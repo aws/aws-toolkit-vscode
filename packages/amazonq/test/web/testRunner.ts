@@ -12,7 +12,7 @@ import 'mocha' // Imports mocha for the browser, defining the `mocha` global.
 import * as vscode from 'vscode'
 
 export async function run(): Promise<void> {
-    await activateToolkitExtension()
+    await activateExtension()
     return new Promise(async (resolve, reject) => {
         setupMocha()
         gatherTestFiles()
@@ -45,7 +45,12 @@ function gatherTestFiles() {
  *
  * So this function ensures the extension has fully activated.
  */
-async function activateToolkitExtension() {
+async function activateExtension() {
+    const extId = VSCODE_EXTENSION_ID.amazonq
+    const ext = vscode.extensions.getExtension(extId)
+    if (!ext) {
+        throw new Error(`Extension '${extId}' not found, can't activate it to run tests.`)
+    }
     await vscode.extensions.getExtension(VSCODE_EXTENSION_ID.amazonq)?.activate()
 }
 

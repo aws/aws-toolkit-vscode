@@ -9,5 +9,5 @@
  *
  * Any web specific tests should be made within their own `describe()`.
  */
-import { timeoutUtilsDescribe } from 'aws-core-vscode/test'
+import { timeoutUtilsDescribe } from 'aws-core-vscode/testWeb'
 timeoutUtilsDescribe

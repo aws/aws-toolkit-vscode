@@ -3,6 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+/**
+ * Some imports in this file are node compatible only.
+ * For web-based test imports, see {@link file://./../testWeb/index.ts}
+ */
+
 export { registerAuthHook, using } from './setupUtil'
 export { runTests } from './testRunner'
 export { MockDocument } from './fake/fakeDocument'
@@ -14,7 +19,6 @@ export { getTestLogger } from './globalSetup.test'
 export { testCommand } from './shared/vscode/testUtils'
 export { FakeAwsContext } from './utilities/fakeAwsContext'
 export { getTestWorkspaceFolder } from '../testInteg/integrationTestsUtilities'
-export { timeoutUtilsDescribe } from './shared/utilities/timeoutUtils.test'
 export * from './codewhisperer/testUtil'
 export * from './credentials/testUtil'
 export * from './testUtil'

@@ -41,6 +41,7 @@
         "./amazonqFeatureDev": "./dist/src/amazonqFeatureDev/index.js",
         "./codewhispererChat": "./dist/src/codewhispererChat/index.js",
         "./test": "./dist/src/test/index.js",
+        "./testWeb": "./dist/src/testWeb/index.js",
         "./login": "./dist/src/login/webview/index.js",
         "./utils": "./dist/src/shared/utilities/index.js",
         "./feedback": "./dist/src/feedback/index.js",
