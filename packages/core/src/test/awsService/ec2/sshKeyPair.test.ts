@@ -6,11 +6,13 @@ import * as vscode from 'vscode'
 import assert from 'assert'
 import * as sinon from 'sinon'
 import * as path from 'path'
+import * as os from 'os'
+import { stat } from 'fs/promises'
 import { SshKeyPair } from '../../../awsService/ec2/sshKeyPair'
 import { createTestWorkspaceFolder, installFakeClock } from '../../testUtil'
 import { InstalledClock } from '@sinonjs/fake-timers'
 import { ChildProcess } from '../../../shared/utilities/childProcess'
-import { fs } from '../../../shared'
+import { fs, globals } from '../../../shared'
 
 describe('SshKeyUtility', async function () {
     let temporaryDirectory: string
@@ -56,6 +58,13 @@ describe('SshKeyUtility', async function () {
             const result = await process.run()
             // Check private key header for algorithm name
             assert.strictEqual(result.stdout.includes('[ED25519 256]'), true)
+        })
+
+        it('sets permission of the file to read/write owner', async function () {
+            if (!globals.isWeb && os.platform() !== 'win32') {
+                const result = await stat(keyPair.getPrivateKeyPath())
+                assert.strictEqual(result.mode & 0o777, 0o600)
+            }
         })
     })
 
