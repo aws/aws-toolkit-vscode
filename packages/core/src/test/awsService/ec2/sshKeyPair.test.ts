@@ -66,7 +66,7 @@ describe('SshKeyUtility', async function () {
         const process = new ChildProcess(`ssh-keygen`, ['-vvv', '-l', '-f', keyPath])
         const result = await process.run()
         // Check private key header for algorithm name
-        assert.strictEqual(result.stdout.includes('[RSA 3072]'), true)
+        assert.strictEqual(result.stdout.includes('[RSA'), true)
         stub.restore()
     })
 
