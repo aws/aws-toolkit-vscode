@@ -12,33 +12,23 @@ import {
     Ec2InstanceStoppedContext,
     refreshExplorerNode,
 } from '../../../../awsService/ec2/explorer/ec2InstanceNode'
-import { Ec2Client, SafeEc2Instance, getNameOfInstance } from '../../../../shared/clients/ec2Client'
+import { Ec2Client, getNameOfInstance } from '../../../../shared/clients/ec2Client'
 import { Ec2ParentNode } from '../../../../awsService/ec2/explorer/ec2ParentNode'
 import { DefaultAwsContext } from '../../../../shared'
+import { testClient, testInstance, testParentNode } from './ec2ParentNode.test'
 
 describe('ec2InstanceNode', function () {
     let testNode: Ec2InstanceNode
-    let testInstance: SafeEc2Instance
-    const testRegion = 'testRegion'
-    const testPartition = 'testPartition'
-
     before(function () {
-        testInstance = {
-            InstanceId: 'testId',
-            Tags: [
-                {
-                    Key: 'Name',
-                    Value: 'testName',
-                },
-            ],
-            LastSeenStatus: 'running',
-        }
-        const testClient = new Ec2Client('')
-        const testParentNode = new Ec2ParentNode(testRegion, testPartition, testClient)
+        sinon.stub(DefaultAwsContext.prototype, 'getCredentialAccountId')
         testNode = new Ec2InstanceNode(testParentNode, testClient, 'testRegion', 'testPartition', testInstance)
     })
 
-    this.beforeEach(function () {
+    after(function () {
+        sinon.restore()
+    })
+
+    beforeEach(function () {
         testNode.updateInstance(testInstance)
     })
 
@@ -97,34 +87,7 @@ describe('ec2InstanceNode', function () {
     })
 
     describe('refreshExplorerNode', function () {
-        let testInstance: SafeEc2Instance
-        let testParentNode: Ec2ParentNode
-        let testClient: Ec2Client
-        let testNode: Ec2InstanceNode
-
-        before(function () {
-            sinon.stub(DefaultAwsContext.prototype, 'getCredentialAccountId')
-            testInstance = {
-                InstanceId: 'testId',
-                Tags: [
-                    {
-                        Key: 'Name',
-                        Value: 'testName',
-                    },
-                ],
-                LastSeenStatus: 'running',
-            }
-            testClient = new Ec2Client('')
-            testParentNode = new Ec2ParentNode('fake-region', 'testPartition', testClient)
-            testNode = new Ec2InstanceNode(testParentNode, testClient, 'testRegion', 'testPartition', testInstance)
-        })
-
-        after(function () {
-            sinon.restore()
-        })
-
         it('refreshes only parent node', async function () {
-            const testParentNode = new Ec2ParentNode('fake-region', 'testPartition', testClient)
             const parentRefresh = sinon.stub(Ec2ParentNode.prototype, 'refreshNode')
             const childRefresh = sinon.stub(Ec2InstanceNode.prototype, 'refreshNode')
 
