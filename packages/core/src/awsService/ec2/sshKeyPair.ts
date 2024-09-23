@@ -11,7 +11,6 @@ import { Timeout } from '../../shared/utilities/timeoutUtils'
 export class SshKeyPair {
     private publicKeyPath: string
     private lifeTimeout: Timeout
-    private deleted: boolean = false
 
     private constructor(
         private keyPath: string,
@@ -63,12 +62,13 @@ export class SshKeyPair {
         if (!this.lifeTimeout.completed) {
             this.lifeTimeout.cancel()
         }
-
-        this.deleted = true
     }
 
-    public isDeleted(): boolean {
-        return this.deleted
+    public async isDeleted(): Promise<boolean> {
+        const privateKeyExists = await fs.existsFile(this.getPrivateKeyPath())
+        const publicKeyExists = await fs.existsFile(this.getPublicKeyPath())
+        const result = !(privateKeyExists || publicKeyExists)
+        return result
     }
 
     public timeAlive(): number {
