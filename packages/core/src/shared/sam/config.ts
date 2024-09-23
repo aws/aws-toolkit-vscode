@@ -8,6 +8,7 @@ import fs from '../fs/fs'
 import { JsonMap, parse, stringify } from '@iarna/toml'
 import { cast, Optional } from '../utilities/typeConstructors'
 import { getLogger } from '../logger/logger'
+import { ToolkitError } from '../errors'
 
 export interface Config {
     readonly environments: Record<string, Omit<Environment, 'name'>>
@@ -73,18 +74,39 @@ export class SamConfig {
         return primarySection?.parameters?.[key] ?? globalSection?.parameters?.[key]
     }
 
+    private static generateConfigFileName(projectRoot: vscode.Uri) {
+        return vscode.Uri.joinPath(projectRoot, 'samconfig.toml')
+    }
+
+    private static async getConfigFileUri(projectRoot: vscode.Uri) {
+        const path = SamConfig.generateConfigFileName(projectRoot)
+        if (!(await fs.exists(path.fsPath))) {
+            getLogger().error('No samconfig.toml found')
+            throw new ToolkitError('No project root found')
+        }
+        return path
+    }
+
+    public static async getConfigContent(projectRoot: vscode.Uri) {
+        if (!projectRoot) {
+            throw new ToolkitError('No project root found')
+        }
+        const uri = await SamConfig.getConfigFileUri(projectRoot)
+        return SamConfig.fromUri(uri)
+    }
+
     public listEnvironments(): Environment[] {
         const envs = this.config.environments
 
         return Object.entries(envs).map(([name, data]) => ({ name, ...data }))
     }
 
-    public static async writeGlobal(uri: vscode.Uri, stackName: string, region: string) {
-        const path = vscode.Uri.joinPath(uri, 'samconfig.toml')
+    public static async writeGlobal(projectRoot: vscode.Uri, stackName: string, region: string) {
+        const path = vscode.Uri.joinPath(projectRoot, 'samconfig.toml')
         if (!(await fs.exists(path))) {
             getLogger().warn('No samconfig.toml found, creating...')
             const data = { default: { global: { parameters: { stack_name: stackName, region: region } } } }
-            return SamConfig.createNewConfigFile(path, data)
+            return SamConfig.createNewConfigFile(projectRoot, data)
         }
         const contents = await fs.readFileAsString(path)
         const data = await parse.async(contents)
@@ -109,30 +131,29 @@ export class SamConfig {
         return new this(uri, config)
     }
 
-    public static async validateSamConfig(uri: vscode.Uri | undefined, configType: DeployType): Promise<boolean> {
-        if (!uri) {
+    public static async validateAppBuilderSamConfig(
+        projectRoot: vscode.Uri | undefined,
+        configType: DeployType
+    ): Promise<boolean> {
+        if (!projectRoot) {
             return false
         }
 
-        const path = vscode.Uri.joinPath(uri, 'samconfig.toml')
-        if (!(await fs.exists(path))) {
-            getLogger().error('No samconfig.toml found')
-            return false
-        }
-        const contents = await fs.readFileAsString(path)
-        const data = await parse.async(contents)
-        if (!data.default) {
+        let content
+        try {
+            content = await SamConfig.getConfigContent(projectRoot)
+        } catch (error) {
             return false
         }
 
-        const deployParameters = data.default as { deploy?: { parameters?: Record<string, unknown> } }
-        const syncParameters = data.default as { sync?: { parameters?: Record<string, unknown> } }
-        const globalParameters = data.default as { global?: { parameters?: Record<string, unknown> } }
+        const globalRegion = content.getParam('global', 'region')
+        const globalStackName = content.getParam('global', 'stack_name')
+        const deployTemplateFile = content.getParam('deploy', 'template_file')
+        const syncTemplateFile = content.getParam('sync', 'template_file')
 
-        const hasRequiredGlobalParams: boolean =
-            !!globalParameters?.global?.parameters?.stack_name && !!globalParameters?.global?.parameters?.region
-        const hasRequiredDeployParameters: boolean = !!deployParameters?.deploy?.parameters?.template_file
-        const hasRequiredSyncParameters: boolean = !!syncParameters?.sync?.parameters?.template_file
+        const hasRequiredGlobalParams: boolean = !!globalRegion && !!globalStackName
+        const hasRequiredDeployParameters: boolean = !!hasRequiredGlobalParams && !!deployTemplateFile
+        const hasRequiredSyncParameters: boolean = !!hasRequiredGlobalParams && !!syncTemplateFile
 
         switch (configType) {
             case DeployType.Deploy:
@@ -146,14 +167,15 @@ export class SamConfig {
     }
 
     public static async validateSamDeployConfig(uri: vscode.Uri | undefined) {
-        return await this.validateSamConfig(uri, DeployType.Deploy)
+        return await this.validateAppBuilderSamConfig(uri, DeployType.Deploy)
     }
 
     public static async validateSamSyncConfig(uri: vscode.Uri | undefined) {
-        return await this.validateSamConfig(uri, DeployType.Sync)
+        return await this.validateAppBuilderSamConfig(uri, DeployType.Sync)
     }
 
-    public static async createNewConfigFile(path: string | vscode.Uri, data: JsonMap) {
+    public static async createNewConfigFile(projectRoot: vscode.Uri, data: JsonMap) {
+        const path = SamConfig.generateConfigFileName(projectRoot)
         await fs.writeFile(path, 'version = 0.1\n\n')
         await fs.appendFile(path, stringify(data))
     }

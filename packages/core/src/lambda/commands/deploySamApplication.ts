@@ -31,7 +31,7 @@ import { showMessageWithUrl } from '../../shared/utilities/messages'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { ChildProcess } from '../../shared/utilities/childProcess'
 import { addTelemetryEnvVar } from '../../shared/sam/cli/samCliInvokerUtils'
-import { getProjectRootFoldersInWorkspace, getProjectRootUri, getSource } from '../../shared/sam/utils'
+import { getProjectRootUri, getSource } from '../../shared/sam/utils'
 import { telemetry } from '../../shared/telemetry'
 import { getParameters } from '../config/parameterUtils'
 import { filter } from '../../shared/utilities/collectionUtils'
@@ -104,21 +104,6 @@ function paramsSourcePrompter(existValidSamconfig: boolean | undefined) {
     })
 }
 
-function workspaceFolderPrompter(projectRootFolders: vscode.Uri[] | undefined) {
-    if (projectRootFolders === undefined) {
-        throw new ToolkitError('No Workspace folder found')
-    }
-    const items = projectRootFolders?.map((workspaceFolder) => {
-        return { label: workspaceFolder.path, data: workspaceFolder }
-    })
-
-    return createQuickPick(items, {
-        title: 'Select workspace folder',
-        placeholder: 'Press enter to proceed with highlighted option',
-        buttons: createCommonButtons(samDeployUrl),
-    })
-}
-
 type DeployResult = {
     isSuccess: boolean
 }
@@ -147,8 +132,6 @@ class DeployWizard extends Wizard<DeployParams> {
     public override async init(): Promise<this> {
         const getProjectRoot = (template: TemplateItem | undefined) =>
             template ? getProjectRootUri(template.uri) : undefined
-
-        const projectRootFolders = await getProjectRootFoldersInWorkspace()
 
         if (this.arg && this.arg.path) {
             // "Deploy" command was invoked on a template.yaml file.
@@ -183,17 +166,11 @@ class DeployWizard extends Wizard<DeployParams> {
             })
         } else if (this.arg && this.arg.regionCode) {
             // "Deploy" command was invoked on a regionNode.
-            this.form.projectRoot.bindPrompter(() => workspaceFolderPrompter(projectRootFolders), {
-                showWhen: () => projectRootFolders.length > 1,
-                setDefault: () => projectRootFolders[0],
-            })
+            this.form.template.bindPrompter(() => createTemplatePrompter(this.registry))
+            this.form.projectRoot.setDefault(({ template }) => getProjectRoot(template))
             this.form.paramsSource.bindPrompter(async ({ projectRoot }) => {
                 const existValidSamConfig: boolean | undefined = await SamConfig.validateSamDeployConfig(projectRoot)
                 return paramsSourcePrompter(existValidSamConfig)
-            })
-            this.form.template.bindPrompter(({ projectRoot }) => createTemplatePrompter(this.registry, projectRoot), {
-                showWhen: ({ paramsSource }) =>
-                    paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
             })
             this.form.region.setDefault(() => this.arg.regionCode)
             this.form.stackName.bindPrompter(
@@ -243,17 +220,11 @@ class DeployWizard extends Wizard<DeployParams> {
             this.form.projectRoot.setDefault(() => getProjectRoot(templateItem))
         } else {
             // "Deploy" command was invoked on the command palette.
-            this.form.projectRoot.bindPrompter(() => workspaceFolderPrompter(projectRootFolders), {
-                showWhen: () => projectRootFolders.length > 1,
-                setDefault: () => projectRootFolders[0],
-            })
+            this.form.template.bindPrompter(() => createTemplatePrompter(this.registry))
+            this.form.projectRoot.setDefault(({ template }) => getProjectRoot(template))
             this.form.paramsSource.bindPrompter(async ({ projectRoot }) => {
                 const existValidSamConfig: boolean | undefined = await SamConfig.validateSamDeployConfig(projectRoot)
                 return paramsSourcePrompter(existValidSamConfig)
-            })
-            this.form.template.bindPrompter(({ projectRoot }) => createTemplatePrompter(this.registry, projectRoot), {
-                showWhen: ({ paramsSource }) =>
-                    paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
             })
             this.form.region.bindPrompter(() => createRegionPrompter().transform((r) => r.id), {
                 showWhen: ({ paramsSource }) =>

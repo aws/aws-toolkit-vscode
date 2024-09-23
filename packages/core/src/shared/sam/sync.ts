@@ -49,7 +49,7 @@ import { IamConnection } from '../../auth/connection'
 import { CloudFormationTemplateRegistry } from '../fs/templateRegistry'
 import { promptAndUseConnection } from '../../auth/utils'
 import { TreeNode } from '../treeview/resourceTreeDataProvider'
-import { getConfigFileUri, getProjectRootFoldersInWorkspace, getProjectRootUri, getSource } from './utils'
+import { getConfigFileUri, getProjectRootUri, getSource } from './utils'
 
 const localize = nls.loadMessageBundle()
 
@@ -75,21 +75,6 @@ export enum ParamsSource {
 enum BucketSource {
     SamCliManaged,
     UserProvided,
-}
-
-function workspaceFolderPrompter(projectRootFolders: vscode.Uri[] | undefined) {
-    if (projectRootFolders === undefined) {
-        throw new ToolkitError('No Workspace folder found')
-    }
-    const items = projectRootFolders?.map((workspaceFolder) => {
-        return { label: workspaceFolder.path, data: workspaceFolder }
-    })
-
-    return createQuickPick(items, {
-        title: 'Select workspace folder',
-        placeholder: 'Press enter to proceed with highlighted option',
-        buttons: createCommonButtons(samSyncUrl),
-    })
 }
 
 async function syncFlagsPrompter(): Promise<DataQuickPickItem<string>[] | undefined> {
@@ -368,23 +353,15 @@ export class SyncWizard extends Wizard<SyncParams> {
     }
 
     public override async init(): Promise<this> {
-        // Get all project root folders within the workspace for prompt options
-        const projectRootFolders = await getProjectRootFoldersInWorkspace()
+        const getProjectRoot = (template: TemplateItem | undefined) =>
+            template ? getProjectRootUri(template.uri) : undefined
 
-        // if the projectRoot is not defined in state already from prepareSyncParams, prompt user for projectRoot
-        this.form.projectRoot.bindPrompter(() => workspaceFolderPrompter(projectRootFolders), {
-            showWhen: () => projectRootFolders.length > 1,
-            setDefault: () => projectRootFolders[0],
-        })
+        this.form.template.bindPrompter(() => createTemplatePrompter(this.registry))
+        this.form.projectRoot.setDefault(({ template }) => getProjectRoot(template))
 
         this.form.paramsSource.bindPrompter(async ({ projectRoot }) => {
             const existValidSamConfig: boolean | undefined = await SamConfig.validateSamSyncConfig(projectRoot)
             return paramsSourcePrompter(existValidSamConfig)
-        })
-
-        this.form.template.bindPrompter(({ projectRoot }) => createTemplatePrompter(this.registry, projectRoot), {
-            showWhen: ({ paramsSource }) =>
-                paramsSource === ParamsSource.Flags || paramsSource === ParamsSource.SpecifyAndSave,
         })
         this.form.region.bindPrompter(() => createRegionPrompter().transform((r) => r.id), {
             showWhen: ({ paramsSource }) =>
