@@ -4044,6 +4044,21 @@
                         "filenamePattern": "*.tc.json"
                     }
                 ]
+            },
+            {
+                "viewType": "workflowStudio.asl",
+                "displayName": "Workflow Studio",
+                "selector": [
+                    {
+                        "filenamePattern": "*.asl.json"
+                    },
+                    {
+                        "filenamePattern": "*.asl.yaml"
+                    },
+                    {
+                        "filenamePattern": "*.asl.yml"
+                    }
+                ]
             }
         ],
         "configurationDefaults": {
