@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Auth: 'Start using Amazon Q' notification being displayed even if signed in."
-}

@@ -35,6 +35,9 @@ export async function runTests(
         }
 
         /**
+         * Tests are not run for core at the moment, but leaving this here because it may be useful in the future.
+         * It might also explain why `import { global } ...` works in web tests but `import global ...` does not.
+         *
          * Node's `require` caches modules by case-sensitive paths, regardless of the underlying
          * file system. This is normally not a problem, but VS Code also happens to normalize paths
          * on Windows to use lowercase drive letters when using its bootstrap loader. This means
