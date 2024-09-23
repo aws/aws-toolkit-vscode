@@ -77,7 +77,6 @@
         "createRelease": "ts-node ../../scripts/createRelease.ts",
         "newChange": "ts-node ../../scripts/newChange.ts",
         "watch": "npm run clean && npm run buildScripts && tsc -watch -p ./",
-        "copyPackageJson": "ts-node ./scripts/build/handlePackageJson",
         "generateIcons": "ts-node ../../scripts/generateIcons.ts",
         "generateSettings": "ts-node ../../scripts/generateSettings.ts"
     },
