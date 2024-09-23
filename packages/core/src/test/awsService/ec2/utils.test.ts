@@ -130,7 +130,7 @@ describe('utils', async function () {
             const cm = await getConnectionManager(connectionManagers, fakeSelection)
             assert.strictEqual(connectionManagers.size, 1)
 
-            await cm.addActiveEnv('sessionId', 'instanceId')
+            await cm.addActiveSession('sessionId', 'instanceId')
 
             const cm2 = await getConnectionManager(connectionManagers, fakeSelection)
 
