@@ -67,6 +67,7 @@ import { randomUUID } from '../shared/crypto'
 import { asStringifiedStack } from '../shared/telemetry/spans'
 import { withTelemetryContext } from '../shared/telemetry/util'
 import { DiskCacheError } from '../shared/utilities/cacheUtils'
+import { setContext } from '../shared/vscode/setContext'
 
 interface AuthService {
     /**
@@ -243,6 +244,8 @@ export class Auth implements AuthService, ConnectionManager {
         this.#activeConnection = conn
         this.#onDidChangeActiveConnection.fire(conn)
         await this.store.setCurrentProfileId(id)
+
+        await setContext('aws.isInternalUser', this.isInternalAmazonUser())
 
         return conn
     }

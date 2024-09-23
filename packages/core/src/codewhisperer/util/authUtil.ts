@@ -151,7 +151,6 @@ export class AuthUtil {
         }
 
         await setContext('aws.codewhisperer.connected', this.isConnected())
-        await setContext('aws.isInternalUser', Auth.instance.isInternalAmazonUser())
         const doShowAmazonQLoginView = !this.isConnected() || this.isConnectionExpired()
         await setContext('aws.amazonq.showLoginView', doShowAmazonQLoginView)
         await setContext('aws.codewhisperer.connectionExpired', this.isConnectionExpired())
