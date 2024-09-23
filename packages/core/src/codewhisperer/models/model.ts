@@ -316,7 +316,7 @@ export class ZipManifest {
     version: string = '1.0'
     hilCapabilities: string[] = ['HIL_1pDependency_VersionUpgrade']
     transformCapabilities: string[] = ['EXPLAINABILITY_V1']
-    customBuildCommand: string = 'test'
+    customBuildCommand: string = 'clean test'
 }
 
 export interface IHilZipManifestParams {

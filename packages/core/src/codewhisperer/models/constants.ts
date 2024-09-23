@@ -639,11 +639,11 @@ export const skipUnitTestsFormMessage =
 
 export const doNotSkipUnitTestsMessage = 'Do not skip unit tests'
 
-export const doNotSkipUnitTestsBuildCommand = 'test'
+export const doNotSkipUnitTestsBuildCommand = 'clean test'
 
 export const skipUnitTestsMessage = 'Skip unit tests'
 
-export const skipUnitTestsBuildCommand = 'test-compile'
+export const skipUnitTestsBuildCommand = 'clean test-compile'
 
 export const planTitle = 'Code Transformation plan by Amazon Q'
 
