@@ -3,13 +3,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import assert from 'assert'
-import { Ec2Prompter, instanceFilter } from '../../../awsService/ec2/prompter'
-import { SafeEc2Instance } from '../../../shared/clients/ec2Client'
+import * as sinon from 'sinon'
+import { Ec2Prompter, getSelection, instanceFilter } from '../../../awsService/ec2/prompter'
+import { Ec2Client, SafeEc2Instance } from '../../../shared/clients/ec2Client'
 import { RegionSubmenuResponse } from '../../../shared/ui/common/regionSubmenu'
 import { Ec2Selection } from '../../../awsService/ec2/prompter'
 import { AsyncCollection } from '../../../shared/utilities/asyncCollection'
 import { intoCollection } from '../../../shared/utilities/collectionUtils'
 import { DataQuickPickItem } from '../../../shared/ui/pickerPrompter'
+import { Ec2ParentNode } from '../../../awsService/ec2/explorer/ec2ParentNode'
+import { Ec2InstanceNode } from '../../../awsService/ec2/explorer/ec2InstanceNode'
 
 describe('Ec2Prompter', async function () {
     class MockEc2Prompter extends Ec2Prompter {
@@ -181,6 +184,45 @@ describe('Ec2Prompter', async function () {
 
             const items = await prompter.testGetInstancesAsQuickPickItems('test-region')
             assert.deepStrictEqual(items, expected)
+        })
+    })
+
+    describe('getSelection', async function () {
+        it('uses node when passed', async function () {
+            const testInstance = {
+                InstanceId: 'testId',
+                Tags: [
+                    {
+                        Key: 'Name',
+                        Value: 'testName',
+                    },
+                ],
+                LastSeenStatus: 'running',
+            }
+            const testClient = new Ec2Client('')
+            const testParentNode = new Ec2ParentNode('fake-region', 'testPartition', testClient)
+            const testNode = new Ec2InstanceNode(
+                testParentNode,
+                testClient,
+                'testRegion',
+                'testPartition',
+                testInstance
+            )
+
+            const prompterStub = sinon.stub(Ec2Prompter.prototype, 'promptUser')
+            const result = await getSelection(testNode)
+
+            assert.strictEqual(result.instanceId, testNode.toSelection().instanceId)
+            assert.strictEqual(result.region, testNode.toSelection().region)
+            sinon.assert.notCalled(prompterStub)
+            prompterStub.restore()
+        })
+
+        it('prompts user when no node is passed', async function () {
+            const prompterStub = sinon.stub(Ec2Prompter.prototype, 'promptUser')
+            await getSelection()
+            sinon.assert.calledOnce(prompterStub)
+            prompterStub.restore()
         })
     })
 })
