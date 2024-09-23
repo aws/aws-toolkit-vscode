@@ -358,7 +358,7 @@ export class FileSystem {
     }
 
     /**
-     * Change permissions on file.
+     * Change permissions on file. Note that this will do nothing on browser.
      * @param uri file whose permissions should be set.
      * @param mode new permissions in octal notation.
      * More info: https://nodejs.org/api/fs.html#fspromiseschmodpath-mode

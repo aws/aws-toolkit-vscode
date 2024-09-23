@@ -8,6 +8,7 @@ import vscode from 'vscode'
 import * as path from 'path'
 import * as utils from 'util'
 import { existsSync, mkdirSync, promises as nodefs, readFileSync, rmSync } from 'fs'
+import { stat } from 'fs/promises'
 import nodeFs from 'fs'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
 import fs, { FileSystem } from '../../../shared/fs/fs'
@@ -377,6 +378,22 @@ describe('FileSystem', function () {
         it('throws if no file exists', async function () {
             const filePath = createTestPath('thisDoesNotExist.txt')
             await assert.rejects(() => fs.stat(filePath))
+        })
+    })
+
+    describe('chmod()', async function () {
+        it('changes permissions when not on web', async function () {
+            const filePath = await makeFile('test.txt', 'hello world', { mode: 0o777 })
+            await fs.chmod(filePath, 0o644)
+            if (!globals.isWeb) {
+                const result = await stat(filePath)
+                assert.strictEqual(result.mode & 0o777, 0o644)
+            }
+        })
+
+        it('throws if no file exists', async function () {
+            const filePath = createTestPath('thisDoesNotExist.txt')
+            await assert.rejects(() => fs.chmod(filePath, 0o644))
         })
     })
 
