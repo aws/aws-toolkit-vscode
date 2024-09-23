@@ -44,7 +44,7 @@ export class Ec2ConnectionManager {
     protected ssmClient: SsmClient
     protected ec2Client: Ec2Client
     protected iamClient: DefaultIamClient
-    protected envManager: Ec2RemoteSessionManager
+    protected sessionManager: Ec2RemoteSessionManager
 
     private policyDocumentationUri = vscode.Uri.parse(
         'https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-getting-started-instance-profile.html'
@@ -58,7 +58,7 @@ export class Ec2ConnectionManager {
         this.ssmClient = this.createSsmSdkClient()
         this.ec2Client = this.createEc2SdkClient()
         this.iamClient = this.createIamSdkClient()
-        this.envManager = new Ec2RemoteSessionManager(regionCode, this.ssmClient)
+        this.sessionManager = new Ec2RemoteSessionManager(regionCode, this.ssmClient)
     }
 
     protected createSsmSdkClient(): SsmClient {
@@ -73,16 +73,16 @@ export class Ec2ConnectionManager {
         return new DefaultIamClient(this.regionCode)
     }
 
-    public async addActiveEnv(sessionId: SSM.SessionId, instanceId: EC2.InstanceId): Promise<void> {
-        await this.envManager.addEnv(instanceId, sessionId)
+    public async addActiveSession(sessionId: SSM.SessionId, instanceId: EC2.InstanceId): Promise<void> {
+        await this.sessionManager.addSession(instanceId, sessionId)
     }
 
     public async closeConnections(): Promise<void> {
-        await this.envManager.closeConnections()
+        await this.sessionManager.closeConnections()
     }
 
     public isConnectedTo(instanceId: string): boolean {
-        return this.envManager.isConnectedTo(instanceId)
+        return this.sessionManager.isConnectedTo(instanceId)
     }
 
     public async getAttachedIamRole(instanceId: string): Promise<IAM.Role | undefined> {
@@ -225,7 +225,7 @@ export class Ec2ConnectionManager {
             throw err
         }
         const ssmSession = await this.ssmClient.startSession(selection.instanceId, 'AWS-StartSSHSession')
-        await this.envManager.addEnv(selection.instanceId, ssmSession.SessionId!)
+        await this.addActiveSession(selection.instanceId, ssmSession.SessionId!)
 
         const vars = getEc2SsmEnv(selection, ssm, ssmSession)
         const envProvider = async () => {
