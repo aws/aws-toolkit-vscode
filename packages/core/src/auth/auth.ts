@@ -180,7 +180,7 @@ export class Auth implements AuthService, ConnectionManager {
         return this.activeConnection !== undefined
     }
 
-    public reformatStartUrl(startUrl: string | undefined) {
+    public normalizeStartUrl(startUrl: string | undefined) {
         return !startUrl ? undefined : startUrl.replace(/[\/#]+$/g, '')
     }
 
