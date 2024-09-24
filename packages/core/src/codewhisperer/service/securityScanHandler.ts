@@ -123,8 +123,11 @@ export function mapToAggregatedList(
             for (let lineNumber = issue.startLine; lineNumber <= issue.endLine; lineNumber++) {
                 const line = editor.document.lineAt(lineNumber - 1)?.text
                 const codeContent = issue.codeSnippet.find((codeIssue) => codeIssue.number === lineNumber)?.content
-                if (line !== codeContent) {
-                    return false
+                if (codeContent?.includes('***')) {
+                    // CodeSnippet contains redacted code so we can't do a direct comparison
+                    return line.length === codeContent.length
+                } else {
+                    return line === codeContent
                 }
             }
         }
