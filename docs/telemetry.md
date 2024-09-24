@@ -293,3 +293,38 @@ traceId: 'aaaaa-aaaaa-aaaaa-aaaaa-aaaaa'
 allowing us to look up `traceId=aaaaa-aaaaa-aaaaa-aaaaa-aaaaa` in our telemetry instance and find all the related events.
 
 For more information visit the OpenTelemetry documentation on traces: https://opentelemetry.io/docs/concepts/signals/traces/
+
+### Manual Trace ID Instrumentation
+
+In certain scenarios you may need to manually instrument disjoint flows to track how a `traceId` propagates through them. e.g.
+
+1. Measuring the time it takes for a message to travel from Amazon Q chat, through VS Code, and back to the customer.
+2. Determining the duration for Amazon Q inline to display a message to the user.
+
+In these cases, where there isn't a direct hierarchy of function calls, manual instrumentation of the `traceId` is necessary.
+
+#### Implementation Options
+
+#### 1. When not currently running in a span
+
+If you're not within an active span and you know the `traceId` you want to use:
+
+```javascript
+telemetry.withTraceId(() => {
+    // Code to be executed within this trace
+}, 'myTraceId')
+```
+
+This method wraps the provided function with the specified traceId
+
+#### 2. When currently running in a span
+
+If you're already executing within a span (e.g., vscode_executeCommand) and you know the traceId you want to use:
+
+```javascript
+telemetry.record({
+    traceId: 'myTraceId',
+})
+```
+
+This approach records the traceId for the current span and all future spans within the same execution context.

@@ -353,22 +353,7 @@ export class TelemetryTracer extends TelemetryBase {
      * See docs/telemetry.md
      */
     public run<T, U extends MetricName>(name: U, fn: (span: Metric<MetricShapes[U]>) => T, options?: SpanOptions): T {
-        const initTraceId = (callback: () => T): T => {
-            /**
-             * Generate a new traceId if one doesn't exist.
-             * This ensures the traceId is created before the span,
-             * allowing it to propagate to all child telemetry metrics.
-             */
-            if (!this.attributes?.traceId) {
-                return this.runRoot(() => {
-                    this.record({ traceId: randomUUID() })
-                    return callback()
-                })
-            }
-            return callback()
-        }
-
-        return initTraceId(() => {
+        return this.withTraceId(() => {
             const span = this.createSpan(name, options).start()
             const frame = this.switchContext(span)
 
@@ -396,7 +381,34 @@ export class TelemetryTracer extends TelemetryBase {
                 span.stop(e)
                 throw e
             }
-        })
+        }, this.attributes?.traceId ?? randomUUID())
+    }
+
+    /**
+     * **Use {@link run} for most scenarios. Only use this method when you have a specific, pre-existing trace ID that you need to instrument.**
+     *
+     * Associates a known trace ID with subsequent telemetry events in the provided callback,
+     * enabling correlation of events from multiple disjoint sources (e.g., webview, VSCode, partner team code).
+     *
+     * The difference between this and using telemetry.record({traceId: 'foo'}) directly is that this will create an active
+     * span if one doesn't already exist. If you already know you're operating in a span (like vscode_executeCommand) then use
+     * telemetry.record directly.
+     *
+     * Records traceId iff this metric is not already associated with a trace
+     */
+    withTraceId<T>(callback: () => T, traceId: string): T {
+        /**
+         * Generate a new traceId if one doesn't exist.
+         * This ensures the traceId is created before the span,
+         * allowing it to propagate to all child telemetry metrics.
+         */
+        if (!this.attributes?.traceId) {
+            return this.runRoot(() => {
+                this.record({ traceId })
+                return callback()
+            })
+        }
+        return callback()
     }
 
     /**
