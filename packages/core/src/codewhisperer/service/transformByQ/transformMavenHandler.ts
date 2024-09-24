@@ -9,7 +9,6 @@ import * as CodeWhispererConstants from '../../models/constants'
 import { spawnSync } from 'child_process' // Consider using ChildProcess once we finalize all spawnSync calls
 import { CodeTransformBuildCommand, telemetry } from '../../../shared/telemetry/telemetry'
 import { CodeTransformTelemetryState } from '../../../amazonqGumby/telemetry/codeTransformTelemetryState'
-import { MetadataResult } from '../../../shared/telemetry/telemetryClient'
 import { ToolkitError } from '../../../shared/errors'
 import { writeLogs } from './transformFileHandler'
 import { throwIfCancelled } from './transformApiHandler'
@@ -59,7 +58,6 @@ function installProjectDependencies(dependenciesFolder: FolderInfo, modulePath: 
             getLogger().error(
                 `CodeTransformation: Error in running Maven ${argString} command ${baseCommand} = ${errorLog}`
             )
-            telemetry.record({ result: MetadataResult.Fail, reason: spawnResult.error?.message })
             throw new ToolkitError(`Maven ${argString} error`, { code: 'MavenExecutionError' })
         } else {
             transformByQState.appendToErrorLog(`${baseCommand} ${argString} succeeded`)
