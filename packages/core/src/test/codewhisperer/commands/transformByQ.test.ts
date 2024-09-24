@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import assert from 'assert'
+import assert, { fail } from 'assert'
 import * as vscode from 'vscode'
 import * as fs from 'fs-extra'
 import * as sinon from 'sinon'
@@ -201,6 +201,32 @@ describe('transformByQ', function () {
             'Content-Type': 'application/zip',
         }
         assert.deepStrictEqual(actual, expected)
+    })
+
+    it(`WHEN zip created THEN manifest.json contains test-compile custom build command`, async function () {
+        const tempFileName = `testfile-${globals.clock.Date.now()}.zip`
+        transformByQState.setProjectPath(tempDir)
+        const transformManifest = new ZipManifest()
+        transformManifest.customBuildCommand = CodeWhispererConstants.skipUnitTestsBuildCommand
+        return zipCode({
+            dependenciesFolder: {
+                path: tempDir,
+                name: tempFileName,
+            },
+            humanInTheLoopFlag: false,
+            modulePath: tempDir,
+            zipManifest: transformManifest,
+        }).then((zipCodeResult) => {
+            const zip = new AdmZip(zipCodeResult.tempFilePath)
+            const manifestEntry = zip.getEntry('manifest.json')
+            if (!manifestEntry) {
+                fail('manifest.json not found in the zip')
+            }
+            const manifestBuffer = manifestEntry.getData()
+            const manifestText = manifestBuffer.toString('utf8')
+            const manifest = JSON.parse(manifestText)
+            assert.strictEqual(manifest.customBuildCommand, CodeWhispererConstants.skipUnitTestsBuildCommand)
+        })
     })
 
     it(`WHEN zip created THEN dependencies contains no .sha1 or .repositories files`, async function () {

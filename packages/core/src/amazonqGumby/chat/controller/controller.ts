@@ -303,6 +303,12 @@ export class GumbyController {
                 })
                 this.messenger.sendJobFinishedMessage(message.tabID, CodeWhispererConstants.jobCancelledChatMessage)
                 break
+            case ButtonActions.CONFIRM_SKIP_TESTS_FORM:
+                await this.handleSkipTestsSelection(message)
+                break
+            case ButtonActions.CANCEL_SKIP_TESTS_FORM:
+                this.messenger.sendJobFinishedMessage(message.tabID, CodeWhispererConstants.jobCancelledChatMessage)
+                break
             case ButtonActions.VIEW_TRANSFORMATION_HUB:
                 await vscode.commands.executeCommand(GumbyCommands.FOCUS_TRANSFORMATION_HUB, CancelActionPositions.Chat)
                 this.messenger.sendJobSubmittedMessage(message.tabID)
@@ -332,6 +338,23 @@ export class GumbyController {
                 this.messenger.sendViewBuildLog(message.tabID)
                 break
         }
+    }
+
+    private async handleSkipTestsSelection(message: any) {
+        const skipTestsSelection = message.formSelectedValues['GumbyTransformSkipTestsForm']
+        if (skipTestsSelection === CodeWhispererConstants.skipUnitTestsMessage) {
+            transformByQState.setCustomBuildCommand(CodeWhispererConstants.skipUnitTestsBuildCommand)
+        } else {
+            transformByQState.setCustomBuildCommand(CodeWhispererConstants.doNotSkipUnitTestsBuildCommand)
+        }
+        telemetry.codeTransform_submitSelection.emit({
+            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
+            userChoice: skipTestsSelection,
+            result: MetadataResult.Pass,
+        })
+        this.messenger.sendSkipTestsSelectionMessage(skipTestsSelection, message.tabID)
+        // perform local build
+        await this.validateBuildWithPromptOnError(message)
     }
 
     // prompt user to pick project and specify source JDK version
@@ -365,7 +388,8 @@ export class GumbyController {
             }
 
             await processTransformFormInput(pathToProject, fromJDKVersion, toJDKVersion)
-            await this.validateBuildWithPromptOnError(message)
+
+            await this.messenger.sendSkipTestsPrompt(message.tabID)
         })
     }
 
