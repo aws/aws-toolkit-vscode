@@ -8,7 +8,6 @@ import * as CloudFormation from '../../../shared/cloudformation/cloudformation'
 import { SamConfig } from '../../../shared/sam/config'
 import { getLogger } from '../../../shared/logger/logger'
 import { ToolkitError } from '../../../shared/errors'
-import { getConfigFileUri } from '../../../shared/sam/utils'
 
 export interface SamApp {
     location: SamAppLocation
@@ -33,8 +32,7 @@ export interface ResourceTreeEntity {
 
 export async function getStackName(projectRoot: vscode.Uri): Promise<any> {
     try {
-        const samConfigUri = await getConfigFileUri(projectRoot)
-        const samConfig = await SamConfig.fromUri(samConfigUri)
+        const samConfig = await SamConfig.getConfigContent(projectRoot)
         const stackName = await samConfig.getParam('global', 'stack_name')
         const region = await samConfig.getParam('global', 'region')
 

@@ -49,7 +49,7 @@ import { IamConnection } from '../../auth/connection'
 import { CloudFormationTemplateRegistry } from '../fs/templateRegistry'
 import { promptAndUseConnection } from '../../auth/utils'
 import { TreeNode } from '../treeview/resourceTreeDataProvider'
-import { getConfigFileUri, getProjectRootUri, getSource } from './utils'
+import { getProjectRootUri, getSource } from './utils'
 
 const localize = nls.loadMessageBundle()
 
@@ -465,7 +465,7 @@ async function saveAndBindArgs(args: SyncParams): Promise<{ readonly boundArgs: 
     })
 
     if (args.paramsSource === ParamsSource.SamConfig) {
-        const samConfigFile = await getConfigFileUri(args.projectRoot)
+        const samConfigFile = await SamConfig.getConfigFileUri(args.projectRoot)
         boundArgs.push('--config-file', `${samConfigFile.fsPath}`)
     }
 

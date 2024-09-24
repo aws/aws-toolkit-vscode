@@ -19,7 +19,8 @@ import { ToolkitError } from '../errors'
 import globals from '../extensionGlobals'
 import { TreeNode } from '../treeview/resourceTreeDataProvider'
 import { Metric, SamBuild, telemetry } from '../telemetry/telemetry'
-import { getConfigFileUri, getProjectRootUri, isDotnetRuntime } from './utils'
+import { getProjectRootUri, isDotnetRuntime } from './utils'
+import { SamConfig } from './config'
 
 export interface BuildParams {
     readonly template: TemplateItem
@@ -183,7 +184,7 @@ export function registerBuild() {
         } else {
             try {
                 // Get samconfig.toml file Uri
-                const samConfigFile = await getConfigFileUri(projectRoot)
+                const samConfigFile = await SamConfig.getConfigFileUri(projectRoot)
                 buildFlags.push('--config-file', `${samConfigFile.fsPath}`)
             } catch (error) {
                 buildFlags = defaultFlags

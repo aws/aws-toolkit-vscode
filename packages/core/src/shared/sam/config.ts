@@ -78,15 +78,27 @@ export class SamConfig {
         return vscode.Uri.joinPath(projectRoot, 'samconfig.toml')
     }
 
-    private static async getConfigFileUri(projectRoot: vscode.Uri) {
+    /**
+     * @description Finds the samconfig.toml file under the provided project folder
+     * @param projectRoot The root folder of the application project
+     * @returns The URI of the samconfig.toml file
+     */
+    public static async getConfigFileUri(projectRoot: vscode.Uri) {
         const path = SamConfig.generateConfigFileName(projectRoot)
         if (!(await fs.exists(path.fsPath))) {
-            getLogger().error('No samconfig.toml found')
-            throw new ToolkitError('No project root found')
+            getLogger().warn('No samconfig.toml found')
+            throw new ToolkitError(`No samconfig.toml file found in ${projectRoot.fsPath}`, {
+                code: 'samNoConfigFound',
+            })
         }
         return path
     }
 
+    /**
+     * @description Finds samconfig.toml file under the provided project folder and read content
+     * @param projectRoot The root folder of the application project
+     * @returns The SamConfig object
+     */
     public static async getConfigContent(projectRoot: vscode.Uri) {
         if (!projectRoot) {
             throw new ToolkitError('No project root found')

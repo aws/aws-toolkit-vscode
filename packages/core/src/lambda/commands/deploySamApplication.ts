@@ -299,18 +299,6 @@ async function getAuthOrPrompt() {
     return Auth.instance.activeConnection
 }
 
-async function getConfigFileUri(projectRoot: vscode.Uri) {
-    const samConfigFilename = 'samconfig'
-    const samConfigFile = (
-        await vscode.workspace.findFiles(new vscode.RelativePattern(projectRoot, `${samConfigFilename}.*`))
-    )[0]
-    if (samConfigFile) {
-        return samConfigFile
-    } else {
-        throw new ToolkitError(`No samconfig.toml file found in ${projectRoot.fsPath}`)
-    }
-}
-
 export async function runDeploy(arg: any): Promise<DeployResult> {
     return await telemetry.sam_deploy.run(async () => {
         const source = getSource(arg)
@@ -336,7 +324,7 @@ export async function runDeploy(arg: any): Promise<DeployResult> {
         const buildFlags: string[] = ['--cached']
 
         if (params.paramsSource === ParamsSource.SamConfig) {
-            const samConfigFile = await getConfigFileUri(params.projectRoot)
+            const samConfigFile = await SamConfig.getConfigFileUri(params.projectRoot)
             deployFlags.push('--config-file', `${samConfigFile.fsPath}`)
         } else {
             deployFlags.push('--template', `${params.template.uri.fsPath}`)

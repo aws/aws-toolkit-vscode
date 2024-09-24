@@ -4,27 +4,10 @@
  */
 
 import * as vscode from 'vscode'
-import { ToolkitError } from '../errors'
 import path from 'path'
 import { AWSTreeNodeBase } from '../treeview/nodes/awsTreeNodeBase'
 import { TreeNode, isTreeNode } from '../treeview/resourceTreeDataProvider'
 import * as CloudFormation from '../cloudformation/cloudformation'
-import fs from '../fs/fs'
-
-/**
- * @description Finds the samconfig.toml file under the provided project folder
- * @param projectRoot The root folder of the application project
- * @returns The URI of the samconfig.toml file
- */
-export async function getConfigFileUri(projectRoot: vscode.Uri): Promise<vscode.Uri> {
-    const samConfigFilename = 'samconfig.toml'
-    const samConfigPath = path.join(projectRoot.path, samConfigFilename)
-    if (await fs.exists(samConfigPath)) {
-        return vscode.Uri.file(samConfigPath)
-    } else {
-        throw new ToolkitError(`No samconfig.toml file found in ${projectRoot.fsPath}`, { code: 'samNoConfigFound' })
-    }
-}
 
 /**
  * @description determines the root directory of the project given uri of the template file
