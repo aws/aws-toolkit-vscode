@@ -77,6 +77,7 @@ async function setupDevMode(context: vscode.ExtensionContext) {
             'deleteSsoConnections',
             'expireSsoConnections',
             'editAuthConnections',
+            'forceIdeCrash',
         ],
     }
 

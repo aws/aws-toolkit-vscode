@@ -41,6 +41,7 @@ export type DevFunction =
     | 'deleteSsoConnections'
     | 'expireSsoConnections'
     | 'editAuthConnections'
+    | 'forceIdeCrash'
 
 export type DevOptions = {
     context: vscode.ExtensionContext
@@ -104,6 +105,11 @@ const menuOptions: Record<DevFunction, MenuOption> = {
         label: 'Auth: Edit Connections',
         detail: 'Opens editor to all Auth Connections the extension is using.',
         executor: editSsoConnections,
+    },
+    forceIdeCrash: {
+        label: 'Crash: Force IDE ExtHost Crash',
+        detail: `Will SIGKILL ExtHost with pid, ${process.pid}, but IDE will not crash itself.`,
+        executor: forceQuitIde,
     },
 }
 
@@ -433,6 +439,16 @@ async function expireSsoConnections() {
         },
         { emit: false, functionId: { name: 'expireSsoConnectionsDev' } }
     )
+}
+
+export function forceQuitIde() {
+    // This current process is the ExtensionHost. Killing it will cause all the extensions to crash
+    // for the current ExtensionHost (unless using "extensions.experimental.affinity").
+    // The IDE instance itself will remaing running, but a new ExtHost will spawn within it.
+    // The PPID does not seem to be the IDE instance but the root VS Code process, killing
+    // this crashes all VS Code instances.
+    const vsCodePid = process.pid
+    process.kill(vsCodePid, 'SIGKILL') // SIGTERM would be the graceful shutdown
 }
 
 async function showState(path: string) {
