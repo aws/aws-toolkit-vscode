@@ -11,6 +11,9 @@ import { isCloud9 } from '../../shared/extensionUtilities'
 import { RecommendationHandler } from '../service/recommendationHandler'
 import { session } from '../util/codeWhispererSession'
 import { RecommendationService } from '../service/recommendationService'
+import { telemetry } from '../../shared/telemetry'
+import { TelemetryHelper } from '../util/telemetryHelper'
+import { randomUUID } from '../../shared/crypto'
 
 /**
  * This function is for manual trigger CodeWhisperer
@@ -52,5 +55,9 @@ export async function invokeRecommendation(
         )
     }
 
-    await RecommendationService.instance.generateRecommendation(client, editor, 'OnDemand', config, undefined)
+    const traceId = randomUUID()
+    TelemetryHelper.instance.setTraceId(traceId)
+    await telemetry.withTraceId(async () => {
+        await RecommendationService.instance.generateRecommendation(client, editor, 'OnDemand', config, undefined)
+    }, traceId)
 }

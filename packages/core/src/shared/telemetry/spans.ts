@@ -412,6 +412,29 @@ export class TelemetryTracer extends TelemetryBase {
     }
 
     /**
+     * **Use {@link run} for most scenarios. Only use this method when you have a specific, pre-existing trace ID that you need to instrument.**
+     *
+     * Associates a known trace ID with subsequent telemetry events in the provided callback,
+     * enabling correlation of events from multiple disjoint sources (e.g., webview, VSCode, partner team code).
+     *
+     * Records traceId iff this metric is not already associated with a trace
+     */
+    withTraceId<T>(callback: () => T, traceId: string): T {
+        /**
+         * Generate a new traceId if one doesn't exist.
+         * This ensures the traceId is created before the span,
+         * allowing it to propagate to all child telemetry metrics.
+         */
+        if (!this.attributes?.traceId) {
+            return this.runRoot(() => {
+                this.record({ traceId })
+                return callback()
+            })
+        }
+        return callback()
+    }
+
+    /**
      * **You should use {@link run} in the majority of cases. Only use this for instrumenting extension entrypoints.**
      *
      * Executes the given function within an anonymous 'root' span which does not emit
