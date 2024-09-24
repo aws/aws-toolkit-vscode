@@ -59,7 +59,7 @@ function installProjectDependencies(dependenciesFolder: FolderInfo, modulePath: 
             getLogger().error(
                 `CodeTransformation: Error in running Maven ${argString} command ${baseCommand} = ${errorLog}`
             )
-            telemetry.record({ result: MetadataResult.Fail, reason: (spawnResult.error as any).code })
+            telemetry.record({ result: MetadataResult.Fail, reason: spawnResult.error?.message })
             throw new ToolkitError(`Maven ${argString} error`, { code: 'MavenExecutionError' })
         } else {
             transformByQState.appendToErrorLog(`${baseCommand} ${argString} succeeded`)
