@@ -177,7 +177,7 @@ export async function createExecutableFile(filepath: string, contents: string): 
         await fs2.writeFile(filepath, `@echo OFF$\r\n${contents}\r\n`)
     } else {
         await fs2.writeFile(filepath, `#!/bin/sh\n${contents}`)
-        nodefs.chmodSync(filepath, 0o744)
+        await fs2.chmod(filepath, 0o744)
     }
 }
 
