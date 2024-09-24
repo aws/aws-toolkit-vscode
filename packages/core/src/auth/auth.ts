@@ -169,10 +169,8 @@ export class Auth implements AuthService, ConnectionManager {
     }
 
     public get startUrl(): string | undefined {
-        // Reformat the url to remove any trailing '/' and `#`
-        // e.g. https://view.awsapps.com/start/# will become https://view.awsapps.com/start
         return isSsoConnection(this.activeConnection)
-            ? this.reformatStartUrl(this.activeConnection.startUrl)
+            ? this.normalizeStartUrl(this.activeConnection.startUrl)
             : undefined
     }
 
@@ -180,6 +178,12 @@ export class Auth implements AuthService, ConnectionManager {
         return this.activeConnection !== undefined
     }
 
+    /**
+     * Normalizes the provided URL
+     *
+     *  Any trailing '/' and `#` is removed from the URL
+     *  e.g. https://view.awsapps.com/start/# will become https://view.awsapps.com/start
+     */
     public normalizeStartUrl(startUrl: string | undefined) {
         return !startUrl ? undefined : startUrl.replace(/[\/#]+$/g, '')
     }
