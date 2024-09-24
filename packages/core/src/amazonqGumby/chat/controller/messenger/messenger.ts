@@ -118,8 +118,8 @@ export class Messenger {
             mandatory: true,
             options: [
                 {
-                    value: CodeWhispererConstants.doNotSkipUnitTestsMessage,
-                    label: CodeWhispererConstants.doNotSkipUnitTestsMessage,
+                    value: CodeWhispererConstants.runUnitTestsMessage,
+                    label: CodeWhispererConstants.runUnitTestsMessage,
                 },
                 {
                     value: CodeWhispererConstants.skipUnitTestsMessage,
@@ -461,12 +461,7 @@ export class Messenger {
     }
 
     public sendSkipTestsSelectionMessage(skipTestsSelection: string, tabID: string) {
-        // just for correct grammar
-        let skipTestsText = skipTestsSelection
-        if (skipTestsText === CodeWhispererConstants.doNotSkipUnitTestsMessage) {
-            skipTestsText = 'not skip unit tests'
-        }
-        const message = `Ok, I will ${skipTestsText.toLowerCase()} when building your project.`
+        const message = `Okay, I will ${skipTestsSelection.toLowerCase()} when building your project.`
         this.dispatcher.sendChatMessage(new ChatMessage({ message, messageType: 'ai-prompt' }, tabID))
     }
 
