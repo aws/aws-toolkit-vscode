@@ -5,9 +5,10 @@
 
 import * as vscode from 'vscode'
 import * as CloudFormation from '../../../shared/cloudformation/cloudformation'
-import { SamConfig } from '../../../shared/sam/config'
+import { SamConfig, SamConfigErrorCode } from '../../../shared/sam/config'
 import { getLogger } from '../../../shared/logger/logger'
 import { ToolkitError } from '../../../shared/errors'
+import { showViewLogsMessage } from '../../../shared/utilities/messages'
 
 export interface SamApp {
     location: SamAppLocation
@@ -38,7 +39,15 @@ export async function getStackName(projectRoot: vscode.Uri): Promise<any> {
 
         return { stackName, region }
     } catch (error) {
-        getLogger().error('getStackName: Failed to retrieve stack name and region. Error: %s', error)
+        if (error instanceof ToolkitError) {
+            if (error.code === SamConfigErrorCode.samNoConfigFound) {
+                getLogger().info('No stack name or region information available in samconfig.toml', error)
+            } else if (error.code === SamConfigErrorCode.samConfigParseError) {
+                getLogger().error(`Error getting stack name or region information: ${error.message}`, error)
+                await showViewLogsMessage('Encounter an issue reading samconfig.toml')
+            }
+        }
+
         return {}
     }
 }

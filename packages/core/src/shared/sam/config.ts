@@ -61,6 +61,11 @@ function parseCommand(section: Record<string, unknown>): Omit<Command, 'name'> {
     return { parameters: cast(section['parameters'], Optional(Object)) }
 }
 
+export enum SamConfigErrorCode {
+    samNoConfigFound = 'samNoConfigFound',
+    samConfigParseError = 'samConfigParseError',
+}
+
 export class SamConfig {
     public constructor(
         public readonly location: vscode.Uri,
@@ -94,9 +99,15 @@ export class SamConfig {
      * @returns The SamConfig object
      */
     public static async fromConfigFileUri(uri: vscode.Uri) {
-        const contents = await fs.readFileAsString(uri)
-        const config = await parseConfig(contents)
-        return new this(uri, config)
+        try {
+            const contents = await fs.readFileAsString(uri)
+            const config = await parseConfig(contents)
+            return new this(uri, config)
+        } catch (error) {
+            throw new ToolkitError(`Error parsing samconfig.toml: ${error}`, {
+                code: SamConfigErrorCode.samConfigParseError,
+            })
+        }
     }
 
     public listEnvironments(): Environment[] {
@@ -120,7 +131,7 @@ export async function getConfigFileUri(projectRoot: vscode.Uri) {
     if (!(await fs.exists(path.fsPath))) {
         getLogger().warn('No samconfig.toml found')
         throw new ToolkitError(`No samconfig.toml file found in ${projectRoot.fsPath}`, {
-            code: 'samNoConfigFound',
+            code: SamConfigErrorCode.samNoConfigFound,
         })
     }
     return path
