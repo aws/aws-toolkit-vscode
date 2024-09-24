@@ -31,7 +31,7 @@ import path from 'path'
 import { RecommendationService } from '../service/recommendationService'
 import { Container } from '../service/serviceContainer'
 import { telemetry } from '../../shared/telemetry'
-import { TelemetryHelper } from '../indexNode'
+import { TelemetryHelper } from '../util/telemetryHelper'
 
 export const acceptSuggestion = Commands.declare(
     'aws.amazonq.accept',

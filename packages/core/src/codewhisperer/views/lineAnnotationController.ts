@@ -20,7 +20,7 @@ import { session } from '../util/codeWhispererSession'
 import { RecommendationHandler } from '../service/recommendationHandler'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { setContext } from '../../shared'
-import { TelemetryHelper } from '../indexNode'
+import { TelemetryHelper } from '../util/telemetryHelper'
 
 const case3TimeWindow = 30000 // 30 seconds
 

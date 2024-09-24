@@ -12,7 +12,7 @@ import { Container } from '../service/serviceContainer'
 import { RecommendationHandler } from '../service/recommendationHandler'
 import { cancellableDebounce } from '../../shared/utilities/functionUtils'
 import { telemetry } from '../../shared/telemetry'
-import { TelemetryHelper } from '../indexNode'
+import { TelemetryHelper } from '../util/telemetryHelper'
 
 export class ActiveStateController implements vscode.Disposable {
     private readonly _disposable: vscode.Disposable

@@ -16,8 +16,8 @@ import { isInlineCompletionEnabled } from '../util/commonUtil'
 import { ClassifierTrigger } from './classifierTrigger'
 import { extractContextForCodeWhisperer } from '../util/editorContext'
 import { RecommendationService } from './recommendationService'
-import { TelemetryHelper } from '../indexNode'
 import { randomUUID } from '../../shared/crypto'
+import { TelemetryHelper } from '../util/telemetryHelper'
 
 /**
  * This class is for CodeWhisperer auto trigger
