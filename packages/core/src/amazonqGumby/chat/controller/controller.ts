@@ -211,7 +211,6 @@ export class GumbyController {
             if (authState.amazonQ !== 'connected') {
                 this.sessionStorage.getSession().isAuthenticating = true
                 this.messenger.sendAuthNeededExceptionMessage(authState, message.tabID)
-                telemetry.record({ result: MetadataResult.Fail, reason: 'auth-failed' })
                 throw new NoAuthError()
             }
 
@@ -427,10 +426,6 @@ export class GumbyController {
 
             if (fromJDKVersion === JDKVersion.UNSUPPORTED) {
                 this.messenger.sendUnrecoverableErrorResponse('unsupported-source-jdk-version', message.tabID)
-                telemetry.record({
-                    result: MetadataResult.Fail,
-                    reason: 'unsupported-source-jdk-version',
-                })
                 return
             }
 
@@ -455,10 +450,6 @@ export class GumbyController {
 
             if (fromDB === DB.OTHER) {
                 this.messenger.sendUnrecoverableErrorResponse('unsupported-source-db-version', message.tabID)
-                telemetry.record({
-                    result: MetadataResult.Fail,
-                    reason: 'unsupported-source-db-version',
-                })
                 return
             }
 
