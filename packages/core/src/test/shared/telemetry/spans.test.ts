@@ -630,4 +630,56 @@ describe('TelemetryTracer', function () {
             })
         })
     })
+
+    describe('withTraceId()', function () {
+        const expectedId = 'foo-foo-foo-foo-foo'
+
+        beforeEach(() => {
+            sandbox.stub(crypto, 'randomUUID').returns(expectedId)
+        })
+
+        it('uses trace id', function () {
+            telemetry.withTraceId(() => {
+                telemetry.vscode_viewLogs.emit({
+                    result: 'Succeeded',
+                })
+            }, expectedId)
+
+            const viewLogsEvent = getMetrics('vscode_viewLogs')[0]
+            assert.deepStrictEqual(viewLogsEvent.traceId, expectedId)
+        })
+
+        it('does not use traceId when in a span', function () {
+            telemetry.vscode_executeCommand.run(() => {
+                telemetry.withTraceId(() => {
+                    telemetry.vscode_viewLogs.emit({
+                        result: 'Succeeded',
+                    })
+                }, 'testTraceId')
+            })
+
+            const executeCommandEvent = getMetrics('vscode_executeCommand')[0]
+            assert.deepStrictEqual(executeCommandEvent.traceId, expectedId)
+
+            const viewLogsEvent = getMetrics('vscode_viewLogs')[0]
+            assert.deepStrictEqual(viewLogsEvent.traceId, expectedId)
+        })
+
+        it('passes traceId through regular functions', function () {
+            telemetry.withTraceId(() => {
+                function foo() {
+                    function fi() {
+                        telemetry.vscode_viewLogs.emit({
+                            result: 'Succeeded',
+                        })
+                    }
+                    fi()
+                }
+                foo()
+            }, expectedId)
+
+            const viewLogsEvent = getMetrics('vscode_viewLogs')[0]
+            assert.deepStrictEqual(viewLogsEvent.traceId, expectedId)
+        })
+    })
 })
