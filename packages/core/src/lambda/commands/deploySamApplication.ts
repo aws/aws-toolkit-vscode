@@ -352,7 +352,6 @@ export async function runDeploy(arg: any): Promise<DeployResult> {
             const samConfigFile = await getConfigFileUri(params.projectRoot)
             deployFlags.push('--config-file', `${samConfigFile.fsPath}`)
         } else {
-            deployFlags.push('--template', `${params.template.uri.fsPath}`)
             deployFlags.push('--region', `${params.region}`)
             deployFlags.push('--stack-name', `${params.stackName}`)
             params.bucketName
@@ -389,13 +388,6 @@ export async function runDeploy(arg: any): Promise<DeployResult> {
                     env: await injectCredentials(connection),
                 }),
             })
-            // Create a child process to run the SAM deploy command
-            const deployProcess = new ChildProcess(samCliPath, ['deploy', ...deployFlags], {
-                spawnOptions: await addTelemetryEnvVar({
-                    cwd: params.projectRoot.fsPath,
-                    env: await injectCredentials(connection),
-                }),
-            })
 
             try {
                 //Run SAM build in Terminal
@@ -403,6 +395,18 @@ export async function runDeploy(arg: any): Promise<DeployResult> {
             } catch (error) {
                 throw ToolkitError.chain(error, 'Failed to build SAM template', { details: { ...buildFlags } })
             }
+
+            // Pass built template to deployFlags
+            const templatePath = vscode.Uri.joinPath(params.projectRoot, '.aws-sam', 'build', 'template.yaml').fsPath
+            deployFlags.push('--template-file', `${templatePath}`)
+
+            // Create a child process to run the SAM deploy command
+            const deployProcess = new ChildProcess(samCliPath, ['deploy', ...deployFlags], {
+                spawnOptions: await addTelemetryEnvVar({
+                    cwd: params.projectRoot.fsPath,
+                    env: await injectCredentials(connection),
+                }),
+            })
 
             //Run SAM deploy in Terminal
             await runInTerminal(deployProcess, 'deploy')
