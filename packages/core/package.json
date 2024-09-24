@@ -3679,7 +3679,7 @@
                 "command": "aws.appBuilder.build",
                 "title": "%AWS.command.appBuilder.build%",
                 "category": "%AWS.title%",
-                "icon": "$(symbol-method)"
+                "icon": "$(package)"
             },
             {
                 "command": "aws.appBuilder.searchLogs",
@@ -3692,12 +3692,6 @@
                 "title": "%AWS.command.appBuilder.deploy%",
                 "category": "%AWS.title%",
                 "icon": "$(cloud-upload)"
-            },
-            {
-                "command": "aws.appBuilder.build",
-                "title": "%AWS.command.appBuilder.build%",
-                "category": "%AWS.title%",
-                "icon": "$(symbol-method)"
             },
             {
                 "command": "aws.appBuilder.openTemplate",
