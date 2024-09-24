@@ -269,11 +269,8 @@ class DeployWizard extends Wizard<DeployParams> {
     async addParameterPromptersIfApplicable(templateUri: vscode.Uri) {
         const samTemplateParameters = await getParameters(templateUri)
         if (samTemplateParameters.size > 0) {
-            const requiredParameterNames = new Set<string>(
-                filter(samTemplateParameters.keys(), (name) => samTemplateParameters.get(name)!.required)
-            )
-
-            requiredParameterNames.forEach((name) => {
+            const parameterNames = new Set<string>(samTemplateParameters.keys())
+            parameterNames.forEach((name) => {
                 this.form[name].bindPrompter(() => createParamPromptProvider(name))
             })
         }
