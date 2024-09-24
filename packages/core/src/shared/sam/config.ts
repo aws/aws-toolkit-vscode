@@ -27,6 +27,7 @@ interface Command {
 enum DeployType {
     Deploy,
     Sync,
+    Build,
 }
 
 // This only handles a subset of possible user configs
@@ -160,6 +161,7 @@ export class SamConfig {
 
         const globalRegion = content.getParam('global', 'region')
         const globalStackName = content.getParam('global', 'stack_name')
+        const buildTemplateFile = content.getParam('build', 'template_file')
         const deployTemplateFile = content.getParam('deploy', 'template_file')
         const syncTemplateFile = content.getParam('sync', 'template_file')
 
@@ -172,6 +174,8 @@ export class SamConfig {
                 return hasRequiredGlobalParams && hasRequiredDeployParameters
             case DeployType.Sync:
                 return hasRequiredGlobalParams && hasRequiredSyncParameters
+            case DeployType.Build:
+                return !!buildTemplateFile
             default:
                 getLogger().error(`Unsupported config type: ${configType}`)
                 return false
@@ -184,6 +188,10 @@ export class SamConfig {
 
     public static async validateSamSyncConfig(uri: vscode.Uri | undefined) {
         return await this.validateAppBuilderSamConfig(uri, DeployType.Sync)
+    }
+
+    public static async validateSamBuildConfig(uri: vscode.Uri | undefined) {
+        return await this.validateAppBuilderSamConfig(uri, DeployType.Build)
     }
 
     public static async createNewConfigFile(projectRoot: vscode.Uri, data: JsonMap) {
