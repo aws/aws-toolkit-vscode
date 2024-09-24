@@ -3930,7 +3930,7 @@
                         "title": "%AWS.toolkit.lambda.walkthrough.toolInstall.title%",
                         "description": "%AWS.toolkit.lambda.walkthrough.toolInstall.description%",
                         "media": {
-                            "image": "./resources/walkthrough/app_builder/install.png",
+                            "image": "./resources/walkthrough/appBuilder/install.png",
                             "altText": "Showing GUI installer"
                         }
                     },
@@ -3939,7 +3939,7 @@
                         "title": "%AWS.toolkit.lambda.walkthrough.chooseTemplate.title%",
                         "description": "%AWS.toolkit.lambda.walkthrough.chooseTemplate.description%",
                         "media": {
-                            "markdown": "./resources/walkthrough/app_builder/App_picker.md"
+                            "markdown": "./resources/walkthrough/appBuilder/AppPicker.md"
                         }
                     },
                     {
@@ -3947,8 +3947,7 @@
                         "title": "%AWS.toolkit.lambda.walkthrough.step1.title%",
                         "description": "%AWS.toolkit.lambda.walkthrough.step1.description%",
                         "media": {
-                            "image": "./resources/walkthrough/app_builder/inner-loop.gif",
-                            "altText": "Empty image"
+                            "markdown": "./resources/walkthrough/appBuilder/InnerLoop.md"
                         }
                     },
                     {
@@ -3956,17 +3955,7 @@
                         "title": "%AWS.toolkit.lambda.walkthrough.step2.title%",
                         "description": "%AWS.toolkit.lambda.walkthrough.step2.description%",
                         "media": {
-                            "image": "./resources/walkthrough/app_builder/outer2.gif",
-                            "altText": "Empty image"
-                        }
-                    },
-                    {
-                        "id": "step3",
-                        "title": "%AWS.toolkit.lambda.walkthrough.step3.title%",
-                        "description": "%AWS.toolkit.lambda.walkthrough.step3.description%",
-                        "media": {
-                            "image": "./resources/walkthrough/app_builder/Quickpick.png",
-                            "altText": "Showing Quickpick options"
+                            "markdown": "./resources/walkthrough/appBuilder/RemoteLoop.md"
                         }
                     }
                 ]
