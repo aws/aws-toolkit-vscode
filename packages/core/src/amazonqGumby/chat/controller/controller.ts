@@ -190,6 +190,28 @@ export class GumbyController {
     }
 
     private async transformInitiated(message: any) {
+        // if previous transformation was already running, show correct message to user
+        switch (this.sessionStorage.getSession().conversationState) {
+            case ConversationState.JOB_SUBMITTED:
+                this.messenger.sendAsyncEventProgress(
+                    message.tabID,
+                    true,
+                    undefined,
+                    GumbyNamedMessages.JOB_SUBMISSION_STATUS_MESSAGE
+                )
+                this.messenger.sendJobSubmittedMessage(message.tabID)
+                return
+            case ConversationState.COMPILING:
+                this.messenger.sendAsyncEventProgress(
+                    message.tabID,
+                    true,
+                    undefined,
+                    GumbyNamedMessages.COMPILATION_PROGRESS_MESSAGE
+                )
+                this.messenger.sendCompilationInProgress(message.tabID)
+                return
+        }
+
         // Start /transform chat flow
         CodeTransformTelemetryState.instance.setSessionId()
 
@@ -199,7 +221,7 @@ export class GumbyController {
         this.messenger.sendUpdatePlaceholder(message.tabID, "Enter 'language upgrade' or 'SQL conversion'")
     }
 
-    private async beginOrResumeTransformation(message: any) {
+    private async beginTransformation(message: any) {
         await telemetry.codeTransform_initiateTransform.run(async () => {
             const authType = await getAuthType()
             telemetry.record({
@@ -213,35 +235,13 @@ export class GumbyController {
                 this.messenger.sendAuthNeededExceptionMessage(authState, message.tabID)
                 throw new NoAuthError()
             }
-
-            // if previous transformation was already running
-            switch (this.sessionStorage.getSession().conversationState) {
-                case ConversationState.JOB_SUBMITTED:
-                    this.messenger.sendAsyncEventProgress(
-                        message.tabID,
-                        true,
-                        undefined,
-                        GumbyNamedMessages.JOB_SUBMISSION_STATUS_MESSAGE
-                    )
-                    this.messenger.sendJobSubmittedMessage(message.tabID)
-                    return
-                case ConversationState.COMPILING:
-                    this.messenger.sendAsyncEventProgress(
-                        message.tabID,
-                        true,
-                        undefined,
-                        GumbyNamedMessages.COMPILATION_PROGRESS_MESSAGE
-                    )
-                    this.messenger.sendCompilationInProgress(message.tabID)
-                    return
-            }
             this.messenger.sendTransformationIntroduction(message.tabID)
         })
     }
 
     private async handleLanguageUpgrade(message: any) {
         try {
-            await this.beginOrResumeTransformation(message)
+            await this.beginTransformation(message)
             const validProjects = await this.validateLanguageUpgradeProjectsWithReplyOnError(message)
             if (validProjects.length > 0) {
                 this.sessionStorage.getSession().updateCandidateProjects(validProjects)
@@ -254,7 +254,7 @@ export class GumbyController {
 
     private async handleSQLConversion(message: any) {
         try {
-            await this.beginOrResumeTransformation(message)
+            await this.beginTransformation(message)
             const validProjects = await this.validateSQLConversionProjectsWithReplyOnError(message)
             if (validProjects.length > 0) {
                 this.sessionStorage.getSession().updateCandidateProjects(validProjects)
@@ -458,10 +458,7 @@ export class GumbyController {
         })
     }
 
-    private async prepareLanguageUpgradeProjectForSubmission(message: {
-        pathToJavaHome: string
-        tabID: string
-    }): Promise<void> {
+    private async prepareLanguageUpgradeProjectForSubmission(message: { pathToJavaHome: string; tabID: string }) {
         if (message.pathToJavaHome) {
             transformByQState.setJavaHome(message.pathToJavaHome)
             getLogger().info(
