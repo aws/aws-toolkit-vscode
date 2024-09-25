@@ -814,7 +814,7 @@ export async function postTransformationJob() {
     }
 
     if (transformByQState.getPayloadFilePath() !== '') {
-        // fs.rmSync(transformByQState.getPayloadFilePath(), { recursive: true, force: true }) // delete ZIP if it exists
+        fs.rmSync(transformByQState.getPayloadFilePath(), { recursive: true, force: true }) // delete ZIP if it exists
     }
 }
 
