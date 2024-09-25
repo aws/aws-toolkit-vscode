@@ -249,6 +249,7 @@ export class ChatController {
             CodeWhispererTracker.getTracker().enqueue({
                 conversationID: this.telemetryHelper.getConversationId(message.tabID) ?? '',
                 messageID: message.messageId,
+                userIntent: message.userIntent,
                 time: new Date(),
                 fileUrl: editor.document.uri,
                 startPosition: cursorStart,
