@@ -20,6 +20,7 @@ import { session } from '../util/codeWhispererSession'
 import { RecommendationHandler } from '../service/recommendationHandler'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { setContext } from '../../shared'
+import { TelemetryHelper } from '../util/telemetryHelper'
 
 const case3TimeWindow = 30000 // 30 seconds
 
@@ -246,24 +247,26 @@ export class LineAnnotationController implements vscode.Disposable {
                 await this.onReady()
             }),
             RecommendationService.instance.suggestionActionEvent(async (e) => {
-                if (!this._isReady) {
-                    return
-                }
-
-                if (this._currentState instanceof ManualtriggerState) {
-                    if (e.triggerType === 'OnDemand' && this._currentState.hasManualTrigger === false) {
-                        this._currentState.hasManualTrigger = true
+                await telemetry.withTraceId(async () => {
+                    if (!this._isReady) {
+                        return
                     }
-                    if (
-                        e.response?.recommendationCount !== undefined &&
-                        e.response?.recommendationCount > 0 &&
-                        this._currentState.hasValidResponse === false
-                    ) {
-                        this._currentState.hasValidResponse = true
-                    }
-                }
 
-                await this.refresh(e.editor, 'codewhisperer')
+                    if (this._currentState instanceof ManualtriggerState) {
+                        if (e.triggerType === 'OnDemand' && this._currentState.hasManualTrigger === false) {
+                            this._currentState.hasManualTrigger = true
+                        }
+                        if (
+                            e.response?.recommendationCount !== undefined &&
+                            e.response?.recommendationCount > 0 &&
+                            this._currentState.hasValidResponse === false
+                        ) {
+                            this._currentState.hasValidResponse = true
+                        }
+                    }
+
+                    await this.refresh(e.editor, 'codewhisperer')
+                }, TelemetryHelper.instance.traceId)
             }),
             this.container.lineTracker.onDidChangeActiveLines(async (e) => {
                 await this.onActiveLinesChanged(e)

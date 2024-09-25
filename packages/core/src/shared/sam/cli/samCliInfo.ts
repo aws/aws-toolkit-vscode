@@ -4,7 +4,7 @@
  */
 
 import { getLogger, Logger } from '../../logger'
-import { ChildProcess } from '../../utilities/childProcess'
+import { ChildProcess } from '../../utilities/processUtils'
 
 export interface SamCliInfoResponse {
     version: string
