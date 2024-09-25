@@ -19,7 +19,7 @@ import {
     SamCliVersionValidation,
     SamCliVersionValidatorResult,
 } from '../../../shared/sam/cli/samCliValidator'
-import { ChildProcessResult } from '../../../shared/utilities/childProcess'
+import { ChildProcessResult } from '../../../shared/utilities/processUtils'
 import { assertLogsContain, getTestLogger } from '../../globalSetup.test'
 import { FakeChildProcessResult, TestSamCliProcessInvoker } from '../../shared/sam/cli/testSamCliProcessInvoker'
 import { TestSettings } from '../../utilities/testSettingsConfiguration'
