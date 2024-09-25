@@ -402,24 +402,45 @@ export async function assertTextEditorContains(contents: string, exact: boolean 
 }
 
 /**
- * Create and open an editor with provided fileText, fileName and options. If folder is not provided,
- * will create a temp worksapce folder which will be automatically deleted in testing environment
- * @param fileText The supplied text to fill this file with
- * @param fileName The name of the file to save it as. Include the file extension here.
+ * Saves `fileText` to `fileName` relative to `folder` (or an auto-created temp workspace folder,
+ * which will be automatically deleted after tests finish), and opens it as a `TextDocument` (not
+ * a `TextEditor`, which is *slow*; use {@link toTextEditor} for that).
+ *
+ * @param fileText Text content
+ * @param fileName Name of the file (including extension) to save it as.
+ * @param folder?  Optional workspace folder where the file will be written to.
+ *
+ * @returns TextDocument that was just opened
+ */
+export async function toTextDocument(
+    fileText: string,
+    fileName: string,
+    folder?: string
+): Promise<ReturnType<typeof vscode.workspace.openTextDocument>> {
+    const myWorkspaceFolder = folder ? folder : (await createTestWorkspaceFolder()).uri.fsPath
+    const filePath = path.join(myWorkspaceFolder, fileName)
+    await toFile(fileText, filePath)
+
+    return await vscode.workspace.openTextDocument(filePath)
+}
+
+/**
+ * Same as {@link toTextDocument}, but opens the result in a TextEditor. This is *much* slower, use
+ * `toTextDocument` if you don't need a text editor.
+ *
+ * @param fileText Text content
+ * @param fileName Name of the file (including extension) to save it as.
+ * @param folder?  Optional workspace folder where the file will be written to.
  *
  * @returns TextEditor that was just opened
  */
-export async function openATextEditorWithText(
+export async function toTextEditor(
     fileText: string,
     fileName: string,
     folder?: string,
     options?: vscode.TextDocumentShowOptions
 ): Promise<vscode.TextEditor> {
-    const myWorkspaceFolder = folder ? folder : (await createTestWorkspaceFolder()).uri.fsPath
-    const filePath = path.join(myWorkspaceFolder, fileName)
-    await toFile(fileText, filePath)
-
-    const textDocument = await vscode.workspace.openTextDocument(filePath)
+    const textDocument = await toTextDocument(fileText, fileName, folder)
 
     return await vscode.window.showTextDocument(textDocument, options)
 }
