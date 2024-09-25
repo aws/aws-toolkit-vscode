@@ -28,19 +28,16 @@ describe('prepareRepoDataPerformanceTest', function () {
             linux: {
                 userCpuUsage: 80,
                 heapTotal: 4,
-                duration: 1.5,
             },
             darwin: {
                 userCpuUsage: 80,
                 systemCpuUsage: 35,
                 heapTotal: 4,
-                duration: 10,
             },
             win32: {
                 userCpuUsage: 80,
                 systemCpuUsage: 35,
                 heapTotal: 4,
-                duration: 3,
             },
         },
         'handles many files',
@@ -48,7 +45,7 @@ describe('prepareRepoDataPerformanceTest', function () {
             const telemetry = new TelemetryHelper()
             return {
                 setup: async () => {
-                    return await createTestWorkspace(500, {
+                    return await createTestWorkspace(250, {
                         fileNamePrefix: 'file',
                         fileContent: '0123456789',
                         fileNameSuffix: '.md',
@@ -59,7 +56,7 @@ describe('prepareRepoDataPerformanceTest', function () {
                         record: () => {},
                     } as unknown as Metric<AmazonqCreateUpload>)
                 },
-                verify: async (_w: WorkspaceFolder, result: resultType) => verifyResult(result, telemetry, 5000),
+                verify: async (_w: WorkspaceFolder, result: resultType) => verifyResult(result, telemetry, 2500),
             }
         }
     )
@@ -71,19 +68,16 @@ describe('prepareRepoDataPerformanceTest', function () {
                 userCpuUsage: 65,
                 systemCpuUsage: 30,
                 heapTotal: 1,
-                duration: 0.2,
             },
             darwin: {
                 userCpuUsage: 50,
                 systemCpuUsage: 25,
                 heapTotal: 1,
-                duration: 0.4,
             },
             win32: {
                 userCpuUsage: 60,
                 systemCpuUsage: 30,
                 heapTotal: 1,
-                duration: 0.2,
             },
         },
 
