@@ -6,6 +6,7 @@
 // Implementation inspired by https://github.com/sourcegraph/sourcegraph-public-snapshot/blob/c864f15af264f0f456a6d8a83290b5c940715349/client/vscode/src/settings/uninstall.ts#L2
 
 import * as vscode from 'vscode'
+import { existsSync } from 'fs'
 import { join } from 'path'
 import { getLogger } from './logger/logger'
 import { telemetry } from './telemetry'
@@ -80,7 +81,7 @@ export function setupUninstallHandler(
 
         const obsoleteFilePath = join(extensionsDirPath, '.obsolete')
 
-        if (extensionsDirPath && obsoleteFilePath) {
+        if (extensionsDirPath && obsoleteFilePath && existsSync(obsoleteFilePath)) {
             const watchPattern = new vscode.RelativePattern(extensionsDirPath, '.obsolete')
             const fileWatcher = vscode.workspace.createFileSystemWatcher(watchPattern)
 
