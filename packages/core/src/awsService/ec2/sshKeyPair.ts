@@ -28,7 +28,7 @@ export class SshKeyPair {
         })
     }
 
-    public static async getSshKeyPair(keyPath: string, lifetime: number, overwrite: boolean = true) {
+    public static async getSshKeyPair(keyPath: string, lifetime: number) {
         await SshKeyPair.generateSshKeyPair(keyPath)
         return new SshKeyPair(keyPath, lifetime)
     }
