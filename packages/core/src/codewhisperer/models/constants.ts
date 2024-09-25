@@ -350,6 +350,10 @@ export const updateInlineLockKey = 'CODEWHISPERER_INLINE_UPDATE_LOCK_KEY'
 export const newCustomizationMessage = 'You have access to new Amazon Q customizations.'
 
 // Start of QCT Strings
+
+// feature flag for SQL transformations
+export const isSQLTransformReady = false
+
 export const uploadZipSizeLimitInBytes = 2000000000 // 2GB
 
 export const maxBufferSize = 1024 * 1024 * 8 // this is 8MB; the default max buffer size for stdout for spawnSync is 1MB
