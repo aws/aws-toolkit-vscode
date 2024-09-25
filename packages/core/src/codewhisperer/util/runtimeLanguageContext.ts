@@ -93,6 +93,7 @@ export class RuntimeLanguageContext {
             r: 'r',
             swift: 'swift',
             systemVerilog: 'systemVerilog',
+            verilog: 'systemVerilog',
             vue: 'vue',
         })
         this.supportedLanguageExtensionMap = createConstantMap<string, CodewhispererLanguage>({
@@ -234,24 +235,20 @@ export class RuntimeLanguageContext {
      * @returns true if the language is supported by CodeWhisperer otherwise false
      */
     public isLanguageSupported(languageId: string): boolean {
+        console.log('id', languageId)
         const lang = this.normalizeLanguage(languageId)
+        console.log('normalized id', lang)
         switch (lang) {
             case undefined:
+                console.log('false')
                 return false
 
             case 'plaintext':
-                return false
-
-            case 'dart':
-            case 'lua':
-            case 'powershell':
-            case 'r':
-            case 'swift':
-            case 'vue':
-            case 'systemVerilog':
+                console.log('false')
                 return false
 
             default:
+                console.log('true')
                 return true
         }
     }

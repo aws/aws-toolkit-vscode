@@ -98,6 +98,13 @@ export const platformLanguageIds = [
     'packer',
     'plaintext',
     'jsonc',
+    'verilog',
+    'powershell',
+    'dart',
+    'lua',
+    'r',
+    'swift',
+    'vue',
 ] as const
 
 export type PlatformLanguageId = (typeof platformLanguageIds)[number]
