@@ -401,7 +401,7 @@ export class Auth implements AuthService, ConnectionManager {
             }
         }
         this.#onDidDeleteConnection.fire({ connId, storedProfile: profile })
-        await setContext('aws.isInternalUser', this.isInternalAmazonUser())
+        await setContext('aws.isInternalUser', false)
     }
 
     @withTelemetryContext({ name: 'clearStaleLinkedIamConnections', class: authClassName })
@@ -434,7 +434,7 @@ export class Auth implements AuthService, ConnectionManager {
         await provider.invalidate('devModeManualExpiration')
         // updates the state of the connection
         await this.refreshConnectionState(conn)
-        await setContext('aws.isInternalUser', this.isInternalAmazonUser())
+        await setContext('aws.isInternalUser', false)
     }
 
     public async getConnection(connection: Pick<Connection, 'id'>): Promise<Connection | undefined> {
