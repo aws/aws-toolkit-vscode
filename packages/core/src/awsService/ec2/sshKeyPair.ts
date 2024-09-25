@@ -47,7 +47,7 @@ export class SshKeyPair {
      * @param keyType type of key to generate.
      */
     public static async tryKeyGen(keyPath: string, keyType: sshKeyType): Promise<boolean> {
-        const overrideKeys = async (proc: ChildProcess, text: string) => {
+        const overrideKeys = async (proc: ChildProcess, _t: string) => {
             await proc.send('yes')
         }
         return !(await tryRun(
