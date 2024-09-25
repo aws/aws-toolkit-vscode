@@ -34,7 +34,7 @@ describe('prepareRepoDataPerformanceTest', function () {
                 userCpuUsage: 80,
                 systemCpuUsage: 35,
                 heapTotal: 4,
-                duration: 0.9,
+                duration: 10,
             },
             win32: {
                 userCpuUsage: 80,
@@ -73,19 +73,19 @@ describe('prepareRepoDataPerformanceTest', function () {
                 userCpuUsage: 65,
                 systemCpuUsage: 30,
                 heapTotal: 1,
-                duration: 0.1,
+                duration: 0.2,
             },
             darwin: {
                 userCpuUsage: 50,
                 systemCpuUsage: 25,
                 heapTotal: 1,
-                duration: 0.2,
+                duration: 0.4,
             },
             win32: {
                 userCpuUsage: 60,
                 systemCpuUsage: 30,
                 heapTotal: 1,
-                duration: 0.1,
+                duration: 0.2,
             },
         },
 
