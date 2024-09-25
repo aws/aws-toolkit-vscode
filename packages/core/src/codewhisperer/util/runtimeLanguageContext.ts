@@ -235,9 +235,7 @@ export class RuntimeLanguageContext {
      * @returns true if the language is supported by CodeWhisperer otherwise false
      */
     public isLanguageSupported(languageId: string): boolean {
-        console.log('id', languageId)
         const lang = this.normalizeLanguage(languageId)
-        console.log('normalized id', lang)
         switch (lang) {
             case undefined:
                 console.log('false')
