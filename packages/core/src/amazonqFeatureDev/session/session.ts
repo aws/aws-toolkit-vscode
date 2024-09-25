@@ -26,7 +26,6 @@ import { ReferenceLogViewProvider } from '../../codewhisperer/service/referenceL
 import { AuthUtil } from '../../codewhisperer/util/authUtil'
 import { getLogger } from '../../shared'
 import { logWithConversationId } from '../userFacingText'
-
 export class Session {
     private _state?: SessionState | Omit<SessionState, 'uploadId'>
     private task: string = ''
@@ -136,7 +135,7 @@ export class Session {
 
         if (resp.nextState) {
             // Cancel the request before moving to a new state
-            this.state?.tokenSource?.cancel()
+            if (!this.state?.tokenSource?.token.isCancellationRequested) this.state?.tokenSource?.cancel()
 
             // Move to the next state
             this._state = resp.nextState

@@ -415,7 +415,7 @@ export class FeatureDevController {
             if (session?.state?.tokenSource?.token.isCancellationRequested) {
                 session?.state.tokenSource?.dispose()
                 if (session?.state?.tokenSource) {
-                    session.state.tokenSource = undefined
+                    session.state.tokenSource = new vscode.CancellationTokenSource()
                 }
                 getLogger().debug('Request cancelled, skipping further processing')
             } else {
@@ -712,7 +712,9 @@ export class FeatureDevController {
         })
         this.workOnNewTask(message)
         const session = await this.sessionStorage.getSession(message.tabID)
-        session.state?.tokenSource?.cancel()
+        if (session.state?.tokenSource) {
+            session.state?.tokenSource?.cancel()
+        }
     }
 
     private async tabOpened(message: any) {

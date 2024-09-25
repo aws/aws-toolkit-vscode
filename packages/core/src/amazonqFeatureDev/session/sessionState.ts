@@ -39,6 +39,8 @@ import { collectFiles, getWorkspaceFoldersByPrefixes } from '../../shared/utilit
 import { i18n } from '../../shared/i18n-helper'
 import { Messenger } from '../controllers/chat/messenger/messenger'
 
+const EMPTY_CODEGEN_ID = 'EMPTY_CURRENT_CODE_GENERATION_ID'
+
 export class ConversationNotStartedState implements Omit<SessionState, 'uploadId'> {
     public tokenSource: vscode.CancellationTokenSource
     public readonly phase = DevPhase.INIT
@@ -136,7 +138,7 @@ abstract class CodeGenBase {
         this.isCancellationRequested = false
         this.conversationId = config.conversationId
         this.uploadId = config.uploadId
-        this.currentCodeGenerationId = config.currentCodeGenerationId
+        this.currentCodeGenerationId = config.currentCodeGenerationId || EMPTY_CODEGEN_ID
     }
 
     async generateCode({
@@ -160,8 +162,7 @@ abstract class CodeGenBase {
     }> {
         for (
             let pollingIteration = 0;
-            pollingIteration < this.pollCount &&
-            (!this.isCancellationRequested || !this.tokenSource.token.isCancellationRequested);
+            pollingIteration < this.pollCount && !this.isCancellationRequested;
             ++pollingIteration
         ) {
             const codegenResult = await this.config.proxyClient.getCodeGeneration(this.conversationId, codeGenerationId)
@@ -275,8 +276,6 @@ export class CodeGenState extends CodeGenBase implements SessionState {
                 action.tokenSource?.token.onCancellationRequested(() => {
                     this.isCancellationRequested = true
                     if (action.tokenSource) this.tokenSource = action.tokenSource
-                    action.tokenSource?.dispose()
-                    action.tokenSource = undefined
                 })
 
                 action.telemetry.setGenerateCodeIteration(this.currentIteration)
@@ -289,9 +288,6 @@ export class CodeGenState extends CodeGenBase implements SessionState {
                     codeGenerationId,
                     this.currentCodeGenerationId
                 )
-
-                this.currentCodeGenerationId = codeGenerationId
-                this.config.currentCodeGenerationId = codeGenerationId
 
                 if (!this.isCancellationRequested) {
                     action.messenger.sendAnswer({
@@ -312,6 +308,11 @@ export class CodeGenState extends CodeGenBase implements SessionState {
                     telemetry: action.telemetry,
                     workspaceFolders: this.config.workspaceFolders,
                 })
+
+                if (codeGeneration && !this.isCancellationRequested) {
+                    this.config.currentCodeGenerationId = codeGenerationId
+                    this.currentCodeGenerationId = codeGenerationId
+                }
 
                 this.filePaths = codeGeneration.newFiles
                 this.deletedFiles = codeGeneration.deletedFiles
@@ -478,7 +479,11 @@ export class PrepareCodeGenState implements SessionState {
                 span
             )
             const uploadId = randomUUID()
-            const { uploadUrl, kmsKeyArn } = await this.config.proxyClient.createUploadUrl(
+            const {
+                uploadUrl,
+                uploadId: returnedUploadId,
+                kmsKeyArn,
+            } = await this.config.proxyClient.createUploadUrl(
                 this.config.conversationId,
                 zipFileChecksum,
                 zipFileBuffer.length,
