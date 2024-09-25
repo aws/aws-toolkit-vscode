@@ -306,9 +306,6 @@ export class CodeGenState extends CodeGenBase implements SessionState {
                         this.tokenSource = action.tokenSource
                     }
                     this.isCancellationRequested = true
-                    if (action.tokenSource) {
-                        this.tokenSource = action.tokenSource
-                    }
                     action.tokenSource?.dispose()
                     action.tokenSource = undefined
                 })
@@ -323,9 +320,6 @@ export class CodeGenState extends CodeGenBase implements SessionState {
                     codeGenerationId,
                     this.currentCodeGenerationId
                 )
-
-                this.currentCodeGenerationId = codeGenerationId
-                this.config.currentCodeGenerationId = codeGenerationId
 
                 if (!this.isCancellationRequested) {
                     action.messenger.sendAnswer({
@@ -541,7 +535,11 @@ export class PrepareCodeGenState implements SessionState {
                 span
             )
             const uploadId = randomUUID()
-            const { uploadUrl, kmsKeyArn } = await this.config.proxyClient.createUploadUrl(
+            const {
+                uploadUrl,
+                uploadId: returnedUploadId,
+                kmsKeyArn,
+            } = await this.config.proxyClient.createUploadUrl(
                 this.config.conversationId,
                 zipFileChecksum,
                 zipFileBuffer.length,
