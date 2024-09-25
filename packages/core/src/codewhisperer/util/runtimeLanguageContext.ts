@@ -238,15 +238,12 @@ export class RuntimeLanguageContext {
         const lang = this.normalizeLanguage(languageId)
         switch (lang) {
             case undefined:
-                console.log('false')
                 return false
 
             case 'plaintext':
-                console.log('false')
                 return false
 
             default:
-                console.log('true')
                 return true
         }
     }
