@@ -82,7 +82,8 @@ function registerNewFiles(
                       Object.values(workspaceFolderPrefixes).find((val) => val.index === 0)?.name ?? ''
                   ]
         if (folder === undefined) {
-            telemetry.amazonq_trackScenarioCountUsage.emit({
+            telemetry.toolkit_trackScenario.emit({
+                count: 1,
                 amazonqConversationId: conversationId,
                 credentialStartUrl: AuthUtil.instance.startUrl,
                 scenarioType: 'wsOrphanedDocuments',
