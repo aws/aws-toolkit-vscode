@@ -55,19 +55,8 @@ export async function getApp(location: SamAppLocation): Promise<SamApp> {
         throw new ToolkitError(`Template at ${location.samTemplateUri.fsPath} is not valid`)
     }
     const templateResources = getResourceEntity(samTemplate.template)
-    const eventToShow: string[] = ['Api', 'HttpApi']
-    const resourceIds: string[] = templateResources.map((resource) => {
-        return resource.Id
-    })
 
-    const resourceTree = [
-        ...templateResources,
-        ...templateResources.flatMap((resource) => {
-            return (resource.Events ?? []).filter((event) => {
-                return event.Type in eventToShow && !(event.Id in resourceIds)
-            })
-        }),
-    ]
+    const resourceTree = [...templateResources]
 
     return { location, resourceTree }
 }
