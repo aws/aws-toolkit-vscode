@@ -41,6 +41,10 @@ export function productName() {
     return isAmazonQ() ? 'Amazon Q' : `${getIdeProperties().company} Toolkit`
 }
 
+export const getExtensionId = () => {
+    return isAmazonQ() ? VSCODE_EXTENSION_ID.amazonq : VSCODE_EXTENSION_ID.awstoolkit
+}
+
 /** Gets the "AWS" or "Amazon Q" prefix (in package.json: `commands.category`). */
 export function commandsPrefix(): string {
     return isAmazonQ() ? 'Amazon Q' : getIdeProperties().company
