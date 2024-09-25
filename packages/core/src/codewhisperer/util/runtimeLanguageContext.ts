@@ -93,6 +93,7 @@ export class RuntimeLanguageContext {
             r: 'r',
             swift: 'swift',
             systemVerilog: 'systemVerilog',
+            systemverilog: 'systemVerilog',
             verilog: 'systemVerilog',
             vue: 'vue',
         })

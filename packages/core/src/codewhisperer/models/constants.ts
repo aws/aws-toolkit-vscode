@@ -98,6 +98,7 @@ export const platformLanguageIds = [
     'packer',
     'plaintext',
     'jsonc',
+    'systemverilog',
     'verilog',
     'powershell',
     'dart',
