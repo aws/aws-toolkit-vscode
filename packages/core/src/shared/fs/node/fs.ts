@@ -3,19 +3,17 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import fs, { FileSystem } from '../fs'
 import vscode from 'vscode'
 import _path from 'path'
 import _fsNode from 'fs/promises'
 import lockFile, { LockOptions } from 'proper-lockfile'
 import { ToolkitError } from '../../errors'
+import { toUri } from '../../utilities/uriUtils'
 
 /**
  * FileSystem related methods that only work in Node.js
  */
 export class NodeFileSystem {
-    private fsCommon: FileSystem = fs
-
     protected constructor() {}
     static #instance: NodeFileSystem
     static get instance(): NodeFileSystem {
@@ -25,9 +23,10 @@ export class NodeFileSystem {
     /**
      * Acquires a lock on the given file, then runs the given callback, releasing the lock when done.
      *
-     * The reason this method is node specific is that we use the `mkdir()` method for the lock file,
-     * and it does not work with the VS Code file system implementation as it does not throw an error
-     * when the lock file already exists.
+     * The reason this is node specific:
+     *   - The proper-lockfile module uses the mkdir() method for lockfiles as it behaves as an atomic exists + make lockfile
+     *   - But the VSC Filesystem implementation does not throw an error when the lock file (directory) already exists,
+     *     so we need to use the node fs module, which does not work in web.
      *
      * @param uri The uri of the file to lock
      * @param lockId Some way to identify who acquired the lock
@@ -37,7 +36,7 @@ export class NodeFileSystem {
         let release = undefined
         try {
             try {
-                const path = this.fsCommon.toUri(uri).fsPath
+                const path = toUri(uri).fsPath
                 release = await lockFile.lock(path, this.lockOptions)
             } catch (err) {
                 if (!(err instanceof Error)) {

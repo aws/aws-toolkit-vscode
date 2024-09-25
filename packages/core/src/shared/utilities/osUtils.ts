@@ -12,8 +12,8 @@ import { getExtensionId } from '../extensionUtilities'
 /**
  * Checks if the current OS session is new.
  *
- * @returns `true` if this is the first call to this function across all extension instances
- * since the OS was last restarted, `false` otherwise.
+ * @returns `true` if this is the First call to this function across all extension instances
+ * since the OS was last restarted, subsequent calls return `false`.
  *
  * Use this function to perform one-time initialization tasks that should only happen
  * once per OS session, regardless of how many extension instances are running.
@@ -24,7 +24,7 @@ export async function isNewOsSession(tmpDir = tempDirPath) {
             // Windows does not have an ephemeral /tmp/ folder that deletes on shutdown, while unix-like os's do.
             // So in Windows we calculate the start time and see if it changed from the previous known start time.
 
-            const lastStartTime = globals.globalState.get<number>('lastOsStartTime', undefined)
+            const lastStartTime = globals.globalState.tryGet('lastOsStartTime', Number)
             // uptime() returns seconds, convert to ms
             const currentOsStartTime = Date.now() - process.uptime() * 1000
 
