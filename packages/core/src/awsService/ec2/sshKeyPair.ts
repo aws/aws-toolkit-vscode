@@ -65,10 +65,9 @@ export class SshKeyPair {
     }
 
     public async isDeleted(): Promise<boolean> {
-        const privateKeyExists = await fs.existsFile(this.getPrivateKeyPath())
-        const publicKeyExists = await fs.existsFile(this.getPublicKeyPath())
-        const result = !(privateKeyExists || publicKeyExists)
-        return result
+        const privateKeyDeleted = !(await fs.existsFile(this.getPrivateKeyPath()))
+        const publicKeyDeleted = !(await fs.existsFile(this.getPublicKeyPath()))
+        return privateKeyDeleted || publicKeyDeleted
     }
 
     public timeAlive(): number {

@@ -124,14 +124,14 @@ describe('SshKeyUtility', async function () {
             assert.strictEqual(await keyPair.isDeleted(), true)
         })
 
-        it('returns false if private key remains', async function () {
+        it('returns true if private key remains', async function () {
             await fs.delete(keyPair.getPublicKeyPath())
-            assert.strictEqual(await keyPair.isDeleted(), false)
+            assert.strictEqual(await keyPair.isDeleted(), true)
         })
 
-        it('returns false if public key remains', async function () {
+        it('returns true if public key remains', async function () {
             await fs.delete(keyPair.getPrivateKeyPath())
-            assert.strictEqual(await keyPair.isDeleted(), false)
+            assert.strictEqual(await keyPair.isDeleted(), true)
         })
     })
 })
