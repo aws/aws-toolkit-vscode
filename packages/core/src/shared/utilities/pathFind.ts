@@ -30,10 +30,12 @@ export async function tryRun(
     p: string,
     args: string[],
     logging: 'yes' | 'no' | 'noresult' = 'yes',
-    expected?: string
+    expected?: string,
+    onStdout?: (proc: ChildProcess, text: string) => void
 ): Promise<boolean> {
     const proc = new ChildProcess(p, args, { logging: 'no' })
-    const r = await proc.run()
+    const options = onStdout ? { onStdout: (text: string) => onStdout(proc, text) } : {}
+    const r = await proc.run(options)
     const ok = r.exitCode === 0 && (expected === undefined || r.stdout.includes(expected))
     if (logging === 'noresult') {
         getLogger().info('tryRun: %s: %s', ok ? 'ok' : 'failed', proc)
