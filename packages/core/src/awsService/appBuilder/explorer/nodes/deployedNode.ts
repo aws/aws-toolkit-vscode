@@ -1,0 +1,84 @@
+/*!
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import * as vscode from 'vscode'
+import { getIcon } from '../../../../shared/icons'
+import { TreeNode } from '../../../../shared/treeview/resourceTreeDataProvider'
+import { createPlaceholderItem } from '../../../../shared/treeview/utils'
+import { localize } from 'vscode-nls'
+import { getLogger } from '../../../../shared/logger/logger'
+import { ToolkitError } from '../../../../shared'
+import { FunctionConfiguration } from '@aws-sdk/client-lambda'
+import { DefaultLambdaClient } from '../../../../shared/clients/lambdaClient'
+
+export interface DeployedResource {
+    stackName: string
+    regionCode: string
+    configuration: FunctionConfiguration
+}
+
+// TODO:: Add doc strings to all TreeNodes
+export class DeployedLambdaNode implements TreeNode<DeployedResource> {
+    public readonly id: string
+
+    public constructor(public readonly resource: DeployedResource) {
+        if (this.resource.configuration.FunctionName) {
+            this.id = this.resource.configuration.FunctionName
+        } else {
+            throw new ToolkitError('Cannot create DeployedLambdaNode, `FunctionName` does not exist.')
+        }
+    }
+
+    public async getChildren(): Promise<DeployedLambdaNode[]> {
+        return []
+    }
+
+    public getTreeItem() {
+        const item = new vscode.TreeItem(this.id)
+
+        item.contextValue = 'awsAppBuilderDeployedNode'
+        item.iconPath = getIcon('vscode-cloud')
+        item.collapsibleState = vscode.TreeItemCollapsibleState.None
+        item.tooltip = this.resource.configuration.FunctionArn
+        return item
+    }
+}
+
+export async function generateDeployedLocalNode(
+    deployedResource: any,
+    regionCode: string,
+    stackName: string
+): Promise<any[]> {
+    let lambdaFunction: any
+
+    try {
+        //TODO: update to Lambda SDK v3. Need to pass in credentials correctly to the new client
+        lambdaFunction = await new DefaultLambdaClient(regionCode).getFunction(deployedResource.PhysicalResourceId)
+        getLogger().debug('Lambda function details:', lambdaFunction)
+    } catch (error: any) {
+        getLogger().error('Failed to fetch Lambda function details:', error)
+        void vscode.window.showErrorMessage(`Failed to get the deployed function: ${error.message}`)
+        return [
+            createPlaceholderItem(
+                localize('AWS.appBuilder.explorerNode.noApps', '[Function resource is yet to be deployed]')
+            ),
+        ]
+    }
+
+    if (!lambdaFunction || !lambdaFunction.Configuration || !lambdaFunction.Configuration.FunctionArn) {
+        getLogger().error('Lambda function details are missing or incomplete:', lambdaFunction)
+        return [
+            createPlaceholderItem(
+                localize('AWS.appBuilder.explorerNode.noApps', '[Function resource is yet to be deployed]')
+            ),
+        ]
+    }
+    const _deployedResource: DeployedResource = {
+        stackName: stackName,
+        regionCode: regionCode,
+        configuration: lambdaFunction.Configuration as FunctionConfiguration,
+    }
+    return [new DeployedLambdaNode(_deployedResource)]
+}

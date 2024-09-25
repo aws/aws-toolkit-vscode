@@ -5,8 +5,9 @@
 
 import * as vscode from 'vscode'
 import fs from '../fs/fs'
-import { parse } from '@iarna/toml'
+import { parse, stringify } from '@iarna/toml'
 import { cast, Optional } from '../utilities/typeConstructors'
+import { getLogger } from '../logger/logger'
 
 export interface Config {
     readonly environments: Record<string, Omit<Environment, 'name'>>
@@ -73,10 +74,32 @@ export class SamConfig {
         return Object.entries(envs).map(([name, data]) => ({ name, ...data }))
     }
 
+    public static async writeGlobal(uri: vscode.Uri, stackName: string, region: string) {
+        const path = vscode.Uri.joinPath(uri, 'samconfig.toml')
+        if (!(await fs.exists(path))) {
+            getLogger().error('No samconfig.toml found')
+            return
+        }
+        const contents = await fs.readFileAsString(path)
+        const data = await parse.async(contents)
+        if (data.default) {
+            const defaultEnv = data.default as { global?: { parameters?: Record<string, unknown> } }
+            if (defaultEnv.global) {
+                if (defaultEnv.global.parameters) {
+                    defaultEnv.global.parameters.stack_name = stackName
+                    defaultEnv.global.parameters.region = region
+                }
+            } else {
+                defaultEnv.global = { parameters: { stack_name: stackName, region: region } }
+            }
+        }
+        const obj = stringify(data)
+        await fs.writeFile(path, obj)
+    }
+
     public static async fromUri(uri: vscode.Uri) {
         const contents = await fs.readFileAsString(uri)
         const config = await parseConfig(contents)
-
         return new this(uri, config)
     }
 }
