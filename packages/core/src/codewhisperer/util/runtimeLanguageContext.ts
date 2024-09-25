@@ -122,6 +122,17 @@ export class RuntimeLanguageContext {
             ts: 'typescript',
             yaml: 'yaml',
             yml: 'yaml',
+            sv: 'systemVerilog',
+            svh: 'systemVerilog',
+            vh: 'systemVerilog',
+            dart: 'dart',
+            lua: 'lua',
+            wlua: 'lua',
+            swift: 'swift',
+            vue: 'vue',
+            ps1: 'powershell',
+            psm1: 'powershell',
+            r: 'r',
         })
     }
 
