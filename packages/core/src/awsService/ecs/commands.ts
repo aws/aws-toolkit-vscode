@@ -9,7 +9,7 @@ const localize = nls.loadMessageBundle()
 import * as vscode from 'vscode'
 import globals from '../../shared/extensionGlobals'
 import { ToolkitPromptSettings } from '../../shared/settings'
-import { ChildProcess } from '../../shared/utilities/childProcess'
+import { ChildProcess } from '../../shared/utilities/processUtils'
 import { showMessageWithCancel, showOutputMessage } from '../../shared/utilities/messages'
 import { formatDateTimestamp, removeAnsi } from '../../shared/utilities/textUtilities'
 import { CancellationError, Timeout } from '../../shared/utilities/timeoutUtils'

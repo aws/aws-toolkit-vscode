@@ -11,7 +11,7 @@ import { stat } from 'fs/promises'
 import { SshKeyPair } from '../../../awsService/ec2/sshKeyPair'
 import { createTestWorkspaceFolder, installFakeClock } from '../../testUtil'
 import { InstalledClock } from '@sinonjs/fake-timers'
-import { ChildProcess } from '../../../shared/utilities/childProcess'
+import { ChildProcess } from '../../../shared/utilities/processUtils'
 import { fs, globals } from '../../../shared'
 
 describe('SshKeyUtility', async function () {

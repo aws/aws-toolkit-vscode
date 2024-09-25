@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as assert from 'assert'
-import { ChildProcess } from '../../../shared/utilities/childProcess'
+import { ChildProcess } from '../../../shared/utilities/processUtils'
 import { startSshAgent } from '../../../shared/extensions/ssh'
 
 describe('SSH Agent', function () {
