@@ -1270,11 +1270,11 @@
             "unit": "Count",
             "metadata": [
                 {
-                    "type": "count"
-                },
-                {
                     "type": "amazonqConversationId",
                     "required": true
+                },
+                {
+                    "type": "count"
                 },
                 {
                     "type": "credentialStartUrl",
