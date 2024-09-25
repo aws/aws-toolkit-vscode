@@ -47,7 +47,7 @@ export class TelemetryHelper {
     private classifierResult?: number = undefined
     private classifierThreshold?: number = undefined
     // variables for tracking end to end sessions
-    public traceId: string = ''
+    public traceId: string = 'notSet'
 
     // use this to distinguish DocumentChangeEvent from CWSPR or from other sources
     public lastSuggestionInDisplay = ''
