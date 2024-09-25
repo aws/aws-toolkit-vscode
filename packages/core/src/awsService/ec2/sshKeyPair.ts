@@ -28,10 +28,12 @@ export class SshKeyPair {
         })
     }
 
-    public static async getSshKeyPair(keyPath: string, lifetime: number) {
+    public static async getSshKeyPair(keyPath: string, lifetime: number, overwrite: boolean = true) {
         // Overwrite key if already exists
-        await fs.delete(keyPath, { force: true })
-        await fs.delete(`${keyPath}.pub`, { force: true })
+        if (overwrite) {
+            await fs.delete(keyPath, { force: true })
+            await fs.delete(`${keyPath}.pub`, { force: true })
+        }
 
         await SshKeyPair.generateSshKeyPair(keyPath)
         return new SshKeyPair(keyPath, lifetime)
