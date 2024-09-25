@@ -86,6 +86,8 @@ export class CWCTelemetryHelper {
                 return 'explainLineByLine'
             case UserIntent.SHOW_EXAMPLES:
                 return 'showExample'
+            case UserIntent.GENERATE_UNIT_TESTS:
+                return 'generateUnitTests'
             default:
                 return undefined
         }

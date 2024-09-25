@@ -58,7 +58,8 @@
                 "showExample",
                 "citeSources",
                 "explainLineByLine",
-                "explainCodeSelection"
+                "explainCodeSelection",
+                "generateUnitTests"
             ],
             "description": "Explict user intent associated with a chat message"
         },
