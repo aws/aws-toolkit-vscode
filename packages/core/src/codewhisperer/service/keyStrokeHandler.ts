@@ -10,14 +10,12 @@ import { ConfigurationEntry } from '../models/model'
 import { getLogger } from '../../shared/logger'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { RecommendationHandler } from './recommendationHandler'
-import { CodewhispererAutomatedTriggerType, telemetry } from '../../shared/telemetry/telemetry'
+import { CodewhispererAutomatedTriggerType } from '../../shared/telemetry/telemetry'
 import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
 import { isInlineCompletionEnabled } from '../util/commonUtil'
 import { ClassifierTrigger } from './classifierTrigger'
 import { extractContextForCodeWhisperer } from '../util/editorContext'
 import { RecommendationService } from './recommendationService'
-import { randomUUID } from '../../shared/crypto'
-import { TelemetryHelper } from '../util/telemetryHelper'
 
 /**
  * This class is for CodeWhisperer auto trigger
@@ -167,18 +165,14 @@ export class KeyStrokeHandler {
             return
         }
 
-        const traceId = randomUUID()
-        TelemetryHelper.instance.setTraceId(traceId)
-        await telemetry.withTraceId(async () => {
-            // RecommendationHandler.instance.reportUserDecisionOfRecommendation(editor, -1)
-            await RecommendationService.instance.generateRecommendation(
-                client,
-                editor,
-                'AutoTrigger',
-                config,
-                autoTriggerType
-            )
-        }, traceId)
+        // RecommendationHandler.instance.reportUserDecisionOfRecommendation(editor, -1)
+        await RecommendationService.instance.generateRecommendation(
+            client,
+            editor,
+            'AutoTrigger',
+            config,
+            autoTriggerType
+        )
     }
 }
 
