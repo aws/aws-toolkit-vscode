@@ -236,8 +236,13 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
                 tabsStorage.updateTabStatus(tabID, 'free')
 
                 if (item.traceId) {
+                    /**
+                     * We've received an answer for a traceId and this message has
+                     * completed its round trip. Send that information back to
+                     * VSCode so we can emit a round trip event
+                     **/
                     ideApi.postMessage({
-                        type: 'stopListening',
+                        type: 'stopChatMessageTelemetry',
                         tabID,
                         traceId: item.traceId,
                         tabType: tabsStorage.getTab(tabID)?.type,
@@ -394,9 +399,12 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
                 return
             }
 
-            // When a user presses "enter"
+            /**
+             * When a user presses "enter" send an event that indicates
+             * we should start tracking the round trip time for this message
+             **/
             ideApi.postMessage({
-                type: 'startListening',
+                type: 'startChatMessageTelemetry',
                 trigger: 'onChatPrompt',
                 tabID,
                 traceId: eventId,

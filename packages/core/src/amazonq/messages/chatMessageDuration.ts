@@ -11,7 +11,7 @@ export class AmazonQChatMessageDuration {
     /**
      * Record the initial requests in the chat message flow
      */
-    static startListening(msg: { traceId: string; startTime: number; trigger?: string }) {
+    static startChatMessageTelemetry(msg: { traceId: string; startTime: number; trigger?: string }) {
         const { traceId, startTime, trigger } = msg
 
         uiEventRecorder.set(traceId, {
@@ -34,7 +34,7 @@ export class AmazonQChatMessageDuration {
     /**
      * Stop listening to all incoming events and emit what we've found
      */
-    static stopListening(msg: { traceId: string }) {
+    static stopChatMessageTelemetry(msg: { traceId: string }) {
         const { traceId } = msg
 
         // We can't figure out what trace this event was associated with

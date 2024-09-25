@@ -34,11 +34,11 @@ export function dispatchWebViewMessagesToApps(
             return
         }
 
-        if (msg.type === 'startListening') {
-            AmazonQChatMessageDuration.startListening(msg)
+        if (msg.type === 'startChatMessageTelemetry') {
+            AmazonQChatMessageDuration.startChatMessageTelemetry(msg)
             return
-        } else if (msg.type === 'stopListening') {
-            AmazonQChatMessageDuration.stopListening(msg)
+        } else if (msg.type === 'stopChatMessageTelemetry') {
+            AmazonQChatMessageDuration.stopChatMessageTelemetry(msg)
             return
         }
 

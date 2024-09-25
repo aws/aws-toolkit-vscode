@@ -1221,7 +1221,7 @@
         },
         {
             "name": "amazonq_chatRoundTrip",
-            "description": "Captures the time it takes for different events between when a user presses enter and receives the message back",
+            "description": "Measures sequential response times in Q chat, from user input to message display. Tracks time intervals between key events: editor receiving the message, feature processing, and final message rendering",
             "passive": true,
             "metadata": [
                 {

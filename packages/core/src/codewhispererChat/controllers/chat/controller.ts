@@ -132,6 +132,11 @@ export class ChatController {
                     },
                 })
             }
+            /**
+             * traceId is only instrumented for chat-prompt but not for things
+             * like follow-up-was-clicked. In those cases we fallback to a different
+             * uuid
+             **/
             return telemetry.withTraceId(() => {
                 return this.processPromptChatMessage(data)
             }, data.traceId ?? randomUUID())

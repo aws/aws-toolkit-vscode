@@ -13,6 +13,15 @@ export type Event =
 
 /**
  * For a given traceID, map an event to a time
+ *
+ * This is used to correlated disjoint events that are happening in different
+ * parts of Q Chat.
+ *
+ * It allows us to tracks time intervals between key events:
+ *  - when VSCode received the message
+ *  - when the feature starts processing the message
+ *  - final message rendering
+ * and emit those as a final result, rather than having to emit each event individually
  */
 export const uiEventRecorder = new RecordMap<{
     trigger: string
