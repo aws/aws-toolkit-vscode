@@ -45,33 +45,32 @@ describe('NodeFileSystem', async function () {
         it('subsequent write not using lock method ignores lock file', async function () {
             const filePath = await testFolder.write('test.txt', 'Nothing Yet')
 
-            // Acquire the lock and write after a delay
+            // Acquire the lock and delay a bit allowing the subsequent write to complete before this one
             const lock = testFs.lock(filePath, async () => {
-                await sleep(200) // FLAKY: should be enough time for the other write to finish, increase if flaky
+                await sleep(300) // FLAKY: should be enough time for the other write to finish, increase if flaky
                 await fs.writeFile(filePath, 'lock 1 text')
             })
-
             // ensure lock is acquired (if we stop using proper-lockfile this needs an update)
             assert.ok(await waitUntil(async () => LockFile.check(filePath), { interval: 10, timeout: 5000 }))
 
-            // Ignore the lock and write to the file
+            // Function Under Test: Ignore the lock and write to the file
             await fs.writeFile(filePath, 'Did not honor lock')
+            assert.strictEqual(await fs.readFileAsString(filePath), 'Did not honor lock')
 
-            await lock
             // The initial file to acquire the lock eventually finished and overwrote the file
             // after the lock ignoring write finished
+            await lock
             assert.strictEqual(await fs.readFileAsString(filePath), 'lock 1 text')
         })
 
         it('2nd lock waits for 1st to finish before writing', async function () {
             const filePath = await testFolder.write('test.txt', 'Nothing Yet')
 
-            // Acquire the lock and write after a delay
+            // Acquire the lock and delay, requiring the 2nd lock to wait a few cycles
             const lock1 = testFs.lock(filePath, async () => {
                 await sleep((testFs.lockOptions.retries as any)!.minTimeout! * 2)
                 await fs.writeFile(filePath, 'lock 1 text')
             })
-
             // ensure lock is acquired (if we stop using proper-lockfile this needs an update)
             assert.ok(await waitUntil(async () => LockFile.check(filePath), { interval: 10, timeout: 5000 }))
 

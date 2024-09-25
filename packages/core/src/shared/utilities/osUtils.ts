@@ -12,8 +12,11 @@ import { getExtensionId } from '../extensionUtilities'
 /**
  * Checks if the current OS session is new.
  *
- * When this function is run the first time out of all extension instances this
- * will return true. Subsequent calls will return false until the next OS restart.
+ * @returns `true` if this is the first call to this function across all extension instances
+ * since the OS was last restarted, `false` otherwise.
+ *
+ * Use this function to perform one-time initialization tasks that should only happen
+ * once per OS session, regardless of how many extension instances are running.
  */
 export async function isNewOsSession(tmpDir = tempDirPath) {
     switch (process.platform) {
