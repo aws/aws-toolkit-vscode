@@ -86,7 +86,7 @@ function registerNewFiles(
                 count: 1,
                 amazonqConversationId: conversationId,
                 credentialStartUrl: AuthUtil.instance.startUrl,
-                scenarioType: 'wsOrphanedDocuments',
+                scenario: 'wsOrphanedDocuments',
             })
             getLogger().error(`No workspace folder found for file: ${zipFilePath} and prefix: ${prefix}`)
             continue
