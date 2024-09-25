@@ -86,9 +86,7 @@
                         <input type="file" id="file" @change="onFileChange" style="display: none" ref="fileInput" />
                         <button v-on:click.prevent="promptForFileLocation" class="button-theme-secondary">
                             Choose file</button
-                        >&nbsp;
-                        <button v-on:click.prevent="reloadFile" class="button-theme-secondary">Reload</button>
-                        &nbsp; {{ selectedFile || 'No file selected' }}
+                        >&nbsp; {{ selectedFile || 'No file selected' }}
                         <span class="data-view">payload from data: {{ payload }} </span>
                         <div class="input-validation" v-if="payload.errorMsg">
                             Error parsing JSON: {{ payload.errorMsg }}

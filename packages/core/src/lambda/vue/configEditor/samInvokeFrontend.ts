@@ -299,7 +299,9 @@ export default defineComponent({
             const resp = await client.promptFile()
             if (resp) {
                 this.selectedFile = resp.selectedFile
-                this.selectedFilePath = resp.selectedFilePath
+                this.launchConfig.sam = this.launchConfig.sam || {}
+                this.launchConfig.sam.localArguments = this.launchConfig.sam.localArguments || []
+                this.launchConfig.sam!.localArguments.push('-e', resp.selectedFilePath)
             }
         },
         async reloadFile() {
