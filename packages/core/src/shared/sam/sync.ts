@@ -666,7 +666,7 @@ export async function prepareSyncParams(
     } else if (arg instanceof vscode.Uri) {
         if (arg.path.endsWith('samconfig.toml')) {
             // "Deploy" command was invoked on a samconfig.toml file.
-            const config = await SamConfig.fromUri(arg)
+            const config = await SamConfig.fromConfigFileUri(arg)
             const params = getSyncParamsFromConfig(config)
             const projectRoot = vscode.Uri.joinPath(config.location, '..')
             const templateUri = params.templatePath

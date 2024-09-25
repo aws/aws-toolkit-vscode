@@ -85,7 +85,7 @@ export class SamConfig {
             throw new ToolkitError('No project root found')
         }
         const uri = await getConfigFileUri(projectRoot)
-        return this.fromUri(uri)
+        return this.fromConfigFileUri(uri)
     }
 
     /**
@@ -93,7 +93,7 @@ export class SamConfig {
      * @param uri The vscode uri of samconfig.toml
      * @returns The SamConfig object
      */
-    public static async fromUri(uri: vscode.Uri) {
+    public static async fromConfigFileUri(uri: vscode.Uri) {
         const contents = await fs.readFileAsString(uri)
         const config = await parseConfig(contents)
         return new this(uri, config)
