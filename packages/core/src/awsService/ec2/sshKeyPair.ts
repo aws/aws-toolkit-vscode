@@ -78,10 +78,6 @@ export class SshKeyPair {
     }
 
     public async delete(): Promise<void> {
-        if (await fs.existsDir(this.keyPath)) {
-            throw new Error('ec2: key path points to directory, not file')
-        }
-
         await fs.delete(this.keyPath)
         await fs.delete(this.publicKeyPath)
 
