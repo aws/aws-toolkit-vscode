@@ -17,7 +17,7 @@ export class SshKeyPair {
     private deleted: boolean = false
 
     private constructor(
-        private keyPath: string,
+        private readonly keyPath: string,
         lifetime: number
     ) {
         this.publicKeyPath = `${keyPath}.pub`
@@ -30,9 +30,9 @@ export class SshKeyPair {
 
     public static async getSshKeyPair(keyPath: string, lifetime: number) {
         // Overwrite key if already exists
-        if (await fs.existsFile(keyPath)) {
-            await fs.delete(keyPath)
-        }
+        await fs.delete(keyPath, { force: true })
+        await fs.delete(`${keyPath}.pub`, { force: true })
+
         await SshKeyPair.generateSshKeyPair(keyPath)
         return new SshKeyPair(keyPath, lifetime)
     }
@@ -72,6 +72,10 @@ export class SshKeyPair {
     }
 
     public async delete(): Promise<void> {
+        if (await fs.existsDir(this.keyPath)) {
+            throw new Error('ec2: key path points to directory, not file')
+        }
+
         await fs.delete(this.keyPath)
         await fs.delete(this.publicKeyPath)
 
