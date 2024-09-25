@@ -358,9 +358,8 @@
             "description": "Duration between the partner teams code receiving the message and when the message was finally displayed in ms"
         },
         {
-            "name": "scenarioType",
+            "name": "scenario",
             "type": "string",
-            "allowedValues": ["wsOrphanedDocuments"],
             "description": "Scenarios to count in telemetry"
         }
     ],
@@ -1282,7 +1281,7 @@
                     "required": false
                 },
                 {
-                    "type": "scenarioType",
+                    "type": "scenario",
                     "required": true
                 }
             ]
