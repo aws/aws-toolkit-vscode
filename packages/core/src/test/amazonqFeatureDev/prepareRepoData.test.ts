@@ -46,22 +46,20 @@ describe('prepareRepoDataPerformanceTest', function () {
         'handles many files',
         function () {
             const telemetry = new TelemetryHelper()
-            let workspace: WorkspaceFolder
-            let result: resultType
             return {
                 setup: async () => {
-                    workspace = await createTestWorkspace(500, {
+                    return await createTestWorkspace(500, {
                         fileNamePrefix: 'file',
                         fileContent: '0123456789',
                         fileNameSuffix: '.md',
                     })
                 },
-                execute: async () => {
-                    result = await prepareRepoData([workspace.uri.fsPath], [workspace], telemetry, {
+                execute: async (workspace: WorkspaceFolder) => {
+                    return await prepareRepoData([workspace.uri.fsPath], [workspace], telemetry, {
                         record: () => {},
                     } as unknown as Metric<AmazonqCreateUpload>)
                 },
-                verify: async () => verifyResult(result, telemetry, 5000),
+                verify: async (_w: WorkspaceFolder, result: resultType) => verifyResult(result, telemetry, 5000),
             }
         }
     )
@@ -92,22 +90,20 @@ describe('prepareRepoDataPerformanceTest', function () {
         'handles large files',
         function () {
             const telemetry = new TelemetryHelper()
-            let result: resultType
-            let workspace: WorkspaceFolder
             return {
                 setup: async () => {
-                    workspace = await createTestWorkspace(10, {
+                    return await createTestWorkspace(10, {
                         fileNamePrefix: 'file',
                         fileContent: getRandomString(1000),
                         fileNameSuffix: '.md',
                     })
                 },
-                execute: async () => {
-                    result = await prepareRepoData([workspace.uri.fsPath], [workspace], telemetry, {
+                execute: async (workspace: WorkspaceFolder) => {
+                    return await prepareRepoData([workspace.uri.fsPath], [workspace], telemetry, {
                         record: () => {},
                     } as unknown as Metric<AmazonqCreateUpload>)
                 },
-                verify: async () => verifyResult(result, telemetry, 10000),
+                verify: async (_w: WorkspaceFolder, result: resultType) => verifyResult(result, telemetry, 10000),
             }
         }
     )
