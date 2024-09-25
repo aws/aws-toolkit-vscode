@@ -38,25 +38,36 @@ describe('SshKeyUtility', async function () {
         sinon.restore()
     })
 
-    describe('generateSshKeys', async function () {
-        it('generates key in target file', async function () {
-            const contents = await vscode.workspace.fs.readFile(vscode.Uri.file(keyPath))
-            assert.notStrictEqual(contents.length, 0)
-        })
+    it('generates key in target file', async function () {
+        const contents = await fs.readFile(vscode.Uri.file(keyPath))
+        assert.notStrictEqual(contents.length, 0)
+    })
 
-        it('generates unique key each time', async function () {
-            const beforeContent = await vscode.workspace.fs.readFile(vscode.Uri.file(keyPath))
-            keyPair = await SshKeyPair.getSshKeyPair(keyPath, 30000)
-            const afterContent = await vscode.workspace.fs.readFile(vscode.Uri.file(keyPath))
-            assert.notStrictEqual(beforeContent, afterContent)
-        })
+    it('generates unique key each time', async function () {
+        const beforeContent = await fs.readFile(vscode.Uri.file(keyPath))
+        keyPair = await SshKeyPair.getSshKeyPair(keyPath, 30000)
+        const afterContent = await fs.readFile(vscode.Uri.file(keyPath))
+        assert.notStrictEqual(beforeContent, afterContent)
+    })
 
-        it('uses ed25519 algorithm to generate the keys', async function () {
-            const process = new ChildProcess(`ssh-keygen`, ['-vvv', '-l', '-f', keyPath])
-            const result = await process.run()
-            // Check private key header for algorithm name
-            assert.strictEqual(result.stdout.includes('[ED25519 256]'), true)
-        })
+    it('defaults to ed25519 key type', async function () {
+        const process = new ChildProcess(`ssh-keygen`, ['-vvv', '-l', '-f', keyPath])
+        const result = await process.run()
+        // Check private key header for algorithm name
+        assert.strictEqual(result.stdout.includes('[ED25519 256]'), true)
+    })
+
+    it('falls back on rsa if ed25519 not available', async function () {
+        await keyPair.delete()
+        const stub = sinon.stub(SshKeyPair, 'tryKeyGen')
+        stub.onFirstCall().resolves(false)
+        stub.callThrough()
+        keyPair = await SshKeyPair.getSshKeyPair(keyPath, 30000)
+        const process = new ChildProcess(`ssh-keygen`, ['-vvv', '-l', '-f', keyPath])
+        const result = await process.run()
+        // Check private key header for algorithm name
+        assert.strictEqual(result.stdout.includes('[RSA'), true)
+        stub.restore()
     })
 
     it('properly names the public key', function () {
@@ -70,10 +81,10 @@ describe('SshKeyUtility', async function () {
 
     it('does overwrite existing keys on get call', async function () {
         const generateStub = sinon.spy(SshKeyPair, 'generateSshKeyPair')
-        const keyBefore = await vscode.workspace.fs.readFile(vscode.Uri.file(keyPath))
+        const keyBefore = await fs.readFile(vscode.Uri.file(keyPath))
         keyPair = await SshKeyPair.getSshKeyPair(keyPath, 30000)
 
-        const keyAfter = await vscode.workspace.fs.readFile(vscode.Uri.file(keyPath))
+        const keyAfter = await fs.readFile(vscode.Uri.file(keyPath))
         sinon.assert.calledOnce(generateStub)
 
         assert.notStrictEqual(keyBefore, keyAfter)

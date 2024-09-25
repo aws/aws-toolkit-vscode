@@ -131,6 +131,8 @@ async function syncFlagsPrompter(): Promise<DataQuickPickItem<string>[] | undefi
     quickPick.canSelectMany = true
     quickPick.step = 3
     quickPick.buttons = [createBackButton(), createExitButton()]
+    const defaultItems = items.filter((item) => item.data === '--watch' || item.data === '--save-params')
+    quickPick.selectedItems = defaultItems
 
     return new Promise((resolve) => {
         quickPick.onDidAccept(() => {
