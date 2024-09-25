@@ -479,11 +479,7 @@ export class PrepareCodeGenState implements SessionState {
                 span
             )
             const uploadId = randomUUID()
-            const {
-                uploadUrl,
-                uploadId: returnedUploadId,
-                kmsKeyArn,
-            } = await this.config.proxyClient.createUploadUrl(
+            const { uploadUrl, kmsKeyArn } = await this.config.proxyClient.createUploadUrl(
                 this.config.conversationId,
                 zipFileChecksum,
                 zipFileBuffer.length,
