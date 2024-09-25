@@ -12,7 +12,7 @@ import {
     SamLocalInvokeCommand,
     SamLocalInvokeCommandArgs,
 } from '../../../../shared/sam/cli/samCliLocalInvoke'
-import { ChildProcess } from '../../../../shared/utilities/childProcess'
+import { ChildProcess } from '../../../../shared/utilities/processUtils'
 import { assertArgIsPresent, assertArgNotPresent, assertArgsContainArgument } from './samCliTestUtils'
 
 describe('SamCliLocalInvokeInvocation', async function () {
