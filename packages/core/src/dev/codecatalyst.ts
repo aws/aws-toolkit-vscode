@@ -13,7 +13,7 @@ import { selectCodeCatalystResource } from '../codecatalyst/wizards/selectResour
 import { VSCODE_EXTENSION_ID } from '../shared/extensions'
 import { DevEnvironment, CodeCatalystClient } from '../shared/clients/codecatalystClient'
 import { prepareDevEnvConnection } from '../codecatalyst/model'
-import { ChildProcess } from '../shared/utilities/childProcess'
+import { ChildProcess } from '../shared/utilities/processUtils'
 import { Timeout } from '../shared/utilities/timeoutUtils'
 import { CodeCatalystCommands } from '../codecatalyst/commands'
 import { showViewLogsMessage } from '../shared/utilities/messages'

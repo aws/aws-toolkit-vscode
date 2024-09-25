@@ -13,7 +13,7 @@ import { getIdeProperties } from '../extensionUtilities'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../filesystemUtilities'
 import { getLogger } from '../logger'
 import { HttpResourceFetcher } from '../resourcefetcher/httpResourceFetcher'
-import { ChildProcess } from '../utilities/childProcess'
+import { ChildProcess } from './processUtils'
 
 import * as nls from 'vscode-nls'
 import { Timeout, CancellationError } from './timeoutUtils'
