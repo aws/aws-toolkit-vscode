@@ -11,7 +11,7 @@ import { makeTemporaryToolkitFolder } from '../../../../shared/filesystemUtiliti
 import { makeUnexpectedExitCodeError } from '../../../../shared/sam/cli/samCliInvokerUtils'
 import { FileFunctions, SamCliBuildInvocation } from '../../../../shared/sam/cli/samCliBuild'
 import { SamCliProcessInvoker } from '../../../../shared/sam/cli/samCliInvokerUtils'
-import { ChildProcessResult } from '../../../../shared/utilities/childProcess'
+import { ChildProcessResult } from '../../../../shared/utilities/processUtils'
 import { getTestLogger } from '../../../globalSetup.test'
 import { assertArgNotPresent, assertArgsContainArgument } from './samCliTestUtils'
 import {
