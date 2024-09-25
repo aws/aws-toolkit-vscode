@@ -19,8 +19,8 @@ import { ToolkitError } from '../errors'
 import globals from '../extensionGlobals'
 import { TreeNode } from '../treeview/resourceTreeDataProvider'
 import { Metric, SamBuild, telemetry } from '../telemetry/telemetry'
-import { getProjectRootUri, isDotnetRuntime } from './utils'
-import { SamConfig } from './config'
+import { getProjectRoot, isDotnetRuntime } from './utils'
+import { getConfigFileUri, validateSamBuildConfig } from './config'
 
 export interface BuildParams {
     readonly template: TemplateItem
@@ -149,15 +149,12 @@ export class BuildWizard extends Wizard<BuildParams> {
     }
 
     public override async init(): Promise<this> {
-        const getProjectRoot = (template: TemplateItem | undefined) =>
-            template ? getProjectRootUri(template.uri) : undefined
-
         if (this.arg === undefined) {
             // "Build" command was invoked on the command palette.
             this.form.template.bindPrompter(() => createTemplatePrompter(this.registry))
             this.form.projectRoot.setDefault(({ template }) => getProjectRoot(template))
             this.form.paramsSource.bindPrompter(async ({ projectRoot }) => {
-                const existValidSamConfig: boolean | undefined = await SamConfig.validateSamBuildConfig(projectRoot)
+                const existValidSamConfig: boolean | undefined = await validateSamBuildConfig(projectRoot)
                 return createParamsSourcePrompter(existValidSamConfig)
             })
         } else {
@@ -167,7 +164,7 @@ export class BuildWizard extends Wizard<BuildParams> {
             this.form.template.setDefault(templateItem)
             this.form.projectRoot.setDefault(({ template }) => getProjectRoot(template))
             this.form.paramsSource.bindPrompter(async ({ projectRoot }) => {
-                const existValidSamConfig: boolean | undefined = await SamConfig.validateSamBuildConfig(projectRoot)
+                const existValidSamConfig: boolean | undefined = await validateSamBuildConfig(projectRoot)
                 return createParamsSourcePrompter(existValidSamConfig)
             })
             this.form.projectRoot.setDefault(() => getProjectRoot(templateItem))
@@ -199,7 +196,7 @@ async function getBuildFlags(
 
         case ParamsSource.SamConfig:
             try {
-                const samConfigFile = await SamConfig.getConfigFileUri(projectRoot)
+                const samConfigFile = await getConfigFileUri(projectRoot)
                 return ['--config-file', samConfigFile.fsPath]
             } catch (error) {
                 return defaultFlags

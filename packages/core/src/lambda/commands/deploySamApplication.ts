@@ -26,12 +26,12 @@ import { DefaultS3Client } from '../../shared/clients/s3Client'
 import { ToolkitError, globals } from '../../shared'
 import { promptAndUseConnection } from '../../auth/utils'
 import { Auth } from '../../auth'
-import { SamConfig } from '../../shared/sam/config'
+import { getConfigFileUri, validateSamDeployConfig, writeSamconfigGlobal } from '../../shared/sam/config'
 import { showMessageWithUrl } from '../../shared/utilities/messages'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { ChildProcess } from '../../shared/utilities/childProcess'
 import { addTelemetryEnvVar } from '../../shared/sam/cli/samCliInvokerUtils'
-import { getProjectRootUri, getSource } from '../../shared/sam/utils'
+import { getProjectRoot, getSource } from '../../shared/sam/utils'
 import { telemetry } from '../../shared/telemetry'
 import { getParameters } from '../config/parameterUtils'
 import { filter } from '../../shared/utilities/collectionUtils'
@@ -130,15 +130,12 @@ class DeployWizard extends Wizard<DeployParams> {
     }
 
     public override async init(): Promise<this> {
-        const getProjectRoot = (template: TemplateItem | undefined) =>
-            template ? getProjectRootUri(template.uri) : undefined
-
         if (this.arg && this.arg.path) {
             // "Deploy" command was invoked on a template.yaml file.
             const templateUri = this.arg as vscode.Uri
             const templateItem = { uri: templateUri, data: {} } as TemplateItem
             const projectRootFolder = getProjectRoot(templateItem)
-            const existValidSamConfig: boolean | undefined = await SamConfig.validateSamDeployConfig(projectRootFolder)
+            const existValidSamConfig: boolean | undefined = await validateSamDeployConfig(projectRootFolder)
 
             await this.addParameterPromptersIfApplicable(templateUri)
 
@@ -169,7 +166,7 @@ class DeployWizard extends Wizard<DeployParams> {
             this.form.template.bindPrompter(() => createTemplatePrompter(this.registry))
             this.form.projectRoot.setDefault(({ template }) => getProjectRoot(template))
             this.form.paramsSource.bindPrompter(async ({ projectRoot }) => {
-                const existValidSamConfig: boolean | undefined = await SamConfig.validateSamDeployConfig(projectRoot)
+                const existValidSamConfig: boolean | undefined = await validateSamDeployConfig(projectRoot)
                 return paramsSourcePrompter(existValidSamConfig)
             })
             this.form.region.setDefault(() => this.arg.regionCode)
@@ -192,7 +189,7 @@ class DeployWizard extends Wizard<DeployParams> {
             const templateUri = this.arg.getTreeItem().resourceUri as vscode.Uri
             const templateItem = { uri: templateUri, data: {} } as TemplateItem
             const projectRootFolder = getProjectRoot(templateItem)
-            const existValidSamConfig: boolean | undefined = await SamConfig.validateSamDeployConfig(projectRootFolder)
+            const existValidSamConfig: boolean | undefined = await validateSamDeployConfig(projectRootFolder)
 
             await this.addParameterPromptersIfApplicable(templateUri)
 
@@ -223,7 +220,7 @@ class DeployWizard extends Wizard<DeployParams> {
             this.form.template.bindPrompter(() => createTemplatePrompter(this.registry))
             this.form.projectRoot.setDefault(({ template }) => getProjectRoot(template))
             this.form.paramsSource.bindPrompter(async ({ projectRoot }) => {
-                const existValidSamConfig: boolean | undefined = await SamConfig.validateSamDeployConfig(projectRoot)
+                const existValidSamConfig: boolean | undefined = await validateSamDeployConfig(projectRoot)
                 return paramsSourcePrompter(existValidSamConfig)
             })
             this.form.region.bindPrompter(() => createRegionPrompter().transform((r) => r.id), {
@@ -324,7 +321,7 @@ export async function runDeploy(arg: any): Promise<DeployResult> {
         const buildFlags: string[] = ['--cached']
 
         if (params.paramsSource === ParamsSource.SamConfig) {
-            const samConfigFile = await SamConfig.getConfigFileUri(params.projectRoot)
+            const samConfigFile = await getConfigFileUri(params.projectRoot)
             deployFlags.push('--config-file', `${samConfigFile.fsPath}`)
         } else {
             deployFlags.push('--template', `${params.template.uri.fsPath}`)
@@ -380,7 +377,7 @@ export async function runDeploy(arg: any): Promise<DeployResult> {
 
             const { paramsSource, stackName, region, projectRoot } = params
             if (paramsSource !== ParamsSource.SamConfig && !!stackName && !!region) {
-                await SamConfig.writeGlobal(projectRoot, stackName, region)
+                await writeSamconfigGlobal(projectRoot, stackName, region)
             }
             //Run SAM deploy in Terminal
             await runInTerminal(deployProcess, 'deploy')

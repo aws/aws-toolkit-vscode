@@ -31,7 +31,7 @@ import { removeAnsi } from '../utilities/textUtilities'
 import { createExitPrompter } from '../ui/common/exitPrompter'
 import { StackSummary } from 'aws-sdk/clients/cloudformation'
 import { SamCliSettings } from './cli/samCliSettings'
-import { SamConfig } from './config'
+import { getConfigFileUri, SamConfig, validateSamSyncConfig, writeSamconfigGlobal } from './config'
 import { cast, Optional } from '../utilities/typeConstructors'
 import { pushIf, toRecord } from '../utilities/collectionUtils'
 import { Auth } from '../../auth/auth'
@@ -49,7 +49,7 @@ import { IamConnection } from '../../auth/connection'
 import { CloudFormationTemplateRegistry } from '../fs/templateRegistry'
 import { promptAndUseConnection } from '../../auth/utils'
 import { TreeNode } from '../treeview/resourceTreeDataProvider'
-import { getProjectRootUri, getSource } from './utils'
+import { getProjectRoot, getProjectRootUri, getSource } from './utils'
 
 const localize = nls.loadMessageBundle()
 
@@ -353,14 +353,11 @@ export class SyncWizard extends Wizard<SyncParams> {
     }
 
     public override async init(): Promise<this> {
-        const getProjectRoot = (template: TemplateItem | undefined) =>
-            template ? getProjectRootUri(template.uri) : undefined
-
         this.form.template.bindPrompter(() => createTemplatePrompter(this.registry))
         this.form.projectRoot.setDefault(({ template }) => getProjectRoot(template))
 
         this.form.paramsSource.bindPrompter(async ({ projectRoot }) => {
-            const existValidSamConfig: boolean | undefined = await SamConfig.validateSamSyncConfig(projectRoot)
+            const existValidSamConfig: boolean | undefined = await validateSamSyncConfig(projectRoot)
             return paramsSourcePrompter(existValidSamConfig)
         })
         this.form.region.bindPrompter(() => createRegionPrompter().transform((r) => r.id), {
@@ -465,7 +462,7 @@ async function saveAndBindArgs(args: SyncParams): Promise<{ readonly boundArgs: 
     })
 
     if (args.paramsSource === ParamsSource.SamConfig) {
-        const samConfigFile = await SamConfig.getConfigFileUri(args.projectRoot)
+        const samConfigFile = await getConfigFileUri(args.projectRoot)
         boundArgs.push('--config-file', `${samConfigFile.fsPath}`)
     }
 
@@ -604,7 +601,7 @@ export async function runSamSync(args: SyncParams) {
     })
     const { paramsSource, stackName, region, projectRoot } = args
     if (paramsSource !== ParamsSource.SamConfig && !!stackName && !!region) {
-        await SamConfig.writeGlobal(projectRoot, stackName, region)
+        await writeSamconfigGlobal(projectRoot, stackName, region)
     }
     await runInTerminal(sam, 'sync')
 }

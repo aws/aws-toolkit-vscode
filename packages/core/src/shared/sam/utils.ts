@@ -8,6 +8,15 @@ import path from 'path'
 import { AWSTreeNodeBase } from '../treeview/nodes/awsTreeNodeBase'
 import { TreeNode, isTreeNode } from '../treeview/resourceTreeDataProvider'
 import * as CloudFormation from '../cloudformation/cloudformation'
+import { TemplateItem } from './sync'
+
+/**
+ * @description determines the root directory of the project given Template Item
+ * @param templateItem Template item object.
+ * @returns The URI of the root project folder (may differ from workspace)
+ * */
+export const getProjectRoot = (template: TemplateItem | undefined) =>
+    template ? getProjectRootUri(template.uri) : undefined
 
 /**
  * @description determines the root directory of the project given uri of the template file
