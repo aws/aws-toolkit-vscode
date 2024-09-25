@@ -59,6 +59,7 @@ import {
     AwsConnection,
     scopesCodeWhispererCore,
     ProfileNotFoundError,
+    isSsoConnection,
 } from './connection'
 import { isSageMaker, isCloud9, isAmazonQ } from '../shared/extensionUtilities'
 import { telemetry } from '../shared/telemetry/telemetry'
@@ -66,6 +67,7 @@ import { randomUUID } from '../shared/crypto'
 import { asStringifiedStack } from '../shared/telemetry/spans'
 import { withTelemetryContext } from '../shared/telemetry/util'
 import { DiskCacheError } from '../shared/utilities/cacheUtils'
+import { setContext } from '../shared/vscode/setContext'
 
 interface AuthService {
     /**
@@ -166,6 +168,30 @@ export class Auth implements AuthService, ConnectionManager {
         return this.#ssoCacheWatcher
     }
 
+    public get startUrl(): string | undefined {
+        return isSsoConnection(this.activeConnection)
+            ? this.normalizeStartUrl(this.activeConnection.startUrl)
+            : undefined
+    }
+
+    public isConnected(): boolean {
+        return this.activeConnection !== undefined
+    }
+
+    /**
+     * Normalizes the provided URL
+     *
+     *  Any trailing '/' and `#` is removed from the URL
+     *  e.g. https://view.awsapps.com/start/# will become https://view.awsapps.com/start
+     */
+    public normalizeStartUrl(startUrl: string | undefined) {
+        return !startUrl ? undefined : startUrl.replace(/[\/#]+$/g, '')
+    }
+
+    public isInternalAmazonUser(): boolean {
+        return this.isConnected() && this.startUrl === 'https://amzn.awsapps.com/start'
+    }
+
     /**
      * Map startUrl -> declared connections
      */
@@ -222,6 +248,8 @@ export class Auth implements AuthService, ConnectionManager {
         this.#activeConnection = conn
         this.#onDidChangeActiveConnection.fire(conn)
         await this.store.setCurrentProfileId(id)
+
+        await setContext('aws.isInternalUser', this.isInternalAmazonUser())
 
         return conn
     }
@@ -373,6 +401,7 @@ export class Auth implements AuthService, ConnectionManager {
             }
         }
         this.#onDidDeleteConnection.fire({ connId, storedProfile: profile })
+        await setContext('aws.isInternalUser', false)
     }
 
     @withTelemetryContext({ name: 'clearStaleLinkedIamConnections', class: authClassName })
@@ -405,6 +434,7 @@ export class Auth implements AuthService, ConnectionManager {
         await provider.invalidate('devModeManualExpiration')
         // updates the state of the connection
         await this.refreshConnectionState(conn)
+        await setContext('aws.isInternalUser', false)
     }
 
     public async getConnection(connection: Pick<Connection, 'id'>): Promise<Connection | undefined> {
