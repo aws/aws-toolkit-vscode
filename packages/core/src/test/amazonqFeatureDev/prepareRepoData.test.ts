@@ -4,70 +4,63 @@
  */
 import assert from 'assert'
 import { WorkspaceFolder } from 'vscode'
-import { performanceTest } from '../../shared/performance/performance'
+import { getEqualOptions, performanceTest } from '../../shared/performance/performance'
 import { createTestWorkspace } from '../testUtil'
 import { prepareRepoData, TelemetryHelper } from '../../amazonqFeatureDev'
-import { AmazonqCreateUpload, Metric } from '../../shared'
+import { AmazonqCreateUpload, getRandomString, Metric } from '../../shared'
+
+type resultType = {
+    zipFileBuffer: Buffer
+    zipFileChecksum: string
+}
 
 describe('prepareRepoDataPerformanceTest', function () {
-    let fileAmount: number
-    let fileNamePrefix: string
-    let fileNameSuffix: string
-    let fileContent: string
-    let workspace: WorkspaceFolder
+    function verifyResult(result: resultType, telemetry: TelemetryHelper, expectedSize: number): void {
+        assert.ok(result)
+        assert.strictEqual(Buffer.isBuffer(result.zipFileBuffer), true)
+        assert.strictEqual(telemetry.repositorySize, expectedSize)
+        assert.strictEqual(result.zipFileChecksum.length, 44)
+    }
 
-    beforeEach(async function () {})
-
-    afterEach(async function () {})
-
-    after(async function () {})
-
-    before(async function () {
-        fileAmount = 1000
-        fileNamePrefix = 'file'
-        fileNameSuffix = '.md'
-        fileContent = 'test content'
-
-        workspace = await createTestWorkspace(fileAmount, { fileNamePrefix, fileContent, fileNameSuffix })
+    performanceTest(getEqualOptions(10, 80, 8, 0.7), 'handles many files', function () {
+        const telemetry = new TelemetryHelper()
+        let workspace: WorkspaceFolder
+        let result: resultType
+        return {
+            setup: async () => {
+                workspace = await createTestWorkspace(1000, {
+                    fileNamePrefix: 'file',
+                    fileContent: '0123456789',
+                    fileNameSuffix: '.md',
+                })
+            },
+            execute: async () => {
+                result = await prepareRepoData([workspace.uri.fsPath], [workspace], telemetry, {
+                    record: () => {},
+                } as unknown as Metric<AmazonqCreateUpload>)
+            },
+            verify: async () => verifyResult(result, telemetry, 10000),
+        }
     })
 
-    performanceTest(
-        {
-            testRuns: 10,
-            linux: {
-                userCpuUsage: 80,
-                heapTotal: 8,
-                duration: 0.7,
+    performanceTest(getEqualOptions(10, 30, 1, 0.1), 'handles large files', function () {
+        const telemetry = new TelemetryHelper()
+        let result: resultType
+        let workspace: WorkspaceFolder
+        return {
+            setup: async () => {
+                workspace = await createTestWorkspace(10, {
+                    fileNamePrefix: 'file',
+                    fileContent: getRandomString(1000),
+                    fileNameSuffix: '.md',
+                })
             },
-            darwin: {
-                userCpuUsage: 80,
-                heapTotal: 8,
-                duration: 0.7,
+            execute: async () => {
+                result = await prepareRepoData([workspace.uri.fsPath], [workspace], telemetry, {
+                    record: () => {},
+                } as unknown as Metric<AmazonqCreateUpload>)
             },
-            win32: {
-                userCpuUsage: 80,
-                heapTotal: 8,
-                duration: 0.7,
-            },
-        },
-        'handles many files',
-        function () {
-            const telemetry = new TelemetryHelper()
-            let result: any
-            return {
-                setup: async () => {},
-                execute: async () => {
-                    result = await prepareRepoData([workspace.uri.fsPath], [workspace], telemetry, {
-                        record: () => {},
-                    } as unknown as Metric<AmazonqCreateUpload>)
-                },
-                verify: async () => {
-                    assert.ok(result)
-                    assert.strictEqual(Buffer.isBuffer(result.zipFileBuffer), true)
-                    assert.strictEqual(telemetry.repositorySize, 12000)
-                    assert.strictEqual(result.zipFileChecksum.length, 44)
-                },
-            }
+            verify: async () => verifyResult(result, telemetry, 10000),
         }
-    )
+    })
 })

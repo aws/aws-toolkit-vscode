@@ -211,3 +211,36 @@ function assertPerformanceMetrics(
         `Expected total duration for ${name} to be less than ${expectedDuration}. Actual duration was ${foundDuration}`
     )
 }
+
+/**
+ * Utility function to supply options that are the same for all OS.
+ * @param userCpuUsage desired userCpuUsage
+ * @param heapTotal desired heapTotal
+ * @param duration desired duration
+ * @returns options for all OS
+ */
+export function getEqualOptions(
+    numRuns: number,
+    userCpuUsage: number,
+    heapTotal: number,
+    duration: number
+): TestOptions {
+    return {
+        testRuns: numRuns,
+        linux: {
+            userCpuUsage: userCpuUsage,
+            heapTotal: heapTotal,
+            duration: duration,
+        },
+        darwin: {
+            userCpuUsage: userCpuUsage,
+            heapTotal: heapTotal,
+            duration: duration,
+        },
+        win32: {
+            userCpuUsage: userCpuUsage,
+            heapTotal: heapTotal,
+            duration: duration,
+        },
+    }
+}
