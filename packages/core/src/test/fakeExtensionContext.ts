@@ -17,7 +17,7 @@ import {
     SamCliVersionValidatorResult,
 } from '../shared/sam/cli/samCliValidator'
 import { DefaultTelemetryService } from '../shared/telemetry/telemetryService'
-import { ChildProcessResult } from '../shared/utilities/childProcess'
+import { ChildProcessResult } from '../shared/utilities/processUtils'
 import { UriHandler } from '../shared/vscode/uriHandler'
 import { FakeTelemetryPublisher } from './fake/fakeTelemetryService'
 import { MockOutputChannel } from './mockOutputChannel'

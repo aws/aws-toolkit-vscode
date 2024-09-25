@@ -20,7 +20,7 @@ import { AsyncCollection, toCollection } from '../shared/utilities/asyncCollecti
 import { getCodeCatalystSpaceName, getCodeCatalystProjectName, getCodeCatalystDevEnvId } from '../shared/vscode/env'
 import { writeFile } from 'fs-extra'
 import { sshAgentSocketVariable, startSshAgent, startVscodeRemote } from '../shared/extensions/ssh'
-import { ChildProcess } from '../shared/utilities/childProcess'
+import { ChildProcess } from '../shared/utilities/processUtils'
 import { isDevenvVscode } from './utils'
 import { Timeout } from '../shared/utilities/timeoutUtils'
 import { Commands } from '../shared/vscode/commands2'

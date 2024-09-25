@@ -9,7 +9,7 @@ import * as packageJson from '../../../package.json'
 import * as os from 'os'
 import { getLogger } from '../logger'
 import { onceChanged } from '../utilities/functionUtils'
-import { ChildProcess } from '../utilities/childProcess'
+import { ChildProcess } from '../utilities/processUtils'
 import { isWeb } from '../extensionGlobals'
 
 /**
