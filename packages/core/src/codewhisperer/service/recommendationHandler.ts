@@ -59,6 +59,10 @@ const nextCommand = Commands.declare('editor.action.inlineSuggest.showNext', () 
 })
 
 const rejectCommand = Commands.declare('aws.amazonq.rejectCodeSuggestion', () => async () => {
+    telemetry.record({
+        traceId: TelemetryHelper.instance.traceId,
+    })
+
     if (!isCloud9('any')) {
         await vscode.commands.executeCommand('editor.action.inlineSuggest.hide')
     }
