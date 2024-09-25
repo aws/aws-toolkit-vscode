@@ -190,6 +190,12 @@ export class GumbyController {
     }
 
     private async transformInitiated(message: any) {
+        // feature flag for SQL transformations
+        if (!CodeWhispererConstants.isSQLTransformReady) {
+            await this.handleLanguageUpgrade(message)
+            return
+        }
+
         // if previous transformation was already running, show correct message to user
         switch (this.sessionStorage.getSession().conversationState) {
             case ConversationState.JOB_SUBMITTED:
