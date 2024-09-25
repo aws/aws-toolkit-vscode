@@ -8,7 +8,7 @@ import * as fs from 'fs-extra'
 import * as os from 'os'
 import * as path from 'path'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../../shared/filesystemUtilities'
-import { ChildProcess, eof } from '../../../shared/utilities/childProcess'
+import { ChildProcess, eof } from '../../../shared/utilities/processUtils'
 import { sleep } from '../../../shared/utilities/timeoutUtils'
 import { Timeout, waitUntil } from '../../../shared/utilities/timeoutUtils'
 
