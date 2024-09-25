@@ -1000,25 +1000,6 @@
             ]
         },
         {
-            "name": "amazonq_trackScenarioCountUsage",
-            "description": "Count how many times a scenario is reached.",
-            "unit": "Count",
-            "metadata": [
-                {
-                    "type": "amazonqConversationId",
-                    "required": true
-                },
-                {
-                    "type": "credentialStartUrl",
-                    "required": false
-                },
-                {
-                    "type": "scenarioType",
-                    "required": true
-                }
-            ]
-        },
-        {
             "name": "amazonq_approachThumbsUp",
             "description": "User clicked on the thumbs up button, to mention that they are satisfied",
             "unit": "Count",
@@ -1281,6 +1262,28 @@
                 {
                     "type": "proxiedSessionId",
                     "required": false
+                }
+            ]
+        },
+        {
+            "name": "toolkit_trackScenario",
+            "description": "Count how many times a scenario is reached.",
+            "unit": "Count",
+            "metadata": [
+                {
+                    "type": "count"
+                },
+                {
+                    "type": "amazonqConversationId",
+                    "required": true
+                },
+                {
+                    "type": "credentialStartUrl",
+                    "required": false
+                },
+                {
+                    "type": "scenarioType",
+                    "required": true
                 }
             ]
         }
