@@ -365,7 +365,7 @@ export class SamInvokeWebview extends VueWebview {
      * On selecting "Create New Entry", prompt the user for a name and save the contents to the end of the `launch.json` array.
      * @param config Config to save
      */
-    public async saveLaunchConfig(config: AwsSamDebuggerConfiguration, configName: string): Promise<void> {
+    public async saveLaunchConfig(config: AwsSamDebuggerConfiguration): Promise<void> {
         const uri = getUriFromLaunchConfig(config)
         if (!uri) {
             // TODO Localize
@@ -376,12 +376,6 @@ export class SamInvokeWebview extends VueWebview {
         }
 
         const launchConfig = new LaunchConfiguration(uri)
-
-        if (configName) {
-            await this.addNewDebugConfig(launchConfig, config, configName)
-            return
-        }
-
         const launchConfigItems = await getLaunchConfigQuickPickItems(launchConfig, uri)
         const pickerItems = [
             {
@@ -430,15 +424,6 @@ export class SamInvokeWebview extends VueWebview {
             )
             await this.openLaunchConfig()
         }
-    }
-
-    private async addNewDebugConfig(
-        launchConfig: LaunchConfiguration,
-        config: AwsSamDebuggerConfiguration,
-        configName: string
-    ): Promise<void> {
-        await launchConfig.addDebugConfiguration(finalizeConfig(config, configName))
-        await this.openLaunchConfig()
     }
 
     /**

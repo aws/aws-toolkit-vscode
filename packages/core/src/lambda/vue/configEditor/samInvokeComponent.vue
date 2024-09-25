@@ -6,46 +6,27 @@
 <template>
     <div class="container">
         <form class="invoke-lambda-form">
-            <div :style="{ padding: '2%' }">
-                <h1>Local invoke and debug configuration</h1>
-                <div class="header-buttons" id="invoke-button-container">
-                    <button class="primary-button" :style="{ width: '20%' }" v-on:click.prevent="launch">Invoke</button>
-                    <select
-                        name="selectedConfig"
-                        v-model="selectedConfig"
-                        on-change="updateConfig"
-                        :style="{ width: '100%' }"
-                    >
-                        <option disabled selected>create a new Config</option>
-                        <option v-for="(config, index) in loadedConfigs" v-bind:value="config" :key="index">
-                            {{ config.label }}
-                        </option>
-                    </select>
-                    <button
-                        class="secondary-button"
-                        :style="{ width: '16rem', fontSize: 'x-small' }"
-                        v-on:click.prevent="save"
-                    >
-                        Save as debug configuration
-                    </button>
-                    <div v-if="newConfigName">
-                        <span class="unsaved">
-                            {{ savedStatus }}
-                        </span>
-                    </div>
-                </div>
-                <div class="formfield" :style="{ marginBottom: '1rem' }">
-                    <label :style="{ width: '20%', paddingRight: '2.5rem' }" for="buildOption"
-                        >Auto-build before invoke</label
-                    >
-                    <input
-                        type="checkbox"
-                        id="buildOption"
-                        value="buildOption"
-                        v-model="buildChoice"
-                        name="build_request"
-                    /><br />
-                </div>
+            <h1>Local Invoke and Debug Configuration</h1>
+            <div class="header-buttons" id="invoke-button-container">
+                <button
+                    class="button-theme-primary"
+                    :style="{ width: '20%', marginRight: '27%' }"
+                    v-on:click.prevent="launch"
+                >
+                    Invoke
+                </button>
+                <button class="button-theme-secondary" v-on:click.prevent="loadConfig">Load Debug Config</button>
+                <button class="button-theme-secondary" v-on:click.prevent="save">Save Debug Config</button>
+            </div>
+            <p>
+                <em>
+                    Using this form you can create, edit, and run launch-configs of <code>type:aws-sam</code>. When you
+                    <strong>Invoke</strong> the launch config, {{ company }} Toolkit calls SAM CLI and attaches the
+                    debugger to the code running in a local Docker container. open
+                    <a href="#" @click.prevent="openLaunchJson">launch.json</a>.
+                </em>
+            </p>
+            <settings-panel id="config-panel" title="General configuration" description="" :start-collapsed="false">
                 <div class="form-row">
                     <div><label>Payload:</label></div>
                     <div class="payload-options">
@@ -156,17 +137,12 @@
                         </div>
                     </div>
                 </div>
-                <textarea style="width: 99%; margin-bottom: 10px" rows="5" cols="60" v-model="payload.value"></textarea>
-            </div>
-            <settings-panel id="config-panel" title="General Configuration" description="" :start-collapsed="true">
-                <p>
-                    <em>
-                        Using this form you can create, edit, and run launch-configs of <code>type:aws-sam</code>. When
-                        you <strong>Invoke</strong> the launch config, {{ company }} Toolkit calls SAM CLI and attaches
-                        the debugger to the code running in a local Docker container, open
-                        <a href="#" @click.prevent="openLaunchJson">launch.json</a>.
-                    </em>
-                </p>
+                <textarea
+                    style="width: 100%; margin-bottom: 10px"
+                    rows="5"
+                    cols="60"
+                    v-model="payload.value"
+                ></textarea>
                 <div class="config-item">
                     <label for="target-type-selector">Invoke target type</label>
                     <select name="target-types" id="target-type-selector" v-model="launchConfig.invokeTarget.target">
@@ -236,7 +212,11 @@
                                 />
                             </div>
                             <div style="margin-left: 105px">
-                                <button class="button-theme-secondary" v-on:click.prevent="loadResource">
+                                <button
+                                    class="button-theme-secondary"
+                                    :style="{ width: '82%', marginLeft: '19%' }"
+                                    v-on:click.prevent="loadResource"
+                                >
                                     Select Resource
                                 </button>
                                 <span class="data-view">
@@ -254,6 +234,12 @@
                             </option>
                         </select>
                         <span class="data-view">runtime in data: {{ launchConfig.lambda.runtime }}</span>
+                        <p
+                            class="runtime-description"
+                            :style="{ width: '250%', marginBottom: '0.1%', marginLeft: '100%' }"
+                        >
+                            For invoke the runtime defined in the template is used.
+                        </p>
                     </div>
                 </div>
                 <div class="target-apigw" v-else-if="launchConfig.invokeTarget.target === 'api'">

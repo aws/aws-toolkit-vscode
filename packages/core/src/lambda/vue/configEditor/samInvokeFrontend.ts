@@ -44,17 +44,14 @@ interface SamInvokeVueData {
     parameters: VueDataLaunchPropertyObject
     containerBuild: boolean
     skipNewImageCheck: boolean
-    loadedConfigs: LaunchConfigPickItem[] | undefined
     selectedConfig: LaunchConfigPickItem
     payloadOption: string
-    buildChoice: boolean
     selectedFile: string
     selectedFilePath: string
     selectedTestEvent: string
     TestEvents: string[]
     showNameInput: boolean
     newTestEventName: string
-    newConfigName: string
     resourceData: ResourceData | undefined
     savedStatus: string
 }
@@ -128,13 +125,11 @@ function initData() {
         parameters: { value: '', errorMsg: '' },
         headers: { value: '', errorMsg: '' },
         stageVariables: { value: '', errorMsg: '' },
-        loadedConfigs: [],
         selectedConfig: { index: 0, config: undefined, label: 'new-config' },
         selectedTestEvent: '',
         TestEvents: [],
         showNameInput: false,
         newTestEventName: '',
-        newConfigName: '',
         savedStatus: savedStatus.unsaved,
     }
 }
@@ -160,12 +155,10 @@ export default defineComponent({
             ],
             runtimes: [],
             httpMethods: ['GET', 'POST', 'PUT', 'DELETE', 'HEAD', 'OPTIONS', 'PATCH'],
-            loadedConfigs: [],
-            payloadOption: '',
+            payloadOption: 'sampleEvents',
             selectedFile: '',
             selectedFilePath: '',
             resourceData: undefined,
-            buildChoice: true,
         }
     },
     methods: {
@@ -191,14 +184,9 @@ export default defineComponent({
         save() {
             const config = this.formatConfig()
             config &&
-                client.saveLaunchConfig(config, this.newConfigName).catch((e) => {
+                client.saveLaunchConfig(config).catch((e) => {
                     console.error('saveLaunchConfig failed: %s', (e as Error).message)
                 })
-            this.savedStatus = savedStatus.saved
-            this.loadConfig()
-        },
-        async create() {
-            this.newConfigName = (await client.getConfigName()) || ''
         },
         loadConfig() {
             client.loadSamLaunchConfig().then(
@@ -399,15 +387,6 @@ export default defineComponent({
                 }
             )
 
-            client.getSamLaunchConfigs().then(
-                (config) => {
-                    this.loadedConfigs = config
-                },
-                (e) => {
-                    console.error('client.loadSamLaunchConfig failed: %s', (e as Error).message)
-                }
-            )
-
             client.getRuntimes().then(
                 (runtimes) => {
                     this.runtimes = runtimes
@@ -425,11 +404,6 @@ export default defineComponent({
                     console.error('client.getCompanyName failed: %s', (e as Error).message)
                 }
             )
-        },
-        reset() {
-            this.clearForm()
-            this.resetJsonErrors()
-            this.setUpWebView()
         },
         formatConfig() {
             this.resetJsonErrors()

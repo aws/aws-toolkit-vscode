@@ -72,7 +72,7 @@ textarea {
 }
 
 .form-control {
-    min-width: 200px; /* Set a minimum width */
+    min-width: 170%; /* Set a minimum width */
     width: 100%; /* Allow the width to adjust based on content */
     display: inline-block;
     flex-grow: 1;
@@ -127,8 +127,6 @@ textarea {
     color: var(--vscode-button-secondaryForeground);
     background: var(--vscode-button-secondaryBackground);
     border: 1px solid var(--vscode-button-border);
-    min-width: auto;
-    width: auto;
     display: inline-block;
     padding: 0.3rem 0.8rem;
     line-height: 1;
@@ -181,4 +179,9 @@ textarea {
     border-radius: 5px;
     gap: 4px;
     padding: 2px 8px;
+}
+
+.runtime-description {
+    font-size: 12px;
+    margin-top: 5px;
 }
