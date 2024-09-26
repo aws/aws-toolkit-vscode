@@ -124,7 +124,6 @@ abstract class CodeGenBase {
     private pollCount = 180
     private requestDelay = 10000
     public tokenSource: vscode.CancellationTokenSource
-    public isCancellationRequested: boolean
     public phase: SessionStatePhase = DevPhase.CODEGEN
     public readonly conversationId: string
     public readonly uploadId: string
@@ -135,7 +134,6 @@ abstract class CodeGenBase {
         public tabID: string
     ) {
         this.tokenSource = new vscode.CancellationTokenSource()
-        this.isCancellationRequested = false
         this.conversationId = config.conversationId
         this.uploadId = config.uploadId
         this.currentCodeGenerationId = config.currentCodeGenerationId || EmptyCodeGenID
@@ -147,12 +145,14 @@ abstract class CodeGenBase {
         codeGenerationId,
         telemetry: telemetry,
         workspaceFolders,
+        isCancellationRequested,
     }: {
         messenger: Messenger
         fs: VirtualFileSystem
         codeGenerationId: string
         telemetry: TelemetryHelper
         workspaceFolders: CurrentWsFolders
+        isCancellationRequested?: boolean
     }): Promise<{
         newFiles: NewFileInfo[]
         deletedFiles: DeletedFileInfo[]
@@ -162,7 +162,7 @@ abstract class CodeGenBase {
     }> {
         for (
             let pollingIteration = 0;
-            pollingIteration < this.pollCount && !this.isCancellationRequested;
+            pollingIteration < this.pollCount && !isCancellationRequested;
             ++pollingIteration
         ) {
             const codegenResult = await this.config.proxyClient.getCodeGeneration(this.conversationId, codeGenerationId)
@@ -238,7 +238,7 @@ abstract class CodeGenBase {
                 }
             }
         }
-        if (!this.isCancellationRequested) {
+        if (!isCancellationRequested) {
             // still in progress
             const errorMessage = i18n('AWS.amazonq.featureDev.error.codeGen.timeout')
             throw new ToolkitError(errorMessage, { code: 'CodeGenTimeout' })
@@ -273,13 +273,6 @@ export class CodeGenState extends CodeGenBase implements SessionState {
                     credentialStartUrl: AuthUtil.instance.startUrl,
                 })
 
-                action.tokenSource?.token.onCancellationRequested(() => {
-                    this.isCancellationRequested = true
-                    if (action.tokenSource) {
-                        this.tokenSource = action.tokenSource
-                    }
-                })
-
                 action.telemetry.setGenerateCodeIteration(this.currentIteration)
                 action.telemetry.setGenerateCodeLastInvocationTime()
                 const codeGenerationId = randomUUID()
@@ -291,7 +284,7 @@ export class CodeGenState extends CodeGenBase implements SessionState {
                     this.currentCodeGenerationId
                 )
 
-                if (!this.isCancellationRequested) {
+                if (!action.tokenSource?.token.isCancellationRequested) {
                     action.messenger.sendAnswer({
                         message: i18n('AWS.amazonq.featureDev.pillText.generatingCode'),
                         type: 'answer-part',
@@ -309,9 +302,10 @@ export class CodeGenState extends CodeGenBase implements SessionState {
                     codeGenerationId,
                     telemetry: action.telemetry,
                     workspaceFolders: this.config.workspaceFolders,
+                    isCancellationRequested: action.tokenSource?.token.isCancellationRequested,
                 })
 
-                if (codeGeneration && !this.isCancellationRequested) {
+                if (codeGeneration && !action.tokenSource?.token.isCancellationRequested) {
                     this.config.currentCodeGenerationId = codeGenerationId
                     this.currentCodeGenerationId = codeGenerationId
                 }
@@ -333,7 +327,7 @@ export class CodeGenState extends CodeGenBase implements SessionState {
                     this.currentIteration + 1,
                     this.codeGenerationRemainingIterationCount,
                     this.codeGenerationTotalIterationCount,
-                    this.tokenSource,
+                    action.tokenSource,
                     this.currentCodeGenerationId
                 )
                 return {
@@ -489,16 +483,18 @@ export class PrepareCodeGenState implements SessionState {
             )
 
             await uploadCode(uploadUrl, zipFileBuffer, zipFileChecksum, kmsKeyArn)
-            action.messenger.sendAnswer({
-                message: i18n('AWS.amazonq.featureDev.pillText.contextGatheringCompleted'),
-                type: 'answer-part',
-                tabID: this.tabID,
-            })
+            if (!action.tokenSource?.token.isCancellationRequested) {
+                action.messenger.sendAnswer({
+                    message: i18n('AWS.amazonq.featureDev.pillText.contextGatheringCompleted'),
+                    type: 'answer-part',
+                    tabID: this.tabID,
+                })
 
-            action.messenger.sendUpdatePlaceholder(
-                this.tabID,
-                i18n('AWS.amazonq.featureDev.pillText.contextGatheringCompleted')
-            )
+                action.messenger.sendUpdatePlaceholder(
+                    this.tabID,
+                    i18n('AWS.amazonq.featureDev.pillText.contextGatheringCompleted')
+                )
+            }
 
             return uploadId
         })

@@ -284,6 +284,16 @@ export class FeatureDevController {
         }
     }
 
+    private disposeToken(session: Session | undefined) {
+        if (session?.state?.tokenSource?.token.isCancellationRequested) {
+            session?.state.tokenSource?.dispose()
+            if (session?.state?.tokenSource) {
+                session.state.tokenSource = new vscode.CancellationTokenSource()
+            }
+            getLogger().debug('Request cancelled, skipping further processing')
+        }
+    }
+
     // TODO add type
     private async processUserChatMessage(message: any) {
         if (message.message === undefined) {
@@ -319,6 +329,7 @@ export class FeatureDevController {
                 await this.onCodeGeneration(session, message.message, message.tabID)
             }
         } catch (err: any) {
+            this.disposeToken(session)
             this.processErrorChatMessage(err, message, session)
             // Lock the chat input until they explicitly click one of the follow ups
             this.messenger.sendChatInputEnabled(message.tabID, false)
@@ -413,11 +424,7 @@ export class FeatureDevController {
             // Finish processing the event
 
             if (session?.state?.tokenSource?.token.isCancellationRequested) {
-                session?.state.tokenSource?.dispose()
-                if (session?.state?.tokenSource) {
-                    session.state.tokenSource = new vscode.CancellationTokenSource()
-                }
-                getLogger().debug('Request cancelled, skipping further processing')
+                this.disposeToken(session)
             } else {
                 this.messenger.sendAsyncEventProgress(tabID, false, undefined)
 
