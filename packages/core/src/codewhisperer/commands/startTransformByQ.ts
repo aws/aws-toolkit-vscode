@@ -274,13 +274,10 @@ export async function preTransformationUploadCode() {
         await telemetry.codeTransform_uploadProject.run(async () => {
             telemetry.record({ codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId() })
 
-            const transformZipManifest = new ZipManifest()
-            // if the user chose to skip unit tests, add the custom build command here
-            transformZipManifest.customBuildCommand = transformByQState.getCustomBuildCommand()
             const zipCodeResult = await zipCode({
                 dependenciesFolder: transformByQState.getDependencyFolderInfo()!,
                 modulePath: transformByQState.getProjectPath(),
-                zipManifest: transformZipManifest,
+                zipManifest: new ZipManifest(),
             })
 
             const payloadFilePath = zipCodeResult.tempFilePath

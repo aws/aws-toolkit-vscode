@@ -142,7 +142,11 @@ export async function validateOpenProjects(
         throw new NoMavenJavaProjectsFoundError()
     }
 
-    // These projects we know must contain a pom.xml and a .java file
+    /*
+     * These projects we know must contain a pom.xml and a .java file
+     * here we try to get the Java version of each project so that we
+     * can pre-select a default version in the QuickPick for them.
+     */
     const projectsValidToTransform = await getProjectsValidToTransform(mavenJavaProjects, onProjectFirstOpen)
 
     return projectsValidToTransform
