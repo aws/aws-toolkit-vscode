@@ -85,6 +85,7 @@ describe('tryInstallLsp performance test', function () {
                 userCpuUsage: 90,
                 systemCpuUsage: 35,
                 heapTotal: 6,
+                duration: 7,
             },
             win32: {
                 userCpuUsage: 90,
