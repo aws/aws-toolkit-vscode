@@ -70,7 +70,9 @@ describe('tryInstallLsp performance test', function () {
     afterEach(function () {
         sinon.restore()
     })
-
+    /**
+     * Test setting up LSP when fetched zip is many (250) small (10B) files.
+     */
     performanceTest(
         {
             testRuns: 10,
@@ -105,7 +107,9 @@ describe('tryInstallLsp performance test', function () {
             }
         }
     )
-
+    /**
+     * Test setting up LSP when fetched zip is few (10) large (1000B) files.
+     */
     performanceTest(
         {
             testRuns: 10,
