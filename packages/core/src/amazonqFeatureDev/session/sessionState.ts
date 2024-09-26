@@ -147,7 +147,6 @@ abstract class CodeGenBase {
         public tabID: string
     ) {
         this.tokenSource = new vscode.CancellationTokenSource()
-        this.isCancellationRequested = false
         this.conversationId = config.conversationId
         this.uploadId = config.uploadId
         this.currentCodeGenerationId = config.currentCodeGenerationId || EmptyCodeGenID
@@ -159,12 +158,14 @@ abstract class CodeGenBase {
         codeGenerationId,
         telemetry: telemetry,
         workspaceFolders,
+        isCancellationRequested,
     }: {
         messenger: Messenger
         fs: VirtualFileSystem
         codeGenerationId: string
         telemetry: TelemetryHelper
         workspaceFolders: CurrentWsFolders
+        isCancellationRequested?: boolean
     }): Promise<{
         newFiles: NewFileInfo[]
         deletedFiles: DeletedFileInfo[]
@@ -174,7 +175,7 @@ abstract class CodeGenBase {
     }> {
         for (
             let pollingIteration = 0;
-            pollingIteration < this.pollCount && !this.isCancellationRequested;
+            pollingIteration < this.pollCount && !isCancellationRequested;
             ++pollingIteration
         ) {
             const codegenResult = await this.config.proxyClient.getCodeGeneration(this.conversationId, codeGenerationId)
@@ -259,7 +260,7 @@ abstract class CodeGenBase {
                 }
             }
         }
-        if (!this.isCancellationRequested) {
+        if (!isCancellationRequested) {
             // still in progress
             const errorMessage = i18n('AWS.amazonq.featureDev.error.codeGen.timeout')
             throw new ToolkitError(errorMessage, { code: 'CodeGenTimeout' })
@@ -302,12 +303,10 @@ export class CodeGenState extends CodeGenBase implements SessionState {
                 })
 
                 action.tokenSource?.token.onCancellationRequested(() => {
+                    this.isCancellationRequested = true
                     if (action.tokenSource) {
                         this.tokenSource = action.tokenSource
                     }
-                    this.isCancellationRequested = true
-                    action.tokenSource?.dispose()
-                    action.tokenSource = undefined
                 })
 
                 action.telemetry.setGenerateCodeIteration(this.currentIteration)
@@ -321,7 +320,7 @@ export class CodeGenState extends CodeGenBase implements SessionState {
                     this.currentCodeGenerationId
                 )
 
-                if (!this.isCancellationRequested) {
+                if (!action.tokenSource?.token.isCancellationRequested) {
                     action.messenger.sendAnswer({
                         message: i18n('AWS.amazonq.featureDev.pillText.generatingCode'),
                         type: 'answer-part',
@@ -339,6 +338,7 @@ export class CodeGenState extends CodeGenBase implements SessionState {
                     codeGenerationId,
                     telemetry: action.telemetry,
                     workspaceFolders: this.config.workspaceFolders,
+                    isCancellationRequested: action.tokenSource?.token.isCancellationRequested,
                 })
 
                 if (codeGeneration && !action.tokenSource?.token.isCancellationRequested) {
@@ -375,7 +375,7 @@ export class CodeGenState extends CodeGenBase implements SessionState {
                     this.codeGenerationTotalIterationCount,
                     action.uploadHistory,
                     codeGenerationId,
-                    this.tokenSource,
+                    action.tokenSource,
                     this.currentCodeGenerationId
                 )
                 return {
