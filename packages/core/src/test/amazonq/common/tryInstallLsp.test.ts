@@ -5,7 +5,7 @@
 import assert from 'assert'
 import { performanceTest } from '../../../shared/performance/performance'
 import { LspController } from '../../../amazonq'
-import { fs, globals } from '../../../shared'
+import { fs, getRandomString, globals } from '../../../shared'
 import sinon from 'sinon'
 import { Content } from 'aws-sdk/clients/codecommit'
 import { createTestWorkspace } from '../../testUtil'
@@ -31,23 +31,39 @@ const fakeNodeContent = {
     serverVersion: '1.1.1',
 }
 
+function createStubs(numberOfFiles: number, fileSize: number) {
+    // Avoid making HTTP request or mocking giant manifest, stub what we need directly from request.
+    sinon.stub(LspController.prototype, 'fetchManifest')
+    // Directly feed the runtime specifications.
+    sinon.stub(LspController.prototype, 'getQserverFromManifest').returns(fakeQServerContent)
+    sinon.stub(LspController.prototype, 'getNodeRuntimeFromManifest').returns(fakeNodeContent)
+    // avoid fetch call.
+    sinon.stub(LspController.prototype, '_download').callsFake(getFakeDownload(numberOfFiles, fileSize))
+    // Hard code the hash since we are creating files on the spot, whose hashes can't be predicted.
+    sinon.stub(LspController.prototype, 'getFileSha384').resolves(fakeHash)
+    // Don't allow tryInstallLsp to move runtimes out of temporary folder.
+    sinon.stub(fs, 'rename')
+}
+
 /**
  * Creates a fake zip with some files in it.
  * @param filepath where to write the zip to.
  * @param _content unused parameter, for compatability with real function.
  */
-const fakeDownload = async (filepath: string, _content: Content) => {
-    const dummyFilesPath = (
-        await createTestWorkspace(100, {
-            fileNamePrefix: 'fakeFile',
-            fileContent: 'emptyContent',
-            workspaceName: 'workspace',
-        })
-    ).uri.fsPath
-    await fs.writeFile(path.join(dummyFilesPath, 'qserver'), 'this value shouldnt matter')
-    const zip = new AdmZip()
-    zip.addLocalFolder(dummyFilesPath)
-    zip.writeZip(filepath)
+const getFakeDownload = function (numberOfFiles: number, fileSize: number) {
+    return async function (filepath: string, _content: Content) {
+        const dummyFilesPath = (
+            await createTestWorkspace(numberOfFiles, {
+                fileNamePrefix: 'fakeFile',
+                fileContent: getRandomString(fileSize),
+                workspaceName: 'workspace',
+            })
+        ).uri.fsPath
+        await fs.writeFile(path.join(dummyFilesPath, 'qserver'), 'this value shouldnt matter')
+        const zip = new AdmZip()
+        zip.addLocalFolder(dummyFilesPath)
+        zip.writeZip(filepath)
+    }
 }
 
 describe('tryInstallLsp performance test', function () {
@@ -55,27 +71,73 @@ describe('tryInstallLsp performance test', function () {
         sinon.restore()
     })
 
-    performanceTest({}, 'sets up', function () {
-        return {
-            setup: async () => {
-                // Avoid making HTTP request or mocking giant manifest, stub what we need directly from request.
-                sinon.stub(LspController.prototype, 'fetchManifest')
-                // Directly feed the runtime specifications.
-                sinon.stub(LspController.prototype, 'getQserverFromManifest').returns(fakeQServerContent)
-                sinon.stub(LspController.prototype, 'getNodeRuntimeFromManifest').returns(fakeNodeContent)
-                // avoid fetch call.
-                sinon.stub(LspController.prototype, '_download').callsFake(fakeDownload)
-                // Hard code the hash since we are creating files on the spot, whose hashes can't be predicted.
-                sinon.stub(LspController.prototype, 'getFileSha384').resolves(fakeHash)
-                // Don't allow tryInstallLsp to move runtimes out of temporary folder.
-                sinon.stub(fs, 'rename')
+    performanceTest(
+        {
+            testRuns: 10,
+            linux: {
+                userCpuUsage: 90,
+                systemCpuUsage: 35,
+                heapTotal: 6,
             },
-            execute: async () => {
-                return await LspController.instance.tryInstallLsp(globals.context)
+            darwin: {
+                userCpuUsage: 90,
+                systemCpuUsage: 35,
+                heapTotal: 6,
             },
-            verify: async (setup: any, result: boolean) => {
-                assert.ok(result)
+            win32: {
+                userCpuUsage: 90,
+                systemCpuUsage: 35,
+                heapTotal: 6,
             },
+        },
+        'many small files in zip',
+        function () {
+            return {
+                setup: async () => {
+                    createStubs(250, 10)
+                },
+                execute: async () => {
+                    return await LspController.instance.tryInstallLsp(globals.context)
+                },
+                verify: async (_setup: any, result: boolean) => {
+                    assert.ok(result)
+                },
+            }
         }
-    })
+    )
+
+    performanceTest(
+        {
+            testRuns: 10,
+            linux: {
+                userCpuUsage: 90,
+                systemCpuUsage: 35,
+                heapTotal: 4,
+            },
+            darwin: {
+                userCpuUsage: 90,
+                systemCpuUsage: 35,
+                heapTotal: 4,
+            },
+            win32: {
+                userCpuUsage: 90,
+                systemCpuUsage: 35,
+                heapTotal: 4,
+            },
+        },
+        'few large files in zip',
+        function () {
+            return {
+                setup: async () => {
+                    createStubs(10, 1000)
+                },
+                execute: async () => {
+                    return await LspController.instance.tryInstallLsp(globals.context)
+                },
+                verify: async (_setup: any, result: boolean) => {
+                    assert.ok(result)
+                },
+            }
+        }
+    )
 })
