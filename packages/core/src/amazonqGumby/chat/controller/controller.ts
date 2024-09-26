@@ -389,7 +389,11 @@ export class GumbyController {
 
             await processTransformFormInput(pathToProject, fromJDKVersion, toJDKVersion)
 
-            await this.messenger.sendSkipTestsPrompt(message.tabID)
+            // TODO: delete this line when backend issue is fixed
+            await this.validateBuildWithPromptOnError(message)
+
+            // TODO: un-comment this line when backend issue is fixed
+            // await this.messenger.sendSkipTestsPrompt(message.tabID)
         })
     }
 
