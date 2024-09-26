@@ -132,23 +132,12 @@ export class Session {
             telemetry: this.telemetry,
             tokenSource: this.state.tokenSource,
             uploadHistory: this.state.uploadHistory,
-            tokenSource: this.state.tokenSource,
         })
 
         if (resp.nextState) {
-            // Cancel the request before moving to a new state
-<<<<<<< HEAD
-<<<<<<< HEAD
             if (!this.state?.tokenSource?.token.isCancellationRequested) {
                 this.state?.tokenSource?.cancel()
             }
-=======
-            this.state?.tokenSource?.cancel()
->>>>>>> 4742b3c59 (refactor(amazonqFeatureDev): include updated rts model)
-=======
-            if (!this.state?.tokenSource?.token.isCancellationRequested) this.state?.tokenSource?.cancel()
->>>>>>> e6782b66f (fix(amazonqFeatureDev): create a new token to stop and iterate in the same session)
-
             // Move to the next state
             this._state = resp.nextState
         }
