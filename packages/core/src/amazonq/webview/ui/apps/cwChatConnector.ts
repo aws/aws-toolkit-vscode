@@ -8,9 +8,11 @@ import { ExtensionMessage } from '../commands'
 import { CodeReference } from './amazonqCommonsConnector'
 import { TabOpenType, TabsStorage } from '../storages/tabsStorage'
 import { FollowUpGenerator } from '../followUps/generator'
+import { TracedChatItem } from '../connector'
 
 interface ChatPayload {
     chatMessage: string
+    traceId?: string
     chatCommand?: string
 }
 
@@ -188,6 +190,7 @@ export class Connector {
                 command: 'chat-prompt',
                 chatMessage: payload.chatMessage,
                 chatCommand: payload.chatCommand,
+                traceId: payload.traceId,
                 tabType: 'cwc',
             })
         })
@@ -258,13 +261,14 @@ export class Connector {
                       }
                     : undefined
 
-            const answer: ChatItem = {
+            const answer: TracedChatItem = {
                 type: messageData.messageType,
                 messageId: messageData.messageID ?? messageData.triggerID,
                 body: messageData.message,
                 followUp: followUps,
                 canBeVoted: true,
                 codeReference: messageData.codeReference,
+                traceId: messageData.traceId,
             }
 
             // If it is not there we will not set it
@@ -291,7 +295,7 @@ export class Connector {
             return
         }
         if (messageData.messageType === ChatItemType.ANSWER) {
-            const answer: ChatItem = {
+            const answer: TracedChatItem = {
                 type: messageData.messageType,
                 body: undefined,
                 relatedContent: undefined,
@@ -304,6 +308,7 @@ export class Connector {
                               options: messageData.followUps,
                           }
                         : undefined,
+                traceId: messageData.traceId,
             }
             this.onChatAnswerReceived(messageData.tabID, answer)
 

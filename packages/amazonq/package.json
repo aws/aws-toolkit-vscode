@@ -350,8 +350,13 @@
                     "group": "cw_chat@4"
                 },
                 {
+                    "command": "aws.amazonq.generateUnitTests",
+                    "group": "cw_chat@5",
+                    "when": "aws.codewhisperer.connected && aws.isInternalUser"
+                },
+                {
                     "command": "aws.amazonq.sendToPrompt",
-                    "group": "cw_chat@5"
+                    "group": "cw_chat@6"
                 }
             ],
             "editor/context": [
@@ -422,6 +427,12 @@
                 "title": "%AWS.command.amazonq.sendToPrompt%",
                 "category": "%AWS.amazonq.title%",
                 "enablement": "aws.codewhisperer.connected"
+            },
+            {
+                "command": "aws.amazonq.generateUnitTests",
+                "title": "%AWS.command.amazonq.generateUnitTests%",
+                "category": "%AWS.amazonq.title%",
+                "enablement": "aws.codewhisperer.connected && aws.isInternalUser"
             },
             {
                 "command": "aws.amazonq.reconnect",
@@ -598,6 +609,13 @@
                 "key": "win+alt+q",
                 "mac": "cmd+alt+q",
                 "linux": "meta+alt+q"
+            },
+            {
+                "command": "aws.amazonq.generateUnitTests",
+                "key": "win+alt+t",
+                "mac": "cmd+alt+t",
+                "linux": "meta+alt+t",
+                "when": "aws.codewhisperer.connected && aws.isInternalUser"
             },
             {
                 "command": "aws.amazonq.invokeInlineCompletion",

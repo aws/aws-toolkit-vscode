@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import { TemplateItem, createTemplatePrompter, getSamCliPathAndVersion, runInTerminal } from './sync'
 import { Commands } from '../vscode/commands2'
-import { ChildProcess } from '../utilities/childProcess'
+import { ChildProcess } from '../utilities/processUtils'
 import { addTelemetryEnvVar } from './cli/samCliInvokerUtils'
 import { Wizard } from '../wizards/wizard'
 import { CloudFormationTemplateRegistry } from '../fs/templateRegistry'
