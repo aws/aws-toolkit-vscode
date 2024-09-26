@@ -14,6 +14,7 @@ type contextKey =
     | 'aws.isDevMode'
     | 'aws.isSageMaker'
     | 'aws.isWebExtHost'
+    | 'aws.isInternalUser'
     | 'aws.amazonq.showLoginView'
     | 'aws.codecatalyst.connected'
     | 'aws.codewhisperer.connected'

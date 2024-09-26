@@ -4,7 +4,7 @@
  */
 
 import assert from 'assert'
-import * as nodefs from 'fs'
+import * as nodeFsSync from 'fs'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import * as FakeTimers from '@sinonjs/fake-timers'
@@ -16,6 +16,9 @@ import { MetricName, MetricShapes } from '../shared/telemetry/telemetry'
 import { keys, selectFrom } from '../shared/utilities/tsUtils'
 import fs2 from '../shared/fs/fs'
 import { DeclaredCommand } from '../shared/vscode/commands2'
+import { mkdirSync, existsSync } from 'fs'
+import * as nodefs from 'fs/promises'
+import { randomBytes } from 'crypto'
 
 const testTempDirs: string[] = []
 
@@ -55,6 +58,79 @@ export function getWorkspaceFolder(dir: string): vscode.WorkspaceFolder {
 }
 
 /**
+ * An all-in-one solution for a folder to use during tests:
+ * - Cleans up after all tests complete
+ * - Each instance is isolated from other tests
+ * - Convenient methods for files operations on paths RELATIVE to the folder
+ *
+ * Create an instance using {@link TestFolder.create()}.
+ *
+ * Add any new methods to this class when needed.
+ *
+ * ---
+ *
+ * IMPORTANT:Web: This uses Node specific FS functions.
+ * This class is used in our agnostic FileSystem unit tests to do the setup.
+ * Since we do not want our FS code to be used to test itself, we aren't using it here.
+ * But if the day comes that we need it for web, we should be able to add some agnostic FS methods in here.
+ */
+export class TestFolder {
+    protected constructor(private readonly rootFolder: string) {}
+
+    /** Creates a folder that deletes itself once all tests are done running. */
+    static async create() {
+        const rootFolder = (await createTestWorkspaceFolder()).uri.fsPath
+        return new TestFolder(rootFolder)
+    }
+
+    /**
+     * Creates a file at the given path relative to the test folder.
+     * Any directories that do not exist in the given path will also be created.
+     *
+     * @returns an absolute path to the file
+     */
+    async write(relativeFilePath: string, content?: string, options?: { mode?: number }): Promise<string> {
+        const filePath = path.join(this.path, relativeFilePath)
+
+        await toFile(content ?? '', filePath)
+
+        if (options?.mode !== undefined) {
+            await nodefs.chmod(filePath, options.mode)
+        }
+
+        return filePath
+    }
+
+    /**
+     * Creates a directory at the given path relative to the test folder.
+     *
+     * @returns an absolute path to the folder
+     */
+    async mkdir(relativeDirPath?: string): Promise<string> {
+        relativeDirPath ??= randomBytes(4).toString('hex')
+        const absolutePath = this.pathFrom(relativeDirPath)
+        mkdirSync(absolutePath, { recursive: true })
+        assert(existsSync(absolutePath))
+        return absolutePath
+    }
+
+    /** Returns an absolute path compose of the test folder path and the given relative path. */
+    pathFrom(relativePath: string): string {
+        return path.join(this.path, relativePath)
+    }
+
+    get path(): string {
+        return path.join(this.rootFolder)
+    }
+}
+
+/**
+ * @deprecated Use {@link TestFolder} instead.
+ *
+ * TODO: move this inside of {@link TestFolder}.
+ *
+ * ---
+ *
  * Creates a random, temporary workspace folder on the filesystem and returns a `WorkspaceFolder`
  * object. The folder will be automatically deleted after tests complete.
  *
@@ -66,7 +142,7 @@ export async function createTestWorkspaceFolder(name?: string, subDir?: string):
     testTempDirs.push(tempFolder)
     const finalWsFolder = subDir === undefined ? tempFolder : path.join(tempFolder, subDir)
     if (subDir !== undefined && subDir.length > 0) {
-        await nodefs.promises.mkdir(finalWsFolder, { recursive: true })
+        await nodefs.mkdir(finalWsFolder, { recursive: true })
     }
     return {
         uri: vscode.Uri.file(finalWsFolder),
@@ -177,7 +253,7 @@ export async function createExecutableFile(filepath: string, contents: string): 
         await fs2.writeFile(filepath, `@echo OFF$\r\n${contents}\r\n`)
     } else {
         await fs2.writeFile(filepath, `#!/bin/sh\n${contents}`)
-        nodefs.chmodSync(filepath, 0o744)
+        nodeFsSync.chmodSync(filepath, 0o744)
     }
 }
 
@@ -326,24 +402,45 @@ export async function assertTextEditorContains(contents: string, exact: boolean 
 }
 
 /**
- * Create and open an editor with provided fileText, fileName and options. If folder is not provided,
- * will create a temp worksapce folder which will be automatically deleted in testing environment
- * @param fileText The supplied text to fill this file with
- * @param fileName The name of the file to save it as. Include the file extension here.
+ * Saves `fileText` to `fileName` relative to `folder` (or an auto-created temp workspace folder,
+ * which will be automatically deleted after tests finish), and opens it as a `TextDocument` (not
+ * a `TextEditor`, which is *slow*; use {@link toTextEditor} for that).
+ *
+ * @param fileText Text content
+ * @param fileName Name of the file (including extension) to save it as.
+ * @param folder?  Optional workspace folder where the file will be written to.
+ *
+ * @returns TextDocument that was just opened
+ */
+export async function toTextDocument(
+    fileText: string,
+    fileName: string,
+    folder?: string
+): Promise<ReturnType<typeof vscode.workspace.openTextDocument>> {
+    const myWorkspaceFolder = folder ? folder : (await createTestWorkspaceFolder()).uri.fsPath
+    const filePath = path.join(myWorkspaceFolder, fileName)
+    await toFile(fileText, filePath)
+
+    return await vscode.workspace.openTextDocument(filePath)
+}
+
+/**
+ * Same as {@link toTextDocument}, but opens the result in a TextEditor. This is *much* slower, use
+ * `toTextDocument` if you don't need a text editor.
+ *
+ * @param fileText Text content
+ * @param fileName Name of the file (including extension) to save it as.
+ * @param folder?  Optional workspace folder where the file will be written to.
  *
  * @returns TextEditor that was just opened
  */
-export async function openATextEditorWithText(
+export async function toTextEditor(
     fileText: string,
     fileName: string,
     folder?: string,
     options?: vscode.TextDocumentShowOptions
 ): Promise<vscode.TextEditor> {
-    const myWorkspaceFolder = folder ? folder : (await createTestWorkspaceFolder()).uri.fsPath
-    const filePath = path.join(myWorkspaceFolder, fileName)
-    await toFile(fileText, filePath)
-
-    const textDocument = await vscode.workspace.openTextDocument(filePath)
+    const textDocument = await toTextDocument(fileText, fileName, folder)
 
     return await vscode.window.showTextDocument(textDocument, options)
 }
