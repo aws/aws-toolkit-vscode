@@ -352,7 +352,7 @@
                 {
                     "command": "aws.amazonq.generateUnitTests",
                     "group": "cw_chat@5",
-                    "when": "aws.codewhisperer.connected && aws.isInternalUser"
+                    "when": "false"
                 },
                 {
                     "command": "aws.amazonq.sendToPrompt",
@@ -432,7 +432,7 @@
                 "command": "aws.amazonq.generateUnitTests",
                 "title": "%AWS.command.amazonq.generateUnitTests%",
                 "category": "%AWS.amazonq.title%",
-                "enablement": "aws.codewhisperer.connected && aws.isInternalUser"
+                "enablement": "false"
             },
             {
                 "command": "aws.amazonq.reconnect",
@@ -615,7 +615,7 @@
                 "key": "win+alt+t",
                 "mac": "cmd+alt+t",
                 "linux": "meta+alt+t",
-                "when": "aws.codewhisperer.connected && aws.isInternalUser"
+                "when": "false"
             },
             {
                 "command": "aws.amazonq.invokeInlineCompletion",
