@@ -39,7 +39,7 @@ import { collectFiles, getWorkspaceFoldersByPrefixes } from '../../shared/utilit
 import { i18n } from '../../shared/i18n-helper'
 import { Messenger } from '../controllers/chat/messenger/messenger'
 
-const EMPTY_CODEGEN_ID = 'EMPTY_CURRENT_CODE_GENERATION_ID'
+const EmptyCodeGenID = 'EMPTY_CURRENT_CODE_GENERATION_ID'
 
 export class ConversationNotStartedState implements Omit<SessionState, 'uploadId'> {
     public tokenSource: vscode.CancellationTokenSource
@@ -138,7 +138,7 @@ abstract class CodeGenBase {
         this.isCancellationRequested = false
         this.conversationId = config.conversationId
         this.uploadId = config.uploadId
-        this.currentCodeGenerationId = config.currentCodeGenerationId || EMPTY_CODEGEN_ID
+        this.currentCodeGenerationId = config.currentCodeGenerationId || EmptyCodeGenID
     }
 
     async generateCode({
@@ -275,7 +275,9 @@ export class CodeGenState extends CodeGenBase implements SessionState {
 
                 action.tokenSource?.token.onCancellationRequested(() => {
                     this.isCancellationRequested = true
-                    if (action.tokenSource) this.tokenSource = action.tokenSource
+                    if (action.tokenSource) {
+                        this.tokenSource = action.tokenSource
+                    }
                 })
 
                 action.telemetry.setGenerateCodeIteration(this.currentIteration)

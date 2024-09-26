@@ -135,7 +135,9 @@ export class Session {
 
         if (resp.nextState) {
             // Cancel the request before moving to a new state
-            if (!this.state?.tokenSource?.token.isCancellationRequested) this.state?.tokenSource?.cancel()
+            if (!this.state?.tokenSource?.token.isCancellationRequested) {
+                this.state?.tokenSource?.cancel()
+            }
 
             // Move to the next state
             this._state = resp.nextState
