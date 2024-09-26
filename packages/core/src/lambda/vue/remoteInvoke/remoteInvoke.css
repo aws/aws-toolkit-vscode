@@ -93,11 +93,7 @@ textarea {
     color: var(--vscode-button-secondaryForeground);
     background: var(--vscode-button-secondaryBackground);
     border: 1px solid var(--vscode-button-border);
-    min-width: auto;
-    width: auto;
-    display: inline-block;
-    padding: 0.3rem 0.8rem;
-    line-height: 1;
+    padding: 8px 12px;
 }
 .button-theme-secondary:hover:not(:disabled) {
     background: var(--vscode-button-secondaryHoverBackground);

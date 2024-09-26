@@ -168,11 +168,21 @@ export default defineComponent({
             this.headers.errorMsg = ''
             this.stageVariables.errorMsg = ''
         },
-        launch() {
+        async launch() {
             const config = this.formatConfig()
 
             if (!config) {
                 return // Exit early if config is not available
+            }
+            if (this.payloadOption === 'sampleEvents' || this.payloadOption === 'savedEvents') {
+                config.lambda.payload = this.payload.value
+            } else if (this.payloadOption === 'localFile') {
+                if (this.selectedFile && this.selectedFilePath) {
+                    const resp = await client.readFile(this.selectedFilePath)
+                    if (resp) {
+                        config.lambda.payload = resp.sample
+                    }
+                }
             }
 
             const source = this.resourceData?.source
