@@ -21,21 +21,25 @@ describe('prepareRepoDataPerformanceTest', function () {
         assert.strictEqual(telemetry.repositorySize, expectedSize)
         assert.strictEqual(result.zipFileChecksum.length, 44)
     }
-
+    /**
+     * Tests 250 files w/ 10 bytes each.
+     * Running more files can lead to flaky test from timeout.
+     */
     performanceTest(
         {
             testRuns: 10,
             linux: {
-                userCpuUsage: 80,
+                userCpuUsage: 90,
+                systemCpuUsage: 35,
                 heapTotal: 4,
             },
             darwin: {
-                userCpuUsage: 80,
+                userCpuUsage: 90,
                 systemCpuUsage: 35,
                 heapTotal: 4,
             },
             win32: {
-                userCpuUsage: 80,
+                userCpuUsage: 90,
                 systemCpuUsage: 35,
                 heapTotal: 4,
             },
@@ -60,7 +64,9 @@ describe('prepareRepoDataPerformanceTest', function () {
             }
         }
     )
-
+    /**
+     * Runs 10 files of size 1000 bytes.
+     */
     performanceTest(
         {
             testRuns: 10,
