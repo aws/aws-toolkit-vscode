@@ -74,17 +74,24 @@
                 </div>
             </div>
         </div>
-        <div class="form-row" v-if="payload === 'sampleEvents'">
+        <div v-if="payload === 'sampleEvents'" class="form-row">
             <label :style="{ fontSize: '13px', fontWeight: 500 }">Sample event</label>
-            <button class="button-theme-secondary" style="width: 50%" @click="loadSampleEvent">
-                Load Sample Event
-            </button>
+            <div>
+                <div>
+                    <button class="button-theme-secondary" style="width: 50%" @click="loadSampleEvent">
+                        Load Sample Event
+                    </button>
+                </div>
+                <br />
+            </div>
+            <br />
+            <textarea style="width: 80%; margin-bottom: 10px" rows="5" cols="60" v-model="sampleText"></textarea>
         </div>
         <div v-if="payload === 'localFile'" class="form-row">
             <div><label>File</label></div>
             <div>
                 <input type="file" id="file" @change="onFileChange" style="display: none" ref="fileInput" />
-                <button @click="promptForFileLocation" class="button-theme-secondary">Choose file</button>
+                <button @click="promptForFileLocation" class="secondary-button">Choose file</button>
                 &nbsp; {{ selectedFile || 'No file selected' }}
             </div>
         </div>
@@ -115,7 +122,7 @@
                     Load Sample Event
                 </button>
             </div>
+            <textarea style="width: 80%; margin-bottom: 10px" rows="5" cols="60" v-model="sampleText"></textarea>
         </div>
-        <textarea style="width: 100%; margin-bottom: 10px" rows="5" cols="60" v-model="sampleText"></textarea>
     </div>
 </template>
