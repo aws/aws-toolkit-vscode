@@ -11,6 +11,7 @@ import { TreeNode } from '../../../shared/treeview/resourceTreeDataProvider'
 import { createWizardTester } from '../wizards/wizardTestUtils'
 import assert from 'assert'
 import { createBaseTemplate } from '../cloudformation/cloudformationTestUtils'
+import { getProjectRootUri } from '../../../shared/sam/utils'
 
 describe('BuildWizard', async function () {
     const createTester = async (params?: Partial<BuildParams>, arg?: TreeNode | undefined) =>
@@ -27,7 +28,12 @@ describe('BuildWizard', async function () {
         assert.ok(workspaceFolder)
 
         const templateUri = vscode.Uri.joinPath(workspaceFolder.uri, 'template.yaml')
-        const samAppLocation = { samTemplateUri: templateUri, workspaceFolder: workspaceFolder }
+        const projectRootUri = getProjectRootUri(templateUri)
+        const samAppLocation = {
+            samTemplateUri: templateUri,
+            workspaceFolder: workspaceFolder,
+            projectRoot: projectRootUri,
+        }
         const appNode = new AppNode(samAppLocation)
         const tester = await createTester({}, appNode)
         tester.template.assertDoesNotShow()

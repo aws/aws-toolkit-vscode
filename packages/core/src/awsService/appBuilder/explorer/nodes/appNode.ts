@@ -35,15 +35,14 @@ export class AppNode implements TreeNode {
         try {
             const successfulApp = await getApp(this.location)
             const templateResources: ResourceTreeEntity[] = successfulApp.resourceTree
-
-            const { stackName, region } = await getStackName(this.location.workspaceFolder)
+            const { stackName, region } = await getStackName(this.location.projectRoot)
             this.stackName = stackName
 
             const listStackResourcesArguments: SamCliListResourcesParameters = {
                 stackName: this.stackName,
                 templateFile: this.location.samTemplateUri.fsPath,
                 region: region,
-                projectRoot: this.location.workspaceFolder.uri,
+                projectRoot: this.location.projectRoot,
             }
 
             const deployedResources: StackResource[] | undefined = this.stackName

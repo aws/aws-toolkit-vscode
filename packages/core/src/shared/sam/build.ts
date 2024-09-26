@@ -19,31 +19,41 @@ import { ToolkitError } from '../errors'
 import globals from '../extensionGlobals'
 import { TreeNode } from '../treeview/resourceTreeDataProvider'
 import { Metric, SamBuild, telemetry } from '../telemetry/telemetry'
-import { getConfigFileUri, getProjectRootUri, isDotnetRuntime } from './utils'
+import { getProjectRoot, isDotnetRuntime } from './utils'
+import { getConfigFileUri, validateSamBuildConfig } from './config'
 
 export interface BuildParams {
     readonly template: TemplateItem
     readonly projectRoot: vscode.Uri
-    readonly paramsSource: ParamsSource.Specify | ParamsSource.Samconfig
+    readonly paramsSource: ParamsSource.Specify | ParamsSource.SamConfig | ParamsSource.DefaultValues
 }
 
 enum ParamsSource {
     Specify,
-    Samconfig,
+    SamConfig,
+    DefaultValues,
 }
 
-function createParamsSourcePrompter() {
+function createParamsSourcePrompter(existValidSamconfig: boolean) {
     const items: DataQuickPickItem<ParamsSource>[] = [
         {
             label: 'Specify build flags',
             data: ParamsSource.Specify,
         },
-        {
-            label: 'Use default values',
-            data: ParamsSource.Samconfig,
-            description: 'cached = true, parallel = true, use_container = true',
-        },
     ]
+
+    items.push(
+        existValidSamconfig
+            ? {
+                  label: 'Use default values from samconfig',
+                  data: ParamsSource.SamConfig,
+              }
+            : {
+                  label: 'Use default values',
+                  data: ParamsSource.DefaultValues,
+                  description: 'cached = true, parallel = true, use_container = true',
+              }
+    )
 
     return createQuickPick(items, {
         title: 'Specify parameters for build',
@@ -126,27 +136,74 @@ export type SamBuildResult = {
 }
 
 export class BuildWizard extends Wizard<BuildParams> {
+    arg: TreeNode<unknown> | undefined
+    registry: CloudFormationTemplateRegistry
     public constructor(
         state: Partial<BuildParams>,
         registry: CloudFormationTemplateRegistry,
         arg?: TreeNode | undefined
     ) {
         super({ initState: state, exitPrompterProvider: createExitPrompter })
+        this.registry = registry
+        this.arg = arg
+    }
 
-        const getProjectRoot = (template: TemplateItem | undefined) =>
-            template ? getProjectRootUri(template) : undefined
-
-        if (arg === undefined) {
-            this.form.template.bindPrompter(() => createTemplatePrompter(registry))
-            this.form.paramsSource.bindPrompter(() => createParamsSourcePrompter())
+    public override async init(): Promise<this> {
+        if (this.arg === undefined) {
+            // "Build" command was invoked on the command palette.
+            this.form.template.bindPrompter(() => createTemplatePrompter(this.registry))
             this.form.projectRoot.setDefault(({ template }) => getProjectRoot(template))
+            this.form.paramsSource.bindPrompter(async ({ projectRoot }) => {
+                const existValidSamConfig: boolean | undefined = await validateSamBuildConfig(projectRoot)
+                return createParamsSourcePrompter(existValidSamConfig)
+            })
         } else {
-            const templateUri = (arg.getTreeItem() as vscode.TreeItem).resourceUri
+            // "Build" command was invoked from build icon from sidebar
+            const templateUri = (this.arg.getTreeItem() as vscode.TreeItem).resourceUri
             const templateItem = { uri: templateUri, data: {} } as TemplateItem
             this.form.template.setDefault(templateItem)
-            this.form.paramsSource.bindPrompter(() => createParamsSourcePrompter())
+            this.form.projectRoot.setDefault(({ template }) => getProjectRoot(template))
+            this.form.paramsSource.bindPrompter(async ({ projectRoot }) => {
+                const existValidSamConfig: boolean | undefined = await validateSamBuildConfig(projectRoot)
+                return createParamsSourcePrompter(existValidSamConfig)
+            })
             this.form.projectRoot.setDefault(() => getProjectRoot(templateItem))
         }
+        return this
+    }
+}
+
+/**
+ * Get build flags based on user selection
+ * @param paramsSource
+ * @param projectRoot
+ * @param defaultFlags
+ * @returns
+ */
+async function getBuildFlags(
+    paramsSource: ParamsSource,
+    projectRoot: vscode.Uri,
+    defaultFlags: string[]
+): Promise<string[]> {
+    switch (paramsSource) {
+        case ParamsSource.Specify:
+            // eslint-disable-next-line no-case-declarations
+            const flagItems = await buildFlagsPrompter()
+            if (flagItems === undefined) {
+                throw new CancellationError('user')
+            }
+            return flagItems ? flagItems.map((item) => item.data as string) : defaultFlags
+
+        case ParamsSource.SamConfig:
+            try {
+                const samConfigFile = await getConfigFileUri(projectRoot)
+                return ['--config-file', samConfigFile.fsPath]
+            } catch (error) {
+                return defaultFlags
+            }
+
+        default:
+            return defaultFlags
     }
 }
 
@@ -166,27 +223,8 @@ export function registerBuild() {
 
         const projectRoot = params.projectRoot
 
-        let buildFlags: string[] = []
         const defaultFlags: string[] = ['--cached', '--parallel', '--save-params', '--use-container']
-
-        if (params.paramsSource === ParamsSource.Specify) {
-            const flagItems = await buildFlagsPrompter()
-            if (flagItems) {
-                flagItems.forEach((item) => {
-                    buildFlags.push(item.data as string)
-                })
-            } else {
-                buildFlags = defaultFlags
-            }
-        } else {
-            try {
-                // Get samconfig.toml file Uri
-                const samConfigFile = await getConfigFileUri(projectRoot)
-                buildFlags.push('--config-file', `${samConfigFile.fsPath}`)
-            } catch (error) {
-                buildFlags = defaultFlags
-            }
-        }
+        const buildFlags: string[] = await getBuildFlags(params.paramsSource, projectRoot, defaultFlags)
 
         if (await isDotnetRuntime(params.template.uri)) {
             buildFlags.push('--mount-with', 'WRITE')

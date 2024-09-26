@@ -5,10 +5,10 @@
 
 import * as vscode from 'vscode'
 import * as CloudFormation from '../../../shared/cloudformation/cloudformation'
-import { SamConfig } from '../../../shared/sam/config'
+import { SamConfig, SamConfigErrorCode } from '../../../shared/sam/config'
 import { getLogger } from '../../../shared/logger/logger'
-import { getFiles } from './detectSamProjects'
 import { ToolkitError } from '../../../shared/errors'
+import { showViewLogsMessage } from '../../../shared/utilities/messages'
 
 export interface SamApp {
     location: SamAppLocation
@@ -18,6 +18,7 @@ export interface SamApp {
 export interface SamAppLocation {
     samTemplateUri: vscode.Uri
     workspaceFolder: vscode.WorkspaceFolder
+    projectRoot: vscode.Uri
 }
 
 export interface ResourceTreeEntity {
@@ -30,21 +31,23 @@ export interface ResourceTreeEntity {
     Method?: string
 }
 
-export async function getStackName(workspaceFolder: vscode.WorkspaceFolder): Promise<any> {
+export async function getStackName(projectRoot: vscode.Uri): Promise<any> {
     try {
-        const configUris = await getFiles(workspaceFolder, 'samconfig.toml', `**/.aws-sam/**`)
-        if (configUris.length === 0) {
-            return {}
-        }
-
-        const samConfig = await SamConfig.fromUri(configUris[0])
-
+        const samConfig = await SamConfig.fromProjectRoot(projectRoot)
         const stackName = await samConfig.getParam('global', 'stack_name')
         const region = await samConfig.getParam('global', 'region')
 
         return { stackName, region }
     } catch (error) {
-        getLogger().error('getStackName: Failed to retrieve stack name and region. Error: %s', error)
+        if (error instanceof ToolkitError) {
+            if (error.code === SamConfigErrorCode.samNoConfigFound) {
+                getLogger().info('No stack name or region information available in samconfig.toml', error)
+            } else if (error.code === SamConfigErrorCode.samConfigParseError) {
+                getLogger().error(`Error getting stack name or region information: ${error.message}`, error)
+                await showViewLogsMessage('Encounter an issue reading samconfig.toml')
+            }
+        }
+
         return {}
     }
 }
