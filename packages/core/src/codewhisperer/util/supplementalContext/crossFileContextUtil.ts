@@ -16,6 +16,7 @@ import { getFileDistance } from '../../../shared/filesystemUtilities'
 import { getOpenFilesInWindow } from '../../../shared/utilities/editorUtilities'
 import { getLogger } from '../../../shared/logger/logger'
 import { CodeWhispererSupplementalContext, CodeWhispererSupplementalContextItem } from '../../models/model'
+import { LspClient } from '../../../amazonq'
 
 type CrossFileSupportedLanguage =
     | 'java'
@@ -66,6 +67,51 @@ export async function fetchSupplementalContextForSrc(
               }
     }
 
+    // TODO:
+    if (false) {
+        return fetchSupplementalContextForSrcV1(editor, cancellationToken)
+    } else {
+        return fetchSupplementalContextForSrcV2(editor)
+    }
+}
+
+export async function fetchSupplementalContextForSrcV2(
+    editor: vscode.TextEditor
+): Promise<Pick<CodeWhispererSupplementalContext, 'supplementalContextItems' | 'strategy'> | undefined> {
+    const inputChunkContent = getInputChunk(editor)
+
+    const bm25Response: { content: string; score: number; filePath: string }[] = await LspClient.instance.queryBM25(
+        inputChunkContent.content,
+        editor.document.uri.fsPath
+    )
+    getLogger().info(JSON.stringify(bm25Response))
+    console.log(bm25Response)
+
+    const supContextItems: CodeWhispererSupplementalContextItem[] = bm25Response
+    return {
+        supplementalContextItems: [...supContextItems],
+        strategy: 'LSP',
+    }
+}
+
+export async function fetchSupplementalContextForSrcV1(
+    editor: vscode.TextEditor,
+    cancellationToken: vscode.CancellationToken
+): Promise<Pick<CodeWhispererSupplementalContext, 'supplementalContextItems' | 'strategy'> | undefined> {
+    const shouldProceed = shouldFetchCrossFileContext(
+        editor.document.languageId,
+        CodeWhispererUserGroupSettings.instance.userGroup
+    )
+
+    if (!shouldProceed) {
+        return shouldProceed === undefined
+            ? undefined
+            : {
+                  supplementalContextItems: [],
+                  strategy: 'Empty',
+              }
+    }
+
     const codeChunksCalculated = crossFileContextConfig.numberOfChunkToFetch
 
     // Step 1: Get relevant cross files to refer
@@ -91,7 +137,7 @@ export async function fetchSupplementalContextForSrc(
 
     // Step 3: Generate Input chunk (10 lines left of cursor position)
     // and Find Best K chunks w.r.t input chunk using BM25
-    const inputChunk: Chunk = getInputChunk(editor, crossFileContextConfig.numberOfLinesEachChunk)
+    const inputChunk: Chunk = getInputChunk(editor)
     const bestChunks: Chunk[] = findBestKChunkMatches(inputChunk, chunkList, crossFileContextConfig.topK)
     throwIfCancelled(cancellationToken)
 
@@ -137,7 +183,8 @@ function findBestKChunkMatches(chunkInput: Chunk, chunkReferences: Chunk[], k: n
 /* This extract 10 lines to the left of the cursor from trigger file.
  * This will be the inputquery to bm25 matching against list of cross-file chunks
  */
-function getInputChunk(editor: vscode.TextEditor, chunkSize: number) {
+function getInputChunk(editor: vscode.TextEditor) {
+    const chunkSize = crossFileContextConfig.numberOfLinesEachChunk
     const cursorPosition = editor.selection.active
     const startLine = Math.max(cursorPosition.line - chunkSize, 0)
     const endLine = Math.max(cursorPosition.line - 1, 0)

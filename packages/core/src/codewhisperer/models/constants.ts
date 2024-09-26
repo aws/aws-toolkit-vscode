@@ -690,6 +690,7 @@ export const crossFileContextConfig = {
     numberOfChunkToFetch: 60,
     topK: 3,
     numberOfLinesEachChunk: 10,
+    codemapMark: 'q-inline',
 }
 
 export const utgConfig = {

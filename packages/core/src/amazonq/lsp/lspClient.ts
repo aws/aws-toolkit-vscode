@@ -17,7 +17,19 @@ import * as jose from 'jose'
 import { Disposable, ExtensionContext } from 'vscode'
 
 import { LanguageClient, LanguageClientOptions, ServerOptions, TransportKind } from 'vscode-languageclient'
-import { GetUsageRequestType, IndexRequestType, QueryRequestType, UpdateIndexRequestType, Usage } from './types'
+import {
+    BuildIndexRequestPayload,
+    BuildIndexRequestType,
+    GetUsageRequestType,
+    IndexConfig,
+    IndexRequestType,
+    QueryInlineProjectContextRequestType,
+    QueryRequestType,
+    UpdateIndexRequestType,
+    UpdateIndexV2RequestPayload,
+    UpdateIndexV2RequestType,
+    Usage,
+} from './types'
 import { Writable } from 'stream'
 import { CodeWhispererSettings } from '../../codewhisperer/util/codewhispererSettings'
 import { fs, getLogger } from '../../shared'
@@ -78,6 +90,24 @@ export class LspClient {
         }
     }
 
+    // v2
+    async indexFilesV2(paths: string[], rootPath: string, config: IndexConfig) {
+        const payload: BuildIndexRequestPayload = {
+            filePaths: paths,
+            projectRoot: rootPath,
+            config: config,
+            language: '',
+        }
+        try {
+            const encryptedRequest = await this.encrypt(JSON.stringify(payload))
+            const resp = await this.client?.sendRequest(BuildIndexRequestType, encryptedRequest)
+            return resp
+        } catch (e) {
+            getLogger().error(`LspClient: indexFilesV2 error: ${e}`)
+            return undefined
+        }
+    }
+
     async query(request: string) {
         try {
             const encryptedRequest = await this.encrypt(
@@ -86,6 +116,23 @@ export class LspClient {
                 })
             )
             const resp = await this.client?.sendRequest(QueryRequestType, encryptedRequest)
+            return resp
+        } catch (e) {
+            getLogger().error(`LspClient: query error: ${e}`)
+            return []
+        }
+    }
+
+    async queryBM25(query: string, path: string) {
+        try {
+            const request = JSON.stringify({
+                query: query,
+                filePath: path,
+            })
+
+            const encrpted = await this.encrypt(request)
+
+            let resp: any = await this.client?.sendRequest(QueryInlineProjectContextRequestType, encrpted)
             return resp
         } catch (e) {
             getLogger().error(`LspClient: query error: ${e}`)
@@ -110,6 +157,23 @@ export class LspClient {
             return resp
         } catch (e) {
             getLogger().error(`LspClient: updateIndex error: ${e}`)
+            return undefined
+        }
+    }
+
+    // not yet account for file move
+    // v2
+    async updateIndexV2(filePath: string[], mode: 'update' | 'remove' | 'add') {
+        const payload: UpdateIndexV2RequestPayload = {
+            filePaths: filePath,
+            updateMode: mode,
+        }
+        try {
+            const encryptedRequest = await this.encrypt(JSON.stringify(payload))
+            const resp = await this.client?.sendRequest(UpdateIndexV2RequestType, encryptedRequest)
+            return resp
+        } catch (e) {
+            getLogger().error(`LspClient: updateIndexV2 error: ${e}`)
             return undefined
         }
     }
@@ -197,15 +261,30 @@ export async function activate(extensionContext: ExtensionContext) {
                 return
             }
             savedDocument = document.uri
-        })
-    )
-    toDispose.push(
+            void LspClient.instance.updateIndexV2([document.uri.fsPath], 'update')
+        }),
         vscode.window.onDidChangeActiveTextEditor((editor) => {
             if (savedDocument && editor && editor.document.uri.fsPath !== savedDocument.fsPath) {
-                void LspClient.instance.updateIndex(savedDocument.fsPath)
+                // void LspClient.instance.updateIndexV2([editor.document.uri.fsPath], 'update')
             }
+        }),
+        vscode.workspace.onDidCreateFiles((e) => {
+            void LspClient.instance.updateIndexV2(
+                e.files.map((f) => f.fsPath),
+                'add'
+            )
+        }),
+        vscode.workspace.onDidDeleteFiles((e) => {
+            void LspClient.instance.updateIndexV2(
+                e.files.map((f) => f.fsPath),
+                'remove'
+            )
+        }),
+        vscode.workspace.onDidRenameFiles((e) => {
+            // void LspClient.instance.updateIndexV2(e.files.map((f) => f.newUri.fsPath), 'rename')
         })
     )
+
     return LspClient.instance.client.onReady().then(() => {
         const disposableFunc = { dispose: () => rangeFormatting?.dispose() as void }
         toDispose.push(disposableFunc)
