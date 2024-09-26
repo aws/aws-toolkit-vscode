@@ -36,6 +36,7 @@ import { telemetry } from '../../shared/telemetry'
 import { getParameters } from '../config/parameterUtils'
 import { filter } from '../../shared/utilities/collectionUtils'
 import { createInputBox } from '../../shared/ui/inputPrompter'
+import * as CloudFormation from '../../shared/cloudformation/cloudformation'
 
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
@@ -52,10 +53,11 @@ interface DeployParams {
     [key: string]: any
 }
 
-function createParamPromptProvider(name: string) {
+function createParamPromptProvider(name: string, defaultValue: string | undefined) {
     return createInputBox({
         title: `Specify SAM parameter value for ${name}`,
         buttons: createCommonButtons(samDeployUrl),
+        value: defaultValue,
     })
 }
 
@@ -251,14 +253,13 @@ class DeployWizard extends Wizard<DeployParams> {
      * @param templateUri the uri of the template
      */
     async addParameterPromptersIfApplicable(templateUri: vscode.Uri) {
+        const template = await CloudFormation.load(templateUri.fsPath)
         const samTemplateParameters = await getParameters(templateUri)
         if (samTemplateParameters.size > 0) {
-            const requiredParameterNames = new Set<string>(
-                filter(samTemplateParameters.keys(), (name) => samTemplateParameters.get(name)!.required)
-            )
-
-            requiredParameterNames.forEach((name) => {
-                this.form[name].bindPrompter(() => createParamPromptProvider(name))
+            const parameterNames = new Set<string>(samTemplateParameters.keys())
+            parameterNames.forEach((name) => {
+                const defaultValue = template.Parameters ? (template.Parameters[name]?.Default as string) : undefined
+                this.form[name].bindPrompter(() => createParamPromptProvider(name, defaultValue))
             })
         }
     }
