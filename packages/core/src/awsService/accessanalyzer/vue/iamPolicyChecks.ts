@@ -119,14 +119,18 @@ export class IamPolicyChecksWebview extends VueWebview {
         // Send the current active text editor to Webview to show what is being targeted by the user
         vscode.window.onDidChangeActiveTextEditor((message: any) => {
             const editedFile = vscode.window.activeTextEditor?.document
-            IamPolicyChecksWebview.editedDocumentFileName = editedFile!.uri.path
-            IamPolicyChecksWebview.editedDocument = editedFile!.getText()
-            IamPolicyChecksWebview.editedDocumentUri = editedFile!.uri
-            this.onChangeInputPath.fire(editedFile!.uri.path)
+            if (editedFile !== undefined) {
+                IamPolicyChecksWebview.editedDocumentFileName = editedFile.uri.path
+                IamPolicyChecksWebview.editedDocument = editedFile.getText()
+                IamPolicyChecksWebview.editedDocumentUri = editedFile.uri
+                this.onChangeInputPath.fire(editedFile.uri.path)
+            }
         })
         vscode.workspace.onDidChangeTextDocument((message: any) => {
             const editedFile = vscode.window.activeTextEditor?.document
-            IamPolicyChecksWebview.editedDocument = editedFile!.getText()
+            if (editedFile !== undefined) {
+                IamPolicyChecksWebview.editedDocument = editedFile.getText()
+            }
         })
     }
 
@@ -715,10 +719,10 @@ export class IamPolicyChecksWebview extends VueWebview {
     }
 
     public pushCustomCheckDiagnostic(diagnostics: vscode.Diagnostic[], finding: any, isBlocking: boolean) {
-        let message = `${finding.findingType}: ${finding.message} - Resource name: ${finding.resourceName}, Policy name: ${finding.policyName}`
-        if (message.includes('existingPolicyDocument')) {
-            message = message.replace('existingPolicyDocument', 'reference document')
-        }
+        const findingMessage: string = finding.message.includes('existingPolicyDocument')
+            ? finding.message.replace('existingPolicyDocument', 'reference document')
+            : finding.message
+        const message = `${finding.findingType}: ${findingMessage} - Resource name: ${finding.resourceName}, Policy name: ${finding.policyName}`
         if (finding.details.reasons) {
             finding.details.reasons.forEach((reason: any) => {
                 diagnostics.push(

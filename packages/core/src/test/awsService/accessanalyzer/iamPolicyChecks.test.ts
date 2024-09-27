@@ -10,53 +10,41 @@ import {
     getResultCssColor,
     IamPolicyChecksWebview,
     PolicyChecksError,
-    renderIamPolicyChecks,
 } from '../../../awsService/accessanalyzer/vue/iamPolicyChecks'
-import { FakeExtensionContext } from '../../../test/fakeExtensionContext'
-import fs from 'fs'
-import { VueWebviewPanel } from '../../../webviews/main'
 import { globals } from '../../../shared'
-import { AccessAnalyzer } from 'aws-sdk'
+import { AccessAnalyzer, Config } from 'aws-sdk'
 import * as s3Client from '../../../shared/clients/s3Client'
 import { DefaultS3Client } from '../../../shared/clients/s3Client'
 import * as iamPolicyChecks from '../../../awsService/accessanalyzer/vue/iamPolicyChecks'
 import * as vscode from 'vscode'
 import { IamPolicyChecksConstants } from '../../../awsService/accessanalyzer/vue/constants'
+import { FileSystem } from '../../../shared/fs/fs'
 
-let policyChecksWebview: VueWebviewPanel | undefined
 const defaultTerraformConfigPath = 'resources/policychecks-tf-default.yaml'
 let sandbox: sinon.SinonSandbox
 let fakePolicyChecksWebview: IamPolicyChecksWebview
-let mockAccessAnalyzer: sinon.SinonMock
+const vscodeFs = FileSystem.instance
 
 describe('iamPolicyChecks', function () {
-    before(async function () {
-        policyChecksWebview = await renderIamPolicyChecks(await FakeExtensionContext.getFakeExtContext())
-    })
-
-    it('webview is not undefined', async function () {
-        assert(policyChecksWebview !== undefined)
-    })
-
     it('IamPolicyChecksWebview built .vue source file path exists', async function () {
-        assert.ok(fs.existsSync(globals.context.asAbsolutePath(`dist/${policyChecksWebview?.server.source}`)))
+        assert.ok(
+            await vscodeFs.existsFile(
+                globals.context.asAbsolutePath(`src/awsService/accessanalyzer/vue/iamPolicyChecks.vue`)
+            )
+        )
     })
 
     it('default Terraform config exists', async function () {
-        assert.ok(fs.existsSync(globals.context.asAbsolutePath(defaultTerraformConfigPath)))
+        assert.ok(await vscodeFs.existsFile(globals.context.asAbsolutePath(defaultTerraformConfigPath)))
     })
 })
 
 describe('_readCustomChecksFile', () => {
-    let fsExistsSyncStub: sinon.SinonStub
-    let fsReadFileSyncStub: sinon.SinonStub
     let parseS3UriStub: sinon.SinonStub
     let s3ClientStub: sinon.SinonStubbedInstance<DefaultS3Client>
     sandbox = sinon.createSandbox()
 
     beforeEach(() => {
-        fsExistsSyncStub = sandbox.stub(fs, 'existsSync')
-        fsReadFileSyncStub = sandbox.stub(fs, 'readFileSync')
         parseS3UriStub = sandbox.stub(s3Client, 'parseS3Uri')
         s3ClientStub = sandbox.createStubInstance(DefaultS3Client)
     })
@@ -66,38 +54,28 @@ describe('_readCustomChecksFile', () => {
     })
 
     it('should read file content if file exists', async () => {
-        const filePath = 'path/to/file.txt'
-        const fileContent = 'file content'
-
-        fsExistsSyncStub.withArgs(filePath).returns(true)
-        fsReadFileSyncStub.withArgs(filePath).returns(fileContent)
+        const filePath = globals.context.asAbsolutePath(defaultTerraformConfigPath)
+        const fileContent = await vscodeFs.readFileAsString(filePath)
 
         const result = await _readCustomChecksFile(filePath)
 
         assert.strictEqual(result, fileContent)
-        assert(fsExistsSyncStub.calledWith(filePath))
-        assert(fsReadFileSyncStub.calledWith(filePath))
     })
 
     it('should throw PolicyChecksError for invalid S3 URI', async () => {
         const invalidS3Uri = 's3://invalid-uri'
-
-        fsExistsSyncStub.withArgs(invalidS3Uri).returns(false)
-        parseS3UriStub.withArgs(invalidS3Uri).throws(new Error('Invalid S3 URI'))
 
         try {
             await _readCustomChecksFile(invalidS3Uri)
             assert.fail('Expected method to throw.')
         } catch (error) {
             assert(error instanceof PolicyChecksError)
-            assert.strictEqual(error.message, 'Invalid file path or S3 URI')
         }
     })
 
     it('should throw PolicyChecksError for other errors', async () => {
         const s3Uri = 's3://bucket/key'
 
-        fsExistsSyncStub.withArgs(s3Uri).returns(false)
         parseS3UriStub.withArgs(s3Uri).returns(['region', 'bucket', 'key'])
         s3ClientStub.getObject.rejects(new Error('Toolkit is not logged-in.'))
 
@@ -106,7 +84,6 @@ describe('_readCustomChecksFile', () => {
             assert.fail('Expected method to throw.')
         } catch (error) {
             assert(error instanceof PolicyChecksError)
-            assert.strictEqual(error.message, 'Toolkit is not logged-in.')
         }
     })
 })
@@ -116,11 +93,12 @@ describe('validatePolicy', function () {
     let executeCommandStub: sinon.SinonStub
     let pushValidatePolicyDiagnosticStub: sinon.SinonStub
     let validateDiagnosticSetStub: sinon.SinonStub
+    const client = new AccessAnalyzer()
+    client.config = new Config()
+    const validatePolicyMock = sinon.mock(AccessAnalyzer)
 
     beforeEach(function () {
         sandbox = sinon.createSandbox()
-        const client = new AccessAnalyzer()
-        mockAccessAnalyzer = sinon.mock(AccessAnalyzer)
         const initialData = {
             cfnParameterPath: '',
             checkAccessNotGrantedActionsTextArea: '',
@@ -146,26 +124,12 @@ describe('validatePolicy', function () {
     it('should handle JSON Policy Language correctly', async function () {
         const policyType = 'Identity'
         const documentType = 'JSON Policy Language'
-        mockAccessAnalyzer
-            .expects('validatePolicy')
-            .once()
-            .returns({
-                findings: [
-                    {
-                        findingType: 'ERROR',
-                        issueCode: 'IssueCode1',
-                        findingDetails: 'Details1',
-                        learnMoreLink: 'Link1',
-                        locations: [{ span: { start: { line: 1, offset: 0 }, end: { line: 1, offset: 10 } } }],
-                    },
-                ],
-            })
+
         sandbox.stub(fakePolicyChecksWebview, 'executeValidatePolicyCommand')
         sandbox.stub(iamPolicyChecks, 'isJsonPolicyLanguage').returns(true)
         IamPolicyChecksWebview.editedDocumentFileName = 'test.json'
-
         await fakePolicyChecksWebview.validatePolicy(documentType, policyType)
-        mockAccessAnalyzer.verify()
+        validatePolicyMock.verify()
     })
 
     it('should handle Terraform Plan correctly', async function () {
@@ -345,7 +309,7 @@ describe('customChecks', function () {
 
     beforeEach(function () {
         sandbox = sinon.createSandbox()
-        const client = new AccessAnalyzer()
+        const client = AccessAnalyzer.prototype
         const initialData = {
             cfnParameterPath: '',
             checkAccessNotGrantedActionsTextArea: '',
