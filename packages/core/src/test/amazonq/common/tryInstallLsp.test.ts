@@ -80,6 +80,7 @@ describe('tryInstallLsp performance test', function () {
                 userCpuUsage: 110,
                 systemCpuUsage: 35,
                 heapTotal: 6,
+                duration: 15,
             },
             darwin: {
                 userCpuUsage: 90,
