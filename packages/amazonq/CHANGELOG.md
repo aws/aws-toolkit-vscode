@@ -1,3 +1,7 @@
+## 1.27.0 2024-09-27
+
+- **Bug Fix** Security Scan: Fixes an issue that incorrectly removes hardcoded credentials detections from auto scans.
+
 ## 1.26.0 2024-09-19
 
 - **Bug Fix** Security Scan: Fixed an issue where the wrong icon was used in the status bar menu.
