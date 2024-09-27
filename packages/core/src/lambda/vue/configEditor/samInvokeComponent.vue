@@ -70,15 +70,25 @@
                         </div>
                     </div>
                 </div>
-                <div class="form-row" v-if="payloadOption === 'sampleEvents'">
+                <div v-if="payloadOption === 'sampleEvents'" class="form-row">
                     <label :style="{ fontSize: '13px', fontWeight: 500 }">Sample event</label>
-                    <button class="button-theme-secondary" style="width: 140px" v-on:click.prevent="loadPayload">
-                        Select an Event</button
-                    ><br />
-                    <span class="data-view">payload from data: {{ payload }} </span>
-                    <div class="input-validation" v-if="payload.errorMsg">
-                        Error parsing JSON: {{ payload.errorMsg }}
+                    <div>
+                        <button class="button-theme-secondary" style="width: 140px" v-on:click.prevent="loadPayload">
+                            Select an Event</button
+                        ><br />
+                        <span class="data-view">payload from data: {{ payload }} </span>
+                        <div class="input-validation" v-if="payload.errorMsg">
+                            Error parsing JSON: {{ payload.errorMsg }}
+                        </div>
+                        <br />
                     </div>
+                    <br />
+                    <textarea
+                        style="width: 100%; margin-bottom: 10px"
+                        rows="5"
+                        cols="60"
+                        v-model="payload.value"
+                    ></textarea>
                 </div>
                 <div v-if="payloadOption === 'localFile'" class="form-row">
                     <div><label>File</label></div>
@@ -134,13 +144,14 @@
                             Error parsing JSON: {{ payload.errorMsg }}
                         </div>
                     </div>
+                    <textarea
+                        style="width: 100%; margin-bottom: 10px"
+                        rows="5"
+                        cols="60"
+                        v-model="payload.value"
+                    ></textarea>
                 </div>
-                <textarea
-                    style="width: 100%; margin-bottom: 10px"
-                    rows="5"
-                    cols="60"
-                    v-model="payload.value"
-                ></textarea>
+
                 <div class="config-item">
                     <label for="target-type-selector">Invoke target type</label>
                     <select name="target-types" id="target-type-selector" v-model="launchConfig.invokeTarget.target">
