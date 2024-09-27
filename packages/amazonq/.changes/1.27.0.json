@@ -1,0 +1,10 @@
+{
+	"date": "2024-09-27",
+	"version": "1.27.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Security Scan: Fixes an issue that incorrectly removes hardcoded credentials detections from auto scans."
+		}
+	]
+}
