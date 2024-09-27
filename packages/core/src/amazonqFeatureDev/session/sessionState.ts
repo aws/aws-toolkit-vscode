@@ -68,7 +68,13 @@ function registerNewFiles(
         fs.registerProvider(uri, new VirtualMemoryFile(contents))
         const prefix =
             workspaceFolderPrefixes === undefined ? '' : zipFilePath.substring(0, zipFilePath.indexOf(path.sep))
-        const folder = workspaceFolderPrefixes === undefined ? workspaceFolders[0] : workspaceFolderPrefixes[prefix]
+        const folder =
+            workspaceFolderPrefixes === undefined
+                ? workspaceFolders[0]
+                : workspaceFolderPrefixes[prefix] ??
+                  workspaceFolderPrefixes[
+                      Object.values(workspaceFolderPrefixes).find((val) => val.index === 0)?.name ?? ''
+                  ]
         if (folder === undefined) {
             getLogger().error(`No workspace folder found for file: ${zipFilePath} and prefix: ${prefix}`)
             continue
@@ -78,7 +84,9 @@ function registerNewFiles(
             fileContent,
             virtualMemoryUri: uri,
             workspaceFolder: folder,
-            relativePath: zipFilePath.substring(workspaceFolderPrefixes === undefined ? 0 : prefix.length + 1),
+            relativePath: zipFilePath.substring(
+                workspaceFolderPrefixes === undefined ? 0 : prefix.length > 0 ? prefix.length + 1 : 0
+            ),
             rejected: false,
         })
     }
