@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import * as path from 'path'
 import fs from '../../shared/fs/fs'
-import { ChildProcess, ChildProcessOptions } from './childProcess'
+import { ChildProcess, ChildProcessOptions } from './processUtils'
 import { GitExtension } from '../extensions/git'
 import { Settings } from '../settings'
 import { getLogger } from '../logger/logger'

@@ -6,7 +6,7 @@
 import { LineSelection, LineTracker, AuthUtil } from 'aws-core-vscode/codewhisperer'
 import sinon from 'sinon'
 import { Disposable, TextEditor, Position, Range, Selection } from 'vscode'
-import { openATextEditorWithText } from 'aws-core-vscode/test'
+import { toTextEditor } from 'aws-core-vscode/test'
 import assert from 'assert'
 import { waitUntil } from 'aws-core-vscode/shared'
 
@@ -82,7 +82,7 @@ describe('LineTracker class', function () {
     describe('includes', function () {
         // util function to help set up LineTracker.selections
         async function setEditorSelection(selections: LineSelection[]): Promise<TextEditor> {
-            const editor = await openATextEditorWithText('\n\n\n\n\n\n\n\n\n\n', 'foo.py', undefined, {
+            const editor = await toTextEditor('\n\n\n\n\n\n\n\n\n\n', 'foo.py', undefined, {
                 preview: false,
             })
 
@@ -200,7 +200,7 @@ describe('LineTracker class', function () {
 
     describe('onContentChanged', function () {
         it('should fire lineChangedEvent and set current line selection', async function () {
-            editor = await openATextEditorWithText('\n\n\n\n\n', 'foo.py', undefined, { preview: false })
+            editor = await toTextEditor('\n\n\n\n\n', 'foo.py', undefined, { preview: false })
             editor.selection = new Selection(new Position(5, 0), new Position(5, 0))
             assertEmptyCounts()
 
@@ -222,7 +222,7 @@ describe('LineTracker class', function () {
 
     describe('onTextEditorSelectionChanged', function () {
         it('should fire lineChangedEvent if selection changes and set current line selection', async function () {
-            editor = await openATextEditorWithText('\n\n\n\n\n', 'foo.py', undefined, { preview: false })
+            editor = await toTextEditor('\n\n\n\n\n', 'foo.py', undefined, { preview: false })
             editor.selection = new Selection(new Position(3, 0), new Position(3, 0))
             assertEmptyCounts()
 
@@ -259,7 +259,7 @@ describe('LineTracker class', function () {
         it('should not fire lineChangedEvent if uri scheme is debug || output', async function () {
             // if the editor is not a text editor, won't emit an event and selection will be set to undefined
             async function assertLineChanged(schema: string) {
-                const anotherEditor = await openATextEditorWithText('', 'bar.log', undefined, { preview: false })
+                const anotherEditor = await toTextEditor('', 'bar.log', undefined, { preview: false })
                 const uri = anotherEditor.document.uri
                 sandbox.stub(uri, 'scheme').get(() => schema)
 

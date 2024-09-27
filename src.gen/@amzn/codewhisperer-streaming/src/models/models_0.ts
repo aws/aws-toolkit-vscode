@@ -246,6 +246,10 @@ export const UserIntent = {
    */
   GENERATE_CLOUDFORMATION_TEMPLATE: "GENERATE_CLOUDFORMATION_TEMPLATE",
   /**
+   * Generate Unit Tests
+   */
+  GENERATE_UNIT_TESTS: "GENERATE_UNIT_TESTS",
+  /**
    * Improve Code
    */
   IMPROVE_CODE: "IMPROVE_CODE",

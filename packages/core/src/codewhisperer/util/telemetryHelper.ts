@@ -46,6 +46,8 @@ export class TelemetryHelper {
     private timeToFirstRecommendation = 0
     private classifierResult?: number = undefined
     private classifierThreshold?: number = undefined
+    // variables for tracking end to end sessions
+    public traceId: string = 'notSet'
 
     // use this to distinguish DocumentChangeEvent from CWSPR or from other sources
     public lastSuggestionInDisplay = ''
@@ -90,6 +92,7 @@ export class TelemetryHelper {
             codewhispererSupplementalContextLength: supplementalContextMetadata?.contentsLength,
             codewhispererUserGroup: CodeWhispererUserGroupSettings.getUserGroup().toString(),
             codewhispererCustomizationArn: getSelectedCustomization().arn,
+            traceId: this.traceId,
         }
         telemetry.codewhisperer_serviceInvocation.emit(event)
     }
@@ -118,6 +121,7 @@ export class TelemetryHelper {
             codewhispererSupplementalContextTimeout: supplementalContextMetadata?.isProcessTimeout,
             codewhispererSupplementalContextIsUtg: supplementalContextMetadata?.isUtg,
             codewhispererSupplementalContextLength: supplementalContextMetadata?.contentsLength,
+            traceId: this.traceId,
         })
     }
 
@@ -171,6 +175,7 @@ export class TelemetryHelper {
                 codewhispererSupplementalContextTimeout: supplementalContextMetadata?.isProcessTimeout,
                 codewhispererSupplementalContextIsUtg: supplementalContextMetadata?.isUtg,
                 codewhispererSupplementalContextLength: supplementalContextMetadata?.contentsLength,
+                traceId: this.traceId,
             }
             telemetry.codewhisperer_userDecision.emit(event)
             events.push(event)
@@ -234,6 +239,7 @@ export class TelemetryHelper {
             codewhispererSupplementalContextTimeout: supplementalContextMetadata?.isProcessTimeout,
             codewhispererSupplementalContextIsUtg: supplementalContextMetadata?.isUtg,
             codewhispererSupplementalContextLength: supplementalContextMetadata?.contentsLength,
+            traceId: this.traceId,
         }
         return aggregated
     }
@@ -299,6 +305,7 @@ export class TelemetryHelper {
             codewhispererSupplementalContextStrategyId: supplementalContextMetadata?.strategy,
             codewhispererCharactersAccepted: acceptedRecommendationContent.length,
             codewhispererFeatureEvaluations: FeatureConfigProvider.instance.getFeatureConfigsTelemetry(),
+            traceId: this.traceId,
         }
         telemetry.codewhisperer_userTriggerDecision.emit(aggregated)
         this.prevTriggerDecision = this.getAggregatedSuggestionState(this.sessionDecisions)
@@ -384,6 +391,10 @@ export class TelemetryHelper {
         if (this.invocationTime) {
             this.timeToFirstRecommendation = timeToFirstRecommendation - this.invocationTime
         }
+    }
+
+    public setTraceId(traceId: string) {
+        this.traceId = traceId
     }
 
     private resetUserTriggerDecisionTelemetry() {

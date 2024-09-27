@@ -10,6 +10,7 @@ import { TabType } from '../ui/storages/tabsStorage'
 import { getLogger } from '../../../shared/logger'
 import { amazonqMark } from '../../../shared/performance/marks'
 import { telemetry } from '../../../shared/telemetry'
+import { AmazonQChatMessageDuration } from '../../messages/chatMessageDuration'
 
 export function dispatchWebViewMessagesToApps(
     webview: Webview,
@@ -30,6 +31,14 @@ export function dispatchWebViewMessagesToApps(
             })
             performance.clearMarks(amazonqMark.uiReady)
             performance.clearMarks(amazonqMark.open)
+            return
+        }
+
+        if (msg.type === 'startChatMessageTelemetry') {
+            AmazonQChatMessageDuration.startChatMessageTelemetry(msg)
+            return
+        } else if (msg.type === 'stopChatMessageTelemetry') {
+            AmazonQChatMessageDuration.stopChatMessageTelemetry(msg)
             return
         }
 
