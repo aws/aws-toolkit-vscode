@@ -11,12 +11,12 @@ import * as _path from 'path'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import * as fsUtils from '../../shared/filesystemUtilities'
-import * as fsExtra from 'fs-extra'
 import { getLogger, Logger } from '../../shared/logger'
 import { ReadonlyJsonObject } from '../../shared/sam/debugger/awsSamDebugConfiguration'
 import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
 import { getNormalizedRelativePath } from '../../shared/utilities/pathUtils'
 import { saveDocumentIfDirty } from '../../shared/utilities/textDocumentUtilities'
+import { access } from 'fs/promises'
 import { fs } from '../../shared'
 
 const localize = nls.loadMessageBundle()
@@ -200,7 +200,7 @@ export function showTemplatesConfigurationError(
 export async function ensureTemplatesConfigFileExists(path: string): Promise<void> {
     await fs.mkdir(_path.dirname(path))
     try {
-        await fsExtra.access(path)
+        await access(path)
     } catch {
         await fs.writeFile(path, '{}')
     }
