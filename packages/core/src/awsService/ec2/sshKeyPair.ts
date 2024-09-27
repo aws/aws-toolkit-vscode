@@ -8,6 +8,7 @@ import { ToolkitError } from '../../shared/errors'
 import { tryRun } from '../../shared/utilities/pathFind'
 import { Timeout } from '../../shared/utilities/timeoutUtils'
 import { findAsync } from '../../shared/utilities/collectionUtils'
+import { RunParameterContext } from '../../shared/utilities/childProcess'
 
 type sshKeyType = 'rsa' | 'ed25519'
 
@@ -46,16 +47,12 @@ export class SshKeyPair {
      * @param keyType type of key to generate.
      */
     public static async tryKeyGen(keyPath: string, keyType: sshKeyType): Promise<boolean> {
-        const overrideKeys = async (proc: any, _t: string) => {
-            await proc.send('yes')
+        const overrideKeys = async (_t: string, context: RunParameterContext) => {
+            await context.send('yes')
         }
-        return !(await tryRun(
-            'ssh-keygen',
-            ['-t', keyType, '-N', '', '-q', '-f', keyPath],
-            'yes',
-            'unknown key type',
-            overrideKeys
-        ))
+        return !(await tryRun('ssh-keygen', ['-t', keyType, '-N', '', '-q', '-f', keyPath], 'yes', 'unknown key type', {
+            onStdout: overrideKeys,
+        }))
     }
 
     public static async tryKeyTypes(keyPath: string, keyTypes: sshKeyType[]): Promise<boolean> {

@@ -8,11 +8,13 @@ import * as crossSpawn from 'cross-spawn'
 import * as logger from '../logger'
 import { Timeout, CancellationError, waitUntil } from './timeoutUtils'
 
-interface RunParameterContext {
+export interface RunParameterContext {
     /** Reports an error parsed from the stdin/stdout streams. */
     reportError(err: string | Error): void
     /** Attempts to stop the running process. See {@link ChildProcess.stop}. */
     stop(force?: boolean, signal?: string): void
+    /** Send string to stdin */
+    send(text: string): Promise<void>
     /** The active `Timeout` object (if applicable). */
     readonly timeout?: Timeout
     /** The logger being used by the process. */
@@ -160,6 +162,7 @@ export class ChildProcess {
                 timeout,
                 logger: this.#log,
                 stop: this.stop.bind(this),
+                send: this.send.bind(this),
                 reportError: (err) => errorHandler(err instanceof Error ? err : new Error(err)),
             }
 
