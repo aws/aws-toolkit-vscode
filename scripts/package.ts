@@ -171,10 +171,25 @@ function main() {
         }
 
         fs.writeFileSync(packageJsonFile, JSON.stringify(packageJson, undefined, '    '))
-        child_process.execFileSync('vsce', ['package', '--ignoreFile', '../.vscodeignore.packages'], {
-            stdio: 'inherit',
-            shell: process.platform === 'win32', // For vsce.cmd on Windows.
-        })
+        child_process.execFileSync(
+            'vsce',
+            [
+                'package',
+                '--ignoreFile',
+                '../.vscodeignore.packages',
+                /**
+                 * Depdendency gathering not required because we bundle with webpack: https://github.com/microsoft/vscode-vsce/issues/439
+                 *
+                 * Removing this arg will cause packaging to break due to issues in src.gen/.../node_modules,
+                 * since those dependencies are disjoint (i.e. not a workspace in the root package.json)
+                 */
+                '--no-dependencies',
+            ],
+            {
+                stdio: 'inherit',
+                shell: process.platform === 'win32', // For vsce.cmd on Windows.
+            }
+        )
 
         console.log(`VSIX Version: ${packageJson.version}`)
 

@@ -3,8 +3,7 @@
     "workspaces": [
         "packages/core/src/web",
         "packages/*",
-        "plugins/*",
-        "src.gen/@amzn/codewhisperer-streaming"
+        "plugins/*"
     ],
     "version": "0.0.1",
     "private": true,
@@ -21,6 +20,7 @@
     },
     "scripts": {
         "prepare": "ts-node ./scripts/prepare.ts",
+        "preinstall": "cd src.gen/@amzn/codewhisperer-streaming && npm i",
         "postinstall": "npm run buildCustomLintPlugin && npm run postinstall -ws --if-present",
         "buildCustomLintPlugin": "npm run build -w plugins/eslint-plugin-aws-toolkits",
         "compile": "npm run compile -w packages/",
