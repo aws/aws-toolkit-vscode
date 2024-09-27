@@ -18,17 +18,10 @@ import {
     CodeIterationLimitError,
     ContentLengthError,
     MonthlyConversationLimitError,
-    PlanIterationLimitError,
     UnknownApiError,
 } from '../errors'
-import {
-    ToolkitError,
-    isAwsError,
-    isCodeWhispererStreamingServiceException,
-    getHttpStatusCode,
-} from '../../shared/errors'
+import { ToolkitError, isAwsError } from '../../shared/errors'
 import { getCodewhispererConfig } from '../../codewhisperer/client/codewhisperer'
-import { LLMResponseType } from '../types'
 import { createCodeWhispererChatStreamingClient } from '../../shared/clients/codewhispererChatClient'
 import { getClientId, getOptOutPreference, getOperatingSystem } from '../../shared/telemetry/util'
 import { extensionVersion } from '../../shared/vscode/env'
@@ -53,15 +46,6 @@ export async function createFeatureDevProxyClient(): Promise<FeatureDevProxyClie
         } as ServiceOptions,
         undefined
     )) as FeatureDevProxyClient
-}
-
-const streamResponseErrors: Record<string, number> = {
-    ValidationException: 400,
-    AccessDeniedException: 403,
-    ResourceNotFoundException: 404,
-    ConflictException: 409,
-    ThrottlingException: 429,
-    InternalServerException: 500,
 }
 
 export class FeatureDevClient {
@@ -130,77 +114,6 @@ export class FeatureDevClient {
             }
 
             throw new UnknownApiError(e instanceof Error ? e.message : 'Unknown error', 'CreateUploadUrl')
-        }
-    }
-    public async generatePlan(
-        conversationId: string,
-        uploadId: string,
-        userMessage: string
-    ): Promise<
-        { responseType: 'EMPTY'; approach?: string } | { responseType: 'VALID' | 'INVALID_STATE'; approach: string }
-    > {
-        try {
-            const streamingClient = await createCodeWhispererChatStreamingClient()
-            const params = {
-                workspaceState: {
-                    programmingLanguage: { languageName: 'javascript' },
-                    uploadId,
-                },
-                conversationState: {
-                    currentMessage: { userInputMessage: { content: userMessage } },
-                    chatTriggerType: 'MANUAL',
-                    conversationId,
-                },
-            }
-            getLogger().debug(`Executing generateTaskAssistPlan with %O`, params)
-            const response = await streamingClient.generateTaskAssistPlan(params)
-            getLogger().debug(`${featureName}: Generated plan: %O`, {
-                requestId: response.$metadata.requestId,
-            })
-            let responseType: LLMResponseType = 'EMPTY'
-            if (!response.planningResponseStream) {
-                return { responseType }
-            }
-
-            const assistantResponse: string[] = []
-            for await (const responseItem of response.planningResponseStream) {
-                if (responseItem.error !== undefined) {
-                    throw responseItem.error
-                } else if (responseItem.invalidStateEvent !== undefined) {
-                    getLogger().debug('Received Invalid State Event: %O', responseItem.invalidStateEvent)
-                    assistantResponse.splice(0)
-                    assistantResponse.push(responseItem.invalidStateEvent.message ?? '')
-                    responseType = 'INVALID_STATE'
-                    break
-                } else if (responseItem.assistantResponseEvent !== undefined) {
-                    responseType = 'VALID'
-                    assistantResponse.push(responseItem.assistantResponseEvent.content ?? '')
-                }
-            }
-            return { responseType, approach: assistantResponse.join('') }
-        } catch (e) {
-            if (isCodeWhispererStreamingServiceException(e)) {
-                getLogger().error(
-                    `${featureName}: failed to execute planning: ${e.message} RequestId: ${
-                        e.$metadata.requestId ?? 'unknown'
-                    }`
-                )
-                if (
-                    (e.name === 'ThrottlingException' &&
-                        e.message.includes('limit for number of iterations on an implementation plan')) ||
-                    e.name === 'ServiceQuotaExceededException'
-                ) {
-                    throw new PlanIterationLimitError()
-                }
-                throw new ApiError(
-                    e.message,
-                    'GeneratePlan',
-                    e.name,
-                    getHttpStatusCode(e) ?? streamResponseErrors[e.name] ?? 500
-                )
-            }
-
-            throw new UnknownApiError(e instanceof Error ? e.message : 'Unknown error', 'GeneratePlan')
         }
     }
 

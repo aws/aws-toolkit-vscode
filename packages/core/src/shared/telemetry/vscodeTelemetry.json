@@ -58,7 +58,8 @@
                 "showExample",
                 "citeSources",
                 "explainLineByLine",
-                "explainCodeSelection"
+                "explainCodeSelection",
+                "generateUnitTests"
             ],
             "description": "Explict user intent associated with a chat message"
         },
@@ -315,6 +316,31 @@
             "name": "totalFiles",
             "type": "int",
             "description": "The total number of files being sent to Amazon Q"
+        },
+        {
+            "name": "traceId",
+            "type": "string",
+            "description": "The unique identifier of a trace"
+        },
+        {
+            "name": "amazonqChatMessageSentTime",
+            "type": "int",
+            "description": "Time when a user initial pressed enter in the chat"
+        },
+        {
+            "name": "amazonqEditorReceivedMessageMs",
+            "type": "int",
+            "description": "Duration between user pressing enter and the editor receiving the message in ms"
+        },
+        {
+            "name": "amazonqFeatureReceivedMessageMs",
+            "type": "int",
+            "description": "Duration between the editor receiving the message and the partner teams code receiving it in ms"
+        },
+        {
+            "name": "amazonqMessageDisplayedMs",
+            "type": "int",
+            "description": "Duration between the partner teams code receiving the message and when the message was finally displayed in ms"
         }
     ],
     "metrics": [
@@ -817,6 +843,10 @@
                     "type": "cwsprChatMessageId"
                 },
                 {
+                    "type": "cwsprChatUserIntent",
+                    "required": false
+                },
+                {
                     "type": "cwsprChatInteractionType"
                 },
                 {
@@ -1176,6 +1206,44 @@
                 {
                     "type": "webviewName",
                     "required": true
+                }
+            ]
+        },
+        {
+            "name": "trace_event",
+            "description": "Represents the root trace spanning multiple operations",
+            "passive": true,
+            "metadata": [
+                {
+                    "type": "traceId",
+                    "required": true
+                },
+                {
+                    "type": "name",
+                    "required": true
+                }
+            ]
+        },
+        {
+            "name": "amazonq_chatRoundTrip",
+            "description": "Measures sequential response times in Q chat, from user input to message display. Tracks time intervals between key events: editor receiving the message, feature processing, and final message rendering",
+            "passive": true,
+            "metadata": [
+                {
+                    "type": "amazonqChatMessageSentTime"
+                },
+                {
+                    "type": "amazonqEditorReceivedMessageMs"
+                },
+                {
+                    "type": "amazonqFeatureReceivedMessageMs"
+                },
+                {
+                    "type": "amazonqMessageDisplayedMs"
+                },
+                {
+                    "type": "source",
+                    "required": false
                 }
             ]
         }

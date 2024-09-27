@@ -44,3 +44,31 @@ describe('shouldFetchUtgContext', () => {
         assert.strictEqual(utgUtils.shouldFetchUtgContext('c', UserGroup.CrossFile), undefined)
     })
 })
+
+describe('guessSrcFileName', function () {
+    it('should return undefined if no matching regex', function () {
+        assert.strictEqual(utgUtils.guessSrcFileName('Foo.java', 'java'), undefined)
+        assert.strictEqual(utgUtils.guessSrcFileName('folder1/foo.py', 'python'), undefined)
+        assert.strictEqual(utgUtils.guessSrcFileName('Bar.js', 'javascript'), undefined)
+    })
+
+    it('java', function () {
+        assert.strictEqual(utgUtils.guessSrcFileName('FooTest.java', 'java'), 'Foo.java')
+        assert.strictEqual(utgUtils.guessSrcFileName('FooTests.java', 'java'), 'Foo.java')
+    })
+
+    it('python', function () {
+        assert.strictEqual(utgUtils.guessSrcFileName('test_foo.py', 'python'), 'foo.py')
+        assert.strictEqual(utgUtils.guessSrcFileName('foo_test.py', 'python'), 'foo.py')
+    })
+
+    it('typescript', function () {
+        assert.strictEqual(utgUtils.guessSrcFileName('Foo.test.ts', 'typescript'), 'Foo.ts')
+        assert.strictEqual(utgUtils.guessSrcFileName('Foo.spec.ts', 'typescript'), 'Foo.ts')
+    })
+
+    it('javascript', function () {
+        assert.strictEqual(utgUtils.guessSrcFileName('Foo.test.js', 'javascript'), 'Foo.js')
+        assert.strictEqual(utgUtils.guessSrcFileName('Foo.spec.js', 'javascript'), 'Foo.js')
+    })
+})

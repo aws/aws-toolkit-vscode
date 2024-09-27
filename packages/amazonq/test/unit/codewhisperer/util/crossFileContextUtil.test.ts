@@ -13,7 +13,7 @@ import {
     assertTabCount,
     closeAllEditors,
     createTestWorkspaceFolder,
-    openATextEditorWithText,
+    toTextEditor,
     shuffleList,
     toFile,
 } from 'aws-core-vscode/test'
@@ -38,8 +38,8 @@ describe('crossFileContextUtil', function () {
 
         describe('should fetch 3 chunks and each chunk should contains 10 lines', function () {
             async function assertCorrectCodeChunk() {
-                await openATextEditorWithText(sampleFileOf60Lines, 'CrossFile.java', tempFolder, { preview: false })
-                const myCurrentEditor = await openATextEditorWithText('', 'TargetFile.java', tempFolder, {
+                await toTextEditor(sampleFileOf60Lines, 'CrossFile.java', tempFolder, { preview: false })
+                const myCurrentEditor = await toTextEditor('', 'TargetFile.java', tempFolder, {
                     preview: false,
                 })
                 const actual = await crossFile.fetchSupplementalContextForSrc(myCurrentEditor, fakeCancellationToken)
@@ -120,12 +120,12 @@ describe('crossFileContextUtil', function () {
             const shuffledFilePaths = shuffleList(expectedFilePaths)
 
             for (const filePath of shuffledFilePaths) {
-                await openATextEditorWithText('', filePath, tempFolder, { preview: false })
+                await toTextEditor('', filePath, tempFolder, { preview: false })
             }
 
-            await openATextEditorWithText('', testFile1, tempFolder, { preview: false })
-            await openATextEditorWithText('', testFile2, tempFolder, { preview: false })
-            const editor = await openATextEditorWithText('', targetFile, tempFolder, { preview: false })
+            await toTextEditor('', testFile1, tempFolder, { preview: false })
+            await toTextEditor('', testFile2, tempFolder, { preview: false })
+            const editor = await toTextEditor('', targetFile, tempFolder, { preview: false })
 
             await assertTabCount(shuffledFilePaths.length + 3)
 
@@ -158,10 +158,10 @@ describe('crossFileContextUtil', function () {
 
         fileExtLists.forEach((fileExt) => {
             it('should be empty if userGroup is control', async function () {
-                const editor = await openATextEditorWithText('content-1', `file-1.${fileExt}`, tempFolder)
-                await openATextEditorWithText('content-2', `file-2.${fileExt}`, tempFolder, { preview: false })
-                await openATextEditorWithText('content-3', `file-3.${fileExt}`, tempFolder, { preview: false })
-                await openATextEditorWithText('content-4', `file-4.${fileExt}`, tempFolder, { preview: false })
+                const editor = await toTextEditor('content-1', `file-1.${fileExt}`, tempFolder)
+                await toTextEditor('content-2', `file-2.${fileExt}`, tempFolder, { preview: false })
+                await toTextEditor('content-3', `file-3.${fileExt}`, tempFolder, { preview: false })
+                await toTextEditor('content-4', `file-4.${fileExt}`, tempFolder, { preview: false })
 
                 await assertTabCount(4)
 
@@ -190,10 +190,10 @@ describe('crossFileContextUtil', function () {
 
         fileExtLists.forEach((fileExt) => {
             it('should be non empty if usergroup is Crossfile', async function () {
-                const editor = await openATextEditorWithText('content-1', `file-1.${fileExt}`, tempFolder)
-                await openATextEditorWithText('content-2', `file-2.${fileExt}`, tempFolder, { preview: false })
-                await openATextEditorWithText('content-3', `file-3.${fileExt}`, tempFolder, { preview: false })
-                await openATextEditorWithText('content-4', `file-4.${fileExt}`, tempFolder, { preview: false })
+                const editor = await toTextEditor('content-1', `file-1.${fileExt}`, tempFolder)
+                await toTextEditor('content-2', `file-2.${fileExt}`, tempFolder, { preview: false })
+                await toTextEditor('content-3', `file-3.${fileExt}`, tempFolder, { preview: false })
+                await toTextEditor('content-4', `file-4.${fileExt}`, tempFolder, { preview: false })
 
                 await assertTabCount(4)
 
@@ -222,10 +222,10 @@ describe('crossFileContextUtil', function () {
 
         fileExtLists.forEach((fileExt) => {
             it('should be non empty', async function () {
-                const editor = await openATextEditorWithText('content-1', `file-1.${fileExt}`, tempFolder)
-                await openATextEditorWithText('content-2', `file-2.${fileExt}`, tempFolder, { preview: false })
-                await openATextEditorWithText('content-3', `file-3.${fileExt}`, tempFolder, { preview: false })
-                await openATextEditorWithText('content-4', `file-4.${fileExt}`, tempFolder, { preview: false })
+                const editor = await toTextEditor('content-1', `file-1.${fileExt}`, tempFolder)
+                await toTextEditor('content-2', `file-2.${fileExt}`, tempFolder, { preview: false })
+                await toTextEditor('content-3', `file-3.${fileExt}`, tempFolder, { preview: false })
+                await toTextEditor('content-4', `file-4.${fileExt}`, tempFolder, { preview: false })
 
                 await assertTabCount(4)
 

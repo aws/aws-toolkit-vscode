@@ -14,7 +14,6 @@ import {
     ContentLengthError,
     FeatureDevServiceError,
     MonthlyConversationLimitError,
-    PlanIterationLimitError,
     PrepareRepoFailedError,
     PromptRefusalException,
     SelectedFolderNotInWorkspaceFolderError,
@@ -26,7 +25,7 @@ import {
     createUserFacingErrorMessage,
     denyListedErrors,
 } from '../../errors'
-import { defaultRetryLimit } from '../../limits'
+import { codeGenRetryLimit, defaultRetryLimit } from '../../limits'
 import { Session } from '../../session/session'
 import { featureName } from '../../constants'
 import { ChatSessionStorage } from '../../storages/chatSession'
@@ -40,7 +39,7 @@ import { placeholder } from '../../../shared/vscode/commands2'
 import { EditorContentController } from '../../../amazonq/commons/controllers/contentController'
 import { openUrl } from '../../../shared/utilities/vsCodeUtils'
 import { getPathsFromZipFilePath } from '../../util/files'
-import { examples, logWithConversationId, messageWithConversationId } from '../../userFacingText'
+import { examples, messageWithConversationId } from '../../userFacingText'
 import { getWorkspaceFoldersByPrefixes } from '../../../shared/utilities/workspaceUtils'
 import { openDeletedDiff, openDiff } from '../../../amazonq/commons/diff'
 import { i18n } from '../../../shared/i18n-helper'
@@ -109,7 +108,7 @@ export class FeatureDevController {
             })
         })
         this.chatControllerMessageListeners.processChatItemVotedMessage.event((data) => {
-            this.processChatItemVotedMessage(data.tabID, data.messageId, data.vote).catch((e) => {
+            this.processChatItemVotedMessage(data.tabID, data.vote).catch((e) => {
                 getLogger().error('processChatItemVotedMessage failed: %s', (e as Error).message)
             })
         })
@@ -120,8 +119,6 @@ export class FeatureDevController {
         })
         this.chatControllerMessageListeners.followUpClicked.event((data) => {
             switch (data.followUp.type) {
-                case FollowUpTypes.GenerateCode:
-                    return this.generateCodeClicked(data)
                 case FollowUpTypes.InsertCode:
                     return this.insertCode(data)
                 case FollowUpTypes.ProvideFeedbackAndRegenerateCode:
@@ -168,44 +165,23 @@ export class FeatureDevController {
         })
     }
 
-    private async processChatItemVotedMessage(tabId: string, messageId: string, vote: string) {
+    private async processChatItemVotedMessage(tabId: string, vote: string) {
         const session = await this.sessionStorage.getSession(tabId)
 
-        switch (session?.state.phase) {
-            case DevPhase.APPROACH:
-                if (vote === 'upvote') {
-                    telemetry.amazonq_approachThumbsUp.emit({
-                        amazonqConversationId: session?.conversationId,
-                        value: 1,
-                        result: 'Succeeded',
-                        credentialStartUrl: AuthUtil.instance.startUrl,
-                    })
-                } else if (vote === 'downvote') {
-                    telemetry.amazonq_approachThumbsDown.emit({
-                        amazonqConversationId: session?.conversationId,
-                        value: 1,
-                        result: 'Succeeded',
-                        credentialStartUrl: AuthUtil.instance.startUrl,
-                    })
-                }
-                break
-            case DevPhase.CODEGEN:
-                if (vote === 'upvote') {
-                    telemetry.amazonq_codeGenerationThumbsUp.emit({
-                        amazonqConversationId: session?.conversationId,
-                        value: 1,
-                        result: 'Succeeded',
-                        credentialStartUrl: AuthUtil.instance.startUrl,
-                    })
-                } else if (vote === 'downvote') {
-                    telemetry.amazonq_codeGenerationThumbsDown.emit({
-                        amazonqConversationId: session?.conversationId,
-                        value: 1,
-                        result: 'Succeeded',
-                        credentialStartUrl: AuthUtil.instance.startUrl,
-                    })
-                }
-                break
+        if (vote === 'upvote') {
+            telemetry.amazonq_codeGenerationThumbsUp.emit({
+                amazonqConversationId: session?.conversationId,
+                value: 1,
+                result: 'Succeeded',
+                credentialStartUrl: AuthUtil.instance.startUrl,
+            })
+        } else if (vote === 'downvote') {
+            telemetry.amazonq_codeGenerationThumbsDown.emit({
+                amazonqConversationId: session?.conversationId,
+                value: 1,
+                result: 'Succeeded',
+                credentialStartUrl: AuthUtil.instance.startUrl,
+            })
         }
     }
 
@@ -254,31 +230,6 @@ export class FeatureDevController {
             case MonthlyConversationLimitError.errorName:
                 this.messenger.sendMonthlyLimitError(message.tabID)
                 break
-
-            case PlanIterationLimitError.errorName:
-                this.messenger.sendAnswer({
-                    type: 'answer',
-                    tabID: message.tabID,
-                    message: err.message + messageWithConversationId(session?.conversationIdUnsafe),
-                })
-                this.messenger.sendAnswer({
-                    type: 'system-prompt',
-                    tabID: message.tabID,
-                    followUps: [
-                        {
-                            pillText: i18n('AWS.amazonq.featureDev.pillText.newPlan'),
-                            type: FollowUpTypes.NewTask,
-                            status: 'info',
-                        },
-                        {
-                            pillText: i18n('AWS.amazonq.featureDev.pillText.generateCode'),
-                            type: FollowUpTypes.GenerateCode,
-                            status: 'info',
-                        },
-                    ],
-                })
-                break
-
             case FeatureDevServiceError.errorName:
             case UploadCodeError.errorName:
             case UserMessageNotFoundError.errorName:
@@ -315,21 +266,10 @@ export class FeatureDevController {
                 })
                 break
             default:
-                switch (session?.state.phase) {
-                    case DevPhase.APPROACH:
-                        if (isDenyListedError) {
-                            defaultMessage = i18n('AWS.amazonq.featureDev.error.approachPhase.denyListedError')
-                        } else {
-                            defaultMessage = i18n('AWS.amazonq.featureDev.error.approachPhase.default')
-                        }
-                        break
-                    case DevPhase.CODEGEN:
-                        if (this.retriesRemaining(session) === 0) {
-                            defaultMessage = i18n('AWS.amazonq.featureDev.error.codeGen.denyListedError')
-                        } else {
-                            defaultMessage = i18n('AWS.amazonq.featureDev.error.codeGen.default')
-                        }
-                        break
+                if (isDenyListedError || this.retriesRemaining(session) === 0) {
+                    defaultMessage = i18n('AWS.amazonq.featureDev.error.codeGen.denyListedError')
+                } else {
+                    defaultMessage = i18n('AWS.amazonq.featureDev.error.codeGen.default')
                 }
 
                 this.messenger.sendErrorMessage(
@@ -373,14 +313,10 @@ export class FeatureDevController {
                 return
             }
 
-            switch (session.state.phase) {
-                case DevPhase.INIT:
-                case DevPhase.APPROACH:
-                    await this.onApproachGeneration(session, message.message, message.tabID)
-                    break
-                case DevPhase.CODEGEN:
-                    await this.onCodeGeneration(session, message.message, message.tabID)
-                    break
+            await session.preloader(message.message)
+
+            if (session.state.phase === DevPhase.CODEGEN) {
+                await this.onCodeGeneration(session, message.message, message.tabID)
             }
         } catch (err: any) {
             this.processErrorChatMessage(err, message, session)
@@ -390,61 +326,17 @@ export class FeatureDevController {
     }
 
     /**
-     * Handle a regular incoming message when a user is in the approach phase
-     */
-    private async onApproachGeneration(session: Session, message: string, tabID: string) {
-        await session.preloader(message)
-
-        getLogger().info(logWithConversationId(session.conversationId))
-
-        // This is a loading animation
-        this.messenger.sendAnswer({
-            type: 'answer-stream',
-            tabID,
-            message: i18n('AWS.amazonq.featureDev.answer.approachCreation'),
-        })
-
-        this.messenger.sendUpdatePlaceholder(tabID, i18n('AWS.amazonq.featureDev.pillText.generatingPlan'))
-
-        const interactions = await session.send(message)
-        this.messenger.sendUpdatePlaceholder(tabID, i18n('AWS.amazonq.featureDev.answer.howPlanCanBeImproved'))
-
-        // This is were we get the plan fully and add it to the chat.
-        this.messenger.sendAnswer({
-            message: interactions.content,
-            type: 'answer',
-            tabID: tabID,
-            canBeVoted: true,
-            snapToTop: true,
-        })
-
-        if (interactions.responseType === 'VALID') {
-            this.messenger.sendAnswer({
-                type: 'answer',
-                tabID,
-                message: i18n('AWS.amazonq.featureDev.answer.generateSuggestion'),
-            })
-
-            // Follow up with action items and complete the request stream
-            this.messenger.sendAnswer({
-                type: 'system-prompt', // show the followups on the right side
-                followUps: this.getFollowUpOptions(session.state.phase),
-                tabID: tabID,
-            })
-        }
-
-        // Unlock the prompt again so that users can iterate
-        this.messenger.sendAsyncEventProgress(tabID, false, undefined)
-    }
-
-    /**
      * Handle a regular incoming message when a user is in the code generation phase
      */
     private async onCodeGeneration(session: Session, message: string, tabID: string) {
-        getLogger().info(logWithConversationId(session.conversationId))
-
         // lock the UI/show loading bubbles
-        this.messenger.sendAsyncEventProgress(tabID, true, i18n('AWS.amazonq.featureDev.pillText.awaitMessage'))
+        this.messenger.sendAsyncEventProgress(
+            tabID,
+            true,
+            session.retries === codeGenRetryLimit
+                ? i18n('AWS.amazonq.featureDev.pillText.awaitMessage')
+                : i18n('AWS.amazonq.featureDev.pillText.awaitMessageRetry')
+        )
 
         try {
             this.messenger.sendAnswer({
@@ -503,7 +395,10 @@ export class FeatureDevController {
                 this.messenger.sendAnswer({
                     type: 'answer',
                     tabID: tabID,
-                    message: `You have ${remainingIterations} out of ${totalIterations} code iterations remaining.`,
+                    message:
+                        remainingIterations === 0
+                            ? 'Would you like me to add this code to your project?'
+                            : `Would you like me to add this code to your project, or provide feedback for new code? You have ${remainingIterations} out of ${totalIterations} code generations left.`,
                 })
             }
 
@@ -532,26 +427,6 @@ export class FeatureDevController {
                     // TODO add focusing on the specific tab once that's implemented
                 }
             }
-        }
-    }
-
-    // TODO add type
-    private async generateCodeClicked(message: any) {
-        let session
-        try {
-            session = await this.sessionStorage.getSession(message.tabID)
-            session.initCodegen()
-            await this.onCodeGeneration(session, '', message.tabID)
-        } catch (err: any) {
-            const errorMessage = createUserFacingErrorMessage(
-                `${featureName} request failed: ${err.cause?.message ?? err.message}`
-            )
-            this.messenger.sendErrorMessage(
-                errorMessage,
-                message.tabID,
-                this.retriesRemaining(session),
-                session?.conversationIdUnsafe
-            )
         }
     }
 
@@ -599,8 +474,6 @@ export class FeatureDevController {
                 ],
             })
 
-            // Ensure that chat input is enabled so that they can provide additional iterations if they choose
-            this.messenger.sendChatInputEnabled(message.tabID, true)
             this.messenger.sendUpdatePlaceholder(
                 message.tabID,
                 i18n('AWS.amazonq.featureDev.placeholder.additionalImprovements')
@@ -666,14 +539,6 @@ export class FeatureDevController {
 
     private getFollowUpOptions(phase: SessionStatePhase | undefined): ChatItemAction[] {
         switch (phase) {
-            case DevPhase.APPROACH:
-                return [
-                    {
-                        pillText: i18n('AWS.amazonq.featureDev.pillText.generateCode'),
-                        type: FollowUpTypes.GenerateCode,
-                        status: 'info',
-                    },
-                ]
             case DevPhase.CODEGEN:
                 return [
                     {
@@ -882,7 +747,12 @@ export class FeatureDevController {
 
     private async newTask(message: any) {
         // Old session for the tab is ending, delete it so we can create a new one for the message id
-        await this.closeSession(message)
+        const session = await this.sessionStorage.getSession(message.tabID)
+        telemetry.amazonq_endChat.emit({
+            amazonqConversationId: session.conversationId,
+            amazonqEndOfTheConversationLatency: performance.now() - session.telemetry.sessionStartTime,
+            result: 'Succeeded',
+        })
         this.sessionStorage.deleteSession(message.tabID)
 
         // Re-run the opening flow, where we check auth + create a session
@@ -902,7 +772,7 @@ export class FeatureDevController {
             tabID: message.tabID,
             message: i18n('AWS.amazonq.featureDev.answer.sessionClosed'),
         })
-        this.messenger.sendUpdatePlaceholder(message.tabID, i18n('AWS.amazonq.featureDev.answer.sessionClosed'))
+        this.messenger.sendUpdatePlaceholder(message.tabID, i18n('AWS.amazonq.featureDev.placeholder.sessionClosed'))
         this.messenger.sendChatInputEnabled(message.tabID, false)
 
         const session = await this.sessionStorage.getSession(message.tabID)

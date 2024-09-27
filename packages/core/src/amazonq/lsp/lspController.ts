@@ -23,6 +23,7 @@ import { globals, ToolkitError } from '../../shared'
 import { AuthUtil } from '../../codewhisperer'
 import { isWeb } from '../../shared/extensionGlobals'
 import { getUserAgent } from '../../shared/telemetry/util'
+import { isAmazonInternalOs } from '../../shared/vscode/env'
 
 function getProjectPaths() {
     const workspaceFolders = vscode.workspace.workspaceFolders
@@ -67,7 +68,7 @@ export interface Manifest {
 }
 const manifestUrl = 'https://aws-toolkit-language-servers.amazonaws.com/q-context/manifest.json'
 // this LSP client in Q extension is only going to work with these LSP server versions
-const supportedLspServerVersions = ['0.1.5']
+const supportedLspServerVersions = ['0.1.9']
 
 const nodeBinName = process.platform === 'win32' ? 'node.exe' : 'node'
 /*
@@ -364,8 +365,9 @@ export class LspController {
     }
 
     async trySetupLsp(context: vscode.ExtensionContext) {
-        if (isCloud9() || isWeb()) {
-            // do not do anything if in Cloud9 or Web mode.
+        if (isCloud9() || isWeb() || isAmazonInternalOs()) {
+            getLogger().warn('LspController: Skipping LSP setup. LSP is not compatible with the current environment. ')
+            // do not do anything if in Cloud9 or Web mode or in AL2 (AL2 does not support node v18+)
             return
         }
         setImmediate(async () => {

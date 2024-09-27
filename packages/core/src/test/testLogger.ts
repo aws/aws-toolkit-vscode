@@ -61,7 +61,7 @@ export class TestLogger implements Logger {
         return this.count++
     }
 
-    // No need to actually implement this. Log tracking is tested in winstonToolkitLogger.test.ts
+    // No need to actually implement this. Log tracking is tested in toolkitLogger.test.ts
     public getLogById(logID: number, file: Uri): string | undefined {
         return undefined
     }

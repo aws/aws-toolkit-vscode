@@ -55,7 +55,6 @@ import { CodeTransformTelemetryState } from '../../telemetry/codeTransformTeleme
 import { getAuthType } from '../../../codewhisperer/service/transformByQ/transformApiHandler'
 import DependencyVersions from '../../models/dependencies'
 import { getStringHash } from '../../../shared/utilities/textUtilities'
-import { getTelemetryReasonDesc } from '../../../shared/errors'
 import { getVersionData } from '../../../codewhisperer/service/transformByQ/transformMavenHandler'
 
 // These events can be interactions within the chat,
@@ -255,8 +254,6 @@ export class GumbyController {
 
     private async validateProjectsWithReplyOnError(message: any): Promise<TransformationCandidateProject[]> {
         let telemetryJavaVersion = JDKToTelemetryValue(JDKVersion.UNSUPPORTED) as CodeTransformJavaSourceVersionsAllowed
-
-        let err
         try {
             const validProjects = await telemetry.codeTransform_validateProject.run(async () => {
                 telemetry.record({
@@ -288,17 +285,6 @@ export class GumbyController {
             } else {
                 this.messenger.sendUnrecoverableErrorResponse('no-project-found', message.tabID)
             }
-            err = e
-        } finally {
-            // TODO: remove deprecated metric once BI started using new metrics
-            telemetry.codeTransform_projectDetails.emit({
-                passive: true,
-                codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-                codeTransformLocalJavaVersion: telemetryJavaVersion,
-                result: err?.code ? MetadataResult.Fail : MetadataResult.Pass,
-                reason: err?.code,
-                reasonDesc: getTelemetryReasonDesc(err),
-            })
         }
         return []
     }
@@ -315,6 +301,12 @@ export class GumbyController {
                     userChoice: 'Cancel',
                     result: MetadataResult.Pass,
                 })
+                this.messenger.sendJobFinishedMessage(message.tabID, CodeWhispererConstants.jobCancelledChatMessage)
+                break
+            case ButtonActions.CONFIRM_SKIP_TESTS_FORM:
+                await this.handleSkipTestsSelection(message)
+                break
+            case ButtonActions.CANCEL_SKIP_TESTS_FORM:
                 this.messenger.sendJobFinishedMessage(message.tabID, CodeWhispererConstants.jobCancelledChatMessage)
                 break
             case ButtonActions.VIEW_TRANSFORMATION_HUB:
@@ -348,6 +340,23 @@ export class GumbyController {
         }
     }
 
+    private async handleSkipTestsSelection(message: any) {
+        const skipTestsSelection = message.formSelectedValues['GumbyTransformSkipTestsForm']
+        if (skipTestsSelection === CodeWhispererConstants.skipUnitTestsMessage) {
+            transformByQState.setCustomBuildCommand(CodeWhispererConstants.skipUnitTestsBuildCommand)
+        } else {
+            transformByQState.setCustomBuildCommand(CodeWhispererConstants.doNotSkipUnitTestsBuildCommand)
+        }
+        telemetry.codeTransform_submitSelection.emit({
+            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
+            userChoice: skipTestsSelection,
+            result: MetadataResult.Pass,
+        })
+        this.messenger.sendSkipTestsSelectionMessage(skipTestsSelection, message.tabID)
+        // perform local build
+        await this.validateBuildWithPromptOnError(message)
+    }
+
     // prompt user to pick project and specify source JDK version
     private async handleUserProjectSelection(message: any) {
         await telemetry.codeTransform_submitSelection.run(async () => {
@@ -379,7 +388,12 @@ export class GumbyController {
             }
 
             await processTransformFormInput(pathToProject, fromJDKVersion, toJDKVersion)
+
+            // TODO: delete this line when backend issue is fixed
             await this.validateBuildWithPromptOnError(message)
+
+            // TODO: un-comment this line when backend issue is fixed
+            // await this.messenger.sendSkipTestsPrompt(message.tabID)
         })
     }
 
@@ -390,20 +404,6 @@ export class GumbyController {
                 `CodeTransformation: using JAVA_HOME = ${transformByQState.getJavaHome()} since source JDK does not match Maven JDK`
             )
         }
-
-        const projectPath = transformByQState.getProjectPath()
-        // TODO: remove deprecated metric once BI started using new metrics
-        telemetry.codeTransform_jobStartedCompleteFromPopupDialog.emit({
-            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-            codeTransformJavaSourceVersionsAllowed: JDKToTelemetryValue(
-                transformByQState.getSourceJDKVersion()!
-            ) as CodeTransformJavaSourceVersionsAllowed,
-            codeTransformJavaTargetVersionsAllowed: JDKToTelemetryValue(
-                transformByQState.getTargetJDKVersion()
-            ) as CodeTransformJavaTargetVersionsAllowed,
-            codeTransformProjectId: projectPath === undefined ? telemetryUndefined : getStringHash(projectPath),
-            result: MetadataResult.Pass,
-        })
 
         // Pre-build project locally
         try {

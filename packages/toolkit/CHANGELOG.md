@@ -1,3 +1,23 @@
+## 3.26.0 2024-09-27
+
+- **Bug Fix** EC2 connect: remote connection will no longer fail with 'too many authentication attempt'
+- **Feature** EC2 connect: use ed25519 to generate ec2 ssh key pair
+- **Feature** EC2 connect: default to ed25519, but fall back on rsa if unsupported
+- **Feature** EC2: Launch ec2 instances from AWS Explorer
+
+## 3.25.0 2024-09-19
+
+- **Bug Fix** no longer gives option to copy instance id on ec2 parent node.
+- **Bug Fix** Login state not updating across multiple VS Code windows.
+- **Bug Fix** Redshift: updated the list clusters and workgroups for regions which do not have serverless APIs
+- **Bug Fix** when connecting to ec2 instance, check for IAM role permitted actions, rather than full policies
+- **Feature** EC2 nodes in explorer update status automatically
+- **Feature** ec2 instance status is reinforced with icons and text
+
+## 3.24.0 2024-09-12
+
+- **Feature** Record telemetry event when AWS Toolkits extension is uninstalled.
+
 ## 3.23.0 2024-09-05
 
 - **Bug Fix** Network errors causing premature SSO logout

@@ -1,0 +1,34 @@
+{
+	"date": "2024-09-19",
+	"version": "1.26.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Security Scan: Fixed an issue where the wrong icon was used in the status bar menu."
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Disable Amazon Q LSP in AL2"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q Chat: Fix shifted chat contents when closing and opening chat panel back"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Security Scan: Minor styling improvements in the security issue webview panel"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q Chat: Fix tooltip remaining on screen when closing and opening chat panel back"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Auth: Login state not updating across multiple VS Code windows."
+		},
+		{
+			"type": "Feature",
+			"description": "Support @workspace queries for specific files like `@workspace what does test.ts do? `. "
+		}
+	]
+}

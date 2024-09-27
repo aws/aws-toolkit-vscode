@@ -120,14 +120,6 @@ async function validateJavaHome(): Promise<boolean> {
         }
     }
     if (javaVersionUsedByMaven !== transformByQState.getSourceJDKVersion()) {
-        // TODO: remove deprecated metric once BI started using new metrics
-        telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
-            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-            codeTransformPreValidationError: 'ProjectJDKDiffersFromBuildSystemJDK',
-            result: MetadataResult.Fail,
-            reason: `${transformByQState.getSourceJDKVersion()} (project) - ${javaVersionUsedByMaven} (maven)`,
-        })
-
         // means either javaVersionUsedByMaven is undefined or it does not match the project JDK
         return false
     }
@@ -282,10 +274,13 @@ export async function preTransformationUploadCode() {
         await telemetry.codeTransform_uploadProject.run(async () => {
             telemetry.record({ codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId() })
 
+            const transformZipManifest = new ZipManifest()
+            // if the user chose to skip unit tests, add the custom build command here
+            transformZipManifest.customBuildCommand = transformByQState.getCustomBuildCommand()
             const zipCodeResult = await zipCode({
                 dependenciesFolder: transformByQState.getDependencyFolderInfo()!,
                 modulePath: transformByQState.getProjectPath(),
-                zipManifest: new ZipManifest(),
+                zipManifest: transformZipManifest,
             })
 
             const payloadFilePath = zipCodeResult.tempFilePath
@@ -728,10 +723,10 @@ export async function postTransformationJob() {
 
     // Note: IntelliJ implementation of ResultStatusMessage includes additional metadata such as jobId.
     telemetry.codeTransform_totalRunTime.emit({
+        buildSystemVersion: mavenVersionInfoMessage,
         codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
         codeTransformResultStatusMessage: resultStatusMessage,
         codeTransformRunTimeLatency: durationInMs,
-        codeTransformLocalMavenVersion: mavenVersionInfoMessage,
         codeTransformLocalJavaVersion: javaVersionInfoMessage,
         result: resultStatusMessage === TransformByQStatus.Succeeded ? MetadataResult.Pass : MetadataResult.Fail,
         reason: resultStatusMessage,

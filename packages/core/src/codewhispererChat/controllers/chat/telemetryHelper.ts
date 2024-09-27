@@ -86,6 +86,8 @@ export class CWCTelemetryHelper {
                 return 'explainLineByLine'
             case UserIntent.SHOW_EXAMPLES:
                 return 'showExample'
+            case UserIntent.GENERATE_UNIT_TESTS:
+                return 'generateUnitTests'
             default:
                 return undefined
         }
@@ -158,6 +160,7 @@ export class CWCTelemetryHelper {
                     cwsprChatConversationId: conversationId ?? '',
                     credentialStartUrl: AuthUtil.instance.startUrl,
                     cwsprChatMessageId: message.messageId,
+                    cwsprChatUserIntent: this.getUserIntentForTelemetry(message.userIntent),
                     cwsprChatInteractionType: 'insertAtCursor',
                     cwsprChatAcceptedCharactersLength: message.code.length,
                     cwsprChatAcceptedNumberOfLines: message.code.split('\n').length,
@@ -175,6 +178,7 @@ export class CWCTelemetryHelper {
                     cwsprChatConversationId: conversationId ?? '',
                     credentialStartUrl: AuthUtil.instance.startUrl,
                     cwsprChatMessageId: message.messageId,
+                    cwsprChatUserIntent: this.getUserIntentForTelemetry(message.userIntent),
                     cwsprChatInteractionType: 'copySnippet',
                     cwsprChatAcceptedCharactersLength: message.code.length,
                     cwsprChatInteractionTarget: message.insertionTargetType,
@@ -332,7 +336,10 @@ export class CWCTelemetryHelper {
 
     public recordAddMessage(triggerPayload: TriggerPayload, message: PromptAnswer) {
         const triggerEvent = this.triggerEventsStorage.getLastTriggerEventByTabID(message.tabID)
-
+        const hasProjectLevelContext =
+            triggerPayload.relevantTextDocuments &&
+            triggerPayload.relevantTextDocuments.length > 0 &&
+            triggerPayload.useRelevantDocuments === true
         const event: AmazonqAddMessage = {
             result: 'Succeeded',
             cwsprChatConversationId: this.getConversationId(message.tabID) ?? '',
@@ -356,15 +363,14 @@ export class CWCTelemetryHelper {
             cwsprChatConversationType: 'Chat',
             credentialStartUrl: AuthUtil.instance.startUrl,
             codewhispererCustomizationArn: triggerPayload.customization.arn,
-            cwsprChatHasProjectContext: triggerPayload.relevantTextDocuments
-                ? triggerPayload.relevantTextDocuments.length > 0 && triggerPayload.useRelevantDocuments === true
-                : false,
+            cwsprChatHasProjectContext: hasProjectLevelContext,
         }
 
         telemetry.amazonq_addMessage.emit(event)
         const language = this.isProgrammingLanguageSupported(triggerPayload.fileLanguage)
             ? { languageName: triggerPayload.fileLanguage as string }
             : undefined
+
         codeWhispererClient
             .sendTelemetryEvent({
                 telemetryEvent: {
@@ -381,9 +387,7 @@ export class CWCTelemetryHelper {
                         requestLength: event.cwsprChatRequestLength,
                         responseLength: event.cwsprChatResponseLength,
                         numberOfCodeBlocks: event.cwsprChatResponseCodeSnippetCount,
-                        hasProjectLevelContext: triggerPayload.relevantTextDocuments
-                            ? triggerPayload.relevantTextDocuments.length > 0
-                            : false,
+                        hasProjectLevelContext: hasProjectLevelContext,
                         customizationArn: undefinedIfEmpty(getSelectedCustomization().arn),
                     },
                 },

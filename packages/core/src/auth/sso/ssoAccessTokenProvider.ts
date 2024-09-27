@@ -18,9 +18,8 @@ import {
 import { getCache } from './cache'
 import { hasProps, hasStringProps, RequiredProps, selectFrom } from '../../shared/utilities/tsUtils'
 import { OidcClient } from './clients'
-import { loadOr } from '../../shared/utilities/cacheUtils'
+import { DiskCacheError, loadOr } from '../../shared/utilities/cacheUtils'
 import {
-    DiskCacheError,
     ToolkitError,
     getErrorMsg,
     getRequestId,
@@ -192,26 +191,21 @@ export abstract class SsoAccessTokenProvider {
 
             return refreshed
         } catch (err) {
-            const possibleCacheError = DiskCacheError.instanceIf(err)
-            if (possibleCacheError instanceof DiskCacheError) {
+            if (err instanceof DiskCacheError) {
                 /**
                  * Background:
-                 * - During token refresh when saving to our filesystem/cache there are sometimes file system
-                 *   related errors.
+                 * - During token refresh the cache sometimes fails due to a file system error.
                  * - When these errors ocurr it will cause the token refresh process to fail, and the users SSO
                  *   connection to become invalid.
-                 * - Because these filesystem errors do not indicate the SSO session is actually stale,
-                 *   we want to catch these filesystem errors and not invalidate the users SSO connection since a
+                 * - Because these cache errors do not indicate the SSO session is actually stale,
+                 *   we want to catch these errors and not invalidate the users SSO connection since a
                  *   subsequent attempt to refresh may succeed.
                  * - To give the user a chance to resolve their filesystem related issue, we want to point them
                  *   to the logs where the error was logged. Hopefully they can use this information to fix the issue,
                  *   or at least hint for them to provide the logs in a bug report.
                  */
-                void DiskCacheErrorMessage.instance.showMessageThrottled(possibleCacheError)
-                throw possibleCacheError
-            }
-
-            if (!isNetworkError(err)) {
+                void DiskCacheErrorMessage.instance.showMessageThrottled(err)
+            } else if (!isNetworkError(err)) {
                 const reason = getTelemetryReason(err)
                 telemetry.aws_refreshCredentials.emit({
                     result: getTelemetryResult(err),
@@ -786,13 +780,13 @@ type ReAuthStateValue = {
 }
 
 /**
- * Singleton class that manages showing the user a message during
- * failures that ocurr during SSO disk cache operations.
+ * Singleton class that manages showing the user a message during {@link DiskCacheError} errors.
  *
  * Background:
  * - We need this {@link DiskCacheErrorMessage} specifically as a singleton since we want to ensure
- *   that only 1 instance of this message appears at a time. There are cases where it shows multiple messages
- *   if not used as a singleton.
+ *   that only 1 instance of this message appears at a time. The current implementation creates a new
+ *   {@link SsoAccessTokenProvider} instance each time a token is requested, and this can happen multiple
+ *   times in rapid succession.
  */
 class DiskCacheErrorMessage {
     static #instance: DiskCacheErrorMessage
@@ -803,6 +797,8 @@ class DiskCacheErrorMessage {
     /**
      * Show a `"don't show again"`-able message which tells the user about a file system related error
      * with the sso cache.
+     *
+     * This message is throttled so we do not spam the user every time something requests a token.
      */
     public showMessageThrottled(error: Error) {
         return this._showMessageThrottled(error)
@@ -827,7 +823,7 @@ class DiskCacheErrorMessage {
 
         function showMessage() {
             return showViewLogsMessage(
-                `File system related error during SSO cache operation:\n"${getErrorMsg(error, true)}"`,
+                `Features using SSO will not work due to:\n"${getErrorMsg(error, true)}"`,
                 'error',
                 [dontShow]
             )
