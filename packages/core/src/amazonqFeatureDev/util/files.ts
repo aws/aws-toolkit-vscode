@@ -63,15 +63,18 @@ export async function prepareRepoData(
         const iterator = ignoredExtensionMap.entries()
 
         for (let i = 0; i < ignoredExtensionMap.size; i++) {
-            const [key, value] = iterator.next().value
-            await amznTelemetry.amazonq_bundleExtensionIgnored.run(async (bundleSpan) => {
-                const event = {
-                    filenameExt: key,
-                    count: value,
-                }
+            const iteratorValue = iterator.next().value
+            if (iteratorValue) {
+                const [key, value] = iteratorValue
+                await amznTelemetry.amazonq_bundleExtensionIgnored.run(async (bundleSpan) => {
+                    const event = {
+                        filenameExt: key,
+                        count: value,
+                    }
 
-                bundleSpan.record(event)
-            })
+                    bundleSpan.record(event)
+                })
+            }
         }
 
         telemetry.setRepositorySize(totalBytes)
@@ -117,7 +120,9 @@ export function getPathsFromZipFilePath(
     }
     // otherwise the first part of the zipPath is the prefix
     const prefix = zipFilePath.substring(0, zipFilePath.indexOf(path.sep))
-    const workspaceFolder = workspacesByPrefix[prefix]
+    const workspaceFolder =
+        workspacesByPrefix[prefix] ??
+        (workspacesByPrefix[Object.values(workspacesByPrefix).find((val) => val.index === 0)?.name ?? ''] || undefined)
     if (workspaceFolder === undefined) {
         throw new ToolkitError(`Could not find workspace folder for prefix ${prefix}`)
     }
