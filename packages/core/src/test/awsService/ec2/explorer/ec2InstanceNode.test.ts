@@ -3,39 +3,32 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as sinon from 'sinon'
 import assert from 'assert'
 import {
     Ec2InstanceNode,
     Ec2InstancePendingContext,
     Ec2InstanceRunningContext,
     Ec2InstanceStoppedContext,
+    refreshExplorerNode,
 } from '../../../../awsService/ec2/explorer/ec2InstanceNode'
-import { Ec2Client, SafeEc2Instance, getNameOfInstance } from '../../../../shared/clients/ec2Client'
+import { Ec2Client, getNameOfInstance } from '../../../../shared/clients/ec2Client'
 import { Ec2ParentNode } from '../../../../awsService/ec2/explorer/ec2ParentNode'
+import { DefaultAwsContext } from '../../../../shared'
+import { testClient, testInstance, testParentNode } from './ec2ParentNode.test'
 
 describe('ec2InstanceNode', function () {
     let testNode: Ec2InstanceNode
-    let testInstance: SafeEc2Instance
-    const testRegion = 'testRegion'
-    const testPartition = 'testPartition'
-
     before(function () {
-        testInstance = {
-            InstanceId: 'testId',
-            Tags: [
-                {
-                    Key: 'Name',
-                    Value: 'testName',
-                },
-            ],
-            LastSeenStatus: 'running',
-        }
-        const testClient = new Ec2Client('')
-        const testParentNode = new Ec2ParentNode(testRegion, testPartition, testClient)
+        sinon.stub(DefaultAwsContext.prototype, 'getCredentialAccountId')
         testNode = new Ec2InstanceNode(testParentNode, testClient, 'testRegion', 'testPartition', testInstance)
     })
 
-    this.beforeEach(function () {
+    after(function () {
+        sinon.restore()
+    })
+
+    beforeEach(function () {
         testNode.updateInstance(testInstance)
     })
 
@@ -91,5 +84,27 @@ describe('ec2InstanceNode', function () {
         const newIdInstance = { ...testInstance, InstanceId: 'testId2', LastSeenStatus: newStatus }
         testNode.updateInstance(newIdInstance)
         assert.strictEqual(testNode.getStatus(), newStatus)
+    })
+
+    describe('refreshExplorerNode', function () {
+        it('refreshes only parent node', async function () {
+            const parentRefresh = sinon.stub(Ec2ParentNode.prototype, 'refreshNode')
+            const childRefresh = sinon.stub(Ec2InstanceNode.prototype, 'refreshNode')
+
+            await refreshExplorerNode(testNode)
+
+            sinon.assert.called(parentRefresh)
+            sinon.assert.notCalled(childRefresh)
+
+            parentRefresh.resetHistory()
+
+            await refreshExplorerNode(testParentNode)
+
+            sinon.assert.called(parentRefresh)
+            sinon.assert.notCalled(childRefresh)
+
+            parentRefresh.restore()
+            childRefresh.restore()
+        })
     })
 })

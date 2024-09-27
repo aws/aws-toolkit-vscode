@@ -19,6 +19,19 @@ import * as FakeTimers from '@sinonjs/fake-timers'
 import { installFakeClock } from '../../../testUtil'
 import { PollingSet } from '../../../../shared/utilities/pollingSet'
 
+export const testInstance = {
+    InstanceId: 'testId',
+    Tags: [
+        {
+            Key: 'Name',
+            Value: 'testName',
+        },
+    ],
+    LastSeenStatus: 'running',
+}
+export const testClient = new Ec2Client('')
+export const testParentNode = new Ec2ParentNode('fake-region', 'testPartition', testClient)
+
 describe('ec2ParentNode', function () {
     let testNode: Ec2ParentNode
     let defaultInstances: SafeEc2Instance[]

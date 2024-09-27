@@ -3,36 +3,26 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Ec2InstanceNode } from './explorer/ec2InstanceNode'
 import { Ec2Node } from './explorer/ec2ParentNode'
-import { Ec2ConnectionManager } from './model'
-import { Ec2Prompter, instanceFilter, Ec2Selection } from './prompter'
 import { SafeEc2Instance, Ec2Client } from '../../shared/clients/ec2Client'
+import { Ec2ConnectionManagerMap } from './activation'
 import { copyToClipboard } from '../../shared/utilities/messages'
-import { getLogger } from '../../shared/logger'
 import { getAwsConsoleUrl } from '../../shared/awsConsole'
 import { showRegionPrompter } from '../../auth/utils'
 import { openUrl } from '../../shared/utilities/vsCodeUtils'
+import { Ec2Prompter, Ec2Selection, instanceFilter } from './prompter'
+import { Ec2InstanceNode } from './explorer/ec2InstanceNode'
+import { Ec2ConnectionManager } from './model'
 
-export function refreshExplorer(node?: Ec2Node) {
-    if (node) {
-        const n = node instanceof Ec2InstanceNode ? node.parent : node
-        n.refreshNode().catch((e) => {
-            getLogger().error('refreshNode failed: %s', (e as Error).message)
-        })
-    }
-}
-
-export async function openTerminal(node?: Ec2Node) {
+export async function openTerminal(connectionManagers: Ec2ConnectionManagerMap, node?: Ec2Node) {
     const selection = await getSelection(node)
-
-    const connectionManager = new Ec2ConnectionManager(selection.region)
+    const connectionManager = await getConnectionManager(connectionManagers, selection)
     await connectionManager.attemptToOpenEc2Terminal(selection)
 }
 
-export async function openRemoteConnection(node?: Ec2Node) {
+export async function openRemoteConnection(connectionManagers: Ec2ConnectionManagerMap, node?: Ec2Node) {
     const selection = await getSelection(node)
-    const connectionManager = new Ec2ConnectionManager(selection.region)
+    const connectionManager = await getConnectionManager(connectionManagers, selection)
     await connectionManager.tryOpenRemoteConnection(selection)
 }
 
@@ -70,4 +60,17 @@ async function getSelection(node?: Ec2Node, filter?: instanceFilter): Promise<Ec
 
 export async function copyInstanceId(instanceId: string): Promise<void> {
     await copyToClipboard(instanceId, 'Id')
+}
+
+export async function getConnectionManager(
+    connectionManagers: Ec2ConnectionManagerMap,
+    selection: Ec2Selection
+): Promise<Ec2ConnectionManager> {
+    if (connectionManagers.has(selection.region)) {
+        return connectionManagers.get(selection.region)!
+    } else {
+        const newConnectionManager = new Ec2ConnectionManager(selection.region)
+        connectionManagers.set(selection.region, newConnectionManager)
+        return newConnectionManager
+    }
 }
