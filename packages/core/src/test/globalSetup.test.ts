@@ -157,6 +157,7 @@ function writeLogsToFile(testName: string) {
     appendFileSync(testLogOutput, entries?.join('\n') ?? '', 'utf8')
 }
 
+// TODO: merge this with `toolkitLogger.test.ts:checkFile`
 export function assertLogsContain(text: string, exactMatch: boolean, severity: LogLevel) {
     assert.ok(
         getTestLogger()
