@@ -590,4 +590,3 @@
 // function writeFile(filename: string): void {
 //     fs.writeFileSync(filename, '')
 // }
-

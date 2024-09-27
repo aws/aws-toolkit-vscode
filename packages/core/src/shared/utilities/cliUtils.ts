@@ -22,6 +22,7 @@ import { DevSettings } from '../settings'
 import { telemetry } from '../telemetry/telemetry'
 import { Result, ToolId } from '../telemetry/telemetry'
 import { openUrl } from './vsCodeUtils'
+import { mergeResolvedShellPath } from '../env/resolveEnv'
 const localize = nls.loadMessageBundle()
 
 const msgDownloading = localize('AWS.installProgress.downloading', 'downloading...')
@@ -341,7 +342,9 @@ async function hasCliCommand(cli: Cli, global: boolean): Promise<string | undefi
     const commands = getOsCommands(cli)
     for (const command of commands ? commands : []) {
         const cmd = global ? command : path.join(getToolkitLocalCliPath(), command)
-        const result = await new ChildProcess(cmd, ['--version']).run({ spawnOptions: { env: process.env } })
+        const result = await new ChildProcess(cmd, ['--version']).run({
+            spawnOptions: { env: await mergeResolvedShellPath(process.env) },
+        })
         if (result.exitCode === 0) {
             return cmd
         }

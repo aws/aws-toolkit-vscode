@@ -19,6 +19,7 @@ import { ToolkitError } from '../errors'
 import globals from '../extensionGlobals'
 import { TreeNode } from '../treeview/resourceTreeDataProvider'
 import { Metric, SamBuild, telemetry } from '../telemetry/telemetry'
+import { getSpawnEnv } from '../env/resolveEnv'
 import { getProjectRoot, isDotnetRuntime } from './utils'
 import { getConfigFileUri, validateSamBuildConfig } from './config'
 
@@ -243,11 +244,11 @@ export function registerBuild() {
             const buildProcess = new ChildProcess(samCliPath, ['build', ...buildFlags], {
                 spawnOptions: await addTelemetryEnvVar({
                     cwd: params.projectRoot.fsPath,
-                    env: process.env,
+                    env: await getSpawnEnv(process.env),
                 }),
             })
 
-            //Run SAM build in Terminal
+            // Run SAM build in Terminal
             await runInTerminal(buildProcess, 'build')
 
             return {

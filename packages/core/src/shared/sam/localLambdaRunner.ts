@@ -20,7 +20,6 @@ import { tryGetAbsolutePath } from '../utilities/workspaceUtils'
 import { SamCliBuildInvocation, SamCliBuildInvocationArguments } from './cli/samCliBuild'
 import { SamCliLocalInvokeInvocation, SamCliLocalInvokeInvocationArguments } from './cli/samCliLocalInvoke'
 import { SamLaunchRequestArgs } from './debugger/awsSamDebugger'
-import { asEnvironmentVariables } from '../../auth/credentials/utils'
 import { buildSamCliStartApiArguments } from './cli/samCliStartApi'
 import { DefaultSamCliProcessInvoker } from './cli/samCliInvoker'
 import { APIGatewayProperties } from './debugger/awsSamDebugConfiguration.gen'
@@ -31,6 +30,7 @@ import { sleep } from '../utilities/timeoutUtils'
 import { showMessageWithCancel } from '../utilities/messages'
 import { ToolkitError, UnknownError } from '../errors'
 import { SamCliError } from './cli/samCliInvokerUtils'
+import { getSpawnEnv } from '../env/resolveEnv'
 
 const localize = nls.loadMessageBundle()
 
@@ -212,10 +212,10 @@ async function invokeLambdaHandler(
         return config
             .samLocalInvokeCommand!.invoke({
                 options: {
-                    env: {
+                    env: await getSpawnEnv({
                         ...process.env,
                         ...env,
-                    },
+                    }),
                 },
                 command: samCommand,
                 args: samArgs,
@@ -236,7 +236,7 @@ async function invokeLambdaHandler(
             templatePath: config.templatePath,
             eventPath: config.eventPayloadFile,
             environmentVariablePath: config.envFile,
-            environmentVariables: env,
+            environmentVariables: await getSpawnEnv(env),
             invoker: config.samLocalInvokeCommand!,
             dockerNetwork: config.sam?.dockerNetwork,
             debugPort: debugPort,
@@ -291,7 +291,6 @@ export async function runLambdaFunction(
     }
 
     const envVars = {
-        ...(config.awsCredentials ? asEnvironmentVariables(config.awsCredentials) : {}),
         ...(config.aws?.region ? { AWS_DEFAULT_REGION: config.aws.region } : {}),
     }
 
@@ -299,7 +298,7 @@ export async function runLambdaFunction(
     const timer = new Timeout(settings.getLocalInvokeTimeout())
 
     // TODO: refactor things to not mutate the config
-    config.templatePath = await buildLambdaHandler(timer, envVars, config, settings)
+    config.templatePath = await buildLambdaHandler(timer, await getSpawnEnv(envVars), config, settings)
 
     await onAfterBuild()
     timer.refresh()

@@ -34,21 +34,19 @@ import { SamCliSettings } from './cli/samCliSettings'
 import { getConfigFileUri, SamConfig, validateSamSyncConfig, writeSamconfigGlobal } from './config'
 import { cast, Optional } from '../utilities/typeConstructors'
 import { pushIf, toRecord } from '../utilities/collectionUtils'
-import { Auth } from '../../auth/auth'
-import { asEnvironmentVariables } from '../../auth/credentials/utils'
 import { SamCliInfoInvocation } from './cli/samCliInfo'
 import { parse } from 'semver'
 import { isAutomation } from '../vscode/env'
 import { getOverriddenParameters } from '../../lambda/config/parameterUtils'
 import { addTelemetryEnvVar } from './cli/samCliInvokerUtils'
-import { samSyncUrl, samInitDocUrl, samUpgradeUrl, credentialHelpUrl } from '../constants'
+import { samSyncUrl, samInitDocUrl, samUpgradeUrl } from '../constants'
 import { getAwsConsoleUrl } from '../awsConsole'
 import { openUrl } from '../utilities/vsCodeUtils'
-import { showMessageWithUrl, showOnce } from '../utilities/messages'
+import { showOnce } from '../utilities/messages'
 import { IamConnection } from '../../auth/connection'
 import { CloudFormationTemplateRegistry } from '../fs/templateRegistry'
-import { promptAndUseConnection } from '../../auth/utils'
 import { TreeNode } from '../treeview/resourceTreeDataProvider'
+import { getSpawnEnv } from '../env/resolveEnv'
 import { getProjectRoot, getProjectRootUri, getSource } from './utils'
 
 const localize = nls.loadMessageBundle()
@@ -432,11 +430,6 @@ async function ensureRepo(resp: Pick<SyncParams, 'region' | 'ecrRepoUri'>) {
     }
 }
 
-export async function injectCredentials(conn: IamConnection, env = process.env) {
-    const creds = await conn.getCredentials()
-    return { ...env, ...asEnvironmentVariables(creds) }
-}
-
 async function saveAndBindArgs(args: SyncParams): Promise<{ readonly boundArgs: string[] }> {
     const data = {
         codeOnly: args.deployType === 'code',
@@ -598,7 +591,7 @@ export async function runSamSync(args: SyncParams) {
     const sam = new ChildProcess(samCliPath, ['sync', ...boundArgs], {
         spawnOptions: await addTelemetryEnvVar({
             cwd: args.projectRoot.fsPath,
-            env: await injectCredentials(args.connection),
+            env: await getSpawnEnv(process.env, { promptForInvalidCredential: true }),
         }),
     })
     const { paramsSource, stackName, region, projectRoot } = args
@@ -710,38 +703,6 @@ export type SamSyncResult = {
     isSuccess: boolean
 }
 
-async function getAuthOrPrompt() {
-    const connection = Auth.instance.activeConnection
-    if (connection?.type === 'iam' && connection.state === 'valid') {
-        return connection
-    }
-    let errorMessage = localize(
-        'aws.sam.sync.authModal.message',
-        'Syncing requires authentication with IAM credentials.'
-    )
-    if (connection?.state === 'valid') {
-        errorMessage =
-            localize(
-                'aws.sam.sync.authModal.invalidAuth',
-                'Authentication through Builder ID or IAM Identity Center detected. '
-            ) + errorMessage
-    }
-    const acceptMessage = localize('aws.sam.sync.authModal.accept', 'Authenticate with IAM credentials')
-    const modalResponse = await showMessageWithUrl(
-        errorMessage,
-        credentialHelpUrl,
-        localizedText.viewDocs,
-        'info',
-        [acceptMessage],
-        true
-    )
-    if (modalResponse !== acceptMessage) {
-        return
-    }
-    await promptAndUseConnection(Auth.instance, 'iam-only')
-    return Auth.instance.activeConnection
-}
-
 export function registerSync() {
     async function runSync(
         deployType: SyncParams['deployType'],
@@ -751,13 +712,6 @@ export function registerSync() {
         return await telemetry.sam_sync.run(async () => {
             const source = getSource(arg)
             telemetry.record({ syncedResources: deployType === 'infra' ? 'AllResources' : 'CodeOnly', source: source })
-
-            const connection = await getAuthOrPrompt()
-            if (connection?.type !== 'iam' || connection?.state !== 'valid') {
-                throw new ToolkitError('Syncing SAM applications requires IAM credentials', {
-                    code: 'NoIAMCredentials',
-                })
-            }
 
             await confirmDevStack()
             const registry = await globals.templateRegistry
@@ -770,7 +724,7 @@ export function registerSync() {
             }
 
             try {
-                await runSamSync({ ...params, connection })
+                await runSamSync({ ...params })
                 return {
                     isSuccess: true,
                 }

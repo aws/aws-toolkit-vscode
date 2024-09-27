@@ -10,6 +10,7 @@ import { ChildProcess } from './processUtils'
 import { GitExtension } from '../extensions/git'
 import { Settings } from '../settings'
 import { getLogger } from '../logger/logger'
+import { mergeResolvedShellPath } from '../env/resolveEnv'
 
 /** Full path to VSCode CLI. */
 let vscPath: string
@@ -34,7 +35,7 @@ export async function tryRun(
     expected?: string
 ): Promise<boolean> {
     const proc = new ChildProcess(p, args, { logging: 'no' })
-    const r = await proc.run()
+    const r = await proc.run({ spawnOptions: { env: await mergeResolvedShellPath(process.env) } })
     const ok = r.exitCode === 0 && (expected === undefined || r.stdout.includes(expected))
     if (logging === 'noresult') {
         getLogger().info('tryRun: %s: %s', ok ? 'ok' : 'failed', proc)

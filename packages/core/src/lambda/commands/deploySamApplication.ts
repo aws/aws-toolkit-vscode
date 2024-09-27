@@ -10,13 +10,11 @@ import {
     createStackPrompter,
     createTemplatePrompter,
     getSamCliPathAndVersion,
-    injectCredentials,
     runInTerminal,
 } from '../../shared/sam/sync'
-import * as localizedText from '../../shared/localizedText'
 import { DataQuickPickItem, createQuickPick } from '../../shared/ui/pickerPrompter'
 import { createCommonButtons } from '../../shared/ui/buttons'
-import { credentialHelpUrl, samDeployUrl } from '../../shared/constants'
+import { samDeployUrl } from '../../shared/constants'
 import { Wizard } from '../../shared/wizards/wizard'
 import { CloudFormationTemplateRegistry } from '../../shared/fs/templateRegistry'
 import { createExitPrompter } from '../../shared/ui/common/exitPrompter'
@@ -24,10 +22,7 @@ import { createRegionPrompter } from '../../shared/ui/common/region'
 import { DefaultCloudFormationClient } from '../../shared/clients/cloudFormationClient'
 import { DefaultS3Client } from '../../shared/clients/s3Client'
 import { ToolkitError, globals } from '../../shared'
-import { promptAndUseConnection } from '../../auth/utils'
-import { Auth } from '../../auth'
-import { getConfigFileUri, validateSamDeployConfig, writeSamconfigGlobal } from '../../shared/sam/config'
-import { showMessageWithUrl } from '../../shared/utilities/messages'
+import { validateSamDeployConfig, writeSamconfigGlobal } from '../../shared/sam/config'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { ChildProcess } from '../../shared/utilities/processUtils'
 import { addTelemetryEnvVar } from '../../shared/sam/cli/samCliInvokerUtils'
@@ -36,10 +31,8 @@ import { telemetry } from '../../shared/telemetry'
 import { getParameters } from '../config/parameterUtils'
 import { filter } from '../../shared/utilities/collectionUtils'
 import { createInputBox } from '../../shared/ui/inputPrompter'
+import { getSpawnEnv } from '../../shared/env/resolveEnv'
 import * as CloudFormation from '../../shared/cloudformation/cloudformation'
-
-import * as nls from 'vscode-nls'
-const localize = nls.loadMessageBundle()
 
 interface DeployParams {
     readonly paramsSource: ParamsSource
@@ -265,36 +258,16 @@ class DeployWizard extends Wizard<DeployParams> {
     }
 }
 
-async function getAuthOrPrompt() {
-    const connection = Auth.instance.activeConnection
-    if (connection?.type === 'iam' && connection.state === 'valid') {
-        return connection
+async function getConfigFileUri(projectRoot: vscode.Uri) {
+    const samConfigFilename = 'samconfig'
+    const samConfigFile = (
+        await vscode.workspace.findFiles(new vscode.RelativePattern(projectRoot, `${samConfigFilename}.*`))
+    )[0]
+    if (samConfigFile) {
+        return samConfigFile
+    } else {
+        throw new ToolkitError(`No samconfig.toml file found in ${projectRoot.fsPath}`)
     }
-    let errorMessage = localize(
-        'aws.appBuilder.deploy.authModal.message',
-        'Deploying requires authentication with IAM credentials.'
-    )
-    if (connection?.state === 'valid') {
-        errorMessage =
-            localize(
-                'aws.appBuilder.deploy.authModal.invalidAuth',
-                'Authentication through Builder ID or IAM Identity Center detected. '
-            ) + errorMessage
-    }
-    const authPrompt = localize('aws.appBuilder.deploy.authModal.accept', 'Authenticate with IAM credentials')
-    const modalResponse = await showMessageWithUrl(
-        errorMessage,
-        credentialHelpUrl,
-        localizedText.viewDocs,
-        'info',
-        [authPrompt],
-        true
-    )
-    if (modalResponse !== authPrompt) {
-        return
-    }
-    await promptAndUseConnection(Auth.instance, 'iam-only')
-    return Auth.instance.activeConnection
 }
 
 export async function runDeploy(arg: any): Promise<DeployResult> {
@@ -302,15 +275,10 @@ export async function runDeploy(arg: any): Promise<DeployResult> {
         const source = getSource(arg)
         telemetry.record({ source: source })
 
-        const connection = await getAuthOrPrompt()
-        if (connection?.type !== 'iam' || connection?.state !== 'valid') {
-            throw new ToolkitError('Deploying SAM applications requires IAM credentials', {
-                code: 'NoIAMCredentials',
-            })
-        }
-
         // Prepare Build params
         const deployParams: Partial<DeployParams> = {}
+
+        const deployEnv = await getSpawnEnv(process.env, { promptForInvalidCredential: true })
 
         const registry = await globals.templateRegistry
         const params = await new DeployWizard(deployParams, registry, arg).run()
@@ -357,7 +325,7 @@ export async function runDeploy(arg: any): Promise<DeployResult> {
             const buildProcess = new ChildProcess(samCliPath, ['build', ...buildFlags], {
                 spawnOptions: await addTelemetryEnvVar({
                     cwd: params.projectRoot.fsPath,
-                    env: await injectCredentials(connection),
+                    env: deployEnv,
                 }),
             })
 
@@ -376,7 +344,7 @@ export async function runDeploy(arg: any): Promise<DeployResult> {
             const deployProcess = new ChildProcess(samCliPath, ['deploy', ...deployFlags], {
                 spawnOptions: await addTelemetryEnvVar({
                     cwd: params.projectRoot.fsPath,
-                    env: await injectCredentials(connection),
+                    env: deployEnv,
                 }),
             })
 
