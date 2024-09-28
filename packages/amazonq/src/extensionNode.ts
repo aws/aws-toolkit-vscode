@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import { activateAmazonQCommon, amazonQContextPrefix, deactivateCommon } from './extension'
 import { DefaultAmazonQAppInitContext } from 'aws-core-vscode/amazonq'
 import { activate as activateQGumby } from 'aws-core-vscode/amazonqGumby'
-import { ExtContext, globals } from 'aws-core-vscode/shared'
+import { ExtContext, globals, CrashMonitoring } from 'aws-core-vscode/shared'
 import { filetypes, SchemaService } from 'aws-core-vscode/sharedNode'
 import { updateDevMode } from 'aws-core-vscode/dev'
 import { CommonAuthViewProvider } from 'aws-core-vscode/login'
@@ -32,6 +32,8 @@ export async function activate(context: vscode.ExtensionContext) {
  * the code compatible with web and move it to {@link activateAmazonQCommon}.
  */
 async function activateAmazonQNode(context: vscode.ExtensionContext) {
+    await (await CrashMonitoring.instance()).start()
+
     const extContext = {
         extensionContext: context,
     }
@@ -93,5 +95,6 @@ async function setupDevMode(context: vscode.ExtensionContext) {
 }
 
 export async function deactivate() {
-    await deactivateCommon()
+    // Run concurrently to speed up execution. stop() does not throw so it is safe
+    await Promise.all([(await CrashMonitoring.instance()).stop(), deactivateCommon()])
 }
