@@ -34,8 +34,8 @@ export interface ResourceTreeEntity {
 export async function getStackName(projectRoot: vscode.Uri): Promise<any> {
     try {
         const samConfig = await SamConfig.fromProjectRoot(projectRoot)
-        const stackName = await samConfig.getParam('global', 'stack_name')
-        const region = await samConfig.getParam('global', 'region')
+        const stackName = await samConfig.getCommandParam('global', 'stack_name')
+        const region = await samConfig.getCommandParam('global', 'region')
 
         return { stackName, region }
     } catch (error) {

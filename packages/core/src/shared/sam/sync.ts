@@ -604,7 +604,7 @@ export async function runSamSync(args: SyncParams) {
 export const getWorkspaceUri = (template: TemplateItem) => vscode.workspace.getWorkspaceFolder(template.uri)?.uri
 const getStringParam = (config: SamConfig, key: string) => {
     try {
-        return cast(config.getParam('sync', key), Optional(String))
+        return cast(config.getCommandParam('sync', key), Optional(String))
     } catch (err) {
         throw ToolkitError.chain(err, `Unable to read "${key}" in config file`, {
             details: { location: config.location.path },
@@ -672,7 +672,7 @@ export async function prepareSyncParams(
                   }
                 : undefined
             // Always use the dependency layer if the user specified to do so
-            const skipDependencyLayer = !config.getParam('sync', 'dependency_layer')
+            const skipDependencyLayer = !config.getCommandParam('sync', 'dependency_layer')
 
             return { ...baseParams, ...params, template, projectRoot, skipDependencyLayer }
         }

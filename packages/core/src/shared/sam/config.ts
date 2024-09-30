@@ -72,11 +72,14 @@ export class SamConfig {
         private readonly config: Config = { environments: {} }
     ) {}
 
-    public getParam(command: string, key: string, targetEnv = 'default'): unknown {
+    public getCommand(command: string, targetEnv = 'default') {
         const env = this.config.environments[targetEnv]
-        const primarySection = env?.commands[command]
-        const globalSection = env?.commands['global']
+        return env?.commands[command]
+    }
 
+    public getCommandParam(command: string, key: string, targetEnv = 'default'): unknown {
+        const primarySection = this.getCommand(command, targetEnv)
+        const globalSection = this.getCommand('global', targetEnv)
         return primarySection?.parameters?.[key] ?? globalSection?.parameters?.[key]
     }
 
@@ -189,15 +192,15 @@ async function validateAppBuilderSamConfig(
         return false
     }
 
-    const globalRegion = content.getParam('global', 'region')
-    const globalStackName = content.getParam('global', 'stack_name')
-    const buildTemplateFile = content.getParam('build', 'template_file')
-    const deployTemplateFile = content.getParam('deploy', 'template_file')
-    const syncTemplateFile = content.getParam('sync', 'template_file')
+    const globalRegion = content.getCommandParam('global', 'region')
+    const globalStackName = content.getCommandParam('global', 'stack_name')
+    const buildCommandConfig = content.getCommand('build')
+    const deployCommandConfig = content.getCommand('deploy')
+    const syncCommandConfig = content.getCommand('sync')
 
     const hasRequiredGlobalParams: boolean = !!globalRegion && !!globalStackName
-    const hasRequiredDeployParameters: boolean = !!hasRequiredGlobalParams && !!deployTemplateFile
-    const hasRequiredSyncParameters: boolean = !!hasRequiredGlobalParams && !!syncTemplateFile
+    const hasRequiredDeployParameters: boolean = !!hasRequiredGlobalParams && !!deployCommandConfig
+    const hasRequiredSyncParameters: boolean = !!hasRequiredGlobalParams && !!syncCommandConfig
 
     switch (configType) {
         case DeployType.Deploy:
@@ -205,7 +208,7 @@ async function validateAppBuilderSamConfig(
         case DeployType.Sync:
             return hasRequiredGlobalParams && hasRequiredSyncParameters
         case DeployType.Build:
-            return !!buildTemplateFile
+            return !!buildCommandConfig
         default:
             getLogger().error(`Unsupported config type: ${configType}`)
             return false

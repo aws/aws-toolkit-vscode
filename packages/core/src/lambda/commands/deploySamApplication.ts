@@ -299,24 +299,25 @@ export async function runDeploy(arg: any): Promise<DeployResult> {
                 ? deployFlags.push('--s3-bucket', `${params.bucketName}`)
                 : deployFlags.push('--resolve-s3')
             deployFlags.push('--capabilities', 'CAPABILITY_IAM', 'CAPABILITY_NAMED_IAM')
-            const samTemplateParameters = await getParameters(params.template.uri)
-
-            const requiredParameterNames = new Set<string>(
-                filter(samTemplateParameters.keys(), (name) => samTemplateParameters.get(name)!.required)
-            )
-
-            const paramsToSet: string[] = []
-            requiredParameterNames.forEach((name) => {
-                if (params[name]) {
-                    paramsToSet.push(`ParameterKey=${name},ParameterValue=${params[name]}`)
-                }
-                deployFlags.push('--parameter-overrides', ...paramsToSet)
-            })
         }
 
         if (params.paramsSource === ParamsSource.SpecifyAndSave) {
             deployFlags.push('--save-params')
         }
+
+        const samTemplateParameters = await getParameters(params.template.uri)
+
+        const requiredParameterNames = new Set<string>(
+            filter(samTemplateParameters.keys(), (name) => samTemplateParameters.get(name)!.required)
+        )
+
+        const paramsToSet: string[] = []
+        requiredParameterNames.forEach((name) => {
+            if (params[name]) {
+                paramsToSet.push(`ParameterKey=${name},ParameterValue=${params[name]}`)
+            }
+            deployFlags.push('--parameter-overrides', ...paramsToSet)
+        })
 
         try {
             const { path: samCliPath } = await getSamCliPathAndVersion()
