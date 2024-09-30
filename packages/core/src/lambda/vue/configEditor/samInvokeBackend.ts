@@ -37,24 +37,9 @@ import { VueWebview } from '../../../webviews/main'
 import { Commands } from '../../../shared/vscode/commands2'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 import { ToolkitError } from '../../../shared'
-import {
-    SamCliRemoteTestEventsParameters,
-    TestEventsOperation,
-    runSamCliRemoteTestEvents,
-} from '../../../shared/sam/cli/samCliRemoteTestEvent'
-import { getSamCliContext } from '../../../shared/sam/cli/samCliContext'
 import { ResourceNode } from '../../../awsService/appBuilder/explorer/nodes/resourceNode'
 
 const localize = nls.loadMessageBundle()
-
-type Event = {
-    name: string
-    region: string
-    arn: string
-    event?: string
-    logicalId?: string
-    stackName?: string
-}
 
 export interface ResourceData {
     logicalId: string
@@ -316,49 +301,9 @@ export class SamInvokeWebview extends VueWebview {
         }
     }
 
-    private getFileName(filePath: string): string {
+    public getFileName(filePath: string): string {
         return path.basename(filePath)
     }
-
-    public async listRemoteTestEvents(region: string, stackName: string, logicalId: string): Promise<string[]> {
-        const params: SamCliRemoteTestEventsParameters = {
-            stackName: stackName,
-            region: region,
-            operation: TestEventsOperation.List,
-            logicalId: logicalId,
-        }
-        const result = await this.remoteTestEvents(params)
-        return result.split('\n')
-    }
-
-    public async createRemoteTestEvents(putEvent: Event) {
-        const params: SamCliRemoteTestEventsParameters = {
-            functionArn: putEvent.arn,
-            operation: TestEventsOperation.Put,
-            name: putEvent.name,
-            eventSample: putEvent.event,
-            region: putEvent.region,
-            stackName: putEvent.stackName,
-            logicalId: putEvent.logicalId,
-        }
-        return await this.remoteTestEvents(params)
-    }
-    public async getRemoteTestEvents(getEvents: Event) {
-        const params: SamCliRemoteTestEventsParameters = {
-            name: getEvents.name,
-            operation: TestEventsOperation.Get,
-            functionArn: getEvents.arn,
-            region: getEvents.region,
-            stackName: getEvents.stackName,
-            logicalId: getEvents.logicalId,
-        }
-        return await this.remoteTestEvents(params)
-    }
-
-    private async remoteTestEvents(params: SamCliRemoteTestEventsParameters) {
-        return await runSamCliRemoteTestEvents(params, getSamCliContext().invoker)
-    }
-
     /**
      * Open a quick pick containing the names of launch configs in the `launch.json` array, plus a "Create New Entry" entry.
      * On selecting a name, overwrite the existing entry in the `launch.json` array and resave the file.

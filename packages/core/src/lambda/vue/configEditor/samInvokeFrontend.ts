@@ -206,11 +206,7 @@ export default defineComponent({
                 }
             )
         },
-        updateConfig() {
-            this.parseConfig(this.selectedConfig.config)
-            this.savedStatus = savedStatus.saved
-        },
-        parseConfig(config?: AwsSamDebuggerConfiguration) {
+        async parseConfig(config?: AwsSamDebuggerConfiguration) {
             if (!config) {
                 return
             }
@@ -220,6 +216,17 @@ export default defineComponent({
             if (config.lambda?.payload) {
                 this.payload.value = JSON.stringify(config.lambda.payload.json, undefined, 4)
             }
+
+            const localArgs = config.sam?.localArguments
+            if (localArgs?.includes('-e') || localArgs?.includes('--event')) {
+                const index = localArgs.findIndex((arg) => arg === '-e' || arg === '--event')
+
+                if (index !== -1 && localArgs[index + 1]) {
+                    this.payloadOption = 'localFile'
+                    this.selectedFile = await client.getFileName(localArgs[index + 1])
+                }
+            }
+
             if (config.lambda?.environmentVariables) {
                 this.environmentVariables.value = JSON.stringify(config.lambda?.environmentVariables)
             }
@@ -323,39 +330,6 @@ export default defineComponent({
                 }
             }
         },
-        async newSelection() {
-            if (this.resourceData) {
-                const eventData = {
-                    name: this.selectedTestEvent,
-                    region: this.resourceData.region,
-                    arn: this.resourceData.arn,
-                    stackName: this.resourceData.stackName,
-                    logicalId: this.resourceData.logicalId,
-                }
-                const resp = await client.getRemoteTestEvents(eventData)
-                this.payload.value = JSON.stringify(JSON.parse(resp), undefined, 4)
-            }
-        },
-        async saveEvent() {
-            if (this.resourceData) {
-                const eventData = {
-                    name: this.newTestEventName,
-                    event: this.payload.value,
-                    region: this.resourceData.region,
-                    arn: this.resourceData.arn,
-                    stackName: this.resourceData.stackName,
-                    logicalId: this.resourceData.logicalId,
-                }
-                await client.createRemoteTestEvents(eventData)
-                this.showNameInput = false
-                this.newTestEventName = ''
-                this.TestEvents = await client.listRemoteTestEvents(
-                    this.resourceData.region,
-                    this.resourceData.stackName,
-                    this.resourceData.logicalId
-                )
-            }
-        },
         showNameField() {
             this.showNameInput = true
         },
@@ -377,21 +351,6 @@ export default defineComponent({
                         if (this.launchConfig.lambda) {
                             this.launchConfig.lambda.runtime = this.resourceData.runtime
                         }
-
-                        client
-                            .listRemoteTestEvents(
-                                this.resourceData.region,
-                                this.resourceData.stackName,
-                                this.resourceData.logicalId
-                            )
-                            .then(
-                                (events) => {
-                                    this.TestEvents = events
-                                },
-                                (e) => {
-                                    console.error('client.listRemoteTestEvents failed: %s', (e as Error).message)
-                                }
-                            )
                     }
                 },
                 (e) => {

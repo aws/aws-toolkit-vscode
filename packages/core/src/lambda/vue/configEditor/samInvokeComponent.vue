@@ -55,34 +55,21 @@
                                     />
                                     <label class="label-selector" for="localFile"> Local file</label><br />
                                 </div>
-                                <div class="formfield">
-                                    <input
-                                        class="radio-selector"
-                                        type="radio"
-                                        id="savedEvents"
-                                        value="savedEvents"
-                                        v-model="payloadOption"
-                                        name="payload_request"
-                                    />
-                                    <label class="label-selector" for="savedEvents"> Remote saved events</label>
-                                </div>
                             </form>
                         </div>
                     </div>
                 </div>
-                <div v-if="payloadOption === 'sampleEvents'" class="form-row">
+                <div class="form-row" v-if="payloadOption === 'sampleEvents'">
                     <label :style="{ fontSize: '13px', fontWeight: 500 }">Sample event</label>
-                    <div>
-                        <button class="button-theme-secondary" style="width: 140px" v-on:click.prevent="loadPayload">
-                            Select an Event</button
-                        ><br />
-                        <span class="data-view">payload from data: {{ payload }} </span>
-                        <div class="input-validation" v-if="payload.errorMsg">
-                            Error parsing JSON: {{ payload.errorMsg }}
-                        </div>
-                        <br />
+                    <button class="button-theme-secondary" style="width: 140px" v-on:click.prevent="loadPayload">
+                        Select an Event</button
+                    ><br />
+                    <span class="data-view">payload from data: {{ payload }} </span>
+                    <div class="input-validation" v-if="payload.errorMsg">
+                        Error parsing JSON: {{ payload.errorMsg }}
                     </div>
-                    <br />
+                </div>
+                <div v-if="payloadOption === 'sampleEvents'">
                     <textarea
                         style="width: 100%; margin-bottom: 10px"
                         rows="5"
@@ -103,55 +90,6 @@
                         </div>
                     </div>
                 </div>
-                <div v-if="payloadOption === 'savedEvents'" class="form-row">
-                    <div><label>Remote event</label></div>
-                    <div class="form-row">
-                        <div>
-                            <select
-                                class="form-row-event-select"
-                                v-model="selectedTestEvent"
-                                v-on:change="newSelection"
-                            >
-                                <option disabled value="">Select an event</option>
-                                <option v-for="item in TestEvents">
-                                    {{ item }}
-                                </option>
-                            </select>
-                        </div>
-                        <div style="margin-left: 105px">
-                            <button v-on:click.prevent="showNameField" class="button-theme-secondary">Create</button
-                            >&nbsp;
-                            <button v-on:click.prevent="saveEvent" class="button-theme-secondary">Save</button>
-                        </div>
-                    </div>
-                    <div class="form-row" v-if="showNameInput">
-                        <label>Name</label>
-                        <input
-                            :style="{ zIndex: '2' }"
-                            type="text"
-                            v-model="newTestEventName"
-                            placeholder="Enter event name"
-                        />
-                    </div>
-                    <br />
-                    <div class="form-row" v-if="showNameInput">
-                        <label :style="{ fontSize: '13px', fontWeight: 500 }">Sample event</label>
-                        <button class="button-theme-secondary" style="width: 140px" v-on:click.prevent="loadPayload">
-                            Select an Event</button
-                        ><br />
-                        <span class="data-view">payload from data: {{ payload }} </span>
-                        <div class="input-validation" v-if="payload.errorMsg">
-                            Error parsing JSON: {{ payload.errorMsg }}
-                        </div>
-                    </div>
-                    <textarea
-                        style="width: 100%; margin-bottom: 10px"
-                        rows="5"
-                        cols="60"
-                        v-model="payload.value"
-                    ></textarea>
-                </div>
-
                 <div class="config-item">
                     <label for="target-type-selector">Invoke target type</label>
                     <select name="target-types" id="target-type-selector" v-model="launchConfig.invokeTarget.target">
