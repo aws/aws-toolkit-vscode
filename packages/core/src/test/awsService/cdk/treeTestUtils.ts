@@ -3,13 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { writeFile } from 'fs-extra'
 import { ConstructTree, ConstructTreeEntity } from '../../../awsService/cdk/explorer/tree/types'
+import { fs } from '../../../shared'
 
 export async function saveCdkJson(cdkJsonPath: string) {
     const cdkJsonContent = '{ "app": "npx ts-node bin/demo-nov7.ts"}'
 
-    await writeFile(cdkJsonPath, cdkJsonContent, 'utf8')
+    await fs.writeFile(cdkJsonPath, cdkJsonContent, 'utf8')
 }
 
 export function generateConstructTreeEntity(label: string, treePath: string, children?: boolean): ConstructTreeEntity {

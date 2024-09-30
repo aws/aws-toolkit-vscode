@@ -8,7 +8,6 @@ import * as path from 'path'
 import * as pathutils from '../../../shared/utilities/pathUtils'
 import * as testutil from '../../testUtil'
 import * as vscode from 'vscode'
-import * as fs from 'fs-extra'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
 import {
     addInitialLaunchConfiguration,
@@ -30,6 +29,8 @@ import globals from '../../../shared/extensionGlobals'
 import { Runtime } from '../../../shared/telemetry/telemetry'
 import { stub } from '../../utilities/stubber'
 import sinon from 'sinon'
+import { fs } from '../../../shared'
+import * as fs2 from 'fs'
 
 const templateYaml = 'template.yaml'
 
@@ -80,7 +81,7 @@ describe('createNewSamApp', function () {
     })
 
     afterEach(async function () {
-        await fs.remove(tempFolder)
+        await fs.delete(tempFolder)
         const r = await globals.templateRegistry
         r.reset()
     })
@@ -93,7 +94,7 @@ describe('createNewSamApp', function () {
             )
         })
         it('returns the target ".yml" file when it exists', async function () {
-            fs.unlinkSync(fakeTarget)
+            fs2.unlinkSync(fakeTarget)
             tempTemplate = vscode.Uri.file(path.join(tempFolder, 'test.yml'))
             fakeTarget = path.join(tempFolder, 'template.yml')
             await testutil.toFile('target file', fakeTarget)
