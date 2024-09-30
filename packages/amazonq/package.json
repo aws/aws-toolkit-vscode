@@ -2,7 +2,7 @@
     "name": "amazon-q-vscode",
     "displayName": "Amazon Q",
     "description": "Amazon Q is your generative AI-powered assistant across the software development lifecycle.",
-    "version": "1.27.0-SNAPSHOT",
+    "version": "1.28.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -350,8 +350,13 @@
                     "group": "cw_chat@4"
                 },
                 {
+                    "command": "aws.amazonq.generateUnitTests",
+                    "group": "cw_chat@5",
+                    "when": "false"
+                },
+                {
                     "command": "aws.amazonq.sendToPrompt",
-                    "group": "cw_chat@5"
+                    "group": "cw_chat@6"
                 }
             ],
             "editor/context": [
@@ -422,6 +427,12 @@
                 "title": "%AWS.command.amazonq.sendToPrompt%",
                 "category": "%AWS.amazonq.title%",
                 "enablement": "aws.codewhisperer.connected"
+            },
+            {
+                "command": "aws.amazonq.generateUnitTests",
+                "title": "%AWS.command.amazonq.generateUnitTests%",
+                "category": "%AWS.amazonq.title%",
+                "enablement": "false"
             },
             {
                 "command": "aws.amazonq.reconnect",
@@ -598,6 +609,13 @@
                 "key": "win+alt+q",
                 "mac": "cmd+alt+q",
                 "linux": "meta+alt+q"
+            },
+            {
+                "command": "aws.amazonq.generateUnitTests",
+                "key": "win+alt+t",
+                "mac": "cmd+alt+t",
+                "linux": "meta+alt+t",
+                "when": "false"
             },
             {
                 "command": "aws.amazonq.invokeInlineCompletion",

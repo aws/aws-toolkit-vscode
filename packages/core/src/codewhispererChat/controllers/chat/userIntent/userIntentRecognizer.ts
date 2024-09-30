@@ -18,6 +18,8 @@ export class UserIntentRecognizer {
                 return UserIntent.APPLY_COMMON_BEST_PRACTICES
             case 'aws.amazonq.optimizeCode':
                 return UserIntent.IMPROVE_CODE
+            case 'aws.amazonq.generateUnitTests':
+                return UserIntent.GENERATE_UNIT_TESTS
             default:
                 return undefined
         }

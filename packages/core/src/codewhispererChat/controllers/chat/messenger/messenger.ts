@@ -293,6 +293,7 @@ export class Messenger {
                             relatedSuggestions: undefined,
                             triggerID,
                             messageID,
+                            traceId: triggerPayload.traceId,
                         },
                         tabID
                     )
@@ -339,6 +340,7 @@ export class Messenger {
         ['aws.amazonq.fixCode', 'Fix'],
         ['aws.amazonq.optimizeCode', 'Optimize'],
         ['aws.amazonq.sendToPrompt', 'Send to prompt'],
+        ['aws.amazonq.generateUnitTests', 'Generate unit tests for'],
     ])
 
     public sendStaticTextResponse(type: StaticTextResponseType, triggerID: string, tabID: string) {
