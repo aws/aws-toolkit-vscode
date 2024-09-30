@@ -744,10 +744,12 @@
         "viewsWelcome": [
             {
                 "view": "aws.appBuilderForFileExplorer",
+                "when": "!aws.isWebExtHost",
                 "contents": "[Open walkthrough](command:aws.toolkit.lambda.openWalkthrough)\n [Open Folder](command:vscode.openFolder)"
             },
             {
                 "view": "aws.appBuilder",
+                "when": "!aws.isWebExtHost",
                 "contents": "[Open walkthrough](command:aws.toolkit.lambda.openWalkthrough)\n [Open Folder](command:vscode.openFolder)"
             }
         ],
@@ -756,7 +758,7 @@
                 {
                     "id": "aws.appBuilderForFileExplorer",
                     "name": "%AWS.appBuilder.explorerTitle%",
-                    "when": "!aws.appBuilder.hide",
+                    "when": "(isCloud9 || !aws.isWebExtHost) && !aws.appBuilder.hide",
                     "contextualTitle": "Application Builder",
                     "widget": {
                         "type": "inspector"
@@ -782,7 +784,7 @@
                 {
                     "id": "aws.appBuilder",
                     "name": "%AWS.appBuilder.explorerTitle%",
-                    "when": "!aws.explorer.showAuthView"
+                    "when": "(isCloud9 || !aws.isWebExtHost) && !aws.explorer.showAuthView"
                 },
                 {
                     "id": "aws.codecatalyst",
@@ -1082,7 +1084,8 @@
                     "when": "!config.aws.samcli.legacyDeploy"
                 },
                 {
-                    "command": "aws.appBuilder.build"
+                    "command": "aws.appBuilder.build",
+                    "when": "!aws.isWebExtHost"
                 },
                 {
                     "command": "aws.s3.copyPath",
@@ -2230,6 +2233,7 @@
             {
                 "command": "aws.launchConfigForm",
                 "title": "%AWS.command.launchConfigForm.title%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "category": "%AWS.title%",
                 "icon": "$(play)",
                 "cloud9": {
@@ -2275,6 +2279,7 @@
             {
                 "command": "aws.launchDebugConfigForm",
                 "title": "%AWS.command.launchConfigForm.title%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "category": "%AWS.title%",
                 "icon": "$(play)",
                 "cloud9": {
@@ -3131,6 +3136,7 @@
             {
                 "command": "aws.toolkit.lambda.openWalkthrough",
                 "title": "%AWS.toolkit.lambda.walkthrough.quickpickTitle%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
@@ -3716,30 +3722,35 @@
             {
                 "command": "aws.appBuilder.build",
                 "title": "%AWS.command.appBuilder.build%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "category": "%AWS.title%",
                 "icon": "$(package)"
             },
             {
                 "command": "aws.appBuilder.searchLogs",
                 "title": "%AWS.command.appBuilder.searchLogs%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "category": "%AWS.title%",
                 "icon": "$(search-view-icon)"
             },
             {
                 "command": "aws.appBuilder.deploy",
                 "title": "%AWS.command.appBuilder.deploy%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "category": "%AWS.title%",
                 "icon": "$(cloud-upload)"
             },
             {
                 "command": "aws.appBuilder.openTemplate",
                 "title": "%AWS.command.appBuilder.openTemplate%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "category": "%AWS.title%",
                 "icon": "$(code)"
             },
             {
                 "command": "aws.appBuilder.openHandler",
                 "title": "%AWS.command.appBuilder.openHandler%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "category": "%AWS.title%",
                 "icon": "$(code)"
             },
@@ -3768,6 +3779,7 @@
                 "command": "aws.openInApplicationComposerDialog",
                 "title": "%AWS.command.applicationComposer.openDialog%",
                 "category": "%AWS.title%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -3778,6 +3790,7 @@
                 "command": "aws.openInApplicationComposer",
                 "title": "%AWS.command.applicationComposer.open%",
                 "category": "%AWS.title%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": {
                     "dark": "resources/icons/aws/applicationcomposer/icon-dark.svg",
                     "light": "resources/icons/aws/applicationcomposer/icon.svg"
@@ -3792,6 +3805,7 @@
                 "command": "aws.createNewThreatComposer",
                 "title": "%AWS.command.threatComposer.createNew%",
                 "category": "%AWS.title%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -3802,6 +3816,7 @@
                 "command": "aws.newThreatComposerFile",
                 "title": "%AWS.command.threatComposer.newFile%",
                 "category": "%AWS.title%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
