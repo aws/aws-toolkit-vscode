@@ -52,15 +52,19 @@ export class Ec2ParentNode extends AWSTreeNodeBase {
         )
     }
 
-    private updatePendingNodes() {
-        this.pollingSet.forEach(async (instanceId) => {
+    private async updatePendingNodes() {
+        for (const instanceId of this.pollingSet.values()) {
             const childNode = this.ec2InstanceNodes.get(instanceId)!
-            await childNode.updateStatus()
-            if (!childNode.isPending()) {
-                this.pollingSet.delete(instanceId)
-                await childNode.refreshNode()
-            }
-        })
+            await this.updatePendingNode(childNode)
+        }
+    }
+
+    private async updatePendingNode(node: Ec2InstanceNode) {
+        await node.updateStatus()
+        if (!node.isPending()) {
+            this.pollingSet.delete(node.InstanceId)
+            await node.refreshNode()
+        }
     }
 
     public async clearChildren() {
