@@ -11,7 +11,6 @@
 import assert from 'assert'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import fs from 'fs'
 import sinon from 'sinon'
 import { createAmazonQUri, getFileDiffUris, getOriginalFileUri, openDeletedDiff, openDiff } from '../../../amazonq'
 import { FileSystem } from '../../../shared/fs/fs'
@@ -36,7 +35,7 @@ describe('diff', () => {
 
     describe('openDiff', () => {
         it('file exists locally', async () => {
-            sandbox.stub(fs, 'existsSync').returns(true)
+            sandbox.stub(FileSystem.prototype, 'exists').resolves(true)
             await openDiff(filePath, rightPath, tabId)
 
             const leftExpected = vscode.Uri.file(filePath)
@@ -45,10 +44,10 @@ describe('diff', () => {
         })
 
         it('file does not exists locally', async () => {
-            sandbox.stub(fs, 'existsSync').returns(false)
+            sandbox.stub(FileSystem.prototype, 'exists').resolves(false)
             await openDiff(filePath, rightPath, tabId)
 
-            const leftExpected = getOriginalFileUri(filePath, tabId)
+            const leftExpected = await getOriginalFileUri(filePath, tabId)
             const rightExpected = createAmazonQUri(rightPath, tabId)
             assert.ok(executeCommandSpy.calledWith('vscode.diff', leftExpected, rightExpected))
         })
@@ -76,20 +75,20 @@ describe('diff', () => {
 
     describe('getOriginalFileUri', () => {
         it('file exists locally', async () => {
-            sandbox.stub(fs, 'existsSync').returns(true)
+            sandbox.stub(FileSystem.prototype, 'exists').resolves(true)
             assert.deepStrictEqual((await getOriginalFileUri(filePath, tabId)).fsPath, filePath)
         })
 
-        it('file does not exists locally', () => {
-            sandbox.stub(fs, 'existsSync').returns(false)
+        it('file does not exists locally', async () => {
+            sandbox.stub(FileSystem.prototype, 'exists').resolves(false)
             const expected = createAmazonQUri('empty', tabId)
-            assert.deepStrictEqual(getOriginalFileUri(filePath, tabId), expected)
+            assert.deepStrictEqual(await getOriginalFileUri(filePath, tabId), expected)
         })
     })
 
     describe('getFileDiffUris', () => {
         it('file exists locally', async () => {
-            sandbox.stub(fs, 'existsSync').returns(true)
+            sandbox.stub(FileSystem.prototype, 'exists').resolves(true)
 
             const { left, right } = await getFileDiffUris(filePath, rightPath, tabId)
 
@@ -101,10 +100,10 @@ describe('diff', () => {
         })
 
         it('file does not exists locally', async () => {
-            sandbox.stub(fs, 'existsSync').returns(false)
+            sandbox.stub(FileSystem.prototype, 'exists').resolves(false)
             const { left, right } = await getFileDiffUris(filePath, rightPath, tabId)
 
-            const leftExpected = getOriginalFileUri(filePath, tabId)
+            const leftExpected = await getOriginalFileUri(filePath, tabId)
             assert.deepStrictEqual(left, leftExpected)
 
             const rightExpected = createAmazonQUri(rightPath, tabId)
