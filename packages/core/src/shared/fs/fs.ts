@@ -367,7 +367,7 @@ export class FileSystem {
      */
     async chmod(uri: vscode.Uri | string, mode: number): Promise<void> {
         if (!this.isWeb) {
-            const path = this.#toUri(uri)
+            const path = toUri(uri)
             await chmod(path.fsPath, mode)
         }
     }
