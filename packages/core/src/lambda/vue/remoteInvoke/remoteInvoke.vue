@@ -78,8 +78,8 @@
             <label :style="{ fontSize: '13px', fontWeight: 500 }">Sample event</label>
             <div>
                 <div>
-                    <button class="button-theme-secondary" style="width: 50%" @click="loadSampleEvent">
-                        Load Sample Event
+                    <button class="button-theme-secondary" style="width: 140px" @click="loadSampleEvent">
+                        Select an event
                     </button>
                 </div>
                 <br />
@@ -91,7 +91,7 @@
             <div><label>File</label></div>
             <div>
                 <input type="file" id="file" @change="onFileChange" style="display: none" ref="fileInput" />
-                <button @click="promptForFileLocation" class="secondary-button">Choose file</button>
+                <button @click="promptForFileLocation" class="button-theme-secondary">Choose file</button>
                 &nbsp; {{ selectedFile || 'No file selected' }}
             </div>
         </div>
@@ -100,7 +100,7 @@
             <div class="form-row">
                 <div>
                     <select class="form-row-event-select" v-model="selectedTestEvent" v-on:change="newSelection">
-                        <option disabled value="">Select an Event</option>
+                        <option disabled value="">Select an event</option>
                         <option v-for="item in initialData.TestEvents">
                             {{ item }}
                         </option>
@@ -119,7 +119,7 @@
             <div class="form-row" v-if="showNameInput">
                 <label :style="{ fontSize: '13px', fontWeight: 500 }">Sample event</label>
                 <button class="button-theme-secondary" style="width: 140px" @click="loadSampleEvent">
-                    Load Sample Event
+                    Select an event
                 </button>
             </div>
             <textarea style="width: 80%; margin-bottom: 10px" rows="5" cols="60" v-model="sampleText"></textarea>

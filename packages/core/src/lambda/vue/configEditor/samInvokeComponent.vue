@@ -61,15 +61,17 @@
                 </div>
                 <div class="form-row" v-if="payloadOption === 'sampleEvents'">
                     <label :style="{ fontSize: '13px', fontWeight: 500 }">Sample event</label>
-                    <button class="button-theme-secondary" style="width: 140px" v-on:click.prevent="loadPayload">
-                        Select an Event</button
-                    ><br />
-                    <span class="data-view">payload from data: {{ payload }} </span>
-                    <div class="input-validation" v-if="payload.errorMsg">
-                        Error parsing JSON: {{ payload.errorMsg }}
+                    <div>
+                        <button class="button-theme-secondary" style="width: 140px" v-on:click.prevent="loadPayload">
+                            Select an event</button
+                        ><br />
+                        <span class="data-view">payload from data: {{ payload }} </span>
+                        <div class="input-validation" v-if="payload.errorMsg">
+                            Error parsing JSON: {{ payload.errorMsg }}
+                        </div>
+                        <br />
                     </div>
-                </div>
-                <div v-if="payloadOption === 'sampleEvents'">
+                    <br />
                     <textarea
                         style="width: 100%; margin-bottom: 10px"
                         rows="5"
