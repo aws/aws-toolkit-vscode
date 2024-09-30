@@ -19,6 +19,7 @@ import { extensionVersion } from '../../shared/vscode/env'
 import { sleep } from '../../shared/utilities/timeoutUtils'
 import globals from '../../shared/extensionGlobals'
 import { createQuickStartWebview } from '../../shared/extensionStartup'
+import { fs } from '../../shared'
 
 describe('extensionUtilities', function () {
     describe('createQuickStartWebview', async function () {
@@ -33,7 +34,7 @@ describe('extensionUtilities', function () {
 
         afterEach(async function () {
             if (tempDir) {
-                await remove(tempDir)
+                await fs.delete(tempDir)
             }
         })
 
@@ -44,7 +45,7 @@ describe('extensionUtilities', function () {
         it('returns a webview with unaltered text if a valid file is passed without tokens', async function () {
             const filetext = 'this temp page does not have any tokens'
             const filepath = 'tokenless'
-            await writeFile(path.join(context.extensionPath, filepath), filetext)
+            await fs.writeFile(path.join(context.extensionPath, filepath), filetext)
             const webview = await createQuickStartWebview(context, filepath)
 
             assert.strictEqual(typeof webview, 'object')
@@ -57,7 +58,7 @@ describe('extensionUtilities', function () {
             const basetext = 'this temp page has tokens: '
             const filetext = basetext + token
             const filepath = 'tokenless'
-            await writeFile(path.join(context.extensionPath, filepath), filetext)
+            await fs.writeFile(path.join(context.extensionPath, filepath), filetext)
             const webview = await createQuickStartWebview(context, filepath)
 
             assert.strictEqual(typeof webview, 'object')

@@ -4,13 +4,14 @@
  */
 
 import assert from 'assert'
-import * as fs from 'fs-extra'
 import * as os from 'os'
 import * as path from 'path'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../../shared/filesystemUtilities'
 import { ChildProcess, eof, getPids } from '../../../shared/utilities/processUtils'
 import { sleep } from '../../../shared/utilities/timeoutUtils'
 import { Timeout, waitUntil } from '../../../shared/utilities/timeoutUtils'
+import { fs } from '../../../shared'
+import { chmodSync } from 'fs'
 
 describe('ChildProcess', async function () {
     let tempFolder: string
@@ -35,7 +36,7 @@ describe('ChildProcess', async function () {
         if (process.platform === 'win32') {
             it('starts and captures stdout - windows', async function () {
                 const batchFile = path.join(tempFolder, 'test-script.bat')
-                writeBatchFile(batchFile)
+                await writeBatchFile(batchFile)
 
                 const childProcess = new ChildProcess(batchFile)
 
@@ -46,9 +47,9 @@ describe('ChildProcess', async function () {
                 const subfolder: string = path.join(tempFolder, 'sub folder')
                 const command: string = path.join(subfolder, 'test script.cmd')
 
-                fs.mkdirSync(subfolder)
+                await fs.mkdir(subfolder)
 
-                writeWindowsCommandFile(command)
+                await writeWindowsCommandFile(command)
 
                 const childProcess = new ChildProcess(command)
 
@@ -57,7 +58,7 @@ describe('ChildProcess', async function () {
 
             it('errs when starting twice - windows', async function () {
                 const batchFile = path.join(tempFolder, 'test-script.bat')
-                writeBatchFile(batchFile)
+                await writeBatchFile(batchFile)
 
                 const childProcess = new ChildProcess(batchFile)
 
@@ -80,7 +81,7 @@ describe('ChildProcess', async function () {
         if (process.platform !== 'win32') {
             it('runs and captures stdout - unix', async function () {
                 const scriptFile = path.join(tempFolder, 'test-script.sh')
-                writeShellFile(scriptFile)
+                await writeShellFile(scriptFile)
 
                 const childProcess = new ChildProcess(scriptFile)
 
@@ -89,7 +90,7 @@ describe('ChildProcess', async function () {
 
             it('errs when starting twice - unix', async function () {
                 const scriptFile = path.join(tempFolder, 'test-script.sh')
-                writeShellFile(scriptFile)
+                await writeShellFile(scriptFile)
 
                 const childProcess = new ChildProcess(scriptFile)
 
@@ -113,14 +114,14 @@ describe('ChildProcess', async function () {
             const subfolder: string = path.join(tempFolder, 'sub folder')
             let command: string
 
-            fs.mkdirSync(subfolder)
+            await fs.mkdir(subfolder)
 
             if (process.platform === 'win32') {
                 command = path.join(subfolder, 'test script.bat')
-                writeBatchFile(command)
+                await writeBatchFile(command)
             } else {
                 command = path.join(subfolder, 'test script.sh')
-                writeShellFile(command)
+                await writeShellFile(command)
             }
 
             const childProcess = new ChildProcess(command)
@@ -140,14 +141,20 @@ describe('ChildProcess', async function () {
         describe('Extra options', function () {
             let childProcess: ChildProcess
 
-            beforeEach(function () {
+            beforeEach(async function () {
                 const isWindows = process.platform === 'win32'
                 const command = path.join(tempFolder, `test-script.${isWindows ? 'bat' : 'sh'}`)
 
                 if (isWindows) {
-                    writeBatchFile(command, ['@echo %1', '@echo %2', '@echo "%3"', 'SLEEP 20', 'exit 1'].join(os.EOL))
+                    await writeBatchFile(
+                        command,
+                        ['@echo %1', '@echo %2', '@echo "%3"', 'SLEEP 20', 'exit 1'].join(os.EOL)
+                    )
                 } else {
-                    writeShellFile(command, ['echo $1', 'echo $2', 'echo "$3"', 'sleep 20', 'exit 1'].join(os.EOL))
+                    await writeShellFile(
+                        command,
+                        ['echo $1', 'echo $2', 'echo "$3"', 'sleep 20', 'exit 1'].join(os.EOL)
+                    )
                 }
 
                 childProcess = new ChildProcess(command, ['1', '2'], { collect: false })
@@ -241,7 +248,7 @@ describe('ChildProcess', async function () {
         if (process.platform === 'win32') {
             it('detects running processes and successfully stops a running process - Windows', async function () {
                 const batchFile = path.join(tempFolder, 'test-script.bat')
-                writeBatchFileWithDelays(batchFile)
+                await writeBatchFileWithDelays(batchFile)
 
                 const childProcess = new ChildProcess(batchFile)
 
@@ -258,7 +265,7 @@ describe('ChildProcess', async function () {
 
             it('can stop() previously stopped processes - Windows', async function () {
                 const batchFile = path.join(tempFolder, 'test-script.bat')
-                writeBatchFileWithDelays(batchFile)
+                await writeBatchFileWithDelays(batchFile)
 
                 const childProcess = new ChildProcess(batchFile)
 
@@ -277,7 +284,7 @@ describe('ChildProcess', async function () {
         if (process.platform !== 'win32') {
             it('detects running processes and successfully stops a running process - Unix', async function () {
                 const scriptFile = path.join(tempFolder, 'test-script.sh')
-                writeShellFileWithDelays(scriptFile)
+                await writeShellFileWithDelays(scriptFile)
 
                 const childProcess = new ChildProcess('sh', [scriptFile])
                 const result = childProcess.run()
@@ -291,7 +298,7 @@ describe('ChildProcess', async function () {
 
             it('can stop() previously stopped processes - Unix', async function () {
                 const scriptFile = path.join(tempFolder, 'test-script.sh')
-                writeShellFileWithDelays(scriptFile)
+                await writeShellFileWithDelays(scriptFile)
 
                 const childProcess = new ChildProcess(scriptFile)
 
@@ -315,33 +322,34 @@ describe('ChildProcess', async function () {
         } // END Unix-only tests
     })
 
-    function writeBatchFile(filename: string, contents?: string): void {
-        fs.writeFileSync(filename, contents ?? '@echo hi')
+    async function writeBatchFile(filename: string, contents?: string): Promise<void> {
+        await fs.writeFile(filename, contents ?? '@echo hi')
     }
 
-    function writeBatchFileWithDelays(filename: string): void {
+    async function writeBatchFileWithDelays(filename: string): Promise<void> {
         const file = `
         @echo hi
         SLEEP 20
         @echo bye`
-        fs.writeFileSync(filename, file)
+        await fs.writeFile(filename, file)
     }
 
-    function writeWindowsCommandFile(filename: string): void {
-        fs.writeFileSync(filename, `@echo OFF${os.EOL}echo hi`)
+    async function writeWindowsCommandFile(filename: string): Promise<void> {
+        await fs.writeFile(filename, `@echo OFF${os.EOL}echo hi`)
     }
 
-    function writeShellFile(filename: string, contents = 'echo hi'): void {
-        fs.writeFileSync(filename, `#!/bin/sh\n${contents}`)
-        fs.chmodSync(filename, 0o744)
+    async function writeShellFile(filename: string, contents = 'echo hi'): Promise<void> {
+        await fs.writeFile(filename, `#!/bin/sh\n${contents}`)
+        // TODO: replace with fs.chmod when
+        chmodSync(filename, 0o744)
     }
 
-    function writeShellFileWithDelays(filename: string): void {
+    async function writeShellFileWithDelays(filename: string): Promise<void> {
         const file = `
         echo hi
         sleep 20
         echo bye`
-        writeShellFile(filename, file)
+        await writeShellFile(filename, file)
     }
 })
 
