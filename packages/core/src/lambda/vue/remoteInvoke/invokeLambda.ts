@@ -133,8 +133,8 @@ export class RemoteInvokeWebview extends VueWebview {
             const fileContent = readFileSync(fileLocations[0].fsPath, { encoding: 'utf8' })
             return {
                 sample: fileContent,
-                selectedFilePath: fileLocations[0].path,
-                selectedFile: this.getFileName(fileLocations[0].path),
+                selectedFilePath: fileLocations[0].fsPath,
+                selectedFile: this.getFileName(fileLocations[0].fsPath),
             }
         } catch (e) {
             getLogger().error('readFileSync: Failed to read file at path %O', fileLocations[0].fsPath, e)

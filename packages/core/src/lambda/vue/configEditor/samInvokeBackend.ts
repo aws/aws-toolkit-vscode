@@ -273,8 +273,8 @@ export class SamInvokeWebview extends VueWebview {
             const fileContent = fs.readFileSync(fileLocations[0].fsPath, { encoding: 'utf8' })
             return {
                 sample: fileContent,
-                selectedFilePath: fileLocations[0].path.trim(),
-                selectedFile: this.getFileName(fileLocations[0].path).trim(),
+                selectedFilePath: fileLocations[0].fsPath,
+                selectedFile: this.getFileName(fileLocations[0].fsPath),
             }
         } catch (e) {
             getLogger().error('readFileSync: Failed to read file at path %O', fileLocations[0].fsPath, e)
