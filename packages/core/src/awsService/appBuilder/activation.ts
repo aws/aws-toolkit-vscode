@@ -14,6 +14,7 @@ import { setContext } from '../../shared/vscode/setContext'
 import { fs } from '../../shared/fs/fs'
 import { AppBuilderRootNode } from './explorer/nodes/rootNode'
 import { initWalkthroughProjectCommand, walkthroughContextString, getOrInstallCliWrapper } from './walkthrough'
+import { getLogger } from '../../shared/logger'
 import path from 'path'
 
 export const templateToOpenAppComposer = 'aws.toolkit.appComposer.templateToOpenOnStart'
@@ -46,11 +47,22 @@ export async function activate(context: ExtContext): Promise<void> {
         },
     ]
 
+    const watcher = vscode.workspace.createFileSystemWatcher('**/{template.yaml,template.yml,samconfig.toml}')
+    watcher.onDidChange(async (uri) => runRefreshAppBuilder(uri, 'changed'))
+    watcher.onDidCreate(async (uri) => runRefreshAppBuilder(uri, 'created'))
+    watcher.onDidDelete(async (uri) => runRefreshAppBuilder(uri, 'deleted'))
+
     for (const viewNode of appBuilderNode) {
         registerToolView(viewNode, context.extensionContext)
     }
 
     await openApplicationComposerAfterReload()
+}
+
+async function runRefreshAppBuilder(uri: vscode.Uri, event: string) {
+    getLogger().debug(`${uri.fsPath} ${event}, refreshing appBuilder`)
+    await vscode.commands.executeCommand('aws.appBuilderForFileExplorer.refresh')
+    await vscode.commands.executeCommand('aws.appBuilder.refresh')
 }
 
 /**
