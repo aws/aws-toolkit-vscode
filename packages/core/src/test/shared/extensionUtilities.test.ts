@@ -6,7 +6,6 @@
 import assert from 'assert'
 
 import { AWSError } from 'aws-sdk'
-import { writeFile, remove } from 'fs-extra'
 import * as path from 'path'
 import * as sinon from 'sinon'
 import { DefaultEc2MetadataClient } from '../../shared/clients/ec2MetadataClient'
