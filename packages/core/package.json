@@ -2,10 +2,6 @@
     "name": "aws-core-vscode",
     "description": "Core library used AWS IDE extensions for VSCode.",
     "version": "1.0.0",
-    "extensionKind": [
-        "workspace"
-    ],
-    "publisher": "amazonwebservices",
     "license": "Apache-2.0",
     "engines": {
         "npm": "^10.1.0",
@@ -42,7 +38,7 @@
         "./amazonqFeatureDev": "./dist/src/amazonqFeatureDev/index.js",
         "./codewhispererChat": "./dist/src/codewhispererChat/index.js",
         "./test": "./dist/src/test/index.js",
-        "./testInteg": "./dist/src/testInteg/index.js",
+        "./testWeb": "./dist/src/testWeb/index.js",
         "./login": "./dist/src/login/webview/index.js",
         "./utils": "./dist/src/shared/utilities/index.js",
         "./feedback": "./dist/src/feedback/index.js",
@@ -4314,33 +4310,6 @@
                     "fontCharacter": "\\f1da"
                 }
             }
-        },
-        "notebooks": [
-            {
-                "type": "aws-redshift-sql-notebook",
-                "displayName": "Redshift SQL notebook",
-                "selector": [
-                    {
-                        "filenamePattern": "*.redshiftnb"
-                    }
-                ]
-            }
-        ],
-        "customEditors": [
-            {
-                "viewType": "threatComposer.tc.json",
-                "displayName": "%AWS.threatComposer.title%",
-                "selector": [
-                    {
-                        "filenamePattern": "*.tc.json"
-                    }
-                ]
-            }
-        ],
-        "configurationDefaults": {
-            "workbench.editorAssociations": {
-                "{git,gitlens,conflictResolution,vscode-local-history}:/**/*.tc.json": "default"
-            }
         }
     },
     "scripts": {
@@ -4348,17 +4317,12 @@
         "clean": "ts-node ../../scripts/clean.ts dist/",
         "copyFiles": "ts-node ./scripts/build/copyFiles.ts",
         "buildScripts": "npm run generateClients && npm run generateIcons && npm run copyFiles",
-        "compile": "npm run testCompile && webpack",
+        "compile": "npm run clean && npm run buildScripts && npm run compileOnly && webpack",
         "compileOnly": "tsc -p ./",
         "compileDev": "npm run compile -- --mode development",
         "webpackDev": "webpack --mode development",
         "serveVue": "webpack serve --config-name vue --mode development",
-        "watch": "npm run testCompile -- -- --watch",
-        "testCompile": "npm run clean && npm run buildScripts && npm run compileOnly",
-        "test": "npm run testCompile && c8 ts-node ./scripts/test/test.ts dist/src/test/index.js",
-        "testWeb": "npm run compileDev && c8 ts-node ./scripts/test/testWeb.ts",
-        "testE2E": "npm run testCompile && c8 ts-node ./scripts/test/testE2E.ts dist/src/testE2E/index.js",
-        "testInteg": "npm run testCompile && c8 ts-node ./scripts/test/testInteg.ts",
+        "watch": "npm run clean && npm run buildScripts && npm run compileOnly -- --watch",
         "lint": "ts-node ./scripts/lint/testLint.ts",
         "generateClients": "ts-node ./scripts/build/generateServiceClient.ts ",
         "generateIcons": "ts-node ../../scripts/generateIcons.ts",

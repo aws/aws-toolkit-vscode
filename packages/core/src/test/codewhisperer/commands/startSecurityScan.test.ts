@@ -14,7 +14,13 @@ import { FakeExtensionContext } from '../../fakeExtensionContext'
 import * as diagnosticsProvider from '../../../codewhisperer/service/diagnosticsProvider'
 import { getTestWorkspaceFolder } from '../../../testInteg/integrationTestsUtilities'
 import { join } from 'path'
-import { assertTelemetry, closeAllEditors, createTestWorkspaceFolder, toFile } from '../../testUtil'
+import {
+    assertTelemetry,
+    closeAllEditors,
+    createTestWorkspaceFolder,
+    getFetchStubWithResponse,
+    toFile,
+} from '../../testUtil'
 import { stub } from '../../utilities/stubber'
 import { AWSError, HttpResponse } from 'aws-sdk'
 import { getTestWindow } from '../../shared/vscode/window'
@@ -30,7 +36,6 @@ import * as model from '../../../codewhisperer/models/model'
 import { CodewhispererSecurityScan } from '../../../shared/telemetry/telemetry.gen'
 import * as errors from '../../../shared/errors'
 import * as timeoutUtils from '../../../shared/utilities/timeoutUtils'
-import { getFetchStubWithResponse } from '../../index'
 import { performanceTest } from '../../../shared/performance/performance'
 
 const mockCreateCodeScanResponse = {
