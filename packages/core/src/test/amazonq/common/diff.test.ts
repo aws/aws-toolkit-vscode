@@ -14,6 +14,7 @@ import * as vscode from 'vscode'
 import fs from 'fs'
 import sinon from 'sinon'
 import { createAmazonQUri, getFileDiffUris, getOriginalFileUri, openDeletedDiff, openDiff } from '../../../amazonq'
+import { FileSystem } from '../../../shared/fs/fs'
 
 describe('diff', () => {
     const filePath = path.join('/', 'foo', 'fi')
@@ -57,7 +58,7 @@ describe('diff', () => {
         const name = 'foo'
 
         it('file exists locally', async () => {
-            sandbox.stub(fs, 'existsSync').returns(true)
+            sandbox.stub(FileSystem.prototype, 'exists').resolves(true)
             await openDeletedDiff(filePath, name, tabId)
 
             const expectedPath = vscode.Uri.file(filePath)
@@ -65,7 +66,7 @@ describe('diff', () => {
         })
 
         it('file does not exists locally', async () => {
-            sandbox.stub(fs, 'existsSync').returns(false)
+            sandbox.stub(FileSystem.prototype, 'exists').resolves(false)
             await openDeletedDiff(filePath, name, tabId)
 
             const expectedPath = createAmazonQUri('empty', tabId)
@@ -74,9 +75,9 @@ describe('diff', () => {
     })
 
     describe('getOriginalFileUri', () => {
-        it('file exists locally', () => {
+        it('file exists locally', async () => {
             sandbox.stub(fs, 'existsSync').returns(true)
-            assert.deepStrictEqual(getOriginalFileUri(filePath, tabId).fsPath, filePath)
+            assert.deepStrictEqual((await getOriginalFileUri(filePath, tabId)).fsPath, filePath)
         })
 
         it('file does not exists locally', () => {
@@ -87,10 +88,10 @@ describe('diff', () => {
     })
 
     describe('getFileDiffUris', () => {
-        it('file exists locally', () => {
+        it('file exists locally', async () => {
             sandbox.stub(fs, 'existsSync').returns(true)
 
-            const { left, right } = getFileDiffUris(filePath, rightPath, tabId)
+            const { left, right } = await getFileDiffUris(filePath, rightPath, tabId)
 
             const leftExpected = vscode.Uri.file(filePath)
             assert.deepStrictEqual(left, leftExpected)
@@ -99,9 +100,9 @@ describe('diff', () => {
             assert.deepStrictEqual(right, rightExpected)
         })
 
-        it('file does not exists locally', () => {
+        it('file does not exists locally', async () => {
             sandbox.stub(fs, 'existsSync').returns(false)
-            const { left, right } = getFileDiffUris(filePath, rightPath, tabId)
+            const { left, right } = await getFileDiffUris(filePath, rightPath, tabId)
 
             const leftExpected = getOriginalFileUri(filePath, tabId)
             assert.deepStrictEqual(left, leftExpected)
