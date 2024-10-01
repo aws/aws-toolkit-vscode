@@ -19,6 +19,8 @@ import { DeclaredCommand } from '../shared/vscode/commands2'
 import { mkdirSync, existsSync } from 'fs'
 import * as nodefs from 'fs/promises'
 import { randomBytes } from 'crypto'
+import request from '../shared/request'
+import { stub } from 'sinon'
 
 const testTempDirs: string[] = []
 
@@ -480,7 +482,13 @@ export async function closeAllEditors(): Promise<void> {
     //  - `vscode.OutputChannel` name prefixed with "extension-output". https://github.com/microsoft/vscode/issues/148993#issuecomment-1167654358
     //  - `vscode.LogOutputChannel` name (created with `vscode.window.createOutputChannel(…,{log:true})`
     // Maybe we can close these with a command?
-    const ignorePatterns = [/extension-output/, /tasks/, /amazonwebservices\.aws-core-vscode\./]
+    // For nullExtensionDescription, see https://github.com/aws/aws-toolkit-vscode/issues/4658
+    const ignorePatterns = [
+        /extension-output/,
+        /tasks/,
+        /amazonwebservices\.[a-z\-]+-vscode\./,
+        /nullExtensionDescription./, // Sometimes exists instead of the prior line, see https://github.com/aws/aws-toolkit-vscode/issues/4658
+    ]
     const editors: vscode.TextEditor[] = []
 
     const noVisibleEditor: boolean | undefined = await waitUntil(
@@ -606,4 +614,9 @@ export function tryRegister(command: DeclaredCommand<() => Promise<any>>) {
             throw err
         }
     }
+}
+
+// Returns a stubbed fetch for other tests.
+export function getFetchStubWithResponse(response: Partial<Response>) {
+    return stub(request, 'fetch').returns({ response: new Promise((res, _) => res(response)) } as any)
 }
