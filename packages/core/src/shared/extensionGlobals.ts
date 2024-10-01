@@ -172,7 +172,7 @@ export { globals as default }
  * Namespace for common variables used globally in the extension.
  * All variables here must be initialized in the activate() method of extension.ts
  */
-interface ToolkitGlobals {
+export interface ToolkitGlobals {
     readonly context: ExtensionContext
     /** Global, shared (with all vscode instances, including remote!), mutable, persisted state (survives IDE restart), namespaced to the extension (not shared with other vscode extensions). */
     readonly globalState: GlobalState

@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import * as path from 'path'
 import * as crypto from 'crypto'
-import { chmodSync, createWriteStream } from 'fs'
+import { createWriteStream } from 'fs'
 import { getLogger } from '../../shared/logger/logger'
 import { CurrentWsFolders, collectFilesForIndex } from '../../shared/utilities/workspaceUtils'
 import fetch from 'node-fetch'
@@ -19,11 +19,12 @@ import { CodeWhispererSettings } from '../../codewhisperer/util/codewhispererSet
 import { activate as activateLsp } from './lspClient'
 import { telemetry } from '../../shared/telemetry'
 import { isCloud9 } from '../../shared/extensionUtilities'
-import { fs, globals, ToolkitError } from '../../shared'
+import { globals, ToolkitError } from '../../shared'
 import { AuthUtil } from '../../codewhisperer'
 import { isWeb } from '../../shared/extensionGlobals'
 import { getUserAgent } from '../../shared/telemetry/util'
 import { isAmazonInternalOs } from '../../shared/vscode/env'
+import { fs } from '../../shared/fs/fs'
 
 function getProjectPaths() {
     const workspaceFolders = vscode.workspace.workspaceFolders
@@ -266,7 +267,7 @@ export class LspController {
             if (!downloadNodeOk) {
                 return false
             }
-            chmodSync(nodeRuntimeTempPath, 0o755)
+            await fs.chmod(nodeRuntimeTempPath, 0o755)
             await fs.rename(nodeRuntimeTempPath, nodeRuntimePath)
             return true
         } catch (e) {

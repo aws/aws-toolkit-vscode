@@ -139,8 +139,8 @@ describe('Ec2ConnectClient', function () {
                 instanceId: 'test-id',
                 region: 'test-region',
             }
-            const mockKeys = await SshKeyPair.getSshKeyPair('', 30000)
-            await client.sendSshKeyToInstance(testSelection, mockKeys, '')
+            const mockKeys = await SshKeyPair.getSshKeyPair('fakeDir', 30000)
+            await client.sendSshKeyToInstance(testSelection, mockKeys, 'test-user')
             sinon.assert.calledWith(sendCommandStub, testSelection.instanceId, 'AWS-RunShellScript')
             sinon.restore()
         })

@@ -4,8 +4,7 @@
  */
 
 import assert from 'assert'
-import globals from '../../shared/extensionGlobals'
-import fs from '../../shared/fs/fs'
+import { fs, globals } from 'aws-core-vscode/shared'
 
 describe('FileSystem', function () {
     it('getUserHomeDir()', async () => {
