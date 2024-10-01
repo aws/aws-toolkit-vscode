@@ -16,7 +16,7 @@ import { runLambdaFunction } from '../localLambdaRunner'
 import { SamLaunchRequestArgs } from './awsSamDebugger'
 import { getLogger } from '../../logger'
 import fs from '../../fs/fs'
-import { chmod, unlink } from 'fs/promises'
+import { chmod } from 'fs/promises'
 import { ChildProcess } from '../../utilities/processUtils'
 import { Timeout } from '../../utilities/timeoutUtils'
 import { execFileSync, SpawnOptions } from 'child_process'
@@ -263,7 +263,7 @@ async function installDebugger(debuggerPath: string): Promise<boolean> {
         }
     } catch (e) {
         if (installScript && (await fs.exists(installScript.path))) {
-            await unlink(installScript.path) // Removes the install script since it failed
+            await fs.delete(installScript.path) // Removes the install script since it failed
         }
         getLogger().error('Failed to cross-compile Delve debugger: %O', e as Error)
         return false
