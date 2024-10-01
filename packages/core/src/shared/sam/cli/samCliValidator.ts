@@ -14,6 +14,7 @@ export const minSamCliVersionForImageSupport = '1.13.0'
 export const maxSamCliVersionExclusive = '2.0.0'
 export const minSamCliVersionForGoSupport = '1.18.1'
 export const minSamCliVersionForArmSupport = '1.33.0'
+export const minSamCliVersionForAppBuilderSupport = '1.98.0'
 
 // Errors
 export class InvalidSamCliError extends ToolkitError {}

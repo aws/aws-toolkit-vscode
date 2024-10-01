@@ -3,324 +3,363 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as path from 'path'
 import * as vscode from 'vscode'
-import * as nls from 'vscode-nls'
+import {
+    TemplateItem,
+    createBucketPrompter,
+    createStackPrompter,
+    createTemplatePrompter,
+    getSamCliPathAndVersion,
+    runInTerminal,
+} from '../../shared/sam/sync'
+import { DataQuickPickItem, createQuickPick } from '../../shared/ui/pickerPrompter'
+import { createCommonButtons } from '../../shared/ui/buttons'
+import { samDeployUrl } from '../../shared/constants'
+import { Wizard } from '../../shared/wizards/wizard'
+import { CloudFormationTemplateRegistry } from '../../shared/fs/templateRegistry'
+import { createExitPrompter } from '../../shared/ui/common/exitPrompter'
+import { createRegionPrompter } from '../../shared/ui/common/region'
+import { DefaultCloudFormationClient } from '../../shared/clients/cloudFormationClient'
+import { DefaultS3Client } from '../../shared/clients/s3Client'
+import { ToolkitError, globals } from '../../shared'
+import { validateSamDeployConfig, writeSamconfigGlobal } from '../../shared/sam/config'
+import { CancellationError } from '../../shared/utilities/timeoutUtils'
+import { ChildProcess } from '../../shared/utilities/processUtils'
+import { addTelemetryEnvVar } from '../../shared/sam/cli/samCliInvokerUtils'
+import { getProjectRoot, getSource } from '../../shared/sam/utils'
+import { telemetry } from '../../shared/telemetry'
+import { getParameters } from '../config/parameterUtils'
+import { filter } from '../../shared/utilities/collectionUtils'
+import { createInputBox } from '../../shared/ui/inputPrompter'
+import { getSpawnEnv } from '../../shared/env/resolveEnv'
+import * as CloudFormation from '../../shared/cloudformation/cloudformation'
 
-import { asEnvironmentVariables } from '../../auth/credentials/utils'
-import { AwsContext } from '../../shared/awsContext'
-import globals from '../../shared/extensionGlobals'
+interface DeployParams {
+    readonly paramsSource: ParamsSource
+    readonly template: TemplateItem
+    readonly region: string
+    readonly stackName: string
+    readonly bucketSource: BucketSource
+    readonly bucketName: string
+    readonly projectRoot: vscode.Uri
 
-import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../shared/filesystemUtilities'
-import { checklogs } from '../../shared/localizedText'
-import { getLogger } from '../../shared/logger'
-import { SamCliBuildInvocation } from '../../shared/sam/cli/samCliBuild'
-import { SamCliSettings } from '../../shared/sam/cli/samCliSettings'
-import { getSamCliContext, SamCliContext, getSamCliVersion } from '../../shared/sam/cli/samCliContext'
-import { runSamCliDeploy } from '../../shared/sam/cli/samCliDeploy'
-import { SamCliProcessInvoker } from '../../shared/sam/cli/samCliInvokerUtils'
-import { runSamCliPackage } from '../../shared/sam/cli/samCliPackage'
-import { throwAndNotifyIfInvalid } from '../../shared/sam/cli/samCliValidationUtils'
-import { Result } from '../../shared/telemetry/telemetry'
-import { addCodiconToString } from '../../shared/utilities/textUtilities'
-import { SamDeployWizardResponse } from '../wizards/samDeployWizard'
-import { telemetry } from '../../shared/telemetry/telemetry'
-
-const localize = nls.loadMessageBundle()
-
-interface DeploySamApplicationParameters {
-    sourceTemplatePath: string
-    deployRootFolder: string
-    environmentVariables: NodeJS.ProcessEnv
-    region: string
-    packageBucketName: string
-    ecrRepo?: string
-    destinationStackName: string
-    parameterOverrides: Map<string, string>
+    [key: string]: any
 }
 
-export interface WindowFunctions {
-    showInformationMessage: typeof vscode.window.showInformationMessage
-    showErrorMessage: typeof vscode.window.showErrorMessage
-    setStatusBarMessage(text: string, hideWhenDone: Thenable<any>): vscode.Disposable
+function createParamPromptProvider(name: string, defaultValue: string | undefined) {
+    return createInputBox({
+        title: `Specify SAM parameter value for ${name}`,
+        buttons: createCommonButtons(samDeployUrl),
+        value: defaultValue,
+    })
 }
 
-export async function deploySamApplication(
-    {
-        samCliContext = getSamCliContext(),
-        samDeployWizard,
-    }: {
-        samCliContext?: SamCliContext
-        samDeployWizard: () => Promise<SamDeployWizardResponse | undefined>
-    },
-    {
-        awsContext,
-        settings,
-        window = getDefaultWindowFunctions(),
-        refreshFn = () => {
-            // no need to await, doesn't need to block further execution (true -> no telemetry)
-            void vscode.commands.executeCommand('aws.refreshAwsExplorer', true)
-        },
-    }: {
-        awsContext: Pick<AwsContext, 'getCredentials' | 'getCredentialProfileName'>
-        settings: SamCliSettings
-        window?: WindowFunctions
-        refreshFn?: () => void
-    }
-): Promise<void> {
-    let deployResult: Result = 'Succeeded'
-    let samVersion: string | undefined
-    let deployFolder: string | undefined
-    try {
-        const credentials = await awsContext.getCredentials()
-        if (!credentials) {
-            throw new Error('No AWS profile selected')
-        }
-
-        throwAndNotifyIfInvalid(await samCliContext.validator.detectValidSamCli())
-
-        const deployWizardResponse = await samDeployWizard()
-
-        if (!deployWizardResponse) {
-            return
-        }
-
-        deployFolder = await makeTemporaryToolkitFolder('samDeploy')
-        samVersion = await getSamCliVersion(samCliContext)
-
-        const deployParameters: DeploySamApplicationParameters = {
-            deployRootFolder: deployFolder,
-            destinationStackName: deployWizardResponse.stackName,
-            packageBucketName: deployWizardResponse.s3Bucket,
-            ecrRepo: deployWizardResponse.ecrRepo?.repositoryUri,
-            parameterOverrides: deployWizardResponse.parameterOverrides,
-            environmentVariables: asEnvironmentVariables(credentials),
-            region: deployWizardResponse.region,
-            sourceTemplatePath: deployWizardResponse.template.fsPath,
-        }
-
-        const deployApplicationPromise = deploy({
-            deployParameters,
-            invoker: samCliContext.invoker,
-            window,
-        })
-
-        window.setStatusBarMessage(
-            addCodiconToString(
-                'cloud-upload',
-                localize(
-                    'AWS.samcli.deploy.statusbar.message',
-                    'Deploying SAM Application to {0}...',
-                    deployWizardResponse.stackName
-                )
-            ),
-            deployApplicationPromise
-        )
-
-        await deployApplicationPromise
-        refreshFn()
-
-        // successful deploy: retain S3 bucket for quick future access
-        const profile = awsContext.getCredentialProfileName()
-        if (profile) {
-            await settings.updateSavedBuckets(profile, deployWizardResponse.region, deployWizardResponse.s3Bucket)
-        } else {
-            getLogger().warn('Profile not provided; cannot write recent buckets.')
-        }
-    } catch (err) {
-        deployResult = 'Failed'
-        outputDeployError(err as Error)
-        void vscode.window.showErrorMessage(
-            localize('AWS.samcli.deploy.workflow.error', 'Failed to deploy SAM application.')
-        )
-    } finally {
-        await tryRemoveFolder(deployFolder)
-        telemetry.sam_deploy.emit({ result: deployResult, version: samVersion })
-    }
-}
-
-function getBuildRootFolder(deployRootFolder: string): string {
-    return path.join(deployRootFolder, 'build')
-}
-
-function getBuildTemplatePath(deployRootFolder: string): string {
-    // Assumption: sam build will always produce a template.yaml file.
-    // If that is not the case, revisit this logic.
-    return path.join(getBuildRootFolder(deployRootFolder), 'template.yaml')
-}
-
-function getPackageTemplatePath(deployRootFolder: string): string {
-    return path.join(deployRootFolder, 'template.yaml')
-}
-
-async function buildOperation(params: {
-    deployParameters: DeploySamApplicationParameters
-    invoker: SamCliProcessInvoker
-}): Promise<boolean> {
-    try {
-        getLogger().info(localize('AWS.samcli.deploy.workflow.init', 'Building SAM Application...'))
-
-        const buildDestination = getBuildRootFolder(params.deployParameters.deployRootFolder)
-
-        const build = new SamCliBuildInvocation({
-            buildDir: buildDestination,
-            baseDir: undefined,
-            templatePath: params.deployParameters.sourceTemplatePath,
-            invoker: params.invoker,
-        })
-
-        await build.execute()
-
-        return true
-    } catch (err) {
-        getLogger().warn(
-            localize(
-                'AWS.samcli.build.failedBuild',
-                '"sam build" failed: {0}',
-                params.deployParameters.sourceTemplatePath
-            )
-        )
-        return false
-    }
-}
-
-async function packageOperation(
-    params: {
-        deployParameters: DeploySamApplicationParameters
-        invoker: SamCliProcessInvoker
-    },
-    buildSuccessful: boolean
-): Promise<void> {
-    if (!buildSuccessful) {
-        void vscode.window.showInformationMessage(
-            localize(
-                'AWS.samcli.deploy.workflow.packaging.noBuild',
-                'Attempting to package source template directory directly since "sam build" failed'
-            )
-        )
-    }
-
-    getLogger().info(
-        localize(
-            'AWS.samcli.deploy.workflow.packaging',
-            'Packaging SAM Application to S3 Bucket: {0}',
-            params.deployParameters.packageBucketName
-        )
-    )
-
-    // HACK: Attempt to package the initial template if the build fails.
-    const buildTemplatePath = buildSuccessful
-        ? getBuildTemplatePath(params.deployParameters.deployRootFolder)
-        : params.deployParameters.sourceTemplatePath
-    const packageTemplatePath = getPackageTemplatePath(params.deployParameters.deployRootFolder)
-
-    await runSamCliPackage(
+function bucketSourcePrompter() {
+    const items: DataQuickPickItem<BucketSource>[] = [
         {
-            sourceTemplateFile: buildTemplatePath,
-            destinationTemplateFile: packageTemplatePath,
-            environmentVariables: params.deployParameters.environmentVariables,
-            region: params.deployParameters.region,
-            s3Bucket: params.deployParameters.packageBucketName,
-            ecrRepo: params.deployParameters.ecrRepo,
+            label: 'Create a SAM CLI managed S3 bucket',
+            data: BucketSource.SamCliManaged,
         },
-        params.invoker
-    )
+        {
+            label: 'Specify an S3 bucket',
+            data: BucketSource.UserProvided,
+        },
+    ]
+
+    return createQuickPick(items, {
+        title: 'Specify S3 bucket for deployment artifacts',
+        placeholder: 'Press enter to proceed with highlighted option',
+        buttons: createCommonButtons(samDeployUrl),
+    })
 }
 
-async function deployOperation(params: {
-    deployParameters: DeploySamApplicationParameters
-    invoker: SamCliProcessInvoker
-}): Promise<void> {
-    try {
-        getLogger().info(
-            localize(
-                'AWS.samcli.deploy.workflow.stackName.initiated',
-                'Deploying SAM Application to CloudFormation Stack: {0}',
-                params.deployParameters.destinationStackName
+function paramsSourcePrompter(existValidSamconfig: boolean | undefined) {
+    const items: DataQuickPickItem<ParamsSource>[] = [
+        {
+            label: 'Specify only required parameters and save as defaults',
+            data: ParamsSource.SpecifyAndSave,
+        },
+        {
+            label: 'Specify only required parameters',
+            data: ParamsSource.Specify,
+        },
+    ]
+
+    if (existValidSamconfig) {
+        items.push({
+            label: 'Use default values from samconfig',
+            data: ParamsSource.SamConfig,
+        })
+    }
+
+    return createQuickPick(items, {
+        title: 'Specify parameters for deploy',
+        placeholder: 'Press enter to proceed with highlighted option',
+        buttons: createCommonButtons(samDeployUrl),
+    })
+}
+
+type DeployResult = {
+    isSuccess: boolean
+}
+
+enum BucketSource {
+    SamCliManaged,
+    UserProvided,
+}
+enum ParamsSource {
+    SpecifyAndSave,
+    Specify,
+    SamConfig,
+}
+
+class DeployWizard extends Wizard<DeployParams> {
+    registry: CloudFormationTemplateRegistry
+    state: Partial<DeployParams>
+    arg: any
+    public constructor(state: Partial<DeployParams>, registry: CloudFormationTemplateRegistry, arg?: any) {
+        super({ initState: state, exitPrompterProvider: createExitPrompter })
+        this.registry = registry
+        this.state = state
+        this.arg = arg
+    }
+
+    public override async init(): Promise<this> {
+        if (this.arg && this.arg.path) {
+            // "Deploy" command was invoked on a template.yaml file.
+            const templateUri = this.arg as vscode.Uri
+            const templateItem = { uri: templateUri, data: {} } as TemplateItem
+            const projectRootFolder = getProjectRoot(templateItem)
+            const existValidSamConfig: boolean | undefined = await validateSamDeployConfig(projectRootFolder)
+
+            await this.addParameterPromptersIfApplicable(templateUri)
+
+            this.form.template.setDefault(templateItem)
+            this.form.projectRoot.setDefault(() => projectRootFolder)
+            this.form.paramsSource.bindPrompter(() => paramsSourcePrompter(existValidSamConfig))
+
+            this.form.region.bindPrompter(() => createRegionPrompter().transform((r) => r.id), {
+                showWhen: ({ paramsSource }) =>
+                    paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
+            })
+            this.form.stackName.bindPrompter(
+                ({ region }) => createStackPrompter(new DefaultCloudFormationClient(region!)),
+                {
+                    showWhen: ({ paramsSource }) =>
+                        paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
+                }
             )
-        )
+            this.form.bucketSource.bindPrompter(() => bucketSourcePrompter(), {
+                showWhen: ({ paramsSource }) =>
+                    paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
+            })
+            this.form.bucketName.bindPrompter(({ region }) => createBucketPrompter(new DefaultS3Client(region!)), {
+                showWhen: ({ bucketSource }) => bucketSource === BucketSource.UserProvided,
+            })
+        } else if (this.arg && this.arg.regionCode) {
+            // "Deploy" command was invoked on a regionNode.
+            this.form.template.bindPrompter(() => createTemplatePrompter(this.registry))
+            this.form.projectRoot.setDefault(({ template }) => getProjectRoot(template))
+            this.form.paramsSource.bindPrompter(async ({ projectRoot }) => {
+                const existValidSamConfig: boolean | undefined = await validateSamDeployConfig(projectRoot)
+                return paramsSourcePrompter(existValidSamConfig)
+            })
+            this.form.region.setDefault(() => this.arg.regionCode)
+            this.form.stackName.bindPrompter(
+                ({ region }) => createStackPrompter(new DefaultCloudFormationClient(region!)),
+                {
+                    showWhen: ({ paramsSource }) =>
+                        paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
+                }
+            )
+            this.form.bucketSource.bindPrompter(() => bucketSourcePrompter(), {
+                showWhen: ({ paramsSource }) =>
+                    paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
+            })
+            this.form.bucketName.bindPrompter(({ region }) => createBucketPrompter(new DefaultS3Client(region!)), {
+                showWhen: ({ bucketSource }) => bucketSource === BucketSource.UserProvided,
+            })
+        } else if (this.arg && this.arg.getTreeItem().resourceUri) {
+            // "Deploy" command was invoked on a TreeNode on the AppBuilder.
+            const templateUri = this.arg.getTreeItem().resourceUri as vscode.Uri
+            const templateItem = { uri: templateUri, data: {} } as TemplateItem
+            const projectRootFolder = getProjectRoot(templateItem)
+            const existValidSamConfig: boolean | undefined = await validateSamDeployConfig(projectRootFolder)
 
-        const packageTemplatePath = getPackageTemplatePath(params.deployParameters.deployRootFolder)
+            await this.addParameterPromptersIfApplicable(templateUri)
 
-        await runSamCliDeploy(
-            {
-                parameterOverrides: params.deployParameters.parameterOverrides,
-                environmentVariables: params.deployParameters.environmentVariables,
-                templateFile: packageTemplatePath,
-                region: params.deployParameters.region,
-                stackName: params.deployParameters.destinationStackName,
-                s3Bucket: params.deployParameters.packageBucketName,
-                ecrRepo: params.deployParameters.ecrRepo,
-            },
-            params.invoker
-        )
-    } catch (err) {
-        // Handle sam deploy Errors to supplement the error message prior to writing it out
-        const error = err as Error
+            this.form.template.setDefault(templateItem)
+            this.form.paramsSource.bindPrompter(() => paramsSourcePrompter(existValidSamConfig))
 
-        getLogger().error(error)
+            this.form.region.bindPrompter(() => createRegionPrompter().transform((r) => r.id), {
+                showWhen: ({ paramsSource }) =>
+                    paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
+            })
+            this.form.stackName.bindPrompter(
+                ({ region }) => createStackPrompter(new DefaultCloudFormationClient(region!)),
+                {
+                    showWhen: ({ paramsSource }) =>
+                        paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
+                }
+            )
+            this.form.bucketSource.bindPrompter(() => bucketSourcePrompter(), {
+                showWhen: ({ paramsSource }) =>
+                    paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
+            })
+            this.form.bucketName.bindPrompter(({ region }) => createBucketPrompter(new DefaultS3Client(region!)), {
+                showWhen: ({ bucketSource }) => bucketSource === BucketSource.UserProvided,
+            })
+            this.form.projectRoot.setDefault(() => getProjectRoot(templateItem))
+        } else {
+            // "Deploy" command was invoked on the command palette.
+            this.form.template.bindPrompter(() => createTemplatePrompter(this.registry))
+            this.form.projectRoot.setDefault(({ template }) => getProjectRoot(template))
+            this.form.paramsSource.bindPrompter(async ({ projectRoot }) => {
+                const existValidSamConfig: boolean | undefined = await validateSamDeployConfig(projectRoot)
+                return paramsSourcePrompter(existValidSamConfig)
+            })
+            this.form.region.bindPrompter(() => createRegionPrompter().transform((r) => r.id), {
+                showWhen: ({ paramsSource }) =>
+                    paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
+            })
+            this.form.stackName.bindPrompter(
+                ({ region }) => createStackPrompter(new DefaultCloudFormationClient(region!)),
+                {
+                    showWhen: ({ paramsSource }) =>
+                        paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
+                }
+            )
+            this.form.bucketSource.bindPrompter(() => bucketSourcePrompter(), {
+                showWhen: ({ paramsSource }) =>
+                    paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
+            })
+            this.form.bucketName.bindPrompter(({ region }) => createBucketPrompter(new DefaultS3Client(region!)), {
+                showWhen: ({ bucketSource }) => bucketSource === BucketSource.UserProvided,
+            })
+        }
 
-        const errorMessage = enhanceAwsCloudFormationInstructions(String(err), params.deployParameters)
-        globals.outputChannel.appendLine(errorMessage)
+        return this
+    }
 
-        throw new Error('Deploy failed')
+    /**
+     * Parse the template for parameters and add prompters for them if applicable.
+     * @param templateUri the uri of the template
+     */
+    async addParameterPromptersIfApplicable(templateUri: vscode.Uri) {
+        const template = await CloudFormation.load(templateUri.fsPath)
+        const samTemplateParameters = await getParameters(templateUri)
+        if (samTemplateParameters.size > 0) {
+            const parameterNames = new Set<string>(samTemplateParameters.keys())
+            parameterNames.forEach((name) => {
+                const defaultValue = template.Parameters ? (template.Parameters[name]?.Default as string) : undefined
+                this.form[name].bindPrompter(() => createParamPromptProvider(name, defaultValue))
+            })
+        }
     }
 }
 
-async function deploy(params: {
-    deployParameters: DeploySamApplicationParameters
-    invoker: SamCliProcessInvoker
-    window: WindowFunctions
-}): Promise<void> {
-    globals.outputChannel.show(true)
-    getLogger().info(localize('AWS.samcli.deploy.workflow.start', 'Starting SAM Application deployment...'))
-
-    const buildSuccessful = await buildOperation(params)
-    await packageOperation(params, buildSuccessful)
-    await deployOperation(params)
-
-    getLogger().info(
-        localize(
-            'AWS.samcli.deploy.workflow.success',
-            'Deployed SAM Application to CloudFormation Stack: {0}',
-            params.deployParameters.destinationStackName
-        )
-    )
-
-    void params.window.showInformationMessage(
-        localize('AWS.samcli.deploy.workflow.success.general', 'SAM Application deployment succeeded.')
-    )
-}
-
-function enhanceAwsCloudFormationInstructions(
-    message: string,
-    deployParameters: DeploySamApplicationParameters
-): string {
-    // detect error message from https://github.com/aws/aws-cli/blob/4ff0cbacbac69a21d4dd701921fe0759cf7852ed/awscli/customizations/cloudformation/exceptions.py#L42
-    // and append region to assist in troubleshooting the error
-    // (command uses CLI configured value--users that don't know this and omit region won't see error)
-    if (
-        message.includes(
-            `aws cloudformation describe-stack-events --stack-name ${deployParameters.destinationStackName}`
-        )
-    ) {
-        message += ` --region ${deployParameters.region}`
+async function getConfigFileUri(projectRoot: vscode.Uri) {
+    const samConfigFilename = 'samconfig'
+    const samConfigFile = (
+        await vscode.workspace.findFiles(new vscode.RelativePattern(projectRoot, `${samConfigFilename}.*`))
+    )[0]
+    if (samConfigFile) {
+        return samConfigFile
+    } else {
+        throw new ToolkitError(`No samconfig.toml file found in ${projectRoot.fsPath}`)
     }
-
-    return message
 }
 
-function outputDeployError(error: Error) {
-    getLogger().error(error)
+export async function runDeploy(arg: any): Promise<DeployResult> {
+    return await telemetry.sam_deploy.run(async () => {
+        const source = getSource(arg)
+        telemetry.record({ source: source })
 
-    globals.outputChannel.show(true)
-    getLogger().error('AWS.samcli.deploy.general.error', 'Error deploying a SAM Application. {0}', checklogs())
-}
+        // Prepare Build params
+        const deployParams: Partial<DeployParams> = {}
 
-function getDefaultWindowFunctions(): WindowFunctions {
-    return {
-        setStatusBarMessage: vscode.window.setStatusBarMessage,
-        showErrorMessage: vscode.window.showErrorMessage,
-        showInformationMessage: vscode.window.showInformationMessage,
-    }
+        const deployEnv = await getSpawnEnv(process.env, { promptForInvalidCredential: true })
+
+        const registry = await globals.templateRegistry
+        const params = await new DeployWizard(deployParams, registry, arg).run()
+        if (params === undefined) {
+            throw new CancellationError('user')
+        }
+
+        const deployFlags: string[] = ['--no-confirm-changeset']
+        const buildFlags: string[] = ['--cached']
+
+        if (params.paramsSource === ParamsSource.SamConfig) {
+            const samConfigFile = await getConfigFileUri(params.projectRoot)
+            deployFlags.push('--config-file', `${samConfigFile.fsPath}`)
+        } else {
+            deployFlags.push('--region', `${params.region}`)
+            deployFlags.push('--stack-name', `${params.stackName}`)
+            params.bucketName
+                ? deployFlags.push('--s3-bucket', `${params.bucketName}`)
+                : deployFlags.push('--resolve-s3')
+            deployFlags.push('--capabilities', 'CAPABILITY_IAM', 'CAPABILITY_NAMED_IAM')
+        }
+
+        if (params.paramsSource === ParamsSource.SpecifyAndSave) {
+            deployFlags.push('--save-params')
+        }
+
+        const samTemplateParameters = await getParameters(params.template.uri)
+
+        const requiredParameterNames = new Set<string>(
+            filter(samTemplateParameters.keys(), (name) => samTemplateParameters.get(name)!.required)
+        )
+
+        const paramsToSet: string[] = []
+        requiredParameterNames.forEach((name) => {
+            if (params[name]) {
+                paramsToSet.push(`ParameterKey=${name},ParameterValue=${params[name]}`)
+            }
+            deployFlags.push('--parameter-overrides', ...paramsToSet)
+        })
+
+        try {
+            const { path: samCliPath } = await getSamCliPathAndVersion()
+
+            // Create a child process to run the SAM build command
+            const buildProcess = new ChildProcess(samCliPath, ['build', ...buildFlags], {
+                spawnOptions: await addTelemetryEnvVar({
+                    cwd: params.projectRoot.fsPath,
+                    env: deployEnv,
+                }),
+            })
+
+            try {
+                //Run SAM build in Terminal
+                await runInTerminal(buildProcess, 'build')
+            } catch (error) {
+                throw ToolkitError.chain(error, 'Failed to build SAM template', { details: { ...buildFlags } })
+            }
+
+            // Pass built template to deployFlags
+            const templatePath = vscode.Uri.joinPath(params.projectRoot, '.aws-sam', 'build', 'template.yaml').fsPath
+            deployFlags.push('--template-file', `${templatePath}`)
+
+            // Create a child process to run the SAM deploy command
+            const deployProcess = new ChildProcess(samCliPath, ['deploy', ...deployFlags], {
+                spawnOptions: await addTelemetryEnvVar({
+                    cwd: params.projectRoot.fsPath,
+                    env: deployEnv,
+                }),
+            })
+
+            const { paramsSource, stackName, region, projectRoot } = params
+            if (paramsSource !== ParamsSource.SamConfig && !!stackName && !!region) {
+                await writeSamconfigGlobal(projectRoot, stackName, region)
+            }
+            //Run SAM deploy in Terminal
+            await runInTerminal(deployProcess, 'deploy')
+        } catch (error) {
+            throw ToolkitError.chain(error, 'Failed to deploy SAM template', { details: { ...deployFlags } })
+        }
+        return {
+            isSuccess: true,
+        }
+    })
 }
