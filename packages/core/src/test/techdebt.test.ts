@@ -18,11 +18,7 @@ describe('tech debt', function () {
 
     it('vscode minimum version', async function () {
         const minVscode = env.getMinVscodeVersion()
-
-        assert.ok(
-            semver.lt(minVscode, '1.75.0'),
-            'remove filesystemUtilities.findFile(), use vscode.workspace.findFiles() instead (after Cloud9 VFS fixes bug)'
-        )
+        assert.ok(semver.lt(minVscode, '1.83.0'))
 
         assert.ok(
             semver.lt(minVscode, '1.75.0'),
