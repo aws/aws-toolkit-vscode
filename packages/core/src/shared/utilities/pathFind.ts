@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import * as path from 'path'
 import fs from '../../shared/fs/fs'
-import { ChildProcess } from './processUtils'
+import { ChildProcess, ChildProcessOptions } from './processUtils'
 import { GitExtension } from '../extensions/git'
 import { Settings } from '../settings'
 import { getLogger } from '../logger/logger'
@@ -30,10 +30,11 @@ export async function tryRun(
     p: string,
     args: string[],
     logging: 'yes' | 'no' | 'noresult' = 'yes',
-    expected?: string
+    expected?: string,
+    opt?: ChildProcessOptions
 ): Promise<boolean> {
     const proc = new ChildProcess(p, args, { logging: 'no' })
-    const r = await proc.run()
+    const r = await proc.run(opt)
     const ok = r.exitCode === 0 && (expected === undefined || r.stdout.includes(expected))
     if (logging === 'noresult') {
         getLogger().info('tryRun: %s: %s', ok ? 'ok' : 'failed', proc)

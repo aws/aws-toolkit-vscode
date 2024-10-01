@@ -4,7 +4,7 @@
  */
 
 import * as assert from 'assert'
-import { isWeb } from '../shared/extensionGlobals'
+import { isWeb } from 'aws-core-vscode/shared'
 
 describe('isWeb', function () {
     it('returns true when in web mode', function () {
