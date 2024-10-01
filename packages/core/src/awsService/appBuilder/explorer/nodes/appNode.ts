@@ -51,7 +51,10 @@ export class AppNode implements TreeNode {
                       invoker: getSamCliContext().invoker,
                   })
                 : undefined
-            resources.push(...generateStackNode(this.location, this.stackName, region))
+            // Skip generating stack node if stack does not exist in region or other errors
+            if (deployedResources && deployedResources.length > 0) {
+                resources.push(...generateStackNode(this.location, this.stackName, region))
+            }
             resources.push(
                 ...generateResourceNodes(this.location, templateResources, this.stackName, region, deployedResources)
             )
