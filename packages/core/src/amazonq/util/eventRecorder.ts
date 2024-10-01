@@ -6,9 +6,11 @@
 import { RecordMap } from '../../shared/utilities/map'
 
 export type Event =
+    | 'contextMenuTriggered' // optional event. Only included if a context menu triggered the flow
     | 'chatMessageSent' // initial on chat prompt event in the ui
     | 'editorReceivedMessage' // message gets from the chat prompt to VSCode
     | 'featureReceivedMessage' // message gets redirected from VSCode -> Partner team features implementation
+    | 'webviewReceivedMessage' // message gets sent from the partner teams implementation -> webview
     | 'messageDisplayed' // message gets shown in the UI
 
 /**

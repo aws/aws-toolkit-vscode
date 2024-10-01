@@ -84,10 +84,15 @@ export class AmazonQChatMessageDuration {
             }
 
             telemetry.amazonq_chatRoundTrip.emit({
-                amazonqChatMessageSentTime: metrics.events.chatMessageSent ?? -1,
-                amazonqEditorReceivedMessageMs: durationFrom('chatMessageSent', 'editorReceivedMessage') ?? -1,
-                amazonqFeatureReceivedMessageMs: durationFrom('editorReceivedMessage', 'featureReceivedMessage') ?? -1,
-                amazonqMessageDisplayedMs: durationFrom('featureReceivedMessage', 'messageDisplayed') ?? -1,
+                ...(metrics.events.contextMenuTriggered
+                    ? {
+                          amazonqChatMessageReceivedMs: durationFrom('contextMenuTriggered', 'chatMessageSent'),
+                      }
+                    : {}),
+                amazonqEditorReceivedMessageMs: durationFrom('chatMessageSent', 'editorReceivedMessage'),
+                amazonqFeatureReceivedMessageMs: durationFrom('editorReceivedMessage', 'featureReceivedMessage'),
+                amazonqWebviewReceivedMessageMs: durationFrom('featureReceivedMessage', 'webviewReceivedMessage'),
+                amazonqMessageDisplayedMs: durationFrom('webviewReceivedMessage', 'messageDisplayed'),
                 source: metrics.trigger,
                 duration: totalDuration,
                 result: 'Succeeded',

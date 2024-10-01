@@ -323,9 +323,9 @@
             "description": "The unique identifier of a trace"
         },
         {
-            "name": "amazonqChatMessageSentTime",
+            "name": "amazonqChatMessageReceivedMs",
             "type": "int",
-            "description": "Time when a user initial pressed enter in the chat"
+            "description": "Duration between context menu trigger to chat message acceptance"
         },
         {
             "name": "amazonqEditorReceivedMessageMs",
@@ -338,9 +338,14 @@
             "description": "Duration between the editor receiving the message and the partner teams code receiving it in ms"
         },
         {
+            "name": "amazonqWebviewReceivedMessageMs",
+            "type": "int",
+            "description": "Duration between the amazon q feature receiving the message and sending the first answer to the webview"
+        },
+        {
             "name": "amazonqMessageDisplayedMs",
             "type": "int",
-            "description": "Duration between the partner teams code receiving the message and when the message was finally displayed in ms"
+            "description": "Duration between the webview receiving the message and displaying it in the webview"
         }
     ],
     "metrics": [
@@ -1230,13 +1235,17 @@
             "passive": true,
             "metadata": [
                 {
-                    "type": "amazonqChatMessageSentTime"
+                    "type": "amazonqChatMessageReceivedMs",
+                    "required": false
                 },
                 {
                     "type": "amazonqEditorReceivedMessageMs"
                 },
                 {
                     "type": "amazonqFeatureReceivedMessageMs"
+                },
+                {
+                    "type": "amazonqWebviewReceivedMessageMs"
                 },
                 {
                     "type": "amazonqMessageDisplayedMs"

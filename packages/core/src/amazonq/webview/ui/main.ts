@@ -125,7 +125,17 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
             if (command === 'aws.amazonq.sendToPrompt') {
                 return messageController.sendSelectedCodeToTab(message)
             } else {
-                return messageController.sendMessageToTab(message, 'cwc')
+                const tabID = messageController.sendMessageToTab(message, 'cwc')
+                if (tabID) {
+                    ideApi.postMessage({
+                        command: 'start-chat-message-telemetry',
+                        trigger: 'onContextCommand',
+                        tabID,
+                        tabType: 'cwc',
+                        startTime: Date.now(),
+                    })
+                }
+                return tabID
             }
         },
         onWelcomeFollowUpClicked: (tabID: string, welcomeFollowUpType: WelcomeFollowupType) => {

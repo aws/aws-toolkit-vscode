@@ -11,6 +11,8 @@ import { getLogger } from '../../../shared/logger'
 import { amazonqMark } from '../../../shared/performance/marks'
 import { telemetry } from '../../../shared/telemetry'
 import { AmazonQChatMessageDuration } from '../../messages/chatMessageDuration'
+import { uiEventRecorder } from '../../util/eventRecorder'
+import { globals } from '../../../shared'
 
 export function dispatchWebViewMessagesToApps(
     webview: Webview,
@@ -62,6 +64,17 @@ export function dispatchWebViewMessagesToApps(
 
 export function dispatchAppsMessagesToWebView(webView: Webview, appsMessageListener: MessageListener<any>) {
     appsMessageListener.onMessage((msg) => {
+        if (
+            msg.messageType === 'answer' &&
+            msg.tabID &&
+            !uiEventRecorder.get(msg.tabID).events.webviewReceivedMessage
+        ) {
+            uiEventRecorder.set(msg.tabID, {
+                events: {
+                    webviewReceivedMessage: globals.clock.Date.now(),
+                },
+            })
+        }
         webView.postMessage(JSON.stringify(msg)).then(undefined, (e) => {
             getLogger().error('webView.postMessage failed: %s', (e as Error).message)
         })

@@ -50,8 +50,8 @@ import { getSelectedCustomization } from '../../../codewhisperer/util/customizat
 import { FeatureConfigProvider } from '../../../shared/featureConfig'
 import { getHttpStatusCode, AwsClientResponseError } from '../../../shared/errors'
 import { uiEventRecorder } from '../../../amazonq/util/eventRecorder'
-import { globals } from '../../../shared'
 import { telemetry } from '../../../shared/telemetry'
+import { globals, waitUntil } from '../../../shared'
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
@@ -338,6 +338,8 @@ export class ChatController {
             return
         }
 
+        // the time the context menu was triggered
+        const triggerTime = globals.clock.Date.now()
         this.editorContextExtractor
             .extractContextForTrigger('ContextMenu')
             .then((context) => {
@@ -381,6 +383,7 @@ export class ChatController {
                     command,
                 })
 
+                const featureTime = globals.clock.Date.now()
                 return this.generateResponse(
                     {
                         message: prompt,
@@ -396,7 +399,27 @@ export class ChatController {
                         customization: getSelectedCustomization(),
                     },
                     triggerID
-                )
+                ).finally(async () => {
+                    // it can take upto 20ms to get a tabid
+                    await waitUntil(
+                        () => Promise.resolve(this.triggerEventsStorage.getTriggerEvent(triggerID)?.tabID),
+                        {
+                            timeout: 60,
+                            interval: 20,
+                        }
+                    )
+
+                    // record the context menu trigger time if a tabID is available
+                    const tabID = this.triggerEventsStorage.getTriggerEvent(triggerID)?.tabID
+                    if (tabID) {
+                        uiEventRecorder.set(tabID, {
+                            events: {
+                                contextMenuTriggered: triggerTime,
+                                featureReceivedMessage: featureTime,
+                            },
+                        })
+                    }
+                })
             })
             .catch((e) => {
                 this.processException(e, '')
