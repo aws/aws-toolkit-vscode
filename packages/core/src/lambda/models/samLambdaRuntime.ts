@@ -57,8 +57,14 @@ export const pythonRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>([
     'python3.7',
 ])
 export const goRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>(['go1.x'])
-export const javaRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>(['java17', 'java11', 'java8', 'java8.al2'])
-export const dotNetRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>(['dotnet6'])
+export const javaRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>([
+    'java17',
+    'java11',
+    'java8',
+    'java8.al2',
+    'java21',
+])
+export const dotNetRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>(['dotnet6', 'dotnet8'])
 
 /**
  * Deprecated runtimes can be found at https://docs.aws.amazon.com/lambda/latest/dg/runtime-support-policy.html

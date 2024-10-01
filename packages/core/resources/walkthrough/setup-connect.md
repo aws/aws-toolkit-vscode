@@ -12,7 +12,7 @@ Choose the most appropriate method based on your requirements.
 
 ## Connect to AWS through the Toolkit for VS Code
 
-1. [Click here](command:aws.login) to open the configuration wizard to connect to AWS.
+1. [Click here](command:aws.toolkit.login) to open the configuration wizard to connect to AWS.
 
     > This command can also be accessed through the [Command Palette](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/toolkit-navigation.html#command-locations) by choosing **AWS: >Connect to AWS**\.
     >

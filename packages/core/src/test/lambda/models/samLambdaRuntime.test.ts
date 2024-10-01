@@ -96,9 +96,11 @@ describe('runtimes', function () {
     it('vscode', function () {
         assert.deepStrictEqual(samLambdaCreatableRuntimes(false).toArray().sort(), [
             'dotnet6',
+            'dotnet8',
             'go1.x',
             'java11',
             'java17',
+            'java21',
             'java8',
             'java8.al2',
             'nodejs14.x',
@@ -115,9 +117,11 @@ describe('runtimes', function () {
         assert.deepStrictEqual(samImageLambdaRuntimes(false).toArray().sort(), [
             'dotnet5.0',
             'dotnet6',
+            'dotnet8',
             'go1.x',
             'java11',
             'java17',
+            'java21',
             'java8',
             'java8.al2',
             'nodejs14.x',
