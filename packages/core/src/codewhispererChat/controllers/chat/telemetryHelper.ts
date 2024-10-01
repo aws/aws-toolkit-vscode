@@ -36,6 +36,7 @@ import { supportedLanguagesList } from '../chat/chatRequest/converter'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { getSelectedCustomization } from '../../../codewhisperer/util/customizationUtil'
 import { undefinedIfEmpty } from '../../../shared'
+import { uiEventRecorder } from '../../../amazonq/util/eventRecorder'
 
 export function logSendTelemetryEventFailure(error: any) {
     let requestId: string | undefined
@@ -60,7 +61,6 @@ export function recordTelemetryChatRunCommand(type: CwsprChatCommandType, comman
 export class CWCTelemetryHelper {
     private sessionStorage: ChatSessionStorage
     private triggerEventsStorage: TriggerEventsStorage
-    private responseStreamStartTime: Map<string, number> = new Map()
     private responseStreamTotalTime: Map<string, number> = new Map()
     private responseStreamTimeForChunks: Map<string, number[]> = new Map()
     private responseWithProjectContext: Map<string, boolean> = new Map()
@@ -435,14 +435,18 @@ export class CWCTelemetryHelper {
         }
     }
 
-    public setResponseStreamStartTime(tabID: string) {
-        this.responseStreamStartTime.set(tabID, performance.now())
-        this.responseStreamTimeForChunks.set(tabID, [performance.now()])
+    /**
+     * Reset the chunks for the current tabId
+     *
+     * Used when before we start recording incoming chunks of the response stream
+     **/
+    public resetResponseChunks(tabID: string) {
+        this.responseStreamTimeForChunks.set(tabID, [])
     }
 
     public setResponseStreamTimeForChunks(tabID: string) {
         const chunkTimes = this.responseStreamTimeForChunks.get(tabID) ?? []
-        this.responseStreamTimeForChunks.set(tabID, [...chunkTimes, performance.now()])
+        this.responseStreamTimeForChunks.set(tabID, [...chunkTimes, globals.clock.Date.now()])
     }
 
     public setResponseFromProjectContext(messageId: string) {
@@ -450,11 +454,8 @@ export class CWCTelemetryHelper {
     }
 
     private getResponseStreamTimeToFirstChunk(tabID: string): number {
-        const chunkTimes = this.responseStreamTimeForChunks.get(tabID) ?? [0, 0]
-        if (chunkTimes.length === 1) {
-            return Math.round(performance.now() - chunkTimes[0])
-        }
-        return Math.round(chunkTimes[1] - chunkTimes[0])
+        const chunkTimes = this.responseStreamTimeForChunks.get(tabID) ?? [0]
+        return Math.round(this.compareChatStartTime(tabID, chunkTimes[0]))
     }
 
     private getResponseStreamTimeBetweenChunks(tabID: string): number[] {
@@ -473,7 +474,7 @@ export class CWCTelemetryHelper {
     }
 
     public setResponseStreamTotalTime(tabID: string) {
-        const totalTime = performance.now() - (this.responseStreamStartTime.get(tabID) ?? 0)
+        const totalTime = this.compareChatStartTime(tabID, globals.clock.Date.now())
         this.responseStreamTotalTime.set(tabID, Math.round(totalTime))
     }
 
@@ -487,5 +488,21 @@ export class CWCTelemetryHelper {
             programmingLanguage !== '' &&
             supportedLanguagesList.includes(programmingLanguage)
         )
+    }
+
+    /**
+     * Get the start time of this chat event and compare it to comparisonTime.
+     *
+     * @returns the duration between start time and comparisonTime or -1 if the message start time is not found
+     */
+    private compareChatStartTime(tabID: string, comparisonTime: number) {
+        const chatMessageSentTime = uiEventRecorder.get(tabID)?.events?.chatMessageSent
+        getLogger().info('chat message sent time: %s. Comparison time: %s', chatMessageSentTime, comparisonTime)
+        if (chatMessageSentTime === undefined) {
+            return -1
+        }
+        getLogger().info('time origin: %s', performance.timeOrigin)
+
+        return comparisonTime - chatMessageSentTime
     }
 }

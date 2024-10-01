@@ -3,29 +3,35 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import AsyncLock from 'async-lock'
 import { globals } from '../../shared'
 import { telemetry } from '../../shared/telemetry'
 import { Event, uiEventRecorder } from '../util/eventRecorder'
 
 export class AmazonQChatMessageDuration {
+    private static _asyncLock = new AsyncLock()
+    private static getAsyncLock() {
+        if (!AmazonQChatMessageDuration._asyncLock) {
+            AmazonQChatMessageDuration._asyncLock = new AsyncLock()
+        }
+        return AmazonQChatMessageDuration._asyncLock
+    }
+
     /**
      * Record the initial requests in the chat message flow
      */
-    static startChatMessageTelemetry(msg: { traceId: string; startTime: number; trigger?: string }) {
-        const { traceId, startTime, trigger } = msg
+    static startChatMessageTelemetry(msg: { traceId: string; startTime: number; tabID: string; trigger?: string }) {
+        const { traceId, startTime, tabID, trigger } = msg
 
-        uiEventRecorder.set(traceId, {
+        uiEventRecorder.set(tabID, {
+            traceId,
             events: {
                 chatMessageSent: startTime,
-            },
-        })
-        uiEventRecorder.set(traceId, {
-            events: {
                 editorReceivedMessage: globals.clock.Date.now(),
             },
         })
         if (trigger) {
-            uiEventRecorder.set(traceId, {
+            uiEventRecorder.set(tabID, {
                 trigger,
             })
         }
@@ -34,60 +40,59 @@ export class AmazonQChatMessageDuration {
     /**
      * Stop listening to all incoming events and emit what we've found
      */
-    static stopChatMessageTelemetry(msg: { traceId: string }) {
-        const { traceId } = msg
-
+    static stopChatMessageTelemetry(msg: { tabID: string }) {
+        const { tabID } = msg
         // We can't figure out what trace this event was associated with
-        if (!traceId) {
+        if (!tabID) {
             return
         }
 
-        uiEventRecorder.set(traceId, {
-            events: {
-                messageDisplayed: globals.clock.Date.now(),
-            },
-        })
+        // Lock the tab id just in case another event tries to trigger this
+        void AmazonQChatMessageDuration.getAsyncLock().acquire(tabID, () => {
+            const metrics = uiEventRecorder.get(tabID)
+            if (!metrics) {
+                return
+            }
 
-        const metrics = uiEventRecorder.get(traceId)
-
-        // get events sorted by the time they were created
-        const events = Object.entries(metrics.events)
-            .map((x) => ({
-                event: x[0],
-                duration: x[1],
-            }))
-            .sort((a, b) => {
-                return a.duration - b.duration
+            uiEventRecorder.set(tabID, {
+                events: {
+                    messageDisplayed: globals.clock.Date.now(),
+                },
             })
 
-        const chatMessageSentTime = events[events.length - 1].duration
-        // Get the total duration by subtracting when the message was displayed and when the chat message was first sent
-        const totalDuration = events[events.length - 1].duration - events[0].duration
+            // get events sorted by the time they were created
+            const events = Object.entries(metrics.events)
+                .map((x) => ({
+                    event: x[0],
+                    duration: x[1],
+                }))
+                .sort((a, b) => {
+                    return a.duration - b.duration
+                })
 
-        /**
-         * Find the time it took to get between two metric events
-         */
-        const timings = new Map<Event, number>()
-        for (let i = 1; i < events.length; i++) {
-            const currentEvent = events[i]
-            const previousEvent = events[i - 1]
+            // Get the total duration by subtracting when the message was displayed and when the chat message was first sent
+            const totalDuration = events[events.length - 1].duration - events[0].duration
 
-            const timeDifference = currentEvent.duration - previousEvent.duration
+            function duration(start: Event, end: Event) {
+                const startEvent = metrics.events[start]
+                const endEvent = metrics.events[end]
+                if (!startEvent || !endEvent) {
+                    return -1
+                }
+                return endEvent - startEvent
+            }
 
-            timings.set(currentEvent.event as Event, timeDifference)
-        }
-
-        telemetry.amazonq_chatRoundTrip.emit({
-            amazonqChatMessageSentTime: chatMessageSentTime,
-            amazonqEditorReceivedMessageMs: timings.get('editorReceivedMessage') ?? -1,
-            amazonqFeatureReceivedMessageMs: timings.get('featureReceivedMessage') ?? -1,
-            amazonqMessageDisplayedMs: timings.get('messageDisplayed') ?? -1,
-            source: metrics.trigger,
-            duration: totalDuration,
-            result: 'Succeeded',
-            traceId,
+            telemetry.amazonq_chatRoundTrip.emit({
+                amazonqChatMessageSentTime: metrics.events.chatMessageSent ?? -1,
+                amazonqEditorReceivedMessageMs: duration('chatMessageSent', 'editorReceivedMessage') ?? -1,
+                amazonqFeatureReceivedMessageMs: duration('editorReceivedMessage', 'featureReceivedMessage') ?? -1,
+                amazonqMessageDisplayedMs: duration('featureReceivedMessage', 'messageDisplayed') ?? -1,
+                source: metrics.trigger,
+                duration: totalDuration,
+                result: 'Succeeded',
+                traceId: metrics.traceId,
+            })
+            uiEventRecorder.delete(tabID)
         })
-
-        uiEventRecorder.delete(traceId)
     }
 }

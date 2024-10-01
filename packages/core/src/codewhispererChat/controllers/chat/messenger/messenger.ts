@@ -127,7 +127,7 @@ export class Messenger {
                 `Empty response from CodeWhisperer Streaming service. Request ID: ${response.$metadata.requestId}`
             )
         }
-        this.telemetryHelper.setResponseStreamStartTime(tabID)
+        this.telemetryHelper.resetResponseChunks(tabID)
         if (
             triggerPayload.relevantTextDocuments &&
             triggerPayload.relevantTextDocuments.length > 0 &&
@@ -293,7 +293,6 @@ export class Messenger {
                             relatedSuggestions: undefined,
                             triggerID,
                             messageID,
-                            traceId: triggerPayload.traceId,
                         },
                         tabID
                     )
