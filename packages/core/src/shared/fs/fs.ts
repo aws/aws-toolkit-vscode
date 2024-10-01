@@ -105,8 +105,12 @@ export class FileSystem {
         return vfs.createDirectory(uri).then(undefined, errHandler)
     }
 
-    // TODO: rename to readFileBytes()?
-    async readFile(path: Uri | string): Promise<Uint8Array> {
+    /**
+     * Read file into byte array.
+     * @param path uri or path to file.
+     * @returns byte content of file.
+     */
+    async readFileBytes(path: Uri | string): Promise<Uint8Array> {
         const uri = toUri(path)
         const errHandler = createPermissionsErrorHandler(this.isWeb, uri, 'r**')
 
@@ -116,11 +120,15 @@ export class FileSystem {
 
         return vfs.readFile(uri).then(undefined, errHandler)
     }
-
-    // TODO: rename to readFile()?
-    async readFileAsString(path: Uri | string, decoder: TextDecoder = FileSystem.#decoder): Promise<string> {
+    /**
+     * Read file and convert the resulting bytes to a string.
+     * @param path uri or path to file.
+     * @param decoder decoder to be used, defaults to UTF-8
+     * @returns string of decoded text.
+     */
+    async readFileText(path: Uri | string, decoder: TextDecoder = FileSystem.#decoder): Promise<string> {
         const uri = toUri(path)
-        const bytes = await this.readFile(uri)
+        const bytes = await this.readFileBytes(uri)
         return decoder.decode(bytes)
     }
 
@@ -131,7 +139,9 @@ export class FileSystem {
     async appendFile(path: Uri | string, content: Uint8Array | string): Promise<void> {
         path = toUri(path)
 
-        const currentContent: Uint8Array = (await this.existsFile(path)) ? await this.readFile(path) : new Uint8Array(0)
+        const currentContent: Uint8Array = (await this.existsFile(path))
+            ? await this.readFileBytes(path)
+            : new Uint8Array(0)
         const currentLength = currentContent.length
 
         const newContent = this.#toBytes(content)
@@ -634,7 +644,7 @@ export class FileSystem {
             return fallback
         }
     }
-
+    // Defaults to UTF-8 encoding/decoding.
     static readonly #decoder = new TextDecoder()
     static readonly #encoder = new TextEncoder()
 

@@ -218,7 +218,7 @@ export class AuthSSOServer {
 
     private async loadResource(res: http.ServerResponse, resourcePath: string) {
         try {
-            const file = await fs.readFile(resourcePath)
+            const file = await fs.readFileBytes(resourcePath)
             res.writeHead(200)
             res.end(file)
         } catch (e) {

@@ -55,12 +55,12 @@ describe('NodeFileSystem', async function () {
 
             // Function Under Test: Ignore the lock and write to the file
             await fs.writeFile(filePath, 'Did not honor lock')
-            assert.strictEqual(await fs.readFileAsString(filePath), 'Did not honor lock')
+            assert.strictEqual(await fs.readFileText(filePath), 'Did not honor lock')
 
             // The initial file to acquire the lock eventually finished and overwrote the file
             // after the lock ignoring write finished
             await lock
-            assert.strictEqual(await fs.readFileAsString(filePath), 'lock 1 text')
+            assert.strictEqual(await fs.readFileText(filePath), 'lock 1 text')
         })
 
         it('2nd lock waits for 1st to finish before writing', async function () {
@@ -76,13 +76,13 @@ describe('NodeFileSystem', async function () {
 
             // Attempt to acquire the lock and immediately write
             const lock2 = testFs.lock(filePath, async () => {
-                assert.deepStrictEqual(await fs.readFileAsString(filePath), 'lock 1 text')
+                assert.deepStrictEqual(await fs.readFileText(filePath), 'lock 1 text')
                 await fs.writeFile(filePath, 'lock 2 text')
             })
 
             await Promise.all([lock1, lock2])
             // The subsequent write waited for the lock to be acquired after the first was done
-            assert.strictEqual(await fs.readFileAsString(filePath), 'lock 2 text')
+            assert.strictEqual(await fs.readFileText(filePath), 'lock 2 text')
         })
 
         it('throws if file does not exist', async function () {
