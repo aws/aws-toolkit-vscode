@@ -7,6 +7,7 @@ import AsyncLock from 'async-lock'
 import { globals } from '../../shared'
 import { telemetry } from '../../shared/telemetry'
 import { Event, uiEventRecorder } from '../util/eventRecorder'
+import { CWCTelemetryHelper } from '../../codewhispererChat/controllers/chat/telemetryHelper'
 
 export class AmazonQChatMessageDuration {
     private static _asyncLock = new AsyncLock()
@@ -92,6 +93,8 @@ export class AmazonQChatMessageDuration {
                 result: 'Succeeded',
                 traceId: metrics.traceId,
             })
+            CWCTelemetryHelper.instance.emitAddMessage(tabID, totalDuration, metrics.events.chatMessageSent)
+
             uiEventRecorder.delete(tabID)
         })
     }

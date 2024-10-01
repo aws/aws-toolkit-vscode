@@ -36,7 +36,6 @@ import { supportedLanguagesList } from '../chat/chatRequest/converter'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { getSelectedCustomization } from '../../../codewhisperer/util/customizationUtil'
 import { undefinedIfEmpty } from '../../../shared'
-import { uiEventRecorder } from '../../../amazonq/util/eventRecorder'
 
 export function logSendTelemetryEventFailure(error: any) {
     let requestId: string | undefined
@@ -59,15 +58,40 @@ export function recordTelemetryChatRunCommand(type: CwsprChatCommandType, comman
 }
 
 export class CWCTelemetryHelper {
+    static instance: CWCTelemetryHelper
     private sessionStorage: ChatSessionStorage
     private triggerEventsStorage: TriggerEventsStorage
-    private responseStreamTotalTime: Map<string, number> = new Map()
     private responseStreamTimeForChunks: Map<string, number[]> = new Map()
     private responseWithProjectContext: Map<string, boolean> = new Map()
+
+    /**
+     * Stores payload information about a message response until
+     * the full round trip time finishes and addMessage telemetry
+     * is sent
+     */
+    private messageStorage: Map<
+        string,
+        {
+            triggerPayload: TriggerPayload
+            message: PromptAnswer
+        }
+    > = new Map()
 
     constructor(sessionStorage: ChatSessionStorage, triggerEventsStorage: TriggerEventsStorage) {
         this.sessionStorage = sessionStorage
         this.triggerEventsStorage = triggerEventsStorage
+    }
+
+    public static init(sessionStorage: ChatSessionStorage, triggerEventsStorage: TriggerEventsStorage) {
+        const lastInstance = CWCTelemetryHelper.instance
+        if (lastInstance !== undefined) {
+            return lastInstance
+        }
+
+        getLogger().debug('CWCTelemetryHelper: Initialized new telemetry helper')
+        const instance = new CWCTelemetryHelper(sessionStorage, triggerEventsStorage)
+        CWCTelemetryHelper.instance = instance
+        return instance
     }
 
     private getUserIntentForTelemetry(userIntent: UserIntent | undefined): CwsprChatUserIntent | undefined {
@@ -334,7 +358,26 @@ export class CWCTelemetryHelper {
         })
     }
 
+    /**
+     * Store the trigger payload and message until the full message round trip finishes
+     *
+     * @calls emitAddMessage when the full message round trip finishes
+     */
     public recordAddMessage(triggerPayload: TriggerPayload, message: PromptAnswer) {
+        this.messageStorage.set(message.tabID, {
+            triggerPayload,
+            message,
+        })
+    }
+
+    public emitAddMessage(tabID: string, fullResponseLatency: number, startTime?: number) {
+        const payload = this.messageStorage.get(tabID)
+        if (!payload) {
+            return
+        }
+
+        const { triggerPayload, message } = payload
+
         const triggerEvent = this.triggerEventsStorage.getLastTriggerEventByTabID(message.tabID)
         const hasProjectLevelContext =
             triggerPayload.relevantTextDocuments &&
@@ -355,9 +398,9 @@ export class CWCTelemetryHelper {
             cwsprChatSourceLinkCount: message.suggestionCount,
             cwsprChatReferencesCount: message.codeReferenceCount,
             cwsprChatFollowUpCount: message.followUpCount,
-            cwsprChatTimeToFirstChunk: this.getResponseStreamTimeToFirstChunk(message.tabID),
+            cwsprChatTimeToFirstChunk: this.getResponseStreamTimeToFirstChunk(message.tabID, startTime),
             cwsprChatTimeBetweenChunks: JSON.stringify(this.getResponseStreamTimeBetweenChunks(message.tabID)),
-            cwsprChatFullResponseLatency: this.responseStreamTotalTime.get(message.tabID) ?? 0,
+            cwsprChatFullResponseLatency: fullResponseLatency,
             cwsprChatRequestLength: triggerPayload.message?.length ?? 0,
             cwsprChatResponseLength: message.messageLength,
             cwsprChatConversationType: 'Chat',
@@ -394,6 +437,8 @@ export class CWCTelemetryHelper {
             })
             .then()
             .catch(logSendTelemetryEventFailure)
+
+        this.messageStorage.delete(tabID)
     }
 
     public recordMessageResponseError(triggerPayload: TriggerPayload, tabID: string, responseCode: number) {
@@ -453,9 +498,12 @@ export class CWCTelemetryHelper {
         this.responseWithProjectContext.set(messageId, true)
     }
 
-    private getResponseStreamTimeToFirstChunk(tabID: string): number {
+    private getResponseStreamTimeToFirstChunk(tabID: string, startTime?: number): number {
+        if (!startTime) {
+            return 0
+        }
         const chunkTimes = this.responseStreamTimeForChunks.get(tabID) ?? [0]
-        return Math.round(this.compareChatStartTime(tabID, chunkTimes[0]))
+        return Math.round(chunkTimes[0] - startTime)
     }
 
     private getResponseStreamTimeBetweenChunks(tabID: string): number[] {
@@ -473,11 +521,6 @@ export class CWCTelemetryHelper {
         }
     }
 
-    public setResponseStreamTotalTime(tabID: string) {
-        const totalTime = this.compareChatStartTime(tabID, globals.clock.Date.now())
-        this.responseStreamTotalTime.set(tabID, Math.round(totalTime))
-    }
-
     public getConversationId(tabID: string): string | undefined {
         return this.sessionStorage.getSession(tabID).sessionIdentifier
     }
@@ -488,21 +531,5 @@ export class CWCTelemetryHelper {
             programmingLanguage !== '' &&
             supportedLanguagesList.includes(programmingLanguage)
         )
-    }
-
-    /**
-     * Get the start time of this chat event and compare it to comparisonTime.
-     *
-     * @returns the duration between start time and comparisonTime or -1 if the message start time is not found
-     */
-    private compareChatStartTime(tabID: string, comparisonTime: number) {
-        const chatMessageSentTime = uiEventRecorder.get(tabID)?.events?.chatMessageSent
-        getLogger().info('chat message sent time: %s. Comparison time: %s', chatMessageSentTime, comparisonTime)
-        if (chatMessageSentTime === undefined) {
-            return -1
-        }
-        getLogger().info('time origin: %s', performance.timeOrigin)
-
-        return comparisonTime - chatMessageSentTime
     }
 }

@@ -304,9 +304,8 @@ export class Messenger {
                     Object.fromEntries(eventCounts)
                 )
 
-                this.telemetryHelper.setResponseStreamTotalTime(tabID)
-
                 const responseCode = response?.$metadata.httpStatusCode ?? 0
+
                 this.telemetryHelper.recordAddMessage(triggerPayload, {
                     followUpCount: followUps.length,
                     suggestionCount: relatedSuggestions.length,

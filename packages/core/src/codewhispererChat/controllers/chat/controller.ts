@@ -106,7 +106,7 @@ export class ChatController {
     ) {
         this.sessionStorage = new ChatSessionStorage()
         this.triggerEventsStorage = new TriggerEventsStorage()
-        this.telemetryHelper = new CWCTelemetryHelper(this.sessionStorage, this.triggerEventsStorage)
+        this.telemetryHelper = CWCTelemetryHelper.init(this.sessionStorage, this.triggerEventsStorage)
         this.messenger = new Messenger(
             new AppToWebViewMessageDispatcher(appsToWebViewMessagePublisher),
             this.telemetryHelper
