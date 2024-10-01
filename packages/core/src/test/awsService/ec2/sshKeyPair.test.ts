@@ -54,7 +54,7 @@ describe('SshKeyUtility', async function () {
 
     it('sets permission of the file to read/write owner', async function () {
         if (!globals.isWeb && os.platform() !== 'win32') {
-            const result = await stat(keyPair.getPrivateKeyPath())
+            const result = await nodefs.stat(keyPair.getPrivateKeyPath())
             assert.strictEqual(result.mode & 0o777, 0o600)
         }
     })
