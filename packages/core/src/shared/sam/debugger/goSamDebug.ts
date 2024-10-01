@@ -16,7 +16,6 @@ import { runLambdaFunction } from '../localLambdaRunner'
 import { SamLaunchRequestArgs } from './awsSamDebugger'
 import { getLogger } from '../../logger'
 import fs from '../../fs/fs'
-import { chmod } from 'fs/promises'
 import { ChildProcess } from '../../utilities/processUtils'
 import { Timeout } from '../../utilities/timeoutUtils'
 import { execFileSync, SpawnOptions } from 'child_process'
@@ -224,7 +223,7 @@ async function makeInstallScript(debuggerPath: string, isWindows: boolean): Prom
     script += `go build -o "${delvePath}" "${delveRepo}/cmd/dlv"\n`
 
     await fs.writeFile(installScriptPath, script, 'utf8')
-    await chmod(installScriptPath, 0o755)
+    await fs.chmod(installScriptPath, 0o755)
 
     return { path: installScriptPath, options: installOptions }
 }

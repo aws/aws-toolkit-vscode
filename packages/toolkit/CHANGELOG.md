@@ -1,3 +1,10 @@
+## 3.26.0 2024-09-27
+
+- **Bug Fix** EC2 connect: remote connection will no longer fail with 'too many authentication attempt'
+- **Feature** EC2 connect: use ed25519 to generate ec2 ssh key pair
+- **Feature** EC2 connect: default to ed25519, but fall back on rsa if unsupported
+- **Feature** EC2: Launch ec2 instances from AWS Explorer
+
 ## 3.25.0 2024-09-19
 
 - **Bug Fix** no longer gives option to copy instance id on ec2 parent node.

@@ -4,7 +4,6 @@
  */
 
 import assert from 'assert'
-import * as nodeFsSync from 'fs'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import * as FakeTimers from '@sinonjs/fake-timers'
@@ -17,8 +16,9 @@ import { keys, selectFrom } from '../shared/utilities/tsUtils'
 import fs from '../shared/fs/fs'
 import { DeclaredCommand } from '../shared/vscode/commands2'
 import { mkdirSync, existsSync } from 'fs'
-import * as nodefs from 'fs/promises'
 import { randomBytes } from 'crypto'
+import request from '../shared/request'
+import { stub } from 'sinon'
 
 const testTempDirs: string[] = []
 
@@ -95,7 +95,7 @@ export class TestFolder {
         await toFile(content ?? '', filePath)
 
         if (options?.mode !== undefined) {
-            await nodefs.chmod(filePath, options.mode)
+            await fs.chmod(filePath, options.mode)
         }
 
         return filePath
@@ -142,7 +142,7 @@ export async function createTestWorkspaceFolder(name?: string, subDir?: string):
     testTempDirs.push(tempFolder)
     const finalWsFolder = subDir === undefined ? tempFolder : path.join(tempFolder, subDir)
     if (subDir !== undefined && subDir.length > 0) {
-        await nodefs.mkdir(finalWsFolder, { recursive: true })
+        await fs.mkdir(finalWsFolder)
     }
     return {
         uri: vscode.Uri.file(finalWsFolder),
@@ -253,7 +253,7 @@ export async function createExecutableFile(filepath: string, contents: string): 
         await fs.writeFile(filepath, `@echo OFF$\r\n${contents}\r\n`)
     } else {
         await fs.writeFile(filepath, `#!/bin/sh\n${contents}`)
-        nodeFsSync.chmodSync(filepath, 0o744)
+        await fs.chmod(filepath, 0o744)
     }
 }
 
@@ -480,7 +480,13 @@ export async function closeAllEditors(): Promise<void> {
     //  - `vscode.OutputChannel` name prefixed with "extension-output". https://github.com/microsoft/vscode/issues/148993#issuecomment-1167654358
     //  - `vscode.LogOutputChannel` name (created with `vscode.window.createOutputChannel(…,{log:true})`
     // Maybe we can close these with a command?
-    const ignorePatterns = [/extension-output/, /tasks/, /amazonwebservices\.aws-core-vscode\./]
+    // For nullExtensionDescription, see https://github.com/aws/aws-toolkit-vscode/issues/4658
+    const ignorePatterns = [
+        /extension-output/,
+        /tasks/,
+        /amazonwebservices\.[a-z\-]+-vscode\./,
+        /nullExtensionDescription./, // Sometimes exists instead of the prior line, see https://github.com/aws/aws-toolkit-vscode/issues/4658
+    ]
     const editors: vscode.TextEditor[] = []
 
     const noVisibleEditor: boolean | undefined = await waitUntil(
@@ -606,4 +612,9 @@ export function tryRegister(command: DeclaredCommand<() => Promise<any>>) {
             throw err
         }
     }
+}
+
+// Returns a stubbed fetch for other tests.
+export function getFetchStubWithResponse(response: Partial<Response>) {
+    return stub(request, 'fetch').returns({ response: new Promise((res, _) => res(response)) } as any)
 }

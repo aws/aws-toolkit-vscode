@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Amazon Q /dev: define first folder as a root path for LLM-created files when using workspaces"
+}

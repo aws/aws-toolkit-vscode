@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import * as path from 'path'
-import { chmodSync, createWriteStream } from 'fs'
+import { createWriteStream } from 'fs'
 import * as crypto from 'crypto'
 import { getLogger } from '../../shared/logger/logger'
 import { CurrentWsFolders, collectFilesForIndex } from '../../shared/utilities/workspaceUtils'
@@ -266,7 +266,7 @@ export class LspController {
             if (!downloadNodeOk) {
                 return false
             }
-            chmodSync(nodeRuntimeTempPath, 0o755)
+            await fs.chmod(nodeRuntimeTempPath, 0o755)
             await fs.rename(nodeRuntimeTempPath, nodeRuntimePath)
             return true
         } catch (e) {

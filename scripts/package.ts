@@ -87,22 +87,6 @@ function isBeta(): boolean {
 }
 
 /**
- * Restores package.json after `scripts/build/handlePackageJson.ts` overwrote it.
- *
- * TODO: remove this after IDE-12831 is resolved.
- */
-function restorePackageJson() {
-    const packageJsonFile = './package.json'
-    const backupJsonFile = `${packageJsonFile}.handlePackageJson.bk`
-
-    if (fs.existsSync(backupJsonFile)) {
-        fs.copyFileSync(backupJsonFile, packageJsonFile)
-        fs.unlinkSync(backupJsonFile)
-        console.log(`package.ts: restored package.json from ${backupJsonFile}`)
-    }
-}
-
-/**
  * Gets a suffix to append to the version-string, or empty for release builds.
  *
  * TODO: use `git describe` instead.
@@ -171,10 +155,25 @@ function main() {
         }
 
         fs.writeFileSync(packageJsonFile, JSON.stringify(packageJson, undefined, '    '))
-        child_process.execFileSync('vsce', ['package', '--ignoreFile', '../.vscodeignore.packages'], {
-            stdio: 'inherit',
-            shell: process.platform === 'win32', // For vsce.cmd on Windows.
-        })
+        child_process.execFileSync(
+            'vsce',
+            [
+                'package',
+                '--ignoreFile',
+                '../.vscodeignore.packages',
+                /**
+                 * Depdendency gathering not required because we bundle with webpack: https://github.com/microsoft/vscode-vsce/issues/439
+                 *
+                 * Removing this arg will cause packaging to break due to issues in src.gen/.../node_modules,
+                 * since those dependencies are disjoint (i.e. not a workspace in the root package.json)
+                 */
+                '--no-dependencies',
+            ],
+            {
+                stdio: 'inherit',
+                shell: process.platform === 'win32', // For vsce.cmd on Windows.
+            }
+        )
 
         console.log(`VSIX Version: ${packageJson.version}`)
 
@@ -194,7 +193,6 @@ function main() {
             fs.copyFileSync(backupWebpackConfigFile, webpackConfigJsFile)
             fs.unlinkSync(backupWebpackConfigFile)
         }
-        restorePackageJson()
     }
 }
 
