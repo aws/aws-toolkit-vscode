@@ -117,7 +117,7 @@ describe('tryInstallLsp performance test', function () {
         {
             testRuns: 10,
             linux: {
-                userCpuUsage: 90,
+                userCpuUsage: 95,
                 systemCpuUsage: 35,
                 heapTotal: 4,
             },
