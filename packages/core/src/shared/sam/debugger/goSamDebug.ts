@@ -224,7 +224,7 @@ async function makeInstallScript(debuggerPath: string, isWindows: boolean): Prom
     script += `go build -o "${delvePath}" "${delveRepo}/cmd/dlv"\n`
 
     await fs.writeFile(installScriptPath, script, 'utf8')
-    await fs.chmod(installScriptPath, 0o755)
+    await fs2.chmod(installScriptPath, 0o755)
 
     return { path: installScriptPath, options: installOptions }
 }
