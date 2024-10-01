@@ -104,10 +104,6 @@ describe('runCommand', function () {
         }
 
         it('vscode ISDIR', async function () {
-            // if (env.isMinVscode('1.83.0')) {
-            //     this.skip()
-            // }
-
             const pat = (() => {
                 switch (os.platform()) {
                     case 'win32':
