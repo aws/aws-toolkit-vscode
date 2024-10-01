@@ -8,6 +8,7 @@ import { ToolkitError } from '../../shared/errors'
 import { tryRun } from '../../shared/utilities/pathFind'
 import { Timeout } from '../../shared/utilities/timeoutUtils'
 import { findAsync } from '../../shared/utilities/collectionUtils'
+import { RunParameterContext } from '../../shared/utilities/processUtils'
 
 type sshKeyType = 'rsa' | 'ed25519'
 
@@ -17,7 +18,7 @@ export class SshKeyPair {
     private deleted: boolean = false
 
     private constructor(
-        private keyPath: string,
+        private readonly keyPath: string,
         lifetime: number
     ) {
         this.publicKeyPath = `${keyPath}.pub`
@@ -29,10 +30,6 @@ export class SshKeyPair {
     }
 
     public static async getSshKeyPair(keyPath: string, lifetime: number) {
-        // Overwrite key if already exists
-        if (await fs.existsFile(keyPath)) {
-            await fs.delete(keyPath)
-        }
         await SshKeyPair.generateSshKeyPair(keyPath)
         return new SshKeyPair(keyPath, lifetime)
     }
@@ -50,7 +47,12 @@ export class SshKeyPair {
      * @param keyType type of key to generate.
      */
     public static async tryKeyGen(keyPath: string, keyType: sshKeyType): Promise<boolean> {
-        return !(await tryRun('ssh-keygen', ['-t', keyType, '-N', '', '-q', '-f', keyPath], 'yes', 'unknown key type'))
+        const overrideKeys = async (_t: string, proc: RunParameterContext) => {
+            await proc.send('yes')
+        }
+        return !(await tryRun('ssh-keygen', ['-t', keyType, '-N', '', '-q', '-f', keyPath], 'yes', 'unknown key type', {
+            onStdout: overrideKeys,
+        }))
     }
 
     public static async tryKeyTypes(keyPath: string, keyTypes: sshKeyType[]): Promise<boolean> {
