@@ -5,6 +5,7 @@
 
 import assert from 'assert'
 import * as fs from 'fs-extra'
+import { fs as fs2 } from '../../../shared'
 import * as os from 'os'
 import * as path from 'path'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../../shared/filesystemUtilities'
@@ -80,7 +81,7 @@ describe('ChildProcess', async function () {
         if (process.platform !== 'win32') {
             it('runs and captures stdout - unix', async function () {
                 const scriptFile = path.join(tempFolder, 'test-script.sh')
-                writeShellFile(scriptFile)
+                await writeShellFile(scriptFile)
 
                 const childProcess = new ChildProcess(scriptFile)
 
@@ -89,7 +90,7 @@ describe('ChildProcess', async function () {
 
             it('errs when starting twice - unix', async function () {
                 const scriptFile = path.join(tempFolder, 'test-script.sh')
-                writeShellFile(scriptFile)
+                await writeShellFile(scriptFile)
 
                 const childProcess = new ChildProcess(scriptFile)
 
@@ -120,7 +121,7 @@ describe('ChildProcess', async function () {
                 writeBatchFile(command)
             } else {
                 command = path.join(subfolder, 'test script.sh')
-                writeShellFile(command)
+                await writeShellFile(command)
             }
 
             const childProcess = new ChildProcess(command)
@@ -140,14 +141,17 @@ describe('ChildProcess', async function () {
         describe('Extra options', function () {
             let childProcess: ChildProcess
 
-            beforeEach(function () {
+            beforeEach(async function () {
                 const isWindows = process.platform === 'win32'
                 const command = path.join(tempFolder, `test-script.${isWindows ? 'bat' : 'sh'}`)
 
                 if (isWindows) {
                     writeBatchFile(command, ['@echo %1', '@echo %2', '@echo "%3"', 'SLEEP 20', 'exit 1'].join(os.EOL))
                 } else {
-                    writeShellFile(command, ['echo $1', 'echo $2', 'echo "$3"', 'sleep 20', 'exit 1'].join(os.EOL))
+                    await writeShellFile(
+                        command,
+                        ['echo $1', 'echo $2', 'echo "$3"', 'sleep 20', 'exit 1'].join(os.EOL)
+                    )
                 }
 
                 childProcess = new ChildProcess(command, ['1', '2'], { collect: false })
@@ -277,7 +281,7 @@ describe('ChildProcess', async function () {
         if (process.platform !== 'win32') {
             it('detects running processes and successfully stops a running process - Unix', async function () {
                 const scriptFile = path.join(tempFolder, 'test-script.sh')
-                writeShellFileWithDelays(scriptFile)
+                await writeShellFileWithDelays(scriptFile)
 
                 const childProcess = new ChildProcess('sh', [scriptFile])
                 const result = childProcess.run()
@@ -291,7 +295,7 @@ describe('ChildProcess', async function () {
 
             it('can stop() previously stopped processes - Unix', async function () {
                 const scriptFile = path.join(tempFolder, 'test-script.sh')
-                writeShellFileWithDelays(scriptFile)
+                await writeShellFileWithDelays(scriptFile)
 
                 const childProcess = new ChildProcess(scriptFile)
 
@@ -331,17 +335,17 @@ describe('ChildProcess', async function () {
         fs.writeFileSync(filename, `@echo OFF${os.EOL}echo hi`)
     }
 
-    function writeShellFile(filename: string, contents = 'echo hi'): void {
+    async function writeShellFile(filename: string, contents = 'echo hi'): Promise<void> {
         fs.writeFileSync(filename, `#!/bin/sh\n${contents}`)
-        fs.chmodSync(filename, 0o744)
+        await fs2.chmod(filename, 0o744)
     }
 
-    function writeShellFileWithDelays(filename: string): void {
+    async function writeShellFileWithDelays(filename: string): Promise<void> {
         const file = `
         echo hi
         sleep 20
         echo bye`
-        writeShellFile(filename, file)
+        await writeShellFile(filename, file)
     }
 })
 

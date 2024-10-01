@@ -24,6 +24,7 @@ import { AuthUtil } from '../../codewhisperer'
 import { isWeb } from '../../shared/extensionGlobals'
 import { getUserAgent } from '../../shared/telemetry/util'
 import { isAmazonInternalOs } from '../../shared/vscode/env'
+import { fs as fs2 } from '../../shared/fs/fs'
 
 function getProjectPaths() {
     const workspaceFolders = vscode.workspace.workspaceFolders
@@ -266,7 +267,7 @@ export class LspController {
             if (!downloadNodeOk) {
                 return false
             }
-            fs.chmodSync(nodeRuntimeTempPath, 0o755)
+            await fs2.chmod(nodeRuntimeTempPath, 0o755)
             fs.moveSync(nodeRuntimeTempPath, nodeRuntimePath)
             return true
         } catch (e) {
