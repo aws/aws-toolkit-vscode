@@ -8,6 +8,7 @@ import { logAndThrowIfUnexpectedExitCode, SamCliProcessInvoker } from './samCliI
 import path from 'path'
 import * as os from 'os'
 import { getSpawnEnv } from '../../env/resolveEnv'
+import { getLogger } from '../../../shared/logger'
 
 export const TestEventsOperation = {
     List: 'list',
@@ -30,6 +31,10 @@ export async function runSamCliRemoteTestEvents(
     invoker: SamCliProcessInvoker
 ): Promise<string> {
     const args = ['remote', 'test-event', remoteTestEventsParameters.operation]
+    if (remoteTestEventsParameters.stackName === '' && remoteTestEventsParameters.functionArn === '') {
+        getLogger().info('No remote test events found. This stack is not deployed.')
+        return 'No remote test events found. This stack is not deployed.'
+    }
     if (remoteTestEventsParameters.functionArn) {
         args.push(remoteTestEventsParameters.functionArn)
     } else if (remoteTestEventsParameters.stackName && remoteTestEventsParameters.logicalId) {
@@ -57,6 +62,10 @@ export async function runSamCliRemoteTestEvents(
             cwd: remoteTestEventsParameters.projectRoot?.fsPath,
         },
     })
+
+    if (childProcessResult.stderr && childProcessResult.stderr.startsWith('Error: No events found for function')) {
+        return ''
+    }
     logAndThrowIfUnexpectedExitCode(childProcessResult, 0)
 
     return childProcessResult.stdout
