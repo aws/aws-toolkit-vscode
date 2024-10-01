@@ -53,7 +53,7 @@ export async function activateYamlExtension(): Promise<YamlExtension | undefined
                 // SLOW: This request happens on every keystroke! (5MB+ read from filesystem).
                 // This is a design flaw in this registerContributor() API.
                 // TODO: this function is non-async preventing us from using our fs module.
-                return fs2.readFileSync(vscode.Uri.parse(uri).fsPath).toString()
+                return nodefs.readFileSync(vscode.Uri.parse(uri).fsPath).toString()
             } catch (e) {
                 getLogger().error(`YAML Extension: failed to read schema URI "${uri}": ${e}`)
                 throw new Error(`${getIdeProperties().company} Toolkit could not parse JSON schema URI: ${uri}`)
