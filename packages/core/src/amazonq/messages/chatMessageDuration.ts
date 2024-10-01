@@ -74,7 +74,7 @@ export class AmazonQChatMessageDuration {
             // Get the total duration by subtracting when the message was displayed and when the chat message was first sent
             const totalDuration = events[events.length - 1].duration - events[0].duration
 
-            function duration(start: Event, end: Event) {
+            function durationFrom(start: Event, end: Event) {
                 const startEvent = metrics.events[start]
                 const endEvent = metrics.events[end]
                 if (!startEvent || !endEvent) {
@@ -85,9 +85,9 @@ export class AmazonQChatMessageDuration {
 
             telemetry.amazonq_chatRoundTrip.emit({
                 amazonqChatMessageSentTime: metrics.events.chatMessageSent ?? -1,
-                amazonqEditorReceivedMessageMs: duration('chatMessageSent', 'editorReceivedMessage') ?? -1,
-                amazonqFeatureReceivedMessageMs: duration('editorReceivedMessage', 'featureReceivedMessage') ?? -1,
-                amazonqMessageDisplayedMs: duration('featureReceivedMessage', 'messageDisplayed') ?? -1,
+                amazonqEditorReceivedMessageMs: durationFrom('chatMessageSent', 'editorReceivedMessage') ?? -1,
+                amazonqFeatureReceivedMessageMs: durationFrom('editorReceivedMessage', 'featureReceivedMessage') ?? -1,
+                amazonqMessageDisplayedMs: durationFrom('featureReceivedMessage', 'messageDisplayed') ?? -1,
                 source: metrics.trigger,
                 duration: totalDuration,
                 result: 'Succeeded',
