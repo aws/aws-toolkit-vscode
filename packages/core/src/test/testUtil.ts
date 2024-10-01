@@ -4,7 +4,6 @@
  */
 
 import assert from 'assert'
-import * as nodeFsSync from 'fs'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import * as FakeTimers from '@sinonjs/fake-timers'
@@ -14,10 +13,9 @@ import globals from '../shared/extensionGlobals'
 import { waitUntil } from '../shared/utilities/timeoutUtils'
 import { MetricName, MetricShapes } from '../shared/telemetry/telemetry'
 import { keys, selectFrom } from '../shared/utilities/tsUtils'
-import fs2 from '../shared/fs/fs'
+import fs from '../shared/fs/fs'
 import { DeclaredCommand } from '../shared/vscode/commands2'
 import { mkdirSync, existsSync } from 'fs'
-import * as nodefs from 'fs/promises'
 import { randomBytes } from 'crypto'
 import request from '../shared/request'
 import { stub } from 'sinon'
@@ -33,15 +31,15 @@ export async function toFile(o: any, filepath: string | vscode.Uri) {
     const file = typeof filepath === 'string' ? filepath : filepath.fsPath
     const text = o === undefined ? '' : o.toString()
     const dir = path.dirname(file)
-    await fs2.mkdir(dir)
-    await fs2.writeFile(file, text)
+    await fs.mkdir(dir)
+    await fs.writeFile(file, text)
 }
 
 /**
  * Gets the contents of `filepath` as UTF-8 encoded string.
  */
 export async function fromFile(filepath: string): Promise<string> {
-    return fs2.readFileAsString(filepath)
+    return fs.readFileAsString(filepath)
 }
 
 /** Gets the full path to the Toolkit source root on this machine. */
@@ -97,7 +95,7 @@ export class TestFolder {
         await toFile(content ?? '', filePath)
 
         if (options?.mode !== undefined) {
-            await nodefs.chmod(filePath, options.mode)
+            await fs.chmod(filePath, options.mode)
         }
 
         return filePath
@@ -144,7 +142,7 @@ export async function createTestWorkspaceFolder(name?: string, subDir?: string):
     testTempDirs.push(tempFolder)
     const finalWsFolder = subDir === undefined ? tempFolder : path.join(tempFolder, subDir)
     if (subDir !== undefined && subDir.length > 0) {
-        await nodefs.mkdir(finalWsFolder, { recursive: true })
+        await fs.mkdir(finalWsFolder)
     }
     return {
         uri: vscode.Uri.file(finalWsFolder),
@@ -157,7 +155,7 @@ export async function createTestFile(fileName: string): Promise<vscode.Uri> {
     const tempFolder = await makeTemporaryToolkitFolder()
     testTempDirs.push(tempFolder) // ensures this is deleted at the end
     const tempFilePath = path.join(tempFolder, fileName)
-    await fs2.writeFile(tempFilePath, '')
+    await fs.writeFile(tempFilePath, '')
     return vscode.Uri.file(tempFilePath)
 }
 
@@ -205,7 +203,7 @@ export async function createTestWorkspace(
 
     do {
         const tempFilePath = path.join(workspace.uri.fsPath, `${fileNamePrefix}${n}${fileNameSuffix}`)
-        await fs2.writeFile(tempFilePath, fileContent)
+        await fs.writeFile(tempFilePath, fileContent)
     } while (--n > 0)
 
     return workspace
@@ -236,7 +234,7 @@ export function assertEqualPaths(actual: string, expected: string, message?: str
  * Asserts that UTF-8 contents of `file` are equal to `expected`.
  */
 export async function assertFileText(file: string, expected: string, message?: string | Error) {
-    const actualContents = await fs2.readFileAsString(file)
+    const actualContents = await fs.readFileAsString(file)
     assert.strictEqual(actualContents, expected, message)
 }
 
@@ -250,12 +248,12 @@ export async function tickPromise<T>(promise: Promise<T>, clock: FakeTimers.Inst
  * Creates an executable file (including any parent directories) with the given contents.
  */
 export async function createExecutableFile(filepath: string, contents: string): Promise<void> {
-    await fs2.mkdir(path.dirname(filepath))
+    await fs.mkdir(path.dirname(filepath))
     if (process.platform === 'win32') {
-        await fs2.writeFile(filepath, `@echo OFF$\r\n${contents}\r\n`)
+        await fs.writeFile(filepath, `@echo OFF$\r\n${contents}\r\n`)
     } else {
-        await fs2.writeFile(filepath, `#!/bin/sh\n${contents}`)
-        nodeFsSync.chmodSync(filepath, 0o744)
+        await fs.writeFile(filepath, `#!/bin/sh\n${contents}`)
+        await fs.chmod(filepath, 0o744)
     }
 }
 

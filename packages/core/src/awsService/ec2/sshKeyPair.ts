@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import { fs } from '../../shared'
-import { chmodSync } from 'fs'
 import { ToolkitError } from '../../shared/errors'
 import { tryRun } from '../../shared/utilities/pathFind'
 import { Timeout } from '../../shared/utilities/timeoutUtils'
@@ -39,7 +38,7 @@ export class SshKeyPair {
         if (!keyGenerated) {
             throw new ToolkitError('ec2: Unable to generate ssh key pair')
         }
-        chmodSync(keyPath, 0o600)
+        await fs.chmod(keyPath, 0o600)
     }
     /**
      * Attempts to generate an ssh key pair. Returns true if successful, false otherwise.
