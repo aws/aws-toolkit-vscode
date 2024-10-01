@@ -153,7 +153,12 @@ export class FileSystem {
 
         return this.writeFile(path, finalContent)
     }
-
+    /**
+     * Checks if file or folder exists.
+     * @param path path to check.
+     * @param fileType optional assert that path contains certain filetype.
+     * @returns if path exists and matches filetype.
+     */
     async exists(path: Uri | string, fileType?: vscode.FileType): Promise<boolean> {
         if (path === undefined || path === '') {
             return false
@@ -301,6 +306,12 @@ export class FileSystem {
         await write(uri)
     }
 
+    /**
+     * Rename a file or folder.
+     * @param oldPath
+     * @param newPath
+     * @returns
+     */
     async rename(oldPath: vscode.Uri | string, newPath: vscode.Uri | string) {
         const oldUri = toUri(oldPath)
         const newUri = toUri(newPath)
@@ -465,7 +476,12 @@ export class FileSystem {
 
         return await vfs.readDirectory(path)
     }
-
+    /**
+     * Copy target file or directory
+     * @param source
+     * @param target
+     * @returns
+     */
     async copy(source: vscode.Uri | string, target: vscode.Uri | string): Promise<void> {
         const sourcePath = toUri(source)
         const targetPath = toUri(target)
