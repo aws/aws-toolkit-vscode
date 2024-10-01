@@ -73,7 +73,7 @@ async function runRefreshAppBuilder(uri: vscode.Uri, event: string) {
  * Checkes templateToOpenAppComposer in global and opens template
  * Directly return if templateToOpenAppComposer is undefined
  */
-async function openApplicationComposerAfterReload(): Promise<void> {
+export async function openApplicationComposerAfterReload(): Promise<void> {
     const templatesToOpen = globals.globalState.get<[string]>(templateToOpenAppComposer)
     // undefined
     if (!templatesToOpen) {

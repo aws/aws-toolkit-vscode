@@ -13,7 +13,6 @@ import { createQuickPick } from '../../shared/ui/pickerPrompter'
 import { createCommonButtons } from '../../shared/ui/buttons'
 import * as nls from 'vscode-nls'
 import { ToolkitError } from '../../shared/errors'
-import { SkipPrompter } from '../../shared/ui/common/skipPrompter'
 import { createSingleFileDialog } from '../../shared/ui/common/openDialog'
 import { fs } from '../../shared/fs/fs'
 import path from 'path'
@@ -65,7 +64,7 @@ const appMap = new Map<string, IServerlessLandProject>([
     ],
 ])
 
-class RuntimeLocationWizard extends Wizard<{
+export class RuntimeLocationWizard extends Wizard<{
     runtime: TutorialRuntimeOptions
     dir: string
     realDir: vscode.Uri
@@ -73,23 +72,23 @@ class RuntimeLocationWizard extends Wizard<{
     public constructor(skipRuntime: boolean, labelValue: string) {
         super()
         const form = this.form
-        if (skipRuntime) {
-            form.runtime.bindPrompter(() => new SkipPrompter('skipped' as TutorialRuntimeOptions))
-        } else {
-            // step1: choose runtime
-            const items: { label: string; data: TutorialRuntimeOptions }[] = [
-                { label: 'Python', data: 'python' },
-                { label: 'Node JS', data: 'node' },
-                { label: 'Java', data: 'java' },
-                { label: 'Dot Net', data: 'dotnet' },
-            ]
-            form.runtime.bindPrompter(() => {
+
+        // step1: choose runtime
+        const items: { label: string; data: TutorialRuntimeOptions }[] = [
+            { label: 'Python', data: 'python' },
+            { label: 'Node JS', data: 'node' },
+            { label: 'Java', data: 'java' },
+            { label: 'Dot Net', data: 'dotnet' },
+        ]
+        form.runtime.bindPrompter(
+            () => {
                 return createQuickPick(items, {
                     title: localize('AWS.toolkit.lambda.walkthroughSelectRuntime', 'Select a runtime'),
                     buttons: createCommonButtons(serverlessLandUrl),
                 })
-            })
-        }
+            },
+            { showWhen: () => !skipRuntime }
+        )
 
         // step2: choose location for project
         const wsFolders = vscode.workspace.workspaceFolders
@@ -158,7 +157,7 @@ export async function getTutorial(
  * @param projectUri The choosen project uri to generate proejct
  * @param runtime The runtime choosen
  */
-async function genWalkthroughProject(
+export async function genWalkthroughProject(
     walkthroughSelected: WalkthroughOptions,
     projectUri: vscode.Uri,
     runtime: TutorialRuntimeOptions | undefined
@@ -204,7 +203,7 @@ async function genWalkthroughProject(
  * check if the selected project Uri exist in current workspace. If not, add Project folder to Workspace
  * @param projectUri uri for the selected project
  */
-async function openProjectInWorkspace(projectUri: vscode.Uri): Promise<void> {
+export async function openProjectInWorkspace(projectUri: vscode.Uri): Promise<void> {
     let templateUri: vscode.Uri | undefined = vscode.Uri.joinPath(projectUri, defaultTemplateName)
     if (!(await fs.exists(templateUri))) {
         // no template.yaml, trying yml
