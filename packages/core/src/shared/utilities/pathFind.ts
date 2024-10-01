@@ -38,7 +38,7 @@ export async function tryRun(
     const proc = new ChildProcess(p, args, { logging: 'no' })
     const r = await proc.run({
         ...opt,
-        ...{ spawnOptions: { env: await mergeResolvedShellPath(opt?.spawnOptions?.env ?? process.env) } },
+        spawnOptions: { env: await mergeResolvedShellPath(opt?.spawnOptions?.env ?? process.env) },
     })
     const ok = r.exitCode === 0 && (expected === undefined || r.stdout.includes(expected))
     if (logging === 'noresult') {
