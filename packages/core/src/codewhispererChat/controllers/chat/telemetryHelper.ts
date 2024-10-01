@@ -86,6 +86,8 @@ export class CWCTelemetryHelper {
                 return 'explainLineByLine'
             case UserIntent.SHOW_EXAMPLES:
                 return 'showExample'
+            case UserIntent.GENERATE_UNIT_TESTS:
+                return 'generateUnitTests'
             default:
                 return undefined
         }
@@ -158,6 +160,7 @@ export class CWCTelemetryHelper {
                     cwsprChatConversationId: conversationId ?? '',
                     credentialStartUrl: AuthUtil.instance.startUrl,
                     cwsprChatMessageId: message.messageId,
+                    cwsprChatUserIntent: this.getUserIntentForTelemetry(message.userIntent),
                     cwsprChatInteractionType: 'insertAtCursor',
                     cwsprChatAcceptedCharactersLength: message.code.length,
                     cwsprChatAcceptedNumberOfLines: message.code.split('\n').length,
@@ -175,6 +178,7 @@ export class CWCTelemetryHelper {
                     cwsprChatConversationId: conversationId ?? '',
                     credentialStartUrl: AuthUtil.instance.startUrl,
                     cwsprChatMessageId: message.messageId,
+                    cwsprChatUserIntent: this.getUserIntentForTelemetry(message.userIntent),
                     cwsprChatInteractionType: 'copySnippet',
                     cwsprChatAcceptedCharactersLength: message.code.length,
                     cwsprChatInteractionTarget: message.insertionTargetType,

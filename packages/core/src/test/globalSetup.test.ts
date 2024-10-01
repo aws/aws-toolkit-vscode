@@ -53,8 +53,16 @@ export async function mochaGlobalSetup(extensionId: string) {
 
         // Shows the full error chain when tests fail
         mapTestErrors(this, normalizeError)
+        const ext = vscode.extensions.getExtension(extensionId)
+        if (!ext) {
+            setTimeout(() => process.exit(1), 4000) // Test process will hang otherwise, but give time to report thrown error.
+            throw new Error(
+                `Could not activate extension for tests: ${extensionId} not found. Is 'extensionDevelopmentPath' configured correctly?` +
+                    ' Does the path have a proper vscode extension package.json?'
+            )
+        }
+        await ext.activate()
 
-        await vscode.extensions.getExtension(extensionId)?.activate()
         const fakeContext = await FakeExtensionContext.create()
         fakeContext.globalStorageUri = (await testUtil.createTestWorkspaceFolder('globalStoragePath')).uri
         fakeContext.extensionPath = globals.context.extensionPath
@@ -157,6 +165,7 @@ function writeLogsToFile(testName: string) {
     appendFileSync(testLogOutput, entries?.join('\n') ?? '', 'utf8')
 }
 
+// TODO: merge this with `toolkitLogger.test.ts:checkFile`
 export function assertLogsContain(text: string, exactMatch: boolean, severity: LogLevel) {
     assert.ok(
         getTestLogger()

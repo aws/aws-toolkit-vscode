@@ -14,7 +14,7 @@ import {
 import { SamCliContext } from '../../../../shared/sam/cli/samCliContext'
 import { runSamCliInit, SamCliInitArgs } from '../../../../shared/sam/cli/samCliInit'
 import { SamCliProcessInvoker, makeUnexpectedExitCodeError } from '../../../../shared/sam/cli/samCliInvokerUtils'
-import { ChildProcessResult } from '../../../../shared/utilities/childProcess'
+import { ChildProcessResult } from '../../../../shared/utilities/processUtils'
 import { getTestLogger } from '../../../globalSetup.test'
 import { assertArgIsPresent, assertArgNotPresent, assertArgsContainArgument } from './samCliTestUtils'
 import {

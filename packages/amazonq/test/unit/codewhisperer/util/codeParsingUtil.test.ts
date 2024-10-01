@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
 import {
     PlatformLanguageId,
     extractClasses,
@@ -11,9 +10,8 @@ import {
     isTestFile,
     utgLanguageConfigs,
 } from 'aws-core-vscode/codewhisperer'
-import * as path from 'path'
 import assert from 'assert'
-import { createTestWorkspaceFolder, toFile } from 'aws-core-vscode/test'
+import { createTestWorkspaceFolder, toTextDocument } from 'aws-core-vscode/test'
 
 describe('RegexValidationForPython', () => {
     it('should extract all function names from a python file content', () => {
@@ -119,9 +117,7 @@ describe('isTestFile', () => {
         expected: boolean
     ) {
         for (const fileName of fileNames) {
-            const p = path.join(testWsFolder, fileName)
-            await toFile('', p)
-            const document = await vscode.workspace.openTextDocument(p)
+            const document = await toTextDocument('', fileName, testWsFolder)
             const actual = await isTestFile(document.uri.fsPath, { languageId: config.languageId })
             assert.strictEqual(actual, expected)
         }
