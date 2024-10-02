@@ -14,7 +14,6 @@ import { sleep } from '../../../shared'
 import { withTelemetryContext } from '../../../shared/telemetry/util'
 import { SinonSandbox } from 'sinon'
 import sinon from 'sinon'
-import { stubPerformance } from '../../utilities/performance'
 import * as crypto from '../../../shared/crypto'
 
 describe('TelemetrySpan', function () {
@@ -76,23 +75,6 @@ describe('TelemetrySpan', function () {
             { result: 'Failed', reason: 'bar' },
             { result: 'Succeeded', duration: 100 },
         ])
-    })
-
-    it('records performance', function () {
-        const { expectedUserCpuUsage, expectedSystemCpuUsage, expectedHeapTotal } = stubPerformance(sandbox)
-        const span = new TelemetrySpan('function_call', {
-            emit: true,
-        })
-        span.start()
-        clock.tick(90)
-        span.stop()
-        assertTelemetry('function_call', {
-            userCpuUsage: expectedUserCpuUsage,
-            systemCpuUsage: expectedSystemCpuUsage,
-            heapTotal: expectedHeapTotal,
-            duration: 90,
-            result: 'Succeeded',
-        })
     })
 })
 
@@ -267,28 +249,6 @@ describe('TelemetryTracer', function () {
             assert.match(metric.awsRegion ?? '', /not-set|\w+-\w+-\d+/)
             assert.match(String(metric.duration) ?? '', /\d+/)
             assert.match(metric.requestId ?? '', /[a-z0-9-]+/)
-        })
-
-        it('records performance', function () {
-            clock = installFakeClock()
-            const { expectedUserCpuUsage, expectedSystemCpuUsage, expectedHeapTotal } = stubPerformance(sandbox)
-            tracer.run(
-                'function_call',
-                () => {
-                    clock?.tick(90)
-                },
-                {
-                    emit: true,
-                }
-            )
-
-            assertTelemetry('function_call', {
-                userCpuUsage: expectedUserCpuUsage,
-                systemCpuUsage: expectedSystemCpuUsage,
-                heapTotal: expectedHeapTotal,
-                duration: 90,
-                result: 'Succeeded',
-            })
         })
 
         describe('nested run()', function () {

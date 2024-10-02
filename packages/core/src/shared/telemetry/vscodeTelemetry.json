@@ -308,16 +308,6 @@
             "description": "The CPU architecture"
         },
         {
-            "name": "totalFileSizeInMB",
-            "type": "int",
-            "description": "The total size of all files being sent to Amazon Q"
-        },
-        {
-            "name": "totalFiles",
-            "type": "int",
-            "description": "The total number of files being sent to Amazon Q"
-        },
-        {
             "name": "traceId",
             "type": "string",
             "description": "The unique identifier of a trace"
@@ -1166,14 +1156,6 @@
                     "required": false
                 },
                 {
-                    "type": "totalFiles",
-                    "required": false
-                },
-                {
-                    "type": "totalFileSizeInMB",
-                    "required": false
-                },
-                {
                     "type": "architecture",
                     "required": false
                 },
@@ -1186,8 +1168,7 @@
                     "required": true
                 }
             ],
-            "passive": true,
-            "trackPerformance": true
+            "passive": true
         },
         {
             "name": "webview_load",
