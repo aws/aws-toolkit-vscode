@@ -349,12 +349,18 @@ export async function runDeploy(arg: any): Promise<DeployResult> {
                 }),
             })
 
-            const { paramsSource, stackName, region, projectRoot } = params
-            if (paramsSource !== ParamsSource.SamConfig && !!stackName && !!region) {
-                await writeSamconfigGlobal(projectRoot, stackName, region)
-            }
             //Run SAM deploy in Terminal
-            await runInTerminal(deployProcess, 'deploy')
+            const { paramsSource, stackName, region, projectRoot } = params
+            const shouldWriteDeploySamconfigGlobal = paramsSource !== ParamsSource.SamConfig && !!stackName && !!region
+            try {
+                await runInTerminal(deployProcess, 'deploy')
+                shouldWriteDeploySamconfigGlobal && (await writeSamconfigGlobal(projectRoot, stackName, region))
+            } catch (error: any) {
+                if (error.code === 'NoUpdateExitCode') {
+                    shouldWriteDeploySamconfigGlobal && (await writeSamconfigGlobal(projectRoot, stackName, region))
+                }
+                throw error
+            }
         } catch (error) {
             throw ToolkitError.chain(error, 'Failed to deploy SAM template', { details: { ...deployFlags } })
         }

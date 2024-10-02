@@ -6,6 +6,7 @@
 import * as vscode from 'vscode'
 import { logAndThrowIfUnexpectedExitCode, SamCliProcessInvoker } from './samCliInvokerUtils'
 import { getSpawnEnv } from '../../env/resolveEnv'
+import { getLogger } from '../..'
 
 export interface SamCliListResourcesParameters {
     templateFile: string
@@ -46,7 +47,12 @@ export async function runSamCliListResource(
 
         return childProcessResult.stdout
     } catch (error: any) {
-        void vscode.window.showErrorMessage(`Failed to run SAM CLI list resources: ${error.message}`)
+        const message = error.message
+        if (message.includes('does not exist on Cloudformation')) {
+            getLogger().info(message)
+        } else {
+            void vscode.window.showErrorMessage(`Failed to run SAM CLI list resources: ${message}`)
+        }
         return []
     }
 }

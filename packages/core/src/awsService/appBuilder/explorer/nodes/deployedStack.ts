@@ -31,7 +31,7 @@ export class StackNameNode implements TreeNode {
         }
     }
     public get value(): string {
-        return `Current stack: ${this.stackName} (${this.region})`
+        return `Stack: ${this.stackName} (${this.region})`
     }
 
     public getTreeItem() {

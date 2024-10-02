@@ -490,6 +490,11 @@ export async function runInTerminal(proc: ChildProcess, cmd: string) {
     const handleResult = (result?: ChildProcessResult) => {
         if (result && result.exitCode !== 0) {
             const message = `sam ${cmd} exited with a non-zero exit code: ${result.exitCode}`
+            if (result.stderr.includes('is up to date')) {
+                throw ToolkitError.chain(result.error, message, {
+                    code: 'NoUpdateExitCode',
+                })
+            }
             throw ToolkitError.chain(result.error, message, {
                 code: 'NonZeroExitCode',
             })
@@ -594,11 +599,10 @@ export async function runSamSync(args: SyncParams) {
             env: await getSpawnEnv(process.env, { promptForInvalidCredential: true }),
         }),
     })
-    const { paramsSource, stackName, region, projectRoot } = args
-    if (paramsSource !== ParamsSource.SamConfig && !!stackName && !!region) {
-        await writeSamconfigGlobal(projectRoot, stackName, region)
-    }
     await runInTerminal(sam, 'sync')
+    const { paramsSource, stackName, region, projectRoot } = args
+    const shouldWriteSyncSamconfigGlobal = paramsSource !== ParamsSource.SamConfig && !!stackName && !!region
+    shouldWriteSyncSamconfigGlobal && (await writeSamconfigGlobal(projectRoot, stackName, region))
 }
 
 export const getWorkspaceUri = (template: TemplateItem) => vscode.workspace.getWorkspaceFolder(template.uri)?.uri
