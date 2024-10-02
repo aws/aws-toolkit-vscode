@@ -92,12 +92,13 @@ export async function openApplicationComposerAfterReload(): Promise<void> {
             continue
         }
 
+        await vscode.commands.executeCommand('workbench.action.focusFirstEditorGroup')
         await vscode.commands.executeCommand('aws.openInApplicationComposer', templateUri)
 
         if (await fs.exists(vscode.Uri.joinPath(templateFolder, 'README.md'))) {
             await vscode.commands.executeCommand('workbench.action.focusFirstEditorGroup')
             await vscode.commands.executeCommand(
-                'markdown.showPreviewToSide',
+                'markdown.showPreview',
                 vscode.Uri.joinPath(templateFolder, 'README.md')
             )
         }

@@ -69,7 +69,7 @@ export class RuntimeLocationWizard extends Wizard<{
     dir: string
     realDir: vscode.Uri
 }> {
-    public constructor(skipRuntime: boolean, labelValue: string) {
+    public constructor(skipRuntime: boolean, labelValue: string, existingTemplates?: vscode.Uri[]) {
         super()
         const form = this.form
 
@@ -100,16 +100,25 @@ export class RuntimeLocationWizard extends Wizard<{
         ]
 
         // if at least one open workspace, add all opened workspace as options
-        if (wsFolders) {
+        if (wsFolders && labelValue !== 'Open existing Project') {
             for (const wsFolder of wsFolders) {
                 items2.push({ label: wsFolder.uri.fsPath, data: wsFolder.uri.fsPath })
             }
         }
 
+        if (wsFolders && existingTemplates && labelValue === 'Open existing Project') {
+            existingTemplates.map((file) => {
+                items2.push({ label: file.fsPath, data: path.dirname(file.fsPath) })
+            })
+        }
+
         form.dir.bindPrompter(() => {
             return createQuickPick(items2, {
-                title: localize('AWS.toolkit.lambda.walkthroughProjectLocation', 'Select a location for project'),
-                buttons: createCommonButtons(serverlessLandUrl),
+                title:
+                    labelValue === 'Open existing Project'
+                        ? localize('AWS.toolkit.lambda.walkthroughOpenExistProject', 'Select an existing template file')
+                        : localize('AWS.toolkit.lambda.walkthroughProjectLocation', 'Select a location for project'),
+                buttons: createCommonButtons(labelValue === 'Open existing Project' ? undefined : serverlessLandUrl),
             })
         })
 
@@ -216,7 +225,7 @@ export async function openProjectInWorkspace(projectUri: vscode.Uri): Promise<vo
     // Open template file, and after update workspace folder
     if (templateUri) {
         await vscode.commands.executeCommand('workbench.action.focusFirstEditorGroup')
-        await vscode.commands.executeCommand('explorer.openToSide', templateUri)
+        await vscode.window.showTextDocument(await vscode.workspace.openTextDocument(templateUri))
         // set global key to template to be opened, appComposer will open them upon reload
         await globals.globalState.update(templateToOpenAppComposer, [templateUri.fsPath])
     }
@@ -234,7 +243,7 @@ export async function openProjectInWorkspace(projectUri: vscode.Uri): Promise<vo
     // Open Readme if exist
     if (await fs.exists(vscode.Uri.joinPath(projectUri, 'README.md'))) {
         await vscode.commands.executeCommand('workbench.action.focusFirstEditorGroup')
-        await vscode.commands.executeCommand('markdown.showPreviewToSide', vscode.Uri.joinPath(projectUri, 'README.md'))
+        await vscode.commands.executeCommand('markdown.showPreview', vscode.Uri.joinPath(projectUri, 'README.md'))
     }
 }
 
@@ -261,7 +270,11 @@ export async function initWalkthroughProjectCommand() {
         }
         // if these two, skip runtime choice
         const skipRuntimeChoice = walkthroughSelected === 'Visual' || walkthroughSelected === 'CustomTemplate'
-        const result = await new RuntimeLocationWizard(skipRuntimeChoice, labelValue).run()
+        const templates: vscode.Uri[] =
+            walkthroughSelected === 'CustomTemplate'
+                ? await vscode.workspace.findFiles('**/{template.yaml,template.yml}', '**/.aws-sam/*')
+                : []
+        const result = await new RuntimeLocationWizard(skipRuntimeChoice, labelValue, templates).run()
         if (!result) {
             getLogger().info('User canceled the runtime selection process via quickpick')
             return
