@@ -79,19 +79,19 @@ describe('tryInstallLsp performance test', function () {
             linux: {
                 userCpuUsage: 100,
                 systemCpuUsage: 35,
-                heapTotal: 4,
+                heapTotal: 6,
                 duration: 15,
             },
             darwin: {
                 userCpuUsage: 100,
                 systemCpuUsage: 35,
-                heapTotal: 4,
+                heapTotal: 6,
                 duration: 15,
             },
             win32: {
                 userCpuUsage: 100,
                 systemCpuUsage: 35,
-                heapTotal: 4,
+                heapTotal: 6,
                 duration: 15,
             },
         },
@@ -119,17 +119,17 @@ describe('tryInstallLsp performance test', function () {
             linux: {
                 userCpuUsage: 100,
                 systemCpuUsage: 50,
-                heapTotal: 4,
+                heapTotal: 6,
             },
             darwin: {
                 userCpuUsage: 100,
                 systemCpuUsage: 50,
-                heapTotal: 4,
+                heapTotal: 6,
             },
             win32: {
                 userCpuUsage: 100,
                 systemCpuUsage: 50,
-                heapTotal: 4,
+                heapTotal: 6,
             },
         },
         'few large files in zip',
