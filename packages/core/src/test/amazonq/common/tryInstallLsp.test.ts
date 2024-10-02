@@ -77,21 +77,21 @@ describe('tryInstallLsp performance test', function () {
         {
             testRuns: 10,
             linux: {
-                userCpuUsage: 110,
+                userCpuUsage: 100,
                 systemCpuUsage: 35,
-                heapTotal: 6,
+                heapTotal: 4,
                 duration: 15,
             },
             darwin: {
-                userCpuUsage: 90,
+                userCpuUsage: 100,
                 systemCpuUsage: 35,
-                heapTotal: 6,
+                heapTotal: 4,
                 duration: 15,
             },
             win32: {
-                userCpuUsage: 90,
+                userCpuUsage: 100,
                 systemCpuUsage: 35,
-                heapTotal: 6,
+                heapTotal: 4,
                 duration: 15,
             },
         },
@@ -117,18 +117,18 @@ describe('tryInstallLsp performance test', function () {
         {
             testRuns: 10,
             linux: {
-                userCpuUsage: 95,
-                systemCpuUsage: 35,
+                userCpuUsage: 100,
+                systemCpuUsage: 50,
                 heapTotal: 4,
             },
             darwin: {
-                userCpuUsage: 90,
-                systemCpuUsage: 35,
+                userCpuUsage: 100,
+                systemCpuUsage: 50,
                 heapTotal: 4,
             },
             win32: {
-                userCpuUsage: 90,
-                systemCpuUsage: 35,
+                userCpuUsage: 100,
+                systemCpuUsage: 50,
                 heapTotal: 4,
             },
         },
