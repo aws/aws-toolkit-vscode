@@ -585,10 +585,6 @@ describe('Auth', function () {
         })
 
         it('reauthenticates a connection if the user selects an expired one', async function () {
-            // if (isMinVscode('1.83.0')) {
-            //     this.skip()
-            // }
-
             getTestWindow().onDidShowQuickPick(async (picker) => {
                 await picker.untilReady()
                 const connItem = picker.findItemOrThrow(/IAM Identity Center/)
