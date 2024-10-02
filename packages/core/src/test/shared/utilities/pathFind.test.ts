@@ -17,7 +17,7 @@ describe('pathFind', function () {
         const iswin = process.platform === 'win32'
         const workspace = vscode.workspace.workspaceFolders![0]
         const tscNodemodules = path.join(workspace.uri.fsPath, `foo/bar/node_modules/.bin/tsc${iswin ? '.cmd' : ''}`)
-        await fs.delete(tscNodemodules)
+        await fs.delete(tscNodemodules, { force: true })
 
         // The test workspace normally doesn't have node_modules so this will
         // be undefined or it will find the globally-installed "tsc".

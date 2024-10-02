@@ -26,7 +26,7 @@ describe('localLambdaRunner', async function () {
     })
 
     afterEach(async function () {
-        await fs.delete(tempDir)
+        await fs.delete(tempDir, { force: true })
     })
 
     describe('attachDebugger', async function () {

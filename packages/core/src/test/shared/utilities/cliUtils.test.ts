@@ -15,7 +15,7 @@ import { fs } from '../../../shared'
 
 describe('cliUtils', async function () {
     afterEach(async function () {
-        await fs.delete(path.join(globals.context.globalStorageUri.fsPath, 'tools'))
+        await fs.delete(path.join(globals.context.globalStorageUri.fsPath, 'tools'), { force: true })
     })
 
     describe('installCli', async function () {

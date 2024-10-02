@@ -17,7 +17,7 @@ describe('FileResourceFetcher', async function () {
     })
 
     afterEach(async function () {
-        await fs.delete(tempFolder)
+        await fs.delete(tempFolder, { force: true })
     })
 
     it('loads the contents of a file', async function () {

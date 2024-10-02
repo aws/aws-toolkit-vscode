@@ -35,7 +35,7 @@ describe('makeCoreCLRDebugConfiguration', function () {
     })
 
     afterEach(async function () {
-        await fs.delete(tempFolder)
+        await fs.delete(tempFolder, { force: true })
     })
 
     async function makeFakeSamLaunchConfig() {

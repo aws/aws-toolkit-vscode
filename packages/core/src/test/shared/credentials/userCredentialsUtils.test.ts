@@ -42,7 +42,7 @@ describe('UserCredentialsUtils', function () {
     })
 
     after(async function () {
-        await fs.delete(tempFolder)
+        await fs.delete(tempFolder, { force: true })
     })
 
     describe('findExistingCredentialsFilenames', function () {

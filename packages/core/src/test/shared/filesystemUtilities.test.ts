@@ -34,7 +34,7 @@ describe('filesystemUtilities', function () {
 
     afterEach(async function () {
         for (const folder of foldersToCleanUp) {
-            await fs.delete(folder)
+            await fs.delete(folder, { force: true })
         }
     })
 

@@ -27,7 +27,7 @@ describe('getLambdaHandlerCandidates', async function () {
     })
 
     after(async function () {
-        await fs.delete(tempFolder)
+        await fs.delete(tempFolder, { force: true })
     })
 
     it('Detects only good function symbols from a mock program', async function () {

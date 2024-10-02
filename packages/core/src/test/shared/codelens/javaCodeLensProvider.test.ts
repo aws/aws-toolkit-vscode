@@ -30,7 +30,7 @@ describe('javaCodeLensProvider', () => {
         })
 
         afterEach(async () => {
-            await fs.delete(tempFolder)
+            await fs.delete(tempFolder, { force: true })
         })
 
         it('Detects a public function symbol', async function () {
