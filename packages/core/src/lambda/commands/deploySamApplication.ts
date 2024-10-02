@@ -34,7 +34,7 @@ import { createInputBox } from '../../shared/ui/inputPrompter'
 import { getSpawnEnv } from '../../shared/env/resolveEnv'
 import * as CloudFormation from '../../shared/cloudformation/cloudformation'
 
-interface DeployParams {
+export interface DeployParams {
     readonly paramsSource: ParamsSource
     readonly template: TemplateItem
     readonly region: string
@@ -103,17 +103,17 @@ type DeployResult = {
     isSuccess: boolean
 }
 
-enum BucketSource {
+export enum BucketSource {
     SamCliManaged,
     UserProvided,
 }
-enum ParamsSource {
+export enum ParamsSource {
     SpecifyAndSave,
     Specify,
     SamConfig,
 }
 
-class DeployWizard extends Wizard<DeployParams> {
+export class DeployWizard extends Wizard<DeployParams> {
     registry: CloudFormationTemplateRegistry
     state: Partial<DeployParams>
     arg: any

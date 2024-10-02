@@ -590,3 +590,119 @@
 // function writeFile(filename: string): void {
 //     fs.writeFileSync(filename, '')
 // }
+import * as vscode from 'vscode'
+import { BucketSource, DeployParams, DeployWizard, ParamsSource } from '../../../lambda/commands/deploySamApplication'
+import { globals, makeTemporaryToolkitFolder } from '../../../shared'
+import { TreeNode } from '../../../shared/treeview/resourceTreeDataProvider'
+import { createWizardTester } from '../../shared/wizards/wizardTestUtils'
+import assert from 'assert'
+import {
+    createBaseTemplate,
+    makeSampleSamTemplateYaml,
+    makeSampleYamlParameters,
+} from '../../shared/cloudformation/cloudformationTestUtils'
+import { AppNode } from '../../../awsService/appBuilder/explorer/nodes/appNode'
+import { SamAppLocation } from '../../../awsService/appBuilder/explorer/samProject'
+import * as testutil from '../../testUtil'
+import * as pathutil from '../../../shared/utilities/pathUtils'
+import path from 'path'
+import { getWorkspaceFolder } from '../../testUtil'
+import { remove } from 'fs-extra'
+
+describe('DeployWizard', async function () {
+    const createTester = async (params?: Partial<DeployParams>, arg?: TreeNode | undefined) =>
+        createWizardTester(new DeployWizard({ ...params }, await globals.templateRegistry, arg))
+
+    it('shows steps in correct order when triggered from command palette', async function () {
+        const tester = await createTester()
+        tester.template.assertShowFirst()
+        tester.paramsSource.assertShowSecond()
+
+        const workspaceUri = vscode.workspace.workspaceFolders?.[0]?.uri || vscode.Uri.file('/')
+        const rootFolderUri = vscode.Uri.joinPath(workspaceUri, 'my')
+        const templateUri = vscode.Uri.joinPath(rootFolderUri, 'template.yaml')
+        const tester2 = await createTester({
+            template: { uri: templateUri, data: createBaseTemplate() },
+            paramsSource: ParamsSource.SpecifyAndSave,
+            projectRoot: rootFolderUri,
+        })
+        tester2.region.assertShow(1)
+        tester2.stackName.assertShow(2)
+        tester2.bucketSource.assertShow(3)
+        tester2.bucketName.assertDoesNotShow()
+        tester2.projectRoot.assertDoesNotShow()
+
+        const tester3 = await createTester({
+            template: { uri: templateUri, data: createBaseTemplate() },
+            paramsSource: ParamsSource.Specify,
+            projectRoot: rootFolderUri,
+            bucketSource: BucketSource.UserProvided,
+        })
+        tester3.region.assertShow(1)
+        tester3.stackName.assertShow(2)
+        tester3.bucketSource.assertDoesNotShow()
+        tester3.bucketName.assertShow(3)
+    })
+
+    it('shows steps in correct order when triggered from appBuilder', async function () {
+        const tempFolder = await makeTemporaryToolkitFolder()
+        const folder = getWorkspaceFolder(tempFolder)
+        const tempFile = vscode.Uri.file(path.join(tempFolder, 'template.yaml'))
+        const srcPath = 'src'
+        const codeUriPath = pathutil.normalize(path.join(tempFolder, srcPath))
+        const paramStr = makeSampleYamlParameters({
+            defaultOverride: {
+                Type: 'String',
+                Default: 'thisWillOverride',
+            },
+        })
+
+        await testutil.toFile(
+            makeSampleSamTemplateYaml(true, { codeUri: codeUriPath, handler: '!Ref defaultOverride' }, paramStr),
+            tempFile.fsPath
+        )
+
+        const samAppLocation = { samTemplateUri: tempFile, workspaceFolder: folder } as SamAppLocation
+        const appNode = new AppNode(samAppLocation) as TreeNode
+        const tester = await createTester({}, appNode)
+        tester.defaultOverride.assertShowFirst()
+        tester.paramsSource.assertShowSecond()
+
+        const tester2 = await createTester({ paramsSource: ParamsSource.SpecifyAndSave }, appNode)
+        tester2.template.assertDoesNotShow()
+        tester2.paramsSource.assertDoesNotShow()
+        tester2.defaultOverride.assertShowFirst()
+        tester2.region.assertShowSecond()
+        tester2.stackName.assertShowThird()
+        tester2.bucketSource.assertShow(4)
+
+        const tester3 = await createTester(
+            {
+                paramsSource: ParamsSource.Specify,
+                bucketSource: BucketSource.UserProvided,
+            },
+            appNode
+        )
+
+        tester3.template.assertDoesNotShow()
+        tester3.paramsSource.assertDoesNotShow()
+        tester3.defaultOverride.assertShowFirst()
+        tester3.region.assertShowSecond()
+        tester3.stackName.assertShowThird()
+        tester3.bucketSource.assertDoesNotShow()
+        tester3.bucketName.assertShow(4)
+        tester3.projectRoot.assertDoesNotShow()
+
+        await remove(tempFolder)
+    })
+
+    it('set the correct project root', async function () {
+        const workspaceFolder = vscode.workspace.workspaceFolders?.[0]
+        assert.ok(workspaceFolder)
+
+        const templateUri = vscode.Uri.joinPath(workspaceFolder.uri, 'template.yaml')
+        const template = { uri: templateUri, data: createBaseTemplate() }
+        const tester = await createTester({ template })
+        tester.projectRoot.path.assertValue(workspaceFolder.uri.path)
+    })
+})
