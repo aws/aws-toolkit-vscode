@@ -71,7 +71,7 @@ describe('ResourceManager', function () {
         registerMappingSpy.restore()
         sandbox.restore()
         await resourceManager.dispose()
-        await fs.delete(tempFolder)
+        await fs.delete(tempFolder, { recursive: true, force: true })
     })
 
     it('opens resources in preview mode', async function () {

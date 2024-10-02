@@ -26,7 +26,7 @@ describe('sharedCredentials', function () {
     })
 
     after(async function () {
-        await fs.delete(tempFolder)
+        await fs.delete(tempFolder, { force: true, recursive: true })
     })
 
     describe('getCredentialsFilename', function () {

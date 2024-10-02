@@ -24,7 +24,7 @@ describe('StateMachineGraphCache', function () {
     })
 
     after(async function () {
-        await fs.delete(tempFolder)
+        await fs.delete(tempFolder, { recursive: true, force: true })
     })
 
     describe('updateCachedFile', function () {

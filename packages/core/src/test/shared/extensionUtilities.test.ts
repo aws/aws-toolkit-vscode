@@ -34,7 +34,7 @@ describe('extensionUtilities', function () {
 
         afterEach(async function () {
             if (tempDir) {
-                await fs.delete(tempDir)
+                await fs.delete(tempDir, { recursive: true, force: true })
             }
         })
 
