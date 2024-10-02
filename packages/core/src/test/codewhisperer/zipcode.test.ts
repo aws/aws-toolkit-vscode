@@ -57,6 +57,7 @@ describe('zipCode', function () {
                                 fileNameSuffix: '.md',
                             })
                         ).uri.fsPath
+                        const writeSpy = sinon.spy(fs, 'writeFile')
                         const transformQManifest = new ZipManifest()
                         transformByQState.setProjectPath(tempDir)
                         transformQManifest.customBuildCommand = CodeWhispererConstants.skipUnitTestsBuildCommand
@@ -75,10 +76,10 @@ describe('zipCode', function () {
                     },
                     verify: async (setup: SetupResult) => {
                         // writes a zip to disk.
-                        assert.ok(setup.writeSpy.called)
                         assert.ok(
-                            setup.writeSpy.getCalls()[0].args[0].includes('.zip') ||
-                                setup.writeSpy.getCalls()[1].args[0].includes('.zip')
+                            setup.writeSpy.args.find((arg) => {
+                                return arg[0].endsWith('.zip')
+                            })
                         )
                     },
                 }
