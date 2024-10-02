@@ -5,7 +5,6 @@
 
 // Use jsonc-parser.parse instead of JSON.parse, as JSONC can handle comments. VS Code uses jsonc-parser
 // under the hood to provide symbols for JSON documents, so this will keep us consistent with VS code.
-import { access, writeFile, ensureDir } from 'fs-extra'
 import * as jsonParser from 'jsonc-parser'
 import * as os from 'os'
 import * as _path from 'path'
@@ -17,6 +16,8 @@ import { ReadonlyJsonObject } from '../../shared/sam/debugger/awsSamDebugConfigu
 import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
 import { getNormalizedRelativePath } from '../../shared/utilities/pathUtils'
 import { saveDocumentIfDirty } from '../../shared/utilities/textDocumentUtilities'
+import { access } from 'fs/promises'
+import { fs } from '../../shared'
 
 const localize = nls.loadMessageBundle()
 
@@ -197,11 +198,11 @@ export function showTemplatesConfigurationError(
 }
 
 export async function ensureTemplatesConfigFileExists(path: string): Promise<void> {
-    await ensureDir(_path.dirname(path))
+    await fs.mkdir(_path.dirname(path))
     try {
         await access(path)
     } catch {
-        await writeFile(path, '{}')
+        await fs.writeFile(path, '{}')
     }
 }
 

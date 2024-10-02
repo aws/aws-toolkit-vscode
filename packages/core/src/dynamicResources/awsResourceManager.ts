@@ -4,7 +4,6 @@
  */
 
 import { writeFileSync } from 'fs'
-import { remove } from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { CloudFormationClient } from '../shared/clients/cloudFormationClient'
@@ -20,6 +19,7 @@ import { ResourceNode } from './explorer/nodes/resourceNode'
 import { ResourceTypeNode } from './explorer/nodes/resourceTypeNode'
 import { isCloud9 } from '../shared/extensionUtilities'
 import globals from '../shared/extensionGlobals'
+import { fs } from '../shared'
 
 export const resourceFileGlobPattern = '**/*.awsResource.json'
 
@@ -97,7 +97,7 @@ export class AwsResourceManager {
             }
 
             if (uri.scheme === 'file') {
-                await remove(uri.fsPath)
+                await fs.delete(uri.fsPath)
 
                 globals.schemaService.registerMapping({
                     uri,
