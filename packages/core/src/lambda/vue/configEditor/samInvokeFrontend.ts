@@ -20,11 +20,6 @@ import saveData from '../../../webviews/mixins/saveData'
 
 const client = WebviewClientFactory.create<SamInvokeWebview>()
 
-const savedStatus = {
-    saved: 'SAVED',
-    unsaved: 'UNSAVED',
-}
-
 interface VueDataLaunchPropertyObject {
     value: string
     errorMsg: string
@@ -53,7 +48,6 @@ interface SamInvokeVueData {
     showNameInput: boolean
     newTestEventName: string
     resourceData: ResourceData | undefined
-    savedStatus: string
 }
 
 function newLaunchConfig(existingConfig?: AwsSamDebuggerConfiguration): AwsSamDebuggerConfigurationLoose {
@@ -130,7 +124,6 @@ function initData() {
         TestEvents: [],
         showNameInput: false,
         newTestEventName: '',
-        savedStatus: savedStatus.unsaved,
     }
 }
 

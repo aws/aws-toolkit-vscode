@@ -15,8 +15,12 @@
                 >
                     Invoke
                 </button>
-                <button class="button-theme-secondary" v-on:click.prevent="loadConfig">Load Debug Config</button>
-                <button class="button-theme-secondary" v-on:click.prevent="save">Save Debug Config</button>
+                <button class="button-theme-secondary" :style="{ marginLeft: '15px' }" v-on:click.prevent="loadConfig">
+                    Load Debug Config
+                </button>
+                <button class="button-theme-secondary" :style="{ marginLeft: '10px' }" v-on:click.prevent="save">
+                    Save Debug Config
+                </button>
             </div>
             <p>
                 <em>

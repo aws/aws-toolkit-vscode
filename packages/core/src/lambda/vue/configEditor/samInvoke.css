@@ -50,15 +50,6 @@ textarea {
     align-items: center;
     margin-bottom: 20px;
 }
-.header-buttons select,
-.header-buttons button,
-.unsaved {
-    margin-right: 10px;
-}
-
-.unsaved {
-    background-color: #4d4d4d;
-}
 
 #target-type-selector {
     margin-bottom: 15px;
@@ -102,15 +93,18 @@ textarea {
 }
 
 .container {
-    /* max-width: 600px; */
     width: 574px;
     height: 824px;
     top: 18px;
-    /* left: 47.5px; */
     gap: 20px;
     margin: auto;
-    /* font-family: Arial, sans-serif; */
     left: 688px;
+    background-color: var(--vscode-editor-background);
+}
+
+.container em {
+    display: block;
+    text-align: justify;
 }
 
 .button-theme-primary {
