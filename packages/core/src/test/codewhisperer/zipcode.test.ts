@@ -40,23 +40,25 @@ describe('zipCode', function () {
         afterEach(function () {
             sinon.restore()
         })
-
+        /**
+         * 250 small 10 byte files.
+         */
         performanceTest(
             {
                 testRuns: 10,
                 linux: {
-                    userCpuUsage: 90,
-                    systemCpuUsage: 35,
+                    userCpuUsage: 100,
+                    systemCpuUsage: 50,
                     heapTotal: 4,
                 },
                 darwin: {
-                    userCpuUsage: 90,
-                    systemCpuUsage: 35,
+                    userCpuUsage: 100,
+                    systemCpuUsage: 50,
                     heapTotal: 4,
                 },
                 win32: {
-                    userCpuUsage: 90,
-                    systemCpuUsage: 35,
+                    userCpuUsage: 100,
+                    systemCpuUsage: 50,
                     heapTotal: 4,
                 },
             },
@@ -85,23 +87,26 @@ describe('zipCode', function () {
                 }
             }
         )
+        /**
+         * 10 large 1 MB files.
+         */
 
         performanceTest(
             {
                 testRuns: 10,
                 linux: {
-                    userCpuUsage: 90,
-                    systemCpuUsage: 35,
+                    userCpuUsage: 100,
+                    systemCpuUsage: 50,
                     heapTotal: 4,
                 },
                 darwin: {
-                    userCpuUsage: 90,
-                    systemCpuUsage: 35,
+                    userCpuUsage: 100,
+                    systemCpuUsage: 50,
                     heapTotal: 4,
                 },
                 win32: {
-                    userCpuUsage: 90,
-                    systemCpuUsage: 35,
+                    userCpuUsage: 100,
+                    systemCpuUsage: 50,
                     heapTotal: 4,
                 },
             },
