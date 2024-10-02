@@ -24,7 +24,6 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import globals from '../../extensionGlobals'
 import fs from '../../fs/fs'
-import { chmod } from 'fs/promises'
 const localize = nls.loadMessageBundle()
 
 /**
@@ -204,7 +203,7 @@ async function downloadInstallScript(debuggerPath: string): Promise<string> {
     }
 
     await fs.writeFile(installScriptPath, installScript, 'utf8')
-    await chmod(installScriptPath, 0o700)
+    await fs.chmod(installScriptPath, 0o700)
 
     return installScriptPath
 }

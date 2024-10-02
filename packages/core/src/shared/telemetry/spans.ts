@@ -23,7 +23,6 @@ import {
     getTelemetryResult,
 } from '../errors'
 import { entries, NumericKeys } from '../utilities/tsUtils'
-import { PerformanceTracker } from '../performance/performance'
 import { randomUUID } from '../crypto'
 
 const AsyncLocalStorage: typeof AsyncLocalStorageClass =
@@ -135,10 +134,7 @@ export type SpanOptions = {
  */
 export class TelemetrySpan<T extends MetricBase = MetricBase> {
     #startTime?: Date
-    #options: SpanOptions & {
-        trackPerformance: boolean
-    }
-    #performance?: PerformanceTracker
+    #options: SpanOptions
 
     private readonly state: Partial<T> = {}
     private readonly definition = definitions[this.name] ?? {
@@ -163,10 +159,6 @@ export class TelemetrySpan<T extends MetricBase = MetricBase> {
             // do emit by default
             emit: options?.emit === undefined ? true : options.emit,
             functionId: options?.functionId,
-            trackPerformance: PerformanceTracker.enabled(
-                this.name,
-                this.definition.trackPerformance && (options?.emit ?? false) // only track the performance if we are also emitting
-            ),
         }
 
         this.metricId = randomUUID()
@@ -209,10 +201,6 @@ export class TelemetrySpan<T extends MetricBase = MetricBase> {
      */
     public start(): this {
         this.#startTime = new globals.clock.Date()
-        if (this.#options.trackPerformance) {
-            ;(this.#performance ??= new PerformanceTracker(this.name)).start()
-        }
-
         return this
     }
 
@@ -223,21 +211,6 @@ export class TelemetrySpan<T extends MetricBase = MetricBase> {
      */
     public stop(err?: unknown): void {
         const duration = this.startTime !== undefined ? globals.clock.Date.now() - this.startTime.getTime() : undefined
-
-        if (this.#options.trackPerformance) {
-            // TODO add these to the global metrics, right now it just forces them in the telemetry and ignores the type
-            // if someone enables this action
-            const performanceMetrics = this.#performance?.stop()
-            if (performanceMetrics) {
-                this.record({
-                    userCpuUsage: performanceMetrics.userCpuUsage,
-                    systemCpuUsage: performanceMetrics.systemCpuUsage,
-                    heapTotal: performanceMetrics.heapTotal,
-                    functionName: this.#options.functionId?.name ?? this.name,
-                    architecture: process.arch,
-                } as any)
-            }
-        }
 
         if (this.#options.emit) {
             this.emit({
