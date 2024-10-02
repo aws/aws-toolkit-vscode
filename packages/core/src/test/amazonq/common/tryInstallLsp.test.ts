@@ -66,14 +66,8 @@ const getFakeDownload = function (numberOfFiles: number, fileSize: number) {
     }
 }
 
-describe('tryInstallLsp performance test', function () {
-    afterEach(function () {
-        sinon.restore()
-    })
-    /**
-     * Test setting up LSP when fetched zip is many (250) small (10B) files.
-     */
-    performanceTest(
+function performanceTestWrapper(numFiles: number, fileSize: number) {
+    return performanceTest(
         {
             testRuns: 10,
             linux: {
@@ -99,7 +93,7 @@ describe('tryInstallLsp performance test', function () {
         function () {
             return {
                 setup: async () => {
-                    createStubs(250, 10)
+                    createStubs(numFiles, fileSize)
                 },
                 execute: async () => {
                     return await LspController.instance.tryInstallLsp(globals.context)
@@ -110,41 +104,14 @@ describe('tryInstallLsp performance test', function () {
             }
         }
     )
-    /**
-     * Test setting up LSP when fetched zip is few (10) large (1000B) files.
-     */
-    performanceTest(
-        {
-            testRuns: 10,
-            linux: {
-                userCpuUsage: 100,
-                systemCpuUsage: 50,
-                heapTotal: 6,
-            },
-            darwin: {
-                userCpuUsage: 100,
-                systemCpuUsage: 50,
-                heapTotal: 6,
-            },
-            win32: {
-                userCpuUsage: 100,
-                systemCpuUsage: 50,
-                heapTotal: 6,
-            },
-        },
-        'few large files in zip',
-        function () {
-            return {
-                setup: async () => {
-                    createStubs(10, 1000)
-                },
-                execute: async () => {
-                    return await LspController.instance.tryInstallLsp(globals.context)
-                },
-                verify: async (_setup: any, result: boolean) => {
-                    assert.ok(result)
-                },
-            }
-        }
-    )
+}
+
+describe('tryInstallLsp', function () {
+    afterEach(function () {
+        sinon.restore()
+    })
+    describe('performance tests', function () {
+        performanceTestWrapper(250, 10)
+        performanceTestWrapper(10, 1000)
+    })
 })
