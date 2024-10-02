@@ -449,8 +449,7 @@ export function forceQuitIde() {
     // This current process is the ExtensionHost. Killing it will cause all the extensions to crash
     // for the current ExtensionHost (unless using "extensions.experimental.affinity").
     // The IDE instance itself will remaing running, but a new ExtHost will spawn within it.
-    // The PPID does not seem to be the IDE instance but the root VS Code process, killing
-    // this crashes all VS Code instances.
+    // The PPID (parent process) is vscode itself, killing it crashes all vscode instances.
     const vsCodePid = process.pid
     process.kill(vsCodePid, 'SIGKILL') // SIGTERM would be the graceful shutdown
 }
