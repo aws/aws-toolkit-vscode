@@ -27,7 +27,7 @@ describe('makeLogger', function () {
         }
 
         testLogger = undefined
-        await fs.delete(tempFolder, { force: true })
+        await fs.delete(tempFolder, { force: true, recursive: true })
     })
 
     it('creates a logger object', function () {

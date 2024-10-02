@@ -163,9 +163,9 @@ describe('SamDebugConfigurationProvider', async function () {
     })
 
     afterEach(async function () {
-        await fs.delete(tempFolder)
+        await fs.delete(tempFolder, { recursive: true })
         if (tempFolderSimilarName) {
-            await fs.delete(tempFolderSimilarName)
+            await fs.delete(tempFolderSimilarName, { recursive: true })
         }
         ;(await globals.templateRegistry).reset()
         sandbox.restore()
@@ -3305,7 +3305,7 @@ describe('debugConfiguration', function () {
     })
 
     afterEach(async function () {
-        await fs.delete(tempFolder)
+        await fs.delete(tempFolder, { recursive: true })
         const r = await globals.templateRegistry
         r.reset()
     })

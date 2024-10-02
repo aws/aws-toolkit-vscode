@@ -48,7 +48,7 @@ describe('transformByQ', function () {
 
     afterEach(async function () {
         sinon.restore()
-        await fs.delete(tempDir)
+        await fs.delete(tempDir, { recursive: true })
     })
 
     it('WHEN converting short duration in milliseconds THEN converts correctly', async function () {

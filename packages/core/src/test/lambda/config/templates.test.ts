@@ -784,7 +784,7 @@ describe('getExistingConfiguration', async function () {
     })
 
     afterEach(async function () {
-        await fs.delete(tempFolder, { force: true })
+        await fs.delete(tempFolder, { recursive: true })
         const r = await globals.templateRegistry
         r.reset()
     })

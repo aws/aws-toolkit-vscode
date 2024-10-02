@@ -44,7 +44,7 @@ describe('detectCdkProjects', function () {
 
     afterEach(async function () {
         for (const path of workspacePaths) {
-            await fs.delete(path)
+            await fs.delete(path, { recursive: true })
         }
 
         workspacePaths.length = 0

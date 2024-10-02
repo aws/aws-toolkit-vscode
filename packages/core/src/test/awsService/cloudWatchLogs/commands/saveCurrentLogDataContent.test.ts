@@ -46,7 +46,7 @@ describe('saveCurrentLogDataContent', async function () {
     })
 
     afterEach(async function () {
-        await fs.delete(tempDir)
+        await fs.delete(tempDir, { recursive: true })
     })
 
     it('saves log content to a file', async function () {

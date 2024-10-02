@@ -58,7 +58,7 @@ describe('UploadLambdaWizard', function () {
             tester = await createWizardTester(new UploadLambdaWizard(undefined, invokePath))
         })
         afterEach(async function () {
-            await fs.delete(tempDir, { force: true })
+            await fs.delete(tempDir, { recursive: true })
         })
 
         it('skip select directory, auto selected', function () {
@@ -84,7 +84,7 @@ describe('UploadLambdaWizard', function () {
             tester = await createWizardTester(new UploadLambdaWizard(undefined, invokePath))
         })
         afterEach(async function () {
-            await fs.delete(tempDir, { force: true })
+            await fs.delete(tempDir, { recursive: true })
         })
 
         it('skip select directory, auto selected', function () {

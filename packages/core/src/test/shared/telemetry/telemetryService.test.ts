@@ -67,7 +67,7 @@ describe('TelemetryService', function () {
     })
 
     afterEach(async function () {
-        await fs.delete(service.persistFilePath)
+        await fs.delete(service.persistFilePath, { recursive: true })
         sandbox.restore()
         clock.uninstall()
     })

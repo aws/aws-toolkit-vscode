@@ -30,7 +30,7 @@ describe('getLambdaHandlerComponents', async function () {
     })
 
     afterEach(async function () {
-        await fs.delete(tempFolder, { force: true })
+        await fs.delete(tempFolder, { recursive: true })
     })
 
     it('Detects a public function symbol', async function () {

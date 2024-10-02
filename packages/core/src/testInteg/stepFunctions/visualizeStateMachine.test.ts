@@ -89,7 +89,7 @@ describe('visualizeStateMachine', async function () {
     })
 
     afterEach(async function () {
-        await fs.delete(tempFolder)
+        await fs.delete(tempFolder, { recursive: true })
         sinon.restore()
     })
 

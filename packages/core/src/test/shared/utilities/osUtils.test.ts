@@ -21,7 +21,7 @@ describe('isNewOsSession', () => {
 
             // Mimic a fresh restart (/tmp/ folder is deleted)
             const files = await fs.readdir(tmpDir)
-            await Promise.all(files.map(async (file) => await fs.delete(`${tmpDir}/${file[0]}`)))
+            await Promise.all(files.map(async (file) => await fs.delete(`${tmpDir}/${file[0]}`), { recursive: true }))
 
             // Since the tmp/ folder was cleared it is considered a new session
             assert.strictEqual(await isNewOsSession(tmpDir), true)

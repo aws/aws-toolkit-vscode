@@ -32,7 +32,7 @@ describe('CloudFormation Template Registry', async function () {
         })
 
         afterEach(async function () {
-            await fs.delete(tempFolder, { force: true })
+            await fs.delete(tempFolder, { recursive: true })
         })
 
         describe('addItem', async function () {
@@ -348,7 +348,7 @@ describe('CloudFormation Template Registry', async function () {
         })
 
         afterEach(async function () {
-            await fs.delete(tempFolder)
+            await fs.delete(tempFolder, { recursive: true })
         })
 
         const resource: {

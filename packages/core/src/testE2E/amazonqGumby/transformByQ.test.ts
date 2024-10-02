@@ -47,7 +47,7 @@ describe('transformByQ', async function () {
 
     after(async function () {
         if (tempDir !== '') {
-            await fs.delete(tempDir)
+            await fs.delete(tempDir, { recursive: true })
         }
     })
 

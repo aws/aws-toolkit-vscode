@@ -54,7 +54,7 @@ describe('SamCliBuildInvocation', async function () {
     })
 
     afterEach(async function () {
-        await fs.delete(tempFolder)
+        await fs.delete(tempFolder, { recursive: true })
     })
 
     it('invokes `sam build` with args', async function () {

@@ -80,7 +80,7 @@ describe('createNewSamApp', function () {
     })
 
     afterEach(async function () {
-        await fs.delete(tempFolder, { force: true })
+        await fs.delete(tempFolder, { recursive: true })
         const r = await globals.templateRegistry
         r.reset()
     })
@@ -93,7 +93,7 @@ describe('createNewSamApp', function () {
             )
         })
         it('returns the target ".yml" file when it exists', async function () {
-            await fs.delete(fakeTarget)
+            await fs.delete(fakeTarget, { recursive: true })
             tempTemplate = vscode.Uri.file(path.join(tempFolder, 'test.yml'))
             fakeTarget = path.join(tempFolder, 'template.yml')
             await testutil.toFile('target file', fakeTarget)

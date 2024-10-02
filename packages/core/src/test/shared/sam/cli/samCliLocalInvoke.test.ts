@@ -39,7 +39,7 @@ describe('SamCliLocalInvokeInvocation', async function () {
     })
 
     afterEach(async function () {
-        await fs.delete(tempFolder)
+        await fs.delete(tempFolder, { recursive: true })
     })
 
     it('invokes `sam local` with args', async function () {

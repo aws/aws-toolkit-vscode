@@ -20,7 +20,7 @@ describe('samCliConfiguration', function () {
     })
 
     afterEach(async function () {
-        await fs.delete(tempFolder)
+        await fs.delete(tempFolder, { recursive: true })
     })
 
     it('uses config value when referencing file that exists', async function () {

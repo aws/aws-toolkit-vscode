@@ -37,7 +37,7 @@ describe('CloudFormation Template Registry', async function () {
 
     afterEach(async function () {
         registry.dispose()
-        await fs.delete(testDir)
+        await fs.delete(testDir, { recursive: true })
     })
 
     it('adds initial template files with yaml and yml extensions at various nesting levels', async function () {
@@ -99,7 +99,7 @@ describe('CloudFormation Template Registry', async function () {
 
         await registryHasTargetNumberOfFiles(registry, 1)
 
-        await fs.delete(filepath)
+        await fs.delete(filepath, { recursive: true })
 
         await registryHasTargetNumberOfFiles(registry, 0)
     })

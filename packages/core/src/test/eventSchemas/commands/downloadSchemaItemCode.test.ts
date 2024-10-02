@@ -353,7 +353,7 @@ describe('SchemaCodeDownload', function () {
 
     afterEach(async function () {
         sandbox.restore()
-        await fs.delete(tempFolder)
+        await fs.delete(tempFolder, { recursive: true })
     })
     const testSchemaName = 'testSchema'
     const testRegistryName = 'testRegistry'
@@ -450,7 +450,7 @@ describe('CodeExtractor', function () {
     })
 
     afterEach(async function () {
-        await fs.delete(destinationDirectory)
+        await fs.delete(destinationDirectory, { recursive: true })
         sandbox.restore()
     })
 
@@ -525,7 +525,7 @@ describe('CodeExtractor', function () {
 
         afterEach(async function () {
             sandbox.restore()
-            await fs.delete(destinationDirectory)
+            await fs.delete(destinationDirectory, { recursive: true })
         })
 
         it('should extract files if no collision present', async function () {

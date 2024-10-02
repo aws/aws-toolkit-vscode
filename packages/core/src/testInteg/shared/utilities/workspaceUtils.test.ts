@@ -80,8 +80,8 @@ describe('findParentProjectFile', async function () {
     })
 
     after(async function () {
-        await fs.delete(path.join(workspaceDir, 'someproject'))
-        await fs.delete(path.join(workspaceDir, 'someotherproject'))
+        await fs.delete(path.join(workspaceDir, 'someproject'), { recursive: true })
+        await fs.delete(path.join(workspaceDir, 'someotherproject'), { recursive: true })
         globals.codelensRootRegistry = globalRegistry
     })
 

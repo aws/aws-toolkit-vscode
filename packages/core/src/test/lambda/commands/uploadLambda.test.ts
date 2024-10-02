@@ -34,7 +34,7 @@ describe('uploadLambda', async function () {
         folderUri = vscode.Uri.file(tempFolder)
     })
     afterEach(async function () {
-        await fs.delete(tempFolder, { force: true })
+        await fs.delete(tempFolder, { recursive: true })
     })
 
     it('finds application.json file from dir path - flat', async function () {
