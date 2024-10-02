@@ -25,7 +25,7 @@ import admZip from 'adm-zip'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { DefaultSchemaClient } from '../../../shared/clients/schemaClient'
 import { fs } from '../../../shared'
-import * as fs2 from 'fs'
+import * as nodefs from 'fs'
 
 describe('CodeDownloader', function () {
     let tempFolder: string
@@ -682,9 +682,9 @@ describe('CodeExtractor', function () {
         const zip = new admZip()
         zip.addFile(fileName, Buffer.from(fileContent))
         const buffer = zip.toBuffer()
-        const fd = fs2.openSync(zipFileName, 'w')
-        fs2.writeSync(fd, buffer, 0, buffer.byteLength, 0)
-        fs2.closeSync(fd)
+        const fd = nodefs.openSync(zipFileName, 'w')
+        nodefs.writeSync(fd, buffer, 0, buffer.byteLength, 0)
+        nodefs.closeSync(fd)
 
         return zip
     }

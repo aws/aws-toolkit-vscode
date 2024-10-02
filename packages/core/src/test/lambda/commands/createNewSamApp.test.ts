@@ -30,7 +30,6 @@ import { Runtime } from '../../../shared/telemetry/telemetry'
 import { stub } from '../../utilities/stubber'
 import sinon from 'sinon'
 import { fs } from '../../../shared'
-import * as fs2 from 'fs'
 
 const templateYaml = 'template.yaml'
 
@@ -94,7 +93,7 @@ describe('createNewSamApp', function () {
             )
         })
         it('returns the target ".yml" file when it exists', async function () {
-            fs2.unlinkSync(fakeTarget)
+            await fs.delete(fakeTarget)
             tempTemplate = vscode.Uri.file(path.join(tempFolder, 'test.yml'))
             fakeTarget = path.join(tempFolder, 'template.yml')
             await testutil.toFile('target file', fakeTarget)
