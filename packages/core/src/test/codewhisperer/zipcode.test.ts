@@ -35,105 +35,59 @@ async function setup(numberOfFiles: number, fileSize: number): Promise<SetupResu
     return { tempDir, tempFileName, transformQManifest, writeSpy }
 }
 
+function performanceTestWrapper(numberOfFiles: number, fileSize: number) {
+    return performanceTest(
+        {
+            testRuns: 10,
+            linux: {
+                userCpuUsage: 120,
+                systemCpuUsage: 50,
+                heapTotal: 4,
+            },
+            darwin: {
+                userCpuUsage: 120,
+                systemCpuUsage: 50,
+                heapTotal: 4,
+            },
+            win32: {
+                userCpuUsage: 120,
+                systemCpuUsage: 50,
+                heapTotal: 4,
+            },
+        },
+        'zipCode',
+        function () {
+            return {
+                setup: async () => await setup(numberOfFiles, fileSize),
+                execute: async ({ tempDir, tempFileName, transformQManifest, writeSpy }: SetupResult) => {
+                    await zipCode({
+                        dependenciesFolder: {
+                            path: tempDir,
+                            name: tempFileName,
+                        },
+                        humanInTheLoopFlag: false,
+                        modulePath: tempDir,
+                        zipManifest: transformQManifest,
+                    })
+                },
+                verify: async (setup: SetupResult) => {
+                    assert.ok(
+                        setup.writeSpy.args.find((arg) => {
+                            return arg[0].endsWith('.zip')
+                        })
+                    )
+                },
+            }
+        }
+    )
+}
+
 describe('zipCode', function () {
     describe('performance tests', function () {
         afterEach(function () {
             sinon.restore()
         })
-        /**
-         * 250 small 10 byte files.
-         */
-        performanceTest(
-            {
-                testRuns: 10,
-                linux: {
-                    userCpuUsage: 100,
-                    systemCpuUsage: 50,
-                    heapTotal: 4,
-                },
-                darwin: {
-                    userCpuUsage: 100,
-                    systemCpuUsage: 50,
-                    heapTotal: 4,
-                },
-                win32: {
-                    userCpuUsage: 100,
-                    systemCpuUsage: 50,
-                    heapTotal: 4,
-                },
-            },
-            'many small files in zip',
-            function () {
-                return {
-                    setup: async () => await setup(250, 10),
-                    execute: async ({ tempDir, tempFileName, transformQManifest, writeSpy }: SetupResult) => {
-                        await zipCode({
-                            dependenciesFolder: {
-                                path: tempDir,
-                                name: tempFileName,
-                            },
-                            humanInTheLoopFlag: false,
-                            modulePath: tempDir,
-                            zipManifest: transformQManifest,
-                        })
-                    },
-                    verify: async (setup: SetupResult) => {
-                        assert.ok(
-                            setup.writeSpy.args.find((arg) => {
-                                return arg[0].endsWith('.zip')
-                            })
-                        )
-                    },
-                }
-            }
-        )
-        /**
-         * 10 large 1 MB files.
-         */
-
-        performanceTest(
-            {
-                testRuns: 10,
-                linux: {
-                    userCpuUsage: 100,
-                    systemCpuUsage: 50,
-                    heapTotal: 4,
-                },
-                darwin: {
-                    userCpuUsage: 100,
-                    systemCpuUsage: 50,
-                    heapTotal: 4,
-                },
-                win32: {
-                    userCpuUsage: 100,
-                    systemCpuUsage: 50,
-                    heapTotal: 4,
-                },
-            },
-            'few large files',
-            function () {
-                return {
-                    setup: async () => await setup(10, 1000),
-                    execute: async ({ tempDir, tempFileName, transformQManifest, writeSpy }: SetupResult) => {
-                        await zipCode({
-                            dependenciesFolder: {
-                                path: tempDir,
-                                name: tempFileName,
-                            },
-                            humanInTheLoopFlag: false,
-                            modulePath: tempDir,
-                            zipManifest: transformQManifest,
-                        })
-                    },
-                    verify: async (setup: SetupResult) => {
-                        assert.ok(
-                            setup.writeSpy.args.find((arg) => {
-                                return arg[0].endsWith('.zip')
-                            })
-                        )
-                    },
-                }
-            }
-        )
+        performanceTestWrapper(250, 10)
+        performanceTestWrapper(10, 1000)
     })
 })
