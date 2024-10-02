@@ -344,7 +344,6 @@ export async function collectFiles(
             }
 
             let totalSizeBytes = 0
-            let totalFiles = 0
             for (const rootPath of sourcePaths) {
                 const allFiles = await vscode.workspace.findFiles(
                     new vscode.RelativePattern(rootPath, '**'),
@@ -352,7 +351,6 @@ export async function collectFiles(
                 )
 
                 const files = respectGitIgnore ? await filterOutGitignoredFiles(rootPath, allFiles) : allFiles
-                totalFiles += files.length
 
                 for (const file of files) {
                     const relativePath = getWorkspaceRelativePath(file.fsPath, { workspaceFolders })
@@ -385,7 +383,6 @@ export async function collectFiles(
                     })
                 }
             }
-            span.record({ totalFiles, totalFileSizeInMB: totalSizeBytes / (1024 * 1024) })
             return storage
         },
         {
