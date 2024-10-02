@@ -592,7 +592,8 @@ export default defineComponent({
     margin: auto;
     position: absolute;
     top: var(--auth-container-top);
-    width: 260px;
+    max-width: 260px;
+    width: 90vw;
 }
 
 .header {

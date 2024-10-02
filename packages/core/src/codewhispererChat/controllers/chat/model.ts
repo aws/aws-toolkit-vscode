@@ -39,6 +39,7 @@ export interface InsertCodeAtCursorPosition {
     command: string | undefined
     tabID: string
     messageId: string
+    userIntent: UserIntent | undefined
     code: string
     insertionTargetType: string | undefined
     codeReference: CodeReference[] | undefined
@@ -51,6 +52,7 @@ export interface CopyCodeToClipboard {
     command: string | undefined
     tabID: string
     messageId: string
+    userIntent: UserIntent | undefined
     code: string
     insertionTargetType: string | undefined
     codeReference: CodeReference[] | undefined
@@ -70,6 +72,7 @@ export type ChatPromptCommandType =
 export interface PromptMessage {
     message: string | undefined
     messageId: string
+    traceId?: string
     command: ChatPromptCommandType | undefined
     userIntent: UserIntent | undefined
     tabID: string
@@ -143,11 +146,13 @@ export interface TriggerPayload {
     readonly customization: Customization
     relevantTextDocuments?: RelevantTextDocument[]
     useRelevantDocuments?: boolean
+    traceId?: string
 }
 
 export interface InsertedCode {
     readonly conversationID: string
     readonly messageID: string
+    readonly userIntent: UserIntent | undefined
     readonly time: Date
     readonly fileUrl: vscode.Uri
     readonly startPosition: vscode.Position

@@ -24,7 +24,7 @@ export class TextMessageHandler {
         this.tabsStorage = props.tabsStorage
     }
 
-    public handle(chatPrompt: ChatPrompt, tabID: string) {
+    public handle(chatPrompt: ChatPrompt, tabID: string, eventID: string) {
         this.tabsStorage.updateTabTypeFromUnknown(tabID, 'cwc')
         this.tabsStorage.resetTabTimer(tabID)
         this.connector.onUpdateTabType(tabID)
@@ -44,6 +44,7 @@ export class TextMessageHandler {
             .requestGenerativeAIAnswer(tabID, {
                 chatMessage: chatPrompt.prompt ?? '',
                 chatCommand: chatPrompt.command,
+                traceId: eventID,
             })
             .then(() => {})
     }

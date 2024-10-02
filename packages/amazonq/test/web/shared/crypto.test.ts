@@ -4,7 +4,7 @@
  */
 
 import assert from 'assert'
-import { randomUUID } from '../../shared/crypto'
+import { randomUUID } from 'aws-core-vscode/shared'
 
 describe('crypto', function () {
     describe('randomUUID()', function () {

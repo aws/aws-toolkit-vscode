@@ -49,6 +49,9 @@ import { CodeWhispererSettings } from '../../../codewhisperer/util/codewhisperer
 import { getSelectedCustomization } from '../../../codewhisperer/util/customizationUtil'
 import { FeatureConfigProvider } from '../../../shared/featureConfig'
 import { getHttpStatusCode, AwsClientResponseError } from '../../../shared/errors'
+import { uiEventRecorder } from '../../../amazonq/util/eventRecorder'
+import { globals } from '../../../shared'
+import { telemetry } from '../../../shared/telemetry'
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
@@ -122,7 +125,21 @@ export class ChatController {
         })
 
         this.chatControllerMessageListeners.processPromptChatMessage.onMessage((data) => {
-            return this.processPromptChatMessage(data)
+            if (data.traceId) {
+                uiEventRecorder.set(data.traceId, {
+                    events: {
+                        featureReceivedMessage: globals.clock.Date.now(),
+                    },
+                })
+            }
+            /**
+             * traceId is only instrumented for chat-prompt but not for things
+             * like follow-up-was-clicked. In those cases we fallback to a different
+             * uuid
+             **/
+            return telemetry.withTraceId(() => {
+                return this.processPromptChatMessage(data)
+            }, data.traceId ?? randomUUID())
         })
 
         this.chatControllerMessageListeners.processTabCreatedMessage.onMessage((data) => {
@@ -249,6 +266,7 @@ export class ChatController {
             CodeWhispererTracker.getTracker().enqueue({
                 conversationID: this.telemetryHelper.getConversationId(message.tabID) ?? '',
                 messageID: message.messageId,
+                userIntent: message.userIntent,
                 time: new Date(),
                 fileUrl: editor.document.uri,
                 startPosition: cursorStart,
@@ -485,6 +503,7 @@ export class ChatController {
                         codeQuery: context?.focusAreaContext?.names,
                         userIntent: this.userIntentRecognizer.getFromPromptChatMessage(message),
                         customization: getSelectedCustomization(),
+                        traceId: message.traceId,
                     },
                     triggerID
                 )

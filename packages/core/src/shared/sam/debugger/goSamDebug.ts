@@ -17,7 +17,7 @@ import { SamLaunchRequestArgs } from './awsSamDebugger'
 import { getLogger } from '../../logger'
 import * as fs from 'fs-extra'
 import fs2 from '../../fs/fs'
-import { ChildProcess } from '../../utilities/childProcess'
+import { ChildProcess } from '../../utilities/processUtils'
 import { Timeout } from '../../utilities/timeoutUtils'
 import { execFileSync, SpawnOptions } from 'child_process'
 import * as nls from 'vscode-nls'
@@ -224,7 +224,7 @@ async function makeInstallScript(debuggerPath: string, isWindows: boolean): Prom
     script += `go build -o "${delvePath}" "${delveRepo}/cmd/dlv"\n`
 
     await fs.writeFile(installScriptPath, script, 'utf8')
-    await fs.chmod(installScriptPath, 0o755)
+    await fs2.chmod(installScriptPath, 0o755)
 
     return { path: installScriptPath, options: installOptions }
 }

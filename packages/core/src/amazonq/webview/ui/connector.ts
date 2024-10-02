@@ -26,18 +26,23 @@ export interface CodeReference {
 
 export interface ChatPayload {
     chatMessage: string
+    traceId?: string // TODO: instrumented for cwc, not for gumby/featuredev. Remove the ? once we support all features
     chatCommand?: string
+}
+
+export interface TracedChatItem extends ChatItem {
+    traceId?: string
 }
 
 export interface ConnectorProps {
     sendMessageToExtension: (message: ExtensionMessage) => void
     onMessageReceived?: (tabID: string, messageData: any, needToShowAPIDocsTab: boolean) => void
     onChatAnswerUpdated?: (tabID: string, message: ChatItem) => void
-    onChatAnswerReceived?: (tabID: string, message: ChatItem) => void
+    onChatAnswerReceived?: (tabID: string, message: TracedChatItem) => void
     onWelcomeFollowUpClicked: (tabID: string, welcomeFollowUpType: WelcomeFollowupType) => void
     onAsyncEventProgress: (tabID: string, inProgress: boolean, message: string | undefined) => void
     onQuickHandlerCommand: (tabID: string, command?: string, eventId?: string) => void
-    onCWCContextCommandMessage: (message: ChatItem, command?: string) => string | undefined
+    onCWCContextCommandMessage: (message: TracedChatItem, command?: string) => string | undefined
     onOpenSettingsMessage: (tabID: string) => void
     onError: (tabID: string, message: string, title: string) => void
     onWarning: (tabID: string, message: string, title: string) => void

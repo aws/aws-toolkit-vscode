@@ -26,7 +26,7 @@ const notInitialized = 'notInitialized'
 
 function _isAmazonQ() {
     const id = globals.context.extension.id
-    const isToolkit = id === VSCODE_EXTENSION_ID.awstoolkit || id === VSCODE_EXTENSION_ID.awstoolkitcore
+    const isToolkit = id === VSCODE_EXTENSION_ID.awstoolkit
     const isQ = id === VSCODE_EXTENSION_ID.amazonq
     if (!isToolkit && !isQ) {
         throw Error(`unexpected extension id: ${id}`) // sanity check
@@ -39,6 +39,10 @@ export const isAmazonQ = once(_isAmazonQ)
 
 export function productName() {
     return isAmazonQ() ? 'Amazon Q' : `${getIdeProperties().company} Toolkit`
+}
+
+export const getExtensionId = () => {
+    return isAmazonQ() ? VSCODE_EXTENSION_ID.amazonq : VSCODE_EXTENSION_ID.awstoolkit
 }
 
 /** Gets the "AWS" or "Amazon Q" prefix (in package.json: `commands.category`). */
