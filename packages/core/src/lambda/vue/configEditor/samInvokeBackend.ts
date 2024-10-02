@@ -68,10 +68,6 @@ interface SampleQuickPickItem extends vscode.QuickPickItem {
     filename: string
 }
 
-export interface initialData {
-    LaunchConfig: LaunchConfigPickItem | undefined
-}
-
 export interface LaunchConfigPickItem extends vscode.QuickPickItem {
     index: number
     config?: AwsSamDebuggerConfiguration
@@ -241,15 +237,6 @@ export class SamInvokeWebview extends VueWebview {
         }
     }
 
-    public async getConfigName() {
-        const ib = input.createInputBox({
-            options: {
-                prompt: localize('AWS.lambda.form.debugConfigName', 'Input Name For Debug Configuration'),
-            },
-        })
-        return await input.promptUser({ inputBox: ib })
-    }
-
     // This method serves as a wrapper around the backend function `openLaunchJsonFile`.
     // The frontend cannot directly import and invoke backend functions like `openLaunchJsonFile`
     // because doing so would break the webview environment by introducing server-side logic
@@ -278,25 +265,6 @@ export class SamInvokeWebview extends VueWebview {
             }
         } catch (e) {
             getLogger().error('readFileSync: Failed to read file at path %O', fileLocations[0].fsPath, e)
-            throw ToolkitError.chain(e, 'Failed to read selected file')
-        }
-    }
-
-    public async readFile(filePath: string) {
-        if (!filePath) {
-            return undefined
-        }
-        const fileLocation = vscode.Uri.file(filePath)
-        try {
-            const fileContent = fs.readFileSync(fileLocation.fsPath, { encoding: 'utf8' })
-
-            return {
-                sample: fileContent,
-                selectedFilePath: fileLocation.fsPath,
-                selectedFile: this.getFileName(fileLocation.fsPath),
-            }
-        } catch (e) {
-            getLogger().error('readFileSync: Failed to read file at path %O', fileLocation.fsPath, e)
             throw ToolkitError.chain(e, 'Failed to read selected file')
         }
     }

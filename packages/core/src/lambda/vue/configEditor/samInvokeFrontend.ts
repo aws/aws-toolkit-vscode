@@ -174,16 +174,6 @@ export default defineComponent({
             if (!config) {
                 return // Exit early if config is not available
             }
-            if (this.payloadOption === 'sampleEvents' || this.payloadOption === 'savedEvents') {
-                config.lambda.payload = this.payload.value
-            } else if (this.payloadOption === 'localFile') {
-                if (this.selectedFile && this.selectedFilePath) {
-                    const resp = await client.readFile(this.selectedFilePath)
-                    if (resp) {
-                        config.lambda.payload = resp.sample
-                    }
-                }
-            }
 
             const source = this.resourceData?.source
 
@@ -213,11 +203,18 @@ export default defineComponent({
             const company = this.company
             this.clearForm()
             this.launchConfig = newLaunchConfig(config)
+
             if (config.lambda?.payload) {
                 this.payload.value = JSON.stringify(config.lambda.payload.json, undefined, 4)
             }
 
             const localArgs = config.sam?.localArguments
+
+            if (!localArgs && this.payload.value) {
+                this.payloadOption = 'sampleEvents'
+                this.selectedFile = ''
+            }
+
             if (localArgs?.includes('-e') || localArgs?.includes('--event')) {
                 const index = localArgs.findIndex((arg) => arg === '-e' || arg === '--event')
 
@@ -319,15 +316,6 @@ export default defineComponent({
                 this.launchConfig.sam = this.launchConfig.sam || {}
                 this.launchConfig.sam.localArguments = this.launchConfig.sam.localArguments || []
                 this.launchConfig.sam!.localArguments.push('-e', resp.selectedFilePath)
-            }
-        },
-        async reloadFile() {
-            if (this.selectedFile) {
-                const resp = await client.readFile(this.selectedFilePath)
-                if (resp) {
-                    this.selectedFile = resp.selectedFile
-                    this.selectedFilePath = resp.selectedFilePath
-                }
             }
         },
         showNameField() {
