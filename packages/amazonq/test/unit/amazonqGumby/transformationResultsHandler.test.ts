@@ -56,6 +56,6 @@ describe('DiffModel', function () {
 
         assert.strictEqual(change instanceof ModifiedChangeNode, true)
 
-        await fs.delete(path.join(workspacePath, 'README.md'))
+        await fs.delete(path.join(workspacePath, 'README.md'), { recursive: true })
     })
 })

@@ -35,8 +35,8 @@ describe('UserCredentialsUtils', function () {
     })
 
     afterEach(async function () {
-        await fs.delete(defaultConfigFileName)
-        await fs.delete(defaultCredentialsFilename)
+        await fs.delete(defaultConfigFileName, { recursive: true })
+        await fs.delete(defaultCredentialsFilename, { recursive: true })
 
         sinon.restore()
     })
