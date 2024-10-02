@@ -331,7 +331,7 @@ export class CodeGenState extends CodeGenBase implements SessionState {
                     this.currentIteration + 1,
                     this.codeGenerationRemainingIterationCount,
                     this.codeGenerationTotalIterationCount,
-                    action.tokenSource,
+                    this.tokenSource,
                     this.currentCodeGenerationId
                 )
                 return {
