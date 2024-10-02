@@ -6,7 +6,6 @@
 import globals from '../extensionGlobals'
 
 import admZip from 'adm-zip'
-import * as fs from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { getIdeProperties } from '../extensionUtilities'
@@ -22,6 +21,7 @@ import { DevSettings } from '../settings'
 import { telemetry } from '../telemetry/telemetry'
 import { Result, ToolId } from '../telemetry/telemetry'
 import { openUrl } from './vsCodeUtils'
+import fs from '../fs/fs'
 const localize = nls.loadMessageBundle()
 
 const msgDownloading = localize('AWS.installProgress.downloading', 'downloading...')
@@ -285,9 +285,7 @@ async function installSsmCli(
         await new TimedProcess('pkgutil', pkgArgs).run({ spawnOptions: { cwd: tempDir } })
         await new TimedProcess('tar', tarArgs).run({ spawnOptions: { cwd: tempPath } })
 
-        fs.copySync(path.join(tempPath, 'usr', 'local', 'sessionmanagerplugin'), outDir, {
-            recursive: true,
-        })
+        await fs.copy(path.join(tempPath, 'usr', 'local', 'sessionmanagerplugin'), outDir)
 
         return finalPath
     }
@@ -306,11 +304,8 @@ async function installSsmCli(
         await new TimedProcess('ar', ['-x', ssmInstaller]).run({ spawnOptions: { cwd: ssmDir } })
         // extract data.tar.gz to CLI dir
         const tarArgs = ['-xzf', path.join(ssmDir, 'data.tar.gz')]
-        await new TimedProcess('tar', tarArgs).run({ spawnOptions: { cwd: ssmDir } }),
-            fs.mkdirSync(outDir, { recursive: true })
-        fs.copySync(path.join(ssmDir, 'usr', 'local', 'sessionmanagerplugin'), outDir, {
-            recursive: true,
-        })
+        await new TimedProcess('tar', tarArgs).run({ spawnOptions: { cwd: ssmDir } }), await fs.mkdir(outDir)
+        await fs.copy(path.join(ssmDir, 'usr', 'local', 'sessionmanagerplugin'), outDir)
 
         return finalPath
     }

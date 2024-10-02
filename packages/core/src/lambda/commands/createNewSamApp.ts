@@ -42,13 +42,13 @@ import { waitUntil } from '../../shared/utilities/timeoutUtils'
 import { debugNewSamAppUrl, launchConfigDocUrl } from '../../shared/constants'
 import { getIdeProperties, isCloud9 } from '../../shared/extensionUtilities'
 import { execFileSync } from 'child_process'
-import { writeFile } from 'fs-extra'
 import { checklogs } from '../../shared/localizedText'
 import globals from '../../shared/extensionGlobals'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { LambdaArchitecture, Result, Runtime } from '../../shared/telemetry/telemetry'
 import { getTelemetryReason, getTelemetryResult } from '../../shared/errors'
 import { openUrl, replaceVscodeVars } from '../../shared/utilities/vsCodeUtils'
+import { fs } from '../../shared'
 
 export const samInitTemplateFiles: string[] = ['template.yaml', 'template.yml']
 export const samInitReadmeFile: string = 'README.TOOLKIT.md'
@@ -472,7 +472,7 @@ export async function writeToolkitReadme(
                     : 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/serverless-apps.html'
             )
 
-        await writeFile(readmeLocation, readme)
+        await fs.writeFile(readmeLocation, readme)
         getLogger().debug(`writeToolkitReadme: wrote file: %O`, readmeLocation)
 
         return true

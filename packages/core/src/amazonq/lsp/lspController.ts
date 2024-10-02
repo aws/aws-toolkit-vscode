@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import * as path from 'path'
-import * as fs from 'fs-extra'
+import { createWriteStream } from 'fs'
 import * as crypto from 'crypto'
 import { getLogger } from '../../shared/logger/logger'
 import { CurrentWsFolders, collectFilesForIndex } from '../../shared/utilities/workspaceUtils'
@@ -19,12 +19,11 @@ import { CodeWhispererSettings } from '../../codewhisperer/util/codewhispererSet
 import { activate as activateLsp } from './lspClient'
 import { telemetry } from '../../shared/telemetry'
 import { isCloud9 } from '../../shared/extensionUtilities'
-import { globals, ToolkitError } from '../../shared'
+import { fs, globals, ToolkitError } from '../../shared'
 import { AuthUtil } from '../../codewhisperer'
 import { isWeb } from '../../shared/extensionGlobals'
 import { getUserAgent } from '../../shared/telemetry/util'
 import { isAmazonInternalOs } from '../../shared/vscode/env'
-import { fs as fs2 } from '../../shared/fs/fs'
 
 function getProjectPaths() {
     const workspaceFolders = vscode.workspace.workspaceFolders
@@ -106,7 +105,7 @@ export class LspController {
             throw new ToolkitError(`Failed to download. Error: ${JSON.stringify(res)}`)
         }
         return new Promise((resolve, reject) => {
-            const file = fs.createWriteStream(localFile)
+            const file = createWriteStream(localFile)
             res.body.pipe(file)
             res.body.on('error', (err) => {
                 reject(err)
@@ -134,16 +133,16 @@ export class LspController {
     }
 
     async getFileSha384(filePath: string): Promise<string> {
-        const fileBuffer = await fs.promises.readFile(filePath)
+        const fileBuffer = await fs.readFile(filePath)
         const hash = crypto.createHash('sha384')
         hash.update(fileBuffer)
         return hash.digest('hex')
     }
 
-    isLspInstalled(context: vscode.ExtensionContext) {
+    async isLspInstalled(context: vscode.ExtensionContext) {
         const localQServer = context.asAbsolutePath(path.join('resources', 'qserver'))
         const localNodeRuntime = context.asAbsolutePath(path.join('resources', nodeBinName))
-        return fs.existsSync(localQServer) && fs.existsSync(localNodeRuntime)
+        return (await fs.exists(localQServer)) && (await fs.exists(localNodeRuntime))
     }
 
     getQserverFromManifest(manifest: Manifest): Content | undefined {
@@ -208,7 +207,7 @@ export class LspController {
             getLogger().error(
                 `LspController: Downloaded file sha ${sha384} does not match manifest ${content.hashes[0]}.`
             )
-            fs.removeSync(filePath)
+            await fs.delete(filePath)
             return false
         }
         return true
@@ -226,19 +225,19 @@ export class LspController {
     async tryInstallLsp(context: vscode.ExtensionContext): Promise<boolean> {
         let tempFolder = undefined
         try {
-            if (this.isLspInstalled(context)) {
+            if (await this.isLspInstalled(context)) {
                 getLogger().info(`LspController: LSP already installed`)
                 return true
             }
             // clean up previous downloaded LSP
             const qserverPath = context.asAbsolutePath(path.join('resources', 'qserver'))
-            if (fs.existsSync(qserverPath)) {
+            if (await fs.exists(qserverPath)) {
                 await tryRemoveFolder(qserverPath)
             }
             // clean up previous downloaded node runtime
             const nodeRuntimePath = context.asAbsolutePath(path.join('resources', nodeBinName))
-            if (fs.existsSync(nodeRuntimePath)) {
-                fs.rmSync(nodeRuntimePath)
+            if (await fs.exists(nodeRuntimePath)) {
+                await fs.delete(nodeRuntimePath)
             }
             // fetch download url for qserver and node runtime
             const manifest: Manifest = (await this.fetchManifest()) as Manifest
@@ -259,7 +258,7 @@ export class LspController {
             }
             const zip = new AdmZip(qserverZipTempPath)
             zip.extractAllTo(tempFolder)
-            fs.moveSync(path.join(tempFolder, 'qserver'), qserverPath)
+            await fs.rename(path.join(tempFolder, 'qserver'), qserverPath)
 
             // download node runtime to temp folder
             const nodeRuntimeTempPath = path.join(tempFolder, nodeBinName)
@@ -267,8 +266,8 @@ export class LspController {
             if (!downloadNodeOk) {
                 return false
             }
-            await fs2.chmod(nodeRuntimeTempPath, 0o755)
-            fs.moveSync(nodeRuntimeTempPath, nodeRuntimePath)
+            await fs.chmod(nodeRuntimeTempPath, 0o755)
+            await fs.rename(nodeRuntimeTempPath, nodeRuntimePath)
             return true
         } catch (e) {
             getLogger().error(`LspController: Failed to setup LSP server ${e}`)
