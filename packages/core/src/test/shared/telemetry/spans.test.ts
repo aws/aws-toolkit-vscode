@@ -14,7 +14,6 @@ import { sleep } from '../../../shared'
 import { withTelemetryContext } from '../../../shared/telemetry/util'
 import { SinonSandbox } from 'sinon'
 import sinon from 'sinon'
-import { stubPerformance } from '../../utilities/performance'
 import * as crypto from '../../../shared/crypto'
 
 describe('TelemetrySpan', function () {
