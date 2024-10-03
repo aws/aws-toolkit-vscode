@@ -35,7 +35,7 @@ function generateCommandOutput(numPieces: number, pieceSize: number): FakeComman
 }
 
 async function setup(pieces: number, pieceSize: number): Promise<SetupResult> {
-    // Force VSCode to find my test workspace only to keep test contained and controlled.
+    // Force VSCode to find test workspace only to keep test contained and controlled.
     const workspace = await createTestWorkspace(1, {})
     const exportCommandInput = {} as ExportResultArchiveCommandInput
     // Manutally stub the CodeWhispererStreaming to avoid constructor call.
