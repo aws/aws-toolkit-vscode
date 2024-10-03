@@ -120,7 +120,7 @@ export class CodeWhispererCodeCoverageTracker {
                 }
             })
         }
-        const percentCount = ((unmodifiedAcceptedTokens / totalTokens) * 100).toFixed(2)
+        const percentCount = ((acceptedTokens / totalTokens) * 100).toFixed(2)
         const percentage = Math.round(parseInt(percentCount))
         const selectedCustomization = getSelectedCustomization()
         if (this._serviceInvocationCount <= 0) {
