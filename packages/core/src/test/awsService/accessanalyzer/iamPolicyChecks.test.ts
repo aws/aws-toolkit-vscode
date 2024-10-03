@@ -19,6 +19,7 @@ import * as iamPolicyChecks from '../../../awsService/accessanalyzer/vue/iamPoli
 import * as vscode from 'vscode'
 import { IamPolicyChecksConstants } from '../../../awsService/accessanalyzer/vue/constants'
 import { FileSystem } from '../../../shared/fs/fs'
+import path from 'path'
 
 const defaultTerraformConfigPath = 'resources/policychecks-tf-default.yaml'
 let sandbox: sinon.SinonSandbox
@@ -29,7 +30,10 @@ describe('iamPolicyChecks', function () {
     it('IamPolicyChecksWebview built .vue source file path exists', async function () {
         assert.ok(
             await vscodeFs.existsFile(
-                globals.context.asAbsolutePath(`src/awsService/accessanalyzer/vue/iamPolicyChecks.vue`)
+                path.join(
+                    path.dirname(globals.context.extensionPath),
+                    `core/src/awsService/accessanalyzer/vue/iamPolicyChecks.vue`
+                )
             )
         )
     })
