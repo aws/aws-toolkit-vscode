@@ -39,8 +39,12 @@ import { isTemplateTargetProperties } from '../../shared/sam/debugger/awsSamDebu
 import { TemplateTargetProperties } from '../../shared/sam/debugger/awsSamDebugConfiguration'
 import { openLaunchJsonFile } from '../../shared/sam/debugger/commands/addSamDebugConfiguration'
 import { waitUntil } from '../../shared/utilities/timeoutUtils'
-import { debugNewSamAppUrl, launchConfigDocUrl } from '../../shared/constants'
-import { getIdeProperties, isCloud9 } from '../../shared/extensionUtilities'
+import {
+    getIdeProperties,
+    getDebugNewSamAppDocUrl,
+    isCloud9,
+    getLaunchConfigDocUrl,
+} from '../../shared/extensionUtilities'
 import { execFileSync } from 'child_process'
 import { checklogs } from '../../shared/localizedText'
 import globals from '../../shared/extensionGlobals'
@@ -316,7 +320,7 @@ export async function createNewSamApplication(
                 )
                 .then(async (buttonText) => {
                     if (buttonText === helpText) {
-                        void openUrl(vscode.Uri.parse(launchConfigDocUrl))
+                        void openUrl(getLaunchConfigDocUrl())
                     }
                 })
         }
@@ -441,7 +445,7 @@ async function showCompletionNotification(appName: string, configs: string): Pro
     if (action === openJson) {
         await openLaunchJsonFile()
     } else if (action === learnMore) {
-        void openUrl(vscode.Uri.parse(debugNewSamAppUrl))
+        void openUrl(getDebugNewSamAppDocUrl())
     }
 }
 
