@@ -13,7 +13,7 @@ import {
     assertTelemetry,
     assertTextEditorContains,
     createTestWorkspaceFolder,
-    openATextEditorWithText,
+    toTextEditor,
 } from 'aws-core-vscode/test'
 import {
     DefaultCodeWhispererClient,
@@ -156,7 +156,7 @@ describe.skip('CodeWhisperer telemetry', async function () {
     describe('tab and esc', function () {
         it('single accept', async function () {
             assertSessionClean()
-            const editor = await openATextEditorWithText('', 'test.py')
+            const editor = await toTextEditor('', 'test.py')
 
             await manualTrigger(editor, client, config)
             await acceptByTab()
@@ -166,7 +166,7 @@ describe.skip('CodeWhisperer telemetry', async function () {
 
         it('single reject', async function () {
             assertSessionClean()
-            const editor = await openATextEditorWithText('', 'test.py')
+            const editor = await toTextEditor('', 'test.py')
 
             await manualTrigger(editor, client, config)
             await rejectByEsc()
@@ -179,7 +179,7 @@ describe.skip('CodeWhisperer telemetry', async function () {
 
         it('accept - accept - accept', async function () {
             assertSessionClean()
-            const editor = await openATextEditorWithText('', 'test.py')
+            const editor = await toTextEditor('', 'test.py')
 
             await manualTrigger(editor, client, config)
             await acceptByTab()
@@ -190,7 +190,7 @@ describe.skip('CodeWhisperer telemetry', async function () {
             await acceptByTab()
             await assertTextEditorContains(`FooBaz${os.EOL}Baz`)
 
-            const anotherEditor = await openATextEditorWithText('', 'anotherTest.py')
+            const anotherEditor = await toTextEditor('', 'anotherTest.py')
             assertSessionClean()
             await manualTrigger(anotherEditor, client, config)
             await acceptByTab()
@@ -205,7 +205,7 @@ describe.skip('CodeWhisperer telemetry', async function () {
 
         it('accept - reject - accept', async function () {
             assertSessionClean()
-            const editor = await openATextEditorWithText('', 'test.py')
+            const editor = await toTextEditor('', 'test.py')
 
             await manualTrigger(editor, client, config)
             await acceptByTab()
@@ -216,7 +216,7 @@ describe.skip('CodeWhisperer telemetry', async function () {
             await rejectByEsc()
             await assertTextEditorContains('Foo')
 
-            const anotherEditor = await openATextEditorWithText('', 'anotherTest.py')
+            const anotherEditor = await toTextEditor('', 'anotherTest.py')
             assertSessionClean()
             await manualTrigger(anotherEditor, client, config)
             await rejectByEsc()
@@ -231,7 +231,7 @@ describe.skip('CodeWhisperer telemetry', async function () {
 
         it('reject - reject - reject', async function () {
             assertSessionClean()
-            const editor = await openATextEditorWithText('', 'test.py')
+            const editor = await toTextEditor('', 'test.py')
 
             await manualTrigger(editor, client, config)
             await rejectByEsc()
@@ -256,7 +256,7 @@ describe.skip('CodeWhisperer telemetry', async function () {
 
         it('reject - accept - reject', async function () {
             assertSessionClean()
-            const editor = await openATextEditorWithText('', 'test.py')
+            const editor = await toTextEditor('', 'test.py')
 
             await manualTrigger(editor, client, config)
             await rejectByEsc()
@@ -302,7 +302,7 @@ describe.skip('CodeWhisperer telemetry', async function () {
             }
 
             assertSessionClean()
-            const editor = await openATextEditorWithText('', 'test.py')
+            const editor = await toTextEditor('', 'test.py')
 
             await manualTrigger(editor, client, config)
             await navigateNext()
@@ -318,7 +318,7 @@ describe.skip('CodeWhisperer telemetry', async function () {
             }
 
             assertSessionClean()
-            const editor = await openATextEditorWithText('', 'test.py')
+            const editor = await toTextEditor('', 'test.py')
 
             await manualTrigger(editor, client, config)
             await navigateNext()
@@ -336,7 +336,7 @@ describe.skip('CodeWhisperer telemetry', async function () {
             }
 
             assertSessionClean()
-            const editor = await openATextEditorWithText('', 'test.py')
+            const editor = await toTextEditor('', 'test.py')
 
             await manualTrigger(editor, client, config)
             await navigateNext()
@@ -351,7 +351,7 @@ describe.skip('CodeWhisperer telemetry', async function () {
     describe('typing', function () {
         it('typeahead match accept', async function () {
             assertSessionClean()
-            const editor = await openATextEditorWithText('', 'test.py')
+            const editor = await toTextEditor('', 'test.py')
 
             await manualTrigger(editor, client, config)
             await typing(editor, 'F')
@@ -365,7 +365,7 @@ describe.skip('CodeWhisperer telemetry', async function () {
 
         it('typeahead match, backspace and accept', async function () {
             assertSessionClean()
-            const editor = await openATextEditorWithText('', 'test.py')
+            const editor = await toTextEditor('', 'test.py')
 
             await manualTrigger(editor, client, config)
             await typing(editor, 'F')
@@ -385,7 +385,7 @@ describe.skip('CodeWhisperer telemetry', async function () {
             // the solution is to waitUntil VSCode InlineSuggestion to resolve the "typeahead" but currently no easy way to know if the InlinSuggestion is shown visible again
             this.skip()
             assertSessionClean()
-            const editor = await openATextEditorWithText('', 'test.py')
+            const editor = await toTextEditor('', 'test.py')
 
             await manualTrigger(editor, client, config)
             await typing(editor, 'F')
@@ -398,7 +398,7 @@ describe.skip('CodeWhisperer telemetry', async function () {
             await rejectByEsc()
             await assertTextEditorContains('Foo')
 
-            const anotherEditor = await openATextEditorWithText('', 'anotherTest.py')
+            const anotherEditor = await toTextEditor('', 'anotherTest.py')
             await manualTrigger(anotherEditor, client, config)
             await typing(anotherEditor, 'Qo')
             await assertTextEditorContains('Qo')
@@ -415,7 +415,7 @@ describe.skip('CodeWhisperer telemetry', async function () {
 
         it('typeahead not match after suggestion is shown and reject', async function () {
             assertSessionClean()
-            const editor = await openATextEditorWithText('', 'test.py')
+            const editor = await toTextEditor('', 'test.py')
 
             await manualTrigger(editor, client, config)
             await typing(editor, 'H')
@@ -441,13 +441,13 @@ describe.skip('CodeWhisperer telemetry', async function () {
 
         it('reject - typeahead not matching after suggestion is shown then invoke another round and accept', async function () {
             assertSessionClean()
-            const editor = await openATextEditorWithText('', 'test.py')
+            const editor = await toTextEditor('', 'test.py')
 
             await manualTrigger(editor, client, config)
             await typing(editor, 'H')
             await assertTextEditorContains('H')
 
-            const anotherEditor = await openATextEditorWithText('', 'anotherTest.py')
+            const anotherEditor = await toTextEditor('', 'anotherTest.py')
             await manualTrigger(anotherEditor, client, config)
             await acceptByTab()
             await assertTextEditorContains(`Baz${os.EOL}Baz`)
@@ -462,14 +462,14 @@ describe.skip('CodeWhisperer telemetry', async function () {
     describe('on editor change, focus change', function () {
         it('reject: trigger then open another editor', async function () {
             assertSessionClean()
-            const editor = await openATextEditorWithText('', 'test.py', tempFolder, { preview: false })
+            const editor = await toTextEditor('', 'test.py', tempFolder, { preview: false })
 
             await manualTrigger(editor, client, config)
 
-            await openATextEditorWithText('text in 2nd editor', 'another1.py', tempFolder, {
+            await toTextEditor('text in 2nd editor', 'another1.py', tempFolder, {
                 preview: false,
             })
-            const anotherEditor = await openATextEditorWithText('text in 3rd editor', 'another2.py', tempFolder, {
+            const anotherEditor = await toTextEditor('text in 3rd editor', 'another2.py', tempFolder, {
                 preview: false,
             })
 
@@ -483,7 +483,7 @@ describe.skip('CodeWhisperer telemetry', async function () {
 
         it('reject: trigger then close editor', async function () {
             assertSessionClean()
-            const editor = await openATextEditorWithText('', 'test.py')
+            const editor = await toTextEditor('', 'test.py')
 
             await manualTrigger(editor, client, config)
             await closeActiveEditor()
@@ -496,7 +496,7 @@ describe.skip('CodeWhisperer telemetry', async function () {
 
         it('reject: onFocusChange', async function () {
             assertSessionClean()
-            const editor = await openATextEditorWithText('', 'test.py')
+            const editor = await toTextEditor('', 'test.py')
 
             await manualTrigger(editor, client, config)
             await assertTextEditorContains('')

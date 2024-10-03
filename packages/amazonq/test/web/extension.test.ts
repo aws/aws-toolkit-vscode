@@ -4,10 +4,10 @@
  */
 
 import assert from 'assert'
-import globals from '../shared/extensionGlobals'
+import { globals, ToolkitGlobals } from 'aws-core-vscode/shared'
 
 describe('activation', async () => {
     it('defines a region provider that can provide regions when in web mode', async () => {
-        assert(globals.regionProvider.getRegions().length > 0)
+        assert((globals as unknown as ToolkitGlobals).regionProvider.getRegions().length > 0)
     })
 })

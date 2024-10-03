@@ -9,7 +9,7 @@ import {
     createMockTextEditor,
     createMockClientRequest,
     resetCodeWhispererGlobalVariables,
-    openATextEditorWithText,
+    toTextEditor,
     createTestWorkspaceFolder,
     closeAllEditors,
 } from 'aws-core-vscode/test'
@@ -104,7 +104,7 @@ describe('editorContext', function () {
         })
 
         it('Should return relative path', async function () {
-            const editor = await openATextEditorWithText('tttt', 'test.py', tempFolder)
+            const editor = await toTextEditor('tttt', 'test.py', tempFolder)
             const actual = EditorContext.getFileRelativePath(editor)
             const expected = 'test.py'
             assert.strictEqual(actual, expected)

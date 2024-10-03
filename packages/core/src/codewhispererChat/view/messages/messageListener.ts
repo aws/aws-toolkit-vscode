@@ -204,6 +204,7 @@ export class UIMessageListener {
             tabID: msg.tabID,
             messageId: msg.messageId,
             userIntent: msg.userIntent !== '' ? msg.userIntent : undefined,
+            traceId: msg.traceId,
         })
     }
 

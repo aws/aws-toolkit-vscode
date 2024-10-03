@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
-import * as fs from 'fs'
+import * as nodefs from 'fs'
 import * as path from 'path'
 import * as os from 'os'
 import * as codeWhisperer from '../../client/codewhisperer'
@@ -44,7 +44,7 @@ import { AuthUtil } from '../../util/authUtil'
 import { createCodeWhispererChatStreamingClient } from '../../../shared/clients/codewhispererChatClient'
 import { downloadExportResultArchive } from '../../../shared/utilities/download'
 import { ExportIntent, TransformationDownloadArtifactType } from '@amzn/codewhisperer-streaming'
-import fs2 from '../../../shared/fs/fs'
+import fs from '../../../shared/fs/fs'
 import { ChatSessionManager } from '../../../amazonqGumby/chat/storages/chatSession'
 import { convertToTimeString, encodeHTML } from '../../../shared/utilities/textUtilities'
 
@@ -109,7 +109,7 @@ export async function uploadArtifactToS3(
 ) {
     throwIfCancelled()
     try {
-        const uploadFileByteSize = (await fs.promises.stat(fileName)).size
+        const uploadFileByteSize = (await nodefs.promises.stat(fileName)).size
         getLogger().info(
             `Uploading project artifact at %s with checksum %s using uploadId: %s and size %s kB`,
             fileName,
@@ -177,7 +177,7 @@ export async function stopJob(jobId: string) {
 }
 
 export async function uploadPayload(payloadFileName: string, uploadContext?: UploadContext) {
-    const buffer = fs.readFileSync(payloadFileName)
+    const buffer = Buffer.from(await fs.readFile(payloadFileName))
     const sha256 = getSha256(buffer)
 
     throwIfCancelled()
@@ -249,7 +249,7 @@ function isExcludedDependencyFile(path: string): boolean {
  * getFilesRecursively on the source code folder.
  */
 function getFilesRecursively(dir: string, isDependenciesFolder: boolean): string[] {
-    const entries = fs.readdirSync(dir, { withFileTypes: true })
+    const entries = nodefs.readdirSync(dir, { withFileTypes: true })
     const files = entries.flatMap((entry) => {
         const res = path.resolve(dir, entry.name)
         // exclude 'target' directory from ZIP (except if zipping dependencies) due to issues in backend
@@ -301,14 +301,14 @@ export async function zipCode({ dependenciesFolder, humanInTheLoopFlag, modulePa
             const sourceFiles = getFilesRecursively(modulePath, false)
             let sourceFilesSize = 0
             for (const file of sourceFiles) {
-                if (fs.statSync(file).isDirectory()) {
+                if (nodefs.statSync(file).isDirectory()) {
                     getLogger().info('CodeTransformation: Skipping directory, likely a symlink')
                     continue
                 }
                 const relativePath = path.relative(modulePath, file)
                 const paddedPath = path.join('sources', relativePath)
                 zip.addLocalFile(file, path.dirname(paddedPath))
-                sourceFilesSize += (await fs.promises.stat(file)).size
+                sourceFilesSize += (await nodefs.promises.stat(file)).size
             }
             getLogger().info(`CodeTransformation: source code files size = ${sourceFilesSize}`)
         }
@@ -316,7 +316,7 @@ export async function zipCode({ dependenciesFolder, humanInTheLoopFlag, modulePa
         throwIfCancelled()
 
         let dependencyFiles: string[] = []
-        if (fs.existsSync(dependenciesFolder.path)) {
+        if (await fs.exists(dependenciesFolder.path)) {
             dependencyFiles = getFilesRecursively(dependenciesFolder.path, true)
         }
 
@@ -330,7 +330,7 @@ export async function zipCode({ dependenciesFolder, humanInTheLoopFlag, modulePa
                 // const paddedPath = path.join(`dependencies/${dependenciesFolder.name}`, relativePath)
                 const paddedPath = path.join(`dependencies/`, relativePath)
                 zip.addLocalFile(file, path.dirname(paddedPath))
-                dependencyFilesSize += (await fs.promises.stat(file)).size
+                dependencyFilesSize += (await nodefs.promises.stat(file)).size
             }
             getLogger().info(`CodeTransformation: dependency files size = ${dependencyFilesSize}`)
             dependenciesCopied = true
@@ -353,19 +353,19 @@ export async function zipCode({ dependenciesFolder, humanInTheLoopFlag, modulePa
         }
 
         tempFilePath = path.join(os.tmpdir(), 'zipped-code.zip')
-        fs.writeFileSync(tempFilePath, zip.toBuffer())
-        if (fs.existsSync(dependenciesFolder.path)) {
-            fs.rmSync(dependenciesFolder.path, { recursive: true, force: true })
+        await fs.writeFile(tempFilePath, zip.toBuffer())
+        if (await fs.exists(dependenciesFolder.path)) {
+            await fs.delete(dependenciesFolder.path, { recursive: true, force: true })
         }
     } catch (e: any) {
         throw Error('Failed to zip project')
     } finally {
         if (logFilePath) {
-            fs.rmSync(logFilePath)
+            await fs.delete(logFilePath)
         }
     }
 
-    const zipSize = (await fs.promises.stat(tempFilePath)).size
+    const zipSize = (await nodefs.promises.stat(tempFilePath)).size
 
     const exceedsLimit = zipSize > CodeWhispererConstants.uploadZipSizeLimitInBytes
 
@@ -409,7 +409,7 @@ export async function startJob(uploadId: string) {
 }
 
 export function getImageAsBase64(filePath: string) {
-    const fileContents = fs.readFileSync(filePath, { encoding: 'base64' })
+    const fileContents = nodefs.readFileSync(filePath, { encoding: 'base64' })
     return `data:image/svg+xml;base64,${fileContents}`
 }
 
@@ -725,9 +725,9 @@ export async function downloadAndExtractResultArchive(
     pathToArchiveDir: string,
     downloadArtifactType: TransformationDownloadArtifactType
 ) {
-    const archivePathExists = await fs2.existsDir(pathToArchiveDir)
+    const archivePathExists = await fs.existsDir(pathToArchiveDir)
     if (!archivePathExists) {
-        await fs2.mkdir(pathToArchiveDir)
+        await fs.mkdir(pathToArchiveDir)
     }
 
     const pathToArchive = path.join(pathToArchiveDir, 'ExportResultsArchive.zip')

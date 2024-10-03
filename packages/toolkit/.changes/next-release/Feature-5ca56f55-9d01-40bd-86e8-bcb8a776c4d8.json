@@ -1,4 +1,0 @@
-{
-	"type": "Feature",
-	"description": "EC2 connect: default to ed25519, but fall back on rsa if unsupported"
-}
