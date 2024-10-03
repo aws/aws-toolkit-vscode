@@ -91,8 +91,14 @@ export class Messenger {
             )
         )
     }
-
+    /**
+     * Guesses the total number of code blocks.
+     * NOTE: Not correct on all examples. Some may cause it to return 0 unexpectedly.
+     * @param message raw message response from codewhisperer client.
+     * @returns count of multi-line code blocks in response.
+     */
     public async countTotalNumberOfCodeBlocks(message: string): Promise<number> {
+        //TODO: remove this when moved to server-side.
         if (message === undefined) {
             return 0
         }
