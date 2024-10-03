@@ -425,6 +425,7 @@ export class FeatureDevController {
 
             if (session?.state?.tokenSource?.token.isCancellationRequested) {
                 this.disposeToken(session)
+                this.workOnNewTask(session)
             } else {
                 this.messenger.sendAsyncEventProgress(tabID, false, undefined)
 
@@ -446,6 +447,11 @@ export class FeatureDevController {
         }
     }
     private workOnNewTask(message: any) {
+        this.messenger.sendAnswer({
+            message: i18n('AWS.amazonq.featureDev.pillText.stoppedCodeGeneration'),
+            type: 'answer-part',
+            tabID: message.tabID,
+        })
         this.messenger.sendAnswer({
             type: 'system-prompt',
             tabID: message.tabID,
@@ -713,11 +719,10 @@ export class FeatureDevController {
 
     private async stopResponse(message: any) {
         this.messenger.sendAnswer({
-            message: i18n('AWS.amazonq.featureDev.pillText.stoppedCodeGeneration'),
+            message: i18n('AWS.amazonq.featureDev.pillText.stoppingCodeGeneration'),
             type: 'answer-part',
             tabID: message.tabID,
         })
-        this.workOnNewTask(message)
         const session = await this.sessionStorage.getSession(message.tabID)
         if (session.state?.tokenSource) {
             session.state?.tokenSource?.cancel()
