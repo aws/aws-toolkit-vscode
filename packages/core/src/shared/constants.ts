@@ -163,7 +163,7 @@ export const amazonQVscodeMarketplace =
  *
  * Moved here to resolve circular dependency issues.
  */
-export const crashMonitoringDirName = {
+export const crashMonitoringDirNames = {
     root: 'crashMonitoring',
     running: 'running',
     shutdown: 'shutdown',
