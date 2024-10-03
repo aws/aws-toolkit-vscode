@@ -92,7 +92,7 @@ export class Messenger {
         )
     }
     /**
-     * Guesses the total number of code blocks.
+     * Tries to calculate the total number of code blocks.
      * NOTES:
      *  - Not correct on all examples. Some may cause it to return 0 unexpectedly.
      *  - Plans in place (as of 4/22/2024) to move this server side.
