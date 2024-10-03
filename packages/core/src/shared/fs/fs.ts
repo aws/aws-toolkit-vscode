@@ -307,7 +307,7 @@ export class FileSystem {
     }
 
     /**
-     * Rename a file or folder.
+     * Rename (move) a file or folder.
      * @param oldPath
      * @param newPath
      * @returns
