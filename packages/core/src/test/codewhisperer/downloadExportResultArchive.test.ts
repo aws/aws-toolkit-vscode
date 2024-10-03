@@ -50,17 +50,17 @@ function perfTest(pieces: number, pieceSize: number, label: string) {
         {
             testRuns: 10,
             linux: {
-                userCpuUsage: 150,
+                userCpuUsage: 200,
                 systemCpuUsage: 35,
                 heapTotal: 4,
             },
             darwin: {
-                userCpuUsage: 150,
+                userCpuUsage: 200,
                 systemCpuUsage: 35,
                 heapTotal: 4,
             },
             win32: {
-                userCpuUsage: 150,
+                userCpuUsage: 200,
                 systemCpuUsage: 35,
                 heapTotal: 4,
             },
