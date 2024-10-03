@@ -14,8 +14,8 @@ import { Logger } from '../logger'
 import { isNewOsSession } from '../utilities/osUtils'
 import nodeFs from 'fs/promises'
 import fs from '../fs/fs'
-import * as CrashMonitoringConstants from './constants'
 import { getLogger } from '../logger/logger'
+import { crashMonitoringDirName } from '../constants'
 
 const className = 'CrashMonitoring'
 
@@ -375,7 +375,7 @@ export class FileSystemState {
      * Use {@link crashMonitoringStateFactory} to make an instance
      */
     constructor(protected readonly deps: MementoStateDependencies) {
-        this.stateDirPath = path.join(this.deps.workDirPath, CrashMonitoringConstants.rootDir)
+        this.stateDirPath = path.join(this.deps.workDirPath, crashMonitoringDirName.root)
 
         this.deps.devLogger?.debug(`crashMonitoring: pid: ${this.deps.pid}`)
         this.deps.devLogger?.debug(`crashMonitoring: sessionId: ${this.deps.sessionId.slice(0, 8)}-...`)
@@ -480,13 +480,13 @@ export class FileSystemState {
         return `${ext.extHostPid}_${ext.sessionId}`
     }
     private async runningExtsDir(): Promise<string> {
-        const p = path.join(this.stateDirPath, CrashMonitoringConstants.runningExtDir)
+        const p = path.join(this.stateDirPath, crashMonitoringDirName.running)
         // ensure the dir exists
         await withFailCtx('ensureRunningExtsDir', () => fs.mkdir(p))
         return p
     }
     private async shutdownExtsDir() {
-        const p = path.join(this.stateDirPath, CrashMonitoringConstants.shutdownExtDir)
+        const p = path.join(this.stateDirPath, crashMonitoringDirName.shutdown)
         // Since this runs in `deactivate()` it cannot use the VS Code FS api
         await withFailCtx('ensureShutdownExtsDir', () => nodeFs.mkdir(p, { recursive: true }))
         return p

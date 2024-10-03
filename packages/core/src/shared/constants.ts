@@ -157,3 +157,14 @@ export const amazonQHelpUrl = 'https://aws.amazon.com/q/'
 // URL for Amazon Q VS Code
 export const amazonQVscodeMarketplace =
     'https://marketplace.visualstudio.com/items?itemName=AmazonWebServices.amazon-q-vscode'
+
+/**
+ * Names of directories relevant to the crash reporting functionality.
+ *
+ * Moved here to resolve circular dependency issues.
+ */
+export const crashMonitoringDirName = {
+    root: 'crashMonitoring',
+    running: 'running',
+    shutdown: 'shutdown',
+} as const
