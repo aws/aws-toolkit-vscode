@@ -93,7 +93,10 @@ export class Messenger {
     }
     /**
      * Guesses the total number of code blocks.
-     * NOTE: Not correct on all examples. Some may cause it to return 0 unexpectedly.
+     * NOTES:
+     *  - Not correct on all examples. Some may cause it to return 0 unexpectedly.
+     *  - Plans in place (as of 4/22/2024) to move this server side.
+     *  - See original pr: https://github.com/aws/aws-toolkit-vscode/pull/4761 for more details.
      * @param message raw message response from codewhisperer client.
      * @returns count of multi-line code blocks in response.
      */
@@ -103,7 +106,7 @@ export class Messenger {
             return 0
         }
 
-        // // To Convert Markdown text to HTML using marked library
+        // To Convert Markdown text to HTML using marked library
         const html = await marked(message)
 
         const dom = new JSDOM(html)
