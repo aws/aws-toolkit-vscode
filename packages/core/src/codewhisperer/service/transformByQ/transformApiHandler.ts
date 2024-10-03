@@ -354,7 +354,9 @@ export async function zipCode({ dependenciesFolder, humanInTheLoopFlag, modulePa
 
         tempFilePath = path.join(os.tmpdir(), 'zipped-code.zip')
         await fs.writeFile(tempFilePath, zip.toBuffer())
-        await fs.delete(dependenciesFolder.path, { recursive: true, force: true })
+        if (await fs.exists(dependenciesFolder.path)) {
+            await fs.delete(dependenciesFolder.path, { recursive: true, force: true })
+        }
     } catch (e: any) {
         throw Error('Failed to zip project')
     } finally {
