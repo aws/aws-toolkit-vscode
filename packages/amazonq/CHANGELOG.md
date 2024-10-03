@@ -1,3 +1,9 @@
+## 1.28.0 2024-10-03
+
+- **Bug Fix** Amazon Q /dev: define first folder as a root path for LLM-created files when using workspaces
+- **Feature** Amazon Q Code Transformation: allow users to skip running tests
+- **Feature** Amazon Q Developer: Updated legal disclaimer text
+
 ## 1.27.0 2024-09-27
 
 - **Bug Fix** Security Scan: Fixes an issue that incorrectly removes hardcoded credentials detections from auto scans.
