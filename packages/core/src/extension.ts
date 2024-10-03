@@ -155,7 +155,7 @@ export async function activateCommon(
     )
 
     // Handle AWS Toolkit un-installation.
-    setupUninstallHandler(VSCODE_EXTENSION_ID.awstoolkit, context)
+    setupUninstallHandler(VSCODE_EXTENSION_ID.awstoolkit, context.extension.id, context)
 
     // auth
     await initializeAuth(globals.loginManager)
