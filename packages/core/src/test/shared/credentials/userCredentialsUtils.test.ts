@@ -21,6 +21,15 @@ import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { getConfigFilename, getCredentialsFilename } from '../../../auth/credentials/sharedCredentialsFile'
 import { fs } from '../../../shared'
 
+/** Async version of "doesNotThrow" */
+async function assertDoesNotThrow(fn: () => Promise<void>): Promise<void> {
+    try {
+        await fn()
+    } catch (err) {
+        assert.fail(`Provided function threw error ${err}`)
+    }
+}
+
 describe('UserCredentialsUtils', function () {
     let tempFolder: string
     let defaultConfigFileName: string
@@ -142,8 +151,8 @@ describe('UserCredentialsUtils', function () {
                 `creds.secretKey: "${profile.aws_access_key_id}" !== "${creds.secretKey}"`
             )
 
-            assert.ok(await fs.checkPerms(credentialsFilename, 'r--'))
-            assert.ok(await fs.checkPerms(credentialsFilename, '-w-'))
+            await assertDoesNotThrow(async () => await fs.checkPerms(credentialsFilename, 'r--'))
+            await assertDoesNotThrow(async () => await fs.checkPerms(credentialsFilename, '-w-'))
         })
     })
 
