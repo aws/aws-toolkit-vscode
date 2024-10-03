@@ -723,6 +723,11 @@ export class FeatureDevController {
             type: 'answer-part',
             tabID: message.tabID,
         })
+        this.messenger.sendChatInputEnabled(message.tabID, false)
+        this.messenger.sendUpdatePlaceholder(
+            message.tabID,
+            i18n('AWS.amazonq.featureDev.pillText.stoppingCodeGeneration')
+        )
         const session = await this.sessionStorage.getSession(message.tabID)
         if (session.state?.tokenSource) {
             session.state?.tokenSource?.cancel()
