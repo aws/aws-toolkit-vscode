@@ -16,8 +16,8 @@ import * as nls from 'vscode-nls'
 import globals, { initialize, isWeb } from './shared/extensionGlobals'
 import { join } from 'path'
 import { Commands } from './shared/vscode/commands2'
-import { documentationUrl, endpointsFileUrl, githubCreateIssueUrl, githubUrl } from './shared/constants'
-import { getIdeProperties, aboutExtension, isCloud9 } from './shared/extensionUtilities'
+import { endpointsFileUrl, githubCreateIssueUrl, githubUrl } from './shared/constants'
+import { getIdeProperties, aboutExtension, isCloud9, getDocUrl } from './shared/extensionUtilities'
 import { logAndShowError, logAndShowWebviewError } from './shared/utilities/logAndShowUtils'
 import { AuthStatus, telemetry } from './shared/telemetry/telemetry'
 import { openUrl } from './shared/utilities/vsCodeUtils'
@@ -149,7 +149,7 @@ export async function activateCommon(
         ),
         // register URLs in extension menu
         Commands.register(`aws.toolkit.help`, async () => {
-            void openUrl(vscode.Uri.parse(documentationUrl))
+            void openUrl(getDocUrl())
             telemetry.aws_help.emit()
         })
     )
