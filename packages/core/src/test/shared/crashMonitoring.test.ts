@@ -3,16 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { assertTelemetry, getMetrics, partialDeepCompare, TestFolder } from '../../testUtil'
+import { assertTelemetry, getMetrics, partialDeepCompare, TestFolder } from '../testUtil'
 import assert from 'assert'
-import globals from '../../../shared/extensionGlobals'
-import {
-    CrashMonitoring,
-    ExtInstance,
-    crashMonitoringStateFactory,
-} from '../../../shared/crashMonitoring/crashMonitoring'
-import { isCI } from '../../../shared/vscode/env'
-import { getLogger } from '../../../shared/logger/logger'
+import globals from '../../shared/extensionGlobals'
+import { CrashMonitoring, ExtInstance, crashMonitoringStateFactory } from '../../shared/crashMonitoring'
+import { isCI } from '../../shared/vscode/env'
+import { getLogger } from '../../shared/logger/logger'
 
 class TestCrashMonitoring extends CrashMonitoring {
     public constructor(...deps: ConstructorParameters<typeof CrashMonitoring>) {
