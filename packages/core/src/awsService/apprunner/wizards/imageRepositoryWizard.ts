@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
 import { AppRunner, IAM } from 'aws-sdk'
 import { createCommonButtons, QuickInputButton, QuickInputToggleButton } from '../../../shared/ui/buttons'
 import { toArrayAsync } from '../../../shared/utilities/collectionUtils'
@@ -21,8 +20,7 @@ import { makeDeploymentButton } from './deploymentButton'
 import { IamClient } from '../../../shared/clients/iamClient'
 import { createRolePrompter } from '../../../shared/ui/common/roles'
 import { getLogger } from '../../../shared/logger/logger'
-import { isCloud9 } from '../../../shared/extensionUtilities'
-import { apprunnerCreateServiceDocsUrl } from '../../../shared/constants'
+import { getAppRunnerCreateServiceDocUrl, isCloud9 } from '../../../shared/extensionUtilities'
 import { createExitPrompter } from '../../../shared/ui/common/exitPrompter'
 
 const localize = nls.loadMessageBundle()
@@ -162,7 +160,7 @@ function createPortPrompter(): Prompter<string> {
         validateInput: validatePort,
         title: localize('AWS.apprunner.createService.selectPort.title', 'Enter a port for the new service'),
         placeholder: 'Enter a port',
-        buttons: createCommonButtons(apprunnerCreateServiceDocsUrl),
+        buttons: createCommonButtons(getAppRunnerCreateServiceDocUrl()),
     })
 }
 
@@ -249,7 +247,7 @@ function createImageRepositorySubForm(
 
     form.ImageConfiguration.Port.bindPrompter(() => createPortPrompter())
     form.ImageConfiguration.RuntimeEnvironmentVariables.bindPrompter(() =>
-        createVariablesPrompter(createCommonButtons(apprunnerCreateServiceDocsUrl))
+        createVariablesPrompter(createCommonButtons(getAppRunnerCreateServiceDocUrl()))
     )
 
     return subform
@@ -262,7 +260,7 @@ export class AppRunnerImageRepositoryWizard extends Wizard<AppRunner.SourceConfi
         const createAccessRolePrompter = () => {
             return createRolePrompter(iamClient, {
                 title: localize('AWS.apprunner.createService.selectRole.title', 'Select a role to pull from ECR'),
-                helpUrl: vscode.Uri.parse(apprunnerCreateServiceDocsUrl),
+                helpUrl: getAppRunnerCreateServiceDocUrl(),
                 roleFilter: (role) => (role.AssumeRolePolicyDocument ?? '').includes(appRunnerEcrEntity),
                 createRole: createEcrRole.bind(undefined, iamClient),
             }).transform((resp) => resp.Arn)
