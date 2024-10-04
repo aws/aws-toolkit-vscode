@@ -7,7 +7,8 @@ import { WorkspaceFolder } from 'vscode'
 import { performanceTest } from '../../shared/performance/performance'
 import { createTestWorkspace } from '../testUtil'
 import { prepareRepoData, TelemetryHelper } from '../../amazonqFeatureDev'
-import { AmazonqCreateUpload, getRandomString, Metric } from '../../shared'
+import { AmazonqCreateUpload, getRandomString } from '../../shared'
+import { Span } from '../../shared/telemetry'
 
 type resultType = {
     zipFileBuffer: Buffer
@@ -48,7 +49,7 @@ function performanceTestWrapper(numFiles: number, fileSize: number) {
                 execute: async (workspace: WorkspaceFolder) => {
                     return await prepareRepoData([workspace.uri.fsPath], [workspace], telemetry, {
                         record: () => {},
-                    } as unknown as Metric<AmazonqCreateUpload>)
+                    } as unknown as Span<AmazonqCreateUpload>)
                 },
                 verify: async (_w: WorkspaceFolder, result: resultType) => {
                     verifyResult(result, telemetry, numFiles * fileSize)
