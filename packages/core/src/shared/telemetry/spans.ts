@@ -329,7 +329,7 @@ export class TelemetryTracer extends TelemetryBase {
      *
      * See docs/telemetry.md
      */
-    public run<T, U extends MetricName>(name: U, fn: (span: Metric<MetricShapes[U]>) => T, options?: SpanOptions): T {
+    public run<T, U extends MetricName>(name: U, fn: (span: Span<MetricShapes[U]>) => T, options?: SpanOptions): T {
         return this.withTraceId(() => {
             const span = this.createSpan(name, options).start()
             const frame = this.switchContext(span)
