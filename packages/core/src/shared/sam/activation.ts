@@ -46,7 +46,7 @@ import { createCommonButtons } from '../ui/buttons'
 import { samDeployUrl } from '../constants'
 import { OpenTemplateParams, OpenTemplateWizard } from '../../awsService/appBuilder/explorer/openTemplate'
 import { telemetry } from '../telemetry'
-import { Metric, AppBuilderOpenTemplate, LambdaGoToHandler } from '../telemetry/telemetry.gen'
+import { Span, AppBuilderOpenTemplate, LambdaGoToHandler } from '../telemetry/telemetry.gen'
 
 const sharedDetectSamCli = shared(detectSamCli)
 
@@ -171,7 +171,7 @@ async function registerCommands(ctx: ExtContext, settings: SamCliSettings): Prom
     )
 }
 
-async function runOpenTemplate(span: Metric<AppBuilderOpenTemplate>, arg: TreeNode) {
+async function runOpenTemplate(span: Span<AppBuilderOpenTemplate>, arg: TreeNode) {
     if (arg) {
         span.record({ source: 'AppBuilderOpenTemplate' })
     } else {
@@ -185,7 +185,7 @@ async function runOpenTemplate(span: Metric<AppBuilderOpenTemplate>, arg: TreeNo
     await vscode.window.showTextDocument(document)
 }
 
-async function runOpenHandler(span: Metric<LambdaGoToHandler>, arg: ResourceNode) {
+async function runOpenHandler(span: Span<LambdaGoToHandler>, arg: ResourceNode) {
     span.record({ source: 'AppBuilderOpenHandler' })
     const folderUri = arg.resource.workspaceFolder.uri
     let handler: string | undefined

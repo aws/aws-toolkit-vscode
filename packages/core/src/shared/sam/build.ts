@@ -18,7 +18,7 @@ import { CancellationError } from '../utilities/timeoutUtils'
 import { ToolkitError } from '../errors'
 import globals from '../extensionGlobals'
 import { TreeNode } from '../treeview/resourceTreeDataProvider'
-import { Metric, SamBuild, telemetry } from '../telemetry/telemetry'
+import { Span, SamBuild, telemetry } from '../telemetry/telemetry'
 import { getSpawnEnv } from '../env/resolveEnv'
 import { getProjectRoot, isDotnetRuntime } from './utils'
 import { getConfigFileUri, validateSamBuildConfig } from './config'
@@ -209,7 +209,7 @@ async function getBuildFlags(
 }
 
 export function registerBuild() {
-    async function runBuild(span: Metric<SamBuild>, arg?: TreeNode): Promise<SamBuildResult> {
+    async function runBuild(span: Span<SamBuild>, arg?: TreeNode): Promise<SamBuildResult> {
         const source = arg ? 'AppBuilderBuild' : 'CommandPalette'
         span.record({ source: source })
 
