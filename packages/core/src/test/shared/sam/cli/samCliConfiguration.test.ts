@@ -4,11 +4,11 @@
  */
 
 import assert from 'assert'
-import * as fs from 'fs-extra'
 import * as path from 'path'
 import { makeTemporaryToolkitFolder } from '../../../../shared/filesystemUtilities'
 import { SamCliSettings } from '../../../../shared/sam/cli/samCliSettings'
 import { TestSettings } from '../../../utilities/testSettingsConfiguration'
+import { fs } from '../../../../shared'
 
 describe('samCliConfiguration', function () {
     let tempFolder: string
@@ -20,13 +20,13 @@ describe('samCliConfiguration', function () {
     })
 
     afterEach(async function () {
-        await fs.remove(tempFolder)
+        await fs.delete(tempFolder, { recursive: true })
     })
 
     it('uses config value when referencing file that exists', async function () {
         const fakeCliLocation = path.join(tempFolder, 'fakeSamCli')
 
-        createSampleFile(fakeCliLocation)
+        await createSampleFile(fakeCliLocation)
         const config = new SamCliSettings({} as any, settingsConfiguration)
         await config.update('location', fakeCliLocation)
 
@@ -77,7 +77,7 @@ describe('samCliConfiguration', function () {
         assert.strictEqual(await config.getOrDetectSamCli().then((r) => r.path), undefined)
     })
 
-    function createSampleFile(filename: string): void {
-        fs.writeFileSync(filename, 'hi')
+    async function createSampleFile(filename: string): Promise<void> {
+        await fs.writeFile(filename, 'hi')
     }
 })

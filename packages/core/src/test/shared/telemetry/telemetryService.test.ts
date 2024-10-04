@@ -6,7 +6,6 @@
 import assert from 'assert'
 import * as FakeTimers from '@sinonjs/fake-timers'
 import * as sinon from 'sinon'
-import * as fs from 'fs-extra'
 import { DefaultTelemetryService } from '../../../shared/telemetry/telemetryService'
 import { AccountStatus } from '../../../shared/telemetry/telemetryClient'
 
@@ -21,6 +20,7 @@ import { installFakeClock } from '../../testUtil'
 import { TelemetryLogger } from '../../../shared/telemetry/telemetryLogger'
 import globals from '../../../shared/extensionGlobals'
 import { toArrayAsync } from '../../../shared/utilities/collectionUtils'
+import { fs } from '../../../shared'
 
 type Metric = { [P in keyof ClientTelemetry.MetricDatum as Uncapitalize<P>]: ClientTelemetry.MetricDatum[P] }
 
@@ -67,7 +67,7 @@ describe('TelemetryService', function () {
     })
 
     afterEach(async function () {
-        await fs.remove(service.persistFilePath)
+        await fs.delete(service.persistFilePath, { recursive: true })
         sandbox.restore()
         clock.uninstall()
     })

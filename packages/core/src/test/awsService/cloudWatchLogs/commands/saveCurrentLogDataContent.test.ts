@@ -6,7 +6,6 @@
 import assert from 'assert'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import * as fs from 'fs-extra'
 
 import { createURIFromArgs } from '../../../../awsService/cloudWatchLogs/cloudWatchLogsUtils'
 import { saveCurrentLogDataContent } from '../../../../awsService/cloudWatchLogs/commands/saveCurrentLogDataContent'
@@ -19,6 +18,7 @@ import {
     LogDataRegistry,
 } from '../../../../awsService/cloudWatchLogs/registry/logDataRegistry'
 import { assertTextEditorContains } from '../../../testUtil'
+import { fs } from '../../../../shared'
 
 async function testFilterLogEvents(
     logGroupInfo: CloudWatchLogsGroupInfo,
@@ -46,7 +46,7 @@ describe('saveCurrentLogDataContent', async function () {
     })
 
     afterEach(async function () {
-        await fs.remove(tempDir)
+        await fs.delete(tempDir, { recursive: true })
     })
 
     it('saves log content to a file', async function () {
