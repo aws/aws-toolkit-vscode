@@ -4,11 +4,11 @@
  */
 
 import assert from 'assert'
-import { remove, writeFile } from 'fs-extra'
 import { join } from 'path'
 import { makeTemporaryToolkitFolder } from '../../../../shared/filesystemUtilities'
 import { buildSamCliStartApiArguments } from '../../../../shared/sam/cli/samCliStartApi'
 import { assertArgIsPresent, assertArgNotPresent, assertArgsContainArgument } from './samCliTestUtils'
+import { fs } from '../../../../shared'
 
 describe('SamCliStartApi', async function () {
     let tempFolder: string
@@ -20,12 +20,12 @@ describe('SamCliStartApi', async function () {
         tempFolder = await makeTemporaryToolkitFolder()
         placeholderTemplateFile = join(tempFolder, 'template.yaml')
         placeholderEventFile = join(tempFolder, 'event.json')
-        await writeFile(placeholderTemplateFile, '')
-        await writeFile(placeholderEventFile, '')
+        await fs.writeFile(placeholderTemplateFile, '')
+        await fs.writeFile(placeholderEventFile, '')
     })
 
     afterEach(async function () {
-        await remove(tempFolder)
+        await fs.delete(tempFolder, { recursive: true })
     })
 
     it('invokes `sam local start-api` with correct args', async function () {
