@@ -4,13 +4,13 @@
  */
 import assert from 'assert'
 import { WorkspaceFolder } from 'vscode'
-import { fs, getRandomString } from '../../shared'
-import { performanceTest } from '../../shared/performance/performance'
-import { createTestWorkspace } from '../testUtil'
-import { downloadExportResultArchive } from '../../shared/utilities/download'
 import { ExportResultArchiveCommandInput } from '@amzn/codewhisperer-streaming'
 import * as sinon from 'sinon'
 import path from 'path'
+import { fs, getRandomString } from '../shared'
+import { createTestWorkspace } from '../test/testUtil'
+import { performanceTest } from '../shared/performance/performance'
+import { downloadExportResultArchive } from '../shared/utilities/download'
 
 interface SetupResult {
     workspace: WorkspaceFolder
