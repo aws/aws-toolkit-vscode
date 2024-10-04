@@ -176,12 +176,12 @@
         },
         {
             "name": "cwsprChatFullDisplayLatency",
-            "type": "string",
+            "type": "int",
             "description": "An array of time when successive chunks of server responses are displayed to the user"
         },
         {
             "name": "cwsprChatTimeBetweenDisplay",
-            "type": "int",
+            "type": "string",
             "description": "The time between the user pressing enter and the entire response being rendered"
         },
         {
