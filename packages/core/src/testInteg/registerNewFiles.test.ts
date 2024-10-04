@@ -4,10 +4,10 @@
  */
 import assert from 'assert'
 import * as vscode from 'vscode'
-import { NewFileInfo, NewFileZipContents, registerNewFiles } from '../../../amazonqFeatureDev'
-import { VirtualFileSystem } from '../../../shared'
-import { performanceTest } from '../../../shared/performance/performance'
-import { getTestWorkspaceFolder } from '../../../testInteg/integrationTestsUtilities'
+import { NewFileInfo, NewFileZipContents, registerNewFiles } from '../amazonqFeatureDev'
+import { performanceTest } from '../shared/performance/performance'
+import { getTestWorkspaceFolder } from './integrationTestsUtilities'
+import { VirtualFileSystem } from '../shared'
 
 interface SetupResult {
     workspace: vscode.WorkspaceFolder
