@@ -5,10 +5,9 @@
 
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import { documentationUrl } from '../constants'
 import { getIcon } from '../icons'
 import { WizardControl, WIZARD_EXIT, WIZARD_RETRY } from '../wizards/wizard'
-import { getIdeProperties } from '../extensionUtilities'
+import { getDocUrl, getIdeProperties } from '../extensionUtilities'
 import { openUrl } from '../utilities/vsCodeUtils'
 
 const localize = nls.loadMessageBundle()
@@ -32,7 +31,7 @@ export interface QuickInputButton<T> extends vscode.QuickInputButton {
  * @param tooltip Optional tooltip for button
  */
 export function createHelpButton(
-    uri: string | vscode.Uri = documentationUrl,
+    uri: string | vscode.Uri = getDocUrl(),
     tooltip: string = helpTooltip
 ): QuickInputLinkButton {
     const iconPath = getIcon('vscode-help')

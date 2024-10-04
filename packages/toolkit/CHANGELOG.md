@@ -1,3 +1,7 @@
+## 3.27.0 2024-10-03
+
+- **Bug Fix** rename Application Composer to Infrastructure Composer
+
 ## 3.26.0 2024-09-27
 
 - **Bug Fix** EC2 connect: remote connection will no longer fail with 'too many authentication attempt'
