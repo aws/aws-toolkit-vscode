@@ -304,11 +304,24 @@ export default defineComponent({
         },
         async promptForFileLocation() {
             const resp = await client.promptFile()
+
             if (resp) {
                 this.selectedFile = resp.selectedFile
                 this.launchConfig.sam = this.launchConfig.sam || {}
                 this.launchConfig.sam.localArguments = this.launchConfig.sam.localArguments || []
-                this.launchConfig.sam!.localArguments.push('-e', resp.selectedFilePath)
+
+                // Ensure only one '-e <filepath>' or '--event <filepath>' exists
+                const eventArgIndex = this.launchConfig.sam.localArguments.findIndex(
+                    (arg) => arg === '-e' || arg === '--event'
+                )
+
+                if (eventArgIndex !== -1 && this.launchConfig.sam.localArguments[eventArgIndex + 1]) {
+                    // Replace the existing file path for either '-e' or '--event'
+                    this.launchConfig.sam.localArguments[eventArgIndex + 1] = resp.selectedFilePath
+                } else {
+                    // Add '-e <filepath>' if not already present
+                    this.launchConfig.sam.localArguments.push('-e', resp.selectedFilePath)
+                }
             }
         },
         showNameField() {
