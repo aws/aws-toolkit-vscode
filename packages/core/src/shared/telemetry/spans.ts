@@ -13,6 +13,7 @@ import {
     MetricDefinition,
     MetricName,
     MetricShapes,
+    Span,
     TelemetryBase,
 } from './telemetry.gen'
 import {
@@ -132,7 +133,7 @@ export type SpanOptions = {
  *
  * See also: docs/telemetry.md
  */
-export class TelemetrySpan<T extends MetricBase = MetricBase> {
+export class TelemetrySpan<T extends MetricBase = MetricBase> implements Span<T> {
     #startTime?: Date
     #options: SpanOptions
 
@@ -317,6 +318,9 @@ export class TelemetryTracer extends TelemetryBase {
      * All changes made to {@link attributes} (via {@link record}) during the execution are
      * reverted after the execution completes.
      *
+     * Runs can be nested within each other. This allows for creating hierarchical spans,
+     * where child spans inherit the context of their parent spans.
+     *
      * This method automatically handles traceId generation and propagation:
      * - If no traceId exists in the current context, a new one is generated.
      * - The traceId is attached to all telemetry events created within this span.
@@ -325,19 +329,13 @@ export class TelemetryTracer extends TelemetryBase {
      *
      * See docs/telemetry.md
      */
-    public run<T, U extends MetricName>(name: U, fn: (span: Metric<MetricShapes[U]>) => T, options?: SpanOptions): T {
+    public run<T, U extends MetricName>(name: U, fn: (span: Span<MetricShapes[U]>) => T, options?: SpanOptions): T {
         return this.withTraceId(() => {
             const span = this.createSpan(name, options).start()
             const frame = this.switchContext(span)
 
             try {
-                //
-                // TODO: Since updating to `@types/node@16`, typescript flags this code with error:
-                //
-                //      Error: npm ERR! src/shared/telemetry/spans.ts(255,57): error TS2345: Argument of type
-                //      'TelemetrySpan<MetricBase>' is not assignable to parameter of type 'Metric<MetricShapes[U]>'.
-                //
-                const result = this.#context.run(frame, fn, span as any)
+                const result = this.#context.run(frame, fn, span)
 
                 if (result instanceof Promise) {
                     return result
@@ -444,9 +442,7 @@ export class TelemetryTracer extends TelemetryBase {
         return {
             name,
             emit: (data) => getSpan().emit(data),
-            record: (data) => getSpan().record(data),
             run: (fn, options?: SpanOptions) => this.run(name as MetricName, fn, options),
-            increment: (data) => getSpan().increment(data),
         }
     }
 

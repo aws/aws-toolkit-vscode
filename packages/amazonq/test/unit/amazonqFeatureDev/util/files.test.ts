@@ -11,7 +11,8 @@ import {
     maxRepoSizeBytes,
 } from 'aws-core-vscode/amazonqFeatureDev'
 import { assertTelemetry, createTestWorkspace } from 'aws-core-vscode/test'
-import { fs, AmazonqCreateUpload, Metric } from 'aws-core-vscode/shared'
+import { fs, AmazonqCreateUpload } from 'aws-core-vscode/shared'
+import { Span } from 'aws-core-vscode/telemetry'
 import sinon from 'sinon'
 
 describe('file utils', () => {
@@ -28,7 +29,7 @@ describe('file utils', () => {
             const telemetry = new TelemetryHelper()
             const result = await prepareRepoData([workspace.uri.fsPath], [workspace], telemetry, {
                 record: () => {},
-            } as unknown as Metric<AmazonqCreateUpload>)
+            } as unknown as Span<AmazonqCreateUpload>)
             assert.strictEqual(Buffer.isBuffer(result.zipFileBuffer), true)
             // checksum is not the same across different test executions because some unique random folder names are generated
             assert.strictEqual(result.zipFileChecksum.length, 44)
@@ -46,7 +47,7 @@ describe('file utils', () => {
             const telemetry = new TelemetryHelper()
             const result = await prepareRepoData([workspace.uri.fsPath], [workspace], telemetry, {
                 record: () => {},
-            } as unknown as Metric<AmazonqCreateUpload>)
+            } as unknown as Span<AmazonqCreateUpload>)
 
             assert.strictEqual(Buffer.isBuffer(result.zipFileBuffer), true)
             // checksum is not the same across different test executions because some unique random folder names are generated
@@ -65,7 +66,7 @@ describe('file utils', () => {
                 () =>
                     prepareRepoData([workspace.uri.fsPath], [workspace], telemetry, {
                         record: () => {},
-                    } as unknown as Metric<AmazonqCreateUpload>),
+                    } as unknown as Span<AmazonqCreateUpload>),
                 ContentLengthError
             )
         })
