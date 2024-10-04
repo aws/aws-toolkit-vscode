@@ -173,7 +173,7 @@ describe('TelemetryTracer', function () {
 
         it('does not change the active span when using a different span', function () {
             tracer.run(metricName, (span) => {
-                tracer.vscode_executeCommand.record({ command: 'foo', debounceCount: 1 })
+                tracer.vscode_executeCommand.emit({ command: 'foo', debounceCount: 1 })
                 assert.strictEqual(tracer.activeSpan, span)
             })
 
