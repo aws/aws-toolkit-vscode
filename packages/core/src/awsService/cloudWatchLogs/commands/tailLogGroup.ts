@@ -13,7 +13,8 @@ import { CloudWatchLogsGroupInfo } from '../registry/logDataRegistry'
 import { RegionSubmenu, RegionSubmenuResponse } from '../../../shared/ui/common/regionSubmenu'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { LogStreamFilterResponse, LogStreamFilterSubmenu } from '../liveTailLogStreamSubmenu'
-import { getLogger } from '../../../shared'
+import { getLogger, ToolkitError } from '../../../shared'
+import { cwlFilterPatternHelpUrl } from '../../../shared/constants'
 
 const localize = nls.loadMessageBundle()
 
@@ -49,7 +50,7 @@ export class TailLogGroupWizard extends Wizard<TailLogGroupWizardResponse> {
         this.form.regionLogGroupSubmenuResponse.bindPrompter(createRegionLogGroupSubmenu)
         this.form.logStreamFilter.bindPrompter((state) => {
             if (!state.regionLogGroupSubmenuResponse?.data) {
-                throw Error('LogGroupName is null')
+                throw new ToolkitError('LogGroupName is null')
             }
             return new LogStreamFilterSubmenu(
                 state.regionLogGroupSubmenuResponse.data,
@@ -80,7 +81,7 @@ async function getLogGroupQuickPickOptions(regionCode: string): Promise<DataQuic
 
     for await (const logGroupObject of logGroups) {
         if (!logGroupObject.arn || !logGroupObject.logGroupName) {
-            throw Error('LogGroupObject name or arn undefined')
+            throw new ToolkitError('LogGroupObject name or arn undefined')
         }
 
         logGroupsOptions.push({
@@ -97,7 +98,7 @@ function formatLogGroupArn(logGroupArn: string): string {
 }
 
 export function createFilterPatternPrompter() {
-    const helpUri = 'https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/FilterAndPatternSyntax.html'
+    const helpUri = cwlFilterPatternHelpUrl
     return createInputBox({
         title: 'Provide log event filter pattern',
         placeholder: 'filter pattern (case sensitive; empty matches all)',

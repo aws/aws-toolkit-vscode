@@ -91,13 +91,13 @@ export async function activate(context: vscode.ExtensionContext, configuration: 
         Commands.register('aws.cwl.changeFilterPattern', async () => changeLogSearchParams(registry, 'filterPattern')),
 
         Commands.register('aws.cwl.changeTimeFilter', async () => changeLogSearchParams(registry, 'timeFilter')),
-    
+
         Commands.register('aws.cwl.tailLogGroup', async (node: LogGroupNode | CloudWatchLogsNode) => {
             const logGroupInfo =
                 node instanceof LogGroupNode
                     ? { regionName: node.regionCode, groupName: node.logGroup.logGroupName! }
                     : undefined
             await tailLogGroup(logGroupInfo)
-        }),
+        })
     )
 }

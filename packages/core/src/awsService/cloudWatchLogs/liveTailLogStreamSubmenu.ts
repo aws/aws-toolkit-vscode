@@ -11,13 +11,13 @@ import { pageableToCollection } from '../../shared/utilities/collectionUtils'
 import { CloudWatchLogs } from 'aws-sdk'
 import { isValidResponse, StepEstimator } from '../../shared/wizards/wizard'
 import { isNonNullable } from '../../shared/utilities/tsUtils'
+import {
+    startLiveTailHelpUrl,
+    startLiveTailLogStreamNamesHelpUrl,
+    startLiveTailLogStreamPrefixHelpUrl,
+} from '../../shared/constants'
 
-export enum LogStreamFilterType {
-    MENU = 'menu',
-    PREFIX = 'prefix',
-    SPECIFIC = 'specific',
-    ALL = 'all',
-}
+export type LogStreamFilterType = 'menu' | 'prefix' | 'specific' | 'all'
 
 export interface LogStreamFilterResponse {
     readonly filter?: string
@@ -26,7 +26,7 @@ export interface LogStreamFilterResponse {
 
 export class LogStreamFilterSubmenu extends Prompter<LogStreamFilterResponse> {
     private logStreamPrefixRegEx = /^[^:*]*$/
-    private currentState: LogStreamFilterType = LogStreamFilterType.MENU
+    private currentState: LogStreamFilterType = 'menu'
     private steps?: [current: number, total: number]
     private region: string
     private logGroupArn: string
@@ -39,7 +39,7 @@ export class LogStreamFilterSubmenu extends Prompter<LogStreamFilterResponse> {
     }
 
     public createMenuPrompter() {
-        const helpUri = 'https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_StartLiveTail.html'
+        const helpUri = startLiveTailHelpUrl
         const prompter = createQuickPick(this.menuOptions, {
             title: 'Select LogStream filter type',
             buttons: createCommonButtons(helpUri),
@@ -52,24 +52,23 @@ export class LogStreamFilterSubmenu extends Prompter<LogStreamFilterResponse> {
         options.push({
             label: 'All',
             detail: 'Include log events from all LogStreams in the selected LogGroup',
-            data: LogStreamFilterType.ALL,
+            data: 'all',
         })
         options.push({
             label: 'Specific',
             detail: 'Include log events from only a specific LogStream',
-            data: LogStreamFilterType.SPECIFIC,
+            data: 'specific',
         })
         options.push({
             label: 'Prefix',
             detail: 'Include log events from LogStreams that begin with a provided prefix',
-            data: LogStreamFilterType.PREFIX,
+            data: 'prefix',
         })
         return options
     }
 
     public createLogStreamPrefixBox(): InputBoxPrompter {
-        const helpUri =
-            'https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_StartLiveTail.html#CWL-StartLiveTail-request-logStreamNamePrefixes'
+        const helpUri = startLiveTailLogStreamPrefixHelpUrl
         return createInputBox({
             title: 'Enter LogStream prefix',
             placeholder: 'logStream prefix (case sensitive; empty matches all)',
@@ -90,8 +89,7 @@ export class LogStreamFilterSubmenu extends Prompter<LogStreamFilterResponse> {
     }
 
     public createLogStreamSelector(): QuickPickPrompter<string> {
-        const helpUri =
-            'https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_StartLiveTail.html#CWL-StartLiveTail-request-logStreamNames'
+        const helpUri = startLiveTailLogStreamNamesHelpUrl
         const client = new DefaultCloudWatchLogsClient(this.region)
         const request: CloudWatchLogs.DescribeLogStreamsRequest = {
             logGroupIdentifier: this.logGroupArn,
@@ -118,16 +116,16 @@ export class LogStreamFilterSubmenu extends Prompter<LogStreamFilterResponse> {
     protected async promptUser(): Promise<PromptResult<LogStreamFilterResponse>> {
         while (true) {
             switch (this.currentState) {
-                case LogStreamFilterType.MENU: {
+                case 'menu': {
                     const prompter = this.createMenuPrompter()
                     this.steps && prompter.setSteps(this.steps[0], this.steps[1])
 
                     const resp = await prompter.prompt()
-                    if (resp === LogStreamFilterType.PREFIX) {
-                        this.switchState(LogStreamFilterType.PREFIX)
-                    } else if (resp === LogStreamFilterType.SPECIFIC) {
-                        this.switchState(LogStreamFilterType.SPECIFIC)
-                    } else if (resp === LogStreamFilterType.ALL) {
+                    if (resp === 'prefix') {
+                        this.switchState('prefix')
+                    } else if (resp === 'specific') {
+                        this.switchState('specific')
+                    } else if (resp === 'all') {
                         return { filter: undefined, type: resp }
                     } else {
                         return undefined
@@ -135,20 +133,20 @@ export class LogStreamFilterSubmenu extends Prompter<LogStreamFilterResponse> {
 
                     break
                 }
-                case LogStreamFilterType.PREFIX: {
+                case 'prefix': {
                     const resp = await this.createLogStreamPrefixBox().prompt()
                     if (isValidResponse(resp)) {
-                        return { filter: resp, type: LogStreamFilterType.PREFIX }
+                        return { filter: resp, type: 'prefix' }
                     }
-                    this.switchState(LogStreamFilterType.MENU)
+                    this.switchState('menu')
                     break
                 }
-                case LogStreamFilterType.SPECIFIC: {
+                case 'specific': {
                     const resp = await this.createLogStreamSelector().prompt()
                     if (isValidResponse(resp)) {
-                        return { filter: resp, type: LogStreamFilterType.SPECIFIC }
+                        return { filter: resp, type: 'specific' }
                     }
-                    this.switchState(LogStreamFilterType.MENU)
+                    this.switchState('menu')
                     break
                 }
             }

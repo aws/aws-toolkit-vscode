@@ -113,6 +113,14 @@ export const ecsIamPermissionsUrl = vscode.Uri.parse(
 export const CLOUDWATCH_LOGS_SCHEME = 'aws-cwl' // eslint-disable-line @typescript-eslint/naming-convention
 export const AWS_SCHEME = 'aws' // eslint-disable-line @typescript-eslint/naming-convention
 
+export const startLiveTailHelpUrl =
+    'https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_StartLiveTail.html'
+export const startLiveTailLogStreamPrefixHelpUrl = `${startLiveTailHelpUrl}#CWL-StartLiveTail-request-logStreamNamePrefixes`
+export const startLiveTailLogStreamNamesHelpUrl = `${startLiveTailHelpUrl}#CWL-StartLiveTail-request-logStreamNames`
+
+export const cwlFilterPatternHelpUrl =
+    'https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/FilterAndPatternSyntax.html'
+
 export const lambdaPackageTypeImage = 'Image'
 
 // URLs for App Runner
