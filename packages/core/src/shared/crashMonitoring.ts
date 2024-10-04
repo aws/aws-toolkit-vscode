@@ -492,7 +492,11 @@ export class FileSystemState {
         return p
     }
     public async clearState(): Promise<void> {
-        await withFailCtx('clearState', async () => fs.delete(this.stateDirPath, { force: true }))
+        this.deps.devLogger?.debug('crashMonitoring: CLEAR_STATE: Started')
+        await withFailCtx('clearState', async () => {
+            await fs.delete(this.stateDirPath, { force: true, recursive: true })
+            this.deps.devLogger?.debug('crashMonitoring: CLEAR_STATE: Succeeded')
+        })
     }
     public async getAllExts(): Promise<ExtInstanceHeartbeat[]> {
         const res = await withFailCtx('getAllExts', async () => {
