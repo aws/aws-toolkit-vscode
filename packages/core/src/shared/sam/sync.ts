@@ -26,7 +26,7 @@ import { telemetry } from '../telemetry/telemetry'
 import { createCommonButtons } from '../ui/buttons'
 import { ToolkitPromptSettings } from '../settings'
 import { getLogger } from '../logger'
-import { isCloud9 } from '../extensionUtilities'
+import { getSamInitDocUrl, isCloud9 } from '../extensionUtilities'
 import { removeAnsi } from '../utilities/textUtilities'
 import { createExitPrompter } from '../ui/common/exitPrompter'
 import { StackSummary } from 'aws-sdk/clients/cloudformation'
@@ -41,7 +41,7 @@ import { parse } from 'semver'
 import { isAutomation } from '../vscode/env'
 import { getOverriddenParameters } from '../../lambda/config/parameterUtils'
 import { addTelemetryEnvVar } from './cli/samCliInvokerUtils'
-import { samSyncUrl, samInitDocUrl, samUpgradeUrl, credentialHelpUrl } from '../constants'
+import { samSyncUrl, samUpgradeUrl, credentialHelpUrl } from '../constants'
 import { getAwsConsoleUrl } from '../awsConsole'
 import { openUrl } from '../utilities/vsCodeUtils'
 import { showMessageWithUrl, showOnce } from '../utilities/messages'
@@ -212,7 +212,7 @@ function createTemplatePrompter(registry: CloudFormationTemplateRegistry) {
         noItemsFoundItem: {
             label: localize('aws.sam.noWorkspace', 'No SAM template.yaml file(s) found. Select for help'),
             data: undefined,
-            onClick: () => openUrl(samInitDocUrl),
+            onClick: () => openUrl(getSamInitDocUrl()),
         },
     })
 }

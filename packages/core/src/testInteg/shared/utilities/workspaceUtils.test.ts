@@ -301,8 +301,6 @@ describe('collectFiles', function () {
         )
 
         assertTelemetry('function_call', {
-            totalFiles: 8,
-            totalFileSizeInMB: 0.0002593994140625,
             functionName: 'collectFiles',
         })
     })

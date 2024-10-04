@@ -19,12 +19,11 @@ import { CodeWhispererSettings } from '../../codewhisperer/util/codewhispererSet
 import { activate as activateLsp } from './lspClient'
 import { telemetry } from '../../shared/telemetry'
 import { isCloud9 } from '../../shared/extensionUtilities'
-import { globals, ToolkitError } from '../../shared'
+import { fs, globals, ToolkitError } from '../../shared'
 import { AuthUtil } from '../../codewhisperer'
 import { isWeb } from '../../shared/extensionGlobals'
 import { getUserAgent } from '../../shared/telemetry/util'
 import { isAmazonInternalOs } from '../../shared/vscode/env'
-import { fs } from '../../shared/fs/fs'
 
 function getProjectPaths() {
     const workspaceFolders = vscode.workspace.workspaceFolders
