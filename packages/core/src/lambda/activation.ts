@@ -11,10 +11,12 @@ import { downloadLambdaCommand } from './commands/downloadLambda'
 import { tryRemoveFolder } from '../shared/filesystemUtilities'
 import { ExtContext } from '../shared/extensions'
 import { invokeRemoteLambda } from './vue/remoteInvoke/invokeLambda'
-import { registerSamInvokeVueCommand } from './vue/configEditor/samInvokeBackend'
+import { registerSamDebugInvokeVueCommand, registerSamInvokeVueCommand } from './vue/configEditor/samInvokeBackend'
 import { Commands } from '../shared/vscode/commands2'
 import { DefaultLambdaClient } from '../shared/clients/lambdaClient'
 import { copyLambdaUrl } from './commands/copyLambdaUrl'
+import type { DeployedLambdaNode } from '../awsService/appBuilder/explorer/nodes/deployedNode'
+import { ResourceNode } from '../awsService/appBuilder/explorer/nodes/resourceNode'
 
 /**
  * Activates Lambda components.
@@ -27,7 +29,7 @@ export async function activate(context: ExtContext): Promise<void> {
         }),
         Commands.register(
             'aws.invokeLambda',
-            async (node: LambdaFunctionNode) =>
+            async (node: LambdaFunctionNode | DeployedLambdaNode) =>
                 await invokeRemoteLambda(context, { outputChannel: context.outputChannel, functionNode: node })
         ),
         // Capture debug finished events, and delete the temporary directory if it exists
@@ -57,6 +59,11 @@ export async function activate(context: ExtContext): Promise<void> {
             'aws.copyLambdaUrl',
             async (node: LambdaFunctionNode) => await copyLambdaUrl(node, new DefaultLambdaClient(node.regionCode))
         ),
-        registerSamInvokeVueCommand(context)
+
+        registerSamInvokeVueCommand(context),
+
+        Commands.register('aws.launchDebugConfigForm', async (node: ResourceNode) =>
+            registerSamDebugInvokeVueCommand(context, { resource: node })
+        )
     )
 }

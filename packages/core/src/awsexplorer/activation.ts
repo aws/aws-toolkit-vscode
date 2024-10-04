@@ -121,6 +121,7 @@ export async function activate(args: {
             refreshCommands: [refreshAmazonQ, refreshAmazonQRootNode],
         })
     }
+
     const viewNodes: ToolView[] = [
         ...amazonQViewNode,
         ...codecatalystViewNode,
