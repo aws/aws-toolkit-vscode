@@ -4,7 +4,6 @@
  */
 
 import assert from 'assert'
-import { mkdir, remove, writeFile } from 'fs-extra'
 import * as path from 'path'
 import globals from '../../../shared/extensionGlobals'
 import * as vscode from 'vscode'
@@ -17,6 +16,7 @@ import {
 } from '../../../lambda/config/templates'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { makeSampleSamTemplateYaml } from '../../shared/cloudformation/cloudformationTestUtils'
+import { fs } from '../../../shared'
 
 class MockLoadTemplatesConfigContext {
     public readonly fileExists: (path: string) => Thenable<boolean>
@@ -779,12 +779,12 @@ describe('getExistingConfiguration', async function () {
             index: 0,
         }
         tempConfigFolder = path.join(tempFolder, '.aws')
-        await mkdir(tempConfigFolder)
+        await fs.mkdir(tempConfigFolder)
         tempConfigFile = path.join(tempConfigFolder, 'templates.json')
     })
 
     afterEach(async function () {
-        await remove(tempFolder)
+        await fs.delete(tempFolder, { recursive: true })
         const r = await globals.templateRegistry
         r.reset()
     })
@@ -795,15 +795,23 @@ describe('getExistingConfiguration', async function () {
     })
 
     it('returns undefined if the legacy config file is not valid JSON', async function () {
-        await writeFile(tempTemplateFile.fsPath, makeSampleSamTemplateYaml(true, { handler: matchedHandler }), 'utf8')
-        await writeFile(tempConfigFile, makeSampleSamTemplateYaml(true, { handler: matchedHandler }), 'utf8')
+        await fs.writeFile(
+            tempTemplateFile.fsPath,
+            makeSampleSamTemplateYaml(true, { handler: matchedHandler }),
+            'utf8'
+        )
+        await fs.writeFile(tempConfigFile, makeSampleSamTemplateYaml(true, { handler: matchedHandler }), 'utf8')
         await (await globals.templateRegistry).addItem(tempTemplateFile)
         const val = await getExistingConfiguration(fakeWorkspaceFolder, matchedHandler, tempTemplateFile)
         assert.strictEqual(val, undefined)
     })
 
     it('returns data from the legacy config file', async function () {
-        await writeFile(tempTemplateFile.fsPath, makeSampleSamTemplateYaml(true, { handler: matchedHandler }), 'utf8')
+        await fs.writeFile(
+            tempTemplateFile.fsPath,
+            makeSampleSamTemplateYaml(true, { handler: matchedHandler }),
+            'utf8'
+        )
         const configData = {
             templates: {
                 'test.yaml': {
@@ -817,7 +825,7 @@ describe('getExistingConfiguration', async function () {
                 },
             },
         }
-        await writeFile(tempConfigFile, JSON.stringify(configData), 'utf8')
+        await fs.writeFile(tempConfigFile, JSON.stringify(configData), 'utf8')
         await (await globals.templateRegistry).addItem(tempTemplateFile)
         const val = await getExistingConfiguration(fakeWorkspaceFolder, matchedHandler, tempTemplateFile)
         assert.ok(val)
