@@ -136,7 +136,7 @@ export class LspClient {
             return resp
         } catch (e) {
             getLogger().error(`LspClient: query error: ${e}`)
-            return []
+            throw e
         }
     }
 

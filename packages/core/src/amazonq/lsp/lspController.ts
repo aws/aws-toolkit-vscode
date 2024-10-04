@@ -303,6 +303,14 @@ export class LspController {
         return resp
     }
 
+    async queryBM25(query: string, path: string) {
+        try {
+            return await LspClient.instance.queryBM25(query, path)
+        } catch (e) {
+            return []
+        }
+    }
+
     async buildIndex() {
         getLogger().info(`LspController: Starting LSP`)
         const start = performance.now()

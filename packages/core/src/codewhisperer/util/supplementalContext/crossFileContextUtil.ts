@@ -16,7 +16,7 @@ import { getFileDistance } from '../../../shared/filesystemUtilities'
 import { getOpenFilesInWindow } from '../../../shared/utilities/editorUtilities'
 import { getLogger } from '../../../shared/logger/logger'
 import { CodeWhispererSupplementalContext, CodeWhispererSupplementalContextItem } from '../../models/model'
-import { LspClient } from '../../../amazonq'
+import { LspController } from '../../../amazonq'
 
 type CrossFileSupportedLanguage =
     | 'java'
@@ -80,14 +80,14 @@ export async function fetchSupplementalContextForSrcV2(
 ): Promise<Pick<CodeWhispererSupplementalContext, 'supplementalContextItems' | 'strategy'> | undefined> {
     const inputChunkContent = getInputChunk(editor)
 
-    const bm25Response: { content: string; score: number; filePath: string }[] = await LspClient.instance.queryBM25(
+    const bm25Response: { content: string; score: number; filePath: string }[] = await LspController.instance.queryBM25(
         inputChunkContent.content,
         editor.document.uri.fsPath
     )
     getLogger().info(JSON.stringify(bm25Response))
     console.log(bm25Response)
 
-    const supContextItems: CodeWhispererSupplementalContextItem[] = bm25Response
+    const supContextItems: CodeWhispererSupplementalContextItem[] = []
     return {
         supplementalContextItems: [...supContextItems],
         strategy: 'LSP',
