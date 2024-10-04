@@ -15,8 +15,18 @@ for each extension.
 - In `Run & Debug` mode, closing the Debug IDE instance behaves differently depending on how it is closed
     - The regular close button in the Debug IDE instance results in a graceful shutdown
     - The red square in the root IDE instance to stop the debugging session results on a non-graceful shutdown, meaning `deactivate()` is not run.
+- `Reload Window` triggers `deactivate()`
 
 Sources:
 
 -   [[1]](https://github.com/Microsoft/vscode/issues/47881#issuecomment-381910587)
 -   [[2]](https://github.com/microsoft/vscode/issues/122825#issuecomment-814218149)
+
+## State (`globalState`, `Memento`)
+
+TODO:
+- How it behaves between remote (ssh) and local
+- How it is not completely reliable. Reads/writes have no guarantee to work (though we are fine in most cases)
+- How it can break as observed with crash monitoring work. At a certain point writes were seemingly succeeding, but did not actually propagate to all IDE instances.
+
+
