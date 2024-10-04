@@ -5,19 +5,19 @@
 
 import assert from 'assert'
 import * as vscode from 'vscode'
-import * as fs from 'fs-extra'
 import * as os from 'os'
 import * as path from 'path'
 
 import * as testutil from '../../testUtil'
 import { findTypescriptCompiler, getVscodeCliPath } from '../../../shared/utilities/pathFind'
+import { fs } from '../../../shared'
 
 describe('pathFind', function () {
     it('findTypescriptCompiler()', async function () {
         const iswin = process.platform === 'win32'
         const workspace = vscode.workspace.workspaceFolders![0]
         const tscNodemodules = path.join(workspace.uri.fsPath, `foo/bar/node_modules/.bin/tsc${iswin ? '.cmd' : ''}`)
-        fs.removeSync(tscNodemodules)
+        await fs.delete(tscNodemodules, { force: true })
 
         // The test workspace normally doesn't have node_modules so this will
         // be undefined or it will find the globally-installed "tsc".
@@ -30,7 +30,7 @@ describe('pathFind', function () {
         const result = await findTypescriptCompiler()
         assert(result !== undefined)
         testutil.assertEqualPaths(result, tscNodemodules)
-        fs.removeSync(tscNodemodules)
+        await fs.delete(tscNodemodules)
     })
 
     it('getVscodeCliPath()', async function () {

@@ -4,10 +4,8 @@
  */
 
 import assert from 'assert'
-import { writeFile, mkdirp, remove } from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import * as fs from 'fs'
 import {
     collectFiles,
     collectFilesForIndex,
@@ -22,6 +20,7 @@ import { assertTelemetry, createTestWorkspace, createTestWorkspaceFolder, toFile
 import sinon from 'sinon'
 import { performanceTest } from '../../../shared/performance/performance'
 import { randomUUID } from '../../../shared/crypto'
+import { fs } from '../../../shared'
 
 describe('findParentProjectFile', async function () {
     const workspaceDir = getTestWorkspaceFolder()
@@ -75,14 +74,14 @@ describe('findParentProjectFile', async function () {
     ]
 
     before(async function () {
-        await mkdirp(path.join(workspaceDir, 'someproject', 'src'))
-        await mkdirp(path.join(workspaceDir, 'someotherproject'))
+        await fs.mkdir(path.join(workspaceDir, 'someproject', 'src'))
+        await fs.mkdir(path.join(workspaceDir, 'someotherproject'))
         globalRegistry = globals.codelensRootRegistry
     })
 
     after(async function () {
-        await remove(path.join(workspaceDir, 'someproject'))
-        await remove(path.join(workspaceDir, 'someotherproject'))
+        await fs.delete(path.join(workspaceDir, 'someproject'), { recursive: true })
+        await fs.delete(path.join(workspaceDir, 'someotherproject'), { recursive: true })
         globals.codelensRootRegistry = globalRegistry
     })
 
@@ -92,7 +91,7 @@ describe('findParentProjectFile', async function () {
 
     afterEach(async function () {
         for (const file of filesToDelete) {
-            await remove(file.fsPath)
+            await fs.delete(file.fsPath)
         }
         filesToDelete = []
         globals.codelensRootRegistry.dispose()
@@ -102,7 +101,7 @@ describe('findParentProjectFile', async function () {
         it(test.scenario, async () => {
             filesToDelete = test.filesToUse
             for (const file of test.filesToUse) {
-                await writeFile(file.fsPath, '')
+                await fs.writeFile(file.fsPath, '')
                 // Add it to the registry. The registry is async and we are not
                 // testing the registry in this test, so manually use it
                 await globals.codelensRootRegistry.addItem(file)
@@ -446,7 +445,7 @@ describe('getWorkspaceFoldersByPrefixes', function () {
             subDir: 'test/app',
         })
         const newRoot = path.join(ws1.uri.fsPath, '../app_cdk')
-        await fs.promises.mkdir(newRoot, { recursive: true })
+        await fs.mkdir(newRoot)
         const ws2: vscode.WorkspaceFolder = {
             index: 0,
             uri: vscode.Uri.file(newRoot),
