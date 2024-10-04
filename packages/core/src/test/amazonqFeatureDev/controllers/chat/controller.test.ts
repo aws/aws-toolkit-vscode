@@ -13,10 +13,14 @@ import { CurrentWsFolders, FollowUpTypes, NewFileInfo, DeletedFileInfo } from '.
 import { Session } from '../../../../amazonqFeatureDev/session/session'
 import { Prompter } from '../../../../shared/ui/prompter'
 import { assertTelemetry, toFile } from '../../../testUtil'
-import { SelectedFolderNotInWorkspaceFolderError } from '../../../../amazonqFeatureDev/errors'
+import {
+    NoChangeRequiredException,
+    SelectedFolderNotInWorkspaceFolderError,
+} from '../../../../amazonqFeatureDev/errors'
 import { CodeGenState, PrepareCodeGenState } from '../../../../amazonqFeatureDev/session/sessionState'
 import { FeatureDevClient } from '../../../../amazonqFeatureDev/client/featureDev'
 import { createAmazonQUri } from '../../../../amazonq/commons/diff'
+import { AuthUtil } from '../../../../codewhisperer'
 
 let mockGetCodeGeneration: sinon.SinonStub
 describe('Controller', () => {
@@ -68,6 +72,12 @@ describe('Controller', () => {
     beforeEach(async () => {
         controllerSetup = await createController()
         session = await createSession({ messenger: controllerSetup.messenger, conversationID, tabID, uploadID })
+
+        sinon.stub(AuthUtil.instance, 'getChatAuthState').resolves({
+            codewhispererCore: 'connected',
+            codewhispererChat: 'connected',
+            amazonQ: 'connected',
+        })
     })
 
     afterEach(() => {
@@ -354,6 +364,43 @@ describe('Controller', () => {
                 amazonqNumberOfFilesAccepted: 2,
                 enabled: true,
                 result: 'Succeeded',
+            })
+        })
+    })
+
+    describe('processUserChatMessage', function () {
+        async function fireChatMessage() {
+            const getSessionStub = sinon.stub(controllerSetup.sessionStorage, 'getSession').resolves(session)
+
+            controllerSetup.emitters.processHumanChatMessage.fire({
+                tabID,
+                conversationID,
+                message: 'test message',
+            })
+
+            // Wait until the controller has time to process the event
+            await waitUntil(() => {
+                return Promise.resolve(getSessionStub.callCount > 0)
+            }, {})
+        }
+
+        describe('processErrorChatMessage', function () {
+            it('should handle NoChangeRequiredException', async function () {
+                const noChangeRequiredException = new NoChangeRequiredException()
+                sinon.stub(session, 'preloader').throws(noChangeRequiredException)
+                const sendAnswerSpy = sinon.stub(controllerSetup.messenger, 'sendAnswer')
+
+                await fireChatMessage()
+
+                assert.strictEqual(
+                    sendAnswerSpy.calledWith({
+                        type: 'answer',
+                        tabID,
+                        message: noChangeRequiredException.message,
+                        canBeVoted: true,
+                    }),
+                    true
+                )
             })
         })
     })
