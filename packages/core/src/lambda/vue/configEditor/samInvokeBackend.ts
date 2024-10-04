@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as fs from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
@@ -36,6 +35,7 @@ import globals from '../../../shared/extensionGlobals'
 import { VueWebview } from '../../../webviews/main'
 import { Commands } from '../../../shared/vscode/commands2'
 import { telemetry } from '../../../shared/telemetry/telemetry'
+import { fs } from '../../../shared'
 import { ToolkitError } from '../../../shared'
 import { ResourceNode } from '../../../awsService/appBuilder/explorer/nodes/resourceNode'
 
@@ -257,7 +257,7 @@ export class SamInvokeWebview extends VueWebview {
         }
 
         try {
-            const fileContent = fs.readFileSync(fileLocations[0].fsPath, { encoding: 'utf8' })
+            const fileContent = await fs.readFile(fileLocations[0].fsPath)
             return {
                 sample: fileContent,
                 selectedFilePath: fileLocations[0].fsPath,
@@ -279,7 +279,7 @@ export class SamInvokeWebview extends VueWebview {
      * @param config Config to save
      */
     public async saveLaunchConfig(config: AwsSamDebuggerConfiguration): Promise<void> {
-        const uri = getUriFromLaunchConfig(config)
+        const uri = await getUriFromLaunchConfig(config)
         if (!uri) {
             // TODO Localize
             void vscode.window.showErrorMessage(
@@ -349,7 +349,7 @@ export class SamInvokeWebview extends VueWebview {
             resolveWorkspaceFolderVariable(undefined, config),
             'Editor-Created Debug Config'
         )
-        const targetUri = getUriFromLaunchConfig(finalConfig)
+        const targetUri = await getUriFromLaunchConfig(finalConfig)
         const folder = targetUri ? vscode.workspace.getWorkspaceFolder(targetUri) : undefined
 
         // Cloud9 currently can't resolve the `aws-sam` debug config provider.
@@ -405,7 +405,7 @@ export async function registerSamDebugInvokeVueCommand(context: ExtContext, para
     })
 }
 
-function getUriFromLaunchConfig(config: AwsSamDebuggerConfiguration): vscode.Uri | undefined {
+async function getUriFromLaunchConfig(config: AwsSamDebuggerConfiguration): Promise<vscode.Uri | undefined> {
     let targetPath: string
     if (isTemplateTargetProperties(config.invokeTarget)) {
         targetPath = config.invokeTarget.templatePath
@@ -426,7 +426,7 @@ function getUriFromLaunchConfig(config: AwsSamDebuggerConfiguration): vscode.Uri
     const workspaceFolders = vscode.workspace.workspaceFolders || []
     for (const workspaceFolder of workspaceFolders) {
         const absolutePath = tryGetAbsolutePath(workspaceFolder, targetPath)
-        if (fs.pathExistsSync(absolutePath)) {
+        if (await fs.exists(absolutePath)) {
             return vscode.Uri.file(absolutePath)
         }
     }

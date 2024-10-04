@@ -9,7 +9,7 @@ import { fs as fs2 } from '../../../shared'
 import * as os from 'os'
 import * as path from 'path'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../../shared/filesystemUtilities'
-import { ChildProcess, eof, getPids } from '../../../shared/utilities/processUtils'
+import { ChildProcess, eof } from '../../../shared/utilities/processUtils'
 import { sleep } from '../../../shared/utilities/timeoutUtils'
 import { Timeout, waitUntil } from '../../../shared/utilities/timeoutUtils'
 
@@ -347,17 +347,4 @@ describe('ChildProcess', async function () {
         echo bye`
         await writeShellFile(filename, file)
     }
-})
-
-describe('getPids', function () {
-    it('returns pids sorted in ascending order', async function () {
-        const pids = await getPids()
-        assert.ok(pids.length > 0)
-        assert.deepStrictEqual(
-            pids.some((pid) => typeof pid !== 'number'),
-            false
-        )
-        const sortedPids = [...pids].sort((a, b) => a - b)
-        assert.deepStrictEqual(pids, sortedPids)
-    })
 })

@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { debugNewSamAppUrl } from '../../../../shared/constants'
+import { debugNewSamAppDocUrl } from '../../../../shared/constants'
 import { telemetry } from '../../../../shared/telemetry/telemetry'
 import { ResourceTreeDataProvider, TreeNode } from '../../../../shared/treeview/resourceTreeDataProvider'
 import { createPlaceholderItem } from '../../../../shared/treeview/utils'
@@ -70,7 +70,7 @@ export class AppBuilderRootNode implements TreeNode {
 
     constructor() {
         Commands.register('aws.appBuilder.viewDocs', () => {
-            void openUrl(vscode.Uri.parse(debugNewSamAppUrl))
+            void openUrl(debugNewSamAppDocUrl.toolkit)
             telemetry.aws_help.emit({ name: 'appBuilder' })
         })
         this._refreshAppBuilderExplorer = (provider?: ResourceTreeDataProvider) =>

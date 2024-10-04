@@ -131,7 +131,7 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
     registerCommands(context)
 
     // Handle Amazon Q Extension un-installation.
-    setupUninstallHandler(VSCODE_EXTENSION_ID.amazonq, context)
+    setupUninstallHandler(VSCODE_EXTENSION_ID.amazonq, context.extension.packageJSON.version, context)
 
     // Hide the Amazon Q tree in toolkit explorer
     await setContext('aws.toolkit.amazonq.dismissed', true)
