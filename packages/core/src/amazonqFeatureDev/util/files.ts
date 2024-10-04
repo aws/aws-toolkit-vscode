@@ -14,7 +14,7 @@ import { maxFileSizeBytes } from '../limits'
 import { createHash } from 'crypto'
 import { CurrentWsFolders } from '../types'
 import { ToolkitError } from '../../shared/errors'
-import { AmazonqCreateUpload, Metric, telemetry as amznTelemetry } from '../../shared/telemetry/telemetry'
+import { AmazonqCreateUpload, Span, telemetry as amznTelemetry } from '../../shared/telemetry/telemetry'
 import { TelemetryHelper } from './telemetryHelper'
 import { maxRepoSizeBytes } from '../constants'
 import { isCodeFile } from '../../shared/filetypes'
@@ -28,7 +28,7 @@ export async function prepareRepoData(
     repoRootPaths: string[],
     workspaceFolders: CurrentWsFolders,
     telemetry: TelemetryHelper,
-    span: Metric<AmazonqCreateUpload>
+    span: Span<AmazonqCreateUpload>
 ) {
     try {
         const files = await collectFiles(repoRootPaths, workspaceFolders, true, maxRepoSizeBytes)
