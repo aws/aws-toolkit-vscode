@@ -49,7 +49,7 @@ describe('CodeDownloader', function () {
 
     afterEach(async function () {
         sandbox.restore()
-        await fs.delete(tempFolder, { force: true })
+        await fs.delete(tempFolder, { recursive: true })
     })
     const testSchemaName = 'testSchema'
     const testRegistryName = 'testRegistry'
@@ -129,7 +129,7 @@ describe('CodeGenerator', function () {
 
     afterEach(async function () {
         sandbox.restore()
-        await fs.delete(tempFolder, { force: true })
+        await fs.delete(tempFolder, { recursive: true })
     })
     const testSchemaName = 'testSchema'
     const testRegistryName = 'testRegistry'
@@ -202,7 +202,7 @@ describe('CodeGeneratorStatusPoller', function () {
 
     afterEach(async function () {
         sandbox.restore()
-        await fs.delete(tempFolder, { force: true })
+        await fs.delete(tempFolder, { recursive: true })
     })
     const testSchemaName = 'testSchema'
     const testRegistryName = 'testRegistry'
