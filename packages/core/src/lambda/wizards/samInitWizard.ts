@@ -10,7 +10,7 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import { SchemasDataProvider } from '../../eventSchemas/providers/schemasDataProvider'
 import { DefaultSchemaClient } from '../../shared/clients/schemaClient'
-import { eventBridgeSchemasDocUrl, samInitDocUrl } from '../../shared/constants'
+import { eventBridgeSchemasDocUrl } from '../../shared/constants'
 import {
     Architecture,
     createRuntimeQuickPick,
@@ -37,6 +37,7 @@ import { Region } from '../../shared/regions/endpoints'
 import { createCommonButtons } from '../../shared/ui/buttons'
 import { createExitPrompter } from '../../shared/ui/common/exitPrompter'
 import { getNonexistentFilename } from '../../shared/filesystemUtilities'
+import { getSamInitDocUrl } from '../../shared/extensionUtilities'
 
 const localize = nls.loadMessageBundle()
 
@@ -55,7 +56,7 @@ export interface CreateNewSamAppWizardForm {
 function createRuntimePrompter(samCliVersion: string): QuickPickPrompter<RuntimeAndPackage> {
     return createRuntimeQuickPick({
         showImageRuntimes: semver.gte(samCliVersion, minSamCliVersionForImageSupport),
-        buttons: createCommonButtons(samInitDocUrl),
+        buttons: createCommonButtons(getSamInitDocUrl()),
     })
 }
 
@@ -73,7 +74,7 @@ function createSamTemplatePrompter(
 
     return createQuickPick(items, {
         title: localize('AWS.samcli.initWizard.template.prompt', 'Select a SAM Application Template'),
-        buttons: createCommonButtons(samInitDocUrl),
+        buttons: createCommonButtons(getSamInitDocUrl()),
     })
 }
 
@@ -91,7 +92,7 @@ function createDependencyPrompter(currRuntime: Runtime): QuickPickPrompter<Depen
 
     return createLabelQuickPick(items, {
         title: localize('AWS.samcli.initWizard.dependencyManager.prompt', 'Select a Dependency Manager'),
-        buttons: createCommonButtons(samInitDocUrl),
+        buttons: createCommonButtons(getSamInitDocUrl()),
     })
 }
 
@@ -117,7 +118,7 @@ function createRegistryPrompter(region: string, credentials?: AWS.Credentials): 
 
     return createLabelQuickPick(items, {
         title: localize('AWS.samcli.initWizard.schemas.registry.prompt', 'Select a Registry'),
-        buttons: createCommonButtons(samInitDocUrl),
+        buttons: createCommonButtons(getSamInitDocUrl()),
     })
 }
 
@@ -179,7 +180,7 @@ function createNamePrompter(defaultValue: string): InputBoxPrompter {
     return createInputBox({
         value: defaultValue,
         title: localize('AWS.samcli.initWizard.name.prompt', 'Enter a name for your new application'),
-        buttons: createCommonButtons(samInitDocUrl),
+        buttons: createCommonButtons(getSamInitDocUrl()),
         validateInput: validateName,
     })
 }
@@ -187,7 +188,7 @@ function createNamePrompter(defaultValue: string): InputBoxPrompter {
 function createArchitecturePrompter(): QuickPickPrompter<Architecture> {
     return createLabelQuickPick<Architecture>([{ label: 'x86_64' }, { label: 'arm64' }], {
         title: localize('AWS.samcli.initWizard.architecture.prompt', 'Select an Architecture'),
-        buttons: createCommonButtons(samInitDocUrl),
+        buttons: createCommonButtons(getSamInitDocUrl()),
     })
 }
 
@@ -266,7 +267,7 @@ export class CreateNewSamAppWizard extends Wizard<CreateNewSamAppWizardForm> {
 
         this.form.location.bindPrompter(() =>
             createFolderPrompt(vscode.workspace.workspaceFolders ?? [], {
-                buttons: createCommonButtons(samInitDocUrl),
+                buttons: createCommonButtons(getSamInitDocUrl()),
                 title: localize('AWS.samInit.location.title', 'Select the folder for your new SAM application'),
                 browseFolderDetail: localize(
                     'AWS.samInit.location.detail',

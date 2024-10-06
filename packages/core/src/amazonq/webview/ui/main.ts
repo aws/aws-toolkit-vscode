@@ -2,7 +2,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { Connector } from './connector'
+import { Connector, TracedChatItem } from './connector'
 import { ChatItem, ChatItemType, MynahIcons, MynahUI, MynahUIDataModel, NotificationType } from '@aws/mynah-ui'
 import { ChatPrompt } from '@aws/mynah-ui/dist/static'
 import { TabsStorage, TabType } from './storages/tabsStorage'
@@ -189,7 +189,7 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
                 } as ChatItem)
             }
         },
-        onChatAnswerReceived: (tabID: string, item: ChatItem) => {
+        onChatAnswerReceived: (tabID: string, item: TracedChatItem) => {
             if (item.type === ChatItemType.ANSWER_PART || item.type === ChatItemType.CODE_RESULT) {
                 mynahUI.updateLastChatAnswer(tabID, {
                     ...(item.messageId !== undefined ? { messageId: item.messageId } : {}),
@@ -234,6 +234,20 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
                     promptInputDisabledState: tabsStorage.isTabDead(tabID),
                 })
                 tabsStorage.updateTabStatus(tabID, 'free')
+
+                if (item.traceId) {
+                    /**
+                     * We've received an answer for a traceId and this message has
+                     * completed its round trip. Send that information back to
+                     * VSCode so we can emit a round trip event
+                     **/
+                    ideApi.postMessage({
+                        type: 'stopChatMessageTelemetry',
+                        tabID,
+                        traceId: item.traceId,
+                        tabType: tabsStorage.getTab(tabID)?.type,
+                    })
+                }
             }
         },
         onMessageReceived: (tabID: string, messageData: MynahUIDataModel) => {
@@ -362,6 +376,7 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
         },
         onTabRemove: connector.onTabRemove,
         onTabChange: connector.onTabChange,
+        // TODO: update mynah-ui this type doesn't seem correct https://github.com/aws/mynah-ui/blob/3777a39eb534a91fd6b99d6cf421ce78ee5c7526/src/main.ts#L372
         onChatPrompt: (tabID: string, prompt: ChatPrompt, eventId: string | undefined) => {
             if ((prompt.prompt ?? '') === '' && (prompt.command ?? '') === '') {
                 return
@@ -374,6 +389,7 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
             } else if (tabsStorage.getTab(tabID)?.type === 'gumby') {
                 connector.requestAnswer(tabID, {
                     chatMessage: prompt.prompt ?? '',
+                    traceId: eventId as string,
                 })
                 return
             }
@@ -383,7 +399,20 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
                 return
             }
 
-            textMessageHandler.handle(prompt, tabID)
+            /**
+             * When a user presses "enter" send an event that indicates
+             * we should start tracking the round trip time for this message
+             **/
+            ideApi.postMessage({
+                type: 'startChatMessageTelemetry',
+                trigger: 'onChatPrompt',
+                tabID,
+                traceId: eventId,
+                tabType: tabsStorage.getTab(tabID)?.type,
+                startTime: Date.now(),
+            })
+
+            textMessageHandler.handle(prompt, tabID, eventId as string)
         },
         onVote: connector.onChatItemVoted,
         onInBodyButtonClicked: (tabId, messageId, action, eventId) => {

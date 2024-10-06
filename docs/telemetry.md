@@ -260,3 +260,71 @@ outerB()
         return telemetry.my_Metric.run(() => b(), { functionId: { name: 'aButMoreUnique' } })
     }
     ```
+
+## Tracing Telemetry Events
+
+All telemetry events include a traceId in addition to other attributes. Traceids allow for improved tracking and correlation of related events across a single operation or user flow.
+
+### What is a traceId?
+
+A traceId is a unique identifier that is generated for the top-level telemetry event in a flow and then propagated to all subsequent related events. This allows us to group and analyze all events associated with a particular operation.
+
+### How it works
+
+1. When a top-level telemetry event is created (e.g., `vscode_executeCommand`), a new traceId is generated.
+2. This traceId is then attached to all subsequent related telemetry events that occur as part of the same operation or flow.
+3. The traceId remains consistent for all events within the same flow
+
+### Example
+
+Consider a flow where `vscode_executeCommand` triggers `amazonq_enterFocusChat` and `amazonq_openChat`. The resulting telemetry events would look like this:
+
+```
+vscode_executeCommand:
+traceId: 'aaaaa-aaaaa-aaaaa-aaaaa-aaaaa'
+
+amazonq_enterFocusChat
+traceId: 'aaaaa-aaaaa-aaaaa-aaaaa-aaaaa'
+
+amazonq_openChat
+traceId: 'aaaaa-aaaaa-aaaaa-aaaaa-aaaaa'
+```
+
+allowing us to look up `traceId=aaaaa-aaaaa-aaaaa-aaaaa-aaaaa` in our telemetry instance and find all the related events.
+
+For more information visit the OpenTelemetry documentation on traces: https://opentelemetry.io/docs/concepts/signals/traces/
+
+### Manual Trace ID Instrumentation
+
+In certain scenarios you may need to manually instrument disjoint flows to track how a `traceId` propagates through them. e.g.
+
+1. Measuring the time it takes for a message to travel from Amazon Q chat, through VS Code, and back to the customer.
+2. Determining the duration for Amazon Q inline to display a message to the user.
+
+In these cases, where there isn't a direct hierarchy of function calls, manual instrumentation of the `traceId` is necessary.
+
+#### Implementation Options
+
+#### 1. When not currently running in a span
+
+If you're not within an active span and you know the `traceId` you want to use:
+
+```javascript
+telemetry.withTraceId(() => {
+    // Code to be executed within this trace
+}, 'myTraceId')
+```
+
+This method wraps the provided function with the specified traceId
+
+#### 2. When currently running in a span
+
+If you're already executing within a span (e.g., vscode_executeCommand) and you know the traceId you want to use:
+
+```javascript
+telemetry.record({
+    traceId: 'myTraceId',
+})
+```
+
+This approach records the traceId for the current span and all future spans within the same execution context.

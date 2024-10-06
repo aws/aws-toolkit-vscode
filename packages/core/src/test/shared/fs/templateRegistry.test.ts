@@ -6,8 +6,6 @@
 import assert from 'assert'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import * as fs from 'fs-extra'
-
 import {
     CloudFormationTemplateRegistry,
     getResourcesForHandler,
@@ -18,6 +16,7 @@ import { badYaml, makeSampleSamTemplateYaml, strToYamlFile } from '../cloudforma
 import { assertEqualPaths, toFile } from '../../testUtil'
 import * as CloudFormation from '../../../shared/cloudformation/cloudformation'
 import { WatchedItem } from '../../../shared/fs/watchedFiles'
+import { fs } from '../../../shared'
 
 // TODO almost all of these tests should be moved to test WatchedFiles instead
 describe('CloudFormation Template Registry', async function () {
@@ -33,7 +32,7 @@ describe('CloudFormation Template Registry', async function () {
         })
 
         afterEach(async function () {
-            await fs.remove(tempFolder)
+            await fs.delete(tempFolder, { recursive: true })
         })
 
         describe('addItem', async function () {
@@ -349,7 +348,7 @@ describe('CloudFormation Template Registry', async function () {
         })
 
         afterEach(async function () {
-            await fs.remove(tempFolder)
+            await fs.delete(tempFolder, { recursive: true })
         })
 
         const resource: {
