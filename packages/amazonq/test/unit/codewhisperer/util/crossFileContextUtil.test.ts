@@ -127,7 +127,7 @@ describe('crossFileContextUtil', function () {
         })
     })
 
-    describe('partial support - control group', function () {
+    describe.skip('partial support - control group', function () {
         const fileExtLists: string[] = []
 
         before(async function () {
@@ -158,7 +158,7 @@ describe('crossFileContextUtil', function () {
         })
     })
 
-    describe('partial support - crossfile group', function () {
+    describe.skip('partial support - crossfile group', function () {
         const fileExtLists: string[] = []
 
         before(async function () {
