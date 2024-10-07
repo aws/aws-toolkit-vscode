@@ -15,6 +15,7 @@ import type * as os from 'os'
 import { CodeWhispererStreamingServiceException } from '@amzn/codewhisperer-streaming'
 import { driveLetterRegex } from './utilities/pathUtils'
 import { getLogger } from './logger/logger'
+import { crashMonitoringDirNames } from './constants'
 
 let _username = 'unknown-user'
 let _isAutomation = false
@@ -376,6 +377,12 @@ export function scrubNames(s: string, username?: string) {
         'Users',
         'users',
         'home',
+        'tmp',
+        'aws-toolkit-vscode',
+        'globalStorage', // from vscode globalStorageUri
+        crashMonitoringDirNames.root,
+        crashMonitoringDirNames.running,
+        crashMonitoringDirNames.shutdown,
     ])
 
     if (username && username.length > 2) {

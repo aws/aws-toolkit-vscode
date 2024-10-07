@@ -6,6 +6,11 @@
             "description": "The time it takes to generate approach response"
         },
         {
+            "name": "proxiedSessionId",
+            "type": "string",
+            "description": "The sessionId of the extension instance that this instance is reporting on behalf of."
+        },
+        {
             "name": "documentFormat",
             "type": "string",
             "allowedValues": ["JSON, YAML"],
@@ -291,6 +296,11 @@
             "name": "heapTotal",
             "type": "int",
             "description": "Memory heap usage in MB"
+        },
+        {
+            "name": "className",
+            "type": "string",
+            "description": "The name of the class"
         },
         {
             "name": "functionName",
@@ -1166,6 +1176,10 @@
                 {
                     "type": "functionName",
                     "required": true
+                },
+                {
+                    "type": "className",
+                    "required": false
                 }
             ],
             "passive": true
@@ -1223,7 +1237,16 @@
                     "type": "amazonqMessageDisplayedMs"
                 },
                 {
-                    "type": "source",
+                    "type": "source"
+                }
+            ]
+        },
+        {
+            "name": "session_end",
+            "description": "Called when stopping the IDE on a best effort basis",
+            "metadata": [
+                {
+                    "type": "proxiedSessionId",
                     "required": false
                 }
             ]

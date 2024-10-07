@@ -59,7 +59,7 @@ import { ExtensionUse } from './auth/utils'
 import { ExtStartUpSources } from './shared/telemetry'
 import { activate as activateThreatComposerEditor } from './threatComposer/activation'
 import { isSsoConnection, hasScopes } from './auth/connection'
-import { setContext } from './shared'
+import { CrashMonitoring, setContext } from './shared'
 
 let localize: nls.LocalizeFunc
 
@@ -77,6 +77,8 @@ export async function activate(context: vscode.ExtensionContext) {
     try {
         // IMPORTANT: If you are doing setup that should also work in web mode (browser), it should be done in the function below
         const extContext = await activateCommon(context, contextPrefix, false)
+
+        await (await CrashMonitoring.instance()).start()
 
         initializeCredentialsProviderManager()
 
@@ -251,7 +253,8 @@ export async function activate(context: vscode.ExtensionContext) {
 }
 
 export async function deactivate() {
-    await deactivateCommon()
+    // Run concurrently to speed up execution. stop() does not throw so it is safe
+    await Promise.all([await (await CrashMonitoring.instance()).stop(), deactivateCommon()])
     await globals.resourceManager.dispose()
 }
 
