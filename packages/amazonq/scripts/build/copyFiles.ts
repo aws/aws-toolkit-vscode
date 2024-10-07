@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+/* eslint-disable no-restricted-imports */
 import * as fs from 'fs-extra'
 import * as path from 'path'
 
@@ -26,12 +27,16 @@ interface CopyTask {
 }
 
 const tasks: CopyTask[] = [
-    ...['LICENSE', 'NOTICE'].map(f => {
+    ...['LICENSE', 'NOTICE'].map((f) => {
         return { target: path.join('../../', f), destination: path.join(projectRoot, f) }
     }),
 
     { target: path.join('../core', 'resources'), destination: path.join('..', 'resources') },
-    { target: path.join('../core', 'package.nls.json'), destination: path.join('..', 'package.nls.json') },
+    {
+        target: path.join('../core', 'package.nls.json'),
+        destination: path.join('..', 'package.nls.json'),
+    },
+    { target: 'test/unit/amazonqGumby/resources' },
 
     // Vue
     {

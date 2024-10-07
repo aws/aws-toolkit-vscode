@@ -11,6 +11,8 @@ import { subscribeOnce } from '../../shared/utilities/vsCodeUtils'
 import { Container } from '../service/serviceContainer'
 import { RecommendationHandler } from '../service/recommendationHandler'
 import { cancellableDebounce } from '../../shared/utilities/functionUtils'
+import { telemetry } from '../../shared/telemetry'
+import { TelemetryHelper } from '../util/telemetryHelper'
 
 export class ActiveStateController implements vscode.Disposable {
     private readonly _disposable: vscode.Disposable
@@ -32,19 +34,21 @@ export class ActiveStateController implements vscode.Disposable {
 
     constructor(private readonly container: Container) {
         this._disposable = vscode.Disposable.from(
-            RecommendationService.instance.suggestionActionEvent(async e => {
-                await this.onSuggestionActionEvent(e)
+            RecommendationService.instance.suggestionActionEvent(async (e) => {
+                await telemetry.withTraceId(async () => {
+                    await this.onSuggestionActionEvent(e)
+                }, TelemetryHelper.instance.traceId)
             }),
-            RecommendationHandler.instance.onDidReceiveRecommendation(async _ => {
+            RecommendationHandler.instance.onDidReceiveRecommendation(async (_) => {
                 await this.onDidReceiveRecommendation()
             }),
-            this.container.lineTracker.onDidChangeActiveLines(async e => {
+            this.container.lineTracker.onDidChangeActiveLines(async (e) => {
                 await this.onActiveLinesChanged(e)
             }),
-            subscribeOnce(this.container.lineTracker.onReady)(async _ => {
+            subscribeOnce(this.container.lineTracker.onReady)(async (_) => {
                 await this.onReady()
             }),
-            this.container.auth.auth.onDidChangeConnectionState(async e => {
+            this.container.auth.auth.onDidChangeConnectionState(async (e) => {
                 if (e.state !== 'authenticating') {
                     await this._refresh(vscode.window.activeTextEditor)
                 }

@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as child_process from 'child_process'
+/* eslint-disable no-restricted-imports */
+import * as proc from 'child_process'
 import * as fs from 'fs-extra'
 import * as path from 'path'
 
@@ -21,7 +22,7 @@ interface ServiceClientDefinition {
 async function generateServiceClients(serviceClientDefinitions: ServiceClientDefinition[]): Promise<void> {
     const tempJsSdkPath = path.join(repoRoot, 'node_modules', '.zzz-awssdk2')
     console.log(`Temp JS SDK Repo location: ${tempJsSdkPath}`)
-    console.log('Service Clients to Generate: ', serviceClientDefinitions.map(x => x.serviceName).join(', '))
+    console.log('Service Clients to Generate: ', serviceClientDefinitions.map((x) => x.serviceName).join(', '))
 
     await cloneJsSdk(tempJsSdkPath)
     await insertServiceClientsIntoJsSdk(tempJsSdkPath, serviceClientDefinitions)
@@ -48,7 +49,7 @@ async function cloneJsSdk(dir: string): Promise<void> {
         }
         const tag = `v${sdkversion}`
 
-        const gitHead = child_process.spawnSync('git', ['-C', dir, 'rev-parse', 'HEAD'])
+        const gitHead = proc.spawnSync('git', ['-C', dir, 'rev-parse', 'HEAD'])
 
         const alreadyCloned = gitHead.status !== undefined && gitHead.status === 0
         const msg = `${alreadyCloned ? 'Updating' : 'Cloning'} AWS JS SDK...
@@ -75,7 +76,7 @@ async function cloneJsSdk(dir: string): Promise<void> {
                   dir,
               ]
 
-        const gitCmd = child_process.execFile('git', gitArgs, { encoding: 'utf8' })
+        const gitCmd = proc.execFile('git', gitArgs, { encoding: 'utf8' })
 
         gitCmd.stderr?.on('data', (data: any) => {
             console.log(data)
@@ -84,7 +85,7 @@ async function cloneJsSdk(dir: string): Promise<void> {
             gitCmd.stdout?.removeAllListeners()
 
             // Only needed for the "update" case, but harmless for "clone".
-            const gitCheckout = child_process.spawnSync('git', [
+            const gitCheckout = proc.spawnSync('git', [
                 '-c',
                 'advice.detachedHead=false',
                 '-C',
@@ -106,7 +107,7 @@ async function insertServiceClientsIntoJsSdk(
     jsSdkPath: string,
     serviceClientDefinitions: ServiceClientDefinition[]
 ): Promise<void> {
-    serviceClientDefinitions.forEach(serviceClientDefinition => {
+    serviceClientDefinitions.forEach((serviceClientDefinition) => {
         const apiVersion = getApiVersion(serviceClientDefinition.serviceJsonPath)
 
         // Copy the Service Json into the JS SDK for generation
@@ -121,7 +122,7 @@ async function insertServiceClientsIntoJsSdk(
     const apiMetadataPath = path.join(jsSdkPath, 'apis', 'metadata.json')
     await patchServicesIntoApiMetadata(
         apiMetadataPath,
-        serviceClientDefinitions.map(x => x.serviceName)
+        serviceClientDefinitions.map((x) => x.serviceName)
     )
 }
 
@@ -151,7 +152,7 @@ async function patchServicesIntoApiMetadata(apiMetadataPath: string, serviceName
     const apiMetadataJson = fs.readFileSync(apiMetadataPath).toString()
     const apiMetadata = JSON.parse(apiMetadataJson) as ApiMetadata
 
-    serviceNames.forEach(serviceName => {
+    serviceNames.forEach((serviceName) => {
         apiMetadata[serviceName.toLowerCase()] = { name: serviceName }
     })
 
@@ -164,7 +165,7 @@ async function patchServicesIntoApiMetadata(apiMetadataPath: string, serviceName
 async function runTypingsGenerator(repoPath: string): Promise<void> {
     console.log('Generating service client typings...')
 
-    const stdout = child_process.execFileSync('node', ['scripts/typings-generator.js'], {
+    const stdout = proc.execFileSync('node', ['scripts/typings-generator.js'], {
         encoding: 'utf8',
         cwd: repoPath,
     })

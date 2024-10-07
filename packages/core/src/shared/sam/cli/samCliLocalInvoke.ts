@@ -3,12 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as child_process from 'child_process'
+import * as proc from 'child_process'
 import { pushIf } from '../../utilities/collectionUtils'
 import * as nls from 'vscode-nls'
 import { fileExists } from '../../filesystemUtilities'
-import { getLogger, Logger } from '../../logger'
-import { ChildProcess } from '../../utilities/childProcess'
+import { getLogger, getDebugConsoleLogger, Logger } from '../../logger'
+import { ChildProcess } from '../../utilities/processUtils'
 import { Timeout } from '../../utilities/timeoutUtils'
 import { removeAnsi } from '../../utilities/textUtilities'
 import * as vscode from 'vscode'
@@ -30,7 +30,7 @@ export const waitForDebuggerMessages = {
 export interface SamLocalInvokeCommandArgs {
     command: string
     args: string[]
-    options?: child_process.SpawnOptions
+    options?: proc.SpawnOptions
     /** Wait until strings specified in `debuggerAttachCues` appear in the process output.  */
     waitForCues: boolean
     timeout?: Timeout
@@ -62,7 +62,7 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
         const childProcess = new ChildProcess(params.command, params.args, {
             spawnOptions: await addTelemetryEnvVar(options),
         })
-        getLogger('channel').info('AWS.running.command', 'Command: {0}', `${childProcess}`)
+        getLogger().info('AWS.running.command', 'Command: {0}', `${childProcess}`)
         // "sam local invoke", "sam local start-api", etc.
         const samCommandName = `sam ${params.args[0]} ${params.args[1]}`
 
@@ -74,19 +74,19 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
                     rejectOnError: true,
                     timeout: params.timeout,
                     onStdout: (text: string): void => {
-                        getLogger('debugConsole').info(text, { raw: true })
+                        getDebugConsoleLogger().info(text, { raw: true })
                         // If we have a timeout (as we do on debug) refresh the timeout as we receive text
                         params.timeout?.refresh()
                         this.logger.verbose('SAM: pid %d: stdout: %s', childProcess.pid(), removeAnsi(text))
                     },
                     onStderr: (text: string): void => {
-                        getLogger('debugConsole').info(text, { raw: true })
+                        getDebugConsoleLogger().info(text, { raw: true })
                         // If we have a timeout (as we do on debug) refresh the timeout as we receive text
                         params.timeout?.refresh()
                         this.logger.verbose('SAM: pid %d: stderr: %s', childProcess.pid(), removeAnsi(text))
                         if (checkForCues) {
                             // Look for messages like "Debugger attached" before returning back to caller
-                            if (this.debuggerAttachCues.some(cue => text.includes(cue))) {
+                            if (this.debuggerAttachCues.some((cue) => text.includes(cue))) {
                                 this.logger.verbose(
                                     `SAM: pid ${childProcess.pid()}: local SAM app is ready for debugger to attach`
                                 )
@@ -96,8 +96,8 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
                         }
                     },
                 })
-                .catch(error => {
-                    getLogger('channel').error(
+                .catch((error) => {
+                    getLogger().error(
                         localize('AWS.samcli.error', 'Error running command "{0}": {1}', samCommandName, error.message)
                     )
                     reject(error)
@@ -139,7 +139,7 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
                     getLogger().debug('forcing disconnect of debugger session "%s"', debugSession.name)
                     debugSession.customRequest('disconnect').then(
                         () => undefined,
-                        e =>
+                        (e) =>
                             getLogger().warn(
                                 'failed to disconnect debugger session "%s": %s',
                                 debugSession.name,

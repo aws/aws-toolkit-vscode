@@ -16,7 +16,7 @@ import { getSelectedCustomization } from './customizationUtil'
 import { selectFrom } from '../../shared/utilities/tsUtils'
 import { checkLeftContextKeywordsForJsonAndYaml } from './commonUtil'
 import { CodeWhispererSupplementalContext } from '../models/model'
-import { getOptOutPreference } from './commonUtil'
+import { getOptOutPreference } from '../../shared/telemetry/util'
 
 let tabSize: number = getTabSizeSetting()
 
@@ -38,33 +38,15 @@ export function extractContextForCodeWhisperer(editor: vscode.TextEditor): codew
             document.positionAt(offset + CodeWhispererConstants.charactersLimit)
         )
     )
-    if (checkLeftContextKeywordsForJsonAndYaml(caretLeftFileContext, editor.document.languageId)) {
-        return {
-            filename: getFileNameForRequest(editor),
-            programmingLanguage: {
-                languageName: 'plaintext',
-            },
-            leftFileContent: caretLeftFileContext,
-            rightFileContent: caretRightFileContext,
-        } as codewhispererClient.FileContext
+    let languageName = 'plaintext'
+    if (!checkLeftContextKeywordsForJsonAndYaml(caretLeftFileContext, editor.document.languageId)) {
+        languageName =
+            runtimeLanguageContext.normalizeLanguage(editor.document.languageId) ?? editor.document.languageId
     }
-
-    if (checkLeftContextKeywordsForJsonAndYaml(caretLeftFileContext, editor.document.languageId)) {
-        return {
-            filename: getFileNameForRequest(editor),
-            programmingLanguage: {
-                languageName: 'plaintext',
-            },
-            leftFileContent: caretLeftFileContext,
-            rightFileContent: caretRightFileContext,
-        } as codewhispererClient.FileContext
-    }
-
     return {
-        filename: getFileNameForRequest(editor),
+        filename: getFileRelativePath(editor),
         programmingLanguage: {
-            languageName:
-                runtimeLanguageContext.normalizeLanguage(editor.document.languageId) ?? editor.document.languageId,
+            languageName: languageName,
         },
         leftFileContent: caretLeftFileContext,
         rightFileContent: caretRightFileContext,
@@ -76,19 +58,27 @@ export function getFileName(editor: vscode.TextEditor): string {
     return fileName.substring(0, CodeWhispererConstants.filenameCharsLimit)
 }
 
-export function getFileNameForRequest(editor: vscode.TextEditor): string {
+export function getFileRelativePath(editor: vscode.TextEditor): string {
     const fileName = path.basename(editor.document.fileName)
-
+    let relativePath = ''
+    const workspaceFolder = vscode.workspace.getWorkspaceFolder(editor.document.uri)
+    if (!workspaceFolder) {
+        relativePath = fileName
+    } else {
+        const workspacePath = workspaceFolder.uri.fsPath
+        const filePath = editor.document.uri.fsPath
+        relativePath = path.relative(workspacePath, filePath)
+    }
     // For notebook files, we want to use the programming language for each cell for the code suggestions, so change
     // the filename sent in the request to reflect that language
-    if (fileName.endsWith('.ipynb')) {
+    if (relativePath.endsWith('.ipynb')) {
         const fileExtension = runtimeLanguageContext.getLanguageExtensionForNotebook(editor.document.languageId)
         if (fileExtension !== undefined) {
-            const filenameWithNewExtension = fileName.substring(0, fileName.length - 5) + fileExtension
+            const filenameWithNewExtension = relativePath.substring(0, relativePath.length - 5) + fileExtension
             return filenameWithNewExtension.substring(0, CodeWhispererConstants.filenameCharsLimit)
         }
     }
-    return fileName.substring(0, CodeWhispererConstants.filenameCharsLimit)
+    return relativePath.substring(0, CodeWhispererConstants.filenameCharsLimit)
 }
 
 export async function buildListRecommendationRequest(
@@ -112,7 +102,7 @@ export async function buildListRecommendationRequest(
 
     const selectedCustomization = getSelectedCustomization()
     const supplementalContext: codewhispererClient.SupplementalContext[] = supplementalContexts
-        ? supplementalContexts.supplementalContextItems.map(v => {
+        ? supplementalContexts.supplementalContextItems.map((v) => {
               return selectFrom(v, 'content', 'filePath')
           })
         : []

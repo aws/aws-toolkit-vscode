@@ -6,14 +6,15 @@
 import * as os from 'os'
 import * as _path from 'path'
 
+/** Matches Windows drive letter ("C:"). */
 export const driveLetterRegex = /^[a-zA-Z]\:/
 
 /**
  * Expands "~" at the start of `fname` to user home dir.
  * TODO: expand env vars too.
  */
-export function resolvePath(fname: string) {
-    const homedir = os.homedir()
+export function resolvePath(fname: string, homedir?: string) {
+    homedir = homedir ?? os.homedir()
     if (fname.startsWith('~/') || fname.startsWith('~\\')) {
         return _path.join(homedir, fname.substring(2))
     }
@@ -105,8 +106,8 @@ export function normalize(p: string): string {
 export function getLocalRootVariants(filePath: string): string[] {
     if (process.platform === 'win32' && driveLetterRegex.test(filePath)) {
         return [
-            filePath.replace(driveLetterRegex, match => match.toLowerCase()),
-            filePath.replace(driveLetterRegex, match => match.toUpperCase()),
+            filePath.replace(driveLetterRegex, (match) => match.toLowerCase()),
+            filePath.replace(driveLetterRegex, (match) => match.toUpperCase()),
         ]
     }
 

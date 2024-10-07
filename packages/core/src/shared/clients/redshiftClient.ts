@@ -20,7 +20,7 @@ import {
     ListSchemasResponse,
     ListTablesResponse,
 } from 'aws-sdk/clients/redshiftdata'
-import { ConnectionParams, ConnectionType, RedshiftWarehouseType } from '../../redshift/models/models'
+import { ConnectionParams, ConnectionType, RedshiftWarehouseType } from '../../awsService/redshift/models/models'
 import { sleep } from '../utilities/timeoutUtils'
 import { SecretsManagerClient } from './secretsManagerClient'
 import { ToolkitError } from '../errors'
@@ -54,7 +54,7 @@ export class DefaultRedshiftClient {
         const response = await redshiftClient.describeClusters(request).promise()
         if (response.Clusters) {
             response.Clusters = response.Clusters.filter(
-                cluster => cluster.ClusterAvailabilityStatus?.toLowerCase() === 'available'
+                (cluster) => cluster.ClusterAvailabilityStatus?.toLowerCase() === 'available'
             )
         }
         return response
@@ -69,7 +69,7 @@ export class DefaultRedshiftClient {
         const response = await redshiftServerlessClient.listWorkgroups(request).promise()
         if (response.workgroups) {
             response.workgroups = response.workgroups.filter(
-                workgroup => workgroup.status?.toLowerCase() === 'available'
+                (workgroup) => workgroup.status?.toLowerCase() === 'available'
             )
         }
         return response

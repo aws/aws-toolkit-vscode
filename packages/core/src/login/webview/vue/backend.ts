@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import globals from '../../../shared/extensionGlobals'
 import { VueWebview } from '../../../webviews/main'
 import { Region } from '../../../shared/regions/endpoints'
-import { ToolkitError } from '../../../shared/errors'
+import { getTelemetryReasonDesc, ToolkitError } from '../../../shared/errors'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { trustedDomainCancellation } from '../../../auth/sso/model'
 import { handleWebviewError } from '../../../webviews/server'
@@ -16,24 +16,24 @@ import {
     AwsConnection,
     Connection,
     hasScopes,
-    isBuilderIdConnection,
-    isIamConnection,
-    isIdcSsoConnection,
     scopesCodeCatalyst,
     scopesCodeWhispererChat,
     scopesSsoAccountAccess,
     SsoConnection,
+    TelemetryMetadata,
 } from '../../../auth/connection'
 import { Auth } from '../../../auth/auth'
 import { StaticProfile, StaticProfileKeyErrorMessage } from '../../../auth/credentials/types'
 import { telemetry } from '../../../shared/telemetry'
+import { AuthAddConnection } from '../../../shared/telemetry/telemetry'
 import { AuthSources } from '../util'
-import { AuthEnabledFeatures, AuthError, AuthFlowState, AuthUiClick, TelemetryMetadata, userCancelled } from './types'
-import { AuthUtil } from '../../../codewhisperer/util/authUtil'
+import { AuthEnabledFeatures, AuthError, AuthFlowState, AuthUiClick, userCancelled } from './types'
 import { DevSettings } from '../../../shared/settings'
 import { AuthSSOServer } from '../../../auth/sso/server'
+import { getLogger } from '../../../shared/logger/logger'
 
 export abstract class CommonAuthWebview extends VueWebview {
+    private readonly className = 'CommonAuthWebview'
     private metricMetadata: TelemetryMetadata = {}
 
     // authSource should be set by whatever triggers the auth page flow.
@@ -74,7 +74,8 @@ export abstract class CommonAuthWebview extends VueWebview {
                 await setupFunc()
                 return
             } catch (e) {
-                console.log(e)
+                getLogger().error('ssoSetup encountered an error: %s', e)
+
                 if (e instanceof ToolkitError && e.code === 'NotOnboarded') {
                     /**
                      * Connection is fine, they just skipped onboarding so not an actual error.
@@ -125,7 +126,13 @@ export abstract class CommonAuthWebview extends VueWebview {
             }
         }
 
-        const result = await runSetup()
+        // Add context to our telemetry by adding the methodName argument to the function stack
+        const result = await telemetry.function_call.run(
+            async () => {
+                return runSetup()
+            },
+            { emit: false, functionId: { name: methodName, class: this.className } }
+        )
 
         if (postMetrics) {
             this.storeMetricMetadata(this.getResultForMetrics(result))
@@ -159,15 +166,6 @@ export abstract class CommonAuthWebview extends VueWebview {
 
     abstract fetchConnections(): Promise<AwsConnection[] | undefined>
 
-    /**
-     * Re-use connection that is pushed from Amazon Q to Toolkit.
-     * @param connectionId ID of the connection to re-use
-     * @param auto indicate whether this happened automatically (true), or the result of user action (false)
-     */
-    abstract useConnection(connectionId: string, auto: boolean): Promise<AuthError | undefined>
-
-    abstract findUsableConnection(connections: AwsConnection[]): AwsConnection | undefined
-
     async errorNotification(e: AuthError) {
         void vscode.window.showInformationMessage(`${e.text}`)
     }
@@ -190,9 +188,8 @@ export abstract class CommonAuthWebview extends VueWebview {
 
     abstract signout(): Promise<void>
 
-    async listConnections(): Promise<Connection[]> {
-        return Auth.instance.listConnections()
-    }
+    /** List current connections known by the extension for the purpose of preventing duplicates. */
+    abstract listSsoConnections(): Promise<SsoConnection[]>
 
     /**
      * Emit stored metric metadata. Does not reset the stored metric metadata, because it
@@ -201,13 +198,13 @@ export abstract class CommonAuthWebview extends VueWebview {
     emitAuthMetric() {
         // We shouldn't report startUrl or region if we aren't reporting IdC
         if (this.metricMetadata.credentialSourceId !== 'iamIdentityCenter') {
-            this.metricMetadata.region = undefined
-            this.metricMetadata.credentialStartUrl = undefined
+            delete this.metricMetadata.awsRegion
+            delete this.metricMetadata.credentialStartUrl
         }
         telemetry.auth_addConnection.emit({
             ...this.metricMetadata,
             source: this.authSource,
-        })
+        } as AuthAddConnection)
     }
 
     /**
@@ -235,36 +232,14 @@ export abstract class CommonAuthWebview extends VueWebview {
                 metadata.result = 'Cancelled'
             } else {
                 metadata.result = 'Failed'
-                metadata.reason = error.text
+                metadata.reason = error.id
+                metadata.reasonDesc = getTelemetryReasonDesc(error.text)
             }
         } else {
             metadata.result = 'Succeeded'
         }
 
         return metadata
-    }
-
-    /**
-     * Get metadata about the current auth for reauthentication telemetry.
-     */
-    getMetadataForExistingConn(conn = AuthUtil.instance.conn): TelemetryMetadata {
-        if (isBuilderIdConnection(conn)) {
-            return {
-                credentialSourceId: 'awsId',
-            }
-        } else if (isIdcSsoConnection(conn)) {
-            return {
-                credentialSourceId: 'iamIdentityCenter',
-                credentialStartUrl: (conn as SsoConnection).startUrl,
-                region: (conn as SsoConnection).ssoRegion,
-            }
-        } else if (isIamConnection(conn)) {
-            return {
-                credentialSourceId: 'sharedCredentials',
-            }
-        }
-
-        throw new Error('getMetadataForExistingConn() called with unknown connection type')
     }
 
     /**

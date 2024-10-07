@@ -10,7 +10,7 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import { SchemasDataProvider } from '../../eventSchemas/providers/schemasDataProvider'
 import { DefaultSchemaClient } from '../../shared/clients/schemaClient'
-import { eventBridgeSchemasDocUrl, samInitDocUrl } from '../../shared/constants'
+import { eventBridgeSchemasDocUrl } from '../../shared/constants'
 import {
     Architecture,
     createRuntimeQuickPick,
@@ -37,6 +37,7 @@ import { Region } from '../../shared/regions/endpoints'
 import { createCommonButtons } from '../../shared/ui/buttons'
 import { createExitPrompter } from '../../shared/ui/common/exitPrompter'
 import { getNonexistentFilename } from '../../shared/filesystemUtilities'
+import { getSamInitDocUrl } from '../../shared/extensionUtilities'
 
 const localize = nls.loadMessageBundle()
 
@@ -55,7 +56,7 @@ export interface CreateNewSamAppWizardForm {
 function createRuntimePrompter(samCliVersion: string): QuickPickPrompter<RuntimeAndPackage> {
     return createRuntimeQuickPick({
         showImageRuntimes: semver.gte(samCliVersion, minSamCliVersionForImageSupport),
-        buttons: createCommonButtons(samInitDocUrl),
+        buttons: createCommonButtons(getSamInitDocUrl()),
     })
 }
 
@@ -65,7 +66,7 @@ function createSamTemplatePrompter(
     samCliVersion: string
 ): QuickPickPrompter<SamTemplate> {
     const templates = getSamTemplateWizardOption(currRuntime, packageType, samCliVersion)
-    const items = templates.toArray().map(template => ({
+    const items = templates.toArray().map((template) => ({
         label: template,
         data: template,
         detail: getTemplateDescription(template),
@@ -73,7 +74,7 @@ function createSamTemplatePrompter(
 
     return createQuickPick(items, {
         title: localize('AWS.samcli.initWizard.template.prompt', 'Select a SAM Application Template'),
-        buttons: createCommonButtons(samInitDocUrl),
+        buttons: createCommonButtons(getSamInitDocUrl()),
     })
 }
 
@@ -82,16 +83,16 @@ function createSchemaRegionPrompter(regions: Region[], defaultRegion?: string): 
         title: localize('AWS.samcli.initWizard.schemas.region.prompt', 'Select an EventBridge Schemas Region'),
         buttons: createCommonButtons(eventBridgeSchemasDocUrl),
         defaultRegion,
-    }).transform(r => r.id)
+    }).transform((r) => r.id)
 }
 
 function createDependencyPrompter(currRuntime: Runtime): QuickPickPrompter<DependencyManager> {
     const dependencyManagers = getDependencyManager(currRuntime)
-    const items = dependencyManagers.map(dependencyManager => ({ label: dependencyManager }))
+    const items = dependencyManagers.map((dependencyManager) => ({ label: dependencyManager }))
 
     return createLabelQuickPick(items, {
         title: localize('AWS.samcli.initWizard.dependencyManager.prompt', 'Select a Dependency Manager'),
-        buttons: createCommonButtons(samInitDocUrl),
+        buttons: createCommonButtons(getSamInitDocUrl()),
     })
 }
 
@@ -99,7 +100,7 @@ function createRegistryPrompter(region: string, credentials?: AWS.Credentials): 
     const client = new DefaultSchemaClient(region)
     const items = SchemasDataProvider.getInstance()
         .getRegistries(region, client, credentials!)
-        .then(registryNames => {
+        .then((registryNames) => {
             if (!registryNames) {
                 void vscode.window.showInformationMessage(
                     localize(
@@ -110,14 +111,14 @@ function createRegistryPrompter(region: string, credentials?: AWS.Credentials): 
                 return []
             }
 
-            return registryNames.map(registry => ({
+            return registryNames.map((registry) => ({
                 label: registry,
             }))
         })
 
     return createLabelQuickPick(items, {
         title: localize('AWS.samcli.initWizard.schemas.registry.prompt', 'Select a Registry'),
-        buttons: createCommonButtons(samInitDocUrl),
+        buttons: createCommonButtons(getSamInitDocUrl()),
     })
 }
 
@@ -129,7 +130,7 @@ function createSchemaPrompter(
     const client = new DefaultSchemaClient(region)
     const items = SchemasDataProvider.getInstance()
         .getSchemas(region, registry, client, credentials!)
-        .then(schemas => {
+        .then((schemas) => {
             if (!schemas) {
                 void vscode.window.showInformationMessage(
                     localize(
@@ -148,7 +149,7 @@ function createSchemaPrompter(
                 return []
             }
 
-            return schemas.map(schema => ({
+            return schemas.map((schema) => ({
                 label: schema.SchemaName!,
             }))
         })
@@ -179,7 +180,7 @@ function createNamePrompter(defaultValue: string): InputBoxPrompter {
     return createInputBox({
         value: defaultValue,
         title: localize('AWS.samcli.initWizard.name.prompt', 'Enter a name for your new application'),
-        buttons: createCommonButtons(samInitDocUrl),
+        buttons: createCommonButtons(getSamInitDocUrl()),
         validateInput: validateName,
     })
 }
@@ -187,7 +188,7 @@ function createNamePrompter(defaultValue: string): InputBoxPrompter {
 function createArchitecturePrompter(): QuickPickPrompter<Architecture> {
     return createLabelQuickPick<Architecture>([{ label: 'x86_64' }, { label: 'arm64' }], {
         title: localize('AWS.samcli.initWizard.architecture.prompt', 'Select an Architecture'),
-        buttons: createCommonButtons(samInitDocUrl),
+        buttons: createCommonButtons(getSamInitDocUrl()),
     })
 }
 
@@ -204,15 +205,18 @@ export class CreateNewSamAppWizard extends Wizard<CreateNewSamAppWizardForm> {
 
         this.form.runtimeAndPackage.bindPrompter(() => createRuntimePrompter(context.samCliVersion))
 
-        this.form.dependencyManager.bindPrompter(state => createDependencyPrompter(state.runtimeAndPackage!.runtime!), {
-            showWhen: state =>
-                state.runtimeAndPackage?.runtime !== undefined &&
-                getDependencyManager(state.runtimeAndPackage.runtime).length > 1,
-            setDefault: state =>
-                state.runtimeAndPackage?.runtime !== undefined
-                    ? getDependencyManager(state.runtimeAndPackage.runtime)[0]
-                    : undefined,
-        })
+        this.form.dependencyManager.bindPrompter(
+            (state) => createDependencyPrompter(state.runtimeAndPackage!.runtime!),
+            {
+                showWhen: (state) =>
+                    state.runtimeAndPackage?.runtime !== undefined &&
+                    getDependencyManager(state.runtimeAndPackage.runtime).length > 1,
+                setDefault: (state) =>
+                    state.runtimeAndPackage?.runtime !== undefined
+                        ? getDependencyManager(state.runtimeAndPackage.runtime)[0]
+                        : undefined,
+            }
+        )
 
         // TODO: remove `partial` when updated wizard types gets merged (need to make the PR first of course...)
         function canShowArchitecture(
@@ -234,7 +238,7 @@ export class CreateNewSamAppWizard extends Wizard<CreateNewSamAppWizardForm> {
             showWhen: canShowArchitecture,
         })
 
-        this.form.template.bindPrompter(state =>
+        this.form.template.bindPrompter((state) =>
             createSamTemplatePrompter(
                 state.runtimeAndPackage!.runtime!,
                 state.runtimeAndPackage!.packageType!,
@@ -250,12 +254,12 @@ export class CreateNewSamAppWizard extends Wizard<CreateNewSamAppWizardForm> {
             showWhen: isStarterTemplate,
         })
 
-        this.form.registryName.bindPrompter(form => createRegistryPrompter(form.region!, context.credentials), {
+        this.form.registryName.bindPrompter((form) => createRegistryPrompter(form.region!, context.credentials), {
             showWhen: isStarterTemplate,
         })
 
         this.form.schemaName.bindPrompter(
-            state => createSchemaPrompter(state.region!, state.registryName!, context.credentials),
+            (state) => createSchemaPrompter(state.region!, state.registryName!, context.credentials),
             {
                 showWhen: isStarterTemplate,
             }
@@ -263,7 +267,7 @@ export class CreateNewSamAppWizard extends Wizard<CreateNewSamAppWizardForm> {
 
         this.form.location.bindPrompter(() =>
             createFolderPrompt(vscode.workspace.workspaceFolders ?? [], {
-                buttons: createCommonButtons(samInitDocUrl),
+                buttons: createCommonButtons(getSamInitDocUrl()),
                 title: localize('AWS.samInit.location.title', 'Select the folder for your new SAM application'),
                 browseFolderDetail: localize(
                     'AWS.samInit.location.detail',
@@ -272,7 +276,7 @@ export class CreateNewSamAppWizard extends Wizard<CreateNewSamAppWizardForm> {
             })
         )
 
-        this.form.name.bindPrompter(async state => {
+        this.form.name.bindPrompter(async (state) => {
             const fname = await getNonexistentFilename(
                 state.location!.fsPath,
                 `lambda-${state.runtimeAndPackage!.runtime}`,

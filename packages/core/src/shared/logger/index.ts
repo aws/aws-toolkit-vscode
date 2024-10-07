@@ -12,4 +12,5 @@ export type Loggable = Error | string
 export type Logger = logger.Logger
 export type LogLevel = logger.LogLevel
 export const getLogger = logger.getLogger
+export const getDebugConsoleLogger = logger.getDebugConsoleLogger
 export const getNullLogger = logger.getNullLogger

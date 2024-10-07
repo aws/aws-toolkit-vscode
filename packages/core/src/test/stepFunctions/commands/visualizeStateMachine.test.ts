@@ -6,6 +6,7 @@
 import assert from 'assert'
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'
+import globals from '../../../shared/extensionGlobals'
 import { Disposable } from 'vscode-languageclient'
 import { AslVisualization } from '../../../../src/stepFunctions/commands/visualizeStateMachine/aslVisualization'
 import { AslVisualizationManager } from '../../../../src/stepFunctions/commands/visualizeStateMachine/aslVisualizationManager'
@@ -13,7 +14,6 @@ import { AslVisualizationManager } from '../../../../src/stepFunctions/commands/
 import { StateMachineGraphCache } from '../../../stepFunctions/utils'
 
 import { YAML_ASL, JSON_ASL } from '../../../../src/stepFunctions/constants/aslFormats'
-import { FakeExtensionContext } from '../../fakeExtensionContext'
 import { closeAllEditors } from '../../testUtil'
 import { getLogger } from '../../../shared/logger'
 import { previewStateMachineCommand } from '../../../stepFunctions/activation'
@@ -21,13 +21,6 @@ import { getTestWindow } from '../../shared/vscode/window'
 
 // Top level defintions
 let aslVisualizationManager: AslVisualizationManager
-
-const mockGlobalStorage: vscode.Memento & { setKeysForSync(keys: readonly string[]): void } = {
-    keys: () => [],
-    setKeysForSync: (keys: readonly string[]) => undefined,
-    update: sinon.spy(),
-    get: sinon.stub().returns(undefined),
-}
 
 const mockDataJson =
     '{"Comment":"A Hello World example of the Amazon States Language using Pass states","StartAt":"Hello","States":{"Hello":{"Type":"Pass","Result":"Hello","Next":"World"},"World":{"Type":"Pass","Result":"${Text}","End":true}}}'
@@ -61,15 +54,12 @@ describe('StepFunctions VisualizeStateMachine', async function () {
     })
 
     beforeEach(async function () {
-        const fakeExtCtx = await FakeExtensionContext.create()
-        fakeExtCtx.globalState = mockGlobalStorage
-        fakeExtCtx.workspaceState = mockGlobalStorage
-        aslVisualizationManager = new AslVisualizationManager(fakeExtCtx)
+        aslVisualizationManager = new AslVisualizationManager(globals.context)
     })
 
     after(async function () {
         sinon.restore()
-        await closeAllEditors().catch(e => getLogger().warn(`closeAllEditors failed: ${e}`))
+        await closeAllEditors().catch((e) => getLogger().warn(`closeAllEditors failed: ${e}`))
     })
 
     it('Test AslVisualization on setup all properties are correct', async function () {
@@ -100,7 +90,7 @@ describe('StepFunctions VisualizeStateMachine', async function () {
         const doc = await getDoc1()
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 0)
 
-        await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage, doc)
+        await aslVisualizationManager.visualizeStateMachine(doc)
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 1)
 
         const managedVisualizations = aslVisualizationManager.getManagedVisualizations()
@@ -111,10 +101,10 @@ describe('StepFunctions VisualizeStateMachine', async function () {
         const doc = await getDoc1()
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 0)
 
-        await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage, doc)
+        await aslVisualizationManager.visualizeStateMachine(doc)
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 1)
 
-        await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage, doc)
+        await aslVisualizationManager.visualizeStateMachine(doc)
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 1)
 
         const managedVisualizations = aslVisualizationManager.getManagedVisualizations()
@@ -127,10 +117,10 @@ describe('StepFunctions VisualizeStateMachine', async function () {
 
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 0)
 
-        await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage, doc1)
+        await aslVisualizationManager.visualizeStateMachine(doc1)
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 1)
 
-        await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage, doc2)
+        await aslVisualizationManager.visualizeStateMachine(doc2)
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 2)
 
         const managedVisualizations = aslVisualizationManager.getManagedVisualizations()
@@ -144,16 +134,16 @@ describe('StepFunctions VisualizeStateMachine', async function () {
 
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 0)
 
-        await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage, doc1)
+        await aslVisualizationManager.visualizeStateMachine(doc1)
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 1)
 
-        await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage, doc2)
+        await aslVisualizationManager.visualizeStateMachine(doc2)
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 2)
 
-        await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage, doc1)
+        await aslVisualizationManager.visualizeStateMachine(doc1)
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 2)
 
-        await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage, doc2)
+        await aslVisualizationManager.visualizeStateMachine(doc2)
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 2)
 
         const managedVisualizations = aslVisualizationManager.getManagedVisualizations()
@@ -164,7 +154,7 @@ describe('StepFunctions VisualizeStateMachine', async function () {
     it('Test AslVisualizationManager managedVisualizations set removes visualization on visualization dispose, single vis', async function () {
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 0)
 
-        let panel = await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage, await getDoc1())
+        let panel = await aslVisualizationManager.visualizeStateMachine(await getDoc1())
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 1)
 
         // Dispose of visualization panel
@@ -181,10 +171,10 @@ describe('StepFunctions VisualizeStateMachine', async function () {
 
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 0)
 
-        let panel = await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage, doc1)
+        let panel = await aslVisualizationManager.visualizeStateMachine(doc1)
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 1)
 
-        await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage, doc2)
+        await aslVisualizationManager.visualizeStateMachine(doc2)
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 2)
 
         // Dispose of first visualization panel
@@ -202,7 +192,7 @@ describe('StepFunctions VisualizeStateMachine', async function () {
 
         const errorMessage = getTestWindow().waitForMessage(/no active text editor/i)
 
-        await Promise.all([previewStateMachineCommand.execute(), errorMessage.then(dialog => dialog.close())])
+        await Promise.all([previewStateMachineCommand.execute(), errorMessage.then((dialog) => dialog.close())])
     })
 
     it('Test AslVisualisation sendUpdateMessage posts a correct update message for YAML files', async function () {
@@ -225,7 +215,7 @@ describe('StepFunctions VisualizeStateMachine', async function () {
         }
 
         assert.ok(postMessage.calledOnce)
-        assert.deepEqual(postMessage.firstCall.args, [message])
+        assert.deepStrictEqual(postMessage.firstCall.args, [message])
     })
 
     it('Test AslVisualisation sendUpdateMessage posts a correct update message for invalid YAML files', async function () {
@@ -248,7 +238,7 @@ describe('StepFunctions VisualizeStateMachine', async function () {
         }
 
         assert.ok(postMessage.calledOnce)
-        assert.deepEqual(postMessage.firstCall.args, [message])
+        assert.deepStrictEqual(postMessage.firstCall.args, [message])
     })
 
     it('Test AslVisualisation sendUpdateMessage posts a correct update message for ASL files', async function () {
@@ -271,7 +261,7 @@ describe('StepFunctions VisualizeStateMachine', async function () {
         }
 
         assert.ok(postMessage.calledOnce)
-        assert.deepEqual(postMessage.firstCall.args, [message])
+        assert.deepStrictEqual(postMessage.firstCall.args, [message])
     })
 })
 

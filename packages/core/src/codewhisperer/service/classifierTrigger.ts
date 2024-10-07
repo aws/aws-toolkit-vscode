@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as os from 'os'
+import os from 'os'
 import * as vscode from 'vscode'
 import { CodewhispererAutomatedTriggerType } from '../../shared/telemetry/telemetry'
 import { extractContextForCodeWhisperer } from '../util/editorContext'
@@ -524,7 +524,12 @@ export class ClassifierTrigger {
         const ideCoefficient = this.ideVscode
 
         const previousDecision = TelemetryHelper.instance.getLastTriggerDecisionForClassifier()
-        const languageCoefficient = this.languageCoefficientMap[language.languageName] ?? 0
+        const languageCoefficients = Object.values(this.languageCoefficientMap)
+        const avrgCoefficient =
+            languageCoefficients.length > 0
+                ? languageCoefficients.reduce((a, b) => a + b) / languageCoefficients.length
+                : 0
+        const languageCoefficient = this.languageCoefficientMap[language.languageName] ?? avrgCoefficient
 
         let previousDecisionCoefficient = 0
         if (previousDecision === 'Accept') {

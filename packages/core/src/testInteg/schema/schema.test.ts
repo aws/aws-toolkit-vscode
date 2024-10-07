@@ -5,7 +5,6 @@
 
 import globals from '../../shared/extensionGlobals'
 import { GlobalStorage } from '../../shared/globalStorage'
-import * as fs from 'fs-extra'
 import { getDefaultSchemas, samAndCfnSchemaUrl } from '../../shared/schemas'
 import {
     getCITestSchemas,
@@ -18,6 +17,7 @@ import {
 } from '../../test/shared/schema/testUtils'
 import { assertTelemetry } from '../../test/testUtil'
 import { waitUntil } from '../../shared/utilities/timeoutUtils'
+import { fs } from '../../shared'
 
 describe('Sam Schema Regression', function () {
     let samSchema: JSONObject
@@ -72,8 +72,8 @@ describe('getDefaultSchemas()', () => {
     beforeEach(async () => {})
 
     it('uses cache after initial fetch for CFN/SAM schema', async () => {
-        fs.removeSync(GlobalStorage.samAndCfnSchemaDestinationUri().fsPath)
-        globals.telemetry.telemetryEnabled = true
+        await fs.delete(GlobalStorage.samAndCfnSchemaDestinationUri().fsPath)
+        await globals.telemetry.setTelemetryEnabled(true)
         globals.telemetry.clearRecords()
         globals.telemetry.logger.clear()
         await getDefaultSchemas()
@@ -81,7 +81,7 @@ describe('getDefaultSchemas()', () => {
         await getDefaultSchemas()
         await waitUntil(
             async () => {
-                return fs.existsSync(GlobalStorage.samAndCfnSchemaDestinationUri().fsPath)
+                return await fs.exists(GlobalStorage.samAndCfnSchemaDestinationUri().fsPath)
             },
             { truthy: true, interval: 200, timeout: 5000 }
         )

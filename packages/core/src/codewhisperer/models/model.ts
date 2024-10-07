@@ -10,12 +10,11 @@ import {
     CodewhispererCompletionType,
     CodewhispererLanguage,
     CodewhispererTriggerType,
+    MetricBase,
     Result,
 } from '../../shared/telemetry/telemetry'
 import { References } from '../client/codewhisperer'
 import globals from '../../shared/extensionGlobals'
-import { autoScansEnabledKey, autoTriggerEnabledKey } from './constants'
-import { get, set } from '../util/commonUtil'
 import { ChatControllerEventEmitters } from '../../amazonqGumby/chat/controller/controller'
 import { TransformationSteps } from '../client/codewhispereruserclient'
 
@@ -75,7 +74,6 @@ export interface GetRecommendationsResponse {
 
 /** Manages the state of CodeWhisperer code suggestions */
 export class CodeSuggestionsState {
-    #context: vscode.Memento
     /** The initial state if suggestion state was not defined */
     #fallback: boolean
     #onDidChangeState = new vscode.EventEmitter<boolean>()
@@ -87,15 +85,14 @@ export class CodeSuggestionsState {
         return (this.#instance ??= new this())
     }
 
-    protected constructor(context: vscode.Memento = globals.context.globalState, fallback: boolean = false) {
-        this.#context = context
+    protected constructor(fallback: boolean = true) {
         this.#fallback = fallback
     }
 
     async toggleSuggestions() {
         const autoTriggerEnabled = this.isSuggestionsEnabled()
         const toSet: boolean = !autoTriggerEnabled
-        await set(autoTriggerEnabledKey, toSet, this.#context)
+        await globals.globalState.update('CODEWHISPERER_AUTO_TRIGGER_ENABLED', toSet)
         this.#onDidChangeState.fire(toSet)
         return toSet
     }
@@ -107,13 +104,12 @@ export class CodeSuggestionsState {
     }
 
     isSuggestionsEnabled(): boolean {
-        const isEnabled = get(autoTriggerEnabledKey, this.#context)
+        const isEnabled = globals.globalState.tryGet('CODEWHISPERER_AUTO_TRIGGER_ENABLED', Boolean)
         return isEnabled !== undefined ? isEnabled : this.#fallback
     }
 }
 
 export class CodeScansState {
-    #context: vscode.Memento
     /** The initial state if scan state was not defined */
     #fallback: boolean
     #onDidChangeState = new vscode.EventEmitter<boolean>()
@@ -128,15 +124,14 @@ export class CodeScansState {
         return (this.#instance ??= new this())
     }
 
-    protected constructor(context: vscode.Memento = globals.context.globalState, fallback: boolean = true) {
-        this.#context = context
+    protected constructor(fallback: boolean = true) {
         this.#fallback = fallback
     }
 
     async toggleScans() {
         const autoScansEnabled = this.isScansEnabled()
         const toSet: boolean = !autoScansEnabled
-        await set(autoScansEnabledKey, toSet, this.#context)
+        await globals.globalState.update('CODEWHISPERER_AUTO_SCANS_ENABLED', toSet)
         this.#onDidChangeState.fire(toSet)
         return toSet
     }
@@ -148,7 +143,7 @@ export class CodeScansState {
     }
 
     isScansEnabled(): boolean {
-        const isEnabled = get(autoScansEnabledKey, this.#context)
+        const isEnabled = globals.globalState.tryGet('CODEWHISPERER_AUTO_SCANS_ENABLED', Boolean)
         return isEnabled !== undefined ? isEnabled : this.#fallback
     }
 
@@ -264,7 +259,7 @@ export class CodeScanState {
             case CodeScanStatus.Running:
                 return getIcon('vscode-stop-circle')
             case CodeScanStatus.Cancelling:
-                return getIcon('vscode-icons:loading~spin')
+                return getIcon('vscode-loading~spin')
         }
     }
 }
@@ -321,6 +316,7 @@ export class ZipManifest {
     version: string = '1.0'
     hilCapabilities: string[] = ['HIL_1pDependency_VersionUpgrade']
     transformCapabilities: string[] = ['EXPLAINABILITY_V1']
+    customBuildCommand: string = 'clean test'
 }
 
 export interface IHilZipManifestParams {
@@ -350,12 +346,12 @@ export enum DropdownStep {
 }
 
 export const jobPlanProgress: {
-    startJob: StepProgress
+    uploadCode: StepProgress
     buildCode: StepProgress
     generatePlan: StepProgress
     transformCode: StepProgress
 } = {
-    startJob: StepProgress.NotStarted,
+    uploadCode: StepProgress.NotStarted,
     buildCode: StepProgress.NotStarted,
     generatePlan: StepProgress.NotStarted,
     transformCode: StepProgress.NotStarted,
@@ -379,8 +375,11 @@ export class TransformByQState {
 
     private targetJDKVersion: JDKVersion = JDKVersion.JDK17
 
+    private customBuildCommand: string = ''
+
     private planFilePath: string = ''
     private summaryFilePath: string = ''
+    private preBuildLogFilePath: string = ''
 
     private resultArchiveFilePath: string = ''
     private projectCopyFilePath: string = ''
@@ -439,6 +438,14 @@ export class TransformByQState {
 
     public getProjectPath() {
         return this.projectPath
+    }
+
+    public getCustomBuildCommand() {
+        return this.customBuildCommand
+    }
+
+    public getPreBuildLogFilePath() {
+        return this.preBuildLogFilePath
     }
 
     public getStartTime() {
@@ -561,6 +568,10 @@ export class TransformByQState {
         this.projectPath = path
     }
 
+    public setCustomBuildCommand(command: string) {
+        this.customBuildCommand = command
+    }
+
     public setStartTime(time: string) {
         this.startTime = time
     }
@@ -637,6 +648,10 @@ export class TransformByQState {
         this.planSteps = steps
     }
 
+    public setPreBuildLogFilePath(path: string) {
+        this.preBuildLogFilePath = path
+    }
+
     public resetPlanSteps() {
         this.planSteps = undefined
     }
@@ -652,6 +667,7 @@ export class TransformByQState {
         this.jobFailureMetadata = ''
         this.payloadFilePath = ''
         this.errorLog = ''
+        this.customBuildCommand = ''
         this.intervalId = undefined
     }
 }
@@ -664,7 +680,7 @@ export class TransformByQStoppedError extends ToolkitError {
     }
 }
 
-export interface CodeScanTelemetryEntry {
+export interface CodeScanTelemetryEntry extends MetricBase {
     codewhispererCodeScanJobId?: string
     codewhispererLanguage: CodewhispererLanguage
     codewhispererCodeScanProjectBytes?: number
@@ -679,6 +695,7 @@ export interface CodeScanTelemetryEntry {
     codeScanServiceInvocationsDuration: number
     result: Result
     reason?: string
+    reasonDesc?: string
     codewhispererCodeScanTotalIssues: number
     codewhispererCodeScanIssuesWithFixes: number
     credentialStartUrl: string | undefined
@@ -705,6 +722,11 @@ export interface Remediation {
     suggestedFixes: SuggestedFix[]
 }
 
+export interface CodeLine {
+    content: string
+    number: number
+}
+
 export interface RawCodeScanIssue {
     filePath: string
     startLine: number
@@ -718,6 +740,7 @@ export interface RawCodeScanIssue {
     relatedVulnerabilities: string[]
     severity: string
     remediation: Remediation
+    codeSnippet: CodeLine[]
 }
 
 export interface CodeScanIssue {

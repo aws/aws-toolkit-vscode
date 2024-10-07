@@ -6,7 +6,6 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import { IAM, StepFunctions } from 'aws-sdk'
-import { mkdir, writeFile } from 'fs-extra'
 import * as vscode from 'vscode'
 import { StepFunctionsClient } from '../shared/clients/stepFunctionsClient'
 import { fileExists } from '../shared/filesystemUtilities'
@@ -20,6 +19,7 @@ import {
 import { HttpResourceFetcher } from '../shared/resourcefetcher/httpResourceFetcher'
 import globals from '../shared/extensionGlobals'
 import { fromExtensionManifest } from '../shared/settings'
+import { fs } from '../shared'
 
 const documentSettings: DocumentLanguageSettings = { comments: 'error', trailingCommas: 'error' }
 const languageService = getLanguageService({})
@@ -31,8 +31,7 @@ const scriptsLastDownloadedUrl = 'SCRIPT_LAST_DOWNLOADED_URL'
 const cssLastDownloadedUrl = 'CSS_LAST_DOWNLOADED_URL'
 
 export interface UpdateCachedScriptOptions {
-    globalStorage: vscode.Memento
-    lastDownloadedURLKey: string
+    lastDownloadedURLKey: 'SCRIPT_LAST_DOWNLOADED_URL' | 'CSS_LAST_DOWNLOADED_URL'
     currentURL: string
     filePath: string
 }
@@ -63,8 +62,16 @@ export class StateMachineGraphCache {
         // eslint-disable-next-line @typescript-eslint/unbound-method
         const { makeDir, writeFile: writeFileCustom, getFileData, fileExists: fileExistsCustom } = options
 
-        this.makeDir = makeDir ?? mkdir
-        this.writeFile = writeFileCustom ?? writeFile
+        this.makeDir =
+            makeDir ??
+            (async (path: string) => {
+                await fs.mkdir(path)
+            })
+        this.writeFile =
+            writeFileCustom ??
+            (async (path: string, data: string, _encoding: string) => {
+                await fs.writeFile(path, data)
+            })
         this.logger = getLogger()
         this.getFileData = getFileData ?? httpsGetRequestWrapper
         this.cssFilePath = options.cssFilePath ?? globals.visualizationResourcePaths.visualizationLibraryCSS.fsPath
@@ -73,13 +80,12 @@ export class StateMachineGraphCache {
         this.fileExists = fileExistsCustom ?? fileExists
     }
 
-    public async updateCache(globalStorage: vscode.Memento): Promise<void> {
+    public async updateCache(): Promise<void> {
         const scriptUpdate = this.updateCachedFile({
-            globalStorage,
             lastDownloadedURLKey: scriptsLastDownloadedUrl,
             currentURL: visualizationScriptUrl,
             filePath: this.jsFilePath,
-        }).catch(error => {
+        }).catch((error) => {
             this.logger.error('Failed to update State Machine Graph script assets')
             this.logger.error(error as Error)
 
@@ -87,11 +93,10 @@ export class StateMachineGraphCache {
         })
 
         const cssUpdate = this.updateCachedFile({
-            globalStorage,
             lastDownloadedURLKey: cssLastDownloadedUrl,
             currentURL: visualizationCssUrl,
             filePath: this.cssFilePath,
-        }).catch(error => {
+        }).catch((error) => {
             this.logger.error('Failed to update State Machine Graph css assets')
             this.logger.error(error as Error)
 
@@ -102,7 +107,7 @@ export class StateMachineGraphCache {
     }
 
     public async updateCachedFile(options: UpdateCachedScriptOptions) {
-        const downloadedUrl = options.globalStorage.get<string>(options.lastDownloadedURLKey)
+        const downloadedUrl = globals.globalState.tryGet<string>(options.lastDownloadedURLKey, String)
         const cachedFileExists = await this.fileExists(options.filePath)
 
         // if current url is different than url that was previously used to download the assets
@@ -113,7 +118,7 @@ export class StateMachineGraphCache {
             await this.writeToLocalStorage(options.filePath, response)
 
             // save the url of the downloaded and cached assets
-            void options.globalStorage.update(options.lastDownloadedURLKey, options.currentURL)
+            await globals.globalState.update(options.lastDownloadedURLKey, options.currentURL)
         }
     }
 
@@ -221,7 +226,7 @@ export async function isDocumentValid(text: string, textDocument?: vscode.TextDo
     const doc = ASLTextDocument.create(textDocument.uri.path, textDocument.languageId, textDocument.version, text)
     const jsonDocument = languageService.parseJSONDocument(doc)
     const diagnostics = await languageService.doValidation(doc, jsonDocument, documentSettings)
-    const isValid = !diagnostics.some(diagnostic => diagnostic.severity === DiagnosticSeverity.Error)
+    const isValid = !diagnostics.some((diagnostic) => diagnostic.severity === DiagnosticSeverity.Error)
 
     return isValid
 }

@@ -23,7 +23,7 @@ export class SsmClient {
         const termination = await client
             .terminateSession({ SessionId: sessionId })
             .promise()
-            .catch(err => {
+            .catch((err) => {
                 getLogger().warn(`ssm: failed to terminate session "${sessionId}": %s`, err)
             })
 
@@ -64,7 +64,6 @@ export class SsmClient {
 
     public async getTargetPlatformName(target: string): Promise<string> {
         const instanceInformation = await this.describeInstance(target)
-
         return instanceInformation.PlatformName!
     }
 

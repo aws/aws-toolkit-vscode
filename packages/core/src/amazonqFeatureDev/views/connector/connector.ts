@@ -7,9 +7,9 @@ import { AuthFollowUpType } from '../../../amazonq/auth/model'
 import { MessagePublisher } from '../../../amazonq/messages/messagePublisher'
 import { CodeReference } from '../../../amazonq/webview/ui/connector'
 import { featureDevChat, licenseText } from '../../constants'
-import { ChatItemType } from '../../models'
 import { ChatItemAction, SourceLink } from '@aws/mynah-ui'
 import { DeletedFileInfo, NewFileInfo } from '../../types'
+import { ChatItemType } from '../../../amazonq/commons/model'
 
 class UiMessage {
     readonly time: number = Date.now()
@@ -52,8 +52,8 @@ export class CodeResultMessage extends UiMessage {
     ) {
         super(tabID)
         this.references = references
-            .filter(ref => ref.licenseName && ref.repository && ref.url)
-            .map(ref => {
+            .filter((ref) => ref.licenseName && ref.repository && ref.url)
+            .map((ref) => {
                 return {
                     information: licenseText(ref),
 
@@ -83,11 +83,13 @@ export class FileComponent extends UiMessage {
     readonly filePaths: NewFileInfo[]
     readonly deletedFiles: DeletedFileInfo[]
     override type = 'updateFileComponent'
+    readonly messageId: string
 
-    constructor(tabID: string, filePaths: NewFileInfo[], deletedFiles: DeletedFileInfo[]) {
+    constructor(tabID: string, filePaths: NewFileInfo[], deletedFiles: DeletedFileInfo[], messageId: string) {
         super(tabID)
         this.filePaths = filePaths
         this.deletedFiles = deletedFiles
+        this.messageId = messageId
     }
 }
 
@@ -148,6 +150,7 @@ export interface ChatMessageProps {
     readonly followUps: ChatItemAction[] | undefined
     readonly relatedSuggestions: SourceLink[] | undefined
     readonly canBeVoted: boolean
+    readonly snapToTop: boolean
 }
 
 export class ChatMessage extends UiMessage {
@@ -157,6 +160,7 @@ export class ChatMessage extends UiMessage {
     readonly relatedSuggestions: SourceLink[] | undefined
     readonly canBeVoted: boolean
     readonly requestID!: string
+    readonly snapToTop: boolean
     override type = 'chatMessage'
 
     constructor(props: ChatMessageProps, tabID: string) {
@@ -166,6 +170,7 @@ export class ChatMessage extends UiMessage {
         this.followUps = props.followUps
         this.relatedSuggestions = props.relatedSuggestions
         this.canBeVoted = props.canBeVoted
+        this.snapToTop = props.snapToTop
     }
 }
 

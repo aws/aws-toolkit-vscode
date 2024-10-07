@@ -5,15 +5,16 @@
 
 import * as os from 'os'
 import * as path from 'path'
-import * as fs from 'fs-extra'
 import * as CodeWhispererConstants from '../../codewhisperer/models/constants'
 import * as codeWhisperer from '../../codewhisperer/client/codewhisperer'
 import assert from 'assert'
 import { getSha256, uploadArtifactToS3, zipCode } from '../../codewhisperer/service/transformByQ/transformApiHandler'
-import request from '../../common/request'
+import request from '../../shared/request'
 import AdmZip from 'adm-zip'
-import { setValidConnection } from '../util/amazonQUtil'
+import { setValidConnection } from '../util/connection'
 import { transformByQState, ZipManifest } from '../../codewhisperer/models/model'
+import globals from '../../shared/extensionGlobals'
+import { fs } from '../../shared'
 
 describe('transformByQ', async function () {
     let tempDir = ''
@@ -28,12 +29,12 @@ describe('transformByQ', async function () {
             this.skip()
         }
         tempDir = path.join(os.tmpdir(), 'gumby-test')
-        fs.mkdirSync(tempDir)
-        tempFileName = `testfile-${Date.now()}.txt`
+        await fs.mkdir(tempDir)
+        tempFileName = `testfile-${globals.clock.Date.now()}.txt`
         tempFilePath = path.join(tempDir, tempFileName)
-        fs.writeFileSync(tempFilePath, 'sample content for the test file')
+        await fs.writeFile(tempFilePath, 'sample content for the test file')
         transformByQState.setProjectPath(tempDir)
-        zippedCodePath = await zipCode({
+        const zipCodeResult = await zipCode({
             dependenciesFolder: {
                 path: tempFilePath,
                 name: tempFileName,
@@ -41,16 +42,17 @@ describe('transformByQ', async function () {
             modulePath: tempDir,
             zipManifest: new ZipManifest(),
         })
+        zippedCodePath = zipCodeResult.tempFilePath
     })
 
     after(async function () {
         if (tempDir !== '') {
-            await fs.remove(tempDir)
+            await fs.delete(tempDir, { recursive: true })
         }
     })
 
     it('WHEN upload payload with missing sha256 in headers THEN fails to upload', async function () {
-        const buffer = fs.readFileSync(zippedCodePath)
+        const buffer = Buffer.from(await fs.readFileBytes(zippedCodePath))
         const sha256 = getSha256(buffer)
         const response = await codeWhisperer.codeWhispererClient.createUploadUrl({
             contentChecksum: sha256,
@@ -61,10 +63,13 @@ describe('transformByQ', async function () {
             'x-amz-checksum-sha256': '',
             'Content-Type': 'application/zip',
         }
+        const body = await fs.readFileText(zippedCodePath)
         await assert.rejects(
             () =>
-                request.fetch('PUT', response.uploadUrl, { body: fs.readFileSync(zippedCodePath), headers: headersObj })
-                    .response
+                request.fetch('PUT', response.uploadUrl, {
+                    body: body,
+                    headers: headersObj,
+                }).response
         )
     })
 
@@ -83,7 +88,7 @@ describe('transformByQ', async function () {
     })
 
     it('WHEN createUploadUrl THEN URL uses HTTPS and sets 60 second expiration', async function () {
-        const buffer = fs.readFileSync(zippedCodePath)
+        const buffer = Buffer.from(await fs.readFileBytes(zippedCodePath))
         const sha256 = getSha256(buffer)
         const response = await codeWhisperer.codeWhispererClient.createUploadUrl({
             contentChecksum: sha256,
@@ -98,7 +103,7 @@ describe('transformByQ', async function () {
     it('WHEN zipCode THEN ZIP contains all expected files and no unexpected files', async function () {
         const zipFiles = new AdmZip(zippedCodePath).getEntries()
         const zipFileNames: string[] = []
-        zipFiles.forEach(file => {
+        zipFiles.forEach((file) => {
             zipFileNames.push(file.name)
         })
         assert.strictEqual(zipFileNames.length, 2) // expecting only a dummy txt file and a manifest.json

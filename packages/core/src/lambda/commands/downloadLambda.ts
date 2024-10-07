@@ -4,7 +4,6 @@
  */
 
 import AdmZip from 'adm-zip'
-import * as fs from 'fs-extra'
 import * as _ from 'lodash'
 import * as path from 'path'
 import * as vscode from 'vscode'
@@ -26,6 +25,7 @@ import { Progress } from 'got/dist/source'
 import { DefaultLambdaClient } from '../../shared/clients/lambdaClient'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { Result, Runtime } from '../../shared/telemetry/telemetry'
+import { fs } from '../../shared'
 
 export async function downloadLambdaCommand(functionNode: LambdaFunctionNode) {
     const result = await runDownloadLambda(functionNode)
@@ -57,7 +57,7 @@ async function runDownloadLambda(functionNode: LambdaFunctionNode): Promise<Resu
     const downloadLocation = path.join(selectedUri.fsPath, functionName, path.sep)
     const downloadLocationName = vscode.workspace.asRelativePath(downloadLocation, true)
 
-    if (await fs.pathExists(downloadLocation)) {
+    if (await fs.exists(downloadLocation)) {
         const isConfirmed = await showConfirmationMessage({
             prompt: localize(
                 'AWS.lambda.download.prompt',
@@ -86,7 +86,7 @@ async function runDownloadLambda(functionNode: LambdaFunctionNode): Promise<Resu
                 downloadLocationName
             ),
         },
-        async progress => {
+        async (progress) => {
             let lambdaLocation: string
 
             try {
@@ -112,7 +112,7 @@ async function runDownloadLambda(functionNode: LambdaFunctionNode): Promise<Resu
             try {
                 await openLambdaFile(lambdaLocation)
                 if (
-                    workspaceFolders.filter(val => {
+                    workspaceFolders.filter((val) => {
                         return selectedUri === val.uri
                     }).length === 0
                 ) {

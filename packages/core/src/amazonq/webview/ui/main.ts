@@ -2,8 +2,8 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { Connector } from './connector'
-import { ChatItem, ChatItemType, MynahUI, MynahUIDataModel, NotificationType } from '@aws/mynah-ui'
+import { Connector, TracedChatItem } from './connector'
+import { ChatItem, ChatItemType, MynahIcons, MynahUI, MynahUIDataModel, NotificationType } from '@aws/mynah-ui'
 import { ChatPrompt } from '@aws/mynah-ui/dist/static'
 import { TabsStorage, TabType } from './storages/tabsStorage'
 import { WelcomeFollowupType } from './apps/amazonqCommonsConnector'
@@ -16,15 +16,24 @@ import { TextMessageHandler } from './messages/handler'
 import { MessageController } from './messages/controller'
 import { getActions, getDetails } from './diffTree/actions'
 import { DiffTreeFileInfo } from './diffTree/types'
-import '../../../../resources/css/amazonq-webview.css'
 
 export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
     // eslint-disable-next-line prefer-const
     let mynahUI: MynahUI
     // eslint-disable-next-line prefer-const
     let connector: Connector
+
+    window.addEventListener('error', (e) => {
+        const { error, message } = e
+        ideApi.postMessage({
+            type: 'error',
+            event: connector.isUIReady ? 'webview_error' : 'webview_load',
+            errorMessage: error ? error.toString() : message,
+        })
+    })
+
     const tabsStorage = new TabsStorage({
-        onTabTimeout: tabID => {
+        onTabTimeout: (tabID) => {
             mynahUI.addChatItem(tabID, {
                 type: ChatItemType.ANSWER,
                 body: 'This conversation has timed out after 48 hours. It will not be saved. Start a new conversation.',
@@ -164,7 +173,7 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
             })
             tabsStorage.updateTabStatus(tabID, 'free')
         },
-        sendMessageToExtension: message => {
+        sendMessageToExtension: (message) => {
             ideApi.postMessage(message)
         },
         onChatAnswerUpdated: (tabID: string, item: ChatItem) => {
@@ -180,7 +189,7 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
                 } as ChatItem)
             }
         },
-        onChatAnswerReceived: (tabID: string, item: ChatItem) => {
+        onChatAnswerReceived: (tabID: string, item: TracedChatItem) => {
             if (item.type === ChatItemType.ANSWER_PART || item.type === ChatItemType.CODE_RESULT) {
                 mynahUI.updateLastChatAnswer(tabID, {
                     ...(item.messageId !== undefined ? { messageId: item.messageId } : {}),
@@ -225,23 +234,42 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
                     promptInputDisabledState: tabsStorage.isTabDead(tabID),
                 })
                 tabsStorage.updateTabStatus(tabID, 'free')
+
+                if (item.traceId) {
+                    /**
+                     * We've received an answer for a traceId and this message has
+                     * completed its round trip. Send that information back to
+                     * VSCode so we can emit a round trip event
+                     **/
+                    ideApi.postMessage({
+                        type: 'stopChatMessageTelemetry',
+                        tabID,
+                        traceId: item.traceId,
+                        tabType: tabsStorage.getTab(tabID)?.type,
+                    })
+                }
             }
         },
         onMessageReceived: (tabID: string, messageData: MynahUIDataModel) => {
             mynahUI.updateStore(tabID, messageData)
         },
-        onFileComponentUpdate: (tabID: string, filePaths: DiffTreeFileInfo[], deletedFiles: DiffTreeFileInfo[]) => {
+        onFileComponentUpdate: (
+            tabID: string,
+            filePaths: DiffTreeFileInfo[],
+            deletedFiles: DiffTreeFileInfo[],
+            messageId: string
+        ) => {
             const updateWith: Partial<ChatItem> = {
                 type: ChatItemType.ANSWER,
                 fileList: {
                     rootFolderTitle: 'Changes',
-                    filePaths: filePaths.map(i => i.relativePath),
-                    deletedFiles: deletedFiles.map(i => i.relativePath),
+                    filePaths: filePaths.map((i) => i.zipFilePath),
+                    deletedFiles: deletedFiles.map((i) => i.zipFilePath),
                     details: getDetails(filePaths),
                     actions: getActions([...filePaths, ...deletedFiles]),
                 },
             }
-            mynahUI.updateLastChatAnswer(tabID, updateWith)
+            mynahUI.updateChatAnswerWithMessageId(tabID, messageId, updateWith)
         },
         onWarning: (tabID: string, message: string, title: string) => {
             mynahUI.notify({
@@ -313,6 +341,27 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
 
             mynahUI.updateStore(newTabID, tabDataGenerator.getTabData(tabType, true))
         },
+        onOpenSettingsMessage(tabId: string) {
+            mynahUI.addChatItem(tabId, {
+                type: ChatItemType.ANSWER,
+                body: `To add your workspace as context, enable local indexing in your IDE settings. After enabling, add @workspace to your question, and I'll generate a response using your workspace as context.`,
+                buttons: [
+                    {
+                        id: 'open-settings',
+                        text: 'Open settings',
+                        icon: MynahIcons.EXTERNAL,
+                        keepCardAfterClick: false,
+                        status: 'info',
+                    },
+                ],
+            })
+            tabsStorage.updateTabStatus(tabId, 'free')
+            mynahUI.updateStore(tabId, {
+                loadingChat: false,
+                promptInputDisabledState: tabsStorage.isTabDead(tabId),
+            })
+            return
+        },
     })
 
     mynahUI = new MynahUI({
@@ -327,6 +376,7 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
         },
         onTabRemove: connector.onTabRemove,
         onTabChange: connector.onTabChange,
+        // TODO: update mynah-ui this type doesn't seem correct https://github.com/aws/mynah-ui/blob/3777a39eb534a91fd6b99d6cf421ce78ee5c7526/src/main.ts#L372
         onChatPrompt: (tabID: string, prompt: ChatPrompt, eventId: string | undefined) => {
             if ((prompt.prompt ?? '') === '' && (prompt.command ?? '') === '') {
                 return
@@ -339,6 +389,7 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
             } else if (tabsStorage.getTab(tabID)?.type === 'gumby') {
                 connector.requestAnswer(tabID, {
                     chatMessage: prompt.prompt ?? '',
+                    traceId: eventId as string,
                 })
                 return
             }
@@ -348,7 +399,20 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
                 return
             }
 
-            textMessageHandler.handle(prompt, tabID)
+            /**
+             * When a user presses "enter" send an event that indicates
+             * we should start tracking the round trip time for this message
+             **/
+            ideApi.postMessage({
+                type: 'startChatMessageTelemetry',
+                trigger: 'onChatPrompt',
+                tabID,
+                traceId: eventId,
+                tabType: tabsStorage.getTab(tabID)?.type,
+                startTime: Date.now(),
+            })
+
+            textMessageHandler.handle(prompt, tabID, eventId as string)
         },
         onVote: connector.onChatItemVoted,
         onInBodyButtonClicked: (tabId, messageId, action, eventId) => {

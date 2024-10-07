@@ -29,17 +29,16 @@ import {
     CodeScanTelemetryEntry,
 } from '../models/model'
 import { cancel, ok } from '../../shared/localizedText'
-import { getDirSize } from '../../shared/filesystemUtilities'
 import { telemetry } from '../../shared/telemetry/telemetry'
-import { isAwsError } from '../../shared/errors'
+import { ToolkitError, getTelemetryReasonDesc, isAwsError } from '../../shared/errors'
 import { openUrl } from '../../shared/utilities/vsCodeUtils'
 import { AuthUtil } from '../util/authUtil'
 import path from 'path'
 import { ZipMetadata, ZipUtil } from '../util/zipUtil'
 import { debounce } from 'lodash'
 import { once } from '../../shared/utilities/functionUtils'
-import { randomUUID } from '../../common/crypto'
-import { CodeAnalysisScope } from '../models/constants'
+import { randomUUID } from '../../shared/crypto'
+import { CodeAnalysisScope, ProjectSizeExceededErrorMessage } from '../models/constants'
 import { CodeScanJobFailedError, CreateCodeScanFailedError, SecurityScanError } from '../models/errors'
 
 const localize = nls.loadMessageBundle()
@@ -186,7 +185,7 @@ export async function startSecurityScan(
         throwIfCancelled(scope, codeScanStartTime)
         const jobStatus = await pollScanJobStatus(client, scanJob.jobId, scope, codeScanStartTime)
         if (jobStatus === 'Failed') {
-            logger.verbose(`Security scan job failed.`)
+            logger.verbose(`Security scan failed.`)
             throw new CodeScanJobFailedError()
         }
 
@@ -200,12 +199,13 @@ export async function startSecurityScan(
             scanJob.jobId,
             CodeWhispererConstants.codeScanFindingsSchema,
             projectPaths,
-            scope
+            scope,
+            editor
         )
         const { total, withFixes } = securityRecommendationCollection.reduce(
             (accumulator, current) => ({
                 total: accumulator.total + current.issues.length,
-                withFixes: accumulator.withFixes + current.issues.filter(i => i.suggestedFixes.length > 0).length,
+                withFixes: accumulator.withFixes + current.issues.filter((i) => i.suggestedFixes.length > 0).length,
             }),
             { total: 0, withFixes: 0 }
         )
@@ -250,12 +250,16 @@ export async function startSecurityScan(
                 CodeScansState.instance.setMonthlyQuotaExceeded()
             }
         }
-        codeScanTelemetryEntry.reason = (error as SecurityScanError).message
+        codeScanTelemetryEntry.reasonDesc =
+            (error as ToolkitError)?.code === 'ContentLengthError'
+                ? 'Payload size limit reached'
+                : getTelemetryReasonDesc(error)
+        codeScanTelemetryEntry.reason = (error as ToolkitError)?.code ?? 'DefaultError'
     } finally {
         codeScanState.setToNotStarted()
         codeScanTelemetryEntry.duration = performance.now() - codeScanStartTime
         codeScanTelemetryEntry.codeScanServiceInvocationsDuration = performance.now() - serviceInvocationStartTime
-        await emitCodeScanTelemetry(codeScanTelemetryEntry)
+        await emitCodeScanTelemetry(codeScanTelemetryEntry, scope)
     }
 }
 
@@ -279,20 +283,15 @@ export function showSecurityScanResults(
     }
     if (scope === CodeWhispererConstants.CodeAnalysisScope.PROJECT) {
         populateCodeScanLogStream(zipMetadata.scannedFiles)
-        showScanCompletedNotification(totalIssues, zipMetadata.scannedFiles, false)
+        showScanCompletedNotification(totalIssues, zipMetadata.scannedFiles)
     }
 }
 
-export async function emitCodeScanTelemetry(codeScanTelemetryEntry: CodeScanTelemetryEntry) {
+export async function emitCodeScanTelemetry(
+    codeScanTelemetryEntry: CodeScanTelemetryEntry,
+    scope: CodeWhispererConstants.CodeAnalysisScope
+) {
     codeScanTelemetryEntry.codewhispererCodeScanProjectBytes = 0
-    const now = performance.now()
-    for (const folder of vscode.workspace.workspaceFolders ?? []) {
-        codeScanTelemetryEntry.codewhispererCodeScanProjectBytes += await getDirSize(
-            folder.uri.fsPath,
-            now,
-            CodeWhispererConstants.projectSizeCalculateTimeoutSeconds * 1000
-        )
-    }
     telemetry.codewhisperer_securityScan.emit({
         ...codeScanTelemetryEntry,
         passive: codeScanTelemetryEntry.codewhispererCodeScanScope === CodeAnalysisScope.FILE,
@@ -301,7 +300,9 @@ export async function emitCodeScanTelemetry(codeScanTelemetryEntry: CodeScanTele
 
 export function errorPromptHelper(error: SecurityScanError, scope: CodeAnalysisScope) {
     if (scope === CodeAnalysisScope.PROJECT) {
-        void vscode.window.showWarningMessage(error.customerFacingMessage, ok)
+        const message =
+            error.code === 'ContentLengthError' ? ProjectSizeExceededErrorMessage : error.customerFacingMessage
+        void vscode.window.showWarningMessage(message, ok)
     }
 }
 
@@ -331,21 +332,14 @@ export async function confirmStopSecurityScan() {
     }
 }
 
-function showScanCompletedNotification(total: number, scannedFiles: Set<string>, isProjectTruncated: boolean) {
+function showScanCompletedNotification(total: number, scannedFiles: Set<string>) {
     const totalFiles = `${scannedFiles.size} ${scannedFiles.size === 1 ? 'file' : 'files'}`
     const totalIssues = `${total} ${total === 1 ? 'issue was' : 'issues were'}`
-    const fileSizeLimitReached = isProjectTruncated ? 'File size limit reached.' : ''
     const learnMore = 'Learn More'
     const items = [CodeWhispererConstants.showScannedFilesMessage]
-    if (isProjectTruncated) {
-        items.push(learnMore)
-    }
     void vscode.window
-        .showInformationMessage(
-            `Security scan completed for ${totalFiles}. ${totalIssues} found. ${fileSizeLimitReached}`,
-            ...items
-        )
-        .then(value => {
+        .showInformationMessage(`Security scan completed for ${totalFiles}. ${totalIssues} found.`, ...items)
+        .then((value) => {
             if (value === CodeWhispererConstants.showScannedFilesMessage) {
                 const [, codeScanOutpuChan] = getLogOutputChan()
                 codeScanOutpuChan.show()

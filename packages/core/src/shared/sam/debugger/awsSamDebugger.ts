@@ -5,7 +5,6 @@
 
 import * as semver from 'semver'
 import * as vscode from 'vscode'
-import * as fs from 'fs-extra'
 import * as nls from 'vscode-nls'
 import {
     getCodeRoot,
@@ -67,6 +66,7 @@ import { Logging } from '../../logger/commands'
 import { credentialHelpUrl, samTroubleshootingUrl } from '../../constants'
 import { Auth } from '../../../auth/auth'
 import { openUrl } from '../../utilities/vsCodeUtils'
+import fs from '../../fs/fs'
 
 const localize = nls.loadMessageBundle()
 
@@ -107,7 +107,7 @@ class SamLaunchRequestError extends ToolkitError.named('SamLaunchRequestError') 
 
         const buttonsWithLogs = [viewLogsButton, ...this.buttons]
 
-        await vscode.window.showErrorMessage(this.message, ...buttonsWithLogs.map(b => b.label)).then(resp => {
+        await vscode.window.showErrorMessage(this.message, ...buttonsWithLogs.map((b) => b.label)).then((resp) => {
             return buttonsWithLogs.find(({ label }) => label === resp)?.onClick()
         })
     }
@@ -362,7 +362,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
     ): Promise<void> {
         try {
             if (config.invokeTarget.target === 'api') {
-                await telemetry.apigateway_invokeLocal.run(async span => {
+                await telemetry.apigateway_invokeLocal.run(async (span) => {
                     const resolved = await this.makeConfig(folder, config, token)
                     span.record({ httpMethod: resolved.api?.httpMethod })
 
@@ -460,7 +460,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         const handlerName = await getHandlerName(folder, config)
 
         config.baseBuildDir = resolve(folder.uri.fsPath, config.sam?.buildDir ?? (await makeTemporaryToolkitFolder()))
-        await fs.ensureDir(config.baseBuildDir)
+        await fs.mkdir(config.baseBuildDir)
 
         if (templateInvoke?.templatePath) {
             // Normalize to absolute path.

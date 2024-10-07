@@ -6,7 +6,8 @@
 //
 // Creates an artifact that can be given to users for testing alpha/beta builds:
 //
-//     aws-toolkit-vscode-99.0.0-xxxxxxx.vsix
+//     aws-toolkit-vscode-99.0.0-gxxxxxxx.vsix
+//     or amazon-q-vscode-99.0.0-gxxxxxxx.vsix
 //
 // Where `xxxxxxx` is the first 7 characters of the commit hash that produced the artifact.
 //
@@ -99,7 +100,8 @@ function getVersionSuffix(feature: string, debug: boolean): string {
     const debugSuffix = debug ? '-debug' : ''
     const featureSuffix = feature === '' ? '' : `-${feature}`
     const commitId = child_process.execFileSync('git', ['rev-parse', '--short=7', 'HEAD']).toString().trim()
-    const commitSuffix = commitId ? `-${commitId}` : ''
+    // Commit id is prefixed with "g" because "-0abc123" is not a valid semver prerelease, and will cause vsce to fail.
+    const commitSuffix = commitId ? `-g${commitId}` : ''
     return `${debugSuffix}${featureSuffix}${commitSuffix}`
 }
 
@@ -153,10 +155,25 @@ function main() {
         }
 
         fs.writeFileSync(packageJsonFile, JSON.stringify(packageJson, undefined, '    '))
-        child_process.execFileSync('vsce', ['package', '--ignoreFile', '../.vscodeignore.packages'], {
-            stdio: 'inherit',
-            shell: process.platform === 'win32', // For vsce.cmd on Windows.
-        })
+        child_process.execFileSync(
+            'vsce',
+            [
+                'package',
+                '--ignoreFile',
+                '../.vscodeignore.packages',
+                /**
+                 * Depdendency gathering not required because we bundle with webpack: https://github.com/microsoft/vscode-vsce/issues/439
+                 *
+                 * Removing this arg will cause packaging to break due to issues in src.gen/.../node_modules,
+                 * since those dependencies are disjoint (i.e. not a workspace in the root package.json)
+                 */
+                '--no-dependencies',
+            ],
+            {
+                stdio: 'inherit',
+                shell: process.platform === 'win32', // For vsce.cmd on Windows.
+            }
+        )
 
         console.log(`VSIX Version: ${packageJson.version}`)
 

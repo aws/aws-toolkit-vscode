@@ -128,6 +128,10 @@ export class AuthNeededException extends UiMessage {
     }
 }
 
+export class OpenSettingsMessage extends UiMessage {
+    override type = 'openSettingsMessage'
+}
+
 export interface ChatMessageProps {
     readonly message: string | undefined
     readonly messageType: ChatMessageType
@@ -137,6 +141,7 @@ export interface ChatMessageProps {
     readonly codeReference?: CodeReference[]
     readonly triggerID: string
     readonly messageID: string
+    readonly traceId?: string
 }
 
 export class ChatMessage extends UiMessage {
@@ -149,6 +154,7 @@ export class ChatMessage extends UiMessage {
     readonly followUpsHeader: string | undefined
     readonly triggerID: string
     readonly messageID: string | undefined
+    readonly traceId?: string
     override type = 'chatMessage'
 
     constructor(props: ChatMessageProps, tabID: string) {
@@ -161,6 +167,7 @@ export class ChatMessage extends UiMessage {
         this.codeReference = props.codeReference
         this.triggerID = props.triggerID
         this.messageID = props.messageID
+        this.traceId = props.traceId
     }
 }
 
@@ -227,6 +234,10 @@ export class AppToWebViewMessageDispatcher {
     }
 
     public sendAuthNeededExceptionMessage(message: AuthNeededException) {
+        this.appsToWebViewMessagePublisher.publish(message)
+    }
+
+    public sendOpenSettingsMessage(message: OpenSettingsMessage) {
         this.appsToWebViewMessagePublisher.publish(message)
     }
 }

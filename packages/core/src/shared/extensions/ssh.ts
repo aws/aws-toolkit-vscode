@@ -6,9 +6,9 @@
 import * as vscode from 'vscode'
 import * as path from 'path'
 import * as nls from 'vscode-nls'
+import fs from '../fs/fs'
 import { getLogger } from '../logger'
-import { ChildProcess } from '../utilities/childProcess'
-import { SystemUtilities } from '../systemUtilities'
+import { ChildProcess } from '../utilities/processUtils'
 import { ArrayConstructor, NonNullObject } from '../utilities/typeConstructors'
 import { Settings } from '../settings'
 import { VSCODE_EXTENSION_ID } from '../extensions'
@@ -18,7 +18,7 @@ const localize = nls.loadMessageBundle()
 export const sshAgentSocketVariable = 'SSH_AUTH_SOCK'
 
 export function getSshConfigPath(): string {
-    const sshConfigDir = path.join(SystemUtilities.getHomeDirectory(), '.ssh')
+    const sshConfigDir = path.join(fs.getUserHomeDir(), '.ssh')
     return path.join(sshConfigDir, 'config')
 }
 
@@ -59,8 +59,8 @@ exit !$?
                 logging: 'noparams',
             } as const
             const result = await new ChildProcess('powershell.exe', ['-Command', script], options).run({
-                onStdout: text => getLogger().verbose(`ssh (ssh-agent): ${text}`),
-                onStderr: text => getLogger().verbose(`ssh (ssh-agent): ${text}`),
+                onStdout: (text) => getLogger().verbose(`ssh (ssh-agent): ${text}`),
+                onStderr: (text) => getLogger().verbose(`ssh (ssh-agent): ${text}`),
             })
 
             if (!result.stdout.includes(runningMessage) && !result.stderr) {
@@ -130,7 +130,7 @@ export async function startVscodeRemote(
     const workspaceUri = `vscode-remote://ssh-remote+${userAt}${hostname}${targetDirectory}`
 
     const settings = new RemoteSshSettings()
-    settings.ensureDefaultExtension(VSCODE_EXTENSION_ID.awstoolkit).catch(e => {
+    settings.ensureDefaultExtension(VSCODE_EXTENSION_ID.awstoolkit).catch((e) => {
         // Non-fatal. Some users intentionally have readonly settings.
         getLogger().warn('startVscodeRemote: failed to set "defaultExtensions": %s', (e as Error).message)
     })

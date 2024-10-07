@@ -14,13 +14,16 @@ export enum ButtonActions {
     STOP_TRANSFORMATION_JOB = 'gumbyStopTransformationJob',
     VIEW_TRANSFORMATION_HUB = 'gumbyViewTransformationHub',
     CONFIRM_TRANSFORMATION_FORM = 'gumbyTransformFormConfirm',
+    CONFIRM_SKIP_TESTS_FORM = 'gumbyTransformSkipTestsFormConfirm',
     CANCEL_TRANSFORMATION_FORM = 'gumbyTransformFormCancel',
+    CANCEL_SKIP_TESTS_FORM = 'gumbyTransformSkipTestsFormCancel',
     CONFIRM_DEPENDENCY_FORM = 'gumbyTransformDependencyFormConfirm',
     CANCEL_DEPENDENCY_FORM = 'gumbyTransformDependencyFormCancel',
     CONFIRM_JAVA_HOME_FORM = 'gumbyJavaHomeFormConfirm',
     CANCEL_JAVA_HOME_FORM = 'gumbyJavaHomeFormCancel',
     CONFIRM_START_TRANSFORMATION_FLOW = 'gumbyStartTransformation',
     OPEN_FILE = 'gumbyOpenFile',
+    OPEN_BUILD_LOG = 'gumbyOpenBuildLog',
 }
 
 export enum GumbyCommands {
@@ -35,17 +38,16 @@ export default class MessengerUtils {
             CodeWhispererConstants.enterJavaHomeChatMessage
         } ${transformByQState.getSourceJDKVersion()}. \n`
         if (os.platform() === 'win32') {
-            javaHomePrompt += CodeWhispererConstants.windowsJavaHomeHelpChatMessage.replace(
-                'JAVA_VERSION_HERE',
-                transformByQState.getSourceJDKVersion()!
-            )
-        } else {
+            javaHomePrompt += CodeWhispererConstants.windowsJavaHomeHelpChatMessage
+        } else if (os.platform() === 'darwin') {
             const jdkVersion = transformByQState.getSourceJDKVersion()
             if (jdkVersion === JDKVersion.JDK8) {
-                javaHomePrompt += ` ${CodeWhispererConstants.nonWindowsJava8HomeHelpChatMessage}`
+                javaHomePrompt += ` ${CodeWhispererConstants.macJava8HomeHelpChatMessage}`
             } else if (jdkVersion === JDKVersion.JDK11) {
-                javaHomePrompt += ` ${CodeWhispererConstants.nonWindowsJava11HomeHelpChatMessage}`
+                javaHomePrompt += ` ${CodeWhispererConstants.macJava11HomeHelpChatMessage}`
             }
+        } else {
+            javaHomePrompt += ` ${CodeWhispererConstants.linuxJavaHomeHelpChatMessage}`
         }
         return javaHomePrompt
     }

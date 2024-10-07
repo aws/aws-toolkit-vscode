@@ -3,22 +3,28 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import globals from '../shared/extensionGlobals'
-
 import * as vscode from 'vscode'
 import { getLogger } from '../shared/logger'
 import { cast, Optional } from '../shared/utilities/typeConstructors'
 import { Auth } from './auth'
-import { once, onceChanged } from '../shared/utilities/functionUtils'
+import { onceChanged } from '../shared/utilities/functionUtils'
 import { isNonNullable } from '../shared/utilities/tsUtils'
-import { Connection, SsoConnection, StatefulConnection } from './connection'
+import { ToolIdStateKey } from '../shared/globalState'
+import { Connection, getTelemetryMetadataForConn, SsoConnection, StatefulConnection } from './connection'
 import { indent } from '../shared/utilities/textUtilities'
+import { AuthModifyConnection, AuthStatus, Span, telemetry } from '../shared/telemetry/telemetry'
+import { asStringifiedStack } from '../shared/telemetry/spans'
+import { withTelemetryContext } from '../shared/telemetry/util'
+import { isNetworkError } from '../shared/errors'
+import globals from '../shared/extensionGlobals'
+
+export type ToolId = 'codecatalyst' | 'codewhisperer' | 'testId'
 
 let currentConn: Auth['activeConnection']
 const auths = new Map<string, SecondaryAuth>()
 const multiConnectionListeners = new WeakMap<Auth, vscode.Disposable>()
 const registerAuthListener = (auth: Auth) => {
-    return auth.onDidChangeActiveConnection(async newConn => {
+    return auth.onDidChangeActiveConnection(async (newConn) => {
         // When we change the active connection, there may be
         // secondary auths that were dependent on the previous active connection.
         // To ensure secondary auths still work, when we change to a new active connection,
@@ -26,9 +32,9 @@ const registerAuthListener = (auth: Auth) => {
         const oldConn = currentConn
         if (newConn && oldConn?.state === 'valid') {
             const saveableAuths = Array.from(auths.values()).filter(
-                a => !a.hasSavedConnection && a.isUsable(oldConn) && !a.isUsable(newConn)
+                (a) => !a.hasSavedConnection && a.isUsable(oldConn) && !a.isUsable(newConn)
             )
-            await Promise.all(saveableAuths.map(a => a.saveConnection(oldConn)))
+            await Promise.all(saveableAuths.map((a) => a.saveConnection(oldConn)))
         }
         currentConn = newConn
     })
@@ -36,7 +42,7 @@ const registerAuthListener = (auth: Auth) => {
 
 export function getSecondaryAuth<T extends Connection>(
     auth: Auth,
-    toolId: string,
+    toolId: ToolId,
     toolLabel: string,
     isValid: (conn: Connection) => conn is T
 ): SecondaryAuth<T> {
@@ -55,14 +61,14 @@ export function getSecondaryAuth<T extends Connection>(
  * Gets all {@link SecondaryAuth} instances that have saved the connection
  */
 export function getDependentAuths(conn: Connection): SecondaryAuth[] {
-    return Array.from(auths.values()).filter(auth => auth.hasSavedConnection && auth.activeConnection?.id === conn.id)
+    return Array.from(auths.values()).filter((auth) => auth.hasSavedConnection && auth.activeConnection?.id === conn.id)
 }
 
 export function getAllConnectionsInUse(auth: Auth): StatefulConnection[] {
     const connMap = new Map<Connection['id'], StatefulConnection>()
     const toolConns = Array.from(auths.values())
-        .filter(a => a.hasSavedConnection)
-        .map(a => a.activeConnection)
+        .filter((a) => a.hasSavedConnection)
+        .map((a) => a.activeConnection)
 
     for (const conn of [auth.activeConnection, ...toolConns].filter(isNonNullable)) {
         connMap.set(conn.id, { ...conn, state: auth.getConnectionState(conn) ?? 'invalid' })
@@ -74,6 +80,8 @@ export function getAllConnectionsInUse(auth: Auth): StatefulConnection[] {
 const onDidChangeConnectionsEmitter = new vscode.EventEmitter<void>()
 export const onDidChangeConnections = onDidChangeConnectionsEmitter.event
 
+// Variable must be declared outside of class to work with decorators
+const secondaryAuthClassName = 'SecondaryAuth'
 /**
  * Enables a tool to bind to a connection independently from the global {@link Auth} service.
  *
@@ -87,16 +95,15 @@ export class SecondaryAuth<T extends Connection = Connection> {
     #savedConnection: T | undefined
     protected static readonly logIfChanged = onceChanged((s: string) => getLogger().info(s))
 
-    private readonly key = `${this.toolId}.savedConnectionId`
+    private readonly key: ToolIdStateKey = `${this.toolId}.savedConnectionId`
     readonly #onDidChangeActiveConnection = new vscode.EventEmitter<T | undefined>()
     public readonly onDidChangeActiveConnection = this.#onDidChangeActiveConnection.event
 
     public constructor(
-        public readonly toolId: string,
+        public readonly toolId: ToolId,
         public readonly toolLabel: string,
         public readonly isUsable: (conn: Connection) => conn is T,
-        private readonly auth: Auth,
-        private readonly memento = globals.context.globalState
+        private readonly auth: Auth
     ) {
         const handleConnectionChanged = async (newActiveConn?: Connection) => {
             if (newActiveConn === undefined && this.#activeConnection?.id) {
@@ -112,33 +119,67 @@ export class SecondaryAuth<T extends Connection = Connection> {
             }
         }
 
-        this.auth.onDidUpdateConnection(conn => {
+        this.auth.onDidUpdateConnection((conn) => {
             if (this.#savedConnection?.id === conn.id) {
                 this.#savedConnection = conn as unknown as T
                 this.#onDidChangeActiveConnection.fire(this.activeConnection)
             }
         })
 
-        this.auth.onDidChangeConnectionState(e => {
+        this.auth.onDidChangeConnectionState((e) => {
             if (this.activeConnection?.id === e.id) {
                 this.#onDidChangeActiveConnection.fire(this.activeConnection)
             }
         })
 
         // Register listener and handle connection immediately in case we were instantiated late
-        handleConnectionChanged(this.auth.activeConnection).catch(e => {
+        handleConnectionChanged(this.auth.activeConnection).catch((e) => {
             getLogger().error('handleConnectionChanged() failed: %s', (e as Error).message)
         })
         this.auth.onDidChangeActiveConnection(handleConnectionChanged)
-        this.auth.onDidDeleteConnection(async (deletedConnId: Connection['id']) => {
-            if (deletedConnId === this.#activeConnection?.id) {
+        this.auth.onDidDeleteConnection(async (event) => {
+            if (event.connId === this.#activeConnection?.id) {
                 await this.clearActiveConnection()
             }
-            if (deletedConnId === this.#savedConnection?.id) {
+            if (event.connId === this.#savedConnection?.id) {
                 // Our saved connection does not exist anymore, delete the reference to it.
                 await this.clearSavedConnection()
             }
         })
+
+        const refreshConn = (event: string) => {
+            getLogger().debug(`secondaryAuth: detected ${event} event in sso cache, refreshing auth.`)
+            globals.clock.setTimeout(
+                telemetry.function_call.run(
+                    () => async () => {
+                        if (this.#savedConnection?.id === this.getStateConnectionId()) {
+                            // Someone updated our cache but the global state doesn't indicate anything new, so do nothing.
+                            // (it could have been us that updated the cache)
+                            getLogger().debug(
+                                `secondaryAuth: cache event did not update global state, no refresh is needed.`
+                            )
+                            return
+                        }
+                        await this.auth.restorePreviousSession()
+                        await this.restoreConnection(true)
+                    },
+                    {
+                        emit: false,
+                        functionId: { name: 'cacheWatchCallback', class: secondaryAuthClassName },
+                    }
+                ),
+                /**
+                 * The connection is first created and stored on disk, then it is stored in global state.
+                 * This creates a race condition for the callback, who listens to the disk event but
+                 * depends on the global state to make a connection decision. The time is arbitrary.
+                 *
+                 * TODO: fix this race condition.
+                 */
+                3000
+            )
+        }
+        this.auth.cacheWatcher.onDidCreate(() => refreshConn('create'))
+        this.auth.cacheWatcher.onDidDelete(() => refreshConn('delete'))
     }
 
     public get activeConnection(): T | undefined {
@@ -172,8 +213,14 @@ export class SecondaryAuth<T extends Connection = Connection> {
         return !!this.activeConnection && this.auth.getConnectionState(this.activeConnection) === 'invalid'
     }
 
+    public get state() {
+        return this.auth.getStateMemento()
+    }
+
     public async saveConnection(conn: T) {
-        await this.memento.update(this.key, conn.id)
+        // TODO: fix this
+        // eslint-disable-next-line aws-toolkits/no-banned-usages
+        await this.state.update(this.key, conn.id)
         this.#savedConnection = conn
         this.#onDidChangeActiveConnection.fire(this.activeConnection)
     }
@@ -182,6 +229,7 @@ export class SecondaryAuth<T extends Connection = Connection> {
      * Globally deletes the connection that this secondary auth is using,
      * effectively doing a signout.
      */
+    @withTelemetryContext({ name: 'deleteConnection', class: secondaryAuthClassName })
     public async deleteConnection() {
         if (this.activeConnection) {
             await this.auth.deleteConnection(this.activeConnection)
@@ -189,14 +237,29 @@ export class SecondaryAuth<T extends Connection = Connection> {
         }
     }
 
+    /**
+     * @warning Intended for a single use case where we need to let one service "forget" about a
+     * connection but leave it intact for other services. This may have unintended consequences.
+     * Use `deleteConnection()` instead.
+     *
+     * Clears the connection in use without deleting it or logging out.
+     */
+    public async forgetConnection() {
+        getLogger().debug('running SecondaryAuth:forgetConnection()')
+        await this.clearSavedConnection()
+        await this.clearActiveConnection()
+    }
+
     /** Stop using the saved connection and fallback to using the active connection, if it is usable. */
-    private async clearSavedConnection() {
-        await this.memento.update(this.key, undefined)
+    public async clearSavedConnection() {
+        // TODO: fix this
+        // eslint-disable-next-line aws-toolkits/no-banned-usages
+        await this.state.update(this.key, undefined)
         this.#savedConnection = undefined
         this.#onDidChangeActiveConnection.fire(this.activeConnection)
     }
 
-    private async clearActiveConnection() {
+    public async clearActiveConnection() {
         this.#activeConnection = undefined
         if (this.#savedConnection) {
             /**
@@ -208,35 +271,65 @@ export class SecondaryAuth<T extends Connection = Connection> {
         this.#onDidChangeActiveConnection.fire(undefined)
     }
 
-    public async useNewConnection(conn: T) {
+    @withTelemetryContext({ name: 'useNewConnection', class: secondaryAuthClassName })
+    public async useNewConnection(conn: T): Promise<T> {
         await this.saveConnection(conn)
         if (this.auth.activeConnection === undefined) {
             // Since no connection exists yet in the "primary" auth, we will make
             // this connection available to all primary auth users
             await this.auth.useConnection(conn)
         }
+
+        return conn
     }
 
     public async addScopes(conn: T & SsoConnection, extraScopes: string[]) {
         return await addScopes(conn, extraScopes, this.auth)
     }
 
+    private hasRunRestoreConnection = false
+
     // Used to lazily restore persisted connections.
     // Kind of clunky. We need an async module loader layer to make things ergonomic.
-    public readonly restoreConnection: () => Promise<T | undefined> = once(async () => {
-        try {
-            await this.auth.tryAutoConnect()
-            this.#savedConnection = await this.loadSavedConnection()
-            this.#onDidChangeActiveConnection.fire(this.activeConnection)
+    @withTelemetryContext({ name: 'restoreConnection', class: secondaryAuthClassName })
+    public async restoreConnection(force: boolean = false): Promise<T | undefined> {
+        if (!force && (this.activeConnection !== undefined || this.hasRunRestoreConnection)) {
+            return
+        }
+        this.hasRunRestoreConnection = true
 
-            return this.#savedConnection
+        try {
+            return await telemetry.auth_modifyConnection.run(async (span) => {
+                span.record({
+                    source: asStringifiedStack(telemetry.getFunctionStack()),
+                    action: 'restore',
+                    id: 'undefined',
+                    connectionState: 'undefined',
+                })
+                await this.auth.tryAutoConnect()
+                this.#savedConnection = await this._loadSavedConnection(span)
+                this.#onDidChangeActiveConnection.fire(this.activeConnection)
+
+                const conn = this.#savedConnection
+                if (conn) {
+                    span.record({
+                        connectionState: this.auth.getConnectionState(conn),
+                        ...(await getTelemetryMetadataForConn(conn)),
+                    })
+                }
+
+                return this.#savedConnection
+            })
         } catch (err) {
             getLogger().warn(`auth (${this.toolId}): failed to restore connection: %s`, err)
         }
-    })
+    }
 
-    private async loadSavedConnection() {
-        const id = cast(this.memento.get(this.key), Optional(String))
+    /**
+     * Provides telemetry if called by restoreConnection() (or another auth_modifyConnection context)
+     */
+    private async _loadSavedConnection(span: Span<AuthModifyConnection>) {
+        const id = this.getStateConnectionId()
         if (id === undefined) {
             return
         }
@@ -244,25 +337,47 @@ export class SecondaryAuth<T extends Connection = Connection> {
         const conn = await this.auth.getConnection({ id })
         if (conn === undefined) {
             getLogger().warn(`auth (${this.toolId}): removing saved connection "${this.key}" as it no longer exists`)
-            await this.memento.update(this.key, undefined)
+            await this.state.update(this.key, undefined)
         } else if (!this.isUsable(conn)) {
             getLogger().warn(`auth (${this.toolId}): saved connection "${this.key}" is not valid`)
-            await this.memento.update(this.key, undefined)
+            await this.state.update(this.key, undefined)
         } else {
-            await this.auth.refreshConnectionState(conn)
+            const getAuthStatus = (state: ReturnType<typeof this.auth.getConnectionState>): AuthStatus => {
+                return state === 'invalid' ? 'expired' : 'connected'
+            }
+
+            let connectionState = this.auth.getConnectionState(conn)
+
+            // This function is expected to be called in the context of restoreConnection()
+            span.record({
+                connectionState,
+                authStatus: getAuthStatus(connectionState),
+            })
+
+            try {
+                await this.auth.refreshConnectionState(conn)
+
+                connectionState = this.auth.getConnectionState(conn)
+                span.record({
+                    connectionState,
+                    authStatus: getAuthStatus(connectionState),
+                })
+            } catch (err) {
+                // The purpose of this function is load a saved connection into memory, not manage the state.
+                // If updating the state fails, then we should delegate downstream to handle getting the proper state.
+                getLogger().error('loadSavedConnection: Failed to refresh connection state: %s', err)
+                if (isNetworkError(err) && connectionState === 'valid') {
+                    span.record({
+                        authStatus: 'connectedWithNetworkError',
+                    })
+                }
+            }
             return conn
         }
     }
 
-    // Used by Amazon Q to delete connection status & scope when this deletion is made by AWS Toolkit
-    // NO event should be emitted from this deletion to avoid infinite loop
-    public async onDeleteConnection(id: string) {
-        await this.auth.onDeleteConnection(id)
-        if (id === this.activeConnection?.id) {
-            await this.memento.update(this.key, undefined)
-            this.#savedConnection = undefined
-            this.#activeConnection = undefined
-        }
+    private getStateConnectionId() {
+        return cast(this.state.get(this.key), Optional(String))
     }
 }
 
@@ -280,28 +395,38 @@ export class SecondaryAuth<T extends Connection = Connection> {
  * Note: This should exist in connection.ts or utils.ts, but due to circular dependencies, it must go here.
  */
 export async function addScopes(conn: SsoConnection, extraScopes: string[], auth = Auth.instance) {
-    const oldScopes = conn.scopes ?? []
-    const newScopes = Array.from(new Set([...oldScopes, ...extraScopes]))
+    return telemetry.function_call.run(
+        async () => {
+            const oldScopes = conn.scopes ?? []
+            const newScopes = Array.from(new Set([...oldScopes, ...extraScopes]))
 
-    const updateConnectionScopes = (scopes: string[]) => {
-        return auth.updateConnection(conn, {
-            type: 'sso',
-            scopes,
-            startUrl: conn.startUrl,
-            ssoRegion: conn.ssoRegion,
-        })
-    }
+            const updatedConn = await setScopes(conn, newScopes, auth)
 
-    const updatedConn = await updateConnectionScopes(newScopes)
+            try {
+                return await auth.reauthenticate(updatedConn, false)
+            } catch (e) {
+                // We updated the connection scopes pre-emptively, but if there is some issue (e.g. user cancels,
+                // InvalidGrantException, etc), then we need to revert to the old connection scopes. Otherwise,
+                // this could soft-lock users into a broken connection that cannot be re-authenticated without
+                // first deleting the connection.
+                await setScopes(conn, oldScopes, auth)
+                throw e
+            }
+        },
+        { emit: false, functionId: { name: 'addScopesSecondaryAuth' } }
+    )
+}
 
-    try {
-        return await auth.reauthenticate(updatedConn, false)
-    } catch (e) {
-        // We updated the connection scopes pre-emptively, but if there is some issue (e.g. user cancels,
-        // InvalidGrantException, etc), then we need to revert to the old connection scopes. Otherwise,
-        // this could soft-lock users into a broken connection that cannot be re-authenticated without
-        // first deleting the connection.
-        await updateConnectionScopes(oldScopes)
-        throw e
-    }
+export function setScopes(conn: SsoConnection, scopes: string[], auth = Auth.instance): Promise<SsoConnection> {
+    return telemetry.function_call.run(
+        () => {
+            return auth.updateConnection(conn, {
+                type: 'sso',
+                scopes,
+                startUrl: conn.startUrl,
+                ssoRegion: conn.ssoRegion,
+            })
+        },
+        { emit: false, functionId: { name: 'setScopesSecondaryAuth' } }
+    )
 }

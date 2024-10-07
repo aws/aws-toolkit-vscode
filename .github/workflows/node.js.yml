@@ -1,16 +1,62 @@
-# github actions: https://help.github.com/actions/language-and-framework-guides/using-nodejs-with-github-actions
+# github actions: https://docs.github.com/en/actions/use-cases-and-examples/building-and-testing/building-and-testing-nodejs
 # setup-node: https://github.com/actions/setup-node
 
 name: CI
 
 on:
     push:
-        branches: [master]
+        branches: [master, staging]
     pull_request:
-        branches: [master, feature/*, mynah-dev]
+        branches: [master, feature/*, staging]
+        # Default = opened + synchronize + reopened.
+        # We also want "edited" so that lint-commits runs when PR title is updated.
+        # https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows#pull_request
+        types:
+            - edited
+            - opened
+            - reopened
+            - synchronize
+
+# Cancel old jobs when a pull request is updated.
+concurrency:
+    group: ${{ github.head_ref || github.run_id }}
+    cancel-in-progress: true
 
 jobs:
+    lint-commits:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  fetch-depth: 20
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: '20'
+            - name: Check PR title
+              run: |
+                  node "$GITHUB_WORKSPACE/.github/workflows/lintcommit.js"
+
+    lint:
+        needs: lint-commits
+        runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                node-version: [16.x]
+                vscode-version: [stable]
+        env:
+            NODE_OPTIONS: '--max-old-space-size=8192'
+        steps:
+            - uses: actions/checkout@v4
+            - name: Use Node.js ${{ matrix.node-version }}
+              uses: actions/setup-node@v4
+              with:
+                  node-version: ${{ matrix.node-version }}
+            - run: npm ci
+            - run: npm run testCompile
+            - run: npm run lint
+
     macos:
+        needs: lint-commits
         name: test macOS
         runs-on: macos-latest
         strategy:
@@ -21,6 +67,8 @@ jobs:
         env:
             VSCODE_TEST_VERSION: ${{ matrix.vscode-version }}
             NODE_OPTIONS: '--max-old-space-size=8192'
+            AWS_TOOLKIT_TEST_CACHE_DIR: '/tmp/.vscode-test/'
+            AWS_TOOLKIT_TEST_USER_DIR: '/tmp/.vscode-test/user-data/'
         steps:
             - uses: actions/checkout@v4
             - name: Use Node.js ${{ matrix.node-version }}
@@ -32,28 +80,53 @@ jobs:
               uses: coactions/setup-xvfb@v1
               with:
                   run: npm test
-            - name: Code coverage
+            - name: Code coverage (Core)
               env:
                   # Unset NODE_OPTIONS because of https://github.com/codecov/uploader/issues/475
                   NODE_OPTIONS: ''
-              if: ${{ github.repository == 'aws/aws-toolkit-vscode' && ( github.ref == 'master' || github.event_name == 'pull_request' ) }}
-              uses: codecov/codecov-action@v3
+              if: ${{ github.repository == 'aws/aws-toolkit-vscode' && github.ref == 'master' }}
+              uses: codecov/codecov-action@v4
               with:
+                  flags: macos-core-unittests
                   verbose: true
-                  file: ./coverage/lcov.info
-                  flags: macos-unittests
+                  file: ./coverage/core/lcov.info
+                  token: ${{ secrets.CODECOV_TOKEN }}
+            - name: Code coverage (Toolkit)
+              env:
+                  # Unset NODE_OPTIONS because of https://github.com/codecov/uploader/issues/475
+                  NODE_OPTIONS: ''
+              if: ${{ github.repository == 'aws/aws-toolkit-vscode' && github.ref == 'master' }}
+              uses: codecov/codecov-action@v4
+              with:
+                  flags: macos-toolkit-unittests
+                  verbose: true
+                  file: ./coverage/toolkit/lcov.info
+                  token: ${{ secrets.CODECOV_TOKEN }}
+            - name: Code coverage (Amazon Q)
+              env:
+                  # Unset NODE_OPTIONS because of https://github.com/codecov/uploader/issues/475
+                  NODE_OPTIONS: ''
+              if: ${{ github.repository == 'aws/aws-toolkit-vscode' && github.ref == 'master' }}
+              uses: codecov/codecov-action@v4
+              with:
+                  flags: macos-amazonq-unittests
+                  verbose: true
+                  file: ./coverage/amazonq/lcov.info
+                  token: ${{ secrets.CODECOV_TOKEN }}
             - name: Code coverage (CodeWhisperer)
               env:
                   # Unset NODE_OPTIONS because of https://github.com/codecov/uploader/issues/475
                   NODE_OPTIONS: ''
-              if: ${{ github.repository == 'aws/aws-toolkit-vscode' && ( github.ref == 'master' || github.event_name == 'pull_request' ) }}
-              uses: codecov/codecov-action@v3
+              if: ${{ github.repository == 'aws/aws-toolkit-vscode' && github.ref == 'master' }}
+              uses: codecov/codecov-action@v4
               with:
-                  verbose: true
-                  file: ./coverage/lcov.info
                   flags: codewhisperer
+                  verbose: true
+                  file: ./coverage/core/lcov.info
+                  token: ${{ secrets.CODECOV_TOKEN }}
 
     web:
+        needs: lint-commits
         name: test Web
         runs-on: ubuntu-latest
         strategy:
@@ -64,6 +137,8 @@ jobs:
         env:
             VSCODE_TEST_VERSION: ${{ matrix.vscode-version }}
             NODE_OPTIONS: '--max-old-space-size=8192'
+            AWS_TOOLKIT_TEST_CACHE_DIR: '/tmp/.vscode-test/'
+            AWS_TOOLKIT_TEST_USER_DIR: '/tmp/.vscode-test/user-data/'
         steps:
             - uses: actions/checkout@v4
             - name: Use Node.js ${{ matrix.node-version }}
@@ -77,6 +152,7 @@ jobs:
                   run: npm run testWeb
 
     windows:
+        needs: lint-commits
         name: test Windows
         runs-on: windows-2019
         strategy:
@@ -100,28 +176,10 @@ jobs:
               env:
                   # Unset NODE_OPTIONS because of https://github.com/codecov/uploader/issues/475
                   NODE_OPTIONS: ''
-              if: ${{ github.repository == 'aws/aws-toolkit-vscode' && ( github.ref == 'master' || github.event_name == 'pull_request' ) }}
-              uses: codecov/codecov-action@v3
+              if: ${{ github.repository == 'aws/aws-toolkit-vscode' && github.ref == 'master' }}
+              uses: codecov/codecov-action@v4
               with:
+                  flags: windows-unittests
                   verbose: true
                   file: ./coverage/lcov.info
-                  flags: windows-unittests
-
-    lint:
-        name: Lint
-        runs-on: ubuntu-latest
-        strategy:
-            matrix:
-                node-version: [16.x]
-                vscode-version: [stable]
-        env:
-            NODE_OPTIONS: '--max-old-space-size=8192'
-        steps:
-            - uses: actions/checkout@v4
-            - name: Use Node.js ${{ matrix.node-version }}
-              uses: actions/setup-node@v4
-              with:
-                  node-version: ${{ matrix.node-version }}
-            - run: npm ci
-            - run: npm run testCompile
-            - run: npm run lint
+                  token: ${{ secrets.CODECOV_TOKEN }}

@@ -102,7 +102,7 @@ export function extractLanguageNameFromFile(file: TextDocument): string | undefi
         case 'vue-html':
             return 'vue'
         default:
-            if (['javascript', 'node'].some(identifier => languageId.includes(identifier))) {
+            if (['javascript', 'node'].some((identifier) => languageId.includes(identifier))) {
                 return 'javascript'
             } else if (languageId.includes('typescript')) {
                 return 'typescript'
@@ -211,7 +211,7 @@ export function extractAdditionalLanguageMatchPoliciesFromFile(file: TextDocumen
         case 'vue-html':
             return new Set<string>(['html'])
         default:
-            if (['javascript', 'node'].some(identifier => languageId.includes(identifier))) {
+            if (['javascript', 'node'].some((identifier) => languageId.includes(identifier))) {
                 return new Set<string>()
             } else if (languageId.includes('typescript')) {
                 return new Set<string>()

@@ -3,8 +3,24 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { runTests } from './testRunner'
+/**
+ * Some imports in this file are node compatible only.
+ * For web-based test imports, see {@link file://./../testWeb/index.ts}
+ */
 
-export function run(): Promise<void> {
-    return runTests(process.env.TEST_DIR ?? 'src/test', ['src/test/globalSetup.test.ts'])
-}
+export { registerAuthHook, using } from './setupUtil'
+export { runTests } from './testRunner'
+export { MockDocument } from './fake/fakeDocument'
+export { FakeMemento, FakeExtensionContext } from './fakeExtensionContext'
+export { Stub, stub } from './utilities/stubber'
+export { getTestWindow } from './shared/vscode/window'
+export { SeverityLevel } from './shared/vscode/message'
+export { getTestLogger } from './globalSetup.test'
+export { testCommand } from './shared/vscode/testUtils'
+export { FakeAwsContext } from './utilities/fakeAwsContext'
+export { getTestWorkspaceFolder } from '../testInteg/integrationTestsUtilities'
+export * from './codewhisperer/testUtil'
+export * from './credentials/testUtil'
+export * from './testUtil'
+export * from './amazonqFeatureDev/utils'
+export * from './fake/mockFeatureConfigData'

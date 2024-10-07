@@ -12,13 +12,15 @@ module.exports = {
         mocha: true,
         es2024: true,
     },
-    plugins: ['@typescript-eslint', 'unicorn', 'header', 'aws-toolkits'],
+    plugins: ['@typescript-eslint', 'unicorn', 'header', 'security-node', 'aws-toolkits'],
     extends: [
         'eslint:recommended',
         'plugin:@typescript-eslint/eslint-recommended',
         'plugin:@typescript-eslint/recommended-requiring-type-checking',
         'plugin:@typescript-eslint/recommended',
-        'prettier',
+        // "Add this as the _last_ item in the extends array, so that eslint-config-prettier has the
+        // opportunity to override other configs." https://github.com/prettier/eslint-plugin-prettier
+        'plugin:prettier/recommended',
     ],
     rules: {
         curly: 2, // Enforce braces on "if"/"for"/etc.
@@ -94,6 +96,9 @@ module.exports = {
         // This is off because prettier takes care of it
         'no-extra-semi': 'off',
         '@typescript-eslint/no-empty-function': 'off',
+        // Disallows returning e.g. Promise<…|never> which signals that an exception may be thrown.
+        // https://stackoverflow.com/q/64230626/152142
+        '@typescript-eslint/no-redundant-type-constituents': 'off',
         '@typescript-eslint/no-unused-vars': 'off',
         '@typescript-eslint/no-floating-promises': 'error', // Promises must catch errors or be awaited.
         '@typescript-eslint/no-var-requires': 'off', // Should be able to remove with the full migration of SDK v3
@@ -139,6 +144,7 @@ module.exports = {
         'unicorn/prefer-reflect-apply': 'error',
         'unicorn/prefer-string-trim-start-end': 'error',
         'unicorn/prefer-type-error': 'error',
+        'security-node/detect-child-process': 'error',
 
         'header/header': [
             'error',
@@ -152,6 +158,10 @@ module.exports = {
 
         'aws-toolkits/no-only-in-tests': 'error',
         'aws-toolkits/no-await-on-vscode-msg': 'error',
+        'aws-toolkits/no-banned-usages': 'error',
+        'aws-toolkits/no-incorrect-once-usage': 'error',
+        'aws-toolkits/no-string-exec-for-child-process': 'error',
+        'aws-toolkits/no-console-log': 'error',
 
         'no-restricted-imports': [
             'error',
@@ -163,13 +173,15 @@ module.exports = {
                             "Avoid importing from the core lib's dist/ folders; please use directly from the core lib defined exports.",
                     },
                 ],
+                // The following will place an error on the `fs-extra` import since we do not want it to be used for browser compatibility reasons.
+                paths: [
+                    {
+                        name: 'fs-extra',
+                        message:
+                            'Avoid fs-extra, use shared/fs/fs.ts. Notify the Toolkit team if your required functionality is not available.',
+                    },
+                ],
             },
-            // The following will place an error on the `fs-extra` import since we do not want it to be used for browser compatibility reasons.
-            // {
-            //     name: 'fs-extra',
-            //     message:
-            //         'Avoid fs-extra, use FileSystemCommon. Notify the Toolkit team if your required functionality is not available.',
-            // },
         ],
     },
 }

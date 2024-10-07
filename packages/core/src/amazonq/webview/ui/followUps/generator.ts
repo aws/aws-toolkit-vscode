@@ -44,7 +44,7 @@ export class FollowUpGenerator {
         switch (tabType) {
             case 'featuredev':
                 return {
-                    text: 'Would you like to follow up with',
+                    text: 'Ask a follow up question',
                     options: [
                         {
                             pillText: 'What are some examples of tasks?',

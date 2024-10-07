@@ -23,7 +23,7 @@ export class CompositeResourceFetcher implements ResourceFetcher {
      */
     public async get(): Promise<string | undefined> {
         for (const fetcher of this.fetchers) {
-            const contents = await fetcher.get().catch(err => {
+            const contents = await fetcher.get().catch((err) => {
                 this.logger.debug('fetch failed: %s', (err as Error).message)
             })
             if (contents) {

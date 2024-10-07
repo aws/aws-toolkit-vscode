@@ -6,10 +6,8 @@
 import assert from 'assert'
 import * as FakeTimers from '@sinonjs/fake-timers'
 import * as sinon from 'sinon'
-import * as fs from 'fs-extra'
 import { DefaultTelemetryService } from '../../../shared/telemetry/telemetryService'
 import { AccountStatus } from '../../../shared/telemetry/telemetryClient'
-import { FakeExtensionContext } from '../../fakeExtensionContext'
 
 import {
     defaultTestAccountId,
@@ -22,6 +20,7 @@ import { installFakeClock } from '../../testUtil'
 import { TelemetryLogger } from '../../../shared/telemetry/telemetryLogger'
 import globals from '../../../shared/extensionGlobals'
 import { toArrayAsync } from '../../../shared/utilities/collectionUtils'
+import { fs } from '../../../shared'
 
 type Metric = { [P in keyof ClientTelemetry.MetricDatum as Uncapitalize<P>]: ClientTelemetry.MetricDatum[P] }
 
@@ -39,15 +38,14 @@ describe('TelemetryService', function () {
     const testFlushPeriod = 10
     let clock: FakeTimers.InstalledClock
     let sandbox: sinon.SinonSandbox
-    let mockContext: FakeExtensionContext
     let mockPublisher: FakeTelemetryPublisher
     let service: DefaultTelemetryService
     let logger: TelemetryLogger
 
     async function initService(awsContext = new FakeAwsContext()): Promise<DefaultTelemetryService> {
-        const newService = await DefaultTelemetryService.create(mockContext, awsContext, undefined, mockPublisher)
+        const newService = await DefaultTelemetryService.create(awsContext, undefined, mockPublisher)
         newService.flushPeriod = testFlushPeriod
-        newService.telemetryEnabled = true
+        await newService.setTelemetryEnabled(true)
 
         return newService
     }
@@ -62,7 +60,6 @@ describe('TelemetryService', function () {
     })
 
     beforeEach(async function () {
-        mockContext = await FakeExtensionContext.create()
         mockPublisher = new FakeTelemetryPublisher()
         service = await initService()
         logger = service.logger
@@ -70,7 +67,7 @@ describe('TelemetryService', function () {
     })
 
     afterEach(async function () {
-        await fs.remove(service.persistFilePath)
+        await fs.delete(service.persistFilePath, { recursive: true })
         sandbox.restore()
         clock.uninstall()
     })
@@ -80,7 +77,7 @@ describe('TelemetryService', function () {
     })
 
     it('posts feedback', async function () {
-        service.telemetryEnabled = false
+        await service.setTelemetryEnabled(false)
         const feedback = { comment: '', sentiment: '' }
         await service.postFeedback(feedback)
 
@@ -128,7 +125,7 @@ describe('TelemetryService', function () {
 
         assert.deepStrictEqual(
             await toArrayAsync(
-                service.findIter(m => {
+                service.findIter((m) => {
                     return m.MetricName === 'bogus'
                 })
             ),
@@ -136,7 +133,7 @@ describe('TelemetryService', function () {
         )
         assert.deepStrictEqual(
             await toArrayAsync(
-                service.findIter(m => {
+                service.findIter((m) => {
                     return m.MetricName === 'metric1'
                 })
             ),
@@ -144,7 +141,7 @@ describe('TelemetryService', function () {
         )
         assert.deepStrictEqual(
             await toArrayAsync(
-                service.findIter(m => {
+                service.findIter((m) => {
                     return !!m.Passive
                 })
             ),
@@ -238,23 +235,24 @@ describe('TelemetryService', function () {
         assertMetadataContainsTestAccount(metricData[0], AccountStatus.NotSet)
     })
 
-    it('events are never recorded if telemetry has been disabled', async function () {
+    it('new events are not recorded if telemetry has been disabled', async function () {
         stubGlobal()
 
-        service.telemetryEnabled = false
+        service.record(fakeMetric({ metricName: 'first' })) // emits 1 metric
+        await service.setTelemetryEnabled(false)
         await service.start()
 
-        // telemetry off: events are never recorded
-        service.record(fakeMetric({ metricName: 'name' }))
+        // telemetry off: new events are never recorded
+        service.record(fakeMetric({ metricName: 'second' })) // would emit 1 metric
         await service.shutdown()
         await clock.tickAsync(testFlushPeriod * 2)
 
-        // events are never flushed
-        assert.strictEqual(mockPublisher.flushCount, 0)
-        assert.strictEqual(mockPublisher.enqueueCount, 0)
-        assert.strictEqual(mockPublisher.queue.length, 0)
-        // and events are not kept in memory
-        assert.strictEqual(logger.metricCount, 0)
+        // only the events prior to disabling are recorded
+        assert.strictEqual(mockPublisher.flushCount, 1)
+        assert.strictEqual(mockPublisher.enqueueCount, 1)
+        assert.strictEqual(mockPublisher.queue.length, 1)
+        // and newer events are not kept in memory
+        assert.strictEqual(logger.metricCount, 1)
     })
 
     function assertMetadataContainsTestAccount(
@@ -265,7 +263,7 @@ describe('TelemetryService', function () {
         const metadata = metricDatum.Metadata
         assert.ok(metadata, 'Metric metadata was undefined')
         assert.ok(
-            metadata.some(item => item.Key === 'awsAccount' && item.Value === expectedAccountId),
+            metadata.some((item) => item.Key === 'awsAccount' && item.Value === expectedAccountId),
             'Expected metadata to contain the test account'
         )
     }

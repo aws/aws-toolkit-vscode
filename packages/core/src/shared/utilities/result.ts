@@ -44,7 +44,7 @@ abstract class Base<T, E> {
     }
 
     public expect(message: string): T {
-        return this.mapErr(err => new ResultError(message, err)).unwrap()
+        return this.mapErr((err) => new ResultError(message, err)).unwrap()
     }
 
     public maybeOk(): T | undefined {
@@ -120,7 +120,10 @@ export namespace Result {
 }
 
 export class ResultError<E> extends Error {
-    public constructor(message: string, public readonly cause: E) {
+    public constructor(
+        message: string,
+        public readonly cause: E
+    ) {
         super(message)
     }
 

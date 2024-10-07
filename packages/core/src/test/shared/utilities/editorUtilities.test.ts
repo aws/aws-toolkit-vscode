@@ -6,7 +6,7 @@
 import assert from 'assert'
 import * as path from 'path'
 import sinon from 'sinon'
-import { closeAllEditors, assertTabCount, createTestWorkspaceFolder, openATextEditorWithText } from '../../testUtil'
+import { closeAllEditors, assertTabCount, createTestWorkspaceFolder, toTextEditor } from '../../testUtil'
 import { getOpenFilesInWindow, isTextEditor } from '../../../shared/utilities/editorUtilities'
 
 describe('supplementalContextUtil', function () {
@@ -27,7 +27,7 @@ describe('supplementalContextUtil', function () {
         })
 
         it('isTextEditor returns false if scheme is debug, output or vscode-terminal', async function () {
-            const editor = await openATextEditorWithText('content', 'file.java', tempFolder, { preview: false })
+            const editor = await toTextEditor('content', 'file.java', tempFolder, { preview: false })
             const uri = editor.document.uri
 
             sinon.stub(uri, 'scheme').get(() => 'debug')
@@ -41,10 +41,10 @@ describe('supplementalContextUtil', function () {
         })
 
         it('no filter provided as argument, should return all files opened', async function () {
-            await openATextEditorWithText('content-1', 'file-1.java', tempFolder, { preview: false })
-            await openATextEditorWithText('content-2', 'file-2.java', tempFolder, { preview: false })
-            await openATextEditorWithText('content-3', 'file-3.java', tempFolder, { preview: false })
-            await openATextEditorWithText('content-4', 'file-4.java', tempFolder, { preview: false })
+            await toTextEditor('content-1', 'file-1.java', tempFolder, { preview: false })
+            await toTextEditor('content-2', 'file-2.java', tempFolder, { preview: false })
+            await toTextEditor('content-3', 'file-3.java', tempFolder, { preview: false })
+            await toTextEditor('content-4', 'file-4.java', tempFolder, { preview: false })
 
             await assertTabCount(4)
 
@@ -57,15 +57,15 @@ describe('supplementalContextUtil', function () {
         })
 
         it('filter argument provided, should return only files matching the predicate', async function () {
-            await openATextEditorWithText('content-1', 'file-1.java', tempFolder, { preview: false })
-            await openATextEditorWithText('content-2', 'file-2.java', tempFolder, { preview: false })
-            await openATextEditorWithText('content-3', 'file-3.txt', tempFolder, { preview: false })
-            await openATextEditorWithText('content-4', 'file-4.txt', tempFolder, { preview: false })
+            await toTextEditor('content-1', 'file-1.java', tempFolder, { preview: false })
+            await toTextEditor('content-2', 'file-2.java', tempFolder, { preview: false })
+            await toTextEditor('content-3', 'file-3.txt', tempFolder, { preview: false })
+            await toTextEditor('content-4', 'file-4.txt', tempFolder, { preview: false })
 
             await assertTabCount(4)
 
             const actual = new Set<string>(
-                await getOpenFilesInWindow(async fileName => path.extname(fileName) === '.java')
+                await getOpenFilesInWindow(async (fileName) => path.extname(fileName) === '.java')
             )
             assert.strictEqual(actual.size, 2)
             assert.ok(actual.has(path.join(tempFolder, 'file-1.java')))

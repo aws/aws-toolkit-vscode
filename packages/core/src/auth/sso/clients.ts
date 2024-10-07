@@ -28,16 +28,20 @@ import { pageableToCollection, partialClone } from '../../shared/utilities/colle
 import { assertHasProps, isNonNullable, RequiredProps, selectFrom } from '../../shared/utilities/tsUtils'
 import { getLogger } from '../../shared/logger'
 import { SsoAccessTokenProvider } from './ssoAccessTokenProvider'
-import { isClientFault } from '../../shared/errors'
+import { AwsClientResponseError, isClientFault } from '../../shared/errors'
 import { DevSettings } from '../../shared/settings'
 import { SdkError } from '@aws-sdk/types'
 import { HttpRequest, HttpResponse } from '@smithy/protocol-http'
 import { StandardRetryStrategy, defaultRetryDecider } from '@smithy/middleware-retry'
 import { AuthenticationFlow } from './model'
 import { toSnakeCase } from '../../shared/utilities/textUtilities'
+import { getUserAgent, withTelemetryContext } from '../../shared/telemetry/util'
 
 export class OidcClient {
-    public constructor(private readonly client: SSOOIDC, private readonly clock: { Date: typeof Date }) {}
+    public constructor(
+        private readonly client: SSOOIDC,
+        private readonly clock: { Date: typeof Date }
+    ) {}
 
     public async registerClient(request: RegisterClientRequest, startUrl: string, flow?: AuthenticationFlow) {
         const response = await this.client.registerClient(request)
@@ -82,23 +86,31 @@ export class OidcClient {
     }
 
     public async createToken(request: CreateTokenRequest) {
-        const response = await this.client.createToken(request as CreateTokenRequest)
+        let response
+        try {
+            response = await this.client.createToken(request as CreateTokenRequest)
+        } catch (err) {
+            const newError = AwsClientResponseError.instanceIf(err)
+            throw newError
+        }
         assertHasProps(response, 'accessToken', 'expiresIn')
 
         return {
             ...selectFrom(response, 'accessToken', 'refreshToken', 'tokenType'),
+            requestId: response.$metadata.requestId,
             expiresAt: new this.clock.Date(response.expiresIn * 1000 + this.clock.Date.now()),
         }
     }
 
     public static create(region: string) {
         const updatedRetryDecider = (err: SdkError) => {
-            // Check the default retry conditions
             if (defaultRetryDecider(err)) {
                 return true
             }
 
-            // Custom retry rules
+            // As part of SIM IDE-10703, there was an assumption that retrying on InvalidGrantException
+            // may be useful. This may not be the case anymore and if more research is done, this may not be needed.
+            // TODO: setup some telemetry to see if there are any successes on a subsequent retry for this case.
             return err.name === 'InvalidGrantException'
         }
         const client = new SSOOIDC({
@@ -108,6 +120,12 @@ export class OidcClient {
                 () => Promise.resolve(3), // Maximum number of retries
                 { retryDecider: updatedRetryDecider }
             ),
+            customUserAgent: getUserAgent({ includePlatform: true, includeClientId: true }),
+            requestHandler: {
+                // This field may have a bug: https://github.com/aws/aws-sdk-js-v3/issues/6271
+                // If the bug is real but is fixed, then we can probably remove this field and just have no timeout by default
+                requestTimeout: 5000,
+            },
         })
 
         addLoggingMiddleware(client)
@@ -129,6 +147,8 @@ type PromisifyClient<T> = {
     [P in keyof T]: T[P] extends (...args: any[]) => any ? ExtractOverload<T[P], PromisifyClient<T>> : T[P]
 }
 
+const ssoClientClassName = 'SsoClient'
+
 export class SsoClient {
     public get region() {
         const region = this.client.config.region
@@ -141,6 +161,7 @@ export class SsoClient {
         private readonly provider: SsoAccessTokenProvider
     ) {}
 
+    @withTelemetryContext({ name: 'listAccounts', class: ssoClientClassName })
     public listAccounts(
         request: Omit<ListAccountsRequest, OmittedProps> = {}
     ): AsyncCollection<RequiredProps<AccountInfo, 'accountId'>[]> {
@@ -148,9 +169,12 @@ export class SsoClient {
             this.call(this.client.listAccounts, request)
         const collection = pageableToCollection(requester, request, 'nextToken', 'accountList')
 
-        return collection.filter(isNonNullable).map(accounts => accounts.map(a => (assertHasProps(a, 'accountId'), a)))
+        return collection
+            .filter(isNonNullable)
+            .map((accounts) => accounts.map((a) => (assertHasProps(a, 'accountId'), a)))
     }
 
+    @withTelemetryContext({ name: 'listAccountRoles', class: ssoClientClassName })
     public listAccountRoles(
         request: Omit<ListAccountRolesRequest, OmittedProps>
     ): AsyncCollection<Required<RoleInfo>[]> {
@@ -160,9 +184,10 @@ export class SsoClient {
 
         return collection
             .filter(isNonNullable)
-            .map(roles => roles.map(r => (assertHasProps(r, 'roleName', 'accountId'), r)))
+            .map((roles) => roles.map((r) => (assertHasProps(r, 'roleName', 'accountId'), r)))
     }
 
+    @withTelemetryContext({ name: 'getRoleCredentials', class: ssoClientClassName })
     public async getRoleCredentials(request: Omit<GetRoleCredentialsRequest, OmittedProps>) {
         const response = await this.call(this.client.getRoleCredentials, request)
 
@@ -177,6 +202,7 @@ export class SsoClient {
         }
     }
 
+    @withTelemetryContext({ name: 'logout', class: ssoClientClassName })
     public async logout(request: Omit<LogoutRequest, OmittedProps> = {}) {
         await this.call(this.client.logout, request)
     }
@@ -200,10 +226,11 @@ export class SsoClient {
         return requester(request as T)
     }
 
+    @withTelemetryContext({ name: 'handleError', class: ssoClientClassName })
     private async handleError(error: unknown): Promise<never> {
         if (error instanceof SSOServiceException && isClientFault(error) && error.name !== 'ForbiddenException') {
             getLogger().warn(`credentials (sso): invalidating stored token: ${error.message}`)
-            await this.provider.invalidate()
+            await this.provider.invalidate(`ssoClient:${error.name}`)
         }
 
         throw error
@@ -214,6 +241,7 @@ export class SsoClient {
             new SSO({
                 region,
                 endpoint: DevSettings.instance.get('endpoints', {})['sso'],
+                customUserAgent: getUserAgent({ includePlatform: true, includeClientId: true }),
             }),
             provider
         )
@@ -222,7 +250,7 @@ export class SsoClient {
 
 function addLoggingMiddleware(client: SSOOIDCClient) {
     client.middlewareStack.add(
-        (next, context) => args => {
+        (next, context) => (args) => {
             if (HttpRequest.isInstance(args.request)) {
                 const { hostname, path } = args.request
                 const input = partialClone(
@@ -240,13 +268,13 @@ function addLoggingMiddleware(client: SSOOIDCClient) {
     )
 
     client.middlewareStack.add(
-        (next, context) => async args => {
+        (next, context) => async (args) => {
             if (!HttpRequest.isInstance(args.request)) {
                 return next(args)
             }
 
             const { hostname, path } = args.request
-            const result = await next(args).catch(e => {
+            const result = await next(args).catch((e) => {
                 if (e instanceof Error && !(e instanceof AuthorizationPendingException)) {
                     const err = { ...e }
                     delete err['stack']

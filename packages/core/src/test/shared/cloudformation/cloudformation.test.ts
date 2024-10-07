@@ -5,11 +5,10 @@
 
 import assert from 'assert'
 import * as path from 'path'
-import * as fs from 'fs-extra'
+import fs from '../../../shared/fs/fs'
 
 import * as CloudFormation from '../../../shared/cloudformation/cloudformation'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
-import { SystemUtilities } from '../../../shared/systemUtilities'
 import {
     createBaseImageResource,
     createBaseImageTemplate,
@@ -31,7 +30,7 @@ describe('CloudFormation', function () {
     })
 
     afterEach(async function () {
-        await fs.remove(filename)
+        await fs.delete(filename, { recursive: true })
     })
 
     it('isValidFilename()', async function () {
@@ -188,13 +187,13 @@ Resources:
     describe('save', async function () {
         it('can successfully save a file', async function () {
             await CloudFormation.save(createBaseTemplate(), filename)
-            assert.strictEqual(await SystemUtilities.fileExists(filename), true)
+            assert.strictEqual(await fs.exists(filename), true)
         })
 
         it('can successfully save a file to YAML and load the file as a CloudFormation.Template', async function () {
             const baseTemplate = createBaseTemplate()
             await CloudFormation.save(baseTemplate, filename)
-            assert.strictEqual(await SystemUtilities.fileExists(filename), true)
+            assert.strictEqual(await fs.exists(filename), true)
             const loadedYaml: CloudFormation.Template = await CloudFormation.load(filename)
             assert.deepStrictEqual(loadedYaml, baseTemplate)
         })

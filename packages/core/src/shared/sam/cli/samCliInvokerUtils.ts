@@ -6,7 +6,7 @@
 import { SpawnOptions } from 'child_process'
 import { getLogger } from '../../logger'
 import { getUserAgent } from '../../telemetry/util'
-import { ChildProcessResult, ChildProcessOptions } from '../../utilities/childProcess'
+import { ChildProcessResult, ChildProcessOptions } from '../../utilities/processUtils'
 import { ErrorInformation, ToolkitError } from '../../errors'
 import globals from '../../extensionGlobals'
 import { isAutomation } from '../../vscode/env'
@@ -133,7 +133,7 @@ export async function addTelemetryEnvVar(options: SpawnOptions | undefined): Pro
     return {
         ...options,
         env: {
-            AWS_TOOLING_USER_AGENT: await getUserAgent({ includeClientId: false }),
+            AWS_TOOLING_USER_AGENT: getUserAgent({ includeClientId: false }),
             ...samEnv,
             ...options?.env,
         },

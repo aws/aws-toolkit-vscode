@@ -9,7 +9,6 @@ import * as pathutils from '../utilities/pathUtils'
 import * as path from 'path'
 import { globDirPatterns, isUntitledScheme, normalizeVSCodeUri } from '../utilities/vsCodeUtils'
 import { Settings } from '../settings'
-import { once } from '../utilities/functionUtils'
 import { Timeout } from '../utilities/timeoutUtils'
 
 /**
@@ -60,7 +59,6 @@ export function getExcludePattern() {
     const excludePattern = `**/{${excludePatternsStr}}/`
     return excludePattern
 }
-const getExcludePatternOnce = once(getExcludePattern)
 
 /**
  * WatchedFiles lets us watch files on the filesystem. It is used
@@ -180,6 +178,9 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
 
     /**
      * Adds a regex pattern to ignore paths containing the pattern
+     *
+     * TODO: this does NOT prevent addWatchPatterns() from creating a massive, expensive, recursive
+     * filewatcher for these patterns 🤦, it merely skips processing at event-time.
      */
     public addExcludedPattern(pattern: RegExp) {
         if (this._isDisposed) {
@@ -203,7 +204,7 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
      * @returns Item, or undefined if (1) processing fails or (2) the name matches an "exclude" rule.
      */
     public async addItem(uri: vscode.Uri, quiet?: boolean, contents?: string): Promise<WatchedItem<T> | undefined> {
-        const excluded = this.excludedFilePatterns.find(pattern => uri.fsPath.match(pattern))
+        const excluded = this.excludedFilePatterns.find((pattern) => uri.fsPath.match(pattern))
         if (excluded) {
             getLogger().verbose(`${this.name}: excluded (matches "${excluded}"): ${uri.fsPath}`)
             return undefined
@@ -309,7 +310,7 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
         let skips = 0
         const found: vscode.Uri[] = []
 
-        const exclude = getExcludePatternOnce()
+        const exclude = getExcludePattern()
         getLogger().info(`${this.name}: building with: ${this.outputPatterns()}`)
 
         for (let i = 0; i < this.globs.length && !cancel?.completed; i++) {
@@ -358,15 +359,15 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
     private addWatcher(watcher: vscode.FileSystemWatcher): void {
         this.disposables.push(
             watcher,
-            watcher.onDidChange(async uri => {
+            watcher.onDidChange(async (uri) => {
                 getLogger().verbose(`${this.name}: detected change: ${uri.fsPath}`)
                 await this.addItem(uri)
             }),
-            watcher.onDidCreate(async uri => {
+            watcher.onDidCreate(async (uri) => {
                 getLogger().verbose(`${this.name}: detected new file: ${uri.fsPath}`)
                 await this.addItem(uri)
             }),
-            watcher.onDidDelete(async uri => {
+            watcher.onDidDelete(async (uri) => {
                 getLogger().verbose(`${this.name}: detected delete: ${uri.fsPath}`)
                 await this.remove(uri)
             })
@@ -389,11 +390,11 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
     }
 
     private outputPatterns(): string {
-        const watch = this.globs.map(cur => cur.toString())
+        const watch = this.globs.map((cur) => (typeof cur === 'string' ? cur.toString() : cur.pattern))
         if (this.watchingUntitledFiles) {
             watch.push('Untitled Files')
         }
-        const exclude = this.excludedFilePatterns.map(cur => cur.toString())
+        const exclude = this.excludedFilePatterns.map((cur) => cur.toString())
 
         return `${watch.length > 0 ? `Watching ${watch.join(', ')}` : ''}${
             exclude.length > 0 ? `, Excluding ${exclude.join(', ')}` : ''

@@ -8,6 +8,8 @@ import { SecondaryAuth, getSecondaryAuth } from '../../auth/secondaryAuth'
 import { createBuilderIdProfile, createTestAuth } from './testUtil'
 import { Connection, createSsoProfile, hasScopes, isSsoConnection } from '../../auth/connection'
 import assert from 'assert'
+import globals from '../../shared/extensionGlobals'
+import { waitUntil } from '../../shared/utilities/timeoutUtils'
 
 describe('SecondaryAuth', function () {
     let auth: ReturnType<typeof createTestAuth>
@@ -20,13 +22,14 @@ describe('SecondaryAuth', function () {
     let onDidChangeActiveConnection: SinonStub
 
     beforeEach(async function () {
-        auth = createTestAuth()
+        auth = createTestAuth(globals.globalState)
         sandbox = createSandbox()
         conn = await auth.createConnection(createBuilderIdProfile({ scopes: scopes }))
         isValid = (conn: Connection): conn is Connection => {
             return isSsoConnection(conn) && hasScopes(conn, scopes)
         }
-        secondaryAuth = getSecondaryAuth(auth, 'testId', 'testLabel', isValid)
+        // await globals.globalState.clear()
+        secondaryAuth = getSecondaryAuth(auth, 'codecatalyst', 'testLabel', isValid)
         onDidChangeActiveConnection = sandbox.stub()
         secondaryAuth.onDidChangeActiveConnection(onDidChangeActiveConnection)
     })
@@ -35,17 +38,17 @@ describe('SecondaryAuth', function () {
         sandbox.restore()
     })
 
-    it('When no SecondaryAuth set or valid PrimaryAuth exist', async function () {
+    it('no SecondaryAuth set or valid PrimaryAuth exist', async function () {
         assert.strictEqual(secondaryAuth.activeConnection?.id, undefined)
     })
 
-    it('When no SecondaryAuth set but valid PrimaryAuth is used', async function () {
+    it('no SecondaryAuth set but valid PrimaryAuth is used', async function () {
         await auth.useConnection(conn)
         assert.strictEqual(onDidChangeActiveConnection.calledOnce, true)
         assert.strictEqual(secondaryAuth.activeConnection?.id, conn.id)
     })
 
-    it('When valid PrimaryAuth is set BUT SecondaryAuth is already using the same connection', async function () {
+    it('valid PrimaryAuth is set BUT SecondaryAuth is already using the same connection', async function () {
         await secondaryAuth.useNewConnection(conn)
         // we save this connection so we expect it to trigger an event
         assert.strictEqual(onDidChangeActiveConnection.called, true)
@@ -58,7 +61,7 @@ describe('SecondaryAuth', function () {
         assert.strictEqual(secondaryAuth.activeConnection?.id, conn.id)
     })
 
-    it('When valid PrimaryAuth changes BUT no SecondaryAuth is set + valid PrimaryAuth currently exists', async function () {
+    it('valid PrimaryAuth changes BUT SecondaryAuth not set + valid PrimaryAuth exists', async function () {
         // Make primary auth already exist
         await auth.useConnection(conn)
         assert.strictEqual(onDidChangeActiveConnection.called, true)
@@ -72,7 +75,7 @@ describe('SecondaryAuth', function () {
         assert.strictEqual(secondaryAuth.activeConnection?.id, otherValidConn.id)
     })
 
-    it('When valid PrimaryAuth deleted BUT SecondaryAuth is already set', async function () {
+    it('valid PrimaryAuth deleted BUT SecondaryAuth is set', async function () {
         await secondaryAuth.useNewConnection(conn)
 
         // add valid connection to the PrimaryAuth
@@ -87,7 +90,7 @@ describe('SecondaryAuth', function () {
         assert.strictEqual(secondaryAuth.activeConnection?.id, conn.id)
     })
 
-    it('When valid SecondaryAuth deleted BUT valid PrimaryAuth already exists', async function () {
+    it('valid SecondaryAuth deleted BUT valid PrimaryAuth exists', async function () {
         await secondaryAuth.useNewConnection(conn)
 
         // add valid connection to the PrimaryAuth
@@ -98,12 +101,27 @@ describe('SecondaryAuth', function () {
         // delete SecondaryAuth
         await auth.deleteConnection(conn)
 
+        // currently both Auth onDidChangeConnectionState and onDidDeleteConnection trigger
+        // and we need to wait for both of the callbacks defined through them in SecondaryAuth to complete.
+        // We know they all completed when SecondaryAuth.onDidChangeActiveConnection has been called twice
+        await waitUntil(async () => onDidChangeActiveConnection.callCount === 2, { interval: 10, timeout: 10000 })
+
         // we fallback to the PrimaryAuth connection
+        assert.strictEqual(onDidChangeActiveConnection.callCount, 2)
+        assert.deepStrictEqual(
+            {
+                id: secondaryAuth.activeConnection?.id,
+                label: secondaryAuth.activeConnection?.label,
+            },
+            {
+                id: otherConn.id,
+                label: otherConn.label,
+            }
+        )
         assert.strictEqual(secondaryAuth.activeConnection?.id, otherConn.id)
-        assert.strictEqual(onDidChangeActiveConnection.called, true)
     })
 
-    it('When SecondaryAuth is invalid, but is reauthenticated elsewhere', async function () {
+    it('SecondaryAuth is invalid, but is reauthenticated elsewhere', async function () {
         // PrimaryAuth has its own conn, we don't care about this
         await auth.useConnection(conn)
 

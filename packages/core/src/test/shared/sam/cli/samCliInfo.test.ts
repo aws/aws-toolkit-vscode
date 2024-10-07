@@ -35,7 +35,7 @@ describe('SamCliInfoInvocation', async function () {
     })
 
     it('converts non-response to undefined', async function () {
-        ;['qwerty', '{"version": "1.2.3"} you have no new email messages'].forEach(output => {
+        ;['qwerty', '{"version": "1.2.3"} you have no new email messages'].forEach((output) => {
             const response = new TestSamCliInfoCommand('').convertOutput(output)
 
             assert.strictEqual(response, undefined, `Expected text to not parse: ${output}`)

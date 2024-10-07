@@ -8,9 +8,8 @@
  * As much as possible, all strings used in the experience should originate here.
  */
 
-import { AuthFollowUpType, expiredText, enableQText, reauthenticateText } from '../../../../amazonq/auth/model'
-import { ChatItemType } from '../../../../amazonqFeatureDev/models'
-import { JDKVersion, TransformationCandidateProject } from '../../../../codewhisperer/models/model'
+import { AuthFollowUpType, AuthMessageDataMap } from '../../../../amazonq/auth/model'
+import { JDKVersion, TransformationCandidateProject, transformByQState } from '../../../../codewhisperer/models/model'
 import { FeatureAuthState } from '../../../../codewhisperer/util/authUtil'
 import * as CodeWhispererConstants from '../../../../codewhisperer/models/constants'
 import {
@@ -28,6 +27,7 @@ import {
 import { ChatItemButton, ChatItemFormItem } from '@aws/mynah-ui/dist/static'
 import MessengerUtils, { ButtonActions } from './messengerUtils'
 import DependencyVersions from '../../../models/dependencies'
+import { ChatItemType } from '../../../../amazonq/commons/model'
 
 export type StaticTextResponseType =
     | 'transform'
@@ -46,12 +46,11 @@ export type UnrecoverableErrorType =
     | 'upload-to-s3-failed'
     | 'job-start-failed'
 
-export type ErrorResponseType = 'no-alternate-dependencies-found'
-
 export enum GumbyNamedMessages {
     COMPILATION_PROGRESS_MESSAGE = 'gumbyProjectCompilationMessage',
     JOB_SUBMISSION_STATUS_MESSAGE = 'gumbyJobSubmissionMessage',
     JOB_SUBMISSION_WITH_DEPENDENCY_STATUS_MESSAGE = 'gumbyJobSubmissionWithDependencyMessage',
+    JOB_FAILED_IN_PRE_BUILD = 'gumbyJobFailedInPreBuildMessage',
 }
 
 export class Messenger {
@@ -86,20 +85,21 @@ export class Messenger {
 
     public async sendAuthNeededExceptionMessage(credentialState: FeatureAuthState, tabID: string) {
         let authType: AuthFollowUpType = 'full-auth'
-        let message = reauthenticateText
-        if (credentialState.amazonQ === 'disconnected') {
-            authType = 'full-auth'
-            message = reauthenticateText
-        }
+        let message = AuthMessageDataMap[authType].message
 
-        if (credentialState.amazonQ === 'unsupported') {
-            authType = 'use-supported-auth'
-            message = enableQText
-        }
-
-        if (credentialState.amazonQ === 'expired') {
-            authType = 're-auth'
-            message = expiredText
+        switch (credentialState.amazonQ) {
+            case 'disconnected':
+                authType = 'full-auth'
+                message = AuthMessageDataMap[authType].message
+                break
+            case 'unsupported':
+                authType = 'use-supported-auth'
+                message = AuthMessageDataMap[authType].message
+                break
+            case 'expired':
+                authType = 're-auth'
+                message = AuthMessageDataMap[authType].message
+                break
         }
 
         this.dispatcher.sendAuthNeededExceptionMessage(new AuthNeededException(message, authType, tabID))
@@ -109,11 +109,50 @@ export class Messenger {
         this.dispatcher.sendAuthenticationUpdate(new AuthenticationUpdateMessage(gumbyEnabled, authenticatingTabIDs))
     }
 
+    public async sendSkipTestsPrompt(tabID: string) {
+        const formItems: ChatItemFormItem[] = []
+        formItems.push({
+            id: 'GumbyTransformSkipTestsForm',
+            type: 'select',
+            title: CodeWhispererConstants.skipUnitTestsFormTitle,
+            mandatory: true,
+            options: [
+                {
+                    value: CodeWhispererConstants.runUnitTestsMessage,
+                    label: CodeWhispererConstants.runUnitTestsMessage,
+                },
+                {
+                    value: CodeWhispererConstants.skipUnitTestsMessage,
+                    label: CodeWhispererConstants.skipUnitTestsMessage,
+                },
+            ],
+        })
+
+        this.dispatcher.sendAsyncEventProgress(
+            new AsyncEventProgressMessage(tabID, {
+                inProgress: true,
+                message: CodeWhispererConstants.skipUnitTestsFormMessage,
+            })
+        )
+
+        this.dispatcher.sendChatPrompt(
+            new ChatPrompt(
+                {
+                    message: 'Q Code Transformation',
+                    formItems: formItems,
+                },
+                'TransformSkipTestsForm',
+                tabID,
+                false
+            )
+        )
+    }
+
     public async sendProjectPrompt(projects: TransformationCandidateProject[], tabID: string) {
         const projectFormOptions: { value: any; label: string }[] = []
         const detectedJavaVersions = new Array<JDKVersion | undefined>()
 
-        projects.forEach(candidateProject => {
+        projects.forEach((candidateProject) => {
             projectFormOptions.push({
                 value: candidateProject.path,
                 label: candidateProject.name,
@@ -125,7 +164,7 @@ export class Messenger {
         formItems.push({
             id: 'GumbyTransformProjectForm',
             type: 'select',
-            title: 'Choose a project to transform',
+            title: CodeWhispererConstants.chooseProjectFormTitle,
             mandatory: true,
 
             options: projectFormOptions,
@@ -134,7 +173,7 @@ export class Messenger {
         formItems.push({
             id: 'GumbyTransformJdkFromForm',
             type: 'select',
-            title: 'Choose the source code version',
+            title: CodeWhispererConstants.chooseSourceVersionFormTitle,
             mandatory: true,
             options: [
                 {
@@ -155,7 +194,7 @@ export class Messenger {
         formItems.push({
             id: 'GumbyTransformJdkToForm',
             type: 'select',
-            title: 'Choose the target code version',
+            title: CodeWhispererConstants.chooseTargetVersionFormTitle,
             mandatory: true,
             options: [
                 {
@@ -327,12 +366,6 @@ export class Messenger {
             case 'unsupported-source-jdk-version':
                 message = CodeWhispererConstants.unsupportedJavaVersionChatMessage
                 break
-            case 'upload-to-s3-failed':
-                message = `I was not able to upload your module to be transformed. Please try again later.`
-                break
-            case 'job-start-failed':
-                message = CodeWhispererConstants.failedToStartJobTooManyJobsChatMessage
-                break
         }
 
         const buttons: ChatItemButton[] = []
@@ -360,15 +393,7 @@ export class Messenger {
      * informational purposes, or some other error workflow is meant to contribute a
      * follow-up with a user action.
      */
-    public sendKnownErrorResponse(type: ErrorResponseType, tabID: string) {
-        let message = '...'
-
-        switch (type) {
-            case 'no-alternate-dependencies-found':
-                message = `I could not find any other versions of this dependency in your local Maven repository. Try transforming the dependency to make it compatible with Java 17, and then try transforming this module again.`
-                break
-        }
-
+    public sendKnownErrorResponse(tabID: string, message: string) {
         this.dispatcher.sendChatMessage(
             new ChatMessage(
                 {
@@ -384,11 +409,7 @@ export class Messenger {
         this.dispatcher.sendCommandMessage(new SendCommandMessage(message.command, message.tabID, message.eventId))
     }
 
-    public sendJobFinishedMessage(tabID: string, message: string = '') {
-        if (message === '') {
-            message = CodeWhispererConstants.jobCancelledChatMessage
-        }
-
+    public sendJobFinishedMessage(tabID: string, message: string) {
         const buttons: ChatItemButton[] = []
         buttons.push({
             keepCardAfterClick: false,
@@ -425,7 +446,7 @@ export class Messenger {
         projectName: string,
         fromJDKVersion: JDKVersion,
         toJDKVersion: JDKVersion,
-        tabID: any
+        tabID: string
     ) {
         const message = `### Transformation details
 -------------
@@ -437,6 +458,11 @@ export class Messenger {
     `
 
         this.dispatcher.sendChatMessage(new ChatMessage({ message, messageType: 'prompt' }, tabID))
+    }
+
+    public sendSkipTestsSelectionMessage(skipTestsSelection: string, tabID: string) {
+        const message = `Okay, I will ${skipTestsSelection.toLowerCase()} when building your project.`
+        this.dispatcher.sendChatMessage(new ChatMessage({ message, messageType: 'ai-prompt' }, tabID))
     }
 
     public sendHumanInTheLoopInitialMessage(tabID: string, codeSnippet: string) {
@@ -453,7 +479,7 @@ export class Messenger {
         )
 
         if (codeSnippet !== '') {
-            message = `Here is the dependency causing the issue: 
+            message = `Here is the dependency causing the issue:
 \`\`\`
 ${codeSnippet}
 \`\`\`
@@ -501,7 +527,7 @@ ${codeSnippet}
 
         const valueFormOptions: { value: any; label: string }[] = []
 
-        versions.allVersions.forEach(version => {
+        versions.allVersions.forEach((version) => {
             valueFormOptions.push({
                 value: version,
                 label: version,
@@ -558,6 +584,32 @@ ${codeSnippet}
             false,
             message,
             GumbyNamedMessages.JOB_SUBMISSION_WITH_DEPENDENCY_STATUS_MESSAGE
+        )
+    }
+
+    public sendViewBuildLog(tabID: string) {
+        const message = `I am having trouble building your project in the secure build environment and could not complete the transformation.`
+        const messageId = GumbyNamedMessages.JOB_FAILED_IN_PRE_BUILD
+        const buttons: ChatItemButton[] = []
+
+        if (transformByQState.getPreBuildLogFilePath() !== '') {
+            buttons.push({
+                keepCardAfterClick: true,
+                text: `View Build Log`,
+                id: ButtonActions.OPEN_BUILD_LOG,
+            })
+        }
+
+        this.dispatcher.sendChatMessage(
+            new ChatMessage(
+                {
+                    message,
+                    messageType: 'ai-prompt',
+                    messageId,
+                    buttons,
+                },
+                tabID
+            )
         )
     }
 }

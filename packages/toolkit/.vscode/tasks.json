@@ -7,7 +7,7 @@
             "label": "extensionInit",
             "type": "shell",
             "command": "echo 'extensionInit'",
-            "dependsOn": ["copyPackageJson", "watch"],
+            "dependsOn": ["watch"],
             "presentation": {
                 "close": true
             }
@@ -31,7 +31,7 @@
             "isBackground": true,
             "problemMatcher": "$tsc-watch",
             "options": {
-                "cwd": "../core"
+                "cwd": "${workspaceFolder}/../../packages/core"
             }
         },
         {
@@ -41,7 +41,7 @@
             "isBackground": true,
             "problemMatcher": "$ts-webpack-watch",
             "options": {
-                "cwd": "../core"
+                "cwd": "${workspaceFolder}/../../packages/core"
             }
         },
         {
@@ -52,34 +52,7 @@
             "isBackground": true,
             "problemMatcher": "$ts-webpack-watch",
             "options": {
-                "cwd": "../core"
-            }
-        },
-        {
-            "label": "copyPackageJson",
-            "type": "shell",
-            "command": "npm run copyPackageJson -- --development",
-            "isBackground": false,
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            },
-            "presentation": {
-                "close": true
-            }
-        },
-        {
-            "label": "restorePackageJson",
-            "type": "npm",
-            "script": "restorePackageJson",
-            "problemMatcher": [],
-            "isBackground": false,
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            },
-            "presentation": {
-                "close": true
+                "cwd": "${workspaceFolder}/../../packages/core"
             }
         },
         {
@@ -89,7 +62,7 @@
             "presentation": {
                 "close": true
             },
-            "dependsOn": ["restorePackageJson"]
+            "dependsOn": []
         },
         // ---------- Start: Web Mode Tasks ----------
         {
@@ -146,9 +119,8 @@
             // Since `webpack --watch` never terminates (but finishes packaging at some point),
             // VS Code uses this to parse the CLI output to pattern match something that indicates it is done
             "problemMatcher": "$ts-webpack-watch",
-            "dependsOn": ["copyPackageJson"],
             "options": {
-                "cwd": "../core"
+                "cwd": "${workspaceFolder}/../../packages/core"
             }
         },
         /**
@@ -161,7 +133,7 @@
             "label": "webRunTerminate",
             "command": "echo ${input:webRunTerminate}",
             "type": "shell",
-            "dependsOn": ["restorePackageJson"]
+            "dependsOn": []
         },
         // ---------- End: Web Mode Tasks ----------
         {
@@ -177,7 +149,7 @@
         {
             "type": "npm",
             "script": "compile",
-            "dependsOn": ["Kill Tasks", "copyPackageJson"],
+            "dependsOn": ["Kill Tasks"],
             "problemMatcher": "$tsc"
         },
         {

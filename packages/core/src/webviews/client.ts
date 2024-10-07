@@ -41,8 +41,8 @@ type ClientCommands<T> = {
     readonly [P in keyof T]: T[P] extends EventEmitter<infer P>
         ? (listener: (e: P) => void) => Promise<{ dispose: () => void }>
         : OmitThisParameter<T[P]> extends (...args: infer P) => infer R
-        ? (...args: P) => R extends Promise<any> ? R : Promise<R>
-        : never
+          ? (...args: P) => R extends Promise<any> ? R : Promise<R>
+          : never
 }
 
 export type WebviewClient<T> = ClientCommands<T>
@@ -68,7 +68,7 @@ export class WebviewClientFactory {
             const { command } = event.data
             if (command === '$clear') {
                 vscode.setState({})
-                this.messageListeners.forEach(listener => this.removeListener(listener))
+                this.messageListeners.forEach((listener) => this.removeListener(listener))
                 window.dispatchEvent(remountEvent)
             }
         })
@@ -187,6 +187,8 @@ export class WebviewClientFactory {
                 },
                 get: (_, prop) => {
                     if (typeof prop !== 'string') {
+                        // Disable because we cannot log to extension in a webview.
+                        // eslint-disable-next-line aws-toolkits/no-console-log
                         console.warn(`Tried to index webview client with non-string property: ${String(prop)}`)
                         return
                     }

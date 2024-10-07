@@ -214,8 +214,8 @@ export async function loginWithMostRecentCredentials(
     const defaultProfile = profileNames.includes(defaultName)
         ? defaultName
         : profileNames.length === 1
-        ? profileNames[0]
-        : undefined
+          ? profileNames[0]
+          : undefined
 
     if (!previousCredentialsId && profileNames.length === 0) {
         await loginManager.logout(true)
@@ -232,7 +232,7 @@ export async function loginWithMostRecentCredentials(
     }
 
     // Try to auto-connect any other non-default profile (useful for env vars, IMDS, Cloud9, ECS, …).
-    const nonDefault = await findAsync(profileNames, async p => {
+    const nonDefault = await findAsync(profileNames, async (p) => {
         const provider = await manager.getCredentialsProvider(providerMap[p])
         return p !== defaultName && !!(await provider?.canAutoConnect())
     })

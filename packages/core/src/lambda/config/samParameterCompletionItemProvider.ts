@@ -70,8 +70,8 @@ export class SamParameterCompletionItemProvider implements vscode.CompletionItem
         const templateParameterNames = await getParameterNames(templateUri, this.context)
 
         return templateParameterNames
-            .filter(name => !prefix || name.startsWith(prefix))
-            .map(name => {
+            .filter((name) => !prefix || name.startsWith(prefix))
+            .map((name) => {
                 const completionItem: vscode.CompletionItem = {
                     kind: vscode.CompletionItemKind.Reference,
                     label: name,
@@ -106,18 +106,18 @@ async function getTemplateUri({
     symbols: vscode.DocumentSymbol[]
     position: vscode.Position
 }): Promise<vscode.Uri | undefined> {
-    const templates = symbols.find(symbol => symbol.name === 'templates')
+    const templates = symbols.find((symbol) => symbol.name === 'templates')
     if (!templates) {
         return undefined
     }
 
-    const template = templates.children.find(child => child.range.contains(position))
+    const template = templates.children.find((child) => child.range.contains(position))
     if (!template) {
         return undefined
     }
 
     // Only offer suggestions inside the 'parameterOverrides' property.
-    const parameterOverrides = template.children.find(child => child.name === 'parameterOverrides')
+    const parameterOverrides = template.children.find((child) => child.name === 'parameterOverrides')
     if (!parameterOverrides) {
         return undefined
     }
@@ -129,7 +129,7 @@ async function getTemplateUri({
 
     // Ensure that position is at a parameter name, not a value.
     if (parameterOverrides.children) {
-        const override = parameterOverrides.children.find(child => child.range.contains(position))
+        const override = parameterOverrides.children.find((child) => child.range.contains(position))
         if (override) {
             if (!override.selectionRange.contains(position)) {
                 return undefined

@@ -7,8 +7,6 @@ import * as vscode from 'vscode'
 import * as semver from 'semver'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { getInlineSuggestEnabled } from '../../shared/utilities/editorUtilities'
-import { getLogger } from '../../shared/logger'
-import globals from '../../shared/extensionGlobals'
 import { AWSTemplateCaseInsensitiveKeyWords, AWSTemplateKeyWords } from '../models/constants'
 
 export function getLocalDatetime() {
@@ -21,7 +19,7 @@ export function asyncCallWithTimeout<T>(asyncPromise: Promise<T>, message: strin
     const timeoutPromise = new Promise((_resolve, reject) => {
         timeoutHandle = setTimeout(() => reject(new Error(message)), timeLimit)
     })
-    return Promise.race([asyncPromise, timeoutPromise]).then(result => {
+    return Promise.race([asyncPromise, timeoutPromise]).then((result) => {
         clearTimeout(timeoutHandle)
         return result as T
     })
@@ -63,28 +61,11 @@ export function getPrefixSuffixOverlap(firstString: string, secondString: string
     return secondString.slice(0, i)
 }
 
-export function getOptOutPreference() {
-    return globals.telemetry.telemetryEnabled ? 'OPTIN' : 'OPTOUT'
-}
-
-export function get(key: string, context: vscode.Memento): any {
-    return context.get(key)
-}
-
-export async function set(key: string, value: any, context: vscode.Memento): Promise<void> {
-    await context.update(key, value).then(
-        () => {},
-        error => {
-            getLogger().verbose(`Failed to update global state: ${error}`)
-        }
-    )
-}
-
 export function checkLeftContextKeywordsForJsonAndYaml(leftFileContent: string, language: string): boolean {
     if (
         (language === 'json' || language === 'yaml') &&
-        !AWSTemplateKeyWords.some(substring => leftFileContent.includes(substring)) &&
-        !AWSTemplateCaseInsensitiveKeyWords.some(substring => leftFileContent.toLowerCase().includes(substring))
+        !AWSTemplateKeyWords.some((substring) => leftFileContent.includes(substring)) &&
+        !AWSTemplateCaseInsensitiveKeyWords.some((substring) => leftFileContent.toLowerCase().includes(substring))
     ) {
         return true
     }

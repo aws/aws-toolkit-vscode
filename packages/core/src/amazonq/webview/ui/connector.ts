@@ -26,21 +26,32 @@ export interface CodeReference {
 
 export interface ChatPayload {
     chatMessage: string
+    traceId?: string // TODO: instrumented for cwc, not for gumby/featuredev. Remove the ? once we support all features
     chatCommand?: string
+}
+
+export interface TracedChatItem extends ChatItem {
+    traceId?: string
 }
 
 export interface ConnectorProps {
     sendMessageToExtension: (message: ExtensionMessage) => void
     onMessageReceived?: (tabID: string, messageData: any, needToShowAPIDocsTab: boolean) => void
     onChatAnswerUpdated?: (tabID: string, message: ChatItem) => void
-    onChatAnswerReceived?: (tabID: string, message: ChatItem) => void
+    onChatAnswerReceived?: (tabID: string, message: TracedChatItem) => void
     onWelcomeFollowUpClicked: (tabID: string, welcomeFollowUpType: WelcomeFollowupType) => void
     onAsyncEventProgress: (tabID: string, inProgress: boolean, message: string | undefined) => void
     onQuickHandlerCommand: (tabID: string, command?: string, eventId?: string) => void
-    onCWCContextCommandMessage: (message: ChatItem, command?: string) => string | undefined
+    onCWCContextCommandMessage: (message: TracedChatItem, command?: string) => string | undefined
+    onOpenSettingsMessage: (tabID: string) => void
     onError: (tabID: string, message: string, title: string) => void
     onWarning: (tabID: string, message: string, title: string) => void
-    onFileComponentUpdate: (tabID: string, filePaths: DiffTreeFileInfo[], deletedFiles: DiffTreeFileInfo[]) => void
+    onFileComponentUpdate: (
+        tabID: string,
+        filePaths: DiffTreeFileInfo[],
+        deletedFiles: DiffTreeFileInfo[],
+        messageId: string
+    ) => void
     onUpdatePlaceholder: (tabID: string, newPlaceholder: string) => void
     onChatInputEnabled: (tabID: string, enabled: boolean) => void
     onUpdateAuthentication: (featureDevEnabled: boolean, authenticatingTabIDs: string[]) => void
@@ -58,7 +69,7 @@ export class Connector {
     private readonly tabsStorage
     private readonly amazonqCommonsConnector: AmazonQCommonsConnector
 
-    private isUIReady = false
+    isUIReady = false
 
     constructor(props: ConnectorProps) {
         this.sendMessageToExtension = props.sendMessageToExtension
@@ -400,6 +411,14 @@ export class Connector {
             case 'gumby':
                 this.gumbyChatConnector.onCustomFormAction(tabId, action)
                 break
+            case 'cwc':
+                if (action.id === `open-settings`) {
+                    this.sendMessageToExtension({
+                        command: 'open-settings',
+                        type: '',
+                        tabType: 'cwc',
+                    })
+                }
         }
     }
 }

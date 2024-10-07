@@ -3,13 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as fs from 'fs-extra'
+import { promises as nodefs } from 'fs'
 import * as vscode from 'vscode'
-import { writeFile } from 'fs-extra'
 import { schema } from 'yaml-cfn'
 import * as yaml from 'js-yaml'
 import * as filesystemUtilities from '../filesystemUtilities'
-import { SystemUtilities } from '../systemUtilities'
+import fs from '../../shared/fs/fs'
 import { getLogger } from '../logger'
 import { lambdaPackageTypeImage } from '../constants'
 import { isCloud9 } from '../extensionUtilities'
@@ -389,7 +388,7 @@ export function isValidFilename(filename: string | vscode.Uri): boolean {
 }
 
 export async function load(filename: string, validate: boolean = true): Promise<Template> {
-    if (!(await SystemUtilities.fileExists(filename))) {
+    if (!(await fs.exists(filename))) {
         throw new Error(`Template file not found: ${filename}`)
     }
 
@@ -446,7 +445,9 @@ export async function tryLoad(
     // https://github.com/aws-cloudformation/aws-cfn-lint-visual-studio-code/blob/629de0bac4f36cfc6534e409a6f6766a2240992f/client/src/yaml-support/yaml-schema.ts#L39-L51
     if (rv.template?.AWSTemplateFormatVersion || rv.template?.Resources) {
         rv.kind =
-            rv.template.Transform && rv.template.Transform.toString().startsWith('AWS::Serverless') ? 'sam' : 'cfn'
+            typeof rv.template.Transform === 'string' && rv.template.Transform.startsWith('AWS::Serverless')
+                ? 'sam'
+                : 'cfn'
 
         return rv
     }
@@ -460,7 +461,7 @@ export async function tryLoad(
 export async function save(template: Template, filename: string): Promise<void> {
     const templateAsYaml: string = yaml.dump(template)
 
-    await writeFile(filename, templateAsYaml, 'utf8')
+    await nodefs.writeFile(filename, templateAsYaml, 'utf8')
 }
 
 export function validateTemplate(template: Template): void {
@@ -469,9 +470,9 @@ export function validateTemplate(template: Template): void {
     }
 
     const lambdaResources = Object.getOwnPropertyNames(template.Resources)
-        .map(key => template.Resources![key]!)
-        .filter(resource => resource.Type === SERVERLESS_FUNCTION_TYPE)
-        .map(resource => resource as Resource)
+        .map((key) => template.Resources![key]!)
+        .filter((resource) => resource.Type === SERVERLESS_FUNCTION_TYPE)
+        .map((resource) => resource as Resource)
 
     if (lambdaResources.length <= 0) {
         throw new Error('Template does not contain any Lambda resources')
@@ -552,13 +553,13 @@ export async function getResourceFromTemplateResources(params: {
     const resources = params.templateResources || {}
 
     const matches = Object.keys(resources)
-        .filter(key =>
+        .filter((key) =>
             matchesHandler({
                 resource: resources[key],
                 handlerName: params.handlerName,
             })
         )
-        .map(key => resources[key]!)
+        .map((key) => resources[key]!)
 
     if (matches.length < 1) {
         throw new Error(`Could not find a SAM resource for handler ${params.handlerName}`)
@@ -879,7 +880,7 @@ export async function createStarterTemplateFile(isSam?: boolean): Promise<void> 
         defaultUri: wsFolder && wsFolder[0] ? wsFolder[0].uri : undefined,
     })
     if (loc) {
-        fs.writeFileSync(loc.fsPath, content)
+        await nodefs.writeFile(loc.fsPath, content)
         await vscode.commands.executeCommand('vscode.open', loc)
     }
 }

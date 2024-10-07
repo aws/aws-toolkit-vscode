@@ -1,0 +1,26 @@
+{
+	"date": "2024-08-01",
+	"version": "1.19.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q Chat: Fixing issue with an incorrect input cursor position in the prompt text box"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q Chat: Fixing issue with the max tabs notification not being dismissible."
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q Chat: Showing/hiding the scrollbars is now controlled by the OS settings"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Q chat may stop responding after processing Python/Java code"
+		},
+		{
+			"type": "Feature",
+			"description": "Amazon q /dev: i18n support for messaging"
+		}
+	]
+}

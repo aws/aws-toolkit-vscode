@@ -96,7 +96,10 @@ export class InputBoxPrompter extends Prompter<string> {
         return this._lastResponse
     }
 
-    constructor(public readonly inputBox: InputBox, protected readonly options: ExtendedInputBoxOptions = {}) {
+    constructor(
+        public readonly inputBox: InputBox,
+        protected readonly options: ExtendedInputBoxOptions = {}
+    ) {
         super()
     }
 
@@ -112,11 +115,11 @@ export class InputBoxPrompter extends Prompter<string> {
      * @param validate Validator function.
      */
     public setValidation(validate: ValidateFn): void {
-        this.validateEvents.forEach(d => d.dispose())
+        this.validateEvents.forEach((d) => d.dispose())
         this.validateEvents = []
 
         this.inputBox.onDidChangeValue(
-            value => (this.inputBox.validationMessage = validate(value, false)),
+            (value) => (this.inputBox.validationMessage = validate(value, false)),
             undefined,
             this.validateEvents
         )
@@ -128,7 +131,7 @@ export class InputBoxPrompter extends Prompter<string> {
     }
 
     protected async promptUser(): Promise<PromptResult<string>> {
-        const promptPromise = new Promise<PromptResult<string>>(resolve => {
+        const promptPromise = new Promise<PromptResult<string>>((resolve) => {
             this.inputBox.onDidAccept(() => {
                 this.recentItem = this.inputBox.value
                 if (!this.inputBox.validationMessage) {
@@ -136,7 +139,7 @@ export class InputBoxPrompter extends Prompter<string> {
                 }
             })
             this.inputBox.onDidHide(() => resolve(WIZARD_EXIT))
-            this.inputBox.onDidTriggerButton(button => {
+            this.inputBox.onDidTriggerButton((button) => {
                 if (button === vscode.QuickInputButtons.Back) {
                     resolve(WIZARD_BACK)
                 } else if ((button as QuickInputButton<string>).onClick !== undefined) {

@@ -9,7 +9,6 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import * as pathutil from '../utilities/pathUtils'
 import got, { OptionsOfTextResponseBody, RequestError } from 'got'
-import { copyFile, readFile, remove, writeFile } from 'fs-extra'
 import { isImageLambdaConfig } from '../../lambda/local/debugConfiguration'
 import { getFamily, RuntimeFamily } from '../../lambda/models/samLambdaRuntime'
 import { ExtContext } from '../extensions'
@@ -24,13 +23,14 @@ import { asEnvironmentVariables } from '../../auth/credentials/utils'
 import { buildSamCliStartApiArguments } from './cli/samCliStartApi'
 import { DefaultSamCliProcessInvoker } from './cli/samCliInvoker'
 import { APIGatewayProperties } from './debugger/awsSamDebugConfiguration.gen'
-import { ChildProcess } from '../utilities/childProcess'
+import { ChildProcess } from '../utilities/processUtils'
 import { SamCliSettings } from './cli/samCliSettings'
 import * as CloudFormation from '../cloudformation/cloudformation'
 import { sleep } from '../utilities/timeoutUtils'
 import { showMessageWithCancel } from '../utilities/messages'
 import { ToolkitError, UnknownError } from '../errors'
 import { SamCliError } from './cli/samCliInvokerUtils'
+import fs from '../fs/fs'
 
 const localize = nls.loadMessageBundle()
 
@@ -125,7 +125,7 @@ async function buildLambdaHandler(
 ): Promise<string> {
     const processInvoker = new DefaultSamCliProcessInvoker(settings)
 
-    getLogger('channel').info(localize('AWS.output.building.sam.application', 'Building SAM application...'))
+    getLogger().info(localize('AWS.output.building.sam.application', 'Building SAM application...'))
     const samBuildOutputFolder = path.join(config.baseBuildDir!, 'output')
 
     const samCliArgs: SamCliBuildInvocationArguments = {
@@ -156,7 +156,7 @@ async function buildLambdaHandler(
     const err = await samBuild
         .execute(timer)
         .then(() => {})
-        .catch(e => UnknownError.cast(e))
+        .catch((e) => UnknownError.cast(e))
     const failure = err ?? samBuild.failure()
     if (failure) {
         // TODO(sijaden): ask SAM CLI for a way to map exit codes to error codes
@@ -167,7 +167,7 @@ async function buildLambdaHandler(
             throw ToolkitError.chain(err, msg, { code: 'BuildFailure' })
         }
     }
-    getLogger('channel').info(localize('AWS.output.building.sam.application.complete', 'Build complete.'))
+    getLogger().info(localize('AWS.output.building.sam.application.complete', 'Build complete.'))
 
     return path.join(samBuildOutputFolder, 'template.yaml')
 }
@@ -178,7 +178,7 @@ async function invokeLambdaHandler(
     config: SamLaunchRequestArgs,
     settings: SamCliSettings
 ): Promise<ChildProcess> {
-    getLogger('channel').info(localize('AWS.output.starting.sam.app.locally', 'Starting SAM application locally'))
+    getLogger().info(localize('AWS.output.starting.sam.app.locally', 'Starting SAM application locally'))
     getLogger().debug(`localLambdaRunner.invokeLambdaFunction: ${config.name}`)
 
     const debugPort = !config.noDebug ? config.debugPort?.toString() : undefined
@@ -223,7 +223,7 @@ async function invokeLambdaHandler(
                 timeout: timer,
                 name: config.name,
             })
-            .catch(err => {
+            .catch((err) => {
                 const msg = `SAM local start-api failed${err instanceof SamCliError ? ': ' + err.message : ''}`
 
                 throw ToolkitError.chain(err, msg)
@@ -259,7 +259,7 @@ async function invokeLambdaHandler(
             throw ToolkitError.chain(err, msg)
         } finally {
             if (config.sam?.buildDir === undefined) {
-                await remove(config.templatePath)
+                await fs.delete(config.templatePath)
             }
         }
     }
@@ -283,11 +283,9 @@ export async function runLambdaFunction(
         const msg =
             (config.invokeTarget.target === 'api' ? `API "${config.api?.path}", ` : '') +
             `Lambda "${config.handlerName}"`
-        getLogger('channel').info(localize('AWS.output.sam.local.startDebug', 'Preparing to debug locally: {0}', msg))
+        getLogger().info(localize('AWS.output.sam.local.startDebug', 'Preparing to debug locally: {0}', msg))
     } else {
-        getLogger('channel').info(
-            localize('AWS.output.sam.local.startRun', 'Preparing to run locally: {0}', config.handlerName)
-        )
+        getLogger().info(localize('AWS.output.sam.local.startRun', 'Preparing to run locally: {0}', config.handlerName))
     }
 
     const envVars = {
@@ -309,7 +307,7 @@ export async function runLambdaFunction(
         const payload =
             config.eventPayloadFile === undefined
                 ? undefined
-                : JSON.parse(await readFile(config.eventPayloadFile, { encoding: 'utf-8' }))
+                : JSON.parse(await fs.readFileText(config.eventPayloadFile))
 
         apiRequest = requestLocalApi(timer, config.api!, config.apiPort!, payload)
     }
@@ -317,7 +315,7 @@ export async function runLambdaFunction(
     // SAM CLI and any API requests are executed in parallel
     // A failure from either is a failure for the whole invocation
     const [process] = await Promise.all([invokeLambdaHandler(timer, envVars, config, settings), apiRequest]).catch(
-        err => {
+        (err) => {
             timer.cancel()
             throw err
         }
@@ -327,7 +325,7 @@ export async function runLambdaFunction(
         return config
     }
 
-    const terminationListener = vscode.debug.onDidTerminateDebugSession(session => {
+    const terminationListener = vscode.debug.onDidTerminateDebugSession((session) => {
         const config = session.configuration as SamLaunchRequestArgs
         if (config.invokeTarget?.target === 'api') {
             stopApi(process, config)
@@ -336,9 +334,7 @@ export async function runLambdaFunction(
 
     async function attach() {
         if (config.onWillAttachDebugger) {
-            getLogger('channel').info(
-                localize('AWS.output.sam.local.waiting', 'Waiting for SAM application to start...')
-            )
+            getLogger().info(localize('AWS.output.sam.local.waiting', 'Waiting for SAM application to start...'))
             await config.onWillAttachDebugger(config.debugPort!, timer)
         }
         // HACK: remove non-serializable properties before attaching.
@@ -351,12 +347,11 @@ export async function runLambdaFunction(
             debugConfig: config,
             retryDelayMillis: attachDebuggerRetryDelayMillis,
         })
-
-        await showDebugConsole()
     }
 
     try {
         await attach()
+        await showOutputChannel(ctx)
     } finally {
         vscode.Disposable.from(timer, terminationListener).dispose()
     }
@@ -404,7 +399,7 @@ async function requestLocalApi(
         retry: {
             // note: `calculateDelay` overrides the default function, so any functionality normally specified in the
             // retry options needs to be implemented yourself
-            calculateDelay: obj => {
+            calculateDelay: (obj) => {
                 if (obj.error.response !== undefined) {
                     getLogger().debug('Local API response: %s : %O', uri, obj.error.response.statusMessage)
                 }
@@ -423,7 +418,7 @@ async function requestLocalApi(
         // TODO: api?.stageVariables,
     }
 
-    getLogger('channel').info(localize('AWS.sam.localApi.request', 'Sending request to local API: {0}', uri))
+    getLogger().info(localize('AWS.sam.localApi.request', 'Sending request to local API: {0}', uri))
 
     await got(uri, reqOpts).catch((err: RequestError) => {
         if (err.code === 'ETIMEDOUT') {
@@ -468,7 +463,7 @@ export async function attachDebugger({
         )}`
     )
 
-    getLogger('channel').info(localize('AWS.output.sam.local.attaching', 'Attaching debugger to SAM application...'))
+    getLogger().info(localize('AWS.output.sam.local.attaching', 'Attaching debugger to SAM application...'))
 
     // The Python extension will silently fail, so it's ok for us to automatically retry
     // Users still will not be able to stop debugging without clicking stop a bunch, but
@@ -495,7 +490,7 @@ export async function attachDebugger({
         }
     }
 
-    getLogger('channel').info(localize('AWS.output.sam.local.attach.success', 'Debugger attached'))
+    getLogger().info(localize('AWS.output.sam.local.attach.success', 'Debugger attached'))
     getLogger().verbose(
         `SAM: debug session: "${vscode.debug.activeDebugSession?.name}" / ${vscode.debug.activeDebugSession?.id}`
     )
@@ -516,13 +511,11 @@ export async function waitForPort(port: number, timeout: Timeout, isDebugPort: b
     } catch (err) {
         getLogger().warn(`Timeout after ${time} ms: port was not used: ${port}`)
         if (isDebugPort) {
-            getLogger('channel').warn(
+            getLogger().warn(
                 localize('AWS.samcli.local.invoke.portUnavailable', 'Failed to use debugger port: {0}', port.toString())
             )
         } else {
-            getLogger('channel').warn(
-                localize('AWS.apig.portUnavailable', 'Failed to use API port: {0}', port.toString())
-            )
+            getLogger().warn(localize('AWS.apig.portUnavailable', 'Failed to use API port: {0}', port.toString()))
         }
     }
 }
@@ -542,16 +535,14 @@ export function shouldAppendRelativePathToFuncHandler(runtime: string): boolean 
 }
 
 /**
- * Brings the Debug Console in focus.
- * If the OutputChannel is showing, focus does not consistently switch over to the debug console, so we're
- * helping make this happen.
+ * Brings the Output Channel in focus.
  */
-async function showDebugConsole(): Promise<void> {
+async function showOutputChannel(ctx: ExtContext): Promise<void> {
     try {
-        await vscode.commands.executeCommand('workbench.debug.action.toggleRepl')
+        ctx.outputChannel.show(true)
     } catch (err) {
         // in case the vs code command changes or misbehaves, swallow error
-        getLogger().verbose('Unable to switch to the Debug Console: %O', err as Error)
+        getLogger().verbose('Unable to focus output channel: %O', err as Error)
     }
 }
 
@@ -580,14 +571,14 @@ export async function makeJsonFiles(config: SamLaunchRequestArgs): Promise<void>
     if (Object.keys(configEnv).length !== 0) {
         const env = JSON.stringify(getEnvironmentVariables(makeResourceName(config), configEnv))
         config.envFile = path.join(config.baseBuildDir!, 'env-vars.json')
-        await writeFile(config.envFile, env)
+        await fs.writeFile(config.envFile, env)
     }
 
     // container-env-vars.json
     if (config.containerEnvVars) {
         config.containerEnvFile = path.join(config.baseBuildDir!, 'container-env-vars.json')
         const containerEnv = JSON.stringify(config.containerEnvVars)
-        await writeFile(config.containerEnvFile, containerEnv)
+        await fs.writeFile(config.containerEnvFile, containerEnv)
     }
 
     // event.json
@@ -603,12 +594,12 @@ export async function makeJsonFiles(config: SamLaunchRequestArgs): Promise<void>
     if (payloadPath) {
         const fullpath = tryGetAbsolutePath(config.workspaceFolder, payloadPath)
         try {
-            JSON.parse(await readFile(fullpath, { encoding: 'utf-8' }))
+            JSON.parse(await fs.readFileText(fullpath))
         } catch (e) {
             throw Error(`Invalid JSON in payload file: ${payloadPath}`)
         }
-        await copyFile(fullpath, config.eventPayloadFile)
+        await fs.copy(fullpath, config.eventPayloadFile)
     } else {
-        await writeFile(config.eventPayloadFile, JSON.stringify(payloadObj || {}))
+        await fs.writeFile(config.eventPayloadFile, JSON.stringify(payloadObj || {}))
     }
 }

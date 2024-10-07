@@ -5,12 +5,11 @@
 
 import assert from 'assert'
 import * as path from 'path'
-import * as fs from 'fs-extra'
 import * as vscode from 'vscode'
 
-import { writeFile } from 'fs-extra'
 import { isValidFuncSignature } from '../../../shared/codelens/goCodeLensProvider'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
+import { fs } from '../../../shared'
 
 describe('getLambdaHandlerCandidates', async function () {
     let tempFolder: string
@@ -23,17 +22,17 @@ describe('getLambdaHandlerCandidates', async function () {
         programFile = path.join(tempFolder, 'program.go')
         dummyMod = path.join(tempFolder, 'go.mod')
 
-        await writeFile(programFile, getFunctionText())
-        await writeFile(dummyMod, 'require github.com/aws/aws-lambda-go v1.13.3\nmodule hello-world\ngo 1.14')
+        await fs.writeFile(programFile, getFunctionText())
+        await fs.writeFile(dummyMod, 'require github.com/aws/aws-lambda-go v1.13.3\nmodule hello-world\ngo 1.14')
     })
 
     after(async function () {
-        await fs.remove(tempFolder)
+        await fs.delete(tempFolder, { recursive: true })
     })
 
     it('Detects only good function symbols from a mock program', async function () {
         const textDoc: vscode.TextDocument = await vscode.workspace.openTextDocument(programFile)
-        const candidates: vscode.DocumentSymbol[] = getDocumentSymbols().filter(symbol =>
+        const candidates: vscode.DocumentSymbol[] = getDocumentSymbols().filter((symbol) =>
             isValidFuncSignature(textDoc, symbol)
         )
 

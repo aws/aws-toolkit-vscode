@@ -9,7 +9,7 @@ import * as vscode from 'vscode'
 import * as http from 'http'
 import { ToolkitError } from '../../shared/errors'
 import { Result } from '../../shared/utilities/result'
-import { ChildProcess, ChildProcessResult } from '../../shared/utilities/childProcess'
+import { ChildProcess, ChildProcessResult } from '../../shared/utilities/processUtils'
 import { SshConfig, ensureConnectScript, sshLogFileLocation } from '../../shared/sshConfig'
 import { FakeExtensionContext } from '../fakeExtensionContext'
 import { fileExists, makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
@@ -20,8 +20,8 @@ import {
     getCodeCatalystSsmEnv,
 } from '../../codecatalyst/model'
 import { StartDevEnvironmentSessionRequest } from 'aws-sdk/clients/codecatalyst'
-import { mkdir, readFile, writeFile } from 'fs-extra'
-import { SystemUtilities } from '../../shared/systemUtilities'
+import { mkdir, readFile, writeFile } from 'fs/promises'
+import fs from '../../shared/fs/fs'
 
 class MockSshConfig extends SshConfig {
     // State variables to track logic flow.
@@ -204,7 +204,7 @@ describe('CodeCatalyst Connect Script', function () {
             try {
                 const data = await new Promise<string>((resolve, reject) => {
                     req.on('error', reject)
-                    req.on('data', d => resolve(d.toString()))
+                    req.on('data', (d) => resolve(d.toString()))
                 })
 
                 const body = JSON.parse(data)
@@ -271,12 +271,12 @@ describe('CodeCatalyst Connect Script', function () {
 
         beforeEach(async function () {
             tmpDir = await makeTemporaryToolkitFolder()
-            sinon.stub(SystemUtilities, 'getHomeDirectory').returns(tmpDir)
+            sinon.stub(fs, 'getUserHomeDir').returns(tmpDir)
         })
 
         afterEach(async function () {
             sinon.restore()
-            await SystemUtilities.delete(tmpDir, { recursive: true })
+            await fs.delete(tmpDir, { recursive: true })
         })
 
         it('works if the .ssh directory is missing', async function () {

@@ -17,7 +17,7 @@ import * as CloudFormation from '../cloudformation/cloudformation'
 import { DefaultEcrClient } from '../clients/ecrClient'
 import { createRegionPrompter } from '../ui/common/region'
 import { CancellationError } from '../utilities/timeoutUtils'
-import { ChildProcess, ChildProcessResult } from '../utilities/childProcess'
+import { ChildProcess, ChildProcessResult } from '../utilities/processUtils'
 import { keys, selectFrom } from '../utilities/tsUtils'
 import { Commands } from '../vscode/commands2'
 import { AWSTreeNodeBase } from '../treeview/nodes/awsTreeNodeBase'
@@ -26,7 +26,7 @@ import { telemetry } from '../telemetry/telemetry'
 import { createCommonButtons } from '../ui/buttons'
 import { ToolkitPromptSettings } from '../settings'
 import { getLogger } from '../logger'
-import { isCloud9 } from '../extensionUtilities'
+import { getSamInitDocUrl, isCloud9 } from '../extensionUtilities'
 import { removeAnsi } from '../utilities/textUtilities'
 import { createExitPrompter } from '../ui/common/exitPrompter'
 import { StackSummary } from 'aws-sdk/clients/cloudformation'
@@ -41,7 +41,7 @@ import { parse } from 'semver'
 import { isAutomation } from '../vscode/env'
 import { getOverriddenParameters } from '../../lambda/config/parameterUtils'
 import { addTelemetryEnvVar } from './cli/samCliInvokerUtils'
-import { samSyncUrl, samInitDocUrl, samUpgradeUrl, credentialHelpUrl } from '../constants'
+import { samSyncUrl, samUpgradeUrl, credentialHelpUrl } from '../constants'
 import { getAwsConsoleUrl } from '../awsConsole'
 import { openUrl } from '../utilities/vsCodeUtils'
 import { showMessageWithUrl, showOnce } from '../utilities/messages'
@@ -68,7 +68,7 @@ export const prefixNewRepoName = (name: string) => `newrepo:${name}`
 
 function createBucketPrompter(client: DefaultS3Client) {
     const recentBucket = getRecentResponse(client.regionCode, 'bucketName')
-    const items = client.listBucketsIterable().map(b => [
+    const items = client.listBucketsIterable().map((b) => [
         {
             label: b.Name,
             data: b.Name as SyncParams['bucketName'],
@@ -83,7 +83,7 @@ function createBucketPrompter(client: DefaultS3Client) {
         filterBoxInputSettings: {
             label: 'Create a New Bucket',
             // This is basically a hack. I need to refactor `createQuickPick` a bit.
-            transform: v => prefixNewBucketName(v),
+            transform: (v) => prefixNewBucketName(v),
         },
         noItemsFoundItem: {
             label: localize(
@@ -104,8 +104,8 @@ const canShowStack = (s: StackSummary) =>
 function createStackPrompter(client: DefaultCloudFormationClient) {
     const recentStack = getRecentResponse(client.regionCode, 'stackName')
     const consoleUrl = getAwsConsoleUrl('cloudformation', client.regionCode)
-    const items = client.listAllStacks().map(stacks =>
-        stacks.filter(canShowStack).map(s => ({
+    const items = client.listAllStacks().map((stacks) =>
+        stacks.filter(canShowStack).map((s) => ({
             label: s.StackName,
             data: s.StackName,
             invalidSelection: !canPickStack(s),
@@ -119,7 +119,7 @@ function createStackPrompter(client: DefaultCloudFormationClient) {
         placeholder: 'Select a stack (or enter a name to create one)',
         filterBoxInputSettings: {
             label: 'Create a New Stack',
-            transform: v => v,
+            transform: (v) => v,
         },
         buttons: createCommonButtons(samSyncUrl, consoleUrl),
         noItemsFoundItem: {
@@ -137,8 +137,8 @@ function createStackPrompter(client: DefaultCloudFormationClient) {
 function createEcrPrompter(client: DefaultEcrClient) {
     const recentEcrRepo = getRecentResponse(client.regionCode, 'ecrRepoUri')
     const consoleUrl = getAwsConsoleUrl('ecr', client.regionCode)
-    const items = client.listAllRepositories().map(list =>
-        list.map(repo => ({
+    const items = client.listAllRepositories().map((list) =>
+        list.map((repo) => ({
             label: repo.repositoryName,
             data: repo.repositoryUri,
             detail: repo.repositoryArn,
@@ -152,7 +152,7 @@ function createEcrPrompter(client: DefaultEcrClient) {
         buttons: createCommonButtons(samSyncUrl, consoleUrl),
         filterBoxInputSettings: {
             label: 'Create a New Repository',
-            transform: v => prefixNewRepoName(v),
+            transform: (v) => prefixNewRepoName(v),
         },
         noItemsFoundItem: {
             label: localize(
@@ -169,7 +169,7 @@ function createEcrPrompter(client: DefaultEcrClient) {
 // TODO: hook this up so it prompts the user when more than 1 environment is present in `samconfig.toml`
 export function createEnvironmentPrompter(config: SamConfig, environments = config.listEnvironments()) {
     const recentEnvironmentName = getRecentResponse(config.location.fsPath, 'environmentName')
-    const items = environments.map(env => ({
+    const items = environments.map((env) => ({
         label: env.name,
         data: env,
         recentlyUsed: env.name === recentEnvironmentName,
@@ -204,7 +204,7 @@ function createTemplatePrompter(registry: CloudFormationTemplateRegistry) {
         }
     })
 
-    const trimmedItems = folders.size === 1 ? items.map(item => ({ ...item, description: undefined })) : items
+    const trimmedItems = folders.size === 1 ? items.map((item) => ({ ...item, description: undefined })) : items
     return createQuickPick(trimmedItems, {
         title: 'Select a SAM CloudFormation Template',
         placeholder: 'Select a SAM template.yaml file',
@@ -212,7 +212,7 @@ function createTemplatePrompter(registry: CloudFormationTemplateRegistry) {
         noItemsFoundItem: {
             label: localize('aws.sam.noWorkspace', 'No SAM template.yaml file(s) found. Select for help'),
             data: undefined,
-            onClick: () => openUrl(samInitDocUrl),
+            onClick: () => openUrl(getSamInitDocUrl()),
         },
     })
 }
@@ -223,8 +223,8 @@ function hasImageBasedResources(template: CloudFormation.Template) {
     return resources === undefined
         ? false
         : Object.keys(resources)
-              .filter(key => resources[key]?.Type === 'AWS::Serverless::Function')
-              .map(key => resources[key]?.Properties?.PackageType)
+              .filter((key) => resources[key]?.Type === 'AWS::Serverless::Function')
+              .map((key) => resources[key]?.Properties?.PackageType)
               .includes('Image')
 }
 
@@ -235,7 +235,7 @@ export class SyncWizard extends Wizard<SyncParams> {
     ) {
         super({ initState: state, exitPrompterProvider: createExitPrompter })
 
-        this.form.region.bindPrompter(() => createRegionPrompter().transform(r => r.id))
+        this.form.region.bindPrompter(() => createRegionPrompter().transform((r) => r.id))
         this.form.template.bindPrompter(() => createTemplatePrompter(registry))
         this.form.stackName.bindPrompter(({ region }) => createStackPrompter(new DefaultCloudFormationClient(region!)))
         this.form.bucketName.bindPrompter(({ region }) => createBucketPrompter(new DefaultS3Client(region!)))
@@ -243,6 +243,7 @@ export class SyncWizard extends Wizard<SyncParams> {
             showWhen: ({ template }) => !!template && hasImageBasedResources(template.data),
         })
 
+        //
         const getProjectRoot = (template: TemplateItem | undefined) =>
             template ? getWorkspaceUri(template) : undefined
 
@@ -362,8 +363,8 @@ async function runSyncInTerminal(proc: ChildProcess) {
         globals.outputChannel.show()
 
         const result = proc.run({
-            onStdout: text => globals.outputChannel.append(removeAnsi(text)),
-            onStderr: text => globals.outputChannel.append(removeAnsi(text)),
+            onStdout: (text) => globals.outputChannel.append(removeAnsi(text)),
+            onStderr: (text) => globals.outputChannel.append(removeAnsi(text)),
         })
         await proc.send('\n')
 
@@ -379,7 +380,7 @@ async function runSyncInTerminal(proc: ChildProcess) {
     terminal.sendText('\n')
     terminal.show()
 
-    const result = await new Promise<ChildProcessResult>(resolve => pty.onDidExit(resolve))
+    const result = await new Promise<ChildProcessResult>((resolve) => pty.onDidExit(resolve))
     if (pty.cancelled) {
         throw result.error !== undefined
             ? ToolkitError.chain(result.error, 'SAM CLI was cancelled before exiting', { cancelled: true })
@@ -468,7 +469,7 @@ const configKeyMapping: Record<string, string | string[]> = {
 
 function getSyncParamsFromConfig(config: SamConfig) {
     const samConfigParams: string[] = []
-    const params = toRecord(keys(configKeyMapping), k => {
+    const params = toRecord(keys(configKeyMapping), (k) => {
         const key = configKeyMapping[k]
         if (typeof key === 'string') {
             const param = getStringParam(config, key)
@@ -618,7 +619,7 @@ export function registerSync() {
     const settings = SamCliSettings.instance
     settings.onDidChange(({ key }) => {
         if (key === 'legacyDeploy') {
-            telemetry.aws_modifySetting.run(span => {
+            telemetry.aws_modifySetting.run((span) => {
                 span.record({ settingId: 'sam_legacyDeploy' })
                 const state = settings.get('legacyDeploy')
                 span.record({ settingState: state ? 'Enabled' : 'Disabled' })
@@ -686,7 +687,9 @@ class ProcessTerminal implements vscode.Pseudoterminal {
     public constructor(private readonly process: ChildProcess) {
         // Used in integration tests
         if (isAutomation()) {
-            this.onDidWrite(text => console.log(text.trim()))
+            // Disable because it is a test.
+            // eslint-disable-next-line aws-toolkits/no-console-log
+            this.onDidWrite((text) => console.log(text.trim()))
         }
     }
 
@@ -702,11 +705,11 @@ class ProcessTerminal implements vscode.Pseudoterminal {
     public open(initialDimensions: vscode.TerminalDimensions | undefined): void {
         this.process
             .run({
-                onStdout: text => this.mapStdio(text),
-                onStderr: text => this.mapStdio(text),
+                onStdout: (text) => this.mapStdio(text),
+                onStderr: (text) => this.mapStdio(text),
             })
-            .then(result => this.onDidExitEmitter.fire(result))
-            .catch(err =>
+            .then((result) => this.onDidExitEmitter.fire(result))
+            .catch((err) =>
                 this.onDidExitEmitter.fire({ error: UnknownError.cast(err), exitCode: -1, stderr: '', stdout: '' })
             )
             .finally(() => this.onDidWriteEmitter.fire('\r\nPress any key to close this terminal'))
@@ -726,12 +729,12 @@ class ProcessTerminal implements vscode.Pseudoterminal {
 
         // enter
         if (data === '\u000D') {
-            this.process.send('\n').then(undefined, e => {
+            this.process.send('\n').then(undefined, (e) => {
                 getLogger().error('ProcessTerminal: process.send() failed: %s', (e as Error).message)
             })
             this.onDidWriteEmitter.fire('\r\n')
         } else {
-            this.process.send(data).then(undefined, e => {
+            this.process.send(data).then(undefined, (e) => {
                 getLogger().error('ProcessTerminal: process.send() failed: %s', (e as Error).message)
             })
             this.onDidWriteEmitter.fire(data)

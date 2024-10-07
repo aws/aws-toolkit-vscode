@@ -25,7 +25,7 @@ describe('git-secrets', function () {
     function setAllowListPatterns(gitSecrets: string) {
         const allowListPatterns: string[] = ['"accountId": "123456789012"']
 
-        allowListPatterns.forEach(pattern => {
+        allowListPatterns.forEach((pattern) => {
             // Returns non-zero exit code if pattern already exists
             runCmd([gitSecrets, '--add', '--allowed', pattern], { cwd: toolkitProjectDir, throws: false })
         })
@@ -34,7 +34,7 @@ describe('git-secrets', function () {
     function setDenyListPatterns(gitSecrets: string) {
         const denyListPatterns: string[] = []
 
-        denyListPatterns.forEach(pattern => {
+        denyListPatterns.forEach((pattern) => {
             // Returns non-zero exit code if pattern already exists
             runCmd([gitSecrets, '--add', pattern], { cwd: toolkitProjectDir, throws: false })
         })

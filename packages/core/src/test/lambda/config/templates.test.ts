@@ -4,7 +4,6 @@
  */
 
 import assert from 'assert'
-import { mkdir, remove, writeFile } from 'fs-extra'
 import * as path from 'path'
 import globals from '../../../shared/extensionGlobals'
 import * as vscode from 'vscode'
@@ -17,6 +16,7 @@ import {
 } from '../../../lambda/config/templates'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { makeSampleSamTemplateYaml } from '../../shared/cloudformation/cloudformationTestUtils'
+import { fs } from '../../../shared'
 
 class MockLoadTemplatesConfigContext {
     public readonly fileExists: (path: string) => Thenable<boolean>
@@ -24,9 +24,9 @@ class MockLoadTemplatesConfigContext {
     public readonly saveDocumentIfDirty: (editorPath: string) => Thenable<void>
 
     public constructor({
-        fileExists = async _path => true,
-        readFile = async _path => '',
-        saveDocumentIfDirty = async _path => {},
+        fileExists = async (_path) => true,
+        readFile = async (_path) => '',
+        saveDocumentIfDirty = async (_path) => {},
     }: Partial<LoadTemplatesConfigContext>) {
         this.fileExists = fileExists
         this.readFile = readFile
@@ -45,7 +45,7 @@ describe('templates', async function () {
             }`
 
             const context = new MockLoadTemplatesConfigContext({
-                readFile: async pathLike => rawJson,
+                readFile: async (pathLike) => rawJson,
             })
 
             const config = await load('', context)
@@ -72,7 +72,7 @@ describe('templates', async function () {
             }`
 
             const context = new MockLoadTemplatesConfigContext({
-                readFile: async pathLike => rawJson,
+                readFile: async (pathLike) => rawJson,
             })
 
             const config = await load('', context)
@@ -99,7 +99,7 @@ describe('templates', async function () {
 
         it('returns minimal config on missing file', async function () {
             const context = new MockLoadTemplatesConfigContext({
-                fileExists: async pathLike => false,
+                fileExists: async (pathLike) => false,
             })
 
             const config = await load('', context)
@@ -111,7 +111,7 @@ describe('templates', async function () {
 
         it('throws on error loading file', async function () {
             const context = new MockLoadTemplatesConfigContext({
-                readFile: async pathLike => {
+                readFile: async (pathLike) => {
                     throw new Error('oh no')
                 },
             })
@@ -130,7 +130,7 @@ describe('templates', async function () {
 
         it('gracefully handles invalid JSON', async function () {
             const context = new MockLoadTemplatesConfigContext({
-                readFile: async pathLike => '{',
+                readFile: async (pathLike) => '{',
             })
 
             try {
@@ -161,7 +161,7 @@ describe('templates', async function () {
             }`
 
             const context = new MockLoadTemplatesConfigContext({
-                readFile: async pathLike => rawJson,
+                readFile: async (pathLike) => rawJson,
             })
 
             const config = await load('', context)
@@ -178,7 +178,7 @@ describe('templates', async function () {
         it('reads the correct path', async function () {
             const readArgs: string[] = []
             const context = new MockLoadTemplatesConfigContext({
-                readFile: async pathLike => {
+                readFile: async (pathLike) => {
                     readArgs.push(pathLike)
 
                     return '{}'
@@ -196,12 +196,12 @@ describe('templates', async function () {
             let read: boolean = false
             let readBeforeSave: boolean = false
             const context = new MockLoadTemplatesConfigContext({
-                readFile: async pathLike => {
+                readFile: async (pathLike) => {
                     read = true
 
                     return '{}'
                 },
-                saveDocumentIfDirty: async pathLike => {
+                saveDocumentIfDirty: async (pathLike) => {
                     saveArgs.push(pathLike)
 
                     if (read) {
@@ -779,12 +779,12 @@ describe('getExistingConfiguration', async function () {
             index: 0,
         }
         tempConfigFolder = path.join(tempFolder, '.aws')
-        await mkdir(tempConfigFolder)
+        await fs.mkdir(tempConfigFolder)
         tempConfigFile = path.join(tempConfigFolder, 'templates.json')
     })
 
     afterEach(async function () {
-        await remove(tempFolder)
+        await fs.delete(tempFolder, { recursive: true })
         const r = await globals.templateRegistry
         r.reset()
     })
@@ -795,15 +795,23 @@ describe('getExistingConfiguration', async function () {
     })
 
     it('returns undefined if the legacy config file is not valid JSON', async function () {
-        await writeFile(tempTemplateFile.fsPath, makeSampleSamTemplateYaml(true, { handler: matchedHandler }), 'utf8')
-        await writeFile(tempConfigFile, makeSampleSamTemplateYaml(true, { handler: matchedHandler }), 'utf8')
+        await fs.writeFile(
+            tempTemplateFile.fsPath,
+            makeSampleSamTemplateYaml(true, { handler: matchedHandler }),
+            'utf8'
+        )
+        await fs.writeFile(tempConfigFile, makeSampleSamTemplateYaml(true, { handler: matchedHandler }), 'utf8')
         await (await globals.templateRegistry).addItem(tempTemplateFile)
         const val = await getExistingConfiguration(fakeWorkspaceFolder, matchedHandler, tempTemplateFile)
         assert.strictEqual(val, undefined)
     })
 
     it('returns data from the legacy config file', async function () {
-        await writeFile(tempTemplateFile.fsPath, makeSampleSamTemplateYaml(true, { handler: matchedHandler }), 'utf8')
+        await fs.writeFile(
+            tempTemplateFile.fsPath,
+            makeSampleSamTemplateYaml(true, { handler: matchedHandler }),
+            'utf8'
+        )
         const configData = {
             templates: {
                 'test.yaml': {
@@ -817,7 +825,7 @@ describe('getExistingConfiguration', async function () {
                 },
             },
         }
-        await writeFile(tempConfigFile, JSON.stringify(configData), 'utf8')
+        await fs.writeFile(tempConfigFile, JSON.stringify(configData), 'utf8')
         await (await globals.templateRegistry).addItem(tempTemplateFile)
         const val = await getExistingConfiguration(fakeWorkspaceFolder, matchedHandler, tempTemplateFile)
         assert.ok(val)

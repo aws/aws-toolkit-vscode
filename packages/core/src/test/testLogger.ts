@@ -20,6 +20,10 @@ export class TestLogger implements Logger {
 
     public enableDebugConsole(): void {}
 
+    public log(logLevel: LogLevel, ...message: Loggable[]): number {
+        return this.addLoggedEntries(logLevel, message)
+    }
+
     public debug(...message: Loggable[]): number {
         return this.addLoggedEntries('debug', message)
     }
@@ -42,12 +46,12 @@ export class TestLogger implements Logger {
 
     public getLoggedEntries(...logLevels: LogLevel[]): Loggable[] {
         return this.loggedEntries
-            .filter(loggedEntry => logLevels.length === 0 || logLevels.includes(loggedEntry.logLevel))
-            .map(loggedEntry => loggedEntry.entry)
+            .filter((loggedEntry) => logLevels.length === 0 || logLevels.includes(loggedEntry.logLevel))
+            .map((loggedEntry) => loggedEntry.entry)
     }
 
     private addLoggedEntries(logLevel: LogLevel, entries: Loggable[]): number {
-        entries.forEach(entry => {
+        entries.forEach((entry) => {
             this.loggedEntries.push({
                 logLevel,
                 entry,
@@ -57,7 +61,7 @@ export class TestLogger implements Logger {
         return this.count++
     }
 
-    // No need to actually implement this. Log tracking is tested in winstonToolkitLogger.test.ts
+    // No need to actually implement this. Log tracking is tested in toolkitLogger.test.ts
     public getLogById(logID: number, file: Uri): string | undefined {
         return undefined
     }

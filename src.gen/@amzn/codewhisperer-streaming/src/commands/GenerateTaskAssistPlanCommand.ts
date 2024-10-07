@@ -97,6 +97,23 @@ export interface GenerateTaskAssistPlanCommandOutput extends GenerateTaskAssistP
  *                   },
  *                 },
  *               },
+ *               relevantDocuments: [ // RelevantDocumentList
+ *                 { // RelevantTextDocument
+ *                   relativeFilePath: "STRING_VALUE", // required
+ *                   programmingLanguage: {
+ *                     languageName: "STRING_VALUE", // required
+ *                   },
+ *                   text: "STRING_VALUE",
+ *                   documentSymbols: [
+ *                     {
+ *                       name: "STRING_VALUE", // required
+ *                       type: "DECLARATION" || "USAGE", // required
+ *                       source: "STRING_VALUE",
+ *                     },
+ *                   ],
+ *                 },
+ *               ],
+ *               useRelevantDocuments: true || false,
  *             },
  *             shellState: { // ShellState
  *               shellName: "STRING_VALUE", // required
@@ -122,6 +139,12 @@ export interface GenerateTaskAssistPlanCommandOutput extends GenerateTaskAssistP
  *                   value: "STRING_VALUE",
  *                 },
  *               ],
+ *             },
+ *             appStudioContext: { // AppStudioState
+ *               namespace: "STRING_VALUE", // required
+ *               propertyName: "STRING_VALUE", // required
+ *               propertyValue: "STRING_VALUE",
+ *               propertyContext: "STRING_VALUE", // required
  *             },
  *             diagnostic: { // Diagnostic Union: only one key present
  *               textDocumentDiagnostic: { // TextDocumentDiagnostic
@@ -159,8 +182,14 @@ export interface GenerateTaskAssistPlanCommandOutput extends GenerateTaskAssistP
  *                 message: "STRING_VALUE", // required
  *               },
  *             },
+ *             consoleState: { // ConsoleState
+ *               region: "STRING_VALUE",
+ *             },
+ *             userSettings: { // UserSettings
+ *               hasConsentedToCrossRegionCalls: true || false,
+ *             },
  *           },
- *           userIntent: "SUGGEST_ALTERNATE_IMPLEMENTATION" || "APPLY_COMMON_BEST_PRACTICES" || "IMPROVE_CODE" || "SHOW_EXAMPLES" || "CITE_SOURCES" || "EXPLAIN_LINE_BY_LINE" || "EXPLAIN_CODE_SELECTION",
+ *           userIntent: "SUGGEST_ALTERNATE_IMPLEMENTATION" || "APPLY_COMMON_BEST_PRACTICES" || "IMPROVE_CODE" || "SHOW_EXAMPLES" || "CITE_SOURCES" || "EXPLAIN_LINE_BY_LINE" || "EXPLAIN_CODE_SELECTION" || "GENERATE_CLOUDFORMATION_TEMPLATE" || "GENERATE_UNIT_TESTS",
  *         },
  *         assistantResponseMessage: { // AssistantResponseMessage
  *           messageId: "STRING_VALUE",
@@ -185,7 +214,7 @@ export interface GenerateTaskAssistPlanCommandOutput extends GenerateTaskAssistP
  *           ],
  *           followupPrompt: { // FollowupPrompt
  *             content: "STRING_VALUE", // required
- *             userIntent: "SUGGEST_ALTERNATE_IMPLEMENTATION" || "APPLY_COMMON_BEST_PRACTICES" || "IMPROVE_CODE" || "SHOW_EXAMPLES" || "CITE_SOURCES" || "EXPLAIN_LINE_BY_LINE" || "EXPLAIN_CODE_SELECTION",
+ *             userIntent: "SUGGEST_ALTERNATE_IMPLEMENTATION" || "APPLY_COMMON_BEST_PRACTICES" || "IMPROVE_CODE" || "SHOW_EXAMPLES" || "CITE_SOURCES" || "EXPLAIN_LINE_BY_LINE" || "EXPLAIN_CODE_SELECTION" || "GENERATE_CLOUDFORMATION_TEMPLATE" || "GENERATE_UNIT_TESTS",
  *           },
  *         },
  *       },
@@ -203,6 +232,23 @@ export interface GenerateTaskAssistPlanCommandOutput extends GenerateTaskAssistP
  *                 end: "<Position>", // required
  *               },
  *             },
+ *             relevantDocuments: [
+ *               {
+ *                 relativeFilePath: "STRING_VALUE", // required
+ *                 programmingLanguage: {
+ *                   languageName: "STRING_VALUE", // required
+ *                 },
+ *                 text: "STRING_VALUE",
+ *                 documentSymbols: [
+ *                   {
+ *                     name: "STRING_VALUE", // required
+ *                     type: "DECLARATION" || "USAGE", // required
+ *                     source: "STRING_VALUE",
+ *                   },
+ *                 ],
+ *               },
+ *             ],
+ *             useRelevantDocuments: true || false,
  *           },
  *           shellState: {
  *             shellName: "STRING_VALUE", // required
@@ -229,6 +275,12 @@ export interface GenerateTaskAssistPlanCommandOutput extends GenerateTaskAssistP
  *               },
  *             ],
  *           },
+ *           appStudioContext: {
+ *             namespace: "STRING_VALUE", // required
+ *             propertyName: "STRING_VALUE", // required
+ *             propertyValue: "STRING_VALUE",
+ *             propertyContext: "STRING_VALUE", // required
+ *           },
  *           diagnostic: {//  Union: only one key present
  *             textDocumentDiagnostic: {
  *               document: "<TextDocument>", // required
@@ -246,8 +298,14 @@ export interface GenerateTaskAssistPlanCommandOutput extends GenerateTaskAssistP
  *               message: "STRING_VALUE", // required
  *             },
  *           },
+ *           consoleState: {
+ *             region: "STRING_VALUE",
+ *           },
+ *           userSettings: {
+ *             hasConsentedToCrossRegionCalls: true || false,
+ *           },
  *         },
- *         userIntent: "SUGGEST_ALTERNATE_IMPLEMENTATION" || "APPLY_COMMON_BEST_PRACTICES" || "IMPROVE_CODE" || "SHOW_EXAMPLES" || "CITE_SOURCES" || "EXPLAIN_LINE_BY_LINE" || "EXPLAIN_CODE_SELECTION",
+ *         userIntent: "SUGGEST_ALTERNATE_IMPLEMENTATION" || "APPLY_COMMON_BEST_PRACTICES" || "IMPROVE_CODE" || "SHOW_EXAMPLES" || "CITE_SOURCES" || "EXPLAIN_LINE_BY_LINE" || "EXPLAIN_CODE_SELECTION" || "GENERATE_CLOUDFORMATION_TEMPLATE" || "GENERATE_UNIT_TESTS",
  *       },
  *       assistantResponseMessage: {
  *         messageId: "STRING_VALUE",
@@ -272,11 +330,12 @@ export interface GenerateTaskAssistPlanCommandOutput extends GenerateTaskAssistP
  *         ],
  *         followupPrompt: {
  *           content: "STRING_VALUE", // required
- *           userIntent: "SUGGEST_ALTERNATE_IMPLEMENTATION" || "APPLY_COMMON_BEST_PRACTICES" || "IMPROVE_CODE" || "SHOW_EXAMPLES" || "CITE_SOURCES" || "EXPLAIN_LINE_BY_LINE" || "EXPLAIN_CODE_SELECTION",
+ *           userIntent: "SUGGEST_ALTERNATE_IMPLEMENTATION" || "APPLY_COMMON_BEST_PRACTICES" || "IMPROVE_CODE" || "SHOW_EXAMPLES" || "CITE_SOURCES" || "EXPLAIN_LINE_BY_LINE" || "EXPLAIN_CODE_SELECTION" || "GENERATE_CLOUDFORMATION_TEMPLATE" || "GENERATE_UNIT_TESTS",
  *         },
  *       },
  *     },
  *     chatTriggerType: "MANUAL" || "DIAGNOSTIC", // required
+ *     customizationArn: "STRING_VALUE",
  *   },
  *   workspaceState: { // WorkspaceState
  *     uploadId: "STRING_VALUE", // required
@@ -319,7 +378,19 @@ export interface GenerateTaskAssistPlanCommandOutput extends GenerateTaskAssistP
  * //     followupPromptEvent: { // FollowupPromptEvent
  * //       followupPrompt: { // FollowupPrompt
  * //         content: "STRING_VALUE", // required
- * //         userIntent: "SUGGEST_ALTERNATE_IMPLEMENTATION" || "APPLY_COMMON_BEST_PRACTICES" || "IMPROVE_CODE" || "SHOW_EXAMPLES" || "CITE_SOURCES" || "EXPLAIN_LINE_BY_LINE" || "EXPLAIN_CODE_SELECTION",
+ * //         userIntent: "SUGGEST_ALTERNATE_IMPLEMENTATION" || "APPLY_COMMON_BEST_PRACTICES" || "IMPROVE_CODE" || "SHOW_EXAMPLES" || "CITE_SOURCES" || "EXPLAIN_LINE_BY_LINE" || "EXPLAIN_CODE_SELECTION" || "GENERATE_CLOUDFORMATION_TEMPLATE" || "GENERATE_UNIT_TESTS",
+ * //       },
+ * //     },
+ * //     codeEvent: { // CodeEvent
+ * //       content: "STRING_VALUE", // required
+ * //     },
+ * //     intentsEvent: { // IntentsEvent
+ * //       intents: { // IntentMap
+ * //         "<keys>": { // IntentData
+ * //           "<keys>": { // IntentDataType Union: only one key present
+ * //             string: "STRING_VALUE",
+ * //           },
+ * //         },
  * //       },
  * //     },
  * //     invalidStateEvent: { // InvalidStateEvent
@@ -342,6 +413,9 @@ export interface GenerateTaskAssistPlanCommandOutput extends GenerateTaskAssistP
  *
  * @throws {@link InternalServerException} (server fault)
  *  This exception is thrown when an unexpected error occurred during the processing of a request.
+ *
+ * @throws {@link ServiceQuotaExceededException} (client fault)
+ *  This exception is thrown when request was denied due to caller exceeding their usage limits
  *
  * @throws {@link ThrottlingException} (client fault)
  *  This exception is thrown when request was denied due to request throttling.

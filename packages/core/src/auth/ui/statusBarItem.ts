@@ -14,7 +14,7 @@ import { Auth } from '../auth'
 import { getAllConnectionsInUse, onDidChangeConnections } from '../secondaryAuth'
 import { codicon, getIcon } from '../../shared/icons'
 import { debounce } from '../../shared/utilities/functionUtils'
-import { authCommands } from '../utils'
+import { Commands } from '../../shared/vscode/commands2'
 
 const statusbarPriority = 1
 
@@ -24,7 +24,7 @@ export async function initializeAwsCredentialsStatusBarItem(
 ): Promise<void> {
     const devSettings = DevSettings.instance
     const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, statusbarPriority)
-    statusBarItem.command = authCommands().login.build().asCommand({ title: 'Login' })
+    statusBarItem.command = (await Commands.getOrThrow('aws.toolkit.login')).build().asCommand({ title: 'Login' })
     statusBarItem.show()
 
     const update = debounce(() => updateItem(statusBarItem, devSettings))
@@ -63,7 +63,7 @@ function updateItem(statusBarItem: vscode.StatusBarItem, devSettings: DevSetting
         getIdeProperties().company
     )
 
-    const icon = connections.some(c => c.state !== 'valid') ? getIcon('vscode-error') : getIcon('vscode-check')
+    const icon = connections.some((c) => c.state !== 'valid') ? getIcon('vscode-error') : getIcon('vscode-check')
     const getText = (text: string) => codicon`${icon} ${company}: ${text}`
     if (connections.length === 0) {
         statusBarItem.text = company
@@ -72,7 +72,7 @@ function updateItem(statusBarItem: vscode.StatusBarItem, devSettings: DevSetting
         statusBarItem.text = getText(connections[0].label)
         statusBarItem.tooltip = connectedTooltip
     } else {
-        const expired = connections.filter(c => c.state !== 'valid')
+        const expired = connections.filter((c) => c.state !== 'valid')
         if (expired.length !== 0) {
             statusBarItem.text = getText(`${expired.length} of ${connections.length} Connections Expired`)
         } else {
@@ -80,7 +80,7 @@ function updateItem(statusBarItem: vscode.StatusBarItem, devSettings: DevSetting
         }
     }
 
-    const color = connections.some(c => c.state !== 'valid')
+    const color = connections.some((c) => c.state !== 'valid')
         ? new vscode.ThemeColor('statusBarItem.errorBackground')
         : undefined
     ;(statusBarItem as any).backgroundColor = color

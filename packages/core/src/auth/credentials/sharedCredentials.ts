@@ -4,15 +4,15 @@
  */
 
 import * as vscode from 'vscode'
-import { SystemUtilities } from '../../shared/systemUtilities'
 import { ToolkitError } from '../../shared/errors'
+import fs from '../../shared/fs/fs'
 import { assertHasProps } from '../../shared/utilities/tsUtils'
 import { getConfigFilename, getCredentialsFilename } from './sharedCredentialsFile'
 import { SectionName, StaticProfile } from './types'
 import { UserCredentialsUtils } from '../../shared/credentials/userCredentialsUtils'
 
 export async function updateAwsSdkLoadConfigEnvVar(): Promise<void> {
-    const configFileExists = await SystemUtilities.fileExists(getConfigFilename())
+    const configFileExists = await fs.exists(getConfigFilename())
     process.env.AWS_SDK_LOAD_CONFIG = configFileExists ? 'true' : ''
 }
 
@@ -46,7 +46,11 @@ export interface ParseResult {
 }
 
 export class ParseError extends Error {
-    public constructor(public readonly source: vscode.Uri, public readonly range: vscode.Range, message: string) {
+    public constructor(
+        public readonly source: vscode.Uri,
+        public readonly range: vscode.Range,
+        message: string
+    ) {
         const location = `${source.fsPath}:${range.start.line}:${range.start.character}`
         super(`${location}: ${message}`)
     }
@@ -91,7 +95,7 @@ export function getSectionOrThrow<T extends Section['type'] = Section['type']>(
     name: SectionName,
     type: T
 ): Section & { type: T } {
-    const section = sections.find(s => s.name === name && s.type === type) as (Section & { type: T }) | undefined
+    const section = sections.find((s) => s.name === name && s.type === type) as (Section & { type: T }) | undefined
     if (!section) {
         const friendlyName = type === 'sso-session' ? 'Session' : 'Profile'
         throw new Error(`${friendlyName} not found: ${name}`)
@@ -112,7 +116,7 @@ export function getSectionDataOrThrow(sections: Section[], name: SectionName, ty
 const sectionTypes = ['profile', 'sso-session'] as const
 function validateSection(section: BaseSection): asserts section is Section {
     // eslint-disable-next-line unicorn/prefer-includes
-    if (!sectionTypes.some(t => t === section.type)) {
+    if (!sectionTypes.some((t) => t === section.type)) {
         throw ParseError.fromSection(
             section,
             `Invalid section type "${section.type}". Expected one of: ${sectionTypes.join(', ')}`
@@ -171,7 +175,7 @@ export function mergeAndValidateSections(data: BaseSection[]): ParseResult {
 
 export function parseIni(iniData: string, source: vscode.Uri): BaseSection[] {
     const sections = [] as BaseSection[]
-    const lines = iniData.split(/\r?\n/).map(l => l.split(/(^|\s)[;#]/)[0]) // remove comments
+    const lines = iniData.split(/\r?\n/).map((l) => l.split(/(^|\s)[;#]/)[0]) // remove comments
     lines.forEach((line, lineNumber) => {
         const section = line.match(/^\s*\[([^\[\]]+)]\s*$/)
         const currentSection: BaseSection | undefined = sections[sections.length - 1]
@@ -222,19 +226,19 @@ export async function loadSharedConfigFiles(init: SharedConfigPaths = {}): Promi
 }
 
 async function loadConfigFile(configUri?: vscode.Uri): Promise<ReturnType<typeof parseIni>> {
-    if (!configUri || !(await SystemUtilities.fileExists(configUri))) {
+    if (!configUri || !(await fs.exists(configUri))) {
         return []
     }
 
-    return parseIni(await SystemUtilities.readFile(configUri), configUri)
+    return parseIni(await fs.readFileText(configUri), configUri)
 }
 
 async function loadCredentialsFile(credentialsUri?: vscode.Uri): Promise<ReturnType<typeof parseIni>> {
-    if (!credentialsUri || !(await SystemUtilities.fileExists(credentialsUri))) {
+    if (!credentialsUri || !(await fs.exists(credentialsUri))) {
         return []
     }
 
-    return parseIni(await SystemUtilities.readFile(credentialsUri), credentialsUri)
+    return parseIni(await fs.readFileText(credentialsUri), credentialsUri)
 }
 
 /**

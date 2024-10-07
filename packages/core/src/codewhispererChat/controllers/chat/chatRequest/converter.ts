@@ -7,10 +7,12 @@ import {
     CursorState,
     DocumentSymbol,
     GenerateAssistantResponseRequest,
+    RelevantTextDocument,
     SymbolType,
     TextDocument,
 } from '@amzn/codewhisperer-streaming'
 import { TriggerPayload } from '../model'
+import { undefinedIfEmpty } from '../../../../shared'
 
 const fqnNameSizeDownLimit = 1
 const fqnNameSizeUpLimit = 256
@@ -41,7 +43,7 @@ export function triggerPayloadToChatRequest(triggerPayload: TriggerPayload): Gen
 
     if (triggerPayload.filePath !== undefined && triggerPayload.filePath !== '') {
         const documentSymbolFqns: DocumentSymbol[] = []
-        triggerPayload.codeQuery?.fullyQualifiedNames?.used?.forEach(fqn => {
+        triggerPayload.codeQuery?.fullyQualifiedNames?.used?.forEach((fqn) => {
             const elem = {
                 name: fqn.symbol?.join('.') ?? '',
                 type: SymbolType.USAGE,
@@ -90,6 +92,13 @@ export function triggerPayloadToChatRequest(triggerPayload: TriggerPayload): Gen
         }
     }
 
+    const relevantDocuments: RelevantTextDocument[] = triggerPayload.relevantTextDocuments
+        ? triggerPayload.relevantTextDocuments
+        : []
+    const useRelevantDocuments = triggerPayload.useRelevantDocuments
+    // service will throw validation exception if string is empty
+    const customizationArn: string | undefined = undefinedIfEmpty(triggerPayload.customization.arn)
+
     return {
         conversationState: {
             currentMessage: {
@@ -101,12 +110,15 @@ export function triggerPayloadToChatRequest(triggerPayload: TriggerPayload): Gen
                         editorState: {
                             document,
                             cursorState,
+                            relevantDocuments,
+                            useRelevantDocuments,
                         },
                     },
                     userIntent: triggerPayload.userIntent,
                 },
             },
             chatTriggerType: 'MANUAL',
+            customizationArn: customizationArn,
         },
     }
 }

@@ -1,0 +1,46 @@
+# github actions: https://docs.github.com/en/actions/use-cases-and-examples/building-and-testing/building-and-testing-nodejs
+# setup-node: https://github.com/actions/setup-node
+
+name: Notifications
+
+on:
+    # `pull_request_target` (as opposed to `pull_request`) gives permissions to comment on PRs.
+    pull_request_target:
+        branches: [master, feature/*, staging]
+        # Default = opened + synchronize + reopened.
+        # We also want "edited" so that changelog notifications runs when PR title is updated.
+        # https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows#pull_request
+        types:
+            - edited
+            - opened
+            - reopened
+            - synchronize
+
+# Cancel old jobs when a pull request is updated.
+concurrency:
+    group: ${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: true
+
+jobs:
+    notify:
+        if: github.repository == 'aws/aws-toolkit-vscode'
+        runs-on: ubuntu-latest
+        permissions:
+            pull-requests: write
+            issues: read
+        steps:
+            - uses: actions/checkout@v4
+              if: github.event_name == 'pull_request_target'
+              with:
+                  fetch-depth: 20
+            - uses: actions/setup-node@v4
+              if: github.event_name == 'pull_request_target'
+              with:
+                  node-version: '20'
+            - name: Check for tests
+              uses: actions/github-script@v7
+              if: github.event_name == 'pull_request_target'
+              with:
+                  script: |
+                      const notify = require('.github/workflows/notify.js')
+                      await notify({github, context})

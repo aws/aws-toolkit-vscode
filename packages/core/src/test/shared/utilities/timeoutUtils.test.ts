@@ -9,7 +9,8 @@ import * as timeoutUtils from '../../../shared/utilities/timeoutUtils'
 import { installFakeClock, tickPromise } from '../../../test/testUtil'
 import { sleep } from '../../../shared/utilities/timeoutUtils'
 
-describe('timeoutUtils', async function () {
+// We export this describe() so it can be used in the web tests as well
+export const timeoutUtilsDescribe = describe('timeoutUtils', async function () {
     let clock: FakeTimers.InstalledClock
 
     before(function () {

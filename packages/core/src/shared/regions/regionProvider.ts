@@ -11,11 +11,11 @@ const localize = nls.loadMessageBundle()
 import * as vscode from 'vscode'
 import { getLogger } from '../logger'
 import { Endpoints, loadEndpoints, Region } from './endpoints'
-import { AWSTreeNodeBase } from '../treeview/nodes/awsTreeNodeBase'
-import { regionSettingKey } from '../constants'
 import { AwsContext } from '../awsContext'
-import { getIdeProperties, isCloud9 } from '../extensionUtilities'
+import { getIdeProperties, isAmazonQ, isCloud9 } from '../extensionUtilities'
 import { ResourceFetcher } from '../resourcefetcher/resourcefetcher'
+import { isSsoConnection } from '../../auth/connection'
+import { Auth } from '../../auth'
 
 export const defaultRegion = 'us-east-1'
 export const defaultPartition = 'aws'
@@ -37,7 +37,6 @@ export class RegionProvider {
 
     public constructor(
         endpoints: Endpoints = { partitions: [] },
-        private readonly globalState = globals.context.globalState,
         private readonly awsContext: Pick<AwsContext, 'getCredentialDefaultRegion'> = globals.awsContext
     ) {
         this.loadFromEndpoints(endpoints)
@@ -52,7 +51,7 @@ export class RegionProvider {
     }
 
     public isServiceInRegion(serviceId: string, regionId: string): boolean {
-        return !!this.regionData.get(regionId)?.serviceIds.find(x => x === serviceId) ?? false
+        return !!this.regionData.get(regionId)?.serviceIds.find((x) => x === serviceId) ?? false
     }
 
     public getPartitionId(regionId: string): string | undefined {
@@ -77,40 +76,48 @@ export class RegionProvider {
 
     public getRegions(partitionId = this.defaultPartitionId): Region[] {
         return [...this.regionData.values()]
-            .filter(region => region.partitionId === partitionId)
-            .map(region => region.region)
+            .filter((region) => region.partitionId === partitionId)
+            .map((region) => region.region)
     }
 
     public getExplorerRegions(): string[] {
-        return this.globalState.get<string[]>(regionSettingKey, [])
+        return globals.globalState.tryGet<string[]>('region', Object, [])
     }
 
     public async updateExplorerRegions(regions: string[]): Promise<void> {
-        return this.globalState.update(regionSettingKey, Array.from(new Set(regions)))
+        return globals.globalState.update('region', Array.from(new Set(regions)))
     }
 
     /**
-     * @param node node on current command.
      * @returns heuristic for default region based on
-     * last touched region in explorer, wizard response, and node passed in.
+     * last touched region in auth, explorer, wizard response.
      */
-    public guessDefaultRegion(node?: AWSTreeNodeBase): string {
-        const explorerRegions = this.getExplorerRegions()
-
-        if (node?.regionCode) {
-            return node.regionCode
-        } else if (explorerRegions.length === 1) {
-            return explorerRegions[0]
-        } else if (this.lastTouchedRegion) {
-            return this.lastTouchedRegion
-        } else {
-            const lastWizardResponse = this.globalState.get<Region>('lastSelectedRegion')
-            if (lastWizardResponse && lastWizardResponse.id) {
-                return lastWizardResponse.id
-            } else {
-                return this.defaultRegionId
-            }
+    public guessDefaultRegion(): string | undefined {
+        const conn = Auth.instance.activeConnection
+        if (isAmazonQ() && isSsoConnection(conn)) {
+            // Only the current auth region makes sense for Amazon Q use cases.
+            return conn.ssoRegion
         }
+
+        if (conn?.type === 'sso') {
+            return conn.ssoRegion
+        }
+
+        const explorerRegions = this.getExplorerRegions()
+        if (explorerRegions.length === 1) {
+            return explorerRegions[0]
+        }
+
+        if (this.lastTouchedRegion) {
+            return this.lastTouchedRegion
+        }
+
+        const lastWizardResponse = globals.globalState.tryGet<Region>('lastSelectedRegion', Object)
+        if (lastWizardResponse && lastWizardResponse.id) {
+            return lastWizardResponse.id
+        }
+
+        return undefined
     }
 
     public setLastTouchedRegion(region: string | undefined) {
@@ -121,8 +128,8 @@ export class RegionProvider {
 
     private loadFromEndpoints(endpoints: Endpoints) {
         this.regionData.clear()
-        endpoints.partitions.forEach(partition => {
-            partition.regions.forEach(region =>
+        endpoints.partitions.forEach((partition) => {
+            partition.regions.forEach((region) =>
                 this.regionData.set(region.id, {
                     dnsSuffix: partition.dnsSuffix,
                     partitionId: partition.id,
@@ -131,8 +138,8 @@ export class RegionProvider {
                 })
             )
 
-            partition.services.forEach(service => {
-                service.endpoints.forEach(endpoint => {
+            partition.services.forEach((service) => {
+                service.endpoints.forEach((endpoint) => {
                     const regionData = this.regionData.get(endpoint.regionId)
 
                     if (regionData) {
@@ -170,7 +177,7 @@ export class RegionProvider {
             }
         }
 
-        load().catch(err => {
+        load().catch((err) => {
             getLogger().error('Failure while loading Endpoints Manifest: %s', err)
 
             return vscode.window.showErrorMessage(

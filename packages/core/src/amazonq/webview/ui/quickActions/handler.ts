@@ -62,7 +62,7 @@ export class QuickActionHandler {
 
         let gumbyTabId: string | undefined = undefined
 
-        this.tabsStorage.getTabs().forEach(tab => {
+        this.tabsStorage.getTabs().forEach((tab) => {
             if (tab.type === 'gumby') {
                 gumbyTabId = tab.id
             }
@@ -156,11 +156,6 @@ export class QuickActionHandler {
                 this.mynahUI.addChatItem(affectedTabId, {
                     type: ChatItemType.PROMPT,
                     body: realPromptText,
-                })
-
-                this.mynahUI.addChatItem(affectedTabId, {
-                    type: ChatItemType.ANSWER_STREAM,
-                    body: '',
                 })
 
                 this.mynahUI.updateStore(affectedTabId, {

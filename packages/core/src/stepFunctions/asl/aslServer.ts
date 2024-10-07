@@ -8,6 +8,9 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  */
 
+// Disable because this is a language server.
+/* eslint-disable aws-toolkits/no-console-log */
+
 import {
     ClientCapabilities as aslClientCapabilities,
     DocumentLanguageSettings,
@@ -37,7 +40,6 @@ import * as URL from 'url'
 import { getLanguageModelCache } from '../../shared/languageServer/languageModelCache'
 import { formatError, runSafe, runSafeAsync } from '../../shared/languageServer/utils/runner'
 import { YAML_ASL, JSON_ASL } from '../constants/aslFormats'
-import globals from '../../shared/extensionGlobals'
 
 export const ResultLimitReached: NotificationType<string, any> = new NotificationType('asl/resultLimitReached')
 
@@ -159,7 +161,7 @@ class LimitExceededWarnings {
     public static cancel(uri: string) {
         const warning = LimitExceededWarnings.pendingWarnings[uri]
         if (warning && warning.timeout) {
-            globals.clock.clearTimeout(warning.timeout)
+            clearTimeout(warning.timeout)
             delete LimitExceededWarnings.pendingWarnings[uri]
         }
     }
@@ -176,7 +178,7 @@ class LimitExceededWarnings {
                 warning.timeout.refresh()
             } else {
                 warning = { features: { [name]: name } }
-                warning.timeout = globals.clock.setTimeout(() => {
+                warning.timeout = setTimeout(() => {
                     connection.sendNotification(
                         ResultLimitReached,
                         `${posix.basename(uri)}: For performance reasons, ${Object.keys(warning.features).join(
@@ -193,7 +195,7 @@ class LimitExceededWarnings {
 
 let formatterRegistration: Thenable<Disposable> | undefined
 
-connection.onDidChangeConfiguration(change => {
+connection.onDidChangeConfiguration((change) => {
     const settings = <Settings>change.settings
 
     foldingRangeLimit = Math.trunc(
@@ -212,8 +214,8 @@ connection.onDidChangeConfiguration(change => {
             }
         } else if (formatterRegistration) {
             formatterRegistration.then(
-                r => r.dispose(),
-                e => {
+                (r) => r.dispose(),
+                (e) => {
                     console.error('formatterRegistration failed: %s', (e as Error).message)
                 }
             )
@@ -223,12 +225,12 @@ connection.onDidChangeConfiguration(change => {
 })
 
 // Retry schema validation on all open documents
-connection.onRequest(ForceValidateRequest, async uri => {
-    return new Promise<Diagnostic[]>(resolve => {
+connection.onRequest(ForceValidateRequest, async (uri) => {
+    return new Promise<Diagnostic[]>((resolve) => {
         const document = documents.get(uri)
         if (document) {
             // updateConfiguration()
-            validateTextDocument(document, diagnostics => {
+            validateTextDocument(document, (diagnostics) => {
                 resolve(diagnostics)
             })
         } else {
@@ -239,13 +241,13 @@ connection.onRequest(ForceValidateRequest, async uri => {
 
 // The content of a text document has changed. This event is emitted
 // when the text document first opened or when its content has changed.
-documents.onDidChangeContent(change => {
+documents.onDidChangeContent((change) => {
     LimitExceededWarnings.cancel(change.document.uri)
     triggerValidation(change.document)
 })
 
 // a document has closed: clear all diagnostics
-documents.onDidClose(event => {
+documents.onDidClose((event) => {
     LimitExceededWarnings.cancel(event.document.uri)
     cleanPendingValidation(event.document)
     connection.sendDiagnostics({ uri: event.document.uri, diagnostics: [] })
@@ -257,14 +259,14 @@ const validationDelayMs = 500
 function cleanPendingValidation(textDocument: TextDocument): void {
     const request = pendingValidationRequests[textDocument.uri]
     if (request) {
-        globals.clock.clearTimeout(request)
+        clearTimeout(request)
         delete pendingValidationRequests[textDocument.uri]
     }
 }
 
 function triggerValidation(textDocument: TextDocument): void {
     cleanPendingValidation(textDocument)
-    pendingValidationRequests[textDocument.uri] = globals.clock.setTimeout(() => {
+    pendingValidationRequests[textDocument.uri] = setTimeout(() => {
         delete pendingValidationRequests[textDocument.uri]
         validateTextDocument(textDocument)
     }, validationDelayMs)
@@ -298,24 +300,24 @@ function validateTextDocument(textDocument: TextDocument, callback?: (diagnostic
     getLanguageService(textDocument.languageId)
         .doValidation(textDocument, jsonDocument, documentSettings)
         .then(
-            diagnostics => {
-                globals.clock.setTimeout(() => {
+            (diagnostics) => {
+                setTimeout(() => {
                     const currDocument = documents.get(textDocument.uri)
                     if (currDocument && currDocument.version === version) {
                         respond(diagnostics) // Send the computed diagnostics to VSCode.
                     }
                 }, 100)
             },
-            error => {
+            (error) => {
                 connection.console.error(formatError(`Error while validating ${textDocument.uri}`, error))
             }
         )
 }
 
-connection.onDidChangeWatchedFiles(change => {
+connection.onDidChangeWatchedFiles((change) => {
     // Monitored files have changed in VSCode
     let hasChanges = false
-    change.changes.forEach(c => {
+    change.changes.forEach((c) => {
         if (getLanguageService('asl').resetSchema(c.uri)) {
             hasChanges = true
         }
@@ -325,10 +327,10 @@ connection.onDidChangeWatchedFiles(change => {
     }
 })
 
-const jsonDocuments = getLanguageModelCache<JSONDocument>(10, 60, document =>
+const jsonDocuments = getLanguageModelCache<JSONDocument>(10, 60, (document) =>
     getLanguageService('asl').parseJSONDocument(document)
 )
-documents.onDidClose(e => {
+documents.onDidClose((e) => {
     jsonDocuments.onDocumentRemoved(e.document)
 })
 connection.onShutdown(() => {

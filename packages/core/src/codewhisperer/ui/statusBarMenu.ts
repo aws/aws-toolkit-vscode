@@ -29,7 +29,6 @@ import { CodeScansState, CodeSuggestionsState, vsCodeState } from '../models/mod
 import { Commands } from '../../shared/vscode/commands2'
 import { createExitButton } from '../../shared/ui/buttons'
 import { telemetry } from '../../shared/telemetry/telemetry'
-import { once } from '../../shared/utilities/functionUtils'
 import { getLogger } from '../../shared/logger'
 
 function getAmazonQCodeWhispererNodes() {
@@ -63,9 +62,6 @@ function getAmazonQCodeWhispererNodes() {
         // CodeWhisperer
         createSeparator('Inline Suggestions'),
         createAutoSuggestions(autoTriggerEnabled),
-        ...(AuthUtil.instance.isValidEnterpriseSsoInUse() && AuthUtil.instance.isCustomizationFeatureEnabled
-            ? [createSelectCustomization()]
-            : []),
         createOpenReferenceLog(),
         createGettingStarted(), // "Learn" node : opens Learn CodeWhisperer page
 
@@ -76,6 +72,9 @@ function getAmazonQCodeWhispererNodes() {
 
         // Amazon Q + others
         createSeparator('Other Features'),
+        ...(AuthUtil.instance.isValidEnterpriseSsoInUse() && AuthUtil.instance.isCustomizationFeatureEnabled
+            ? [createSelectCustomization()]
+            : []),
         switchToAmazonQNode(),
     ]
 }
@@ -101,10 +100,10 @@ export function getQuickPickItems(): DataQuickPickItem<string>[] {
 
 export const listCodeWhispererCommandsId = 'aws.amazonq.listCommands'
 export const listCodeWhispererCommands = Commands.declare({ id: listCodeWhispererCommandsId }, () => () => {
-    once(() => telemetry.ui_click.emit({ elementId: 'cw_statusBarMenu' }))()
+    telemetry.ui_click.emit({ elementId: 'cw_statusBarMenu' })
     Commands.tryExecute('aws.amazonq.refreshAnnotation', true)
         .then()
-        .catch(e => {
+        .catch((e) => {
             getLogger().debug(
                 `codewhisperer: running into error while executing command { refreshAnnotation } on user clicking statusbar: ${e}`
             )

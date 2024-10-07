@@ -9,6 +9,10 @@ import { SecurityIssueHoverProvider } from './securityIssueHoverProvider'
 import { SecurityIssueCodeActionProvider } from './securityIssueCodeActionProvider'
 import { CodeAnalysisScope, codewhispererDiagnosticSourceLabel } from '../models/constants'
 
+export interface SecurityDiagnostic extends vscode.Diagnostic {
+    findingId?: string
+}
+
 interface SecurityScanRender {
     securityDiagnosticCollection: vscode.DiagnosticCollection | undefined
     initialized: boolean
@@ -31,7 +35,7 @@ export function initSecurityScanRender(
     } else if (scope === CodeAnalysisScope.PROJECT) {
         securityScanRender.securityDiagnosticCollection?.clear()
     }
-    securityRecommendationList.forEach(securityRecommendation => {
+    securityRecommendationList.forEach((securityRecommendation) => {
         updateSecurityDiagnosticCollection(securityRecommendation)
         updateSecurityIssueHoverAndCodeActions(securityRecommendation)
     })
@@ -41,7 +45,7 @@ export function initSecurityScanRender(
 function updateSecurityIssueHoverAndCodeActions(securityRecommendation: AggregatedCodeScanIssue) {
     const updatedSecurityRecommendationList = [
         ...SecurityIssueHoverProvider.instance.issues.filter(
-            group => group.filePath !== securityRecommendation.filePath
+            (group) => group.filePath !== securityRecommendation.filePath
         ),
         securityRecommendation,
     ]
@@ -55,8 +59,8 @@ export function updateSecurityDiagnosticCollection(securityRecommendation: Aggre
     const securityDiagnosticCollection = createSecurityDiagnosticCollection()
     const securityDiagnostics: vscode.Diagnostic[] = vscode.languages
         .getDiagnostics(uri)
-        .filter(diagnostic => diagnostic.source === codewhispererDiagnosticSourceLabel)
-    securityRecommendation.issues.forEach(securityIssue => {
+        .filter((diagnostic) => diagnostic.source === codewhispererDiagnosticSourceLabel)
+    securityRecommendation.issues.forEach((securityIssue) => {
         securityDiagnostics.push(createSecurityDiagnostic(securityIssue))
     })
     securityDiagnosticCollection.set(uri, securityDiagnostics)
@@ -64,16 +68,20 @@ export function updateSecurityDiagnosticCollection(securityRecommendation: Aggre
 
 export function createSecurityDiagnostic(securityIssue: CodeScanIssue) {
     const range = new vscode.Range(securityIssue.startLine, 0, securityIssue.endLine, 0)
-    const securityDiagnostic: vscode.Diagnostic = new vscode.Diagnostic(
+    const securityDiagnostic: SecurityDiagnostic = new vscode.Diagnostic(
         range,
         securityIssue.title,
         vscode.DiagnosticSeverity.Warning
     )
     securityDiagnostic.source = codewhispererDiagnosticSourceLabel
-    securityDiagnostic.code = {
-        value: securityIssue.detectorId,
-        target: vscode.Uri.parse(securityIssue.recommendation.url),
-    }
+    const detectorUrl = securityIssue.recommendation.url
+    securityDiagnostic.code = detectorUrl
+        ? {
+              value: securityIssue.detectorId,
+              target: vscode.Uri.parse(detectorUrl),
+          }
+        : securityIssue.detectorId
+    securityDiagnostic.findingId = securityIssue.findingId
     return securityDiagnostic
 }
 
@@ -92,11 +100,21 @@ export function disposeSecurityDiagnostic(event: vscode.TextDocumentChangeEvent)
     }
     const currentSecurityDiagnostics = securityScanRender.securityDiagnosticCollection?.get(uri)
     const newSecurityDiagnostics: vscode.Diagnostic[] = []
-    const changedRange = event.contentChanges[0].range
-    const changedText = event.contentChanges[0].text
-    const lineOffset = getLineOffset(changedRange, changedText)
 
-    currentSecurityDiagnostics?.forEach(issue => {
+    const { changedRange, changedText, lineOffset } = event.contentChanges.reduce(
+        (acc, change) => ({
+            changedRange: acc.changedRange.union(change.range),
+            changedText: acc.changedText + change.text,
+            lineOffset: acc.lineOffset + getLineOffset(change.range, change.text),
+        }),
+        {
+            changedRange: event.contentChanges[0].range,
+            changedText: '',
+            lineOffset: 0,
+        }
+    )
+
+    currentSecurityDiagnostics?.forEach((issue) => {
         const intersection = changedRange.intersection(issue.range)
         if (
             issue.severity === vscode.DiagnosticSeverity.Warning &&
@@ -129,15 +147,8 @@ function getLineOffset(range: vscode.Range, text: string) {
 export function removeDiagnostic(uri: vscode.Uri, issue: CodeScanIssue) {
     const currentSecurityDiagnostics = securityScanRender.securityDiagnosticCollection?.get(uri)
     if (currentSecurityDiagnostics) {
-        const newSecurityDiagnostics = currentSecurityDiagnostics.filter(diagnostic => {
-            return !(
-                typeof diagnostic.code !== 'string' &&
-                typeof diagnostic.code !== 'number' &&
-                diagnostic.code?.value === issue.detectorId &&
-                diagnostic.message === issue.title &&
-                diagnostic.range.start.line === issue.startLine &&
-                diagnostic.range.end.line === issue.endLine
-            )
+        const newSecurityDiagnostics = currentSecurityDiagnostics.filter((diagnostic: SecurityDiagnostic) => {
+            return diagnostic.findingId !== issue.findingId
         })
         securityScanRender.securityDiagnosticCollection?.set(uri, newSecurityDiagnostics)
     }

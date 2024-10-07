@@ -4,5 +4,5 @@
  */
 
 export { activate } from './activation'
-export { telemetry, AuthStatus } from './telemetry'
+export { telemetry, AuthStatus, Span } from './telemetry'
 export { ExtStartUpSources } from './util'

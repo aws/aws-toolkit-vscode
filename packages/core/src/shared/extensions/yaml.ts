@@ -4,12 +4,12 @@
  */
 
 import * as vscode from 'vscode'
-import { readFileSync } from 'fs-extra'
 import { VSCODE_EXTENSION_ID } from '../extensions'
 import { getLogger } from '../logger/logger'
 import { getIdeProperties } from '../extensionUtilities'
 import { activateExtension } from '../utilities/vsCodeUtils'
 import { AWS_SCHEME } from '../constants'
+import * as nodefs from 'fs'
 
 // sourced from https://github.com/redhat-developer/vscode-yaml/blob/3d82d61ea63d3e3a9848fe6b432f8f1f452c1bec/src/schema-extension-api.ts
 // removed everything that is not currently being used
@@ -45,14 +45,15 @@ export async function activateYamlExtension(): Promise<YamlExtension | undefined
     }
     yamlExt.exports.registerContributor(
         AWS_SCHEME,
-        resource => {
+        (resource) => {
             return schemaMap.get(resource)?.toString()
         },
-        uri => {
+        (uri) => {
             try {
                 // SLOW: This request happens on every keystroke! (5MB+ read from filesystem).
                 // This is a design flaw in this registerContributor() API.
-                return readFileSync(vscode.Uri.parse(uri).fsPath).toString()
+                // TODO: this function is non-async preventing us from using our fs module.
+                return nodefs.readFileSync(vscode.Uri.parse(uri).fsPath).toString()
             } catch (e) {
                 getLogger().error(`YAML Extension: failed to read schema URI "${uri}": ${e}`)
                 throw new Error(`${getIdeProperties().company} Toolkit could not parse JSON schema URI: ${uri}`)
@@ -62,7 +63,7 @@ export async function activateYamlExtension(): Promise<YamlExtension | undefined
 
     return {
         assignSchema: (path, schema) => schemaMap.set(path.toString(), applyScheme(AWS_SCHEME, evaluate(schema))),
-        removeSchema: path => schemaMap.delete(path.toString()),
-        getSchema: path => schemaMap.get(path.toString()),
+        removeSchema: (path) => schemaMap.delete(path.toString()),
+        getSchema: (path) => schemaMap.get(path.toString()),
     }
 }

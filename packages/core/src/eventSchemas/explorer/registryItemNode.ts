@@ -24,7 +24,10 @@ export class RegistryItemNode extends AWSTreeNodeBase {
     private readonly schemaNodes: Map<string, SchemaItemNode>
     public override readonly regionCode: string = this.client.regionCode
 
-    public constructor(private registryItemOutput: Schemas.RegistrySummary, private readonly client: SchemaClient) {
+    public constructor(
+        private registryItemOutput: Schemas.RegistrySummary,
+        private readonly client: SchemaClient
+    ) {
         super('', vscode.TreeItemCollapsibleState.Collapsed)
 
         this.update(registryItemOutput)
@@ -64,13 +67,13 @@ export class RegistryItemNode extends AWSTreeNodeBase {
     }
 
     public async updateChildren(): Promise<void> {
-        const schemas = await toMapAsync(listSchemaItems(this.client, this.registryName), schema => schema.SchemaName)
+        const schemas = await toMapAsync(listSchemaItems(this.client, this.registryName), (schema) => schema.SchemaName)
 
         updateInPlace(
             this.schemaNodes,
             schemas.keys(),
-            key => this.schemaNodes.get(key)!.update(schemas.get(key)!),
-            key => new SchemaItemNode(schemas.get(key)!, this.client, this.registryName)
+            (key) => this.schemaNodes.get(key)!.update(schemas.get(key)!),
+            (key) => new SchemaItemNode(schemas.get(key)!, this.client, this.registryName)
         )
     }
 }

@@ -13,9 +13,13 @@ import { Timeout } from '../utilities/timeoutUtils'
 import { showMessageWithCancel } from '../utilities/messages'
 import { ToolkitError, isAwsError } from '../errors'
 
-export interface Ec2Instance extends EC2.Instance {
-    name?: string
-    status?: EC2.InstanceStateName
+/**
+ * A wrapper around EC2.Instance where we can safely assume InstanceId field exists.
+ */
+export interface SafeEc2Instance extends EC2.Instance {
+    InstanceId: string
+    Name?: string
+    LastSeenStatus: EC2.InstanceStateName
 }
 
 export class Ec2Client {
@@ -25,7 +29,7 @@ export class Ec2Client {
         return await globals.sdkClientBuilder.createAwsService(EC2, undefined, this.regionCode)
     }
 
-    public async getInstances(filters?: EC2.Filter[]): Promise<AsyncCollection<EC2.Instance>> {
+    public async getInstances(filters?: EC2.Filter[]): Promise<AsyncCollection<SafeEc2Instance>> {
         const client = await this.createSdkClient()
 
         const requester = async (request: EC2.DescribeInstancesRequest) => client.describeInstances(request).promise()
@@ -44,14 +48,24 @@ export class Ec2Client {
     /** Updates status and name in-place for displaying to humans. */
     protected async updateInstancesDetail(
         instances: AsyncCollection<EC2.Instance>
-    ): Promise<AsyncCollection<EC2.Instance>> {
-        return instances
-            .map(async instance => {
-                return { ...instance, status: await this.getInstanceStatus(instance.InstanceId!) }
+    ): Promise<AsyncCollection<SafeEc2Instance>> {
+        // Intermediate interface so that I can coerce EC2.Instance to SafeEc2Instnace
+        interface SafeEc2InstanceWithoutStatus extends EC2.Instance {
+            InstanceId: string
+            Name?: string
+        }
+
+        const safeInstances: AsyncCollection<SafeEc2InstanceWithoutStatus> = instances.filter(
+            (instance) => instance.InstanceId !== undefined
+        )
+
+        return safeInstances
+            .map(async (instance) => {
+                return { ...instance, LastSeenStatus: await this.getInstanceStatus(instance.InstanceId) }
             })
-            .map(instance => {
+            .map((instance) => {
                 return instanceHasName(instance!)
-                    ? { ...instance, name: lookupTagKey(instance!.Tags!, 'Name') }
+                    ? { ...instance, Name: lookupTagKey(instance!.Tags!, 'Name') }
                     : instance!
             })
     }
@@ -61,9 +75,9 @@ export class Ec2Client {
     ): AsyncCollection<EC2.Instance> {
         return reservations
             .flatten()
-            .map(instanceList => instanceList?.Instances)
+            .map((instanceList) => instanceList?.Instances)
             .flatten()
-            .filter(instance => instance!.InstanceId !== undefined)
+            .filter((instance) => instance!.InstanceId !== undefined)
     }
 
     public async getInstanceStatus(instanceId: string): Promise<EC2.InstanceStateName> {
@@ -78,7 +92,7 @@ export class Ec2Client {
             'InstanceStatuses'
         )
             .flatten()
-            .map(instanceStatus => instanceStatus!.InstanceState!.Name!)
+            .map((instanceStatus) => instanceStatus!.InstanceState!.Name!)
             .promise()
 
         return response[0]
@@ -200,7 +214,7 @@ export class Ec2Client {
             'IamInstanceProfileAssociations'
         )
             .flatten()
-            .filter(association => association !== undefined)
+            .filter((association) => association !== undefined)
             .promise()
 
         return response[0]!
@@ -222,9 +236,9 @@ export function getNameOfInstance(instance: EC2.Instance): string | undefined {
 }
 
 export function instanceHasName(instance: EC2.Instance): boolean {
-    return instance.Tags !== undefined && instance.Tags.some(tag => tag.Key === 'Name')
+    return instance.Tags !== undefined && instance.Tags.some((tag) => tag.Key === 'Name')
 }
 
 function lookupTagKey(tags: EC2.Tag[], targetKey: string) {
-    return tags.filter(tag => tag.Key === targetKey)[0].Value
+    return tags.filter((tag) => tag.Key === targetKey)[0].Value
 }

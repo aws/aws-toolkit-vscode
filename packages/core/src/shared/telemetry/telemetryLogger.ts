@@ -20,7 +20,8 @@ export interface MetricQuery {
     readonly excludeKeys?: string[]
 }
 
-interface Metadata {
+/** Telemetry metadata in the form of a javscript Object. */
+export interface MetadataObj {
     [key: string]: string | undefined
 }
 
@@ -39,10 +40,10 @@ function isValidEntry(datum: MetadataEntry): datum is Required<MetadataEntry> {
  * ```
  */
 export const mapMetadata = (excludeKeys: string[]) => (metadata: Required<MetricDatum>['Metadata']) => {
-    const result: Metadata = {}
+    const result: MetadataObj = {}
     return metadata
         .filter(isValidEntry)
-        .filter(a => !excludeKeys.includes(a.Key))
+        .filter((a) => !excludeKeys.includes(a.Key))
         .reduce((a, b) => ((a[b.Key] = b.Value), a), result)
 }
 
@@ -105,9 +106,9 @@ export class TelemetryLogger {
      *
      * **All metadata values are casted to strings by the telemetry client**
      */
-    public query(query: MetricQuery): Metadata[] {
+    public query(query: MetricQuery): MetadataObj[] {
         return this.queryFull(query)
-            .map(m => m.Metadata ?? [])
+            .map((m) => m.Metadata ?? [])
             .map(mapMetadata(query.excludeKeys ?? []))
     }
 
@@ -115,6 +116,6 @@ export class TelemetryLogger {
      * Queries telemetry for metrics, returning the entire structure.
      */
     public queryFull(query: MetricQuery): MetricDatum[] {
-        return this._metrics.filter(m => m.MetricName === query.metricName)
+        return this._metrics.filter((m) => m.MetricName === query.metricName)
     }
 }

@@ -7,6 +7,7 @@ import { ChatItemType, MynahUIDataModel } from '@aws/mynah-ui'
 import { TabType } from '../storages/tabsStorage'
 import { FollowUpGenerator } from '../followUps/generator'
 import { QuickActionGenerator } from '../quickActions/generator'
+import { TabTypeDataMap } from './constants'
 
 export interface TabDataGeneratorProps {
     isFeatureDevEnabled: boolean
@@ -16,50 +17,6 @@ export interface TabDataGeneratorProps {
 export class TabDataGenerator {
     private followUpsGenerator: FollowUpGenerator
     public quickActionsGenerator: QuickActionGenerator
-
-    private tabTitle: Map<TabType, string> = new Map([
-        ['unknown', 'Chat'],
-        ['cwc', 'Chat'],
-        ['featuredev', 'Q - Dev'],
-        ['gumby', 'Q - Code Transformation'],
-    ])
-
-    private tabInputPlaceholder: Map<TabType, string> = new Map([
-        ['unknown', 'Ask a question or enter "/" for quick actions'],
-        ['cwc', 'Ask a question or enter "/" for quick actions'],
-        ['featuredev', 'Describe your task or issue in as much detail as possible'],
-        ['gumby', 'Open a new tab to chat with Q'],
-    ])
-
-    private tabWelcomeMessage: Map<TabType, string> = new Map([
-        [
-            'unknown',
-            `Hi, I'm Amazon Q. I can answer your software development questions. 
-        Ask me to explain, debug, or optimize your code. 
-        You can enter \`/\` to see a list of quick actions.`,
-        ],
-        [
-            'cwc',
-            `Hi, I'm Amazon Q. I can answer your software development questions. 
-        Ask me to explain, debug, or optimize your code. 
-        You can enter \`/\` to see a list of quick actions.`,
-        ],
-        [
-            'featuredev',
-            `Welcome to feature development.
-
-I can generate code to implement new functionality across your workspace. We'll start by discussing an implementation plan, and then we can review and regenerate code based on your feedback. 
-            
-To get started, describe the task you are trying to accomplish.
-`,
-        ],
-        [
-            'gumby',
-            `Welcome to Code Transformation!
-
-I can help you upgrade your Java 8 and 11 codebases to Java 17.`,
-        ],
-    ])
 
     constructor(props: TabDataGeneratorProps) {
         this.followUpsGenerator = new FollowUpGenerator()
@@ -71,16 +28,27 @@ I can help you upgrade your Java 8 and 11 codebases to Java 17.`,
 
     public getTabData(tabType: TabType, needWelcomeMessages: boolean, taskName?: string): MynahUIDataModel {
         const tabData: MynahUIDataModel = {
-            tabTitle: taskName ?? this.tabTitle.get(tabType),
+            tabTitle: taskName ?? TabTypeDataMap[tabType].title,
             promptInputInfo:
-                'Use of Amazon Q is subject to the [AWS Responsible AI Policy](https://aws.amazon.com/machine-learning/responsible-ai/policy/).',
+                'Amazon Q Developer uses generative AI. You may need to verify responses. See the [AWS Responsible AI Policy](https://aws.amazon.com/machine-learning/responsible-ai/policy/).',
             quickActionCommands: this.quickActionsGenerator.generateForTab(tabType),
-            promptInputPlaceholder: this.tabInputPlaceholder.get(tabType),
+            promptInputPlaceholder: TabTypeDataMap[tabType].placeholder,
+            contextCommands: [
+                {
+                    groupName: 'Mention code',
+                    commands: [
+                        {
+                            command: '@workspace',
+                            description: '(BETA) Reference all code in workspace.',
+                        },
+                    ],
+                },
+            ],
             chatItems: needWelcomeMessages
                 ? [
                       {
                           type: ChatItemType.ANSWER,
-                          body: this.tabWelcomeMessage.get(tabType),
+                          body: TabTypeDataMap[tabType].welcome,
                       },
                       {
                           type: ChatItemType.ANSWER,

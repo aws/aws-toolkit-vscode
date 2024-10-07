@@ -24,9 +24,9 @@ import * as pathutils from '../utilities/pathUtils'
 import { tryGetAbsolutePath } from '../utilities/workspaceUtils'
 import { getLogger } from '../logger'
 import { makeFailedWriteMessage, showViewLogsMessage } from '../utilities/messages'
-import { launchConfigDocUrl } from '../constants'
 import { openUrl } from '../utilities/vsCodeUtils'
 import globals from '../extensionGlobals'
+import { getLaunchConfigDocUrl } from '../extensionUtilities'
 
 const localize = nls.loadMessageBundle()
 
@@ -58,7 +58,7 @@ export class LaunchConfiguration {
 
     public getDebugConfigurations(): vscode.DebugConfiguration[] {
         const configs = this.configSource.getDebugConfigurations()
-        return configs.map(o => {
+        return configs.map((o) => {
             if (isAwsSamDebugConfiguration(o)) {
                 ensureRelativePaths(undefined, o)
             }
@@ -70,7 +70,7 @@ export class LaunchConfiguration {
      * Returns all valid Sam Debug Configurations.
      */
     public async getSamDebugConfigurations(): Promise<AwsSamDebuggerConfiguration[]> {
-        const configs = this.getDebugConfigurations().filter(o =>
+        const configs = this.getDebugConfigurations().filter((o) =>
             isAwsSamDebugConfiguration(o)
         ) as AwsSamDebuggerConfiguration[]
         const registry = await globals.templateRegistry
@@ -128,9 +128,9 @@ class DefaultDebugConfigSource implements DebugConfigurationSource {
             const helpText = localize('AWS.generic.message.getHelp', 'Get Help...')
             getLogger().error('setDebugConfigurations failed: %O', e as Error)
             await showViewLogsMessage(makeFailedWriteMessage('launch.json'), 'error', [helpText]).then(
-                async buttonText => {
+                async (buttonText) => {
                     if (buttonText === helpText) {
-                        await openUrl(vscode.Uri.parse(launchConfigDocUrl))
+                        await openUrl(getLaunchConfigDocUrl())
                     }
                 }
             )
@@ -141,7 +141,7 @@ class DefaultDebugConfigSource implements DebugConfigurationSource {
 async function getSamCodeTargets(launchConfig: LaunchConfiguration): Promise<CodeTargetProperties[]> {
     const debugConfigs = await launchConfig.getSamDebugConfigurations()
     return _(debugConfigs)
-        .map(samConfig => samConfig.invokeTarget)
+        .map((samConfig) => samConfig.invokeTarget)
         .filter(isCodeTargetProperties)
         .value()
 }
@@ -162,11 +162,11 @@ export async function getConfigsMappedToTemplates(
     }
     const folder = launchConfig.workspaceFolder
     // Launch configs with target=template or target=api.
-    const templateConfigs = (await launchConfig.getSamDebugConfigurations()).filter(o =>
+    const templateConfigs = (await launchConfig.getSamDebugConfigurations()).filter((o) =>
         isTemplateTargetProperties(o.invokeTarget)
     )
     const filtered = templateConfigs.filter(
-        t =>
+        (t) =>
             (type === undefined || t.invokeTarget.target === type) &&
             pathutils.areEqual(
                 folder?.uri.fsPath,
@@ -175,7 +175,7 @@ export async function getConfigsMappedToTemplates(
             )
     )
     return _(filtered)
-        .thru(array => new Set(array))
+        .thru((array) => new Set(array))
         .value()
 }
 
@@ -191,7 +191,7 @@ export async function getReferencedHandlerPaths(launchConfig: LaunchConfiguratio
     const existingSamCodeTargets = await getSamCodeTargets(launchConfig)
 
     return _(existingSamCodeTargets)
-        .map(target => {
+        .map((target) => {
             if (path.isAbsolute(target.projectRoot)) {
                 return pathutils.normalize(path.join(target.projectRoot, target.lambdaHandler))
             }
@@ -203,6 +203,6 @@ export async function getReferencedHandlerPaths(launchConfig: LaunchConfiguratio
                 )
             )
         })
-        .thru(array => new Set(array))
+        .thru((array) => new Set(array))
         .value()
 }

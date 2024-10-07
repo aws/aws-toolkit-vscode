@@ -11,7 +11,7 @@ const localize = nls.loadMessageBundle()
 
 import * as AWS from 'aws-sdk'
 import * as logger from '../logger/logger'
-import { PerfLog } from '../logger/logger'
+import { PerfLog } from '../logger/perfLogger'
 import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
 import { CancellationError, Timeout, waitTimeout, waitUntil } from '../utilities/timeoutUtils'
 import { isUserCancelledError } from '../../shared/errors'
@@ -200,7 +200,7 @@ export async function createClient(
 
 // XXX: the backend currently rejects empty strings for `alias` so the field must be removed if falsey
 function fixAliasInRequest<
-    T extends CodeCatalyst.CreateDevEnvironmentRequest | CodeCatalyst.UpdateDevEnvironmentRequest
+    T extends CodeCatalyst.CreateDevEnvironmentRequest | CodeCatalyst.UpdateDevEnvironmentRequest,
 >(request: T): T {
     if (!request.alias) {
         delete request.alias
@@ -228,7 +228,10 @@ class CodeCatalystClientInternal {
      */
     private static userDetailsCache = new Map<UserDetails['userId'], UserDetails>()
 
-    public constructor(private readonly connection: SsoConnection, private readonly sdkClient: CodeCatalyst) {
+    public constructor(
+        private readonly connection: SsoConnection,
+        private readonly sdkClient: CodeCatalyst
+    ) {
         this.log = logger.getLogger()
     }
 
@@ -415,7 +418,7 @@ class CodeCatalystClientInternal {
             this.call(this.sdkClient.listSpaces(request), true, { items: [] })
         const collection = pageableToCollection(requester, request, 'nextToken', 'items')
 
-        return collection.map(summaries => summaries?.map(s => ({ type: 'org', ...s })) ?? [])
+        return collection.map((summaries) => summaries?.map((s) => ({ type: 'org', ...s })) ?? [])
     }
 
     /**
@@ -436,8 +439,8 @@ class CodeCatalystClientInternal {
         const collection = pageableToCollection(requester, request, 'nextToken', 'items')
 
         return collection.map(
-            summaries =>
-                summaries?.map(s => ({
+            (summaries) =>
+                summaries?.map((s) => ({
                     type: 'project',
                     org: { name: request.spaceName },
                     ...s,
@@ -458,7 +461,7 @@ class CodeCatalystClientInternal {
             })
         const collection = pageableToCollection(requester, initRequest, 'nextToken', 'items')
 
-        return collection.map(envs => envs.map(s => toDevEnv(proj.org.name, proj.name, s)))
+        return collection.map((envs) => envs.map((s) => toDevEnv(proj.org.name, proj.name, s)))
     }
 
     /**
@@ -476,7 +479,7 @@ class CodeCatalystClientInternal {
 
             // Filter out 3P repos
             if (!thirdParty) {
-                finalRepositories = allRepositories.then(async repos => {
+                finalRepositories = allRepositories.then(async (repos) => {
                     repos.items = await excludeThirdPartyRepos(
                         this,
                         request.spaceName,
@@ -492,8 +495,8 @@ class CodeCatalystClientInternal {
 
         const collection = pageableToCollection(requester, request, 'nextToken', 'items')
         return collection.map(
-            summaries =>
-                summaries?.map(s => ({
+            (summaries) =>
+                summaries?.map((s) => ({
                     type: 'repo',
                     org: { name: request.spaceName },
                     project: { name: request.projectName },
@@ -511,8 +514,8 @@ class CodeCatalystClientInternal {
 
         return collection
             .filter(isNonNullable)
-            .map(items =>
-                items.map(b => toBranch(request.spaceName, request.projectName, request.sourceRepositoryName, b))
+            .map((items) =>
+                items.map((b) => toBranch(request.spaceName, request.projectName, request.sourceRepositoryName, b))
             )
     }
 
@@ -540,15 +543,15 @@ class CodeCatalystClientInternal {
             case 'org':
                 return this.listSpaces()
             case 'project':
-                return mapInner(this.listResources('org'), o => this.listProjects({ spaceName: o.name }))
+                return mapInner(this.listResources('org'), (o) => this.listProjects({ spaceName: o.name }))
             case 'repo':
-                return mapInner(this.listResources('project'), p =>
+                return mapInner(this.listResources('project'), (p) =>
                     this.listSourceRepositories({ projectName: p.name, spaceName: p.org.name }, ...args)
                 )
             case 'branch':
                 throw new Error('Listing branches is not currently supported')
             case 'devEnvironment':
-                return mapInner(this.listResources('project'), p => this.listDevEnvironments(p))
+                return mapInner(this.listResources('project'), (p) => this.listDevEnvironments(p))
         }
     }
 
@@ -665,9 +668,9 @@ class CodeCatalystClientInternal {
         }
 
         function failedStartMsg(serviceMsg?: string) {
-            const lastStatus = statuses[statuses.length - 1]?.status
+            const LastSeenStatus = statuses[statuses.length - 1]?.status
             const serviceMsg_ = serviceMsg ? `${serviceMsg}: ` : ''
-            return `Dev Environment failed to start (${lastStatus}): ${serviceMsg_}${getName()}`
+            return `Dev Environment failed to start (${LastSeenStatus}): ${serviceMsg_}${getName()}`
         }
 
         const doLog = (kind: 'debug' | 'error' | 'info', msg: string) => {
@@ -712,8 +715,8 @@ class CodeCatalystClientInternal {
                     throw new CancellationError('user')
                 }
 
-                const lastStatus = statuses[statuses.length - 1]
-                const elapsed = Date.now() - lastStatus.start
+                const LastSeenStatus = statuses[statuses.length - 1]
+                const elapsed = Date.now() - LastSeenStatus.start
                 const resp = await this.getDevEnvironment(args)
                 const serviceReason = (resp.statusReason ?? '').trim()
                 alias = resp.alias
@@ -721,10 +724,10 @@ class CodeCatalystClientInternal {
                 if (
                     startAttempts > 2 &&
                     elapsed > 10000 &&
-                    ['STOPPED', 'FAILED'].includes(lastStatus.status) &&
+                    ['STOPPED', 'FAILED'].includes(LastSeenStatus.status) &&
                     ['STOPPED', 'FAILED'].includes(resp.status)
                 ) {
-                    const fails = statuses.filter(o => o.status === 'FAILED').length
+                    const fails = statuses.filter((o) => o.status === 'FAILED').length
                     const code = fails === 0 ? 'BadDevEnvState' : 'FailedDevEnv'
 
                     if (serviceReason !== '') {
@@ -766,7 +769,7 @@ class CodeCatalystClientInternal {
                     })
                 }
 
-                if (lastStatus?.status !== resp.status) {
+                if (LastSeenStatus?.status !== resp.status) {
                     statuses.push({ status: resp.status, start: Date.now() })
                     if (resp.status !== 'RUNNING') {
                         doLog('debug', `devenv not started, waiting`)
@@ -778,7 +781,7 @@ class CodeCatalystClientInternal {
             { interval: 1000, timeout: timeout.remainingTime, truthy: true }
         )
 
-        const devenv = await waitTimeout(pollDevEnv, timeout).catch(e => {
+        const devenv = await waitTimeout(pollDevEnv, timeout).catch((e) => {
             if (isUserCancelledError(e)) {
                 doLog('info', 'devenv failed to start (user cancelled)')
                 e.message = failedStartMsg()
@@ -819,7 +822,7 @@ export async function excludeThirdPartyRepos(
     // Filter out 3P repos.
     return (
         await Promise.all(
-            items.map(async item => {
+            items.map(async (item) => {
                 return (await isThirdPartyRepo(client, {
                     spaceName,
                     projectName,
@@ -829,7 +832,7 @@ export async function excludeThirdPartyRepos(
                     : item
             })
         )
-    ).filter(item => item !== undefined) as CodeCatalyst.ListSourceRepositoriesItem[]
+    ).filter((item) => item !== undefined) as CodeCatalyst.ListSourceRepositoriesItem[]
 }
 
 /**

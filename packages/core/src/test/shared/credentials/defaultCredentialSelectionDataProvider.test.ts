@@ -25,7 +25,7 @@ describe('defaultCredentialSelectionDataProvider', function () {
                     actions: QuickPickItem[],
                     partialState: Partial<CredentialSelectionState>
                 ): Promise<QuickPickItem> {
-                    return new Promise<QuickPickItem>(resolve => {
+                    return new Promise<QuickPickItem>((resolve) => {
                         resolve({ label: this.existingProfileNames[1] })
                     })
                 }
@@ -107,9 +107,8 @@ describe('defaultCredentialSelectionDataProvider', function () {
             const profileNames: string[] = ['profile1', 'profile2', 'profile3']
 
             const dataProvider = new MockCredentialSelectionDataProvider(profileNames)
-            const credentialState: CredentialSelectionState | undefined = await promptToDefineCredentialsProfile(
-                dataProvider
-            )
+            const credentialState: CredentialSelectionState | undefined =
+                await promptToDefineCredentialsProfile(dataProvider)
 
             assert(credentialState)
             assert(credentialState!.accesskey)

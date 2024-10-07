@@ -8,7 +8,7 @@ phases:
             nodejs: 16
         commands:
             - |
-                if(-Not($Env:CODE_COV_TOKEN -eq $null)) {
+                if(-Not($Env:CODECOV_TOKEN -eq $null)) {
                     choco install -y --no-progress codecov
                 }
 
@@ -30,15 +30,16 @@ phases:
 
     build:
         commands:
-            - npm run testCompile
+            - npm run compile -w packages/core
+            - npm run testCompile -w packages/ --if-present
             - npm run lint
             - $env:TEST_REPORT_DIR="$env:CODEBUILD_SRC_DIR/.test_reports"; npm run test
             - |
-                if(-Not($Env:CODEBUILD_BUILD_SUCCEEDING -eq "0" -Or $Env:CODE_COV_TOKEN -eq $null)) {
+                if(-Not($Env:CODEBUILD_BUILD_SUCCEEDING -eq "0" -Or $Env:CODECOV_TOKEN -eq $null)) {
                   $env:VCS_COMMIT_ID=$Env:CODEBUILD_RESOLVED_SOURCE_VERSION;
                   $env:CI_BUILD_URL=[uri]::EscapeUriString($Env:CODEBUILD_BUILD_URL);
                   $env:CI_BUILD_ID=$Env:CODEBUILD_BUILD_ID;
-                  codecov -t $Env:CODE_COV_TOKEN `
+                  codecov -t $Env:CODECOV_TOKEN `
                     --flag unittest `
                     -f "build/reports/jacoco/coverageReport/coverageReport.xml" `
                     -c $Env:CODEBUILD_RESOLVED_SOURCE_VERSION

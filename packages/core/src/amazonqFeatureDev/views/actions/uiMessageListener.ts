@@ -21,7 +21,7 @@ export class UIMessageListener {
         this.webViewMessageListener = props.webViewMessageListener
 
         // Now we are listening to events that get sent from amazonq/webview/actions/actionListener (e.g. the tab)
-        this.webViewMessageListener.onMessage(msg => {
+        this.webViewMessageListener.onMessage((msg) => {
             this.handleMessage(msg)
         })
     }
@@ -39,6 +39,9 @@ export class UIMessageListener {
                 break
             case 'chat-item-voted':
                 this.chatItemVoted(msg)
+                break
+            case 'chat-item-feedback':
+                this.chatItemFeedback(msg)
                 break
             case 'stop-response':
                 this.stopResponse(msg)
@@ -71,6 +74,10 @@ export class UIMessageListener {
             vote: msg.vote,
             messageId: msg.messageId,
         })
+    }
+
+    private chatItemFeedback(msg: any) {
+        this.featureDevControllerEventsEmitters?.processChatItemFeedbackMessage.fire(msg)
     }
 
     private processChatMessage(msg: any) {

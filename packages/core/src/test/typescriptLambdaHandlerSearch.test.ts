@@ -11,7 +11,7 @@ import { TypescriptLambdaHandlerSearch } from '../shared/typescriptLambdaHandler
 
 describe('TypescriptLambdaHandlerSearch', function () {
     it('finds export declared functions in Typescript code', async function () {
-        const filename: string = path.join(getSamplesFolder(), 'typescript', 'sampleFunctions.ts')
+        const filename: string = path.join(testFixturesDir(), 'typescript/sampleFunctions.ts')
 
         const expectedHandlerNames: Set<string> = new Set([
             'sampleFunctions.exportedFunctionWithNoArgs',
@@ -28,7 +28,7 @@ describe('TypescriptLambdaHandlerSearch', function () {
     })
 
     it('ignores class declarations in Typescript code', async function () {
-        const filename: string = path.join(getSamplesFolder(), 'typescript', 'sampleClasses.ts')
+        const filename: string = path.join(testFixturesDir(), 'typescript/sampleClasses.ts')
 
         const expectedHandlerNames: Set<string> = new Set(['sampleClasses.exportedFunctionWithNoArgs'])
 
@@ -36,7 +36,7 @@ describe('TypescriptLambdaHandlerSearch', function () {
     })
 
     it('ignores interface declarations in Typescript code', async function () {
-        const filename: string = path.join(getSamplesFolder(), 'typescript', 'sampleInterfaces.ts')
+        const filename: string = path.join(testFixturesDir(), 'typescript/sampleInterfaces.ts')
 
         const expectedHandlerNames: Set<string> = new Set(['sampleInterfaces.exportedFunctionWithNoArgs'])
 
@@ -44,7 +44,7 @@ describe('TypescriptLambdaHandlerSearch', function () {
     })
 
     it('finds module.exports declared functions in javascript code', async function () {
-        const filename: string = path.join(getSamplesFolder(), 'javascript', 'sampleFunctions.js')
+        const filename: string = path.join(testFixturesDir(), 'javascript/sampleFunctions.js')
 
         const expectedHandlerNames: Set<string> = new Set([
             'sampleFunctions.exportedFunctionWithNoArgs',
@@ -62,7 +62,7 @@ describe('TypescriptLambdaHandlerSearch', function () {
     })
 
     it('ignores class declarations in javascript code', async function () {
-        const filename: string = path.join(getSamplesFolder(), 'javascript', 'sampleClasses.js')
+        const filename: string = path.join(testFixturesDir(), 'javascript/sampleClasses.js')
 
         const expectedHandlerNames: Set<string> = new Set(['sampleClasses.exportedFunctionWithNoArgs'])
 
@@ -82,14 +82,14 @@ describe('TypescriptLambdaHandlerSearch', function () {
         assertCandidateHandlers(handlers, expectedHandlerNames)
     }
 
-    function getSamplesFolder(): string {
-        return path.join(__dirname, '..', '..', '..', 'src', 'test', 'samples')
+    function testFixturesDir(): string {
+        return path.join(__dirname, '../../../src/testFixtures')
     }
 
     function assertCandidateHandlers(actual: RootlessLambdaHandlerCandidate[], expectedHandlerNames: Set<string>) {
         assert.strictEqual(actual.length, expectedHandlerNames.size)
         assert.strictEqual(
-            actual.map(handler => handler.handlerName).every(handlerName => expectedHandlerNames.has(handlerName)),
+            actual.map((handler) => handler.handlerName).every((handlerName) => expectedHandlerNames.has(handlerName)),
             true
         )
     }

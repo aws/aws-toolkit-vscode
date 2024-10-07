@@ -3,14 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { randomUUID } from '../../common/crypto'
-
-export interface ICodeTransformMetaData {
-    dependencyVersionSelected?: string
-    canceledFromChat?: boolean
-    retryCount?: number
-    errorMessage?: string
-}
+import { randomUUID } from '../../shared/crypto'
+import { codeTransformMetaDataToJsonString, ICodeTransformMetaData } from './codeTransformMetadata'
+import globals from '../../shared/extensionGlobals'
 
 interface ICodeTransformTelemetryState {
     sessionId: string
@@ -25,7 +20,7 @@ export class CodeTransformTelemetryState {
     private constructor() {
         this.mainState = {
             sessionId: randomUUID(),
-            sessionStartTime: Date.now(),
+            sessionStartTime: globals.clock.Date.now(),
             resultStatus: '',
             codeTransformMetadata: {},
         }
@@ -35,13 +30,14 @@ export class CodeTransformTelemetryState {
     public getStartTime = () => this.mainState.sessionStartTime
     public getResultStatus = () => this.mainState.resultStatus
     public getCodeTransformMetaData = () => this.mainState.codeTransformMetadata
-    public getCodeTransformMetaDataString = () => JSON.stringify(this.mainState.codeTransformMetadata)
+    public getCodeTransformMetaDataString = () =>
+        codeTransformMetaDataToJsonString(this.mainState.codeTransformMetadata)
 
     public setSessionId = () => {
         this.mainState.sessionId = randomUUID()
     }
     public setStartTime = () => {
-        this.mainState.sessionStartTime = Date.now()
+        this.mainState.sessionStartTime = globals.clock.Date.now()
     }
     public setResultStatus = (newValue: string) => {
         this.mainState.resultStatus = newValue

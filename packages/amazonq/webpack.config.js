@@ -10,7 +10,7 @@ module.exports = (env, argv) => {
     const config = {
         ...baseConfigFactory(env, argv),
         entry: {
-            'src/extension': './src/extension.ts',
+            'src/extensionNode': './src/extensionNode.ts',
         },
     }
 
@@ -18,6 +18,7 @@ module.exports = (env, argv) => {
         ...baseWebConfigsFactory(env, argv),
         entry: {
             'src/extensionWeb': './src/extensionWeb.ts',
+            'test/web/testRunnerWebCore': './test/web/testRunner.ts',
         },
     }
 

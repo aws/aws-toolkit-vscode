@@ -1,0 +1,26 @@
+{
+	"date": "2024-06-27",
+	"version": "1.11.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q Chat: Fix for inline buttons don't have borders"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q Chat: Fix for some edge cases when followups appear on top without styles"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q Chat: Fix for prompt input removes whole word if it starts with @ character but there is no context selected"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q Chat: Fix for prompt input doesn't show multi line content properly after it reaches 10-15 lines"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q /dev command: Fix in progress experience for ongoing backend calls"
+		}
+	]
+}

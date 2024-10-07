@@ -75,6 +75,7 @@ phases:
             - VCS_COMMIT_ID="${CODEBUILD_RESOLVED_SOURCE_VERSION}"
             - CI_BUILD_URL=$(echo $CODEBUILD_BUILD_URL | sed 's/#/%23/g')
             - CI_BUILD_ID="${CODEBUILD_BUILD_ID}"
+            - test -n "${CODECOV_TOKEN}" && [ "$TARGET_BRANCH" = "master" ] && ./codecov --token=${CODECOV_TOKEN} --branch=${CODEBUILD_RESOLVED_SOURCE_VERSION} --repository=${CODEBUILD_SOURCE_REPO_URL} --file=./coverage/core/lcov.info --file=./coverage/amazonq/lcov.info --file=./coverage/toolkit/lcov.info
     post_build:
         commands:
             # Destroy .netrc to avoid leaking $GITHUB_READONLY_TOKEN.

@@ -12,7 +12,7 @@ import {
     SamCliProcessInvokeOptions,
     SamCliProcessInvoker,
 } from '../../../../shared/sam/cli/samCliInvokerUtils'
-import { ChildProcessResult } from '../../../../shared/utilities/childProcess'
+import { ChildProcessResult } from '../../../../shared/utilities/processUtils'
 import { TestLogger } from '../../../testLogger'
 
 export class TestSamCliProcessInvoker implements SamCliProcessInvoker {
@@ -101,9 +101,9 @@ export async function assertLogContainsBadExitInformation(
 
     const logText = logger
         .getLoggedEntries()
-        .filter(x => !isError(x))
+        .filter((x) => !isError(x))
         .join('\n')
-    expectedTexts.forEach(expectedText => {
+    expectedTexts.forEach((expectedText) => {
         assert.ok(logText.includes(expectedText.text), expectedText.verifyMessage)
     })
 }

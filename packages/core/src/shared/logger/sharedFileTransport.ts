@@ -4,16 +4,16 @@
  */
 
 import TransportStream from 'winston-transport'
-import { fsCommon } from '../../srcShared/fs'
+import fs from '../fs/fs'
 import * as vscode from 'vscode'
 import globals from '../extensionGlobals'
 import { MESSAGE } from './consoleLogTransport'
-import { WinstonToolkitLogger } from './winstonToolkitLogger'
+import { ToolkitLogger } from './toolkitLogger'
 
 interface LogEntry {
     level: string
     message: string
-    /** This is the formatted message from {@link WinstonToolkitLogger} in the winston.createLogger() call */
+    /** This is the formatted message from {@link ToolkitLogger} in the winston.createLogger() call */
     [MESSAGE]: string
 }
 
@@ -39,7 +39,7 @@ export class SharedFileTransport extends TransportStream {
     private logFile: vscode.Uri
     constructor(
         opts: TransportStream.TransportStreamOptions & { logFile: vscode.Uri },
-        private readonly append = (f: vscode.Uri, s: string) => fsCommon.appendFile(f, s)
+        private readonly append = (f: vscode.Uri, s: string) => fs.appendFile(f, s)
     ) {
         super(opts)
         this.logFile = opts.logFile
@@ -59,7 +59,7 @@ export class SharedFileTransport extends TransportStream {
 
         if (!this.resolvesAfterLogsWritten) {
             // we create a promise which resolves once logs are written to the file
-            this.resolvesAfterLogsWritten = new Promise(resolve => {
+            this.resolvesAfterLogsWritten = new Promise((resolve) => {
                 this.doResolve = resolve.bind(this)
             })
         }
@@ -97,7 +97,7 @@ export class SharedFileTransport extends TransportStream {
             return
         }
 
-        const logMessages = this.bufferedLogEntries.map(logEntry => logEntry[MESSAGE])
+        const logMessages = this.bufferedLogEntries.map((logEntry) => logEntry[MESSAGE])
 
         // Remove the logs that were written to the file from the buffer.
         // But we have to keep in mind new logs may have been

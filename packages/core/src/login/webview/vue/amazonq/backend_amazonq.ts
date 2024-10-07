@@ -4,25 +4,26 @@
  */
 import * as vscode from 'vscode'
 import {
-    scopesCodeWhispererChat,
     AwsConnection,
     Connection,
-    isSsoConnection,
     SsoConnection,
+    getTelemetryMetadataForConn,
+    isSsoConnection,
 } from '../../../../auth/connection'
-import { AuthUtil, amazonQScopes } from '../../../../codewhisperer/util/authUtil'
+import { AuthUtil } from '../../../../codewhisperer/util/authUtil'
 import { CommonAuthWebview } from '../backend'
 import { awsIdSignIn } from '../../../../codewhisperer/util/showSsoPrompt'
 import { connectToEnterpriseSso } from '../../../../codewhisperer/util/getStartUrl'
 import { activateExtension, isExtensionInstalled } from '../../../../shared/utilities/vsCodeUtils'
 import { VSCODE_EXTENSION_ID } from '../../../../shared/extensions'
 import { getLogger } from '../../../../shared/logger'
-import { Auth } from '../../../../auth'
-import { ToolkitError } from '../../../../shared/errors'
 import { debounce } from 'lodash'
 import { AuthError, AuthFlowState, userCancelled } from '../types'
 import { builderIdStartUrl } from '../../../../auth/sso/model'
+import { ToolkitError } from '../../../../shared/errors'
+import { withTelemetryContext } from '../../../../shared/telemetry/util'
 
+const className = 'AmazonQLoginWebview'
 export class AmazonQLoginWebview extends CommonAuthWebview {
     public override id: string = 'aws.amazonq.AmazonCommonAuth'
     public static sourcePath: string = 'vue/src/login/webview/vue/amazonq/index.js'
@@ -35,109 +36,24 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
         this.setupConnectionEventEmitter()
     }
 
+    /**
+     * Returns list of connections that are pushed from Toolkit to Amazon Q
+     */
     async fetchConnections(): Promise<AwsConnection[] | undefined> {
         if (!isExtensionInstalled(VSCODE_EXTENSION_ID.awstoolkit)) {
             return undefined
         }
         await activateExtension(VSCODE_EXTENSION_ID.awstoolkit)
         const toolkitExt = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.awstoolkit)
-        const importedApi = toolkitExt?.exports.getApi(VSCODE_EXTENSION_ID.amazonq)
-        const connections: AwsConnection[] = []
+        const importedApi = toolkitExt?.exports?.getApi(VSCODE_EXTENSION_ID.amazonq)
         if (importedApi && 'listConnections' in importedApi) {
-            return await importedApi?.listConnections()
+            return ((await importedApi?.listConnections()) as AwsConnection[]).filter(
+                // No need to display Builder ID as an existing connection,
+                // users can just select the Builder ID login option and it would have the same effect.
+                (conn) => conn.startUrl !== builderIdStartUrl
+            )
         }
-        return connections
-    }
-    /**
-     * Gets a connection that is usable by Amazon Q.
-     *
-     * @param connections List of AWS Toolkit Connections
-     * @returns Amazon Q connection, or undefined if none of the given connections have scopes required for Amazon Q.
-     */
-    findUsableConnection(connections: AwsConnection[]): AwsConnection | undefined {
-        return AuthUtil.instance.findUsableQConnection(connections)
-    }
-
-    async useConnection(connectionId: string, auto: boolean): Promise<AuthError | undefined> {
-        getLogger().debug(`called useConnection() with connectionId: '${connectionId}', auto: '${auto}'`)
-        return this.ssoSetup(
-            'useConnection',
-            async () => {
-                if (!isExtensionInstalled(VSCODE_EXTENSION_ID.awstoolkit)) {
-                    return
-                }
-                try {
-                    await activateExtension(VSCODE_EXTENSION_ID.awstoolkit)
-                    const toolkitExt = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.awstoolkit)
-                    const importedApi = toolkitExt?.exports.getApi(VSCODE_EXTENSION_ID.amazonq)
-                    if (importedApi && 'listConnections' in importedApi) {
-                        const connections: AwsConnection[] = await importedApi?.listConnections()
-                        for (const conn of connections) {
-                            if (conn.id === connectionId) {
-                                if (!auto) {
-                                    this.storeMetricMetadata({
-                                        // Hacky way to check for builder ID with AwsConnection interface
-                                        credentialSourceId:
-                                            conn.startUrl === builderIdStartUrl ? 'awsId' : 'iamIdentityCenter',
-                                        credentialStartUrl: conn.startUrl,
-                                        region: conn.ssoRegion,
-                                        authEnabledFeatures: this.getAuthEnabledFeatures(conn),
-                                    })
-                                }
-                                let newConn: SsoConnection
-                                if (conn.scopes?.includes(scopesCodeWhispererChat[0])) {
-                                    getLogger().info(
-                                        `auth: re-use connection from existing connection id ${connectionId}`
-                                    )
-                                    newConn = await Auth.instance.createConnectionFromApi(conn)
-                                    await AuthUtil.instance.secondaryAuth.useNewConnection(newConn)
-                                } else {
-                                    getLogger().info(
-                                        `auth: re-use(new scope) to connection from existing connection id ${connectionId}`
-                                    )
-                                    // when re-using a connection from toolkit, if adding scope is necessary
-                                    // temporarily create a new connection without triggerring any connection hooks
-                                    // then try reauthenticate, if success, use this connection, toolkit connnection scope also gets updated.
-                                    // if failed, connection is set to invalid
-                                    const oldScopes = conn?.scopes ? conn.scopes : []
-                                    const newScopes = Array.from(new Set([...oldScopes, ...amazonQScopes]))
-                                    const payload: AwsConnection = {
-                                        type: conn.type,
-                                        ssoRegion: conn.ssoRegion,
-                                        scopes: newScopes,
-                                        startUrl: conn.startUrl,
-                                        state: conn.state,
-                                        id: conn.id,
-                                        label: conn.label,
-                                    }
-                                    newConn = await Auth.instance.createConnectionFromApi(payload)
-                                    try {
-                                        await Auth.instance.reauthenticate(newConn, false)
-                                    } catch (e) {
-                                        // Restore original scopes as to not soft-lock connections.
-                                        await Auth.instance.createConnectionFromApi({ ...payload, scopes: oldScopes })
-                                        throw e
-                                    }
-                                    await AuthUtil.instance.secondaryAuth.useNewConnection(newConn)
-                                }
-                                if (!auto) {
-                                    this.storeMetricMetadata({
-                                        credentialStartUrl: conn.startUrl,
-                                        region: conn.ssoRegion,
-                                        authEnabledFeatures: this.getAuthEnabledFeatures(newConn),
-                                    })
-                                }
-                            }
-                        }
-                    }
-                } catch (e) {
-                    throw ToolkitError.chain(e, 'Failed to add Amazon Q scope', {
-                        code: 'FailedToConnect',
-                    })
-                }
-            },
-            !auto
-        )
+        return []
     }
 
     async startBuilderIdSetup(): Promise<AuthError | undefined> {
@@ -149,23 +65,26 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
                 isReAuth: false,
             })
 
-            await awsIdSignIn()
+            const conn = await awsIdSignIn()
+            this.storeMetricMetadata(await getTelemetryMetadataForConn(conn))
+
             void vscode.window.showInformationMessage('AmazonQ: Successfully connected to AWS Builder ID')
         })
     }
 
     async startEnterpriseSetup(startUrl: string, region: string): Promise<AuthError | undefined> {
-        getLogger().debug(`called useConnection() with startUrl: '${startUrl}', region: '${region}'`)
+        getLogger().debug(`called startEnterpriseSetup() with startUrl: '${startUrl}', region: '${region}'`)
         return await this.ssoSetup('startCodeWhispererEnterpriseSetup', async () => {
             this.storeMetricMetadata({
                 credentialStartUrl: startUrl,
-                region,
                 credentialSourceId: 'iamIdentityCenter',
                 authEnabledFeatures: 'codewhisperer',
                 isReAuth: false,
             })
 
-            await connectToEnterpriseSso(startUrl, region)
+            const conn = await connectToEnterpriseSso(startUrl, region)
+            this.storeMetricMetadata(await getTelemetryMetadataForConn(conn))
+
             void vscode.window.showInformationMessage('AmazonQ: Successfully connected to AWS IAM Identity Center')
         })
     }
@@ -178,23 +97,29 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
             // Sanity checks
             if (!AuthUtil.instance.isConnected()) {
                 getLogger().error('amazon Q reauthenticate called on a non-existant connection')
+                throw new ToolkitError('Cannot reauthenticate non-existant connection.')
             }
 
-            if (!isSsoConnection(AuthUtil.instance.conn)) {
+            const conn = AuthUtil.instance.conn
+            if (!isSsoConnection(conn)) {
                 getLogger().error('amazon Q reauthenticate called, but the connection is not SSO')
+                throw new ToolkitError('Cannot reauthenticate non-SSO connection.')
             }
 
             /**
              * IMPORTANT: During this process {@link this.onActiveConnectionModified} is triggered. This
              * causes the reauth page to refresh before the user is actually done the whole reauth flow.
              */
-            this.reauthError = await this.ssoSetup('reauthenticate', async () => {
+            this.reauthError = await this.ssoSetup('reauthenticateAmazonQ', async () => {
                 this.storeMetricMetadata({
-                    authEnabledFeatures: this.getAuthEnabledFeatures(AuthUtil.instance.conn as SsoConnection),
+                    authEnabledFeatures: this.getAuthEnabledFeatures(conn),
                     isReAuth: true,
-                    ...this.getMetadataForExistingConn(),
+                    ...(await getTelemetryMetadataForConn(conn)),
                 })
                 await AuthUtil.instance.reauthenticate()
+                this.storeMetricMetadata({
+                    ...(await getTelemetryMetadataForConn(conn)),
+                })
             })
         } finally {
             this.isReauthenticating = false
@@ -239,13 +164,17 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
         return this.authState
     }
 
+    @withTelemetryContext({ name: 'signout', class: className })
     override async signout(): Promise<void> {
+        const conn = AuthUtil.instance.secondaryAuth.activeConnection
+        if (!isSsoConnection(conn)) {
+            throw new ToolkitError(`Cannot signout non-SSO connection, type is: ${conn?.type}`)
+        }
+
         this.storeMetricMetadata({
-            authEnabledFeatures: this.getAuthEnabledFeatures(
-                AuthUtil.instance.secondaryAuth.activeConnection as SsoConnection
-            ),
+            authEnabledFeatures: this.getAuthEnabledFeatures(conn),
             isReAuth: true,
-            ...this.getMetadataForExistingConn(),
+            ...(await getTelemetryMetadataForConn(conn)),
             result: 'Cancelled',
         })
 
@@ -253,6 +182,12 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
         this.reauthError = undefined
 
         this.emitAuthMetric()
+    }
+
+    async listSsoConnections(): Promise<SsoConnection[]> {
+        // Amazon Q only supports 1 connection at a time,
+        // so there isn't a need to de-duplicate connections.
+        return []
     }
 
     override startIamCredentialSetup(

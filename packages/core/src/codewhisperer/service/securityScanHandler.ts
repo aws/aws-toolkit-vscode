@@ -5,7 +5,14 @@
 
 import { DefaultCodeWhispererClient } from '../client/codewhisperer'
 import { getLogger } from '../../shared/logger'
-import { AggregatedCodeScanIssue, CodeScansState, codeScanState, CodeScanStoppedError } from '../models/model'
+import * as vscode from 'vscode'
+import {
+    AggregatedCodeScanIssue,
+    CodeScanIssue,
+    CodeScansState,
+    codeScanState,
+    CodeScanStoppedError,
+} from '../models/model'
 import { sleep } from '../../shared/utilities/timeoutUtils'
 import * as codewhispererClient from '../client/codewhisperer'
 import * as CodeWhispererConstants from '../models/constants'
@@ -21,7 +28,7 @@ import {
     UploadIntent,
 } from '../client/codewhispereruserclient'
 import { TelemetryHelper } from '../util/telemetryHelper'
-import request from '../../common/request'
+import request from '../../shared/request'
 import { ZipMetadata } from '../util/zipUtil'
 import { getNullLogger } from '../../shared/logger/logger'
 import {
@@ -31,13 +38,15 @@ import {
     SecurityScanTimedOutError,
     UploadArtifactToS3Error,
 } from '../models/errors'
+import { getTelemetryReasonDesc } from '../../shared/errors'
 
 export async function listScanResults(
     client: DefaultCodeWhispererClient,
     jobId: string,
     codeScanFindingsSchema: string,
     projectPaths: string[],
-    scope: CodeWhispererConstants.CodeAnalysisScope
+    scope: CodeWhispererConstants.CodeAnalysisScope,
+    editor: vscode.TextEditor | undefined
 ) {
     const logger = getLoggerForScope(scope)
     const codeScanIssueMap: Map<string, RawCodeScanIssue[]> = new Map()
@@ -46,7 +55,7 @@ export async function listScanResults(
     const collection = pageableToCollection(requester, { jobId, codeScanFindingsSchema }, 'nextToken')
     const issues = await collection
         .flatten()
-        .map(resp => {
+        .map((resp) => {
             logger.verbose(`Request id: ${resp.$response.requestId}`)
             if ('codeScanFindings' in resp) {
                 return resp.codeScanFindings
@@ -54,57 +63,83 @@ export async function listScanResults(
             return resp.codeAnalysisFindings
         })
         .promise()
-    issues.forEach(issue => {
-        mapToAggregatedList(codeScanIssueMap, issue)
+    issues.forEach((issue) => {
+        mapToAggregatedList(codeScanIssueMap, issue, editor, scope)
     })
     codeScanIssueMap.forEach((issues, key) => {
         // Project path example: /Users/username/project
         // Key example: project/src/main/java/com/example/App.java
-        projectPaths.forEach(projectPath => {
+        projectPaths.forEach((projectPath) => {
             // We need to remove the project path from the key to get the absolute path to the file
             // Do not use .. in between because there could be multiple project paths in the same parent dir.
             const filePath = path.join(projectPath, key.split('/').slice(1).join('/'))
             if (existsSync(filePath) && statSync(filePath).isFile()) {
                 const aggregatedCodeScanIssue: AggregatedCodeScanIssue = {
                     filePath: filePath,
-                    issues: issues.map(issue => {
-                        return {
-                            startLine: issue.startLine - 1 >= 0 ? issue.startLine - 1 : 0,
-                            endLine: issue.endLine,
-                            comment: `${issue.title.trim()}: ${issue.description.text.trim()}`,
-                            title: issue.title,
-                            description: issue.description,
-                            detectorId: issue.detectorId,
-                            detectorName: issue.detectorName,
-                            findingId: issue.findingId,
-                            ruleId: issue.ruleId,
-                            relatedVulnerabilities: issue.relatedVulnerabilities,
-                            severity: issue.severity,
-                            recommendation: issue.remediation.recommendation,
-                            suggestedFixes: issue.remediation.suggestedFixes,
-                        }
-                    }),
+                    issues: issues.map(mapRawToCodeScanIssue),
                 }
                 aggregatedCodeScanIssueList.push(aggregatedCodeScanIssue)
             }
         })
+        const maybeAbsolutePath = `/${key}`
+        if (existsSync(maybeAbsolutePath) && statSync(maybeAbsolutePath).isFile()) {
+            const aggregatedCodeScanIssue: AggregatedCodeScanIssue = {
+                filePath: maybeAbsolutePath,
+                issues: issues.map(mapRawToCodeScanIssue),
+            }
+            aggregatedCodeScanIssueList.push(aggregatedCodeScanIssue)
+        }
     })
     return aggregatedCodeScanIssueList
 }
 
-function mapToAggregatedList(codeScanIssueMap: Map<string, RawCodeScanIssue[]>, json: string) {
+function mapRawToCodeScanIssue(issue: RawCodeScanIssue): CodeScanIssue {
+    return {
+        startLine: issue.startLine - 1 >= 0 ? issue.startLine - 1 : 0,
+        endLine: issue.endLine,
+        comment: `${issue.title.trim()}: ${issue.description.text.trim()}`,
+        title: issue.title,
+        description: issue.description,
+        detectorId: issue.detectorId,
+        detectorName: issue.detectorName,
+        findingId: issue.findingId,
+        ruleId: issue.ruleId,
+        relatedVulnerabilities: issue.relatedVulnerabilities,
+        severity: issue.severity,
+        recommendation: issue.remediation.recommendation,
+        suggestedFixes: issue.remediation.suggestedFixes,
+    }
+}
+
+export function mapToAggregatedList(
+    codeScanIssueMap: Map<string, RawCodeScanIssue[]>,
+    json: string,
+    editor: vscode.TextEditor | undefined,
+    scope: CodeWhispererConstants.CodeAnalysisScope
+) {
     const codeScanIssues: RawCodeScanIssue[] = JSON.parse(json)
-    codeScanIssues.forEach(issue => {
-        if (codeScanIssueMap.has(issue.filePath)) {
-            const list = codeScanIssueMap.get(issue.filePath)
-            if (list === undefined) {
-                codeScanIssueMap.set(issue.filePath, [issue])
-            } else {
-                list.push(issue)
-                codeScanIssueMap.set(issue.filePath, list)
+    const filteredIssues = codeScanIssues.filter((issue) => {
+        if (scope === CodeWhispererConstants.CodeAnalysisScope.FILE && editor) {
+            for (let lineNumber = issue.startLine; lineNumber <= issue.endLine; lineNumber++) {
+                const line = editor.document.lineAt(lineNumber - 1)?.text
+                const codeContent = issue.codeSnippet.find((codeIssue) => codeIssue.number === lineNumber)?.content
+                if (codeContent?.includes('***')) {
+                    // CodeSnippet contains redacted code so we can't do a direct comparison
+                    return line.length === codeContent.length
+                } else {
+                    return line === codeContent
+                }
             }
+        }
+        return true
+    })
+
+    filteredIssues.forEach((issue) => {
+        const filePath = issue.filePath
+        if (codeScanIssueMap.has(filePath)) {
+            codeScanIssueMap.get(filePath)?.push(issue)
         } else {
-            codeScanIssueMap.set(issue.filePath, [issue])
+            codeScanIssueMap.set(filePath, [issue])
         }
     })
 }
@@ -115,13 +150,13 @@ export async function pollScanJobStatus(
     scope: CodeWhispererConstants.CodeAnalysisScope,
     codeScanStartTime: number
 ) {
+    const pollingStartTime = performance.now()
     // We don't expect to get results immediately, so sleep for some time initially to not make unnecessary calls
-    await sleep(getPollingDelayForScope(scope))
+    await sleep(getPollingDelayMsForScope(scope))
 
     const logger = getLoggerForScope(scope)
     logger.verbose(`Polling scan job status...`)
     let status: string = 'Pending'
-    let timer: number = 0
     while (true) {
         throwIfCancelled(scope, codeScanStartTime)
         const req: codewhispererClient.GetCodeScanRequest = {
@@ -137,12 +172,8 @@ export async function pollScanJobStatus(
         }
         throwIfCancelled(scope, codeScanStartTime)
         await sleep(CodeWhispererConstants.codeScanJobPollingIntervalSeconds * 1000)
-        timer += CodeWhispererConstants.codeScanJobPollingIntervalSeconds
-        const timeoutSeconds =
-            scope === CodeWhispererConstants.CodeAnalysisScope.FILE
-                ? CodeWhispererConstants.codeFileScanJobTimeoutSeconds
-                : CodeWhispererConstants.codeScanJobTimeoutSeconds
-        if (timer > timeoutSeconds) {
+        const elapsedTime = performance.now() - pollingStartTime
+        if (elapsedTime > getPollingTimeoutMsForScope(scope)) {
             logger.verbose(`Scan job status: ${status}`)
             logger.verbose(`Security Scan failed. Amazon Q timed out.`)
             throw new SecurityScanTimedOutError()
@@ -168,7 +199,7 @@ export async function createScanJob(
         scope: scope,
         codeScanName: scanName,
     }
-    const resp = await client.createCodeScan(req).catch(err => {
+    const resp = await client.createCodeScan(req).catch((err) => {
         getLogger().error(`Failed creating scan job. Request id: ${err.requestId}`)
         throw new CreateCodeScanError(err)
     })
@@ -199,7 +230,7 @@ export async function getPresignedUrlAndUpload(
         },
     }
     logger.verbose(`Prepare for uploading src context...`)
-    const srcResp = await client.createUploadUrl(srcReq).catch(err => {
+    const srcResp = await client.createUploadUrl(srcReq).catch((err) => {
         getLogger().error(`Failed getting presigned url for uploading src context. Request id: ${err.requestId}`)
         throw new CreateUploadUrlError(err)
     })
@@ -277,7 +308,10 @@ export async function uploadArtifactToS3(
         getLogger().error(
             `Amazon Q is unable to upload workspace artifacts to Amazon S3 for security scans. For more information, see the Amazon Q documentation or contact your network or organization administrator.`
         )
-        const errorMessage = (error as Error).message
+        const errorMessage = getTelemetryReasonDesc(error)?.includes(`"PUT" request failed with code "403"`)
+            ? `"PUT" request failed with code "403"`
+            : getTelemetryReasonDesc(error) ?? 'Security scan failed.'
+
         throw new UploadArtifactToS3Error(errorMessage)
     }
 }
@@ -286,8 +320,18 @@ export function getLoggerForScope(scope: CodeWhispererConstants.CodeAnalysisScop
     return scope === CodeWhispererConstants.CodeAnalysisScope.FILE ? getNullLogger() : getLogger()
 }
 
-function getPollingDelayForScope(scope: CodeWhispererConstants.CodeAnalysisScope) {
-    return scope === CodeWhispererConstants.CodeAnalysisScope.FILE
-        ? CodeWhispererConstants.fileScanPollingDelaySeconds
-        : CodeWhispererConstants.projectScanPollingDelaySeconds
+function getPollingDelayMsForScope(scope: CodeWhispererConstants.CodeAnalysisScope) {
+    return (
+        (scope === CodeWhispererConstants.CodeAnalysisScope.FILE
+            ? CodeWhispererConstants.fileScanPollingDelaySeconds
+            : CodeWhispererConstants.projectScanPollingDelaySeconds) * 1000
+    )
+}
+
+function getPollingTimeoutMsForScope(scope: CodeWhispererConstants.CodeAnalysisScope) {
+    return (
+        (scope === CodeWhispererConstants.CodeAnalysisScope.FILE
+            ? CodeWhispererConstants.codeFileScanJobTimeoutSeconds
+            : CodeWhispererConstants.codeScanJobTimeoutSeconds) * 1000
+    )
 }

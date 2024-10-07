@@ -53,14 +53,14 @@ export class LambdaNode extends AWSTreeNodeBase {
     public async updateChildren(): Promise<void> {
         const functions: Map<string, Lambda.FunctionConfiguration> = toMap(
             await toArrayAsync(listLambdaFunctions(this.client)),
-            configuration => configuration.FunctionName
+            (configuration) => configuration.FunctionName
         )
 
         updateInPlace(
             this.functionNodes,
             functions.keys(),
-            key => this.functionNodes.get(key)!.update(functions.get(key)!),
-            key => makeLambdaFunctionNode(this, this.regionCode, functions.get(key)!)
+            (key) => this.functionNodes.get(key)!.update(functions.get(key)!),
+            (key) => makeLambdaFunctionNode(this, this.regionCode, functions.get(key)!)
         )
     }
 }

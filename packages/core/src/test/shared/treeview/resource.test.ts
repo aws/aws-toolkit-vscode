@@ -54,7 +54,7 @@ describe('ResourceTreeNode', function () {
 
         const children = await node.getChildren()
         assert.deepStrictEqual(
-            children.map(n => n.id),
+            children.map((n) => n.id),
             ['1', '2', '3']
         )
     })

@@ -13,24 +13,40 @@ coverage:
     status:
         project:
             default:
-                threshold: 1
+                target: 70%
+                threshold: 5%
                 informational: true
             codewhisperer:
-                target: 70%
                 paths:
-                    - src/codewhisperer/*
+                    - packages/core/src/codewhisperer/*
                 flags:
                     - 'codewhisperer'
             amazonqFeatureDev:
-                target: 70%
                 paths:
-                    - src/amazonqFeatureDev/*
+                    - packages/core/src/amazonqFeatureDev/*
                 flags:
                     - 'amazonqFeatureDev'
-        patch: no
-        changes: no
+            amazonqGumby:
+                paths:
+                    - packages/core/src/amazonqGumby/*
+            codewhispererChat:
+                paths:
+                    - packages/core/src/codewhispererChat/*
+            applicationcomposer:
+                paths:
+                    - packages/core/src/applicationcomposer/*
+            stepFunctions:
+                target: 50%
+                threshold: 10%
+                paths:
+                    - packages/core/src/stepFunctions/*
+            threatComposer:
+                paths:
+                    - packages/core/src/threatComposer/*
+        patch: false
+        changes: false
 
-comment: off
+comment: false
 
 github_checks:
     annotations: false

@@ -62,6 +62,17 @@ do the following:
 
 Now when you run the extension in the browser it will do CORS checks.
 
+## Running in [vscode.dev](https://vscode.dev)
+
+The following will explain how to get your latest local development changes running in the actual `vscode.dev`. Use this if you want to test on an actual VS Code Web instance.
+
+1. Build the extension. We need the Web mode entrypoint file to exist.
+2. OPTIONAL: Start up your browser with security disabled. Certain functionalities do not support CORS and will fail otherwise.
+    - On MacOS from the CLI is similar to `/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --disable-web-security`
+3. `cd` to the extension you want to test in `packages/`. Eg: `packages/amazonq/`.
+    - We need to do this since the following command hosts your build from the `cwd`.
+4. Follow the [VS Code documentation](https://code.visualstudio.com/api/extension-guides/web-extensions#test-your-web-extension-in-vscode.dev) for setting up certs, serving your the latest changes, and installing the extension to `vscode.dev`.
+
 ## Testing in VSCode Web Mode
 
 The following steps will result in a VSCode Extension window running
@@ -74,12 +85,14 @@ VS Code window, in the background it is running in a Browser context.
 
 ## Adding Web mode specific npm modules
 
-If you need to manage npm modules required for Web mode, such as a [browserfied module](https://www.npmjs.com/package/os-browserify), see [the documentation here](../packages/core/src/web/README.md).
+If you need to manage npm modules required for Web mode, such as a [browserfied module](https://www.npmjs.com/package/os-browserify), see [the documentation here](../packages/core/src/web/README.md#packagejson).
 
 ## Finding incompatible transitive dependencies
 
 For example, if I have a Typescript module, `myFile.ts`, that imports a module which imports another module (transitive dependency) such as `fs-extra`,
 when I execute `myFile.ts` in the browser it will break due to `fs-extra` not being browser compatible.
+
+> INFO: A common error is `Cannot read properties of undefined (reading 'native')` caused by `fs-extra`
 
 It may be difficult to determine which module imported `fs-extra` due to a nested chain of transitive dependencies.
 
@@ -91,10 +104,11 @@ to help us visualize the imports and determine which module is importing a certa
 1. Install the `graphviz` cli, this provides the `dot` cli command
     - Mac: `brew install graphviz`
     - Others: [See documentation](https://www.graphviz.org/download/)
-2. Run `npx depcruise {RELATIVE_PATH_TO_FILE}  --output-type dot | dot -T svg > dependency-graph.svg`
-    - For example, `npx depcruise src/srcShared/fs.ts  --output-type dot | dot -T svg > dependency-graph.svg` generates the following which shows `fs-extra` is imported by `fileSystemUtilities.ts`:
-      ![Dependency Graph](./images/dependency-graph.svg)
-    - Additionally specify a certain dependency with `--reaches` , `npx depcruise src/srcShared/fs.ts --reaches "fs-extra" --output-type dot | dot -T svg > dependency-graph.svg`, to hide unrelated dependencies:
+2. Temporarily install `dependency-cruiser`
+    - IMPORTANT: You will want to revert this install when done
+    - `npm i dependency-cruiser`
+3. Run `npx depcruise {RELATIVE_PATH_TO_FILE}  --reaches "{YOUR_MODULE}" --output-type dot | dot -T svg > dependency-graph.svg`
+    - For example `npx depcruise src/shared/fs/fs.ts --reaches "fs-extra" --output-type dot | dot -T svg > dependency-graph.svg`, generates the following which shows that `fs-extra` is imported by `fileSystemUtilities.ts`:
       ![Dependency Graph](./images/dependency-graph-small.svg)
 
 ## Behavior of module exports in tests

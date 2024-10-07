@@ -8,9 +8,11 @@ import { ExtensionMessage } from '../commands'
 import { CodeReference } from './amazonqCommonsConnector'
 import { TabOpenType, TabsStorage } from '../storages/tabsStorage'
 import { FollowUpGenerator } from '../followUps/generator'
+import { TracedChatItem } from '../connector'
 
 interface ChatPayload {
     chatMessage: string
+    traceId?: string
     chatCommand?: string
 }
 
@@ -21,6 +23,7 @@ export interface ConnectorProps {
     onCWCContextCommandMessage: (message: ChatItem, command?: string) => string | undefined
     onError: (tabID: string, message: string, title: string) => void
     onWarning: (tabID: string, message: string, title: string) => void
+    onOpenSettingsMessage: (tabID: string) => void
     tabsStorage: TabsStorage
 }
 
@@ -30,6 +33,7 @@ export class Connector {
     private readonly onWarning
     private readonly onChatAnswerReceived
     private readonly onCWCContextCommandMessage
+    private readonly onOpenSettingsMessage
     private readonly followUpGenerator: FollowUpGenerator
 
     constructor(props: ConnectorProps) {
@@ -38,6 +42,7 @@ export class Connector {
         this.onWarning = props.onWarning
         this.onError = props.onError
         this.onCWCContextCommandMessage = props.onCWCContextCommandMessage
+        this.onOpenSettingsMessage = props.onOpenSettingsMessage
         this.followUpGenerator = new FollowUpGenerator()
     }
 
@@ -185,6 +190,7 @@ export class Connector {
                 command: 'chat-prompt',
                 chatMessage: payload.chatMessage,
                 chatCommand: payload.chatCommand,
+                traceId: payload.traceId,
                 tabType: 'cwc',
             })
         })
@@ -255,13 +261,14 @@ export class Connector {
                       }
                     : undefined
 
-            const answer: ChatItem = {
+            const answer: TracedChatItem = {
                 type: messageData.messageType,
                 messageId: messageData.messageID ?? messageData.triggerID,
                 body: messageData.message,
                 followUp: followUps,
                 canBeVoted: true,
                 codeReference: messageData.codeReference,
+                traceId: messageData.traceId,
             }
 
             // If it is not there we will not set it
@@ -288,7 +295,7 @@ export class Connector {
             return
         }
         if (messageData.messageType === ChatItemType.ANSWER) {
-            const answer: ChatItem = {
+            const answer: TracedChatItem = {
                 type: messageData.messageType,
                 body: undefined,
                 relatedContent: undefined,
@@ -301,6 +308,7 @@ export class Connector {
                               options: messageData.followUps,
                           }
                         : undefined,
+                traceId: messageData.traceId,
             }
             this.onChatAnswerReceived(messageData.tabID, answer)
 
@@ -322,6 +330,10 @@ export class Connector {
         })
 
         return
+    }
+
+    private processOpenSettingsMessage = async (messageData: any): Promise<void> => {
+        this.onOpenSettingsMessage(messageData.tabID)
     }
 
     handleMessageReceive = async (messageData: any): Promise<void> => {
@@ -346,6 +358,11 @@ export class Connector {
 
         if (messageData.type === 'authNeededException') {
             await this.processAuthNeededException(messageData)
+            return
+        }
+
+        if (messageData.type === 'openSettingsMessage') {
+            await this.processOpenSettingsMessage(messageData)
             return
         }
     }

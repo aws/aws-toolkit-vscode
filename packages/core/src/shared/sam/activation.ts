@@ -26,7 +26,8 @@ import { SamTemplateCodeLensProvider } from '../codelens/samTemplateCodeLensProv
 import * as jsLensProvider from '../codelens/typescriptCodeLensProvider'
 import { ExtContext, VSCODE_EXTENSION_ID } from '../extensions'
 import { getIdeProperties, getIdeType, IDE, isCloud9 } from '../extensionUtilities'
-import { PerfLog, getLogger } from '../logger/logger'
+import { getLogger } from '../logger/logger'
+import { PerfLog } from '../logger/perfLogger'
 import { NoopWatcher } from '../fs/watchedFiles'
 import { detectSamCli } from './cli/samCliDetection'
 import { CodelensRootRegistry } from '../fs/codelensRootRegistry'
@@ -93,7 +94,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
         )
     )
 
-    config.onDidChange(async event => {
+    config.onDidChange(async (event) => {
         switch (event.key) {
             case 'location':
                 // This only shows a message (passive=true), does not set anything.
@@ -132,7 +133,7 @@ async function registerCommands(ctx: ExtContext, settings: SamCliSettings): Prom
             { id: 'aws.pickAddSamDebugConfiguration', autoconnect: false },
             codelensUtils.pickAddSamDebugConfiguration
         ),
-        Commands.register({ id: 'aws.deploySamApplication', autoconnect: true }, async arg => {
+        Commands.register({ id: 'aws.deploySamApplication', autoconnect: true }, async (arg) => {
             // `arg` is one of :
             //  - undefined
             //  - regionNode (selected from AWS Explorer)
@@ -375,7 +376,7 @@ async function createYamlExtensionPrompt(): Promise<void> {
 
         // user already has an open template with focus
         // prescreen if a template.yaml is current open so we only call once
-        const openTemplateYamls = vscode.window.visibleTextEditors.filter(editor => {
+        const openTemplateYamls = vscode.window.visibleTextEditors.filter((editor) => {
             const fileName = editor.document.fileName
             return fileName.endsWith('template.yaml') || fileName.endsWith('template.yml')
         })

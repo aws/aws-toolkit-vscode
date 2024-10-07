@@ -4,7 +4,6 @@
  */
 
 import assert from 'assert'
-import * as fs from 'fs'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import * as FakeTimers from '@sinonjs/fake-timers'
@@ -14,29 +13,33 @@ import globals from '../shared/extensionGlobals'
 import { waitUntil } from '../shared/utilities/timeoutUtils'
 import { MetricName, MetricShapes } from '../shared/telemetry/telemetry'
 import { keys, selectFrom } from '../shared/utilities/tsUtils'
-import { fsCommon } from '../srcShared/fs'
+import fs from '../shared/fs/fs'
 import { DeclaredCommand } from '../shared/vscode/commands2'
+import { mkdirSync, existsSync } from 'fs'
+import { randomBytes } from 'crypto'
+import request from '../shared/request'
+import { stub } from 'sinon'
 
 const testTempDirs: string[] = []
 
 /**
- * Writes the string form of `o` to `filePathParts` as UTF-8 text.
+ * Writes the string form of `o` to `filepath` as UTF-8 text.
  *
- * Creates parent directories in `filePathParts`, if necessary.
+ * Creates parent directories in `filepath`, if necessary.
  */
-export async function toFile(o: any, ...filePathParts: string[]) {
-    const text = o ? o.toString() : ''
-    const filePath = path.join(...filePathParts)
-    const dir = path.dirname(filePath)
-    await fsCommon.mkdir(dir)
-    await fsCommon.writeFile(filePath, text)
+export async function toFile(o: any, filepath: string | vscode.Uri) {
+    const file = typeof filepath === 'string' ? filepath : filepath.fsPath
+    const text = o === undefined ? '' : o.toString()
+    const dir = path.dirname(file)
+    await fs.mkdir(dir)
+    await fs.writeFile(file, text)
 }
 
 /**
  * Gets the contents of `filepath` as UTF-8 encoded string.
  */
 export async function fromFile(filepath: string): Promise<string> {
-    return fsCommon.readFileAsString(filepath)
+    return await fs.readFileText(filepath)
 }
 
 /** Gets the full path to the Toolkit source root on this machine. */
@@ -55,18 +58,91 @@ export function getWorkspaceFolder(dir: string): vscode.WorkspaceFolder {
 }
 
 /**
- * Creates a random, temporary workspace folder on the filesystem and returns a
- * `WorkspaceFolder` object.
+ * An all-in-one solution for a folder to use during tests:
+ * - Cleans up after all tests complete
+ * - Each instance is isolated from other tests
+ * - Convenient methods for files operations on paths RELATIVE to the folder
  *
- * @param name  Optional name, defaults to "test-workspace-folder".
- * @param subDir Optional subdirectory created in the workspace folder and returned in the result.
+ * Create an instance using {@link TestFolder.create()}.
+ *
+ * Add any new methods to this class when needed.
+ *
+ * ---
+ *
+ * IMPORTANT:Web: This uses Node specific FS functions.
+ * This class is used in our agnostic FileSystem unit tests to do the setup.
+ * Since we do not want our FS code to be used to test itself, we aren't using it here.
+ * But if the day comes that we need it for web, we should be able to add some agnostic FS methods in here.
+ */
+export class TestFolder {
+    protected constructor(private readonly rootFolder: string) {}
+
+    /** Creates a folder that deletes itself once all tests are done running. */
+    static async create() {
+        const rootFolder = (await createTestWorkspaceFolder()).uri.fsPath
+        return new TestFolder(rootFolder)
+    }
+
+    /**
+     * Creates a file at the given path relative to the test folder.
+     * Any directories that do not exist in the given path will also be created.
+     *
+     * @returns an absolute path to the file
+     */
+    async write(relativeFilePath: string, content?: string, options?: { mode?: number }): Promise<string> {
+        const filePath = path.join(this.path, relativeFilePath)
+
+        await toFile(content ?? '', filePath)
+
+        if (options?.mode !== undefined) {
+            await fs.chmod(filePath, options.mode)
+        }
+
+        return filePath
+    }
+
+    /**
+     * Creates a directory at the given path relative to the test folder.
+     *
+     * @returns an absolute path to the folder
+     */
+    async mkdir(relativeDirPath?: string): Promise<string> {
+        relativeDirPath ??= randomBytes(4).toString('hex')
+        const absolutePath = this.pathFrom(relativeDirPath)
+        mkdirSync(absolutePath, { recursive: true })
+        assert(existsSync(absolutePath))
+        return absolutePath
+    }
+
+    /** Returns an absolute path compose of the test folder path and the given relative path. */
+    pathFrom(relativePath: string): string {
+        return path.join(this.path, relativePath)
+    }
+
+    get path(): string {
+        return path.join(this.rootFolder)
+    }
+}
+
+/**
+ * @deprecated Use {@link TestFolder} instead.
+ *
+ * TODO: move this inside of {@link TestFolder}.
+ *
+ * ---
+ *
+ * Creates a random, temporary workspace folder on the filesystem and returns a `WorkspaceFolder`
+ * object. The folder will be automatically deleted after tests complete.
+ *
+ * @param name  Folder name (default: "test-workspace-folder").
+ * @param subDir Subdirectory created in the workspace folder and returned in the result.
  */
 export async function createTestWorkspaceFolder(name?: string, subDir?: string): Promise<vscode.WorkspaceFolder> {
     const tempFolder = await makeTemporaryToolkitFolder()
     testTempDirs.push(tempFolder)
     const finalWsFolder = subDir === undefined ? tempFolder : path.join(tempFolder, subDir)
     if (subDir !== undefined && subDir.length > 0) {
-        await fs.promises.mkdir(finalWsFolder, { recursive: true })
+        await fs.mkdir(finalWsFolder)
     }
     return {
         uri: vscode.Uri.file(finalWsFolder),
@@ -79,7 +155,7 @@ export async function createTestFile(fileName: string): Promise<vscode.Uri> {
     const tempFolder = await makeTemporaryToolkitFolder()
     testTempDirs.push(tempFolder) // ensures this is deleted at the end
     const tempFilePath = path.join(tempFolder, fileName)
-    await fsCommon.writeFile(tempFilePath, '')
+    await fs.writeFile(tempFilePath, '')
     return vscode.Uri.file(tempFilePath)
 }
 
@@ -109,6 +185,10 @@ export async function createTestWorkspace(
          * the subDir where the workspace folder will point to within the temp folder
          */
         subDir?: string
+        /**
+         * optional file name suffix
+         */
+        fileNameSuffix?: string
     }
 ): Promise<vscode.WorkspaceFolder> {
     const workspace = await createTestWorkspaceFolder(opts.workspaceName, opts.subDir)
@@ -118,11 +198,12 @@ export async function createTestWorkspace(
     }
 
     const fileNamePrefix = opts?.fileNamePrefix ?? 'test-file-'
+    const fileNameSuffix = opts?.fileNameSuffix ?? ''
     const fileContent = opts?.fileContent ?? ''
 
     do {
-        const tempFilePath = path.join(workspace.uri.fsPath, `${fileNamePrefix}${n}`)
-        await fsCommon.writeFile(tempFilePath, fileContent)
+        const tempFilePath = path.join(workspace.uri.fsPath, `${fileNamePrefix}${n}${fileNameSuffix}`)
+        await fs.writeFile(tempFilePath, fileContent)
     } while (--n > 0)
 
     return workspace
@@ -153,7 +234,7 @@ export function assertEqualPaths(actual: string, expected: string, message?: str
  * Asserts that UTF-8 contents of `file` are equal to `expected`.
  */
 export async function assertFileText(file: string, expected: string, message?: string | Error) {
-    const actualContents = await fsCommon.readFileAsString(file)
+    const actualContents = await fs.readFileText(file)
     assert.strictEqual(actualContents, expected, message)
 }
 
@@ -167,12 +248,12 @@ export async function tickPromise<T>(promise: Promise<T>, clock: FakeTimers.Inst
  * Creates an executable file (including any parent directories) with the given contents.
  */
 export async function createExecutableFile(filepath: string, contents: string): Promise<void> {
-    await fsCommon.mkdir(path.dirname(filepath))
+    await fs.mkdir(path.dirname(filepath))
     if (process.platform === 'win32') {
-        await fsCommon.writeFile(filepath, `@echo OFF$\r\n${contents}\r\n`)
+        await fs.writeFile(filepath, `@echo OFF$\r\n${contents}\r\n`)
     } else {
-        await fsCommon.writeFile(filepath, `#!/bin/sh\n${contents}`)
-        fs.chmodSync(filepath, 0o744)
+        await fs.writeFile(filepath, `#!/bin/sh\n${contents}`)
+        await fs.chmod(filepath, 0o744)
     }
 }
 
@@ -242,7 +323,17 @@ export function assertTelemetry<K extends MetricName>(
     const expectedList = Array.isArray(expected) ? expected : [expected]
     const query = { metricName: name }
     const metadata = globals.telemetry.logger.query(query)
-    assert.ok(metadata.length > 0, `telemetry not found for metric name: "${name}"`)
+
+    // When an empty expected array was given
+    if (Array.isArray(expected) && expected.length === 0) {
+        if (metadata.length === 0) {
+            // succeeds if no results found, but none were expected
+            return
+        }
+        assert.fail(`Expected no metrics for "${name}", but some exist`)
+    }
+
+    assert.ok(metadata.length > 0, `telemetry metric not found: "${name}"`)
 
     for (let i = 0; i < expectedList.length; i++) {
         const metric = expectedList[i]
@@ -251,12 +342,12 @@ export function assertTelemetry<K extends MetricName>(
         delete expectedCopy['passive']
 
         Object.keys(expectedCopy).forEach(
-            k => ((expectedCopy as any)[k] = (expectedCopy as Record<string, any>)[k]?.toString())
+            (k) => ((expectedCopy as any)[k] = (expectedCopy as Record<string, any>)[k]?.toString())
         )
 
-        const msg = `telemetry item ${i + 1} (of ${
+        const msg = `telemetry metric ${i + 1} (of ${
             expectedList.length
-        }) not found (in the expected order) for metric name: "${name}" `
+        }) not found (in the expected order): "${name}" `
         partialDeepCompare(metadata[i], expectedCopy, msg)
 
         // Check this explicitly because we deleted it above.
@@ -311,24 +402,45 @@ export async function assertTextEditorContains(contents: string, exact: boolean 
 }
 
 /**
- * Create and open an editor with provided fileText, fileName and options. If folder is not provided,
- * will create a temp worksapce folder which will be automatically deleted in testing environment
- * @param fileText The supplied text to fill this file with
- * @param fileName The name of the file to save it as. Include the file extension here.
+ * Saves `fileText` to `fileName` relative to `folder` (or an auto-created temp workspace folder,
+ * which will be automatically deleted after tests finish), and opens it as a `TextDocument` (not
+ * a `TextEditor`, which is *slow*; use {@link toTextEditor} for that).
+ *
+ * @param fileText Text content
+ * @param fileName Name of the file (including extension) to save it as.
+ * @param folder?  Optional workspace folder where the file will be written to.
+ *
+ * @returns TextDocument that was just opened
+ */
+export async function toTextDocument(
+    fileText: string,
+    fileName: string,
+    folder?: string
+): Promise<ReturnType<typeof vscode.workspace.openTextDocument>> {
+    const myWorkspaceFolder = folder ? folder : (await createTestWorkspaceFolder()).uri.fsPath
+    const filePath = path.join(myWorkspaceFolder, fileName)
+    await toFile(fileText, filePath)
+
+    return await vscode.workspace.openTextDocument(filePath)
+}
+
+/**
+ * Same as {@link toTextDocument}, but opens the result in a TextEditor. This is *much* slower, use
+ * `toTextDocument` if you don't need a text editor.
+ *
+ * @param fileText Text content
+ * @param fileName Name of the file (including extension) to save it as.
+ * @param folder?  Optional workspace folder where the file will be written to.
  *
  * @returns TextEditor that was just opened
  */
-export async function openATextEditorWithText(
+export async function toTextEditor(
     fileText: string,
     fileName: string,
     folder?: string,
     options?: vscode.TextDocumentShowOptions
 ): Promise<vscode.TextEditor> {
-    const myWorkspaceFolder = folder ? folder : (await createTestWorkspaceFolder()).uri.fsPath
-    const filePath = path.join(myWorkspaceFolder, fileName)
-    await toFile(fileText, filePath)
-
-    const textDocument = await vscode.workspace.openTextDocument(filePath)
+    const textDocument = await toTextDocument(fileText, fileName, folder)
 
     return await vscode.window.showTextDocument(textDocument, options)
 }
@@ -340,7 +452,7 @@ export async function assertTabCount(size: number): Promise<void | never> {
     const tabs = await waitUntil(
         async () => {
             const tabs = vscode.window.tabGroups.all
-                .map(tabGroup => tabGroup.tabs)
+                .map((tabGroup) => tabGroup.tabs)
                 .reduce((acc, curVal) => acc.concat(curVal), [])
 
             if (tabs.length === size) {
@@ -368,7 +480,13 @@ export async function closeAllEditors(): Promise<void> {
     //  - `vscode.OutputChannel` name prefixed with "extension-output". https://github.com/microsoft/vscode/issues/148993#issuecomment-1167654358
     //  - `vscode.LogOutputChannel` name (created with `vscode.window.createOutputChannel(…,{log:true})`
     // Maybe we can close these with a command?
-    const ignorePatterns = [/extension-output/, /tasks/, /amazonwebservices\.aws-core-vscode\./]
+    // For nullExtensionDescription, see https://github.com/aws/aws-toolkit-vscode/issues/4658
+    const ignorePatterns = [
+        /extension-output/,
+        /tasks/,
+        /amazonwebservices\.[a-z\-]+-vscode\./,
+        /nullExtensionDescription./, // Sometimes exists instead of the prior line, see https://github.com/aws/aws-toolkit-vscode/issues/4658
+    ]
     const editors: vscode.TextEditor[] = []
 
     const noVisibleEditor: boolean | undefined = await waitUntil(
@@ -378,7 +496,7 @@ export async function closeAllEditors(): Promise<void> {
             editors.length = 0
             editors.push(
                 ...vscode.window.visibleTextEditors.filter(
-                    editor => !ignorePatterns.some(p => p.test(editor.document.fileName))
+                    (editor) => !ignorePatterns.some((p) => p.test(editor.document.fileName))
                 )
             )
 
@@ -392,7 +510,7 @@ export async function closeAllEditors(): Promise<void> {
     )
 
     if (!noVisibleEditor) {
-        const editorNames = editors.map(editor => `\t${editor.document.fileName}`)
+        const editorNames = editors.map((editor) => `\t${editor.document.fileName}`)
         throw new Error(`Editors were still open after closeAllEditors():\n${editorNames.join('\n')}`)
     }
 }
@@ -422,7 +540,7 @@ export function captureEvent<T>(event: vscode.Event<T>): EventCapturer<T> {
     let idx = 0
     const emits: T[] = []
     const listeners: vscode.Disposable[] = []
-    listeners.push(event(data => emits.push(data)))
+    listeners.push(event((data) => emits.push(data)))
 
     return {
         emits,
@@ -453,7 +571,7 @@ export function captureEvent<T>(event: vscode.Event<T>): EventCapturer<T> {
 export function captureEventOnce<T>(event: vscode.Event<T>, timeout?: number): Promise<T> {
     return new Promise<T>((resolve, reject) => {
         const stop = () => reject(new Error('Timed out waiting for event'))
-        event(data => resolve(data))
+        event((data) => resolve(data))
 
         if (timeout !== undefined) {
             setTimeout(stop, timeout)
@@ -494,4 +612,9 @@ export function tryRegister(command: DeclaredCommand<() => Promise<any>>) {
             throw err
         }
     }
+}
+
+// Returns a stubbed fetch for other tests.
+export function getFetchStubWithResponse(response: Partial<Response>) {
+    return stub(request, 'fetch').returns({ response: new Promise((res, _) => res(response)) } as any)
 }

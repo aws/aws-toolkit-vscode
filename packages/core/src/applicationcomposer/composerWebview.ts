@@ -78,7 +78,7 @@ export class ApplicationComposer {
 
         // Handle messages from the webview
         this.disposables.push(
-            panel.webview.onDidReceiveMessage(message =>
+            panel.webview.onDidReceiveMessage((message) =>
                 handleMessage(message, {
                     panel: panel,
                     textDocument: textDocument,
@@ -98,7 +98,7 @@ export class ApplicationComposer {
             }
             this.isPanelDisposed = true
             this.onVisualizationDisposeEmitter.fire()
-            this.disposables.forEach(disposable => {
+            this.disposables.forEach((disposable) => {
                 disposable.dispose()
             })
             this.onVisualizationDisposeEmitter.dispose()
@@ -119,7 +119,11 @@ export class ApplicationComposer {
     ): vscode.WebviewPanel {
         const panel = vscode.window.createWebviewPanel(
             'applicationComposer',
-            localize('AWS.applicationComposer.title', '{0} (Application Composer)', path.basename(documentUri.fsPath)),
+            localize(
+                'AWS.applicationComposer.title',
+                '{0} (Infrastructure Composer)',
+                path.basename(documentUri.fsPath)
+            ),
             {
                 preserveFocus: true,
                 viewColumn: vscode.ViewColumn.Active,

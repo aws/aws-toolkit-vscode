@@ -4,7 +4,6 @@
  */
 
 import { Runtime } from 'aws-sdk/clients/lambda'
-import { writeFile } from 'fs-extra'
 import * as os from 'os'
 import * as path from 'path'
 import {
@@ -26,6 +25,7 @@ import { getWorkspaceRelativePath } from '../../utilities/workspaceUtils'
 import { DefaultSamLocalInvokeCommand, waitForDebuggerMessages } from '../cli/samCliLocalInvoke'
 import { runLambdaFunction } from '../localLambdaRunner'
 import { SamLaunchRequestArgs } from './awsSamDebugger'
+import fs from '../../fs/fs'
 
 /** SAM will mount the --debugger-path to /tmp/lambci_debug_files */
 const debugpyWrapperPath = '/tmp/lambci_debug_files/py_debug_wrapper.py'
@@ -56,14 +56,14 @@ async function makePythonDebugManifest(params: {
     if (params.useIkpdb) {
         manifestText = manifestText.replace(/[ \t]*ikp3db\b[^\r\n]*/, '')
         manifestText += `${os.EOL}ikp3db`
-        await writeFile(debugManifestPath, manifestText)
+        await fs.writeFile(debugManifestPath, manifestText)
         return debugManifestPath
     }
 
     // TODO: If another module name includes the string "debugpy", this will be skipped...
     if (!params.useIkpdb && !manifestText.includes('debugpy')) {
         manifestText += `${os.EOL}debugpy>=1.0,<2`
-        await writeFile(debugManifestPath, manifestText)
+        await fs.writeFile(debugManifestPath, manifestText)
 
         return debugManifestPath
     }
@@ -161,7 +161,7 @@ export async function makePythonDebugConfig(
     if (config.lambda?.pathMappings !== undefined) {
         pathMappings = config.lambda.pathMappings
     } else {
-        pathMappings = getLocalRootVariants(config.codeRoot).map<PythonPathMapping>(variant => {
+        pathMappings = getLocalRootVariants(config.codeRoot).map<PythonPathMapping>((variant) => {
             return {
                 localRoot: variant,
                 remoteRoot: '/var/task',

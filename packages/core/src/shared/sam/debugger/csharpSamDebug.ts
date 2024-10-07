@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { chmod, ensureDir, writeFile } from 'fs-extra'
 import * as os from 'os'
 import * as path from 'path'
 import {
@@ -18,12 +17,13 @@ import { ExtContext } from '../../extensions'
 import { DefaultSamLocalInvokeCommand, waitForDebuggerMessages } from '../cli/samCliLocalInvoke'
 import { runLambdaFunction, waitForPort } from '../localLambdaRunner'
 import { SamLaunchRequestArgs } from './awsSamDebugger'
-import { ChildProcess } from '../../utilities/childProcess'
+import { ChildProcess } from '../../utilities/processUtils'
 import { HttpResourceFetcher } from '../../resourcefetcher/httpResourceFetcher'
 import { getLogger } from '../../logger'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import globals from '../../extensionGlobals'
+import fs from '../../fs/fs'
 const localize = nls.loadMessageBundle()
 
 /**
@@ -77,9 +77,10 @@ export async function invokeCsharpLambda(ctx: ExtContext, config: SamLaunchReque
     config.samLocalInvokeCommand = new DefaultSamLocalInvokeCommand([waitForDebuggerMessages.DOTNET])
     // eslint-disable-next-line @typescript-eslint/unbound-method
     config.onWillAttachDebugger = waitForPort
+    const platformArchitecture = os.arch()
 
     if (!config.noDebug) {
-        if (config.architecture === 'arm64') {
+        if ([config.architecture, platformArchitecture].includes('arm64')) {
             void vscode.window.showWarningMessage(
                 localize(
                     'AWS.sam.noArm.dotnet.debug',
@@ -108,10 +109,10 @@ function getDebuggerPath(parentFolder: string): string {
 }
 
 async function _installDebugger({ debuggerPath }: InstallDebuggerArgs): Promise<void> {
-    await ensureDir(debuggerPath)
+    await fs.mkdir(debuggerPath)
 
     try {
-        getLogger('channel').info(
+        getLogger().info(
             localize(
                 'AWS.samcli.local.invoke.debugger.install',
                 'Installing .NET Core Debugger to {0}...',
@@ -172,7 +173,7 @@ async function _installDebugger({ debuggerPath }: InstallDebuggerArgs): Promise<
             throw new Error(`command failed (exit code: ${install.exitCode}): ${installCommand}`)
         }
     } catch (err) {
-        getLogger('channel').info(
+        getLogger().info(
             localize(
                 'AWS.samcli.local.invoke.debugger.install.failed',
                 'Error installing .NET Core Debugger: {0}',
@@ -201,8 +202,8 @@ async function downloadInstallScript(debuggerPath: string): Promise<string> {
         throw Error(`Failed to download ${installScriptUrl}`)
     }
 
-    await writeFile(installScriptPath, installScript, 'utf8')
-    await chmod(installScriptPath, 0o700)
+    await fs.writeFile(installScriptPath, installScript, 'utf8')
+    await fs.chmod(installScriptPath, 0o700)
 
     return installScriptPath
 }
@@ -219,11 +220,11 @@ export async function makeDotnetDebugConfiguration(
     codeUri: string
 ): Promise<DotNetDebugConfiguration> {
     if (config.noDebug) {
-        throw Error(`SAM debug: invalid config ${config}`)
+        throw Error(`SAM debug: invalid config: ${config.name}`)
     }
     const pipeArgs = ['-c', `docker exec -i $(docker ps -q -f publish=${config.debugPort}) \${debuggerCommand}`]
     config.debuggerPath = pathutil.normalize(getDebuggerPath(codeUri))
-    await ensureDir(config.debuggerPath)
+    await fs.mkdir(config.debuggerPath)
 
     const isImageLambda = await isImageLambdaConfig(config)
 
@@ -235,7 +236,7 @@ export async function makeDotnetDebugConfiguration(
 
     if (os.platform() === 'win32') {
         // Coerce drive letter to uppercase. While Windows is case-insensitive, sourceFileMap is case-sensitive.
-        codeUri = codeUri.replace(pathutil.driveLetterRegex, match => match.toUpperCase())
+        codeUri = codeUri.replace(pathutil.driveLetterRegex, (match) => match.toUpperCase())
     }
 
     if (isImageLambda) {
@@ -254,7 +255,7 @@ export async function makeDotnetDebugConfiguration(
         }
         // we could safely leave this entry in, but might as well give the user full control if they're specifying mappings
         delete config.sourceFileMap['/build']
-        config.lambda.pathMappings.forEach(mapping => {
+        config.lambda.pathMappings.forEach((mapping) => {
             // this looks weird because we're mapping the PDB path to the local workspace
             config.sourceFileMap[mapping.remoteRoot] = mapping.localRoot
         })

@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { AuthAddConnection } from '../../../shared/telemetry/telemetry'
-
 /**
  * Types that can be used by both the backend and frontend files
  */
@@ -39,7 +37,7 @@ export enum LoginOption {
     BUILDER_ID,
     ENTERPRISE_SSO,
     IAM_CREDENTIAL,
-    EXISTING_LOGINS,
+    IMPORTED_LOGINS,
 }
 
 /**
@@ -48,6 +46,7 @@ export enum LoginOption {
 export type AuthUiClick =
     | 'auth_backButton'
     | 'auth_cancelButton'
+    | 'auth_reauthCancelButton'
     | 'auth_continueButton'
     | 'auth_idcOption'
     | 'auth_builderIdOption'
@@ -66,6 +65,21 @@ export const userCancelled = 'userCancelled'
 
 export type AuthEnabledFeatures = 'awsExplorer' | 'codewhisperer' | 'codecatalyst'
 
-type Writeable<T> = { -readonly [U in keyof T]: T[U] }
-export type TelemetryMetadata = Partial<Writeable<AuthAddConnection>>
 export type AuthError = { id: string; text: string }
+
+export type ServiceItemId = 'awsExplorer' | 'codewhisperer' | 'codecatalyst'
+export function isServiceItemId(value: unknown): value is ServiceItemId {
+    return (
+        typeof value === 'string' && (value === 'awsExplorer' || value === 'codewhisperer' || value === 'codecatalyst')
+    )
+}
+
+export type AuthFormId =
+    | 'credentials'
+    | 'builderIdCodeWhisperer'
+    | 'builderIdCodeCatalyst'
+    | 'identityCenterCodeWhisperer'
+    | 'identityCenterCodeCatalyst'
+    | 'identityCenterExplorer'
+    | 'aggregateExplorer'
+    | 'unknown'

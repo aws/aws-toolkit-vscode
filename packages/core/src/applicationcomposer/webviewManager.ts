@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import request from '../common/request'
+import request from '../shared/request'
 import { ApplicationComposer } from './composerWebview'
 import { getLogger } from '../shared/logger'
 
@@ -79,6 +79,15 @@ export class ApplicationComposerManager {
             const newVisualization = new ApplicationComposer(document, this.extensionContext, this.getWebviewContent)
             this.handleNewVisualization(document.uri.fsPath, newVisualization)
 
+            if (vscode.version === '1.91.0') {
+                void vscode.window.showWarningMessage(
+                    localize(
+                        'AWS.applicationComposer.visualisation.warnings.draganddrop',
+                        'This version of Visual Studio Code has a bug preventing normal drag and drop functionality. ' +
+                            'As a temporary workaround, hold the Shift key before releasing a resource onto the visual canvas.'
+                    )
+                )
+            }
             return newVisualization.getPanel()
         } catch (err) {
             this.handleErr(err as Error)
@@ -107,7 +116,7 @@ export class ApplicationComposerManager {
         void vscode.window.showInformationMessage(
             localize(
                 'AWS.applicationComposer.visualisation.errors.rendering',
-                'There was an error rendering Application Composer, check logs for details.'
+                'There was an error rendering Infrastructure Composer, check logs for details.'
             )
         )
         this.logger.error(`${this.name}: Unable to show App Composer webview: ${err}`)

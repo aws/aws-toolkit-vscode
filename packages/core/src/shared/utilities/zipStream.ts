@@ -68,7 +68,7 @@ export class ZipStream {
 
         this._zipWriter = new ZipWriter(
             new WritableStream({
-                write: chunk => {
+                write: (chunk) => {
                     this._streamBuffer.write(chunk)
                     this._hasher.update(chunk)
                 },
@@ -92,7 +92,7 @@ export class ZipStream {
 
         if (this._filesToZip.length > 0 && this._filesBeingZipped < this._maxNumberOfFileStreams) {
             const [fileToZip, path] = this._filesToZip.shift()!
-            void readFileAsString(fileToZip).then(content => {
+            void readFileAsString(fileToZip).then((content) => {
                 return this._zipWriter.add(path, new TextReader(content), {
                     onend: this.boundFileCompletionCallback,
                     onstart: this.boundFileStartCallback,
@@ -116,7 +116,7 @@ export class ZipStream {
         // We only start zipping another file if we're under our limit
         // of concurrent file streams
         if (this._filesBeingZipped < this._maxNumberOfFileStreams) {
-            void readFileAsString(file).then(content => {
+            void readFileAsString(file).then((content) => {
                 return this._zipWriter.add(path, new TextReader(content), {
                     onend: this.boundFileCompletionCallback,
                     onstart: this.boundFileStartCallback,
@@ -133,7 +133,7 @@ export class ZipStream {
         // We need to poll to check for all the file streams to be completely processed
         // -- we are keeping track of this via the "progress" event handler
         while (!finished) {
-            finished = await new Promise(resolve => {
+            finished = await new Promise((resolve) => {
                 setTimeout(() => {
                     getLogger().verbose('success is', this._numberOfFilesSucceeded, '/', this._numberOfFilesToStream)
                     onProgress?.(Math.floor((100 * this._numberOfFilesSucceeded) / this._numberOfFilesToStream))

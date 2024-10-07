@@ -3,15 +3,18 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import * as crypto from 'crypto'
 import * as path from 'path'
 import { getLogger } from '../../shared/logger/logger'
+import fs from '../../shared/fs/fs'
 import { createDiskCache, KeyedCache, mapCache } from '../../shared/utilities/cacheUtils'
 import { stripUndefined } from '../../shared/utilities/collectionUtils'
 import { hasProps, selectFrom } from '../../shared/utilities/tsUtils'
 import { SsoToken, ClientRegistration } from './model'
-import { SystemUtilities } from '../../shared/systemUtilities'
 import { DevSettings } from '../../shared/settings'
+import { onceChanged } from '../../shared/utilities/functionUtils'
+import globals from '../../shared/extensionGlobals'
 
 interface RegistrationKey {
     readonly startUrl: string
@@ -31,7 +34,7 @@ export interface SsoCache {
     readonly registration: KeyedCache<ClientRegistration, RegistrationKey>
 }
 
-const defaultCacheDir = () => path.join(SystemUtilities.getHomeDirectory(), '.aws', 'sso', 'cache')
+const defaultCacheDir = () => path.join(fs.getUserHomeDir(), '.aws/sso/cache')
 export const getCacheDir = () => DevSettings.instance.get('ssoCacheDirectory', defaultCacheDir())
 
 export function getCache(directory = getCacheDir()): SsoCache {
@@ -39,6 +42,12 @@ export function getCache(directory = getCacheDir()): SsoCache {
         token: getTokenCache(directory),
         registration: getRegistrationCache(directory),
     }
+}
+
+export function getCacheFileWatcher(directory = getCacheDir()) {
+    const watcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(directory, '*.json'))
+    globals.context.subscriptions.push(watcher)
+    return watcher
 }
 
 export function getRegistrationCache(directory = getCacheDir()): KeyedCache<ClientRegistration, RegistrationKey> {
@@ -105,8 +114,8 @@ export function getTokenCache(directory = getCacheDir()): KeyedCache<SsoAccess> 
         }
     }
 
-    const logger = (message: string) => getLogger().debug(`SSO token cache: ${message}`)
-    const cache = createDiskCache<StoredToken, string>((key: string) => getTokenCacheFile(directory, key), logger)
+    const logIfChanged = onceChanged((message: string) => getLogger().debug(`SSO token cache: ${message}`))
+    const cache = createDiskCache<StoredToken, string>((key: string) => getTokenCacheFile(directory, key), logIfChanged)
 
     return mapCache(cache, read, write)
 }
@@ -134,7 +143,7 @@ function getRegistrationCacheFile(ssoCacheDir: string, key: RegistrationKey): st
     const hash = (startUrl: string, scopes: string[]) => {
         const shasum = crypto.createHash('sha256')
         shasum.update(startUrl)
-        scopes.forEach(s => shasum.update(s))
+        scopes.forEach((s) => shasum.update(s))
         return shasum.digest('hex')
     }
 

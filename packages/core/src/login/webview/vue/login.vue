@@ -1,11 +1,17 @@
 <!-- This Vue File is the login webview of AWS Toolkit and Amazon Q.-->
 <template>
-    <div v-bind:class="[disabled ? 'disabled-form' : '']" class="auth-container" @click="handleDocumentClick">
+    <div
+        v-bind:class="[disabled ? 'disabled-form' : '']"
+        class="auth-container"
+        :data-app="app"
+        @click="handleDocumentClick"
+        v-if="stage !== 'CONNECTED'"
+    >
         <div class="logoIcon bottomMargin">
             <!-- Icon -->
 
             <svg
-                v-if="app === 'AMAZONQ' && stage !== 'CONNECTED'"
+                v-if="app === 'AMAZONQ'"
                 width="71"
                 height="71"
                 viewBox="0 0 71 71"
@@ -46,7 +52,7 @@
                 </defs>
             </svg>
             <svg
-                v-if="app === 'TOOLKIT' && stage !== 'CONNECTED'"
+                v-if="app === 'TOOLKIT'"
                 width="100"
                 height="80"
                 viewBox="0 0 54 40"
@@ -81,29 +87,29 @@
                 </svg>
             </button>
             <div class="auth-container-section">
-                <div class="existing-logins" v-if="existingLogins.length > 0">
+                <div class="imported-logins" v-if="importedLogins.length > 0">
                     <div class="header bottomMargin">Connect with an existing account:</div>
-                    <div v-for="(existingLogin, index) in existingLogins" :key="index">
+                    <div v-for="(importedLogin, index) in importedLogins" :key="index">
                         <SelectableItem
                             @toggle="toggleItemSelection"
-                            :isSelected="selectedLoginOption === LoginOption.EXISTING_LOGINS + index"
-                            :itemId="LoginOption.EXISTING_LOGINS + index"
-                            :itemText="existingLogin.text"
-                            :itemTitle="existingLogin.title"
-                            :itemType="existingLogin.type"
+                            :isSelected="selectedLoginOption === LoginOption.IMPORTED_LOGINS + index"
+                            :itemId="LoginOption.IMPORTED_LOGINS + index"
+                            :itemText="importedLogin.text"
+                            :itemTitle="importedLogin.title"
+                            :itemType="importedLogin.type"
                             class="selectable-item bottomMargin"
                         ></SelectableItem>
                     </div>
                     <div class="header">Or, choose a sign-in option:</div>
                 </div>
-                <div class="header bottomMargin" v-if="existingLogins.length == 0">Choose a sign-in option:</div>
+                <div class="header bottomMargin" v-if="importedLogins.length == 0">Choose a sign-in option:</div>
                 <SelectableItem
                     v-if="app === 'AMAZONQ'"
                     @toggle="toggleItemSelection"
                     :isSelected="selectedLoginOption === LoginOption.BUILDER_ID"
                     :itemId="LoginOption.BUILDER_ID"
-                    :itemText="'No AWS account required'"
-                    :itemTitle="'Use For Free'"
+                    :itemText="'with Builder ID, a personal profile from AWS'"
+                    :itemTitle="'Use for Free'"
                     :itemType="LoginOption.BUILDER_ID"
                     class="selectable-item bottomMargin"
                 ></SelectableItem>
@@ -216,17 +222,10 @@
                     Connecting to IAM...
                 </div>
                 <div v-else class="header bottomMargin">Authenticating in browser...</div>
-                <button
-                    class="continue-button"
-                    v-on:click="handleCancelButton()"
-                    style="color: #6f6f6f; background-color: var(--vscode-input-background)"
-                >
-                    Cancel
-                </button>
+                <button class="continue-button" v-on:click="handleCancelButton()">Cancel</button>
             </div>
         </template>
 
-        <template v-if="stage === 'CONNECTED'"> </template>
         <template v-if="stage === 'AWS_PROFILE'">
             <button class="back-button bottomMargin" @click="handleBackButtonClick">
                 <svg width="13" height="11" viewBox="0 0 13 11" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -275,25 +274,16 @@
 <script lang="ts">
 import { defineComponent } from 'vue'
 import SelectableItem from './selectableItem.vue'
-import { LoginOption, AuthError } from './types'
+import { LoginOption } from './types'
 import { CommonAuthWebview } from './backend'
 import { WebviewClientFactory } from '../../../webviews/client'
 import { Region } from '../../../shared/regions/endpoints'
+import { ssoUrlFormatRegex, ssoUrlFormatMessage } from '../../../auth/sso/constants'
 
 const client = WebviewClientFactory.create<CommonAuthWebview>()
 
 /** Where the user is currently in the builder id setup process */
 type Stage = 'START' | 'SSO_FORM' | 'CONNECTED' | 'AUTHENTICATING' | 'AWS_PROFILE'
-
-function validateSsoUrlFormat(url: string) {
-    const regex =
-        /^(https?:\/\/(.+)\.awsapps\.com\/start|https?:\/\/identitycenter\.amazonaws\.com\/ssoins-[\da-zA-Z]{16})$/
-    return regex.test(url)
-}
-
-function isBuilderId(url: string) {
-    return url === 'https://view.awsapps.com/start'
-}
 
 function getCredentialId(loginOption: LoginOption) {
     switch (loginOption) {
@@ -312,21 +302,18 @@ const authUiClickOptionMap = {
     [LoginOption.BUILDER_ID]: 'auth_builderIdOption',
     [LoginOption.ENTERPRISE_SSO]: 'auth_idcOption',
     [LoginOption.IAM_CREDENTIAL]: 'auth_credentialsOption',
-    [LoginOption.EXISTING_LOGINS]: 'auth_existingAuthOption',
+    [LoginOption.IMPORTED_LOGINS]: 'auth_existingAuthOption',
 }
 
 function getUiClickEvent(loginOption: LoginOption) {
     return (authUiClickOptionMap as any)[loginOption]
 }
 
-interface ExistingLogin {
+interface ImportedLogin {
     id: number
     text: string
     title: string
-    connectionId: string
     type: number
-
-    // used internally
     startUrl: string
     region: string
 }
@@ -347,7 +334,8 @@ export default defineComponent({
     },
     data() {
         return {
-            existingLogins: [] as ExistingLogin[],
+            existingStartUrls: [] as string[],
+            importedLogins: [] as ImportedLogin[],
             selectedLoginOption: LoginOption.NONE,
             stage: 'START' as Stage,
             regions: [] as Region[],
@@ -366,13 +354,18 @@ export default defineComponent({
         await this.emitUpdate('created')
     },
 
-    mounted() {
+    async mounted() {
         this.fetchRegions()
-        void this.updateExistingConnections()
+        await this.updateExistingStartUrls()
+        await this.updateImportedConnections()
 
         // Reset gathered telemetry data each time we view the login page.
         // The webview panel is reset on each view of the login page by design.
-        void client.resetStoredMetricMetadata()
+        client.resetStoredMetricMetadata()
+
+        // Pre-select the first available login option
+        await this.preselectLoginOption()
+        this.handleUrlInput() // validate the default startUrl
     },
     methods: {
         toggleItemSelection(itemId: number) {
@@ -421,12 +414,18 @@ export default defineComponent({
                 } else if (this.selectedLoginOption === LoginOption.ENTERPRISE_SSO) {
                     this.stage = 'SSO_FORM'
                     this.$nextTick(() => document.getElementById('startUrl')!.focus())
-                    await client.storeMetricMetadata({ region: this.selectedRegion })
-                } else if (this.selectedLoginOption >= LoginOption.EXISTING_LOGINS) {
+                    await client.storeMetricMetadata({ awsRegion: this.selectedRegion })
+                } else if (this.selectedLoginOption >= LoginOption.IMPORTED_LOGINS) {
                     this.stage = 'AUTHENTICATING'
                     const selectedConnection =
-                        this.existingLogins[this.selectedLoginOption - LoginOption.EXISTING_LOGINS]
-                    const error = await client.useConnection(selectedConnection.connectionId, false)
+                        this.importedLogins[this.selectedLoginOption - LoginOption.IMPORTED_LOGINS]
+
+                    // Imported connections cannot be Builder IDs, they are filtered out in the client.
+                    const error = await client.startEnterpriseSetup(
+                        selectedConnection.startUrl,
+                        selectedConnection.region,
+                        this.app
+                    )
                     if (error) {
                         this.stage = 'START'
                         void client.errorNotification(error)
@@ -443,16 +442,7 @@ export default defineComponent({
                 }
                 this.stage = 'AUTHENTICATING'
 
-                // First check if the user tried submitting a connection that was already displayed as existing.
-                const existingConn = this.existingLogins.find(conn => conn.startUrl === this.startUrl)
-
-                let error: AuthError | undefined
-                if (existingConn !== undefined) {
-                    error = await client.useConnection(existingConn.connectionId, false)
-                } else {
-                    error = await client.startEnterpriseSetup(this.startUrl, this.selectedRegion, this.app)
-                }
-
+                const error = await client.startEnterpriseSetup(this.startUrl, this.selectedRegion, this.app)
                 if (error) {
                     this.stage = 'START'
                     void client.errorNotification(error)
@@ -486,17 +476,9 @@ export default defineComponent({
             }
         },
         handleUrlInput() {
-            if (this.startUrl && !validateSsoUrlFormat(this.startUrl)) {
-                this.startUrlError =
-                    'URLs must start with http:// or https://. Example: https://d-xxxxxxxxxx.awsapps.com/start'
-            } else if (
-                this.startUrl &&
-                this.existingLogins.some(conn => conn.startUrl === this.startUrl && conn.region !== this.selectedRegion)
-            ) {
-                // Here, the user provided a startUrl that is already displayed as an existing option (in the previous screen).
-                // If the selectedRegion differs from the region in the existing connection, then we can display this error.
-                // Otherwise, we would have skipped this codepath and we will just re-use the existing connection since it is the same
-                // as what the user provided.
+            if (this.startUrl && !ssoUrlFormatRegex.test(this.startUrl)) {
+                this.startUrlError = ssoUrlFormatMessage
+            } else if (this.startUrl && this.existingStartUrls.some((url) => url === this.startUrl)) {
                 this.startUrlError =
                     'A connection for this start URL already exists. Sign out before creating a new one.'
             } else {
@@ -507,9 +489,8 @@ export default defineComponent({
             }
         },
         handleRegionInput(event: any) {
-            this.handleUrlInput() // startUrl validity depends on region, see handleUriInput() for details
             void client.storeMetricMetadata({
-                region: event.target.value,
+                awsRegion: event.target.value,
             })
             void client.emitUiClick('auth_regionSelection')
         },
@@ -527,42 +508,45 @@ export default defineComponent({
             this.regions = regions
         },
         async emitUpdate(cause?: string) {},
-        async updateExistingConnections() {
+        async updateImportedConnections() {
             // fetch existing connections of AWS toolkit in Amazon Q
             // or fetch existing connections of Amazon Q in AWS Toolkit
             // to reuse connections in AWS Toolkit & Amazon Q
             const sharedConnections = await client.fetchConnections()
-            sharedConnections?.forEach((connection, index) => {
-                this.existingLogins.push({
-                    id: LoginOption.EXISTING_LOGINS + index,
-                    text: this.app === 'TOOLKIT' ? 'Used by Amazon Q' : 'Used by AWS Toolkit',
-                    title: isBuilderId(connection.startUrl)
-                        ? 'AWS Builder ID'
-                        : `IAM Identity Center ${connection.startUrl}`,
-                    connectionId: connection.id,
-                    type: isBuilderId(connection.startUrl) ? LoginOption.BUILDER_ID : LoginOption.ENTERPRISE_SSO,
-                    startUrl: connection.startUrl,
-                    region: connection.ssoRegion,
+            sharedConnections
+                ?.filter((c) => !this.existingStartUrls.includes(c.startUrl))
+                .forEach((connection, index) => {
+                    this.importedLogins.push({
+                        id: LoginOption.IMPORTED_LOGINS + index,
+                        text: this.app === 'TOOLKIT' ? 'Used by Amazon Q' : 'Used by AWS Toolkit',
+                        title: `IAM Identity Center ${connection.startUrl}`,
+                        type: LoginOption.ENTERPRISE_SSO,
+                        startUrl: connection.startUrl,
+                        region: connection.ssoRegion,
+                    })
                 })
-            })
-
-            // If Amazon Q has no connections while Toolkit has connections
-            // Auto connect Q using toolkit connection.
-            const connections = await client.listConnections()
-            if (connections.length === 0 && sharedConnections && sharedConnections.length > 0) {
-                const conn = await client.findUsableConnection(sharedConnections)
-                if (conn) {
-                    await client.useConnection(conn.id, true)
-                }
-            }
 
             this.$forceUpdate()
+        },
+        async updateExistingStartUrls() {
+            this.existingStartUrls = (await client.listSsoConnections()).map((conn) => conn.startUrl)
         },
         async getDefaultStartUrl() {
             return await client.getDefaultStartUrl()
         },
         handleHelpLinkClick() {
             void client.emitUiClick('auth_helpLink')
+        },
+        async preselectLoginOption() {
+            // Select the first available option for Login
+            if (this.importedLogins.length > 0) {
+                this.selectedLoginOption = LoginOption.IMPORTED_LOGINS
+            } else if (this.app === 'AMAZONQ') {
+                this.selectedLoginOption = LoginOption.BUILDER_ID
+            } else if (this.app === 'TOOLKIT') {
+                this.selectedLoginOption = LoginOption.ENTERPRISE_SSO
+            }
+            this.$forceUpdate()
         },
         shouldDisableSsoContinue() {
             return this.startUrl.length == 0 || this.startUrlError.length > 0 || !this.selectedRegion
@@ -575,6 +559,8 @@ export default defineComponent({
 </script>
 
 <style>
+@import './base.css';
+
 .selectable-item {
     margin-bottom: 10px;
     margin-top: 10px;
@@ -583,7 +569,7 @@ export default defineComponent({
 .logoIcon {
     display: flex;
     flex-direction: row;
-    justify-content: left;
+    justify-content: center;
     align-items: flex-start;
     height: auto;
 }
@@ -591,7 +577,7 @@ export default defineComponent({
     color: #c6c6c6;
     margin-bottom: 5px;
     margin-top: 5px;
-    font-size: 10px;
+    font-size: var(--font-size-sm);
     font-weight: 500;
 }
 .vscode-light .hint {
@@ -602,41 +588,41 @@ export default defineComponent({
 }
 
 .auth-container {
-    display: flex;
-    flex-direction: column;
-    /* Stretches our overall container to the whole screen */
-    height: 100%;
-    width: 260px;
-    /* Centers all content in to middle of page since the height is the whole screen*/
-    justify-content: center;
+    height: auto;
+    margin: auto;
+    position: absolute;
+    top: var(--auth-container-top);
+    max-width: 260px;
+    width: 90vw;
 }
 
 .header {
-    font-size: 12px;
+    font-size: var(--font-size-base);
     font-weight: bold;
 }
-.header.vscode-dark {
+
+.vscode-dark .header {
     color: white;
 }
-.header.vscode-light {
+.vscode-light .header {
     color: black;
 }
 
 .title {
     margin-bottom: 3px;
     margin-top: 3px;
-    font-size: 11px;
+    font-size: var(--font-size-base);
     font-weight: 500;
 }
-.title.vscode-dark {
+.vscode-dark .title {
     color: white;
 }
-.title.vscode-light {
+.vscode-light .title {
     color: black;
 }
 
 .subHeader {
-    font-size: 10px;
+    font-size: var(--font-size-sm);
 }
 .continue-button {
     background-color: var(--vscode-button-background);
@@ -649,6 +635,7 @@ export default defineComponent({
     margin-bottom: 3px;
     margin-top: 3px;
     cursor: pointer;
+    font-size: var(--font-size-base);
 }
 .back-button {
     background: none;
@@ -668,6 +655,26 @@ export default defineComponent({
     color: #6f6f6f;
     cursor: not-allowed;
 }
+body.vscode-high-contrast:not(body.vscode-high-contrast-light) .continue-button {
+    background-color: white;
+    color: var(--vscode-input-background);
+}
+
+body.vscode-high-contrast:not(body.vscode-high-contrast-light) .continue-button:disabled {
+    background-color: #6f6f6f;
+    color: var(--vscode-input-background);
+}
+
+body.vscode-high-contrast-light .continue-button {
+    background-color: var(--vscode-button-background);
+    color: white;
+}
+
+body.vscode-high-contrast-light .continue-button:disabled {
+    background-color: #6f6f6f;
+    color: var(--vscode-input-background);
+}
+
 .urlInput {
     background-color: var(--vscode-input-background);
     width: 244px;
@@ -678,13 +685,15 @@ export default defineComponent({
     padding-right: 8px;
     padding-top: 6px;
     padding-bottom: 6px;
-    font-size: 13px;
+    font-size: var(--font-size-base);
     font-weight: 400;
 }
-body.vscode-light .urlInput {
+body.vscode-light .urlInput,
+body.vscode-high-contrast-light .urlInput {
     color: black;
 }
-body.vscode-dark .urlInput {
+body.vscode-dark .urlInput,
+body.vscode-high-contrast:not(body.vscode-high-contrast-light) .urlInput {
     color: #cccccc;
 }
 .iamInput {
@@ -697,13 +706,16 @@ body.vscode-dark .urlInput {
     padding-right: 8px;
     padding-top: 6px;
     padding-bottom: 6px;
-    font-size: 13px;
+    font-size: var(--font-size-base);
     font-weight: 400;
 }
-body.vscode-light .iamInput {
+body.vscode-light .iamInput,
+body.vscode-high-contrast-light .iamInput {
     color: black;
 }
-body.vscode-dark .iamInput {
+
+body.vscode-dark .iamInput,
+body.vscode-high-contrast:not(body.vscode-high-contrast-light) .iamInput {
     color: #cccccc;
 }
 .regionSelect {
@@ -715,18 +727,21 @@ body.vscode-dark .iamInput {
     padding-right: 8px;
     padding-top: 6px;
     padding-bottom: 6px;
-    font-size: 13px;
+    font-size: var(--font-size-base);
     font-weight: 400;
 }
-body.vscode-light .regionSelect {
+body.vscode-light .regionSelect,
+body.vscode-high-contrast-light .regionSelect {
     color: black;
 }
-body.vscode-dark .regionSelect {
-    color: #cccccc;
+
+body.vscode-dark .regionSelect,
+body.vscode-high-contrast:not(body.vscode-high-contrast-light) .regionSelect {
+    color: white;
 }
 .start-url-error {
     color: #ff0000;
-    font-size: 8px;
+    font-size: var(--font-size-sm);
 }
 #logo {
     fill: var(--vscode-button-foreground);

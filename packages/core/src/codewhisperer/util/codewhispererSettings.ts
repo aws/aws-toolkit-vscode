@@ -8,6 +8,10 @@ const description = {
     showInlineCodeSuggestionsWithCodeReferences: Boolean, // eslint-disable-line id-length
     importRecommendationForInlineCodeSuggestions: Boolean, // eslint-disable-line id-length
     shareContentWithAWS: Boolean,
+    workspaceIndex: Boolean,
+    workspaceIndexWorkerThreads: Number,
+    workspaceIndexUseGPU: Boolean,
+    workspaceIndexMaxSize: Number,
 }
 
 export class CodeWhispererSettings extends fromExtensionManifest('amazonQ', description) {
@@ -37,6 +41,27 @@ export class CodeWhispererSettings extends fromExtensionManifest('amazonQ', desc
     public isOptoutEnabled(): boolean {
         const value = this.get('shareContentWithAWS', true)
         return !value
+    }
+    public isLocalIndexEnabled(): boolean {
+        return this.get('workspaceIndex', false)
+    }
+
+    public async enableLocalIndex() {
+        await this.update('workspaceIndex', true)
+    }
+
+    public isLocalIndexGPUEnabled(): boolean {
+        return this.get('workspaceIndexUseGPU', false)
+    }
+
+    public getIndexWorkerThreads(): number {
+        // minimal 0 threads
+        return Math.max(this.get('workspaceIndexWorkerThreads', 0), 0)
+    }
+
+    public getMaxIndexSize(): number {
+        // minimal 1MB
+        return Math.max(this.get('workspaceIndexMaxSize', 250), 1)
     }
 
     static #instance: CodeWhispererSettings

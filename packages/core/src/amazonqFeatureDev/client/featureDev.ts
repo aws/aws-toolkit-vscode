@@ -18,16 +18,25 @@ import {
     CodeIterationLimitError,
     ContentLengthError,
     MonthlyConversationLimitError,
-    PlanIterationLimitError,
     UnknownApiError,
 } from '../errors'
-import { ToolkitError, isAwsError, isCodeWhispererStreamingServiceException } from '../../shared/errors'
+import { ToolkitError, isAwsError } from '../../shared/errors'
 import { getCodewhispererConfig } from '../../codewhisperer/client/codewhisperer'
-import { LLMResponseType } from '../types'
 import { createCodeWhispererChatStreamingClient } from '../../shared/clients/codewhispererChatClient'
+import { getClientId, getOptOutPreference, getOperatingSystem } from '../../shared/telemetry/util'
+import { extensionVersion } from '../../shared/vscode/env'
+
+// Re-enable once BE is able to handle retries.
+const writeAPIRetryOptions = {
+    maxRetries: 0,
+    retryDelayOptions: {
+        // The default number of milliseconds to use in the exponential backoff
+        base: 500,
+    },
+}
 
 // Create a client for featureDev proxy client based off of aws sdk v2
-export async function createFeatureDevProxyClient(): Promise<FeatureDevProxyClient> {
+export async function createFeatureDevProxyClient(options?: Partial<ServiceOptions>): Promise<FeatureDevProxyClient> {
     const bearerToken = await AuthUtil.instance.getBearerToken()
     const cwsprConfig = getCodewhispererConfig()
     return (await globals.sdkClientBuilder.createAwsService(
@@ -37,36 +46,22 @@ export async function createFeatureDevProxyClient(): Promise<FeatureDevProxyClie
             region: cwsprConfig.region,
             endpoint: cwsprConfig.endpoint,
             token: new Token({ token: bearerToken }),
-            // SETTING TO 0 FOR BETA. RE-ENABLE FOR RE-INVENT
-            maxRetries: 0,
-            retryDelayOptions: {
-                // The default number of milliseconds to use in the exponential backoff
-                base: 500,
-            },
+            ...options,
         } as ServiceOptions,
         undefined
     )) as FeatureDevProxyClient
 }
 
-const streamResponseErrors: Record<string, number> = {
-    ValidationException: 400,
-    AccessDeniedException: 403,
-    ResourceNotFoundException: 404,
-    ConflictException: 409,
-    ThrottlingException: 429,
-    InternalServerException: 500,
-}
-
 export class FeatureDevClient {
-    public async getClient() {
+    public async getClient(options?: Partial<ServiceOptions>) {
         // Should not be stored for the whole session.
         // Client has to be reinitialized for each request so we always have a fresh bearerToken
-        return await createFeatureDevProxyClient()
+        return await createFeatureDevProxyClient(options)
     }
 
     public async createConversation() {
         try {
-            const client = await this.getClient()
+            const client = await this.getClient(writeAPIRetryOptions)
             getLogger().debug(`Executing createTaskAssistConversation with {}`)
             const { conversationId, $response } = await client.createTaskAssistConversation().promise()
             getLogger().debug(`${featureName}: Created conversation: %O`, {
@@ -91,7 +86,7 @@ export class FeatureDevClient {
 
     public async createUploadUrl(conversationId: string, contentChecksumSha256: string, contentLength: number) {
         try {
-            const client = await this.getClient()
+            const client = await this.getClient(writeAPIRetryOptions)
             const params = {
                 uploadContext: {
                     taskAssistPlanningUploadContext: {
@@ -125,81 +120,10 @@ export class FeatureDevClient {
             throw new UnknownApiError(e instanceof Error ? e.message : 'Unknown error', 'CreateUploadUrl')
         }
     }
-    public async generatePlan(
-        conversationId: string,
-        uploadId: string,
-        userMessage: string
-    ): Promise<
-        { responseType: 'EMPTY'; approach?: string } | { responseType: 'VALID' | 'INVALID_STATE'; approach: string }
-    > {
-        try {
-            const streamingClient = await createCodeWhispererChatStreamingClient()
-            const params = {
-                workspaceState: {
-                    programmingLanguage: { languageName: 'javascript' },
-                    uploadId,
-                },
-                conversationState: {
-                    currentMessage: { userInputMessage: { content: userMessage } },
-                    chatTriggerType: 'MANUAL',
-                    conversationId,
-                },
-            }
-            getLogger().debug(`Executing generateTaskAssistPlan with %O`, params)
-            const response = await streamingClient.generateTaskAssistPlan(params)
-            getLogger().debug(`${featureName}: Generated plan: %O`, {
-                requestId: response.$metadata.requestId,
-            })
-            let responseType: LLMResponseType = 'EMPTY'
-            if (!response.planningResponseStream) {
-                return { responseType }
-            }
-
-            const assistantResponse: string[] = []
-            for await (const responseItem of response.planningResponseStream) {
-                if (responseItem.error !== undefined) {
-                    throw responseItem.error
-                } else if (responseItem.invalidStateEvent !== undefined) {
-                    getLogger().debug('Received Invalid State Event: %O', responseItem.invalidStateEvent)
-                    assistantResponse.splice(0)
-                    assistantResponse.push(responseItem.invalidStateEvent.message ?? '')
-                    responseType = 'INVALID_STATE'
-                    break
-                } else if (responseItem.assistantResponseEvent !== undefined) {
-                    responseType = 'VALID'
-                    assistantResponse.push(responseItem.assistantResponseEvent.content ?? '')
-                }
-            }
-            return { responseType, approach: assistantResponse.join('') }
-        } catch (e) {
-            if (isCodeWhispererStreamingServiceException(e)) {
-                getLogger().error(
-                    `${featureName}: failed to execute planning: ${e.message} RequestId: ${
-                        e.$metadata.requestId ?? 'unknown'
-                    }`
-                )
-                if (
-                    (e.name === 'ThrottlingException' &&
-                        e.message.includes('limit for number of iterations on an implementation plan')) ||
-                    e.name === 'ServiceQuotaExceededException'
-                ) {
-                    throw new PlanIterationLimitError()
-                }
-                throw new ApiError(
-                    e.message,
-                    'GeneratePlan',
-                    e.name,
-                    e.$metadata?.httpStatusCode ?? streamResponseErrors[e.name] ?? 500
-                )
-            }
-
-            throw new UnknownApiError(e instanceof Error ? e.message : 'Unknown error', 'GeneratePlan')
-        }
-    }
 
     public async startCodeGeneration(conversationId: string, uploadId: string, message: string) {
         try {
-            const client = await this.getClient()
+            const client = await this.getClient(writeAPIRetryOptions)
             const params = {
                 conversationState: {
                     conversationId,
@@ -306,6 +230,44 @@ export class FeatureDevClient {
                 }`
             )
             throw new ToolkitError((e as Error).message, { code: 'ExportResultArchiveFailed' })
+        }
+    }
+
+    /**
+     * This event is specific to ABTesting purposes.
+     *
+     * No need to fail currently if the event fails in the request. In addition, currently there is no need for a return value.
+     *
+     * @param conversationId
+     */
+    public async sendFeatureDevTelemetryEvent(conversationId: string) {
+        try {
+            const client = await this.getClient()
+            const params: FeatureDevProxyClient.SendTelemetryEventRequest = {
+                telemetryEvent: {
+                    featureDevEvent: {
+                        conversationId,
+                    },
+                },
+                optOutPreference: getOptOutPreference(),
+                userContext: {
+                    ideCategory: 'VSCODE',
+                    operatingSystem: getOperatingSystem(),
+                    product: 'FeatureDev', // Should be the same as in JetBrains
+                    clientId: getClientId(globals.globalState),
+                    ideVersion: extensionVersion,
+                },
+            }
+            const response = await client.sendTelemetryEvent(params).promise()
+            getLogger().debug(
+                `${featureName}: successfully sent featureDevEvent: ConversationId: ${conversationId} RequestId: ${response.$response.requestId}`
+            )
+        } catch (e) {
+            getLogger().error(
+                `${featureName}: failed to send feature dev telemetry: ${(e as Error).name}: ${
+                    (e as Error).message
+                } RequestId: ${(e as any).requestId}`
+            )
         }
     }
 }

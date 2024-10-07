@@ -6,19 +6,25 @@
 import { Commands } from '../../shared/vscode/commands2'
 import { ApplicationComposerManager } from '../webviewManager'
 import vscode from 'vscode'
-import { AuthUtil } from '../../codewhisperer/util/authUtil'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { ToolkitError } from '../../shared/errors'
+import { getAmazonqApi } from '../../amazonq/extApi'
 
 export const openTemplateInComposerCommand = Commands.declare(
     'aws.openInApplicationComposer',
     (manager: ApplicationComposerManager) => async (arg?: vscode.TextEditor | vscode.Uri) => {
-        const authState = await AuthUtil.instance.getChatAuthState()
-
         let result: vscode.WebviewPanel | undefined
-        await telemetry.appcomposer_openTemplate.run(async span => {
+        await telemetry.appcomposer_openTemplate.run(async (span) => {
+            const amazonqApi = await getAmazonqApi()
+
+            let hasChatAuth = false
+            if (amazonqApi) {
+                const authState = await amazonqApi.authApi.getChatAuthState()
+                hasChatAuth = authState.codewhispererChat === 'connected' || authState.codewhispererChat === 'expired'
+            }
+
             span.record({
-                hasChatAuth: authState.codewhispererChat === 'connected' || authState.codewhispererChat === 'expired',
+                hasChatAuth,
             })
             arg ??= vscode.window.activeTextEditor
             const input = arg instanceof vscode.Uri ? arg : arg?.document

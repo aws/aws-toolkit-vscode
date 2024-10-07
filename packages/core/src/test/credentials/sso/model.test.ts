@@ -21,7 +21,7 @@ describe('openSsoPortalLink', function () {
         const waitForMessage = async (): Promise<void> =>
             getTestWindow()
                 .waitForMessage(confirmCode)
-                .then(m => {
+                .then((m) => {
                     assert.ok(m.detail?.includes(userCode), 'Expected message to show the user verification code')
 
                     const action = actions.shift()

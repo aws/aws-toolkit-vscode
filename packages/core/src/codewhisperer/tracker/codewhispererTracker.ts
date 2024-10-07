@@ -14,6 +14,9 @@ import { AuthUtil } from '../util/authUtil'
 import { InsertedCode } from '../../codewhispererChat/controllers/chat/model'
 import { codeWhispererClient } from '../client/codewhisperer'
 import { logSendTelemetryEventFailure } from '../../codewhispererChat/controllers/chat/telemetryHelper'
+import { Timeout } from '../../shared/utilities/timeoutUtils'
+import { getSelectedCustomization } from '../util/customizationUtil'
+import { undefinedIfEmpty } from '../../shared'
 
 /**
  * This singleton class is mainly used for calculating the percentage of user modification.
@@ -21,7 +24,7 @@ import { logSendTelemetryEventFailure } from '../../codewhispererChat/controller
  */
 export class CodeWhispererTracker {
     private _eventQueue: (AcceptedSuggestionEntry | InsertedCode)[]
-    private _timer?: NodeJS.Timer
+    private _timer?: Timeout
     private static instance: CodeWhispererTracker
 
     /**
@@ -48,7 +51,7 @@ export class CodeWhispererTracker {
         }
 
         if (this._eventQueue.length >= 0) {
-            this.startTimer().catch(e => {
+            this.startTimer().catch((e) => {
                 getLogger().error('startTimer failed: %s', (e as Error).message)
             })
         }
@@ -87,6 +90,7 @@ export class CodeWhispererTracker {
 
     public async emitTelemetryOnSuggestion(suggestion: AcceptedSuggestionEntry | InsertedCode) {
         let percentage = 1.0
+
         try {
             if (suggestion.fileUrl?.scheme !== '') {
                 const document = await vscode.workspace.openTextDocument(suggestion.fileUrl)
@@ -117,6 +121,7 @@ export class CodeWhispererTracker {
                                 conversationId: event.cwsprChatConversationId,
                                 messageId: event.cwsprChatMessageId,
                                 modificationPercentage: event.cwsprChatModificationPercentage,
+                                customizationArn: undefinedIfEmpty(getSelectedCustomization().arn),
                             },
                         },
                     })
@@ -133,6 +138,8 @@ export class CodeWhispererTracker {
                     codewhispererLanguage: suggestion.language,
                     credentialStartUrl: AuthUtil.instance.startUrl,
                     codewhispererUserGroup: CodeWhispererUserGroupSettings.getUserGroup().toString(),
+                    codewhispererCharactersAccepted: suggestion.originalString.length,
+                    codewhispererCharactersModified: 0, // TODO: currently we don't have an accurate number for this field with existing implementation
                 })
                 // TODO:
                 // Temperary comment out user modification event, need further discussion on how to calculate this metric
@@ -158,7 +165,8 @@ export class CodeWhispererTracker {
 
     public async startTimer() {
         if (!this._timer) {
-            this._timer = setTimeout(async () => {
+            this._timer = new Timeout(CodeWhispererTracker.defaultCheckPeriodMillis)
+            this._timer.onCompletion(async () => {
                 try {
                     await this.flush()
                 } finally {
@@ -166,13 +174,13 @@ export class CodeWhispererTracker {
                         this._timer!.refresh()
                     }
                 }
-            }, CodeWhispererTracker.defaultCheckPeriodMillis)
+            })
         }
     }
 
     public closeTimer() {
         if (this._timer !== undefined) {
-            clearTimeout(this._timer)
+            this._timer.cancel()
             this._timer = undefined
         }
     }

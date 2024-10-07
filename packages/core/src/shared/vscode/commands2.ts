@@ -5,17 +5,17 @@
 
 import * as vscode from 'vscode'
 import { toTitleCase } from '../utilities/textUtilities'
-import { isNameMangled } from './env'
 import { getLogger, NullLogger } from '../logger/logger'
 import { FunctionKeys, Functions, getFunctions } from '../utilities/classUtils'
 import { TreeItemContent, TreeNode } from '../treeview/resourceTreeDataProvider'
-import { telemetry, MetricName, VscodeExecuteCommand, Metric } from '../telemetry/telemetry'
+import { telemetry, MetricName, VscodeExecuteCommand, Metric, Span } from '../telemetry/telemetry'
 import globals from '../extensionGlobals'
 import { ToolkitError } from '../errors'
 import crypto from 'crypto'
 import { keysAsInt } from '../utilities/tsUtils'
 import { partialClone } from '../utilities/collectionUtils'
 import { isAmazonQ } from '../extensionUtilities'
+import { isNameMangled } from '../utilities/typeConstructors'
 
 type Callback = (...args: any[]) => any
 type CommandFactory<T extends Callback, U extends any[]> = (...parameters: U) => T
@@ -113,14 +113,12 @@ export interface CommandDeclarations<T> {
  * @param declarations Has the mapping of command names to the backend logic
  * @param backend The backend logic of the commands
  */
-export function registerCommandsWithVSCode<T>(
-    extContext: vscode.ExtensionContext,
+export function registerDeclaredCommands<T>(
+    disposables: { dispose(): any }[],
     declarations: CommandDeclarations<T>,
     backend: T
 ): void {
-    extContext.subscriptions.push(
-        ...Object.values<DeclaredCommand>(declarations.declared).map(c => c.register(backend))
-    )
+    disposables.push(...Object.values<DeclaredCommand>(declarations.declared).map((c) => c.register(backend)))
 }
 
 /**
@@ -144,6 +142,16 @@ export class Commands {
             const info = { id }
             return new CommandResource<Callback>({ info, factory: throwOnRegister }, this.commands)
         }
+    }
+
+    /** See {@link Commands.getOrThrow}. */
+    public async getOrThrow(id: string): Promise<Command> {
+        const cmd = await this.get(id)
+        if (cmd === undefined) {
+            throw new ToolkitError(`Tried to get Command '${id}', but it hasn't been registered.`)
+        }
+
+        return cmd
     }
 
     /** See {@link Commands.tryExecute}. */
@@ -198,7 +206,7 @@ export class Commands {
             const name = !isNameMangled() ? `${target.name}.${k}` : undefined
             const mapInfo = (id: Id) => (typeof id === 'string' ? { id, name } : { name, ...id })
 
-            result[mappedKey] = id => this.declare(mapInfo(id), (instance: T) => v.bind(instance))
+            result[mappedKey] = (id) => this.declare(mapInfo(id), (instance: T) => v.bind(instance))
         }
 
         return result as unknown as Declarables<T>
@@ -223,9 +231,16 @@ export class Commands {
     public static readonly instance = new Commands()
 
     /**
-     * Returns a {@link Command} if the ID is currently registered within VS Code.
+     * Returns a {@link Command} if the ID is currently registered within VS Code,
+     * or undefined otherwise.
      */
     public static readonly get = this.instance.get.bind(this.instance)
+
+    /**
+     * Returns a {@link Command} if the ID is currently registered within VS Code,
+     * or throws a {@link ToolkitError} otherwise.
+     */
+    public static readonly getOrThrow = this.instance.getOrThrow.bind(this.instance)
 
     /**
      * Executes a command if it exists, else does nothing.
@@ -305,7 +320,10 @@ class CommandResource<T extends Callback = Callback, U extends any[] = any[]> {
     private idCounter = 0
     public readonly id = this.resource.info.id
 
-    public constructor(private readonly resource: Deferred<T, U>, private readonly commands = vscode.commands) {}
+    public constructor(
+        private readonly resource: Deferred<T, U>,
+        private readonly commands = vscode.commands
+    ) {}
 
     public get registered() {
         return !!this.subscription
@@ -471,22 +489,27 @@ function getInstrumenter(
     }
 
     // Throttling occurs regardless of whether or not the instrumenter is invoked
-    const span = telemetryName ? telemetry[telemetryName] : telemetry.vscode_executeCommand
+    const span: Metric = telemetryName ? telemetry[telemetryName] : telemetry.vscode_executeCommand
     const debounceCount = info?.debounceCount !== 0 ? info?.debounceCount : undefined
     TelemetryDebounceInfo.instance.set(id, { startTime: currentTime, debounceCount: 0 })
 
     const fields = findFieldsToAddToMetric(id.args, id.compositeKey)
 
     return <T extends Callback>(fn: T, ...args: Parameters<T>) =>
-        span.run(span => {
-            ;(span as Metric<VscodeExecuteCommand>).record({
-                command: id.id,
-                debounceCount,
-                ...fields,
-            })
+        span.run(
+            (span) => {
+                ;(span as Span<VscodeExecuteCommand>).record({
+                    command: id.id,
+                    debounceCount,
+                    ...fields,
+                })
 
-            return fn(...args)
-        })
+                return fn(...args)
+            },
+            // wrap all command executions with their ID as context for telemetry.
+            // this will give us a better idea on the entrypoints of executions
+            { functionId: { name: id.id, class: 'Commands' } }
+        )
 }
 
 export const unsetSource = 'sourceImproperlySet'
@@ -503,7 +526,9 @@ function handleBadCompositeKey(data: { id: string; args: any[]; compositeKey: Co
     Object.entries(compositeKey).forEach(([index, field]) => {
         const indexAsInt = parseInt(index)
         const arg = args[indexAsInt]
-        if (field === 'source' && typeof arg !== 'string') {
+        if (field === 'source' && arg === undefined) {
+            args[indexAsInt] = 'vscodeUI'
+        } else if (field === 'source' && typeof arg !== 'string') {
             /**
              * This case happens when either the caller sets the wrong args themselves through
              * vscode.commands.executeCommand OR if through a VS Code UI component like the ellipsis menu
@@ -526,11 +551,11 @@ function handleBadCompositeKey(data: { id: string; args: any[]; compositeKey: Co
  */
 function findFieldsToAddToMetric(args: any[], compositeKey: CompositeKey): { [field in MetricField]?: any } {
     const indexes = keysAsInt(compositeKey)
-    const indexesWithValue = indexes.filter(i => compositeKey[i] !== undefined)
+    const indexesWithValue = indexes.filter((i) => compositeKey[i] !== undefined)
     const sortedIndexesWithValue = indexesWithValue.sort((a, b) => a - b)
 
     const result: { [field in MetricField]?: any } = {}
-    sortedIndexesWithValue.forEach(i => {
+    sortedIndexesWithValue.forEach((i) => {
         const fieldName: MetricField = compositeKey[i]
         const fieldValue = args[i]
         result[fieldName] = fieldValue
@@ -592,7 +617,7 @@ export class TelemetryDebounceInfo {
         }
 
         // All the args that will be used to build the unique key
-        const uniqueArgs = uniqueIndexes.map(i => args[i])
+        const uniqueArgs = uniqueIndexes.map((i) => args[i])
 
         return uniqueArgs.length > 0 ? `${id}-${this.hashObjects(uniqueArgs)}` : id
     }
@@ -602,7 +627,7 @@ export class TelemetryDebounceInfo {
      * in the key for {@link telemetryInfo}.
      */
     private hashObjects(objects: any[]): string {
-        const hashableObjects = objects.map(obj => {
+        const hashableObjects = objects.map((obj) => {
             if (typeof obj === 'string') {
                 return obj
             }
@@ -614,7 +639,7 @@ export class TelemetryDebounceInfo {
         })
 
         const hasher = crypto.createHash('sha256')
-        hashableObjects.forEach(o => hasher.update(o))
+        hashableObjects.forEach((o) => hasher.update(o))
         return hasher.digest('hex')
     }
 }
@@ -655,7 +680,7 @@ async function runCommand<T extends Callback>(fn: T, info: CommandInfo<T>): Prom
 // the extension entry-point. `Commands` form the backbone of everything else in the Toolkit.
 // This file should contain as little application-specific logic as possible.
 let errorHandler: (info: Omit<CommandInfo<any>, 'args'>, error: unknown) => void
-export function registerErrorHandler(handler: typeof errorHandler): void {
+export function registerCommandErrorHandler(handler: typeof errorHandler): void {
     if (errorHandler !== undefined) {
         throw new TypeError('Error handler has already been registered')
     }

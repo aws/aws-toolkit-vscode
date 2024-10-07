@@ -11,7 +11,7 @@ export function stringOrProp(obj: any, prop: string): string {
 }
 
 export function getMissingProps<T>(obj: T, ...props: (keyof T)[]): typeof props {
-    return props.filter(prop => obj[prop] === undefined)
+    return props.filter((prop) => obj[prop] === undefined)
 }
 
 export function hasProps<T, K extends keyof T>(obj: T, ...props: K[]): obj is Readonly<RequiredProps<T, K>> {
@@ -19,7 +19,7 @@ export function hasProps<T, K extends keyof T>(obj: T, ...props: K[]): obj is Re
 }
 
 export function hasStringProps<T, K extends PropertyKey>(obj: T, ...props: K[]): obj is T & { [P in K]: string } {
-    return props.filter(prop => typeof (obj as unknown as Record<K, unknown>)[prop] !== 'string').length === 0
+    return props.filter((prop) => typeof (obj as unknown as Record<K, unknown>)[prop] !== 'string').length === 0
 }
 
 export function assertHasProps<T, K extends keyof T>(
@@ -41,7 +41,7 @@ export function assertHasProps<T, K extends keyof T>(
 }
 
 export function selectFrom<T, K extends keyof T>(obj: T, ...props: K[]): { [P in K]: T[P] } {
-    return props.map(p => [p, obj[p]] as const).reduce((a, [k, v]) => ((a[k] = v), a), {} as { [P in K]: T[P] })
+    return props.map((p) => [p, obj[p]] as const).reduce((a, [k, v]) => ((a[k] = v), a), {} as { [P in K]: T[P] })
 }
 
 export function isNonNullable<T>(obj: T | void): obj is NonNullable<T> {
@@ -64,7 +64,7 @@ export function keys<T extends Record<string, any>>(obj: T): [keyof T & string] 
 }
 
 export function keysAsInt<T extends Record<number, any>>(obj: T): number[] {
-    return Object.keys(obj).map(k => parseInt(k))
+    return Object.keys(obj).map((k) => parseInt(k))
 }
 
 /**

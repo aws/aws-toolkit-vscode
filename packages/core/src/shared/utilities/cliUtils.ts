@@ -6,14 +6,13 @@
 import globals from '../extensionGlobals'
 
 import admZip from 'adm-zip'
-import * as fs from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { getIdeProperties } from '../extensionUtilities'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../filesystemUtilities'
 import { getLogger } from '../logger'
 import { HttpResourceFetcher } from '../resourcefetcher/httpResourceFetcher'
-import { ChildProcess } from '../utilities/childProcess'
+import { ChildProcess } from './processUtils'
 
 import * as nls from 'vscode-nls'
 import { Timeout, CancellationError } from './timeoutUtils'
@@ -22,6 +21,7 @@ import { DevSettings } from '../settings'
 import { telemetry } from '../telemetry/telemetry'
 import { Result, ToolId } from '../telemetry/telemetry'
 import { openUrl } from './vsCodeUtils'
+import fs from '../fs/fs'
 const localize = nls.loadMessageBundle()
 
 const msgDownloading = localize('AWS.installProgress.downloading', 'downloading...')
@@ -145,7 +145,7 @@ export async function installCli(cli: AwsClis, confirm: boolean): Promise<string
                 localize('AWS.cli.failedInstall', 'Installation of the {0} CLI failed.', cliToInstall.name),
                 manualInstall
             )
-            .then(button => {
+            .then((button) => {
                 if (button === manualInstall) {
                     void openUrl(vscode.Uri.parse(cliToInstall.manualInstallLink))
                 }
@@ -157,14 +157,14 @@ export async function installCli(cli: AwsClis, confirm: boolean): Promise<string
             getLogger().info('Cleaning up installer...')
             // nonblocking: use `then`
             tryRemoveFolder(tempDir).then(
-                success => {
+                (success) => {
                     if (success) {
                         getLogger().info('Removed installer.')
                     } else {
                         getLogger().warn(`installCli: failed to clean up temp directory: ${tempDir}`)
                     }
                 },
-                e => {
+                (e) => {
                     getLogger().error('installCli: tryRemoveFolder failed: %s', (e as Error).message)
                 }
             )
@@ -236,7 +236,7 @@ function getToolkitLocalCliPath(): string {
 }
 
 function handleError<T extends Promise<unknown>>(promise: T): T {
-    return promise.catch<never>(err => {
+    return promise.catch<never>((err) => {
         if (
             !(err instanceof CancellationError || err instanceof InstallerError || err instanceof InvalidPlatformError)
         ) {
@@ -258,7 +258,7 @@ async function installSsmCli(
     const finalPath = path.join(getToolkitLocalCliPath(), getOsCommand(awsClis['session-manager-plugin']))
     const TimedProcess = ChildProcess.extend({ timeout, rejectOnError: true, rejectOnErrorCode: true })
 
-    getLogger('channel').info(`Installing SSM CLI from ${ssmInstaller} to ${outDir}...`)
+    getLogger().info(`Installing SSM CLI from ${ssmInstaller} to ${outDir}...`)
     progress.report({ message: msgInstallingLocal })
 
     return handleError(install())
@@ -285,9 +285,7 @@ async function installSsmCli(
         await new TimedProcess('pkgutil', pkgArgs).run({ spawnOptions: { cwd: tempDir } })
         await new TimedProcess('tar', tarArgs).run({ spawnOptions: { cwd: tempPath } })
 
-        fs.copySync(path.join(tempPath, 'usr', 'local', 'sessionmanagerplugin'), outDir, {
-            recursive: true,
-        })
+        await fs.copy(path.join(tempPath, 'usr', 'local', 'sessionmanagerplugin'), outDir)
 
         return finalPath
     }
@@ -306,11 +304,8 @@ async function installSsmCli(
         await new TimedProcess('ar', ['-x', ssmInstaller]).run({ spawnOptions: { cwd: ssmDir } })
         // extract data.tar.gz to CLI dir
         const tarArgs = ['-xzf', path.join(ssmDir, 'data.tar.gz')]
-        await new TimedProcess('tar', tarArgs).run({ spawnOptions: { cwd: ssmDir } }),
-            fs.mkdirSync(outDir, { recursive: true })
-        fs.copySync(path.join(ssmDir, 'usr', 'local', 'sessionmanagerplugin'), outDir, {
-            recursive: true,
-        })
+        await new TimedProcess('tar', tarArgs).run({ spawnOptions: { cwd: ssmDir } }), await fs.mkdir(outDir)
+        await fs.copy(path.join(ssmDir, 'usr', 'local', 'sessionmanagerplugin'), outDir)
 
         return finalPath
     }
@@ -340,7 +335,7 @@ export async function getOrInstallCli(cli: AwsClis, confirm: boolean): Promise<s
 //     const awsInstaller = await downloadCliSource(AWS_CLIS.aws, tempDir)
 //     fs.chmodSync(awsInstaller, 0o700)
 
-//     getLogger('channel').info(`Installing AWS CLI from ${awsInstaller} to ${getToolkitCliDir()}...`)
+//     getLogger().info(`Installing AWS CLI from ${awsInstaller} to ${getToolkitCliDir()}...`)
 //     progress.report({ message: msgInstallingLocal })
 //     switch (process.platform) {
 //         case 'win32': {

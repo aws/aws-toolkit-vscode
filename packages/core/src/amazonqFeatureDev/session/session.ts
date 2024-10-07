@@ -5,29 +5,33 @@
 
 import * as path from 'path'
 
-import { ConversationNotStartedState, PrepareCodeGenState, PrepareRefinementState } from './sessionState'
-import type { DeletedFileInfo, Interaction, NewFileInfo, SessionState, SessionStateConfig } from '../types'
+import { ConversationNotStartedState, PrepareCodeGenState } from './sessionState'
+import {
+    type DeletedFileInfo,
+    type Interaction,
+    type NewFileInfo,
+    type SessionState,
+    type SessionStateConfig,
+} from '../types'
 import { ConversationIdNotFoundError } from '../errors'
 import { referenceLogText } from '../constants'
-import { FileSystemCommon } from '../../srcShared/fs'
+import fs from '../../shared/fs/fs'
 import { Messenger } from '../controllers/chat/messenger/messenger'
 import { FeatureDevClient } from '../client/featureDev'
-import { approachRetryLimit, codeGenRetryLimit } from '../limits'
+import { codeGenRetryLimit } from '../limits'
 import { SessionConfig } from './sessionConfigFactory'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { ReferenceLogViewProvider } from '../../codewhisperer/service/referenceLogViewProvider'
 import { AuthUtil } from '../../codewhisperer/util/authUtil'
-
-const fs = FileSystemCommon.instance
+import { getLogger } from '../../shared'
+import { logWithConversationId } from '../userFacingText'
 
 export class Session {
     private _state?: SessionState | Omit<SessionState, 'uploadId'>
     private task: string = ''
-    private approach: string = ''
     private proxyClient: FeatureDevClient
     private _conversationId?: string
-    private approachRetries: number
     private codeGenRetries: number
     private preloaderFinished = false
     private _latestMessage: string = ''
@@ -40,13 +44,12 @@ export class Session {
         public readonly config: SessionConfig,
         private messenger: Messenger,
         public readonly tabID: string,
-        initialState: Omit<SessionState, 'uploadId'> = new ConversationNotStartedState('', tabID),
+        initialState: Omit<SessionState, 'uploadId'> = new ConversationNotStartedState(tabID),
         proxyClient: FeatureDevClient = new FeatureDevClient()
     ) {
         this._state = initialState
         this.proxyClient = proxyClient
 
-        this.approachRetries = approachRetryLimit
         this.codeGenRetries = codeGenRetryLimit
 
         this._telemetry = new TelemetryHelper()
@@ -61,6 +64,7 @@ export class Session {
             await this.setupConversation(msg)
             this.preloaderFinished = true
             this.messenger.sendAsyncEventProgress(this.tabID, true, undefined)
+            await this.proxyClient.sendFeatureDevTelemetryEvent(this.conversationId) // send the event only once per conversation.
         }
     }
 
@@ -73,18 +77,24 @@ export class Session {
         // Store the initial message when setting up the conversation so that if it fails we can retry with this message
         this._latestMessage = msg
 
-        await telemetry.amazonq_startConversationInvoke.run(async span => {
+        await telemetry.amazonq_startConversationInvoke.run(async (span) => {
             this._conversationId = await this.proxyClient.createConversation()
+            getLogger().info(logWithConversationId(this.conversationId))
+
             span.record({ amazonqConversationId: this._conversationId, credentialStartUrl: AuthUtil.instance.startUrl })
         })
 
-        this._state = new PrepareRefinementState(
+        this._state = new PrepareCodeGenState(
             {
                 ...this.getSessionStateConfig(),
                 conversationId: this.conversationId,
+                uploadId: '',
             },
-            '',
-            this.tabID
+            [],
+            [],
+            [],
+            this.tabID,
+            0
         )
     }
 
@@ -100,32 +110,6 @@ export class Session {
             proxyClient: this.proxyClient,
             conversationId: this.conversationId,
         }
-    }
-
-    /**
-     * Triggered by the Generate Code follow up button to move to the code generation phase
-     */
-    initCodegen(): void {
-        this._state = new PrepareCodeGenState(
-            {
-                ...this.getSessionStateConfig(),
-                conversationId: this.conversationId,
-                uploadId: this.uploadId,
-            },
-            this.approach,
-            [],
-            [],
-            [],
-            this.tabID,
-            0
-        )
-        this._latestMessage = ''
-
-        telemetry.amazonq_isApproachAccepted.emit({
-            amazonqConversationId: this.conversationId,
-            enabled: true,
-            result: 'Succeeded',
-        })
     }
 
     async send(msg: string): Promise<Interaction> {
@@ -149,29 +133,27 @@ export class Session {
         })
 
         if (resp.nextState) {
-            // Approach may have been changed after the interaction
-            const newApproach = this.state.approach
-
             // Cancel the request before moving to a new state
             this.state.tokenSource.cancel()
 
             // Move to the next state
             this._state = resp.nextState
-
-            // If approach was changed then we need to set it in the next state and this state
-            this.state.approach = newApproach
-            this.approach = newApproach
         }
 
         return resp.interaction
     }
 
-    public async updateFilesPaths(tabID: string, filePaths: NewFileInfo[], deletedFiles: DeletedFileInfo[]) {
-        this.messenger.updateFileComponent(tabID, filePaths, deletedFiles)
+    public async updateFilesPaths(
+        tabID: string,
+        filePaths: NewFileInfo[],
+        deletedFiles: DeletedFileInfo[],
+        messageId: string
+    ) {
+        this.messenger.updateFileComponent(tabID, filePaths, deletedFiles, messageId)
     }
 
     public async insertChanges() {
-        for (const filePath of this.state.filePaths?.filter(i => !i.rejected) ?? []) {
+        for (const filePath of this.state.filePaths?.filter((i) => !i.rejected) ?? []) {
             const absolutePath = path.join(filePath.workspaceFolder.uri.fsPath, filePath.relativePath)
 
             const uri = filePath.virtualMemoryUri
@@ -182,7 +164,7 @@ export class Session {
             await fs.writeFile(absolutePath, decodedContent)
         }
 
-        for (const filePath of this.state.deletedFiles?.filter(i => !i.rejected) ?? []) {
+        for (const filePath of this.state.deletedFiles?.filter((i) => !i.rejected) ?? []) {
             const absolutePath = path.join(filePath.workspaceFolder.uri.fsPath, filePath.relativePath)
             await fs.delete(absolutePath)
         }
@@ -207,25 +189,11 @@ export class Session {
     }
 
     get retries() {
-        switch (this.state.phase) {
-            case 'Approach':
-                return this.approachRetries
-            case 'Codegen':
-                return this.codeGenRetries
-            default:
-                return this.approachRetries
-        }
+        return this.codeGenRetries
     }
 
     decreaseRetries() {
-        switch (this.state.phase) {
-            case 'Approach':
-                this.approachRetries -= 1
-                break
-            case 'Codegen':
-                this.codeGenRetries -= 1
-                break
-        }
+        this.codeGenRetries -= 1
     }
     get conversationId() {
         if (!this._conversationId) {

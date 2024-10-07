@@ -48,6 +48,7 @@ phases:
             - VCS_COMMIT_ID="${CODEBUILD_RESOLVED_SOURCE_VERSION}"
             - CI_BUILD_URL=$(echo $CODEBUILD_BUILD_URL | sed 's/#/%23/g') # Encode `#` in the URL because otherwise the url is clipped in the Codecov.io site
             - CI_BUILD_ID="${CODEBUILD_BUILD_ID}"
+            - test -n "${CODECOV_TOKEN}" && [ "$TARGET_BRANCH" = "master" ] && ./codecov --token=${CODECOV_TOKEN} --branch=${CODEBUILD_RESOLVED_SOURCE_VERSION} --repository=${CODEBUILD_SOURCE_REPO_URL} --file=./coverage/core/lcov.info --file=./coverage/amazonq/lcov.info --file=./coverage/toolkit/lcov.info
 
 reports:
     unit-test:

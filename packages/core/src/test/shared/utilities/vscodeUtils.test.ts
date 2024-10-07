@@ -18,8 +18,8 @@ describe('vscodeUtils', async function () {
 
         assert.deepStrictEqual(vscodeUtil.isExtensionActive('invalid.extension'), false)
 
-        await vscodeUtil.activateExtension(VSCODE_EXTENSION_ID.awstoolkitcore, false)
-        assert.deepStrictEqual(vscodeUtil.isExtensionActive(VSCODE_EXTENSION_ID.awstoolkitcore), true)
+        await vscodeUtil.activateExtension(VSCODE_EXTENSION_ID.awstoolkit, false)
+        assert.deepStrictEqual(vscodeUtil.isExtensionActive(VSCODE_EXTENSION_ID.awstoolkit), true)
     })
 
     it('globDirPatterns()', async function () {
@@ -56,7 +56,7 @@ describe('isExtensionInstalled()', function () {
                 version: extVersion,
             },
         } as vscode.Extension<any>
-        getExtension = _ => ext
+        getExtension = (_) => ext
     })
 
     it('fails if extension could not be found', function () {

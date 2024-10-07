@@ -16,7 +16,7 @@ import { getLogger } from '../logger'
 import globals from '../extensionGlobals'
 import { Timeout } from '../utilities/timeoutUtils'
 import { localize } from '../utilities/vsCodeUtils'
-import { PerfLog } from '../logger/logger'
+import { PerfLog } from '../logger/perfLogger'
 import { showMessageWithCancel } from '../utilities/messages'
 
 export class CloudFormationTemplateRegistry extends WatchedFiles<CloudFormation.Template> {
@@ -116,7 +116,7 @@ export class AsyncCloudFormationTemplateRegistry {
                 this.isSetup = true
                 cancelSetup.dispose()
             },
-            e => {
+            (e) => {
                 getLogger().error('AsyncCloudFormationTemplateRegistry: setupPromise failed: %s', (e as Error).message)
             }
         )
@@ -138,8 +138,8 @@ export function getResourcesForHandler(
     unfilteredTemplates: WatchedItem<CloudFormation.Template>[]
 ): { templateDatum: WatchedItem<CloudFormation.Template>; name: string; resourceData: CloudFormation.Resource }[] {
     // TODO: Array.flat and Array.flatMap not introduced until >= Node11.x -- migrate when VS Code updates Node ver
-    const o = unfilteredTemplates.map(templateDatum => {
-        return getResourcesForHandlerFromTemplateDatum(filepath, handler, templateDatum).map(resource => {
+    const o = unfilteredTemplates.map((templateDatum) => {
+        return getResourcesForHandlerFromTemplateDatum(filepath, handler, templateDatum).map((resource) => {
             return {
                 ...resource,
                 templateDatum,

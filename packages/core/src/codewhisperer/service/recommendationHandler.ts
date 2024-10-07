@@ -31,7 +31,7 @@ import {
 } from '../../shared/telemetry/telemetry'
 import { CodeWhispererCodeCoverageTracker } from '../tracker/codewhispererCodeCoverageTracker'
 import { invalidCustomizationMessage } from '../models/constants'
-import { switchToBaseCustomizationAndNotify } from '../util/customizationUtil'
+import { getSelectedCustomization, switchToBaseCustomizationAndNotify } from '../util/customizationUtil'
 import { session } from '../util/codeWhispererSession'
 import { Commands } from '../../shared/vscode/commands2'
 import globals from '../../shared/extensionGlobals'
@@ -59,8 +59,14 @@ const nextCommand = Commands.declare('editor.action.inlineSuggest.showNext', () 
 })
 
 const rejectCommand = Commands.declare('aws.amazonq.rejectCodeSuggestion', () => async () => {
-    RecommendationHandler.instance.reportUserDecisions(-1)
+    telemetry.record({
+        traceId: TelemetryHelper.instance.traceId,
+    })
 
+    if (!isCloud9('any')) {
+        await vscode.commands.executeCommand('editor.action.inlineSuggest.hide')
+    }
+    RecommendationHandler.instance.reportUserDecisions(-1)
     await Commands.tryExecute('aws.amazonq.refreshAnnotation')
 })
 
@@ -99,7 +105,7 @@ export class RecommendationHandler {
     }
 
     isValidResponse(): boolean {
-        return session.recommendations.some(r => r.content.trim() !== '')
+        return session.recommendations.some((r) => r.content.trim() !== '')
     }
 
     async getServerResponse(
@@ -275,7 +281,7 @@ export class RecommendationHandler {
                     getLogger().error('amazonq inline-suggest: AccessDeniedException : %s', (error as Error).message)
                     void vscode.window
                         .showErrorMessage(`CodeWhisperer: ${error?.message}`, CodeWhispererConstants.settingsLearnMore)
-                        .then(async resp => {
+                        .then(async (resp) => {
                             if (resp === CodeWhispererConstants.settingsLearnMore) {
                                 void openUrl(vscode.Uri.parse(CodeWhispererConstants.learnMoreUri))
                             }
@@ -412,7 +418,7 @@ export class RecommendationHandler {
     }
 
     hasAtLeastOneValidSuggestion(typedPrefix: string): boolean {
-        return session.recommendations.some(r => r.content.trim() !== '' && r.content.startsWith(typedPrefix))
+        return session.recommendations.some((r) => r.content.trim() !== '' && r.content.startsWith(typedPrefix))
     }
 
     cancelPaginatedRequest() {
@@ -455,7 +461,6 @@ export class RecommendationHandler {
             this.clearRecommendations()
             this.disposeInlineCompletion()
             await vscode.commands.executeCommand('aws.amazonq.refreshStatusBar')
-            this.disposeCommandOverrides()
             // fix a regression that requires user to hit Esc twice to clear inline ghost text
             // because disposing a provider does not clear the UX
             if (isVscHavingRegressionInlineCompletionApi()) {
@@ -493,7 +498,7 @@ export class RecommendationHandler {
         if (isCloud9('any')) {
             this.clearRecommendations()
         } else if (isInlineCompletionEnabled()) {
-            this.clearInlineCompletionStates().catch(e => {
+            this.clearInlineCompletionStates().catch((e) => {
                 getLogger().error('clearInlineCompletionStates failed: %s', (e as Error).message)
             })
         }
@@ -633,12 +638,14 @@ export class RecommendationHandler {
     }
 
     async onCursorChange(e: vscode.TextEditorSelectionChangeEvent) {
-        // e.kind will be 1 for keyboard cursor change events
         // we do not want to reset the states for keyboard events because they can be typeahead
-        if (e.kind !== 1 && vscode.window.activeTextEditor === e.textEditor) {
+        if (
+            e.kind !== vscode.TextEditorSelectionChangeKind.Keyboard &&
+            vscode.window.activeTextEditor === e.textEditor
+        ) {
             application()._clearCodeWhispererUIListener.fire()
             // when cursor change due to mouse movement we need to reset the active item index for inline
-            if (e.kind === 2) {
+            if (e.kind === vscode.TextEditorSelectionChangeKind.Mouse) {
                 this.inlineCompletionProvider?.clearActiveItemIndex()
             }
         }
@@ -654,9 +661,7 @@ export class RecommendationHandler {
             return
         }
         if (this.isSuggestionVisible()) {
-            // to force refresh the visual cue so that the total recommendation count can be updated
-            // const index = this.inlineCompletionProvider?.getActiveItemIndex
-            await this.showRecommendation(0, false)
+            // do not force refresh the tooltip to avoid suggestion "flashing"
             return
         }
         if (
@@ -668,8 +673,6 @@ export class RecommendationHandler {
             })
             this.reportUserDecisions(-1)
         } else if (session.recommendations.length > 0) {
-            this.subscribeSuggestionCommands()
-            // await this.startRejectionTimer(editor)
             await this.showRecommendation(0, true)
         }
     }
@@ -694,6 +697,7 @@ export class RecommendationHandler {
                 codewhispererSessionId: session.sessionId,
                 codewhispererTriggerType: session.triggerType,
                 codewhispererCompletionType: session.getCompletionType(0),
+                codewhispererCustomizationArn: getSelectedCustomization().arn,
                 codewhispererLanguage: languageContext.language,
                 duration: performance.now() - this.lastInvocationTime,
                 passive: true,

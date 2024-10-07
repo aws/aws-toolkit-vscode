@@ -34,6 +34,12 @@ export class SecurityScanLanguageContext {
             c: 'c',
             cpp: 'cpp',
             php: 'php',
+            xml: 'plaintext', // xml does not exist in CodewhispererLanguage
+            toml: 'plaintext',
+            'pip-requirements': 'plaintext',
+            'java-properties': 'plaintext',
+            'go.mod': 'plaintext',
+            'go.sum': 'plaintext',
         })
     }
 
@@ -43,7 +49,7 @@ export class SecurityScanLanguageContext {
 
     public isLanguageSupported(languageId: string): boolean {
         const lang = this.normalizeLanguage(languageId)
-        return lang !== undefined
+        return lang !== undefined && lang !== 'plaintext'
     }
 }
 

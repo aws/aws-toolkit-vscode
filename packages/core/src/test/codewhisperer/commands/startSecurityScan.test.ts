@@ -14,16 +14,29 @@ import { FakeExtensionContext } from '../../fakeExtensionContext'
 import * as diagnosticsProvider from '../../../codewhisperer/service/diagnosticsProvider'
 import { getTestWorkspaceFolder } from '../../../testInteg/integrationTestsUtilities'
 import { join } from 'path'
-import { assertTelemetry, closeAllEditors } from '../../testUtil'
+import {
+    assertTelemetry,
+    closeAllEditors,
+    createTestWorkspaceFolder,
+    getFetchStubWithResponse,
+    toFile,
+} from '../../testUtil'
 import { stub } from '../../utilities/stubber'
-import { HttpResponse } from 'aws-sdk'
+import { AWSError, HttpResponse } from 'aws-sdk'
 import { getTestWindow } from '../../shared/vscode/window'
 import { SeverityLevel } from '../../shared/vscode/message'
 import { cancel } from '../../../shared/localizedText'
-import { showScannedFilesMessage, stopScanMessage, CodeAnalysisScope } from '../../../codewhisperer/models/constants'
+import {
+    showScannedFilesMessage,
+    stopScanMessage,
+    CodeAnalysisScope,
+    projectScansLimitReached,
+} from '../../../codewhisperer/models/constants'
 import * as model from '../../../codewhisperer/models/model'
 import { CodewhispererSecurityScan } from '../../../shared/telemetry/telemetry.gen'
-import { getFetchStubWithResponse } from '../../common/request.test'
+import * as errors from '../../../shared/errors'
+import * as timeoutUtils from '../../../shared/utilities/timeoutUtils'
+import { performanceTest } from '../../../shared/performance/performance'
 
 const mockCreateCodeScanResponse = {
     $response: {
@@ -99,6 +112,7 @@ const mockCodeScanFindings = JSON.stringify([
             },
             suggestedFixes: [],
         },
+        codeSnippet: [],
     } satisfies model.RawCodeScanIssue,
 ])
 
@@ -126,7 +140,6 @@ let editor: vscode.TextEditor
 
 describe('startSecurityScan', function () {
     const workspaceFolder = getTestWorkspaceFolder()
-
     beforeEach(async function () {
         extensionContext = await FakeExtensionContext.create()
         mockSecurityPanelViewProvider = new SecurityPanelViewProvider(extensionContext)
@@ -134,6 +147,7 @@ describe('startSecurityScan', function () {
         appCodePath = join(appRoot, 'hello_world', 'app.py')
         editor = await openTestFile(appCodePath)
         await model.CodeScansState.instance.setScansEnabled(false)
+        sinon.stub(timeoutUtils, 'sleep')
     })
     afterEach(function () {
         sinon.restore()
@@ -172,7 +186,7 @@ describe('startSecurityScan', function () {
         )
         assert.ok(commandSpy.calledWith('workbench.action.problems.focus'))
         assert.ok(securityScanRenderSpy.calledOnce)
-        const warnings = getTestWindow().shownMessages.filter(m => m.severity === SeverityLevel.Warning)
+        const warnings = getTestWindow().shownMessages.filter((m) => m.severity === SeverityLevel.Warning)
         assert.strictEqual(warnings.length, 0)
     })
 
@@ -191,7 +205,7 @@ describe('startSecurityScan', function () {
         )
         assert.ok(commandSpy.neverCalledWith('workbench.action.problems.focus'))
         assert.ok(securityScanRenderSpy.calledOnce)
-        const warnings = getTestWindow().shownMessages.filter(m => m.severity === SeverityLevel.Warning)
+        const warnings = getTestWindow().shownMessages.filter((m) => m.severity === SeverityLevel.Warning)
         assert.strictEqual(warnings.length, 0)
         assertTelemetry('codewhisperer_securityScan', {
             codewhispererCodeScanScope: 'FILE',
@@ -204,7 +218,7 @@ describe('startSecurityScan', function () {
         const securityScanRenderSpy = sinon.spy(diagnosticsProvider, 'initSecurityScanRender')
         const securityScanStoppedErrorSpy = sinon.spy(model, 'CodeScanStoppedError')
         const testWindow = getTestWindow()
-        testWindow.onDidShowMessage(message => {
+        testWindow.onDidShowMessage((message) => {
             if (message.message === stopScanMessage) {
                 message.selectItem(startSecurityScan.stopScanButton)
             }
@@ -221,8 +235,8 @@ describe('startSecurityScan', function () {
         await scanPromise
         assert.ok(securityScanRenderSpy.notCalled)
         assert.ok(securityScanStoppedErrorSpy.calledOnce)
-        const warnings = testWindow.shownMessages.filter(m => m.severity === SeverityLevel.Warning)
-        assert.ok(warnings.map(m => m.message).includes(stopScanMessage))
+        const warnings = testWindow.shownMessages.filter((m) => m.severity === SeverityLevel.Warning)
+        assert.ok(warnings.map((m) => m.message).includes(stopScanMessage))
     })
 
     it('Should not stop security scan for project scans when not confirmed', async function () {
@@ -230,7 +244,7 @@ describe('startSecurityScan', function () {
         const securityScanRenderSpy = sinon.spy(diagnosticsProvider, 'initSecurityScanRender')
         const securityScanStoppedErrorSpy = sinon.spy(model, 'CodeScanStoppedError')
         const testWindow = getTestWindow()
-        testWindow.onDidShowMessage(message => {
+        testWindow.onDidShowMessage((message) => {
             if (message.message === stopScanMessage) {
                 message.selectItem(cancel)
             }
@@ -247,8 +261,8 @@ describe('startSecurityScan', function () {
         await scanPromise
         assert.ok(securityScanRenderSpy.calledOnce)
         assert.ok(securityScanStoppedErrorSpy.notCalled)
-        const warnings = testWindow.shownMessages.filter(m => m.severity === SeverityLevel.Warning)
-        assert.ok(warnings.map(m => m.message).includes(stopScanMessage))
+        const warnings = testWindow.shownMessages.filter((m) => m.severity === SeverityLevel.Warning)
+        assert.ok(warnings.map((m) => m.message).includes(stopScanMessage))
     })
 
     it('Should stop security scan for file scans if setting is disabled', async function () {
@@ -275,7 +289,7 @@ describe('startSecurityScan', function () {
         }
         getFetchStubWithResponse({ status: 200, statusText: 'testing stub' })
         const testWindow = getTestWindow()
-        testWindow.onDidShowMessage(message => {
+        testWindow.onDidShowMessage((message) => {
             if (message.message.includes('Security scan completed')) {
                 message.selectItem(showScannedFilesMessage)
             }
@@ -288,7 +302,6 @@ describe('startSecurityScan', function () {
             CodeAnalysisScope.PROJECT
         )
         assertTelemetry('codewhisperer_securityScan', {
-            codewhispererLanguage: 'yaml',
             codewhispererCodeScanTotalIssues: 1,
             codewhispererCodeScanIssuesWithFixes: 0,
             codewhispererCodeScanScope: 'PROJECT',
@@ -318,8 +331,9 @@ describe('startSecurityScan', function () {
         assertTelemetry('codewhisperer_securityScan', [
             {
                 result: 'Cancelled',
-                reason: 'Security scan stopped by user.',
-            },
+                reasonDesc: 'Security scan stopped by user.',
+                reason: 'DefaultError',
+            } as unknown as CodewhispererSecurityScan,
             {
                 result: 'Succeeded',
             },
@@ -355,5 +369,163 @@ describe('startSecurityScan', function () {
                 codewhispererCodeScanScope: 'PROJECT',
             },
         ])
+    })
+
+    it('Should handle failed scan job status', async function () {
+        getFetchStubWithResponse({ status: 200, statusText: 'testing stub' })
+
+        const mockClient = createClient()
+        mockClient.getCodeScan.resolves({
+            ...mockGetCodeScanResponse,
+            status: 'Failed',
+        })
+        await startSecurityScan.startSecurityScan(
+            mockSecurityPanelViewProvider,
+            editor,
+            mockClient,
+            extensionContext,
+            CodeAnalysisScope.PROJECT
+        )
+        assertTelemetry('codewhisperer_securityScan', {
+            codewhispererCodeScanScope: 'PROJECT',
+            result: 'Failed',
+            reason: 'CodeScanJobFailedError',
+            reasonDesc: 'CodeScanJobFailedError: Security scan failed.',
+            passive: false,
+        } as unknown as CodewhispererSecurityScan)
+    })
+
+    it('Should show notification when throttled for project scans', async function () {
+        getFetchStubWithResponse({ status: 200, statusText: 'testing stub' })
+        const mockClient = createClient()
+        mockClient.createCodeScan.throws({
+            code: 'ThrottlingException',
+            time: new Date(),
+            name: 'error name',
+            message: 'Maximum project scan count reached for this month.',
+        } satisfies AWSError)
+        sinon.stub(errors, 'isAwsError').returns(true)
+        const testWindow = getTestWindow()
+        await startSecurityScan.startSecurityScan(
+            mockSecurityPanelViewProvider,
+            editor,
+            mockClient,
+            extensionContext,
+            CodeAnalysisScope.PROJECT
+        )
+        assert.ok(testWindow.shownMessages.map((m) => m.message).includes(projectScansLimitReached))
+        assertTelemetry('codewhisperer_securityScan', {
+            codewhispererCodeScanScope: 'PROJECT',
+            result: 'Failed',
+            reason: 'ThrottlingException',
+            reasonDesc: 'ThrottlingException: Maximum project scan count reached for this month.',
+            passive: false,
+        } as unknown as CodewhispererSecurityScan)
+    })
+
+    it('Should set monthly quota exceeded when throttled for file scans', async function () {
+        getFetchStubWithResponse({ status: 200, statusText: 'testing stub' })
+        await model.CodeScansState.instance.setScansEnabled(true)
+        const mockClient = createClient()
+        mockClient.createCodeScan.throws({
+            code: 'ThrottlingException',
+            time: new Date(),
+            name: 'error name',
+            message: 'Maximum auto-scans count reached for this month.',
+        } satisfies AWSError)
+        sinon.stub(errors, 'isAwsError').returns(true)
+        assert.equal(model.CodeScansState.instance.isMonthlyQuotaExceeded(), false)
+        await startSecurityScan.startSecurityScan(
+            mockSecurityPanelViewProvider,
+            editor,
+            mockClient,
+            extensionContext,
+            CodeAnalysisScope.FILE
+        )
+        assert.equal(model.CodeScansState.instance.isMonthlyQuotaExceeded(), true)
+        const warnings = getTestWindow().shownMessages.filter((m) => m.severity === SeverityLevel.Warning)
+        assert.strictEqual(warnings.length, 0)
+        assertTelemetry('codewhisperer_securityScan', {
+            codewhispererCodeScanScope: 'FILE',
+            result: 'Failed',
+            reason: 'ThrottlingException',
+            reasonDesc: 'ThrottlingException: Maximum auto-scans count reached for this month.',
+            passive: true,
+        } as unknown as CodewhispererSecurityScan)
+    })
+})
+
+describe('startSecurityScanPerformanceTest', function () {
+    beforeEach(async function () {
+        extensionContext = await FakeExtensionContext.create()
+        mockSecurityPanelViewProvider = new SecurityPanelViewProvider(extensionContext)
+        const folder = await createTestWorkspaceFolder()
+        const mockFilePath = join(folder.uri.fsPath, 'app.py')
+        await toFile('hello_world', mockFilePath)
+        appCodePath = mockFilePath
+        editor = await openTestFile(appCodePath)
+        await model.CodeScansState.instance.setScansEnabled(false)
+        sinon.stub(timeoutUtils, 'sleep')
+    })
+
+    afterEach(function () {
+        sinon.restore()
+    })
+
+    after(async function () {
+        await closeAllEditors()
+    })
+
+    const createClient = () => {
+        const mockClient = stub(DefaultCodeWhispererClient)
+        mockClient.createCodeScan.resolves(mockCreateCodeScanResponse)
+        mockClient.createUploadUrl.resolves(mockCreateUploadUrlResponse)
+        mockClient.getCodeScan.resolves(mockGetCodeScanResponse)
+        mockClient.listCodeScanFindings.resolves(mockListCodeScanFindingsResponse)
+        return mockClient
+    }
+
+    const openTestFile = async (filePath: string) => {
+        const doc = await vscode.workspace.openTextDocument(filePath)
+        return await vscode.window.showTextDocument(doc, {
+            selection: new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
+        })
+    }
+
+    performanceTest({}, 'Should calculate cpu and memory usage for file scans', function () {
+        return {
+            setup: async () => {
+                getFetchStubWithResponse({ status: 200, statusText: 'testing stub' })
+                const commandSpy = sinon.spy(vscode.commands, 'executeCommand')
+                const securityScanRenderSpy = sinon.spy(diagnosticsProvider, 'initSecurityScanRender')
+                await model.CodeScansState.instance.setScansEnabled(true)
+                return { commandSpy, securityScanRenderSpy }
+            },
+            execute: async () => {
+                await startSecurityScan.startSecurityScan(
+                    mockSecurityPanelViewProvider,
+                    editor,
+                    createClient(),
+                    extensionContext,
+                    CodeAnalysisScope.FILE
+                )
+            },
+            verify: ({
+                commandSpy,
+                securityScanRenderSpy,
+            }: {
+                commandSpy: sinon.SinonSpy
+                securityScanRenderSpy: sinon.SinonSpy
+            }) => {
+                assert.ok(commandSpy.neverCalledWith('workbench.action.problems.focus'))
+                assert.ok(securityScanRenderSpy.calledOnce)
+                const warnings = getTestWindow().shownMessages.filter((m) => m.severity === SeverityLevel.Warning)
+                assert.strictEqual(warnings.length, 0)
+                assertTelemetry('codewhisperer_securityScan', {
+                    codewhispererCodeScanScope: 'FILE',
+                    passive: true,
+                })
+            },
+        }
     })
 })

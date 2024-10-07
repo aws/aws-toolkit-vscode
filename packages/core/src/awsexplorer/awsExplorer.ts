@@ -17,7 +17,8 @@ import { intersection, toMap, updateInPlace } from '../shared/utilities/collecti
 import { once } from '../shared/utilities/functionUtils'
 import { localize } from '../shared/utilities/vsCodeUtils'
 import { RegionNode } from './regionNode'
-import { AuthNode, authCommands } from '../auth/utils'
+import { AuthNode } from '../auth/utils'
+import { Commands } from '../shared/vscode/commands2'
 
 export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, RefreshableAwsTreeProvider {
     public viewProviderId: string = 'aws.explorer'
@@ -75,7 +76,7 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
             }
         } catch (err) {
             const error = err as Error
-            this.logger.error(`Error getting children for node ${element?.label ?? 'Root Node'}: %s`, error)
+            this.logger.error(`Error getting children for node %O: %s`, element?.label ?? 'Root Node', error)
 
             childNodes.splice(
                 0,
@@ -106,8 +107,8 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
         const conn = this.auth.activeConnection
         if (conn !== undefined && conn.type !== 'iam') {
             // TODO: this should show up as a child node?
-            const selectIamNode = authCommands()
-                .useIamCredentials.build(this.auth)
+            const selectIamNode = (await Commands.getOrThrow('_aws.toolkit.auth.useIamCredentials'))
+                .build(this.auth)
                 .asTreeNode({
                     // label: `No IAM credentials linked to ${conn.label}`,
                     // iconPath: getIcon('vscode-circle-slash'),
@@ -122,13 +123,13 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
 
         const partitionRegions = this.regionProvider.getRegions()
         const userVisibleRegionCodes = this.regionProvider.getExplorerRegions()
-        const regionMap = toMap(partitionRegions, r => r.id)
+        const regionMap = toMap(partitionRegions, (r) => r.id)
 
         updateInPlace(
             this.regionNodes,
             intersection(regionMap.keys(), userVisibleRegionCodes),
-            key => this.regionNodes.get(key)!.update(regionMap.get(key)!),
-            key => new RegionNode(regionMap.get(key)!, this.regionProvider)
+            (key) => this.regionNodes.get(key)!.update(regionMap.get(key)!),
+            (key) => new RegionNode(regionMap.get(key)!, this.regionProvider)
         )
 
         if (this.regionNodes.size === 0) {

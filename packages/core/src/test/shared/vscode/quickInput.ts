@@ -42,7 +42,7 @@ function untilReady(
 /* Waits until the filter has been applied to the picker */
 async function whenAppliedFilter(picker: vscode.QuickPick<vscode.QuickPickItem>): Promise<void> {
     await captureEventOnce(picker.onDidChangeActive)
-    await new Promise(r => setImmediate(r))
+    await new Promise((r) => setImmediate(r))
     await captureEventOnce(picker.onDidChangeActive)
 }
 
@@ -74,8 +74,8 @@ function matchItem<T extends vscode.QuickPickItem>(item: T, expected: ItemMatche
 
 /* Returns all items from source that are in target. Strings are matched based off label. Items are only matched once. */
 function matchItems<T extends vscode.QuickPickItem>(source: T[], ...expected: ItemMatcher<T>[]): T[] {
-    return source.filter(item => {
-        const index = expected.findIndex(t => matchItem(item, t))
+    return source.filter((item) => {
+        const index = expected.findIndex((t) => matchItem(item, t))
         if (index !== -1) {
             expected.splice(index, 1)
         }
@@ -95,7 +95,7 @@ function matchItemButton<T extends vscode.QuickInputButton>(item: T, expected: I
 }
 
 function matchItemButtons<T extends vscode.QuickInputButton>(source: T[], expected: ItemButtonMatcher<T>): T[] {
-    return source.filter(item => matchItemButton(item, expected))
+    return source.filter((item) => matchItemButton(item, expected))
 }
 
 const throwError = (message: string, actual?: any, expected?: any) => {
@@ -130,9 +130,9 @@ function findButtonOrThrow(
     input: vscode.QuickPick<vscode.QuickPickItem> | vscode.InputBox,
     button: string | vscode.QuickInputButton
 ) {
-    const target = typeof button === 'string' ? input.buttons.filter(b => b.tooltip === button)[0] : button
+    const target = typeof button === 'string' ? input.buttons.filter((b) => b.tooltip === button)[0] : button
     if (target === undefined) {
-        throwError(`Unable to find button: ${button}`)
+        throwError(`Unable to find button: ${String(button)}`)
     }
 
     return target
@@ -142,8 +142,8 @@ function printMatcher<T extends vscode.QuickPickItem>(matcher: ItemMatcher<T>) {
     matcher instanceof RegExp
         ? matcher.source
         : typeof matcher === 'string'
-        ? matcher
-        : JSON.stringify(matcher, undefined, 4)
+          ? matcher
+          : JSON.stringify(matcher, undefined, 4)
 }
 
 function findItemOrThrow<T extends vscode.QuickPickItem>(picker: vscode.QuickPick<T>, item: ItemMatcher<T>): T {
@@ -221,7 +221,7 @@ export class PickerTester<T extends vscode.QuickPickItem> {
      * See {@link acceptItem}.
      */
     public acceptItems(...items: ItemMatcher<T>[]): void {
-        this.picker.selectedItems = items.map(i => findItemOrThrow(this.picker, i))
+        this.picker.selectedItems = items.map((i) => findItemOrThrow(this.picker, i))
         this.triggers.onDidAccept.fire()
     }
 
@@ -285,7 +285,7 @@ export class PickerTester<T extends vscode.QuickPickItem> {
      * Order does not matter, but it must be the same items.
      */
     public assertActiveItems(...items: ItemMatcher<T>[]): void {
-        const filteredActive = filterItems(this.picker).filter(i => this.picker.activeItems.includes(i))
+        const filteredActive = filterItems(this.picker).filter((i) => this.picker.activeItems.includes(i))
         const sortedActive = [...filteredActive].sort((a, b) => a.label.localeCompare(b.label))
         const sortedExpected = [...items].sort((a, b) => {
             const labelA = typeof a === 'string' ? a : a instanceof RegExp ? a.source : a.label
@@ -327,9 +327,9 @@ export type TestQuickPick<T extends vscode.QuickPickItem = vscode.QuickPickItem>
 
 export function createTestQuickPick<T extends vscode.QuickPickItem>(picker: vscode.QuickPick<T>): TestQuickPick<T> {
     const emitters = toRecord(pickerEvents, () => new vscode.EventEmitter<any>())
-    const triggers = toRecord(pickerEvents, k => emitters[k].fire.bind(emitters[k]))
+    const triggers = toRecord(pickerEvents, (k) => emitters[k].fire.bind(emitters[k]))
     const extraEmitters = createExtraEmitters()
-    keys(emitters).forEach(key => picker[key](triggers[key]))
+    keys(emitters).forEach((key) => picker[key](triggers[key]))
 
     const state = { visible: false }
     const tester = new PickerTester(picker, emitters, extraEmitters)
@@ -427,10 +427,10 @@ export type TestInputBox = vscode.InputBox &
 
 export function createTestInputBox(inputBox: vscode.InputBox): TestInputBox {
     const emitters = toRecord(inputEvents, () => new vscode.EventEmitter<any>())
-    const triggers = toRecord(inputEvents, k => emitters[k].fire.bind(emitters[k]))
+    const triggers = toRecord(inputEvents, (k) => emitters[k].fire.bind(emitters[k]))
     const extraEmitters = createExtraEmitters()
 
-    keys(emitters).forEach(key => inputBox[key](triggers[key]))
+    keys(emitters).forEach((key) => inputBox[key](triggers[key]))
 
     const state = { visible: false }
     const tester = new InputBoxTester(inputBox, emitters, extraEmitters)

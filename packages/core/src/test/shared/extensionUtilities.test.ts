@@ -6,17 +6,11 @@
 import assert from 'assert'
 
 import { AWSError } from 'aws-sdk'
-import { writeFile, remove } from 'fs-extra'
 import * as path from 'path'
 import * as sinon from 'sinon'
 import { DefaultEc2MetadataClient } from '../../shared/clients/ec2MetadataClient'
 import * as vscode from 'vscode'
-import {
-    ExtensionUserActivity,
-    getComputeRegion,
-    initializeComputeRegion,
-    mostRecentVersionKey,
-} from '../../shared/extensionUtilities'
+import { UserActivity, getComputeRegion, initializeComputeRegion } from '../../shared/extensionUtilities'
 import { isDifferentVersion, setMostRecentVersion } from '../../shared/extensionUtilities'
 import * as filesystemUtilities from '../../shared/filesystemUtilities'
 import { FakeExtensionContext } from '../fakeExtensionContext'
@@ -25,20 +19,22 @@ import { extensionVersion } from '../../shared/vscode/env'
 import { sleep } from '../../shared/utilities/timeoutUtils'
 import globals from '../../shared/extensionGlobals'
 import { createQuickStartWebview } from '../../shared/extensionStartup'
+import { fs } from '../../shared'
 
 describe('extensionUtilities', function () {
     describe('createQuickStartWebview', async function () {
-        const context = await FakeExtensionContext.create()
+        let context: FakeExtensionContext
         let tempDir: string | undefined
 
         beforeEach(async function () {
+            context = await FakeExtensionContext.create()
             tempDir = await filesystemUtilities.makeTemporaryToolkitFolder()
             context.extensionPath = tempDir
         })
 
         afterEach(async function () {
             if (tempDir) {
-                await remove(tempDir)
+                await fs.delete(tempDir, { recursive: true })
             }
         })
 
@@ -49,7 +45,7 @@ describe('extensionUtilities', function () {
         it('returns a webview with unaltered text if a valid file is passed without tokens', async function () {
             const filetext = 'this temp page does not have any tokens'
             const filepath = 'tokenless'
-            await writeFile(path.join(context.extensionPath, filepath), filetext)
+            await fs.writeFile(path.join(context.extensionPath, filepath), filetext)
             const webview = await createQuickStartWebview(context, filepath)
 
             assert.strictEqual(typeof webview, 'object')
@@ -62,7 +58,7 @@ describe('extensionUtilities', function () {
             const basetext = 'this temp page has tokens: '
             const filetext = basetext + token
             const filepath = 'tokenless'
-            await writeFile(path.join(context.extensionPath, filepath), filetext)
+            await fs.writeFile(path.join(context.extensionPath, filepath), filetext)
             const webview = await createQuickStartWebview(context, filepath)
 
             assert.strictEqual(typeof webview, 'object')
@@ -76,34 +72,28 @@ describe('extensionUtilities', function () {
     describe('isDifferentVersion', function () {
         it('returns false if the version exists and matches the existing version exactly', async function () {
             const goodVersion = '1.2.3'
-            const extContext = await FakeExtensionContext.create()
-            await extContext.globalState.update(mostRecentVersionKey, goodVersion)
+            await globals.globalState.update('globalsMostRecentVersion', goodVersion)
 
-            assert.strictEqual(isDifferentVersion(extContext, goodVersion), false)
+            assert.strictEqual(isDifferentVersion(goodVersion), false)
         })
 
         it("returns true if a most recent version isn't set", async () => {
-            const extContext = await FakeExtensionContext.create()
-
-            assert.ok(isDifferentVersion(extContext))
+            assert.ok(isDifferentVersion())
         })
 
         it("returns true if a most recent version doesn't match the current version", async () => {
             const oldVersion = '1.2.3'
             const newVersion = '4.5.6'
-            const extContext = await FakeExtensionContext.create()
-            await extContext.globalState.update(mostRecentVersionKey, oldVersion)
+            await globals.globalState.update('globalsMostRecentVersion', oldVersion)
 
-            assert.ok(isDifferentVersion(extContext, newVersion))
+            assert.ok(isDifferentVersion(newVersion))
         })
     })
 
     describe('setMostRecentVersion', function () {
         it('sets the most recent version', async function () {
-            const extContext = await FakeExtensionContext.create()
-            setMostRecentVersion(extContext)
-
-            assert.strictEqual(extContext.globalState.get<string>(mostRecentVersionKey), extensionVersion)
+            setMostRecentVersion()
+            assert.strictEqual(globals.globalState.get('globalsMostRecentVersion'), extensionVersion)
         })
     })
 })
@@ -184,7 +174,7 @@ describe('initializeComputeRegion, getComputeRegion', async function () {
     })
 })
 
-describe('ExtensionUserActivity', function () {
+describe('UserActivity', function () {
     let count: number
     let sandbox: sinon.SinonSandbox
 
@@ -209,7 +199,7 @@ describe('ExtensionUserActivity', function () {
             secondIntervalStart + 201,
             secondIntervalStart + 202,
         ]
-        const instance = new ExtensionUserActivity(throttleDelay, [
+        const instance = new UserActivity(throttleDelay, [
             ...firstInvervalMillisUntilFire.map(delayedTriggeredEvent),
             ...secondIntervalMillisUntilFire.map(delayedTriggeredEvent),
         ])
@@ -222,12 +212,12 @@ describe('ExtensionUserActivity', function () {
     describe('does not fire user activity events in specific scenarios', function () {
         let userActivitySubscriber: sinon.SinonStubbedMember<() => void>
         let _triggerUserActivity: (obj: any) => void
-        let instance: ExtensionUserActivity
+        let instance: UserActivity
 
         beforeEach(function () {
             userActivitySubscriber = sandbox.stub()
             _triggerUserActivity = () => {
-                throw Error('Called before ExtensionUserActivity was instantiated')
+                throw Error('Called before UserActivity was instantiated')
             }
         })
 
@@ -329,11 +319,10 @@ describe('ExtensionUserActivity', function () {
         }
 
         function createTriggerActivityFunc() {
-            instance = new ExtensionUserActivity(0)
+            instance = new UserActivity(0)
             instance.onUserActivity(userActivitySubscriber)
-            // Creation of the ExtensionUserActivity instance
-            // will call the stubbed event and set the value
-            // for _triggerUserActivity
+            // Creation of the UserActivity instance will call the stubbed event and set the value
+            // for _triggerUserActivity.
             return _triggerUserActivity
         }
     })

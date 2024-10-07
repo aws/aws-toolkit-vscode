@@ -4,7 +4,6 @@
  */
 
 import { glob } from 'glob'
-import * as fs from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import * as manifest from '../../package.json'
@@ -13,7 +12,7 @@ import { selectCodeCatalystResource } from '../codecatalyst/wizards/selectResour
 import { VSCODE_EXTENSION_ID } from '../shared/extensions'
 import { DevEnvironment, CodeCatalystClient } from '../shared/clients/codecatalystClient'
 import { prepareDevEnvConnection } from '../codecatalyst/model'
-import { ChildProcess } from '../shared/utilities/childProcess'
+import { ChildProcess } from '../shared/utilities/processUtils'
 import { Timeout } from '../shared/utilities/timeoutUtils'
 import { CodeCatalystCommands } from '../codecatalyst/commands'
 import { showViewLogsMessage } from '../shared/utilities/messages'
@@ -21,6 +20,7 @@ import { startVscodeRemote } from '../shared/extensions/ssh'
 import { isValidResponse } from '../shared/wizards/wizard'
 import { createQuickPick } from '../shared/ui/pickerPrompter'
 import { createCommonButtons } from '../shared/ui/buttons'
+import { fs } from '../shared'
 
 type LazyProgress<T> = vscode.Progress<T> & vscode.Disposable & { getToken(): Timeout }
 
@@ -31,7 +31,7 @@ function lazyProgress<T extends Record<string, any>>(timeout: Timeout): LazyProg
     let dispose!: () => void
     let progress: vscode.Progress<T>
     const location = vscode.ProgressLocation.Notification
-    const thenable = new Promise<void>(resolve => {
+    const thenable = new Promise<void>((resolve) => {
         dispose = resolve
         timeout.token.onCancellationRequested(() => resolve)
     })
@@ -39,11 +39,11 @@ function lazyProgress<T extends Record<string, any>>(timeout: Timeout): LazyProg
     return {
         dispose,
         getToken: () => timeout,
-        report: value => {
+        report: (value) => {
             if (!progress) {
                 void vscode.window.withProgress({ location, cancellable: true }, (p, t) => {
                     progress = p
-                    t.onCancellationRequested(e => timeout.cancel())
+                    t.onCancellationRequested((e) => timeout.cancel())
                     return thenable
                 })
             }
@@ -85,7 +85,7 @@ async function openTerminal(client: CodeCatalystClient, progress: LazyProgress<{
 export async function installVsixCommand(ctx: vscode.ExtensionContext) {
     const commands = CodeCatalystCommands.fromContext(ctx)
 
-    await commands.withClient(async client => {
+    await commands.withClient(async (client) => {
         const env = await selectCodeCatalystResource(client, 'devEnvironment')
         if (!env) {
             return
@@ -105,15 +105,11 @@ async function promptVsix(
     ctx: vscode.ExtensionContext,
     progress?: LazyProgress<{ message: string }>
 ): Promise<vscode.Uri | undefined> {
-    const folders = (vscode.workspace.workspaceFolders ?? []).map(f => f.uri).concat(vscode.Uri.file(ctx.extensionPath))
+    const folders = (vscode.workspace.workspaceFolders ?? [])
+        .map((f) => f.uri)
+        .concat(vscode.Uri.file(ctx.extensionPath))
 
-    enum ExtensionMode {
-        Production = 1,
-        Development = 2,
-        Test = 3,
-    }
-
-    const isDevelopmentWindow = ctx.extensionMode === ExtensionMode.Development
+    const isDevelopmentWindow = ctx.extensionMode === vscode.ExtensionMode.Development
     const extPath = isDevelopmentWindow ? ctx.extensionPath : folders[0].fsPath
 
     const packageNew = {
@@ -170,13 +166,13 @@ async function promptVsix(
 
         for (const f of folders) {
             const paths = await glob('*.vsix', { cwd: f.fsPath })
-            const uris = paths.map(v => vscode.Uri.file(path.join(f.fsPath, v)))
+            const uris = paths.map((v) => vscode.Uri.file(path.join(f.fsPath, v)))
 
             if (uris.length > 0 && seps.length > 0) {
                 yield [seps.shift()!]
             }
 
-            yield uris.map(v => ({
+            yield uris.map((v) => ({
                 label: path.basename(v.fsPath),
                 detail: v.fsPath,
                 data: v,
@@ -202,7 +198,7 @@ async function installVsix(
     progress: LazyProgress<{ message: string }>,
     env: DevEnvironment
 ): Promise<void> {
-    const resp = await promptVsix(ctx, progress).then(r => r?.fsPath)
+    const resp = await promptVsix(ctx, progress).then((r) => r?.fsPath)
 
     if (!resp) {
         return
@@ -221,14 +217,14 @@ async function installVsix(
     if (path.extname(resp) !== '.vsix') {
         progress.report({ message: 'Copying extension...' })
 
-        const packageData = await fs.readFile(path.join(resp, 'package.json'), 'utf-8')
+        const packageData = await fs.readFileText(path.join(resp, 'package.json'))
         const targetManfiest: typeof manifest = JSON.parse(packageData)
         const destName = `${extPath}/${extId}-${targetManfiest.version}`
         const source = `${resp}${path.sep}`
 
         // Using `.vscodeignore` would be nice here but `rsync` doesn't understand glob patterns
         const excludes = ['.git/', 'node_modules/', '/src/', '/scripts/', '/dist/src/test/']
-            .map(p => ['--exclude', p])
+            .map((p) => ['--exclude', p])
             .reduce((a, b) => a.concat(b))
 
         const installCommand = [`cd ${destName}`, 'npm i --ignore-scripts'].join(' && ')
@@ -247,7 +243,7 @@ async function installVsix(
             .split('-')
             .reverse()
             .slice(0, 2)
-            .map(s => s.replace('.vsix', ''))
+            .map((s) => s.replace('.vsix', ''))
         const destName = [extId, ...suffixParts.reverse()].join('-')
 
         const installCmd = [
@@ -269,7 +265,7 @@ async function installVsix(
 export async function deleteDevEnvCommand(ctx: vscode.ExtensionContext) {
     const commands = CodeCatalystCommands.fromContext(ctx)
 
-    await commands.withClient(async client => {
+    await commands.withClient(async (client) => {
         const devenv = await selectCodeCatalystResource(client, 'devEnvironment')
         if (!devenv) {
             return

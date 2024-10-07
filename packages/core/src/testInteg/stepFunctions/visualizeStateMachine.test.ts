@@ -4,13 +4,13 @@
  */
 
 import assert from 'assert'
-import * as fs from 'fs-extra'
 import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import { MessageObject } from '../../stepFunctions/commands/visualizeStateMachine/aslVisualization'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
-import { closeAllEditors, openATextEditorWithText } from '../../test/testUtil'
+import { closeAllEditors, toTextEditor } from '../../test/testUtil'
 import { previewStateMachineCommand } from '../../stepFunctions/activation'
+import { fs } from '../../shared'
 
 const sampleStateMachine = `
 	 {
@@ -89,7 +89,7 @@ describe('visualizeStateMachine', async function () {
     })
 
     afterEach(async function () {
-        await fs.remove(tempFolder)
+        await fs.delete(tempFolder, { recursive: true })
         sinon.restore()
     })
 
@@ -101,7 +101,7 @@ describe('visualizeStateMachine', async function () {
     it('opens up a webview when there is an active text editor', async function () {
         const stateMachineFileText = '{}'
         const fileName = 'mysamplestatemachine.json'
-        await openATextEditorWithText(stateMachineFileText, fileName, tempFolder)
+        await toTextEditor(stateMachineFileText, fileName, tempFolder)
 
         const result = await previewStateMachineCommand.execute()
 
@@ -110,7 +110,7 @@ describe('visualizeStateMachine', async function () {
 
     it('correctly displays content when given a sample state machine', async function () {
         const fileName = 'mysamplestatemachine.json'
-        const textEditor = await openATextEditorWithText(sampleStateMachine, fileName, tempFolder)
+        const textEditor = await toTextEditor(sampleStateMachine, fileName, tempFolder)
 
         const result = await previewStateMachineCommand.execute()
 
@@ -133,7 +133,7 @@ describe('visualizeStateMachine', async function () {
 
     it('correctly displays content when given a sample state machine in yaml', async function () {
         const fileName = 'mysamplestatemachine.asl.yaml'
-        const textEditor = await openATextEditorWithText(samleStateMachineYaml, fileName, tempFolder)
+        const textEditor = await toTextEditor(samleStateMachineYaml, fileName, tempFolder)
 
         const result = await previewStateMachineCommand.execute()
 
@@ -157,22 +157,22 @@ describe('visualizeStateMachine', async function () {
     it('update webview is triggered when user saves correct text editor', async function () {
         const stateMachineFileText = '{}'
         const fileName = 'mysamplestatemachine.json'
-        const textEditor = await openATextEditorWithText(stateMachineFileText, fileName, tempFolder)
+        const textEditor = await toTextEditor(stateMachineFileText, fileName, tempFolder)
 
         const result = await previewStateMachineCommand.execute()
 
         assert.ok(result)
 
         if (result) {
-            const viewStateChanged = new Promise<vscode.WebviewPanelOnDidChangeViewStateEvent>(resolve => {
-                result.onDidChangeViewState(e => {
+            const viewStateChanged = new Promise<vscode.WebviewPanelOnDidChangeViewStateEvent>((resolve) => {
+                result.onDidChangeViewState((e) => {
                     // Ensure that this event fires after document is saved
                     assert.ok(e)
                     resolve(e)
                 })
             })
 
-            await textEditor.edit(eb => {
+            await textEditor.edit((eb) => {
                 eb.replace(
                     new vscode.Range(
                         textEditor.document.positionAt(0),
@@ -191,7 +191,7 @@ describe('visualizeStateMachine', async function () {
     it('doesnt update the graph if a seperate file is opened or modified', async function () {
         const stateMachineFileText = '{}'
         const stateMachineDefinitionFile = 'mystatemachine.json'
-        await openATextEditorWithText(stateMachineFileText, stateMachineDefinitionFile, tempFolder)
+        await toTextEditor(stateMachineFileText, stateMachineDefinitionFile, tempFolder)
 
         const result = await previewStateMachineCommand.execute()
         assert.ok(result)
@@ -202,7 +202,7 @@ describe('visualizeStateMachine', async function () {
         const someOtherFileText = 'Some other file that is not related to state machine.'
         const someOtherFileName = 'fileTwo'
 
-        const textEditor2 = await openATextEditorWithText(someOtherFileText, someOtherFileName, tempFolder)
+        const textEditor2 = await toTextEditor(someOtherFileText, someOtherFileName, tempFolder)
 
         const updatedText = 'updated text'
 
@@ -213,7 +213,7 @@ describe('visualizeStateMachine', async function () {
         }
 
         // Update and save the file that we are NOT visualizing
-        await textEditor2.edit(eb => {
+        await textEditor2.edit((eb) => {
             eb.replace(
                 new vscode.Range(
                     textEditor2.document.positionAt(0),

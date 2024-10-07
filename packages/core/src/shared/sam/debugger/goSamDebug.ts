@@ -15,10 +15,9 @@ import { DefaultSamLocalInvokeCommand, waitForDebuggerMessages } from '../cli/sa
 import { runLambdaFunction } from '../localLambdaRunner'
 import { SamLaunchRequestArgs } from './awsSamDebugger'
 import { getLogger } from '../../logger'
-import * as fs from 'fs-extra'
-import { ChildProcess } from '../../utilities/childProcess'
+import fs from '../../fs/fs'
+import { ChildProcess } from '../../utilities/processUtils'
 import { Timeout } from '../../utilities/timeoutUtils'
-import { SystemUtilities } from '../../../shared/systemUtilities'
 import { execFileSync, SpawnOptions } from 'child_process'
 import * as nls from 'vscode-nls'
 import { sleep } from '../../utilities/timeoutUtils'
@@ -192,7 +191,7 @@ async function makeInstallScript(debuggerPath: string, isWindows: boolean): Prom
         let repoPath: string = path.join(goPath, 'src', delveRepo)
 
         if (!getDelveVersion(repoPath, true)) {
-            getLogger('channel').info(
+            getLogger().info(
                 localize(
                     'AWS.sam.debugger.godelve.download',
                     'The Delve repo was not found in your GOPATH. Downloading in a temporary directory...'
@@ -212,7 +211,7 @@ async function makeInstallScript(debuggerPath: string, isWindows: boolean): Prom
 
     delveVersion = delveVersion.replace('v', '-')
     const installScriptPath: string = path.join(debuggerPath, `install${delveVersion}.${scriptExt}`)
-    const alreadyInstalled = await SystemUtilities.fileExists(installScriptPath)
+    const alreadyInstalled = await fs.exists(installScriptPath)
 
     if (alreadyInstalled && delveVersion !== '') {
         return undefined
@@ -236,7 +235,7 @@ async function makeInstallScript(debuggerPath: string, isWindows: boolean): Prom
  * @returns False when installation fails
  */
 async function installDebugger(debuggerPath: string): Promise<boolean> {
-    await fs.ensureDir(debuggerPath)
+    await fs.mkdir(debuggerPath)
     const isWindows: boolean = os.platform() === 'win32'
     let installScript: InstallScript | undefined
 
@@ -249,21 +248,21 @@ async function installDebugger(debuggerPath: string): Promise<boolean> {
 
         const childProcess = new ChildProcess(installScript.path, [], { spawnOptions: installScript.options })
         const install = await childProcess.run({
-            onStdout: (text: string) => getLogger('channel').info(`[Delve install script] -> ${text}`),
-            onStderr: (text: string) => getLogger('channel').error(`[Delve install script] -> ${text}`),
+            onStdout: (text: string) => getLogger().info(`[Delve install script] -> ${text}`),
+            onStderr: (text: string) => getLogger().error(`[Delve install script] -> ${text}`),
         })
 
         const code = install.exitCode
-        if (!fs.existsSync(path.join(debuggerPath, 'dlv'))) {
+        if (!(await fs.exists(path.join(debuggerPath, 'dlv')))) {
             throw new Error(`Install script did not generate the Delve binary: exit code ${code}`)
         } else if (code) {
-            getLogger('channel').warn(`Install script did not sucessfully run, using old Delve binary...`)
+            getLogger().warn(`Install script did not sucessfully run, using old Delve binary...`)
         } else {
             getLogger().info(`Installed Delve debugger in ${debuggerPath}`)
         }
     } catch (e) {
-        if (installScript && (await SystemUtilities.fileExists(installScript.path))) {
-            fs.unlinkSync(installScript.path) // Removes the install script since it failed
+        if (installScript && (await fs.exists(installScript.path))) {
+            await fs.delete(installScript.path) // Removes the install script since it failed
         }
         getLogger().error('Failed to cross-compile Delve debugger: %O', e as Error)
         return false

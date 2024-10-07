@@ -12,7 +12,11 @@ import { ssmJson, ssmYaml } from '../../shared/constants'
 
 import * as localizedText from '../../shared/localizedText'
 import { getLogger, Logger } from '../../shared/logger'
-import { PublishSSMDocumentWizard, PublishSSMDocumentWizardResponse } from '../wizards/publishDocumentWizard'
+import {
+    PublishSSMDocumentAction,
+    PublishSSMDocumentWizard,
+    PublishSSMDocumentWizardResponse,
+} from '../wizards/publishDocumentWizard'
 import { showConfirmationMessage } from '../util/util'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { Result, SsmOperation } from '../../shared/telemetry/telemetry'
@@ -49,9 +53,9 @@ export async function publishSSMDocument(): Promise<void> {
 
     try {
         const response = await new PublishSSMDocumentWizard().run()
-        if (response?.action === 'Create') {
+        if (response?.action === PublishSSMDocumentAction.QuickCreate) {
             await createDocument(response, textDocument)
-        } else if (response?.action === 'Update') {
+        } else if (response?.action === PublishSSMDocumentAction.QuickUpdate) {
             await updateDocument(response, textDocument)
         }
     } catch (err) {

@@ -5,8 +5,25 @@
 
 export type AuthFollowUpType = 'full-auth' | 're-auth' | 'missing_scopes' | 'use-supported-auth'
 
-export const reauthenticateText = `You don't have access to Amazon Q. Please authenticate to get started.`
+export type AuthMessageData = {
+    message: string
+}
 
-export const enableQText = `You haven't enabled Amazon Q in VSCode`
+const reauthenticateData: AuthMessageData = {
+    message: `You don't have access to Amazon Q. Please authenticate to get started.`,
+}
 
-export const expiredText = `Your Amazon Q session has timed out. Re-authenticate to continue.`
+const enableQData: AuthMessageData = {
+    message: `You haven't enabled Amazon Q in VSCode`,
+}
+
+const expiredData: AuthMessageData = {
+    message: `Your Amazon Q session has timed out. Re-authenticate to continue.`,
+}
+
+export const AuthMessageDataMap: Record<AuthFollowUpType, AuthMessageData> = {
+    'full-auth': reauthenticateData,
+    're-auth': reauthenticateData,
+    missing_scopes: enableQData,
+    'use-supported-auth': expiredData,
+}

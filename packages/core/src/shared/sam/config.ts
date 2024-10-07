@@ -4,8 +4,8 @@
  */
 
 import * as vscode from 'vscode'
+import fs from '../fs/fs'
 import { parse } from '@iarna/toml'
-import { SystemUtilities } from '../systemUtilities'
 import { cast, Optional } from '../utilities/typeConstructors'
 
 export interface Config {
@@ -39,7 +39,7 @@ async function parseConfig(contents: string): Promise<Config> {
 function parseEnvironment(section: Record<string, unknown>): Omit<Environment, 'name'> {
     const objs = Object.entries(section).filter(([_, v]) => typeof v === 'object') as [
         string,
-        Record<string, unknown>
+        Record<string, unknown>,
     ][]
     const commands = {} as Environment['commands']
     for (const [k, v] of objs) {
@@ -54,7 +54,10 @@ function parseCommand(section: Record<string, unknown>): Omit<Command, 'name'> {
 }
 
 export class SamConfig {
-    public constructor(public readonly location: vscode.Uri, private readonly config: Config = { environments: {} }) {}
+    public constructor(
+        public readonly location: vscode.Uri,
+        private readonly config: Config = { environments: {} }
+    ) {}
 
     public getParam(command: string, key: string, targetEnv = 'default'): unknown {
         const env = this.config.environments[targetEnv]
@@ -71,7 +74,7 @@ export class SamConfig {
     }
 
     public static async fromUri(uri: vscode.Uri) {
-        const contents = await SystemUtilities.readFile(uri)
+        const contents = await fs.readFileText(uri)
         const config = await parseConfig(contents)
 
         return new this(uri, config)

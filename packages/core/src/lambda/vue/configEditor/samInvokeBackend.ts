@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as fs from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
@@ -36,6 +35,7 @@ import globals from '../../../shared/extensionGlobals'
 import { VueWebview } from '../../../webviews/main'
 import { Commands } from '../../../shared/vscode/commands2'
 import { telemetry } from '../../../shared/telemetry/telemetry'
+import { fs } from '../../../shared'
 
 const localize = nls.loadMessageBundle()
 
@@ -126,7 +126,7 @@ export class SamInvokeWebview extends VueWebview {
      */
     public async getSamplePayload(): Promise<string | undefined> {
         try {
-            const inputs: SampleQuickPickItem[] = (await getSampleLambdaPayloads()).map(entry => {
+            const inputs: SampleQuickPickItem[] = (await getSampleLambdaPayloads()).map((entry) => {
                 return { label: entry.name ?? '', filename: entry.filename ?? '' }
             })
 
@@ -220,7 +220,7 @@ export class SamInvokeWebview extends VueWebview {
      * @param config Config to save
      */
     public async saveLaunchConfig(config: AwsSamDebuggerConfiguration): Promise<void> {
-        const uri = getUriFromLaunchConfig(config)
+        const uri = await getUriFromLaunchConfig(config)
         if (!uri) {
             // TODO Localize
             void vscode.window.showErrorMessage(
@@ -289,7 +289,7 @@ export class SamInvokeWebview extends VueWebview {
             resolveWorkspaceFolderVariable(undefined, config),
             'Editor-Created Debug Config'
         )
-        const targetUri = getUriFromLaunchConfig(finalConfig)
+        const targetUri = await getUriFromLaunchConfig(finalConfig)
         const folder = targetUri ? vscode.workspace.getWorkspaceFolder(targetUri) : undefined
 
         // Cloud9 currently can't resolve the `aws-sam` debug config provider.
@@ -311,7 +311,7 @@ const WebviewPanel = VueWebview.compilePanel(SamInvokeWebview)
 export function registerSamInvokeVueCommand(context: ExtContext): vscode.Disposable {
     return Commands.register('aws.launchConfigForm', async (launchConfig?: AwsSamDebuggerConfiguration) => {
         const webview = new WebviewPanel(context.extensionContext, context, launchConfig)
-        await telemetry.sam_openConfigUi.run(async span => {
+        await telemetry.sam_openConfigUi.run(async (span) => {
             await webview.show({
                 title: localize('AWS.command.launchConfigForm.title', 'Edit SAM Debug Configuration'),
                 // TODO: make this only open `Beside` when executed via CodeLens
@@ -321,7 +321,7 @@ export function registerSamInvokeVueCommand(context: ExtContext): vscode.Disposa
     })
 }
 
-function getUriFromLaunchConfig(config: AwsSamDebuggerConfiguration): vscode.Uri | undefined {
+async function getUriFromLaunchConfig(config: AwsSamDebuggerConfiguration): Promise<vscode.Uri | undefined> {
     let targetPath: string
     if (isTemplateTargetProperties(config.invokeTarget)) {
         targetPath = config.invokeTarget.templatePath
@@ -342,7 +342,7 @@ function getUriFromLaunchConfig(config: AwsSamDebuggerConfiguration): vscode.Uri
     const workspaceFolders = vscode.workspace.workspaceFolders || []
     for (const workspaceFolder of workspaceFolders) {
         const absolutePath = tryGetAbsolutePath(workspaceFolder, targetPath)
-        if (fs.pathExistsSync(absolutePath)) {
+        if (await fs.exists(absolutePath)) {
             return vscode.Uri.file(absolutePath)
         }
     }

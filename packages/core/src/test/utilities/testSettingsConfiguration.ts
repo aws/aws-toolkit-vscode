@@ -11,8 +11,8 @@ import { cast, TypeConstructor } from '../../shared/utilities/typeConstructors'
 type ObjectPath<T extends Record<string, any>, K extends PropertyKey[] = []> = K extends []
     ? [keyof T]
     : IndexObject<T, K> extends Record<string, any>
-    ? K | [...K, keyof IndexObject<T, K>]
-    : K
+      ? K | [...K, keyof IndexObject<T, K>]
+      : K
 
 type IndexObject<T extends Record<string, any>, K> = K extends [infer L, ...infer R]
     ? L extends keyof T
@@ -83,12 +83,12 @@ export class TestSettings implements ClassToInterfaceType<Settings> {
         section: string,
         listener: (event: vscode.ConfigurationChangeEvent) => unknown
     ): vscode.Disposable {
-        return this.onDidChangeEmitter.event(prop => {
+        return this.onDidChangeEmitter.event((prop) => {
             if (prop.startsWith(section)) {
                 const remainder = prop.replace(section, '').replace(/^\./, '')
-                listener({ affectsConfiguration: key => remainder.startsWith(key) })
+                listener({ affectsConfiguration: (key) => remainder.startsWith(key) })
             } else if (section.startsWith(prop)) {
-                listener({ affectsConfiguration: key => key.startsWith(section) })
+                listener({ affectsConfiguration: (key) => key.startsWith(section) })
             }
         })
     }

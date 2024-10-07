@@ -1,0 +1,28 @@
+{
+    "description": "Attach IAM Policy to Instance",
+    "assumeRole": "{{ AutomationAssumeRole }}",
+    "schemaVersion": "0.3",
+    "parameters": {
+        "AutomationAssumeRole": {
+            "description": "ARN role",
+            "type": "String"
+        },
+        "InstanceId": {
+            "description": "Instance ID",
+            "type": "String"
+        }
+    },
+    "mainSteps": [
+        {
+            "inputs": {
+                "FunctionName": "SSMOnboardingLambda",
+                "InputPayload": {
+                    "instance_id": "{{ InstanceId }}"
+                }
+            },
+            "name": "AttachPoliciesToInstance",
+            "action": "aws:invokeLambdaFunction",
+            "onFailure": "Abort"
+        }
+    ]
+}

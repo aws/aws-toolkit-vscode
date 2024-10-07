@@ -24,8 +24,9 @@ phases:
                 VERSION=$(node -e "console.log(require('./packages/${TARGET_EXTENSION}/package.json').version);" | (IFS="-"; read -r version unused && echo "$version"))
                 DATE=$(date)
                 npm version --no-git-tag-version "$VERSION" -w packages/${TARGET_EXTENSION}
-                # Call npm ci because 'createRelease' uses ts-node
-                npm ci
+                # 'createRelease' uses ts-node.
+                # Ignore broken "postinstall" script in "src.gen/@amzn/codewhisperer-streaming/package.json".
+                npm install --ignore-scripts ts-node
             - |
                 npm run createRelease -w packages/${TARGET_EXTENSION}
             - |

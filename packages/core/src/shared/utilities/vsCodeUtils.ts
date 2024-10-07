@@ -86,7 +86,7 @@ export function showInstallExtensionMsg(
     const items = [installBtn]
 
     const p = vscode.window.showErrorMessage(msg, ...items)
-    void p.then<string | undefined>(selection => {
+    void p.then<string | undefined>((selection) => {
         if (selection === installBtn) {
             void showExtensionPage(extId)
         }
@@ -102,7 +102,7 @@ export function buildMissingExtensionMessage(
     feat = `${getIdeProperties().company} Toolkit`
 ): string {
     const minV = semver.coerce(minVersion)
-    const expectedVersionMsg = isNonNullable(minV) ? ` of version >=${minV}` : ''
+    const expectedVersionMsg = isNonNullable(minV) ? ` of version >=${minV.version}` : ''
 
     return localize(
         'AWS.missingExtension',
@@ -180,7 +180,7 @@ export function isUntitledScheme(uri: vscode.Uri): boolean {
  */
 export function globDirPatterns(dirs: string[]): string[] {
     //The patterns themselves are not useful, but with postformating like "**/${pattern}/" they become glob dir patterns
-    return dirs.map(current => {
+    return dirs.map((current) => {
         // Trim all "*" and "/" chars.
         // Note that the replace() patterns and order is intentionaly so that "**/*foo*/**" yields "*foo*".
         const scrubbed = current
@@ -203,7 +203,7 @@ export function normalizeVSCodeUri(uri: vscode.Uri): string {
 export function reloadWindowPrompt(message: string): void {
     const reload = 'Reload'
 
-    void vscode.window.showInformationMessage(message, reload).then(selected => {
+    void vscode.window.showInformationMessage(message, reload).then((selected) => {
         if (selected === reload) {
             void vscode.commands.executeCommand('workbench.action.reloadWindow')
         }
@@ -214,9 +214,9 @@ export function reloadWindowPrompt(message: string): void {
  * Opens a URL in the system web browser. Throws `CancellationError`
  * if user dismisses the vscode confirmation prompt.
  */
-export async function openUrl(url: vscode.Uri): Promise<boolean> {
-    return telemetry.aws_openUrl.run(async span => {
-        span.record({ url: url.toString() })
+export async function openUrl(url: vscode.Uri, source?: string): Promise<boolean> {
+    return telemetry.aws_openUrl.run(async (span) => {
+        span.record({ url: url.toString(), source })
         const didOpen = await vscode.env.openExternal(url)
         if (!didOpen) {
             throw new CancellationError('user')
@@ -246,7 +246,7 @@ export function replaceVscodeVars(val: string, workspaceFolder?: string): string
  */
 export function subscribeOnce<T>(event: vscode.Event<T>): vscode.Event<T> {
     return (listener: (e: T) => unknown, thisArgs?: unknown) => {
-        const result = event(e => {
+        const result = event((e) => {
             result.dispose()
             return listener.call(thisArgs, e)
         })

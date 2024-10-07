@@ -3,14 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as child_process from 'child_process'
+import * as proc from 'child_process'
 import packageJson from '../../package.json'
 import { downloadAndUnzipVSCode, resolveCliArgsFromVSCodeExecutablePath } from '@vscode/test-electron'
 import { join, resolve } from 'path'
 import { runTests } from '@vscode/test-electron'
 import { VSCODE_EXTENSION_ID } from '../../src/shared/extensions'
 import { TestOptions } from '@vscode/test-electron/out/runTest'
-import { defaultCachePath } from '@vscode/test-electron/out/download'
 
 const envvarVscodeTestVersion = 'VSCODE_TEST_VERSION'
 
@@ -19,7 +18,8 @@ const minimum = 'minimum'
 
 const disableWorkspaceTrust = '--disable-workspace-trust'
 
-type SuiteName = 'integration' | 'e2e' | 'unit' | 'web'
+const suiteNames = ['integration', 'e2e', 'unit', 'web'] as const
+export type SuiteName = (typeof suiteNames)[number]
 
 /**
  * This is the generalized method that is used by different test suites (unit, integration, ...) in CI to
@@ -29,14 +29,24 @@ type SuiteName = 'integration' | 'e2e' | 'unit' | 'web'
  * If you want to run the tests manually you should use the `Run & Debug` menu in VS Code instead
  * to be able to use to breakpoints.
  */
-export async function runToolkitTests(suite: SuiteName, relativeTestEntryPoint: string, env?: Record<string, string>) {
+export async function runToolkitTests(
+    suite: SuiteName,
+    relativeTestEntryPoint: string,
+    workspaceFolder?: string,
+    env?: Record<string, string>
+) {
     try {
+        if (!suiteNames.includes(suite)) {
+            throw new Error(`Invalid suite name: '${suite}'. Must be one of: ${suiteNames.join(',')}`)
+        }
+
         console.log(`Running ${suite} test suite...`)
 
         const args = await getVSCodeCliArgs({
             vsCodeExecutablePath: await setupVSCodeTestInstance(suite),
             relativeTestEntryPoint,
             suite,
+            workspaceFolder,
             env,
         })
         console.log(`runTests() args:\n${JSON.stringify(args, undefined, 2)}`)
@@ -58,6 +68,7 @@ async function getVSCodeCliArgs(params: {
     vsCodeExecutablePath: string
     relativeTestEntryPoint: string
     suite: SuiteName
+    workspaceFolder?: string
     env?: Record<string, string>
 }): Promise<TestOptions> {
     const projectRootDir = process.cwd()
@@ -83,7 +94,10 @@ async function getVSCodeCliArgs(params: {
         disableExtensionsArgs = ['--disable-extensions']
     }
 
-    const workspacePath = join(projectRootDir, 'dist', 'src', 'testFixtures', 'workspaceFolder')
+    const workspaceFolderLocation = params.workspaceFolder
+        ? params.workspaceFolder
+        : 'dist/src/testFixtures/workspaceFolder'
+    const workspacePath = join(projectRootDir, workspaceFolderLocation)
     // This tells VS Code to run the extension in a web environment, which mimics vscode.dev
     const webExtensionKind = params.suite === 'web' ? ['--extensionDevelopmentKind=web'] : []
     const userDataDir = process.env.AWS_TOOLKIT_TEST_USER_DIR
@@ -136,7 +150,7 @@ async function setupVSCodeTestInstance(suite: SuiteName): Promise<string> {
     const downloadOptions = {
         platform,
         version: vsCodeVersion,
-        cachePath: process.env.AWS_TOOLKIT_TEST_CACHE_DIR ?? defaultCachePath,
+        cachePath: process.env.AWS_TOOLKIT_TEST_CACHE_DIR ?? '../../.vscode-test',
     }
 
     const vsCodeExecutablePath = await downloadAndUnzipVSCode(downloadOptions)
@@ -163,12 +177,12 @@ async function invokeVSCodeCli(vsCodeExecutablePath: string, args: string[]): Pr
     // Workaround: set --user-data-dir to avoid this error in CI:
     // "You are trying to start Visual Studio Code as a super user …"
     if (process.env.AWS_TOOLKIT_TEST_USER_DIR) {
-        cmdArgs = cmdArgs.filter(a => !a.startsWith('--user-data-dir='))
+        cmdArgs = cmdArgs.filter((a) => !a.startsWith('--user-data-dir='))
         cmdArgs.push(`--user-data-dir=${process.env.AWS_TOOLKIT_TEST_USER_DIR}`)
     }
 
     console.log(`Invoking vscode CLI command:\n    "${cli}" ${JSON.stringify(cmdArgs)}`)
-    const spawnResult = child_process.spawnSync(cli, cmdArgs, {
+    const spawnResult = proc.spawnSync(cli, cmdArgs, {
         encoding: 'utf-8',
         stdio: 'pipe',
     })

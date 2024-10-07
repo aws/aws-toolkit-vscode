@@ -30,6 +30,8 @@ import { session } from '../util/codeWhispererSession'
 import path from 'path'
 import { RecommendationService } from '../service/recommendationService'
 import { Container } from '../service/serviceContainer'
+import { telemetry } from '../../shared/telemetry'
+import { TelemetryHelper } from '../util/telemetryHelper'
 
 export const acceptSuggestion = Commands.declare(
     'aws.amazonq.accept',
@@ -46,35 +48,33 @@ export const acceptSuggestion = Commands.declare(
             language: CodewhispererLanguage,
             references: codewhispererClient.References
         ) => {
+            telemetry.record({
+                traceId: TelemetryHelper.instance.traceId,
+            })
+
             RecommendationService.instance.incrementAcceptedCount()
             const editor = vscode.window.activeTextEditor
             await Container.instance.lineAnnotationController.refresh(editor, 'codewhisperer')
             const onAcceptanceFunc = isInlineCompletionEnabled() ? onInlineAcceptance : onAcceptance
-            await onAcceptanceFunc(
-                {
-                    editor,
-                    range,
-                    effectiveRange,
-                    acceptIndex,
-                    recommendation,
-                    requestId,
-                    sessionId,
-                    triggerType,
-                    completionType,
-                    language,
-                    references,
-                },
-                context.extensionContext.globalState
-            )
+            await onAcceptanceFunc({
+                editor,
+                range,
+                effectiveRange,
+                acceptIndex,
+                recommendation,
+                requestId,
+                sessionId,
+                triggerType,
+                completionType,
+                language,
+                references,
+            })
         }
 )
 /**
  * This function is called when user accepts a intelliSense suggestion or an inline suggestion
  */
-export async function onInlineAcceptance(
-    acceptanceEntry: OnRecommendationAcceptanceEntry,
-    globalStorage: vscode.Memento
-) {
+export async function onInlineAcceptance(acceptanceEntry: OnRecommendationAcceptanceEntry) {
     RecommendationHandler.instance.cancelPaginatedRequest()
     RecommendationHandler.instance.disposeInlineCompletion()
 
@@ -121,7 +121,7 @@ export async function onInlineAcceptance(
             language: languageContext.language,
         })
         const insertedCoderange = new vscode.Range(start, end)
-        CodeWhispererCodeCoverageTracker.getTracker(languageContext.language, globalStorage)?.countAcceptedTokens(
+        CodeWhispererCodeCoverageTracker.getTracker(languageContext.language)?.countAcceptedTokens(
             insertedCoderange,
             acceptanceEntry.editor.document.getText(insertedCoderange),
             acceptanceEntry.editor.document.fileName

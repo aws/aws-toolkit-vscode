@@ -6,11 +6,9 @@
 import assert from 'assert'
 import * as os from 'os'
 import * as path from 'path'
-import * as fs from 'fs-extra'
 import * as vscode from 'vscode'
 import * as sampleDotNetSamProgram from './sampleDotNetSamProgram'
 
-import { writeFile } from 'fs-extra'
 import {
     DotNetLambdaHandlerComponents,
     generateDotNetLambdaHandler,
@@ -19,6 +17,7 @@ import {
     isValidLambdaHandler,
 } from '../../../shared/codelens/csharpCodeLensProvider'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
+import { fs } from '../../../shared'
 
 const fakeRange = new vscode.Range(0, 0, 0, 0)
 
@@ -31,12 +30,12 @@ describe('getLambdaHandlerComponents', async function () {
     })
 
     afterEach(async function () {
-        await fs.remove(tempFolder)
+        await fs.delete(tempFolder, { recursive: true })
     })
 
     it('Detects a public function symbol', async function () {
         const programFile = path.join(tempFolder, 'program.cs')
-        await writeFile(programFile, sampleDotNetSamProgram.getFunctionText())
+        await fs.writeFile(programFile, sampleDotNetSamProgram.getFunctionText())
 
         const textDoc = await vscode.workspace.openTextDocument(programFile)
         const documentSymbols = sampleDotNetSamProgram.getDocumentSymbols()
@@ -146,7 +145,7 @@ describe('isPublicMethodSymbol', async function () {
         },
     ]
 
-    validPublicMethodTests.forEach(test => {
+    validPublicMethodTests.forEach((test) => {
         const sampleMethodSymbol: vscode.DocumentSymbol = new vscode.DocumentSymbol(
             'FunctionHandler(APIGatewayProxyRequest apigProxyEvent, ILambdaContext context)',
             '',

@@ -1,3 +1,95 @@
+## 3.27.0 2024-10-03
+
+- **Bug Fix** rename Application Composer to Infrastructure Composer
+
+## 3.26.0 2024-09-27
+
+- **Bug Fix** EC2 connect: remote connection will no longer fail with 'too many authentication attempt'
+- **Feature** EC2 connect: use ed25519 to generate ec2 ssh key pair
+- **Feature** EC2 connect: default to ed25519, but fall back on rsa if unsupported
+- **Feature** EC2: Launch ec2 instances from AWS Explorer
+
+## 3.25.0 2024-09-19
+
+- **Bug Fix** no longer gives option to copy instance id on ec2 parent node.
+- **Bug Fix** Login state not updating across multiple VS Code windows.
+- **Bug Fix** Redshift: updated the list clusters and workgroups for regions which do not have serverless APIs
+- **Bug Fix** when connecting to ec2 instance, check for IAM role permitted actions, rather than full policies
+- **Feature** EC2 nodes in explorer update status automatically
+- **Feature** ec2 instance status is reinforced with icons and text
+
+## 3.24.0 2024-09-12
+
+- **Feature** Record telemetry event when AWS Toolkits extension is uninstalled.
+
+## 3.23.0 2024-09-05
+
+- **Bug Fix** Network errors causing premature SSO logout
+- **Bug Fix** Fix SyntaxError causing premature expiration (edge case)
+
+## 3.22.0 2024-08-29
+
+- **Bug Fix** Auth: `SyntaxError` causing unexpected SSO logout
+- **Bug Fix** Auth: Users may be silently logged out due to network issues when starting the extension.
+
+## 3.21.0 2024-08-22
+
+- **Bug Fix** Various backend fixes
+
+## 3.17.0 2024-07-29
+
+- **Bug Fix** FileNotFound error causing early SSO expiration
+
+## 3.16.0 2024-07-25
+
+- **Bug Fix** AccessAnalyzer: error when running CheckNoPublicAccess with only role trust policy in template
+
+## 3.15.0 2024-07-18
+
+- **Bug Fix** Unexpected SSO expiration on Windows due to EPERM
+
+## 3.14.0 2024-07-11
+
+- **Bug Fix** App composer generate suggestion unclickable when logged in
+- **Bug Fix** AD/LDAP users may see "uv_os_get_passwd ENOENT" error on startup #5277
+
+## 3.13.0 2024-07-08
+
+- **Bug Fix** Add warning message for drag and drop bug on VS Code 1.91.0
+- **Feature** CodeCatalyst: always show Dev Environment timeout warning as modal prompt
+
+## 3.12.0 2024-06-27
+
+- **Bug Fix** Step functions language server activates when editing ASL documents from previous session
+- **Bug Fix** Step functions language server activation fails
+
+## 3.11.0 2024-06-21
+
+- **Removal** Auth: No longer share SSO sessions with Amazon Q.
+
+## 3.10.0 2024-06-14
+
+- **Bug Fix** UX: Amazon Q continues to install even if users uninstall it.
+- **Bug Fix** CodeCatalyst: Dev Environment may time out if user is not authenticated
+
+## 3.9.0 2024-06-07
+
+- **Feature** Toolkit now supports creating, viewing and editing [Threat Composer](https://github.com/awslabs/threat-composer#readme) threat models (`*.tc.json`)
+
+## 3.8.0 2024-05-30
+
+- **Bug Fix** auth: use device code auth when running in a web browser
+
+## 3.7.0 2024-05-23
+
+- **Feature** AWS Toolkit now publishes to Open VSX: https://open-vsx.org/namespace/amazonwebservices
+- **Feature** IAM Policy Checks: validate IAM policies within VS Code
+
+## 3.6.0 2024-05-23
+
+- **Feature** IAM Policy Checks: add feature to validate IAM policies within VS Code
+- **Feature** AWS Toolkit now publishes to Open VSX: https://open-vsx.org/namespace/amazonwebservices
+
 ## 3.4.0 2024-05-17
 
 - **Bug Fix** CodeCatalyst: No longer display a prompt to 'Onboard' if re-using an existing connection from Amazon Q and it is already onboarded.

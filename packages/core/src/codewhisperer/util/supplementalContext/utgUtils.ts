@@ -4,7 +4,7 @@
  */
 
 import * as path from 'path'
-import { fsCommon } from '../../../srcShared/fs'
+import { fs } from '../../../shared'
 import * as vscode from 'vscode'
 import {
     countSubstringMatches,
@@ -24,10 +24,12 @@ import { getOpenFilesInWindow } from '../../../shared/utilities/editorUtilities'
 import { getLogger } from '../../../shared/logger/logger'
 import { CodeWhispererSupplementalContext, CodeWhispererSupplementalContextItem, UtgStrategy } from '../../models/model'
 
-type UtgSupportedLanguage = keyof typeof utgLanguageConfigs
+const utgSupportedLanguages: vscode.TextDocument['languageId'][] = ['java', 'python']
+
+type UtgSupportedLanguage = (typeof utgSupportedLanguages)[number]
 
 function isUtgSupportedLanguage(languageId: vscode.TextDocument['languageId']): languageId is UtgSupportedLanguage {
-    return languageId in utgLanguageConfigs
+    return utgSupportedLanguages.includes(languageId)
 }
 
 export function shouldFetchUtgContext(
@@ -114,7 +116,7 @@ async function generateSupplementalContextFromFocalFile(
     strategy: UtgStrategy,
     cancellationToken: vscode.CancellationToken
 ): Promise<CodeWhispererSupplementalContextItem[]> {
-    const fileContent = await fsCommon.readFileAsString(vscode.Uri.parse(filePath!).fsPath)
+    const fileContent = await fs.readFileText(vscode.Uri.parse(filePath!).fsPath)
 
     // DO NOT send code chunk with empty content
     if (fileContent.trim().length === 0) {
@@ -134,7 +136,7 @@ async function findSourceFileByContent(
     languageConfig: utgLanguageConfig,
     cancellationToken: vscode.CancellationToken
 ): Promise<string | undefined> {
-    const testFileContent = await fsCommon.readFileAsString(editor.document.fileName)
+    const testFileContent = await fs.readFileText(editor.document.fileName)
     const testElementList = extractFunctions(testFileContent, languageConfig.functionExtractionPattern)
 
     throwIfCancelled(cancellationToken)
@@ -159,7 +161,7 @@ async function findSourceFileByContent(
     for (const filePath of relevantFilePaths) {
         throwIfCancelled(cancellationToken)
 
-        const fileContent = await fsCommon.readFileAsString(filePath)
+        const fileContent = await fs.readFileText(filePath)
         const elementList = extractFunctions(fileContent, languageConfig.functionExtractionPattern)
         elementList.push(...extractClasses(fileContent, languageConfig.classExtractionPattern))
         const matchCount = countSubstringMatches(elementList, testElementList)
@@ -175,7 +177,7 @@ async function getRelevantUtgFiles(editor: vscode.TextEditor): Promise<string[]>
     const targetFile = editor.document.uri.fsPath
     const language = editor.document.languageId
 
-    return await getOpenFilesInWindow(async candidateFile => {
+    return await getOpenFilesInWindow(async (candidateFile) => {
         return (
             targetFile !== candidateFile &&
             path.extname(targetFile) === path.extname(candidateFile) &&
@@ -184,41 +186,45 @@ async function getRelevantUtgFiles(editor: vscode.TextEditor): Promise<string[]>
     })
 }
 
+export function guessSrcFileName(
+    testFileName: string,
+    languageId: vscode.TextDocument['languageId']
+): string | undefined {
+    const languageConfig = utgLanguageConfigs[languageId]
+    if (!languageConfig) {
+        return undefined
+    }
+
+    for (const pattern of languageConfig.testFilenamePattern) {
+        try {
+            const match = testFileName.match(pattern)
+            if (match) {
+                return match[1] + match[2]
+            }
+        } catch (err) {
+            if (err instanceof Error) {
+                getLogger().error(
+                    `codewhisperer: error while guessing source file name from file ${testFileName} and pattern ${pattern}: ${err.message}`
+                )
+            }
+        }
+    }
+
+    return undefined
+}
+
 async function findSourceFileByName(
     editor: vscode.TextEditor,
     languageConfig: utgLanguageConfig,
     cancellationToken: vscode.CancellationToken
 ): Promise<string | undefined> {
     const testFileName = path.basename(editor.document.fileName)
-
-    let basenameSuffix = testFileName
-    const match = testFileName.match(languageConfig.testFilenamePattern)
-    if (match) {
-        basenameSuffix = match[1] || match[2]
+    const assumedSrcFileName = guessSrcFileName(testFileName, editor.document.languageId)
+    if (!assumedSrcFileName) {
+        return undefined
     }
 
-    throwIfCancelled(cancellationToken)
-
-    // Assuming the convention of using similar path structure for test and src files.
-    const dirPath = path.dirname(editor.document.uri.fsPath)
-    let newPath = ''
-    const lastIndexTest = dirPath.lastIndexOf('/test/')
-    const lastIndexTst = dirPath.lastIndexOf('/tst/')
-    // This is a faster way on the assumption that source file and test file will follow similar path structure.
-    if (lastIndexTest > 0) {
-        newPath = dirPath.substring(0, lastIndexTest) + '/src/' + dirPath.substring(lastIndexTest + 5)
-    } else if (lastIndexTst > 0) {
-        newPath = dirPath.substring(0, lastIndexTst) + '/src/' + dirPath.substring(lastIndexTst + 4)
-    }
-    newPath = path.join(newPath, basenameSuffix + languageConfig.extension)
-    // TODO: Add metrics here, as we are not able to find the source file by name.
-    if (await fsCommon.exists(newPath)) {
-        return newPath
-    }
-
-    throwIfCancelled(cancellationToken)
-
-    const sourceFiles = await vscode.workspace.findFiles(`**/${basenameSuffix}${languageConfig.extension}`)
+    const sourceFiles = await vscode.workspace.findFiles(`**/${assumedSrcFileName}`)
 
     throwIfCancelled(cancellationToken)
 

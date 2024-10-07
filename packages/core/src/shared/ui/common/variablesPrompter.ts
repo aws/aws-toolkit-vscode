@@ -4,13 +4,13 @@
  */
 
 import * as vscode from 'vscode'
-import * as fs from 'fs-extra'
 import { showViewLogsMessage } from '../../utilities/messages'
 import { WIZARD_RETRY } from '../../wizards/wizard'
 import { createQuickPick, DataQuickPickItem, QuickPickPrompter } from '../pickerPrompter'
 import * as nls from 'vscode-nls'
 import { PrompterButtons } from '../buttons'
 import { promisifyThenable } from '../../utilities/vsCodeUtils'
+import fs from '../../fs/fs'
 
 const localize = nls.loadMessageBundle()
 
@@ -36,9 +36,9 @@ function unquote(str: string): string {
 function parseEnvFile(contents: string): { [key: string]: string } {
     return contents
         .split(/\r?\n/)
-        .map(line => line.match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/))
+        .map((line) => line.match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/))
         .filter(isMatchArray)
-        .map(match => ({ [match[1]]: unquote(match[2] ?? '').trim() }))
+        .map((match) => ({ [match[1]]: unquote(match[2] ?? '').trim() }))
         .reduce((a, b) => Object.assign(a, b))
 }
 
@@ -72,7 +72,7 @@ export function createVariablesPrompter(
                 throw new Error('Closed dialog')
             }
             const path = resp[0].fsPath
-            const contents = await fs.promises.readFile(path)
+            const contents = await fs.readFileBytes(path)
             return parseEnvFile(contents.toString())
         } catch (err) {
             if ((err as Error).message !== 'Closed dialog') {

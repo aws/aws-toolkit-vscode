@@ -1,0 +1,26 @@
+{
+	"date": "2024-06-14",
+	"version": "1.9.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q inline suggestions: remember `Pause Auto-Suggestions` after IDE restart"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q /dev command: stop showing spinner when there is an error."
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Security Scan: Fixes an issue where auto-scans cause the editor to become unresponsive for larger projects."
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Fix(Amazon Q Code Transformation): show more detailed error messages for proxy issues"
+		},
+		{
+			"type": "Feature",
+			"description": "Amazon Q Code Transform: Allow user to view transformation build log"
+		}
+	]
+}

@@ -5,7 +5,7 @@
 
 import assert from 'assert'
 import { Runtime } from 'aws-sdk/clients/lambda'
-import { mkdirpSync, mkdtemp } from 'fs-extra'
+import { mkdtempSync } from 'fs'
 import * as path from 'path'
 import * as semver from 'semver'
 import * as vscode from 'vscode'
@@ -27,6 +27,7 @@ import { insertTextIntoFile } from '../shared/utilities/textUtilities'
 import globals from '../shared/extensionGlobals'
 import { closeAllEditors } from '../test/testUtil'
 import { ToolkitError } from '../shared/errors'
+import { fs } from '../shared'
 
 const projectFolder = testUtils.getTestWorkspaceFolder()
 
@@ -311,7 +312,7 @@ async function startDebugger(
     // Create a Promise that encapsulates our success critera
     const success = new Promise<void>((resolve, reject) => {
         testDisposables.push(
-            vscode.debug.onDidTerminateDebugSession(async session => {
+            vscode.debug.onDidTerminateDebugSession(async (session) => {
                 logSession('END', session.name)
                 const sessionRuntime = (session.configuration as any).runtime
                 if (!sessionRuntime) {
@@ -393,15 +394,15 @@ describe('SAM Integration Tests', async function () {
         await testUtils.configureAwsToolkitExtension()
         // await testUtils.configureGoExtension()
 
-        testSuiteRoot = await mkdtemp(path.join(projectFolder, 'inttest'))
+        testSuiteRoot = mkdtempSync(path.join(projectFolder, 'inttest'))
         console.log('testSuiteRoot: ', testSuiteRoot)
-        mkdirpSync(testSuiteRoot)
+        await fs.mkdir(testSuiteRoot)
     })
 
     after(async function () {
         await tryRemoveFolder(testSuiteRoot)
         // Print a summary of session that were seen by `onDidStartDebugSession`.
-        const sessionReport = sessionLog.map(x => `    ${x}`).join('\n')
+        const sessionReport = sessionLog.map((x) => `    ${x}`).join('\n')
         await config.update('server.launchMode', javaLanguageSetting)
         console.log(`DebugSessions seen in this run:\n${sessionReport}`)
     })
@@ -417,7 +418,7 @@ describe('SAM Integration Tests', async function () {
             randomTestScenario = scenarios[0]
 
             runtimeTestRoot = path.join(testSuiteRoot, 'randomScenario')
-            mkdirpSync(runtimeTestRoot)
+            await fs.mkdir(runtimeTestRoot)
         })
 
         after(async function () {
@@ -453,7 +454,7 @@ describe('SAM Integration Tests', async function () {
             before(async function () {
                 runtimeTestRoot = path.join(testSuiteRoot, scenario.runtime)
                 console.log('runtimeTestRoot: ', runtimeTestRoot)
-                mkdirpSync(runtimeTestRoot)
+                await fs.mkdir(runtimeTestRoot)
             })
 
             after(async function () {
@@ -480,7 +481,7 @@ describe('SAM Integration Tests', async function () {
                 let cfnTemplatePath: string
 
                 before(async function () {
-                    testDir = await mkdtemp(path.join(runtimeTestRoot, 'samapp-'))
+                    testDir = mkdtempSync(path.join(runtimeTestRoot, 'samapp-'))
                     log(`testDir: ${testDir}`)
 
                     await createSamApplication(testDir, scenario)
@@ -500,7 +501,7 @@ describe('SAM Integration Tests', async function () {
                 })
 
                 afterEach(async function () {
-                    testDisposables.forEach(d => d.dispose())
+                    testDisposables.forEach((d) => d.dispose())
                     await stopDebugger(undefined)
                 })
 

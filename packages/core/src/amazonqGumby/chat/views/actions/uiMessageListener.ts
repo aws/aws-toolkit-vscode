@@ -25,7 +25,7 @@ export class UIMessageListener {
         this.webViewMessageListener = props.webViewMessageListener
 
         // Now we are listening to events that get sent from amazonq/webview/actions/actionListener (e.g. the tab)
-        this.webViewMessageListener.onMessage(msg => {
+        this.webViewMessageListener.onMessage((msg) => {
             this.handleMessage(msg)
         })
     }

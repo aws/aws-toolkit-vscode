@@ -25,7 +25,7 @@ import { isAwsError } from '../../shared/errors'
 import { getLogger } from '../../shared/logger'
 import { session } from './codeWhispererSession'
 import { CodeWhispererSupplementalContext } from '../models/model'
-import { FeatureConfigProvider } from '../service/featureConfigProvider'
+import { FeatureConfigProvider } from '../../shared/featureConfig'
 import { CodeScanRemediationsEventType } from '../client/codewhispereruserclient'
 
 export class TelemetryHelper {
@@ -46,6 +46,8 @@ export class TelemetryHelper {
     private timeToFirstRecommendation = 0
     private classifierResult?: number = undefined
     private classifierThreshold?: number = undefined
+    // variables for tracking end to end sessions
+    public traceId: string = 'notSet'
 
     // use this to distinguish DocumentChangeEvent from CWSPR or from other sources
     public lastSuggestionInDisplay = ''
@@ -90,6 +92,7 @@ export class TelemetryHelper {
             codewhispererSupplementalContextLength: supplementalContextMetadata?.contentsLength,
             codewhispererUserGroup: CodeWhispererUserGroupSettings.getUserGroup().toString(),
             codewhispererCustomizationArn: getSelectedCustomization().arn,
+            traceId: this.traceId,
         }
         telemetry.codewhisperer_serviceInvocation.emit(event)
     }
@@ -118,6 +121,7 @@ export class TelemetryHelper {
             codewhispererSupplementalContextTimeout: supplementalContextMetadata?.isProcessTimeout,
             codewhispererSupplementalContextIsUtg: supplementalContextMetadata?.isUtg,
             codewhispererSupplementalContextLength: supplementalContextMetadata?.contentsLength,
+            traceId: this.traceId,
         })
     }
 
@@ -171,6 +175,7 @@ export class TelemetryHelper {
                 codewhispererSupplementalContextTimeout: supplementalContextMetadata?.isProcessTimeout,
                 codewhispererSupplementalContextIsUtg: supplementalContextMetadata?.isUtg,
                 codewhispererSupplementalContextLength: supplementalContextMetadata?.contentsLength,
+                traceId: this.traceId,
             }
             telemetry.codewhisperer_userDecision.emit(event)
             events.push(event)
@@ -227,13 +232,14 @@ export class TelemetryHelper {
             codewhispererCursorOffset: session.startCursorOffset,
             codewhispererSuggestionState: this.getAggregatedSuggestionState(events),
             codewhispererSuggestionImportCount: events
-                .map(e => e.codewhispererSuggestionImportCount || 0)
+                .map((e) => e.codewhispererSuggestionImportCount || 0)
                 .reduce((a, b) => a + b, 0),
             codewhispererTypeaheadLength: 0,
             codewhispererUserGroup: CodeWhispererUserGroupSettings.getUserGroup().toString(),
             codewhispererSupplementalContextTimeout: supplementalContextMetadata?.isProcessTimeout,
             codewhispererSupplementalContextIsUtg: supplementalContextMetadata?.isUtg,
             codewhispererSupplementalContextLength: supplementalContextMetadata?.contentsLength,
+            traceId: this.traceId,
         }
         return aggregated
     }
@@ -259,7 +265,7 @@ export class TelemetryHelper {
         const generatedLines =
             acceptedRecommendationContent.trim() === '' ? 0 : acceptedRecommendationContent.split('\n').length
         const suggestionCount = this.sessionDecisions
-            .map(e => e.codewhispererSuggestionCount)
+            .map((e) => e.codewhispererSuggestionCount)
             .reduce((a, b) => a + b, 0)
 
         const aggregated: CodewhispererUserTriggerDecision = {
@@ -275,7 +281,7 @@ export class TelemetryHelper {
             codewhispererLineNumber: this.sessionDecisions[0].codewhispererLineNumber,
             codewhispererCursorOffset: this.sessionDecisions[0].codewhispererCursorOffset,
             codewhispererSuggestionImportCount: this.sessionDecisions
-                .map(e => e.codewhispererSuggestionImportCount || 0)
+                .map((e) => e.codewhispererSuggestionImportCount || 0)
                 .reduce((a, b) => a + b, 0),
             codewhispererTypeaheadLength: this.typeAheadLength,
             codewhispererTimeSinceLastDocumentChange: this.timeSinceLastModification
@@ -299,6 +305,7 @@ export class TelemetryHelper {
             codewhispererSupplementalContextStrategyId: supplementalContextMetadata?.strategy,
             codewhispererCharactersAccepted: acceptedRecommendationContent.length,
             codewhispererFeatureEvaluations: FeatureConfigProvider.instance.getFeatureConfigsTelemetry(),
+            traceId: this.traceId,
         }
         telemetry.codewhisperer_userTriggerDecision.emit(aggregated)
         this.prevTriggerDecision = this.getAggregatedSuggestionState(this.sessionDecisions)
@@ -335,7 +342,7 @@ export class TelemetryHelper {
                 },
             })
             .then()
-            .catch(error => {
+            .catch((error) => {
                 let requestId: string | undefined
                 if (isAwsError(error)) {
                     requestId = error.requestId
@@ -384,6 +391,10 @@ export class TelemetryHelper {
         if (this.invocationTime) {
             this.timeToFirstRecommendation = timeToFirstRecommendation - this.invocationTime
         }
+    }
+
+    public setTraceId(traceId: string) {
+        this.traceId = traceId
     }
 
     private resetUserTriggerDecisionTelemetry() {
@@ -529,17 +540,11 @@ export class TelemetryHelper {
             codewhispererLanguage: session.language,
             credentialStartUrl: AuthUtil.instance.startUrl,
             codewhispererUserGroup: CodeWhispererUserGroupSettings.getUserGroup().toString(),
+            codewhispererCustomizationArn: getSelectedCustomization().arn,
         })
     }
     public sendCodeScanEvent(languageId: string, jobId: string) {
         getLogger().debug(`start sendCodeScanEvent: jobId: "${jobId}", languageId: "${languageId}"`)
-
-        let codewhispererRuntimeLanguage: string = languageId
-        if (codewhispererRuntimeLanguage === 'jsx') {
-            codewhispererRuntimeLanguage = 'javascript'
-        } else if (codewhispererRuntimeLanguage === 'tsx') {
-            codewhispererRuntimeLanguage = 'typescript'
-        }
 
         client
             .sendTelemetryEvent({
@@ -554,7 +559,7 @@ export class TelemetryHelper {
                 },
             })
             .then()
-            .catch(error => {
+            .catch((error) => {
                 let requestId: string | undefined
                 if (isAwsError(error)) {
                     requestId = error.requestId
@@ -603,7 +608,7 @@ export class TelemetryHelper {
                 },
             })
             .then()
-            .catch(error => {
+            .catch((error) => {
                 let requestId: string | undefined
                 if (isAwsError(error)) {
                     requestId = error.requestId

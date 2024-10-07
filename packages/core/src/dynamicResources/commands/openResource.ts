@@ -29,7 +29,7 @@ export async function openResource(opts: {
             location: vscode.ProgressLocation.Notification,
             cancellable: false,
         },
-        async progress => {
+        async (progress) => {
             let result: Result = 'Succeeded'
 
             progress.report({
