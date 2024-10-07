@@ -307,7 +307,7 @@ export async function runLambdaFunction(
         const payload =
             config.eventPayloadFile === undefined
                 ? undefined
-                : JSON.parse(await fs.readFileAsString(config.eventPayloadFile))
+                : JSON.parse(await fs.readFileText(config.eventPayloadFile))
 
         apiRequest = requestLocalApi(timer, config.api!, config.apiPort!, payload)
     }
@@ -594,7 +594,7 @@ export async function makeJsonFiles(config: SamLaunchRequestArgs): Promise<void>
     if (payloadPath) {
         const fullpath = tryGetAbsolutePath(config.workspaceFolder, payloadPath)
         try {
-            JSON.parse(await fs.readFileAsString(fullpath))
+            JSON.parse(await fs.readFileText(fullpath))
         } catch (e) {
             throw Error(`Invalid JSON in payload file: ${payloadPath}`)
         }

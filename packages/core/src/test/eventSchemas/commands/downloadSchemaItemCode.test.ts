@@ -384,7 +384,7 @@ describe('SchemaCodeDownload', function () {
 
             // should extract the zip file with provided fileContent
             const expectedFilePath = path.join(request.destinationDirectory.fsPath, fileName)
-            const response = await fs.readFileAsString(expectedFilePath)
+            const response = await fs.readFileText(expectedFilePath)
             assert.strictEqual(response, fileContent, `${expectedFilePath} :file content do not match`)
         })
 
@@ -421,7 +421,7 @@ describe('SchemaCodeDownload', function () {
             )
 
             const expectedFilePath = path.join(request.destinationDirectory.fsPath, fileName)
-            const response = await fs.readFileAsString(expectedFilePath)
+            const response = await fs.readFileText(expectedFilePath)
             assert.strictEqual(response, fileContent, 'Extracted file content do not match with expected')
         })
 
@@ -551,8 +551,8 @@ describe('CodeExtractor', function () {
             assert.ok(await fs.exists(file2Path), `${file2Path} should exist`)
 
             //confirm file contents
-            const file1Content = await fs.readFileAsString(file1Path)
-            const file2Content = await fs.readFileAsString(file2Path)
+            const file1Content = await fs.readFileText(file1Path)
+            const file2Content = await fs.readFileText(file2Path)
 
             assert.strictEqual(file1Content, 'First file content', `${file1Path} : file content do not match`)
             assert.strictEqual(file2Content, 'Second file content', `${file2Path} : file content do not match`)
@@ -578,7 +578,7 @@ describe('CodeExtractor', function () {
             await codeExtractor.extractAndPlace(buffer, request)
 
             const file1Path = path.join(destinationDirectory, fileName1)
-            const file1Content = await fs.readFileAsString(file1Path)
+            const file1Content = await fs.readFileText(file1Path)
 
             assert.strictEqual(file1Content, expectedFileContent, `${file1Path} :File content should not be overriden`)
         })
@@ -604,7 +604,7 @@ describe('CodeExtractor', function () {
             await codeExtractor.extractAndPlace(buffer, request)
 
             const file1Path = path.join(destinationDirectory, fileName1)
-            const file1Content = await fs.readFileAsString(file1Path)
+            const file1Content = await fs.readFileText(file1Path)
 
             assert.strictEqual(file1Content, overridenFileContent, `${file1Path} :File content should be overriden`)
         })
@@ -634,7 +634,7 @@ describe('CodeExtractor', function () {
             )
 
             const file1Path = path.join(destinationDirectory, fileName1)
-            const file1Content = await fs.readFileAsString(file1Path)
+            const file1Content = await fs.readFileText(file1Path)
 
             assert.strictEqual(file1Content, expectedFileContent, `${file1Path} :File content should not be overriden`)
         })
