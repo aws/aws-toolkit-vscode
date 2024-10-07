@@ -7,7 +7,7 @@ import '@cspotcode/source-map-support/register'
 import * as path from 'path'
 import Mocha from 'mocha'
 import { glob } from 'glob'
-import * as fs from 'fs-extra'
+import { fs } from '../shared'
 
 // Set explicit timezone to ensure that tests run locally do not use the user's actual timezone, otherwise
 // the test can pass on one persons machine but not anothers.
@@ -99,7 +99,7 @@ export async function runTests(
     // So instead we are loading the modules ourselves and registering the relevant hooks
     initTests.forEach((relativePath) => {
         const fullPath = path.join(dist, relativePath).replace('.ts', '.js')
-        if (!fs.pathExistsSync(fullPath)) {
+        if (!fs.exists(fullPath)) {
             console.error(`error: missing ${fullPath}`)
             throw Error(`missing ${fullPath}`)
         }
@@ -135,7 +135,7 @@ export async function runTests(
         if (coverage) {
             const dst = path.resolve(root, '.nyc_output', 'out.json')
             console.log(`Writing test coverage to "${dst}"`)
-            await fs.ensureDir(path.dirname(dst))
+            await fs.mkdir(path.dirname(dst))
             await fs.writeFile(dst, JSON.stringify(coverage))
         } else {
             console.log('No test coverage found')

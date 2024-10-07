@@ -5,9 +5,9 @@
 
 import assert from 'assert'
 import * as path from 'path'
-import * as fs from 'fs-extra'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../../shared/filesystemUtilities'
 import { getRegistrationCache, getTokenCache } from '../../../auth/sso/cache'
+import { fs } from '../../../shared'
 
 describe('SSO Cache', function () {
     const region = 'dummyRegion'
@@ -47,7 +47,7 @@ describe('SSO Cache', function () {
             await cache.save({ startUrl, region }, validRegistration)
 
             const cachedPath = path.join(testDir, `aws-toolkit-vscode-client-id-${region}.json`)
-            const contents = await fs.readFile(cachedPath, 'utf-8')
+            const contents = await fs.readFileText(cachedPath)
 
             assert.deepStrictEqual(JSON.parse(contents), {
                 ...validRegistration,
@@ -70,7 +70,7 @@ describe('SSO Cache', function () {
 
             // SHA-1 hash of the encoded start URL `https://123456.awsapps.com/start`
             const cachedPath = path.join(testDir, 'c1ac99f782ad92755c6de8647b510ec247330ad1.json')
-            const contents = await fs.readFile(cachedPath, 'utf-8')
+            const contents = await fs.readFileText(cachedPath)
 
             assert.deepStrictEqual(JSON.parse(contents), {
                 region,
