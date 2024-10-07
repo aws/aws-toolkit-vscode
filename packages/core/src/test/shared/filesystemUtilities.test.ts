@@ -5,7 +5,6 @@
 
 import assert from 'assert'
 import * as os from 'os'
-import { writeFile, remove } from 'fs-extra'
 import * as path from 'path'
 import {
     fileExists,
@@ -15,6 +14,7 @@ import {
     makeTemporaryToolkitFolder,
     tempDirPath,
 } from '../../shared/filesystemUtilities'
+import { fs } from '../../shared'
 
 describe('filesystemUtilities', function () {
     const targetFilename = 'findThisFile12345.txt'
@@ -27,14 +27,14 @@ describe('filesystemUtilities', function () {
         tempFolder = await makeTemporaryToolkitFolder()
         targetFilePath = path.join(tempFolder, targetFilename)
 
-        await writeFile(targetFilePath, 'Hello, World!', 'utf8')
+        await fs.writeFile(targetFilePath, 'Hello, World!', 'utf8')
 
         foldersToCleanUp.push(tempFolder)
     })
 
     afterEach(async function () {
         for (const folder of foldersToCleanUp) {
-            await remove(folder)
+            await fs.delete(folder, { recursive: true })
         }
     })
 
@@ -45,17 +45,17 @@ describe('filesystemUtilities', function () {
         })
         it(`returns a filename that does not exist in the directory`, async function () {
             const dir = tempFolder
-            await writeFile(path.join(dir, 'foo.txt'), '', 'utf8')
-            await writeFile(path.join(dir, 'foo-0.txt'), '', 'utf8')
-            await writeFile(path.join(dir, 'foo-1.txt'), '', 'utf8')
-            await writeFile(path.join(dir, 'foo-2.txt'), '', 'utf8')
+            await fs.writeFile(path.join(dir, 'foo.txt'), '', 'utf8')
+            await fs.writeFile(path.join(dir, 'foo-0.txt'), '', 'utf8')
+            await fs.writeFile(path.join(dir, 'foo-1.txt'), '', 'utf8')
+            await fs.writeFile(path.join(dir, 'foo-2.txt'), '', 'utf8')
             assert.strictEqual(await getNonexistentFilename(dir, 'foo', '.txt', 99), 'foo-3.txt')
             assert.strictEqual(await getNonexistentFilename(dir, 'foo', '', 99), 'foo')
         })
         it(`returns "foo-RANDOM.txt" if max is reached`, async function () {
             const dir = tempFolder
-            await writeFile(path.join(dir, 'foo.txt'), '', 'utf8')
-            await writeFile(path.join(dir, 'foo-1.txt'), '', 'utf8')
+            await fs.writeFile(path.join(dir, 'foo.txt'), '', 'utf8')
+            await fs.writeFile(path.join(dir, 'foo-1.txt'), '', 'utf8')
             // Looks like "foo-75446d5d.txt".
             assert.ok(/^foo-[a-fA-F0-9]{8}.txt$/.test(await getNonexistentFilename(dir, 'foo', '.txt', 1)))
         })
