@@ -5,8 +5,8 @@
 
 import * as vscode from 'vscode'
 import * as path from 'path'
-import { createWriteStream } from 'fs'
 import * as crypto from 'crypto'
+import { createWriteStream } from 'fs'
 import { getLogger } from '../../shared/logger/logger'
 import { CurrentWsFolders, collectFilesForIndex } from '../../shared/utilities/workspaceUtils'
 import fetch from 'node-fetch'
@@ -133,7 +133,7 @@ export class LspController {
     }
 
     async getFileSha384(filePath: string): Promise<string> {
-        const fileBuffer = await fs.readFile(filePath)
+        const fileBuffer = await fs.readFileBytes(filePath)
         const hash = crypto.createHash('sha384')
         hash.update(fileBuffer)
         return hash.digest('hex')

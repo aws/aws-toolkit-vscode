@@ -72,7 +72,7 @@ export function createVariablesPrompter(
                 throw new Error('Closed dialog')
             }
             const path = resp[0].fsPath
-            const contents = await fs.readFile(path)
+            const contents = await fs.readFileBytes(path)
             return parseEnvFile(contents.toString())
         } catch (err) {
             if ((err as Error).message !== 'Closed dialog') {

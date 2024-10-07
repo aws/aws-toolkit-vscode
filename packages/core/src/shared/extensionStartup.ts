@@ -60,7 +60,7 @@ export async function createQuickStartWebview(
     const baseTemplateFn = _.template(BaseTemplates.simpleHtml)
 
     const htmlBody = convertExtensionRootTokensToPath(
-        await fs.readFileAsString(path.join(context.extensionPath, actualPage)),
+        await fs.readFileText(path.join(context.extensionPath, actualPage)),
         context.extensionPath,
         view.webview
     )

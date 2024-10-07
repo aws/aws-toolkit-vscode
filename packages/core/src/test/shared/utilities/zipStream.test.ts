@@ -33,7 +33,7 @@ describe('zipStream', function () {
         await fs.writeFile(zipPath, zipBuffer)
         const expectedMd5 = crypto
             .createHash('md5')
-            .update(await fs.readFile(zipPath))
+            .update(await fs.readFileBytes(zipPath))
             .digest('base64')
         assert.strictEqual(result.md5, expectedMd5)
         assert.strictEqual(result.sizeInBytes, (await fs.stat(zipPath)).size)
@@ -55,7 +55,7 @@ describe('zipStream', function () {
         await fs.writeFile(zipPath, zipBuffer)
         const expectedMd5 = crypto
             .createHash('md5')
-            .update(await fs.readFile(zipPath))
+            .update(await fs.readFileBytes(zipPath))
             .digest('base64')
         assert.strictEqual(result.md5, expectedMd5)
         assert.strictEqual(result.sizeInBytes, (await fs.stat(zipPath)).size)
