@@ -13,7 +13,12 @@ import { telemetry } from '../../shared/telemetry/telemetry'
 import { VirtualFileSystem } from '../../shared/virtualFilesystem'
 import { VirtualMemoryFile } from '../../shared/virtualMemoryFile'
 import { featureDevScheme } from '../constants'
-import { FeatureDevServiceError, IllegalStateTransition, PromptRefusalException } from '../errors'
+import {
+    FeatureDevServiceError,
+    IllegalStateTransition,
+    NoChangeRequiredException,
+    PromptRefusalException,
+} from '../errors'
 import {
     CodeGenerationStatus,
     CurrentWsFolders,
@@ -208,6 +213,9 @@ abstract class CodeGenBase {
                             throw new PromptRefusalException()
                         }
                         case codegenResult.codeGenerationStatusDetail?.includes('EmptyPatch'): {
+                            if (codegenResult.codeGenerationStatusDetail?.includes('NO_CHANGE_REQUIRED')) {
+                                throw new NoChangeRequiredException()
+                            }
                             throw new FeatureDevServiceError(
                                 i18n('AWS.amazonq.featureDev.error.codeGen.default'),
                                 'EmptyPatchException'
