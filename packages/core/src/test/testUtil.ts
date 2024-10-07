@@ -39,7 +39,7 @@ export async function toFile(o: any, filepath: string | vscode.Uri) {
  * Gets the contents of `filepath` as UTF-8 encoded string.
  */
 export async function fromFile(filepath: string): Promise<string> {
-    return await fs.readFileAsString(filepath)
+    return await fs.readFileText(filepath)
 }
 
 /** Gets the full path to the Toolkit source root on this machine. */
@@ -234,7 +234,7 @@ export function assertEqualPaths(actual: string, expected: string, message?: str
  * Asserts that UTF-8 contents of `file` are equal to `expected`.
  */
 export async function assertFileText(file: string, expected: string, message?: string | Error) {
-    const actualContents = await fs.readFileAsString(file)
+    const actualContents = await fs.readFileText(file)
     assert.strictEqual(actualContents, expected, message)
 }
 

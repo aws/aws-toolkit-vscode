@@ -59,7 +59,7 @@ describe('_readCustomChecksFile', () => {
 
     it('should read file content if file exists', async () => {
         const filePath = globals.context.asAbsolutePath(defaultTerraformConfigPath)
-        const fileContent = await vscodeFs.readFileAsString(filePath)
+        const fileContent = await vscodeFs.readFileText(filePath)
 
         const result = await _readCustomChecksFile(filePath)
 
