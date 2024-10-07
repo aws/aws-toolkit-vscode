@@ -18,8 +18,8 @@
 //
 
 import * as child_process from 'child_process'
+import * as fs from 'fs-extra'
 import * as path from 'path'
-import { fs } from '../packages/core/src/shared'
 
 function parseArgs() {
     // Invoking this script with argument "foo":
@@ -105,7 +105,7 @@ function getVersionSuffix(feature: string, debug: boolean): string {
     return `${debugSuffix}${featureSuffix}${commitSuffix}`
 }
 
-async function main() {
+function main() {
     const args = parseArgs()
     // It is expected that this will package from a packages/{subproject} folder.
     // There is a base config in packages/
@@ -114,7 +114,7 @@ async function main() {
     const webpackConfigJsFile = '../webpack.base.config.js'
     const backupWebpackConfigFile = `${webpackConfigJsFile}.package.bk`
 
-    if (!(await fs.exists(packageJsonFile))) {
+    if (!fs.existsSync(packageJsonFile)) {
         throw new Error(`package.json not found, cannot package this directory: ${process.cwd()}`)
     }
 
@@ -127,8 +127,8 @@ async function main() {
             throw new Error('Cannot package VSIX as both a release and a beta simultaneously')
         }
         // Create backup file so we can restore the originals later.
-        await fs.copy(packageJsonFile, backupJsonFile)
-        const packageJson = JSON.parse(await fs.readFileText(packageJsonFile))
+        fs.copyFileSync(packageJsonFile, backupJsonFile)
+        const packageJson = JSON.parse(fs.readFileSync(packageJsonFile, { encoding: 'utf-8' }))
 
         if (!release || args.debug) {
             const versionSuffix = getVersionSuffix(args.feature, args.debug)
@@ -148,13 +148,13 @@ async function main() {
             }
 
             if (args.debug) {
-                await fs.copy(webpackConfigJsFile, backupWebpackConfigFile)
-                const webpackConfigJs = await fs.readFileText(webpackConfigJsFile)
-                await fs.writeFile(webpackConfigJsFile, webpackConfigJs.replace(/minimize: true/, 'minimize: false'))
+                fs.copyFileSync(webpackConfigJsFile, backupWebpackConfigFile)
+                const webpackConfigJs = fs.readFileSync(webpackConfigJsFile, { encoding: 'utf-8' })
+                fs.writeFileSync(webpackConfigJsFile, webpackConfigJs.replace(/minimize: true/, 'minimize: false'))
             }
         }
 
-        await fs.writeFile(packageJsonFile, JSON.stringify(packageJson, undefined, '    '))
+        fs.writeFileSync(packageJsonFile, JSON.stringify(packageJson, undefined, '    '))
         child_process.execFileSync(
             'vsce',
             [
@@ -181,19 +181,19 @@ async function main() {
         // TODO: Once we can support releasing multiple artifacts,
         // let's just keep the .vsix in its respective project folder in packages/
         const vsixName = `${packageJson.name}-${packageJson.version}.vsix`
-        await fs.rename(vsixName, `../../${vsixName}`)
+        fs.moveSync(vsixName, `../../${vsixName}`, { overwrite: true })
     } catch (e) {
         console.log(e)
         throw Error('package.ts: failed')
     } finally {
         // Restore the original files.
-        await fs.copy(backupJsonFile, packageJsonFile)
-        await fs.delete(backupJsonFile)
+        fs.copyFileSync(backupJsonFile, packageJsonFile)
+        fs.unlinkSync(backupJsonFile)
         if (args.debug) {
-            await fs.copy(backupWebpackConfigFile, webpackConfigJsFile)
-            await fs.delete(backupWebpackConfigFile)
+            fs.copyFileSync(backupWebpackConfigFile, webpackConfigJsFile)
+            fs.unlinkSync(backupWebpackConfigFile)
         }
     }
 }
 
-void main()
+main()

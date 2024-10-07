@@ -4,9 +4,9 @@
  */
 
 import * as child_process from 'child_process'
+import * as fs from 'fs-extra'
 import { marked } from 'marked'
 import * as path from 'path'
-import { fs } from '../packages/core/src/shared'
 
 // doesn't use path utils as this should be formatted for finding images with HTML markup
 const projectRoot = process.cwd()
@@ -19,7 +19,7 @@ const projectRoot = process.cwd()
  * @param outputFile Filepath to output HTML to
  * @param cn Converts "AWS" to "Amazon" for CN-based compute.
  */
-async function translateReadmeToHtml(
+function translateReadmeToHtml(
     root: string,
     inputFile: string,
     outputFile: string,
@@ -27,14 +27,14 @@ async function translateReadmeToHtml(
     cn: boolean = false
 ) {
     const inputPath = path.join(root, inputFile)
-    if (!(await fs.exists(inputPath))) {
+    if (!fs.existsSync(inputPath)) {
         if (throwIfNotExists) {
             throw Error(`File ${inputFile} was not found, but it is required.`)
         }
         console.log(`File ${inputFile} was not found, skipping transformation...`)
         return
     }
-    const fileText = (await fs.readFileBytes(path.join(root, inputFile))).toString()
+    const fileText = fs.readFileSync(path.join(root, inputFile)).toString()
     const relativePathRegex = /]\(\.\//g
     let transformedText = fileText.replace(relativePathRegex, '](!!EXTENSIONROOT!!/')
     if (cn) {
@@ -45,32 +45,27 @@ async function translateReadmeToHtml(
     if (typeof r !== 'string') {
         throw Error()
     }
-    await fs.writeFile(path.join(root, outputFile), r)
+    fs.writeFileSync(path.join(root, outputFile), r)
 }
 
 /**
  * Do a best effort job of generating a git hash and putting it into the package
  */
-async function generateFileHash(root: string) {
+function generateFileHash(root: string) {
     try {
         const response = child_process.execSync('git rev-parse HEAD')
-        await fs.mkdir(root)
-        await fs.writeFile(path.join(root, '.gitcommit'), response)
+        fs.outputFileSync(path.join(root, '.gitcommit'), response)
     } catch (e) {
         console.log(`Getting commit hash failed ${e}`)
     }
 }
 
-async function main() {
-    try {
-        await translateReadmeToHtml(projectRoot, 'README.md', 'quickStartVscode.html', true)
-        await translateReadmeToHtml(projectRoot, 'README.quickstart.cloud9.md', 'quickStartCloud9.html', false)
-        await translateReadmeToHtml(projectRoot, 'README.quickstart.cloud9.md', 'quickStartCloud9-cn.html', false, true)
-        await generateFileHash(projectRoot)
-    } catch (error) {
-        console.error(error)
-        process.exit(100)
-    }
+try {
+    translateReadmeToHtml(projectRoot, 'README.md', 'quickStartVscode.html', true)
+    translateReadmeToHtml(projectRoot, 'README.quickstart.cloud9.md', 'quickStartCloud9.html', false)
+    translateReadmeToHtml(projectRoot, 'README.quickstart.cloud9.md', 'quickStartCloud9-cn.html', false, true)
+    generateFileHash(projectRoot)
+} catch (error) {
+    console.error(error)
+    process.exit(100)
 }
-
-void main()

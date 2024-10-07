@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as fs from 'fs-extra'
 import * as path from 'path'
-import { fs } from '../packages/core/src/shared'
 
 /**
  * Generate a settings type based on `package.json:contributes.configuration`.
@@ -14,10 +14,10 @@ import { fs } from '../packages/core/src/shared'
  * This script is meant to be run from individual from subprojects.
  */
 
-async function main() {
+function main() {
     const ext = path.basename(process.cwd())
     const packageJsonFile = './package.json'
-    const packageJson = JSON.parse(await fs.readFileText(packageJsonFile))
+    const packageJson = JSON.parse(fs.readFileSync(packageJsonFile, { encoding: 'utf-8' }))
 
     const genFile = `../core/src/shared/settings-${ext}.gen.ts`
     type Configuration = { [key: string]: { [key: string]: {} } }
@@ -50,7 +50,7 @@ export const ${ext}Settings = ${JSON.stringify(settings, undefined, '    ')}
 export default ${ext}Settings
 `
 
-    await fs.writeFile(genFile, contents)
+    fs.writeFileSync(genFile, contents)
 }
 
-void main()
+main()
