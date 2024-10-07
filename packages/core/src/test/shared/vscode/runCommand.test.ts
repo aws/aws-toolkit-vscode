@@ -17,7 +17,6 @@ import { assertTelemetry, getMetrics, installFakeClock } from '../../testUtil'
 import { getTestWindow } from '../../shared/vscode/window'
 import { makeTemporaryToolkitFolder } from '../../../shared'
 import path from 'path'
-import * as env from '../../../shared/vscode/env'
 import { fakeErrorChain, getAwsServiceError } from '../errors.test'
 
 async function throwMe(errorOrFn?: Error | (() => Promise<never>)): Promise<void | never> {
@@ -104,10 +103,6 @@ describe('runCommand', function () {
         }
 
         it('vscode ISDIR', async function () {
-            if (env.isMinVscode('1.83.0')) {
-                this.skip()
-            }
-
             const pat = (() => {
                 switch (os.platform()) {
                     case 'win32':
