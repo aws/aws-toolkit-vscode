@@ -20,11 +20,6 @@ describe('tech debt', function () {
         const minVscode = env.getMinVscodeVersion()
         assert.ok(semver.lt(minVscode, '1.84.0'))
 
-        assert.ok(
-            semver.lt(minVscode, '1.93.0'),
-            'remove AsyncLocalStorage polyfill used in `spans.ts` if Cloud9 is on node 14+'
-        )
-
         // see https://github.com/microsoft/vscode/issues/173861
         assert.ok(
             semver.lt(minVscode, '1.93.0'),
