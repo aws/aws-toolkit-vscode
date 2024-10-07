@@ -70,7 +70,7 @@ export function isSupportedJsonFormat(fileName: string, leftFileContent: string,
         language === 'json' &&
         !AWSTemplateKeyWords.some((substring) => leftFileContent.includes(substring)) &&
         !AWSTemplateCaseInsensitiveKeyWords.some((substring) => leftFileContent.toLowerCase().includes(substring)) &&
-        !JsonConfigFileNamingConvention.has(fileName)
+        !JsonConfigFileNamingConvention.has(fileName.toLowerCase())
     ) {
         return true
     }
