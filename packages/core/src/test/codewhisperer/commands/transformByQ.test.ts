@@ -5,7 +5,6 @@
 
 import assert, { fail } from 'assert'
 import * as vscode from 'vscode'
-import * as fs from 'fs-extra'
 import * as sinon from 'sinon'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { transformByQState, TransformByQStoppedError } from '../../../codewhisperer/models/model'
@@ -37,6 +36,7 @@ import {
 } from '../../../codewhisperer/service/transformByQ/transformProjectValidationHandler'
 import { TransformationCandidateProject, ZipManifest } from '../../../codewhisperer/models/model'
 import globals from '../../../shared/extensionGlobals'
+import { fs } from '../../../shared'
 
 describe('transformByQ', function () {
     let tempDir: string
@@ -48,7 +48,7 @@ describe('transformByQ', function () {
 
     afterEach(async function () {
         sinon.restore()
-        await fs.remove(tempDir)
+        await fs.delete(tempDir, { recursive: true })
     })
 
     it('WHEN converting short duration in milliseconds THEN converts correctly', async function () {
@@ -254,13 +254,13 @@ describe('transformByQ', function () {
             'resolver-status.properties',
         ]
 
-        m2Folders.forEach((folder) => {
+        for (const folder of m2Folders) {
             const folderPath = path.join(tempDir, folder)
-            fs.mkdirSync(folderPath, { recursive: true })
-            filesToAdd.forEach((file) => {
-                fs.writeFileSync(path.join(folderPath, file), 'sample content for the test file')
-            })
-        })
+            await fs.mkdir(folderPath)
+            for (const file of filesToAdd) {
+                await fs.writeFile(path.join(folderPath, file), 'sample content for the test file')
+            }
+        }
 
         const tempFileName = `testfile-${globals.clock.Date.now()}.zip`
         transformByQState.setProjectPath(tempDir)

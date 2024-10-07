@@ -64,7 +64,7 @@ describe('CodeWhisperer security scan', async function () {
 
     afterEach(async function () {
         if (tempFolder !== undefined) {
-            await fs.delete(tempFolder)
+            await fs.delete(tempFolder, { recursive: true })
         }
     })
 
