@@ -4,7 +4,6 @@
  */
 
 import assert from 'assert'
-import * as fs from 'fs-extra'
 import * as path from 'path'
 import { installCli } from '../../../shared/utilities/cliUtils'
 import globals from '../../../shared/extensionGlobals'
@@ -12,10 +11,11 @@ import { ChildProcess } from '../../../shared/utilities/processUtils'
 import { SeverityLevel } from '../vscode/message'
 import { assertTelemetryCurried } from '../../testUtil'
 import { getTestWindow } from '../../shared/vscode/window'
+import { fs } from '../../../shared'
 
 describe('cliUtils', async function () {
     afterEach(async function () {
-        await fs.remove(path.join(globals.context.globalStorageUri.fsPath, 'tools'))
+        await fs.delete(path.join(globals.context.globalStorageUri.fsPath, 'tools'), { recursive: true, force: true })
     })
 
     describe('installCli', async function () {

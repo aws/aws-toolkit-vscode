@@ -92,7 +92,7 @@ export class UserCredentialsUtils {
         const contents = credentialsContext ? ['', createNewCredentialsFile(credentialsContext)] : []
 
         if (await fs.exists(dest)) {
-            contents.unshift(await fs.readFileAsString(dest))
+            contents.unshift(await fs.readFileText(dest))
         } else {
             contents.unshift(header)
         }

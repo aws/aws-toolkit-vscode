@@ -173,13 +173,15 @@ module.exports = {
                             "Avoid importing from the core lib's dist/ folders; please use directly from the core lib defined exports.",
                     },
                 ],
+                // The following will place an error on the `fs-extra` import since we do not want it to be used for browser compatibility reasons.
+                paths: [
+                    {
+                        name: 'fs-extra',
+                        message:
+                            'Avoid fs-extra, use shared/fs/fs.ts. Notify the Toolkit team if your required functionality is not available.',
+                    },
+                ],
             },
-            // The following will place an error on the `fs-extra` import since we do not want it to be used for browser compatibility reasons.
-            // {
-            //     name: 'fs-extra',
-            //     message:
-            //         'Avoid fs-extra, use shared/fs/fs.ts. Notify the Toolkit team if your required functionality is not available.',
-            // },
         ],
     },
 }
