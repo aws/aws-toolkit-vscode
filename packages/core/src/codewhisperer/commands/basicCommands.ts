@@ -462,7 +462,7 @@ export const registerToolkitApiCallback = Commands.declare(
             } else if (isExtensionActive(VSCODE_EXTENSION_ID.awstoolkit)) {
                 // when this command is executed by Amazon Q activation
                 const toolkitExt = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.awstoolkit)
-                _toolkitApi = toolkitExt?.exports.getApi(VSCODE_EXTENSION_ID.amazonq)
+                _toolkitApi = toolkitExt?.exports?.getApi(VSCODE_EXTENSION_ID.amazonq)
             }
             if (_toolkitApi) {
                 registerToolkitApiCallbackOnce()
