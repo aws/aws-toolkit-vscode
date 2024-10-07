@@ -7,12 +7,12 @@ import assert from 'assert'
 import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import * as semver from 'semver'
-import { DefaultCodeWhispererClient } from '../../../codewhisperer/client/codewhisperer'
-import * as startSecurityScan from '../../../codewhisperer/commands/startSecurityScan'
-import { SecurityPanelViewProvider } from '../../../codewhisperer/views/securityPanelViewProvider'
-import { FakeExtensionContext } from '../../fakeExtensionContext'
-import * as diagnosticsProvider from '../../../codewhisperer/service/diagnosticsProvider'
-import { getTestWorkspaceFolder } from '../../../testInteg/integrationTestsUtilities'
+import { DefaultCodeWhispererClient } from '../../codewhisperer'
+import * as startSecurityScan from '../../codewhisperer/commands/startSecurityScan'
+import { SecurityPanelViewProvider } from '../../codewhisperer/views/securityPanelViewProvider'
+import { FakeExtensionContext } from '../../test/fakeExtensionContext'
+import * as diagnosticsProvider from '../../codewhisperer/service/diagnosticsProvider'
+import { getTestWorkspaceFolder } from '../../testInteg/integrationTestsUtilities'
 import { join } from 'path'
 import {
     assertTelemetry,
@@ -20,23 +20,23 @@ import {
     createTestWorkspaceFolder,
     getFetchStubWithResponse,
     toFile,
-} from '../../testUtil'
-import { stub } from '../../utilities/stubber'
+} from '../../test/testUtil'
+import { stub } from '../../test/utilities/stubber'
 import { AWSError, HttpResponse } from 'aws-sdk'
-import { getTestWindow } from '../../shared/vscode/window'
-import { SeverityLevel } from '../../shared/vscode/message'
-import { cancel } from '../../../shared/localizedText'
+import { getTestWindow } from '../../test/shared/vscode/window'
+import { SeverityLevel } from '../../test/shared/vscode/message'
+import { cancel } from '../../shared'
 import {
     showScannedFilesMessage,
     stopScanMessage,
     CodeAnalysisScope,
     projectScansLimitReached,
-} from '../../../codewhisperer/models/constants'
-import * as model from '../../../codewhisperer/models/model'
-import { CodewhispererSecurityScan } from '../../../shared/telemetry/telemetry.gen'
-import * as errors from '../../../shared/errors'
-import * as timeoutUtils from '../../../shared/utilities/timeoutUtils'
-import { performanceTest } from '../../../shared/performance/performance'
+} from '../../codewhisperer'
+import * as model from '../../codewhisperer/models/model'
+import { CodewhispererSecurityScan } from '../../shared/telemetry/telemetry.gen'
+import * as errors from '../../shared/errors'
+import * as timeoutUtils from '../../shared/utilities/timeoutUtils'
+import { performanceTest } from '../../shared/performance/performance'
 
 const mockCreateCodeScanResponse = {
     $response: {
