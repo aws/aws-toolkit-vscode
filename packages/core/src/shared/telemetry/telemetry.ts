@@ -23,7 +23,10 @@ export const telemetry = new TelemetryTracer()
  */
 declare module './telemetry.gen' {
     interface Metric<T extends MetricBase = MetricBase> {
+        run<U>(fn: (span: Span<T>) => U, options?: SpanOptions): U
+    }
+
+    interface Span<T extends MetricBase = MetricBase> {
         increment(data: { [P in NumericKeys<T>]+?: number }): void
-        run<U>(fn: (span: this) => U, options?: SpanOptions): U
     }
 }

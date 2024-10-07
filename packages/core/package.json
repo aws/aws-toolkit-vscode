@@ -502,8 +502,6 @@
         "mime-types": "^2.1.32",
         "node-fetch": "^2.7.0",
         "portfinder": "^1.0.32",
-        "proper-lockfile": "^4.1.2",
-        "ps-list": "^8.1.1",
         "semver": "^7.5.4",
         "stream-buffers": "^3.0.2",
         "strip-ansi": "^5.2.0",

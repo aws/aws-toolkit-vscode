@@ -4,7 +4,6 @@
  */
 
 import assert from 'assert'
-import * as fs from 'fs-extra'
 import * as path from 'path'
 import globals from '../../../shared/extensionGlobals'
 import * as vscode from 'vscode'
@@ -26,6 +25,7 @@ import { TestSettings } from '../../utilities/testSettingsConfiguration'
 import { Settings } from '../../../shared/settings'
 import { SamCliSettings } from '../../../shared/sam/cli/samCliSettings'
 import { FakeAwsContext } from '../../utilities/fakeAwsContext'
+import { fs } from '../../../shared'
 
 describe('deploySamApplication', async function () {
     // Bad Validator
@@ -138,7 +138,7 @@ describe('deploySamApplication', async function () {
         profile = 'testAcct'
         tempToolkitFolder = await makeTemporaryToolkitFolder()
         templatePath = path.join(tempToolkitFolder, 'template.yaml')
-        writeFile(templatePath)
+        await fs.writeFile(templatePath, '')
 
         // TODO: is this safe? will add output channel across all tests
         // we are using this pattern in other tests...
@@ -158,7 +158,7 @@ describe('deploySamApplication', async function () {
     })
 
     afterEach(async function () {
-        await fs.remove(tempToolkitFolder)
+        await fs.delete(tempToolkitFolder, { recursive: true })
     })
 
     it('deploys with the happy path', async function () {
@@ -585,8 +585,4 @@ function assertErrorLogsSwallowed(text: string, exactMatch: boolean) {
             .some((e) => !(e instanceof Error) && (exactMatch ? e === text : e.includes(text))),
         `Expected to find "${text}" in the error logs, but not as a thrown error`
     )
-}
-
-function writeFile(filename: string): void {
-    fs.writeFileSync(filename, '')
 }

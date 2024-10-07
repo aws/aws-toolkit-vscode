@@ -188,4 +188,10 @@ body.vscode-high-contrast:not(body.vscode-high-contrast-light) .icon .svg-path {
 body.vscode-high-contrast-light .icon .svg-path {
     fill: black;
 }
+
+.item-container-base .text .p {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
 </style>
