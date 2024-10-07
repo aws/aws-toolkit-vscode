@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { fs } from 'aws-core-vscode/shared'
+/* eslint-disable no-restricted-imports */
+import * as fs from 'fs-extra'
 import * as path from 'path'
 
 // Copies various dependencies into "dist/".
@@ -104,7 +105,11 @@ async function copy(task: CopyTask): Promise<void> {
     const dst = path.resolve(outRoot, task.destination ?? task.target)
 
     try {
-        await fs.copy(src, dst)
+        await fs.copy(src, dst, {
+            recursive: true,
+            overwrite: true,
+            errorOnExist: false,
+        })
     } catch (error) {
         throw new Error(`Copy "${src}" to "${dst}" failed: ${error instanceof Error ? error.message : error}`)
     }

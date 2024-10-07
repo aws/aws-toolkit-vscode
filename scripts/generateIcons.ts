@@ -5,8 +5,7 @@
 
 import webfont from 'webfont'
 import * as path from 'path'
-import * as nodefs from 'fs'
-import fs from '../packages/core/dist/src/shared/fs/fs'
+import * as fs from 'fs-extra'
 
 const fontId = 'aws-toolkit-icons'
 const projectDir = process.cwd() // root/packages/toolkit
@@ -14,7 +13,7 @@ const rootDir = path.join(projectDir, '../..') // root/
 const iconsDir = path.join(projectDir, 'resources', 'icons')
 const fontsDir = path.join(projectDir, 'resources', 'fonts')
 const stylesheetsDir = path.join(projectDir, 'resources', 'css')
-const packageJson = JSON.parse(nodefs.readFileSync(path.join(projectDir, 'package.json'), { encoding: 'utf-8' }))
+const packageJson = JSON.parse(fs.readFileSync(path.join(projectDir, 'package.json'), { encoding: 'utf-8' }))
 const iconSources = [
     // Paths relative to packages/toolkit
     `resources/icons/**/*.svg`,
@@ -83,14 +82,14 @@ async function generateCloud9Icons(targets: { name: string; path: string }[], de
     console.log('Generating icons for Cloud9')
 
     async function replaceColor(file: string, color: string, dst: string): Promise<void> {
-        const contents = await fs.readFileText(file)
+        const contents = await fs.readFile(file, 'utf-8')
         const replaced = contents.replace(/currentColor/g, color)
         await fs.writeFile(dst, replaced)
     }
 
     for (const [theme, color] of Object.entries(themes)) {
         const themeDest = path.join(destination, theme)
-        await fs.mkdir(themeDest)
+        await fs.mkdirp(themeDest)
         await Promise.all(targets.map((t) => replaceColor(t.path, color, path.join(themeDest, `${t.name}.svg`))))
     }
 }
@@ -170,10 +169,8 @@ ${result.template}
     const cloud9Dest = path.join(iconsDir, 'cloud9', 'generated')
     const isValidIcon = (i: (typeof icons)[number]): i is Required<typeof i> => i.data !== undefined
 
-    await fs.mkdir(fontsDir)
-    if (result.woff) {
-        await fs.writeFile(dest, result.woff)
-    }
+    await fs.mkdirp(fontsDir)
+    await fs.writeFile(dest, result.woff)
     await fs.writeFile(stylesheetPath, template)
     await updatePackage(
         `./${relativeDest}`,
@@ -198,14 +195,14 @@ class GeneratedFilesManifest {
     public async emit(dir: string): Promise<void> {
         const dest = path.join(dir, 'generated.buildinfo')
         const data = JSON.stringify(this.files, undefined, 4)
-        await fs.mkdir(dir)
+        await fs.mkdirp(dir)
         await fs.writeFile(dest, data)
     }
 }
 
 async function loadCodiconMappings(): Promise<Record<string, number | undefined>> {
     const codicons = path.join(rootDir, 'node_modules', '@vscode', 'codicons', 'src')
-    const data = JSON.parse(await fs.readFileText(path.join(codicons, 'template', 'mapping.json')))
+    const data = JSON.parse(await fs.readFile(path.join(codicons, 'template', 'mapping.json'), 'utf-8'))
     const mappings: Record<string, number | undefined> = {}
     for (const [k, v] of Object.entries(data)) {
         if (typeof k === 'string' && typeof v === 'number') {
