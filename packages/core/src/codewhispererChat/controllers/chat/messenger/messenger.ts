@@ -293,7 +293,6 @@ export class Messenger {
                             relatedSuggestions: undefined,
                             triggerID,
                             messageID,
-                            traceId: triggerPayload.traceId,
                         },
                         tabID
                     )
