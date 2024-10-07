@@ -7,78 +7,137 @@ import * as vscode from 'vscode'
 import { getIcon } from '../../../../shared/icons'
 import { TreeNode } from '../../../../shared/treeview/resourceTreeDataProvider'
 import { createPlaceholderItem } from '../../../../shared/treeview/utils'
-import { localize } from 'vscode-nls'
+import * as nls from 'vscode-nls'
+const localize = nls.loadMessageBundle()
 import { getLogger } from '../../../../shared/logger/logger'
-import { ToolkitError } from '../../../../shared'
-import { FunctionConfiguration } from '@aws-sdk/client-lambda'
+import { FunctionConfiguration, LambdaClient, GetFunctionCommand } from '@aws-sdk/client-lambda'
 import { DefaultLambdaClient } from '../../../../shared/clients/lambdaClient'
+import globals from '../../../../shared/extensionGlobals'
+import { defaultPartition } from '../../../../shared/regions/regionProvider'
+import { Lambda, APIGateway } from 'aws-sdk'
+import { LambdaNode } from '../../../../lambda/explorer/lambdaNodes'
+import { LambdaFunctionNode } from '../../../../lambda/explorer/lambdaFunctionNode'
+import { DefaultS3Client, DefaultBucket } from '../../../../shared/clients/s3Client'
+import { S3Node } from '../../../../awsService/s3/explorer/s3Nodes'
+import { S3BucketNode } from '../../../../awsService/s3/explorer/s3BucketNode'
+import { ApiGatewayNode } from '../../../../awsService/apigateway/explorer/apiGatewayNodes'
+import { RestApiNode } from '../../../../awsService/apigateway/explorer/apiNodes'
+import {
+    SERVERLESS_FUNCTION_TYPE,
+    SERVERLESS_API_TYPE,
+    s3BucketType,
+} from '../../../../shared/cloudformation/cloudformation'
 
 export interface DeployedResource {
     stackName: string
     regionCode: string
-    configuration: FunctionConfiguration
+    explorerNode: any
+    arn: string
+    contextValue: string
 }
 
-// TODO:: Add doc strings to all TreeNodes
-export class DeployedLambdaNode implements TreeNode<DeployedResource> {
+export class DeployedResourceNode implements TreeNode<DeployedResource> {
     public readonly id: string
+    public readonly contextValue: string
 
     public constructor(public readonly resource: DeployedResource) {
-        if (this.resource.configuration.FunctionName) {
-            this.id = this.resource.configuration.FunctionName
+        if (this.resource.arn) {
+            this.id = this.resource.arn
+            this.contextValue = this.resource.contextValue
         } else {
-            throw new ToolkitError('Cannot create DeployedLambdaNode, `FunctionName` does not exist.')
+            getLogger().warn('Cannot create DeployedResourceNode, the ARN does not exist.')
+            this.id = ''
+            this.contextValue = ''
         }
     }
 
-    public async getChildren(): Promise<DeployedLambdaNode[]> {
+    public async getChildren(): Promise<DeployedResourceNode[]> {
         return []
     }
 
     public getTreeItem() {
         const item = new vscode.TreeItem(this.id)
 
-        item.contextValue = 'awsAppBuilderDeployedNode'
+        item.contextValue = this.contextValue
         item.iconPath = getIcon('vscode-cloud')
         item.collapsibleState = vscode.TreeItemCollapsibleState.None
-        item.tooltip = this.resource.configuration.FunctionArn
+        item.tooltip = this.resource.arn
         return item
     }
 }
 
-export async function generateDeployedLocalNode(
+export async function generateDeployedNode(
     deployedResource: any,
     regionCode: string,
-    stackName: string
+    stackName: string,
+    resourceTreeEntity: any
 ): Promise<any[]> {
-    let lambdaFunction: any
-
-    try {
-        //TODO: update to Lambda SDK v3. Need to pass in credentials correctly to the new client
-        lambdaFunction = await new DefaultLambdaClient(regionCode).getFunction(deployedResource.PhysicalResourceId)
-        getLogger().debug('Lambda function details:', lambdaFunction)
-    } catch (error: any) {
-        getLogger().error('Failed to fetch Lambda function details:', error)
-        void vscode.window.showErrorMessage(`Failed to get the deployed function: ${error.message}`)
-        return [
-            createPlaceholderItem(
-                localize('AWS.appBuilder.explorerNode.noApps', '[Function resource is yet to be deployed]')
-            ),
-        ]
+    let newDeployedResource: any
+    const partitionId = globals.regionProvider.getPartitionId(regionCode) ?? defaultPartition
+    switch (resourceTreeEntity.Type) {
+        case SERVERLESS_FUNCTION_TYPE: {
+            const defaultClient = new DefaultLambdaClient(regionCode)
+            const lambdaNode = new LambdaNode(regionCode, defaultClient)
+            let configuration: Lambda.FunctionConfiguration
+            let v3configuration
+            let logGroupName
+            try {
+                configuration = (await defaultClient.getFunction(deployedResource.PhysicalResourceId))
+                    .Configuration as Lambda.FunctionConfiguration
+                newDeployedResource = new LambdaFunctionNode(lambdaNode, regionCode, configuration)
+            } catch {
+                getLogger().error('Error getting Lambda configuration')
+            }
+            const v3Client = new LambdaClient({ region: regionCode })
+            const v3command = new GetFunctionCommand({ FunctionName: deployedResource.PhysicalResourceId })
+            try {
+                v3configuration = (await v3Client.send(v3command)).Configuration as FunctionConfiguration
+                logGroupName = v3configuration.LoggingConfig?.LogGroup
+            } catch {
+                getLogger().error('Error getting Lambda V3 configuration')
+            }
+            newDeployedResource.contextValue = 'awsRegionFunctionNodeDownloadable'
+            newDeployedResource.configuration = {
+                ...newDeployedResource.configuration,
+                logGroupName: logGroupName,
+            } as any
+            break
+        }
+        case s3BucketType: {
+            const s3Client = new DefaultS3Client(regionCode)
+            const s3Node = new S3Node(s3Client)
+            const s3Bucket = new DefaultBucket({
+                partitionId: partitionId,
+                region: regionCode,
+                name: deployedResource.PhysicalResourceId,
+            })
+            newDeployedResource = new S3BucketNode(s3Bucket, s3Node, s3Client)
+            newDeployedResource.contextValue = 'awsS3BucketNode'
+            break
+        }
+        case SERVERLESS_API_TYPE: {
+            const apiParentNode = new ApiGatewayNode(partitionId, regionCode)
+            const apiNodes = await apiParentNode.getChildren()
+            const apiNode = apiNodes.find((node) => node.id === deployedResource.PhysicalResourceId)
+            newDeployedResource = new RestApiNode(apiParentNode, partitionId, regionCode, apiNode as APIGateway.RestApi)
+            newDeployedResource.contextValue = 'awsApiGatewayNode'
+            break
+        }
+        default:
+            newDeployedResource = new DeployedResourceNode(deployedResource)
+            getLogger().info('Details are missing or are incomplete for:', deployedResource)
+            return [
+                createPlaceholderItem(
+                    localize('AWS.appBuilder.explorerNode.noApps', '[This resource is not yet supported.]')
+                ),
+            ]
     }
-
-    if (!lambdaFunction || !lambdaFunction.Configuration || !lambdaFunction.Configuration.FunctionArn) {
-        getLogger().error('Lambda function details are missing or incomplete:', lambdaFunction)
-        return [
-            createPlaceholderItem(
-                localize('AWS.appBuilder.explorerNode.noApps', '[Function resource is yet to be deployed]')
-            ),
-        ]
+    const finalDeployedResource = {
+        stackName,
+        regionCode,
+        explorerNode: newDeployedResource,
+        arn: newDeployedResource.arn,
+        contextValue: newDeployedResource.contextValue,
     }
-    const _deployedResource: DeployedResource = {
-        stackName: stackName,
-        regionCode: regionCode,
-        configuration: lambdaFunction.Configuration as FunctionConfiguration,
-    }
-    return [new DeployedLambdaNode(_deployedResource)]
+    return [new DeployedResourceNode(finalDeployedResource)]
 }

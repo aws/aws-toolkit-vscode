@@ -16,7 +16,7 @@ import { TimeFilterResponse, TimeFilterSubmenu } from '../../../../awsService/cl
 import { createQuickPickPrompterTester, QuickPickPrompterTester } from '../../../shared/ui/testUtils'
 import { getTestWindow } from '../../../shared/vscode/window'
 import { createWizardTester } from '../../../shared/wizards/wizardTestUtils'
-import { DeployedLambdaNode, DeployedResource } from '../../../../awsService/appBuilder/explorer/nodes/deployedNode'
+import { DeployedResourceNode, DeployedResource } from '../../../../awsService/appBuilder/explorer/nodes/deployedNode'
 
 describe('searchLogGroup', async function () {
     describe('Wizard', async function () {
@@ -61,17 +61,19 @@ describe('searchLogGroup', async function () {
             const mockResource: DeployedResource = {
                 stackName: 'test-stack',
                 regionCode: 'us-east-1',
-                configuration: {
+                explorerNode: {
                     FunctionName: 'my-lambda-function',
                     LoggingConfig: {
                         LogGroup: 'my-lambda-loggroup',
                     },
                 },
+                arn: 'arn:aws:lambda:us-east-1:111111111:function:my-lambda-function',
+                contextValue: 'awsRegionFunctionNode',
             }
-            const mockLambdaNode = new DeployedLambdaNode(mockResource)
+            const mockLambdaNode = new DeployedResourceNode(mockResource)
             const nodeTestWizard = await createWizardTester(
                 new SearchLogGroupWizard({
-                    groupName: mockLambdaNode.resource.configuration.LoggingConfig!.LogGroup || '',
+                    groupName: mockLambdaNode.resource.explorerNode.LoggingConfig!.LogGroup || '',
                     regionName: mockLambdaNode.resource.regionCode,
                 })
             )
@@ -84,14 +86,16 @@ describe('searchLogGroup', async function () {
             const mockResource: DeployedResource = {
                 stackName: 'test-stack',
                 regionCode: 'us-east-1',
-                configuration: {
+                explorerNode: {
                     FunctionName: 'my-lambda-function',
                 },
+                arn: 'arn:aws:lambda:us-east-1:111111111:function:my-lambda-function',
+                contextValue: 'awsRegionFunctionNode',
             }
-            const mockLambdaNode = new DeployedLambdaNode(mockResource)
+            const mockLambdaNode = new DeployedResourceNode(mockResource)
             const nodeTestWizard = await createWizardTester(
                 new SearchLogGroupWizard({
-                    groupName: '/aws/lambda/' + mockLambdaNode.resource.configuration.FunctionName || '',
+                    groupName: '/aws/lambda/' + mockLambdaNode.resource.explorerNode.FunctionName,
                     regionName: mockLambdaNode.resource.regionCode,
                 })
             )

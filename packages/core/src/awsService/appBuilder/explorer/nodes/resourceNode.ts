@@ -7,10 +7,16 @@ import * as vscode from 'vscode'
 import { IconPath, getIcon } from '../../../../shared/icons'
 import { TreeNode } from '../../../../shared/treeview/resourceTreeDataProvider'
 import { ResourceTreeEntity, SamAppLocation } from '../samProject'
-import { SERVERLESS_FUNCTION_TYPE } from '../../../../shared/cloudformation/cloudformation'
+import {
+    SERVERLESS_FUNCTION_TYPE,
+    s3BucketType,
+    appRunnerType,
+    ecrRepositoryType,
+} from '../../../../shared/cloudformation/cloudformation'
 import { generatePropertyNodes } from './propertyNode'
-import { generateDeployedLocalNode } from './deployedNode'
+import { generateDeployedNode } from './deployedNode'
 import { StackResource } from '../../../../lambda/commands/listSamResources'
+import { DeployedResourceNode } from './deployedNode'
 
 enum ResourceTypeId {
     Function = 'function',
@@ -45,20 +51,28 @@ export class ResourceNode implements TreeNode {
     }
 
     public async getChildren() {
-        let deployedNode: TreeNode[] = []
+        let deployedNode: DeployedResourceNode[] = []
 
         if (this.deployedResource && this.region && this.stackName) {
-            deployedNode = await generateDeployedLocalNode(this.deployedResource, this.region, this.stackName)
+            deployedNode = await generateDeployedNode(
+                this.deployedResource,
+                this.region,
+                this.stackName,
+                this.resourceTreeEntity
+            )
         }
-        return [...generatePropertyNodes(this.resourceTreeEntity), ...deployedNode]
+        if (this.resourceTreeEntity.Type === SERVERLESS_FUNCTION_TYPE) {
+            return [...generatePropertyNodes(this.resourceTreeEntity), ...deployedNode]
+        } else {
+            return [...deployedNode]
+        }
     }
 
     public getTreeItem(): vscode.TreeItem {
         // Determine the initial TreeItem collapsible state based on the type
-        const collapsibleState =
-            this.type === SERVERLESS_FUNCTION_TYPE
-                ? vscode.TreeItemCollapsibleState.Collapsed
-                : vscode.TreeItemCollapsibleState.None
+        const collapsibleState = this.deployedResource
+            ? vscode.TreeItemCollapsibleState.Collapsed
+            : vscode.TreeItemCollapsibleState.None
 
         // Create the TreeItem with the determined collapsible state
         const item = new vscode.TreeItem(this.resourceTreeEntity.Id, collapsibleState)
@@ -84,6 +98,12 @@ export class ResourceNode implements TreeNode {
         switch (this.type) {
             case SERVERLESS_FUNCTION_TYPE:
                 return getIcon('aws-lambda-function')
+            case s3BucketType:
+                return getIcon('aws-s3-bucket')
+            case appRunnerType:
+                return getIcon('aws-apprunner-service')
+            case ecrRepositoryType:
+                return getIcon('aws-ecr-registry')
             default:
                 return getIcon('vscode-info')
         }
@@ -113,7 +133,7 @@ export function generateResourceNodes(
     }
 
     return resources.map((resource) => {
-        if (resource.Type === SERVERLESS_FUNCTION_TYPE) {
+        if (resource.Type) {
             const deployedResource = deployedResources.find(
                 (deployedResource) => resource.Id === deployedResource.LogicalResourceId
             )

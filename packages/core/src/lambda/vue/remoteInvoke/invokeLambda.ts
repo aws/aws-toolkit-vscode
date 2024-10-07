@@ -27,8 +27,6 @@ import {
     TestEventsOperation,
 } from '../../../shared/sam/cli/samCliRemoteTestEvent'
 import { getSamCliContext } from '../../../shared/sam/cli/samCliContext'
-import { type DeployedResource } from '../../../awsService/appBuilder/explorer/nodes/deployedNode'
-import { isTreeNode, type TreeNode } from '../../../shared/treeview/resourceTreeDataProvider'
 import { ToolkitError } from '../../../shared'
 import { basename } from 'path'
 
@@ -250,20 +248,14 @@ export async function invokeRemoteLambda(
          *  }
          */
         outputChannel: vscode.OutputChannel
-        functionNode: LambdaFunctionNode | TreeNode
+        functionNode: LambdaFunctionNode
+        source?: string
     }
 ) {
     const inputs = await getSampleLambdaPayloads()
-    let resource: any = params.functionNode
-    let source: string = 'AwsExplorerRemoteInvoke'
-    let functionArn: string | undefined
-    if (isTreeNode(params.functionNode)) {
-        resource = params.functionNode.resource as DeployedResource
-        functionArn = resource.configuration.FunctionArn
-        source = 'AppBuilderRemoteInvoke'
-    } else {
-        functionArn = params.functionNode.configuration.FunctionArn
-    }
+    const resource: any = params.functionNode
+    const source: string = params.source || 'AwsExplorerRemoteInvoke'
+    const functionArn = params.functionNode.configuration.FunctionArn
     try {
         functionArn ? await listRemoteTestEvents(functionArn, resource.regionCode) : []
     } catch (err) {

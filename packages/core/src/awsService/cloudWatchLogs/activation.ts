@@ -19,9 +19,8 @@ import { searchLogGroup } from './commands/searchLogGroup'
 import { changeLogSearchParams } from './changeLogSearch'
 import { CloudWatchLogsNode } from './explorer/cloudWatchLogsNode'
 import { loadAndOpenInitialLogStreamFile, LogStreamCodeLensProvider } from './document/logStreamsCodeLensProvider'
-import { DeployedLambdaNode } from '../appBuilder/explorer/nodes/deployedNode'
+import { DeployedResourceNode } from '../appBuilder/explorer/nodes/deployedNode'
 import { isTreeNode } from '../../shared/treeview/resourceTreeDataProvider'
-import { CloudWatchLogsGroupInfo } from './registry/logDataRegistry'
 import { getLogger } from '../../shared/logger/logger'
 import { ToolkitError } from '../../shared'
 
@@ -96,15 +95,12 @@ export async function activate(context: vscode.ExtensionContext, configuration: 
 
         Commands.register('aws.cwl.changeTimeFilter', async () => changeLogSearchParams(registry, 'timeFilter')),
 
-        Commands.register('aws.appBuilder.searchLogs', async (node: DeployedLambdaNode) => {
-            const logGroupPrefix = '/aws/lambda/'
+        Commands.register('aws.appBuilder.searchLogs', async (node: DeployedResourceNode) => {
             try {
-                const logGroupInfo: CloudWatchLogsGroupInfo | undefined = isTreeNode(node)
+                const logGroupInfo = isTreeNode(node)
                     ? {
                           regionName: node.resource.regionCode,
-                          groupName:
-                              node.resource.configuration.LoggingConfig?.LogGroup ||
-                              logGroupPrefix + node.resource.configuration.FunctionName,
+                          groupName: getFunctionLogGroupName(node.resource.explorerNode.configuration),
                       }
                     : undefined
                 const source: string = logGroupInfo ? 'AppBuilderSearchLogs' : 'CommandPaletteSearchLogs'
@@ -115,4 +111,8 @@ export async function activate(context: vscode.ExtensionContext, configuration: 
             }
         })
     )
+}
+function getFunctionLogGroupName(configuration: any) {
+    const logGroupPrefix = '/aws/lambda/'
+    return configuration.logGroupName || logGroupPrefix + configuration.FunctionName
 }
