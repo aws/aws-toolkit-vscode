@@ -285,7 +285,7 @@ describe('crossFileContextUtil', function () {
             assert.strictEqual(chunks[4].content, aStringWithLineCount(10, 200))
         })
 
-        it('link', async function () {
+        it('linkChunks should add another chunk which will link to the first chunk and chunk.nextContent should reflect correct value', async function () {
             const filePath = path.join(tempFolder, 'file.txt')
             await toFile(aStringWithLineCount(210), filePath)
 
