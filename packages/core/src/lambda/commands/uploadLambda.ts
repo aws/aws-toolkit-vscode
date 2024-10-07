@@ -419,7 +419,7 @@ async function runUploadLambdaZipFile(lambda: LambdaFunction, zipFileUri: vscode
             cancellable: false,
         },
         async (progress) => {
-            const zipFile = await fs.readFile(zipFileUri.fsPath).catch((err) => {
+            const zipFile = await fs.readFileBytes(zipFileUri.fsPath).catch((err) => {
                 throw new ToolkitError('Failed to read zip', { cause: err })
             })
             return await uploadZipBuffer(lambda, zipFile, progress)
@@ -512,7 +512,7 @@ export async function findApplicationJsonFile(
 export async function getFunctionNames(file: vscode.Uri, region: string): Promise<string[] | undefined> {
     try {
         const names: string[] = []
-        const appData = JSON.parse(await fs.readFileAsString(file.fsPath))
+        const appData = JSON.parse(await fs.readFileText(file.fsPath))
         if (appData['Functions']) {
             const functions = Object.keys(appData['Functions'])
             if (functions) {

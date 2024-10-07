@@ -177,7 +177,7 @@ export async function stopJob(jobId: string) {
 }
 
 export async function uploadPayload(payloadFileName: string, uploadContext?: UploadContext) {
-    const buffer = Buffer.from(await fs.readFile(payloadFileName))
+    const buffer = Buffer.from(await fs.readFileBytes(payloadFileName))
     const sha256 = getSha256(buffer)
 
     throwIfCancelled()
