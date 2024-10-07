@@ -290,7 +290,7 @@ describe('crossFileContextUtil', function () {
             await toFile(aStringWithLineCount(210), filePath)
 
             const chunks = await crossFile.splitFileToChunks(filePath, crossFileContextConfig.numberOfLinesEachChunk)
-            const linkedChunks = await crossFile.linkChunks(chunks)
+            const linkedChunks = crossFile.linkChunks(chunks)
 
             // 210 / 50 + 2
             assert.strictEqual(linkedChunks.length, 6)
