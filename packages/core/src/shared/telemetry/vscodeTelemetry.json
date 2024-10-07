@@ -1158,22 +1158,6 @@
             "description": "Represents a function call. In most cases this should wrap code with a run(), then you can add context.",
             "metadata": [
                 {
-                    "type": "userCpuUsage",
-                    "required": false
-                },
-                {
-                    "type": "systemCpuUsage",
-                    "required": false
-                },
-                {
-                    "type": "architecture",
-                    "required": false
-                },
-                {
-                    "type": "heapTotal",
-                    "required": false
-                },
-                {
                     "type": "functionName",
                     "required": true
                 },
