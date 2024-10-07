@@ -150,7 +150,7 @@ async function main() {
             if (args.debug) {
                 await fs.copy(webpackConfigJsFile, backupWebpackConfigFile)
                 const webpackConfigJs = await fs.readFileText(webpackConfigJsFile)
-                await fs.copy(webpackConfigJsFile, webpackConfigJs.replace(/minimize: true/, 'minimize: false'))
+                await fs.writeFile(webpackConfigJsFile, webpackConfigJs.replace(/minimize: true/, 'minimize: false'))
             }
         }
 
