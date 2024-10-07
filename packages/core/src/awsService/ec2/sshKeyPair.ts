@@ -68,7 +68,7 @@ export class SshKeyPair {
     }
 
     public async getPublicKey(): Promise<string> {
-        const contents = await fs.readFileAsString(this.publicKeyPath)
+        const contents = await fs.readFileText(this.publicKeyPath)
         return contents
     }
 

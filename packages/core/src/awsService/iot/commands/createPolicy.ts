@@ -66,7 +66,7 @@ export async function getPolicyDocument(): Promise<Uint8Array | undefined> {
 
     let data: Uint8Array
     try {
-        data = await fs.readFile(policyLocation.fsPath)
+        data = await fs.readFileBytes(policyLocation.fsPath)
     } catch (e) {
         getLogger().error('Failed to read policy document: %s', e)
         void showViewLogsMessage(localize('AWS.iot.createPolicy.error', 'Failed to read policy document'))
