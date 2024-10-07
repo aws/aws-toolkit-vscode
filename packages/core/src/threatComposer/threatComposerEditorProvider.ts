@@ -148,6 +148,7 @@ export class ThreatComposerEditorProvider implements vscode.CustomTextEditorProv
                         this.getWebviewContent
                     )
                     this.handleNewVisualization(document.uri.fsPath, newVisualization)
+                    span.record({ id: fileId })
                 } catch (err) {
                     this.handleErr(err as Error)
                     throw new ToolkitError((err as Error).message, { code: 'Failed to Open Threat Composer' })

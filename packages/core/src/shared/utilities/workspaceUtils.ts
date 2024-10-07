@@ -68,6 +68,11 @@ export class GitIgnoreFilter {
 
 export type CurrentWsFolders = [vscode.WorkspaceFolder, ...vscode.WorkspaceFolder[]]
 
+export function hasWorkspace() {
+    const wsFolders = vscode.workspace.workspaceFolders
+    return wsFolders !== undefined && wsFolders.length > 0
+}
+
 /**
  * Resolves `relPath` against parent `workspaceFolder`, or returns `relPath` if
  * already absolute or the operation fails.

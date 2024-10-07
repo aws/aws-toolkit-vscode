@@ -5,7 +5,7 @@
 
 import assert from 'assert'
 import { Runtime } from 'aws-sdk/clients/lambda'
-import { mkdirpSync, mkdtemp } from 'fs-extra'
+import { mkdtempSync } from 'fs'
 import * as path from 'path'
 import * as semver from 'semver'
 import * as vscode from 'vscode'
@@ -27,6 +27,7 @@ import { insertTextIntoFile } from '../shared/utilities/textUtilities'
 import globals from '../shared/extensionGlobals'
 import { closeAllEditors } from '../test/testUtil'
 import { ToolkitError } from '../shared/errors'
+import { fs } from '../shared'
 
 const projectFolder = testUtils.getTestWorkspaceFolder()
 
@@ -393,9 +394,9 @@ describe('SAM Integration Tests', async function () {
         await testUtils.configureAwsToolkitExtension()
         // await testUtils.configureGoExtension()
 
-        testSuiteRoot = await mkdtemp(path.join(projectFolder, 'inttest'))
+        testSuiteRoot = mkdtempSync(path.join(projectFolder, 'inttest'))
         console.log('testSuiteRoot: ', testSuiteRoot)
-        mkdirpSync(testSuiteRoot)
+        await fs.mkdir(testSuiteRoot)
     })
 
     after(async function () {
@@ -417,7 +418,7 @@ describe('SAM Integration Tests', async function () {
             randomTestScenario = scenarios[0]
 
             runtimeTestRoot = path.join(testSuiteRoot, 'randomScenario')
-            mkdirpSync(runtimeTestRoot)
+            await fs.mkdir(runtimeTestRoot)
         })
 
         after(async function () {
@@ -453,7 +454,7 @@ describe('SAM Integration Tests', async function () {
             before(async function () {
                 runtimeTestRoot = path.join(testSuiteRoot, scenario.runtime)
                 console.log('runtimeTestRoot: ', runtimeTestRoot)
-                mkdirpSync(runtimeTestRoot)
+                await fs.mkdir(runtimeTestRoot)
             })
 
             after(async function () {
@@ -480,7 +481,7 @@ describe('SAM Integration Tests', async function () {
                 let cfnTemplatePath: string
 
                 before(async function () {
-                    testDir = await mkdtemp(path.join(runtimeTestRoot, 'samapp-'))
+                    testDir = mkdtempSync(path.join(runtimeTestRoot, 'samapp-'))
                     log(`testDir: ${testDir}`)
 
                     await createSamApplication(testDir, scenario)

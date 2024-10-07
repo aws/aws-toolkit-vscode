@@ -69,8 +69,8 @@ export class StateMachineGraphCache {
             })
         this.writeFile =
             writeFileCustom ??
-            (async (path: string, data: string, encoding: string) => {
-                await fs.writeFile(path, data, { mode: encoding })
+            (async (path: string, data: string, _encoding: string) => {
+                await fs.writeFile(path, data)
             })
         this.logger = getLogger()
         this.getFileData = getFileData ?? httpsGetRequestWrapper

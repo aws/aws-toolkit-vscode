@@ -348,7 +348,7 @@ describe('FileSystem', function () {
             const dir = await testFolder.mkdir()
             const f = path.join(dir, 'missingfile.txt')
             assert(!existsSync(f))
-            await fs.delete(f)
+            await fs.delete(f, { recursive: true })
         })
 
         it('error if file *and* its parent dir not found', async function () {

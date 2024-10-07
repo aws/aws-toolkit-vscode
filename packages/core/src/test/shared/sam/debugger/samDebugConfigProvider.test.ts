@@ -38,16 +38,15 @@ import {
     makeSampleYamlResource,
     makeSampleYamlParameters,
 } from '../../cloudformation/cloudformationTestUtils'
-import { readFileSync } from 'fs-extra'
 import { CredentialsStore } from '../../../../auth/credentials/store'
 import { CredentialsProviderManager } from '../../../../auth/providers/credentialsProviderManager'
 import { Credentials } from '@aws-sdk/types'
 import { ExtContext } from '../../../../shared/extensions'
-import { mkdir, remove } from 'fs-extra'
 import { getLogger } from '../../../../shared/logger/logger'
 import { CredentialsProvider } from '../../../../auth/providers/credentials'
 import globals from '../../../../shared/extensionGlobals'
 import { isCI } from '../../../../shared/vscode/env'
+import { fs } from '../../../../shared'
 
 /**
  * Asserts the contents of a "launch config" (the result of `makeConfig()` or
@@ -164,9 +163,9 @@ describe('SamDebugConfigurationProvider', async function () {
     })
 
     afterEach(async function () {
-        await remove(tempFolder)
+        await fs.delete(tempFolder, { recursive: true })
         if (tempFolderSimilarName) {
-            await remove(tempFolderSimilarName)
+            await fs.delete(tempFolderSimilarName, { recursive: true })
         }
         ;(await globals.templateRegistry).reset()
         sandbox.restore()
@@ -231,8 +230,8 @@ describe('SamDebugConfigurationProvider', async function () {
             tempFolderSimilarName = tempFolder + 'SimilarName'
             const similarNameYaml = vscode.Uri.file(path.join(tempFolderSimilarName, 'test.yaml'))
 
-            await mkdir(nestedDir)
-            await mkdir(tempFolderSimilarName)
+            await fs.mkdir(nestedDir)
+            await fs.mkdir(tempFolderSimilarName)
 
             await testutil.toFile(makeSampleSamTemplateYaml(true, { resourceName: resources[0] }), tempFile.fsPath)
             await testutil.toFile(makeSampleSamTemplateYaml(true, { resourceName: resources[1] }), nestedYaml.fsPath)
@@ -2173,7 +2172,10 @@ describe('SamDebugConfigurationProvider', async function () {
             }
 
             assertEqualLaunchConfigs(actual, expected)
-            assert.strictEqual(readFileSync(actual.eventPayloadFile!, 'utf-8'), readFileSync(absPayloadPath, 'utf-8'))
+            assert.strictEqual(
+                await fs.readFileAsString(actual.eventPayloadFile!),
+                await fs.readFileAsString(absPayloadPath)
+            )
             await assertFileText(
                 expected.templatePath,
                 `Resources:
@@ -2696,8 +2698,8 @@ describe('SamDebugConfigurationProvider', async function () {
 
             assertEqualLaunchConfigs(actual, expected)
             assert.strictEqual(
-                readFileSync(actual.eventPayloadFile!, 'utf-8'),
-                readFileSync(input.lambda.payload.path, 'utf-8')
+                await fs.readFileAsString(actual.eventPayloadFile!),
+                await fs.readFileAsString(input.lambda.payload.path)
             )
             await assertFileText(
                 expected.templatePath,
@@ -3303,7 +3305,7 @@ describe('debugConfiguration', function () {
     })
 
     afterEach(async function () {
-        await remove(tempFolder)
+        await fs.delete(tempFolder, { recursive: true })
         const r = await globals.templateRegistry
         r.reset()
     })

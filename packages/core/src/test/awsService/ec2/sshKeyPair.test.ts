@@ -35,7 +35,7 @@ describe('SshKeyUtility', async function () {
     })
 
     after(async function () {
-        await fs.delete(temporaryDirectory, { recursive: true, force: true })
+        await fs.delete(temporaryDirectory, { recursive: true })
         clock.uninstall()
         sinon.restore()
     })

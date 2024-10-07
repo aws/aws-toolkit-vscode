@@ -4,13 +4,13 @@
  */
 
 import assert from 'assert'
-import * as fs from 'fs-extra'
 import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import { MessageObject } from '../../stepFunctions/commands/visualizeStateMachine/aslVisualization'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { closeAllEditors, toTextEditor } from '../../test/testUtil'
 import { previewStateMachineCommand } from '../../stepFunctions/activation'
+import { fs } from '../../shared'
 
 const sampleStateMachine = `
 	 {
@@ -89,7 +89,7 @@ describe('visualizeStateMachine', async function () {
     })
 
     afterEach(async function () {
-        await fs.remove(tempFolder)
+        await fs.delete(tempFolder, { recursive: true })
         sinon.restore()
     })
 
