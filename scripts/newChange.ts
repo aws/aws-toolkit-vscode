@@ -4,10 +4,10 @@
  */
 
 import * as child_process from 'child_process'
-import * as fs from 'fs-extra'
 import { join } from 'path'
 import * as readlineSync from 'readline-sync'
 import * as crypto from 'crypto'
+import { fs } from '../packages/core/src/shared'
 
 const directory = join(process.cwd(), '.changes', 'next-release')
 const changeTypes = ['Breaking Change', 'Feature', 'Bug Fix', 'Deprecation', 'Removal', 'Test']
@@ -40,18 +40,22 @@ function promptForChange(): string {
     }
 }
 
-fs.mkdirpSync(directory)
+async function main() {
+    await fs.mkdir(directory)
 
-const type = promptForType()
-const description = promptForChange()
-const contents: NewChange = {
-    type: type,
-    description: description,
+    const type = promptForType()
+    const description = promptForChange()
+    const contents: NewChange = {
+        type: type,
+        description: description,
+    }
+    const fileName = `${type}-${crypto.randomUUID()}.json`
+    const path = join(directory, fileName)
+    await fs.writeFile(path, JSON.stringify(contents, undefined, '\t') + '\n')
+
+    console.log(`Change log written to ${path}`)
+    child_process.execSync(`git add ${directory}`)
+    console.log('Change log added to git working directory')
 }
-const fileName = `${type}-${crypto.randomUUID()}.json`
-const path = join(directory, fileName)
-fs.writeFileSync(path, JSON.stringify(contents, undefined, '\t') + '\n')
 
-console.log(`Change log written to ${path}`)
-child_process.execSync(`git add ${directory}`)
-console.log('Change log added to git working directory')
+void main()

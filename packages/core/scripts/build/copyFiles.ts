@@ -3,9 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-/* eslint-disable no-restricted-imports */
-import * as fs from 'fs-extra'
 import * as path from 'path'
+import { fs } from '../../src/shared'
 
 // Moves all dependencies into `dist`
 
@@ -51,11 +50,7 @@ async function copy(task: CopyTask): Promise<void> {
     const dst = path.resolve(outRoot, task.destination ?? task.target)
 
     try {
-        await fs.copy(src, dst, {
-            recursive: true,
-            overwrite: true,
-            errorOnExist: false,
-        })
+        await fs.copy(src, dst)
     } catch (error) {
         throw new Error(`Copy "${src}" to "${dst}" failed: ${error instanceof Error ? error.message : error}`)
     }
