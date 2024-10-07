@@ -65,7 +65,7 @@ export function getPrefixSuffixOverlap(firstString: string, secondString: string
     return secondString.slice(0, i)
 }
 
-export function checkKeywordsForJson(fileName: string, leftFileContent: string, language: string): boolean {
+export function isSupportedJsonFormat(fileName: string, leftFileContent: string, language: string): boolean {
     if (
         language === 'json' &&
         !AWSTemplateKeyWords.some((substring) => leftFileContent.includes(substring)) &&
