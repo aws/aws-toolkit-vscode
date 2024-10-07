@@ -491,7 +491,7 @@ export class CWCTelemetryHelper {
     }
 
     public setResponseStreamStartTime(tabID: string) {
-        this.responseStreamStartTime.set(tabID, globals.clock.Date.now())
+        this.responseStreamStartTime.set(tabID, performance.now())
         this.responseStreamTimeForChunks.set(tabID, [performance.now()])
         this.displayTimeForChunks.set(tabID, [])
     }
@@ -545,7 +545,7 @@ export class CWCTelemetryHelper {
     }
 
     public setResponseStreamTotalTime(tabID: string) {
-        const totalTime = globals.clock.Date.now() - (this.responseStreamStartTime.get(tabID) ?? 0)
+        const totalTime = performance.now() - (this.responseStreamStartTime.get(tabID) ?? 0)
         this.responseStreamTotalTime.set(tabID, Math.round(totalTime))
     }
 

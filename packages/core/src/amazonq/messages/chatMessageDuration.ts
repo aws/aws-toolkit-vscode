@@ -43,10 +43,11 @@ export class AmazonQChatMessageDuration {
     /**
      * Stop listening to all incoming events and emit what we've found
      */
-    static stopChatMessageTelemetry(msg: { tabID: string; time: number }) {
-        const { tabID, time } = msg
+    static stopChatMessageTelemetry(msg: { tabID: string; time: number; tabType: TabType }) {
+        const { tabID, time, tabType } = msg
+
         // We can't figure out what trace this event was associated with
-        if (!tabID) {
+        if (!tabID || tabType !== 'cwc') {
             return
         }
 
