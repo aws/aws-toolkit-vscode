@@ -34,7 +34,7 @@ export class GitIgnoreFilter {
     public static async build(gitIgnoreFiles: vscode.Uri[]): Promise<GitIgnoreFilter> {
         const acceptors: GitIgnoreRelativeAcceptor[] = []
         for (const file of gitIgnoreFiles) {
-            const fileContent = await fs.readFileAsString(file)
+            const fileContent = await fs.readFileText(file)
 
             const folderPath = getWorkspaceParentDirectory(file.fsPath)
             if (folderPath === undefined) {
@@ -401,7 +401,7 @@ export async function collectFiles(
 
 const readFile = async (file: vscode.Uri) => {
     try {
-        const fileContent = await fs.readFileAsString(file, new TextDecoder('utf8', { fatal: false }))
+        const fileContent = await fs.readFileText(file, new TextDecoder('utf8', { fatal: false }))
         return fileContent
     } catch (error) {
         getLogger().debug(

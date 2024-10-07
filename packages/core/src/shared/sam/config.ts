@@ -74,7 +74,7 @@ export class SamConfig {
     }
 
     public static async fromUri(uri: vscode.Uri) {
-        const contents = await fs.readFileAsString(uri)
+        const contents = await fs.readFileText(uri)
         const config = await parseConfig(contents)
 
         return new this(uri, config)

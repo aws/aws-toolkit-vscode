@@ -506,7 +506,7 @@ export class FileSystemState {
                 // we will assume that other instance handled its termination appropriately.
                 const ext = await withFailCtx('parseRunningExtFile', async () =>
                     ignoreBadFileError(async () => {
-                        const text = await fs.readFileAsString(path.join(await this.runningExtsDir(), extId))
+                        const text = await fs.readFileText(path.join(await this.runningExtsDir(), extId))
 
                         if (!text) {
                             return undefined

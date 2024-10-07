@@ -133,7 +133,7 @@ export class LspController {
     }
 
     async getFileSha384(filePath: string): Promise<string> {
-        const fileBuffer = await fs.readFile(filePath)
+        const fileBuffer = await fs.readFileBytes(filePath)
         const hash = crypto.createHash('sha384')
         hash.update(fileBuffer)
         return hash.digest('hex')

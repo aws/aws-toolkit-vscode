@@ -52,7 +52,7 @@ describe('transformByQ', async function () {
     })
 
     it('WHEN upload payload with missing sha256 in headers THEN fails to upload', async function () {
-        const buffer = Buffer.from(await fs.readFile(zippedCodePath))
+        const buffer = Buffer.from(await fs.readFileBytes(zippedCodePath))
         const sha256 = getSha256(buffer)
         const response = await codeWhisperer.codeWhispererClient.createUploadUrl({
             contentChecksum: sha256,
@@ -63,7 +63,7 @@ describe('transformByQ', async function () {
             'x-amz-checksum-sha256': '',
             'Content-Type': 'application/zip',
         }
-        const body = await fs.readFileAsString(zippedCodePath)
+        const body = await fs.readFileText(zippedCodePath)
         await assert.rejects(
             () =>
                 request.fetch('PUT', response.uploadUrl, {
@@ -88,7 +88,7 @@ describe('transformByQ', async function () {
     })
 
     it('WHEN createUploadUrl THEN URL uses HTTPS and sets 60 second expiration', async function () {
-        const buffer = Buffer.from(await fs.readFile(zippedCodePath))
+        const buffer = Buffer.from(await fs.readFileBytes(zippedCodePath))
         const sha256 = getSha256(buffer)
         const response = await codeWhisperer.codeWhispererClient.createUploadUrl({
             contentChecksum: sha256,
