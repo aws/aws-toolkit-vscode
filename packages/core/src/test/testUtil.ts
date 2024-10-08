@@ -15,7 +15,6 @@ import { MetricName, MetricShapes } from '../shared/telemetry/telemetry'
 import { keys, selectFrom } from '../shared/utilities/tsUtils'
 import fs from '../shared/fs/fs'
 import { DeclaredCommand } from '../shared/vscode/commands2'
-import { mkdirSync, existsSync } from 'fs'
 import { randomBytes } from 'crypto'
 import request from '../shared/request'
 import { stub } from 'sinon'
@@ -109,8 +108,8 @@ export class TestFolder {
     async mkdir(relativeDirPath?: string): Promise<string> {
         relativeDirPath ??= randomBytes(4).toString('hex')
         const absolutePath = this.pathFrom(relativeDirPath)
-        mkdirSync(absolutePath, { recursive: true })
-        assert(existsSync(absolutePath))
+        await fs.mkdir(absolutePath)
+        assert(await fs.exists(absolutePath))
         return absolutePath
     }
 

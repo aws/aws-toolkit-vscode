@@ -4,7 +4,6 @@
  */
 import * as vscode from 'vscode'
 import assert from 'assert'
-import nodefs from 'fs'
 import * as sinon from 'sinon'
 import * as path from 'path'
 import * as os from 'os'
@@ -13,6 +12,7 @@ import { createTestWorkspaceFolder, installFakeClock } from '../../testUtil'
 import { InstalledClock } from '@sinonjs/fake-timers'
 import { ChildProcess } from '../../../shared/utilities/processUtils'
 import { fs, globals } from '../../../shared'
+import { statSync } from 'fs'
 
 describe('SshKeyUtility', async function () {
     let temporaryDirectory: string
@@ -54,7 +54,7 @@ describe('SshKeyUtility', async function () {
 
     it('sets permission of the file to read/write owner', async function () {
         if (!globals.isWeb && os.platform() !== 'win32') {
-            const result = nodefs.statSync(keyPair.getPrivateKeyPath())
+            const result = statSync(keyPair.getPrivateKeyPath())
             assert.strictEqual(result.mode & 0o777, 0o600)
         }
     })

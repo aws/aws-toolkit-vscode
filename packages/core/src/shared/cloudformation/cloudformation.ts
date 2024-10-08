@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { promises as nodefs } from 'fs'
 import * as vscode from 'vscode'
 import { schema } from 'yaml-cfn'
 import * as yaml from 'js-yaml'
@@ -461,7 +460,7 @@ export async function tryLoad(
 export async function save(template: Template, filename: string): Promise<void> {
     const templateAsYaml: string = yaml.dump(template)
 
-    await nodefs.writeFile(filename, templateAsYaml, 'utf8')
+    await fs.writeFile(filename, templateAsYaml)
 }
 
 export function validateTemplate(template: Template): void {
@@ -880,7 +879,7 @@ export async function createStarterTemplateFile(isSam?: boolean): Promise<void> 
         defaultUri: wsFolder && wsFolder[0] ? wsFolder[0].uri : undefined,
     })
     if (loc) {
-        await nodefs.writeFile(loc.fsPath, content)
+        await fs.writeFile(loc.fsPath, content)
         await vscode.commands.executeCommand('vscode.open', loc)
     }
 }

@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
-import * as nodefs from 'fs'
 import * as path from 'path'
 import * as os from 'os'
 import * as codeWhisperer from '../../client/codewhisperer'
@@ -47,6 +46,7 @@ import { ExportIntent, TransformationDownloadArtifactType } from '@amzn/codewhis
 import fs from '../../../shared/fs/fs'
 import { ChatSessionManager } from '../../../amazonqGumby/chat/storages/chatSession'
 import { convertToTimeString, encodeHTML } from '../../../shared/utilities/textUtilities'
+import { readdirSync } from 'fs'
 
 export function getSha256(buffer: Buffer) {
     const hasher = crypto.createHash('sha256')
@@ -109,7 +109,7 @@ export async function uploadArtifactToS3(
 ) {
     throwIfCancelled()
     try {
-        const uploadFileByteSize = (await nodefs.promises.stat(fileName)).size
+        const uploadFileByteSize = (await fs.stat(fileName)).size
         getLogger().info(
             `Uploading project artifact at %s with checksum %s using uploadId: %s and size %s kB`,
             fileName,
@@ -249,7 +249,7 @@ function isExcludedDependencyFile(path: string): boolean {
  * getFilesRecursively on the source code folder.
  */
 function getFilesRecursively(dir: string, isDependenciesFolder: boolean): string[] {
-    const entries = nodefs.readdirSync(dir, { withFileTypes: true })
+    const entries = readdirSync(dir, { withFileTypes: true })
     const files = entries.flatMap((entry) => {
         const res = path.resolve(dir, entry.name)
         // exclude 'target' directory from ZIP (except if zipping dependencies) due to issues in backend
@@ -301,14 +301,14 @@ export async function zipCode({ dependenciesFolder, humanInTheLoopFlag, modulePa
             const sourceFiles = getFilesRecursively(modulePath, false)
             let sourceFilesSize = 0
             for (const file of sourceFiles) {
-                if (nodefs.statSync(file).isDirectory()) {
+                if (await fs.existsDir(file)) {
                     getLogger().info('CodeTransformation: Skipping directory, likely a symlink')
                     continue
                 }
                 const relativePath = path.relative(modulePath, file)
                 const paddedPath = path.join('sources', relativePath)
                 zip.addLocalFile(file, path.dirname(paddedPath))
-                sourceFilesSize += (await nodefs.promises.stat(file)).size
+                sourceFilesSize += (await fs.stat(file)).size
             }
             getLogger().info(`CodeTransformation: source code files size = ${sourceFilesSize}`)
         }
@@ -330,7 +330,7 @@ export async function zipCode({ dependenciesFolder, humanInTheLoopFlag, modulePa
                 // const paddedPath = path.join(`dependencies/${dependenciesFolder.name}`, relativePath)
                 const paddedPath = path.join(`dependencies/`, relativePath)
                 zip.addLocalFile(file, path.dirname(paddedPath))
-                dependencyFilesSize += (await nodefs.promises.stat(file)).size
+                dependencyFilesSize += (await fs.stat(file)).size
             }
             getLogger().info(`CodeTransformation: dependency files size = ${dependencyFilesSize}`)
             dependenciesCopied = true
@@ -365,7 +365,7 @@ export async function zipCode({ dependenciesFolder, humanInTheLoopFlag, modulePa
         }
     }
 
-    const zipSize = (await nodefs.promises.stat(tempFilePath)).size
+    const zipSize = (await fs.stat(tempFilePath)).size
 
     const exceedsLimit = zipSize > CodeWhispererConstants.uploadZipSizeLimitInBytes
 
@@ -408,8 +408,8 @@ export async function startJob(uploadId: string) {
     }
 }
 
-export function getImageAsBase64(filePath: string) {
-    const fileContents = nodefs.readFileSync(filePath, { encoding: 'base64' })
+export async function getImageAsBase64(filePath: string) {
+    const fileContents = Buffer.from(await fs.readFileBytes(filePath)).toString('base64')
     return `data:image/svg+xml;base64,${fileContents}`
 }
 
@@ -418,7 +418,7 @@ export function getImageAsBase64(filePath: string) {
  * ex. getIcon('transform-file') returns the 'transform-file-light.svg' icon if user has a light theme enabled,
  * otherwise 'transform-file-dark.svg' is returned.
  */
-export function getTransformationIcon(name: string) {
+export async function getTransformationIcon(name: string) {
     let iconPath = ''
     switch (name) {
         case 'linesOfCode':
@@ -448,7 +448,7 @@ export function getTransformationIcon(name: string) {
     } else {
         iconPath += '-dark.svg'
     }
-    return getImageAsBase64(globals.context.asAbsolutePath(path.join('resources/icons/aws/amazonq', iconPath)))
+    return await getImageAsBase64(globals.context.asAbsolutePath(path.join('resources/icons/aws/amazonq', iconPath)))
 }
 
 export function getFormattedString(s: string) {
@@ -495,17 +495,17 @@ export function getTableMapping(stepZeroProgressUpdates: ProgressUpdates) {
     return map
 }
 
-export function getJobStatisticsHtml(jobStatistics: any) {
+export async function getJobStatisticsHtml(jobStatistics: any) {
     let htmlString = ''
     if (jobStatistics.length === 0) {
         return htmlString
     }
     htmlString += `<div style="flex: 1; margin-left: 20px; border: 1px solid #424750; border-radius: 8px; padding: 10px;">`
-    jobStatistics.forEach((stat: { name: string; value: string }) => {
-        htmlString += `<p style="margin-bottom: 4px"><img src="${getTransformationIcon(
+    for (const stat of jobStatistics) {
+        htmlString += `<p style="margin-bottom: 4px"><img src="${await getTransformationIcon(
             stat.name
         )}" style="vertical-align: middle;"> ${getFormattedString(stat.name)}: ${stat.value}</p>`
-    })
+    }
     htmlString += `</div>`
     return htmlString
 }
@@ -533,9 +533,9 @@ export async function getTransformationPlan(jobId: string) {
         const jobStatistics = JSON.parse(tableMapping['0']).rows // ID of '0' reserved for job statistics table
 
         // get logo directly since we only use one logo regardless of color theme
-        const logoIcon = getTransformationIcon('transformLogo')
+        const logoIcon = await getTransformationIcon('transformLogo')
 
-        const arrowIcon = getTransformationIcon('upArrow')
+        const arrowIcon = await getTransformationIcon('upArrow')
 
         let plan = `<style>table {border: 1px solid #424750;}</style>\n\n<a id="top"></a><br><p style="font-size: 24px;"><img src="${logoIcon}" style="margin-right: 15px; vertical-align: middle;"></img><b>${CodeWhispererConstants.planTitle}</b></p><br>`
         const authType = await getAuthType()
@@ -547,7 +547,7 @@ export async function getTransformationPlan(jobId: string) {
         }
         plan += `<div style="display: flex;"><div style="flex: 1; border: 1px solid #424750; border-radius: 8px; padding: 10px;"><p>${
             CodeWhispererConstants.planIntroductionMessage
-        }</p></div>${getJobStatisticsHtml(jobStatistics)}</div>`
+        }</p></div>${await getJobStatisticsHtml(jobStatistics)}</div>`
         plan += `<div style="margin-top: 32px; border: 1px solid #424750; border-radius: 8px; padding: 10px;"><p style="font-size: 18px; margin-bottom: 4px;"><b>${CodeWhispererConstants.planHeaderMessage}</b></p><i>${CodeWhispererConstants.planDisclaimerMessage} <a href="https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/code-transformation.html">Read more.</a></i><br><br>`
         response.transformationPlan.transformationSteps.slice(1).forEach((step) => {
             plan += `<div style="border: 1px solid #424750; border-radius: 8px; padding: 20px;"><div style="display:flex; justify-content:space-between; align-items:center;"><p style="font-size: 16px; margin-bottom: 4px;">${step.name}</p><a href="#top">Scroll to top <img src="${arrowIcon}" style="vertical-align: middle"></a></div><p>${step.description}</p>`

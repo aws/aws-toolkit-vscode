@@ -5,7 +5,6 @@
  * This class is responsible for responding to UI events by calling
  * the Gumby extension.
  */
-import nodefs from 'fs'
 import path from 'path'
 import * as vscode from 'vscode'
 import { GumbyNamedMessages, Messenger } from './messenger/messenger'
@@ -56,6 +55,7 @@ import { getAuthType } from '../../../codewhisperer/service/transformByQ/transfo
 import DependencyVersions from '../../models/dependencies'
 import { getStringHash } from '../../../shared/utilities/textUtilities'
 import { getVersionData } from '../../../codewhisperer/service/transformByQ/transformMavenHandler'
+import { fs } from '../../../shared'
 
 // These events can be interactions within the chat,
 // or elsewhere in the IDE
@@ -488,7 +488,7 @@ export class GumbyController {
         const session = this.sessionStorage.getSession()
         switch (session.conversationState) {
             case ConversationState.PROMPT_JAVA_HOME: {
-                const pathToJavaHome = extractPath(data.message)
+                const pathToJavaHome = await extractPath(data.message)
 
                 if (pathToJavaHome) {
                     await this.prepareProjectForSubmission({
@@ -562,7 +562,7 @@ export class GumbyController {
  * @param text
  * @returns the absolute path if path points to existing folder, otherwise undefined
  */
-function extractPath(text: string): string | undefined {
+async function extractPath(text: string): Promise<string | undefined> {
     const resolvedPath = path.resolve(text.trim())
-    return nodefs.existsSync(resolvedPath) ? resolvedPath : undefined
+    return (await fs.exists(resolvedPath)) ? resolvedPath : undefined
 }

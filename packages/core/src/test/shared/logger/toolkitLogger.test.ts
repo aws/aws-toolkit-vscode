@@ -4,13 +4,13 @@
  */
 
 import assert from 'assert'
-import * as fs from 'fs'
 import * as filesystemUtilities from '../../../shared/filesystemUtilities'
 import * as vscode from 'vscode'
 import { ToolkitLogger } from '../../../shared/logger/toolkitLogger'
 import { MockOutputChannel } from '../../mockOutputChannel'
 import { sleep, waitUntil } from '../../../shared/utilities/timeoutUtils'
 import { ToolkitError } from '../../../shared/errors'
+import { fs } from '../../../shared'
 
 /**
  * Disposes the logger then waits for the write streams to flush. The `expected` and `unexpected` arrays just look
@@ -30,10 +30,10 @@ async function checkFile(
         setTimeout(() => reject(new Error('Timed out waiting for log message')), 10_000)
 
         // Wait for file to exist
-        while (!fs.existsSync(logPath.fsPath)) {
+        while (!(await fs.exists(logPath.fsPath))) {
             await sleep(200)
         }
-        const contents = fs.readFileSync(logPath.fsPath)
+        const contents = Buffer.from(await fs.readFileBytes(logPath.fsPath))
 
         // Error if unexpected messages are in the log file
         const foundUnexpected = unexpected

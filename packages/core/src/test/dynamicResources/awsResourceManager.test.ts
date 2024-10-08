@@ -16,7 +16,6 @@ import { CloudControlClient, DefaultCloudControlClient } from '../../shared/clie
 import { CloudFormationClient, DefaultCloudFormationClient } from '../../shared/clients/cloudFormationClient'
 import { makeTemporaryToolkitFolder, readFileAsString } from '../../shared/filesystemUtilities'
 import { FakeExtensionContext } from '../fakeExtensionContext'
-import { existsSync } from 'fs'
 import { ResourceTypeMetadata } from '../../dynamicResources/model/resources'
 import globals from '../../shared/extensionGlobals'
 import { Stub, stub } from '../utilities/stubber'
@@ -189,7 +188,7 @@ describe('ResourceManager', function () {
         const [mapping] = registerMappingSpy.args[registerMappingSpy.args.length - 1]
 
         const expectedSchemaLocation = path.join(tempFolder, 'sometype.schema.json')
-        assert.ok(existsSync(expectedSchemaLocation))
+        assert.ok(await fs.exists(expectedSchemaLocation))
         assert.strictEqual(mapping.type, 'json')
         testutil.assertEqualPaths(mapping.uri.fsPath, editor.document.uri.fsPath)
         const schema = mapping.schema as vscode.Uri

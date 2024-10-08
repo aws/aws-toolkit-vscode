@@ -17,7 +17,7 @@ import { getLogger } from '../../shared/logger'
 import { CodeWhispererCodeCoverageTracker } from '../../codewhisperer/tracker/codewhispererCodeCoverageTracker'
 import globals from '../../shared/extensionGlobals'
 import { session } from '../../codewhisperer/util/codeWhispererSession'
-import fs from 'fs'
+import { Dirent } from 'fs'
 import { DefaultAWSClientBuilder, ServiceOptions } from '../../shared/awsClientBuilder'
 import { FakeAwsContext } from '../utilities/fakeAwsContext'
 import { Service } from 'aws-sdk'
@@ -201,8 +201,8 @@ export function createCodeActionContext(): vscode.CodeActionContext {
     }
 }
 
-export function createMockDirentFile(fileName: string): fs.Dirent {
-    const dirent = new fs.Dirent()
+export function createMockDirentFile(fileName: string): Dirent {
+    const dirent = new Dirent()
     dirent.isFile = () => true
     dirent.name = fileName
     return dirent

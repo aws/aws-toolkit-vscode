@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { writeFileSync } from 'fs'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { CloudFormationClient } from '../shared/clients/cloudFormationClient'
@@ -163,7 +162,7 @@ export class AwsResourceManager {
             `.${normalizedTypeName}.awsResource.json`
         )
         const fullPath = path.join(this.folder!, filename)
-        writeFileSync(fullPath, contents)
+        await fs.writeFile(fullPath, contents)
 
         return vscode.Uri.file(fullPath)
     }
@@ -184,7 +183,7 @@ export class AwsResourceManager {
                     this.extensionContext.globalStorageUri.fsPath,
                     `${normalizedTypeName}.schema.json`
                 )
-                writeFileSync(schemaFile, JSON.stringify(JSON.parse(type.Schema), undefined, 2))
+                await fs.writeFile(schemaFile, JSON.stringify(JSON.parse(type.Schema), undefined, 2))
                 location = vscode.Uri.file(schemaFile)
                 const typeSchema = JSON.parse(await readFileAsString(schemaFile)) as TypeSchema
                 this.schemas.set(typeName, {

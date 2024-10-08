@@ -4,7 +4,6 @@
  */
 
 import * as vscode from 'vscode'
-import * as fs from 'fs'
 import * as os from 'os'
 import path from 'path'
 import { getLogger } from '../../shared/logger'
@@ -72,7 +71,7 @@ import DependencyVersions from '../../amazonqGumby/models/dependencies'
 import { dependencyNoAvailableVersions } from '../../amazonqGumby/models/constants'
 import { HumanInTheLoopManager } from '../service/transformByQ/humanInTheLoopManager'
 import { setContext } from '../../shared/vscode/setContext'
-import { makeTemporaryToolkitFolder } from '../../shared'
+import { fs, makeTemporaryToolkitFolder } from '../../shared'
 import globals from '../../shared/extensionGlobals'
 
 function getFeedbackCommentData() {
@@ -95,7 +94,7 @@ export async function processTransformFormInput(
 export async function setMaven() {
     let mavenWrapperExecutableName = os.platform() === 'win32' ? 'mvnw.cmd' : 'mvnw'
     const mavenWrapperExecutablePath = path.join(transformByQState.getProjectPath(), mavenWrapperExecutableName)
-    if (fs.existsSync(mavenWrapperExecutablePath)) {
+    if (await fs.exists(mavenWrapperExecutablePath)) {
         if (mavenWrapperExecutableName === 'mvnw') {
             mavenWrapperExecutableName = './mvnw' // add the './' for non-Windows
         } else if (mavenWrapperExecutableName === 'mvnw.cmd') {
@@ -234,8 +233,8 @@ export async function parseBuildFile() {
         const alias = path.basename(os.homedir())
         absolutePaths.push(alias)
         const buildFilePath = path.join(transformByQState.getProjectPath(), 'pom.xml')
-        if (fs.existsSync(buildFilePath)) {
-            const buildFileContents = fs.readFileSync(buildFilePath).toString().toLowerCase()
+        if (await fs.exists(buildFilePath)) {
+            const buildFileContents = (await fs.readFileBytes(buildFilePath)).toString().toLowerCase()
             const detectedPaths = []
             for (const absolutePath of absolutePaths) {
                 if (buildFileContents.includes(absolutePath)) {
@@ -599,7 +598,7 @@ export async function pollTransformationStatusUntilPlanReady(jobId: string) {
             throw e
         }
 
-        if (fs.existsSync(pathToLog) && !transformByQState.isCancelled()) {
+        if ((await fs.exists(pathToLog)) && !transformByQState.isCancelled()) {
             throw new TransformationPreBuildError()
         } else {
             // not strictly needed to reset path here and above; doing it just to represent unavailable logs
@@ -620,7 +619,7 @@ export async function pollTransformationStatusUntilPlanReady(jobId: string) {
 
     if (plan !== undefined) {
         const planFilePath = path.join(transformByQState.getProjectPath(), 'transformation-plan.md')
-        fs.writeFileSync(planFilePath, plan)
+        await fs.writeFile(planFilePath, plan)
         await vscode.commands.executeCommand('markdown.showPreview', vscode.Uri.file(planFilePath))
         transformByQState.setPlanFilePath(planFilePath)
         await setContext('gumby.isPlanAvailable', true)
@@ -752,7 +751,7 @@ export async function postTransformationJob() {
     }
 
     if (transformByQState.getPayloadFilePath() !== '') {
-        fs.rmSync(transformByQState.getPayloadFilePath(), { recursive: true, force: true }) // delete ZIP if it exists
+        await fs.delete(transformByQState.getPayloadFilePath(), { recursive: true, force: true }) // delete ZIP if it exists
     }
 }
 

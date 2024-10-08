@@ -9,7 +9,6 @@ import * as path from 'path'
 import * as utils from 'util'
 import { existsSync, mkdirSync, promises as nodefs, readFileSync } from 'fs'
 import { stat } from 'fs/promises'
-import nodeFs from 'fs'
 import fs, { FileSystem } from '../../../shared/fs/fs'
 import * as os from 'os'
 import { isMinVscode, isWin } from '../../../shared/vscode/env'
@@ -106,7 +105,7 @@ describe('FileSystem', function () {
                     sandbox.stub(fs, 'rename').throws(new Error('Test Error Message VSC'))
                 }
                 if (throws.node) {
-                    sandbox.stub(nodeFs.promises, 'rename').throws(new Error('Test Error Message Node'))
+                    sandbox.stub(nodefs, 'rename').throws(new Error('Test Error Message Node'))
                 }
                 const filePath = testFolder.pathFrom('myFileName')
 

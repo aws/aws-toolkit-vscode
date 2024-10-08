@@ -8,8 +8,8 @@ import { describe } from 'mocha'
 import assert from 'assert'
 import * as path from 'path'
 import { platform } from 'os'
-import { existsSync, mkdirSync, unlinkSync, writeFileSync } from 'fs'
 import { runCmd } from './testUtils'
+import { fs } from '../shared'
 
 /**
  * NOTES:
@@ -40,22 +40,22 @@ describe('git-secrets', function () {
         })
     }
 
-    function setupTestFixturesDir(toolkitProjectDir: string) {
+    async function setupTestFixturesDir(toolkitProjectDir: string) {
         const testFixturesPath = path.join(toolkitProjectDir, 'src', 'testFixtures', 'bin')
-        mkdirSync(testFixturesPath, { recursive: true })
+        await fs.mkdir(testFixturesPath)
         return testFixturesPath
     }
 
-    function setupAccessKeyFile(testFixturesPath: string) {
+    async function setupAccessKeyFile(testFixturesPath: string) {
         const accessKeyFilePath = path.join(testFixturesPath, 'fileWithAccessKey.ts')
-        deleteFileIfExists(accessKeyFilePath)
+        await deleteFileIfExists(accessKeyFilePath)
         return accessKeyFilePath
     }
 
-    function setupGitSecretsExecutable(testFixturesPath: string) {
+    async function setupGitSecretsExecutable(testFixturesPath: string) {
         const gitSecretsExecutablePath = path.join(testFixturesPath, 'git-secrets')
 
-        if (existsSync(gitSecretsExecutablePath)) {
+        if (await fs.exists(gitSecretsExecutablePath)) {
             console.log('INFO: git-secrets already installed')
         } else {
             console.log('INFO: Installing git-secrets...')
@@ -72,13 +72,13 @@ describe('git-secrets', function () {
         return gitSecretsExecutablePath
     }
 
-    function deleteFileIfExists(filePath: string) {
-        if (existsSync(filePath)) {
-            unlinkSync(filePath)
+    async function deleteFileIfExists(filePath: string) {
+        if (await fs.exists(filePath)) {
+            await fs.delete(filePath)
         }
     }
 
-    function createFileWithSecretKey(accessKeyFilePath: string) {
+    async function createFileWithSecretKey(accessKeyFilePath: string) {
         // Create file in project that has secret key value.
         // Need to build access key string incrementally to not trigger git-secrets.
         const keyValue = 'yAki21XLhAIBiKvyaxr4p/ltr8OxkZTHISISFAKE'
@@ -91,18 +91,18 @@ describe('git-secrets', function () {
 
 ${mySecretAccessKey}
 `.trim()
-        writeFileSync(accessKeyFilePath, fileContent)
+        await fs.writeFile(accessKeyFilePath, fileContent)
     }
 
-    before(function () {
+    before(async function () {
         if (platform() === 'win32') {
             this.skip()
         }
 
         toolkitProjectDir = path.resolve()
-        testFixturesPath = setupTestFixturesDir(toolkitProjectDir)
-        gitSecrets = setupGitSecretsExecutable(testFixturesPath)
-        accessKeyFilePath = setupAccessKeyFile(testFixturesPath)
+        testFixturesPath = await setupTestFixturesDir(toolkitProjectDir)
+        gitSecrets = await setupGitSecretsExecutable(testFixturesPath)
+        accessKeyFilePath = await setupAccessKeyFile(testFixturesPath)
 
         // Register all patterns with `git-secrets`
         runCmd([gitSecrets, '--register-aws'], { cwd: toolkitProjectDir })
@@ -110,8 +110,8 @@ ${mySecretAccessKey}
         setAllowListPatterns(gitSecrets)
     })
 
-    afterEach(function () {
-        deleteFileIfExists(accessKeyFilePath)
+    afterEach(async function () {
+        await deleteFileIfExists(accessKeyFilePath)
     })
 
     it('ensures no git secrets are found', function () {
@@ -119,8 +119,8 @@ ${mySecretAccessKey}
         assert.strictEqual(result.status, 0, `Failure output: ${result.stderr.toString()}`)
     })
 
-    it('sanity check it finds secrets', function () {
-        createFileWithSecretKey(accessKeyFilePath)
+    it('sanity check it finds secrets', async function () {
+        await createFileWithSecretKey(accessKeyFilePath)
         const result = runCmd([gitSecrets, '--scan', accessKeyFilePath], { cwd: toolkitProjectDir, throws: false })
         assert.strictEqual(result.status, 1)
     })

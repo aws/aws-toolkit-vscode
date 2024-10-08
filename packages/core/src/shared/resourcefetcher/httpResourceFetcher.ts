@@ -2,11 +2,10 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-
-import * as fs from 'fs'
 import * as http from 'http'
 import * as https from 'https'
 import * as stream from 'stream'
+import * as fs from 'fs'
 import got, { Response, RequestError, CancelError } from 'got'
 import urlToOptions from 'got/dist/source/core/utils/url-to-options'
 import Request from 'got/dist/source/core'
@@ -16,6 +15,7 @@ import { ResourceFetcher } from './resourcefetcher'
 import { Timeout, CancellationError, CancelEvent } from '../utilities/timeoutUtils'
 import { isCloud9 } from '../extensionUtilities'
 import { Headers } from 'got/dist/source/core'
+import { createWriteStream } from 'fs'
 
 // XXX: patched Got module for compatability with older VS Code versions (e.g. Cloud9)
 // `got` has also deprecated `urlToOptions`
@@ -149,7 +149,7 @@ export class HttpResourceFetcher implements ResourceFetcher {
     private pipeGetRequest(pipeLocation: string, timeout?: Timeout): FetcherResult {
         const requester = isCloud9() ? patchedGot : got
         const requestStream = requester.stream(this.url, { headers: this.buildRequestHeaders() })
-        const fsStream = fs.createWriteStream(pipeLocation)
+        const fsStream = createWriteStream(pipeLocation)
 
         const done = new Promise<void>((resolve, reject) => {
             const pipe = stream.pipeline(requestStream, fsStream, (err) => {

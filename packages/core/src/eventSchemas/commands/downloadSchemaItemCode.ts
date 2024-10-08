@@ -6,7 +6,6 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 import { Schemas } from 'aws-sdk'
-import fs = require('fs')
 import path = require('path')
 import * as vscode from 'vscode'
 import { SchemaClient } from '../../shared/clients/schemaClient'
@@ -26,6 +25,8 @@ import {
 import admZip from 'adm-zip'
 import globals from '../../shared/extensionGlobals'
 import { telemetry } from '../../shared/telemetry/telemetry'
+import { closeSync, openSync, writeSync } from 'fs'
+import { fs } from '../../shared'
 
 enum CodeGenerationStatus {
     CREATE_COMPLETE = 'CREATE_COMPLETE',
@@ -296,12 +297,12 @@ export class CodeExtractor {
 
             //write binary data into a temp zip file in a temp directory
             const zipContentsBinary = new Uint8Array(zipContents)
-            const fd = fs.openSync(codeZipFile, 'w')
-            fs.writeSync(fd, zipContentsBinary, 0, zipContentsBinary.byteLength, 0)
-            fs.closeSync(fd)
+            const fd = openSync(codeZipFile, 'w')
+            writeSync(fd, zipContentsBinary, 0, zipContentsBinary.byteLength, 0)
+            closeSync(fd)
 
             let overwriteFiles: boolean = false
-            const collisionExist = this.checkFileCollisions(codeZipFile, destinationDirectory)
+            const collisionExist = await this.checkFileCollisions(codeZipFile, destinationDirectory)
 
             if (collisionExist) {
                 overwriteFiles = await this.confirmOverwriteCollisions()
@@ -323,21 +324,21 @@ export class CodeExtractor {
     }
 
     // Check if downloaded code hierarchy has collisions with the destination directory and display them in output channel
-    public checkFileCollisions(codeZipFile: string, destinationDirectory: string): boolean {
+    public async checkFileCollisions(codeZipFile: string, destinationDirectory: string): Promise<boolean> {
         const zip = new admZip(codeZipFile)
         const zipEntries = zip.getEntries()
         const detectedCollisions: string[] = []
 
-        zipEntries.forEach(function (zipEntry) {
+        for (const zipEntry of zipEntries) {
             if (zipEntry.isDirectory) {
                 // Ignore directories because those can/will merged
             } else {
                 const intendedDestinationPath = path.join(destinationDirectory, '/', zipEntry.entryName)
-                if (fs.existsSync(intendedDestinationPath)) {
+                if (await fs.exists(intendedDestinationPath)) {
                     detectedCollisions.push(intendedDestinationPath)
                 }
             }
-        })
+        }
 
         if (detectedCollisions.length > 0) {
             this.writeToOutputChannel(detectedCollisions)

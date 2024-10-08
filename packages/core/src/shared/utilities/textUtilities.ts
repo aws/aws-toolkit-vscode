@@ -4,10 +4,11 @@
  */
 
 import * as crypto from 'crypto'
-import * as fs from 'fs'
 import { default as stripAnsi } from 'strip-ansi'
 import { isCloud9 } from '../extensionUtilities'
 import { getLogger } from '../logger'
+import fs from '../fs/fs'
+import { close, openSync, writeSync } from 'fs'
 
 /**
  * Truncates string `s` if it exceeds `n` chars.
@@ -145,16 +146,16 @@ export function stripNewLinesAndComments(text: string): string {
  * @param line Optional line number to use (0 indexed)
  */
 export async function insertTextIntoFile(text: string, filePath: string, line: number = 0) {
-    const oldData: Buffer = fs.readFileSync(filePath)
+    const oldData: Buffer = Buffer.from(await fs.readFileBytes(filePath))
     const lines: string[] = oldData.toString().split(/\r?\n/)
     lines.splice(line, 0, text)
 
     const newData: Buffer = Buffer.from(lines.join('\n'))
-    const fd: number = fs.openSync(filePath, 'w+')
+    const fd: number = openSync(filePath, 'w+')
 
-    fs.writeSync(fd, newData, 0, newData.length, 0)
+    writeSync(fd, newData, 0, newData.length, 0)
 
-    fs.close(fd, (err) => {
+    close(fd, (err) => {
         if (err) {
             throw err
         }

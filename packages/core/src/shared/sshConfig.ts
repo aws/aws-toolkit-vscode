@@ -16,7 +16,6 @@ import { CancellationError } from './utilities/timeoutUtils'
 import { getSshConfigPath } from './extensions/ssh'
 import globals from './extensionGlobals'
 import { fileExists, readFileAsString } from './filesystemUtilities'
-import { chmodSync } from 'fs'
 import fs from './fs/fs'
 
 const localize = nls.loadMessageBundle()
@@ -112,15 +111,14 @@ export class SshConfig {
         try {
             const parentsDir = path.dirname(sshConfigPath)
             const grandParentsDir = path.dirname(parentsDir)
-            // TODO: replace w/ fs.chmod once stub is merged.
             await fs.mkdir(grandParentsDir)
-            chmodSync(grandParentsDir, 0o755)
+            await fs.chmod(grandParentsDir, 0o755)
 
             await fs.mkdir(parentsDir)
-            chmodSync(parentsDir, 0o700)
+            await fs.chmod(parentsDir, 0o700)
 
             await fs.appendFile(sshConfigPath, section)
-            chmodSync(sshConfigPath, 0o600)
+            await fs.chmod(sshConfigPath, 0o600)
         } catch (e) {
             const message = localize(
                 'AWS.sshConfig.error.writeFail',

@@ -24,9 +24,9 @@ import { getOpenExternalStub } from '../../globalSetup.test'
 import { getTestWindow } from '../../shared/vscode/window'
 import { SeverityLevel } from '../../shared/vscode/message'
 import { ToolkitError } from '../../../shared/errors'
-import * as fs from 'fs'
 import * as path from 'path'
 import { Stub, stub } from '../../utilities/stubber'
+import { fs } from '../../../shared'
 
 const hourInMs = 3600000
 
@@ -73,7 +73,7 @@ describe('SsoAccessTokenProvider', function () {
     async function makeTemporaryTokenCacheFolder() {
         const root = await makeTemporaryToolkitFolder()
         const cacheDir = path.join(root, '.aws', 'sso', 'cache')
-        fs.mkdirSync(cacheDir, { recursive: true })
+        await fs.mkdir(cacheDir)
         return cacheDir
     }
 

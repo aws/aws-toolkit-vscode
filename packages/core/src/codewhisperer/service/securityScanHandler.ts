@@ -16,7 +16,7 @@ import {
 import { sleep } from '../../shared/utilities/timeoutUtils'
 import * as codewhispererClient from '../client/codewhisperer'
 import * as CodeWhispererConstants from '../models/constants'
-import { existsSync, statSync, readFileSync } from 'fs'
+import { existsSync, statSync } from 'fs'
 import { RawCodeScanIssue } from '../models/model'
 import * as crypto from 'crypto'
 import path = require('path')
@@ -39,6 +39,7 @@ import {
     UploadArtifactToS3Error,
 } from '../models/errors'
 import { getTelemetryReasonDesc } from '../../shared/errors'
+import { fs } from '../../shared'
 
 export async function listScanResults(
     client: DefaultCodeWhispererClient,
@@ -220,7 +221,7 @@ export async function getPresignedUrlAndUpload(
         throw new InvalidSourceZipError()
     }
     const srcReq: CreateUploadUrlRequest = {
-        contentMd5: getMd5(zipMetadata.zipFilePath),
+        contentMd5: await getMd5(zipMetadata.zipFilePath),
         artifactType: 'SourceCode',
         uploadIntent: getUploadIntent(scope),
         uploadContext: {
@@ -251,9 +252,9 @@ function getUploadIntent(scope: CodeWhispererConstants.CodeAnalysisScope): Uploa
         : CodeWhispererConstants.projectScanUploadIntent
 }
 
-function getMd5(fileName: string) {
+async function getMd5(fileName: string) {
     const hasher = crypto.createHash('md5')
-    hasher.update(readFileSync(fileName))
+    hasher.update(await fs.readFileBytes(fileName))
     return hasher.digest('base64')
 }
 
@@ -288,7 +289,7 @@ export async function uploadArtifactToS3(
     const logger = getLoggerForScope(scope)
     const encryptionContext = `{"uploadId":"${resp.uploadId}"}`
     const headersObj: Record<string, string> = {
-        'Content-MD5': getMd5(fileName),
+        'Content-MD5': await getMd5(fileName),
         'x-amz-server-side-encryption': 'aws:kms',
         'Content-Type': 'application/zip',
         'x-amz-server-side-encryption-context': Buffer.from(encryptionContext, 'utf8').toString('base64'),
@@ -300,7 +301,7 @@ export async function uploadArtifactToS3(
 
     try {
         const response = await request.fetch('PUT', resp.uploadUrl, {
-            body: readFileSync(fileName),
+            body: await fs.readFileBytes(fileName),
             headers: resp?.requestHeaders ?? headersObj,
         }).response
         logger.debug(`StatusCode: ${response.status}, Text: ${response.statusText}`)

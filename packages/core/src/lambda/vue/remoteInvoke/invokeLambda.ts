@@ -4,7 +4,6 @@
  */
 
 import { _Blob } from 'aws-sdk/clients/lambda'
-import { readFileSync } from 'fs'
 import * as _ from 'lodash'
 import * as vscode from 'vscode'
 import { DefaultLambdaClient, LambdaClient } from '../../../shared/clients/lambdaClient'
@@ -20,6 +19,7 @@ import * as nls from 'vscode-nls'
 import { VueWebview } from '../../../webviews/main'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 import { Result } from '../../../shared/telemetry/telemetry'
+import { fs } from '../../../shared'
 
 const localize = nls.loadMessageBundle()
 
@@ -99,14 +99,14 @@ export class RemoteInvokeWebview extends VueWebview {
         }
 
         try {
-            const fileContent = readFileSync(fileLocations[0].fsPath, { encoding: 'utf8' })
+            const fileContent = fs.readFileText(fileLocations[0].fsPath)
 
             return {
                 sample: fileContent,
                 selectedFile: fileLocations[0].path,
             }
         } catch (e) {
-            getLogger().error('readFileSync: Failed to read file at path %O', fileLocations[0].fsPath, e)
+            getLogger().error('readFileText: Failed to read file at path %O', fileLocations[0].fsPath, e)
             void vscode.window.showErrorMessage((e as Error).message)
         }
     }

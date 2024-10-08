@@ -4,7 +4,6 @@
  */
 
 import * as vscode from 'vscode'
-import * as fs from 'fs'
 import * as path from 'path'
 import { getLogger, Logger } from '../../../shared/logger'
 import { localize } from '../../../shared/utilities/vsCodeUtils'
@@ -15,7 +14,7 @@ import { AccessAnalyzer, SharedIniFileCredentials } from 'aws-sdk'
 import { execFileSync } from 'child_process'
 import { ToolkitError } from '../../../shared/errors'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../../shared/filesystemUtilities'
-import { globals } from '../../../shared'
+import { fs, globals } from '../../../shared'
 import {
     IamPolicyChecksConstants,
     PolicyChecksCheckType,
@@ -331,7 +330,7 @@ export class IamPolicyChecksWebview extends VueWebview {
         const document = IamPolicyChecksWebview.editedDocumentFileName
         customPolicyCheckDiagnosticCollection.clear()
         if (referenceDocument !== '') {
-            fs.writeFileSync(tempFilePath, referenceDocument)
+            await fs.writeFile(tempFilePath, referenceDocument)
         } else {
             this.onCustomPolicyCheckResponse.fire([
                 IamPolicyChecksConstants.MissingReferenceDocError,
@@ -807,8 +806,8 @@ export async function renderIamPolicyChecks(context: ExtContext): Promise<VueWeb
 
 // Helper function to get document contents from a path
 export async function _readCustomChecksFile(input: string): Promise<string> {
-    if (fs.existsSync(input)) {
-        return fs.readFileSync(input).toString()
+    if (await fs.exists(input)) {
+        return (await fs.readFileBytes(input)).toString()
     } else {
         try {
             const [region, bucket, key] = parseS3Uri(input)

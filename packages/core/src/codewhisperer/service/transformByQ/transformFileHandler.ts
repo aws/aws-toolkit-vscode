@@ -8,7 +8,6 @@ import * as path from 'path'
 import * as os from 'os'
 import xml2js = require('xml2js')
 import * as CodeWhispererConstants from '../../models/constants'
-import { existsSync, writeFileSync } from 'fs'
 import { BuildSystem, FolderInfo, transformByQState } from '../../models/model'
 import { IManifestFile } from '../../../amazonqFeatureDev/models'
 import fs from '../../../shared/fs/fs'
@@ -25,13 +24,13 @@ export function getDependenciesFolderInfo(): FolderInfo {
 
 export async function writeLogs() {
     const logFilePath = path.join(os.tmpdir(), 'build-logs.txt')
-    writeFileSync(logFilePath, transformByQState.getErrorLog())
+    await fs.writeFile(logFilePath, transformByQState.getErrorLog())
     return logFilePath
 }
 
 export async function checkBuildSystem(projectPath: string) {
     const mavenBuildFilePath = path.join(projectPath, 'pom.xml')
-    if (existsSync(mavenBuildFilePath)) {
+    if (await fs.exists(mavenBuildFilePath)) {
         return BuildSystem.Maven
     }
     return BuildSystem.Unknown
@@ -55,7 +54,7 @@ export async function createPomCopy(
 export async function replacePomVersion(pomFileVirtualFileReference: vscode.Uri, version: string, delimiter: string) {
     const pomFileText = await fs.readFileText(pomFileVirtualFileReference.fsPath)
     const pomFileTextWithNewVersion = pomFileText.replace(delimiter, version)
-    writeFileSync(pomFileVirtualFileReference.fsPath, pomFileTextWithNewVersion)
+    await fs.writeFile(pomFileVirtualFileReference.fsPath, pomFileTextWithNewVersion)
 }
 
 export async function getJsonValuesFromManifestFile(

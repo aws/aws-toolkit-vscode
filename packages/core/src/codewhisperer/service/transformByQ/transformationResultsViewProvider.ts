@@ -5,7 +5,6 @@
 
 import AdmZip from 'adm-zip'
 import os from 'os'
-import fs from 'fs'
 import { parsePatch, applyPatches, ParsedDiff } from 'diff'
 import path from 'path'
 import vscode from 'vscode'
@@ -20,17 +19,19 @@ import * as CodeWhispererConstants from '../../models/constants'
 import { createCodeWhispererChatStreamingClient } from '../../../shared/clients/codewhispererChatClient'
 import { ChatSessionManager } from '../../../amazonqGumby/chat/storages/chatSession'
 import { setContext } from '../../../shared/vscode/setContext'
+import { fs } from '../../../shared'
+import { existsSync, readFileSync, rmSync, writeFileSync } from 'fs'
 
 export abstract class ProposedChangeNode {
     abstract readonly resourcePath: string
 
     abstract generateCommand(): vscode.Command
     abstract generateDescription(): string
-    abstract saveFile(): void
+    abstract saveFile(): Promise<void>
 
-    public saveChange(): void {
+    public async saveChange(): Promise<void> {
         try {
-            this.saveFile()
+            await this.saveFile()
         } catch (err) {
             //to do: file system-related error handling
             if (err instanceof Error) {
@@ -66,8 +67,8 @@ export class ModifiedChangeNode extends ProposedChangeNode {
         return 'M'
     }
 
-    override saveFile(): void {
-        fs.copyFileSync(this.tmpChangedPath, this.originalPath)
+    override async saveFile(): Promise<void> {
+        await fs.copy(this.tmpChangedPath, this.originalPath)
     }
 }
 
@@ -96,13 +97,13 @@ export class AddedChangeNode extends ProposedChangeNode {
         return 'A'
     }
 
-    override saveFile(): void {
+    override async saveFile(): Promise<void> {
         // create parent directory before copying files (ex. for the summary/ and assets/ folders)
         const parentDir = path.dirname(this.pathToWorkspaceFile)
-        if (!fs.existsSync(parentDir)) {
-            fs.mkdirSync(parentDir, { recursive: true })
+        if (!(await fs.exists(parentDir))) {
+            await fs.mkdir(parentDir)
         }
-        fs.copyFileSync(this.pathToTmpFile, this.pathToWorkspaceFile)
+        await fs.copy(this.pathToTmpFile, this.pathToWorkspaceFile)
     }
 }
 
@@ -121,19 +122,19 @@ export class DiffModel {
      * @param changedFiles List of files that were changed
      * @returns Path to the folder containing the copied files
      */
-    public copyProject(pathToWorkspace: string, changedFiles: ParsedDiff[]) {
+    public async copyProject(pathToWorkspace: string, changedFiles: ParsedDiff[]) {
         const pathToTmpSrcDir = path.join(os.tmpdir(), `project-copy-${Date.now()}`)
-        fs.mkdirSync(pathToTmpSrcDir)
-        changedFiles.forEach((file) => {
-            const pathToTmpFile = path.join(pathToTmpSrcDir, file.oldFileName!.substring(2))
+        await fs.mkdir(pathToTmpSrcDir)
+        for (const file of changedFiles) {
+            const pathToTmpFile = path.join(pathToTmpSrcDir, file.newFileName!.substring(2))
             // use mkdirsSync to create parent directories in pathToTmpFile too
-            fs.mkdirSync(path.dirname(pathToTmpFile), { recursive: true })
+            await fs.mkdir(path.dirname(pathToTmpFile))
             const pathToOldFile = path.join(pathToWorkspace, file.oldFileName!.substring(2))
             // pathToOldFile will not exist for new files such as summary.md
-            if (fs.existsSync(pathToOldFile)) {
-                fs.copyFileSync(pathToOldFile, pathToTmpFile)
+            if (await fs.exists(pathToOldFile)) {
+                await fs.copy(pathToOldFile, pathToTmpFile)
             }
-        })
+        }
         return pathToTmpSrcDir
     }
 
@@ -142,23 +143,23 @@ export class DiffModel {
      * @param pathToWorkspace Path to the project that was transformed
      * @returns List of nodes containing the paths of files that were modified, added, or removed
      */
-    public parseDiff(pathToDiff: string, pathToWorkspace: string): ProposedChangeNode[] {
-        const diffContents = fs.readFileSync(pathToDiff, 'utf8')
+    public async parseDiff(pathToDiff: string, pathToWorkspace: string): Promise<ProposedChangeNode[]> {
+        const diffContents = await fs.readFileText(pathToDiff)
         const changedFiles = parsePatch(diffContents)
         // path to the directory containing copy of the changed files in the transformed project
-        const pathToTmpSrcDir = this.copyProject(pathToWorkspace, changedFiles)
+        const pathToTmpSrcDir = await this.copyProject(pathToWorkspace, changedFiles)
         transformByQState.setProjectCopyFilePath(pathToTmpSrcDir)
 
         applyPatches(changedFiles, {
             loadFile: function (fileObj, callback) {
                 // load original contents of file
                 const filePath = path.join(pathToWorkspace, fileObj.oldFileName!.substring(2))
-                if (!fs.existsSync(filePath)) {
+                if (existsSync(filePath)) {
                     // must be a new file (ex. summary.md), so pass empty string as original contents and do not pass error
                     callback(undefined, '')
                 } else {
                     // must be a modified file (most common), so pass original contents
-                    const fileContents = fs.readFileSync(filePath, 'utf-8')
+                    const fileContents = readFileSync(filePath, 'utf-8')
                     callback(undefined, fileContents)
                 }
             },
@@ -166,7 +167,7 @@ export class DiffModel {
             patched: function (fileObj, content, callback) {
                 const filePath = path.join(pathToTmpSrcDir, fileObj.newFileName!.substring(2))
                 // write changed contents to the copy of the original file (or create a new file)
-                fs.writeFileSync(filePath, content)
+                writeFileSync(filePath, content)
                 callback(undefined)
             },
             complete: function (err) {
@@ -185,8 +186,8 @@ export class DiffModel {
             const originalPath = path.join(pathToWorkspace, file.oldFileName!.substring(2))
             const tmpChangedPath = path.join(pathToTmpSrcDir, file.newFileName!.substring(2))
 
-            const originalFileExists = fs.existsSync(originalPath)
-            const changedFileExists = fs.existsSync(tmpChangedPath)
+            const originalFileExists = existsSync(originalPath)
+            const changedFileExists = existsSync(tmpChangedPath)
 
             if (originalFileExists && changedFileExists) {
                 return new ModifiedChangeNode(originalPath, tmpChangedPath)
@@ -207,10 +208,10 @@ export class DiffModel {
         return this.changes[0]
     }
 
-    public saveChanges() {
-        this.changes.forEach((file) => {
-            file.saveChange()
-        })
+    public async saveChanges() {
+        for (const file of this.changes) {
+            await file.saveChange()
+        }
 
         this.clearChanges()
     }
@@ -271,11 +272,11 @@ export class ProposedTransformationExplorer {
             await setContext('gumby.reviewState', TransformByQReviewStatus.NotStarted)
 
             // delete result archive after changes cleared; summary is under ResultArchiveFilePath
-            if (fs.existsSync(transformByQState.getResultArchiveFilePath())) {
-                fs.rmSync(transformByQState.getResultArchiveFilePath(), { recursive: true, force: true })
+            if (existsSync(transformByQState.getResultArchiveFilePath())) {
+                rmSync(transformByQState.getResultArchiveFilePath(), { recursive: true, force: true })
             }
-            if (fs.existsSync(transformByQState.getProjectCopyFilePath())) {
-                fs.rmSync(transformByQState.getProjectCopyFilePath(), { recursive: true, force: true })
+            if (existsSync(transformByQState.getProjectCopyFilePath())) {
+                rmSync(transformByQState.getProjectCopyFilePath(), { recursive: true, force: true })
             }
 
             diffModel.clearChanges()
@@ -341,7 +342,7 @@ export class ProposedTransformationExplorer {
                     )
 
                     // Update downloaded artifact size
-                    exportResultsArchiveSize = (await fs.promises.stat(pathToArchive)).size
+                    exportResultsArchiveSize = (await fs.stat(pathToArchive)).size
 
                     telemetry.record({ codeTransformTotalByteSize: exportResultsArchiveSize })
                 })
@@ -372,7 +373,7 @@ export class ProposedTransformationExplorer {
                 pathContainingArchive = path.dirname(pathToArchive)
                 const zip = new AdmZip(pathToArchive)
                 zip.extractAllTo(pathContainingArchive)
-                diffModel.parseDiff(
+                await diffModel.parseDiff(
                     path.join(pathContainingArchive, ExportResultArchiveStructure.PathToDiffPatch),
                     transformByQState.getProjectPath()
                 )
@@ -405,7 +406,7 @@ export class ProposedTransformationExplorer {
         })
 
         vscode.commands.registerCommand('aws.amazonq.transformationHub.reviewChanges.acceptChanges', async () => {
-            diffModel.saveChanges()
+            await diffModel.saveChanges()
             telemetry.ui_click.emit({ elementId: 'transformationHub_acceptChanges' })
             void vscode.window.showInformationMessage(CodeWhispererConstants.changesAppliedNotification)
             transformByQState.getChatControllers()?.transformationFinished.fire({

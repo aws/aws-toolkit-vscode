@@ -4,7 +4,6 @@
  */
 
 import * as vscode from 'vscode'
-import { readFileSync } from 'fs'
 import * as CloudFormation from '../cloudformation/cloudformation'
 import * as pathutils from '../utilities/pathUtils'
 import * as path from 'path'
@@ -18,6 +17,7 @@ import { Timeout } from '../utilities/timeoutUtils'
 import { localize } from '../utilities/vsCodeUtils'
 import { PerfLog } from '../logger/perfLogger'
 import { showMessageWithCancel } from '../utilities/messages'
+import { readFileSync } from 'fs'
 
 export class CloudFormationTemplateRegistry extends WatchedFiles<CloudFormation.Template> {
     public name: string = 'CloudFormationTemplateRegistry'

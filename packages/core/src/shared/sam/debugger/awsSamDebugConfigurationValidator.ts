@@ -4,7 +4,6 @@
  */
 
 import * as vscode from 'vscode'
-import * as fs from 'fs'
 import * as path from 'path'
 import { samImageLambdaRuntimes, samZipLambdaRuntimes } from '../../../lambda/models/samLambdaRuntime'
 import * as CloudFormation from '../../cloudformation/cloudformation'
@@ -20,6 +19,7 @@ import {
 } from './awsSamDebugConfiguration'
 import { tryGetAbsolutePath } from '../../utilities/workspaceUtils'
 import { CloudFormationTemplateRegistry } from '../../fs/templateRegistry'
+import fs from '../../fs/fs'
 
 export interface ValidationResult {
     isValid: boolean
@@ -43,7 +43,7 @@ export class DefaultAwsSamDebugConfigurationValidator implements AwsSamDebugConf
     ): Promise<ValidationResult> {
         let rv: ValidationResult = { isValid: false, message: undefined }
         if (resolveVars) {
-            config = doTraverseAndReplace(config, this.workspaceFolder?.uri.fsPath ?? '')
+            config = await doTraverseAndReplace(config, this.workspaceFolder?.uri.fsPath ?? '')
         }
         if (!config.request) {
             rv.message = localize(
@@ -93,7 +93,7 @@ export class DefaultAwsSamDebugConfigurationValidator implements AwsSamDebugConf
         }
 
         if (rv.isValid) {
-            rv = this.validateLambda(config)
+            rv = await this.validateLambda(config)
         }
 
         if (!rv.isValid && !rv.message) {
@@ -277,10 +277,10 @@ export class DefaultAwsSamDebugConfigurationValidator implements AwsSamDebugConf
         return { isValid: true }
     }
 
-    private validateLambda(config: AwsSamDebuggerConfiguration): ValidationResult {
+    private async validateLambda(config: AwsSamDebuggerConfiguration): Promise<ValidationResult> {
         if (config.lambda?.payload?.path) {
             const fullpath = tryGetAbsolutePath(this.workspaceFolder, config.lambda?.payload?.path)
-            if (!fs.existsSync(fullpath)) {
+            if (!(await fs.exists(fullpath))) {
                 return {
                     isValid: false,
                     message: localize(
@@ -303,14 +303,14 @@ export class DefaultAwsSamDebugConfigurationValidator implements AwsSamDebugConf
  * @param config
  * @returns resolved config
  */
-export function resolveWorkspaceFolderVariable(
+export async function resolveWorkspaceFolderVariable(
     folder: vscode.WorkspaceFolder | undefined,
     config: AwsSamDebuggerConfiguration
-): AwsSamDebuggerConfiguration {
-    return doTraverseAndReplace(config, folder?.uri.fsPath)
+): Promise<AwsSamDebuggerConfiguration> {
+    return await doTraverseAndReplace(config, folder?.uri.fsPath)
 }
 
-function doTraverseAndReplace(object: { [key: string]: any }, fspath: string | undefined): any {
+async function doTraverseAndReplace(object: { [key: string]: any }, fspath: string | undefined): Promise<any> {
     const wsfRegex = /^(.*)(\$\{workspaceFolder\})(.*)$/g
     if (!vscode.workspace.workspaceFolders && !fspath) {
         throw new Error('No workspace folders available; cannot resolve workspaceFolder variable.')
@@ -324,7 +324,7 @@ function doTraverseAndReplace(object: { [key: string]: any }, fspath: string | u
             if (result) {
                 if (!fspath) {
                     for (const wsf of vscode.workspace.workspaceFolders!) {
-                        if (fs.existsSync(path.join(result[1], wsf.uri.fsPath, result[3]))) {
+                        if (await fs.exists(path.join(result[1], wsf.uri.fsPath, result[3]))) {
                             fspath = wsf.uri.fsPath
                             break
                         }
@@ -336,7 +336,7 @@ function doTraverseAndReplace(object: { [key: string]: any }, fspath: string | u
                 final[key] = path.join(result[1], fspath, result[3])
             }
         } else if (typeof val === 'object') {
-            final[key] = doTraverseAndReplace(val, fspath)
+            final[key] = await doTraverseAndReplace(val, fspath)
         }
     }
 

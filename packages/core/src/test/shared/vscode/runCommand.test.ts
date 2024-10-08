@@ -6,7 +6,6 @@
 import globals from '../../../shared/extensionGlobals'
 
 import os from 'os'
-import { promises as fsPromises } from 'fs'
 import fs from '../../../shared/fs/fs'
 import * as sinon from 'sinon'
 import assert from 'assert'
@@ -80,7 +79,8 @@ describe('runCommand', function () {
         before(async function () {
             tempFolder = await makeTemporaryToolkitFolder()
             unwritableFile = path.join(tempFolder, 'unwritableFile')
-            await fsPromises.writeFile(unwritableFile, 'foo', { mode: 0o400 })
+            await fs.writeFile(unwritableFile, 'foo')
+            await fs.chmod(unwritableFile, 0o400)
         })
 
         after(async function () {
@@ -126,7 +126,7 @@ describe('runCommand', function () {
         it('nodejs ISDIR', async function () {
             await runAndWaitForMessage(/EISDIR: illegal operation on a directory/, async () => {
                 // Try to write to the current directory. 💩
-                const err = await fsPromises.writeFile('.', 'foo').catch((e) => e)
+                const err = await fs.writeFile('.', 'foo').catch((e) => e)
                 const err2 = new Error('generic error')
                 ;(err2 as any).cause = err
                 throw err2
@@ -165,7 +165,7 @@ describe('runCommand', function () {
             await Promise.all([
                 viewLogsDialog.then((dialog) => dialog.close()),
                 testCommand.execute(async () => {
-                    const err = await fsPromises.writeFile(unwritableFile, 'bar').catch((e) => e)
+                    const err = await fs.writeFile(unwritableFile, 'bar').catch((e) => e)
                     throw fakeErrorChain(err, new Error('error 3'))
                 }),
             ])

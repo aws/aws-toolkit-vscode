@@ -17,7 +17,7 @@ import {
 import assert from 'assert'
 import sinon from 'sinon'
 import * as vscode from 'vscode'
-import fs from 'fs'
+import * as fs from 'fs'
 
 const mockCodeScanFindings = JSON.stringify([
     {
@@ -72,7 +72,7 @@ describe('securityScanHandler', function () {
         let mockClient: Stub<DefaultCodeWhispererClient>
         beforeEach(function () {
             mockClient = stub(DefaultCodeWhispererClient)
-            sinon.stub(fs, 'existsSync').returns(true)
+            sinon.stub(fs, 'existsSync').resolves(true)
             sinon.stub(fs, 'statSync').returns({ isFile: () => true } as fs.Stats)
         })
 

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as fs from 'fs'
+import { createReadStream as createRStream, createWriteStream as createWStream } from 'fs'
 import { Readable, Writable, pipeline } from 'stream'
 import * as vscode from 'vscode'
 
@@ -15,11 +15,11 @@ export interface FileStreams {
 
 export class DefaultFileStreams implements FileStreams {
     public createReadStream(uri: vscode.Uri): Readable {
-        return fs.createReadStream(uri.fsPath)
+        return createRStream(uri.fsPath)
     }
 
     public createWriteStream(uri: vscode.Uri): Writable {
-        return fs.createWriteStream(uri.fsPath)
+        return createWStream(uri.fsPath)
     }
 }
 
@@ -27,7 +27,7 @@ export function streamToFile(stream: Readable, target: vscode.Uri): Promise<void
     if (target.scheme !== 'file') {
         throw new Error('Only files on disk are currently supported for streams')
     }
-    const destination = fs.createWriteStream(target.fsPath)
+    const destination = createWStream(target.fsPath)
 
     return pipe(stream, destination)
 }

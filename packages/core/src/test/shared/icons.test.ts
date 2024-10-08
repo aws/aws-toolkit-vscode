@@ -11,46 +11,46 @@ import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../shared/filesy
 import { fs } from '../../shared'
 
 describe('getIcon', function () {
-    it('returns a ThemeIcon for `vscode` codicons', function () {
-        const icon = getIcon('vscode-gear', false)
+    it('returns a ThemeIcon for `vscode` codicons', async function () {
+        const icon = await getIcon('vscode-gear', false)
 
         assert.ok(icon instanceof ThemeIcon)
         assert.strictEqual(icon.id, 'gear')
     })
 
-    it('returns a ThemeIcon for `aws` icons', function () {
-        const icon = getIcon('aws-cdk-logo', false)
+    it('returns a ThemeIcon for `aws` icons', async function () {
+        const icon = await getIcon('aws-cdk-logo', false)
 
         assert.ok(icon instanceof ThemeIcon)
         assert.strictEqual(icon.id, 'aws-cdk-logo')
     })
 
-    it('returns icon URIs for non-codicon icons', function () {
-        const icon = getIcon('vscode-help', false)
+    it('returns icon URIs for non-codicon icons', async function () {
+        const icon = await getIcon('vscode-help', false)
 
         assert.ok(!(icon instanceof ThemeIcon))
         assert.ok(icon.dark.path.endsWith('/resources/icons/vscode/dark/help.svg'))
         assert.ok(icon.light.path.endsWith('/resources/icons/vscode/light/help.svg'))
     })
 
-    it('can use specific icons for Cloud9', function () {
-        const icon = getIcon('vscode-help', true)
+    it('can use specific icons for Cloud9', async function () {
+        const icon = await getIcon('vscode-help', true)
 
         assert.ok(!(icon instanceof ThemeIcon))
         assert.ok(icon.dark.path.endsWith('/resources/icons/cloud9/dark/vscode-help.svg'))
         assert.ok(icon.light.path.endsWith('/resources/icons/cloud9/light/vscode-help.svg'))
     })
 
-    it('can use generated icons for Cloud9', function () {
-        const icon = getIcon('aws-cdk-logo', true)
+    it('can use generated icons for Cloud9', async function () {
+        const icon = await getIcon('aws-cdk-logo', true)
 
         assert.ok(!(icon instanceof ThemeIcon))
         assert.ok(icon.dark.path.endsWith('/resources/icons/cloud9/generated/dark/aws-cdk-logo.svg'))
         assert.ok(icon.light.path.endsWith('/resources/icons/cloud9/generated/light/aws-cdk-logo.svg'))
     })
 
-    it('can use codicons for Cloud9', function () {
-        const icon = getIcon('vscode-gear', true)
+    it('can use codicons for Cloud9', async function () {
+        const icon = await getIcon('vscode-gear', true)
 
         assert.ok(!(icon instanceof ThemeIcon))
         assert.ok(icon.dark.path.endsWith('/resources/icons/cloud9/generated/dark/vscode-gear.svg'))
@@ -72,7 +72,7 @@ describe('getIcon', function () {
                 await fs.writeFile(p, '<svg></svg>')
             }
 
-            const icon = getIcon('aws-cdk-logo', false, tempDir)
+            const icon = await getIcon('aws-cdk-logo', false, tempDir)
 
             assert.ok(!(icon instanceof ThemeIcon))
             assert.strictEqual(icon.dark.fsPath, Uri.file(paths[1]).fsPath)
@@ -90,7 +90,7 @@ describe('getIcon', function () {
             await fs.mkdir(path.dirname(logoPath))
             await fs.writeFile(logoPath, '<svg></svg>')
 
-            const icon = getIcon('aws-cdk-logo', false, tempDir)
+            const icon = await getIcon('aws-cdk-logo', false, tempDir)
 
             assert.ok(icon instanceof ThemeIcon)
             assert.strictEqual(icon.source?.fsPath, Uri.file(logoPath).fsPath)
@@ -101,18 +101,18 @@ describe('getIcon', function () {
 })
 
 describe('codicon', function () {
-    it('inserts icon ids', function () {
-        const result = codicon`my icon: ${getIcon('vscode-gear')}`
+    it('inserts icon ids', async function () {
+        const result = codicon`my icon: ${await getIcon('vscode-gear')}`
         assert.strictEqual(result, 'my icon: $(gear)')
     })
 
-    it('skips adding icons if no icon font is available', function () {
-        const result = codicon`my icon: ${getIcon('vscode-help')}`
+    it('skips adding icons if no icon font is available', async function () {
+        const result = codicon`my icon: ${await getIcon('vscode-help')}`
         assert.strictEqual(result, 'my icon:')
     })
 
-    it('trims the resulting string', function () {
-        const result = codicon`  some text ${getIcon('vscode-help')}      `
+    it('trims the resulting string', async function () {
+        const result = codicon`  some text ${await getIcon('vscode-help')}      `
         assert.strictEqual(result, 'some text')
     })
 })

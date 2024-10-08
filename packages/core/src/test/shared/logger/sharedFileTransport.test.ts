@@ -10,7 +10,6 @@ import fs from '../../../shared/fs/fs'
 import { stub, SinonStub } from 'sinon'
 import { MESSAGE } from '../../../shared/logger/consoleLogTransport'
 import { createTestFile } from '../../testUtil'
-import { readFileSync } from 'fs'
 import { sleep } from '../../../shared/utilities/timeoutUtils'
 
 describe('SharedFileTransport', function () {
@@ -47,7 +46,7 @@ describe('SharedFileTransport', function () {
         await lastLog // wait for the last log to be written to the file
 
         // assert all logs were written to file
-        const actualText = readFileSync(logFile.fsPath, 'utf8')
+        const actualText = await fs.readFileText(logFile.fsPath)
         assert.strictEqual(actualText, 'a1\na2\na3\na4\na5\na6\n')
         assert.strictEqual(nextFunc.callCount, 6)
     })
