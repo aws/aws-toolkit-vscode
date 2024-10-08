@@ -11,7 +11,7 @@ import { Uri, ThemeIcon, ThemeColor } from 'vscode'
 import { isCloud9 } from './extensionUtilities'
 import { memoize } from './utilities/functionUtils'
 import { getLogger } from './logger/logger'
-import fs from './fs/fs'
+import { existsSync } from 'fs'
 
 // Animation:
 // https://code.visualstudio.com/api/references/icons-in-labels#animation
@@ -87,17 +87,17 @@ export function addColor(icon: IconPath, color: string | ThemeColor): IconPath {
     return new Icon(icon.id, icon.source, typeof color === 'string' ? new ThemeColor(color) : color)
 }
 
-async function resolveIconId(
+function resolveIconId(
     id: IconId,
     shouldUseCloud9 = isCloud9(),
     iconsPath = globals.context.asAbsolutePath(path.join('resources', 'icons'))
-): Promise<IconPath> {
+): IconPath {
     const [namespace, ...rest] = id.split('-')
     const name = rest.join('-')
 
     // This 'override' logic is to support legacy use-cases, though ideally we wouldn't need it at all
-    const cloud9Override = shouldUseCloud9 ? await resolvePathsSync(path.join(iconsPath, 'cloud9'), id) : undefined
-    const override = cloud9Override ?? (await resolvePathsSync(path.join(iconsPath, namespace), name))
+    const cloud9Override = shouldUseCloud9 ? resolvePathsSync(path.join(iconsPath, 'cloud9'), id) : undefined
+    const override = cloud9Override ?? resolvePathsSync(path.join(iconsPath, namespace), name)
     if (override) {
         getLogger().verbose(`icons: using override for "${id}"`)
         return override
@@ -105,7 +105,7 @@ async function resolveIconId(
 
     // TODO: remove when they support codicons + the contribution point
     if (shouldUseCloud9) {
-        const generated = await resolvePathsSync(path.join(iconsPath, 'cloud9', 'generated'), id)
+        const generated = resolvePathsSync(path.join(iconsPath, 'cloud9', 'generated'), id)
 
         if (generated) {
             return generated
@@ -121,16 +121,16 @@ async function resolveIconId(
     return new Icon(namespace === 'vscode' ? name : id, source)
 }
 
-async function resolvePathsSync(
+function resolvePathsSync(
     rootDir: string,
     target: string
-): Promise<{ light: Uri; dark: Uri; toString: () => string } | undefined> {
+): { light: Uri; dark: Uri; toString: () => string } | undefined {
     const filename = `${target}.svg`
     const darkPath = path.join(rootDir, 'dark', filename)
     const lightPath = path.join(rootDir, 'light', filename)
 
     try {
-        if (!isWeb() && (await fs.exists(darkPath)) && (await fs.exists(lightPath))) {
+        if (!isWeb() && existsSync(darkPath) && existsSync(lightPath)) {
             return { dark: Uri.file(darkPath), light: Uri.file(lightPath), toString: () => filename }
         }
     } catch (error) {

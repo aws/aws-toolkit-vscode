@@ -158,8 +158,7 @@ describe('runCommand', function () {
         })
 
         it('nodejs EACCES (not wrapped by toolkit `PermissionsError`)', async function () {
-            const expectedMsg =
-                os.platform() === 'win32' ? /EPERM: operation not permitted/ : /EACCES: permission denied/
+            const expectedMsg = 'Expected rw-, found r--.'
             const viewLogsDialog = getTestWindow().waitForMessage(expectedMsg)
 
             await Promise.all([

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { fs } from '../../../shared'
+import { readFileSync } from 'fs'
 import { getLogger, Logger } from '../../../shared/logger'
 
 /**
@@ -12,13 +12,10 @@ import { getLogger, Logger } from '../../../shared/logger'
  *
  * @returns the escaped ASL Json definition string of the state machine construct
  */
-export async function getStateMachineDefinitionFromCfnTemplate(
-    uniqueIdentifier: string,
-    templatePath: string
-): Promise<string> {
+export function getStateMachineDefinitionFromCfnTemplate(uniqueIdentifier: string, templatePath: string): string {
     const logger: Logger = getLogger()
     try {
-        const data = await fs.readFileText(templatePath)
+        const data = readFileSync(templatePath, 'utf-8')
         const jsonObj = JSON.parse(data)
         const resources = jsonObj?.Resources
         if (!resources) {

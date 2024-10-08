@@ -473,7 +473,7 @@ describe('CodeExtractor', function () {
             //Create a zip file that clashes with destination content
             zipHandler = createZipFileInTempDirectory(fileName, 'Second file content', zipName)
 
-            const collisionOccured = codeExtractor.checkFileCollisions(zipName, destinationDirectory)
+            const collisionOccured = await codeExtractor.checkFileCollisions(zipName, destinationDirectory)
 
             assert.strictEqual(collisionOccured, true, 'should confirm that collision occurs')
             assert(outputChannel.value.includes(expectedMessage), `channel missing msg: ${expectedMessage}`)
@@ -491,7 +491,7 @@ describe('CodeExtractor', function () {
             const fileName2 = 'test2.txt'
             zipHandler = createZipFileInTempDirectory(fileName2, 'Second file content', zipName)
 
-            const collisionOccured = codeExtractor.checkFileCollisions(zipName, destinationDirectory)
+            const collisionOccured = await codeExtractor.checkFileCollisions(zipName, destinationDirectory)
             assert.strictEqual(
                 collisionOccured,
                 false,

@@ -31,17 +31,17 @@ describe('CellStatusBarItemProvider', function () {
         sinon.restore()
     })
 
-    it('provides "Connect" status bar item when cell has no connectionParams', () => {
+    it('provides "Connect" status bar item when cell has no connectionParams', async () => {
         const cell = { notebook: { metadata: { connectionParams: undefined } } }
         const expectedText = '$(notebook-state-error) Connect'
-        const result = cellStatusBarItemProvider.provideCellStatusBarItems(cell, undefined)
+        const result = await cellStatusBarItemProvider.provideCellStatusBarItems(cell, undefined)
         assert(Array.isArray(result))
         assert.strictEqual(result.length, 1)
         assert.strictEqual(result[0].text, expectedText)
     })
 
-    it('provides status bar with success-icon and connection information', () => {
-        const result = cellStatusBarItemProvider.provideCellStatusBarItems(cell, token)
+    it('provides status bar with success-icon and connection information', async () => {
+        const result = await cellStatusBarItemProvider.provideCellStatusBarItems(cell, token)
         const expectedText = '$(notebook-state-success) Connected to TestWarehouse'
         const expectedCommand = {
             command: 'aws.redshift.notebookConnectClicked',

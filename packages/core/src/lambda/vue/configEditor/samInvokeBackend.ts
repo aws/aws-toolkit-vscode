@@ -286,7 +286,7 @@ export class SamInvokeWebview extends VueWebview {
      */
     public async invokeLaunchConfig(config: AwsSamDebuggerConfiguration): Promise<void> {
         const finalConfig = finalizeConfig(
-            resolveWorkspaceFolderVariable(undefined, config),
+            await resolveWorkspaceFolderVariable(undefined, config),
             'Editor-Created Debug Config'
         )
         const targetUri = await getUriFromLaunchConfig(finalConfig)

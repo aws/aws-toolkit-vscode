@@ -15,7 +15,7 @@ const cdkOutPath = normalize(normalize(__dirname).replace('/dist', '') + '/resou
 const templatePath = normalize(`${cdkOutPath}/templateJsonTester.template.json`)
 
 describe('Get State Machine Definition from Cfn Template', function () {
-    it('get the correct cfn definition for state machine with correct inputs', function () {
+    it('get the correct cfn definition for state machine with correct inputs', async function () {
         let data = getCfnDefinition.getStateMachineDefinitionFromCfnTemplate(uniqueIdendifier, templatePath)
         data = getCfnDefinition.toUnescapedAslJsonString(data)
         assert.strictEqual(data, unescapedJsonString)
