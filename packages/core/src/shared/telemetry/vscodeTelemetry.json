@@ -162,17 +162,32 @@
         {
             "name": "cwsprChatTimeToFirstChunk",
             "type": "int",
-            "description": "Time taken in ms to get back the first chunk"
+            "description": "The time between the initial server request and when we got back the first usable result"
         },
         {
             "name": "cwsprChatTimeBetweenChunks",
             "type": "string",
-            "description": "Time (list of int) taken in ms between chunks"
+            "description": "An array of time when successive chunks of data are received from the server"
         },
         {
             "name": "cwsprChatFullResponseLatency",
             "type": "int",
-            "description": "Time taken to get the full response in ms"
+            "description": "The time between the initial server request and the final response from the server"
+        },
+        {
+            "name": "cwsprTimeToFirstDisplay",
+            "type": "int",
+            "description": "The time between the user pressing enter and when the first chunk of data is displayed to the user"
+        },
+        {
+            "name": "cwsprChatTimeBetweenDisplays",
+            "type": "string",
+            "description": "An array of time when successive chunks of server responses are displayed to the user"
+        },
+        {
+            "name": "cwsprChatFullDisplayLatency",
+            "type": "int",
+            "description": "The time between the user pressing enter and the entire response being rendered"
         },
         {
             "name": "cwsprChatResponseLength",
@@ -757,6 +772,15 @@
                 },
                 {
                     "type": "cwsprChatFullResponseLatency"
+                },
+                {
+                    "type": "cwsprTimeToFirstDisplay"
+                },
+                {
+                    "type": "cwsprChatFullDisplayLatency"
+                },
+                {
+                    "type": "cwsprChatTimeBetweenDisplays"
                 },
                 {
                     "type": "cwsprChatRequestLength"
