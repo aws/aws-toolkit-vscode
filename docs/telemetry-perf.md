@@ -27,7 +27,7 @@ How long it took to receive the first suggestion after we started calling the ge
 
         sdk->>rHandler: Return client
         note over rHandler, backend: codewhispererFirstCompletionLatency
-        rect rgb(75, 75, 75)
+        rect rgb(200, 255, 200)
         loop Get paginated recommendations
             rHandler->>backend: calls
         end
@@ -63,7 +63,7 @@ How long it took from when we started calling the getRecommendations API to when
 
         sdk->>rHandler: Return client
         note over User, backend: codewhispererEndToEndLatency
-        rect rgb(75, 75, 75)
+        rect rgb(200, 255, 200)
             loop Get paginated recommendations
                 rHandler->>backend: calls
             end
@@ -100,7 +100,7 @@ How long it took to complete all paginated calls
 
         sdk->>rHandler: Return client
         note over User, backend: codewhispererAllCompletionsLatency
-        rect rgb(75, 75, 75)
+        rect rgb(200, 255, 200)
             loop Get paginated recommendations
                 rHandler->>backend: calls
             end
@@ -141,10 +141,9 @@ How long it took to display the first suggestion after it received the first res
             rHandler->>backend: calls
         end
         note over User, backend: codewhispererPostprocessingLatency
-        rect rgb(75, 75, 75)
+        rect rgb(200, 255, 200)
             backend->>rHandler: first response received
             rHandler->>User: show results
-
         end
 
         backend->>rHandler: all the other responses
@@ -171,7 +170,7 @@ How long it took to get the bearer token
         rHandler->>sdk: calls
 
         note over sdk, token: codewhispererCredentialFetchingLatency
-        rect rgb(75, 75, 75)
+        rect rgb(200, 255, 200)
             sdk->>token: Start getting bearer token
             token->>sdk: Finished getting bearer token
         end
@@ -207,7 +206,7 @@ How long it took to create the client and get ready to start sending getRecommen
         rHandler->>sdk: calls
 
         note over rHandler, token: codewhispererPreprocessingLatency
-        rect rgb(75, 75, 75)
+        rect rgb(200, 255, 200)
             sdk->>token: Start getting bearer token
             token->>sdk: Finished getting bearer token
             sdk->>rHandler: Return client
@@ -239,7 +238,7 @@ How long it took from when the user stopped pressing a key to when they were sho
 
         User->>invoke: Finished typing
         note over User, token: codewhisperer_perceivedLatency duration
-        rect rgb(75, 75, 75)
+        rect rgb(200, 255, 200)
         invoke->>rService: calls
         rService->>rHandler: calls
         rHandler->>sdk: calls
