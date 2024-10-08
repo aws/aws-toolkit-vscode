@@ -28,7 +28,7 @@ import * as model from '../../codewhisperer/models/model'
 import { CodewhispererSecurityScan } from '../../shared/telemetry/telemetry.gen'
 import * as errors from '../../shared/errors'
 import * as timeoutUtils from '../../shared/utilities/timeoutUtils'
-import { createMockClient, mockGetCodeScanResponse } from './utils'
+import { createMockClient, mockGetCodeScanResponse } from './testUtil'
 
 let extensionContext: FakeExtensionContext
 let mockSecurityPanelViewProvider: SecurityPanelViewProvider

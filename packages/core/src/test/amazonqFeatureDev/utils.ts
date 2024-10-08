@@ -5,7 +5,6 @@
 
 import * as vscode from 'vscode'
 import * as sinon from 'sinon'
-import * as model from '../../codewhisperer/models/model'
 import { MessagePublisher } from '../../amazonq/messages/messagePublisher'
 import { Messenger } from '../../amazonqFeatureDev/controllers/chat/messenger/messenger'
 import { AppToWebViewMessageDispatcher } from '../../amazonqFeatureDev/views/connector/connector'
@@ -19,9 +18,6 @@ import { FeatureDevClient } from '../../amazonqFeatureDev/client/featureDev'
 import { VirtualMemoryFile } from '../../shared/virtualMemoryFile'
 import path from 'path'
 import { featureDevScheme } from '../../amazonqFeatureDev/constants'
-import { HttpResponse } from 'aws-sdk'
-import { DefaultCodeWhispererClient } from '../../codewhisperer'
-import { stub } from '../utilities/stubber'
 
 export function createMessenger(): Messenger {
     return new Messenger(
@@ -119,107 +115,4 @@ export async function createController(): Promise<ControllerSetup> {
         messenger,
         sessionStorage,
     }
-}
-
-export const mockGetCodeScanResponse = {
-    $response: {
-        data: {
-            status: 'Completed',
-        },
-        requestId: 'requestId',
-        hasNextPage: () => false,
-        error: undefined,
-        nextPage: () => undefined,
-        redirectCount: 0,
-        retryCount: 0,
-        httpResponse: new HttpResponse(),
-    },
-    status: 'Completed',
-}
-
-export function createMockClient() {
-    const mockClient = stub(DefaultCodeWhispererClient)
-
-    const mockCreateCodeScanResponse = {
-        $response: {
-            data: {
-                jobId: 'jobId',
-                status: 'Pending',
-            },
-            requestId: 'requestId',
-            hasNextPage: () => false,
-            error: undefined,
-            nextPage: () => undefined,
-            redirectCount: 0,
-            retryCount: 0,
-            httpResponse: new HttpResponse(),
-        },
-        jobId: 'jobId',
-        status: 'Pending',
-    }
-    const mockCreateUploadUrlResponse = {
-        $response: {
-            data: {
-                uploadId: 'uploadId',
-                uploadUrl: 'uploadUrl',
-            },
-            requestId: 'requestId',
-            hasNextPage: () => false,
-            error: undefined,
-            nextPage: () => undefined,
-            redirectCount: 0,
-            retryCount: 0,
-            httpResponse: new HttpResponse(),
-        },
-        uploadId: 'uploadId',
-        uploadUrl: 'https://test.com',
-    }
-
-    const mockCodeScanFindings = JSON.stringify([
-        {
-            filePath: 'workspaceFolder/python3.7-plain-sam-app/hello_world/app.py',
-            startLine: 1,
-            endLine: 1,
-            title: 'title',
-            description: {
-                text: 'text',
-                markdown: 'markdown',
-            },
-            detectorId: 'detectorId',
-            detectorName: 'detectorName',
-            findingId: 'findingId',
-            relatedVulnerabilities: [],
-            severity: 'High',
-            remediation: {
-                recommendation: {
-                    text: 'text',
-                    url: 'url',
-                },
-                suggestedFixes: [],
-            },
-            codeSnippet: [],
-        } satisfies model.RawCodeScanIssue,
-    ])
-
-    const mockListCodeScanFindingsResponse = {
-        $response: {
-            data: {
-                codeScanFindings: mockCodeScanFindings,
-            },
-            requestId: 'requestId',
-            hasNextPage: () => false,
-            error: undefined,
-            nextPage: () => undefined,
-            redirectCount: 0,
-            retryCount: 0,
-            httpResponse: new HttpResponse(),
-        },
-        codeScanFindings: mockCodeScanFindings,
-    }
-
-    mockClient.createCodeScan.resolves(mockCreateCodeScanResponse)
-    mockClient.createUploadUrl.resolves(mockCreateUploadUrlResponse)
-    mockClient.getCodeScan.resolves(mockGetCodeScanResponse)
-    mockClient.listCodeScanFindings.resolves(mockListCodeScanFindingsResponse)
-    return mockClient
 }
