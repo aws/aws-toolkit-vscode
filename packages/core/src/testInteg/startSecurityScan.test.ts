@@ -4,13 +4,13 @@
  */
 import * as vscode from 'vscode'
 import * as sinon from 'sinon'
-import * as startSecurityScan from '../../codewhisperer/commands/startSecurityScan'
-import * as diagnosticsProvider from '../../codewhisperer/service/diagnosticsProvider'
-import * as model from '../../codewhisperer/models/model'
-import * as timeoutUtils from '../../shared/utilities/timeoutUtils'
+import * as startSecurityScan from '../codewhisperer/commands/startSecurityScan'
+import * as diagnosticsProvider from '../codewhisperer/service/diagnosticsProvider'
+import * as model from '../codewhisperer/models/model'
+import * as timeoutUtils from '../shared/utilities/timeoutUtils'
 import assert from 'assert'
-import { SecurityPanelViewProvider } from '../../codewhisperer/views/securityPanelViewProvider'
-import { FakeExtensionContext } from '../../test/fakeExtensionContext'
+import { SecurityPanelViewProvider } from '../codewhisperer/views/securityPanelViewProvider'
+import { FakeExtensionContext } from '../test/fakeExtensionContext'
 import { join } from 'path'
 import {
     assertTelemetry,
@@ -18,12 +18,12 @@ import {
     createTestWorkspaceFolder,
     getFetchStubWithResponse,
     toFile,
-} from '../../test/testUtil'
-import { getTestWindow } from '../../test/shared/vscode/window'
-import { SeverityLevel } from '../../test/shared/vscode/message'
-import { CodeAnalysisScope } from '../../codewhisperer'
-import { performanceTest } from '../../shared/performance/performance'
-import { createMockClient } from '../../test/amazonqFeatureDev/utils'
+} from '../test/testUtil'
+import { getTestWindow } from '../test/shared/vscode/window'
+import { SeverityLevel } from '../test/shared/vscode/message'
+import { CodeAnalysisScope } from '../codewhisperer'
+import { performanceTest } from '../shared/performance/performance'
+import { createMockClient } from '../test/amazonqFeatureDev/utils'
 
 describe('startSecurityScanPerformanceTest', function () {
     let extensionContext: FakeExtensionContext
