@@ -78,7 +78,8 @@ export async function activate(context: vscode.ExtensionContext) {
         // IMPORTANT: If you are doing setup that should also work in web mode (browser), it should be done in the function below
         const extContext = await activateCommon(context, contextPrefix, false)
 
-        await (await CrashMonitoring.instance())?.start()
+        // Intentionally do not await since this can be slow and non-critical
+        void (await CrashMonitoring.instance())?.start()
 
         initializeCredentialsProviderManager()
 

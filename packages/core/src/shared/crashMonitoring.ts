@@ -17,6 +17,7 @@ import fs from './fs/fs'
 import { getLogger } from './logger/logger'
 import { crashMonitoringDirNames } from './constants'
 import { throwOnUnstableFileSystem } from './filesystemUtilities'
+import { withRetries } from './utilities/functionUtils'
 
 const className = 'CrashMonitoring'
 
@@ -427,17 +428,21 @@ export class FileSystemState {
 
     // ------------------ Heartbeat methods ------------------
     public async sendHeartbeat() {
-        await withFailCtx('sendHeartbeatState', async () => {
-            const dir = await this.runningExtsDir()
-            const extId = this.createExtId(this.ext)
-            await fs.writeFile(
-                path.join(dir, extId),
-                JSON.stringify({ ...this.ext, lastHeartbeat: this.deps.now() }, undefined, 4)
-            )
-            this.deps.devLogger?.debug(
-                `crashMonitoring: HEARTBEAT pid ${this.deps.pid} + sessionId: ${this.deps.sessionId.slice(0, 8)}-...`
-            )
-        })
+        const _sendHeartbeat = () =>
+            withFailCtx('sendHeartbeatState', async () => {
+                const dir = await this.runningExtsDir()
+                const extId = this.createExtId(this.ext)
+                await fs.writeFile(
+                    path.join(dir, extId),
+                    JSON.stringify({ ...this.ext, lastHeartbeat: this.deps.now() }, undefined, 4)
+                )
+                this.deps.devLogger?.debug(
+                    `crashMonitoring: HEARTBEAT pid ${this.deps.pid} + sessionId: ${this.deps.sessionId.slice(0, 8)}-...`
+                )
+            })
+        // retry a failed heartbeat to avoid incorrectly being reported as a crash
+        const _sendHeartbeatWithRetries = withRetries(_sendHeartbeat, { maxRetries: 8, delay: 100, backoff: 2 })
+        return _sendHeartbeatWithRetries
     }
 
     /**
