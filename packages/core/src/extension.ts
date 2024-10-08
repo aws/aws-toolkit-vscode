@@ -50,6 +50,7 @@ import { Auth } from './auth'
 import { AuthFormId } from './login/webview/vue/types'
 import { getTelemetryMetadataForConn, isSsoConnection } from './auth/connection'
 import { registerCommands } from './commands'
+import * as semver from 'semver'
 
 // In web mode everything must be in a single file, so things like the endpoints file will not be available.
 // The following imports the endpoints file, which causes webpack to bundle it in the final output file
@@ -170,7 +171,7 @@ export async function activateCommon(
         uriHandler: globals.uriHandler,
         credentialsStore: globals.loginManager.store,
     }
-
+    void setupVscodeVersionNotification()
     await activateViewsShared(extContext.extensionContext)
 
     return extContext
@@ -302,4 +303,33 @@ export async function emitUserState() {
             authScopes: [...enabledScopes].join(','),
         })
     })
+}
+
+// TODO: remove once version bump to 1.83.0 is complete.
+function setupVscodeVersionNotification() {
+    let notificationDisplayed = false
+    tryShowNotification()
+
+    function tryShowNotification() {
+        // Do not show the notification if the IDE version will continue to be supported.
+        if (!semver.gte(vscode.version, '1.83.0')) {
+            return
+        }
+
+        if (notificationDisplayed) {
+            return
+        }
+
+        notificationDisplayed = true
+
+        telemetry.toolkit_showNotification.emit({
+            component: 'editor',
+            id: 'versionNotification',
+            reason: 'unsupportedVersion',
+            result: 'Succeeded',
+        })
+        void vscode.window.showWarningMessage(
+            'Update VS Code to version 1.83.0+, support for previous versions will be dropped soon. '
+        )
+    }
 }
