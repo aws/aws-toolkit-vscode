@@ -9,6 +9,7 @@ import { telemetry } from 'aws-core-vscode/telemetry'
 import { AuthUtil, CodeWhispererSettings } from 'aws-core-vscode/codewhisperer'
 import { Commands, placeholder, funcUtil } from 'aws-core-vscode/shared'
 import * as amazonq from 'aws-core-vscode/amazonq'
+import * as semver from 'semver'
 
 export async function activate(context: ExtensionContext) {
     const appInitContext = amazonq.DefaultAmazonQAppInitContext.instance
@@ -58,6 +59,7 @@ export async function activate(context: ExtensionContext) {
     await amazonq.activateBadge()
     void setupLsp()
     void setupAuthNotification()
+    void setupVscodeVersionNotification()
 }
 
 function registerApps(appInitContext: amazonq.AmazonQAppInitContext) {
@@ -65,7 +67,6 @@ function registerApps(appInitContext: amazonq.AmazonQAppInitContext) {
     amazonq.featureDevChatAppInit(appInitContext)
     amazonq.gumbyChatAppInit(appInitContext)
 }
-
 /**
  * Display a notification to user for Log In.
  *
@@ -103,5 +104,33 @@ async function setupAuthNotification() {
         if (selection === buttonAction) {
             void amazonq.focusAmazonQPanel.execute(placeholder, source)
         }
+    }
+}
+// TODO: remove once version bump to 1.83.0 is complete.
+export function setupVscodeVersionNotification() {
+    let notificationDisplayed = false
+    tryShowNotification()
+
+    function tryShowNotification() {
+        // Do not show the notification if the IDE version will continue to be supported.
+        if (!semver.gte(vscode.version, '1.83.0')) {
+            return
+        }
+
+        if (notificationDisplayed) {
+            return
+        }
+
+        notificationDisplayed = true
+
+        telemetry.toolkit_showNotification.emit({
+            component: 'editor',
+            id: 'versionNotification',
+            reason: 'unsupportedVersion',
+            result: 'Succeeded',
+        })
+        void vscode.window.showWarningMessage(
+            'Update VS Code to version 1.83.0+, support for previous versions will be dropped soon. '
+        )
     }
 }

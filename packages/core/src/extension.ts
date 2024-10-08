@@ -12,7 +12,6 @@
 
 import vscode from 'vscode'
 import * as nls from 'vscode-nls'
-
 import globals, { initialize, isWeb } from './shared/extensionGlobals'
 import { join } from 'path'
 import { Commands } from './shared/vscode/commands2'
