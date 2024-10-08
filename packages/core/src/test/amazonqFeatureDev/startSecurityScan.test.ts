@@ -23,105 +23,17 @@ import { join } from 'path'
 import { assertTelemetry, closeAllEditors, getFetchStubWithResponse } from '../testUtil'
 import { stub } from '../../test/utilities/stubber'
 import { DefaultCodeWhispererClient } from '../../codewhisperer'
-import { AWSError, HttpResponse } from 'aws-sdk'
+import { AWSError } from 'aws-sdk'
 import { CodeAnalysisScope } from '../../codewhisperer'
 import { getTestWindow } from '../shared/vscode/window'
 import { SeverityLevel } from '../../test/shared/vscode/message'
 import { cancel, CodewhispererSecurityScan } from '../../shared'
-
-const mockCreateCodeScanResponse = {
-    $response: {
-        data: {
-            jobId: 'jobId',
-            status: 'Pending',
-        },
-        requestId: 'requestId',
-        hasNextPage: () => false,
-        error: undefined,
-        nextPage: () => undefined,
-        redirectCount: 0,
-        retryCount: 0,
-        httpResponse: new HttpResponse(),
-    },
-    jobId: 'jobId',
-    status: 'Pending',
-}
-
-const mockCreateUploadUrlResponse = {
-    $response: {
-        data: {
-            uploadId: 'uploadId',
-            uploadUrl: 'uploadUrl',
-        },
-        requestId: 'requestId',
-        hasNextPage: () => false,
-        error: undefined,
-        nextPage: () => undefined,
-        redirectCount: 0,
-        retryCount: 0,
-        httpResponse: new HttpResponse(),
-    },
-    uploadId: 'uploadId',
-    uploadUrl: 'https://test.com',
-}
-
-const mockGetCodeScanResponse = {
-    $response: {
-        data: {
-            status: 'Completed',
-        },
-        requestId: 'requestId',
-        hasNextPage: () => false,
-        error: undefined,
-        nextPage: () => undefined,
-        redirectCount: 0,
-        retryCount: 0,
-        httpResponse: new HttpResponse(),
-    },
-    status: 'Completed',
-}
-
-const mockCodeScanFindings = JSON.stringify([
-    {
-        filePath: 'workspaceFolder/python3.7-plain-sam-app/hello_world/app.py',
-        startLine: 1,
-        endLine: 1,
-        title: 'title',
-        description: {
-            text: 'text',
-            markdown: 'markdown',
-        },
-        detectorId: 'detectorId',
-        detectorName: 'detectorName',
-        findingId: 'findingId',
-        relatedVulnerabilities: [],
-        severity: 'High',
-        remediation: {
-            recommendation: {
-                text: 'text',
-                url: 'url',
-            },
-            suggestedFixes: [],
-        },
-        codeSnippet: [],
-    } satisfies model.RawCodeScanIssue,
-])
-
-const mockListCodeScanFindingsResponse = {
-    $response: {
-        data: {
-            codeScanFindings: mockCodeScanFindings,
-        },
-        requestId: 'requestId',
-        hasNextPage: () => false,
-        error: undefined,
-        nextPage: () => undefined,
-        redirectCount: 0,
-        retryCount: 0,
-        httpResponse: new HttpResponse(),
-    },
-    codeScanFindings: mockCodeScanFindings,
-}
+import {
+    mockCreateCodeScanResponse,
+    mockCreateUploadUrlResponse,
+    mockGetCodeScanResponse,
+    mockListCodeScanFindingsResponse,
+} from './utils'
 
 describe('startSecurityScan', function () {
     let extensionContext: FakeExtensionContext
