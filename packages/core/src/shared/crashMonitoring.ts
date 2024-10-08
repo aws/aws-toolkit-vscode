@@ -83,7 +83,7 @@ export class CrashMonitoring {
             const state = await crashMonitoringStateFactory()
             return (this.#instance ??= new CrashMonitoring(
                 state,
-                DevSettings.instance.get('crashCheckInterval', 1000 * 60 * 3),
+                DevSettings.instance.get('crashCheckInterval', 1000 * 60 * 10), // check every 10 minutes
                 isDevMode,
                 isAutomation(),
                 devModeLogger
@@ -441,7 +441,7 @@ export class FileSystemState {
                 )
             })
         // retry a failed heartbeat to avoid incorrectly being reported as a crash
-        const _sendHeartbeatWithRetries = withRetries(_sendHeartbeat, { maxRetries: 8, delay: 100, backoff: 2 })
+        const _sendHeartbeatWithRetries = withRetries(_sendHeartbeat, { maxRetries: 7, delay: 100, backoff: 2 })
         return _sendHeartbeatWithRetries
     }
 
@@ -490,8 +490,14 @@ export class FileSystemState {
 
         // Clean up the running extension file since it is no longer exists
         const dir = await this.runningExtsDir()
-        // Use force since another checker may have already removed this file before this is ran
-        await withFailCtx('deleteStaleRunningFile', () => fs.delete(path.join(dir, extId)))
+        // Retry on failure since failing to delete this file will result in incorrectly reported crashes.
+        // The common errors we were seeing were windows EPERM/EBUSY errors. There may be a relation
+        // to this https://github.com/aws/aws-toolkit-vscode/pull/5335
+        await withRetries(() => withFailCtx('deleteStaleRunningFile', () => fs.delete(path.join(dir, extId))), {
+            maxRetries: 7,
+            delay: 100,
+            backoff: 2,
+        })
     }
 
     // ------------------ State data ------------------
