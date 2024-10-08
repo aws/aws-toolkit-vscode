@@ -6,41 +6,29 @@ import * as vscode from 'vscode'
 import { CLOUDWATCH_LOGS_LIVETAIL_SCHEME } from '../../../shared/constants'
 import { LiveTailSession, LiveTailSessionConfiguration } from './liveTailSession'
 import { ToolkitError } from '../../../shared'
+import { NestedMap } from '../../../shared/utilities/map'
 
-export class LiveTailSessionRegistry {
+export class LiveTailSessionRegistry extends NestedMap<vscode.Uri, LiveTailSession> {
     static #instance: LiveTailSessionRegistry
 
     public static get instance() {
         return (this.#instance ??= new this())
     }
 
-    public constructor(private readonly registry: Map<string, LiveTailSession> = new Map()) {}
-
-    public registerLiveTailSession(session: LiveTailSession) {
-        if (this.doesRegistryContainLiveTailSession(session.uri)) {
-            throw new ToolkitError(`There is already a LiveTail session registered with uri: ${session.uri}`)
-        }
-        this.registry.set(this.uriToKey(session.uri), session)
+    public constructor() {
+        super()
     }
 
-    public getLiveTailSessionFromUri(uri: vscode.Uri): LiveTailSession {
-        const session = this.registry.get(this.uriToKey(uri))
-        if (!session) {
-            throw new ToolkitError(`No LiveTail session registered for uri: ${uri} found.`)
-        }
-        return session
-    }
-
-    public removeLiveTailSessionFromRegistry(uri: vscode.Uri) {
-        this.registry.delete(this.uriToKey(uri))
-    }
-
-    public doesRegistryContainLiveTailSession(uri: vscode.Uri): boolean {
-        return this.registry.has(this.uriToKey(uri))
-    }
-
-    private uriToKey(uri: vscode.Uri): string {
+    protected override hash(uri: vscode.Uri): string {
         return uri.toString()
+    }
+
+    protected override get name(): string {
+        return LiveTailSessionRegistry.name
+    }
+
+    protected override get default(): LiveTailSession {
+        throw new ToolkitError('No LiveTailSession found for provided uri.')
     }
 }
 

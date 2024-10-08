@@ -12,6 +12,24 @@ import {
     createLiveTailURIFromArgs,
     LiveTailSessionRegistry,
 } from '../../../../awsService/cloudWatchLogs/registry/liveTailSessionRegistry'
+import { CLOUDWATCH_LOGS_LIVETAIL_SCHEME } from '../../../../shared/constants'
+
+/**
+ * Exposes protected methods so we can test them
+ */
+class TestLiveTailSessionRegistry extends LiveTailSessionRegistry {
+    constructor() {
+        super()
+    }
+
+    override hash(uri: vscode.Uri): string {
+        return super.hash(uri)
+    }
+
+    override get default(): LiveTailSession {
+        return super.default
+    }
+}
 
 describe('LiveTailRegistry', async function () {
     const session = new LiveTailSession({
@@ -19,120 +37,99 @@ describe('LiveTailRegistry', async function () {
         region: 'test-region',
     })
 
-    let liveTailSessionRegistry: LiveTailSessionRegistry
+    let liveTailSessionRegistry: TestLiveTailSessionRegistry
 
     beforeEach(function () {
-        liveTailSessionRegistry = new LiveTailSessionRegistry()
+        liveTailSessionRegistry = new TestLiveTailSessionRegistry()
     })
 
-    it('returns LiveTailSession after setting it', async function () {
-        liveTailSessionRegistry.registerLiveTailSession(session)
-        const retrievedSession = liveTailSessionRegistry.getLiveTailSessionFromUri(session.uri)
-        assert.strictEqual(retrievedSession, session)
+    it('hash()', function () {
+        assert.deepStrictEqual(liveTailSessionRegistry.hash(session.uri), session.uri.toString())
     })
 
-    it('contains returns true after setting session', async function () {
-        liveTailSessionRegistry.registerLiveTailSession(session)
-        const doesContain = liveTailSessionRegistry.doesRegistryContainLiveTailSession(session.uri)
-        assert.strictEqual(doesContain, true)
-    })
-
-    it('contains returns false if session not set', async function () {
-        const doesContain = liveTailSessionRegistry.doesRegistryContainLiveTailSession(session.uri)
-        assert.strictEqual(doesContain, false)
-    })
-
-    it('removeLiveTailSessionFromRegistry removes session from registry ', async function () {
-        liveTailSessionRegistry.registerLiveTailSession(session)
-        assert.strictEqual(liveTailSessionRegistry.doesRegistryContainLiveTailSession(session.uri), true)
-        liveTailSessionRegistry.removeLiveTailSessionFromRegistry(session.uri)
-        assert.strictEqual(liveTailSessionRegistry.doesRegistryContainLiveTailSession(session.uri), false)
-    })
-
-    it('throws registering the same session twice', async function () {
-        liveTailSessionRegistry.registerLiveTailSession(session)
-        assert.throws(() => liveTailSessionRegistry.registerLiveTailSession(session))
-    })
-
-    it('throws cant find session', async function () {
-        assert.throws(() => liveTailSessionRegistry.getLiveTailSessionFromUri(session.uri))
+    it('default()', function () {
+        assert.throws(() => liveTailSessionRegistry.default)
     })
 })
 
 describe('LiveTailSession URI', async function () {
+    const testLogGroupName = 'test-log-group'
+    const testRegion = 'test-region'
+    const expectedUriBase = `${CLOUDWATCH_LOGS_LIVETAIL_SCHEME}:${testRegion}:${testLogGroupName}`
+
     it('is correct with no logStream filter, no filter pattern', function () {
         const config: LiveTailSessionConfiguration = {
-            logGroupName: 'test-log-group',
-            region: 'test-region',
+            logGroupName: testLogGroupName,
+            region: testRegion,
         }
-        const expectedUri = vscode.Uri.parse('aws-cwl-lt:test-region:test-log-group')
+        const expectedUri = vscode.Uri.parse(expectedUriBase)
         const uri = createLiveTailURIFromArgs(config)
         assert.deepEqual(uri, expectedUri)
     })
 
     it('is correct with no logStream filter, with filter pattern', function () {
         const config: LiveTailSessionConfiguration = {
-            logGroupName: 'test-log-group',
-            region: 'test-region',
+            logGroupName: testLogGroupName,
+            region: testRegion,
             logEventFilterPattern: 'test-filter',
         }
-        const expectedUri = vscode.Uri.parse('aws-cwl-lt:test-region:test-log-group:test-filter')
+        const expectedUri = vscode.Uri.parse(`${expectedUriBase}:test-filter`)
         const uri = createLiveTailURIFromArgs(config)
         assert.deepEqual(uri, expectedUri)
     })
 
     it('is correct with ALL logStream filter', function () {
         const config: LiveTailSessionConfiguration = {
-            logGroupName: 'test-log-group',
-            region: 'test-region',
+            logGroupName: testLogGroupName,
+            region: testRegion,
             logStreamFilter: {
                 type: 'all',
             },
         }
-        const expectedUri = vscode.Uri.parse('aws-cwl-lt:test-region:test-log-group:all')
+        const expectedUri = vscode.Uri.parse(`${expectedUriBase}:all`)
         const uri = createLiveTailURIFromArgs(config)
         assert.deepEqual(uri, expectedUri)
     })
 
     it('is correct with prefix logStream filter', function () {
         const config: LiveTailSessionConfiguration = {
-            logGroupName: 'test-log-group',
-            region: 'test-region',
+            logGroupName: testLogGroupName,
+            region: testRegion,
             logStreamFilter: {
                 type: 'prefix',
                 filter: 'test-prefix',
             },
         }
-        const expectedUri = vscode.Uri.parse('aws-cwl-lt:test-region:test-log-group:prefix:test-prefix')
+        const expectedUri = vscode.Uri.parse(`${expectedUriBase}:prefix:test-prefix`)
         const uri = createLiveTailURIFromArgs(config)
         assert.deepEqual(uri, expectedUri)
     })
 
     it('is correct with specific logStream filter', function () {
         const config: LiveTailSessionConfiguration = {
-            logGroupName: 'test-log-group',
-            region: 'test-region',
+            logGroupName: testLogGroupName,
+            region: testRegion,
             logStreamFilter: {
                 type: 'specific',
                 filter: 'test-stream',
             },
         }
-        const expectedUri = vscode.Uri.parse('aws-cwl-lt:test-region:test-log-group:specific:test-stream')
+        const expectedUri = vscode.Uri.parse(`${expectedUriBase}:specific:test-stream`)
         const uri = createLiveTailURIFromArgs(config)
         assert.deepEqual(uri, expectedUri)
     })
 
     it('is correct with specific logStream filter and filter pattern', function () {
         const config: LiveTailSessionConfiguration = {
-            logGroupName: 'test-log-group',
-            region: 'test-region',
+            logGroupName: testLogGroupName,
+            region: testRegion,
             logStreamFilter: {
                 type: 'specific',
                 filter: 'test-stream',
             },
             logEventFilterPattern: 'test-filter',
         }
-        const expectedUri = vscode.Uri.parse('aws-cwl-lt:test-region:test-log-group:specific:test-stream:test-filter')
+        const expectedUri = vscode.Uri.parse(`${expectedUriBase}:specific:test-stream:test-filter`)
         const uri = createLiveTailURIFromArgs(config)
         assert.deepEqual(uri, expectedUri)
     })
