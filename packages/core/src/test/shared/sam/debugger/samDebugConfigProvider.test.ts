@@ -2172,10 +2172,7 @@ describe('SamDebugConfigurationProvider', async function () {
             }
 
             assertEqualLaunchConfigs(actual, expected)
-            assert.strictEqual(
-                await fs.readFileAsString(actual.eventPayloadFile!),
-                await fs.readFileAsString(absPayloadPath)
-            )
+            assert.strictEqual(await fs.readFileText(actual.eventPayloadFile!), await fs.readFileText(absPayloadPath))
             await assertFileText(
                 expected.templatePath,
                 `Resources:
@@ -2698,8 +2695,8 @@ describe('SamDebugConfigurationProvider', async function () {
 
             assertEqualLaunchConfigs(actual, expected)
             assert.strictEqual(
-                await fs.readFileAsString(actual.eventPayloadFile!),
-                await fs.readFileAsString(input.lambda.payload.path)
+                await fs.readFileText(actual.eventPayloadFile!),
+                await fs.readFileText(input.lambda.payload.path)
             )
             await assertFileText(
                 expected.templatePath,
