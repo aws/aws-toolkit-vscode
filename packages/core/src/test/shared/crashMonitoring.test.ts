@@ -14,8 +14,9 @@ class TestCrashMonitoring extends CrashMonitoring {
     public constructor(...deps: ConstructorParameters<typeof CrashMonitoring>) {
         super(...deps)
     }
-    public override crash() {
-        super.crash()
+    /** Immitates an extension crash */
+    public crash() {
+        super.cleanup()
     }
 }
 

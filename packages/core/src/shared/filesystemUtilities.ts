@@ -12,6 +12,7 @@ import * as pathutils from './utilities/pathUtils'
 import globals from '../shared/extensionGlobals'
 import fs from '../shared/fs/fs'
 import { ToolkitError } from './errors'
+import * as nodeFs from 'fs/promises'
 
 export const tempDirPath = path.join(
     // https://github.com/aws/aws-toolkit-vscode/issues/240
@@ -261,7 +262,7 @@ const FileSystemStabilityException = ToolkitError.named(FileSystemStabilityExcep
  *
  * @throws a {@link FileSystemStabilityException} which wraps the underlying failed fs operation error.
  */
-export async function throwOnUnstableFileSystem(tmpRoot: string) {
+export async function throwOnUnstableFileSystem(tmpRoot: string = tempDirPath) {
     const tmpFolder = path.join(tmpRoot, `validateStableFS-${crypto.randomBytes(4).toString('hex')}`)
     const tmpFile = path.join(tmpFolder, 'file.txt')
 
@@ -270,8 +271,14 @@ export async function throwOnUnstableFileSystem(tmpRoot: string) {
         await withFailCtx('mkdirInitial', () => fs.mkdir(tmpFolder))
         // Verifies that we do not throw if the dir exists and we try to make it again
         await withFailCtx('mkdirButAlreadyExists', () => fs.mkdir(tmpFolder))
-        await withFailCtx('mkdirSubfolder', () => fs.mkdir(path.join(tmpFolder, 'subfolder')))
-        await withFailCtx('rmdirInitial', () => fs.delete(tmpFolder, { recursive: true }))
+        // Test subfolder creation. Based on telemetry it looks like the vsc mkdir may be flaky
+        // when creating subfolders. Hopefully this gives us some useful information.
+        const subfolderRoot = path.join(tmpFolder, 'a')
+        const subfolderPath = path.join(subfolderRoot, 'b/c/d/e')
+        await withFailCtx('mkdirSubfolderNode', () => nodeFs.mkdir(subfolderPath, { recursive: true }))
+        await withFailCtx('rmdirInitialForNode', () => fs.delete(subfolderRoot, { recursive: true }))
+        await withFailCtx('mkdirSubfolderVsc', () => fs.mkdir(subfolderPath))
+        await withFailCtx('rmdirInitialForVsc', () => fs.delete(subfolderRoot, { recursive: true }))
 
         // test basic file operations
         await withFailCtx('mkdirForFileOpsTest', () => fs.mkdir(tmpFolder))
@@ -293,6 +300,8 @@ export async function throwOnUnstableFileSystem(tmpRoot: string) {
                 throw new Error(`Unexpected file contents after multiple writes: "${text}"`)
             }
         })
+        // write a large file, ensuring we are not near a space limit
+        await withFailCtx('writeFileLarge', () => fs.writeFile(tmpFile, 'a'.repeat(1000)))
         // test concurrent reads on a file
         await withFailCtx('writeFileConcurrencyTest', () => fs.writeFile(tmpFile, 'concurrencyTest'))
         const result = await Promise.all([
