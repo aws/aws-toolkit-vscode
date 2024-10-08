@@ -2,38 +2,41 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
+
+import assert from 'assert'
 import * as vscode from 'vscode'
 import * as sinon from 'sinon'
-import * as assert from 'assert'
 import * as semver from 'semver'
-import * as model from '../../codewhisperer/models/model'
-import * as timeoutUtils from '../../shared/utilities/timeoutUtils'
-import * as diagnosticsProvider from '../../codewhisperer/service/diagnosticsProvider'
 import * as startSecurityScan from '../../codewhisperer/commands/startSecurityScan'
-import * as errors from '../../shared/errors'
-import {
-    SecurityPanelViewProvider,
-    stopScanMessage,
-    showScannedFilesMessage,
-    projectScansLimitReached,
-} from '../../codewhisperer'
-import { getTestWorkspaceFolder } from '../../testInteg/integrationTestsUtilities'
+import { SecurityPanelViewProvider } from '../../codewhisperer/views/securityPanelViewProvider'
 import { FakeExtensionContext } from '../fakeExtensionContext'
+import * as diagnosticsProvider from '../../codewhisperer/service/diagnosticsProvider'
+import { getTestWorkspaceFolder } from '../../testInteg/integrationTestsUtilities'
 import { join } from 'path'
 import { assertTelemetry, closeAllEditors, getFetchStubWithResponse } from '../testUtil'
 import { AWSError } from 'aws-sdk'
-import { CodeAnalysisScope } from '../../codewhisperer'
 import { getTestWindow } from '../shared/vscode/window'
-import { SeverityLevel } from '../../test/shared/vscode/message'
-import { cancel, CodewhispererSecurityScan } from '../../shared'
-import { createMockClient, mockGetCodeScanResponse } from '../amazonqFeatureDev/utils'
+import { SeverityLevel } from '../shared/vscode/message'
+import { cancel } from '../../shared/localizedText'
+import {
+    showScannedFilesMessage,
+    stopScanMessage,
+    CodeAnalysisScope,
+    projectScansLimitReached,
+} from '../../codewhisperer/models/constants'
+import * as model from '../../codewhisperer/models/model'
+import { CodewhispererSecurityScan } from '../../shared/telemetry/telemetry.gen'
+import * as errors from '../../shared/errors'
+import * as timeoutUtils from '../../shared/utilities/timeoutUtils'
+import { createMockClient, mockGetCodeScanResponse } from './utils'
+
+let extensionContext: FakeExtensionContext
+let mockSecurityPanelViewProvider: SecurityPanelViewProvider
+let appRoot: string
+let appCodePath: string
+let editor: vscode.TextEditor
 
 describe('startSecurityScan', function () {
-    let extensionContext: FakeExtensionContext
-    let mockSecurityPanelViewProvider: SecurityPanelViewProvider
-    let appRoot: string
-    let appCodePath: string
-    let editor: vscode.TextEditor
     const workspaceFolder = getTestWorkspaceFolder()
     beforeEach(async function () {
         extensionContext = await FakeExtensionContext.create()
