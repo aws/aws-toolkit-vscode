@@ -8,7 +8,7 @@
  */
 
 export { ExtContext } from './extensions'
-export { initialize, default as globals } from './extensionGlobals'
+export { initialize, isWeb, ToolkitGlobals, default as globals } from './extensionGlobals'
 export { activate as activateLogger } from './logger/activation'
 export { activate as activateTelemetry } from './telemetry/activation'
 export { DefaultAwsContext } from './awsContext'
@@ -36,6 +36,7 @@ export {
     CodewhispererUserDecision,
     CodewhispererSecurityScan,
 } from './telemetry/telemetry.gen'
+export { randomUUID } from './crypto'
 export * from './environmentVariables'
 export * from './vscode/setContext'
 export * from './utilities/textUtilities'
@@ -50,3 +51,4 @@ export * as errors from './errors'
 export * as funcUtil from './utilities/functionUtils'
 export { fs } from './fs/fs'
 export * from './handleUninstall'
+export { CrashMonitoring } from './crashMonitoring'

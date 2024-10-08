@@ -9,7 +9,6 @@
 import assert from 'assert'
 import * as sinon from 'sinon'
 import vscode from 'vscode'
-import { appendFileSync, mkdirpSync, remove } from 'fs-extra'
 import { join } from 'path'
 import globals from '../shared/extensionGlobals'
 import { CodelensRootRegistry } from '../shared/fs/codelensRootRegistry'
@@ -26,6 +25,7 @@ import { disableAwsSdkWarning } from '../shared/awsClientBuilder'
 import { GlobalState } from '../shared/globalState'
 import { FeatureConfigProvider } from '../shared/featureConfig'
 import { mockFeatureConfigsData } from './fake/mockFeatureConfigData'
+import { fs } from '../shared'
 
 disableAwsSdkWarning()
 
@@ -43,9 +43,9 @@ export async function mochaGlobalSetup(extensionId: string) {
     return async function (this: Mocha.Runner) {
         // Clean up and set up test logs
         try {
-            await remove(testLogOutput)
+            await fs.delete(testLogOutput)
         } catch (e) {}
-        mkdirpSync(testReportDir)
+        await fs.mkdir(testReportDir)
 
         sinon.stub(FeatureConfigProvider.prototype, 'listFeatureEvaluations').resolves({
             featureEvaluations: mockFeatureConfigsData,
@@ -53,8 +53,16 @@ export async function mochaGlobalSetup(extensionId: string) {
 
         // Shows the full error chain when tests fail
         mapTestErrors(this, normalizeError)
+        const ext = vscode.extensions.getExtension(extensionId)
+        if (!ext) {
+            setTimeout(() => process.exit(1), 4000) // Test process will hang otherwise, but give time to report thrown error.
+            throw new Error(
+                `Could not activate extension for tests: ${extensionId} not found. Is 'extensionDevelopmentPath' configured correctly?` +
+                    ' Does the path have a proper vscode extension package.json?'
+            )
+        }
+        await ext.activate()
 
-        await vscode.extensions.getExtension(extensionId)?.activate()
         const fakeContext = await FakeExtensionContext.create()
         fakeContext.globalStorageUri = (await testUtil.createTestWorkspaceFolder('globalStoragePath')).uri
         fakeContext.extensionPath = globals.context.extensionPath
@@ -109,7 +117,7 @@ export const mochaHooks = {
         }
 
         // Prevent other tests from using the same TestLogger instance
-        teardownTestLogger(this.currentTest?.fullTitle() as string)
+        await teardownTestLogger(this.currentTest?.fullTitle() as string)
         testLogger = undefined
         resetTestWindow()
         const r = await globals.templateRegistry
@@ -143,18 +151,18 @@ function setupTestLogger(): TestLogger {
     return logger
 }
 
-function teardownTestLogger(testName: string) {
-    writeLogsToFile(testName)
+async function teardownTestLogger(testName: string) {
+    await writeLogsToFile(testName)
 
     setLogger(undefined, 'main')
     setLogger(undefined, 'debugConsole')
 }
 
-function writeLogsToFile(testName: string) {
+async function writeLogsToFile(testName: string) {
     const entries = testLogger?.getLoggedEntries()
     entries?.unshift(`=== Starting test "${testName}" ===`)
     entries?.push(`=== Ending test "${testName}" ===\n\n`)
-    appendFileSync(testLogOutput, entries?.join('\n') ?? '', 'utf8')
+    await fs.appendFile(testLogOutput, entries?.join('\n') ?? '')
 }
 
 // TODO: merge this with `toolkitLogger.test.ts:checkFile`

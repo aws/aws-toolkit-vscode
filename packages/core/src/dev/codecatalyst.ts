@@ -4,7 +4,6 @@
  */
 
 import { glob } from 'glob'
-import * as fs from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import * as manifest from '../../package.json'
@@ -21,6 +20,7 @@ import { startVscodeRemote } from '../shared/extensions/ssh'
 import { isValidResponse } from '../shared/wizards/wizard'
 import { createQuickPick } from '../shared/ui/pickerPrompter'
 import { createCommonButtons } from '../shared/ui/buttons'
+import { fs } from '../shared'
 
 type LazyProgress<T> = vscode.Progress<T> & vscode.Disposable & { getToken(): Timeout }
 
@@ -217,7 +217,7 @@ async function installVsix(
     if (path.extname(resp) !== '.vsix') {
         progress.report({ message: 'Copying extension...' })
 
-        const packageData = await fs.readFile(path.join(resp, 'package.json'), 'utf-8')
+        const packageData = await fs.readFileText(path.join(resp, 'package.json'))
         const targetManfiest: typeof manifest = JSON.parse(packageData)
         const destName = `${extPath}/${extId}-${targetManfiest.version}`
         const source = `${resp}${path.sep}`

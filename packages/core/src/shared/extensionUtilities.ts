@@ -15,6 +15,14 @@ import { extensionVersion, getCodeCatalystDevEnvId } from './vscode/env'
 import { DevSettings } from './settings'
 import globals from './extensionGlobals'
 import { once } from './utilities/functionUtils'
+import {
+    apprunnerCreateServiceDocUrl,
+    debugNewSamAppDocUrl,
+    documentationUrl,
+    launchConfigDocUrl,
+    samDeployDocUrl,
+    samInitDocUrl,
+} from './constants'
 
 const localize = nls.loadMessageBundle()
 
@@ -26,7 +34,7 @@ const notInitialized = 'notInitialized'
 
 function _isAmazonQ() {
     const id = globals.context.extension.id
-    const isToolkit = id === VSCODE_EXTENSION_ID.awstoolkit || id === VSCODE_EXTENSION_ID.awstoolkitcore
+    const isToolkit = id === VSCODE_EXTENSION_ID.awstoolkit
     const isQ = id === VSCODE_EXTENSION_ID.amazonq
     if (!isToolkit && !isQ) {
         throw Error(`unexpected extension id: ${id}`) // sanity check
@@ -252,6 +260,28 @@ export function showWelcomeMessage(context: vscode.ExtensionContext): void {
         // swallow error and don't block extension load
         getLogger().error(err as Error)
     }
+}
+
+function _getDocumentationUrl(urls: { cloud9: vscode.Uri; toolkit: vscode.Uri }): vscode.Uri {
+    return isCloud9() ? urls.cloud9 : urls.toolkit
+}
+export function getDocUrl() {
+    return _getDocumentationUrl(documentationUrl)
+}
+export function getSamInitDocUrl() {
+    return _getDocumentationUrl(samInitDocUrl)
+}
+export function getLaunchConfigDocUrl() {
+    return _getDocumentationUrl(launchConfigDocUrl)
+}
+export function getSamDeployDocUrl() {
+    return _getDocumentationUrl(samDeployDocUrl)
+}
+export function getDebugNewSamAppDocUrl() {
+    return _getDocumentationUrl(debugNewSamAppDocUrl)
+}
+export function getAppRunnerCreateServiceDocUrl() {
+    return _getDocumentationUrl(apprunnerCreateServiceDocUrl)
 }
 
 /**

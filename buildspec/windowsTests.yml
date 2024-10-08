@@ -30,7 +30,8 @@ phases:
 
     build:
         commands:
-            - npm run testCompile
+            - npm run compile -w packages/core
+            - npm run testCompile -w packages/ --if-present
             - npm run lint
             - $env:TEST_REPORT_DIR="$env:CODEBUILD_SRC_DIR/.test_reports"; npm run test
             - |

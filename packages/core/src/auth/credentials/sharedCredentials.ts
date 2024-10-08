@@ -230,7 +230,7 @@ async function loadConfigFile(configUri?: vscode.Uri): Promise<ReturnType<typeof
         return []
     }
 
-    return parseIni(await fs.readFileAsString(configUri), configUri)
+    return parseIni(await fs.readFileText(configUri), configUri)
 }
 
 async function loadCredentialsFile(credentialsUri?: vscode.Uri): Promise<ReturnType<typeof parseIni>> {
@@ -238,7 +238,7 @@ async function loadCredentialsFile(credentialsUri?: vscode.Uri): Promise<ReturnT
         return []
     }
 
-    return parseIni(await fs.readFileAsString(credentialsUri), credentialsUri)
+    return parseIni(await fs.readFileText(credentialsUri), credentialsUri)
 }
 
 /**

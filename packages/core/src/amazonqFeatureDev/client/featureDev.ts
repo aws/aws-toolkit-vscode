@@ -26,8 +26,17 @@ import { getClientId, getOptOutPreference, getOperatingSystem } from '../../shar
 import { extensionVersion } from '../../shared/vscode/env'
 import apiConfig = require('./codewhispererruntime-2022-11-11.json')
 
+// Re-enable once BE is able to handle retries.
+const writeAPIRetryOptions = {
+    maxRetries: 0,
+    retryDelayOptions: {
+        // The default number of milliseconds to use in the exponential backoff
+        base: 500,
+    },
+}
+
 // Create a client for featureDev proxy client based off of aws sdk v2
-export async function createFeatureDevProxyClient(): Promise<FeatureDevProxyClient> {
+export async function createFeatureDevProxyClient(options?: Partial<ServiceOptions>): Promise<FeatureDevProxyClient> {
     const bearerToken = await AuthUtil.instance.getBearerToken()
     const cwsprConfig = getCodewhispererConfig()
     return (await globals.sdkClientBuilder.createAwsService(
@@ -37,27 +46,22 @@ export async function createFeatureDevProxyClient(): Promise<FeatureDevProxyClie
             region: cwsprConfig.region,
             endpoint: cwsprConfig.endpoint,
             token: new Token({ token: bearerToken }),
-            // SETTING TO 0 FOR BETA. RE-ENABLE FOR RE-INVENT
-            maxRetries: 0,
-            retryDelayOptions: {
-                // The default number of milliseconds to use in the exponential backoff
-                base: 500,
-            },
+            ...options,
         } as ServiceOptions,
         undefined
     )) as FeatureDevProxyClient
 }
 
 export class FeatureDevClient {
-    public async getClient() {
+    public async getClient(options?: Partial<ServiceOptions>) {
         // Should not be stored for the whole session.
         // Client has to be reinitialized for each request so we always have a fresh bearerToken
-        return await createFeatureDevProxyClient()
+        return await createFeatureDevProxyClient(options)
     }
 
     public async createConversation() {
         try {
-            const client = await this.getClient()
+            const client = await this.getClient(writeAPIRetryOptions)
             getLogger().debug(`Executing createTaskAssistConversation with {}`)
             const { conversationId, $response } = await client.createTaskAssistConversation().promise()
             getLogger().debug(`${featureName}: Created conversation: %O`, {
@@ -87,7 +91,7 @@ export class FeatureDevClient {
         uploadId: string
     ) {
         try {
-            const client = await this.getClient()
+            const client = await this.getClient(writeAPIRetryOptions)
             const params = {
                 uploadContext: {
                     taskAssistPlanningUploadContext: {
@@ -131,7 +135,7 @@ export class FeatureDevClient {
         currentCodeGenerationId?: string
     ) {
         try {
-            const client = await this.getClient()
+            const client = await this.getClient(writeAPIRetryOptions)
             const params = {
                 codeGenerationId,
                 conversationState: {

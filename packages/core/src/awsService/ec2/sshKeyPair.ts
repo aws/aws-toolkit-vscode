@@ -3,11 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import { fs } from '../../shared'
-import { chmodSync } from 'fs'
 import { ToolkitError } from '../../shared/errors'
 import { tryRun } from '../../shared/utilities/pathFind'
 import { Timeout } from '../../shared/utilities/timeoutUtils'
 import { findAsync } from '../../shared/utilities/collectionUtils'
+import { RunParameterContext } from '../../shared/utilities/processUtils'
 
 type sshKeyType = 'rsa' | 'ed25519'
 
@@ -17,7 +17,7 @@ export class SshKeyPair {
     private deleted: boolean = false
 
     private constructor(
-        private keyPath: string,
+        private readonly keyPath: string,
         lifetime: number
     ) {
         this.publicKeyPath = `${keyPath}.pub`
@@ -29,10 +29,6 @@ export class SshKeyPair {
     }
 
     public static async getSshKeyPair(keyPath: string, lifetime: number) {
-        // Overwrite key if already exists
-        if (await fs.existsFile(keyPath)) {
-            await fs.delete(keyPath)
-        }
         await SshKeyPair.generateSshKeyPair(keyPath)
         return new SshKeyPair(keyPath, lifetime)
     }
@@ -42,7 +38,7 @@ export class SshKeyPair {
         if (!keyGenerated) {
             throw new ToolkitError('ec2: Unable to generate ssh key pair')
         }
-        chmodSync(keyPath, 0o600)
+        await fs.chmod(keyPath, 0o600)
     }
     /**
      * Attempts to generate an ssh key pair. Returns true if successful, false otherwise.
@@ -50,7 +46,12 @@ export class SshKeyPair {
      * @param keyType type of key to generate.
      */
     public static async tryKeyGen(keyPath: string, keyType: sshKeyType): Promise<boolean> {
-        return !(await tryRun('ssh-keygen', ['-t', keyType, '-N', '', '-q', '-f', keyPath], 'yes', 'unknown key type'))
+        const overrideKeys = async (_t: string, proc: RunParameterContext) => {
+            await proc.send('yes')
+        }
+        return !(await tryRun('ssh-keygen', ['-t', keyType, '-N', '', '-q', '-f', keyPath], 'yes', 'unknown key type', {
+            onStdout: overrideKeys,
+        }))
     }
 
     public static async tryKeyTypes(keyPath: string, keyTypes: sshKeyType[]): Promise<boolean> {
@@ -67,7 +68,7 @@ export class SshKeyPair {
     }
 
     public async getPublicKey(): Promise<string> {
-        const contents = await fs.readFileAsString(this.publicKeyPath)
+        const contents = await fs.readFileText(this.publicKeyPath)
         return contents
     }
 

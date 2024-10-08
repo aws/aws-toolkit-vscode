@@ -6,6 +6,11 @@
             "description": "The time it takes to generate approach response"
         },
         {
+            "name": "proxiedSessionId",
+            "type": "string",
+            "description": "The sessionId of the extension instance that this instance is reporting on behalf of."
+        },
+        {
             "name": "documentFormat",
             "type": "string",
             "allowedValues": ["JSON, YAML"],
@@ -293,6 +298,11 @@
             "description": "Memory heap usage in MB"
         },
         {
+            "name": "className",
+            "type": "string",
+            "description": "The name of the class"
+        },
+        {
             "name": "functionName",
             "type": "string",
             "description": "The name of the function"
@@ -306,16 +316,6 @@
             "name": "architecture",
             "type": "string",
             "description": "The CPU architecture"
-        },
-        {
-            "name": "totalFileSizeInMB",
-            "type": "int",
-            "description": "The total size of all files being sent to Amazon Q"
-        },
-        {
-            "name": "totalFiles",
-            "type": "int",
-            "description": "The total number of files being sent to Amazon Q"
         },
         {
             "name": "traceId",
@@ -1158,36 +1158,15 @@
             "description": "Represents a function call. In most cases this should wrap code with a run(), then you can add context.",
             "metadata": [
                 {
-                    "type": "userCpuUsage",
-                    "required": false
-                },
-                {
-                    "type": "systemCpuUsage",
-                    "required": false
-                },
-                {
-                    "type": "totalFiles",
-                    "required": false
-                },
-                {
-                    "type": "totalFileSizeInMB",
-                    "required": false
-                },
-                {
-                    "type": "architecture",
-                    "required": false
-                },
-                {
-                    "type": "heapTotal",
-                    "required": false
-                },
-                {
                     "type": "functionName",
                     "required": true
+                },
+                {
+                    "type": "className",
+                    "required": false
                 }
             ],
-            "passive": true,
-            "trackPerformance": true
+            "passive": true
         },
         {
             "name": "webview_load",
@@ -1242,7 +1221,16 @@
                     "type": "amazonqMessageDisplayedMs"
                 },
                 {
-                    "type": "source",
+                    "type": "source"
+                }
+            ]
+        },
+        {
+            "name": "session_end",
+            "description": "Called when stopping the IDE on a best effort basis",
+            "metadata": [
+                {
+                    "type": "proxiedSessionId",
                     "required": false
                 }
             ]

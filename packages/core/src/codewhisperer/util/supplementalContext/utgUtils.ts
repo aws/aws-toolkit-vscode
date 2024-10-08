@@ -116,7 +116,7 @@ async function generateSupplementalContextFromFocalFile(
     strategy: UtgStrategy,
     cancellationToken: vscode.CancellationToken
 ): Promise<CodeWhispererSupplementalContextItem[]> {
-    const fileContent = await fs.readFileAsString(vscode.Uri.parse(filePath!).fsPath)
+    const fileContent = await fs.readFileText(vscode.Uri.parse(filePath!).fsPath)
 
     // DO NOT send code chunk with empty content
     if (fileContent.trim().length === 0) {
@@ -136,7 +136,7 @@ async function findSourceFileByContent(
     languageConfig: utgLanguageConfig,
     cancellationToken: vscode.CancellationToken
 ): Promise<string | undefined> {
-    const testFileContent = await fs.readFileAsString(editor.document.fileName)
+    const testFileContent = await fs.readFileText(editor.document.fileName)
     const testElementList = extractFunctions(testFileContent, languageConfig.functionExtractionPattern)
 
     throwIfCancelled(cancellationToken)
@@ -161,7 +161,7 @@ async function findSourceFileByContent(
     for (const filePath of relevantFilePaths) {
         throwIfCancelled(cancellationToken)
 
-        const fileContent = await fs.readFileAsString(filePath)
+        const fileContent = await fs.readFileText(filePath)
         const elementList = extractFunctions(fileContent, languageConfig.functionExtractionPattern)
         elementList.push(...extractClasses(fileContent, languageConfig.classExtractionPattern))
         const matchCount = countSubstringMatches(elementList, testElementList)
