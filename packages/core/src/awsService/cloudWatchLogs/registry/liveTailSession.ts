@@ -6,7 +6,7 @@ import * as vscode from 'vscode'
 import { CloudWatchLogsClient, StartLiveTailCommand, StartLiveTailCommandOutput } from '@aws-sdk/client-cloudwatch-logs'
 import { LogStreamFilterResponse } from '../liveTailLogStreamSubmenu'
 import { CloudWatchLogsSettings } from '../cloudWatchLogsUtils'
-import { Settings } from '../../../shared'
+import { Settings, ToolkitError } from '../../../shared'
 import { createLiveTailURIFromArgs } from './liveTailSessionRegistry'
 
 export type LiveTailSessionConfiguration = {
@@ -56,9 +56,13 @@ export class LiveTailSession {
 
     public startLiveTailSession(): Promise<StartLiveTailCommandOutput> {
         const command = this.buildStartLiveTailCommand()
-        return this.liveTailClient.cwlClient.send(command, {
-            abortSignal: this.liveTailClient.abortController.signal,
-        })
+        try {
+            return this.liveTailClient.cwlClient.send(command, {
+                abortSignal: this.liveTailClient.abortController.signal,
+            })
+        } catch (e) {
+            throw new ToolkitError('Encountered error while trying to start LiveTail session.')
+        }
     }
 
     public stopLiveTailSession() {
