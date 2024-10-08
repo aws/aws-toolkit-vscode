@@ -46,8 +46,7 @@ import { ExportIntent, TransformationDownloadArtifactType } from '@amzn/codewhis
 import fs from '../../../shared/fs/fs'
 import { ChatSessionManager } from '../../../amazonqGumby/chat/storages/chatSession'
 import { convertToTimeString, encodeHTML } from '../../../shared/utilities/textUtilities'
-/* eslint-disable no-restricted-imports */
-import { readdirSync } from 'fs'
+import { readdirSync } from 'fs' // eslint-disable-line no-restricted-imports
 
 export function getSha256(buffer: Buffer) {
     const hasher = crypto.createHash('sha256')

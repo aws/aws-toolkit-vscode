@@ -9,7 +9,7 @@ import vscode from 'vscode'
 import * as GitTypes from '../../../../types/git'
 import { GitExtension, Repository } from '../../../shared/extensions/git'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
-import { realpathSync } from 'fs'
+import { realpathSync } from 'fs' // eslint-disable-line no-restricted-imports
 import { execFileSync } from 'child_process'
 import { sleep } from '../../../shared/utilities/timeoutUtils'
 import { getLogger } from '../../../shared/logger/logger'

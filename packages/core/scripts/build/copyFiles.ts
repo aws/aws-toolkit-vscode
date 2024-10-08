@@ -3,8 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-/* eslint-disable no-restricted-imports */
-import * as fs from 'fs-extra'
+import * as fs from 'fs-extra' // eslint-disable-line no-restricted-imports
 import * as path from 'path'
 
 // Moves all dependencies into `dist`

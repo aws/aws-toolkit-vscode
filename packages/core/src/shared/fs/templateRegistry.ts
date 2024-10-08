@@ -17,8 +17,7 @@ import { Timeout } from '../utilities/timeoutUtils'
 import { localize } from '../utilities/vsCodeUtils'
 import { PerfLog } from '../logger/perfLogger'
 import { showMessageWithCancel } from '../utilities/messages'
-/* eslint-disable no-restricted-imports */
-import { readFileSync } from 'fs'
+import { readFileSync } from 'fs' // eslint-disable-line no-restricted-imports
 
 export class CloudFormationTemplateRegistry extends WatchedFiles<CloudFormation.Template> {
     public name: string = 'CloudFormationTemplateRegistry'

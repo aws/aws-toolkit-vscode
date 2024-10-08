@@ -17,8 +17,7 @@ import { getLogger } from '../../shared/logger'
 import { CodeWhispererCodeCoverageTracker } from '../../codewhisperer/tracker/codewhispererCodeCoverageTracker'
 import globals from '../../shared/extensionGlobals'
 import { session } from '../../codewhisperer/util/codeWhispererSession'
-/* eslint-disable no-restricted-imports */
-import { Dirent } from 'fs'
+import { Dirent } from 'fs' // eslint-disable-line no-restricted-imports
 import { DefaultAWSClientBuilder, ServiceOptions } from '../../shared/awsClientBuilder'
 import { FakeAwsContext } from '../utilities/fakeAwsContext'
 import { Service } from 'aws-sdk'

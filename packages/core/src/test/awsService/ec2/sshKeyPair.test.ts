@@ -12,8 +12,7 @@ import { createTestWorkspaceFolder, installFakeClock } from '../../testUtil'
 import { InstalledClock } from '@sinonjs/fake-timers'
 import { ChildProcess } from '../../../shared/utilities/processUtils'
 import { fs, globals } from '../../../shared'
-/* eslint-disable no-restricted-imports */
-import { statSync } from 'fs'
+import { statSync } from 'fs' // eslint-disable-line no-restricted-imports
 
 describe('SshKeyUtility', async function () {
     let temporaryDirectory: string

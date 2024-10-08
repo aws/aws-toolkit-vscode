@@ -7,8 +7,7 @@ import assert from 'assert'
 import vscode from 'vscode'
 import * as path from 'path'
 import * as utils from 'util'
-/* eslint-disable no-restricted-imports */
-import { existsSync, mkdirSync, promises as nodefs, readFileSync } from 'fs'
+import { existsSync, mkdirSync, promises as nodefs, readFileSync } from 'fs' // eslint-disable-line no-restricted-imports
 import { stat } from 'fs/promises'
 import fs, { FileSystem } from '../../../shared/fs/fs'
 import * as os from 'os'

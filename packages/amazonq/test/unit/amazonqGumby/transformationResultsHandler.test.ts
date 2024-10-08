@@ -29,7 +29,7 @@ describe('DiffModel', function () {
             return true
         })
 
-        testDiffModel.parseDiff(getTestResourceFilePath('resources/files/addedFile.diff'), workspacePath)
+        await testDiffModel.parseDiff(getTestResourceFilePath('resources/files/addedFile.diff'), workspacePath)
 
         assert.strictEqual(testDiffModel.changes.length, 1)
         const change = testDiffModel.changes[0]
@@ -49,7 +49,7 @@ describe('DiffModel', function () {
             'This guide walks you through using Gradle to build a simple Java project.'
         )
 
-        testDiffModel.parseDiff(getTestResourceFilePath('resources/files/modifiedFile.diff'), workspacePath)
+        await testDiffModel.parseDiff(getTestResourceFilePath('resources/files/modifiedFile.diff'), workspacePath)
 
         assert.strictEqual(testDiffModel.changes.length, 1)
         const change = testDiffModel.changes[0]

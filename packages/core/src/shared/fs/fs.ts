@@ -4,8 +4,7 @@
  */
 import vscode from 'vscode'
 import os from 'os'
-/* eslint-disable no-restricted-imports */
-import { promises as nodefs, constants as nodeConstants, WriteFileOptions } from 'fs'
+import { promises as nodefs, constants as nodeConstants, WriteFileOptions } from 'fs' // eslint-disable-line no-restricted-imports
 import { chmod } from 'fs/promises'
 import { isCloud9 } from '../extensionUtilities'
 import _path from 'path'

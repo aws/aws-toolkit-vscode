@@ -2,8 +2,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-/* eslint-disable no-restricted-imports */
-import { createReadStream as createRStream, createWriteStream as createWStream } from 'fs'
+import { createReadStream as createRStream, createWriteStream as createWStream } from 'fs' // eslint-disable-line no-restricted-imports
 import { Readable, Writable, pipeline } from 'stream'
 import * as vscode from 'vscode'
 

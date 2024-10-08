@@ -20,8 +20,7 @@ import { createCodeWhispererChatStreamingClient } from '../../../shared/clients/
 import { ChatSessionManager } from '../../../amazonqGumby/chat/storages/chatSession'
 import { setContext } from '../../../shared/vscode/setContext'
 import { fs } from '../../../shared'
-/* eslint-disable no-restricted-imports */
-import { existsSync, readFileSync, rmSync, writeFileSync } from 'fs'
+import { existsSync, readFileSync, rmSync, writeFileSync } from 'fs' // eslint-disable-line no-restricted-imports
 
 export abstract class ProposedChangeNode {
     abstract readonly resourcePath: string

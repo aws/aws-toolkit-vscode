@@ -8,6 +8,7 @@ import { describe } from 'mocha'
 import assert from 'assert'
 import * as path from 'path'
 import { platform } from 'os'
+//import { existsSync, mkdirSync, unlinkSync, writeFileSync } from 'fs'
 import { runCmd } from './testUtils'
 import { fs } from '../shared'
 

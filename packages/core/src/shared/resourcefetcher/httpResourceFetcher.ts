@@ -5,8 +5,7 @@
 import * as http from 'http'
 import * as https from 'https'
 import * as stream from 'stream'
-/* eslint-disable no-restricted-imports */
-import * as fs from 'fs'
+import * as fs from 'fs' // eslint-disable-line no-restricted-imports
 import got, { Response, RequestError, CancelError } from 'got'
 import urlToOptions from 'got/dist/source/core/utils/url-to-options'
 import Request from 'got/dist/source/core'
@@ -16,7 +15,7 @@ import { ResourceFetcher } from './resourcefetcher'
 import { Timeout, CancellationError, CancelEvent } from '../utilities/timeoutUtils'
 import { isCloud9 } from '../extensionUtilities'
 import { Headers } from 'got/dist/source/core'
-import { createWriteStream } from 'fs'
+import { createWriteStream } from 'fs' // eslint-disable-line no-restricted-imports
 
 // XXX: patched Got module for compatability with older VS Code versions (e.g. Cloud9)
 // `got` has also deprecated `urlToOptions`
