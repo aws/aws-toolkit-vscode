@@ -9,7 +9,6 @@ import * as diagnosticsProvider from '../../codewhisperer/service/diagnosticsPro
 import * as model from '../../codewhisperer/models/model'
 import * as timeoutUtils from '../../shared/utilities/timeoutUtils'
 import assert from 'assert'
-import { DefaultCodeWhispererClient } from '../../codewhisperer'
 import { SecurityPanelViewProvider } from '../../codewhisperer/views/securityPanelViewProvider'
 import { FakeExtensionContext } from '../../test/fakeExtensionContext'
 import { join } from 'path'
@@ -20,17 +19,11 @@ import {
     getFetchStubWithResponse,
     toFile,
 } from '../../test/testUtil'
-import { stub } from '../../test/utilities/stubber'
 import { getTestWindow } from '../../test/shared/vscode/window'
 import { SeverityLevel } from '../../test/shared/vscode/message'
 import { CodeAnalysisScope } from '../../codewhisperer'
 import { performanceTest } from '../../shared/performance/performance'
-import {
-    mockCreateCodeScanResponse,
-    mockCreateUploadUrlResponse,
-    mockGetCodeScanResponse,
-    mockListCodeScanFindingsResponse,
-} from '../../test/amazonqFeatureDev/utils'
+import { createMockClient } from '../../test/amazonqFeatureDev/utils'
 
 describe('startSecurityScanPerformanceTest', function () {
     let extensionContext: FakeExtensionContext
@@ -57,15 +50,6 @@ describe('startSecurityScanPerformanceTest', function () {
         await closeAllEditors()
     })
 
-    const createClient = () => {
-        const mockClient = stub(DefaultCodeWhispererClient)
-        mockClient.createCodeScan.resolves(mockCreateCodeScanResponse)
-        mockClient.createUploadUrl.resolves(mockCreateUploadUrlResponse)
-        mockClient.getCodeScan.resolves(mockGetCodeScanResponse)
-        mockClient.listCodeScanFindings.resolves(mockListCodeScanFindingsResponse)
-        return mockClient
-    }
-
     const openTestFile = async (filePath: string) => {
         const doc = await vscode.workspace.openTextDocument(filePath)
         return await vscode.window.showTextDocument(doc, {
@@ -86,7 +70,7 @@ describe('startSecurityScanPerformanceTest', function () {
                 await startSecurityScan.startSecurityScan(
                     mockSecurityPanelViewProvider,
                     editor,
-                    createClient(),
+                    createMockClient(),
                     extensionContext,
                     CodeAnalysisScope.FILE
                 )

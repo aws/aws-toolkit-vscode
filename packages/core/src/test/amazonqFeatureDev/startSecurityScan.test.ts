@@ -21,19 +21,12 @@ import { getTestWorkspaceFolder } from '../../testInteg/integrationTestsUtilitie
 import { FakeExtensionContext } from '../fakeExtensionContext'
 import { join } from 'path'
 import { assertTelemetry, closeAllEditors, getFetchStubWithResponse } from '../testUtil'
-import { stub } from '../../test/utilities/stubber'
-import { DefaultCodeWhispererClient } from '../../codewhisperer'
 import { AWSError } from 'aws-sdk'
 import { CodeAnalysisScope } from '../../codewhisperer'
 import { getTestWindow } from '../shared/vscode/window'
 import { SeverityLevel } from '../../test/shared/vscode/message'
 import { cancel, CodewhispererSecurityScan } from '../../shared'
-import {
-    mockCreateCodeScanResponse,
-    mockCreateUploadUrlResponse,
-    mockGetCodeScanResponse,
-    mockListCodeScanFindingsResponse,
-} from './utils'
+import { createMockClient, mockGetCodeScanResponse } from './utils'
 
 describe('startSecurityScan', function () {
     let extensionContext: FakeExtensionContext
@@ -57,15 +50,6 @@ describe('startSecurityScan', function () {
     after(async function () {
         await closeAllEditors()
     })
-    const createClient = () => {
-        const mockClient = stub(DefaultCodeWhispererClient)
-
-        mockClient.createCodeScan.resolves(mockCreateCodeScanResponse)
-        mockClient.createUploadUrl.resolves(mockCreateUploadUrlResponse)
-        mockClient.getCodeScan.resolves(mockGetCodeScanResponse)
-        mockClient.listCodeScanFindings.resolves(mockListCodeScanFindingsResponse)
-        return mockClient
-    }
 
     const openTestFile = async (filePath: string) => {
         const doc = await vscode.workspace.openTextDocument(filePath)
@@ -82,7 +66,7 @@ describe('startSecurityScan', function () {
         await startSecurityScan.startSecurityScan(
             mockSecurityPanelViewProvider,
             editor,
-            createClient(),
+            createMockClient(),
             extensionContext,
             CodeAnalysisScope.PROJECT
         )
@@ -101,7 +85,7 @@ describe('startSecurityScan', function () {
         await startSecurityScan.startSecurityScan(
             mockSecurityPanelViewProvider,
             editor,
-            createClient(),
+            createMockClient(),
             extensionContext,
             CodeAnalysisScope.FILE
         )
@@ -129,7 +113,7 @@ describe('startSecurityScan', function () {
         const scanPromise = startSecurityScan.startSecurityScan(
             mockSecurityPanelViewProvider,
             editor,
-            createClient(),
+            createMockClient(),
             extensionContext,
             CodeAnalysisScope.PROJECT
         )
@@ -155,7 +139,7 @@ describe('startSecurityScan', function () {
         const scanPromise = startSecurityScan.startSecurityScan(
             mockSecurityPanelViewProvider,
             editor,
-            createClient(),
+            createMockClient(),
             extensionContext,
             CodeAnalysisScope.PROJECT
         )
@@ -175,7 +159,7 @@ describe('startSecurityScan', function () {
         const scanPromise = startSecurityScan.startSecurityScan(
             mockSecurityPanelViewProvider,
             editor,
-            createClient(),
+            createMockClient(),
             extensionContext,
             CodeAnalysisScope.FILE
         )
@@ -199,7 +183,7 @@ describe('startSecurityScan', function () {
         await startSecurityScan.startSecurityScan(
             mockSecurityPanelViewProvider,
             editor,
-            createClient(),
+            createMockClient(),
             extensionContext,
             CodeAnalysisScope.PROJECT
         )
@@ -218,14 +202,14 @@ describe('startSecurityScan', function () {
         const scanPromise = startSecurityScan.startSecurityScan(
             mockSecurityPanelViewProvider,
             editor,
-            createClient(),
+            createMockClient(),
             extensionContext,
             CodeAnalysisScope.FILE
         )
         await startSecurityScan.startSecurityScan(
             mockSecurityPanelViewProvider,
             editor,
-            createClient(),
+            createMockClient(),
             extensionContext,
             CodeAnalysisScope.FILE
         )
@@ -249,14 +233,14 @@ describe('startSecurityScan', function () {
         const scanPromise = startSecurityScan.startSecurityScan(
             mockSecurityPanelViewProvider,
             editor,
-            createClient(),
+            createMockClient(),
             extensionContext,
             CodeAnalysisScope.PROJECT
         )
         await startSecurityScan.startSecurityScan(
             mockSecurityPanelViewProvider,
             editor,
-            createClient(),
+            createMockClient(),
             extensionContext,
             CodeAnalysisScope.FILE
         )
@@ -276,7 +260,7 @@ describe('startSecurityScan', function () {
     it('Should handle failed scan job status', async function () {
         getFetchStubWithResponse({ status: 200, statusText: 'testing stub' })
 
-        const mockClient = createClient()
+        const mockClient = createMockClient()
         mockClient.getCodeScan.resolves({
             ...mockGetCodeScanResponse,
             status: 'Failed',
@@ -299,7 +283,7 @@ describe('startSecurityScan', function () {
 
     it('Should show notification when throttled for project scans', async function () {
         getFetchStubWithResponse({ status: 200, statusText: 'testing stub' })
-        const mockClient = createClient()
+        const mockClient = createMockClient()
         mockClient.createCodeScan.throws({
             code: 'ThrottlingException',
             time: new Date(),
@@ -328,7 +312,7 @@ describe('startSecurityScan', function () {
     it('Should set monthly quota exceeded when throttled for file scans', async function () {
         getFetchStubWithResponse({ status: 200, statusText: 'testing stub' })
         await model.CodeScansState.instance.setScansEnabled(true)
-        const mockClient = createClient()
+        const mockClient = createMockClient()
         mockClient.createCodeScan.throws({
             code: 'ThrottlingException',
             time: new Date(),
