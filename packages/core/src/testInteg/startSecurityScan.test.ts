@@ -23,7 +23,7 @@ import { getTestWindow } from '../test/shared/vscode/window'
 import { SeverityLevel } from '../test/shared/vscode/message'
 import { CodeAnalysisScope } from '../codewhisperer'
 import { performanceTest } from '../shared/performance/performance'
-import { createMockClient } from '../test/amazonqFeatureDev/utils'
+import { createClient } from '../test/codewhisperer/testUtil'
 
 describe('startSecurityScanPerformanceTest', function () {
     let extensionContext: FakeExtensionContext
@@ -70,7 +70,7 @@ describe('startSecurityScanPerformanceTest', function () {
                 await startSecurityScan.startSecurityScan(
                     mockSecurityPanelViewProvider,
                     editor,
-                    createMockClient(),
+                    createClient(),
                     extensionContext,
                     CodeAnalysisScope.FILE
                 )

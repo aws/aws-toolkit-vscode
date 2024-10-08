@@ -28,7 +28,7 @@ import * as model from '../../codewhisperer/models/model'
 import { CodewhispererSecurityScan } from '../../shared/telemetry/telemetry.gen'
 import * as errors from '../../shared/errors'
 import * as timeoutUtils from '../../shared/utilities/timeoutUtils'
-import { createMockClient, mockGetCodeScanResponse } from './testUtil'
+import { createClient, mockGetCodeScanResponse } from './testUtil'
 
 let extensionContext: FakeExtensionContext
 let mockSecurityPanelViewProvider: SecurityPanelViewProvider
@@ -69,7 +69,7 @@ describe('startSecurityScan', function () {
         await startSecurityScan.startSecurityScan(
             mockSecurityPanelViewProvider,
             editor,
-            createMockClient(),
+            createClient(),
             extensionContext,
             CodeAnalysisScope.PROJECT
         )
@@ -88,7 +88,7 @@ describe('startSecurityScan', function () {
         await startSecurityScan.startSecurityScan(
             mockSecurityPanelViewProvider,
             editor,
-            createMockClient(),
+            createClient(),
             extensionContext,
             CodeAnalysisScope.FILE
         )
@@ -116,7 +116,7 @@ describe('startSecurityScan', function () {
         const scanPromise = startSecurityScan.startSecurityScan(
             mockSecurityPanelViewProvider,
             editor,
-            createMockClient(),
+            createClient(),
             extensionContext,
             CodeAnalysisScope.PROJECT
         )
@@ -142,7 +142,7 @@ describe('startSecurityScan', function () {
         const scanPromise = startSecurityScan.startSecurityScan(
             mockSecurityPanelViewProvider,
             editor,
-            createMockClient(),
+            createClient(),
             extensionContext,
             CodeAnalysisScope.PROJECT
         )
@@ -162,7 +162,7 @@ describe('startSecurityScan', function () {
         const scanPromise = startSecurityScan.startSecurityScan(
             mockSecurityPanelViewProvider,
             editor,
-            createMockClient(),
+            createClient(),
             extensionContext,
             CodeAnalysisScope.FILE
         )
@@ -186,7 +186,7 @@ describe('startSecurityScan', function () {
         await startSecurityScan.startSecurityScan(
             mockSecurityPanelViewProvider,
             editor,
-            createMockClient(),
+            createClient(),
             extensionContext,
             CodeAnalysisScope.PROJECT
         )
@@ -205,14 +205,14 @@ describe('startSecurityScan', function () {
         const scanPromise = startSecurityScan.startSecurityScan(
             mockSecurityPanelViewProvider,
             editor,
-            createMockClient(),
+            createClient(),
             extensionContext,
             CodeAnalysisScope.FILE
         )
         await startSecurityScan.startSecurityScan(
             mockSecurityPanelViewProvider,
             editor,
-            createMockClient(),
+            createClient(),
             extensionContext,
             CodeAnalysisScope.FILE
         )
@@ -236,14 +236,14 @@ describe('startSecurityScan', function () {
         const scanPromise = startSecurityScan.startSecurityScan(
             mockSecurityPanelViewProvider,
             editor,
-            createMockClient(),
+            createClient(),
             extensionContext,
             CodeAnalysisScope.PROJECT
         )
         await startSecurityScan.startSecurityScan(
             mockSecurityPanelViewProvider,
             editor,
-            createMockClient(),
+            createClient(),
             extensionContext,
             CodeAnalysisScope.FILE
         )
@@ -263,7 +263,7 @@ describe('startSecurityScan', function () {
     it('Should handle failed scan job status', async function () {
         getFetchStubWithResponse({ status: 200, statusText: 'testing stub' })
 
-        const mockClient = createMockClient()
+        const mockClient = createClient()
         mockClient.getCodeScan.resolves({
             ...mockGetCodeScanResponse,
             status: 'Failed',
@@ -286,7 +286,7 @@ describe('startSecurityScan', function () {
 
     it('Should show notification when throttled for project scans', async function () {
         getFetchStubWithResponse({ status: 200, statusText: 'testing stub' })
-        const mockClient = createMockClient()
+        const mockClient = createClient()
         mockClient.createCodeScan.throws({
             code: 'ThrottlingException',
             time: new Date(),
@@ -315,7 +315,7 @@ describe('startSecurityScan', function () {
     it('Should set monthly quota exceeded when throttled for file scans', async function () {
         getFetchStubWithResponse({ status: 200, statusText: 'testing stub' })
         await model.CodeScansState.instance.setScansEnabled(true)
-        const mockClient = createMockClient()
+        const mockClient = createClient()
         mockClient.createCodeScan.throws({
             code: 'ThrottlingException',
             time: new Date(),

@@ -226,7 +226,7 @@ export const mockGetCodeScanResponse = {
     status: 'Completed',
 }
 
-export function createMockClient() {
+export function createClient() {
     const mockClient = stub(codewhispererClient.DefaultCodeWhispererClient)
 
     const mockCreateCodeScanResponse = {
