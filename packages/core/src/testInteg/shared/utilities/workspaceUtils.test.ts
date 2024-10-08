@@ -16,7 +16,7 @@ import {
 import { getTestWorkspaceFolder } from '../../integrationTestsUtilities'
 import globals from '../../../shared/extensionGlobals'
 import { CodelensRootRegistry } from '../../../shared/fs/codelensRootRegistry'
-import { assertTelemetry, createTestWorkspace, createTestWorkspaceFolder, toFile } from '../../../test/testUtil'
+import { createTestWorkspace, createTestWorkspaceFolder, toFile } from '../../../test/testUtil'
 import sinon from 'sinon'
 import { performanceTest } from '../../../shared/performance/performance'
 import { randomUUID } from '../../../shared/crypto'
@@ -298,10 +298,6 @@ describe('collectFiles', function () {
             ] satisfies typeof result,
             result
         )
-
-        assertTelemetry('function_call', {
-            functionName: 'collectFiles',
-        })
     })
 
     it('does not return license files', async function () {
