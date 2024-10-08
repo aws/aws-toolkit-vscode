@@ -8,11 +8,9 @@ import { ExtensionMessage } from '../commands'
 import { CodeReference } from './amazonqCommonsConnector'
 import { TabOpenType, TabsStorage } from '../storages/tabsStorage'
 import { FollowUpGenerator } from '../followUps/generator'
-import { TracedChatItem } from '../connector'
 
 interface ChatPayload {
     chatMessage: string
-    traceId?: string
     chatCommand?: string
 }
 
@@ -74,6 +72,17 @@ export class Connector {
     }
 
     followUpClicked = (tabID: string, messageId: string, followUp: ChatItemAction): void => {
+        /**
+         * We've pressed on a followup button and should start watching that round trip telemetry
+         */
+        this.sendMessageToExtension({
+            command: 'start-chat-message-telemetry',
+            trigger: 'followUpClicked',
+            tabID,
+            traceId: messageId,
+            tabType: 'cwc',
+            startTime: Date.now(),
+        })
         this.sendMessageToExtension({
             command: 'follow-up-was-clicked',
             followUp,
@@ -183,17 +192,29 @@ export class Connector {
         })
     }
 
-    requestGenerativeAIAnswer = (tabID: string, payload: ChatPayload): Promise<any> =>
-        new Promise((resolve, reject) => {
+    requestGenerativeAIAnswer = (tabID: string, messageId: string, payload: ChatPayload): Promise<any> => {
+        /**
+         * When a user presses "enter" send an event that indicates
+         * we should start tracking the round trip time for this message
+         **/
+        this.sendMessageToExtension({
+            command: 'start-chat-message-telemetry',
+            trigger: 'onChatPrompt',
+            tabID,
+            traceId: messageId,
+            tabType: 'cwc',
+            startTime: Date.now(),
+        })
+        return new Promise((resolve, reject) => {
             this.sendMessageToExtension({
                 tabID: tabID,
                 command: 'chat-prompt',
                 chatMessage: payload.chatMessage,
                 chatCommand: payload.chatCommand,
-                traceId: payload.traceId,
                 tabType: 'cwc',
             })
         })
+    }
 
     clearChat = (tabID: string): void => {
         this.sendMessageToExtension({
@@ -261,14 +282,13 @@ export class Connector {
                       }
                     : undefined
 
-            const answer: TracedChatItem = {
+            const answer: ChatItem = {
                 type: messageData.messageType,
                 messageId: messageData.messageID ?? messageData.triggerID,
                 body: messageData.message,
                 followUp: followUps,
                 canBeVoted: true,
                 codeReference: messageData.codeReference,
-                traceId: messageData.traceId,
             }
 
             // If it is not there we will not set it
@@ -295,7 +315,7 @@ export class Connector {
             return
         }
         if (messageData.messageType === ChatItemType.ANSWER) {
-            const answer: TracedChatItem = {
+            const answer: ChatItem = {
                 type: messageData.messageType,
                 body: undefined,
                 relatedContent: undefined,
@@ -308,7 +328,6 @@ export class Connector {
                               options: messageData.followUps,
                           }
                         : undefined,
-                traceId: messageData.traceId,
             }
             this.onChatAnswerReceived(messageData.tabID, answer)
 
