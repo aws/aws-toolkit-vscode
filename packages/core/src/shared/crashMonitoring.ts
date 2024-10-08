@@ -16,6 +16,7 @@ import nodeFs from 'fs/promises'
 import fs from './fs/fs'
 import { getLogger } from './logger/logger'
 import { crashMonitoringDirNames } from './constants'
+import { throwOnUnstableFileSystem } from './filesystemUtilities'
 
 const className = 'CrashMonitoring'
 
@@ -65,17 +66,32 @@ export class CrashMonitoring {
         private readonly devLogger: Logger | undefined
     ) {}
 
+    static #didTryInstance = false
     static #instance: CrashMonitoring | undefined
-    public static async instance(): Promise<CrashMonitoring> {
-        const isDevMode = getIsDevMode()
-        const devModeLogger: Logger | undefined = isDevMode ? getLogger() : undefined
-        return (this.#instance ??= new CrashMonitoring(
-            await crashMonitoringStateFactory(),
-            DevSettings.instance.get('crashCheckInterval', 1000 * 60 * 3),
-            isDevMode,
-            isAutomation(),
-            devModeLogger
-        ))
+    public static async instance(): Promise<CrashMonitoring | undefined> {
+        // Since the first attempt to create an instance may have failed, we do not
+        // attempt to create an instance again and return whatever we have
+        if (this.#didTryInstance === true) {
+            return this.#instance
+        }
+
+        try {
+            this.#didTryInstance = true
+            const isDevMode = getIsDevMode()
+            const devModeLogger: Logger | undefined = isDevMode ? getLogger() : undefined
+            const state = await crashMonitoringStateFactory()
+            return (this.#instance ??= new CrashMonitoring(
+                state,
+                DevSettings.instance.get('crashCheckInterval', 1000 * 60 * 3),
+                isDevMode,
+                isAutomation(),
+                devModeLogger
+            ))
+        } catch (error) {
+            // Creating the crash monitoring state can throw/fail
+            emitFailure({ functionName: 'instance', error })
+            return undefined
+        }
     }
 
     /** Start the Crash Monitoring process */
@@ -358,6 +374,12 @@ function getDefaultDependencies(): MementoStateDependencies {
         devLogger: getIsDevMode() ? getLogger() : undefined,
     }
 }
+/**
+ * Factory to create an instance of the state. Do not create an instance of the
+ * class manually since there are required setup steps.
+ *
+ * @throws if the filesystem state cannot get in to a good state
+ */
 export async function crashMonitoringStateFactory(deps = getDefaultDependencies()): Promise<FileSystemState> {
     const state: FileSystemState = new FileSystemState(deps)
     await state.init()
@@ -385,8 +407,18 @@ export class FileSystemState {
     /**
      * Does the required initialization steps, this must always be run after
      * creation of the instance.
+     *
+     * @throws if the filesystem state cannot get in to a good state
      */
     public async init() {
+        // IMPORTANT: do not run crash reporting on unstable filesystem to reduce invalid crash data
+        // NOTE: We want to get a diff between clients that succeeded vs failed this check,
+        // so emit a metric to track that
+        await telemetry.function_call.run(async (span) => {
+            span.record({ className, functionName: 'FileSystemStateValidation' })
+            await withFailCtx('validateFileSystemStability', () => throwOnUnstableFileSystem(this.deps.workDirPath))
+        })
+
         // Clear the state if the user did something like a computer restart
         if (await this.deps.isStateStale()) {
             await this.clearState()
@@ -595,7 +627,7 @@ async function withFailCtx<T>(ctx: string, fn: () => Promise<T>): Promise<T> {
         // make sure we await the function so it actually executes within the try/catch
         return await fn()
     } catch (err) {
-        throw CrashMonitoringError.chain(err, `Failed "${ctx}"`, { code: className })
+        throw CrashMonitoringError.chain(err, `Context: "${ctx}"`, { code: className })
     }
 }
 

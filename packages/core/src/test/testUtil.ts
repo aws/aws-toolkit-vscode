@@ -75,7 +75,7 @@ export function getWorkspaceFolder(dir: string): vscode.WorkspaceFolder {
  * But if the day comes that we need it for web, we should be able to add some agnostic FS methods in here.
  */
 export class TestFolder {
-    protected constructor(private readonly rootFolder: string) {}
+    protected constructor(public readonly path: string) {}
 
     /** Creates a folder that deletes itself once all tests are done running. */
     static async create() {
@@ -117,10 +117,6 @@ export class TestFolder {
     /** Returns an absolute path compose of the test folder path and the given relative path. */
     pathFrom(relativePath: string): string {
         return path.join(this.path, relativePath)
-    }
-
-    get path(): string {
-        return path.join(this.rootFolder)
     }
 }
 
