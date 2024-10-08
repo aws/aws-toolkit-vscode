@@ -30,7 +30,7 @@ export interface ChatPayload {
     chatCommand?: string
 }
 
-// Adding userIntent param by extending ChatItem to send userIntent as part of amazonq_interactWithMessage event
+// Adding userIntent param by extending ChatItem to send userIntent as part of amazonq_interactWithMessage telemetry event
 export interface CWCChatItem extends ChatItem {
     traceId?: string
     userIntent?: UserIntent
