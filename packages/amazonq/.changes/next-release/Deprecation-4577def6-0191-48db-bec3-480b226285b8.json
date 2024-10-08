@@ -1,0 +1,4 @@
+{
+	"type": "Deprecation",
+	"description": "The next release of this extension will require VS Code 1.83.0 or newer."
+}

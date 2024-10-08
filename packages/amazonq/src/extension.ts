@@ -40,6 +40,7 @@ import {
     placeholder,
     setContext,
     setupUninstallHandler,
+    maybeShowMinVscodeWarning,
 } from 'aws-core-vscode/shared'
 import { ExtStartUpSources, telemetry } from 'aws-core-vscode/telemetry'
 import { VSCODE_EXTENSION_ID } from 'aws-core-vscode/utils'
@@ -97,6 +98,8 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
             return
         }
     }
+
+    void maybeShowMinVscodeWarning('1.83.0')
 
     globals.machineId = await getMachineId()
     globals.awsContext = new DefaultAwsContext()
