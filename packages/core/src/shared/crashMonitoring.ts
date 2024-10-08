@@ -166,6 +166,7 @@ export class CrashMonitoring {
  * {@link CrashChecker} listens for these.
  */
 class Heartbeat {
+    private didEmitFailure: boolean = false
     private isRunning: boolean = false
     private intervalRef: NodeJS.Timer | undefined
     constructor(
@@ -175,8 +176,6 @@ class Heartbeat {
     ) {}
 
     public async start() {
-        this.isRunning = true
-
         // heartbeat 2 times per check
         const heartbeatInterval = this.checkInterval / 2
 
@@ -188,12 +187,11 @@ class Heartbeat {
             try {
                 await this.state.sendHeartbeat()
             } catch (e) {
-                emitFailure({ functionName: 'sendHeartbeat', error: e })
-
-                // Since there was an error we want to stop crash monitoring since it is pointless.
-                // We will need to monitor telemetry to see if we can determine widespread issues.
-                // Make sure it is signaled as a graceful shutdown to reduce noise of crashed extensions.
-                await this.stop()
+                // only emit a failure once so we do not spam telemetry on repeated errors
+                if (!this.didEmitFailure) {
+                    this.didEmitFailure = true
+                    emitFailure({ functionName: 'sendHeartbeat', error: e })
+                }
 
                 // During development we are fine with impacting extension execution, so throw
                 if (this.isDevMode) {
@@ -201,6 +199,8 @@ class Heartbeat {
                 }
             }
         }, heartbeatInterval)
+
+        this.isRunning = true
     }
 
     public async stop() {
@@ -491,7 +491,7 @@ export class FileSystemState {
         // Clean up the running extension file since it is no longer exists
         const dir = await this.runningExtsDir()
         // Use force since another checker may have already removed this file before this is ran
-        await withFailCtx('deleteStaleRunningFile', () => fs.delete(path.join(dir, extId), { force: true }))
+        await withFailCtx('deleteStaleRunningFile', () => fs.delete(path.join(dir, extId)))
     }
 
     // ------------------ State data ------------------
