@@ -98,6 +98,13 @@ export class UploadCodeError extends ToolkitError {
     }
 }
 
+export class UploadURLExpired extends ToolkitError {
+    static errorName = 'UploadURLExpired'
+    constructor() {
+        super(i18n('AWS.amazonq.featureDev.error.uploadURLExpired'), { code: 'UploadURLExpired' })
+    }
+}
+
 export class IllegalStateTransition extends ToolkitError {
     constructor() {
         super(i18n('AWS.amazonq.featureDev.error.illegalStateTransition'), { code: 'IllegalStateTransition' })
