@@ -9,7 +9,7 @@ import { createConstantMap, ConstantMap } from '../../shared/utilities/tsUtils'
 import * as codewhispererClient from '../client/codewhisperer'
 import * as CodeWhispererConstants from '../models/constants'
 
-type RuntimeLanguage = Exclude<CodewhispererLanguage, 'jsx' | 'tsx'>
+type RuntimeLanguage = Exclude<CodewhispererLanguage, 'jsx' | 'tsx' | 'systemVerilog'> | 'systemverilog'
 
 const runtimeLanguageSet: ReadonlySet<RuntimeLanguage> = new Set([
     'c',
@@ -30,6 +30,7 @@ const runtimeLanguageSet: ReadonlySet<RuntimeLanguage> = new Set([
     'json',
     'yaml',
     'tf',
+    'systemverilog',
 ])
 
 export class RuntimeLanguageContext {
@@ -159,6 +160,9 @@ export class RuntimeLanguageContext {
 
             case 'tsx':
                 return 'typescript'
+
+            case 'systemVerilog':
+                return 'systemverilog'
 
             default:
                 if (!runtimeLanguageSet.has(language)) {
