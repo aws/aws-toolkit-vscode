@@ -31,5 +31,7 @@ type MessageCommand =
     | 'file-click'
     | 'form-action-click'
     | 'open-settings'
+    | 'start-chat-message-telemetry'
+    | 'stop-chat-message-telemetry'
 
 export type ExtensionMessage = Record<string, any> & { command: MessageCommand }

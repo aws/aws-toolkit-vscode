@@ -72,7 +72,6 @@ export type ChatPromptCommandType =
 export interface PromptMessage {
     message: string | undefined
     messageId: string
-    traceId?: string
     command: ChatPromptCommandType | undefined
     userIntent: UserIntent | undefined
     tabID: string
