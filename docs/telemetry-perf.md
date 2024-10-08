@@ -2,7 +2,9 @@
 
 Visual representations of performance telemetry metrics
 
-## codewhispererFirstCompletionLatency
+## Amazon Q Inline
+
+### codewhispererFirstCompletionLatency
 
 How long it took to receive the first suggestion after we started calling the getRecommendations API
 
@@ -38,7 +40,7 @@ How long it took to receive the first suggestion after we started calling the ge
         rHandler->>User: add to already shown results
 ```
 
-## codewhispererEndToEndLatency
+### codewhispererEndToEndLatency
 
 How long it took from when we started calling the getRecommendations API to when the first suggestion was shown
 
@@ -74,7 +76,7 @@ How long it took from when we started calling the getRecommendations API to when
         rHandler->>User: add to already shown results
 ```
 
-## codewhispererAllCompletionsLatency
+### codewhispererAllCompletionsLatency
 
 How long it took to complete all paginated calls
 
@@ -112,7 +114,7 @@ How long it took to complete all paginated calls
         rHandler->>User: add to already shown results
 ```
 
-## codewhispererPostprocessingLatency
+### codewhispererPostprocessingLatency
 
 How long it took to display the first suggestion after it received the first response from the API
 
@@ -149,7 +151,7 @@ How long it took to display the first suggestion after it received the first res
         rHandler->>User: add to already shown results
 ```
 
-## codewhispererCredentialFetchingLatency
+### codewhispererCredentialFetchingLatency
 
 How long it took to get the bearer token
 
@@ -185,7 +187,7 @@ How long it took to get the bearer token
         rHandler->>User: add to already shown results
 ```
 
-## codewhispererPreprocessingLatency
+### codewhispererPreprocessingLatency
 
 How long it took to create the client and get ready to start sending getRecommendation API calls
 
@@ -221,7 +223,7 @@ How long it took to create the client and get ready to start sending getRecommen
         rHandler->>User: add to already shown results
 ```
 
-## codewhisperer_perceivedLatency duration
+### codewhisperer_perceivedLatency duration
 
 How long it took from when the user stopped pressing a key to when they were shown a response
 
