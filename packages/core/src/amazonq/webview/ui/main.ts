@@ -2,7 +2,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { Connector } from './connector'
+import { Connector, CWCChatItem } from './connector'
 import { ChatItem, ChatItemType, MynahIcons, MynahUI, MynahUIDataModel, NotificationType } from '@aws/mynah-ui'
 import { ChatPrompt } from '@aws/mynah-ui/dist/static'
 import { TabsStorage, TabType } from './storages/tabsStorage'
@@ -22,6 +22,8 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
     let mynahUI: MynahUI
     // eslint-disable-next-line prefer-const
     let connector: Connector
+    //Store the mapping between messageId and messageUserIntent for amazonq_interactWithMessage telemetry
+    const messageUserIntentMap = new Map<string, string>()
 
     window.addEventListener('error', (e) => {
         const { error, message } = e
@@ -199,7 +201,7 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
                 } as ChatItem)
             }
         },
-        onChatAnswerReceived: (tabID: string, item: ChatItem) => {
+        onChatAnswerReceived: (tabID: string, item: CWCChatItem) => {
             if (item.type === ChatItemType.ANSWER_PART || item.type === ChatItemType.CODE_RESULT) {
                 mynahUI.updateLastChatAnswer(tabID, {
                     ...(item.messageId !== undefined ? { messageId: item.messageId } : {}),
@@ -211,6 +213,9 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
                         ? { type: ChatItemType.CODE_RESULT, fileList: item.fileList }
                         : {}),
                 })
+                if (item.messageId !== undefined && item.userIntent !== undefined) {
+                    messageUserIntentMap.set(item.messageId, item.userIntent)
+                }
                 ideApi.postMessage({
                     command: 'update-chat-message-telemetry',
                     tabID,
@@ -429,7 +434,28 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
                 content: 'Thanks for your feedback.',
             })
         },
-        onCodeInsertToCursorPosition: connector.onCodeInsertToCursorPosition,
+        onCodeInsertToCursorPosition: (
+            tabId,
+            messageId,
+            code,
+            type,
+            referenceTrackerInfo,
+            eventId,
+            codeBlockIndex,
+            totalCodeBlocks
+        ) => {
+            connector.onCodeInsertToCursorPosition(
+                tabId,
+                messageId,
+                code,
+                type,
+                referenceTrackerInfo,
+                eventId,
+                codeBlockIndex,
+                totalCodeBlocks,
+                messageUserIntentMap.get(messageId) ?? undefined
+            )
+        },
         onCopyCodeToClipboard: (
             tabId,
             messageId,
@@ -448,7 +474,8 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
                 referenceTrackerInfo,
                 eventId,
                 codeBlockIndex,
-                totalCodeBlocks
+                totalCodeBlocks,
+                messageUserIntentMap.get(messageId) ?? undefined
             )
             mynahUI.notify({
                 type: NotificationType.SUCCESS,

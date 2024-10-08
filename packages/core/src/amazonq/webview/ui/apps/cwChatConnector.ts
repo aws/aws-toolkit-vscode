@@ -3,11 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ChatItem, ChatItemAction, ChatItemType, FeedbackPayload } from '@aws/mynah-ui'
+import { ChatItemAction, ChatItemType, FeedbackPayload } from '@aws/mynah-ui'
 import { ExtensionMessage } from '../commands'
 import { CodeReference } from './amazonqCommonsConnector'
 import { TabOpenType, TabsStorage } from '../storages/tabsStorage'
 import { FollowUpGenerator } from '../followUps/generator'
+import { CWCChatItem } from '../connector'
 
 interface ChatPayload {
     chatMessage: string
@@ -17,8 +18,8 @@ interface ChatPayload {
 export interface ConnectorProps {
     sendMessageToExtension: (message: ExtensionMessage) => void
     onMessageReceived?: (tabID: string, messageData: any, needToShowAPIDocsTab: boolean) => void
-    onChatAnswerReceived?: (tabID: string, message: ChatItem) => void
-    onCWCContextCommandMessage: (message: ChatItem, command?: string) => string | undefined
+    onChatAnswerReceived?: (tabID: string, message: CWCChatItem) => void
+    onCWCContextCommandMessage: (message: CWCChatItem, command?: string) => string | undefined
     onError: (tabID: string, message: string, title: string) => void
     onWarning: (tabID: string, message: string, title: string) => void
     onOpenSettingsMessage: (tabID: string) => void
@@ -109,7 +110,8 @@ export class Connector {
         codeReference?: CodeReference[],
         eventId?: string,
         codeBlockIndex?: number,
-        totalCodeBlocks?: number
+        totalCodeBlocks?: number,
+        userIntent?: string
     ): void => {
         this.sendMessageToExtension({
             tabID: tabID,
@@ -122,6 +124,7 @@ export class Connector {
             eventId,
             codeBlockIndex,
             totalCodeBlocks,
+            userIntent,
         })
     }
 
@@ -133,7 +136,8 @@ export class Connector {
         codeReference?: CodeReference[],
         eventId?: string,
         codeBlockIndex?: number,
-        totalCodeBlocks?: number
+        totalCodeBlocks?: number,
+        userIntent?: string
     ): void => {
         this.sendMessageToExtension({
             tabID: tabID,
@@ -146,6 +150,7 @@ export class Connector {
             eventId,
             codeBlockIndex,
             totalCodeBlocks,
+            userIntent,
         })
     }
 
@@ -282,13 +287,14 @@ export class Connector {
                       }
                     : undefined
 
-            const answer: ChatItem = {
+            const answer: CWCChatItem = {
                 type: messageData.messageType,
                 messageId: messageData.messageID ?? messageData.triggerID,
                 body: messageData.message,
                 followUp: followUps,
                 canBeVoted: true,
                 codeReference: messageData.codeReference,
+                userIntent: messageData.userIntent,
             }
 
             // If it is not there we will not set it
@@ -315,12 +321,13 @@ export class Connector {
             return
         }
         if (messageData.messageType === ChatItemType.ANSWER) {
-            const answer: ChatItem = {
+            const answer: CWCChatItem = {
                 type: messageData.messageType,
                 body: undefined,
                 relatedContent: undefined,
                 messageId: messageData.messageID,
                 codeReference: messageData.codeReference,
+                userIntent: messageData.userIntent,
                 followUp:
                     messageData.followUps !== undefined && messageData.followUps.length > 0
                         ? {
