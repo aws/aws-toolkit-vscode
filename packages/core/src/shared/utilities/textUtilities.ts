@@ -8,6 +8,7 @@ import { default as stripAnsi } from 'strip-ansi'
 import { isCloud9 } from '../extensionUtilities'
 import { getLogger } from '../logger'
 import fs from '../fs/fs'
+/* eslint-disable no-restricted-imports */
 import { close, openSync, writeSync } from 'fs'
 
 /**

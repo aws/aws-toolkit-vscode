@@ -46,6 +46,7 @@ import { ExportIntent, TransformationDownloadArtifactType } from '@amzn/codewhis
 import fs from '../../../shared/fs/fs'
 import { ChatSessionManager } from '../../../amazonqGumby/chat/storages/chatSession'
 import { convertToTimeString, encodeHTML } from '../../../shared/utilities/textUtilities'
+/* eslint-disable no-restricted-imports */
 import { readdirSync } from 'fs'
 
 export function getSha256(buffer: Buffer) {

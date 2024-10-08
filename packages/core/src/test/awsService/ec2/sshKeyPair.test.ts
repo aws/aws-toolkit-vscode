@@ -12,6 +12,7 @@ import { createTestWorkspaceFolder, installFakeClock } from '../../testUtil'
 import { InstalledClock } from '@sinonjs/fake-timers'
 import { ChildProcess } from '../../../shared/utilities/processUtils'
 import { fs, globals } from '../../../shared'
+/* eslint-disable no-restricted-imports */
 import { statSync } from 'fs'
 
 describe('SshKeyUtility', async function () {

@@ -25,6 +25,7 @@ import {
 import admZip from 'adm-zip'
 import globals from '../../shared/extensionGlobals'
 import { telemetry } from '../../shared/telemetry/telemetry'
+/* eslint-disable no-restricted-imports */
 import { closeSync, openSync, writeSync } from 'fs'
 import { fs } from '../../shared'
 

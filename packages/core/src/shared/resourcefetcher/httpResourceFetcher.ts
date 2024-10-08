@@ -5,6 +5,7 @@
 import * as http from 'http'
 import * as https from 'https'
 import * as stream from 'stream'
+/* eslint-disable no-restricted-imports */
 import * as fs from 'fs'
 import got, { Response, RequestError, CancelError } from 'got'
 import urlToOptions from 'got/dist/source/core/utils/url-to-options'

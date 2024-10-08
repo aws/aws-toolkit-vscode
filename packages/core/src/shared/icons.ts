@@ -11,6 +11,7 @@ import { Uri, ThemeIcon, ThemeColor } from 'vscode'
 import { isCloud9 } from './extensionUtilities'
 import { memoize } from './utilities/functionUtils'
 import { getLogger } from './logger/logger'
+/* eslint-disable no-restricted-imports */
 import { existsSync } from 'fs'
 
 // Animation:

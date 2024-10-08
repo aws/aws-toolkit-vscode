@@ -2,7 +2,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-
+/* eslint-disable no-restricted-imports */
 import { existsSync, PathLike, readFileSync } from 'fs'
 import * as path from 'path'
 import * as vscode from 'vscode'

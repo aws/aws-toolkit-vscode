@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+/* eslint-disable no-restricted-imports */
 import { readFileSync } from 'fs'
 import { getLogger, Logger } from '../../../shared/logger'
 

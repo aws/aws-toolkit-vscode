@@ -17,6 +17,7 @@ import {
 import assert from 'assert'
 import sinon from 'sinon'
 import * as vscode from 'vscode'
+/* eslint-disable no-restricted-imports */
 import * as fs from 'fs'
 
 const mockCodeScanFindings = JSON.stringify([
