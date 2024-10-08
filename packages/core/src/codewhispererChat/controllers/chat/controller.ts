@@ -106,7 +106,7 @@ export class ChatController {
     ) {
         this.sessionStorage = new ChatSessionStorage()
         this.triggerEventsStorage = new TriggerEventsStorage()
-        this.telemetryHelper = new CWCTelemetryHelper(this.sessionStorage, this.triggerEventsStorage)
+        this.telemetryHelper = CWCTelemetryHelper.init(this.sessionStorage, this.triggerEventsStorage)
         this.messenger = new Messenger(
             new AppToWebViewMessageDispatcher(appsToWebViewMessagePublisher),
             this.telemetryHelper
@@ -125,8 +125,9 @@ export class ChatController {
         })
 
         this.chatControllerMessageListeners.processPromptChatMessage.onMessage((data) => {
-            if (data.traceId) {
-                uiEventRecorder.set(data.traceId, {
+            const uiEvents = uiEventRecorder.get(data.tabID)
+            if (uiEvents) {
+                uiEventRecorder.set(data.tabID, {
                     events: {
                         featureReceivedMessage: globals.clock.Date.now(),
                     },
@@ -139,7 +140,7 @@ export class ChatController {
              **/
             return telemetry.withTraceId(() => {
                 return this.processPromptChatMessage(data)
-            }, data.traceId ?? randomUUID())
+            }, uiEvents?.traceId ?? randomUUID())
         })
 
         this.chatControllerMessageListeners.processTabCreatedMessage.onMessage((data) => {
@@ -503,7 +504,6 @@ export class ChatController {
                         codeQuery: context?.focusAreaContext?.names,
                         userIntent: this.userIntentRecognizer.getFromPromptChatMessage(message),
                         customization: getSelectedCustomization(),
-                        traceId: message.traceId,
                     },
                     triggerID
                 )
