@@ -13,6 +13,7 @@ import { TabType, TabsStorage } from './storages/tabsStorage'
 import { WelcomeFollowupType } from './apps/amazonqCommonsConnector'
 import { AuthFollowUpType } from './followUps/generator'
 import { DiffTreeFileInfo } from './diffTree/types'
+import { UserIntent } from '@amzn/codewhisperer-streaming'
 
 export interface CodeReference {
     licenseName?: string
@@ -27,6 +28,12 @@ export interface CodeReference {
 export interface ChatPayload {
     chatMessage: string
     chatCommand?: string
+}
+
+// Adding userIntent param by extending ChatItem to send userIntent as part of amazonq_interactWithMessage telemetry event
+export interface CWCChatItem extends ChatItem {
+    traceId?: string
+    userIntent?: UserIntent
 }
 
 export interface ConnectorProps {
@@ -214,7 +221,8 @@ export class Connector {
         codeReference?: CodeReference[],
         eventId?: string,
         codeBlockIndex?: number,
-        totalCodeBlocks?: number
+        totalCodeBlocks?: number,
+        userIntent?: string
     ): void => {
         switch (this.tabsStorage.getTab(tabID)?.type) {
             case 'cwc':
@@ -226,7 +234,8 @@ export class Connector {
                     codeReference,
                     eventId,
                     codeBlockIndex,
-                    totalCodeBlocks
+                    totalCodeBlocks,
+                    userIntent
                 )
                 break
             case 'featuredev':
@@ -243,7 +252,8 @@ export class Connector {
         codeReference?: CodeReference[],
         eventId?: string,
         codeBlockIndex?: number,
-        totalCodeBlocks?: number
+        totalCodeBlocks?: number,
+        userIntent?: string
     ): void => {
         switch (this.tabsStorage.getTab(tabID)?.type) {
             case 'cwc':
@@ -255,7 +265,8 @@ export class Connector {
                     codeReference,
                     eventId,
                     codeBlockIndex,
-                    totalCodeBlocks
+                    totalCodeBlocks,
+                    userIntent
                 )
                 break
             case 'featuredev':
