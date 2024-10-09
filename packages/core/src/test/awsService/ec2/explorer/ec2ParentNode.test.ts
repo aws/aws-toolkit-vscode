@@ -134,7 +134,6 @@ describe('ec2ParentNode', function () {
         ]
 
         getInstanceStub.resolves(mapToInstanceCollection(instances))
-
         await testNode.updateChildren()
         assert.strictEqual(testNode.pollingSet.size, 1)
         getInstanceStub.restore()
@@ -186,6 +185,25 @@ describe('ec2ParentNode', function () {
         getInstanceStub.resolves(mapToInstanceCollection(instances))
         await testNode.updateChildren()
         assert.throws(() => testNode.getInstanceNode('node2'))
+        getInstanceStub.restore()
+    })
+
+    it('adds node to polling set when asked to track it', async function () {
+        const instances = [{ Name: 'firstOne', InstanceId: 'node1', LastSeenStatus: 'pending' }]
+
+        getInstanceStub.resolves(mapToInstanceCollection(instances))
+        await testNode.updateChildren()
+        testNode.trackPendingNode('node1')
+        assert.strictEqual(testNode.pollingSet.size, 1)
+        getInstanceStub.restore()
+    })
+
+    it('throws error when asked to track non-child node', async function () {
+        const instances = [{ Name: 'firstOne', InstanceId: 'node1', LastSeenStatus: 'pending' }]
+
+        getInstanceStub.resolves(mapToInstanceCollection(instances))
+        await testNode.updateChildren()
+        assert.throws(() => testNode.trackPendingNode('node2'))
         getInstanceStub.restore()
     })
 })

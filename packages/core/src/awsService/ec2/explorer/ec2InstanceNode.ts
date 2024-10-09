@@ -29,9 +29,9 @@ export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode 
         public readonly instance: SafeEc2Instance
     ) {
         super('')
+        this.parent.addChild(this)
         this.updateInstance(instance)
         this.id = this.InstanceId
-        this.parent.addChild(this)
     }
 
     public updateInstance(newInstance: SafeEc2Instance) {
