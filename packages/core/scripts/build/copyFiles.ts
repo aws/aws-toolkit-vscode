@@ -60,11 +60,14 @@ function copy(task: CopyTask): void {
         throw new Error(`Copy "${src}" to "${dst}" failed: ${error instanceof Error ? error.message : error}`)
     }
 }
-
-try {
-    tasks.map(copy)
-} catch (error) {
-    console.error('`copyFiles.ts` failed')
-    console.error(error)
-    process.exit(1)
+function main() {
+    try {
+        tasks.map(copy)
+    } catch (error) {
+        console.error('`copyFiles.ts` failed')
+        console.error(error)
+        process.exit(1)
+    }
 }
+
+void main()

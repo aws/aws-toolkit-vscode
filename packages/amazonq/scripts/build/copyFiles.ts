@@ -94,10 +94,14 @@ if (args.includes('--vueHr')) {
     console.log('Using Vue Hot Reload webpacks from core/')
 }
 
-try {
-    tasks.map(copy)
-} catch (error) {
-    console.error('`copyFiles.ts` failed')
-    console.error(error)
-    process.exit(1)
+function main() {
+    try {
+        tasks.map(copy)
+    } catch (error) {
+        console.error('`copyFiles.ts` failed')
+        console.error(error)
+        process.exit(1)
+    }
 }
+
+void main()
