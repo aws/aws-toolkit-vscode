@@ -18,7 +18,7 @@
 //
 
 import * as child_process from 'child_process'
-import * as nodefs from 'fs'
+import * as nodefs from 'fs' // eslint-disable-line no-restricted-imports
 import * as path from 'path'
 
 function parseArgs() {

@@ -4,7 +4,7 @@
  */
 
 import * as proc from 'child_process'
-import * as nodefs from 'fs'
+import * as nodefs from 'fs' // eslint-disable-line no-restricted-imports
 import * as path from 'path'
 
 const repoRoot = path.join(process.cwd(), '../../') // root/packages/toolkit -> root/

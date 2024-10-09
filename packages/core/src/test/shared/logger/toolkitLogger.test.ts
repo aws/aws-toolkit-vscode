@@ -4,7 +4,7 @@
  */
 
 import assert from 'assert'
-import * as fs from 'fs'
+import * as fs from 'fs' // eslint-disable-line no-restricted-imports
 import * as filesystemUtilities from '../../../shared/filesystemUtilities'
 import * as vscode from 'vscode'
 import { ToolkitLogger } from '../../../shared/logger/toolkitLogger'

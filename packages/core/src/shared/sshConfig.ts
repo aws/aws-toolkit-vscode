@@ -16,7 +16,7 @@ import { CancellationError } from './utilities/timeoutUtils'
 import { getSshConfigPath } from './extensions/ssh'
 import globals from './extensionGlobals'
 import { fileExists, readFileAsString } from './filesystemUtilities'
-import { chmodSync } from 'fs'
+import { chmodSync } from 'fs' // eslint-disable-line no-restricted-imports
 import fs from './fs/fs'
 
 const localize = nls.loadMessageBundle()

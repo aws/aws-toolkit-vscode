@@ -9,7 +9,7 @@ import { getLogger } from '../logger/logger'
 import { getIdeProperties } from '../extensionUtilities'
 import { activateExtension } from '../utilities/vsCodeUtils'
 import { AWS_SCHEME } from '../constants'
-import * as nodefs from 'fs'
+import * as nodefs from 'fs' // eslint-disable-line no-restricted-imports
 
 // sourced from https://github.com/redhat-developer/vscode-yaml/blob/3d82d61ea63d3e3a9848fe6b432f8f1f452c1bec/src/schema-extension-api.ts
 // removed everything that is not currently being used
