@@ -68,6 +68,7 @@ type OpenDiffMessage = {
     // currently the zip file path
     filePath: string
     deleted: boolean
+    codeGenerationId: string
 }
 
 type fileClickedMessage = {
@@ -409,7 +410,8 @@ export class FeatureDevController {
                 deletedFiles,
                 session.state.references ?? [],
                 tabID,
-                session.uploadId
+                session.uploadId,
+                session.state.codeGenerationId ?? ''
             )
 
             const remainingIterations = session.state.codeGenerationRemainingIterationCount
@@ -695,6 +697,7 @@ export class FeatureDevController {
 
     private async openDiff(message: OpenDiffMessage) {
         const tabId: string = message.tabID
+        const codeGenerationId: string = message.messageId
         const zipFilePath: string = message.filePath
         const session = await this.sessionStorage.getSession(tabId)
         telemetry.amazonq_isReviewedChanges.emit({
@@ -711,7 +714,11 @@ export class FeatureDevController {
             const name = path.basename(pathInfos.relativePath)
             await openDeletedDiff(pathInfos.absolutePath, name, tabId)
         } else {
-            const rightPath = path.join(session.uploadId, zipFilePath)
+            let uploadId = session.uploadId
+            if (session?.state?.uploadHistory && session.state.uploadHistory[codeGenerationId]) {
+                uploadId = session?.state?.uploadHistory[codeGenerationId].uploadId
+            }
+            const rightPath = path.join(uploadId, zipFilePath)
             await openDiff(pathInfos.absolutePath, rightPath, tabId)
         }
     }
