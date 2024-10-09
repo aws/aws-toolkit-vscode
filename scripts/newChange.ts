@@ -4,7 +4,7 @@
  */
 
 import * as child_process from 'child_process'
-import * as nodefs from 'fs'
+import * as nodefs from 'fs' // eslint-disable-line no-restricted-imports
 import { join } from 'path'
 import * as readlineSync from 'readline-sync'
 import * as crypto from 'crypto'

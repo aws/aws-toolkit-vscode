@@ -4,7 +4,7 @@
  */
 import * as vscode from 'vscode'
 import assert from 'assert'
-import nodefs from 'fs'
+import nodefs from 'fs' // eslint-disable-line no-restricted-imports
 import * as sinon from 'sinon'
 import * as path from 'path'
 import * as os from 'os'

@@ -5,7 +5,7 @@
 
 import webfont from 'webfont'
 import * as path from 'path'
-import * as nodefs from 'fs'
+import * as nodefs from 'fs' // eslint-disable-line no-restricted-imports
 
 const fontId = 'aws-toolkit-icons'
 const projectDir = process.cwd() // root/packages/toolkit

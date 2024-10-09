@@ -4,7 +4,7 @@
  */
 
 import { _Blob } from 'aws-sdk/clients/lambda'
-import { readFileSync } from 'fs'
+import { readFileSync } from 'fs' // eslint-disable-line no-restricted-imports
 import * as _ from 'lodash'
 import * as vscode from 'vscode'
 import { DefaultLambdaClient, LambdaClient } from '../../../shared/clients/lambdaClient'
