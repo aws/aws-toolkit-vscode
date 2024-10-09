@@ -17,7 +17,6 @@ import { getLogger } from '../../shared/logger'
 import { CodeWhispererCodeCoverageTracker } from '../../codewhisperer/tracker/codewhispererCodeCoverageTracker'
 import globals from '../../shared/extensionGlobals'
 import { session } from '../../codewhisperer/util/codeWhispererSession'
-import fs from 'fs'
 import { DefaultAWSClientBuilder, ServiceOptions } from '../../shared/awsClientBuilder'
 import { FakeAwsContext } from '../utilities/fakeAwsContext'
 import { Service } from 'aws-sdk'
@@ -25,6 +24,7 @@ import userApiConfig = require('./../../codewhisperer/client/user-service-2.json
 import CodeWhispererUserClient = require('../../codewhisperer/client/codewhispereruserclient')
 import { codeWhispererClient } from '../../codewhisperer/client/codewhisperer'
 import { RecommendationHandler } from '../../codewhisperer/service/recommendationHandler'
+import { Dirent } from 'fs' // eslint-disable-line no-restricted-imports
 
 export async function resetCodeWhispererGlobalVariables() {
     vsCodeState.isIntelliSenseActive = false
@@ -201,8 +201,8 @@ export function createCodeActionContext(): vscode.CodeActionContext {
     }
 }
 
-export function createMockDirentFile(fileName: string): fs.Dirent {
-    const dirent = new fs.Dirent()
+export function createMockDirentFile(fileName: string): Dirent {
+    const dirent = new Dirent()
     dirent.isFile = () => true
     dirent.name = fileName
     return dirent
