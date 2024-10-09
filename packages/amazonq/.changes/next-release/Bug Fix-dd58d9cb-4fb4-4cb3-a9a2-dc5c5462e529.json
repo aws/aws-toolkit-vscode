@@ -1,4 +1,4 @@
 {
 	"type": "Bug Fix",
-	"description": "Amazon Q (/dev): Allow end-user access history diff generated along iterations"
+	"description": "Amazon Q (/dev): view diffs of previous /dev iterations"
 }
