@@ -324,7 +324,13 @@ export class ZipManifest {
     hilCapabilities: string[] = ['HIL_1pDependency_VersionUpgrade']
     transformCapabilities: string[] = ['EXPLAINABILITY_V1']
     customBuildCommand: string = 'clean test'
-    sqlMetadataPath: string | undefined = undefined
+    customConversions: {
+        type: string | undefined
+        source: string | undefined
+        target: string | undefined
+        schema: string | undefined
+        host: string | undefined
+    } = { type: undefined, source: undefined, target: undefined, schema: undefined, host: undefined }
 }
 
 export interface IHilZipManifestParams {
@@ -388,6 +394,8 @@ export class TransformByQState {
     private sourceDB: DB | undefined = undefined
 
     private targetDB: DB | undefined = undefined
+
+    private sourceServerName: string = ''
 
     private metadataPathSQL: string = ''
 
@@ -484,6 +492,10 @@ export class TransformByQState {
 
     public getTargetDB() {
         return this.targetDB
+    }
+
+    public getSourceServerName() {
+        return this.sourceServerName
     }
 
     public getMetadataPathSQL() {
@@ -622,6 +634,10 @@ export class TransformByQState {
         this.targetDB = db
     }
 
+    public setSourceServerName(serverName: string) {
+        this.sourceServerName = serverName
+    }
+
     public setMetadataPathSQL(path: string) {
         this.metadataPathSQL = path
     }
@@ -705,6 +721,7 @@ export class TransformByQState {
         this.jobFailureMetadata = ''
         this.payloadFilePath = ''
         this.metadataPathSQL = ''
+        this.sourceServerName = ''
         this.errorLog = ''
         this.customBuildCommand = ''
         this.intervalId = undefined

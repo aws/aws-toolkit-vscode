@@ -352,7 +352,7 @@ export const newCustomizationMessage = 'You have access to new Amazon Q customiz
 // Start of QCT Strings
 
 // feature flag for SQL transformations
-export const isSQLTransformReady = false
+export const isSQLTransformReady = true
 
 export const uploadZipSizeLimitInBytes = 2000000000 // 2GB
 
@@ -508,13 +508,13 @@ export const invalidMetadataFileNoRulesJson =
     "Sorry, your metadata ZIP appears to be invalid; it does not contain an 'sct-rules.json' file."
 
 export const invalidMetadataFileUnsupportedSourceVendor = (vendor: string) =>
-    `Sorry, your metadata ZIP appears to be invalid; the source vendor is '${vendor}', but only 'Oracle' is supported.`
+    `Sorry, your metadata file appears to be invalid; the source vendor is '${vendor}', but only Oracle is supported.`
 
 export const invalidMetadataFileUnsupportedTargetVendor = (vendor: string) =>
-    `Sorry, your metadata ZIP appears to be invalid; the target vendor is '${vendor}', but only 'Amazon Aurora PostgreSQL' and 'Amazon RDS for PostgreSQL' are supported.`
+    `Sorry, your metadata file appears to be invalid; the target vendor is '${vendor}', but only Amazon Aurora PostgreSQL and Amazon RDS for PostgreSQL are supported.`
 
 export const invalidMetadataFileTargetVendorMismatch = (foundVendor: string, selectedVendor: string) =>
-    `Sorry, your metadata ZIP appears to be invalid; the target vendor is '${foundVendor}', but you previously selected a target vendor of '${selectedVendor}'.`
+    `Sorry, your metadata file appears to be invalid; the target vendor is '${foundVendor}', but you previously selected a target vendor of '${selectedVendor}'.`
 
 export const invalidMetadataFileUnknownIssueParsing =
     'Sorry, I had an issue parsing the metadata ZIP you provided; please make sure it is valid.'
