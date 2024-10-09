@@ -39,14 +39,14 @@ import { TreeNode } from '../treeview/resourceTreeDataProvider'
 import { SamAppLocation } from '../../awsService/appBuilder/explorer/samProject'
 import { ResourceNode } from '../../awsService/appBuilder/explorer/nodes/resourceNode'
 import { ToolkitError } from '../errors'
-import { registerBuild } from './build'
 import { runDeploy } from '../../lambda/commands/deploySamApplication'
 import { DataQuickPickItem, createQuickPick } from '../ui/pickerPrompter'
 import { createCommonButtons } from '../ui/buttons'
 import { samDeployUrl } from '../constants'
 import { OpenTemplateParams, OpenTemplateWizard } from '../../awsService/appBuilder/explorer/openTemplate'
 import { telemetry } from '../telemetry'
-import { Span, AppBuilderOpenTemplate, LambdaGoToHandler } from '../telemetry/telemetry.gen'
+import { AppBuilderOpenTemplate, LambdaGoToHandler, Span } from '../telemetry/telemetry.gen'
+import { runBuild } from './build'
 
 const sharedDetectSamCli = shared(detectSamCli)
 
@@ -122,7 +122,6 @@ export async function activate(ctx: ExtContext): Promise<void> {
         await resumeCreateNewSamApp(ctx)
     }
 
-    registerBuild()
     registerSync()
 }
 
@@ -139,6 +138,13 @@ async function registerCommands(ctx: ExtContext, settings: SamCliSettings): Prom
         Commands.register(
             { id: 'aws.pickAddSamDebugConfiguration', autoconnect: false },
             codelensUtils.pickAddSamDebugConfiguration
+        ),
+        Commands.register(
+            {
+                id: 'aws.appBuilder.build',
+                autoconnect: false,
+            },
+            async (arg?: TreeNode | undefined) => await telemetry.sam_build.run(async () => await runBuild(arg))
         ),
         Commands.register(
             { id: 'aws.deploySamApplication', autoconnect: true },

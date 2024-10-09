@@ -5,7 +5,6 @@
 
 import * as vscode from 'vscode'
 import { TemplateItem, createTemplatePrompter, getSamCliPathAndVersion, runInTerminal } from './sync'
-import { Commands } from '../vscode/commands2'
 import { ChildProcess } from '../utilities/processUtils'
 import { addTelemetryEnvVar } from './cli/samCliInvokerUtils'
 import { Wizard } from '../wizards/wizard'
@@ -18,7 +17,7 @@ import { CancellationError } from '../utilities/timeoutUtils'
 import { ToolkitError } from '../errors'
 import globals from '../extensionGlobals'
 import { TreeNode } from '../treeview/resourceTreeDataProvider'
-import { Span, SamBuild, telemetry } from '../telemetry/telemetry'
+import { telemetry } from '../telemetry/telemetry'
 import { getSpawnEnv } from '../env/resolveEnv'
 import { getProjectRoot, isDotnetRuntime } from './utils'
 import { getConfigFileUri, validateSamBuildConfig } from './config'
@@ -29,7 +28,7 @@ export interface BuildParams {
     readonly paramsSource: ParamsSource.Specify | ParamsSource.SamConfig | ParamsSource.DefaultValues
 }
 
-enum ParamsSource {
+export enum ParamsSource {
     Specify,
     SamConfig,
     DefaultValues,
@@ -208,62 +207,52 @@ async function getBuildFlags(
     }
 }
 
-export function registerBuild() {
-    async function runBuild(span: Span<SamBuild>, arg?: TreeNode): Promise<SamBuildResult> {
-        const source = arg ? 'AppBuilderBuild' : 'CommandPalette'
-        span.record({ source: source })
+export async function runBuild(arg?: TreeNode): Promise<SamBuildResult> {
+    const source = arg ? 'AppBuilderBuild' : 'CommandPalette'
+    telemetry.record({ source: source })
 
-        // Prepare Build params
-        const buildParams: Partial<BuildParams> = {}
+    // Prepare Build params
+    const buildParams: Partial<BuildParams> = {}
 
-        const registry = await globals.templateRegistry
-        const params = await new BuildWizard(buildParams, registry, arg).run()
-        if (params === undefined) {
-            throw new CancellationError('user')
-        }
+    const registry = await globals.templateRegistry
+    const params = await new BuildWizard(buildParams, registry, arg).run()
+    if (params === undefined) {
+        throw new CancellationError('user')
+    }
 
-        const projectRoot = params.projectRoot
+    const projectRoot = params.projectRoot
 
-        const defaultFlags: string[] = ['--cached', '--parallel', '--save-params', '--use-container']
-        const buildFlags: string[] = await getBuildFlags(params.paramsSource, projectRoot, defaultFlags)
+    const defaultFlags: string[] = ['--cached', '--parallel', '--save-params', '--use-container']
+    const buildFlags: string[] = await getBuildFlags(params.paramsSource, projectRoot, defaultFlags)
 
-        if (await isDotnetRuntime(params.template.uri)) {
-            buildFlags.push('--mount-with', 'WRITE')
-            if (!buildFlags.includes('--use-container')) {
-                buildFlags.push('--use-container')
-            }
-        }
-
-        const templatePath = params.template.uri.fsPath
-        buildFlags.push('--template', `${templatePath}`)
-
-        try {
-            const { path: samCliPath } = await getSamCliPathAndVersion()
-
-            // Create a child process to run the SAM build command
-            const buildProcess = new ChildProcess(samCliPath, ['build', ...buildFlags], {
-                spawnOptions: await addTelemetryEnvVar({
-                    cwd: params.projectRoot.fsPath,
-                    env: await getSpawnEnv(process.env),
-                }),
-            })
-
-            // Run SAM build in Terminal
-            await runInTerminal(buildProcess, 'build')
-
-            return {
-                isSuccess: true,
-            }
-        } catch (error) {
-            throw ToolkitError.chain(error, 'Failed to build SAM template', { details: { ...buildFlags } })
+    if (await isDotnetRuntime(params.template.uri)) {
+        buildFlags.push('--mount-with', 'WRITE')
+        if (!buildFlags.includes('--use-container')) {
+            buildFlags.push('--use-container')
         }
     }
 
-    Commands.register(
-        {
-            id: 'aws.appBuilder.build',
-            autoconnect: false,
-        },
-        async (arg?: TreeNode | undefined) => await telemetry.sam_build.run(async (span) => await runBuild(span, arg))
-    )
+    const templatePath = params.template.uri.fsPath
+    buildFlags.push('--template', `${templatePath}`)
+
+    try {
+        const { path: samCliPath } = await getSamCliPathAndVersion()
+
+        // Create a child process to run the SAM build command
+        const buildProcess = new ChildProcess(samCliPath, ['build', ...buildFlags], {
+            spawnOptions: await addTelemetryEnvVar({
+                cwd: params.projectRoot.fsPath,
+                env: await getSpawnEnv(process.env),
+            }),
+        })
+
+        // Run SAM build in Terminal
+        await runInTerminal(buildProcess, 'build')
+
+        return {
+            isSuccess: true,
+        }
+    } catch (error) {
+        throw ToolkitError.chain(error, 'Failed to build SAM template', { details: { ...buildFlags } })
+    }
 }
