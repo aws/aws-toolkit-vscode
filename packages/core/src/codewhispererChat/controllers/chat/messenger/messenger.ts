@@ -86,6 +86,7 @@ export class Messenger {
                     relatedSuggestions: undefined,
                     triggerID,
                     messageID: '',
+                    userIntent: undefined,
                 },
                 tabID
             )
@@ -193,6 +194,7 @@ export class Messenger {
                                     codeReference,
                                     triggerID,
                                     messageID,
+                                    userIntent: triggerPayload.userIntent,
                                 },
                                 tabID
                             )
@@ -269,6 +271,7 @@ export class Messenger {
                                 relatedSuggestions: undefined,
                                 triggerID,
                                 messageID,
+                                userIntent: triggerPayload.userIntent,
                             },
                             tabID
                         )
@@ -286,6 +289,7 @@ export class Messenger {
                                 relatedSuggestions,
                                 triggerID,
                                 messageID,
+                                userIntent: triggerPayload.userIntent,
                             },
                             tabID
                         )
@@ -302,6 +306,7 @@ export class Messenger {
                             relatedSuggestions: undefined,
                             triggerID,
                             messageID,
+                            userIntent: triggerPayload.userIntent,
                         },
                         tabID
                     )
@@ -425,6 +430,7 @@ export class Messenger {
                     relatedSuggestions: undefined,
                     triggerID,
                     messageID: 'static_message_' + triggerID,
+                    userIntent: undefined,
                 },
                 tabID
             )
