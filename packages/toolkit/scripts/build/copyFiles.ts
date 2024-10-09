@@ -4,7 +4,7 @@
  */
 
 /* eslint-disable no-restricted-imports */
-import { promises as fs } from 'fs'
+import fs from 'fs'
 import * as path from 'path'
 
 // Copies various dependencies into "dist/".
@@ -100,12 +100,12 @@ const tasks: CopyTask[] = [
     },
 ]
 
-async function copy(task: CopyTask): Promise<void> {
+function copy(task: CopyTask): void {
     const src = path.resolve(projectRoot, task.target)
     const dst = path.resolve(outRoot, task.destination ?? task.target)
 
     try {
-        await fs.cp(src, dst, {
+        fs.cpSync(src, dst, {
             recursive: true,
             force: true,
             errorOnExist: false,
@@ -115,12 +115,10 @@ async function copy(task: CopyTask): Promise<void> {
     }
 }
 
-void (async () => {
-    try {
-        await Promise.all(tasks.map(copy))
-    } catch (error) {
-        console.error('`copyFiles.ts` failed')
-        console.error(error)
-        process.exit(1)
-    }
-})()
+try {
+    tasks.map(copy)
+} catch (error) {
+    console.error('`copyFiles.ts` failed')
+    console.error(error)
+    process.exit(1)
+}

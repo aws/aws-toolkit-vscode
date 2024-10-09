@@ -4,7 +4,7 @@
  */
 
 /* eslint-disable no-restricted-imports */
-import { promises as fs } from 'fs'
+import fs from 'fs'
 import * as path from 'path'
 
 // Moves all dependencies into `dist`
@@ -73,12 +73,12 @@ const tasks: CopyTask[] = [
     },
 ]
 
-async function copy(task: CopyTask): Promise<void> {
+function copy(task: CopyTask): void {
     const src = path.resolve(projectRoot, task.target)
     const dst = path.resolve(outRoot, task.destination ?? task.target)
 
     try {
-        await fs.cp(src, dst, {
+        fs.cpSync(src, dst, {
             recursive: true,
             force: true,
             errorOnExist: false,
@@ -88,18 +88,16 @@ async function copy(task: CopyTask): Promise<void> {
     }
 }
 
-void (async () => {
-    const args = process.argv.slice(2)
-    if (args.includes('--vueHr')) {
-        vueHr = true
-        console.log('Using Vue Hot Reload webpacks from core/')
-    }
+const args = process.argv.slice(2)
+if (args.includes('--vueHr')) {
+    vueHr = true
+    console.log('Using Vue Hot Reload webpacks from core/')
+}
 
-    try {
-        await Promise.all(tasks.map(copy))
-    } catch (error) {
-        console.error('`copyFiles.ts` failed')
-        console.error(error)
-        process.exit(1)
-    }
-})()
+try {
+    tasks.map(copy)
+} catch (error) {
+    console.error('`copyFiles.ts` failed')
+    console.error(error)
+    process.exit(1)
+}
