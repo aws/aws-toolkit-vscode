@@ -182,7 +182,7 @@ module.exports = {
                     },
                     {
                         name: 'fs',
-                        message: 'Avoid fs and use shared/fs/fs.ts when possible.',
+                        message: 'Avoid node:fs and use shared/fs/fs.ts when possible.',
                     },
                 ],
             },
