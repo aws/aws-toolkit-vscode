@@ -68,7 +68,7 @@ export interface Manifest {
 }
 const manifestUrl = 'https://aws-toolkit-language-servers.amazonaws.com/q-context/manifest.json'
 // this LSP client in Q extension is only going to work with these LSP server versions
-const supportedLspServerVersions = ['0.1.9']
+const supportedLspServerVersions = ['0.1.13']
 
 const nodeBinName = process.platform === 'win32' ? 'node.exe' : 'node'
 /*
@@ -285,7 +285,7 @@ export class LspController {
         const resp: RelevantTextDocument[] = []
         chunks?.forEach((chunk) => {
             const text = chunk.context ? chunk.context : chunk.content
-            if (chunk.programmingLanguage) {
+            if (chunk.programmingLanguage && chunk.programmingLanguage !== 'unknown') {
                 resp.push({
                     text: text,
                     relativeFilePath: chunk.relativePath ? chunk.relativePath : path.basename(chunk.filePath),
