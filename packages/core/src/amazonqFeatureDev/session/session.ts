@@ -130,6 +130,7 @@ export class Session {
             fs: this.config.fs,
             messenger: this.messenger,
             telemetry: this.telemetry,
+            uploadHistory: this.state.uploadHistory,
         })
 
         if (resp.nextState) {

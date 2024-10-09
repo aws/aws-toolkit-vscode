@@ -27,10 +27,10 @@ const mockSessionStateAction = (msg?: string): SessionStateAction => {
             new AppToWebViewMessageDispatcher(new MessagePublisher<any>(new vscode.EventEmitter<any>()))
         ),
         telemetry: new TelemetryHelper(),
+        uploadHistory: {},
     }
 }
 
-let mockGeneratePlan: sinon.SinonStub
 let mockGetCodeGeneration: sinon.SinonStub
 let mockExportResultArchive: sinon.SinonStub
 let mockCreateUploadUrl: sinon.SinonStub
@@ -49,7 +49,6 @@ const mockSessionStateConfig = ({
     proxyClient: {
         createConversation: () => sinon.stub(),
         createUploadUrl: () => mockCreateUploadUrl(),
-        generatePlan: () => mockGeneratePlan(),
         startCodeGeneration: () => sinon.stub(),
         getCodeGeneration: () => mockGetCodeGeneration(),
         exportResultArchive: () => mockExportResultArchive(),
@@ -111,7 +110,7 @@ describe('sessionState', () => {
             mockExportResultArchive = sinon.stub().resolves({ newFileContents: [], deletedFiles: [], references: [] })
 
             const testAction = mockSessionStateAction()
-            const state = new CodeGenState(testConfig, [], [], [], tabId, 0, 2, 3)
+            const state = new CodeGenState(testConfig, [], [], [], tabId, 0, {}, 2, 3)
             const result = await state.interact(testAction)
 
             const nextState = new PrepareCodeGenState(testConfig, [], [], [], tabId, 1, 2, 3)
@@ -125,7 +124,7 @@ describe('sessionState', () => {
         it('fails when codeGenerationStatus failed ', async () => {
             mockGetCodeGeneration = sinon.stub().rejects(new ToolkitError('Code generation failed'))
             const testAction = mockSessionStateAction()
-            const state = new CodeGenState(testConfig, [], [], [], tabId, 0)
+            const state = new CodeGenState(testConfig, [], [], [], tabId, 0, {})
             try {
                 await state.interact(testAction)
                 assert.fail('failed code generations should throw an error')
