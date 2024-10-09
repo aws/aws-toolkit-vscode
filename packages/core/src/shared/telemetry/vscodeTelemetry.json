@@ -356,11 +356,6 @@
             "name": "amazonqMessageDisplayedMs",
             "type": "int",
             "description": "Duration between the partner teams code receiving the message and when the message was finally displayed in ms"
-        },
-        {
-            "name": "scenario",
-            "type": "string",
-            "description": "Scenarios to count in telemetry"
         }
     ],
     "metrics": [
@@ -1261,28 +1256,6 @@
                 {
                     "type": "proxiedSessionId",
                     "required": false
-                }
-            ]
-        },
-        {
-            "name": "toolkit_trackScenario",
-            "description": "Count how many times a scenario is reached.",
-            "unit": "Count",
-            "metadata": [
-                {
-                    "type": "amazonqConversationId",
-                    "required": true
-                },
-                {
-                    "type": "count"
-                },
-                {
-                    "type": "credentialStartUrl",
-                    "required": false
-                },
-                {
-                    "type": "scenario",
-                    "required": true
                 }
             ]
         }
