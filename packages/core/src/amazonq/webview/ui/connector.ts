@@ -25,6 +25,16 @@ export interface CodeReference {
     }
 }
 
+export interface UploadHistory {
+    [key: string]: {
+        uploadId: string
+        timestamp: number
+        tabId: string
+        filePaths: DiffTreeFileInfo[]
+        deletedFiles: DiffTreeFileInfo[]
+    }
+}
+
 export interface ChatPayload {
     chatMessage: string
     chatCommand?: string
@@ -366,10 +376,10 @@ export class Connector {
         }
     }
 
-    onOpenDiff = (tabID: string, filePath: string, deleted: boolean): void => {
+    onOpenDiff = (tabID: string, filePath: string, deleted: boolean, messageId?: string): void => {
         switch (this.tabsStorage.getTab(tabID)?.type) {
             case 'featuredev':
-                this.featureDevChatConnector.onOpenDiff(tabID, filePath, deleted)
+                this.featureDevChatConnector.onOpenDiff(tabID, filePath, deleted, messageId)
                 break
         }
     }

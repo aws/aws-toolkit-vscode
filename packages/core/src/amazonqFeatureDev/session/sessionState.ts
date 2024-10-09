@@ -36,7 +36,7 @@ import {
 import { prepareRepoData } from '../util/files'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { uploadCode } from '../util/upload'
-import { CodeReference } from '../../amazonq/webview/ui/connector'
+import { CodeReference, UploadHistory } from '../../amazonq/webview/ui/connector'
 import { isPresent } from '../../shared/utilities/collectionUtils'
 import { AuthUtil } from '../../codewhisperer/util/authUtil'
 import { randomUUID } from '../../shared/crypto'
@@ -261,6 +261,7 @@ export class CodeGenState extends CodeGenBase implements SessionState {
         public references: CodeReference[],
         tabID: string,
         private currentIteration: number,
+        public uploadHistory: UploadHistory,
         public codeGenerationRemainingIterationCount?: number,
         public codeGenerationTotalIterationCount?: number
     ) {
@@ -308,6 +309,16 @@ export class CodeGenState extends CodeGenBase implements SessionState {
                 this.codeGenerationRemainingIterationCount = codeGeneration.codeGenerationRemainingIterationCount
                 this.codeGenerationTotalIterationCount = codeGeneration.codeGenerationTotalIterationCount
 
+                if (action.uploadHistory && !action.uploadHistory[codeGenerationId] && codeGenerationId) {
+                    action.uploadHistory[codeGenerationId] = {
+                        timestamp: Date.now(),
+                        uploadId: this.config.uploadId,
+                        filePaths: codeGeneration.newFiles,
+                        deletedFiles: codeGeneration.deletedFiles,
+                        tabId: this.tabID,
+                    }
+                }
+
                 action.telemetry.setAmazonqNumberOfReferences(this.references.length)
                 action.telemetry.recordUserCodeGenerationTelemetry(span, this.conversationId)
                 const nextState = new PrepareCodeGenState(
@@ -318,7 +329,9 @@ export class CodeGenState extends CodeGenBase implements SessionState {
                     this.tabID,
                     this.currentIteration + 1,
                     this.codeGenerationRemainingIterationCount,
-                    this.codeGenerationTotalIterationCount
+                    this.codeGenerationTotalIterationCount,
+                    action.uploadHistory,
+                    codeGenerationId
                 )
                 return {
                     nextState,
@@ -338,6 +351,7 @@ export class MockCodeGenState implements SessionState {
     public filePaths: NewFileInfo[]
     public deletedFiles: DeletedFileInfo[]
     public readonly conversationId: string
+    public readonly codeGenerationId?: string
     public readonly uploadId: string
 
     constructor(
@@ -384,7 +398,8 @@ export class MockCodeGenState implements SessionState {
                     },
                 ],
                 this.tabID,
-                this.uploadId
+                this.uploadId,
+                this.codeGenerationId ?? ''
             )
             action.messenger.sendAnswer({
                 message: undefined,
@@ -431,11 +446,15 @@ export class PrepareCodeGenState implements SessionState {
         public tabID: string,
         private currentIteration: number,
         public codeGenerationRemainingIterationCount?: number,
-        public codeGenerationTotalIterationCount?: number
+        public codeGenerationTotalIterationCount?: number,
+        public uploadHistory: UploadHistory = {},
+        public codeGenerationId?: string
     ) {
         this.tokenSource = new vscode.CancellationTokenSource()
         this.uploadId = config.uploadId
         this.conversationId = config.conversationId
+        this.uploadHistory = uploadHistory
+        this.codeGenerationId = codeGenerationId
     }
 
     updateWorkspaceRoot(workspaceRoot: string) {
@@ -490,7 +509,8 @@ export class PrepareCodeGenState implements SessionState {
             this.deletedFiles,
             this.references,
             this.tabID,
-            this.currentIteration
+            this.currentIteration,
+            this.uploadHistory
         )
         return nextState.interact(action)
     }
