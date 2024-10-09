@@ -20,6 +20,7 @@ import {
     SelectedFolderNotInWorkspaceFolderError,
     TabIdNotFoundError,
     UploadCodeError,
+    UploadURLExpired,
     UserMessageNotFoundError,
     WorkspaceFolderNotFoundError,
     ZipFileError,
@@ -278,6 +279,14 @@ export class FeatureDevController {
                             status: 'success',
                         },
                     ],
+                })
+                break
+            case UploadURLExpired.errorName:
+                this.messenger.sendAnswer({
+                    type: 'answer',
+                    tabID: message.tabID,
+                    message: err.message,
+                    canBeVoted: true,
                 })
                 break
             default:
