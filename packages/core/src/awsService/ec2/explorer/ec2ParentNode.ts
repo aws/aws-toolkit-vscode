@@ -57,7 +57,7 @@ export class Ec2ParentNode extends AWSTreeNodeBase {
         if (childNode) {
             return childNode
         } else {
-            throw new Error(`Node with id ${instanceId} not found`)
+            throw new Error(`Node with id ${instanceId} from polling set not found`)
         }
     }
 

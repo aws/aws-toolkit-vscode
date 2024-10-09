@@ -17,16 +17,13 @@ import { EC2 } from 'aws-sdk'
 import { AsyncCollection } from '../../../../shared/utilities/asyncCollection'
 import * as FakeTimers from '@sinonjs/fake-timers'
 import { installFakeClock } from '../../../testUtil'
-import { PollingSet } from '../../../../shared/utilities/pollingSet'
 
 describe('ec2ParentNode', function () {
     let testNode: Ec2ParentNode
-    let defaultInstances: SafeEc2Instance[]
     let client: Ec2Client
     let getInstanceStub: sinon.SinonStub<[filters?: EC2.Filter[] | undefined], Promise<AsyncCollection<EC2.Instance>>>
     let clock: FakeTimers.InstalledClock
     let refreshStub: sinon.SinonStub<[], Promise<void>>
-    let clearTimerStub: sinon.SinonStub<[], void>
 
     const testRegion = 'testRegion'
     const testPartition = 'testPartition'
@@ -45,32 +42,12 @@ describe('ec2ParentNode', function () {
         client = new Ec2Client(testRegion)
         clock = installFakeClock()
         refreshStub = sinon.stub(Ec2InstanceNode.prototype, 'refreshNode')
-        clearTimerStub = sinon.stub(PollingSet.prototype, 'clearTimer')
-        defaultInstances = [
-            { Name: 'firstOne', InstanceId: '0', LastSeenStatus: 'running' },
-            { Name: 'secondOne', InstanceId: '1', LastSeenStatus: 'running' },
-        ]
     })
 
     beforeEach(function () {
         getInstanceStub = sinon.stub(Ec2Client.prototype, 'getInstances')
-        defaultInstances = [
-            { Name: 'firstOne', InstanceId: '0', LastSeenStatus: 'running' },
-            { Name: 'secondOne', InstanceId: '1', LastSeenStatus: 'stopped' },
-        ]
-
-        getInstanceStub.callsFake(async () =>
-            intoCollection(
-                defaultInstances.map((instance) => ({
-                    InstanceId: instance.InstanceId,
-                    Tags: [{ Key: 'Name', Value: instance.Name }],
-                }))
-            )
-        )
-
         testNode = new Ec2ParentNode(testRegion, testPartition, client)
         refreshStub.resetHistory()
-        clearTimerStub.resetHistory()
     })
 
     afterEach(function () {
@@ -91,10 +68,14 @@ describe('ec2ParentNode', function () {
     })
 
     it('has instance child nodes', async function () {
-        getInstanceStub.resolves(mapToInstanceCollection(defaultInstances))
+        const instances = [
+            { Name: 'firstOne', InstanceId: '0', LastSeenStatus: 'running' },
+            { Name: 'secondOne', InstanceId: '1', LastSeenStatus: 'stopped' },
+        ]
+        getInstanceStub.resolves(mapToInstanceCollection(instances))
         const childNodes = await testNode.getChildren()
 
-        assert.strictEqual(childNodes.length, defaultInstances.length, 'Unexpected child count')
+        assert.strictEqual(childNodes.length, instances.length, 'Unexpected child count')
 
         childNodes.forEach((node) =>
             assert.ok(node instanceof Ec2InstanceNode, 'Expected child node to be Ec2InstanceNode')
