@@ -41,6 +41,13 @@ export class Ec2ParentNode extends AWSTreeNodeBase {
         })
     }
 
+    public trackPendingNode(instanceId: string) {
+        if (!this.ec2InstanceNodes.has(instanceId)) {
+            throw new Error(`Attempt to track ec2 node ${instanceId} that isn't a child`)
+        }
+        this.pollingSet.start(instanceId)
+    }
+
     public async updateChildren(): Promise<void> {
         const ec2Instances = await (await this.ec2Client.getInstances()).toMap((instance) => instance.InstanceId)
         updateInPlace(
@@ -78,6 +85,10 @@ export class Ec2ParentNode extends AWSTreeNodeBase {
 
     public async clearChildren() {
         this.ec2InstanceNodes = new Map<string, Ec2InstanceNode>()
+    }
+
+    public addChild(node: Ec2InstanceNode) {
+        this.ec2InstanceNodes.set(node.InstanceId, node)
     }
 
     public async refreshNode(): Promise<void> {
