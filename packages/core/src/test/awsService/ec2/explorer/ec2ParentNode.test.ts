@@ -24,7 +24,6 @@ describe('ec2ParentNode', function () {
     let getInstanceStub: sinon.SinonStub<[filters?: EC2.Filter[] | undefined], Promise<AsyncCollection<EC2.Instance>>>
     let clock: FakeTimers.InstalledClock
     let refreshStub: sinon.SinonStub<[], Promise<void>>
-    let updateStatusStub: sinon.SinonStub<[], Promise<void>>
     const testRegion = 'testRegion'
     const testPartition = 'testPartition'
 
@@ -42,7 +41,7 @@ describe('ec2ParentNode', function () {
         client = new Ec2Client(testRegion)
         clock = installFakeClock()
         refreshStub = sinon.stub(Ec2InstanceNode.prototype, 'refreshNode')
-        updateStatusStub = sinon.stub(Ec2InstanceNode.prototype, 'updateStatus')
+        sinon.stub(Ec2InstanceNode.prototype, 'updateStatus')
     })
 
     beforeEach(function () {
