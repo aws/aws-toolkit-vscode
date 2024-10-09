@@ -13,7 +13,6 @@ import { CodewhispererLanguage, telemetry } from '../../shared/telemetry/telemet
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { AuthUtil } from '../util/authUtil'
-import { CodeWhispererUserGroupSettings } from '../util/userGroupUtil'
 import { getSelectedCustomization } from '../util/customizationUtil'
 import { codeWhispererClient as client } from '../client/codewhisperer'
 import { isAwsError } from '../../shared/errors'
@@ -134,7 +133,6 @@ export class CodeWhispererCodeCoverageTracker {
             codewhispererSuggestedTokens: acceptedTokens,
             codewhispererPercentage: percentage ? percentage : 0,
             successCount: this._serviceInvocationCount,
-            codewhispererUserGroup: CodeWhispererUserGroupSettings.getUserGroup().toString(),
             codewhispererCustomizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
             credentialStartUrl: AuthUtil.instance.startUrl,
         })
