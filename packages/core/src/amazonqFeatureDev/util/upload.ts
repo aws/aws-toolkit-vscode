@@ -42,6 +42,6 @@ export async function uploadCode(url: string, buffer: Buffer, checksumSha256: st
                     )
             }
         }
-        throw new ToolkitError(i18n('AWS.amazonq.featureDev.error.codeGen.default'))
+        throw ToolkitError.chain(e, i18n('AWS.amazonq.featureDev.error.codeGen.default'))
     }
 }
