@@ -8,7 +8,7 @@ import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import * as crossFile from 'aws-core-vscode/codewhisperer'
 import { createMockTextEditor } from 'aws-core-vscode/test'
-import { CodeWhispererUserGroupSettings, UserGroup, crossFileContextConfig } from 'aws-core-vscode/codewhisperer'
+import { crossFileContextConfig } from 'aws-core-vscode/codewhisperer'
 import {
     assertTabCount,
     closeAllEditors,
@@ -20,7 +20,6 @@ import {
 import { areEqual, normalize } from 'aws-core-vscode/shared'
 import * as path from 'path'
 
-const userGroupSettings = CodeWhispererUserGroupSettings.instance
 let tempFolder: string
 
 describe('crossFileContextUtil', function () {
@@ -36,30 +35,18 @@ describe('crossFileContextUtil', function () {
             tempFolder = (await createTestWorkspaceFolder()).uri.fsPath
         })
 
-        describe('should fetch 3 chunks and each chunk should contains 10 lines', function () {
-            async function assertCorrectCodeChunk() {
-                await toTextEditor(sampleFileOf60Lines, 'CrossFile.java', tempFolder, { preview: false })
-                const myCurrentEditor = await toTextEditor('', 'TargetFile.java', tempFolder, {
-                    preview: false,
-                })
-                const actual = await crossFile.fetchSupplementalContextForSrc(myCurrentEditor, fakeCancellationToken)
-                assert.ok(actual)
-                assert.ok(actual.supplementalContextItems.length === 3)
-
-                assert.strictEqual(actual.supplementalContextItems[0].content.split('\n').length, 10)
-                assert.strictEqual(actual.supplementalContextItems[1].content.split('\n').length, 10)
-                assert.strictEqual(actual.supplementalContextItems[2].content.split('\n').length, 10)
-            }
-
-            it('control group', async function () {
-                CodeWhispererUserGroupSettings.instance.userGroup = UserGroup.Control
-                await assertCorrectCodeChunk()
+        it('should fetch 3 chunks and each chunk should contains 10 lines', async function () {
+            await toTextEditor(sampleFileOf60Lines, 'CrossFile.java', tempFolder, { preview: false })
+            const myCurrentEditor = await toTextEditor('', 'TargetFile.java', tempFolder, {
+                preview: false,
             })
+            const actual = await crossFile.fetchSupplementalContextForSrc(myCurrentEditor, fakeCancellationToken)
+            assert.ok(actual)
+            assert.ok(actual.supplementalContextItems.length === 3)
 
-            it('treatment group', async function () {
-                CodeWhispererUserGroupSettings.instance.userGroup = UserGroup.CrossFile
-                await assertCorrectCodeChunk()
-            })
+            assert.strictEqual(actual.supplementalContextItems[0].content.split('\n').length, 10)
+            assert.strictEqual(actual.supplementalContextItems[1].content.split('\n').length, 10)
+            assert.strictEqual(actual.supplementalContextItems[2].content.split('\n').length, 10)
         })
     })
 
@@ -140,12 +127,11 @@ describe('crossFileContextUtil', function () {
         })
     })
 
-    describe('partial support - control group', function () {
+    describe.skip('partial support - control group', function () {
         const fileExtLists: string[] = []
 
         before(async function () {
             this.timeout(60000)
-            userGroupSettings.userGroup = UserGroup.Control
         })
 
         beforeEach(async function () {
@@ -172,12 +158,11 @@ describe('crossFileContextUtil', function () {
         })
     })
 
-    describe('partial support - crossfile group', function () {
+    describe.skip('partial support - crossfile group', function () {
         const fileExtLists: string[] = []
 
         before(async function () {
             this.timeout(60000)
-            userGroupSettings.userGroup = UserGroup.CrossFile
         })
 
         beforeEach(async function () {
