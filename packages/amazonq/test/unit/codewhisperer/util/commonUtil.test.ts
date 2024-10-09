@@ -4,7 +4,11 @@
  */
 
 import assert from 'assert'
-import { checkLeftContextKeywordsForJsonAndYaml, getPrefixSuffixOverlap } from 'aws-core-vscode/codewhisperer'
+import {
+    JsonConfigFileNamingConvention,
+    checkLeftContextKeywordsForJson,
+    getPrefixSuffixOverlap,
+} from 'aws-core-vscode/codewhisperer'
 
 describe('commonUtil', function () {
     describe('getPrefixSuffixOverlap', function () {
@@ -31,29 +35,47 @@ describe('commonUtil', function () {
         })
     })
 
-    describe('checkLeftContextKeywordsForJsonAndYaml', function () {
+    describe('checkLeftContextKeywordsForJson', function () {
         it('Should return true for valid left context keywords', async function () {
             assert.strictEqual(
-                checkLeftContextKeywordsForJsonAndYaml('Create an S3 Bucket named CodeWhisperer', 'json'),
-                true
-            )
-            assert.strictEqual(
-                checkLeftContextKeywordsForJsonAndYaml('Create an S3 Bucket named CodeWhisperer', 'yaml'),
+                checkLeftContextKeywordsForJson('foo.json', 'Create an S3 Bucket named CodeWhisperer', 'json'),
                 true
             )
         })
         it('Should return false for invalid left context keywords', async function () {
             assert.strictEqual(
-                checkLeftContextKeywordsForJsonAndYaml('Create an S3 Bucket named CodeWhisperer in cfn', 'yaml'),
-                false
-            )
-            assert.strictEqual(
-                checkLeftContextKeywordsForJsonAndYaml(
+                checkLeftContextKeywordsForJson(
+                    'foo.json',
                     'Create an S3 Bucket named CodeWhisperer in Cloudformation',
                     'json'
                 ),
                 false
             )
         })
+
+        for (const jsonConfigFile of JsonConfigFileNamingConvention) {
+            it(`should evalute by filename ${jsonConfigFile}`, function () {
+                assert.strictEqual(checkLeftContextKeywordsForJson(jsonConfigFile, 'foo', 'json'), false)
+
+                assert.strictEqual(checkLeftContextKeywordsForJson(jsonConfigFile.toUpperCase(), 'bar', 'json'), false)
+
+                assert.strictEqual(checkLeftContextKeywordsForJson(jsonConfigFile.toUpperCase(), 'baz', 'json'), false)
+            })
+
+            const upperCaseFilename = jsonConfigFile.toUpperCase()
+            it(`should evalute by filename and case insensitive ${upperCaseFilename}`, function () {
+                assert.strictEqual(checkLeftContextKeywordsForJson(upperCaseFilename, 'foo', 'json'), false)
+
+                assert.strictEqual(
+                    checkLeftContextKeywordsForJson(upperCaseFilename.toUpperCase(), 'bar', 'json'),
+                    false
+                )
+
+                assert.strictEqual(
+                    checkLeftContextKeywordsForJson(upperCaseFilename.toUpperCase(), 'baz', 'json'),
+                    false
+                )
+            })
+        }
     })
 })
