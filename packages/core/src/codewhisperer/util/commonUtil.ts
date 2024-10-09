@@ -7,7 +7,11 @@ import * as vscode from 'vscode'
 import * as semver from 'semver'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { getInlineSuggestEnabled } from '../../shared/utilities/editorUtilities'
-import { AWSTemplateCaseInsensitiveKeyWords, AWSTemplateKeyWords } from '../models/constants'
+import {
+    AWSTemplateCaseInsensitiveKeyWords,
+    AWSTemplateKeyWords,
+    JsonConfigFileNamingConvention,
+} from '../models/constants'
 
 export function getLocalDatetime() {
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
@@ -61,11 +65,12 @@ export function getPrefixSuffixOverlap(firstString: string, secondString: string
     return secondString.slice(0, i)
 }
 
-export function checkLeftContextKeywordsForJsonAndYaml(leftFileContent: string, language: string): boolean {
+export function checkLeftContextKeywordsForJson(fileName: string, leftFileContent: string, language: string): boolean {
     if (
-        (language === 'json' || language === 'yaml') &&
+        language === 'json' &&
         !AWSTemplateKeyWords.some((substring) => leftFileContent.includes(substring)) &&
-        !AWSTemplateCaseInsensitiveKeyWords.some((substring) => leftFileContent.toLowerCase().includes(substring))
+        !AWSTemplateCaseInsensitiveKeyWords.some((substring) => leftFileContent.toLowerCase().includes(substring)) &&
+        !JsonConfigFileNamingConvention.has(fileName.toLowerCase())
     ) {
         return true
     }

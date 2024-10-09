@@ -22,6 +22,20 @@ export const AWSTemplateKeyWords = ['AWSTemplateFormatVersion', 'Resources', 'AW
 
 export const AWSTemplateCaseInsensitiveKeyWords = ['cloudformation', 'cfn', 'template', 'description']
 
+export const JsonConfigFileNamingConvention = new Set([
+    'app.json',
+    'appsettings.json',
+    'bower.json',
+    'composer.json',
+    'db.json',
+    'manifest.json',
+    'package.json',
+    'schema.json',
+    'settings.json',
+    'tsconfig.json',
+    'vcpkg.json',
+])
+
 export const normalTextChangeRegex = /[A-Za-z0-9]/g
 
 export const autoSuggestionConfig = {
