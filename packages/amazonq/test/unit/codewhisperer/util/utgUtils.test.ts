@@ -5,43 +5,32 @@
 
 import assert from 'assert'
 import * as utgUtils from 'aws-core-vscode/codewhisperer'
-import { UserGroup } from 'aws-core-vscode/codewhisperer'
 
 describe('shouldFetchUtgContext', () => {
     it('fully supported language', function () {
-        assert.ok(utgUtils.shouldFetchUtgContext('java', UserGroup.Control))
-        assert.ok(utgUtils.shouldFetchUtgContext('java', UserGroup.CrossFile))
+        assert.ok(utgUtils.shouldFetchUtgContext('java'))
     })
 
     it('partially supported language', () => {
-        assert.strictEqual(utgUtils.shouldFetchUtgContext('python', UserGroup.Control), false)
-        assert.strictEqual(utgUtils.shouldFetchUtgContext('python', UserGroup.CrossFile), true)
+        assert.strictEqual(utgUtils.shouldFetchUtgContext('python'), false)
     })
 
     it('not supported language', () => {
-        assert.strictEqual(utgUtils.shouldFetchUtgContext('typescript', UserGroup.Control), undefined)
-        assert.strictEqual(utgUtils.shouldFetchUtgContext('typescript', UserGroup.CrossFile), undefined)
+        assert.strictEqual(utgUtils.shouldFetchUtgContext('typescript'), undefined)
 
-        assert.strictEqual(utgUtils.shouldFetchUtgContext('javascript', UserGroup.Control), undefined)
-        assert.strictEqual(utgUtils.shouldFetchUtgContext('javascript', UserGroup.CrossFile), undefined)
+        assert.strictEqual(utgUtils.shouldFetchUtgContext('javascript'), undefined)
 
-        assert.strictEqual(utgUtils.shouldFetchUtgContext('javascriptreact', UserGroup.Control), undefined)
-        assert.strictEqual(utgUtils.shouldFetchUtgContext('javascriptreact', UserGroup.CrossFile), undefined)
+        assert.strictEqual(utgUtils.shouldFetchUtgContext('javascriptreact'), undefined)
 
-        assert.strictEqual(utgUtils.shouldFetchUtgContext('typescriptreact', UserGroup.Control), undefined)
-        assert.strictEqual(utgUtils.shouldFetchUtgContext('typescriptreact', UserGroup.CrossFile), undefined)
+        assert.strictEqual(utgUtils.shouldFetchUtgContext('typescriptreact'), undefined)
 
-        assert.strictEqual(utgUtils.shouldFetchUtgContext('scala', UserGroup.Control), undefined)
-        assert.strictEqual(utgUtils.shouldFetchUtgContext('scala', UserGroup.CrossFile), undefined)
+        assert.strictEqual(utgUtils.shouldFetchUtgContext('scala'), undefined)
 
-        assert.strictEqual(utgUtils.shouldFetchUtgContext('shellscript', UserGroup.Control), undefined)
-        assert.strictEqual(utgUtils.shouldFetchUtgContext('shellscript', UserGroup.CrossFile), undefined)
+        assert.strictEqual(utgUtils.shouldFetchUtgContext('shellscript'), undefined)
 
-        assert.strictEqual(utgUtils.shouldFetchUtgContext('csharp', UserGroup.Control), undefined)
-        assert.strictEqual(utgUtils.shouldFetchUtgContext('csharp', UserGroup.CrossFile), undefined)
+        assert.strictEqual(utgUtils.shouldFetchUtgContext('csharp'), undefined)
 
-        assert.strictEqual(utgUtils.shouldFetchUtgContext('c', UserGroup.Control), undefined)
-        assert.strictEqual(utgUtils.shouldFetchUtgContext('c', UserGroup.CrossFile), undefined)
+        assert.strictEqual(utgUtils.shouldFetchUtgContext('c'), undefined)
     })
 })
 

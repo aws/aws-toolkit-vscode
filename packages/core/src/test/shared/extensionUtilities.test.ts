@@ -18,10 +18,20 @@ import { InstanceIdentity } from '../../shared/clients/ec2MetadataClient'
 import { extensionVersion } from '../../shared/vscode/env'
 import { sleep } from '../../shared/utilities/timeoutUtils'
 import globals from '../../shared/extensionGlobals'
-import { createQuickStartWebview } from '../../shared/extensionStartup'
+import { createQuickStartWebview, maybeShowMinVscodeWarning } from '../../shared/extensionStartup'
 import { fs } from '../../shared'
+import { getTestWindow } from './vscode/window'
 
 describe('extensionUtilities', function () {
+    it('maybeShowMinVscodeWarning', async () => {
+        const testVscodeVersion = '99.0.0'
+        await maybeShowMinVscodeWarning(testVscodeVersion)
+        const expectedMsg =
+            /will soon require .* 99\.0\.0 or newer. The currently running version .* will no longer receive updates./
+        const msg = await getTestWindow().waitForMessage(expectedMsg)
+        msg.close()
+    })
+
     describe('createQuickStartWebview', async function () {
         let context: FakeExtensionContext
         let tempDir: string | undefined

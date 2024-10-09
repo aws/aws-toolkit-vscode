@@ -8,9 +8,8 @@ import { fs } from '../../../shared'
 import path = require('path')
 import { BM25Document, BM25Okapi } from './rankBm25'
 import { ToolkitError } from '../../../shared/errors'
-import { UserGroup, crossFileContextConfig, supplemetalContextFetchingTimeoutMsg } from '../../models/constants'
+import { crossFileContextConfig, supplemetalContextFetchingTimeoutMsg } from '../../models/constants'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
-import { CodeWhispererUserGroupSettings } from '../userGroupUtil'
 import { isTestFile } from './codeParsingUtil'
 import { getFileDistance } from '../../../shared/filesystemUtilities'
 import { getOpenFilesInWindow } from '../../../shared/utilities/editorUtilities'
@@ -52,10 +51,7 @@ export async function fetchSupplementalContextForSrc(
     editor: vscode.TextEditor,
     cancellationToken: vscode.CancellationToken
 ): Promise<Pick<CodeWhispererSupplementalContext, 'supplementalContextItems' | 'strategy'> | undefined> {
-    const shouldProceed = shouldFetchCrossFileContext(
-        editor.document.languageId,
-        CodeWhispererUserGroupSettings.instance.userGroup
-    )
+    const shouldProceed = shouldFetchCrossFileContext(editor.document.languageId)
 
     if (!shouldProceed) {
         return shouldProceed === undefined
@@ -155,10 +151,7 @@ function getInputChunk(editor: vscode.TextEditor, chunkSize: number) {
  * @returns specifically returning undefined if the langueage is not supported,
  * otherwise true/false depending on if the language is fully supported or not belonging to the user group
  */
-function shouldFetchCrossFileContext(
-    languageId: vscode.TextDocument['languageId'],
-    userGroup: UserGroup
-): boolean | undefined {
+function shouldFetchCrossFileContext(languageId: vscode.TextDocument['languageId']): boolean | undefined {
     if (!isCrossFileSupported(languageId)) {
         return undefined
     }

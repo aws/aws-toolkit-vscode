@@ -18,8 +18,6 @@ import { ToolkitError } from '../../../shared/errors'
 import { supplemetalContextFetchingTimeoutMsg } from '../../models/constants'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { utgConfig } from '../../models/constants'
-import { CodeWhispererUserGroupSettings } from '../userGroupUtil'
-import { UserGroup } from '../../models/constants'
 import { getOpenFilesInWindow } from '../../../shared/utilities/editorUtilities'
 import { getLogger } from '../../../shared/logger/logger'
 import { CodeWhispererSupplementalContext, CodeWhispererSupplementalContextItem, UtgStrategy } from '../../models/model'
@@ -32,19 +30,12 @@ function isUtgSupportedLanguage(languageId: vscode.TextDocument['languageId']): 
     return utgSupportedLanguages.includes(languageId)
 }
 
-export function shouldFetchUtgContext(
-    languageId: vscode.TextDocument['languageId'],
-    userGroup: UserGroup
-): boolean | undefined {
+export function shouldFetchUtgContext(languageId: vscode.TextDocument['languageId']): boolean | undefined {
     if (!isUtgSupportedLanguage(languageId)) {
         return undefined
     }
 
-    if (languageId === 'java') {
-        return true
-    } else {
-        return userGroup === UserGroup.CrossFile
-    }
+    return languageId === 'java'
 }
 
 /**
@@ -60,10 +51,7 @@ export async function fetchSupplementalContextForTest(
     editor: vscode.TextEditor,
     cancellationToken: vscode.CancellationToken
 ): Promise<Pick<CodeWhispererSupplementalContext, 'supplementalContextItems' | 'strategy'> | undefined> {
-    const shouldProceed = shouldFetchUtgContext(
-        editor.document.languageId,
-        CodeWhispererUserGroupSettings.instance.userGroup
-    )
+    const shouldProceed = shouldFetchUtgContext(editor.document.languageId)
 
     if (!shouldProceed) {
         return shouldProceed === undefined ? undefined : { supplementalContextItems: [], strategy: 'Empty' }

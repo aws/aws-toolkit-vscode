@@ -29,8 +29,7 @@ export class QuickActionGenerator {
                               {
                                   command: '/dev',
                                   placeholder: 'Describe your task or issue in as much detail as possible',
-                                  description:
-                                      'Plan and implement new functionality across multiple files in your workspace.',
+                                  description: 'Generate code to make a change in your project',
                               },
                           ]
                         : []),

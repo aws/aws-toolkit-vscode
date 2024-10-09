@@ -9,7 +9,6 @@ import { distance } from 'fastest-levenshtein'
 import { AcceptedSuggestionEntry } from '../models/model'
 import { getLogger } from '../../shared/logger/logger'
 import { AmazonqModifyCode, telemetry } from '../../shared/telemetry/telemetry'
-import { CodeWhispererUserGroupSettings } from '../util/userGroupUtil'
 import { AuthUtil } from '../util/authUtil'
 import { InsertedCode } from '../../codewhispererChat/controllers/chat/model'
 import { codeWhispererClient } from '../client/codewhisperer'
@@ -137,7 +136,6 @@ export class CodeWhispererTracker {
                     codewhispererCompletionType: suggestion.completionType,
                     codewhispererLanguage: suggestion.language,
                     credentialStartUrl: AuthUtil.instance.startUrl,
-                    codewhispererUserGroup: CodeWhispererUserGroupSettings.getUserGroup().toString(),
                     codewhispererCharactersAccepted: suggestion.originalString.length,
                     codewhispererCharactersModified: 0, // TODO: currently we don't have an accurate number for this field with existing implementation
                 })

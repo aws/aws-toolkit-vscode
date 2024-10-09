@@ -6,16 +6,9 @@
 import assert from 'assert'
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'
-import {
-    CodeWhispererCodeCoverageTracker,
-    vsCodeState,
-    TelemetryHelper,
-    AuthUtil,
-    UserGroup,
-    CodeWhispererUserGroupSettings,
-} from 'aws-core-vscode/codewhisperer'
+import { CodeWhispererCodeCoverageTracker, vsCodeState, TelemetryHelper, AuthUtil } from 'aws-core-vscode/codewhisperer'
 import { createMockDocument, createMockTextEditor, resetCodeWhispererGlobalVariables } from 'aws-core-vscode/test'
-import { globals, extensionVersion } from 'aws-core-vscode/shared'
+import { globals } from 'aws-core-vscode/shared'
 import { assertTelemetryCurried } from 'aws-core-vscode/test'
 
 describe('codewhispererCodecoverageTracker', function () {
@@ -516,21 +509,14 @@ describe('codewhispererCodecoverageTracker', function () {
             if (tracker) {
                 sinon.stub(tracker, 'isActive').returns(true)
             }
-            CodeWhispererUserGroupSettings.instance.reset()
         })
 
         afterEach(function () {
             sinon.restore()
             CodeWhispererCodeCoverageTracker.instances.clear()
-            CodeWhispererUserGroupSettings.instance.reset()
         })
 
         it('should emit correct code coverage telemetry in python file', async function () {
-            await globals.globalState.update('CODEWHISPERER_USER_GROUP', {
-                group: UserGroup.Control,
-                version: extensionVersion,
-            })
-
             const tracker = CodeWhispererCodeCoverageTracker.getTracker(language)
 
             const assertTelemetry = assertTelemetryCurried('codewhisperer_codePercentage')
@@ -545,16 +531,10 @@ describe('codewhispererCodecoverageTracker', function () {
                 codewhispererSuggestedTokens: 7,
                 codewhispererPercentage: 7,
                 successCount: 1,
-                codewhispererUserGroup: 'Control',
             })
         })
 
         it('should emit correct code coverage telemetry when success count = 0', async function () {
-            await globals.globalState.update('CODEWHISPERER_USER_GROUP', {
-                group: UserGroup.Control,
-                version: extensionVersion,
-            })
-
             const tracker = CodeWhispererCodeCoverageTracker.getTracker('java')
 
             const assertTelemetry = assertTelemetryCurried('codewhisperer_codePercentage')
@@ -574,7 +554,6 @@ describe('codewhispererCodecoverageTracker', function () {
                 codewhispererSuggestedTokens: 18,
                 codewhispererPercentage: 60,
                 successCount: 2,
-                codewhispererUserGroup: 'Control',
             })
         })
     })
