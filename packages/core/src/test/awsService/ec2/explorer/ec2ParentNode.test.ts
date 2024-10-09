@@ -182,4 +182,23 @@ describe('ec2ParentNode', function () {
         sinon.assert.called(refreshStub)
         statusUpdateStub.restore()
     })
+
+    it('returns the node when in the map', async function () {
+        const instances = [{ Name: 'firstOne', InstanceId: 'node1', LastSeenStatus: 'pending' }]
+
+        getInstanceStub.resolves(mapToInstanceCollection(instances))
+        await testNode.updateChildren()
+        const node = testNode.getInstanceNode('node1')
+        assert.strictEqual(node.InstanceId, instances[0].InstanceId)
+        getInstanceStub.restore()
+    })
+
+    it('throws error when node not in map', async function () {
+        const instances = [{ Name: 'firstOne', InstanceId: 'node1', LastSeenStatus: 'pending' }]
+
+        getInstanceStub.resolves(mapToInstanceCollection(instances))
+        await testNode.updateChildren()
+        assert.throws(() => testNode.getInstanceNode('node2'))
+        getInstanceStub.restore()
+    })
 })

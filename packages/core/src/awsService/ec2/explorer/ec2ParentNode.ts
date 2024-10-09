@@ -52,9 +52,18 @@ export class Ec2ParentNode extends AWSTreeNodeBase {
         )
     }
 
+    public getInstanceNode(instanceId: string): Ec2InstanceNode {
+        const childNode = this.ec2InstanceNodes.get(instanceId)
+        if (childNode) {
+            return childNode
+        } else {
+            throw new Error(`Node with id ${instanceId} not found`)
+        }
+    }
+
     private async updatePendingNodes() {
         for (const instanceId of this.pollingSet.values()) {
-            const childNode = this.ec2InstanceNodes.get(instanceId)!
+            const childNode = this.getInstanceNode(instanceId)
             await this.updatePendingNode(childNode)
         }
     }
