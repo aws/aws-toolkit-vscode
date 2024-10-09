@@ -4,7 +4,7 @@
  */
 
 /* eslint-disable no-restricted-imports */
-import * as fs from 'fs-extra'
+import { promises as fs } from 'fs'
 import * as path from 'path'
 
 // Copies various dependencies into "dist/".
@@ -105,9 +105,9 @@ async function copy(task: CopyTask): Promise<void> {
     const dst = path.resolve(outRoot, task.destination ?? task.target)
 
     try {
-        await fs.copy(src, dst, {
+        await fs.cp(src, dst, {
             recursive: true,
-            overwrite: true,
+            force: true,
             errorOnExist: false,
         })
     } catch (error) {
