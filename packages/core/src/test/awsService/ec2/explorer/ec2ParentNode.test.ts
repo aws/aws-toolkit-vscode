@@ -52,6 +52,7 @@ describe('ec2ParentNode', function () {
 
     afterEach(function () {
         getInstanceStub.restore()
+        testNode.pollingSet.clear()
         testNode.pollingSet.clearTimer()
     })
 
