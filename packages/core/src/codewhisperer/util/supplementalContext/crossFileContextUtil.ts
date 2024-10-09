@@ -164,7 +164,7 @@ function shouldFetchCrossFileContext(languageId: vscode.TextDocument['languageId
  * when a given chunk context passes the match in BM25.
  * Special handling is needed for last(its next points to its own) and first chunk
  */
-function linkChunks(chunks: Chunk[]) {
+export function linkChunks(chunks: Chunk[]) {
     const updatedChunks: Chunk[] = []
 
     // This additional chunk is needed to create a next pointer to chunk 0.

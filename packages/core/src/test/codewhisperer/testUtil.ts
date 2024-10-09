@@ -207,3 +207,12 @@ export function createMockDirentFile(fileName: string): Dirent {
     dirent.name = fileName
     return dirent
 }
+
+export function aStringWithLineCount(lineCount: number, start: number = 0): string {
+    let s = ''
+    for (let i = start; i < start + lineCount; i++) {
+        s += `line${i}\n`
+    }
+
+    return s.trimEnd()
+}
