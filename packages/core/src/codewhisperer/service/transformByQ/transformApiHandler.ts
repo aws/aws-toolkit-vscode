@@ -315,13 +315,18 @@ export async function zipCode(
             getLogger().info(`CodeTransformation: source code files size = ${sourceFilesSize}`)
         }
 
-        if (transformByQState.getMetadataPathSQL()) {
-            // user is doing a SQL conversion
-            zip.addLocalFile(transformByQState.getMetadataPathSQL())
-            // must be true here, since only other option is HilZipManifest (not used for SQL conversions)
-            if (zipManifest instanceof ZipManifest) {
-                zipManifest.sqlMetadataPath = path.basename(transformByQState.getMetadataPathSQL())
-            }
+        if (transformByQState.getMetadataPathSQL() && zipManifest instanceof ZipManifest) {
+            // user is doing a SQL conversion since metadataPath is defined
+            // also, it must be a ZipManifest since only other option is HilZipManifest which is not used for SQL conversions
+            zip.addLocalFile(
+                transformByQState.getMetadataPathSQL(),
+                path.join(zipManifest.sourcesRoot, 'sct-metadata-random-num')
+            )
+            zipManifest.customConversions['source'] = transformByQState.getSourceDB()
+            zipManifest.customConversions['target'] = transformByQState.getTargetDB()
+            zipManifest.customConversions['type'] = 'SQL'
+            zipManifest.customConversions['schema'] = 'ADMIN-get-from-user'
+            zipManifest.customConversions['host'] = transformByQState.getSourceServerName()
             const sqlMetadataSize = (await nodefs.promises.stat(transformByQState.getMetadataPathSQL())).size
             getLogger().info(`CodeTransformation: SQL metadata file size = ${sqlMetadataSize}`)
         }
@@ -329,7 +334,7 @@ export async function zipCode(
         throwIfCancelled()
 
         let dependencyFiles: string[] = []
-        if (dependenciesFolder && await fs.exists(dependenciesFolder.path)) {
+        if (dependenciesFolder && (await fs.exists(dependenciesFolder.path))) {
             dependencyFiles = getFilesRecursively(dependenciesFolder.path, true)
         }
 
@@ -367,10 +372,11 @@ export async function zipCode(
 
         tempFilePath = path.join(os.tmpdir(), 'zipped-code.zip')
         await fs.writeFile(tempFilePath, zip.toBuffer())
-        if (dependenciesFolder && await fs.exists(dependenciesFolder.path)) {
+        if (dependenciesFolder && (await fs.exists(dependenciesFolder.path))) {
             await fs.delete(dependenciesFolder.path, { recursive: true, force: true })
         }
     } catch (e: any) {
+        getLogger().error(`CodeTransformation: zipCode error = ${e}`)
         throw Error('Failed to zip project')
     } finally {
         if (logFilePath) {

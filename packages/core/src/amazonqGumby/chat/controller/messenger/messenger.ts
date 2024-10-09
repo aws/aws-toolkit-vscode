@@ -536,6 +536,8 @@ export class Messenger {
                 message: CodeWhispererConstants.checkingForProjectsChatMessage,
             })
         )
+
+        // TO-DO: add a delay for 2s here to match IntelliJ
     }
 
     public sendLanguageUpgradeProjectSelectionMessage(
@@ -722,7 +724,7 @@ ${codeSnippet}
     }
 
     public sendSelectSQLMetadataFileMessage(tabID: string) {
-        const message = 'Please select your metadata ZIP file.'
+        const message = 'Please select your metadata .sct file.'
         const buttons: ChatItemButton[] = []
 
         buttons.push({
