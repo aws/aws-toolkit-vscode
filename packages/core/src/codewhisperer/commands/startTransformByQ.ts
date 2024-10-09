@@ -274,11 +274,13 @@ export async function parseBuildFile() {
     return undefined
 }
 
-export async function validateSQLMetadataFile(sctRulesData: any, message: any) {
+export async function validateSQLMetadataFile(sctData: any, message: any) {
     try {
-        const sctRules = JSON.parse(sctRulesData)
-        const sourceDB = sctRules['rules'][0]['locator']['sourceVendor'] as string
-        const targetDB = sctRules['rules'][0]['locator']['targetVendor'] as string
+        const dbEntities = sctData['tree']['instances'][0]['ProjectModel'][0]['entities'][0]
+        const sourceDB = dbEntities['sources'][0]['DbServer'][0]['$']['vendor']
+        const targetDB = dbEntities['targets'][0]['DbServer'][0]['$']['vendor']
+        const sourceServerName = dbEntities['sources'][0]['DbServer'][0]['$']['name']
+        transformByQState.setSourceServerName(sourceServerName)
         if (sourceDB.toUpperCase() !== DB.ORACLE) {
             transformByQState.getChatControllers()?.transformationFinished.fire({
                 message: CodeWhispererConstants.invalidMetadataFileUnsupportedSourceVendor(sourceDB),
@@ -301,6 +303,7 @@ export async function validateSQLMetadataFile(sctRulesData: any, message: any) {
             })
             return false
         }
+        // TO-DO: when more than just Oracle is supported, validate that sourceDB === transformByQState.getSourceDB()
     } catch (e: any) {
         transformByQState.getChatControllers()?.transformationFinished.fire({
             message: CodeWhispererConstants.invalidMetadataFileUnknownIssueParsing,

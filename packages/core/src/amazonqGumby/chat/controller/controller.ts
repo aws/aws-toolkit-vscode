@@ -6,7 +6,7 @@
  * the Gumby extension.
  */
 import nodefs from 'fs' // eslint-disable-line no-restricted-imports
-import os from 'os'
+import * as xml2js from 'xml2js'
 import path from 'path'
 import * as vscode from 'vscode'
 import { GumbyNamedMessages, Messenger } from './messenger/messenger'
@@ -62,7 +62,6 @@ import { getAuthType } from '../../../codewhisperer/service/transformByQ/transfo
 import DependencyVersions from '../../models/dependencies'
 import { getStringHash } from '../../../shared/utilities/textUtilities'
 import { getVersionData } from '../../../codewhisperer/service/transformByQ/transformMavenHandler'
-import AdmZip from 'adm-zip'
 
 // These events can be interactions within the chat,
 // or elsewhere in the IDE
@@ -530,6 +529,9 @@ export class GumbyController {
         const fileUri = await vscode.window.showOpenDialog({
             canSelectMany: false, // Allow only one file to be selected
             openLabel: 'Select', // Label for the open button
+            filters: {
+                'SCT metadata': ['sct'], // Restrict user to only pick a .sct file
+            },
         })
 
         if (!fileUri || fileUri.length === 0) {
@@ -541,25 +543,43 @@ export class GumbyController {
             return
         }
 
-        const metadataZip = new AdmZip(fileUri[0].fsPath)
-        const pathToZip = path.join(os.tmpdir(), 'SCT-metadata')
-        metadataZip.extractAllTo(pathToZip, true)
-        const zipEntries = metadataZip.getEntries()
-        const pathToRules = zipEntries.find((entry) => entry.name === 'sct-rules.json')?.entryName
+        const fileContents = nodefs.readFileSync(fileUri[0].fsPath, 'utf-8')
+        let parsedData: any = undefined
+        xml2js.parseString(fileContents, (err, result) => {
+            if (err) {
+                getLogger().error('Error parsing SCT file:', err)
+            } else {
+                parsedData = result
+            }
+        })
 
-        if (!pathToRules) {
+        if (!parsedData) {
             this.transformationFinished({
-                message: CodeWhispererConstants.invalidMetadataFileNoRulesJson,
+                message: CodeWhispererConstants.invalidMetadataFileUnknownIssueParsing,
                 tabID: message.tabID,
             })
             return
         }
 
-        const sctRulesData = nodefs.readFileSync(path.join(pathToZip, pathToRules), 'utf8')
-        const isValidSctRulesData = await validateSQLMetadataFile(sctRulesData, message)
-        if (!isValidSctRulesData) {
+        const isValidMetadata = await validateSQLMetadataFile(parsedData, message)
+        if (!isValidMetadata) {
             return
         }
+
+        // extract schema names from metadata file
+        // probably if anything throws here we should just continue and not validate the user's schema input
+        // unless we show a form with the schema options, in which case this needs to pass
+        const serverNodeLocations =
+            parsedData['tree']['instances'][0]['ProjectModel'][0]['relations'][0]['server-node-location']
+        const schemaNames = new Set<string>()
+        serverNodeLocations.forEach((serverNodeLocation: any) => {
+            const schemaNodes = serverNodeLocation['FullNameNodeInfoList'][0]['nameParts'][0][
+                'FullNameNodeInfo'
+            ].filter((node: any) => node['$']['typeNode'] === 'schema')
+            schemaNodes.forEach((node: any) => {
+                schemaNames.add(node['$']['nameNode'].toUpperCase())
+            })
+        })
 
         transformByQState.setMetadataPathSQL(fileUri[0].fsPath)
 
