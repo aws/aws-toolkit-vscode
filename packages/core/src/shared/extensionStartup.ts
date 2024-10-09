@@ -14,6 +14,8 @@ import { fs } from '../shared/fs/fs'
 import { getIdeProperties, getIdeType, isAmazonQ, isCloud9, isCn, productName } from './extensionUtilities'
 import * as localizedText from './localizedText'
 import { AmazonQPromptSettings, ToolkitPromptSettings } from './settings'
+import { showMessage } from './utilities/messages'
+import { getTelemetryReasonDesc } from './errors'
 
 const localize = nls.loadMessageBundle()
 
@@ -26,20 +28,24 @@ export async function maybeShowMinVscodeWarning(minVscode: string) {
         return
     }
     const updateButton = `Update ${vscode.env.appName}`
+    const msg = `${productName()} will soon require VS Code ${minVscode} or newer. The currently running version ${vscode.version} will no longer receive updates.`
     if (getIdeType() === 'vscode' && semver.lt(vscode.version, minVscode)) {
-        void vscode.window
-            .showWarningMessage(
-                `${productName()} will soon require VS Code ${minVscode} or newer. The currently running version ${vscode.version} will no longer receive updates.`,
-                updateButton,
-                localizedText.dontShow
-            )
-            .then(async (resp) => {
-                if (resp === updateButton) {
-                    await vscode.commands.executeCommand('update.checkForUpdate')
-                } else if (resp === localizedText.dontShow) {
-                    void settings.disablePrompt('minIdeVersion')
-                }
-            })
+        void showMessage(
+            'warn',
+            msg,
+            [updateButton, localizedText.dontShow],
+            {},
+            {
+                id: 'maybeShowMinVscodeWarning',
+                reasonDesc: getTelemetryReasonDesc(msg),
+            }
+        ).then(async (resp) => {
+            if (resp === updateButton) {
+                await vscode.commands.executeCommand('update.checkForUpdate')
+            } else if (resp === localizedText.dontShow) {
+                void settings.disablePrompt('minIdeVersion')
+            }
+        })
     }
 }
 
