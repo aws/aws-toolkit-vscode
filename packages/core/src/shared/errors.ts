@@ -10,7 +10,7 @@ import { isThrottlingError, isTransientError } from '@smithy/service-error-class
 import { Result } from './telemetry/telemetry'
 import { CancellationError } from './utilities/timeoutUtils'
 import { hasKey, isNonNullable } from './utilities/tsUtils'
-import type * as nodefs from 'fs'
+import type * as nodefs from 'fs' // eslint-disable-line no-restricted-imports
 import type * as os from 'os'
 import { CodeWhispererStreamingServiceException } from '@amzn/codewhisperer-streaming'
 import { driveLetterRegex } from './utilities/pathUtils'

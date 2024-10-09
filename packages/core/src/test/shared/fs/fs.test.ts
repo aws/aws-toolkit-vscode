@@ -7,9 +7,9 @@ import assert from 'assert'
 import vscode from 'vscode'
 import * as path from 'path'
 import * as utils from 'util'
-import { existsSync, mkdirSync, promises as nodefs, readFileSync } from 'fs'
+import { existsSync, mkdirSync, promises as nodefs, readFileSync } from 'fs' // eslint-disable-line no-restricted-imports
 import { stat } from 'fs/promises'
-import nodeFs from 'fs'
+import nodeFs from 'fs' // eslint-disable-line no-restricted-imports
 import fs, { FileSystem } from '../../../shared/fs/fs'
 import * as os from 'os'
 import { isMinVscode, isWin } from '../../../shared/vscode/env'
