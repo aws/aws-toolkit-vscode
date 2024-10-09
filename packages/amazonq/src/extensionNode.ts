@@ -97,5 +97,5 @@ async function setupDevMode(context: vscode.ExtensionContext) {
 
 export async function deactivate() {
     // Run concurrently to speed up execution. stop() does not throw so it is safe
-    await Promise.all([(await CrashMonitoring.instance())?.stop(), deactivateCommon()])
+    await Promise.all([(await CrashMonitoring.instance())?.shutdown(), deactivateCommon()])
 }

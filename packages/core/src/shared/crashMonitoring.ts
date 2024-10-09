@@ -28,14 +28,14 @@ const className = 'CrashMonitoring'
  *
  * - If an extension crashes it cannot report that it crashed.
  * - The ExtensionHost is a separate process from the main VS Code editor process where all extensions run in
- * - Read about the [`deactivate()` behavior](../../../../../docs/vscode_behaviors.md)
+ * - Read about the [`deactivate()` behavior](../../../../docs/vscode_behaviors.md)
  * - An IDE instance is one instance of VS Code, and Extension Instance is 1 instance of our extension. These are 1:1.
  *
  * ### How it works at a high level:
  *
- * - Each IDE instance will start its own crash reporting process on startup
- * - The crash reporting process works with each instance sending heartbeats to a centralized state. Separately each instance
- *   has a "Checker" the each entry in the centralized to see if it is not running anymore, and appropriately handles when needed.
+ * - Each IDE instance will start its own crash monitoring process on startup
+ * - The crash monitoring process works with each instance sending heartbeats to a centralized state. Separately each instance
+ *   has a "Checker" that checks each heartbeat to see if it is not running anymore, and appropriately handles when needed.
  *
  * - On a crash we will emit a `session_end` metrics with `{ result: 'Failed', reason: 'ExtHostCrashed', crashedSessionId: '...' }`
  * - On successful shutdown  a `session_end` with a successful result is already emitted elsewhere.
@@ -44,14 +44,20 @@ const className = 'CrashMonitoring'
  *
  * - To get the most verbose debug logs, configure the devmode setting: `crashReportInterval`
  *
+ * - This entire feature is non critical and should not impede extension usage if something goes wrong. As a result, we
+ *   swallow all errors and only log/telemetry issues. This is the reason for all the try/catch statements
+ *
  * ### Limitations
  * - We will never truly know if we are the cause of the crash
  *   - Since all extensions run in the same Ext Host process, any one of them could cause it to crash and we wouldn't be
  *     able to differentiate
  * - If the IDE itself crashes, unrelated to the extensions, it will still be seen as a crash in our telemetry
  *   - We are not able to explicitly determine if we were the cause of the crash
- * - If the user shuts down their computer after a crash before the next interval of the Primary can run, that info is lost
+ * - If the user shuts down their computer after a crash before the next crash check can run, that info is lost
  *   - We cannot persist crash information on computer restart
+ * - We use the users filesystem to maintain the state of running extension instances, but the
+ *   filesystem is not reliable and can lead to incorrect crash reports
+ *   - To mitigate this we do not run crash reporting on machines that we detect have a flaky filesystem
  */
 export class CrashMonitoring {
     protected heartbeat: Heartbeat | undefined
@@ -99,12 +105,11 @@ export class CrashMonitoring {
             return
         }
 
-        // In the Prod code this runs by default and interferes as it reports its own heartbeats.
+        // During tests, the Prod code also runs this function. It interferes with telemetry assertion since it reports additional heartbeats.
         if (this.isAutomation) {
             return
         }
 
-        // Dont throw since this feature is not critical and shouldn't prevent extension execution
         try {
             this.heartbeat = new Heartbeat(this.state, this.checkInterval, this.isDevMode)
             this.crashChecker = new CrashChecker(this.state, this.checkInterval, this.isDevMode, this.devLogger)
@@ -113,9 +118,12 @@ export class CrashMonitoring {
             await this.crashChecker.start()
         } catch (error) {
             emitFailure({ functionName: 'start', error })
-            this.cleanup()
+            try {
+                this.crashChecker?.cleanup()
+                await this.heartbeat?.cleanup()
+            } catch {}
 
-            // In development this gives us a useful stacktrace
+            // Surface errors during development, otherwise it can be missed.
             if (this.isDevMode) {
                 throw error
             }
@@ -123,31 +131,20 @@ export class CrashMonitoring {
     }
 
     /** Stop the Crash Monitoring process, signifying a graceful shutdown */
-    public async stop() {
-        // Dont throw since this feature is not critical and shouldn't prevent extension shutdown
+    public async shutdown() {
         try {
-            this.crashChecker?.stop()
-            await this.heartbeat?.stop()
+            this.crashChecker?.cleanup()
+            await this.heartbeat?.shutdown()
         } catch (error) {
             try {
                 // This probably wont emit in time before shutdown, but may be written to the logs
                 emitFailure({ functionName: 'stop', error })
-            } catch (e) {
-                // In case emit fails, do nothing
-            }
+            } catch {}
+
             if (this.isDevMode) {
                 throw error
             }
         }
-    }
-
-    /**
-     * Mimic a crash of the extension, or can just be used as cleanup.
-     * Only use this for tests.
-     */
-    protected cleanup() {
-        this.crashChecker?.stop()
-        this.heartbeat?.stopInterval()
     }
 }
 
@@ -164,7 +161,6 @@ class Heartbeat {
     ) {}
 
     public async start() {
-        // heartbeat 2 times per check
         const heartbeatInterval = this.checkInterval / 2
 
         // Send an initial heartbeat immediately
@@ -175,10 +171,11 @@ class Heartbeat {
             try {
                 await this.state.sendHeartbeat()
             } catch (e) {
-                this.stopInterval()
-                emitFailure({ functionName: 'sendHeartbeat', error: e })
+                try {
+                    await this.cleanup()
+                    emitFailure({ functionName: 'sendHeartbeatInterval', error: e })
+                } catch {}
 
-                // During development we are fine with impacting extension execution, so throw
                 if (this.isDevMode) {
                     throw e
                 }
@@ -187,31 +184,31 @@ class Heartbeat {
     }
 
     /** Stops everything, signifying a graceful shutdown */
-    public async stop() {
-        this.stopInterval()
+    public async shutdown() {
+        globals.clock.clearInterval(this.intervalRef)
         return this.state.indicateGracefulShutdown()
     }
 
-    /** Stops the heartbeat interval */
-    public stopInterval() {
-        globals.clock.clearInterval(this.intervalRef)
+    /**
+     * Safely attempts to clean up this heartbeat from the state to try and avoid
+     * an incorrectly indicated crash. Use this on failures.
+     *
+     * ---
+     *
+     * IMPORTANT: This function must not throw as this function is run within a catch
+     */
+    public async cleanup() {
+        try {
+            await this.shutdown()
+        } catch {}
+        try {
+            await this.state.clearHeartbeat()
+        } catch {}
     }
 }
 
 /**
- * This checks for if an extension has crashed and handles that result appropriately.
- * It listens to heartbeats sent by {@link Heartbeat}, and then handles appropriately when the heartbeats
- * stop.
- *
- * ---
- *
- * This follows the Primary/Secondary design where one of the extension instances is the Primary checker
- * and all others are Secondary.
- *
- * The Primary actually reads the state and reports crashes if detected.
- *
- * The Secondary continuously attempts to become the Primary if the previous Primary is no longer responsive.
- * This helps to reduce raceconditions for operations on the state.
+ * This checks the heartbeats of each known extension to see if it has crashed and handles that result appropriately.
  */
 class CrashChecker {
     private intervalRef: NodeJS.Timer | undefined
@@ -232,17 +229,14 @@ class CrashChecker {
                 tryCheckCrash(this.state, this.checkInterval, this.isDevMode, this.devLogger)
             )
 
+            // check on an interval
             this.intervalRef = globals.clock.setInterval(async () => {
                 try {
                     await tryCheckCrash(this.state, this.checkInterval, this.isDevMode, this.devLogger)
                 } catch (e) {
                     emitFailure({ functionName: 'checkCrashInterval', error: e })
+                    this.cleanup()
 
-                    // Since there was an error there is point to try checking for crashed instances.
-                    // We will need to monitor telemetry to see if we can determine widespread issues.
-                    this.stop()
-
-                    // During development we are fine with impacting extension execution, so throw
                     if (this.isDevMode) {
                         throw e
                     }
@@ -269,13 +263,13 @@ class CrashChecker {
 
                 // Ext is not running anymore, handle appropriately depending on why it stopped running
                 await state.handleExtNotRunning(ext, {
-                    shutdown: async () => {
+                    onShutdown: async () => {
                         // Nothing to do, just log info if necessary
                         devLogger?.debug(
                             `crashMonitoring: SHUTDOWN: following has gracefully shutdown: pid ${ext.extHostPid} + sessionId: ${ext.sessionId}`
                         )
                     },
-                    crash: async () => {
+                    onCrash: async () => {
                         // Debugger instances may incorrectly look like they crashed, so don't emit.
                         // Example is if I hit the red square in the debug menu, it is a non-graceful shutdown. But the regular
                         // 'x' button in the Debug IDE instance is a graceful shutdown.
@@ -314,16 +308,12 @@ class CrashChecker {
 
         function isStoppedHeartbeats(ext: ExtInstanceHeartbeat, checkInterval: number) {
             const millisSinceLastHeartbeat = globals.clock.Date.now() - ext.lastHeartbeat
-            // since heartbeats happen 2 times per check interval it will have occured
-            // at least once in the timespan of the check interval.
-            //
-            // But if we want to be more flexible this condition can be modified since
-            // something like global state taking time to sync can return the incorrect last heartbeat value.
             return millisSinceLastHeartbeat >= checkInterval
         }
     }
 
-    public stop() {
+    /** Use this on failures */
+    public cleanup() {
         globals.clock.clearInterval(this.intervalRef)
     }
 }
@@ -356,8 +346,7 @@ function getDefaultDependencies(): MementoStateDependencies {
     }
 }
 /**
- * Factory to create an instance of the state. Do not create an instance of the
- * class manually since there are required setup steps.
+ * Factory to create an instance of the state.
  *
  * @throws if the filesystem state cannot be confirmed to be stable, i.e flaky fs operations
  */
@@ -368,14 +357,16 @@ export async function crashMonitoringStateFactory(deps = getDefaultDependencies(
 }
 
 /**
- * The state of all running extensions. This state is globally shared with all other extension instances.
- * This state specifically uses the File System.
+ * The state of all running extensions.
+ * - is globally shared with all other extension instances.
+ * - uses the File System
+ *   - is not truly reliable since filesystems are not reliable
  */
 export class FileSystemState {
     private readonly stateDirPath: string
 
     /**
-     * Use {@link crashMonitoringStateFactory} to make an instance
+     * IMORTANT: Use {@link crashMonitoringStateFactory} to make an instance
      */
     constructor(protected readonly deps: MementoStateDependencies) {
         this.stateDirPath = path.join(this.deps.workDirPath, crashMonitoringDirNames.root)
@@ -393,8 +384,8 @@ export class FileSystemState {
      */
     public async init() {
         // IMPORTANT: do not run crash reporting on unstable filesystem to reduce invalid crash data
-        // NOTE: We want to get a diff between clients that succeeded vs failed this check,
-        // so emit a metric to track that
+        //
+        // NOTE: Emits a metric to know how many clients we skipped
         await telemetry.function_call.run(async (span) => {
             span.record({ className, functionName: 'FileSystemStateValidation' })
             await withFailCtx('validateFileSystemStability', () => throwOnUnstableFileSystem())
@@ -423,14 +414,16 @@ export class FileSystemState {
             }
             const funcWithCtx = () => withFailCtx('sendHeartbeatState', func)
             const funcWithRetries = withRetries(funcWithCtx, { maxRetries: 8, delay: 100, backoff: 2 })
-
-            // retry a failed heartbeat to avoid incorrectly being reported as a crash
             return await funcWithRetries
         } catch (e) {
             // delete this ext from the state to avoid an incorrectly reported crash since we could not send a new heartbeat
-            await withFailCtx('sendHeartbeatStateCleanup', () => this.deleteRunningFile(extId))
+            await withFailCtx('sendHeartbeatFailureCleanup', () => this.clearHeartbeat())
             throw e
         }
+    }
+    /** Clears this extentions heartbeat from the state */
+    public async clearHeartbeat() {
+        await this.deleteHeartbeatFile(this.extId)
     }
 
     /**
@@ -460,31 +453,29 @@ export class FileSystemState {
      */
     public async handleExtNotRunning(
         ext: ExtInstance,
-        opts: { shutdown: () => Promise<void>; crash: () => Promise<void> }
+        opts: { onShutdown: () => Promise<void>; onCrash: () => Promise<void> }
     ): Promise<void> {
         const extId = this.createExtId(ext)
         const shutdownFilePath = path.join(await this.shutdownExtsDir(), extId)
 
         if (await withFailCtx('existsShutdownFile', () => fs.exists(shutdownFilePath))) {
-            await opts.shutdown()
+            await opts.onShutdown()
             // We intentionally do not clean up the file in shutdown since there may be another
             // extension may be doing the same thing in parallel, and would read the extension as
             // crashed since the file was missing. The file  will be cleared on computer restart though.
 
             // TODO: Be smart and clean up the file after some time.
         } else {
-            await opts.crash()
+            await opts.onCrash()
         }
 
         // Clean up the running extension file since it no longer exists
-        await this.deleteRunningFile(extId)
+        await this.deleteHeartbeatFile(extId)
     }
-    private async deleteRunningFile(extId: ExtInstanceId) {
-        // Clean up the running extension file since it is no longer exists
+    public async deleteHeartbeatFile(extId: ExtInstanceId) {
         const dir = await this.runningExtsDir()
-        // Retry on failure since failing to delete this file will result in incorrectly reported crashes.
-        // The common errors we were seeing were windows EPERM/EBUSY errors. There may be a relation
-        // to this https://github.com/aws/aws-toolkit-vscode/pull/5335
+        // Retry file deletion to prevent incorrect crash reports. Common Windows errors seen in telemetry: EPERM/EBUSY.
+        // See: https://github.com/aws/aws-toolkit-vscode/pull/5335
         await withRetries(() => withFailCtx('deleteStaleRunningFile', () => fs.delete(path.join(dir, extId))), {
             maxRetries: 8,
             delay: 100,
