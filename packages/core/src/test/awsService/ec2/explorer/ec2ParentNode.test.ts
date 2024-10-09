@@ -24,6 +24,7 @@ describe('ec2ParentNode', function () {
     let getInstanceStub: sinon.SinonStub<[filters?: EC2.Filter[] | undefined], Promise<AsyncCollection<EC2.Instance>>>
     let clock: FakeTimers.InstalledClock
     let refreshStub: sinon.SinonStub<[], Promise<void>>
+    let statusUpdateStub: sinon.SinonStub<[status: string], Promise<string>>
     const testRegion = 'testRegion'
     const testPartition = 'testPartition'
 
@@ -41,7 +42,7 @@ describe('ec2ParentNode', function () {
         client = new Ec2Client(testRegion)
         clock = installFakeClock()
         refreshStub = sinon.stub(Ec2InstanceNode.prototype, 'refreshNode')
-        sinon.stub(Ec2InstanceNode.prototype, 'updateStatus')
+        statusUpdateStub = sinon.stub(Ec2Client.prototype, 'getInstanceStatus')
     })
 
     beforeEach(function () {
@@ -140,7 +141,7 @@ describe('ec2ParentNode', function () {
     })
 
     it('does not refresh explorer when timer goes off if status unchanged', async function () {
-        const statusUpdateStub = sinon.stub(Ec2Client.prototype, 'getInstanceStatus').resolves('pending')
+        statusUpdateStub = statusUpdateStub.resolves('pending')
         const instances = [
             { Name: 'firstOne', InstanceId: '0', LastSeenStatus: 'pending' },
             { Name: 'secondOne', InstanceId: '1', LastSeenStatus: 'stopped' },
@@ -152,12 +153,11 @@ describe('ec2ParentNode', function () {
         await testNode.updateChildren()
         await clock.tickAsync(6000)
         sinon.assert.notCalled(refreshStub)
-        statusUpdateStub.restore()
         getInstanceStub.restore()
     })
 
     it('does refresh explorer when timer goes and status changed', async function () {
-        const statusUpdateStub = sinon.stub(Ec2Client.prototype, 'getInstanceStatus').resolves('running')
+        statusUpdateStub = statusUpdateStub.resolves('running')
         const instances = [{ Name: 'firstOne', InstanceId: '0', LastSeenStatus: 'pending' }]
 
         getInstanceStub.resolves(mapToInstanceCollection(instances))
@@ -166,7 +166,6 @@ describe('ec2ParentNode', function () {
         sinon.assert.notCalled(refreshStub)
         await clock.tickAsync(6000)
         sinon.assert.called(refreshStub)
-        statusUpdateStub.restore()
     })
 
     it('returns the node when in the map', async function () {
