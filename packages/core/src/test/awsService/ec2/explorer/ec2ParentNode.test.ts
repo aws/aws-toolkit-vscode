@@ -158,9 +158,13 @@ describe('ec2ParentNode', function () {
     })
 
     it('does refresh explorer when timer goes and status changed', async function () {
-        sinon.assert.notCalled(refreshStub)
         const statusUpdateStub = sinon.stub(Ec2Client.prototype, 'getInstanceStatus').resolves('running')
-        testNode.pollingSet.add('0')
+        const instances = [{ Name: 'firstOne', InstanceId: '0', LastSeenStatus: 'pending' }]
+
+        getInstanceStub.resolves(mapToInstanceCollection(instances))
+        await testNode.updateChildren()
+
+        sinon.assert.notCalled(refreshStub)
         await clock.tickAsync(6000)
         sinon.assert.called(refreshStub)
         statusUpdateStub.restore()
