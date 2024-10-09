@@ -522,6 +522,7 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
             maxTabs: 10,
             feedbackOptions: feedbackOptions,
             texts: uiComponentsTexts,
+            autoFocus: false,
         },
     })
 
