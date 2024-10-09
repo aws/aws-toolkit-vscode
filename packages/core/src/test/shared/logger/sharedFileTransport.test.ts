@@ -10,7 +10,7 @@ import fs from '../../../shared/fs/fs'
 import { stub, SinonStub } from 'sinon'
 import { MESSAGE } from '../../../shared/logger/consoleLogTransport'
 import { createTestFile } from '../../testUtil'
-import { readFileSync } from 'fs'
+import { readFileSync } from 'fs' // eslint-disable-line no-restricted-imports
 import { sleep } from '../../../shared/utilities/timeoutUtils'
 
 describe('SharedFileTransport', function () {

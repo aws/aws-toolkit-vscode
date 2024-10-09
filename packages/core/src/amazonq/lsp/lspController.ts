@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import * as path from 'path'
 import * as crypto from 'crypto'
-import { createWriteStream } from 'fs'
+import { createWriteStream } from 'fs' // eslint-disable-line no-restricted-imports
 import { getLogger } from '../../shared/logger/logger'
 import { CurrentWsFolders, collectFilesForIndex } from '../../shared/utilities/workspaceUtils'
 import fetch from 'node-fetch'
