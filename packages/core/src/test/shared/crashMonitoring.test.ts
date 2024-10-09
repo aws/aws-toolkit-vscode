@@ -14,10 +14,10 @@ class TestCrashMonitoring extends CrashMonitoring {
     public constructor(...deps: ConstructorParameters<typeof CrashMonitoring>) {
         super(...deps)
     }
-    /** Immitates an extension crash */
+    /** Imitates an extension crash */
     public async crash() {
-        this.crashChecker?.cleanup()
-        await this.heartbeat?.cleanup()
+        this.crashChecker?.testCrash()
+        this.heartbeat?.testCrash()
     }
 }
 

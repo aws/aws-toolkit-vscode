@@ -205,6 +205,11 @@ class Heartbeat {
             await this.state.clearHeartbeat()
         } catch {}
     }
+
+    /** Mimics a crash, only for testing */
+    public testCrash() {
+        globals.clock.clearInterval(this.intervalRef)
+    }
 }
 
 /**
@@ -312,8 +317,13 @@ class CrashChecker {
         }
     }
 
-    /** Use this on failures */
+    /** Use this on failures to terminate the crash checker */
     public cleanup() {
+        globals.clock.clearInterval(this.intervalRef)
+    }
+
+    /** Mimics a crash, only for testing */
+    public testCrash() {
         globals.clock.clearInterval(this.intervalRef)
     }
 }
