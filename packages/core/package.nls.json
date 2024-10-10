@@ -280,6 +280,7 @@
     "AWS.amazonq.featureDev.error.codeGen.denyListedError": "I'm sorry, I'm having trouble generating your code and can't continue at the moment. Please try again later, and share feedback to help me improve.",
     "AWS.amazonq.featureDev.error.codeGen.default": "I'm sorry, I ran into an issue while trying to generate your code. Please try again.",
     "AWS.amazonq.featureDev.error.codeGen.timeout": "Code generation did not finish within the expected time",
+    "AWS.amazonq.featureDev.error.uploadURLExpired": "I’m sorry, I wasn’t able to generate code. A connection timed out or became unavailable. Please try again or check the following:\n\n- Exclude non-essential files in your workspace’s `.gitignore.`\n\n- Check that your network connection is stable.",
     "AWS.amazonq.featureDev.error.workspaceFolderNotFoundError": "I couldn't find a workspace folder. Open a workspace, and then open a new chat tab and enter /dev to start discussing your code task with me.",
     "AWS.amazonq.featureDev.error.selectedFolderNotInWorkspaceFolderError": "The folder you chose isn't in your open workspace folder. You can add this folder to your workspace, or choose a folder in your open workspace.",
     "AWS.amazonq.featureDev.error.userMessageNotFoundError": "It looks like you didn't provide an input. Please enter your message in the text bar.",

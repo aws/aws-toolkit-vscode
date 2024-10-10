@@ -6,7 +6,7 @@
 // Implementation inspired by https://github.com/sourcegraph/sourcegraph-public-snapshot/blob/c864f15af264f0f456a6d8a83290b5c940715349/client/vscode/src/settings/uninstall.ts#L2
 
 import * as vscode from 'vscode'
-import { existsSync } from 'fs'
+import { existsSync } from 'fs' // eslint-disable-line no-restricted-imports
 import * as semver from 'semver'
 import { join } from 'path'
 import { getLogger } from './logger/logger'

@@ -4,7 +4,7 @@
  */
 import * as vscode from 'vscode'
 import assert from 'assert'
-import nodefs from 'fs'
+import nodefs from 'fs' // eslint-disable-line no-restricted-imports
 import * as sinon from 'sinon'
 import * as path from 'path'
 import * as os from 'os'
@@ -125,5 +125,33 @@ describe('SshKeyUtility', async function () {
         await clock.tickAsync(100)
         sinon.assert.calledOnce(deleteStub)
         sinon.restore()
+    })
+
+    it('determines deleted status based on file system', async function () {
+        await fs.delete(keyPair.getPrivateKeyPath())
+        await fs.delete(keyPair.getPublicKeyPath())
+
+        assert(keyPair.isDeleted())
+    })
+
+    describe('isDeleted', async function () {
+        it('returns false if key files exist', async function () {
+            assert.strictEqual(await keyPair.isDeleted(), false)
+        })
+
+        it('returns true if key files do not exist', async function () {
+            await keyPair.delete()
+            assert.strictEqual(await keyPair.isDeleted(), true)
+        })
+
+        it('returns true if private key remains', async function () {
+            await fs.delete(keyPair.getPublicKeyPath())
+            assert.strictEqual(await keyPair.isDeleted(), true)
+        })
+
+        it('returns true if public key remains', async function () {
+            await fs.delete(keyPair.getPrivateKeyPath())
+            assert.strictEqual(await keyPair.isDeleted(), true)
+        })
     })
 })

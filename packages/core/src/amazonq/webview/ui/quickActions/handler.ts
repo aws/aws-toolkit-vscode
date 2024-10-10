@@ -166,7 +166,7 @@ export class QuickActionHandler {
                     cancelButtonWhenLoading: false,
                 })
 
-                void this.connector.requestGenerativeAIAnswer(affectedTabId, {
+                void this.connector.requestGenerativeAIAnswer(affectedTabId, '', {
                     chatMessage: realPromptText,
                 })
             }

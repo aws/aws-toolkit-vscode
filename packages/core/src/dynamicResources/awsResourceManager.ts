@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { writeFileSync } from 'fs'
+import { writeFileSync } from 'fs' // eslint-disable-line no-restricted-imports
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { CloudFormationClient } from '../shared/clients/cloudFormationClient'

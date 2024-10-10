@@ -10,7 +10,7 @@ import { isThrottlingError, isTransientError } from '@smithy/service-error-class
 import { Result } from './telemetry/telemetry'
 import { CancellationError } from './utilities/timeoutUtils'
 import { hasKey, isNonNullable } from './utilities/tsUtils'
-import type * as nodefs from 'fs'
+import type * as nodefs from 'fs' // eslint-disable-line no-restricted-imports
 import type * as os from 'os'
 import { CodeWhispererStreamingServiceException } from '@amzn/codewhisperer-streaming'
 import { driveLetterRegex } from './utilities/pathUtils'
@@ -218,7 +218,24 @@ export class ToolkitError extends Error implements ErrorInformation {
     }
 
     /**
-     * Creates a new {@link ToolkitError} instance that was directly caused by another {@link error}.
+     * Creates a new {@link ToolkitError} instance that was directly caused by another error.
+     *
+     * @param error - The original error that caused this error.
+     * @param message - A descriptive message for the new error.
+     * @param info - Additional information about the error.
+     * @returns {ToolkitError} The new ToolkitError instance.
+     *
+     * @recommendation It is recommended to throw the returned ToolkitError instance instead of just returning it.
+     * This way, the error can be properly propagated and handled in the calling code.
+     *
+     * Example:
+     * ```typescript
+     * try {
+     *   // Some code that might throw an error
+     * } catch (error) {
+     *   throw ToolkitError.chain(error, 'An error occurred during operation', { operation: 'someOperation' });
+     * }
+     * ```
      */
     public static chain(error: unknown, message: string, info?: Omit<ErrorInformation, 'cause'>): ToolkitError {
         return new this(message, {

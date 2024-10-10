@@ -9,7 +9,7 @@ import type { CancellationTokenSource } from 'vscode'
 import { Messenger } from './controllers/chat/messenger/messenger'
 import { FeatureDevClient } from './client/featureDev'
 import { TelemetryHelper } from './util/telemetryHelper'
-import { CodeReference } from '../amazonq/webview/ui/connector'
+import { CodeReference, UploadHistory } from '../amazonq/webview/ui/connector'
 import { DiffTreeFileInfo } from '../amazonq/webview/ui/diffTree/types'
 
 export type Interaction = {
@@ -61,13 +61,16 @@ export interface SessionState {
     readonly references?: CodeReference[]
     readonly phase?: SessionStatePhase
     readonly uploadId: string
+    readonly tokenSource: CancellationTokenSource
     currentCodeGenerationId?: string
     tokenSource?: CancellationTokenSource
+    readonly codeGenerationId?: string
     readonly tabID: string
     interact(action: SessionStateAction): Promise<SessionStateInteraction>
     updateWorkspaceRoot?: (workspaceRoot: string) => void
     codeGenerationRemainingIterationCount?: number
     codeGenerationTotalIterationCount?: number
+    uploadHistory?: UploadHistory
 }
 
 export interface SessionStateConfig {
@@ -86,6 +89,7 @@ export interface SessionStateAction {
     fs: VirtualFileSystem
     telemetry: TelemetryHelper
     tokenSource?: CancellationTokenSource
+    uploadHistory?: UploadHistory
 }
 
 export type NewFileZipContents = { zipFilePath: string; fileContent: string }

@@ -46,6 +46,9 @@ export async function createFeatureDevProxyClient(options?: Partial<ServiceOptio
             region: cwsprConfig.region,
             endpoint: cwsprConfig.endpoint,
             token: new Token({ token: bearerToken }),
+            httpOptions: {
+                connectTimeout: 10000, // 10 seconds, 3 times P99 API latency
+            },
             ...options,
         } as ServiceOptions,
         undefined

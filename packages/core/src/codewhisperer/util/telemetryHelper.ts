@@ -18,7 +18,6 @@ import {
 import { CodewhispererCompletionType, CodewhispererSuggestionState } from '../../shared/telemetry/telemetry'
 import { getImportCount } from './importAdderUtil'
 import { CodeWhispererSettings } from './codewhispererSettings'
-import { CodeWhispererUserGroupSettings } from './userGroupUtil'
 import { getSelectedCustomization } from './customizationUtil'
 import { AuthUtil } from './authUtil'
 import { isAwsError } from '../../shared/errors'
@@ -90,7 +89,6 @@ export class TelemetryHelper {
             codewhispererSupplementalContextIsUtg: supplementalContextMetadata?.isUtg,
             codewhispererSupplementalContextLatency: supplementalContextMetadata?.latency,
             codewhispererSupplementalContextLength: supplementalContextMetadata?.contentsLength,
-            codewhispererUserGroup: CodeWhispererUserGroupSettings.getUserGroup().toString(),
             codewhispererCustomizationArn: getSelectedCustomization().arn,
             traceId: this.traceId,
         }
@@ -117,7 +115,6 @@ export class TelemetryHelper {
             codewhispererLanguage: language,
             codewhispererGettingStartedTask: session.taskType,
             credentialStartUrl: AuthUtil.instance.startUrl,
-            codewhispererUserGroup: CodeWhispererUserGroupSettings.getUserGroup().toString(),
             codewhispererSupplementalContextTimeout: supplementalContextMetadata?.isProcessTimeout,
             codewhispererSupplementalContextIsUtg: supplementalContextMetadata?.isUtg,
             codewhispererSupplementalContextLength: supplementalContextMetadata?.contentsLength,
@@ -171,7 +168,6 @@ export class TelemetryHelper {
                 codewhispererLanguage: session.language,
                 codewhispererGettingStartedTask: session.taskType,
                 credentialStartUrl: AuthUtil.instance.startUrl,
-                codewhispererUserGroup: CodeWhispererUserGroupSettings.getUserGroup().toString(),
                 codewhispererSupplementalContextTimeout: supplementalContextMetadata?.isProcessTimeout,
                 codewhispererSupplementalContextIsUtg: supplementalContextMetadata?.isUtg,
                 codewhispererSupplementalContextLength: supplementalContextMetadata?.contentsLength,
@@ -235,7 +231,6 @@ export class TelemetryHelper {
                 .map((e) => e.codewhispererSuggestionImportCount || 0)
                 .reduce((a, b) => a + b, 0),
             codewhispererTypeaheadLength: 0,
-            codewhispererUserGroup: CodeWhispererUserGroupSettings.getUserGroup().toString(),
             codewhispererSupplementalContextTimeout: supplementalContextMetadata?.isProcessTimeout,
             codewhispererSupplementalContextIsUtg: supplementalContextMetadata?.isUtg,
             codewhispererSupplementalContextLength: supplementalContextMetadata?.contentsLength,
@@ -296,7 +291,6 @@ export class TelemetryHelper {
             codewhispererPreviousSuggestionState: this.prevTriggerDecision,
             codewhispererClassifierResult: this.classifierResult,
             codewhispererClassifierThreshold: this.classifierThreshold,
-            codewhispererUserGroup: CodeWhispererUserGroupSettings.getUserGroup().toString(),
             codewhispererSupplementalContextTimeout: supplementalContextMetadata?.isProcessTimeout,
             codewhispererSupplementalContextIsUtg: supplementalContextMetadata?.isUtg,
             codewhispererSupplementalContextLength: supplementalContextMetadata?.contentsLength,
@@ -539,7 +533,6 @@ export class TelemetryHelper {
             codewhispererTriggerType: session.triggerType,
             codewhispererLanguage: session.language,
             credentialStartUrl: AuthUtil.instance.startUrl,
-            codewhispererUserGroup: CodeWhispererUserGroupSettings.getUserGroup().toString(),
             codewhispererCustomizationArn: getSelectedCustomization().arn,
         })
     }

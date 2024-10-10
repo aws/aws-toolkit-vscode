@@ -3,8 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import * as crypto from 'crypto'
-import * as fs from 'fs'
+import * as fs from 'fs' // eslint-disable-line no-restricted-imports
 import { default as stripAnsi } from 'strip-ansi'
 import { isCloud9 } from '../extensionUtilities'
 import { getLogger } from '../logger'
@@ -30,11 +31,20 @@ export function truncate(s: string, n: number, suffix?: string): string {
 }
 
 /**
- * Indents a string.
+ * Indents a given string with spaces.
  *
- * @param size Indent width (number of space chars).
- * @param clear Clear existing whitespace, if any.
- * @param s Text to indent.
+ * @param {string} s - The input string to be indented.
+ * @param {number} [size=4] - The number of spaces to use for indentation. Defaults to 4.
+ * @param {boolean} [clear=false] - If true, the function will clear any existing indentation and apply the new indentation.
+ * @returns {string} The indented string.
+ *
+ * @example
+ * const indentedString = indent('Hello\nWorld', 2);
+ * console.log(indentedString); // Output: "  Hello\n  World"
+ *
+ * @example
+ * const indentedString = indent('  Hello\n    World', 4, true);
+ * console.log(indentedString); // Output: "    Hello\n    World"
  */
 export function indent(s: string, size: number = 4, clear: boolean = false): string {
     const n = Math.abs(size)
@@ -394,4 +404,35 @@ export function undefinedIfEmpty(str: string | undefined): string | undefined {
     }
 
     return undefined
+}
+
+/**
+ * Extracts the file path and selection context from the message.
+ *
+ * @param {any} message - The message object containing the file and selection context.
+ * @returns {Object} - An object with `filePath` and `selection` properties.
+ */
+export function extractFileAndCodeSelectionFromMessage(message: any) {
+    const filePath = message?.context?.activeFileContext?.filePath
+    const selection = message?.context?.focusAreaContext?.selectionInsideExtendedCodeBlock as vscode.Selection
+    return { filePath, selection }
+}
+
+/**
+ * Indents the given code based on the current document's indentation at the selection start.
+ *
+ * @param {any} message - The message object containing the code.
+ * @param {vscode.TextDocument} doc - The VSCode document where the code is applied.
+ * @param {vscode.Selection} selection - The selection range in the document.
+ * @returns {string} - The processed code to be applied to the document.
+ */
+export function getIndentedCode(message: any, doc: vscode.TextDocument, selection: vscode.Selection) {
+    const indentRange = new vscode.Range(new vscode.Position(selection.start.line, 0), selection.active)
+    let indentation = doc.getText(indentRange)
+
+    if (indentation.trim().length !== 0) {
+        indentation = ' '.repeat(indentation.length - indentation.trimStart().length)
+    }
+
+    return indent(message.code, indentation.length)
 }
