@@ -256,7 +256,7 @@ export class RecommendationHandler {
             sessionId = resp?.$response?.httpResponse?.headers['x-amzn-sessionid']
             TelemetryHelper.instance.setFirstResponseRequestId(requestId)
             if (page === 0) {
-                TelemetryHelper.instance.setTimeToFirstRecommendation(performance.now())
+                session.setTimeToFirstRecommendation(performance.now())
             }
             if (nextToken === '') {
                 TelemetryHelper.instance.setAllPaginationEndTime()
