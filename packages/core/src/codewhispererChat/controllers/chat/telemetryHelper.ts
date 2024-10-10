@@ -203,6 +203,7 @@ export class CWCTelemetryHelper {
                     cwsprChatCodeBlockIndex: message.codeBlockIndex,
                     cwsprChatTotalCodeBlocks: message.totalCodeBlocks,
                     cwsprChatHasProjectContext: this.responseWithProjectContext.get(message.messageId),
+                    cwsprChatProgrammingLanguage: message.codeBlockLanguage,
                 }
                 break
             case 'code_was_copied_to_clipboard':
@@ -220,6 +221,7 @@ export class CWCTelemetryHelper {
                     cwsprChatCodeBlockIndex: message.codeBlockIndex,
                     cwsprChatTotalCodeBlocks: message.totalCodeBlocks,
                     cwsprChatHasProjectContext: this.responseWithProjectContext.get(message.messageId),
+                    cwsprChatProgrammingLanguage: message.codeBlockLanguage,
                 }
                 break
             case 'accept_diff':

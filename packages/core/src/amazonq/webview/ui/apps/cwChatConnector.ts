@@ -111,7 +111,8 @@ export class Connector {
         eventId?: string,
         codeBlockIndex?: number,
         totalCodeBlocks?: number,
-        userIntent?: string
+        userIntent?: string,
+        codeBlockLanguage?: string
     ): void => {
         this.sendMessageToExtension({
             tabID: tabID,
@@ -125,6 +126,7 @@ export class Connector {
             codeBlockIndex,
             totalCodeBlocks,
             userIntent,
+            codeBlockLanguage,
         })
     }
 
@@ -137,7 +139,8 @@ export class Connector {
         eventId?: string,
         codeBlockIndex?: number,
         totalCodeBlocks?: number,
-        userIntent?: string
+        userIntent?: string,
+        codeBlockLanguage?: string
     ): void => {
         this.sendMessageToExtension({
             tabID: tabID,
@@ -151,6 +154,7 @@ export class Connector {
             codeBlockIndex,
             totalCodeBlocks,
             userIntent,
+            codeBlockLanguage,
         })
     }
 
@@ -295,6 +299,7 @@ export class Connector {
                 canBeVoted: true,
                 codeReference: messageData.codeReference,
                 userIntent: messageData.userIntent,
+                codeBlockLanguage: messageData.codeBlockLanguage,
             }
 
             // If it is not there we will not set it
@@ -328,6 +333,7 @@ export class Connector {
                 messageId: messageData.messageID,
                 codeReference: messageData.codeReference,
                 userIntent: messageData.userIntent,
+                codeBlockLanguage: messageData.codeBlockLanguage,
                 followUp:
                     messageData.followUps !== undefined && messageData.followUps.length > 0
                         ? {
