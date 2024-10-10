@@ -305,7 +305,7 @@ export class TelemetryHelper {
         // When we send a userTriggerDecision for neither Accept nor Reject, service side should not use this value
         // and client side will set this value to 0.0.
         let e2eLatency = session.firstSuggestionShowTime - session.invokeSuggestionStartTime
-        if (aggregatedSuggestionState != 'Reject' && aggregatedSuggestionState != 'Accept') {
+        if (aggregatedSuggestionState !== 'Reject' && aggregatedSuggestionState !== 'Accept') {
             e2eLatency = 0.0
         }
 
