@@ -25,6 +25,12 @@ interface CopyTask {
     readonly destination?: string
 }
 
+const cpSync = fs.cpSync as (
+    source: string,
+    destination: string,
+    options?: { recursive: boolean; force: boolean; errorOnExist: boolean }
+) => void
+
 const tasks: CopyTask[] = [
     { target: path.join('src', 'templates') },
     { target: path.join('src', 'test', 'shared', 'cloudformation', 'yaml') },
@@ -51,7 +57,7 @@ function copy(task: CopyTask): void {
     const dst = path.resolve(outRoot, task.destination ?? task.target)
 
     try {
-        fs.cpSync(src, dst, {
+        cpSync(src, dst, {
             recursive: true,
             force: true,
             errorOnExist: false,
