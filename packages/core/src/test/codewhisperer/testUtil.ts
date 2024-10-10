@@ -17,7 +17,6 @@ import { getLogger } from '../../shared/logger'
 import { CodeWhispererCodeCoverageTracker } from '../../codewhisperer/tracker/codewhispererCodeCoverageTracker'
 import globals from '../../shared/extensionGlobals'
 import { session } from '../../codewhisperer/util/codeWhispererSession'
-import fs from 'fs'
 import { DefaultAWSClientBuilder, ServiceOptions } from '../../shared/awsClientBuilder'
 import { FakeAwsContext } from '../utilities/fakeAwsContext'
 import { HttpResponse, Service } from 'aws-sdk'
@@ -27,6 +26,7 @@ import { codeWhispererClient } from '../../codewhisperer/client/codewhisperer'
 import { RecommendationHandler } from '../../codewhisperer/service/recommendationHandler'
 import * as model from '../../codewhisperer/models/model'
 import { stub } from '../utilities/stubber'
+import { Dirent } from 'fs' // eslint-disable-line no-restricted-imports
 
 export async function resetCodeWhispererGlobalVariables() {
     vsCodeState.isIntelliSenseActive = false
@@ -203,8 +203,8 @@ export function createCodeActionContext(): vscode.CodeActionContext {
     }
 }
 
-export function createMockDirentFile(fileName: string): fs.Dirent {
-    const dirent = new fs.Dirent()
+export function createMockDirentFile(fileName: string): Dirent {
+    const dirent = new Dirent()
     dirent.isFile = () => true
     dirent.name = fileName
     return dirent
@@ -311,4 +311,13 @@ export function createClient() {
     mockClient.getCodeScan.resolves(mockGetCodeScanResponse)
     mockClient.listCodeScanFindings.resolves(mockListCodeScanFindingsResponse)
     return mockClient
+}
+
+export function aStringWithLineCount(lineCount: number, start: number = 0): string {
+    let s = ''
+    for (let i = start; i < start + lineCount; i++) {
+        s += `line${i}\n`
+    }
+
+    return s.trimEnd()
 }

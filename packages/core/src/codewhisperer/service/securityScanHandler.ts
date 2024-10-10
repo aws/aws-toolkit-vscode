@@ -16,7 +16,7 @@ import {
 import { sleep } from '../../shared/utilities/timeoutUtils'
 import * as codewhispererClient from '../client/codewhisperer'
 import * as CodeWhispererConstants from '../models/constants'
-import { existsSync, statSync, readFileSync } from 'fs'
+import { existsSync, statSync, readFileSync } from 'fs' // eslint-disable-line no-restricted-imports
 import { RawCodeScanIssue } from '../models/model'
 import * as crypto from 'crypto'
 import path = require('path')
