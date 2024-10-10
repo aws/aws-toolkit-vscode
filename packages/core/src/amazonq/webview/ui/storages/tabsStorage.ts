@@ -14,6 +14,7 @@ export interface Tab {
     type: TabType
     isSelected: boolean
     openInteractionType?: TabOpenType
+    lastCommand?: string
 }
 
 export class TabsStorage {
@@ -60,6 +61,18 @@ export class TabsStorage {
 
     public isTabDead(tabID: string): boolean {
         return this.tabs.get(tabID)?.status === 'dead'
+    }
+
+    public updateTabLastCommand(tabID: string, command?: string) {
+        if (command === undefined) {
+            return
+        }
+        const currentTabValue = this.tabs.get(tabID)
+        if (currentTabValue === undefined || currentTabValue.status === 'dead') {
+            return
+        }
+        currentTabValue.lastCommand = command
+        this.tabs.set(tabID, currentTabValue)
     }
 
     public updateTabStatus(tabID: string, tabStatus: TabStatus) {

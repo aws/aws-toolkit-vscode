@@ -3,7 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ChatItem, FeedbackPayload, Engagement, ChatItemAction } from '@aws/mynah-ui'
+import {
+    ChatItem,
+    FeedbackPayload,
+    Engagement,
+    ChatItemAction,
+    CodeSelectionType,
+    ReferenceTrackerInformation,
+} from '@aws/mynah-ui'
 import { Connector as CWChatConnector } from './apps/cwChatConnector'
 import { Connector as FeatureDevChatConnector } from './apps/featureDevChatConnector'
 import { Connector as AmazonQCommonsConnector } from './apps/amazonqCommonsConnector'
@@ -51,7 +58,7 @@ export interface ConnectorProps {
     sendMessageToExtension: (message: ExtensionMessage) => void
     onMessageReceived?: (tabID: string, messageData: any, needToShowAPIDocsTab: boolean) => void
     onChatAnswerUpdated?: (tabID: string, message: ChatItem) => void
-    onChatAnswerReceived?: (tabID: string, message: ChatItem) => void
+    onChatAnswerReceived?: (tabID: string, message: ChatItem, messageData: any) => void
     onWelcomeFollowUpClicked: (tabID: string, welcomeFollowUpType: WelcomeFollowupType) => void
     onAsyncEventProgress: (tabID: string, inProgress: boolean, message: string | undefined) => void
     onQuickHandlerCommand: (tabID: string, command?: string, eventId?: string) => void
@@ -188,6 +195,9 @@ export class Connector {
         } else if (messageData.sender === 'gumbyChat') {
             await this.gumbyChatConnector.handleMessageReceive(messageData)
         }
+
+        // Reset lastCommand after message is rendered.
+        this.tabsStorage.updateTabLastCommand(messageData.tabID, '')
     }
 
     onTabAdd = (tabID: string): void => {
@@ -255,6 +265,64 @@ export class Connector {
                 this.featureDevChatConnector.onCodeInsertToCursorPosition(tabID, code, type, codeReference)
                 break
         }
+    }
+
+    onAcceptDiff = (
+        tabId: string,
+        messageId: string,
+        actionId: string,
+        data?: string,
+        code?: string,
+        type?: CodeSelectionType,
+        referenceTrackerInformation?: ReferenceTrackerInformation[],
+        eventId?: string,
+        codeBlockIndex?: number,
+        totalCodeBlocks?: number
+    ) => {
+        const tabType = this.tabsStorage.getTab(tabId)?.type
+        this.sendMessageToExtension({
+            tabType,
+            tabID: tabId,
+            command: 'accept_diff',
+            messageId,
+            actionId,
+            data,
+            code,
+            type,
+            referenceTrackerInformation,
+            eventId,
+            codeBlockIndex,
+            totalCodeBlocks,
+        })
+    }
+
+    onViewDiff = (
+        tabId: string,
+        messageId: string,
+        actionId: string,
+        data?: string,
+        code?: string,
+        type?: CodeSelectionType,
+        referenceTrackerInformation?: ReferenceTrackerInformation[],
+        eventId?: string,
+        codeBlockIndex?: number,
+        totalCodeBlocks?: number
+    ) => {
+        const tabType = this.tabsStorage.getTab(tabId)?.type
+        this.sendMessageToExtension({
+            tabType,
+            tabID: tabId,
+            command: 'view_diff',
+            messageId,
+            actionId,
+            data,
+            code,
+            type,
+            referenceTrackerInformation,
+            eventId,
+            codeBlockIndex,
+            totalCodeBlocks,
+        })
     }
 
     onCopyCodeToClipboard = (
