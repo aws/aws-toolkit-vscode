@@ -7,7 +7,7 @@ import * as _path from 'path'
 import * as vscode from 'vscode'
 import { getTabSizeSetting } from './editorUtilities'
 import { tempDirPath } from '../filesystemUtilities'
-import { fs, getIndentedCode, ToolkitError } from '../index'
+import { fs, indent, ToolkitError } from '../index'
 import { getLogger } from '../logger'
 
 /**
@@ -164,4 +164,23 @@ export async function createTempFileForDiff(
 
     await applyChanges(doc, range, code)
     return tempFileUri
+}
+
+/**
+ * Indents the given code based on the current document's indentation at the selection start.
+ *
+ * @param message The message object containing the code.
+ * @param doc The VSCode document where the code is applied.
+ * @param selection The selection range in the document.
+ * @returns The processed code to be applied to the document.
+ */
+export function getIndentedCode(message: any, doc: vscode.TextDocument, selection: vscode.Selection) {
+    const indentRange = new vscode.Range(new vscode.Position(selection.start.line, 0), selection.active)
+    let indentation = doc.getText(indentRange)
+
+    if (indentation.trim().length !== 0) {
+        indentation = ' '.repeat(indentation.length - indentation.trimStart().length)
+    }
+
+    return indent(message.code, indentation.length)
 }

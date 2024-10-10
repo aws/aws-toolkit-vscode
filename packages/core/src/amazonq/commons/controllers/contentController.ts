@@ -12,9 +12,10 @@ import { disposeOnEditorClose } from '../../../shared/utilities/editorUtilities'
 import {
     applyChanges,
     createTempFileForDiff,
+    getIndentedCode,
     getSelectionFromRange,
 } from '../../../shared/utilities/textDocumentUtilities'
-import { extractFileAndCodeSelectionFromMessage, fs, getErrorMsg, getIndentedCode, ToolkitError } from '../../../shared'
+import { extractFileAndCodeSelectionFromMessage, fs, getErrorMsg, ToolkitError } from '../../../shared'
 
 class ContentProvider implements vscode.TextDocumentContentProvider {
     constructor(private uri: vscode.Uri) {}
