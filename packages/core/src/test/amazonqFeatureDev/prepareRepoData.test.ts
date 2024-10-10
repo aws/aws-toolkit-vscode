@@ -3,22 +3,33 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import assert from 'assert'
+import * as sinon from 'sinon'
 import { WorkspaceFolder } from 'vscode'
 import { performanceTest } from '../../shared/performance/performance'
 import { createTestWorkspace } from '../testUtil'
 import { prepareRepoData, TelemetryHelper } from '../../amazonqFeatureDev'
-import { AmazonqCreateUpload, getRandomString } from '../../shared'
+import { AmazonqCreateUpload, fs, getRandomString } from '../../shared'
 import { Span } from '../../shared/telemetry'
+import { FileSystem } from '../../shared/fs/fs'
+import { AdmZipSpy } from '../../shared/performance/zipSpy'
+import AdmZip from 'adm-zip'
 
 type resultType = {
     zipFileBuffer: Buffer
     zipFileChecksum: string
 }
 
+type setupResult = {
+    workspace: WorkspaceFolder
+    initialZip: AdmZip
+    fsSpy: sinon.SinonSpiedInstance<FileSystem>
+    zipSpy: AdmZipSpy
+}
+
 function performanceTestWrapper(numFiles: number, fileSize: number) {
     return performanceTest(
         {
-            testRuns: 10,
+            testRuns: 1,
             linux: {
                 userCpuUsage: 100,
                 systemCpuUsage: 35,
@@ -40,34 +51,49 @@ function performanceTestWrapper(numFiles: number, fileSize: number) {
             const telemetry = new TelemetryHelper()
             return {
                 setup: async () => {
-                    return await createTestWorkspace(numFiles, {
+                    const initialZip = new AdmZip()
+                    const fsSpy = sinon.spy(fs)
+                    const zipSpy = new AdmZipSpy(initialZip)
+                    const workspace = await createTestWorkspace(numFiles, {
                         fileNamePrefix: 'file',
                         fileContent: getRandomString(fileSize),
                         fileNameSuffix: '.md',
                     })
+                    return { workspace, initialZip, fsSpy, zipSpy }
                 },
-                execute: async (workspace: WorkspaceFolder) => {
-                    return await prepareRepoData([workspace.uri.fsPath], [workspace], telemetry, {
-                        record: () => {},
-                    } as unknown as Span<AmazonqCreateUpload>)
+                execute: async (setup: setupResult) => {
+                    return await prepareRepoData(
+                        [setup.workspace.uri.fsPath],
+                        [setup.workspace],
+                        telemetry,
+                        {
+                            record: () => {},
+                        } as unknown as Span<AmazonqCreateUpload>,
+                        setup.initialZip
+                    )
                 },
-                verify: async (_w: WorkspaceFolder, result: resultType) => {
-                    verifyResult(result, telemetry, numFiles * fileSize)
+                verify: async (setup: setupResult, result: resultType) => {
+                    verifyResult(setup, result, telemetry, numFiles * fileSize)
                 },
             }
         }
     )
 }
 
-function verifyResult(result: resultType, telemetry: TelemetryHelper, expectedSize: number): void {
+function verifyResult(setup: setupResult, result: resultType, telemetry: TelemetryHelper, expectedSize: number): void {
     assert.ok(result)
     assert.strictEqual(Buffer.isBuffer(result.zipFileBuffer), true)
     assert.strictEqual(telemetry.repositorySize, expectedSize)
     assert.strictEqual(result.zipFileChecksum.length, 44)
+    assert.ok(setup.fsSpy.appendFile.callCount === 0)
+    assert.ok(setup.zipSpy.addLocalFile.callCount > 0)
 }
 
 describe('prepareRepoData', function () {
     describe('Performance Tests', function () {
+        afterEach(function () {
+            sinon.restore()
+        })
         performanceTestWrapper(250, 10)
         performanceTestWrapper(10, 1000)
     })
