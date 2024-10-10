@@ -36,6 +36,16 @@ export function makeFailedWriteMessage(filename: string): string {
     return message
 }
 
+/**
+ * Shows a message and emits a `toolkit_showNotification` metric (if and only if the user
+ * confirms/dismisses the dialog!) capturing the result.
+ *
+ * @param kind  Kind of message to show
+ * @param message  Message text
+ * @param items  Buttons
+ * @returns Promise that resolves when a button is clicked or the message is dismissed, and returns
+ * the selected button text.
+ */
 export function showMessage(
     kind: 'info' | 'warn' | 'error' = 'error',
     message: string,
@@ -43,14 +53,7 @@ export function showMessage(
     options: vscode.MessageOptions & { telemetry?: boolean } = {},
     metric: Partial<ToolkitShowNotification> = {}
 ): Thenable<string | undefined> {
-    return telemetry.toolkit_showNotification.run(async (span) => {
-        span.record({
-            passive: true,
-            id: 'unknown',
-            component: 'editor',
-            ...metric,
-        })
-
+    function showMsg() {
         switch (kind) {
             case 'info':
                 return vscode.window.showInformationMessage(message, options, ...items)
@@ -60,6 +63,24 @@ export function showMessage(
             default:
                 return vscode.window.showErrorMessage(message, options, ...items)
         }
+    }
+
+    // NOTE: this does not emit telemetry (or logs) until the user confirms/dismisses the message!
+    // That includes vscode's "Do Not Disturb" mode: when a message is "shown" in DND mode, it is
+    // neither confirmed nor dismissed until the user opens the messages list and interacts with it!
+    return telemetry.toolkit_showNotification.run(async (span) => {
+        span.record({
+            passive: true,
+            id: 'unknown',
+            component: 'editor',
+            ...metric,
+        })
+
+        return showMsg().then((result) => {
+            span.record({ userChoice: result } as any)
+
+            return result
+        })
     })
 }
 
@@ -108,7 +129,6 @@ export async function showMessageWithUrl(
  * Shows a non-modal message with a "View Logs" button.
  *
  * @param message  Message text
- * @param window  Window
  * @param kind  Kind of message to show
  * @param extraItems  Extra buttons shown _before_ the "View Logs" button
  * @returns	Promise that resolves when a button is clicked or the message is
@@ -146,7 +166,6 @@ export async function showViewLogsMessage(
  * @param prompt the message to show.
  * @param confirm the confirmation button text.
  * @param cancel the cancel button text.
- * @param window the window.
  */
 export async function showConfirmationMessage({
     prompt,
