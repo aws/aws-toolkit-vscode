@@ -10,7 +10,6 @@ import { CodeReference } from './amazonqCommonsConnector'
 import { FollowUpGenerator } from '../followUps/generator'
 import { getActions } from '../diffTree/actions'
 import { DiffTreeFileInfo } from '../diffTree/types'
-import { telemetry } from '../../../../shared/telemetry'
 
 interface ChatPayload {
     chatMessage: string
@@ -278,13 +277,10 @@ export class Connector {
     }
 
     onStopChatResponse = (tabID: string): void => {
-        telemetry.amazonq_stopCodeGeneration.run((span) => {
-            span.record({ tabID })
-            this.sendMessageToExtension({
-                tabID: tabID,
-                command: 'stop-response',
-                tabType: 'featuredev',
-            })
+        this.sendMessageToExtension({
+            tabID: tabID,
+            command: 'stop-response',
+            tabType: 'featuredev',
         })
     }
 
