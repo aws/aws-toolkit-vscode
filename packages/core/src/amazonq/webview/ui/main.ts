@@ -3,7 +3,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import { Connector, CWCChatItem } from './connector'
-import { ChatItem, ChatItemType, MynahIcons, MynahUI, MynahUIDataModel, NotificationType } from '@aws/mynah-ui'
+import {
+    ChatItem,
+    ChatItemType,
+    CodeSelectionType,
+    MynahIcons,
+    MynahUI,
+    MynahUIDataModel,
+    NotificationType,
+    ReferenceTrackerInformation,
+} from '@aws/mynah-ui'
 import { ChatPrompt } from '@aws/mynah-ui/dist/static'
 import { TabsStorage, TabType } from './storages/tabsStorage'
 import { WelcomeFollowupType } from './apps/amazonqCommonsConnector'
@@ -16,8 +25,14 @@ import { TextMessageHandler } from './messages/handler'
 import { MessageController } from './messages/controller'
 import { getActions, getDetails } from './diffTree/actions'
 import { DiffTreeFileInfo } from './diffTree/types'
+import { FeatureContext } from '../../../shared'
+import { tryNewMap } from '../../util/functionUtils'
 
-export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
+export const createMynahUI = (
+    ideApi: any,
+    amazonQEnabled: boolean,
+    featureConfigsSerialized: [string, FeatureContext][]
+) => {
     // eslint-disable-next-line prefer-const
     let mynahUI: MynahUI
     // eslint-disable-next-line prefer-const
@@ -73,6 +88,23 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
     // eslint-disable-next-line prefer-const
     let messageController: MessageController
 
+    let featureConfigs: Map<string, FeatureContext> = tryNewMap(featureConfigsSerialized)
+
+    function shouldDisplayDiff(messageData: any) {
+        const isEnabled = featureConfigs.get('ViewDiffInChat')?.variation === 'TREATMENT'
+        const tab = tabsStorage.getTab(messageData?.tabID || '')
+        const allowedCommands = [
+            'aws.amazonq.refactorCode',
+            'aws.amazonq.fixCode',
+            'aws.amazonq.optimizeCode',
+            'aws.amazonq.sendToPrompt',
+        ]
+        if (isEnabled && tab?.type === 'cwc' && allowedCommands.includes(tab.lastCommand || '')) {
+            return true
+        }
+        return false
+    }
+
     // eslint-disable-next-line prefer-const
     connector = new Connector({
         tabsStorage,
@@ -92,6 +124,9 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
                 isFeatureDevEnabled,
                 isGumbyEnabled,
             })
+
+            featureConfigs = tryNewMap(featureConfigsSerialized)
+
             // Set the new defaults for the quick action commands in all tabs now that isFeatureDevEnabled was enabled/disabled
             for (const tab of tabsStorage.getTabs()) {
                 mynahUI.updateStore(tab.id, {
@@ -117,6 +152,7 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
         },
         onFileActionClick: (tabID: string, messageId: string, filePath: string, actionName: string): void => {},
         onQuickHandlerCommand: (tabID: string, command?: string, eventId?: string) => {
+            tabsStorage.updateTabLastCommand(tabID, command)
             if (command === 'aws.awsq.transform') {
                 quickActionHandler.handle({ command: '/transform' }, tabID, eventId)
             } else if (command === 'aws.awsq.clearchat') {
@@ -124,10 +160,13 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
             }
         },
         onCWCContextCommandMessage: (message: ChatItem, command?: string): string | undefined => {
+            const selectedTab = tabsStorage.getSelectedTab()
+            tabsStorage.updateTabLastCommand(selectedTab?.id || '', command || '')
+
             if (command === 'aws.amazonq.sendToPrompt') {
-                return messageController.sendSelectedCodeToTab(message)
+                return messageController.sendSelectedCodeToTab(message, command)
             } else {
-                const tabID = messageController.sendMessageToTab(message, 'cwc')
+                const tabID = messageController.sendMessageToTab(message, 'cwc', command)
                 if (tabID) {
                     ideApi.postMessage({
                         command: 'start-chat-message-telemetry',
@@ -201,7 +240,7 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
                 } as ChatItem)
             }
         },
-        onChatAnswerReceived: (tabID: string, item: CWCChatItem) => {
+        onChatAnswerReceived: (tabID: string, item: CWCChatItem, messageData: any) => {
             if (item.type === ChatItemType.ANSWER_PART || item.type === ChatItemType.CODE_RESULT) {
                 mynahUI.updateLastChatAnswer(tabID, {
                     ...(item.messageId !== undefined ? { messageId: item.messageId } : {}),
@@ -232,7 +271,29 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
                 item.formItems !== undefined ||
                 item.buttons !== undefined
             ) {
-                mynahUI.addChatItem(tabID, item)
+                mynahUI.addChatItem(tabID, {
+                    ...item,
+                    messageId: item.messageId,
+                    codeBlockActions: {
+                        ...(shouldDisplayDiff(messageData)
+                            ? {
+                                  'insert-to-cursor': undefined,
+                                  accept_diff: {
+                                      id: 'accept_diff',
+                                      label: 'Apply Diff',
+                                      icon: MynahIcons.OK_CIRCLED,
+                                      data: messageData,
+                                  },
+                                  view_diff: {
+                                      id: 'view_diff',
+                                      label: 'View Diff',
+                                      icon: MynahIcons.EYE,
+                                      data: messageData,
+                                  },
+                              }
+                            : {}),
+                    },
+                })
             }
 
             if (
@@ -359,6 +420,7 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
             connector.onUpdateTabType(newTabID)
 
             mynahUI.updateStore(newTabID, tabDataGenerator.getTabData(tabType, true))
+            featureConfigs = tryNewMap(featureConfigsSerialized)
         },
         onOpenSettingsMessage(tabId: string) {
             mynahUI.addChatItem(tabId, {
@@ -455,6 +517,51 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
                 totalCodeBlocks,
                 messageUserIntentMap.get(messageId) ?? undefined
             )
+        },
+        onCodeBlockActionClicked: (
+            tabId: string,
+            messageId: string,
+            actionId: string,
+            data?: string,
+            code?: string,
+            type?: CodeSelectionType,
+            referenceTrackerInformation?: ReferenceTrackerInformation[],
+            eventId?: string,
+            codeBlockIndex?: number,
+            totalCodeBlocks?: number
+        ) => {
+            switch (actionId) {
+                case 'accept_diff':
+                    connector.onAcceptDiff(
+                        tabId,
+                        messageId,
+                        actionId,
+                        data,
+                        code,
+                        type,
+                        referenceTrackerInformation,
+                        eventId,
+                        codeBlockIndex,
+                        totalCodeBlocks
+                    )
+                    break
+                case 'view_diff':
+                    connector.onViewDiff(
+                        tabId,
+                        messageId,
+                        actionId,
+                        data,
+                        code,
+                        type,
+                        referenceTrackerInformation,
+                        eventId,
+                        codeBlockIndex,
+                        totalCodeBlocks
+                    )
+                    break
+                default:
+                    break
+            }
         },
         onCopyCodeToClipboard: (
             tabId,
