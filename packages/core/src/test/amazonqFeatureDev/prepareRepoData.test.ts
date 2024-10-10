@@ -11,7 +11,6 @@ import { prepareRepoData, TelemetryHelper } from '../../amazonqFeatureDev'
 import { AmazonqCreateUpload, fs, getRandomString } from '../../shared'
 import { Span } from '../../shared/telemetry'
 import { FileSystem } from '../../shared/fs/fs'
-import { AdmZipSpy } from '../../shared/performance/zipSpy'
 import AdmZip from 'adm-zip'
 
 type resultType = {
@@ -23,7 +22,7 @@ type setupResult = {
     workspace: WorkspaceFolder
     initialZip: AdmZip
     fsSpy: sinon.SinonSpiedInstance<FileSystem>
-    zipSpy: AdmZipSpy
+    zipSpy: sinon.SinonSpiedInstance<AdmZip>
 }
 
 function performanceTestWrapper(numFiles: number, fileSize: number) {
@@ -53,7 +52,7 @@ function performanceTestWrapper(numFiles: number, fileSize: number) {
                 setup: async () => {
                     const initialZip = new AdmZip()
                     const fsSpy = sinon.spy(fs)
-                    const zipSpy = new AdmZipSpy(initialZip)
+                    const zipSpy = sinon.spy(initialZip)
                     const workspace = await createTestWorkspace(numFiles, {
                         fileNamePrefix: 'file',
                         fileContent: getRandomString(fileSize),
@@ -85,7 +84,7 @@ function verifyResult(setup: setupResult, result: resultType, telemetry: Telemet
     assert.strictEqual(Buffer.isBuffer(result.zipFileBuffer), true)
     assert.strictEqual(telemetry.repositorySize, expectedSize)
     assert.strictEqual(result.zipFileChecksum.length, 44)
-    assert.ok(setup.fsSpy.appendFile.callCount === 0)
+    assert.ok(setup.fsSpy.stat.callCount > 0)
     assert.ok(setup.zipSpy.addLocalFile.callCount > 0)
 }
 
