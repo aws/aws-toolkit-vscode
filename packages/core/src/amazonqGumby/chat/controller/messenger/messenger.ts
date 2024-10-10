@@ -9,12 +9,7 @@
  */
 
 import { AuthFollowUpType, AuthMessageDataMap } from '../../../../amazonq/auth/model'
-import {
-    DB,
-    JDKVersion,
-    TransformationCandidateProject,
-    transformByQState,
-} from '../../../../codewhisperer/models/model'
+import { JDKVersion, TransformationCandidateProject, transformByQState } from '../../../../codewhisperer/models/model'
 import { FeatureAuthState } from '../../../../codewhisperer/util/authUtil'
 import * as CodeWhispererConstants from '../../../../codewhisperer/models/constants'
 import {
@@ -256,42 +251,18 @@ export class Messenger {
             type: 'select',
             title: 'Choose a project to transform',
             mandatory: true,
-
             options: projectFormOptions,
         })
 
         formItems.push({
-            id: 'GumbyTransformDBFromForm',
+            id: 'GumbyTransformSQLSchemaForm',
             type: 'select',
-            title: 'Choose the source database',
+            title: 'Choose the schema of the database',
             mandatory: true,
-            options: [
-                {
-                    value: DB.ORACLE,
-                    label: CodeWhispererConstants.oracleVendor,
-                },
-                {
-                    value: DB.OTHER,
-                    label: CodeWhispererConstants.otherVendor,
-                },
-            ],
-        })
-
-        formItems.push({
-            id: 'GumbyTransformDBToForm',
-            type: 'select',
-            title: 'Choose the target database',
-            mandatory: true,
-            options: [
-                {
-                    value: DB.RDS_POSTGRESQL,
-                    label: CodeWhispererConstants.rdsTargetVendor,
-                },
-                {
-                    value: DB.AURORA_POSTGRESQL,
-                    label: CodeWhispererConstants.auroraTargetVendor,
-                },
-            ],
+            options: Array.from(transformByQState.getSchemaOptions()).map((schema) => ({
+                value: schema,
+                label: schema,
+            })),
         })
 
         this.dispatcher.sendAsyncEventProgress(
@@ -558,14 +529,25 @@ export class Messenger {
         this.dispatcher.sendChatMessage(new ChatMessage({ message, messageType: 'prompt' }, tabID))
     }
 
-    public sendSQLConversionProjectSelectionMessage(projectName: string, fromDB: DB, toDB: DB, tabID: string) {
+    public sendSQLConversionProjectSelectionMessage(projectName: string, schema: string, tabID: string) {
         const message = `### Transformation details
 -------------
 | | |
 | :------------------- | -------: |
 | **Project**             |   ${projectName}   |
-| **Source DB** |  ${fromDB}   |
-| **Target DB** |  ${toDB}   |
+| **Schema** |  ${schema}   |
+    `
+        this.dispatcher.sendChatMessage(new ChatMessage({ message, messageType: 'prompt' }, tabID))
+    }
+
+    public sendSQLConversionMetadataReceivedMessage(tabID: any) {
+        const message = `### Transformation details
+-------------
+| | |
+| :------------------- | -------: |
+| **Source DB**             |   ${transformByQState.getSourceDB()}   |
+| **Target DB** |  ${transformByQState.getTargetDB()}   |
+| **Host** |  ${transformByQState.getSourceServerName()}   |
     `
         this.dispatcher.sendChatMessage(new ChatMessage({ message, messageType: 'prompt' }, tabID))
     }
@@ -723,8 +705,8 @@ ${codeSnippet}
         )
     }
 
-    public sendSelectSQLMetadataFileMessage(tabID: string) {
-        const message = 'Please select your metadata .sct file.'
+    public async sendSelectSQLMetadataFileMessage(tabID: string) {
+        const message = CodeWhispererConstants.selectSQLMetadataFileHelpMessage
         const buttons: ChatItemButton[] = []
 
         buttons.push({
