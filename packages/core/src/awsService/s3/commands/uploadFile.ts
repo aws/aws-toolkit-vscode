@@ -6,7 +6,7 @@
 import * as path from 'path'
 import * as mime from 'mime-types'
 import * as vscode from 'vscode'
-import { statSync } from 'fs'
+import { statSync } from 'fs' // eslint-disable-line no-restricted-imports
 import { S3 } from 'aws-sdk'
 import { getLogger } from '../../../shared/logger'
 import { S3Node } from '../explorer/s3Nodes'

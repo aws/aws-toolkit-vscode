@@ -14,7 +14,6 @@ type sshKeyType = 'rsa' | 'ed25519'
 export class SshKeyPair {
     private publicKeyPath: string
     private lifeTimeout: Timeout
-    private deleted: boolean = false
 
     private constructor(
         private readonly keyPath: string,
@@ -68,7 +67,7 @@ export class SshKeyPair {
     }
 
     public async getPublicKey(): Promise<string> {
-        const contents = await fs.readFileAsString(this.publicKeyPath)
+        const contents = await fs.readFileText(this.publicKeyPath)
         return contents
     }
 
@@ -79,12 +78,12 @@ export class SshKeyPair {
         if (!this.lifeTimeout.completed) {
             this.lifeTimeout.cancel()
         }
-
-        this.deleted = true
     }
 
-    public isDeleted(): boolean {
-        return this.deleted
+    public async isDeleted(): Promise<boolean> {
+        const privateKeyDeleted = !(await fs.existsFile(this.getPrivateKeyPath()))
+        const publicKeyDeleted = !(await fs.existsFile(this.getPublicKeyPath()))
+        return privateKeyDeleted || publicKeyDeleted
     }
 
     public timeAlive(): number {

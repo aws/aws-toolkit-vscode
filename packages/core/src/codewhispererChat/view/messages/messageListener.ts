@@ -63,6 +63,12 @@ export class UIMessageListener {
                     })
                 }
                 break
+            case 'accept_diff':
+                this.processAcceptDiff(msg)
+                break
+            case 'view_diff':
+                this.processViewDiff(msg)
+                break
             case 'code_was_copied_to_clipboard':
                 this.processCodeWasCopiedToClipboard(msg)
                 break
@@ -162,6 +168,22 @@ export class UIMessageListener {
         })
     }
 
+    private processAcceptDiff(msg: any) {
+        this.chatControllerMessagePublishers.processAcceptDiff.publish({
+            command: msg.command,
+            tabID: msg.tabID || msg.tabId,
+            ...msg,
+        })
+    }
+
+    private processViewDiff(msg: any) {
+        this.chatControllerMessagePublishers.processViewDiff.publish({
+            command: msg.command,
+            tabID: msg.tabID || msg.tabId,
+            ...msg,
+        })
+    }
+
     private processCodeWasCopiedToClipboard(msg: any) {
         this.chatControllerMessagePublishers.processCopyCodeToClipboard.publish({
             command: msg.command,
@@ -204,7 +226,6 @@ export class UIMessageListener {
             tabID: msg.tabID,
             messageId: msg.messageId,
             userIntent: msg.userIntent !== '' ? msg.userIntent : undefined,
-            traceId: msg.traceId,
         })
     }
 

@@ -16,7 +16,7 @@ import { CloudControlClient, DefaultCloudControlClient } from '../../shared/clie
 import { CloudFormationClient, DefaultCloudFormationClient } from '../../shared/clients/cloudFormationClient'
 import { makeTemporaryToolkitFolder, readFileAsString } from '../../shared/filesystemUtilities'
 import { FakeExtensionContext } from '../fakeExtensionContext'
-import { existsSync } from 'fs'
+import { existsSync } from 'fs' // eslint-disable-line no-restricted-imports
 import { ResourceTypeMetadata } from '../../dynamicResources/model/resources'
 import globals from '../../shared/extensionGlobals'
 import { Stub, stub } from '../utilities/stubber'

@@ -13,7 +13,12 @@ import { telemetry } from '../../shared/telemetry/telemetry'
 import { VirtualFileSystem } from '../../shared/virtualFilesystem'
 import { VirtualMemoryFile } from '../../shared/virtualMemoryFile'
 import { featureDevScheme } from '../constants'
-import { FeatureDevServiceError, IllegalStateTransition, PromptRefusalException } from '../errors'
+import {
+    FeatureDevServiceError,
+    IllegalStateTransition,
+    NoChangeRequiredException,
+    PromptRefusalException,
+} from '../errors'
 import {
     CodeGenerationStatus,
     CurrentWsFolders,
@@ -31,7 +36,7 @@ import {
 import { prepareRepoData } from '../util/files'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { uploadCode } from '../util/upload'
-import { CodeReference } from '../../amazonq/webview/ui/connector'
+import { CodeReference, UploadHistory } from '../../amazonq/webview/ui/connector'
 import { isPresent } from '../../shared/utilities/collectionUtils'
 import { AuthUtil } from '../../codewhisperer/util/authUtil'
 import { randomUUID } from '../../shared/crypto'
@@ -56,7 +61,8 @@ function registerNewFiles(
     fs: VirtualFileSystem,
     newFileContents: NewFileZipContents[],
     uploadId: string,
-    workspaceFolders: CurrentWsFolders
+    workspaceFolders: CurrentWsFolders,
+    conversationId: string
 ): NewFileInfo[] {
     const result: NewFileInfo[] = []
     const workspaceFolderPrefixes = getWorkspaceFoldersByPrefixes(workspaceFolders)
@@ -76,6 +82,12 @@ function registerNewFiles(
                       Object.values(workspaceFolderPrefixes).find((val) => val.index === 0)?.name ?? ''
                   ]
         if (folder === undefined) {
+            telemetry.toolkit_trackScenario.emit({
+                count: 1,
+                amazonqConversationId: conversationId,
+                credentialStartUrl: AuthUtil.instance.startUrl,
+                scenario: 'wsOrphanedDocuments',
+            })
             getLogger().error(`No workspace folder found for file: ${zipFilePath} and prefix: ${prefix}`)
             continue
         }
@@ -169,7 +181,13 @@ abstract class CodeGenBase {
                 case CodeGenerationStatus.COMPLETE: {
                     const { newFileContents, deletedFiles, references } =
                         await this.config.proxyClient.exportResultArchive(this.conversationId)
-                    const newFileInfo = registerNewFiles(fs, newFileContents, this.uploadId, workspaceFolders)
+                    const newFileInfo = registerNewFiles(
+                        fs,
+                        newFileContents,
+                        this.uploadId,
+                        workspaceFolders,
+                        this.conversationId
+                    )
                     telemetry.setNumberOfFilesGenerated(newFileInfo.length)
 
                     return {
@@ -208,6 +226,9 @@ abstract class CodeGenBase {
                             throw new PromptRefusalException()
                         }
                         case codegenResult.codeGenerationStatusDetail?.includes('EmptyPatch'): {
+                            if (codegenResult.codeGenerationStatusDetail?.includes('NO_CHANGE_REQUIRED')) {
+                                throw new NoChangeRequiredException()
+                            }
                             throw new FeatureDevServiceError(
                                 i18n('AWS.amazonq.featureDev.error.codeGen.default'),
                                 'EmptyPatchException'
@@ -253,6 +274,7 @@ export class CodeGenState extends CodeGenBase implements SessionState {
         public references: CodeReference[],
         tabID: string,
         private currentIteration: number,
+        public uploadHistory: UploadHistory,
         public codeGenerationRemainingIterationCount?: number,
         public codeGenerationTotalIterationCount?: number
     ) {
@@ -300,6 +322,16 @@ export class CodeGenState extends CodeGenBase implements SessionState {
                 this.codeGenerationRemainingIterationCount = codeGeneration.codeGenerationRemainingIterationCount
                 this.codeGenerationTotalIterationCount = codeGeneration.codeGenerationTotalIterationCount
 
+                if (action.uploadHistory && !action.uploadHistory[codeGenerationId] && codeGenerationId) {
+                    action.uploadHistory[codeGenerationId] = {
+                        timestamp: Date.now(),
+                        uploadId: this.config.uploadId,
+                        filePaths: codeGeneration.newFiles,
+                        deletedFiles: codeGeneration.deletedFiles,
+                        tabId: this.tabID,
+                    }
+                }
+
                 action.telemetry.setAmazonqNumberOfReferences(this.references.length)
                 action.telemetry.recordUserCodeGenerationTelemetry(span, this.conversationId)
                 const nextState = new PrepareCodeGenState(
@@ -310,7 +342,9 @@ export class CodeGenState extends CodeGenBase implements SessionState {
                     this.tabID,
                     this.currentIteration + 1,
                     this.codeGenerationRemainingIterationCount,
-                    this.codeGenerationTotalIterationCount
+                    this.codeGenerationTotalIterationCount,
+                    action.uploadHistory,
+                    codeGenerationId
                 )
                 return {
                     nextState,
@@ -330,6 +364,7 @@ export class MockCodeGenState implements SessionState {
     public filePaths: NewFileInfo[]
     public deletedFiles: DeletedFileInfo[]
     public readonly conversationId: string
+    public readonly codeGenerationId?: string
     public readonly uploadId: string
 
     constructor(
@@ -356,7 +391,13 @@ export class MockCodeGenState implements SessionState {
                 zipFilePath: f.zipFilePath,
                 fileContent: f.fileContent,
             }))
-            this.filePaths = registerNewFiles(action.fs, newFileContents, this.uploadId, this.config.workspaceFolders)
+            this.filePaths = registerNewFiles(
+                action.fs,
+                newFileContents,
+                this.uploadId,
+                this.config.workspaceFolders,
+                this.conversationId
+            )
             this.deletedFiles = [
                 {
                     zipFilePath: 'src/this-file-should-be-deleted.ts',
@@ -376,7 +417,8 @@ export class MockCodeGenState implements SessionState {
                     },
                 ],
                 this.tabID,
-                this.uploadId
+                this.uploadId,
+                this.codeGenerationId ?? ''
             )
             action.messenger.sendAnswer({
                 message: undefined,
@@ -423,11 +465,15 @@ export class PrepareCodeGenState implements SessionState {
         public tabID: string,
         private currentIteration: number,
         public codeGenerationRemainingIterationCount?: number,
-        public codeGenerationTotalIterationCount?: number
+        public codeGenerationTotalIterationCount?: number,
+        public uploadHistory: UploadHistory = {},
+        public codeGenerationId?: string
     ) {
         this.tokenSource = new vscode.CancellationTokenSource()
         this.uploadId = config.uploadId
         this.conversationId = config.conversationId
+        this.uploadHistory = uploadHistory
+        this.codeGenerationId = codeGenerationId
     }
 
     updateWorkspaceRoot(workspaceRoot: string) {
@@ -482,7 +528,8 @@ export class PrepareCodeGenState implements SessionState {
             this.deletedFiles,
             this.references,
             this.tabID,
-            this.currentIteration
+            this.currentIteration,
+            this.uploadHistory
         )
         return nextState.interact(action)
     }

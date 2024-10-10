@@ -4,7 +4,7 @@
  */
 import * as vscode from 'vscode'
 import assert from 'assert'
-import nodefs from 'fs'
+import nodefs from 'fs' // eslint-disable-line no-restricted-imports
 import * as sinon from 'sinon'
 import * as path from 'path'
 import * as os from 'os'
@@ -41,14 +41,14 @@ describe('SshKeyUtility', async function () {
     })
 
     it('generates key in target file', async function () {
-        const contents = await fs.readFile(vscode.Uri.file(keyPath))
+        const contents = await fs.readFileBytes(vscode.Uri.file(keyPath))
         assert.notStrictEqual(contents.length, 0)
     })
 
     it('generates unique key each time', async function () {
-        const beforeContent = await fs.readFile(vscode.Uri.file(keyPath))
+        const beforeContent = await fs.readFileBytes(vscode.Uri.file(keyPath))
         keyPair = await SshKeyPair.getSshKeyPair(keyPath, 30000)
-        const afterContent = await fs.readFile(vscode.Uri.file(keyPath))
+        const afterContent = await fs.readFileBytes(vscode.Uri.file(keyPath))
         assert.notStrictEqual(beforeContent, afterContent)
     })
 
@@ -90,10 +90,10 @@ describe('SshKeyUtility', async function () {
 
     it('does overwrite existing keys on get call', async function () {
         const generateStub = sinon.spy(SshKeyPair, 'generateSshKeyPair')
-        const keyBefore = await fs.readFile(vscode.Uri.file(keyPath))
+        const keyBefore = await fs.readFileBytes(vscode.Uri.file(keyPath))
         keyPair = await SshKeyPair.getSshKeyPair(keyPath, 30000)
 
-        const keyAfter = await fs.readFile(vscode.Uri.file(keyPath))
+        const keyAfter = await fs.readFileBytes(vscode.Uri.file(keyPath))
         sinon.assert.calledOnce(generateStub)
 
         assert.notStrictEqual(keyBefore, keyAfter)
@@ -125,5 +125,33 @@ describe('SshKeyUtility', async function () {
         await clock.tickAsync(100)
         sinon.assert.calledOnce(deleteStub)
         sinon.restore()
+    })
+
+    it('determines deleted status based on file system', async function () {
+        await fs.delete(keyPair.getPrivateKeyPath())
+        await fs.delete(keyPair.getPublicKeyPath())
+
+        assert(keyPair.isDeleted())
+    })
+
+    describe('isDeleted', async function () {
+        it('returns false if key files exist', async function () {
+            assert.strictEqual(await keyPair.isDeleted(), false)
+        })
+
+        it('returns true if key files do not exist', async function () {
+            await keyPair.delete()
+            assert.strictEqual(await keyPair.isDeleted(), true)
+        })
+
+        it('returns true if private key remains', async function () {
+            await fs.delete(keyPair.getPublicKeyPath())
+            assert.strictEqual(await keyPair.isDeleted(), true)
+        })
+
+        it('returns true if public key remains', async function () {
+            await fs.delete(keyPair.getPrivateKeyPath())
+            assert.strictEqual(await keyPair.isDeleted(), true)
+        })
     })
 })

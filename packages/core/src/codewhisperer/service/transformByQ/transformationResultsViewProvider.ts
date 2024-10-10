@@ -5,7 +5,7 @@
 
 import AdmZip from 'adm-zip'
 import os from 'os'
-import fs from 'fs'
+import fs from 'fs' // eslint-disable-line no-restricted-imports
 import { parsePatch, applyPatches, ParsedDiff } from 'diff'
 import path from 'path'
 import vscode from 'vscode'

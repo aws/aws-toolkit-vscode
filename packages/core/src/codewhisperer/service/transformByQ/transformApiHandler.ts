@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
-import * as nodefs from 'fs'
+import * as nodefs from 'fs' // eslint-disable-line no-restricted-imports
 import * as path from 'path'
 import * as os from 'os'
 import * as codeWhisperer from '../../client/codewhisperer'
@@ -177,7 +177,7 @@ export async function stopJob(jobId: string) {
 }
 
 export async function uploadPayload(payloadFileName: string, uploadContext?: UploadContext) {
-    const buffer = Buffer.from(await fs.readFile(payloadFileName))
+    const buffer = Buffer.from(await fs.readFileBytes(payloadFileName))
     const sha256 = getSha256(buffer)
 
     throwIfCancelled()

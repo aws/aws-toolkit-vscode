@@ -322,7 +322,7 @@ export class DefaultTelemetryService {
 
                 return []
             }
-            const input = JSON.parse(await fs.readFileAsString(cachePath))
+            const input = JSON.parse(await fs.readFileText(cachePath))
             const events = filterTelemetryCacheEvents(input)
 
             return events
