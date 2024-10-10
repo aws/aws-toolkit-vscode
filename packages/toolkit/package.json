@@ -53,7 +53,7 @@
     "browser": "./dist/src/extensionWeb",
     "engines": {
         "npm": "^10.1.0",
-        "vscode": "^1.68.0"
+        "vscode": "^1.83.0"
     },
     "scripts": {
         "vscode:prepublish": "npm run clean && npm run buildScripts && webpack --mode production",
