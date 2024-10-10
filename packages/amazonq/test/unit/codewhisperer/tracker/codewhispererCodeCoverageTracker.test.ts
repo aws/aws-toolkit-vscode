@@ -6,7 +6,13 @@
 import assert from 'assert'
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'
-import { CodeWhispererCodeCoverageTracker, vsCodeState, TelemetryHelper, AuthUtil } from 'aws-core-vscode/codewhisperer'
+import {
+    CodeWhispererCodeCoverageTracker,
+    vsCodeState,
+    TelemetryHelper,
+    AuthUtil,
+    getUnmodifiedAcceptedTokens,
+} from 'aws-core-vscode/codewhisperer'
 import { createMockDocument, createMockTextEditor, resetCodeWhispererGlobalVariables } from 'aws-core-vscode/test'
 import { globals } from 'aws-core-vscode/shared'
 import { assertTelemetryCurried } from 'aws-core-vscode/test'
@@ -150,14 +156,13 @@ describe('codewhispererCodecoverageTracker', function () {
         })
 
         it('Should return correct unmodified accepted tokens count', function () {
-            const tracker = CodeWhispererCodeCoverageTracker.getTracker(language)
-            assert.strictEqual(tracker?.getUnmodifiedAcceptedTokens('foo', 'fou'), 2)
-            assert.strictEqual(tracker?.getUnmodifiedAcceptedTokens('foo', 'f11111oo'), 3)
-            assert.strictEqual(tracker?.getUnmodifiedAcceptedTokens('foo', 'fo'), 2)
-            assert.strictEqual(tracker?.getUnmodifiedAcceptedTokens('helloworld', 'HelloWorld'), 8)
-            assert.strictEqual(tracker?.getUnmodifiedAcceptedTokens('helloworld', 'World'), 4)
-            assert.strictEqual(tracker?.getUnmodifiedAcceptedTokens('CodeWhisperer', 'CODE'), 1)
-            assert.strictEqual(tracker?.getUnmodifiedAcceptedTokens('CodeWhisperer', 'CodeWhispererGood'), 13)
+            assert.strictEqual(getUnmodifiedAcceptedTokens('foo', 'fou'), 2)
+            assert.strictEqual(getUnmodifiedAcceptedTokens('foo', 'f11111oo'), 3)
+            assert.strictEqual(getUnmodifiedAcceptedTokens('foo', 'fo'), 2)
+            assert.strictEqual(getUnmodifiedAcceptedTokens('helloworld', 'HelloWorld'), 8)
+            assert.strictEqual(getUnmodifiedAcceptedTokens('helloworld', 'World'), 4)
+            assert.strictEqual(getUnmodifiedAcceptedTokens('CodeWhisperer', 'CODE'), 1)
+            assert.strictEqual(getUnmodifiedAcceptedTokens('CodeWhisperer', 'CodeWhispererGood'), 13)
         })
     })
 

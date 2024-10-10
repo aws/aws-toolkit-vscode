@@ -16,7 +16,7 @@ import { logSendTelemetryEventFailure } from '../../codewhispererChat/controller
 import { Timeout } from '../../shared/utilities/timeoutUtils'
 import { getSelectedCustomization } from '../util/customizationUtil'
 import { isAwsError, undefinedIfEmpty } from '../../shared'
-import { getUnmodifiedAcceptedTokens } from '../indexNode'
+import { getUnmodifiedAcceptedTokens } from '../util/commonUtil'
 
 /**
  * This singleton class is mainly used for calculating the percentage of user modification.
@@ -149,7 +149,7 @@ export class CodeWhispererTracker {
                                 sessionId: suggestion.sessionId,
                                 requestId: suggestion.requestId,
                                 programmingLanguage: { languageName: suggestion.language },
-                                // deprecated % value and should not be used by service-side
+                                // deprecated % value and should not be used by service side
                                 modificationPercentage: percentage,
                                 customizationArn: customizationArn,
                                 timestamp: new Date(Date.now()),

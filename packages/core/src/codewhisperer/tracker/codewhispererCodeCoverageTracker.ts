@@ -8,7 +8,6 @@ import { getLogger } from '../../shared/logger/logger'
 import * as CodeWhispererConstants from '../models/constants'
 import globals from '../../shared/extensionGlobals'
 import { vsCodeState } from '../models/model'
-
 import { CodewhispererLanguage, telemetry } from '../../shared/telemetry/telemetry'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { TelemetryHelper } from '../util/telemetryHelper'

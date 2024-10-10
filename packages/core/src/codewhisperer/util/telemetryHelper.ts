@@ -23,10 +23,9 @@ import { AuthUtil } from './authUtil'
 import { isAwsError } from '../../shared/errors'
 import { getLogger } from '../../shared/logger'
 import { session } from './codeWhispererSession'
-import { AcceptedSuggestionEntry, CodeWhispererSupplementalContext } from '../models/model'
+import { CodeWhispererSupplementalContext } from '../models/model'
 import { FeatureConfigProvider } from '../../shared/featureConfig'
 import { CodeScanRemediationsEventType } from '../client/codewhispereruserclient'
-import { InsertedCode } from '../../codewhispererChat/controllers/chat/model'
 
 export class TelemetryHelper {
     // Some variables for client component latency
