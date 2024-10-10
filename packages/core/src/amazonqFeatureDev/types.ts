@@ -21,6 +21,7 @@ export type Interaction = {
 export interface SessionStateInteraction {
     nextState: SessionState | Omit<SessionState, 'uploadId'> | undefined
     interaction: Interaction
+    currentCodeGenerationId?: string
 }
 
 export enum DevPhase {
@@ -61,6 +62,8 @@ export interface SessionState {
     readonly phase?: SessionStatePhase
     readonly uploadId: string
     readonly tokenSource: CancellationTokenSource
+    currentCodeGenerationId?: string
+    tokenSource?: CancellationTokenSource
     readonly codeGenerationId?: string
     readonly tabID: string
     interact(action: SessionStateAction): Promise<SessionStateInteraction>
@@ -76,6 +79,7 @@ export interface SessionStateConfig {
     conversationId: string
     proxyClient: FeatureDevClient
     uploadId: string
+    currentCodeGenerationId?: string
 }
 
 export interface SessionStateAction {
@@ -84,6 +88,7 @@ export interface SessionStateAction {
     messenger: Messenger
     fs: VirtualFileSystem
     telemetry: TelemetryHelper
+    tokenSource?: CancellationTokenSource
     uploadHistory?: UploadHistory
 }
 
