@@ -20,7 +20,7 @@ jobs:
     package:
         runs-on: ubuntu-latest
         env:
-            NODE_OPTIONS: '--max-old-space-size=8192'
+            NODE_OPTIONS: '--max-old-space-size=8192 --experimental-filesystem'
         outputs:
             feature: ${{ steps.build.outputs.feature }}
             tagname: ${{ steps.build.outputs.tagname }}
