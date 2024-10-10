@@ -6,7 +6,6 @@
  * the Gumby extension.
  */
 import nodefs from 'fs' // eslint-disable-line no-restricted-imports
-import * as xml2js from 'xml2js'
 import path from 'path'
 import * as vscode from 'vscode'
 import { GumbyNamedMessages, Messenger } from './messenger/messenger'
@@ -34,7 +33,7 @@ import {
     getValidSQLConversionCandidateProjects,
     validateSQLMetadataFile,
 } from '../../../codewhisperer/commands/startTransformByQ'
-import { DB, JDKVersion, transformByQState } from '../../../codewhisperer/models/model'
+import { JDKVersion, transformByQState } from '../../../codewhisperer/models/model'
 import {
     AbsolutePathDetectedError,
     AlternateDependencyVersionsNotFoundError,
@@ -263,7 +262,7 @@ export class GumbyController {
             const validProjects = await this.validateSQLConversionProjectsWithReplyOnError(message)
             if (validProjects.length > 0) {
                 this.sessionStorage.getSession().updateCandidateProjects(validProjects)
-                await this.messenger.sendSQLConversionProjectPrompt(validProjects, message.tabID)
+                await this.messenger.sendSelectSQLMetadataFileMessage(message.tabID)
             }
         } catch (err: any) {
             getLogger().error(`Error handling SQL conversion: ${err}`)
@@ -442,8 +441,7 @@ export class GumbyController {
     private async handleUserSQLConversionProjectSelection(message: any) {
         await telemetry.codeTransform_submitSelection.run(async () => {
             const pathToProject: string = message.formSelectedValues['GumbyTransformSQLConversionProjectForm']
-            const fromDB: DB = message.formSelectedValues['GumbyTransformDBFromForm']
-            const toDB: DB = message.formSelectedValues['GumbyTransformDBToForm']
+            const schema: string = message.formSelectedValues['GumbyTransformSQLSchemaForm']
 
             telemetry.record({
                 codeTransformProjectId: pathToProject === undefined ? telemetryUndefined : getStringHash(pathToProject),
@@ -451,15 +449,19 @@ export class GumbyController {
             })
 
             const projectName = path.basename(pathToProject)
-            this.messenger.sendSQLConversionProjectSelectionMessage(projectName, fromDB, toDB, message.tabID)
+            this.messenger.sendSQLConversionProjectSelectionMessage(projectName, schema, message.tabID)
 
-            if (fromDB === DB.OTHER) {
-                this.messenger.sendUnrecoverableErrorResponse('unsupported-source-db-version', message.tabID)
-                return
-            }
+            await processSQLConversionTransformFormInput(pathToProject, schema)
 
-            await processSQLConversionTransformFormInput(pathToProject, fromDB, toDB)
-            this.messenger.sendSelectSQLMetadataFileMessage(message.tabID)
+            this.messenger.sendAsyncEventProgress(
+                message.tabID,
+                true,
+                undefined,
+                GumbyNamedMessages.JOB_SUBMISSION_STATUS_MESSAGE
+            )
+            this.messenger.sendJobSubmittedMessage(message.tabID)
+            this.sessionStorage.getSession().conversationState = ConversationState.JOB_SUBMITTED
+            await startTransformByQ()
         })
     }
 
@@ -527,15 +529,15 @@ export class GumbyController {
 
     private async processMetadataFile(message: any) {
         const fileUri = await vscode.window.showOpenDialog({
-            canSelectMany: false, // Allow only one file to be selected
-            openLabel: 'Select', // Label for the open button
+            canSelectMany: false,
+            openLabel: 'Select',
             filters: {
                 'SCT metadata': ['sct'], // Restrict user to only pick a .sct file
             },
         })
 
         if (!fileUri || fileUri.length === 0) {
-            // User canceled the dialog
+            // user closed the dialog
             this.transformationFinished({
                 message: CodeWhispererConstants.jobCancelledChatMessage,
                 tabID: message.tabID,
@@ -544,54 +546,19 @@ export class GumbyController {
         }
 
         const fileContents = nodefs.readFileSync(fileUri[0].fsPath, 'utf-8')
-        let parsedData: any = undefined
-        xml2js.parseString(fileContents, (err, result) => {
-            if (err) {
-                getLogger().error('Error parsing SCT file:', err)
-            } else {
-                parsedData = result
-            }
-        })
 
-        if (!parsedData) {
-            this.transformationFinished({
-                message: CodeWhispererConstants.invalidMetadataFileUnknownIssueParsing,
-                tabID: message.tabID,
-            })
-            return
-        }
-
-        const isValidMetadata = await validateSQLMetadataFile(parsedData, message)
+        const isValidMetadata = await validateSQLMetadataFile(fileContents, message)
         if (!isValidMetadata) {
             return
         }
 
-        // extract schema names from metadata file
-        // probably if anything throws here we should just continue and not validate the user's schema input
-        // unless we show a form with the schema options, in which case this needs to pass
-        const serverNodeLocations =
-            parsedData['tree']['instances'][0]['ProjectModel'][0]['relations'][0]['server-node-location']
-        const schemaNames = new Set<string>()
-        serverNodeLocations.forEach((serverNodeLocation: any) => {
-            const schemaNodes = serverNodeLocation['FullNameNodeInfoList'][0]['nameParts'][0][
-                'FullNameNodeInfo'
-            ].filter((node: any) => node['$']['typeNode'] === 'schema')
-            schemaNodes.forEach((node: any) => {
-                schemaNames.add(node['$']['nameNode'].toUpperCase())
-            })
-        })
-
+        this.messenger.sendSQLConversionMetadataReceivedMessage(message.tabID)
         transformByQState.setMetadataPathSQL(fileUri[0].fsPath)
 
-        this.messenger.sendAsyncEventProgress(
-            message.tabID,
-            true,
-            undefined,
-            GumbyNamedMessages.JOB_SUBMISSION_STATUS_MESSAGE
+        await this.messenger.sendSQLConversionProjectPrompt(
+            Array.from(this.sessionStorage.getSession().candidateProjects.values()),
+            message.tabID
         )
-        this.messenger.sendJobSubmittedMessage(message.tabID)
-        this.sessionStorage.getSession().conversationState = ConversationState.JOB_SUBMITTED
-        await startTransformByQ()
     }
 
     private transformationFinished(data: { message: string | undefined; tabID: string }) {

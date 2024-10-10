@@ -504,20 +504,26 @@ export const unsupportedJavaVersionChatMessage = `Sorry, currently I can only up
 
 export const unsupportedDatabaseChatMessage = `Sorry, currently I can only convert SQL built on Oracle. For more information, see the [Amazon Q documentation](${codeTransformPrereqDoc}).`
 
-export const invalidMetadataFileNoRulesJson =
-    "Sorry, your metadata ZIP appears to be invalid; it does not contain an 'sct-rules.json' file."
+export const selectSQLMetadataFileHelpMessage =
+    'You can download the .sct file by going to AWS Console -> AWS DMS -> Migration Projects. Open the schema conversion project and navigate to the S3 bucket linked to it. You will find the ZIP containing the .sct file under the <schema-conversion-project>/ directory.'
+
+export const invalidMetadataFileNoSourceServerName =
+    'Sorry, your metadata .sct file appears to be invalid; I could not find the server name of the source DB.'
 
 export const invalidMetadataFileUnsupportedSourceVendor = (vendor: string) =>
-    `Sorry, your metadata file appears to be invalid; the source vendor is '${vendor}', but only Oracle is supported.`
+    `Sorry, your metadata .sct file appears to be invalid; the source vendor is '${vendor}', but only Oracle is supported.`
 
 export const invalidMetadataFileUnsupportedTargetVendor = (vendor: string) =>
-    `Sorry, your metadata file appears to be invalid; the target vendor is '${vendor}', but only Amazon Aurora PostgreSQL and Amazon RDS for PostgreSQL are supported.`
+    `Sorry, your metadata .sct file appears to be invalid; the target vendor is '${vendor}', but only Amazon Aurora PostgreSQL and Amazon RDS for PostgreSQL are supported.`
 
 export const invalidMetadataFileTargetVendorMismatch = (foundVendor: string, selectedVendor: string) =>
-    `Sorry, your metadata file appears to be invalid; the target vendor is '${foundVendor}', but you previously selected a target vendor of '${selectedVendor}'.`
+    `Sorry, your metadata .sct file appears to be invalid; the target vendor is '${foundVendor}', but you previously selected a target vendor of '${selectedVendor}'.`
+
+export const invalidMetadataFileNoSchemaNamesFound =
+    'Sorry, your metadata.sct file appears to be invalid; I could not find any schema names.'
 
 export const invalidMetadataFileUnknownIssueParsing =
-    'Sorry, I had an issue parsing the metadata ZIP you provided; please make sure it is valid.'
+    'Sorry, I had an issue parsing the metadata .sct file you provided; please make sure it is valid.'
 
 export const oracleVendor = 'Oracle'
 

@@ -19,7 +19,7 @@ import * as CodeWhispererConstants from '../../../codewhisperer/models/constants
 import { convertToTimeString, convertDateToTimestamp } from '../../../shared/utilities/textUtilities'
 import path from 'path'
 import AdmZip from 'adm-zip'
-import { createTestWorkspaceFolder, toFile } from '../../testUtil'
+import { createTestWorkspaceFolder, TestFolder, toFile } from '../../testUtil'
 import {
     NoJavaProjectsFoundError,
     NoMavenJavaProjectsFoundError,
@@ -336,9 +336,9 @@ describe('transformByQ', function () {
     })
 
     it(`WHEN parseBuildFile on pom.xml with absolute path THEN absolute path detected`, async function () {
-        const dirPath = await createTestWorkspaceFolder()
-        transformByQState.setProjectPath(dirPath.uri.fsPath)
-        const pomPath = path.join(dirPath.uri.fsPath, 'pom.xml')
+        const dirPath = await TestFolder.create()
+        transformByQState.setProjectPath(dirPath.path)
+        const pomPath = path.join(dirPath.path, 'pom.xml')
         await toFile('<project><properties><path>system/name/here</path></properties></project>', pomPath)
         const expectedWarning =
             'I detected 1 potential absolute file path(s) in your pom.xml file: **system/**. Absolute file paths might cause issues when I build your code. Any errors will show up in the build log.'
@@ -346,79 +346,242 @@ describe('transformByQ', function () {
         assert.strictEqual(expectedWarning, warningMessage)
     })
 
-    it(`WHEN validateMetadataFile on sct-rules.json with supported source DB and supported target DB THEN passes validation`, async function () {
-        const sampleRules = {
-            rules: [
-                {
-                    name: 'Mapping rule',
-                    ruleId: '1',
-                    locator: {
-                        sourceVendor: 'ORACLE',
-                        targetVendor: 'AURORA_POSTGRESQL',
-                    },
-                },
-            ],
-        }
-        const sampleRulesString = JSON.stringify(sampleRules)
-        transformByQState.setTargetDB(DB.AURORA_POSTGRESQL)
-        const isValidMetadata = await validateSQLMetadataFile(sampleRulesString, { tabID: 'abc123' })
+    it(`WHEN validateMetadataFile on fully valid .sct file THEN passes validation`, async function () {
+        const sampleFileContents = `<?xml version="1.0" encoding="UTF-8"?>
+        <tree>
+        <instances>
+            <ProjectModel>
+            <entities>
+                <sources>
+                <DbServer vendor="oracle" name="sample.rds.amazonaws.com">
+                </DbServer>
+                </sources>
+                <targets>
+                <DbServer vendor="aurora_postgresql" />
+                </targets>
+            </entities>
+            <relations>
+                <server-node-location>
+                <FullNameNodeInfoList>
+                    <nameParts>
+                    <FullNameNodeInfo typeNode="schema" nameNode="schema1"/>
+                    <FullNameNodeInfo typeNode="table" nameNode="table1"/>
+                    </nameParts>
+                </FullNameNodeInfoList>
+                </server-node-location>
+                <server-node-location>
+                <FullNameNodeInfoList>
+                    <nameParts>
+                    <FullNameNodeInfo typeNode="schema" nameNode="schema2"/>
+                    <FullNameNodeInfo typeNode="table" nameNode="table2"/>
+                    </nameParts>
+                </FullNameNodeInfoList>
+                </server-node-location>
+                <server-node-location>
+                <FullNameNodeInfoList>
+                    <nameParts>
+                    <FullNameNodeInfo typeNode="schema" nameNode="schema3"/>
+                    <FullNameNodeInfo typeNode="table" nameNode="table3"/>
+                    </nameParts>
+                </FullNameNodeInfoList>
+                </server-node-location>
+            </relations>
+            </ProjectModel>
+        </instances>
+        </tree>`
+        const isValidMetadata = await validateSQLMetadataFile(sampleFileContents, { tabID: 'abc123' })
         assert.strictEqual(isValidMetadata, true)
+        assert.strictEqual(transformByQState.getSourceDB(), DB.ORACLE)
+        assert.strictEqual(transformByQState.getTargetDB(), DB.AURORA_POSTGRESQL)
+        assert.strictEqual(transformByQState.getSourceServerName(), 'sample.rds.amazonaws.com')
+        const expectedSchemaOptions = ['SCHEMA1', 'SCHEMA2', 'SCHEMA3']
+        expectedSchemaOptions.forEach((schema) => {
+            assert(transformByQState.getSchemaOptions().has(schema))
+        })
     })
 
-    it(`WHEN validateMetadataFile on sct-rules.json with unsupported source DB and supported target DB THEN fails validation`, async function () {
-        const sampleRules = {
-            rules: [
-                {
-                    name: 'Mapping rule',
-                    ruleId: '1',
-                    locator: {
-                        sourceVendor: 'NOT_ORACLE',
-                        targetVendor: 'AURORA_POSTGRESQL',
-                    },
-                },
-            ],
-        }
-        const sampleRulesString = JSON.stringify(sampleRules)
-        transformByQState.setTargetDB(DB.AURORA_POSTGRESQL)
-        const isValidMetadata = await validateSQLMetadataFile(sampleRulesString, { tabID: 'abc123' })
+    it(`WHEN validateMetadataFile on .sct file with unsupported source DB THEN fails validation`, async function () {
+        const sampleFileContents = `<?xml version="1.0" encoding="UTF-8"?>
+        <tree>
+        <instances>
+            <ProjectModel>
+            <entities>
+                <sources>
+                <DbServer vendor="not-oracle" name="sample.rds.amazonaws.com">
+                </DbServer>
+                </sources>
+                <targets>
+                <DbServer vendor="aurora_postgresql" />
+                </targets>
+            </entities>
+            <relations>
+                <server-node-location>
+                <FullNameNodeInfoList>
+                    <nameParts>
+                    <FullNameNodeInfo typeNode="schema" nameNode="schema1"/>
+                    <FullNameNodeInfo typeNode="table" nameNode="table1"/>
+                    </nameParts>
+                </FullNameNodeInfoList>
+                </server-node-location>
+                <server-node-location>
+                <FullNameNodeInfoList>
+                    <nameParts>
+                    <FullNameNodeInfo typeNode="schema" nameNode="schema2"/>
+                    <FullNameNodeInfo typeNode="table" nameNode="table2"/>
+                    </nameParts>
+                </FullNameNodeInfoList>
+                </server-node-location>
+                <server-node-location>
+                <FullNameNodeInfoList>
+                    <nameParts>
+                    <FullNameNodeInfo typeNode="schema" nameNode="schema3"/>
+                    <FullNameNodeInfo typeNode="table" nameNode="table3"/>
+                    </nameParts>
+                </FullNameNodeInfoList>
+                </server-node-location>
+            </relations>
+            </ProjectModel>
+        </instances>
+        </tree>`
+        const isValidMetadata = await validateSQLMetadataFile(sampleFileContents, { tabID: 'abc123' })
         assert.strictEqual(isValidMetadata, false)
     })
 
-    it(`WHEN validateMetadataFile on sct-rules.json with supported source DB and unsupported target DB THEN fails validation`, async function () {
-        const sampleRules = {
-            rules: [
-                {
-                    name: 'Mapping rule',
-                    ruleId: '1',
-                    locator: {
-                        sourceVendor: 'ORACLE',
-                        targetVendor: 'NOT_AURORA_POSTGRESQL',
-                    },
-                },
-            ],
-        }
-        const sampleRulesString = JSON.stringify(sampleRules)
-        transformByQState.setTargetDB(DB.AURORA_POSTGRESQL) // even though this is set to something valid, validation should fail
-        const isValidMetadata = await validateSQLMetadataFile(sampleRulesString, { tabID: 'abc123' })
+    it(`WHEN validateMetadataFile on .sct file with unsupported target DB THEN fails validation`, async function () {
+        const sampleFileContents = `<?xml version="1.0" encoding="UTF-8"?>
+        <tree>
+        <instances>
+            <ProjectModel>
+            <entities>
+                <sources>
+                <DbServer vendor="oracle" name="sample.rds.amazonaws.com">
+                </DbServer>
+                </sources>
+                <targets>
+                <DbServer vendor="not-postgresql" />
+                </targets>
+            </entities>
+            <relations>
+                <server-node-location>
+                <FullNameNodeInfoList>
+                    <nameParts>
+                    <FullNameNodeInfo typeNode="schema" nameNode="schema1"/>
+                    <FullNameNodeInfo typeNode="table" nameNode="table1"/>
+                    </nameParts>
+                </FullNameNodeInfoList>
+                </server-node-location>
+                <server-node-location>
+                <FullNameNodeInfoList>
+                    <nameParts>
+                    <FullNameNodeInfo typeNode="schema" nameNode="schema2"/>
+                    <FullNameNodeInfo typeNode="table" nameNode="table2"/>
+                    </nameParts>
+                </FullNameNodeInfoList>
+                </server-node-location>
+                <server-node-location>
+                <FullNameNodeInfoList>
+                    <nameParts>
+                    <FullNameNodeInfo typeNode="schema" nameNode="schema3"/>
+                    <FullNameNodeInfo typeNode="table" nameNode="table3"/>
+                    </nameParts>
+                </FullNameNodeInfoList>
+                </server-node-location>
+            </relations>
+            </ProjectModel>
+        </instances>
+        </tree>`
+        const isValidMetadata = await validateSQLMetadataFile(sampleFileContents, { tabID: 'abc123' })
         assert.strictEqual(isValidMetadata, false)
     })
 
-    it(`WHEN validateMetadataFile on sct-rules.json with supported source DB and supported target DB, but user selected a different target DB in chat form, THEN fails validation`, async function () {
-        const sampleRules = {
-            rules: [
-                {
-                    name: 'Mapping rule',
-                    ruleId: '1',
-                    locator: {
-                        sourceVendor: 'ORACLE',
-                        targetVendor: 'AURORA_POSTGRESQL',
-                    },
-                },
-            ],
-        }
-        const sampleRulesString = JSON.stringify(sampleRules)
-        transformByQState.setTargetDB(DB.RDS_POSTGRESQL) // different from 'AURORA_POSTGRESQL' above, so should fail validation
-        const isValidMetadata = await validateSQLMetadataFile(sampleRulesString, { tabID: 'abc123' })
+    it(`WHEN validateMetadataFile on .sct file with no source server name THEN fails validation`, async function () {
+        const sampleFileContents = `<?xml version="1.0" encoding="UTF-8"?>
+        <tree>
+        <instances>
+            <ProjectModel>
+            <entities>
+                <sources>
+                <DbServer vendor="oracle">
+                </DbServer>
+                </sources>
+                <targets>
+                <DbServer vendor="rds_postgresql" />
+                </targets>
+            </entities>
+            <relations>
+                <server-node-location>
+                <FullNameNodeInfoList>
+                    <nameParts>
+                    <FullNameNodeInfo typeNode="schema" nameNode="schema1"/>
+                    <FullNameNodeInfo typeNode="table" nameNode="table1"/>
+                    </nameParts>
+                </FullNameNodeInfoList>
+                </server-node-location>
+                <server-node-location>
+                <FullNameNodeInfoList>
+                    <nameParts>
+                    <FullNameNodeInfo typeNode="schema" nameNode="schema2"/>
+                    <FullNameNodeInfo typeNode="table" nameNode="table2"/>
+                    </nameParts>
+                </FullNameNodeInfoList>
+                </server-node-location>
+                <server-node-location>
+                <FullNameNodeInfoList>
+                    <nameParts>
+                    <FullNameNodeInfo typeNode="schema" nameNode="schema3"/>
+                    <FullNameNodeInfo typeNode="table" nameNode="table3"/>
+                    </nameParts>
+                </FullNameNodeInfoList>
+                </server-node-location>
+            </relations>
+            </ProjectModel>
+        </instances>
+        </tree>`
+        const isValidMetadata = await validateSQLMetadataFile(sampleFileContents, { tabID: 'abc123' })
+        assert.strictEqual(isValidMetadata, false)
+    })
+
+    it(`WHEN validateMetadataFile on .sct file with no schema names present THEN fails validation`, async function () {
+        const sampleFileContents = `<?xml version="1.0" encoding="UTF-8"?>
+        <tree>
+        <instances>
+            <ProjectModel>
+            <entities>
+                <sources>
+                <DbServer vendor="oracle" name="sample.rds.amazonaws.com">
+                </DbServer>
+                </sources>
+                <targets>
+                <DbServer vendor="rds_postgresql" />
+                </targets>
+            </entities>
+            <relations>
+                <server-node-location>
+                <FullNameNodeInfoList>
+                    <nameParts>
+                    <FullNameNodeInfo typeNode="table" nameNode="table1"/>
+                    </nameParts>
+                </FullNameNodeInfoList>
+                </server-node-location>
+                <server-node-location>
+                <FullNameNodeInfoList>
+                    <nameParts>
+                    <FullNameNodeInfo typeNode="table" nameNode="table2"/>
+                    </nameParts>
+                </FullNameNodeInfoList>
+                </server-node-location>
+                <server-node-location>
+                <FullNameNodeInfoList>
+                    <nameParts>
+                    <FullNameNodeInfo typeNode="table" nameNode="table3"/>
+                    </nameParts>
+                </FullNameNodeInfoList>
+                </server-node-location>
+            </relations>
+            </ProjectModel>
+        </instances>
+        </tree>`
+        const isValidMetadata = await validateSQLMetadataFile(sampleFileContents, { tabID: 'abc123' })
         assert.strictEqual(isValidMetadata, false)
     })
 })

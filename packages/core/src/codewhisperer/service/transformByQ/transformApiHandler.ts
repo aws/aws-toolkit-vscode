@@ -320,12 +320,12 @@ export async function zipCode(
             // also, it must be a ZipManifest since only other option is HilZipManifest which is not used for SQL conversions
             zip.addLocalFile(
                 transformByQState.getMetadataPathSQL(),
-                path.join(zipManifest.sourcesRoot, 'sct-metadata-random-num')
+                path.join(zipManifest.sourcesRoot, 'qct-sct-metadata')
             )
             zipManifest.customConversions['source'] = transformByQState.getSourceDB()
             zipManifest.customConversions['target'] = transformByQState.getTargetDB()
             zipManifest.customConversions['type'] = 'SQL'
-            zipManifest.customConversions['schema'] = 'ADMIN-get-from-user'
+            zipManifest.customConversions['schema'] = transformByQState.getSchema()
             zipManifest.customConversions['host'] = transformByQState.getSourceServerName()
             const sqlMetadataSize = (await nodefs.promises.stat(transformByQState.getMetadataPathSQL())).size
             getLogger().info(`CodeTransformation: SQL metadata file size = ${sqlMetadataSize}`)
