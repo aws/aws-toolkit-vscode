@@ -25,7 +25,6 @@ import {
     IndexRequestType,
     QueryInlineProjectContextRequestType,
     QueryRequestType,
-    UpdateIndexRequestType,
     UpdateIndexV2RequestPayload,
     UpdateIndexV2RequestType,
     Usage,
@@ -90,7 +89,6 @@ export class LspClient {
         }
     }
 
-    // v2
     async indexFilesV2(paths: string[], rootPath: string, config: IndexConfig) {
         const payload: BuildIndexRequestPayload = {
             filePaths: paths,
@@ -143,21 +141,6 @@ export class LspClient {
     async getLspServerUsage(): Promise<Usage | undefined> {
         if (this.client) {
             return (await this.client.sendRequest(GetUsageRequestType, '')) as Usage
-        }
-    }
-
-    async updateIndex(filePath: string) {
-        try {
-            const encryptedRequest = await this.encrypt(
-                JSON.stringify({
-                    filePath: filePath,
-                })
-            )
-            const resp = await this.client?.sendRequest(UpdateIndexRequestType, encryptedRequest)
-            return resp
-        } catch (e) {
-            getLogger().error(`LspClient: updateIndex error: ${e}`)
-            return undefined
         }
     }
 
@@ -261,11 +244,10 @@ export async function activate(extensionContext: ExtensionContext) {
                 return
             }
             savedDocument = document.uri
-            void LspClient.instance.updateIndexV2([document.uri.fsPath], 'update')
         }),
         vscode.window.onDidChangeActiveTextEditor((editor) => {
             if (savedDocument && editor && editor.document.uri.fsPath !== savedDocument.fsPath) {
-                // void LspClient.instance.updateIndexV2([editor.document.uri.fsPath], 'update')
+                void LspClient.instance.updateIndexV2([editor.document.uri.fsPath], 'update')
             }
         }),
         vscode.workspace.onDidCreateFiles((e) => {
@@ -279,9 +261,6 @@ export async function activate(extensionContext: ExtensionContext) {
                 e.files.map((f) => f.fsPath),
                 'remove'
             )
-        }),
-        vscode.workspace.onDidRenameFiles((e) => {
-            // void LspClient.instance.updateIndexV2(e.files.map((f) => f.newUri.fsPath), 'rename')
         })
     )
 
