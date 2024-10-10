@@ -66,7 +66,7 @@ jobs:
                 vscode-version: [minimum, stable, insiders]
         env:
             VSCODE_TEST_VERSION: ${{ matrix.vscode-version }}
-            NODE_OPTIONS: '--max-old-space-size=8192 ----experimental-modules'
+            NODE_OPTIONS: '--max-old-space-size=8192 --experimental-modules'
             AWS_TOOLKIT_TEST_CACHE_DIR: '/tmp/.vscode-test/'
             AWS_TOOLKIT_TEST_USER_DIR: '/tmp/.vscode-test/user-data/'
         steps:
