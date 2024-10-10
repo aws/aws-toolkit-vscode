@@ -16,6 +16,7 @@ import { assertTelemetry, toFile } from '../../../testUtil'
 import {
     NoChangeRequiredException,
     SelectedFolderNotInWorkspaceFolderError,
+    UploadURLExpired,
 } from '../../../../amazonqFeatureDev/errors'
 import { CodeGenState, PrepareCodeGenState } from '../../../../amazonqFeatureDev/session/sessionState'
 import { FeatureDevClient } from '../../../../amazonqFeatureDev/client/featureDev'
@@ -385,9 +386,8 @@ describe('Controller', () => {
         }
 
         describe('processErrorChatMessage', function () {
-            it('should handle NoChangeRequiredException', async function () {
-                const noChangeRequiredException = new NoChangeRequiredException()
-                sinon.stub(session, 'preloader').throws(noChangeRequiredException)
+            async function verifyException(error: Error, message?: string) {
+                sinon.stub(session, 'preloader').throws(error)
                 const sendAnswerSpy = sinon.stub(controllerSetup.messenger, 'sendAnswer')
 
                 await fireChatMessage()
@@ -396,11 +396,23 @@ describe('Controller', () => {
                     sendAnswerSpy.calledWith({
                         type: 'answer',
                         tabID,
-                        message: noChangeRequiredException.message,
+                        message: message ?? error.message,
                         canBeVoted: true,
                     }),
                     true
                 )
+            }
+
+            it('should handle NoChangeRequiredException', async function () {
+                const noChangeRequiredException = new NoChangeRequiredException()
+
+                await verifyException(noChangeRequiredException)
+            })
+
+            it('should handle UploadURLExpired', async function () {
+                const uploadURLExpired = new UploadURLExpired()
+
+                await verifyException(uploadURLExpired)
             })
         })
     })

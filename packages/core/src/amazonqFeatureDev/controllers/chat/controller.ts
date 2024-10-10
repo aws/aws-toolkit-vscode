@@ -216,8 +216,8 @@ export class FeatureDevController {
         let defaultMessage
         const isDenyListedError = denyListedErrors.some((err) => errorMessage.includes(err))
 
-        switch (err.code) {
-            case ContentLengthError.errorName:
+        switch (err.constructor.name) {
+            case ContentLengthError.name:
                 this.messenger.sendAnswer({
                     type: 'answer',
                     tabID: message.tabID,
@@ -235,14 +235,14 @@ export class FeatureDevController {
                     ],
                 })
                 break
-            case MonthlyConversationLimitError.errorName:
+            case MonthlyConversationLimitError.name:
                 this.messenger.sendMonthlyLimitError(message.tabID)
                 break
-            case FeatureDevServiceError.errorName:
-            case UploadCodeError.errorName:
-            case UserMessageNotFoundError.errorName:
-            case TabIdNotFoundError.errorName:
-            case PrepareRepoFailedError.errorName:
+            case FeatureDevServiceError.name:
+            case UploadCodeError.name:
+            case UserMessageNotFoundError.name:
+            case TabIdNotFoundError.name:
+            case PrepareRepoFailedError.name:
                 this.messenger.sendErrorMessage(
                     errorMessage,
                     message.tabID,
@@ -250,11 +250,11 @@ export class FeatureDevController {
                     session?.conversationIdUnsafe
                 )
                 break
-            case PromptRefusalException.errorName:
-            case ZipFileError.errorName:
+            case PromptRefusalException.name:
+            case ZipFileError.name:
                 this.messenger.sendErrorMessage(errorMessage, message.tabID, 0, session?.conversationIdUnsafe, true)
                 break
-            case NoChangeRequiredException.errorName:
+            case NoChangeRequiredException.name:
                 this.messenger.sendAnswer({
                     type: 'answer',
                     tabID: message.tabID,
@@ -263,7 +263,7 @@ export class FeatureDevController {
                 })
                 // Allow users to re-work the task description.
                 return this.newTask(message)
-            case CodeIterationLimitError.errorName:
+            case CodeIterationLimitError.name:
                 this.messenger.sendAnswer({
                     type: 'answer',
                     tabID: message.tabID,
@@ -282,7 +282,7 @@ export class FeatureDevController {
                     ],
                 })
                 break
-            case UploadURLExpired.errorName:
+            case UploadURLExpired.name:
                 this.messenger.sendAnswer({
                     type: 'answer',
                     tabID: message.tabID,
