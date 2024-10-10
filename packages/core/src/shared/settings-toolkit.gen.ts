@@ -22,6 +22,7 @@ export const toolkitSettings = {
     "aws.stepfunctions.asl.maxItemsComputed": {},
     "aws.ssmDocument.ssm.maxItemsComputed": {},
     "aws.cwl.limit": {},
+    "aws.cwl.liveTailMaxEvents": {},
     "aws.samcli.manuallySelectedBuckets": {},
     "aws.samcli.enableCodeLenses": {},
     "aws.suppressPrompts": {

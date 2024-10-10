@@ -162,6 +162,13 @@
                     "description": "%AWS.cwl.limit.desc%",
                     "maximum": 10000
                 },
+                "aws.cwl.liveTailMaxEvents": {
+                    "type": "number",
+                    "default": 10000,
+                    "description": "%AWS.cwl.liveTailMaxEvents.desc%",
+                    "minimum": 1000,
+                    "maximum": 10000
+                },
                 "aws.samcli.manuallySelectedBuckets": {
                     "type": "object",
                     "description": "%AWS.samcli.deploy.bucket.recentlyUsed%",
