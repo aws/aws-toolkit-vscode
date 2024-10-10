@@ -11,10 +11,6 @@ export type IndexRequestPayload = {
     refresh: boolean
 }
 
-export type IndexRequest = string
-
-export const IndexRequestType: RequestType<IndexRequest, any, any> = new RequestType('lsp/index')
-
 export type ClearRequest = string
 
 export const ClearRequestType: RequestType<ClearRequest, any, any> = new RequestType('lsp/clear')
@@ -22,10 +18,6 @@ export const ClearRequestType: RequestType<ClearRequest, any, any> = new Request
 export type QueryRequest = string
 
 export const QueryRequestType: RequestType<QueryRequest, any, any> = new RequestType('lsp/query')
-
-export type UpdateIndexRequest = string
-
-export const UpdateIndexRequestType: RequestType<UpdateIndexRequest, any, any> = new RequestType('lsp/updateIndex')
 
 export type GetUsageRequest = string
 

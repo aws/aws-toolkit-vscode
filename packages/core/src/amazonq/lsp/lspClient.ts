@@ -22,7 +22,6 @@ import {
     BuildIndexRequestType,
     GetUsageRequestType,
     IndexConfig,
-    IndexRequestType,
     QueryInlineProjectContextRequestType,
     QueryRequestType,
     UpdateIndexV2RequestPayload,
@@ -72,24 +71,7 @@ export class LspClient {
             .encrypt(key)
     }
 
-    async indexFiles(request: string[], rootPath: string, refresh: boolean) {
-        try {
-            const encryptedRequest = await this.encrypt(
-                JSON.stringify({
-                    filePaths: request,
-                    rootPath: rootPath,
-                    refresh: refresh,
-                })
-            )
-            const resp = await this.client?.sendRequest(IndexRequestType, encryptedRequest)
-            return resp
-        } catch (e) {
-            getLogger().error(`LspClient: indexFiles error: ${e}`)
-            return undefined
-        }
-    }
-
-    async indexFilesV2(paths: string[], rootPath: string, config: IndexConfig) {
+    async indexFiles(paths: string[], rootPath: string, config: IndexConfig) {
         const payload: BuildIndexRequestPayload = {
             filePaths: paths,
             projectRoot: rootPath,
@@ -144,9 +126,7 @@ export class LspClient {
         }
     }
 
-    // not yet account for file move
-    // v2
-    async updateIndexV2(filePath: string[], mode: 'update' | 'remove' | 'add') {
+    async updateIndex(filePath: string[], mode: 'update' | 'remove' | 'add') {
         const payload: UpdateIndexV2RequestPayload = {
             filePaths: filePath,
             updateMode: mode,
@@ -247,17 +227,17 @@ export async function activate(extensionContext: ExtensionContext) {
         }),
         vscode.window.onDidChangeActiveTextEditor((editor) => {
             if (savedDocument && editor && editor.document.uri.fsPath !== savedDocument.fsPath) {
-                void LspClient.instance.updateIndexV2([editor.document.uri.fsPath], 'update')
+                void LspClient.instance.updateIndex([editor.document.uri.fsPath], 'update')
             }
         }),
         vscode.workspace.onDidCreateFiles((e) => {
-            void LspClient.instance.updateIndexV2(
+            void LspClient.instance.updateIndex(
                 e.files.map((f) => f.fsPath),
                 'add'
             )
         }),
         vscode.workspace.onDidDeleteFiles((e) => {
-            void LspClient.instance.updateIndexV2(
+            void LspClient.instance.updateIndex(
                 e.files.map((f) => f.fsPath),
                 'remove'
             )

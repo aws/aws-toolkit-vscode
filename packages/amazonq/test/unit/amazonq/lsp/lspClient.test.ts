@@ -27,7 +27,7 @@ describe('Amazon Q LSP client', function () {
     })
 
     it('encrypts payload of index files ', async () => {
-        await lspClient.indexFiles(['fileA'], 'path', false)
+        await lspClient.indexFiles(['fileA'], 'path', 'all')
         assert.ok(encryptFunc.calledOnce)
         assert.ok(
             encryptFunc.calledWith(

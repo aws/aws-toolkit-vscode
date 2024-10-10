@@ -335,7 +335,7 @@ export class LspController {
             getLogger().info(`LspController: Found ${files.length} files in current project ${getProjectPaths()}`)
             const config = CodeWhispererSettings.instance.isLocalIndexEnabled() ? 'all' : 'default'
             const r = files.map((f) => f.fileUri.fsPath)
-            const resp = await LspClient.instance.indexFilesV2(r, projRoot, config)
+            const resp = await LspClient.instance.indexFiles(r, projRoot, config)
             if (resp) {
                 getLogger().debug(`LspController: Finish building index of project`)
                 const usage = await LspClient.instance.getLspServerUsage()
