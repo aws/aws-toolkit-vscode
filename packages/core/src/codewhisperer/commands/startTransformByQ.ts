@@ -6,6 +6,7 @@
 import * as vscode from 'vscode'
 import * as fs from 'fs' // eslint-disable-line no-restricted-imports
 import * as os from 'os'
+import * as xml2js from 'xml2js'
 import path from 'path'
 import { getLogger } from '../../shared/logger'
 import * as CodeWhispererConstants from '../models/constants'
@@ -96,11 +97,10 @@ export async function processLanguageUpgradeTransformFormInput(
     transformByQState.setTargetJDKVersion(toJDKVersion)
 }
 
-export async function processSQLConversionTransformFormInput(pathToProject: string, fromDB: DB, toDB: DB) {
+export async function processSQLConversionTransformFormInput(pathToProject: string, schema: string) {
     transformByQState.setProjectName(path.basename(pathToProject))
     transformByQState.setProjectPath(pathToProject)
-    transformByQState.setSourceDB(fromDB)
-    transformByQState.setTargetDB(toDB)
+    transformByQState.setSchema(schema)
 }
 
 export async function setMaven() {
@@ -274,39 +274,69 @@ export async function parseBuildFile() {
     return undefined
 }
 
-export async function validateSQLMetadataFile(sctData: any, message: any) {
+export async function validateSQLMetadataFile(fileContents: string, message: any) {
     try {
+        let sctData: any = undefined
+        xml2js.parseString(fileContents, (err, result) => {
+            if (err) {
+                getLogger().error('Error parsing .sct file, not valid XML:', err)
+                throw err
+            } else {
+                sctData = result
+            }
+        })
+
         const dbEntities = sctData['tree']['instances'][0]['ProjectModel'][0]['entities'][0]
-        const sourceDB = dbEntities['sources'][0]['DbServer'][0]['$']['vendor']
-        const targetDB = dbEntities['targets'][0]['DbServer'][0]['$']['vendor']
+        const sourceDB = dbEntities['sources'][0]['DbServer'][0]['$']['vendor'].toUpperCase()
+        const targetDB = dbEntities['targets'][0]['DbServer'][0]['$']['vendor'].toUpperCase()
         const sourceServerName = dbEntities['sources'][0]['DbServer'][0]['$']['name']
+        if (!sourceServerName) {
+            transformByQState.getChatControllers()?.transformationFinished.fire({
+                message: CodeWhispererConstants.invalidMetadataFileNoSourceServerName,
+                tabID: message.tabID,
+            })
+            return false
+        }
         transformByQState.setSourceServerName(sourceServerName)
-        if (sourceDB.toUpperCase() !== DB.ORACLE) {
+        if (sourceDB !== DB.ORACLE) {
             transformByQState.getChatControllers()?.transformationFinished.fire({
                 message: CodeWhispererConstants.invalidMetadataFileUnsupportedSourceVendor(sourceDB),
                 tabID: message.tabID,
             })
             return false
-        } else if (targetDB.toUpperCase() !== DB.AURORA_POSTGRESQL && targetDB.toUpperCase() !== DB.RDS_POSTGRESQL) {
+        } else if (targetDB !== DB.AURORA_POSTGRESQL && targetDB !== DB.RDS_POSTGRESQL) {
             transformByQState.getChatControllers()?.transformationFinished.fire({
                 message: CodeWhispererConstants.invalidMetadataFileUnsupportedTargetVendor(targetDB),
                 tabID: message.tabID,
             })
             return false
-        } else if (targetDB.toUpperCase() !== transformByQState.getTargetDB()) {
+        }
+        transformByQState.setSourceDB(sourceDB)
+        transformByQState.setTargetDB(targetDB)
+
+        // extract schema names from metadata file
+        const serverNodeLocations =
+            sctData['tree']['instances'][0]['ProjectModel'][0]['relations'][0]['server-node-location']
+        const schemaNames = new Set<string>()
+        serverNodeLocations.forEach((serverNodeLocation: any) => {
+            const schemaNodes = serverNodeLocation['FullNameNodeInfoList'][0]['nameParts'][0][
+                'FullNameNodeInfo'
+            ].filter((node: any) => node['$']['typeNode'] === 'schema')
+            schemaNodes.forEach((node: any) => {
+                schemaNames.add(node['$']['nameNode'].toUpperCase())
+            })
+        })
+        if (schemaNames.size === 0) {
             transformByQState.getChatControllers()?.transformationFinished.fire({
-                message: CodeWhispererConstants.invalidMetadataFileTargetVendorMismatch(
-                    targetDB,
-                    transformByQState.getTargetDB()!
-                ),
+                message: CodeWhispererConstants.invalidMetadataFileNoSchemaNamesFound,
                 tabID: message.tabID,
             })
             return false
         }
-        // TO-DO: when more than just Oracle is supported, validate that sourceDB === transformByQState.getSourceDB()
+        transformByQState.setSchemaOptions(schemaNames) // user will choose one of these
     } catch (e: any) {
         transformByQState.getChatControllers()?.transformationFinished.fire({
-            message: CodeWhispererConstants.invalidMetadataFileUnknownIssueParsing,
+            message: `${CodeWhispererConstants.invalidMetadataFileUnknownIssueParsing} ${e.message ?? ''}`,
             tabID: message.tabID,
         })
         return false

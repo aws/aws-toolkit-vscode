@@ -395,6 +395,10 @@ export class TransformByQState {
 
     private targetDB: DB | undefined = undefined
 
+    private schema: string = ''
+
+    private schemaOptions: Set<string> = new Set()
+
     private sourceServerName: string = ''
 
     private metadataPathSQL: string = ''
@@ -492,6 +496,14 @@ export class TransformByQState {
 
     public getTargetDB() {
         return this.targetDB
+    }
+
+    public getSchema() {
+        return this.schema
+    }
+
+    public getSchemaOptions() {
+        return this.schemaOptions
     }
 
     public getSourceServerName() {
@@ -634,6 +646,14 @@ export class TransformByQState {
         this.targetDB = db
     }
 
+    public setSchema(schema: string) {
+        this.schema = schema
+    }
+
+    public setSchemaOptions(schemaOptions: Set<string>) {
+        this.schemaOptions = schemaOptions
+    }
+
     public setSourceServerName(serverName: string) {
         this.sourceServerName = serverName
     }
@@ -721,7 +741,13 @@ export class TransformByQState {
         this.jobFailureMetadata = ''
         this.payloadFilePath = ''
         this.metadataPathSQL = ''
+        this.sourceJDKVersion = undefined
+        this.targetJDKVersion = JDKVersion.JDK17
+        this.sourceDB = undefined
+        this.targetDB = undefined
         this.sourceServerName = ''
+        this.schema = ''
+        this.schemaOptions.clear()
         this.errorLog = ''
         this.customBuildCommand = ''
         this.intervalId = undefined
