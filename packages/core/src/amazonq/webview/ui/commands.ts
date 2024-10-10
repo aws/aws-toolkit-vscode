@@ -16,6 +16,8 @@ type MessageCommand =
     | 'open-diff'
     | 'code_was_copied_to_clipboard'
     | 'insert_code_at_cursor_position'
+    | 'accept_diff'
+    | 'view_diff'
     | 'stop-response'
     | 'trigger-tabID-received'
     | 'clear'
