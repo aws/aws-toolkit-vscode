@@ -200,24 +200,6 @@
             "description": "Number of characters in request"
         },
         {
-            "name": "cwsprChatInteractionType",
-            "allowedValues": [
-                "acceptDiff",
-                "insertAtCursor",
-                "copySnippet",
-                "copy",
-                "clickLink",
-                "clickFollowUp",
-                "hoverReference",
-                "upvote",
-                "downvote",
-                "clickBodyLink",
-                "viewDiff"
-            ],
-            "type": "string",
-            "description": "Indicates the specific interaction type with a message in a conversation"
-        },
-        {
             "name": "cwsprChatInteractionTarget",
             "type": "string",
             "description": "Identifies the entity within the message that user interacts with."

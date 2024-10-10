@@ -4,7 +4,7 @@
  */
 
 /**
- * Converts an array of key-value pairs into a Map object.
+ * Tries to create map and returns empty map if failed.
  *
  * @param {[unknown, unknown][]} arr - An array of tuples, where each tuple represents a key-value pair.
  * @returns {Map<unknown, unknown>} A new Map object created from the input array.
