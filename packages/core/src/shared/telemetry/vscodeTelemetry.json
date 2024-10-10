@@ -1,6 +1,12 @@
 {
     "types": [
         {
+            "name": "ec2ConnectionType",
+            "type": "string",
+            "allowedValues": ["remoteDesktop", "ssh", "scp", "ssm", "remoteWorkspace"],
+            "description": "Ways to connect to an EC2 Instance"
+        },
+        {
             "name": "amazonGenerateApproachLatency",
             "type": "double",
             "description": "The time it takes to generate approach response"
