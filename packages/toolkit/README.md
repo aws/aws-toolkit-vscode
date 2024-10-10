@@ -33,7 +33,7 @@ AWS Infrastructure Composer maintains a real-time visual representation of your 
 -   Use the right tool for the task, including visual, code, or generative AI powered code suggestions in your IDE.
 -   Integrate with Workflow Studio to visually orchestrate over 220 AWS services or public http endpoints with Step Functions workflows.
 
-![Infrastructure Composer](https://raw.githubusercontent.com/aws/aws-toolkit-vscode/HEAD/docs/marketplace/vscode/appComposer.gif)
+![Infrastructure Composer](https://raw.githubusercontent.com/aws/aws-toolkit-vscode/HEAD/docs/marketplace/vscode/infraComposer.webp)
 
 ## [Amazon CodeCatalyst](https://codecatalyst.aws/explore)
 

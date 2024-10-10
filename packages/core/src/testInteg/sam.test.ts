@@ -5,7 +5,7 @@
 
 import assert from 'assert'
 import { Runtime } from 'aws-sdk/clients/lambda'
-import { mkdtempSync } from 'fs'
+import { mkdtempSync } from 'fs' // eslint-disable-line no-restricted-imports
 import * as path from 'path'
 import * as semver from 'semver'
 import * as vscode from 'vscode'

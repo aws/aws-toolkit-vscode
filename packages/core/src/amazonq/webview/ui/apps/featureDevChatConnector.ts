@@ -94,12 +94,13 @@ export class Connector {
         })
     }
 
-    onOpenDiff = (tabID: string, filePath: string, deleted: boolean): void => {
+    onOpenDiff = (tabID: string, filePath: string, deleted: boolean, messageId?: string): void => {
         this.sendMessageToExtension({
             command: 'open-diff',
             tabID,
             filePath,
             deleted,
+            messageId,
             tabType: 'featuredev',
         })
     }
@@ -167,7 +168,11 @@ export class Connector {
                 canBeVoted: true,
                 codeReference: messageData.references,
                 // TODO get the backend to store a message id in addition to conversationID
-                messageId: messageData.messageID ?? messageData.triggerID ?? messageData.conversationID,
+                messageId:
+                    messageData.codeGenerationId ??
+                    messageData.messageID ??
+                    messageData.triggerID ??
+                    messageData.conversationID,
                 fileList: {
                     rootFolderTitle: 'Changes',
                     filePaths: messageData.filePaths.map((f: DiffTreeFileInfo) => f.zipFilePath),

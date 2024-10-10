@@ -5,7 +5,7 @@
  * This class is responsible for responding to UI events by calling
  * the Gumby extension.
  */
-import nodefs from 'fs'
+import nodefs from 'fs' // eslint-disable-line no-restricted-imports
 import path from 'path'
 import * as vscode from 'vscode'
 import { GumbyNamedMessages, Messenger } from './messenger/messenger'
