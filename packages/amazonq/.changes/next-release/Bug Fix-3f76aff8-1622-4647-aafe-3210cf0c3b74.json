@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Amazon Q extension may fail to start if AWS Toolkit extension fails to start"
-}
