@@ -152,7 +152,7 @@ export class CodeWhispererTracker {
                                 // deprecated % value and should not be used by service side
                                 modificationPercentage: percentage,
                                 customizationArn: customizationArn,
-                                timestamp: new Date(Date.now()),
+                                timestamp: new Date(),
                                 acceptedCharacterCount: suggestion.originalString.length,
                                 unmodifiedAcceptedCharacterCount: getUnmodifiedAcceptedTokens(
                                     suggestion.originalString,
