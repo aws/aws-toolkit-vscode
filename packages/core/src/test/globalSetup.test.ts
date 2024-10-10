@@ -26,9 +26,9 @@ import { GlobalState } from '../shared/globalState'
 import { FeatureConfigProvider } from '../shared/featureConfig'
 import { mockFeatureConfigsData } from './fake/mockFeatureConfigData'
 import { fs } from '../shared'
+import { rm, mkdir } from 'fs/promises' //eslint-disable-line no-restricted-imports
 
 disableAwsSdkWarning()
-
 const testReportDir = join(__dirname, '../../../../../.test-reports') // Root project, not subproject
 const testLogOutput = join(testReportDir, 'testLog.log')
 const globalSandbox = sinon.createSandbox()
@@ -42,10 +42,11 @@ let openExternalStub: sinon.SinonStub<Parameters<(typeof vscode)['env']['openExt
 export async function mochaGlobalSetup(extensionId: string) {
     return async function (this: Mocha.Runner) {
         // Clean up and set up test logs
+        // Use nodefs over our fs since globals may not be initialized yet and our fs checks isWeb via globals.
         try {
-            await fs.delete(testLogOutput)
+            await rm(testLogOutput)
         } catch (e) {}
-        await fs.mkdir(testReportDir)
+        await mkdir(testReportDir, { recursive: true })
 
         sinon.stub(FeatureConfigProvider.prototype, 'listFeatureEvaluations').resolves({
             featureEvaluations: mockFeatureConfigsData,
