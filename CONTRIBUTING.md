@@ -367,11 +367,13 @@ If you need to report an issue attach these to give the most detailed informatio
 1. Open the Command Palette (`cmd/ctrl` + `shift` + `p`), then search for "View Logs". Choose the correct option for the extension you want, eg: `AWS: View Logs` or `Amazon Q: View Logs`
    ![](./docs/images/logsView.png)
 2. Click the gear icon on the bottom right and select `Debug`
+   > IMPORTANT: If you do not see the gear icon, update VS Code
+
    ![](./docs/images/logsSetDebug.png)
-3. Click the gear icon again and select `Set As Default`. This will ensure we stay in `Debug` until explicitly changed
+4. Click the gear icon again and select `Set As Default`. This will ensure we stay in `Debug` until explicitly changed
    ![](./docs/images/logsSetDefault.png)
-4. Open the Command Palette again and select `Reload Window`.
-5. Now you should see additional `[debug]` prefixed logs in the output.
+5. Open the Command Palette again and select `Reload Window`.
+6. Now you should see additional `[debug]` prefixed logs in the output.
    ![](./docs/images/logsDebugLog.png)
 
 ### Telemetry
