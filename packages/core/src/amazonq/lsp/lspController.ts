@@ -304,7 +304,7 @@ export class LspController {
     }
 
     async buildIndex() {
-        getLogger().info(`LspController: Starting to build vector index of project`)
+        getLogger().info(`LspController: Starting to build index of project`)
         const start = performance.now()
         const projPaths = getProjectPaths()
         projPaths.sort()
@@ -331,7 +331,7 @@ export class LspController {
                 false
             )
             if (resp) {
-                getLogger().debug(`LspController: Finish building vector index of project`)
+                getLogger().debug(`LspController: Finish building index of project`)
                 const usage = await LspClient.instance.getLspServerUsage()
                 telemetry.amazonq_indexWorkspace.emit({
                     duration: performance.now() - start,
@@ -343,7 +343,7 @@ export class LspController {
                     credentialStartUrl: AuthUtil.instance.startUrl,
                 })
             } else {
-                getLogger().error(`LspController: Failed to build vector index of project`)
+                getLogger().error(`LspController: Failed to build index of project`)
                 telemetry.amazonq_indexWorkspace.emit({
                     duration: performance.now() - start,
                     result: 'Failed',
@@ -352,7 +352,7 @@ export class LspController {
                 })
             }
         } catch (e) {
-            getLogger().error(`LspController: Failed to build vector index of project`)
+            getLogger().error(`LspController: Failed to build index of project`)
             telemetry.amazonq_indexWorkspace.emit({
                 duration: performance.now() - start,
                 result: 'Failed',
@@ -371,12 +371,6 @@ export class LspController {
             return
         }
         setImmediate(async () => {
-            if (!CodeWhispererSettings.instance.isLocalIndexEnabled()) {
-                // only download LSP for users who did not turn on this feature
-                // do not start LSP server
-                await LspController.instance.tryInstallLsp(context)
-                return
-            }
             const ok = await LspController.instance.tryInstallLsp(context)
             if (!ok) {
                 return
@@ -384,7 +378,9 @@ export class LspController {
             try {
                 await activateLsp(context)
                 getLogger().info('LspController: LSP activated')
-                void LspController.instance.buildIndex()
+                if (CodeWhispererSettings.instance.isLocalIndexEnabled()) {
+                    void LspController.instance.buildIndex()
+                }
                 // log the LSP server CPU and Memory usage per 30 minutes.
                 globals.clock.setInterval(
                     async () => {
