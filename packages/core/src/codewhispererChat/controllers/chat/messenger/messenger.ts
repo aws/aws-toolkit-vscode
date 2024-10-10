@@ -184,7 +184,9 @@ export class Messenger {
                         chatEvent.assistantResponseEvent.content.length > 0
                     ) {
                         message += chatEvent.assistantResponseEvent.content
-                        codeBlockLanguage = this.extractCodeBlockLanguage(message)
+                        if (codeBlockLanguage === 'plaintext') {
+                            codeBlockLanguage = this.extractCodeBlockLanguage(message)
+                        }
                         this.dispatcher.sendChatMessage(
                             new ChatMessage(
                                 {
@@ -341,9 +343,21 @@ export class Messenger {
     }
 
     private extractCodeBlockLanguage(message: string): string {
-        const firstLine = message.split('\n')[0]
-        const match = firstLine.match(/^```(\w+)/)
-        return match ? match[1] : 'plaintext'
+        // This fulfills both the cases of unit test generation(java, python) and general use case(Non java and Non python) languages.
+        const codeBlockStart = message.indexOf('```')
+        if (codeBlockStart === -1) {
+            return 'plaintext'
+        }
+
+        const languageStart = codeBlockStart + 3
+        const languageEnd = message.indexOf('\n', languageStart)
+
+        if (languageEnd === -1) {
+            return 'plaintext'
+        }
+
+        const language = message.substring(languageStart, languageEnd).trim()
+        return language !== '' ? language : 'plaintext'
     }
 
     public sendErrorMessage(errorMessage: string | undefined, tabID: string, requestID: string | undefined) {
