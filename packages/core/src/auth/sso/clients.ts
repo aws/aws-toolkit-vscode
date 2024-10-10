@@ -39,7 +39,7 @@ import { getUserAgent, withTelemetryContext } from '../../shared/telemetry/util'
 
 export class OidcClient {
     public constructor(
-        private readonly client: SSOOIDC,
+        public readonly client: SSOOIDC,
         private readonly clock: { Date: typeof Date }
     ) {}
 
@@ -157,7 +157,7 @@ export class SsoClient {
     }
 
     public constructor(
-        private readonly client: PromisifyClient<SSO>,
+        public readonly client: PromisifyClient<SSO>,
         private readonly provider: SsoAccessTokenProvider
     ) {}
 

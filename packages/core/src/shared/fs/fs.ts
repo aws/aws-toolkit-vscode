@@ -380,7 +380,12 @@ export class FileSystem {
     }
 
     /**
-     * Change permissions on file. Note that this will do nothing on browser.
+     * Sets file permissions flags.
+     *
+     * Platform notes:
+     * - web-mode: skipped
+     * - Windows: only affects "write" permission, and group/owner/other is not implemented.
+     *
      * @param uri file whose permissions should be set.
      * @param mode new permissions in octal notation.
      * More info: https://nodejs.org/api/fs.html#fspromiseschmodpath-mode
@@ -389,6 +394,8 @@ export class FileSystem {
     async chmod(uri: vscode.Uri | string, mode: number): Promise<void> {
         if (!this.isWeb) {
             const path = toUri(uri)
+            // Note: https://nodejs.org/api/fs.html#fschmodpath-mode-callback
+            // on Windows only the write permission is/can be changed. group/owner/other is not implemented.
             await chmod(path.fsPath, mode)
         }
     }

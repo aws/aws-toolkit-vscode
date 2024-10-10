@@ -8,17 +8,35 @@ import { AWSError, Request, Service } from 'aws-sdk'
 import { version } from 'vscode'
 import { AWSClientBuilder, DefaultAWSClientBuilder } from '../../shared/awsClientBuilder'
 import { DevSettings } from '../../shared/settings'
-import { getClientId } from '../../shared/telemetry/util'
+import { getClientId, getUserAgent } from '../../shared/telemetry/util'
 import { FakeMemento } from '../fakeExtensionContext'
 import { FakeAwsContext } from '../utilities/fakeAwsContext'
 import { TestSettings } from '../utilities/testSettingsConfiguration'
 import { GlobalState } from '../../shared/globalState'
+import { createCodeWhispererChatStreamingClient } from '../../shared/clients/codewhispererChatClient'
+import { OidcClient, SsoClient } from '../../auth/sso/clients'
 
-describe('DefaultAwsClientBuilder', function () {
+describe('AwsClientBuilder', function () {
     let builder: AWSClientBuilder
 
     beforeEach(function () {
         builder = new DefaultAWSClientBuilder(new FakeAwsContext())
+    })
+
+    it('service clients set user agent', async function () {
+        const userAgent = getUserAgent({ includePlatform: true, includeClientId: true })
+
+        const cwclient = await createCodeWhispererChatStreamingClient('fake-token')
+        assert.deepStrictEqual(cwclient.config.customUserAgent, [[userAgent]])
+
+        const oidcClient = OidcClient.create('us-east-2')
+        assert.deepStrictEqual(oidcClient.client.config.customUserAgent, [[userAgent]])
+
+        const ssoClient = SsoClient.create('us-east-2', {} as any)
+        assert.deepStrictEqual(ssoClient.client.config.customUserAgent, [[userAgent]])
+
+        const awsService = await builder.createAwsService(Service)
+        assert.deepStrictEqual(awsService.config.customUserAgent, userAgent)
     })
 
     describe('createAndConfigureSdkClient', function () {
