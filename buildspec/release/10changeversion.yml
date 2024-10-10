@@ -2,7 +2,7 @@ version: 0.2
 
 env:
     variables:
-        NODE_OPTIONS: '--max-old-space-size=8192 --experimental-fs'
+        NODE_OPTIONS: '--max-old-space-size=8192 --experimental-modules'
 
 phases:
     pre_build:

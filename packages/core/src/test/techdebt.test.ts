@@ -50,6 +50,6 @@ describe('tech debt', function () {
     it('remove node flag for experimental', async function () {
         const minNodejs = env.getMinNodejsVersion()
 
-        assert.ok(semver.lt(minNodejs, '22.3.0'), 'with node 22.3.0+ we no longer need the --experimental-fs flag')
+        assert.ok(semver.lt(minNodejs, '22.3.0'), 'with node 22.3.0+ we no longer need the --experimental-modules flag')
     })
 })
