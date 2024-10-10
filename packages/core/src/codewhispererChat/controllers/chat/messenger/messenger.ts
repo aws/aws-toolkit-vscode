@@ -87,6 +87,7 @@ export class Messenger {
                     triggerID,
                     messageID: '',
                     userIntent: undefined,
+                    codeBlockLanguage: undefined,
                 },
                 tabID
             )
@@ -131,6 +132,7 @@ export class Messenger {
         let codeReference: CodeReference[] = []
         let followUps: FollowUp[] = []
         let relatedSuggestions: Suggestion[] = []
+        let codeBlockLanguage: string = 'plaintext'
 
         if (response.generateAssistantResponseResponse === undefined) {
             throw new ToolkitError(
@@ -182,7 +184,7 @@ export class Messenger {
                         chatEvent.assistantResponseEvent.content.length > 0
                     ) {
                         message += chatEvent.assistantResponseEvent.content
-
+                        codeBlockLanguage = this.extractCodeBlockLanguage(message)
                         this.dispatcher.sendChatMessage(
                             new ChatMessage(
                                 {
@@ -195,6 +197,7 @@ export class Messenger {
                                     triggerID,
                                     messageID,
                                     userIntent: triggerPayload.userIntent,
+                                    codeBlockLanguage: codeBlockLanguage,
                                 },
                                 tabID
                             )
@@ -272,6 +275,7 @@ export class Messenger {
                                 triggerID,
                                 messageID,
                                 userIntent: triggerPayload.userIntent,
+                                codeBlockLanguage: codeBlockLanguage,
                             },
                             tabID
                         )
@@ -290,6 +294,7 @@ export class Messenger {
                                 triggerID,
                                 messageID,
                                 userIntent: triggerPayload.userIntent,
+                                codeBlockLanguage: undefined,
                             },
                             tabID
                         )
@@ -307,6 +312,7 @@ export class Messenger {
                             triggerID,
                             messageID,
                             userIntent: triggerPayload.userIntent,
+                            codeBlockLanguage: undefined,
                         },
                         tabID
                     )
@@ -332,6 +338,12 @@ export class Messenger {
                     totalNumberOfCodeBlocksInResponse: await this.countTotalNumberOfCodeBlocks(message),
                 })
             })
+    }
+
+    private extractCodeBlockLanguage(message: string): string {
+        const firstLine = message.split('\n')[0]
+        const match = firstLine.match(/^```(\w+)/)
+        return match ? match[1] : 'plaintext'
     }
 
     public sendErrorMessage(errorMessage: string | undefined, tabID: string, requestID: string | undefined) {
@@ -431,6 +443,7 @@ export class Messenger {
                     triggerID,
                     messageID: 'static_message_' + triggerID,
                     userIntent: undefined,
+                    codeBlockLanguage: undefined,
                 },
                 tabID
             )
