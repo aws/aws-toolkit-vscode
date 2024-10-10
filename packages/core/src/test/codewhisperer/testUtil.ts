@@ -19,11 +19,13 @@ import globals from '../../shared/extensionGlobals'
 import { session } from '../../codewhisperer/util/codeWhispererSession'
 import { DefaultAWSClientBuilder, ServiceOptions } from '../../shared/awsClientBuilder'
 import { FakeAwsContext } from '../utilities/fakeAwsContext'
-import { Service } from 'aws-sdk'
+import { HttpResponse, Service } from 'aws-sdk'
 import userApiConfig = require('./../../codewhisperer/client/user-service-2.json')
 import CodeWhispererUserClient = require('../../codewhisperer/client/codewhispereruserclient')
 import { codeWhispererClient } from '../../codewhisperer/client/codewhisperer'
 import { RecommendationHandler } from '../../codewhisperer/service/recommendationHandler'
+import * as model from '../../codewhisperer/models/model'
+import { stub } from '../utilities/stubber'
 import { Dirent } from 'fs' // eslint-disable-line no-restricted-imports
 
 export async function resetCodeWhispererGlobalVariables() {
@@ -206,6 +208,109 @@ export function createMockDirentFile(fileName: string): Dirent {
     dirent.isFile = () => true
     dirent.name = fileName
     return dirent
+}
+
+export const mockGetCodeScanResponse = {
+    $response: {
+        data: {
+            status: 'Completed',
+        },
+        requestId: 'requestId',
+        hasNextPage: () => false,
+        error: undefined,
+        nextPage: () => undefined,
+        redirectCount: 0,
+        retryCount: 0,
+        httpResponse: new HttpResponse(),
+    },
+    status: 'Completed',
+}
+
+export function createClient() {
+    const mockClient = stub(codewhispererClient.DefaultCodeWhispererClient)
+
+    const mockCreateCodeScanResponse = {
+        $response: {
+            data: {
+                jobId: 'jobId',
+                status: 'Pending',
+            },
+            requestId: 'requestId',
+            hasNextPage: () => false,
+            error: undefined,
+            nextPage: () => undefined,
+            redirectCount: 0,
+            retryCount: 0,
+            httpResponse: new HttpResponse(),
+        },
+        jobId: 'jobId',
+        status: 'Pending',
+    }
+    const mockCreateUploadUrlResponse = {
+        $response: {
+            data: {
+                uploadId: 'uploadId',
+                uploadUrl: 'uploadUrl',
+            },
+            requestId: 'requestId',
+            hasNextPage: () => false,
+            error: undefined,
+            nextPage: () => undefined,
+            redirectCount: 0,
+            retryCount: 0,
+            httpResponse: new HttpResponse(),
+        },
+        uploadId: 'uploadId',
+        uploadUrl: 'https://test.com',
+    }
+
+    const mockCodeScanFindings = JSON.stringify([
+        {
+            filePath: 'workspaceFolder/python3.7-plain-sam-app/hello_world/app.py',
+            startLine: 1,
+            endLine: 1,
+            title: 'title',
+            description: {
+                text: 'text',
+                markdown: 'markdown',
+            },
+            detectorId: 'detectorId',
+            detectorName: 'detectorName',
+            findingId: 'findingId',
+            relatedVulnerabilities: [],
+            severity: 'High',
+            remediation: {
+                recommendation: {
+                    text: 'text',
+                    url: 'url',
+                },
+                suggestedFixes: [],
+            },
+            codeSnippet: [],
+        } satisfies model.RawCodeScanIssue,
+    ])
+
+    const mockListCodeScanFindingsResponse = {
+        $response: {
+            data: {
+                codeScanFindings: mockCodeScanFindings,
+            },
+            requestId: 'requestId',
+            hasNextPage: () => false,
+            error: undefined,
+            nextPage: () => undefined,
+            redirectCount: 0,
+            retryCount: 0,
+            httpResponse: new HttpResponse(),
+        },
+        codeScanFindings: mockCodeScanFindings,
+    }
+
+    mockClient.createCodeScan.resolves(mockCreateCodeScanResponse)
+    mockClient.createUploadUrl.resolves(mockCreateUploadUrlResponse)
+    mockClient.getCodeScan.resolves(mockGetCodeScanResponse)
+    mockClient.listCodeScanFindings.resolves(mockListCodeScanFindingsResponse)
+    return mockClient
 }
 
 export function aStringWithLineCount(lineCount: number, start: number = 0): string {
