@@ -417,22 +417,3 @@ export function extractFileAndCodeSelectionFromMessage(message: any) {
     const selection = message?.context?.focusAreaContext?.selectionInsideExtendedCodeBlock as vscode.Selection
     return { filePath, selection }
 }
-
-/**
- * Indents the given code based on the current document's indentation at the selection start.
- *
- * @param {any} message - The message object containing the code.
- * @param {vscode.TextDocument} doc - The VSCode document where the code is applied.
- * @param {vscode.Selection} selection - The selection range in the document.
- * @returns {string} - The processed code to be applied to the document.
- */
-export function getIndentedCode(message: any, doc: vscode.TextDocument, selection: vscode.Selection) {
-    const indentRange = new vscode.Range(new vscode.Position(selection.start.line, 0), selection.active)
-    let indentation = doc.getText(indentRange)
-
-    if (indentation.trim().length !== 0) {
-        indentation = ' '.repeat(indentation.length - indentation.trimStart().length)
-    }
-
-    return indent(message.code, indentation.length)
-}
