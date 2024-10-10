@@ -263,7 +263,7 @@ describe('Controller', () => {
                 workspaceFolders,
             }
 
-            const codeGenState = new CodeGenState(testConfig, getFilePaths(controllerSetup), [], [], tabID, 0)
+            const codeGenState = new CodeGenState(testConfig, getFilePaths(controllerSetup), [], [], tabID, 0, {})
             const newSession = await createSession({
                 messenger: controllerSetup.messenger,
                 sessionState: codeGenState,

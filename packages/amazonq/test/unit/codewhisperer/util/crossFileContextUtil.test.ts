@@ -7,7 +7,7 @@ import assert from 'assert'
 import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import * as crossFile from 'aws-core-vscode/codewhisperer'
-import { createMockTextEditor } from 'aws-core-vscode/test'
+import { aStringWithLineCount, createMockTextEditor } from 'aws-core-vscode/test'
 import { crossFileContextConfig } from 'aws-core-vscode/codewhisperer'
 import {
     assertTabCount,
@@ -35,8 +35,8 @@ describe('crossFileContextUtil', function () {
             tempFolder = (await createTestWorkspaceFolder()).uri.fsPath
         })
 
-        it('should fetch 3 chunks and each chunk should contains 10 lines', async function () {
-            await toTextEditor(sampleFileOf60Lines, 'CrossFile.java', tempFolder, { preview: false })
+        it('should fetch 3 chunks and each chunk should contains 50 lines', async function () {
+            await toTextEditor(aStringWithLineCount(200), 'CrossFile.java', tempFolder, { preview: false })
             const myCurrentEditor = await toTextEditor('', 'TargetFile.java', tempFolder, {
                 preview: false,
             })
@@ -44,9 +44,9 @@ describe('crossFileContextUtil', function () {
             assert.ok(actual)
             assert.ok(actual.supplementalContextItems.length === 3)
 
-            assert.strictEqual(actual.supplementalContextItems[0].content.split('\n').length, 10)
-            assert.strictEqual(actual.supplementalContextItems[1].content.split('\n').length, 10)
-            assert.strictEqual(actual.supplementalContextItems[2].content.split('\n').length, 10)
+            assert.strictEqual(actual.supplementalContextItems[0].content.split('\n').length, 50)
+            assert.strictEqual(actual.supplementalContextItems[1].content.split('\n').length, 50)
+            assert.strictEqual(actual.supplementalContextItems[2].content.split('\n').length, 50)
         })
     })
 
@@ -250,73 +250,59 @@ describe('crossFileContextUtil', function () {
             assert.strictEqual(chunks[1].content, 'line_6\nline_7')
         })
 
-        it('codewhisperer crossfile config should use 10 lines', async function () {
+        it('codewhisperer crossfile config should use 50 lines', async function () {
             const filePath = path.join(tempFolder, 'file.txt')
-            await toFile(sampleFileOf60Lines, filePath)
+            await toFile(aStringWithLineCount(210), filePath)
 
             const chunks = await crossFile.splitFileToChunks(filePath, crossFileContextConfig.numberOfLinesEachChunk)
-            assert.strictEqual(chunks.length, 6)
+
+            // (210 / 50) + 1
+            assert.strictEqual(chunks.length, 5)
+            // line0 -> line49
+            assert.strictEqual(chunks[0].content, aStringWithLineCount(50, 0))
+            // line50 -> line99
+            assert.strictEqual(chunks[1].content, aStringWithLineCount(50, 50))
+            // line100 -> line149
+            assert.strictEqual(chunks[2].content, aStringWithLineCount(50, 100))
+            // line150 -> line199
+            assert.strictEqual(chunks[3].content, aStringWithLineCount(50, 150))
+            // line 200 -> line209
+            assert.strictEqual(chunks[4].content, aStringWithLineCount(10, 200))
+        })
+
+        it('linkChunks should add another chunk which will link to the first chunk and chunk.nextContent should reflect correct value', async function () {
+            const filePath = path.join(tempFolder, 'file.txt')
+            await toFile(aStringWithLineCount(210), filePath)
+
+            const chunks = await crossFile.splitFileToChunks(filePath, crossFileContextConfig.numberOfLinesEachChunk)
+            const linkedChunks = crossFile.linkChunks(chunks)
+
+            // 210 / 50 + 2
+            assert.strictEqual(linkedChunks.length, 6)
+
+            // 0th
+            assert.strictEqual(linkedChunks[0].content, aStringWithLineCount(3, 0))
+            assert.strictEqual(linkedChunks[0].nextContent, aStringWithLineCount(50, 0))
+
+            // 1st
+            assert.strictEqual(linkedChunks[1].content, aStringWithLineCount(50, 0))
+            assert.strictEqual(linkedChunks[1].nextContent, aStringWithLineCount(50, 50))
+
+            // 2nd
+            assert.strictEqual(linkedChunks[2].content, aStringWithLineCount(50, 50))
+            assert.strictEqual(linkedChunks[2].nextContent, aStringWithLineCount(50, 100))
+
+            // 3rd
+            assert.strictEqual(linkedChunks[3].content, aStringWithLineCount(50, 100))
+            assert.strictEqual(linkedChunks[3].nextContent, aStringWithLineCount(50, 150))
+
+            // 4th
+            assert.strictEqual(linkedChunks[4].content, aStringWithLineCount(50, 150))
+            assert.strictEqual(linkedChunks[4].nextContent, aStringWithLineCount(10, 200))
+
+            // 5th
+            assert.strictEqual(linkedChunks[5].content, aStringWithLineCount(10, 200))
+            assert.strictEqual(linkedChunks[5].nextContent, aStringWithLineCount(10, 200))
         })
     })
 })
-
-const sampleFileOf60Lines = `import java.util.List;
-// we need this comment on purpose because chunk will be trimed right, adding this to avoid trimRight and make assertion easier
-/**
- * 
- * 
- * 
- * 
- * 
- **/
-class Main {
-    public static void main(String[] args) {
-        Calculator calculator = new Calculator();
-        calculator.add(1, 2);
-        calculator.subtract(1, 2);
-        calculator.multiply(1, 2);
-        calculator.divide(1, 2);
-        calculator.remainder(1, 2);
-    }
-}
-//
-class Calculator {
-    public Calculator() {
-        System.out.println("constructor");
-    }
-//
-    public add(int num1, int num2) {
-        System.out.println("add");
-        return num1 + num2;
-    }
-//
-    public subtract(int num1, int num2) {
-        System.out.println("subtract");
-        return num1 - num2;
-    }
-//
-    public multiply(int num1, int num2) {
-        System.out.println("multiply");
-        return num1 * num2;    
-    }
-//
-    public divide(int num1, int num2) {
-        System.out.println("divide");
-        return num1 / num2;
-    }
-//
-    public remainder(int num1, int num2) {
-        System.out.println("remainder");
-        return num1 % num2;
-    }
-//
-    public power(int num1, int num2) {
-        System.out.println("power");
-        return (int) Math.pow(num1, num2);
-    }
-//
-    public squareRoot(int num1) {
-        System.out.println("squareRoot");
-        return (int) Math.sqrt(num1);
-    }
-}`

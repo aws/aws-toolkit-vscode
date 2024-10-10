@@ -15,7 +15,7 @@ import { MetricName, MetricShapes } from '../shared/telemetry/telemetry'
 import { keys, selectFrom } from '../shared/utilities/tsUtils'
 import fs from '../shared/fs/fs'
 import { DeclaredCommand } from '../shared/vscode/commands2'
-import { mkdirSync, existsSync } from 'fs'
+import { mkdirSync, existsSync } from 'fs' // eslint-disable-line no-restricted-imports
 import { randomBytes } from 'crypto'
 import request from '../shared/request'
 import { stub } from 'sinon'

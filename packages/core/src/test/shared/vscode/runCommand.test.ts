@@ -6,7 +6,7 @@
 import globals from '../../../shared/extensionGlobals'
 
 import os from 'os'
-import { promises as fsPromises } from 'fs'
+import { promises as fsPromises } from 'fs' // eslint-disable-line no-restricted-imports
 import fs from '../../../shared/fs/fs'
 import * as sinon from 'sinon'
 import assert from 'assert'
