@@ -225,7 +225,6 @@ export async function activate(extensionContext: ExtensionContext) {
         }),
         vscode.window.onDidChangeActiveTextEditor((editor) => {
             if (savedDocument && editor && editor.document.uri.fsPath !== savedDocument.fsPath) {
-                console.log('onDidChangeActiveTextEditor', savedDocument.fsPath)
                 void LspClient.instance.updateIndex([savedDocument.fsPath], 'update')
             }
         }),
