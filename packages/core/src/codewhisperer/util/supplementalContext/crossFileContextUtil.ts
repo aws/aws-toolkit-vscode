@@ -15,7 +15,7 @@ import { getFileDistance } from '../../../shared/filesystemUtilities'
 import { getOpenFilesInWindow } from '../../../shared/utilities/editorUtilities'
 import { getLogger } from '../../../shared/logger/logger'
 import { CodeWhispererSupplementalContext, CodeWhispererSupplementalContextItem } from '../../models/model'
-import { LspController } from '../../../amazonq'
+import { LspController } from '../../../amazonq/lsp/lspController'
 import { CodeWhispererUserGroupSettings } from '../userGroupUtil'
 
 type CrossFileSupportedLanguage =
