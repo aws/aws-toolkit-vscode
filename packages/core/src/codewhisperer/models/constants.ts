@@ -505,9 +505,9 @@ export const unsupportedJavaVersionChatMessage = `Sorry, currently I can only up
 export const selectSQLMetadataFileHelpMessage =
     'Next, I need the .sct metadata file of your project. You can download the .sct file by going to AWS Console -> AWS DMS -> Migration Projects. Open the schema conversion project and navigate to the S3 bucket linked to it. You will find the ZIP containing the .sct file under the {schema-conversion-project}/ directory.'
 
-export const invalidMetadataFileUnsupportedSourceVendor = `Sorry, your .sct metadata file appears to be invalid; the source DB must be Oracle.`
+export const invalidMetadataFileUnsupportedSourceDB = `Sorry, your .sct metadata file appears to be invalid; the source DB must be Oracle.`
 
-export const invalidMetadataFileUnsupportedTargetVendor = `Sorry, your .sct metadata file appears to be invalid; the target DB must be Aurora Postgresql or Amazon RDS for Postgresql.`
+export const invalidMetadataFileUnsupportedTargetDB = `Sorry, your .sct metadata file appears to be invalid; the target DB must be Aurora Postgresql or Amazon RDS for Postgresql.`
 
 export const invalidMetadataFileErrorParsing = 'Sorry, the .sct metadata file you provided appears to be invalid.'
 

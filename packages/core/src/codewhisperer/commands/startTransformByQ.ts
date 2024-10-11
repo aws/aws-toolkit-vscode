@@ -108,7 +108,7 @@ export async function validateSQLMetadataFile(fileContents: string, message: any
         let sctData: any = undefined
         xml2js.parseString(fileContents, (err, result) => {
             if (err) {
-                getLogger().error('Error parsing .sct file, not valid XML:', err)
+                getLogger().error('CodeTransformation: Error parsing .sct file, not valid XML.', err)
                 throw new Error(`Invalid XML encountered`)
             } else {
                 sctData = result
@@ -143,10 +143,10 @@ export async function validateSQLMetadataFile(fileContents: string, message: any
         })
         transformByQState.setSchemaOptions(schemaNames) // user will choose one of these
         getLogger().info(
-            `Parsed SCT file with source DB: ${sourceDB}, target DB: ${targetDB}, source host name: ${sourceServerName}, and schema names: ${schemaNames}`
+            `CodeTransformation: Parsed .sct file with source DB: ${sourceDB}, target DB: ${targetDB}, source host name: ${sourceServerName}, and schema names: ${Array.from(schemaNames)}`
         )
-    } catch (e: any) {
-        getLogger().error('Error parsing .sct file:', e)
+    } catch (err: any) {
+        getLogger().error('CodeTransformation: Error parsing .sct file.', err)
         transformByQState.getChatMessenger()?.sendUnrecoverableErrorResponse('error-parsing-sct-file', message.tabID)
         return false
     }

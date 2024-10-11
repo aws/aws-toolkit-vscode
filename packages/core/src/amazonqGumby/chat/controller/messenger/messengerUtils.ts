@@ -65,9 +65,7 @@ export default class MessengerUtils {
         }
     }
 
-    static createLanguageUpgradeTransformationConfirmationPrompt = (
-        detectedJavaVersions: Array<JDKVersion | undefined>
-    ): string => {
+    static createLanguageUpgradeConfirmationPrompt = (detectedJavaVersions: Array<JDKVersion | undefined>): string => {
         let javaVersionString = 'Java project'
         const uniqueJavaOptions = new Set(detectedJavaVersions)
 

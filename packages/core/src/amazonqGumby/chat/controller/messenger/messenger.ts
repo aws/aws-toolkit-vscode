@@ -213,7 +213,7 @@ export class Messenger {
         this.dispatcher.sendAsyncEventProgress(
             new AsyncEventProgressMessage(tabID, {
                 inProgress: true,
-                message: MessengerUtils.createLanguageUpgradeTransformationConfirmationPrompt(detectedJavaVersions),
+                message: MessengerUtils.createLanguageUpgradeConfirmationPrompt(detectedJavaVersions),
             })
         )
 
@@ -433,10 +433,10 @@ export class Messenger {
                 message = CodeWhispererConstants.unsupportedJavaVersionChatMessage
                 break
             case 'unsupported-source-db':
-                message = CodeWhispererConstants.invalidMetadataFileUnsupportedSourceVendor
+                message = CodeWhispererConstants.invalidMetadataFileUnsupportedSourceDB
                 break
             case 'unsupported-target-db':
-                message = CodeWhispererConstants.invalidMetadataFileUnsupportedTargetVendor
+                message = CodeWhispererConstants.invalidMetadataFileUnsupportedTargetDB
                 break
             case 'error-parsing-sct-file':
                 message = CodeWhispererConstants.invalidMetadataFileErrorParsing
@@ -518,7 +518,7 @@ export class Messenger {
         // TO-DO: add a delay for 2s here to match IntelliJ
     }
 
-    public sendLanguageUpgradeProjectSelectionMessage(
+    public sendLanguageUpgradeProjectChoiceMessage(
         projectName: string,
         fromJDKVersion: JDKVersion,
         toJDKVersion: JDKVersion,
