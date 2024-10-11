@@ -66,9 +66,9 @@ export interface Manifest {
         targets: Target[]
     }[]
 }
-const manifestUrl = 'https://ducvaeoffl85c.cloudfront.net/manifest-0.1.14.json'
+const manifestUrl = 'https://ducvaeoffl85c.cloudfront.net/manifest-0.1.15.json'
 // this LSP client in Q extension is only going to work with these LSP server versions
-const supportedLspServerVersions = ['0.1.14']
+const supportedLspServerVersions = ['0.1.15']
 
 const nodeBinName = process.platform === 'win32' ? 'node.exe' : 'node'
 /*
