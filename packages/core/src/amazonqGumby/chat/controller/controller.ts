@@ -236,7 +236,7 @@ export class GumbyController {
             const authState = await AuthUtil.instance.getChatAuthState()
             if (authState.amazonQ !== 'connected') {
                 this.sessionStorage.getSession().isAuthenticating = true
-                this.messenger.sendAuthNeededExceptionMessage(authState, message.tabID)
+                await this.messenger.sendAuthNeededExceptionMessage(authState, message.tabID)
                 throw new NoAuthError()
             }
             this.messenger.sendTransformationIntroduction(message.tabID)
@@ -246,7 +246,7 @@ export class GumbyController {
     private async handleLanguageUpgrade(message: any) {
         try {
             await this.beginTransformation(message)
-            const validProjects = await this.validateLanguageUpgradeProjectsWithReplyOnError(message)
+            const validProjects = await this.validateLanguageUpgradeProjects(message)
             if (validProjects.length > 0) {
                 this.sessionStorage.getSession().updateCandidateProjects(validProjects)
                 await this.messenger.sendLanguageUpgradeProjectPrompt(validProjects, message.tabID)
@@ -259,7 +259,7 @@ export class GumbyController {
     private async handleSQLConversion(message: any) {
         try {
             await this.beginTransformation(message)
-            const validProjects = await this.validateSQLConversionProjectsWithReplyOnError(message)
+            const validProjects = await this.validateSQLConversionProjects(message)
             if (validProjects.length > 0) {
                 this.sessionStorage.getSession().updateCandidateProjects(validProjects)
                 await this.messenger.sendSelectSQLMetadataFileMessage(message.tabID)
@@ -269,7 +269,7 @@ export class GumbyController {
         }
     }
 
-    private async validateLanguageUpgradeProjectsWithReplyOnError(message: any) {
+    private async validateLanguageUpgradeProjects(message: any) {
         let telemetryJavaVersion = JDKToTelemetryValue(JDKVersion.UNSUPPORTED) as CodeTransformJavaSourceVersionsAllowed
         try {
             const validProjects = await telemetry.codeTransform_validateProject.run(async () => {
@@ -306,7 +306,7 @@ export class GumbyController {
         return []
     }
 
-    private async validateSQLConversionProjectsWithReplyOnError(message: any) {
+    private async validateSQLConversionProjects(message: any) {
         try {
             const validProjects = await telemetry.codeTransform_validateProject.run(async () => {
                 telemetry.record({
@@ -330,7 +330,7 @@ export class GumbyController {
         const typedAction = MessengerUtils.stringToEnumValue(ButtonActions, message.action as any)
         switch (typedAction) {
             case ButtonActions.CONFIRM_LANGUAGE_UPGRADE_TRANSFORMATION_FORM:
-                await this.handleUserLanguageUpgradeProjectSelection(message)
+                await this.handleUserLanguageUpgradeProjectChoice(message)
                 break
             case ButtonActions.CANCEL_TRANSFORMATION_FORM:
                 telemetry.codeTransform_submitSelection.emit({
@@ -403,7 +403,7 @@ export class GumbyController {
         await this.validateBuildWithPromptOnError(message)
     }
 
-    private async handleUserLanguageUpgradeProjectSelection(message: any) {
+    private async handleUserLanguageUpgradeProjectChoice(message: any) {
         await telemetry.codeTransform_submitSelection.run(async () => {
             const pathToProject: string = message.formSelectedValues['GumbyTransformLanguageUpgradeProjectForm']
             const toJDKVersion: JDKVersion = message.formSelectedValues['GumbyTransformJdkToForm']
@@ -421,7 +421,7 @@ export class GumbyController {
             })
 
             const projectName = path.basename(pathToProject)
-            this.messenger.sendLanguageUpgradeProjectSelectionMessage(
+            this.messenger.sendLanguageUpgradeProjectChoiceMessage(
                 projectName,
                 fromJDKVersion,
                 toJDKVersion,
@@ -465,7 +465,7 @@ export class GumbyController {
         })
     }
 
-    private async prepareLanguageUpgradeProjectForSubmission(message: { pathToJavaHome: string; tabID: string }) {
+    private async prepareLanguageUpgradeProject(message: { pathToJavaHome: string; tabID: string }) {
         if (message.pathToJavaHome) {
             transformByQState.setJavaHome(message.pathToJavaHome)
             getLogger().info(
@@ -524,7 +524,7 @@ export class GumbyController {
             throw err
         }
 
-        await this.prepareLanguageUpgradeProjectForSubmission(message)
+        await this.prepareLanguageUpgradeProject(message)
     }
 
     private async processMetadataFile(message: any) {
@@ -597,7 +597,7 @@ export class GumbyController {
             case ConversationState.PROMPT_JAVA_HOME: {
                 const pathToJavaHome = extractPath(data.message)
                 if (pathToJavaHome) {
-                    await this.prepareLanguageUpgradeProjectForSubmission({
+                    await this.prepareLanguageUpgradeProject({
                         pathToJavaHome,
                         tabID: data.tabID,
                     })
@@ -610,9 +610,9 @@ export class GumbyController {
             case ConversationState.WAITING_FOR_OBJECTIVE: {
                 const objective = data.message.trim().toLowerCase()
                 if (objective === 'language upgrade') {
-                    this.handleLanguageUpgrade(data)
+                    await this.handleLanguageUpgrade(data)
                 } else if (objective === 'sql conversion') {
-                    this.handleSQLConversion(data)
+                    await this.handleSQLConversion(data)
                 } else {
                     // keep prompting user until they enter a valid option
                     await this.transformInitiated(data)
