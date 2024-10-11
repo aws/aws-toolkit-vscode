@@ -42,7 +42,7 @@ let openExternalStub: sinon.SinonStub<Parameters<(typeof vscode)['env']['openExt
 export async function mochaGlobalSetup(extensionId: string) {
     return async function (this: Mocha.Runner) {
         // Clean up and set up test logs
-        // Use nodefs over our fs since globals may not be initialized yet and our fs checks isWeb via globals.
+        // Use nodefs instead of our fs module (which uses globals.isWeb, which is not initialized yet).
         await nodefs.rm(testLogOutput, { force: true })
         await nodefs.mkdir(testReportDir, { recursive: true })
 
