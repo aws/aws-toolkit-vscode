@@ -48,7 +48,9 @@ export type UnrecoverableErrorType =
     | 'unsupported-source-jdk-version'
     | 'upload-to-s3-failed'
     | 'job-start-failed'
-    | 'unsupported-source-db-version'
+    | 'unsupported-source-db'
+    | 'unsupported-target-db'
+    | 'error-parsing-sct-file'
 
 export enum GumbyNamedMessages {
     COMPILATION_PROGRESS_MESSAGE = 'gumbyProjectCompilationMessage',
@@ -430,9 +432,14 @@ export class Messenger {
             case 'unsupported-source-jdk-version':
                 message = CodeWhispererConstants.unsupportedJavaVersionChatMessage
                 break
-            case 'unsupported-source-db-version':
-                message = CodeWhispererConstants.unsupportedDatabaseChatMessage
+            case 'unsupported-source-db':
+                message = CodeWhispererConstants.invalidMetadataFileUnsupportedSourceVendor
                 break
+            case 'unsupported-target-db':
+                message = CodeWhispererConstants.invalidMetadataFileUnsupportedTargetVendor
+                break
+            case 'error-parsing-sct-file':
+                message = CodeWhispererConstants.invalidMetadataFileErrorParsing
         }
 
         const buttons: ChatItemButton[] = []
@@ -549,7 +556,13 @@ export class Messenger {
 | **Target DB** |  ${transformByQState.getTargetDB()}   |
 | **Host** |  ${transformByQState.getSourceServerName()}   |
     `
-        this.dispatcher.sendChatMessage(new ChatMessage({ message, messageType: 'prompt' }, tabID))
+        this.dispatcher.sendChatMessage(
+            new ChatMessage(
+                { message: 'I detected the following in your .sct metadata file.', messageType: 'ai-prompt' },
+                tabID
+            )
+        )
+        this.dispatcher.sendChatMessage(new ChatMessage({ message, messageType: 'ai-prompt' }, tabID))
     }
 
     public sendSkipTestsSelectionMessage(skipTestsSelection: string, tabID: string) {

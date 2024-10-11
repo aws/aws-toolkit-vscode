@@ -502,28 +502,14 @@ export const absolutePathDetectedMessage = (numPaths: number, buildFile: string,
 
 export const unsupportedJavaVersionChatMessage = `Sorry, currently I can only upgrade Java 8 or Java 11 projects. For more information, see the [Amazon Q documentation](${codeTransformPrereqDoc}).`
 
-export const unsupportedDatabaseChatMessage = `Sorry, currently I can only convert SQL built on Oracle. For more information, see the [Amazon Q documentation](${codeTransformPrereqDoc}).`
-
 export const selectSQLMetadataFileHelpMessage =
-    'You can download the .sct file by going to AWS Console -> AWS DMS -> Migration Projects. Open the schema conversion project and navigate to the S3 bucket linked to it. You will find the ZIP containing the .sct file under the <schema-conversion-project>/ directory.'
+    'Next, I need the .sct metadata file of your project. You can download the .sct file by going to AWS Console -> AWS DMS -> Migration Projects. Open the schema conversion project and navigate to the S3 bucket linked to it. You will find the ZIP containing the .sct file under the {schema-conversion-project}/ directory.'
 
-export const invalidMetadataFileNoSourceServerName =
-    'Sorry, your metadata .sct file appears to be invalid; I could not find the server name of the source DB.'
+export const invalidMetadataFileUnsupportedSourceVendor = `Sorry, your .sct metadata file appears to be invalid; the source DB must be Oracle.`
 
-export const invalidMetadataFileUnsupportedSourceVendor = (vendor: string) =>
-    `Sorry, your metadata .sct file appears to be invalid; the source vendor is '${vendor}', but only Oracle is supported.`
+export const invalidMetadataFileUnsupportedTargetVendor = `Sorry, your .sct metadata file appears to be invalid; the target DB must be Aurora Postgresql or Amazon RDS for Postgresql.`
 
-export const invalidMetadataFileUnsupportedTargetVendor = (vendor: string) =>
-    `Sorry, your metadata .sct file appears to be invalid; the target vendor is '${vendor}', but only Amazon Aurora PostgreSQL and Amazon RDS for PostgreSQL are supported.`
-
-export const invalidMetadataFileTargetVendorMismatch = (foundVendor: string, selectedVendor: string) =>
-    `Sorry, your metadata .sct file appears to be invalid; the target vendor is '${foundVendor}', but you previously selected a target vendor of '${selectedVendor}'.`
-
-export const invalidMetadataFileNoSchemaNamesFound =
-    'Sorry, your metadata.sct file appears to be invalid; I could not find any schema names.'
-
-export const invalidMetadataFileUnknownIssueParsing =
-    'Sorry, I had an issue parsing the metadata .sct file you provided; please make sure it is valid.'
+export const invalidMetadataFileErrorParsing = 'Sorry, the .sct metadata file you provided appears to be invalid.'
 
 export const oracleVendor = 'Oracle'
 
