@@ -103,6 +103,56 @@ export async function processSQLConversionTransformFormInput(pathToProject: stri
     transformByQState.setSchema(schema)
 }
 
+export async function validateSQLMetadataFile(fileContents: string, message: any) {
+    try {
+        let sctData: any = undefined
+        xml2js.parseString(fileContents, (err, result) => {
+            if (err) {
+                getLogger().error('Error parsing .sct file, not valid XML:', err)
+                throw new Error(`Invalid XML encountered`)
+            } else {
+                sctData = result
+            }
+        })
+
+        const dbEntities = sctData['tree']['instances'][0]['ProjectModel'][0]['entities'][0]
+        const sourceDB = dbEntities['sources'][0]['DbServer'][0]['$']['vendor'].trim().toUpperCase()
+        const targetDB = dbEntities['targets'][0]['DbServer'][0]['$']['vendor'].trim().toUpperCase()
+        const sourceServerName = dbEntities['sources'][0]['DbServer'][0]['$']['name'].trim()
+        transformByQState.setSourceServerName(sourceServerName)
+        if (sourceDB !== DB.ORACLE) {
+            transformByQState.getChatMessenger()?.sendUnrecoverableErrorResponse('unsupported-source-db', message.tabID)
+            return false
+        } else if (targetDB !== DB.AURORA_POSTGRESQL && targetDB !== DB.RDS_POSTGRESQL) {
+            transformByQState.getChatMessenger()?.sendUnrecoverableErrorResponse('unsupported-target-db', message.tabID)
+            return false
+        }
+        transformByQState.setSourceDB(sourceDB)
+        transformByQState.setTargetDB(targetDB)
+
+        const serverNodeLocations =
+            sctData['tree']['instances'][0]['ProjectModel'][0]['relations'][0]['server-node-location']
+        const schemaNames = new Set<string>()
+        serverNodeLocations.forEach((serverNodeLocation: any) => {
+            const schemaNodes = serverNodeLocation['FullNameNodeInfoList'][0]['nameParts'][0][
+                'FullNameNodeInfo'
+            ].filter((node: any) => node['$']['typeNode'] === 'schema')
+            schemaNodes.forEach((node: any) => {
+                schemaNames.add(node['$']['nameNode'].toUpperCase())
+            })
+        })
+        transformByQState.setSchemaOptions(schemaNames) // user will choose one of these
+        getLogger().info(
+            `Parsed SCT file with source DB: ${sourceDB}, target DB: ${targetDB}, source host name: ${sourceServerName}, and schema names: ${schemaNames}`
+        )
+    } catch (e: any) {
+        getLogger().error('Error parsing .sct file:', e)
+        transformByQState.getChatMessenger()?.sendUnrecoverableErrorResponse('error-parsing-sct-file', message.tabID)
+        return false
+    }
+    return true
+}
+
 export async function setMaven() {
     let mavenWrapperExecutableName = os.platform() === 'win32' ? 'mvnw.cmd' : 'mvnw'
     const mavenWrapperExecutablePath = path.join(transformByQState.getProjectPath(), mavenWrapperExecutableName)
@@ -272,76 +322,6 @@ export async function parseBuildFile() {
         getLogger().error(`CodeTransformation: error scanning for absolute paths, tranformation continuing: ${err}`)
     }
     return undefined
-}
-
-export async function validateSQLMetadataFile(fileContents: string, message: any) {
-    try {
-        let sctData: any = undefined
-        xml2js.parseString(fileContents, (err, result) => {
-            if (err) {
-                getLogger().error('Error parsing .sct file, not valid XML:', err)
-                throw err
-            } else {
-                sctData = result
-            }
-        })
-
-        const dbEntities = sctData['tree']['instances'][0]['ProjectModel'][0]['entities'][0]
-        const sourceDB = dbEntities['sources'][0]['DbServer'][0]['$']['vendor'].toUpperCase()
-        const targetDB = dbEntities['targets'][0]['DbServer'][0]['$']['vendor'].toUpperCase()
-        const sourceServerName = dbEntities['sources'][0]['DbServer'][0]['$']['name']
-        if (!sourceServerName) {
-            transformByQState.getChatControllers()?.transformationFinished.fire({
-                message: CodeWhispererConstants.invalidMetadataFileNoSourceServerName,
-                tabID: message.tabID,
-            })
-            return false
-        }
-        transformByQState.setSourceServerName(sourceServerName)
-        if (sourceDB !== DB.ORACLE) {
-            transformByQState.getChatControllers()?.transformationFinished.fire({
-                message: CodeWhispererConstants.invalidMetadataFileUnsupportedSourceVendor(sourceDB),
-                tabID: message.tabID,
-            })
-            return false
-        } else if (targetDB !== DB.AURORA_POSTGRESQL && targetDB !== DB.RDS_POSTGRESQL) {
-            transformByQState.getChatControllers()?.transformationFinished.fire({
-                message: CodeWhispererConstants.invalidMetadataFileUnsupportedTargetVendor(targetDB),
-                tabID: message.tabID,
-            })
-            return false
-        }
-        transformByQState.setSourceDB(sourceDB)
-        transformByQState.setTargetDB(targetDB)
-
-        // extract schema names from metadata file
-        const serverNodeLocations =
-            sctData['tree']['instances'][0]['ProjectModel'][0]['relations'][0]['server-node-location']
-        const schemaNames = new Set<string>()
-        serverNodeLocations.forEach((serverNodeLocation: any) => {
-            const schemaNodes = serverNodeLocation['FullNameNodeInfoList'][0]['nameParts'][0][
-                'FullNameNodeInfo'
-            ].filter((node: any) => node['$']['typeNode'] === 'schema')
-            schemaNodes.forEach((node: any) => {
-                schemaNames.add(node['$']['nameNode'].toUpperCase())
-            })
-        })
-        if (schemaNames.size === 0) {
-            transformByQState.getChatControllers()?.transformationFinished.fire({
-                message: CodeWhispererConstants.invalidMetadataFileNoSchemaNamesFound,
-                tabID: message.tabID,
-            })
-            return false
-        }
-        transformByQState.setSchemaOptions(schemaNames) // user will choose one of these
-    } catch (e: any) {
-        transformByQState.getChatControllers()?.transformationFinished.fire({
-            message: `${CodeWhispererConstants.invalidMetadataFileUnknownIssueParsing} ${e.message ?? ''}`,
-            tabID: message.tabID,
-        })
-        return false
-    }
-    return true
 }
 
 export async function preTransformationUploadCode() {

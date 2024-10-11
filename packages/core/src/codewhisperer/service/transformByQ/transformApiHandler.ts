@@ -402,6 +402,7 @@ export async function zipCode({ dependenciesFolder, humanInTheLoopFlag, projectP
 export async function startJob(uploadId: string) {
     const sourceLanguageVersion = `JAVA_${transformByQState.getSourceJDKVersion()}`
     const targetLanguageVersion = `JAVA_${transformByQState.getTargetJDKVersion()}`
+    // TO-DO: figure out what to set source and target language version too, along with transformation type
     try {
         const response = await codeWhisperer.codeWhispererClient.codeModernizerStartCodeTransformation({
             workspaceState: {
