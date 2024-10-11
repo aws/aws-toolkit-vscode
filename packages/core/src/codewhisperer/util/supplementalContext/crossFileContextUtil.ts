@@ -76,12 +76,9 @@ export async function fetchSupplementalContextForSrcV2(
 ): Promise<Pick<CodeWhispererSupplementalContext, 'supplementalContextItems' | 'strategy'> | undefined> {
     const inputChunkContent = getInputChunk(editor)
 
-    const bm25Response: { content: string; score: number; filePath: string }[] = await LspController.instance.queryBM25(
-        inputChunkContent.content,
-        editor.document.uri.fsPath
-    )
+    const bm25Response: { content: string; score: number; filePath: string }[] =
+        await LspController.instance.queryInlineProjectContext(inputChunkContent.content, editor.document.uri.fsPath)
     getLogger().info(JSON.stringify(bm25Response))
-    console.log(bm25Response)
 
     const supContextItems: CodeWhispererSupplementalContextItem[] = []
     return {

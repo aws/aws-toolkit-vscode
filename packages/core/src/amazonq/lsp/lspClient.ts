@@ -103,7 +103,7 @@ export class LspClient {
         }
     }
 
-    async queryBM25(query: string, path: string) {
+    async queryInlineProjectContext(query: string, path: string) {
         try {
             const request = JSON.stringify({
                 query: query,
@@ -113,7 +113,7 @@ export class LspClient {
             let resp: any = await this.client?.sendRequest(QueryInlineProjectContextRequestType, encrpted)
             return resp
         } catch (e) {
-            getLogger().error(`LspClient: query error: ${e}`)
+            getLogger().error(`LspClient: queryInlineProjectContext error: ${e}`)
             throw e
         }
     }

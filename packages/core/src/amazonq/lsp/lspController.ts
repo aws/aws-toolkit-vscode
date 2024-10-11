@@ -303,9 +303,9 @@ export class LspController {
         return resp
     }
 
-    async queryBM25(query: string, path: string) {
+    async queryInlineProjectContext(query: string, path: string) {
         try {
-            return await LspClient.instance.queryBM25(query, path)
+            return await LspClient.instance.queryInlineProjectContext(query, path)
         } catch (e) {
             return []
         }
