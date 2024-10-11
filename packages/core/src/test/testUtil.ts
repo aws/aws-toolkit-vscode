@@ -296,7 +296,7 @@ export function partialDeepCompare<T>(actual: unknown, expected: T, message?: st
     assert.deepStrictEqual(partial, expected, message)
 }
 
-export function assertNotInTelemetry(keyword: string) {
+export function assertNotInTelemetryMetadata(keyword: string) {
     return globals.telemetry.logger.queryKeyword(keyword).length === 0
 }
 
