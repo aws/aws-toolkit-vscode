@@ -699,12 +699,12 @@
             {
                 "view": "aws.appBuilderForFileExplorer",
                 "when": "!aws.isWebExtHost",
-                "contents": "[Open walkthrough](command:aws.toolkit.lambda.openWalkthrough)\n [Open Folder](command:vscode.openFolder)"
+                "contents": "[Open Walkthrough](command:aws.toolkit.lambda.openWalkthrough)\n [Open Folder](command:vscode.openFolder)"
             },
             {
                 "view": "aws.appBuilder",
                 "when": "!aws.isWebExtHost",
-                "contents": "[Open walkthrough](command:aws.toolkit.lambda.openWalkthrough)\n [Open Folder](command:vscode.openFolder)"
+                "contents": "[Open Walkthrough](command:aws.toolkit.lambda.openWalkthrough)\n [Open Folder](command:vscode.openFolder)"
             }
         ],
         "views": {
