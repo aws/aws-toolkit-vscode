@@ -23,7 +23,7 @@ import {
 import { ToolkitError, isAwsError } from '../../shared/errors'
 import { getCodewhispererConfig } from '../../codewhisperer/client/codewhisperer'
 import { createCodeWhispererChatStreamingClient } from '../../shared/clients/codewhispererChatClient'
-import { getClientId, getOptOutPreference, getOperatingSystem } from '../../shared/telemetry/util'
+import { getClientId, getOptOutPreference, getOperatingSystem, getUserAgent } from '../../shared/telemetry/util'
 import { extensionVersion } from '../../shared/vscode/env'
 
 // Re-enable once BE is able to handle retries.
@@ -46,6 +46,7 @@ export async function createFeatureDevProxyClient(options?: Partial<ServiceOptio
             region: cwsprConfig.region,
             endpoint: cwsprConfig.endpoint,
             token: new Token({ token: bearerToken }),
+            customUserAgent: getUserAgent(),
             httpOptions: {
                 connectTimeout: 10000, // 10 seconds, 3 times P99 API latency
             },
