@@ -42,7 +42,11 @@ describe('buildIndex', function () {
             return {
                 setup: async () => setupWithWorkspace(250, { fileContent: '0123456789' }),
                 execute: async () => {
-                    await LspController.instance.buildIndex()
+                    await LspController.instance.buildIndex({
+                        startUrl: '',
+                        maxIndexSize: 30,
+                        isVectorIndexEnabled: true,
+                    })
                 },
                 verify: verifyResult,
             }
@@ -51,7 +55,11 @@ describe('buildIndex', function () {
             return {
                 setup: async () => setupWithWorkspace(10, { fileContent: getRandomString(1000) }),
                 execute: async () => {
-                    await LspController.instance.buildIndex()
+                    await LspController.instance.buildIndex({
+                        startUrl: '',
+                        maxIndexSize: 30,
+                        isVectorIndexEnabled: true,
+                    })
                 },
                 verify: verifyResult,
             }
