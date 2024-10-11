@@ -67,7 +67,12 @@ export async function fetchSupplementalContextForSrc(
     if (false) {
         return fetchSupplementalContextForSrcV1(editor, cancellationToken)
     } else {
-        return fetchSupplementalContextForSrcV2(editor)
+        try {
+            return fetchSupplementalContextForSrcV2(editor)
+        } catch (e) {
+            getLogger().error(`Failed to fetch supplemental context from LSP ${e}`)
+            return fetchSupplementalContextForSrcV1(editor, cancellationToken)
+        }
     }
 }
 
@@ -76,9 +81,9 @@ export async function fetchSupplementalContextForSrcV2(
 ): Promise<Pick<CodeWhispererSupplementalContext, 'supplementalContextItems' | 'strategy'> | undefined> {
     const inputChunkContent = getInputChunk(editor)
 
-    const bm25Response: { content: string; score: number; filePath: string }[] =
+    const inlineProjectContext: { content: string; score: number; filePath: string }[] =
         await LspController.instance.queryInlineProjectContext(inputChunkContent.content, editor.document.uri.fsPath)
-    getLogger().info(JSON.stringify(bm25Response))
+    getLogger().info(JSON.stringify(inlineProjectContext))
 
     const supContextItems: CodeWhispererSupplementalContextItem[] = []
     return {
