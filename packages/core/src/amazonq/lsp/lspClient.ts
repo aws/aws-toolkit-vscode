@@ -23,7 +23,7 @@ import {
     GetUsageRequestType,
     IndexConfig,
     QueryInlineProjectContextRequestType,
-    QueryRequestType,
+    QueryVectorIndexRequestType,
     UpdateIndexV2RequestPayload,
     UpdateIndexV2RequestType,
     Usage,
@@ -71,7 +71,7 @@ export class LspClient {
             .encrypt(key)
     }
 
-    async indexFiles(paths: string[], rootPath: string, config: IndexConfig) {
+    async buildIndex(paths: string[], rootPath: string, config: IndexConfig) {
         const payload: BuildIndexRequestPayload = {
             filePaths: paths,
             projectRoot: rootPath,
@@ -83,22 +83,22 @@ export class LspClient {
             const resp = await this.client?.sendRequest(BuildIndexRequestType, encryptedRequest)
             return resp
         } catch (e) {
-            getLogger().error(`LspClient: indexFilesV2 error: ${e}`)
+            getLogger().error(`LspClient: buildIndex error: ${e}`)
             return undefined
         }
     }
 
-    async query(request: string) {
+    async queryVectorIndex(request: string) {
         try {
             const encryptedRequest = await this.encrypt(
                 JSON.stringify({
                     query: request,
                 })
             )
-            const resp = await this.client?.sendRequest(QueryRequestType, encryptedRequest)
+            const resp = await this.client?.sendRequest(QueryVectorIndexRequestType, encryptedRequest)
             return resp
         } catch (e) {
-            getLogger().error(`LspClient: query error: ${e}`)
+            getLogger().error(`LspClient: queryVectorIndex error: ${e}`)
             return []
         }
     }
@@ -109,9 +109,7 @@ export class LspClient {
                 query: query,
                 filePath: path,
             })
-
             const encrpted = await this.encrypt(request)
-
             let resp: any = await this.client?.sendRequest(QueryInlineProjectContextRequestType, encrpted)
             return resp
         } catch (e) {
@@ -136,7 +134,7 @@ export class LspClient {
             const resp = await this.client?.sendRequest(UpdateIndexV2RequestType, encryptedRequest)
             return resp
         } catch (e) {
-            getLogger().error(`LspClient: updateIndexV2 error: ${e}`)
+            getLogger().error(`LspClient: updateIndex error: ${e}`)
             return undefined
         }
     }
