@@ -17,6 +17,7 @@ import { References } from '../client/codewhisperer'
 import globals from '../../shared/extensionGlobals'
 import { ChatControllerEventEmitters } from '../../amazonqGumby/chat/controller/controller'
 import { TransformationSteps } from '../client/codewhispereruserclient'
+import { Messenger } from '../../amazonqGumby/chat/controller/messenger/messenger'
 
 // unavoidable global variables
 interface VsCodeState {
@@ -427,6 +428,7 @@ export class TransformByQState {
     private javaHome: string | undefined = undefined
 
     private chatControllers: ChatControllerEventEmitters | undefined = undefined
+    private chatMessenger: Messenger | undefined = undefined
 
     private dependencyFolderInfo: FolderInfo | undefined = undefined
 
@@ -570,6 +572,10 @@ export class TransformByQState {
         return this.chatControllers
     }
 
+    public getChatMessenger() {
+        return this.chatMessenger
+    }
+
     public getDependencyFolderInfo(): FolderInfo | undefined {
         return this.dependencyFolderInfo
     }
@@ -708,6 +714,10 @@ export class TransformByQState {
 
     public setChatControllers(controllers: ChatControllerEventEmitters) {
         this.chatControllers = controllers
+    }
+
+    public setChatMessenger(messenger: Messenger) {
+        this.chatMessenger = messenger
     }
 
     public setDependencyFolderInfo(folderInfo: FolderInfo) {
