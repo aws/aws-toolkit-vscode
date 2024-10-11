@@ -43,9 +43,7 @@ export async function mochaGlobalSetup(extensionId: string) {
     return async function (this: Mocha.Runner) {
         // Clean up and set up test logs
         // Use nodefs over our fs since globals may not be initialized yet and our fs checks isWeb via globals.
-        try {
-            await rm(testLogOutput)
-        } catch (e) {}
+        await rm(testLogOutput, { force: true })
         await mkdir(testReportDir, { recursive: true })
 
         sinon.stub(FeatureConfigProvider.prototype, 'listFeatureEvaluations').resolves({
