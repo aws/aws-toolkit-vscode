@@ -16,7 +16,7 @@ import { findParentProjectFile } from '../../utilities/workspaceUtils'
 import { DefaultSamLocalInvokeCommand, waitForDebuggerMessages } from '../cli/samCliLocalInvoke'
 import { runLambdaFunction, waitForPort } from '../localLambdaRunner'
 import { SamLaunchRequestArgs } from './awsSamDebugger'
-import { findTypescriptCompiler } from '../../utilities/pathFinder'
+import { pathFinder } from '../../utilities/pathFinder'
 import fs from '../../fs/fs'
 
 const tsConfigFile = 'aws-toolkit-tsconfig.json'
@@ -209,7 +209,7 @@ async function compileTypeScript(config: SamLaunchRequestArgs): Promise<void> {
     config.invokeTarget.lambdaHandler = pathutil.normalizeSeparator(tsLambdaHandler)
     getLogger().info(`Resolved compiled lambda handler to ${tsLambdaHandler}`)
 
-    const tsc = await findTypescriptCompiler()
+    const tsc = await pathFinder.findTypescriptCompiler()
     if (!tsc) {
         throw new Error('TypeScript compiler "tsc" not found in node_modules/ or the system.')
     }

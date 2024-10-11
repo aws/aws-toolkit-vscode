@@ -7,7 +7,7 @@ import { minimumSsmActions } from '../../shared/remoteSession'
 
 describe('minimumSsmActions', function () {
     it('should contain minimal actions needed for ssm connection', function () {
-        assert.strictEqual(minimumSsmActions, [
+        assert.deepStrictEqual(minimumSsmActions, [
             'ssmmessages:CreateControlChannel',
             'ssmmessages:CreateDataChannel',
             'ssmmessages:OpenControlChannel',

@@ -11,7 +11,7 @@ import { GitExtension } from '../extensions/git'
 import { Settings } from '../settings'
 import { getLogger } from '../logger/logger'
 
-type searchablePath = 'vsc' | 'ssh' | 'git' | 'bash' | 'tsc'
+type searchablePath = 'vsc' | 'ssh' | 'git' | 'bash'
 
 export class PathFinder {
     private cachedPaths: Map<searchablePath, string>
@@ -94,9 +94,6 @@ export class PathFinder {
      * @returns fullpath if found in the workspace, "tsc" if found in current $PATH, else undefined.
      */
     public async findTypescriptCompiler(): Promise<string | undefined> {
-        if (this.cachedPaths.has('tsc')) {
-            return this.cachedPaths.get('tsc')
-        }
         const foundUris = await vscode.workspace.findFiles('**/node_modules/.bin/{tsc,tsc.cmd}', undefined, 1)
         const tscPaths = []
         if (foundUris.length > 0) {
@@ -107,7 +104,6 @@ export class PathFinder {
         for (const tsc of tscPaths) {
             // Try to run "tsc -v".
             if (await PathFinder.tryRun(tsc, ['-v'], 'yes', 'Version')) {
-                this.cachedPaths.set('tsc', tsc)
                 return tsc
             }
         }
