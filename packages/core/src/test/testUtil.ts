@@ -295,9 +295,12 @@ export function partialDeepCompare<T>(actual: unknown, expected: T, message?: st
     const partial = selectFrom(actual, ...keys(expected as object))
     assert.deepStrictEqual(partial, expected, message)
 }
-
-export function assertNotInTelemetryMetadata(keyword: string) {
-    return globals.telemetry.logger.queryKeyword(keyword).length === 0
+/**
+ * Finds all metrics whose metadata contains this keyword in their key value pairs, as part of the key OR the value.
+ * @param keyword target substring to search for
+ */
+export function assertNotInTelemetryMetadata(keyword: string): void | never {
+    return assert.ok(globals.telemetry.logger.queryKeyword(keyword).length === 0)
 }
 
 /**
