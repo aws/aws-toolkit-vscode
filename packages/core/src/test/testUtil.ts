@@ -296,6 +296,10 @@ export function partialDeepCompare<T>(actual: unknown, expected: T, message?: st
     assert.deepStrictEqual(partial, expected, message)
 }
 
+export function assertNotInTelemetry(keyword: string) {
+    return globals.telemetry.logger.queryKeyword(keyword).length === 0
+}
+
 /**
  * Finds the emitted telemetry metrics with the given `name`, then checks if the metadata fields
  * match the expected values, in the order specified by `expected`. Comparisons are done using

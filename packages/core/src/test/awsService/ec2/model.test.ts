@@ -13,6 +13,9 @@ import { ToolkitError } from '../../../shared/errors'
 import { IAM } from 'aws-sdk'
 import { SshKeyPair } from '../../../awsService/ec2/sshKeyPair'
 import { DefaultIamClient } from '../../../shared/clients/iamClient'
+import { assertNotInTelemetry, createTestWorkspaceFolder } from '../../testUtil'
+import { fs } from '../../../shared'
+import path from 'path'
 
 describe('Ec2ConnectClient', function () {
     let client: Ec2ConnectionManager
@@ -143,6 +146,22 @@ describe('Ec2ConnectClient', function () {
             await client.sendSshKeyToInstance(testSelection, mockKeys, 'test-user')
             sinon.assert.calledWith(sendCommandStub, testSelection.instanceId, 'AWS-RunShellScript')
             sinon.restore()
+        })
+
+        it('avoids writing the keys to any telemetry metrics', async function () {
+            sinon.stub(SsmClient.prototype, 'sendCommandAndWait')
+
+            const testSelection = {
+                instanceId: 'test-id',
+                region: 'test-region',
+            }
+            const keyPath = path.join((await createTestWorkspaceFolder()).uri.path, 'keys')
+            const keys = await SshKeyPair.getSshKeyPair(keyPath, 30000)
+            await client.sendSshKeyToInstance(testSelection, keys, 'test-user')
+            const privKey = await fs.readFileText(keys.getPrivateKeyPath())
+            assertNotInTelemetry(privKey)
+            sinon.restore()
+            await keys.delete()
         })
     })
 
