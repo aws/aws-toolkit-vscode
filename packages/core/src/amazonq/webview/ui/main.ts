@@ -38,7 +38,7 @@ export const createMynahUI = (
     // eslint-disable-next-line prefer-const
     let connector: Connector
     //Store the mapping between messageId and messageUserIntent for amazonq_interactWithMessage telemetry
-    const messageUserIntentMap = new Map<string, string[]>()
+    const responseMetadata = new Map<string, string[]>()
 
     window.addEventListener('error', (e) => {
         const { error, message } = e
@@ -257,7 +257,7 @@ export const createMynahUI = (
                     item.userIntent !== undefined &&
                     item.codeBlockLanguage !== undefined
                 ) {
-                    messageUserIntentMap.set(item.messageId, [item.userIntent, item.codeBlockLanguage])
+                    responseMetadata.set(item.messageId, [item.userIntent, item.codeBlockLanguage])
                 }
                 ideApi.postMessage({
                     command: 'update-chat-message-telemetry',
@@ -519,8 +519,8 @@ export const createMynahUI = (
                 eventId,
                 codeBlockIndex,
                 totalCodeBlocks,
-                messageUserIntentMap.get(messageId)?.[0] ?? undefined,
-                messageUserIntentMap.get(messageId)?.[1] ?? undefined
+                responseMetadata.get(messageId)?.[0] ?? undefined,
+                responseMetadata.get(messageId)?.[1] ?? undefined
             )
         },
         onCodeBlockActionClicked: (
@@ -587,8 +587,8 @@ export const createMynahUI = (
                 eventId,
                 codeBlockIndex,
                 totalCodeBlocks,
-                messageUserIntentMap.get(messageId)?.[0] ?? undefined,
-                messageUserIntentMap.get(messageId)?.[1] ?? undefined
+                responseMetadata.get(messageId)?.[0] ?? undefined,
+                responseMetadata.get(messageId)?.[1] ?? undefined
             )
             mynahUI.notify({
                 type: NotificationType.SUCCESS,
