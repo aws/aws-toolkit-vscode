@@ -26,7 +26,7 @@ import { GlobalState } from '../shared/globalState'
 import { FeatureConfigProvider } from '../shared/featureConfig'
 import { mockFeatureConfigsData } from './fake/mockFeatureConfigData'
 import { fs } from '../shared'
-import { rm, mkdir } from 'fs/promises' //eslint-disable-line no-restricted-imports
+import { promises as nodefs } from 'fs' //eslint-disable-line no-restricted-imports
 
 disableAwsSdkWarning()
 const testReportDir = join(__dirname, '../../../../../.test-reports') // Root project, not subproject
@@ -43,8 +43,8 @@ export async function mochaGlobalSetup(extensionId: string) {
     return async function (this: Mocha.Runner) {
         // Clean up and set up test logs
         // Use nodefs over our fs since globals may not be initialized yet and our fs checks isWeb via globals.
-        await rm(testLogOutput, { force: true })
-        await mkdir(testReportDir, { recursive: true })
+        await nodefs.rm(testLogOutput, { force: true })
+        await nodefs.mkdir(testReportDir, { recursive: true })
 
         sinon.stub(FeatureConfigProvider.prototype, 'listFeatureEvaluations').resolves({
             featureEvaluations: mockFeatureConfigsData,
