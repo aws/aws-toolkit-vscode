@@ -521,7 +521,7 @@ export class GumbyController {
                 this.messenger.sendChatInputEnabled(message.tabID, true)
                 this.messenger.sendUpdatePlaceholder(message.tabID, 'Enter the path to your Java installation.')
             }
-            throw err
+            return
         }
 
         await this.prepareLanguageUpgradeProject(message)
