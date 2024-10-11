@@ -191,27 +191,26 @@ export async function installCli(
     let reason: string = ''
 
     let tempDir: string | undefined
-
-    // get install uri to see if auto-install is enabled.
     const manualInstall = localize('AWS.cli.manualInstall', 'Install manually...')
-    if (!getOsCliSource(awsClis[cli])) {
-        // Installer not supported on this platform, direct custoemr to manual install
-        const selection = await vscode.window.showInformationMessage(
-            localize(
-                'AWS.cli.installCliPrompt',
-                '{0} could not find {1} CLI. Install a local copy?',
-                localize('AWS.channel.aws.toolkit', '{0} Toolkit', getIdeProperties().company),
-                cliToInstall.name
-            ),
-            manualInstall
-        )
-        if (selection === manualInstall) {
-            void openUrl(vscode.Uri.parse(cliToInstall.manualInstallLink))
-        }
-        throw new CancellationError('user')
-    }
 
     try {
+        // get install uri to see if auto-install is enabled.
+        if (!getOsCliSource(awsClis[cli])) {
+            // Installer not supported on this platform, direct custoemr to manual install
+            const selection = await vscode.window.showInformationMessage(
+                localize(
+                    'AWS.cli.autoInstallNotSupported',
+                    'Auto install of {0} CLI is not supported on your platform',
+                    cliToInstall.name
+                ),
+                manualInstall
+            )
+            if (selection === manualInstall) {
+                void openUrl(vscode.Uri.parse(cliToInstall.manualInstallLink))
+            }
+            throw new CancellationError('user')
+        }
+
         const install = localize('AWS.generic.install', 'Install')
         const selection = !confirm
             ? install
@@ -232,8 +231,7 @@ export async function installCli(
             }
             throw new CancellationError('user')
         }
-
-        const timeout = new Timeout(1200000)
+        const timeout = new Timeout(20 * 60 * 1000)
         const progress = await showMessageWithCancel(
             localize('AWS.cli.installProgress', 'Installing: {0} CLI', cliToInstall.name),
             timeout
@@ -520,9 +518,14 @@ async function installGui(
         switch (process.platform) {
             case 'darwin':
                 await new TimedProcess('open', [guiInstaller, '-W']).run()
+                // Send telemetry when Gui pops up successfully
+                telemetry.appBuilder_installTool.emit({ result: 'Succeeded', toolId: cli })
+
                 return await getCliCommand(awsClis[cli])
             case 'win32':
                 await new TimedProcess(guiInstaller, []).run()
+                telemetry.appBuilder_installTool.emit({ result: 'Succeeded', toolId: cli })
+
                 return await getCliCommand(awsClis[cli])
             // customer shouldn't reach this point as they will be directed to manual install link in entrypoint.
             default:

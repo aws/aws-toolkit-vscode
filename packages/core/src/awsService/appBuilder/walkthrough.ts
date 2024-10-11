@@ -136,8 +136,6 @@ export class RuntimeLocationWizard extends Wizard<{
             showWhen: (state) => state.dir !== undefined && state.dir === 'file-selector',
             setDefault: (state) => (state.dir ? vscode.Uri.file(state.dir) : undefined),
         })
-
-        // option2:workspce filepath returned
     }
 }
 
@@ -334,7 +332,6 @@ export async function getOrUpdateOrInstallSAMCli(source: string) {
  * wraps getOrinstallCli and send telemetry
  * @param toolId to install/check
  * @param source to be added in telemetry
- * @param context the extension context
  */
 export async function getOrInstallCliWrapper(toolId: AwsClis, source: string) {
     await telemetry.appBuilder_installTool.run(async () => {
