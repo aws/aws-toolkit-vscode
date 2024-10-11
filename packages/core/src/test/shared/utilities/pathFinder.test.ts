@@ -49,5 +49,6 @@ describe('pathFind', function () {
         const path = await pathFinder.findSshPath()
         assert.ok(path)
         assert.ok(tryRunStub.calledOnce)
+        assert.ok(tryRunStub.calledWith(path))
     })
 })
