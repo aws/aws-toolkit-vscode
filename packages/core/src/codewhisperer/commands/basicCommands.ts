@@ -41,8 +41,8 @@ import { ToolkitError, getTelemetryReason, getTelemetryReasonDesc } from '../../
 import { isRemoteWorkspace } from '../../shared/vscode/env'
 import { isBuilderIdConnection } from '../../auth/connection'
 import globals from '../../shared/extensionGlobals'
-import { getVscodeCliPath, tryRun } from '../../shared/utilities/pathFind'
 import { setContext } from '../../shared/vscode/setContext'
+import pathFinder, { PathFinder } from '../../shared/utilities/pathFinder'
 
 const MessageTimeOut = 5_000
 
@@ -315,7 +315,7 @@ export const installAmazonQExtension = Commands.declare(
              * installExtension will fail on remote environments when the amazon q extension is already installed locally.
              * Until thats fixed we need to manually install the amazon q extension using the cli
              */
-            const vscPath = await getVscodeCliPath()
+            const vscPath = await pathFinder.getVscodeCliPath()
             if (!vscPath) {
                 throw new ToolkitError('installAmazonQ: Unable to find VSCode CLI path', {
                     code: 'CodeCLINotFound',
@@ -328,7 +328,7 @@ export const installAmazonQExtension = Commands.declare(
                 },
                 (progress, token) => {
                     progress.report({ message: 'Installing Amazon Q' })
-                    return tryRun(vscPath, ['--install-extension', VSCODE_EXTENSION_ID.amazonq])
+                    return PathFinder.tryRun(vscPath, ['--install-extension', VSCODE_EXTENSION_ID.amazonq])
                 }
             )
             return
