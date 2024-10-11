@@ -56,6 +56,7 @@ module.exports = (env = {}, argv = {}) => {
                  * This is no longer the case. Verify if you need this module and configure a polyfill for it.
                  */
                 timers: false,
+                net: require.resolve('net-browserify'),
             },
         },
         node: {
