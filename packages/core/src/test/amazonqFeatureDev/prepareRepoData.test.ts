@@ -23,6 +23,8 @@ type setupResult = {
     initialZip: AdmZip
     fsSpy: sinon.SinonSpiedInstance<FileSystem>
     zipSpy: sinon.SinonSpiedInstance<AdmZip>
+    numFiles: number
+    fileSize: number
 }
 
 function performanceTestWrapper(numFiles: number, fileSize: number) {
@@ -58,7 +60,7 @@ function performanceTestWrapper(numFiles: number, fileSize: number) {
                         fileContent: getRandomString(fileSize),
                         fileNameSuffix: '.md',
                     })
-                    return { workspace, initialZip, fsSpy, zipSpy }
+                    return { workspace, initialZip, fsSpy, zipSpy, numFiles, fileSize }
                 },
                 execute: async (setup: setupResult) => {
                     return await prepareRepoData(
@@ -84,8 +86,12 @@ function verifyResult(setup: setupResult, result: resultType, telemetry: Telemet
     assert.strictEqual(Buffer.isBuffer(result.zipFileBuffer), true)
     assert.strictEqual(telemetry.repositorySize, expectedSize)
     assert.strictEqual(result.zipFileChecksum.length, 44)
-    assert.ok(setup.fsSpy.stat.callCount > 0)
-    assert.ok(setup.zipSpy.addLocalFile.callCount > 0)
+
+    assert.ok(setup.fsSpy.stat.callCount <= setup.numFiles * 2, 'calls stat at most twice per file')
+    // Sometimes this line fails locally when it finds additional. This shouldn't happen in CI.
+    assert.ok(setup.fsSpy.readFileText.callCount <= setup.numFiles, 'reads each file at most once')
+    assert.ok(setup.zipSpy.addLocalFile.callCount <= setup.numFiles, 'add files to zip at most once')
+    assert.strictEqual(setup.zipSpy.toBuffer.callCount, 1, 'creates buffer once')
 }
 
 describe('prepareRepoData', function () {
