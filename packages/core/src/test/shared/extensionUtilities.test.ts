@@ -21,6 +21,7 @@ import globals from '../../shared/extensionGlobals'
 import { createQuickStartWebview, maybeShowMinVscodeWarning } from '../../shared/extensionStartup'
 import { fs } from '../../shared'
 import { getTestWindow } from './vscode/window'
+import { assertTelemetry } from '../testUtil'
 
 describe('extensionUtilities', function () {
     it('maybeShowMinVscodeWarning', async () => {
@@ -30,6 +31,7 @@ describe('extensionUtilities', function () {
             /will soon require .* 99\.0\.0 or newer. The currently running version .* will no longer receive updates./
         const msg = await getTestWindow().waitForMessage(expectedMsg)
         msg.close()
+        assertTelemetry('toolkit_showNotification', [])
     })
 
     describe('createQuickStartWebview', async function () {
