@@ -101,6 +101,8 @@ export async function processSQLConversionTransformFormInput(pathToProject: stri
     transformByQState.setProjectName(path.basename(pathToProject))
     transformByQState.setProjectPath(pathToProject)
     transformByQState.setSchema(schema)
+    transformByQState.setSourceJDKVersion(JDKVersion.JDK8) // use dummy value of JDK8 so that startJob API can be called
+    // targetJDKVersion defaults to JDK17, the only supported version, which is fine
 }
 
 export async function validateSQLMetadataFile(fileContents: string, message: any) {
@@ -136,7 +138,7 @@ export async function validateSQLMetadataFile(fileContents: string, message: any
         serverNodeLocations.forEach((serverNodeLocation: any) => {
             const schemaNodes = serverNodeLocation['FullNameNodeInfoList'][0]['nameParts'][0][
                 'FullNameNodeInfo'
-            ].filter((node: any) => node['$']['typeNode'] === 'schema')
+            ].filter((node: any) => node['$']['typeNode'].toLowerCase() === 'schema')
             schemaNodes.forEach((node: any) => {
                 schemaNames.add(node['$']['nameNode'].toUpperCase())
             })
