@@ -61,6 +61,31 @@ export interface CopyCodeToClipboard {
     totalCodeBlocks: number
 }
 
+export interface AcceptDiff {
+    command: string | undefined
+    tabID: string // rename tabId
+    messageId: string
+    actionId: string
+    data: string
+    code: string
+    referenceTrackerInformation?: CodeReference[]
+    eventId: string
+    codeBlockIndex?: number
+    totalCodeBlocks?: number
+}
+export interface ViewDiff {
+    command: string | undefined
+    tabID: string // rename tabId
+    messageId: string
+    actionId: string
+    data: string
+    code: string
+    referenceTrackerInformation?: CodeReference[]
+    eventId: string
+    codeBlockIndex?: number
+    totalCodeBlocks?: number
+}
+
 export type ChatPromptCommandType =
     | 'help'
     | 'clear'
