@@ -4,10 +4,10 @@
  */
 import assert from 'assert'
 import * as vscode from 'vscode'
-import { NewFileInfo, NewFileZipContents, registerNewFiles } from '../amazonqFeatureDev'
-import { performanceTest } from '../shared/performance/performance'
-import { getTestWorkspaceFolder } from './integrationTestsUtilities'
-import { VirtualFileSystem } from '../shared'
+import { NewFileInfo, NewFileZipContents, registerNewFiles } from '../../amazonqFeatureDev'
+import { performanceTest } from '../../shared/performance/performance'
+import { getTestWorkspaceFolder } from '../integrationTestsUtilities'
+import { VirtualFileSystem } from '../../shared'
 
 interface SetupResult {
     workspace: vscode.WorkspaceFolder
@@ -24,6 +24,7 @@ function getFileContents(numFiles: number, fileSize: number): NewFileZipContents
 }
 
 function performanceTestWrapper(label: string, numFiles: number, fileSize: number) {
+    const conversationId = 'test-conversation'
     return performanceTest(
         {
             testRuns: 10,
@@ -59,9 +60,13 @@ function performanceTestWrapper(label: string, numFiles: number, fileSize: numbe
                     }
                 },
                 execute: async (setup: SetupResult) => {
-                    return registerNewFiles(new VirtualFileSystem(), setup.fileContents, 'test-upload-id', [
-                        setup.workspace,
-                    ])
+                    return registerNewFiles(
+                        new VirtualFileSystem(),
+                        setup.fileContents,
+                        'test-upload-id',
+                        [setup.workspace],
+                        conversationId
+                    )
                 },
                 verify: async (_setup: SetupResult, result: NewFileInfo[]) => {
                     assert.strictEqual(result.length, numFiles)
