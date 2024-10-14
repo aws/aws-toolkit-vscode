@@ -12,7 +12,7 @@ import { AmazonqCreateUpload, fs, getRandomString } from '../../shared'
 import { Span } from '../../shared/telemetry'
 import { FileSystem } from '../../shared/fs/fs'
 import AdmZip from 'adm-zip'
-import { assertEfficientZip, getFsCallsUpperBound } from './utilities'
+import { assertEfficientAdmZip, getFsCallsUpperBound } from './utilities'
 
 type resultType = {
     zipFileBuffer: Buffer
@@ -89,7 +89,7 @@ function verifyResult(setup: setupResult, result: resultType, telemetry: Telemet
     assert.strictEqual(result.zipFileChecksum.length, 44)
 
     assert.ok(getFsCallsUpperBound(setup.fsSpy) <= setup.numFiles * 4, 'total system calls should be under 4 per file')
-    assertEfficientZip(setup.zipSpy, setup.numFiles)
+    assertEfficientAdmZip(setup.zipSpy, setup.numFiles)
 }
 
 describe('prepareRepoData', function () {
