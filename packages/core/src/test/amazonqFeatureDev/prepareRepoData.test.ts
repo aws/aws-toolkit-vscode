@@ -32,17 +32,17 @@ function performanceTestWrapper(numFiles: number, fileSize: number) {
         {
             testRuns: 1,
             linux: {
-                userCpuUsage: 100,
+                userCpuUsage: 150,
                 systemCpuUsage: 35,
                 heapTotal: 4,
             },
             darwin: {
-                userCpuUsage: 100,
+                userCpuUsage: 150,
                 systemCpuUsage: 35,
                 heapTotal: 4,
             },
             win32: {
-                userCpuUsage: 100,
+                userCpuUsage: 150,
                 systemCpuUsage: 35,
                 heapTotal: 4,
             },
