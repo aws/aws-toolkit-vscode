@@ -15,6 +15,8 @@ import {
 } from '../../../shared/telemetry/telemetry'
 import { ChatSessionStorage } from '../../storages/chatSession'
 import {
+    AcceptDiff,
+    ViewDiff,
     ChatItemFeedbackMessage,
     ChatItemVotedMessage,
     CopyCodeToClipboard,
@@ -58,6 +60,7 @@ export function recordTelemetryChatRunCommand(type: CwsprChatCommandType, comman
 }
 
 export class CWCTelemetryHelper {
+    static instance: CWCTelemetryHelper
     private sessionStorage: ChatSessionStorage
     private triggerEventsStorage: TriggerEventsStorage
     private responseStreamStartTime: Map<string, number> = new Map()
@@ -65,9 +68,37 @@ export class CWCTelemetryHelper {
     private responseStreamTimeForChunks: Map<string, number[]> = new Map()
     private responseWithProjectContext: Map<string, boolean> = new Map()
 
+    // Keeps track of when chunks of data were displayed in a tab
+    private displayTimeForChunks: Map<string, number[]> = new Map()
+
+    /**
+     * Stores payload information about a message response until
+     * the full round trip time finishes and addMessage telemetry
+     * is sent
+     */
+    private messageStorage: Map<
+        string,
+        {
+            triggerPayload: TriggerPayload
+            message: PromptAnswer
+        }
+    > = new Map()
+
     constructor(sessionStorage: ChatSessionStorage, triggerEventsStorage: TriggerEventsStorage) {
         this.sessionStorage = sessionStorage
         this.triggerEventsStorage = triggerEventsStorage
+    }
+
+    public static init(sessionStorage: ChatSessionStorage, triggerEventsStorage: TriggerEventsStorage) {
+        const lastInstance = CWCTelemetryHelper.instance
+        if (lastInstance !== undefined) {
+            return lastInstance
+        }
+
+        getLogger().debug('CWCTelemetryHelper: Initialized new telemetry helper')
+        const instance = new CWCTelemetryHelper(sessionStorage, triggerEventsStorage)
+        CWCTelemetryHelper.instance = instance
+        return instance
     }
 
     private getUserIntentForTelemetry(userIntent: UserIntent | undefined): CwsprChatUserIntent | undefined {
@@ -142,6 +173,7 @@ export class CWCTelemetryHelper {
 
     public recordInteractWithMessage(
         message:
+            | AcceptDiff
             | InsertCodeAtCursorPosition
             | CopyCodeToClipboard
             | PromptMessage
@@ -149,6 +181,8 @@ export class CWCTelemetryHelper {
             | SourceLinkClickMessage
             | ResponseBodyLinkClickMessage
             | FooterInfoLinkClick
+            | ViewDiff,
+        { result }: { result: Result } = { result: 'Succeeded' }
     ) {
         const conversationId = this.getConversationId(message.tabID)
         let event: AmazonqInteractWithMessage | undefined
@@ -156,7 +190,7 @@ export class CWCTelemetryHelper {
             case 'insert_code_at_cursor_position':
                 message = message as InsertCodeAtCursorPosition
                 event = {
-                    result: 'Succeeded',
+                    result,
                     cwsprChatConversationId: conversationId ?? '',
                     credentialStartUrl: AuthUtil.instance.startUrl,
                     cwsprChatMessageId: message.messageId,
@@ -174,7 +208,7 @@ export class CWCTelemetryHelper {
             case 'code_was_copied_to_clipboard':
                 message = message as CopyCodeToClipboard
                 event = {
-                    result: 'Succeeded',
+                    result,
                     cwsprChatConversationId: conversationId ?? '',
                     credentialStartUrl: AuthUtil.instance.startUrl,
                     cwsprChatMessageId: message.messageId,
@@ -188,10 +222,42 @@ export class CWCTelemetryHelper {
                     cwsprChatHasProjectContext: this.responseWithProjectContext.get(message.messageId),
                 }
                 break
+            case 'accept_diff':
+                message = message as AcceptDiff
+                event = {
+                    result,
+                    cwsprChatConversationId: conversationId ?? '',
+                    cwsprChatMessageId: message.messageId,
+                    cwsprChatInteractionType: 'acceptDiff',
+                    credentialStartUrl: AuthUtil.instance.startUrl,
+                    cwsprChatAcceptedCharactersLength: message.code.length,
+                    cwsprChatHasReference:
+                        message.referenceTrackerInformation && message.referenceTrackerInformation.length > 0,
+                    cwsprChatCodeBlockIndex: message.codeBlockIndex,
+                    cwsprChatTotalCodeBlocks: message.totalCodeBlocks,
+                    cwsprChatHasProjectContext: this.responseWithProjectContext.get(message.messageId),
+                }
+                break
+            case 'view_diff':
+                message = message as ViewDiff
+                event = {
+                    result,
+                    cwsprChatConversationId: conversationId ?? '',
+                    cwsprChatMessageId: message.messageId,
+                    cwsprChatInteractionType: 'viewDiff',
+                    credentialStartUrl: AuthUtil.instance.startUrl,
+                    cwsprChatAcceptedCharactersLength: message.code.length,
+                    cwsprChatHasReference:
+                        message.referenceTrackerInformation && message.referenceTrackerInformation.length > 0,
+                    cwsprChatCodeBlockIndex: message.codeBlockIndex,
+                    cwsprChatTotalCodeBlocks: message.totalCodeBlocks,
+                    cwsprChatHasProjectContext: this.responseWithProjectContext.get(message.messageId),
+                }
+                break
             case 'follow-up-was-clicked':
                 message = message as PromptMessage
                 event = {
-                    result: 'Succeeded',
+                    result,
                     cwsprChatConversationId: conversationId ?? '',
                     credentialStartUrl: AuthUtil.instance.startUrl,
                     cwsprChatMessageId: message.messageId,
@@ -202,7 +268,7 @@ export class CWCTelemetryHelper {
             case 'chat-item-voted':
                 message = message as ChatItemVotedMessage
                 event = {
-                    result: 'Succeeded',
+                    result,
                     cwsprChatMessageId: message.messageId,
                     cwsprChatConversationId: conversationId ?? '',
                     credentialStartUrl: AuthUtil.instance.startUrl,
@@ -213,7 +279,7 @@ export class CWCTelemetryHelper {
             case 'source-link-click':
                 message = message as SourceLinkClickMessage
                 event = {
-                    result: 'Succeeded',
+                    result,
                     cwsprChatMessageId: message.messageId,
                     cwsprChatConversationId: conversationId ?? '',
                     credentialStartUrl: AuthUtil.instance.startUrl,
@@ -225,7 +291,7 @@ export class CWCTelemetryHelper {
             case 'response-body-link-click':
                 message = message as ResponseBodyLinkClickMessage
                 event = {
-                    result: 'Succeeded',
+                    result,
                     cwsprChatMessageId: message.messageId,
                     cwsprChatConversationId: conversationId ?? '',
                     credentialStartUrl: AuthUtil.instance.startUrl,
@@ -237,7 +303,7 @@ export class CWCTelemetryHelper {
             case 'footer-info-link-click':
                 message = message as FooterInfoLinkClick
                 event = {
-                    result: 'Succeeded',
+                    result,
                     cwsprChatMessageId: 'footer',
                     cwsprChatConversationId: conversationId ?? '',
                     credentialStartUrl: AuthUtil.instance.startUrl,
@@ -334,7 +400,26 @@ export class CWCTelemetryHelper {
         })
     }
 
+    /**
+     * Store the trigger payload and message until the full message round trip finishes
+     *
+     * @calls emitAddMessage when the full message round trip finishes
+     */
     public recordAddMessage(triggerPayload: TriggerPayload, message: PromptAnswer) {
+        this.messageStorage.set(message.tabID, {
+            triggerPayload,
+            message,
+        })
+    }
+
+    public emitAddMessage(tabID: string, fullDisplayLatency: number, startTime?: number) {
+        const payload = this.messageStorage.get(tabID)
+        if (!payload) {
+            return
+        }
+
+        const { triggerPayload, message } = payload
+
         const triggerEvent = this.triggerEventsStorage.getLastTriggerEventByTabID(message.tabID)
         const hasProjectLevelContext =
             triggerPayload.relevantTextDocuments &&
@@ -356,8 +441,13 @@ export class CWCTelemetryHelper {
             cwsprChatReferencesCount: message.codeReferenceCount,
             cwsprChatFollowUpCount: message.followUpCount,
             cwsprChatTimeToFirstChunk: this.getResponseStreamTimeToFirstChunk(message.tabID),
-            cwsprChatTimeBetweenChunks: JSON.stringify(this.getResponseStreamTimeBetweenChunks(message.tabID)),
+            cwsprChatTimeBetweenChunks: JSON.stringify(
+                this.getTimeBetweenChunks(message.tabID, this.responseStreamTimeForChunks)
+            ),
             cwsprChatFullResponseLatency: this.responseStreamTotalTime.get(message.tabID) ?? 0,
+            cwsprTimeToFirstDisplay: this.getFirstDisplayTime(tabID, startTime),
+            cwsprChatTimeBetweenDisplays: JSON.stringify(this.getTimeBetweenChunks(tabID, this.displayTimeForChunks)),
+            cwsprChatFullDisplayLatency: fullDisplayLatency,
             cwsprChatRequestLength: triggerPayload.message?.length ?? 0,
             cwsprChatResponseLength: message.messageLength,
             cwsprChatConversationType: 'Chat',
@@ -382,7 +472,7 @@ export class CWCTelemetryHelper {
                         ...(language !== undefined ? { programmingLanguage: language } : {}),
                         activeEditorTotalCharacters: event.cwsprChatActiveEditorTotalCharacters,
                         timeToFirstChunkMilliseconds: event.cwsprChatTimeToFirstChunk,
-                        timeBetweenChunks: this.getResponseStreamTimeBetweenChunks(message.tabID),
+                        timeBetweenChunks: this.getTimeBetweenChunks(message.tabID, this.responseStreamTimeForChunks),
                         fullResponselatency: event.cwsprChatFullResponseLatency,
                         requestLength: event.cwsprChatRequestLength,
                         responseLength: event.cwsprChatResponseLength,
@@ -394,6 +484,8 @@ export class CWCTelemetryHelper {
             })
             .then()
             .catch(logSendTelemetryEventFailure)
+
+        this.messageStorage.delete(tabID)
     }
 
     public recordMessageResponseError(triggerPayload: TriggerPayload, tabID: string, responseCode: number) {
@@ -438,11 +530,17 @@ export class CWCTelemetryHelper {
     public setResponseStreamStartTime(tabID: string) {
         this.responseStreamStartTime.set(tabID, performance.now())
         this.responseStreamTimeForChunks.set(tabID, [performance.now()])
+        this.displayTimeForChunks.set(tabID, [])
     }
 
     public setResponseStreamTimeForChunks(tabID: string) {
         const chunkTimes = this.responseStreamTimeForChunks.get(tabID) ?? []
         this.responseStreamTimeForChunks.set(tabID, [...chunkTimes, performance.now()])
+    }
+
+    public setDisplayTimeForChunks(tabID: string, time: number) {
+        const chunkTimes = this.displayTimeForChunks.get(tabID) ?? []
+        this.displayTimeForChunks.set(tabID, [...chunkTimes, time])
     }
 
     public setResponseFromProjectContext(messageId: string) {
@@ -457,10 +555,21 @@ export class CWCTelemetryHelper {
         return Math.round(chunkTimes[1] - chunkTimes[0])
     }
 
-    private getResponseStreamTimeBetweenChunks(tabID: string): number[] {
+    /**
+     * Finds the time between when a user pressed enter and the first chunk appears in the UI
+     */
+    private getFirstDisplayTime(tabID: string, startTime?: number) {
+        if (!startTime) {
+            return 0
+        }
+        const chunkTimes = this.displayTimeForChunks.get(tabID) ?? [0]
+        return Math.round(chunkTimes[0] - startTime)
+    }
+
+    private getTimeBetweenChunks(tabID: string, chunks: Map<string, number[]>): number[] {
         try {
             const chunkDeltaTimes: number[] = []
-            const chunkTimes = this.responseStreamTimeForChunks.get(tabID) ?? [0]
+            const chunkTimes = chunks.get(tabID) ?? [0]
             for (let idx = 0; idx < chunkTimes.length - 1; idx++) {
                 chunkDeltaTimes.push(Math.round(chunkTimes[idx + 1] - chunkTimes[idx]))
             }

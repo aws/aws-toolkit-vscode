@@ -55,7 +55,7 @@ import { registerCommands } from './commands'
 // In web mode everything must be in a single file, so things like the endpoints file will not be available.
 // The following imports the endpoints file, which causes webpack to bundle it in the final output file
 import endpoints from '../resources/endpoints.json'
-import { getLogger, setupUninstallHandler } from './shared'
+import { getLogger, maybeShowMinVscodeWarning, setupUninstallHandler } from './shared'
 import { showViewLogsMessage } from './shared/utilities/messages'
 
 disableAwsSdkWarning()
@@ -101,6 +101,8 @@ export async function activateCommon(
     if (homeDirLogs.length > 0) {
         getLogger().error('fs.init: invalid home directory given by env vars: %O', homeDirLogs)
     }
+
+    void maybeShowMinVscodeWarning('1.83.0')
 
     if (isCloud9()) {
         vscode.window.withProgress = wrapWithProgressForCloud9(globals.outputChannel)

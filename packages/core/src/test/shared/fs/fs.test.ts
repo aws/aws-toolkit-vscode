@@ -7,9 +7,9 @@ import assert from 'assert'
 import vscode from 'vscode'
 import * as path from 'path'
 import * as utils from 'util'
-import { existsSync, mkdirSync, promises as nodefs, readFileSync } from 'fs'
+import { existsSync, mkdirSync, promises as nodefs, readFileSync } from 'fs' // eslint-disable-line no-restricted-imports
 import { stat } from 'fs/promises'
-import nodeFs from 'fs'
+import nodeFs from 'fs' // eslint-disable-line no-restricted-imports
 import fs, { FileSystem } from '../../../shared/fs/fs'
 import * as os from 'os'
 import { isMinVscode, isWin } from '../../../shared/vscode/env'
@@ -340,6 +340,7 @@ describe('FileSystem', function () {
 
         it('deletes directory with recursive:true', async function () {
             const dir = await testFolder.mkdir()
+            await testFolder.write('testfile.txt', 'testText')
             await fs.delete(dir, { recursive: true })
             assert(!existsSync(dir))
         })
@@ -348,7 +349,7 @@ describe('FileSystem', function () {
             const dir = await testFolder.mkdir()
             const f = path.join(dir, 'missingfile.txt')
             assert(!existsSync(f))
-            await fs.delete(f, { recursive: true })
+            await fs.delete(f)
         })
 
         it('error if file *and* its parent dir not found', async function () {

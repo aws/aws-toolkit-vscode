@@ -38,7 +38,6 @@ import globals from '../../shared/extensionGlobals'
 import { noSuggestions, updateInlineLockKey } from '../models/constants'
 import AsyncLock from 'async-lock'
 import { AuthUtil } from '../util/authUtil'
-import { CodeWhispererUserGroupSettings } from '../util/userGroupUtil'
 import { CWInlineCompletionItemProvider } from './inlineCompletionItemProvider'
 import { application } from '../util/codeWhispererApplication'
 import { openUrl } from '../../shared/utilities/vsCodeUtils'
@@ -257,7 +256,7 @@ export class RecommendationHandler {
             sessionId = resp?.$response?.httpResponse?.headers['x-amzn-sessionid']
             TelemetryHelper.instance.setFirstResponseRequestId(requestId)
             if (page === 0) {
-                TelemetryHelper.instance.setTimeToFirstRecommendation(performance.now())
+                session.setTimeToFirstRecommendation(performance.now())
             }
             if (nextToken === '') {
                 TelemetryHelper.instance.setAllPaginationEndTime()
@@ -702,7 +701,6 @@ export class RecommendationHandler {
                 duration: performance.now() - this.lastInvocationTime,
                 passive: true,
                 credentialStartUrl: AuthUtil.instance.startUrl,
-                codewhispererUserGroup: CodeWhispererUserGroupSettings.getUserGroup().toString(),
                 result: 'Succeeded',
             })
         }

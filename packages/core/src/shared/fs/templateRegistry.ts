@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { readFileSync } from 'fs'
+import { readFileSync } from 'fs' // eslint-disable-line no-restricted-imports
 import * as CloudFormation from '../cloudformation/cloudformation'
 import * as pathutils from '../utilities/pathUtils'
 import * as path from 'path'
