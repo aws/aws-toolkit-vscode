@@ -111,13 +111,6 @@ export class RemoteInvokeWebview extends VueWebview {
         }
     }
 
-    public async getSample(requestName: string) {
-        const sampleUrl = `${sampleRequestPath}${requestName}`
-        const sample = (await new HttpResourceFetcher(sampleUrl, { showUrl: true }).get()) ?? ''
-
-        return sample
-    }
-
     public async promptFile() {
         const fileLocations = await vscode.window.showOpenDialog({
             openLabel: 'Open',
