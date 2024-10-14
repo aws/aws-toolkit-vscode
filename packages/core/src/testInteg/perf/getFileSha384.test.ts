@@ -4,10 +4,10 @@
  */
 import assert from 'assert'
 import path from 'path'
-import { getTestWorkspaceFolder } from './integrationTestsUtilities'
-import { fs, getRandomString } from '../shared'
-import { LspController } from '../amazonq'
-import { performanceTest } from '../shared/performance/performance'
+import { getTestWorkspaceFolder } from '../integrationTestsUtilities'
+import { fs, getRandomString } from '../../shared'
+import { LspController } from '../../amazonq'
+import { performanceTest } from '../../shared/performance/performance'
 
 function performanceTestWrapper(label: string, fileSize: number) {
     return performanceTest(
