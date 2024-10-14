@@ -20,11 +20,14 @@ import {
 import { makeEndpointsProvider, registerGenericCommands } from 'aws-core-vscode'
 import { CommonAuthWebview } from 'aws-core-vscode/login'
 import {
+    amazonQDiffScheme,
     DefaultAWSClientBuilder,
     DefaultAwsContext,
     ExtContext,
     RegionProvider,
     Settings,
+    VirtualFileSystem,
+    VirtualMemoryFile,
     activateLogger,
     activateTelemetry,
     env,
@@ -40,6 +43,7 @@ import {
     placeholder,
     setContext,
     setupUninstallHandler,
+    maybeShowMinVscodeWarning,
 } from 'aws-core-vscode/shared'
 import { ExtStartUpSources, telemetry } from 'aws-core-vscode/telemetry'
 import { VSCODE_EXTENSION_ID } from 'aws-core-vscode/utils'
@@ -98,6 +102,8 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
         }
     }
 
+    void maybeShowMinVscodeWarning('1.83.0')
+
     globals.machineId = await getMachineId()
     globals.awsContext = new DefaultAwsContext()
     globals.sdkClientBuilder = new DefaultAWSClientBuilder(globals.awsContext)
@@ -132,6 +138,14 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
 
     // Handle Amazon Q Extension un-installation.
     setupUninstallHandler(VSCODE_EXTENSION_ID.amazonq, context.extension.packageJSON.version, context)
+
+    const vfs = new VirtualFileSystem()
+
+    // Register an empty file that's used when a to open a diff
+    vfs.registerProvider(
+        vscode.Uri.from({ scheme: amazonQDiffScheme, path: 'empty' }),
+        new VirtualMemoryFile(new Uint8Array())
+    )
 
     // Hide the Amazon Q tree in toolkit explorer
     await setContext('aws.toolkit.amazonq.dismissed', true)

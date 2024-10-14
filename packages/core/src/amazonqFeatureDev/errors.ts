@@ -66,6 +66,15 @@ export class PromptRefusalException extends ToolkitError {
     }
 }
 
+export class NoChangeRequiredException extends ToolkitError {
+    static errorName = 'NoChangeRequiredException'
+    constructor() {
+        super(i18n('AWS.amazonq.featureDev.error.noChangeRequiredException'), {
+            code: 'NoChangeRequiredException',
+        })
+    }
+}
+
 export class FeatureDevServiceError extends ToolkitError {
     static errorName = 'FeatureDevServiceError'
     constructor(message: string, code: string) {
@@ -86,6 +95,13 @@ export class UploadCodeError extends ToolkitError {
     static errorName = 'UploadCodeError'
     constructor(statusCode: string) {
         super(uploadCodeError, { code: `UploadCode-${statusCode}` })
+    }
+}
+
+export class UploadURLExpired extends ToolkitError {
+    static errorName = 'UploadURLExpired'
+    constructor() {
+        super(i18n('AWS.amazonq.featureDev.error.uploadURLExpired'), { code: 'UploadURLExpired' })
     }
 }
 

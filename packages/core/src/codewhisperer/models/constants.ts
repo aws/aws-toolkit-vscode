@@ -22,6 +22,20 @@ export const AWSTemplateKeyWords = ['AWSTemplateFormatVersion', 'Resources', 'AW
 
 export const AWSTemplateCaseInsensitiveKeyWords = ['cloudformation', 'cfn', 'template', 'description']
 
+export const JsonConfigFileNamingConvention = new Set([
+    'app.json',
+    'appsettings.json',
+    'bower.json',
+    'composer.json',
+    'db.json',
+    'manifest.json',
+    'package.json',
+    'schema.json',
+    'settings.json',
+    'tsconfig.json',
+    'vcpkg.json',
+])
+
 export const normalTextChangeRegex = /[A-Za-z0-9]/g
 
 export const autoSuggestionConfig = {
@@ -98,6 +112,14 @@ export const platformLanguageIds = [
     'packer',
     'plaintext',
     'jsonc',
+    'systemverilog',
+    'verilog',
+    'powershell',
+    'dart',
+    'lua',
+    'r',
+    'swift',
+    'vue',
 ] as const
 
 export type PlatformLanguageId = (typeof platformLanguageIds)[number]
@@ -689,7 +711,7 @@ export const runSecurityScanButtonTitle = 'Run security scan'
 export const crossFileContextConfig = {
     numberOfChunkToFetch: 60,
     topK: 3,
-    numberOfLinesEachChunk: 10,
+    numberOfLinesEachChunk: 50,
 }
 
 export const utgConfig = {

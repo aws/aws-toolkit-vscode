@@ -96,7 +96,8 @@ describe('session', () => {
                 [],
                 [],
                 tabID,
-                0
+                0,
+                {}
             )
             const session = await createSession({ messenger, sessionState: codeGenState, conversationID })
             encodedContent = new TextEncoder().encode(notRejectedFileContent)

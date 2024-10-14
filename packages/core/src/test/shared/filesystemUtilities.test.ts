@@ -13,8 +13,10 @@ import {
     isInDirectory,
     makeTemporaryToolkitFolder,
     tempDirPath,
+    throwOnUnstableFileSystem,
 } from '../../shared/filesystemUtilities'
 import { fs } from '../../shared'
+import { TestFolder } from '../testUtil'
 
 describe('filesystemUtilities', function () {
     const targetFilename = 'findThisFile12345.txt'
@@ -189,6 +191,13 @@ describe('filesystemUtilities', function () {
             fileB = 'C:\\FOO\\BAR\\B.txt'
             const actual = getFileDistance(fileA, fileB)
             assert.strictEqual(actual, 3)
+        })
+    })
+
+    describe('throwOnUnstableFileSystem', async function () {
+        it('does not throw on stable filesystem', async function () {
+            const testFolder = await TestFolder.create()
+            await throwOnUnstableFileSystem(testFolder.path)
         })
     })
 })

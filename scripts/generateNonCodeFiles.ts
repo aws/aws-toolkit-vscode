@@ -4,7 +4,7 @@
  */
 
 import * as child_process from 'child_process'
-import * as fs from 'fs-extra'
+import * as nodefs from 'fs' // eslint-disable-line no-restricted-imports
 import { marked } from 'marked'
 import * as path from 'path'
 
@@ -27,14 +27,14 @@ function translateReadmeToHtml(
     cn: boolean = false
 ) {
     const inputPath = path.join(root, inputFile)
-    if (!fs.existsSync(inputPath)) {
+    if (!nodefs.existsSync(inputPath)) {
         if (throwIfNotExists) {
             throw Error(`File ${inputFile} was not found, but it is required.`)
         }
         console.log(`File ${inputFile} was not found, skipping transformation...`)
         return
     }
-    const fileText = fs.readFileSync(path.join(root, inputFile)).toString()
+    const fileText = nodefs.readFileSync(path.join(root, inputFile)).toString()
     const relativePathRegex = /]\(\.\//g
     let transformedText = fileText.replace(relativePathRegex, '](!!EXTENSIONROOT!!/')
     if (cn) {
@@ -45,7 +45,7 @@ function translateReadmeToHtml(
     if (typeof r !== 'string') {
         throw Error()
     }
-    fs.writeFileSync(path.join(root, outputFile), r)
+    nodefs.writeFileSync(path.join(root, outputFile), r)
 }
 
 /**
@@ -54,7 +54,8 @@ function translateReadmeToHtml(
 function generateFileHash(root: string) {
     try {
         const response = child_process.execSync('git rev-parse HEAD')
-        fs.outputFileSync(path.join(root, '.gitcommit'), response)
+        nodefs.mkdirSync(root, { recursive: true })
+        nodefs.writeFileSync(path.join(root, '.gitcommit'), response)
     } catch (e) {
         console.log(`Getting commit hash failed ${e}`)
     }
