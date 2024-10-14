@@ -122,7 +122,7 @@ export class TelemetryLogger {
     /**
      * Queries telemetry for metrics with metadata containing a keyword in the key or value
      */
-    public queryKeyword(keyword: string): MetricDatum[] {
+    public queryRegex(re: RegExp): MetricDatum[] {
         return this._metrics.filter((m) =>
             m.Metadata?.some((md) => md.Value?.includes(keyword) || md.Key?.includes(keyword))
         )
