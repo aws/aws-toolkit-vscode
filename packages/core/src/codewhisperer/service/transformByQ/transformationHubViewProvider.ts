@@ -263,10 +263,13 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                 return CodeWhispererConstants.filesUploadedMessage
             case 'PREPARING':
             case 'PREPARED':
-                return CodeWhispererConstants.buildingCodeMessage.replace(
-                    'JAVA_VERSION_HERE',
-                    transformByQState.getSourceJDKVersion() ?? ''
-                )
+                // for SQL conversions, skip to planningMessage since we don't build the code
+                return transformByQState.getSchema()
+                    ? CodeWhispererConstants.planningMessage
+                    : CodeWhispererConstants.buildingCodeMessage.replace(
+                          'JAVA_VERSION_HERE',
+                          transformByQState.getSourceJDKVersion() ?? ''
+                      )
             case 'PLANNING':
             case 'PLANNED':
                 return CodeWhispererConstants.planningMessage
@@ -331,7 +334,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                 activeStepId === 0
             )
             const buildMarkup =
-                activeStepId >= 1 && !transformByQState.getMetadataPathSQL() // for SQL conversions, don't show buildCode step
+                activeStepId >= 1 && !transformByQState.getSchema() // for SQL conversions, don't show buildCode step
                     ? simpleStep(
                           this.getProgressIconMarkup(jobPlanProgress['buildCode']),
                           CodeWhispererConstants.buildCodeStepMessage,

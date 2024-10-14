@@ -212,6 +212,10 @@ export async function uploadPayload(payloadFileName: string, uploadContext?: Upl
         transformByQState.setJobId(encodeHTML(response.uploadId))
     }
     jobPlanProgress['uploadCode'] = StepProgress.Succeeded
+    if (transformByQState.getSchema()) {
+        // if doing a SQL conversion, we don't build the code, so mark this step as succeeded immediately so that next step renders
+        jobPlanProgress['buildCode'] = StepProgress.Succeeded
+    }
     updateJobHistory()
     return response.uploadId
 }
@@ -404,7 +408,6 @@ export async function zipCode(
 export async function startJob(uploadId: string) {
     const sourceLanguageVersion = `JAVA_${transformByQState.getSourceJDKVersion()}`
     const targetLanguageVersion = `JAVA_${transformByQState.getTargetJDKVersion()}`
-    // TO-DO: figure out what to set source and target language version too, along with transformation type
     try {
         const response = await codeWhisperer.codeWhispererClient.codeModernizerStartCodeTransformation({
             workspaceState: {
@@ -412,9 +415,9 @@ export async function startJob(uploadId: string) {
                 programmingLanguage: { languageName: CodeWhispererConstants.defaultLanguage.toLowerCase() },
             },
             transformationSpec: {
-                transformationType: CodeWhispererConstants.transformationType,
-                source: { language: sourceLanguageVersion },
-                target: { language: targetLanguageVersion },
+                transformationType: CodeWhispererConstants.transformationType, // shared b/w language upgrades & sql conversions for now
+                source: { language: sourceLanguageVersion }, // dummy value of JDK8 used for SQL conversions just so that this API can be called
+                target: { language: targetLanguageVersion }, // always JDK17
             },
         })
         if (response.$response.requestId) {
@@ -621,6 +624,7 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
                 transformationJobId: jobId,
             })
             status = response.transformationJob.status!
+            // if doing a SQL conversion, we don't build the code, so mark this step as succeeded immediately so that next step gets rendered
             if (CodeWhispererConstants.validStatesForBuildSucceeded.includes(status)) {
                 jobPlanProgress['buildCode'] = StepProgress.Succeeded
             }

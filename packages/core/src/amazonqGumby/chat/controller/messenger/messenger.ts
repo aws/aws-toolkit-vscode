@@ -728,6 +728,12 @@ ${codeSnippet}
             id: ButtonActions.SELECT_SQL_CONVERSION_METADATA_FILE,
         })
 
+        buttons.push({
+            keepCardAfterClick: false,
+            text: 'Cancel',
+            id: ButtonActions.CANCEL_TRANSFORMATION_FORM,
+        })
+
         this.dispatcher.sendChatMessage(
             new ChatMessage(
                 {

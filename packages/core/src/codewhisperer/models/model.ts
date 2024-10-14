@@ -756,7 +756,6 @@ export class TransformByQState {
         this.sourceDB = undefined
         this.targetDB = undefined
         this.sourceServerName = ''
-        this.schema = ''
         this.schemaOptions.clear()
         this.errorLog = ''
         this.customBuildCommand = ''

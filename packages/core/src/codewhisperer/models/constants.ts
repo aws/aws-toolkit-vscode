@@ -507,17 +507,9 @@ export const selectSQLMetadataFileHelpMessage =
 
 export const invalidMetadataFileUnsupportedSourceDB = `Sorry, your .sct metadata file appears to be invalid; the source DB must be Oracle.`
 
-export const invalidMetadataFileUnsupportedTargetDB = `Sorry, your .sct metadata file appears to be invalid; the target DB must be Aurora Postgresql or Amazon RDS for Postgresql.`
+export const invalidMetadataFileUnsupportedTargetDB = `Sorry, your .sct metadata file appears to be invalid; the target DB must be Aurora PostgreSQL or Amazon RDS for PostgreSQL.`
 
 export const invalidMetadataFileErrorParsing = 'Sorry, the .sct metadata file you provided appears to be invalid.'
-
-export const oracleVendor = 'Oracle'
-
-export const otherVendor = 'Other'
-
-export const auroraTargetVendor = 'Amazon Aurora PostgreSQL'
-
-export const rdsTargetVendor = 'Amazon RDS for PostgreSQL'
 
 export const failedToStartJobChatMessage =
     "Sorry, I couldn't begin the transformation. Please try starting the transformation again."
