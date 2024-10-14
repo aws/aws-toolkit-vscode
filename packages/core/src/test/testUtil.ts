@@ -299,8 +299,8 @@ export function partialDeepCompare<T>(actual: unknown, expected: T, message?: st
  * Asserts that no metrics metadata (key OR value) matches the given regex.
  * @param keyword target substring to search for
  */
-export function assertNoTelemetryMatch(re: RegExp): void | never {
-    return assert.ok(globals.telemetry.logger.queryKeyword(keyword).length === 0)
+export function assertNoTelemetryMatch(re: RegExp | string): void | never {
+    return assert.ok(globals.telemetry.logger.queryRegex(re).length === 0)
 }
 
 /**

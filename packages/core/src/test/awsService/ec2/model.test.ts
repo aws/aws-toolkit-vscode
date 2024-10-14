@@ -13,7 +13,7 @@ import { ToolkitError } from '../../../shared/errors'
 import { IAM } from 'aws-sdk'
 import { SshKeyPair } from '../../../awsService/ec2/sshKeyPair'
 import { DefaultIamClient } from '../../../shared/clients/iamClient'
-import { assertNotInTelemetryMetadata, createTestWorkspaceFolder } from '../../testUtil'
+import { assertNoTelemetryMatch, createTestWorkspaceFolder } from '../../testUtil'
 import { fs } from '../../../shared'
 import path from 'path'
 
@@ -159,7 +159,7 @@ describe('Ec2ConnectClient', function () {
             const keys = await SshKeyPair.getSshKeyPair(keyPath, 30000)
             await client.sendSshKeyToInstance(testSelection, keys, 'test-user')
             const privKey = await fs.readFileText(keys.getPrivateKeyPath())
-            assertNotInTelemetryMetadata(privKey)
+            assertNoTelemetryMatch(privKey)
             sinon.restore()
             await keys.delete()
         })
