@@ -3,15 +3,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { performanceTest } from '../shared/performance/performance'
+import { performanceTest } from '../../shared/performance/performance'
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'
 import assert from 'assert'
-import { LspClient, LspController } from '../amazonq'
+import { LspClient, LspController } from '../../amazonq'
 import { LanguageClient, ServerOptions } from 'vscode-languageclient'
-import { createTestWorkspace } from '../test/testUtil'
-import { GetUsageRequestType, IndexRequestType } from '../amazonq/lsp/types'
-import { getRandomString } from '../shared'
+import { createTestWorkspace } from '../../test/testUtil'
+import { GetUsageRequestType, IndexRequestType } from '../../amazonq/lsp/types'
+import { getRandomString } from '../../shared'
 
 interface SetupResult {
     clientReqStub: sinon.SinonStub
