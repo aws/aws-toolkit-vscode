@@ -5,7 +5,7 @@
 import assert from 'assert'
 import { WorkspaceFolder } from 'vscode'
 import { performanceTest } from '../../shared/performance/performance'
-import { createTestWorkspace } from '../testUtil'
+import { createTestWorkspace } from '../../test/testUtil'
 import { prepareRepoData, TelemetryHelper } from '../../amazonqFeatureDev'
 import { AmazonqCreateUpload, getRandomString } from '../../shared'
 import { Span } from '../../shared/telemetry'
