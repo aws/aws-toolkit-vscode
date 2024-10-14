@@ -4,12 +4,12 @@
  */
 import assert from 'assert'
 import * as sinon from 'sinon'
-import { TransformByQState, ZipManifest } from '../codewhisperer'
-import { fs, getRandomString, globals } from '../shared'
-import { createTestWorkspace } from '../test/testUtil'
-import * as CodeWhispererConstants from '../codewhisperer/models/constants'
-import { performanceTest } from '../shared/performance/performance'
-import { zipCode } from '../codewhisperer/indexNode'
+import { TransformByQState, ZipManifest } from '../../codewhisperer'
+import { fs, getRandomString, globals } from '../../shared'
+import { createTestWorkspace } from '../../test/testUtil'
+import * as CodeWhispererConstants from '../../codewhisperer/models/constants'
+import { performanceTest } from '../../shared/performance/performance'
+import { zipCode } from '../../codewhisperer/indexNode'
 
 interface SetupResult {
     tempDir: string
