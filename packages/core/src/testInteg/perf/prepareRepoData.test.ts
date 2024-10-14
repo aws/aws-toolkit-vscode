@@ -12,6 +12,7 @@ import { AmazonqCreateUpload, fs, getRandomString } from '../../shared'
 import { Span } from '../../shared/telemetry'
 import { FileSystem } from '../../shared/fs/fs'
 import AdmZip from 'adm-zip'
+import { assertEfficientZip, getFsCallsUpperBound } from './utilities'
 
 type resultType = {
     zipFileBuffer: Buffer
@@ -87,11 +88,8 @@ function verifyResult(setup: setupResult, result: resultType, telemetry: Telemet
     assert.strictEqual(telemetry.repositorySize, expectedSize)
     assert.strictEqual(result.zipFileChecksum.length, 44)
 
-    assert.ok(setup.fsSpy.stat.callCount <= setup.numFiles * 2, 'calls stat at most twice per file')
-    // Sometimes this line fails locally when it finds additional. This shouldn't happen in CI.
-    assert.ok(setup.fsSpy.readFileText.callCount <= setup.numFiles, 'reads each file at most once')
-    assert.ok(setup.zipSpy.addLocalFile.callCount <= setup.numFiles, 'add files to zip at most once')
-    assert.strictEqual(setup.zipSpy.toBuffer.callCount, 1, 'creates buffer once')
+    assert.ok(getFsCallsUpperBound(setup.fsSpy) <= setup.numFiles * 4, 'total system calls should be under 4 per file')
+    assertEfficientZip(setup.zipSpy, setup.numFiles)
 }
 
 describe('prepareRepoData', function () {
@@ -99,7 +97,9 @@ describe('prepareRepoData', function () {
         afterEach(function () {
             sinon.restore()
         })
-        performanceTestWrapper(250, 10)
         performanceTestWrapper(10, 1000)
+        performanceTestWrapper(50, 500)
+        performanceTestWrapper(100, 100)
+        performanceTestWrapper(250, 10)
     })
 })
