@@ -4,8 +4,10 @@
  */
 
 import assert from 'assert'
-import { once, onceChanged, debounce } from '../../../shared/utilities/functionUtils'
+import { once, onceChanged, debounce, withRetries } from '../../../shared/utilities/functionUtils'
 import { installFakeClock } from '../../testUtil'
+import { stub, SinonStub } from 'sinon'
+import { InstalledClock } from '@sinonjs/fake-timers'
 
 describe('functionUtils', function () {
     it('once()', function () {
@@ -105,5 +107,84 @@ describe('debounce', function () {
             assert.strictEqual(counter, 2)
             assert.strictEqual(calls.length, 4)
         })
+    })
+})
+
+// function to test the withRetries method. It passes in a stub function as the argument and has different tests that throw on different iterations
+describe('withRetries', function () {
+    let clock: InstalledClock
+    let fn: SinonStub
+
+    beforeEach(function () {
+        fn = stub()
+        clock = installFakeClock()
+    })
+
+    afterEach(function () {
+        clock.uninstall()
+    })
+
+    it('retries the function until it succeeds, using defaults', async function () {
+        fn.onCall(0).throws()
+        fn.onCall(1).throws()
+        fn.onCall(2).resolves('success')
+        assert.strictEqual(await withRetries(fn), 'success')
+    })
+
+    it('retries the function until it succeeds at the final try', async function () {
+        fn.onCall(0).throws()
+        fn.onCall(1).throws()
+        fn.onCall(2).throws()
+        fn.onCall(3).resolves('success')
+        assert.strictEqual(await withRetries(fn, { maxRetries: 4 }), 'success')
+    })
+
+    it('throws the last error if the function always fails, using defaults', async function () {
+        fn.onCall(0).throws()
+        fn.onCall(1).throws()
+        fn.onCall(2).throws()
+        fn.onCall(3).resolves('unreachable')
+        await assert.rejects(async () => {
+            await withRetries(fn)
+        })
+    })
+
+    it('throws the last error if the function always fails', async function () {
+        fn.onCall(0).throws()
+        fn.onCall(1).throws()
+        fn.onCall(2).throws()
+        fn.onCall(3).throws()
+        fn.onCall(4).resolves('unreachable')
+        await assert.rejects(async () => {
+            await withRetries(fn, { maxRetries: 4 })
+        })
+    })
+
+    it('honors retry delay + backoff multiplier', async function () {
+        fn.onCall(0).throws() // 100ms
+        fn.onCall(1).throws() // 200ms
+        fn.onCall(2).throws() // 400ms
+        fn.onCall(3).resolves('success')
+
+        const res = withRetries(fn, { maxRetries: 4, delay: 100, backoff: 2 })
+
+        // Check the call count after each iteration, ensuring the function is called
+        // after the correct delay between retries.
+        await clock.tickAsync(99)
+        assert.strictEqual(fn.callCount, 1)
+        await clock.tickAsync(1)
+        assert.strictEqual(fn.callCount, 2)
+
+        await clock.tickAsync(199)
+        assert.strictEqual(fn.callCount, 2)
+        await clock.tickAsync(1)
+        assert.strictEqual(fn.callCount, 3)
+
+        await clock.tickAsync(399)
+        assert.strictEqual(fn.callCount, 3)
+        await clock.tickAsync(1)
+        assert.strictEqual(fn.callCount, 4)
+
+        assert.strictEqual(await res, 'success')
     })
 })

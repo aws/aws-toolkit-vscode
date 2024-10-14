@@ -25,6 +25,7 @@ export class TextMessageHandler {
     }
 
     public handle(chatPrompt: ChatPrompt, tabID: string, eventID: string) {
+        this.tabsStorage.updateTabLastCommand(tabID, chatPrompt.command)
         this.tabsStorage.updateTabTypeFromUnknown(tabID, 'cwc')
         this.tabsStorage.resetTabTimer(tabID)
         this.connector.onUpdateTabType(tabID)
