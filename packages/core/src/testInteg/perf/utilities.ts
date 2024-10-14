@@ -50,11 +50,19 @@ export function getFsWritesUpperBound(fsSpy: sinon.SinonSpiedInstance<FileSystem
     )
 }
 /**
- * Check that each file is added to zip once, and written to buffer done exactly once.
+ * Check that each file is added to zip at most (factor * numFiles + offset) times, and written to buffer done exactly once.
  * @param zipSpy spied AdmZip instance used by code.
  * @param numFiles number of files in the workspace expected to be zipped.
  */
-export function assertEfficientAdmZip(zipSpy: sinon.SinonSpiedInstance<AdmZip>, numFiles: number): void | never {
-    assert.ok(zipSpy.addLocalFile.callCount <= numFiles, 'add files to zip at most once')
+export function assertEfficientAdmZip(
+    zipSpy: sinon.SinonSpiedInstance<AdmZip>,
+    numFiles: number,
+    factor: number = 1,
+    offset: number = 0
+): void | never {
+    assert.ok(
+        zipSpy.addLocalFile.callCount <= factor * numFiles + offset,
+        'add files to zip at factor*numFiles + offset times'
+    )
     assert.strictEqual(zipSpy.toBuffer.callCount, 1, 'creates buffer once')
 }
