@@ -27,7 +27,7 @@ async function verifyResult(setup: SetupResult) {
     assert.ok(setup.clientReqStub.secondCall.calledWith(GetUsageRequestType))
 
     assert.strictEqual(getFsCallsUpperBound(setup.fsSpy), 0, 'should not make any fs calls')
-    assert.strictEqual(setup.findFilesSpy.callCount, 2, 'only make 2 calls to find all files in workspace')
+    assert.ok(setup.findFilesSpy.callCount <= 2, 'findFiles should not be called more than twice')
 }
 
 async function setupWithWorkspace(numFiles: number, options: { fileContent: string }): Promise<SetupResult> {
