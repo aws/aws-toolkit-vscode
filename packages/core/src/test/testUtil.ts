@@ -296,7 +296,7 @@ export function partialDeepCompare<T>(actual: unknown, expected: T, message?: st
     assert.deepStrictEqual(partial, expected, message)
 }
 /**
- * Finds all metrics whose metadata contains this keyword in their key value pairs, as part of the key OR the value.
+ * Asserts that no metrics metadata (key OR value) matches the given regex.
  * @param keyword target substring to search for
  */
 export function assertNotInTelemetryMetadata(keyword: string): void | never {
