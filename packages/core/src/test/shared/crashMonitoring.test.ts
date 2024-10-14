@@ -14,8 +14,10 @@ class TestCrashMonitoring extends CrashMonitoring {
     public constructor(...deps: ConstructorParameters<typeof CrashMonitoring>) {
         super(...deps)
     }
-    public override crash() {
-        super.crash()
+    /** Imitates an extension crash */
+    public async crash() {
+        this.crashChecker?.testCrash()
+        this.heartbeat?.testCrash()
     }
 }
 
@@ -87,7 +89,7 @@ export const crashMonitoringTest = async () => {
 
         // Ext 1 does a graceful shutdown
         await exts[1].ext.start()
-        await exts[1].ext.stop()
+        await exts[1].ext.shutdown()
         await awaitIntervals(oneInterval)
         // Ext 1 did a graceful shutdown so no metric emitted
         assertTelemetry('session_end', [])
@@ -99,7 +101,7 @@ export const crashMonitoringTest = async () => {
         const exts = await makeTestExtensions(2)
 
         await exts[0].ext.start()
-        exts[0].ext.crash()
+        await exts[0].ext.crash()
         await awaitIntervals(oneInterval)
         // There is no other active instance to report the issue
         assertTelemetry('session_end', [])
@@ -121,7 +123,7 @@ export const crashMonitoringTest = async () => {
         }
 
         for (let i = 1; i < extCount; i++) {
-            exts[i].ext.crash()
+            await exts[i].ext.crash()
             latestCrashedExts.push(exts[i])
         }
 
@@ -142,7 +144,7 @@ export const crashMonitoringTest = async () => {
 
         // start Ext 1 then crash it, Ext 0 finds the crash
         await exts[1].ext.start()
-        exts[1].ext.crash()
+        await exts[1].ext.crash()
         latestCrashedExts.push(exts[1])
         await awaitIntervals(oneInterval * 1)
 
@@ -150,14 +152,14 @@ export const crashMonitoringTest = async () => {
 
         // start Ext 2 and crash Ext 0, Ext 2 is promoted to Primary checker
         await exts[2].ext.start()
-        exts[0].ext.crash()
+        await exts[0].ext.crash()
         latestCrashedExts.push(exts[0])
         await awaitIntervals(oneInterval * 1)
         assertCrashedExtensions(latestCrashedExts)
 
         // Ext 3 starts, then crashes. Ext 2 reports the crash since it is the Primary checker
         await exts[3].ext.start()
-        exts[3].ext.crash()
+        await exts[3].ext.crash()
         latestCrashedExts.push(exts[3])
         await awaitIntervals(oneInterval * 1)
         assertCrashedExtensions(latestCrashedExts)

@@ -15,7 +15,7 @@ import { MetricName, MetricShapes } from '../shared/telemetry/telemetry'
 import { keys, selectFrom } from '../shared/utilities/tsUtils'
 import fs from '../shared/fs/fs'
 import { DeclaredCommand } from '../shared/vscode/commands2'
-import { mkdirSync, existsSync } from 'fs'
+import { mkdirSync, existsSync } from 'fs' // eslint-disable-line no-restricted-imports
 import { randomBytes } from 'crypto'
 import request from '../shared/request'
 import { stub } from 'sinon'
@@ -39,7 +39,7 @@ export async function toFile(o: any, filepath: string | vscode.Uri) {
  * Gets the contents of `filepath` as UTF-8 encoded string.
  */
 export async function fromFile(filepath: string): Promise<string> {
-    return await fs.readFileAsString(filepath)
+    return await fs.readFileText(filepath)
 }
 
 /** Gets the full path to the Toolkit source root on this machine. */
@@ -75,7 +75,7 @@ export function getWorkspaceFolder(dir: string): vscode.WorkspaceFolder {
  * But if the day comes that we need it for web, we should be able to add some agnostic FS methods in here.
  */
 export class TestFolder {
-    protected constructor(private readonly rootFolder: string) {}
+    protected constructor(public readonly path: string) {}
 
     /** Creates a folder that deletes itself once all tests are done running. */
     static async create() {
@@ -117,10 +117,6 @@ export class TestFolder {
     /** Returns an absolute path compose of the test folder path and the given relative path. */
     pathFrom(relativePath: string): string {
         return path.join(this.path, relativePath)
-    }
-
-    get path(): string {
-        return path.join(this.rootFolder)
     }
 }
 
@@ -234,7 +230,7 @@ export function assertEqualPaths(actual: string, expected: string, message?: str
  * Asserts that UTF-8 contents of `file` are equal to `expected`.
  */
 export async function assertFileText(file: string, expected: string, message?: string | Error) {
-    const actualContents = await fs.readFileAsString(file)
+    const actualContents = await fs.readFileText(file)
     assert.strictEqual(actualContents, expected, message)
 }
 

@@ -12,10 +12,10 @@ for each extension.
 -   The Extension Host process has at most 5 seconds to shut down, after which it will exit. [1]
 -   The vscode API will be unreliable at deactivation time. So certain VSC APIs like the filesystem may not work. [1]
     -   The VSC Filesystem API has been confirmed to not work
-- In `Run & Debug` mode, closing the Debug IDE instance behaves differently depending on how it is closed
-    - The regular close button in the Debug IDE instance results in a graceful shutdown
-    - The red square in the root IDE instance to stop the debugging session results on a non-graceful shutdown, meaning `deactivate()` is not run.
-- `Reload Window` triggers `deactivate()`
+-   In `Run & Debug` mode, closing the Debug IDE instance behaves differently depending on how it is closed
+    -   The regular close button in the Debug IDE instance results in a graceful shutdown
+    -   The red square in the root IDE instance to stop the debugging session results on a non-graceful shutdown, meaning `deactivate()` is not run.
+-   `Reload Window` triggers `deactivate()`
 
 Sources:
 
@@ -25,8 +25,7 @@ Sources:
 ## State (`globalState`, `Memento`)
 
 TODO:
-- How it behaves between remote (ssh) and local
-- How it is not completely reliable. Reads/writes have no guarantee to work (though we are fine in most cases)
-- How it can break as observed with crash monitoring work. At a certain point writes were seemingly succeeding, but did not actually propagate to all IDE instances.
 
-
+-   How it behaves between remote (ssh) and local
+-   How it is not completely reliable. Reads/writes have no guarantee to work (though we are fine in most cases)
+-   How it can break as observed with crash monitoring work. At a certain point writes were seemingly succeeding, but did not actually propagate to all IDE instances.

@@ -6,14 +6,9 @@
 import assert from 'assert'
 import * as sinon from 'sinon'
 import { assertTelemetryCurried } from 'aws-core-vscode/test'
-import {
-    AuthUtil,
-    CodeWhispererTracker,
-    UserGroup,
-    CodeWhispererUserGroupSettings,
-} from 'aws-core-vscode/codewhisperer'
+import { AuthUtil, CodeWhispererTracker } from 'aws-core-vscode/codewhisperer'
 import { resetCodeWhispererGlobalVariables, createAcceptedSuggestionEntry } from 'aws-core-vscode/test'
-import { globals, extensionVersion } from 'aws-core-vscode/shared'
+import { globals } from 'aws-core-vscode/shared'
 
 describe('codewhispererTracker', function () {
     describe('enqueue', function () {
@@ -86,20 +81,7 @@ describe('codewhispererTracker', function () {
     })
 
     describe('emitTelemetryOnSuggestion', function () {
-        beforeEach(function () {
-            CodeWhispererUserGroupSettings.instance.reset()
-        })
-
-        afterEach(function () {
-            CodeWhispererUserGroupSettings.instance.reset()
-        })
-
         it('Should call recordCodewhispererUserModification with suggestion event', async function () {
-            await globals.globalState.update('CODEWHISPERER_USER_GROUP', {
-                group: UserGroup.CrossFile,
-                version: extensionVersion,
-            })
-
             const testStartUrl = 'testStartUrl'
             sinon.stub(AuthUtil.instance, 'startUrl').value(testStartUrl)
             const suggestion = createAcceptedSuggestionEntry()
@@ -114,7 +96,6 @@ describe('codewhispererTracker', function () {
                 codewhispererCompletionType: 'Line',
                 codewhispererLanguage: 'java',
                 credentialStartUrl: testStartUrl,
-                codewhispererUserGroup: 'CrossFile',
                 codewhispererCharactersAccepted: suggestion.originalString.length,
                 codewhispererCharactersModified: 0,
             })

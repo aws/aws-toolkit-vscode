@@ -24,6 +24,8 @@ import {
     ResponseBodyLinkClickMessage,
     ChatPromptCommandType,
     FooterInfoLinkClick,
+    ViewDiff,
+    AcceptDiff,
 } from './model'
 import { AppToWebViewMessageDispatcher } from '../../view/connector/connector'
 import { MessagePublisher } from '../../../amazonq/messages/messagePublisher'
@@ -59,6 +61,8 @@ export interface ChatControllerMessagePublishers {
     readonly processTabClosedMessage: MessagePublisher<TabClosedMessage>
     readonly processTabChangedMessage: MessagePublisher<TabChangedMessage>
     readonly processInsertCodeAtCursorPosition: MessagePublisher<InsertCodeAtCursorPosition>
+    readonly processAcceptDiff: MessagePublisher<AcceptDiff>
+    readonly processViewDiff: MessagePublisher<ViewDiff>
     readonly processCopyCodeToClipboard: MessagePublisher<CopyCodeToClipboard>
     readonly processContextMenuCommand: MessagePublisher<EditorContextCommand>
     readonly processTriggerTabIDReceived: MessagePublisher<TriggerTabIDReceived>
@@ -77,6 +81,8 @@ export interface ChatControllerMessageListeners {
     readonly processTabClosedMessage: MessageListener<TabClosedMessage>
     readonly processTabChangedMessage: MessageListener<TabChangedMessage>
     readonly processInsertCodeAtCursorPosition: MessageListener<InsertCodeAtCursorPosition>
+    readonly processAcceptDiff: MessageListener<AcceptDiff>
+    readonly processViewDiff: MessageListener<ViewDiff>
     readonly processCopyCodeToClipboard: MessageListener<CopyCodeToClipboard>
     readonly processContextMenuCommand: MessageListener<EditorContextCommand>
     readonly processTriggerTabIDReceived: MessageListener<TriggerTabIDReceived>
@@ -106,7 +112,7 @@ export class ChatController {
     ) {
         this.sessionStorage = new ChatSessionStorage()
         this.triggerEventsStorage = new TriggerEventsStorage()
-        this.telemetryHelper = new CWCTelemetryHelper(this.sessionStorage, this.triggerEventsStorage)
+        this.telemetryHelper = CWCTelemetryHelper.init(this.sessionStorage, this.triggerEventsStorage)
         this.messenger = new Messenger(
             new AppToWebViewMessageDispatcher(appsToWebViewMessagePublisher),
             this.telemetryHelper
@@ -125,8 +131,9 @@ export class ChatController {
         })
 
         this.chatControllerMessageListeners.processPromptChatMessage.onMessage((data) => {
-            if (data.traceId) {
-                uiEventRecorder.set(data.traceId, {
+            const uiEvents = uiEventRecorder.get(data.tabID)
+            if (uiEvents) {
+                uiEventRecorder.set(data.tabID, {
                     events: {
                         featureReceivedMessage: globals.clock.Date.now(),
                     },
@@ -139,7 +146,7 @@ export class ChatController {
              **/
             return telemetry.withTraceId(() => {
                 return this.processPromptChatMessage(data)
-            }, data.traceId ?? randomUUID())
+            }, uiEvents?.traceId ?? randomUUID())
         })
 
         this.chatControllerMessageListeners.processTabCreatedMessage.onMessage((data) => {
@@ -156,6 +163,14 @@ export class ChatController {
 
         this.chatControllerMessageListeners.processInsertCodeAtCursorPosition.onMessage((data) => {
             return this.processInsertCodeAtCursorPosition(data)
+        })
+
+        this.chatControllerMessageListeners.processAcceptDiff.onMessage((data) => {
+            return this.processAcceptDiff(data)
+        })
+
+        this.chatControllerMessageListeners.processViewDiff.onMessage((data) => {
+            return this.processViewDiff(data)
         })
 
         this.chatControllerMessageListeners.processCopyCodeToClipboard.onMessage((data) => {
@@ -275,6 +290,30 @@ export class ChatController {
             })
         })
         this.telemetryHelper.recordInteractWithMessage(message)
+    }
+
+    private async processAcceptDiff(message: AcceptDiff) {
+        const context = this.triggerEventsStorage.getTriggerEvent((message.data as any)?.triggerID) || ''
+        this.editorContentController
+            .acceptDiff({ ...message, ...context })
+            .then(() => {
+                this.telemetryHelper.recordInteractWithMessage(message)
+            })
+            .catch((error) => {
+                this.telemetryHelper.recordInteractWithMessage(message, { result: 'Failed' })
+            })
+    }
+
+    private async processViewDiff(message: ViewDiff) {
+        const context = this.triggerEventsStorage.getTriggerEvent((message.data as any)?.triggerID) || ''
+        this.editorContentController
+            .viewDiff({ ...message, ...context })
+            .then(() => {
+                this.telemetryHelper.recordInteractWithMessage(message)
+            })
+            .catch((error) => {
+                this.telemetryHelper.recordInteractWithMessage(message, { result: 'Failed' })
+            })
     }
 
     private async processCopyCodeToClipboard(message: CopyCodeToClipboard) {
@@ -503,7 +542,6 @@ export class ChatController {
                         codeQuery: context?.focusAreaContext?.names,
                         userIntent: this.userIntentRecognizer.getFromPromptChatMessage(message),
                         customization: getSelectedCustomization(),
-                        traceId: message.traceId,
                     },
                     triggerID
                 )

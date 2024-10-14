@@ -32,7 +32,8 @@ export async function activate(context: vscode.ExtensionContext) {
  * the code compatible with web and move it to {@link activateAmazonQCommon}.
  */
 async function activateAmazonQNode(context: vscode.ExtensionContext) {
-    await (await CrashMonitoring.instance()).start()
+    // Intentionally do not await since this is slow and non-critical
+    void (await CrashMonitoring.instance())?.start()
 
     const extContext = {
         extensionContext: context,
@@ -96,5 +97,5 @@ async function setupDevMode(context: vscode.ExtensionContext) {
 
 export async function deactivate() {
     // Run concurrently to speed up execution. stop() does not throw so it is safe
-    await Promise.all([(await CrashMonitoring.instance()).stop(), deactivateCommon()])
+    await Promise.all([(await CrashMonitoring.instance())?.shutdown(), deactivateCommon()])
 }

@@ -14,11 +14,13 @@ import {
     ContentLengthError,
     FeatureDevServiceError,
     MonthlyConversationLimitError,
+    NoChangeRequiredException,
     PrepareRepoFailedError,
     PromptRefusalException,
     SelectedFolderNotInWorkspaceFolderError,
     TabIdNotFoundError,
     UploadCodeError,
+    UploadURLExpired,
     UserMessageNotFoundError,
     WorkspaceFolderNotFoundError,
     ZipFileError,
@@ -66,6 +68,7 @@ type OpenDiffMessage = {
     // currently the zip file path
     filePath: string
     deleted: boolean
+    codeGenerationId: string
 }
 
 type fileClickedMessage = {
@@ -131,6 +134,11 @@ export class FeatureDevController {
                     this.initialExamples(data)
                     break
                 case FollowUpTypes.NewTask:
+                    this.messenger.sendAnswer({
+                        type: 'answer',
+                        tabID: data?.tabID,
+                        message: i18n('AWS.amazonq.featureDev.answer.newTaskChanges'),
+                    })
                     return this.newTask(data)
                 case FollowUpTypes.CloseSession:
                     return this.closeSession(data)
@@ -246,6 +254,15 @@ export class FeatureDevController {
             case ZipFileError.errorName:
                 this.messenger.sendErrorMessage(errorMessage, message.tabID, 0, session?.conversationIdUnsafe, true)
                 break
+            case NoChangeRequiredException.errorName:
+                this.messenger.sendAnswer({
+                    type: 'answer',
+                    tabID: message.tabID,
+                    message: err.message,
+                    canBeVoted: true,
+                })
+                // Allow users to re-work the task description.
+                return this.newTask(message)
             case CodeIterationLimitError.errorName:
                 this.messenger.sendAnswer({
                     type: 'answer',
@@ -263,6 +280,14 @@ export class FeatureDevController {
                             status: 'success',
                         },
                     ],
+                })
+                break
+            case UploadURLExpired.errorName:
+                this.messenger.sendAnswer({
+                    type: 'answer',
+                    tabID: message.tabID,
+                    message: err.message,
+                    canBeVoted: true,
                 })
                 break
             default:
@@ -319,7 +344,7 @@ export class FeatureDevController {
                 await this.onCodeGeneration(session, message.message, message.tabID)
             }
         } catch (err: any) {
-            this.processErrorChatMessage(err, message, session)
+            await this.processErrorChatMessage(err, message, session)
             // Lock the chat input until they explicitly click one of the follow ups
             this.messenger.sendChatInputEnabled(message.tabID, false)
         }
@@ -385,7 +410,8 @@ export class FeatureDevController {
                 deletedFiles,
                 session.state.references ?? [],
                 tabID,
-                session.uploadId
+                session.uploadId,
+                session.state.codeGenerationId ?? ''
             )
 
             const remainingIterations = session.state.codeGenerationRemainingIterationCount
@@ -671,6 +697,7 @@ export class FeatureDevController {
 
     private async openDiff(message: OpenDiffMessage) {
         const tabId: string = message.tabID
+        const codeGenerationId: string = message.messageId
         const zipFilePath: string = message.filePath
         const session = await this.sessionStorage.getSession(tabId)
         telemetry.amazonq_isReviewedChanges.emit({
@@ -687,7 +714,11 @@ export class FeatureDevController {
             const name = path.basename(pathInfos.relativePath)
             await openDeletedDiff(pathInfos.absolutePath, name, tabId)
         } else {
-            const rightPath = path.join(session.uploadId, zipFilePath)
+            let uploadId = session.uploadId
+            if (session?.state?.uploadHistory && session.state.uploadHistory[codeGenerationId]) {
+                uploadId = session?.state?.uploadHistory[codeGenerationId].uploadId
+            }
+            const rightPath = path.join(uploadId, zipFilePath)
             await openDiff(pathInfos.absolutePath, rightPath, tabId)
         }
     }
@@ -758,11 +789,7 @@ export class FeatureDevController {
         // Re-run the opening flow, where we check auth + create a session
         await this.tabOpened(message)
 
-        this.messenger.sendAnswer({
-            type: 'answer',
-            tabID: message.tabID,
-            message: i18n('AWS.amazonq.featureDev.answer.newTaskChanges'),
-        })
+        this.messenger.sendChatInputEnabled(message.tabID, true)
         this.messenger.sendUpdatePlaceholder(message.tabID, i18n('AWS.amazonq.featureDev.placeholder.describe'))
     }
 

@@ -19,7 +19,7 @@ export interface ConnectorProps {
     sendMessageToExtension: (message: ExtensionMessage) => void
     onMessageReceived?: (tabID: string, messageData: any, needToShowAPIDocsTab: boolean) => void
     onAsyncEventProgress: (tabID: string, inProgress: boolean, message: string) => void
-    onChatAnswerReceived?: (tabID: string, message: ChatItem) => void
+    onChatAnswerReceived?: (tabID: string, message: ChatItem, messageData: any) => void
     sendFeedback?: (tabId: string, feedbackPayload: FeedbackPayload) => void | undefined
     onError: (tabID: string, message: string, title: string) => void
     onWarning: (tabID: string, message: string, title: string) => void
@@ -94,12 +94,13 @@ export class Connector {
         })
     }
 
-    onOpenDiff = (tabID: string, filePath: string, deleted: boolean): void => {
+    onOpenDiff = (tabID: string, filePath: string, deleted: boolean, messageId?: string): void => {
         this.sendMessageToExtension({
             command: 'open-diff',
             tabID,
             filePath,
             deleted,
+            messageId,
             tabType: 'featuredev',
         })
     }
@@ -153,7 +154,7 @@ export class Connector {
                           }
                         : undefined,
             }
-            this.onChatAnswerReceived(messageData.tabID, answer)
+            this.onChatAnswerReceived(messageData.tabID, answer, messageData)
         }
     }
 
@@ -167,7 +168,11 @@ export class Connector {
                 canBeVoted: true,
                 codeReference: messageData.references,
                 // TODO get the backend to store a message id in addition to conversationID
-                messageId: messageData.messageID ?? messageData.triggerID ?? messageData.conversationID,
+                messageId:
+                    messageData.codeGenerationId ??
+                    messageData.messageID ??
+                    messageData.triggerID ??
+                    messageData.conversationID,
                 fileList: {
                     rootFolderTitle: 'Changes',
                     filePaths: messageData.filePaths.map((f: DiffTreeFileInfo) => f.zipFilePath),
@@ -176,7 +181,7 @@ export class Connector {
                 },
                 body: '',
             }
-            this.onChatAnswerReceived(messageData.tabID, answer)
+            this.onChatAnswerReceived(messageData.tabID, answer, messageData)
         }
     }
 
@@ -185,19 +190,27 @@ export class Connector {
             return
         }
 
-        this.onChatAnswerReceived(messageData.tabID, {
-            type: ChatItemType.ANSWER,
-            body: messageData.message,
-            followUp: undefined,
-            canBeVoted: false,
-        })
+        this.onChatAnswerReceived(
+            messageData.tabID,
+            {
+                type: ChatItemType.ANSWER,
+                body: messageData.message,
+                followUp: undefined,
+                canBeVoted: false,
+            },
+            messageData
+        )
 
-        this.onChatAnswerReceived(messageData.tabID, {
-            type: ChatItemType.SYSTEM_PROMPT,
-            body: undefined,
-            followUp: this.followUpGenerator.generateAuthFollowUps('featuredev', messageData.authType),
-            canBeVoted: false,
-        })
+        this.onChatAnswerReceived(
+            messageData.tabID,
+            {
+                type: ChatItemType.SYSTEM_PROMPT,
+                body: undefined,
+                followUp: this.followUpGenerator.generateAuthFollowUps('featuredev', messageData.authType),
+                canBeVoted: false,
+            },
+            messageData
+        )
 
         return
     }

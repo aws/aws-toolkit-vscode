@@ -22,32 +22,32 @@ describe('isNewOsSession', () => {
     })
 
     it('unix-like: returns true when expected', async () => {
-        const uptimeStub = sandbox.stub()
+        const uptimeMillisStub = sandbox.stub()
         const now = sandbox.stub()
-        // We started our computer at 2 minutes since epoch (time - pc uptime)
-        // and the comptuer has been on for 1 minute. So the OS started 1 minute since epoch.
-        now.returns(60_000 + 60_000)
-        uptimeStub.returns(1)
+        // We started our computer at 1 minutes since epoch and the comptuer uptime has been 1 minute.
+        // So the OS started at the epoch  (time - uptime).
+        now.returns(0) // the epoch time
+        uptimeMillisStub.returns(0) // this session has just started
 
         // On a brand new session the first caller will get true
-        assert.strictEqual(await isNewOsSession(now, uptimeStub), true)
+        assert.strictEqual(await isNewOsSession(now, uptimeMillisStub), true)
         // Subsequent callers will get false
-        assert.strictEqual(await isNewOsSession(now, uptimeStub), false)
+        assert.strictEqual(await isNewOsSession(now, uptimeMillisStub), false)
 
-        // Start a computer session 10 minutes from epoch
-        uptimeStub.returns(0)
-        now.returns(60_000 * 10)
-        assert.strictEqual(await isNewOsSession(now, uptimeStub), true)
-        // Anything that is within a 5 second threshold of the last session time, is considered the same session
-        now.returns(60_000 * 10 + 5000)
-        assert.strictEqual(await isNewOsSession(now, uptimeStub), false)
-        now.returns(60_000 * 10 + 5000 + 1)
-        assert.strictEqual(await isNewOsSession(now, uptimeStub), true)
+        // 10 minutes later, same session
+        now.returns(1000 * 60 * 10)
+        uptimeMillisStub.returns(1000 * 60 * 10) // This scales proportionately with the current time
+        // This is still the same session, so we get false
+        assert.strictEqual(await isNewOsSession(now, uptimeMillisStub), false)
 
-        // A non-zero uptime
-        uptimeStub.returns(5) // The computer has been running for 5 minutes already, so the start time is relative to this.
-        now.returns(60_000 * 10 + 5000 + 60_000 * 10) // 5 minutes since last session
-        // Nothing changes since the diff between uptime and the last start has not changed
-        assert.strictEqual(await isNewOsSession(now, uptimeStub), true)
+        // Test the lowerbound of what is considered a new session
+        // Pretend we started a new computer session 5 seconds after the initial session
+        uptimeMillisStub.returns(0)
+        now.returns(5000)
+        // Anything that is within a 5 second threshold of the last session time, is considered the SAME session
+        assert.strictEqual(await isNewOsSession(now, uptimeMillisStub), false)
+        // This is 1 millisecond after the threshold, it is considered a NEW session
+        now.returns(5000 + 1)
+        assert.strictEqual(await isNewOsSession(now, uptimeMillisStub), true)
     })
 })

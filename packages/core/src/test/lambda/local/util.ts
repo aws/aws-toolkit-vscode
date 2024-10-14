@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { writeFile } from 'fs-extra'
 import { EOL } from 'os'
 import * as CloudFormation from '../../../shared/cloudformation/cloudformation'
+import { fs } from '../../../shared'
 
 export async function saveTemplate(templatePath: string, runtime: string, ...functionNames: string[]) {
     const functionResources = functionNames
@@ -57,5 +57,5 @@ Outputs:
         Value: !GetAtt HelloWorldFunctionRole.Arn
 `
 
-    await writeFile(templatePath, templateContent, 'utf8')
+    await fs.writeFile(templatePath, templateContent)
 }
