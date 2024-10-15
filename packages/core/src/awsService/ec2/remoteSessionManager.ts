@@ -8,8 +8,6 @@ import { SsmClient } from '../../shared/clients/ssmClient'
 import { Disposable } from 'vscode'
 
 export class Ec2RemoteSessionManager extends Map<EC2.InstanceId, SSM.SessionId> implements Disposable {
-    //private activeSessions: Map<EC2.InstanceId, SSM.SessionId>
-
     public constructor(
         readonly regionCode: string,
         protected ssmClient: SsmClient
