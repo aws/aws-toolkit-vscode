@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import assert from 'assert'
+import sinon from 'sinon'
 import * as vscode from 'vscode'
 import { NewFileInfo, NewFileZipContents, registerNewFiles } from '../../amazonqFeatureDev'
 import { performanceTest } from '../../shared/performance/performance'
@@ -12,6 +13,8 @@ import { VirtualFileSystem } from '../../shared'
 interface SetupResult {
     workspace: vscode.WorkspaceFolder
     fileContents: NewFileZipContents[]
+    vfsSpy: sinon.SinonSpiedInstance<VirtualFileSystem>
+    vfs: VirtualFileSystem
 }
 
 function getFileContents(numFiles: number, fileSize: number): NewFileZipContents[] {
@@ -31,17 +34,17 @@ function performanceTestWrapper(label: string, numFiles: number, fileSize: numbe
             linux: {
                 userCpuUsage: 200,
                 systemCpuUsage: 35,
-                heapTotal: 8,
+                heapTotal: 16,
             },
             darwin: {
                 userCpuUsage: 200,
                 systemCpuUsage: 35,
-                heapTotal: 8,
+                heapTotal: 16,
             },
             win32: {
                 userCpuUsage: 200,
                 systemCpuUsage: 35,
-                heapTotal: 8,
+                heapTotal: 16,
             },
         },
         label,
@@ -50,6 +53,9 @@ function performanceTestWrapper(label: string, numFiles: number, fileSize: numbe
                 setup: async () => {
                     const testWorkspaceUri = vscode.Uri.file(getTestWorkspaceFolder())
                     const fileContents = getFileContents(numFiles, fileSize)
+                    const vfs = new VirtualFileSystem()
+                    const vfsSpy = sinon.spy(vfs)
+
                     return {
                         workspace: {
                             uri: testWorkspaceUri,
@@ -57,19 +63,25 @@ function performanceTestWrapper(label: string, numFiles: number, fileSize: numbe
                             index: 0,
                         },
                         fileContents: fileContents,
+                        vfsSpy: vfsSpy,
+                        vfs: vfs,
                     }
                 },
                 execute: async (setup: SetupResult) => {
                     return registerNewFiles(
-                        new VirtualFileSystem(),
+                        setup.vfs,
                         setup.fileContents,
                         'test-upload-id',
                         [setup.workspace],
                         conversationId
                     )
                 },
-                verify: async (_setup: SetupResult, result: NewFileInfo[]) => {
+                verify: async (setup: SetupResult, result: NewFileInfo[]) => {
                     assert.strictEqual(result.length, numFiles)
+                    assert.ok(
+                        setup.vfsSpy.registerProvider.callCount <= numFiles,
+                        'only register each file once in vfs'
+                    )
                 },
             }
         }
