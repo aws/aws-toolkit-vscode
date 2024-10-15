@@ -257,7 +257,7 @@ export class SamInvokeWebview extends VueWebview {
         }
 
         try {
-            const fileContent = await fs.readFile(fileLocations[0].fsPath)
+            const fileContent = await fs.readFileText(fileLocations[0].fsPath)
             return {
                 sample: fileContent,
                 selectedFilePath: fileLocations[0].fsPath,

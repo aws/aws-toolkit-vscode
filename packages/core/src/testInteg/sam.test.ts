@@ -670,9 +670,9 @@ describe('SAM Integration Tests', async function () {
         before(async function () {
             workspaceFolder = getWorkspaceFolder(testSuiteRoot)
             testRoot = path.join(testSuiteRoot, scenario.runtime)
-            mkdirpSync(testRoot)
+            await fs.mkdir(testRoot)
 
-            testDir = await mkdtemp(path.join(testRoot, 'samapp-'))
+            testDir = mkdtempSync(path.join(testRoot, 'samapp-'))
             console.log(`testDir: ${testDir}`)
 
             await createSamApplication(testDir, scenario)

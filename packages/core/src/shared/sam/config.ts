@@ -103,7 +103,7 @@ export class SamConfig {
      */
     public static async fromConfigFileUri(uri: vscode.Uri) {
         try {
-            const contents = await fs.readFileAsString(uri)
+            const contents = await fs.readFileText(uri)
             const config = await parseConfig(contents)
             return new this(uri, config)
         } catch (error) {
@@ -122,6 +122,8 @@ export class SamConfig {
     public static async fromUri(uri: vscode.Uri) {
         const contents = await fs.readFileText(uri)
         const config = await parseConfig(contents)
+
+        return new this(uri, config)
     }
 }
 
@@ -159,7 +161,7 @@ export async function writeSamconfigGlobal(projectRoot: vscode.Uri, stackName: s
         const data = { default: { global: { parameters: { stack_name: stackName, region: region } } } }
         return createNewConfigFile(projectRoot, data)
     }
-    const contents = await fs.readFileAsString(path)
+    const contents = await fs.readFileText(path)
     const data = await parse.async(contents)
     if (data.default) {
         const defaultEnv = data.default as { global?: { parameters?: Record<string, unknown> } }
