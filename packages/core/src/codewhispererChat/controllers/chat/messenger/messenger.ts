@@ -33,6 +33,7 @@ import { CodeScanIssue } from '../../../../codewhisperer/models/model'
 import { marked } from 'marked'
 import { JSDOM } from 'jsdom'
 import { LspController } from '../../../../amazonq/lsp/lspController'
+import { extractCodeBlockLanguage } from '../../../../shared/markdown'
 
 export type StaticTextResponseType = 'quick-action-help' | 'onboarding-help' | 'transform' | 'help'
 
@@ -185,7 +186,7 @@ export class Messenger {
                     ) {
                         message += chatEvent.assistantResponseEvent.content
                         if (codeBlockLanguage === 'plaintext') {
-                            codeBlockLanguage = this.extractCodeBlockLanguage(message)
+                            codeBlockLanguage = extractCodeBlockLanguage(message)
                         }
                         this.dispatcher.sendChatMessage(
                             new ChatMessage(
@@ -340,24 +341,6 @@ export class Messenger {
                     totalNumberOfCodeBlocksInResponse: await this.countTotalNumberOfCodeBlocks(message),
                 })
             })
-    }
-
-    private extractCodeBlockLanguage(message: string): string {
-        // This fulfills both the cases of unit test generation(java, python) and general use case(Non java and Non python) languages.
-        const codeBlockStart = message.indexOf('```')
-        if (codeBlockStart === -1) {
-            return 'plaintext'
-        }
-
-        const languageStart = codeBlockStart + 3
-        const languageEnd = message.indexOf('\n', languageStart)
-
-        if (languageEnd === -1) {
-            return 'plaintext'
-        }
-
-        const language = message.substring(languageStart, languageEnd).trim()
-        return language !== '' ? language : 'plaintext'
     }
 
     public sendErrorMessage(errorMessage: string | undefined, tabID: string, requestID: string | undefined) {
