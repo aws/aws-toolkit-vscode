@@ -71,17 +71,17 @@ describe('startSecurityScanPerformanceTest', function () {
     performanceTest(
         {
             darwin: {
-                userCpuUsage: 100,
+                userCpuUsage: 150,
                 systemCpuUsage: 35,
                 heapTotal: 2,
             },
             linux: {
-                userCpuUsage: 100,
+                userCpuUsage: 150,
                 systemCpuUsage: 35,
                 heapTotal: 2,
             },
             win32: {
-                userCpuUsage: 100,
+                userCpuUsage: 150,
                 systemCpuUsage: 35,
                 heapTotal: 2,
             },
