@@ -334,7 +334,8 @@ export async function getOrUpdateOrInstallSAMCli(source: string) {
  * @param source to be added in telemetry
  */
 export async function getOrInstallCliWrapper(toolId: AwsClis, source: string) {
-    await telemetry.appBuilder_installTool.run(async () => {
+    await telemetry.appBuilder_installTool.run(async (span) => {
+        span.record({ source: source, toolId: toolId })
         if (toolId === 'sam-cli') {
             await getOrUpdateOrInstallSAMCli(source)
             return

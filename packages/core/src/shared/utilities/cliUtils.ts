@@ -316,7 +316,6 @@ export async function installCli(
             )
         }
         getLogger().info(`${cli} installation: ${result}`)
-        // commented for we need to add docker to toolId type in telemetry. No good way to add it in dev.
         telemetry.aws_toolInstallation.emit({ result, reason, toolId: cli })
     }
 }
@@ -518,14 +517,9 @@ async function installGui(
         switch (process.platform) {
             case 'darwin':
                 await new TimedProcess('open', [guiInstaller, '-W']).run()
-                // Send telemetry when Gui pops up successfully
-                telemetry.appBuilder_installTool.emit({ result: 'Succeeded', toolId: cli })
-
                 return await getCliCommand(awsClis[cli])
             case 'win32':
                 await new TimedProcess(guiInstaller, []).run()
-                telemetry.appBuilder_installTool.emit({ result: 'Succeeded', toolId: cli })
-
                 return await getCliCommand(awsClis[cli])
             // customer shouldn't reach this point as they will be directed to manual install link in entrypoint.
             default:
