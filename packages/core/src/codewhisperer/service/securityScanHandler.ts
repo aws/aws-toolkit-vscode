@@ -310,7 +310,7 @@ export async function uploadArtifactToS3(
         )
         const errorMessage = getTelemetryReasonDesc(error)?.includes(`"PUT" request failed with code "403"`)
             ? `"PUT" request failed with code "403"`
-            : getTelemetryReasonDesc(error) ?? 'Security scan failed.'
+            : (getTelemetryReasonDesc(error) ?? 'Security scan failed.')
 
         throw new UploadArtifactToS3Error(errorMessage)
     }
