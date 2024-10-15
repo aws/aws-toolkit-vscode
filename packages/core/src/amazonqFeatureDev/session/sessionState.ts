@@ -364,7 +364,7 @@ export class CodeGenState extends CodeGenBase implements SessionState {
                     this.codeGenerationRemainingIterationCount,
                     this.codeGenerationTotalIterationCount,
                     this.tokenSource,
-                    this.currentCodeGenerationId
+                    this.currentCodeGenerationId,
                     action.uploadHistory,
                     codeGenerationId
                 )
@@ -486,11 +486,12 @@ export class PrepareCodeGenState implements SessionState {
         public references: CodeReference[],
         public tabID: string,
         private currentIteration: number,
-        public uploadHistory: UploadHistory = {},
+
         public codeGenerationRemainingIterationCount?: number,
         public codeGenerationTotalIterationCount?: number,
         public superTokenSource?: vscode.CancellationTokenSource,
-        public currentCodeGenerationId?: string
+        public currentCodeGenerationId?: string,
+        public uploadHistory: UploadHistory = {},
         public codeGenerationId?: string
     ) {
         this.tokenSource = superTokenSource || new vscode.CancellationTokenSource()

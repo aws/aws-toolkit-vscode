@@ -61,7 +61,6 @@ export interface SessionState {
     readonly references?: CodeReference[]
     readonly phase?: SessionStatePhase
     readonly uploadId: string
-    readonly tokenSource: CancellationTokenSource
     currentCodeGenerationId?: string
     tokenSource?: CancellationTokenSource
     readonly codeGenerationId?: string
