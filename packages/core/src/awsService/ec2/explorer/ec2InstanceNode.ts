@@ -30,6 +30,7 @@ export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode 
         public readonly instance: SafeEc2Instance
     ) {
         super('')
+        this.parent.addChild(this)
         this.updateInstance(instance)
         this.id = this.InstanceId
     }
@@ -42,7 +43,7 @@ export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode 
         this.tooltip = `${this.name}\n${this.InstanceId}\n${this.instance.LastSeenStatus}\n${this.arn}`
 
         if (this.isPending()) {
-            this.parent.pollingSet.start(this.InstanceId)
+            this.parent.trackPendingNode(this.InstanceId)
         }
     }
 

@@ -8,9 +8,8 @@ import { fs } from '../../../shared'
 import path = require('path')
 import { BM25Document, BM25Okapi } from './rankBm25'
 import { ToolkitError } from '../../../shared/errors'
-import { UserGroup, crossFileContextConfig, supplemetalContextFetchingTimeoutMsg } from '../../models/constants'
+import { crossFileContextConfig, supplemetalContextFetchingTimeoutMsg } from '../../models/constants'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
-import { CodeWhispererUserGroupSettings } from '../userGroupUtil'
 import { isTestFile } from './codeParsingUtil'
 import { getFileDistance } from '../../../shared/filesystemUtilities'
 import { getOpenFilesInWindow } from '../../../shared/utilities/editorUtilities'
@@ -52,10 +51,7 @@ export async function fetchSupplementalContextForSrc(
     editor: vscode.TextEditor,
     cancellationToken: vscode.CancellationToken
 ): Promise<Pick<CodeWhispererSupplementalContext, 'supplementalContextItems' | 'strategy'> | undefined> {
-    const shouldProceed = shouldFetchCrossFileContext(
-        editor.document.languageId,
-        CodeWhispererUserGroupSettings.instance.userGroup
-    )
+    const shouldProceed = shouldFetchCrossFileContext(editor.document.languageId)
 
     if (!shouldProceed) {
         return shouldProceed === undefined
@@ -155,10 +151,7 @@ function getInputChunk(editor: vscode.TextEditor, chunkSize: number) {
  * @returns specifically returning undefined if the langueage is not supported,
  * otherwise true/false depending on if the language is fully supported or not belonging to the user group
  */
-function shouldFetchCrossFileContext(
-    languageId: vscode.TextDocument['languageId'],
-    userGroup: UserGroup
-): boolean | undefined {
+function shouldFetchCrossFileContext(languageId: vscode.TextDocument['languageId']): boolean | undefined {
     if (!isCrossFileSupported(languageId)) {
         return undefined
     }
@@ -171,7 +164,7 @@ function shouldFetchCrossFileContext(
  * when a given chunk context passes the match in BM25.
  * Special handling is needed for last(its next points to its own) and first chunk
  */
-function linkChunks(chunks: Chunk[]) {
+export function linkChunks(chunks: Chunk[]) {
     const updatedChunks: Chunk[] = []
 
     // This additional chunk is needed to create a next pointer to chunk 0.
@@ -199,7 +192,7 @@ function linkChunks(chunks: Chunk[]) {
 export async function splitFileToChunks(filePath: string, chunkSize: number): Promise<Chunk[]> {
     const chunks: Chunk[] = []
 
-    const fileContent = (await fs.readFileAsString(filePath)).trimEnd()
+    const fileContent = (await fs.readFileText(filePath)).trimEnd()
     const lines = fileContent.split('\n')
 
     for (let i = 0; i < lines.length; i += chunkSize) {

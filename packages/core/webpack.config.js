@@ -36,18 +36,5 @@ module.exports = (env, argv) => {
         },
     }
 
-    const webConfig = {
-        ...baseWebConfigsFactory(env, argv),
-        entry: {
-            // We webpack AND compile at the same time in certain build scripts.
-            // Both webpack and compile can output the same named file, overwriting one another.
-            // Due to this we must ensure the webpack `entry` files have a different
-            // name from the actual source files so we do not overwrite the output
-            // from the compilation.
-            'src/extensionWebCore': './src/extensionWeb.ts',
-            'src/testWeb/testRunnerWebCore': './src/testWeb/testRunner.ts',
-        },
-    }
-
-    return [config, vueConfig, webConfig]
+    return [config, vueConfig]
 }

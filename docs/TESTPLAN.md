@@ -45,8 +45,7 @@ The test suite has the following categories of tests:
 
 ## Test files
 
-Currently, most if not all testing code lives in the subproject `packages/core/`.
-For more information, see [arch_develop.md](./arch_develop.md#monorepo-structure)
+Currently, most testing code lives in the subproject `packages/core/` due to the move to monorepo. See [arch_develop.md](./arch_develop.md#monorepo-structure).
 
 -   `src/test/` : unit tests
     -   `src/test/globalSetup.test.ts` :
@@ -59,6 +58,8 @@ For more information, see [arch_develop.md](./arch_develop.md#monorepo-structure
     -   used by both unit and integration tests
 -   `.vscode/launch.json` : defines VSCode launch configs useful for Toolkit
     developers, e.g. the `Extension Tests` config runs all tests in `src/test/`.
+
+Many tests required running in an activated extension environment, but the core-lib is just a library and does not have any extension to activate itself. Core-lib tests are run from `packages/toolkit`, and web tests are run from `packages/amazonq`.
 
 ## How we test
 

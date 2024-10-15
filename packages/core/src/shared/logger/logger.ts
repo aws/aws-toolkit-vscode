@@ -12,6 +12,11 @@ const toolkitLoggers: {
 } = { main: undefined, debugConsole: undefined }
 
 export interface Logger {
+    /**
+     * Developer-only: Optional log file, which gets all log messages (regardless of the configured
+     * log-level).
+     */
+    logFile?: vscode.Uri
     debug(message: string | Error, ...meta: any[]): number
     verbose(message: string | Error, ...meta: any[]): number
     info(message: string | Error, ...meta: any[]): number
@@ -27,20 +32,22 @@ export interface Logger {
 }
 
 export abstract class BaseLogger implements Logger {
+    logFile?: vscode.Uri
+
     debug(message: string | Error, ...meta: any[]): number {
-        return this.sendToLog('debug', message, meta)
+        return this.sendToLog('debug', message, ...meta)
     }
     verbose(message: string | Error, ...meta: any[]): number {
-        return this.sendToLog('verbose', message, meta)
+        return this.sendToLog('verbose', message, ...meta)
     }
     info(message: string | Error, ...meta: any[]): number {
-        return this.sendToLog('info', message, meta)
+        return this.sendToLog('info', message, ...meta)
     }
     warn(message: string | Error, ...meta: any[]): number {
-        return this.sendToLog('warn', message, meta)
+        return this.sendToLog('warn', message, ...meta)
     }
     error(message: string | Error, ...meta: any[]): number {
-        return this.sendToLog('error', message, meta)
+        return this.sendToLog('error', message, ...meta)
     }
     log(logLevel: LogLevel, message: string | Error, ...meta: any[]): number {
         return this.sendToLog(logLevel, message, ...meta)

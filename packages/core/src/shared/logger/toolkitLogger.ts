@@ -15,7 +15,7 @@ import { ConsoleLogTransport } from './consoleLogTransport'
 import { isWeb } from '../extensionGlobals'
 
 /* define log topics */
-export type LogTopic = 'unknown' | 'test'
+export type LogTopic = 'unknown' | 'test' | 'crashReport'
 
 class ErrorLog {
     constructor(

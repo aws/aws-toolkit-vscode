@@ -3,29 +3,42 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as sinon from 'sinon'
 import assert from 'assert'
 import {
     Ec2InstanceNode,
     Ec2InstancePendingContext,
     Ec2InstanceRunningContext,
     Ec2InstanceStoppedContext,
-    refreshExplorerNode,
 } from '../../../../awsService/ec2/explorer/ec2InstanceNode'
-import { Ec2Client, getNameOfInstance } from '../../../../shared/clients/ec2Client'
+import { Ec2Client, SafeEc2Instance, getNameOfInstance } from '../../../../shared/clients/ec2Client'
 import { Ec2ParentNode } from '../../../../awsService/ec2/explorer/ec2ParentNode'
-import { DefaultAwsContext } from '../../../../shared'
-import { testClient, testInstance, testParentNode } from './ec2ParentNode.test'
+import * as sinon from 'sinon'
+import { PollingSet } from '../../../../shared/utilities/pollingSet'
 
 describe('ec2InstanceNode', function () {
     let testNode: Ec2InstanceNode
-    before(function () {
-        sinon.stub(DefaultAwsContext.prototype, 'getCredentialAccountId')
-        testNode = new Ec2InstanceNode(testParentNode, testClient, 'testRegion', 'testPartition', testInstance)
-    })
+    let testInstance: SafeEc2Instance
+    const testRegion = 'testRegion'
+    const testPartition = 'testPartition'
 
-    after(function () {
-        sinon.restore()
+    before(function () {
+        testInstance = {
+            InstanceId: 'testId',
+            Tags: [
+                {
+                    Key: 'Name',
+                    Value: 'testName',
+                },
+            ],
+            LastSeenStatus: 'running',
+        }
+        sinon.stub(Ec2InstanceNode.prototype, 'updateStatus')
+        // Don't want to be polling here, that is tested in ../ec2ParentNode.test.ts
+        // disabled here for convenience (avoiding race conditions with timeout)
+        sinon.stub(PollingSet.prototype, 'start')
+        const testClient = new Ec2Client('')
+        const testParentNode = new Ec2ParentNode(testRegion, testPartition, testClient)
+        testNode = new Ec2InstanceNode(testParentNode, testClient, 'testRegion', 'testPartition', testInstance)
     })
 
     beforeEach(function () {
@@ -84,27 +97,5 @@ describe('ec2InstanceNode', function () {
         const newIdInstance = { ...testInstance, InstanceId: 'testId2', LastSeenStatus: newStatus }
         testNode.updateInstance(newIdInstance)
         assert.strictEqual(testNode.getStatus(), newStatus)
-    })
-
-    describe('refreshExplorerNode', function () {
-        it('refreshes only parent node', async function () {
-            const parentRefresh = sinon.stub(Ec2ParentNode.prototype, 'refreshNode')
-            const childRefresh = sinon.stub(Ec2InstanceNode.prototype, 'refreshNode')
-
-            await refreshExplorerNode(testNode)
-
-            sinon.assert.called(parentRefresh)
-            sinon.assert.notCalled(childRefresh)
-
-            parentRefresh.resetHistory()
-
-            await refreshExplorerNode(testParentNode)
-
-            sinon.assert.called(parentRefresh)
-            sinon.assert.notCalled(childRefresh)
-
-            parentRefresh.restore()
-            childRefresh.restore()
-        })
     })
 })

@@ -4,7 +4,6 @@
  */
 
 import assert from 'assert'
-import { writeFile, remove } from 'fs-extra'
 import * as path from 'path'
 import { makeTemporaryToolkitFolder } from '../../../../shared/filesystemUtilities'
 import {
@@ -12,8 +11,9 @@ import {
     SamLocalInvokeCommand,
     SamLocalInvokeCommandArgs,
 } from '../../../../shared/sam/cli/samCliLocalInvoke'
-import { ChildProcess } from '../../../../shared/utilities/childProcess'
+import { ChildProcess } from '../../../../shared/utilities/processUtils'
 import { assertArgIsPresent, assertArgNotPresent, assertArgsContainArgument } from './samCliTestUtils'
+import { fs } from '../../../../shared'
 
 describe('SamCliLocalInvokeInvocation', async function () {
     class TestSamLocalInvokeCommand implements SamLocalInvokeCommand {
@@ -34,12 +34,12 @@ describe('SamCliLocalInvokeInvocation', async function () {
         tempFolder = await makeTemporaryToolkitFolder()
         placeholderTemplateFile = path.join(tempFolder, 'template.yaml')
         placeholderEventFile = path.join(tempFolder, 'event.json')
-        await writeFile(placeholderTemplateFile, '')
-        await writeFile(placeholderEventFile, '')
+        await fs.writeFile(placeholderTemplateFile, '')
+        await fs.writeFile(placeholderEventFile, '')
     })
 
     afterEach(async function () {
-        await remove(tempFolder)
+        await fs.delete(tempFolder, { recursive: true })
     })
 
     it('invokes `sam local` with args', async function () {

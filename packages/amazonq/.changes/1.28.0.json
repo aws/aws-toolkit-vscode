@@ -1,0 +1,18 @@
+{
+	"date": "2024-10-03",
+	"version": "1.28.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q /dev: define first folder as a root path for LLM-created files when using workspaces"
+		},
+		{
+			"type": "Feature",
+			"description": "Amazon Q Code Transformation: allow users to skip running tests"
+		},
+		{
+			"type": "Feature",
+			"description": "Amazon Q Developer: Updated legal disclaimer text"
+		}
+	]
+}

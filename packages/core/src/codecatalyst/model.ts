@@ -18,9 +18,8 @@ import { DevEnvClient } from '../shared/clients/devenvClient'
 import { getLogger } from '../shared/logger'
 import { AsyncCollection, toCollection } from '../shared/utilities/asyncCollection'
 import { getCodeCatalystSpaceName, getCodeCatalystProjectName, getCodeCatalystDevEnvId } from '../shared/vscode/env'
-import { writeFile } from 'fs-extra'
 import { sshAgentSocketVariable, startSshAgent, startVscodeRemote } from '../shared/extensions/ssh'
-import { ChildProcess } from '../shared/utilities/childProcess'
+import { ChildProcess } from '../shared/utilities/processUtils'
 import { isDevenvVscode } from './utils'
 import { Timeout } from '../shared/utilities/timeoutUtils'
 import { Commands } from '../shared/vscode/commands2'
@@ -31,6 +30,7 @@ import { ToolkitError } from '../shared/errors'
 import { Result } from '../shared/utilities/result'
 import { VscodeRemoteConnection, ensureDependencies } from '../shared/remoteSession'
 import { SshConfig, sshLogFileLocation } from '../shared/sshConfig'
+import { fs } from '../shared'
 
 export type DevEnvironmentId = Pick<DevEnvironment, 'id' | 'org' | 'project'>
 export const connectScriptPrefix = 'codecatalyst_connect'
@@ -134,7 +134,7 @@ export function createBoundProcess(envProvider: EnvProvider): typeof ChildProces
 }
 
 export async function cacheBearerToken(bearerToken: string, devenvId: string): Promise<void> {
-    await writeFile(bearerTokenCacheLocation(devenvId), `${bearerToken}`, 'utf8')
+    await fs.writeFile(bearerTokenCacheLocation(devenvId), `${bearerToken}`, 'utf8')
 }
 
 export function bearerTokenCacheLocation(devenvId: string): string {

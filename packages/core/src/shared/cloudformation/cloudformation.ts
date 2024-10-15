@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { promises as nodefs } from 'fs'
+import { promises as nodefs } from 'fs' // eslint-disable-line no-restricted-imports
 import * as vscode from 'vscode'
 import { schema } from 'yaml-cfn'
 import * as yaml from 'js-yaml'

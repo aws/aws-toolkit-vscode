@@ -6,7 +6,6 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import { IAM, StepFunctions } from 'aws-sdk'
-import { mkdir, writeFile } from 'fs-extra'
 import * as vscode from 'vscode'
 import { StepFunctionsClient } from '../shared/clients/stepFunctionsClient'
 import { fileExists } from '../shared/filesystemUtilities'
@@ -20,6 +19,7 @@ import {
 import { HttpResourceFetcher } from '../shared/resourcefetcher/httpResourceFetcher'
 import globals from '../shared/extensionGlobals'
 import { fromExtensionManifest } from '../shared/settings'
+import { fs } from '../shared'
 
 const documentSettings: DocumentLanguageSettings = { comments: 'error', trailingCommas: 'error' }
 const languageService = getLanguageService({})
@@ -62,8 +62,16 @@ export class StateMachineGraphCache {
         // eslint-disable-next-line @typescript-eslint/unbound-method
         const { makeDir, writeFile: writeFileCustom, getFileData, fileExists: fileExistsCustom } = options
 
-        this.makeDir = makeDir ?? mkdir
-        this.writeFile = writeFileCustom ?? writeFile
+        this.makeDir =
+            makeDir ??
+            (async (path: string) => {
+                await fs.mkdir(path)
+            })
+        this.writeFile =
+            writeFileCustom ??
+            (async (path: string, data: string, _encoding: string) => {
+                await fs.writeFile(path, data)
+            })
         this.logger = getLogger()
         this.getFileData = getFileData ?? httpsGetRequestWrapper
         this.cssFilePath = options.cssFilePath ?? globals.visualizationResourcePaths.visualizationLibraryCSS.fsPath

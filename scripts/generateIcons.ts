@@ -5,7 +5,7 @@
 
 import webfont from 'webfont'
 import * as path from 'path'
-import * as fs from 'fs-extra'
+import * as nodefs from 'fs' // eslint-disable-line no-restricted-imports
 
 const fontId = 'aws-toolkit-icons'
 const projectDir = process.cwd() // root/packages/toolkit
@@ -13,7 +13,7 @@ const rootDir = path.join(projectDir, '../..') // root/
 const iconsDir = path.join(projectDir, 'resources', 'icons')
 const fontsDir = path.join(projectDir, 'resources', 'fonts')
 const stylesheetsDir = path.join(projectDir, 'resources', 'css')
-const packageJson = JSON.parse(fs.readFileSync(path.join(projectDir, 'package.json'), { encoding: 'utf-8' }))
+const packageJson = JSON.parse(nodefs.readFileSync(path.join(projectDir, 'package.json'), { encoding: 'utf-8' }))
 const iconSources = [
     // Paths relative to packages/toolkit
     `resources/icons/**/*.svg`,
@@ -69,7 +69,7 @@ async function updatePackage(fontPath: string, icons: [id: string, icon: Package
 
     // prettier adds a newline to JSON files
     const newPackage = `${JSON.stringify(packageJson, undefined, 4)}\n`
-    await fs.writeFile(path.join(projectDir, 'package.json'), newPackage)
+    nodefs.writeFileSync(path.join(projectDir, 'package.json'), newPackage)
     console.log('Updated package.json')
 }
 
@@ -81,15 +81,15 @@ const themes = {
 async function generateCloud9Icons(targets: { name: string; path: string }[], destination: string): Promise<void> {
     console.log('Generating icons for Cloud9')
 
-    async function replaceColor(file: string, color: string, dst: string): Promise<void> {
-        const contents = await fs.readFile(file, 'utf-8')
+    function replaceColor(file: string, color: string, dst: string): void {
+        const contents = nodefs.readFileSync(file, 'utf-8')
         const replaced = contents.replace(/currentColor/g, color)
-        await fs.writeFile(dst, replaced)
+        nodefs.writeFileSync(dst, replaced)
     }
 
     for (const [theme, color] of Object.entries(themes)) {
         const themeDest = path.join(destination, theme)
-        await fs.mkdirp(themeDest)
+        nodefs.mkdirSync(themeDest, { recursive: true })
         await Promise.all(targets.map((t) => replaceColor(t.path, color, path.join(themeDest, `${t.name}.svg`))))
     }
 }
@@ -169,9 +169,11 @@ ${result.template}
     const cloud9Dest = path.join(iconsDir, 'cloud9', 'generated')
     const isValidIcon = (i: (typeof icons)[number]): i is Required<typeof i> => i.data !== undefined
 
-    await fs.mkdirp(fontsDir)
-    await fs.writeFile(dest, result.woff)
-    await fs.writeFile(stylesheetPath, template)
+    nodefs.mkdirSync(fontsDir, { recursive: true })
+    if (result.woff) {
+        nodefs.writeFileSync(dest, result.woff)
+    }
+    nodefs.writeFileSync(stylesheetPath, template)
     await updatePackage(
         `./${relativeDest}`,
         icons.filter(isValidIcon).map((i) => [i.name, i.data])
@@ -182,7 +184,7 @@ ${result.template}
     generated.addEntry(stylesheetPath)
     generated.addEntry(cloud9Dest)
 
-    await generated.emit(path.join(projectDir, 'dist'))
+    generated.emit(path.join(projectDir, 'dist'))
 }
 
 class GeneratedFilesManifest {
@@ -192,17 +194,17 @@ class GeneratedFilesManifest {
         this.files.push(file)
     }
 
-    public async emit(dir: string): Promise<void> {
+    public emit(dir: string): void {
         const dest = path.join(dir, 'generated.buildinfo')
         const data = JSON.stringify(this.files, undefined, 4)
-        await fs.mkdirp(dir)
-        await fs.writeFile(dest, data)
+        nodefs.mkdirSync(dir, { recursive: true })
+        nodefs.writeFileSync(dest, data)
     }
 }
 
 async function loadCodiconMappings(): Promise<Record<string, number | undefined>> {
     const codicons = path.join(rootDir, 'node_modules', '@vscode', 'codicons', 'src')
-    const data = JSON.parse(await fs.readFile(path.join(codicons, 'template', 'mapping.json'), 'utf-8'))
+    const data = JSON.parse(nodefs.readFileSync(path.join(codicons, 'template', 'mapping.json'), 'utf-8'))
     const mappings: Record<string, number | undefined> = {}
     for (const [k, v] of Object.entries(data)) {
         if (typeof k === 'string' && typeof v === 'number') {
