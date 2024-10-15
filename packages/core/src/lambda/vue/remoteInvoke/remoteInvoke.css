@@ -1,0 +1,132 @@
+.Icontainer {
+    margin-inline: auto;
+    margin-top: 5rem;
+}
+
+h1 {
+    text-align: left;
+    margin-bottom: 20px;
+}
+
+div {
+    width: 521px;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 150px 1fr;
+    margin-bottom: 10px;
+}
+.form-row-select {
+    width: 387px;
+    height: 28px;
+    border: 1px;
+    border-radius: 5px;
+    gap: 4px;
+    padding: 2px 8px;
+}
+
+.dynamic-span {
+    white-space: nowrap;
+    text-overflow: initial;
+    overflow: scroll;
+    width: 381px;
+    height: 28px;
+    font-weight: 500;
+    font-size: 13px;
+    line-height: 15.51px;
+}
+
+.form-row-event-select {
+    width: 244px;
+    height: 28px;
+    margin-bottom: 15px;
+    margin-left: 8px;
+}
+
+.payload-options {
+    display: grid;
+    grid-template-columns: 150px 1fr;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+label {
+    margin-right: 10px;
+}
+
+span,
+select,
+.payload-options {
+    display: block;
+}
+
+textarea {
+    color: var(--vscode-settings-textInputForeground);
+    background: var(--vscode-settings-textInputBackground);
+    border: 1px solid var(--vscode-settings-textInputBorder);
+}
+
+.payload-options-button {
+    display: grid;
+    align-items: center;
+    border: none;
+    padding: 5px 10px;
+    cursor: pointer;
+    font-size: 0.9em;
+    margin-bottom: 10px;
+}
+
+.button-theme-primary {
+    color: var(--vscode-button-foreground);
+    background: var(--vscode-button-background);
+    border: 1px solid var(--vscode-button-border);
+    padding: 8px 12px;
+}
+.button-theme-primary:hover:not(:disabled) {
+    background: var(--vscode-button-hoverBackground);
+    cursor: pointer;
+}
+.button-theme-secondary {
+    color: var(--vscode-button-secondaryForeground);
+    background: var(--vscode-button-secondaryBackground);
+    border: 1px solid var(--vscode-button-border);
+    padding: 8px 12px;
+}
+.button-theme-secondary:hover:not(:disabled) {
+    background: var(--vscode-button-secondaryHoverBackground);
+    cursor: pointer;
+}
+
+.payload-options-buttons {
+    display: flex;
+    align-items: center;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.radio-selector {
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+}
+
+.label-selector {
+    padding-left: 7px;
+    font-weight: 500;
+    font-size: 13px;
+    line-height: 15.51px;
+    text-align: center;
+}
+
+.form-row-select {
+    display: grid;
+    grid-template-columns: 150px 1fr;
+    margin-bottom: 10px;
+}
+
+.formfield {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}

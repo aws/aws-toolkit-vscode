@@ -32,6 +32,8 @@ import { activateViewsShared, registerToolView } from './activationShared'
 import { isExtensionInstalled } from '../shared/utilities'
 import { CommonAuthViewProvider } from '../login/webview'
 import { setContext } from '../shared'
+import { isTreeNode, TreeNode } from '../shared/treeview/resourceTreeDataProvider'
+import { getSourceNode } from '../shared/utilities/treeNodeUtils'
 
 /**
  * Activates the AWS Explorer UI and related functionality.
@@ -121,6 +123,7 @@ export async function activate(args: {
             refreshCommands: [refreshAmazonQ, refreshAmazonQRootNode],
         })
     }
+
     const viewNodes: ToolView[] = [
         ...amazonQViewNode,
         ...codecatalystViewNode,
@@ -196,8 +199,18 @@ async function registerAwsExplorerCommands(
                     isPreviewAndRender: true,
                 })
         ),
-        Commands.register('aws.copyArn', async (node: AWSResourceNode) => await copyTextCommand(node, 'ARN')),
-        Commands.register('aws.copyName', async (node: AWSResourceNode) => await copyTextCommand(node, 'name')),
+        Commands.register('aws.copyArn', async (node: AWSResourceNode) => {
+            if (isTreeNode(node)) {
+                node = getSourceNode<AWSResourceNode>(node)
+            }
+            await copyTextCommand(node, 'ARN')
+        }),
+        Commands.register('aws.copyName', async (node: AWSResourceNode | TreeNode) => {
+            if (isTreeNode(node)) {
+                node = getSourceNode<AWSResourceNode>(node)
+            }
+            await copyTextCommand(node, 'name')
+        }),
         Commands.register('aws.refreshAwsExplorerNode', async (element: AWSTreeNodeBase | undefined) => {
             awsExplorer.refresh(element)
         }),
