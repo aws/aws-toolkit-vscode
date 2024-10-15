@@ -33,6 +33,7 @@ import { CodeScanIssue } from '../../../../codewhisperer/models/model'
 import { marked } from 'marked'
 import { JSDOM } from 'jsdom'
 import { LspController } from '../../../../amazonq/lsp/lspController'
+import { extractCodeBlockLanguage } from '../../../../shared/markdown'
 
 export type StaticTextResponseType = 'quick-action-help' | 'onboarding-help' | 'transform' | 'help'
 
@@ -87,6 +88,7 @@ export class Messenger {
                     triggerID,
                     messageID: '',
                     userIntent: undefined,
+                    codeBlockLanguage: undefined,
                 },
                 tabID
             )
@@ -131,6 +133,7 @@ export class Messenger {
         let codeReference: CodeReference[] = []
         let followUps: FollowUp[] = []
         let relatedSuggestions: Suggestion[] = []
+        let codeBlockLanguage: string = 'plaintext'
 
         if (response.generateAssistantResponseResponse === undefined) {
             throw new ToolkitError(
@@ -182,7 +185,9 @@ export class Messenger {
                         chatEvent.assistantResponseEvent.content.length > 0
                     ) {
                         message += chatEvent.assistantResponseEvent.content
-
+                        if (codeBlockLanguage === 'plaintext') {
+                            codeBlockLanguage = extractCodeBlockLanguage(message)
+                        }
                         this.dispatcher.sendChatMessage(
                             new ChatMessage(
                                 {
@@ -195,6 +200,7 @@ export class Messenger {
                                     triggerID,
                                     messageID,
                                     userIntent: triggerPayload.userIntent,
+                                    codeBlockLanguage: codeBlockLanguage,
                                 },
                                 tabID
                             )
@@ -272,6 +278,7 @@ export class Messenger {
                                 triggerID,
                                 messageID,
                                 userIntent: triggerPayload.userIntent,
+                                codeBlockLanguage: codeBlockLanguage,
                             },
                             tabID
                         )
@@ -290,6 +297,7 @@ export class Messenger {
                                 triggerID,
                                 messageID,
                                 userIntent: triggerPayload.userIntent,
+                                codeBlockLanguage: undefined,
                             },
                             tabID
                         )
@@ -307,6 +315,7 @@ export class Messenger {
                             triggerID,
                             messageID,
                             userIntent: triggerPayload.userIntent,
+                            codeBlockLanguage: undefined,
                         },
                         tabID
                     )
@@ -431,6 +440,7 @@ export class Messenger {
                     triggerID,
                     messageID: 'static_message_' + triggerID,
                     userIntent: undefined,
+                    codeBlockLanguage: undefined,
                 },
                 tabID
             )

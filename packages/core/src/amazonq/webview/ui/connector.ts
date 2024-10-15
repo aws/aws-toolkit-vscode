@@ -51,6 +51,7 @@ export interface ChatPayload {
 export interface CWCChatItem extends ChatItem {
     traceId?: string
     userIntent?: UserIntent
+    codeBlockLanguage?: string
 }
 
 export interface ConnectorProps {
@@ -248,7 +249,8 @@ export class Connector {
         eventId?: string,
         codeBlockIndex?: number,
         totalCodeBlocks?: number,
-        userIntent?: string
+        userIntent?: string,
+        codeBlockLanguage?: string
     ): void => {
         switch (this.tabsStorage.getTab(tabID)?.type) {
             case 'cwc':
@@ -261,7 +263,8 @@ export class Connector {
                     eventId,
                     codeBlockIndex,
                     totalCodeBlocks,
-                    userIntent
+                    userIntent,
+                    codeBlockLanguage
                 )
                 break
             case 'featuredev':
@@ -337,7 +340,8 @@ export class Connector {
         eventId?: string,
         codeBlockIndex?: number,
         totalCodeBlocks?: number,
-        userIntent?: string
+        userIntent?: string,
+        codeBlockLanguage?: string
     ): void => {
         switch (this.tabsStorage.getTab(tabID)?.type) {
             case 'cwc':
@@ -350,7 +354,8 @@ export class Connector {
                     eventId,
                     codeBlockIndex,
                     totalCodeBlocks,
-                    userIntent
+                    userIntent,
+                    codeBlockLanguage
                 )
                 break
             case 'featuredev':
