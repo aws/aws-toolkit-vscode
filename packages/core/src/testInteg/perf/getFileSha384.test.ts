@@ -20,7 +20,7 @@ interface SetupResult {
 function performanceTestWrapper(label: string, fileSize: number) {
     return performanceTest(
         {
-            testRuns: 1,
+            testRuns: 10,
             linux: {
                 userCpuUsage: 400,
                 systemCpuUsage: 35,

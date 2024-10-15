@@ -31,7 +31,7 @@ type setupResult = {
 function performanceTestWrapper(numFiles: number, fileSize: number) {
     return performanceTest(
         {
-            testRuns: 1,
+            testRuns: 10,
             linux: {
                 userCpuUsage: 150,
                 systemCpuUsage: 35,
