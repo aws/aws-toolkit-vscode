@@ -214,7 +214,7 @@ export class FeatureDevController {
         )
 
         let defaultMessage
-        const isDenyListedError = denyListedErrors.some((err) => errorMessage.includes(err))
+        const isDenyListedError = denyListedErrors.some((denyListedError) => err.message.includes(denyListedError))
 
         switch (err.constructor.name) {
             case ContentLengthError.name:
@@ -222,6 +222,7 @@ export class FeatureDevController {
                     type: 'answer',
                     tabID: message.tabID,
                     message: err.message + messageWithConversationId(session?.conversationIdUnsafe),
+                    canBeVoted: true,
                 })
                 this.messenger.sendAnswer({
                     type: 'system-prompt',
@@ -268,6 +269,7 @@ export class FeatureDevController {
                     type: 'answer',
                     tabID: message.tabID,
                     message: err.message + messageWithConversationId(session?.conversationIdUnsafe),
+                    canBeVoted: true,
                 })
                 this.messenger.sendAnswer({
                     type: 'system-prompt',

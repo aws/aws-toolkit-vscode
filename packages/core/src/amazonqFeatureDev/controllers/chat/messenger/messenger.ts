@@ -85,6 +85,7 @@ export class Messenger {
                 type: 'answer',
                 tabID: tabID,
                 message: showDefaultMessage ? errorMessage : i18n('AWS.amazonq.featureDev.error.technicalDifficulties'),
+                canBeVoted: true,
             })
             this.sendFeedback(tabID)
             return
