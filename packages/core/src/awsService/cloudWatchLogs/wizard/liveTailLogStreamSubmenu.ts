@@ -2,20 +2,20 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { Prompter, PromptResult } from '../../shared/ui/prompter'
-import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
-import { createCommonButtons } from '../../shared/ui/buttons'
-import { createInputBox, InputBoxPrompter } from '../../shared/ui/inputPrompter'
-import { createQuickPick, DataQuickPickItem, QuickPickPrompter } from '../../shared/ui/pickerPrompter'
-import { pageableToCollection } from '../../shared/utilities/collectionUtils'
+import { Prompter, PromptResult } from '../../../shared/ui/prompter'
+import { DefaultCloudWatchLogsClient } from '../../../shared/clients/cloudWatchLogsClient'
+import { createCommonButtons } from '../../../shared/ui/buttons'
+import { createInputBox, InputBoxPrompter } from '../../../shared/ui/inputPrompter'
+import { createQuickPick, DataQuickPickItem, QuickPickPrompter } from '../../../shared/ui/pickerPrompter'
+import { pageableToCollection } from '../../../shared/utilities/collectionUtils'
 import { CloudWatchLogs } from 'aws-sdk'
-import { isValidResponse, StepEstimator } from '../../shared/wizards/wizard'
-import { isNonNullable } from '../../shared/utilities/tsUtils'
+import { isValidResponse, StepEstimator } from '../../../shared/wizards/wizard'
+import { isNonNullable } from '../../../shared/utilities/tsUtils'
 import {
     startLiveTailHelpUrl,
     startLiveTailLogStreamNamesHelpUrl,
     startLiveTailLogStreamPrefixHelpUrl,
-} from '../../shared/constants'
+} from '../../../shared/constants'
 
 export type LogStreamFilterType = 'menu' | 'prefix' | 'specific' | 'all'
 

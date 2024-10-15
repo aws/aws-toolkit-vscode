@@ -4,10 +4,11 @@
  */
 import * as vscode from 'vscode'
 import { CloudWatchLogsClient, StartLiveTailCommand, StartLiveTailCommandOutput } from '@aws-sdk/client-cloudwatch-logs'
-import { LogStreamFilterResponse } from '../liveTailLogStreamSubmenu'
+import { LogStreamFilterResponse } from '../wizard/liveTailLogStreamSubmenu'
 import { CloudWatchLogsSettings } from '../cloudWatchLogsUtils'
 import { Settings, ToolkitError } from '../../../shared'
 import { createLiveTailURIFromArgs } from './liveTailSessionRegistry'
+import { getUserAgent } from '../../../shared/telemetry/util'
 
 export type LiveTailSessionConfiguration = {
     logGroupName: string
@@ -35,7 +36,10 @@ export class LiveTailSession {
         this._logGroupName = configuration.logGroupName
         this.logStreamFilter = configuration.logStreamFilter
         this.liveTailClient = {
-            cwlClient: new CloudWatchLogsClient({ region: configuration.region }),
+            cwlClient: new CloudWatchLogsClient({
+                region: configuration.region,
+                customUserAgent: getUserAgent(),
+            }),
             abortController: new AbortController(),
         }
         this._maxLines = LiveTailSession.settings.get('liveTailMaxEvents', 10000)
