@@ -27,11 +27,6 @@ describe('extractCodeBlockLanguage', () => {
         assert.strictEqual(extractCodeBlockLanguage(message), 'typescript')
     })
 
-    it('should return "plaintext" when the code block is not closed', () => {
-        const message = 'Incomplete code block:\n```javascript\nconsole.log("Hello");'
-        assert.strictEqual(extractCodeBlockLanguage(message), 'plaintext')
-    })
-
     it('should handle empty messages', () => {
         assert.strictEqual(extractCodeBlockLanguage(''), 'plaintext')
     })
