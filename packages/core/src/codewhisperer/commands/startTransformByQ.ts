@@ -791,7 +791,7 @@ export async function postTransformationJob() {
     const durationInMs = calculateTotalLatency(CodeTransformTelemetryState.instance.getStartTime())
     const resultStatusMessage = transformByQState.getStatus()
 
-    if (!transformByQState.getMetadataPathSQL()) {
+    if (!transformByQState.getSchema()) {
         // the below is only applicable when user is doing a Java 8/11 language upgrade
         const versionInfo = await getVersionData()
         const mavenVersionInfoMessage = `${versionInfo[0]} (${transformByQState.getMavenName()})`
