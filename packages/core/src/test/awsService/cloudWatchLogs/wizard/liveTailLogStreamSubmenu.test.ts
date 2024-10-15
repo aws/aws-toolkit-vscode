@@ -4,9 +4,9 @@
  */
 
 import assert from 'assert'
-import { LogStreamFilterSubmenu } from '../../../awsService/cloudWatchLogs/liveTailLogStreamSubmenu'
-import { createQuickPickPrompterTester, QuickPickPrompterTester } from '../../shared/ui/testUtils'
-import { getTestWindow } from '../../shared/vscode/window'
+import { LogStreamFilterSubmenu } from '../../../../awsService/cloudWatchLogs/wizard/liveTailLogStreamSubmenu'
+import { createQuickPickPrompterTester, QuickPickPrompterTester } from '../../../shared/ui/testUtils'
+import { getTestWindow } from '../../../shared/vscode/window'
 
 describe('liveTailLogStreamSubmenu', async function () {
     let logStreamFilterSubmenu: LogStreamFilterSubmenu

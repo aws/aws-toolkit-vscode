@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { TailLogGroupWizard } from '../../../../awsService/cloudWatchLogs/commands/tailLogGroup'
+import { TailLogGroupWizard } from '../../../../awsService/cloudWatchLogs/wizard/tailLogGroupWizard'
 import { createWizardTester } from '../../../shared/wizards/wizardTestUtils'
 
 describe('TailLogGroupWizard', async function () {
