@@ -5,10 +5,8 @@
 import * as vscode from 'vscode'
 import { CLOUDWATCH_LOGS_LIVETAIL_SCHEME } from '../../../shared/constants'
 import { LiveTailSession, LiveTailSessionConfiguration } from './liveTailSession'
-import { ToolkitError } from '../../../shared'
-import { NestedMap } from '../../../shared/utilities/map'
 
-export class LiveTailSessionRegistry extends NestedMap<vscode.Uri, LiveTailSession> {
+export class LiveTailSessionRegistry extends Map<vscode.Uri, LiveTailSession> {
     static #instance: LiveTailSessionRegistry
 
     public static get instance() {
@@ -17,18 +15,6 @@ export class LiveTailSessionRegistry extends NestedMap<vscode.Uri, LiveTailSessi
 
     public constructor() {
         super()
-    }
-
-    protected override hash(uri: vscode.Uri): string {
-        return uri.toString()
-    }
-
-    protected override get name(): string {
-        return LiveTailSessionRegistry.name
-    }
-
-    protected override get default(): LiveTailSession {
-        throw new ToolkitError('No LiveTailSession found for provided uri.')
     }
 }
 
