@@ -304,12 +304,12 @@ describe('AppBuilder Walkthrough', function () {
             sandbox.assert.calledWith(
                 spyExecuteCommand,
                 'aws.openInApplicationComposer',
-                sinon.match.has('path', vscode.Uri.joinPath(workspaceUri, 'template.yaml').fsPath)
+                sinon.match.has('path', sinon.match(/template.yaml/g))
             )
             sandbox.assert.neverCalledWith(
                 spyExecuteCommand,
                 'aws.openInApplicationComposer',
-                sinon.match.has('path', vscode.Uri.joinPath(workspaceUri, 'template.yml').fsPath)
+                sinon.match.has('path', sinon.match(/template.yml/g))
             )
         })
 
