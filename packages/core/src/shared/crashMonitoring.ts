@@ -18,6 +18,7 @@ import { getLogger } from './logger/logger'
 import { crashMonitoringDirNames } from './constants'
 import { throwOnUnstableFileSystem } from './filesystemUtilities'
 import { withRetries } from './utilities/functionUtils'
+import { TimeLag } from './utilities/timeoutUtils'
 
 const className = 'CrashMonitoring'
 
@@ -112,15 +113,17 @@ export class CrashMonitoring {
 
         try {
             this.heartbeat = new Heartbeat(this.state, this.checkInterval, this.isDevMode)
+            this.heartbeat.onFailure(() => this.cleanup())
+
             this.crashChecker = new CrashChecker(this.state, this.checkInterval, this.isDevMode, this.devLogger)
+            this.crashChecker.onFailure(() => this.cleanup())
 
             await this.heartbeat.start()
             await this.crashChecker.start()
         } catch (error) {
             emitFailure({ functionName: 'start', error })
             try {
-                this.crashChecker?.cleanup()
-                await this.heartbeat?.cleanup()
+                await this.cleanup()
             } catch {}
 
             // Surface errors during development, otherwise it can be missed.
@@ -146,6 +149,11 @@ export class CrashMonitoring {
             }
         }
     }
+
+    public async cleanup() {
+        this.crashChecker?.cleanup()
+        await this.heartbeat?.cleanup()
+    }
 }
 
 /**
@@ -154,15 +162,19 @@ export class CrashMonitoring {
  */
 class Heartbeat {
     private intervalRef: NodeJS.Timer | undefined
+    private _onFailure = new vscode.EventEmitter<void>()
+    public onFailure: vscode.Event<void> = this._onFailure.event
+    private readonly heartbeatInterval: number
+
     constructor(
         private readonly state: FileSystemState,
-        private readonly checkInterval: number,
+        checkInterval: number,
         private readonly isDevMode: boolean
-    ) {}
+    ) {
+        this.heartbeatInterval = checkInterval / 2
+    }
 
     public async start() {
-        const heartbeatInterval = this.checkInterval / 2
-
         // Send an initial heartbeat immediately
         await withFailCtx('initialSendHeartbeat', () => this.state.sendHeartbeat())
 
@@ -179,14 +191,15 @@ class Heartbeat {
                 if (this.isDevMode) {
                     throw e
                 }
+                this._onFailure.fire()
             }
-        }, heartbeatInterval)
+        }, this.heartbeatInterval)
     }
 
     /** Stops everything, signifying a graceful shutdown */
     public async shutdown() {
         globals.clock.clearInterval(this.intervalRef)
-        return this.state.indicateGracefulShutdown()
+        await this.state.indicateGracefulShutdown()
     }
 
     /**
@@ -217,34 +230,55 @@ class Heartbeat {
  */
 class CrashChecker {
     private intervalRef: NodeJS.Timer | undefined
+    private _onFailure = new vscode.EventEmitter<void>()
+    public onFailure = this._onFailure.event
 
     constructor(
         private readonly state: FileSystemState,
         private readonly checkInterval: number,
         private readonly isDevMode: boolean,
-        private readonly devLogger: Logger | undefined
+        private readonly devLogger: Logger | undefined,
+        /**
+         * This class is required for the following edge case:
+         * 1. Heartbeat is sent
+         * 2. Computer goes to sleep for X minutes
+         * 3. Wake up computer. But before a new heartbeat can be sent, a crash checker (can be from another ext instance) runs
+         *   and sees a stale heartbeat. It assumes a crash.
+         *
+         * Why? Intervals do not run while the computer is asleep, so the latest heartbeat has a "lag" since it wasn't able to send
+         *      a new heartbeat.
+         *      Then on wake, there is a racecondition for the next heartbeat to be sent before the next crash check. If the crash checker
+         *      runs first it will incorrectly conclude a crash.
+         *
+         * Solution: Keep track of the lag, and then skip the next crash check if there was a lag. This will give time for the
+         *           next heartbeat to be sent.
+         */
+        private readonly timeLag: TimeLag = new TimeLag()
     ) {}
 
     public async start() {
         {
             this.devLogger?.debug(`crashMonitoring: checkInterval ${this.checkInterval}`)
 
+            this.timeLag.start()
+
             // do an initial check
             await withFailCtx('initialCrashCheck', () =>
-                tryCheckCrash(this.state, this.checkInterval, this.isDevMode, this.devLogger)
+                tryCheckCrash(this.state, this.checkInterval, this.isDevMode, this.devLogger, this.timeLag)
             )
 
             // check on an interval
             this.intervalRef = globals.clock.setInterval(async () => {
                 try {
-                    await tryCheckCrash(this.state, this.checkInterval, this.isDevMode, this.devLogger)
+                    await tryCheckCrash(this.state, this.checkInterval, this.isDevMode, this.devLogger, this.timeLag)
                 } catch (e) {
                     emitFailure({ functionName: 'checkCrashInterval', error: e })
-                    this.cleanup()
 
                     if (this.isDevMode) {
                         throw e
                     }
+
+                    this._onFailure.fire()
                 }
             }, this.checkInterval)
         }
@@ -255,8 +289,15 @@ class CrashChecker {
             state: FileSystemState,
             checkInterval: number,
             isDevMode: boolean,
-            devLogger: Logger | undefined
+            devLogger: Logger | undefined,
+            timeLag: TimeLag
         ) {
+            if (await timeLag.didLag()) {
+                timeLag.reset()
+                devLogger?.warn('crashMonitoring: SKIPPED check crash due to time lag')
+                return
+            }
+
             // Iterate all known extensions and for each check if they have crashed
             const knownExts = await state.getAllExts()
             const runningExts: ExtInstanceHeartbeat[] = []
@@ -320,11 +361,12 @@ class CrashChecker {
     /** Use this on failures to terminate the crash checker */
     public cleanup() {
         globals.clock.clearInterval(this.intervalRef)
+        this.timeLag.cleanup()
     }
 
     /** Mimics a crash, only for testing */
     public testCrash() {
-        globals.clock.clearInterval(this.intervalRef)
+        this.cleanup()
     }
 }
 
@@ -617,7 +659,10 @@ export type ExtInstance = {
     isDebug?: boolean
 }
 
-type ExtInstanceHeartbeat = ExtInstance & { lastHeartbeat: number }
+type ExtInstanceHeartbeat = ExtInstance & {
+    /** Timestamp of the last heartbeat in milliseconds */
+    lastHeartbeat: number
+}
 
 function isExtHeartbeat(ext: unknown): ext is ExtInstanceHeartbeat {
     return typeof ext === 'object' && ext !== null && 'lastHeartbeat' in ext && ext.lastHeartbeat !== undefined
