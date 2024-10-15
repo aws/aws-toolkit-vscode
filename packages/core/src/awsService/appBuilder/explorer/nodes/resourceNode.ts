@@ -35,6 +35,7 @@ export class ResourceNode implements TreeNode {
         private readonly stackName?: string,
         private readonly region?: string,
         private readonly deployedResource?: StackResource,
+        // TODO: cleanup or rename functionArn parameter as type can be differ from Lambda; value never set in generateResourceNodes()
         private readonly functionArn?: string
     ) {}
 
@@ -51,10 +52,11 @@ export class ResourceNode implements TreeNode {
     }
 
     public async getChildren() {
-        let deployedNode: DeployedResourceNode[] = []
+        let deployedNodes: DeployedResourceNode[] = []
+        let propertyNodes: TreeNode[] = []
 
         if (this.deployedResource && this.region && this.stackName) {
-            deployedNode = await generateDeployedNode(
+            deployedNodes = await generateDeployedNode(
                 this.deployedResource,
                 this.region,
                 this.stackName,
@@ -62,10 +64,10 @@ export class ResourceNode implements TreeNode {
             )
         }
         if (this.resourceTreeEntity.Type === SERVERLESS_FUNCTION_TYPE) {
-            return [...generatePropertyNodes(this.resourceTreeEntity), ...deployedNode]
-        } else {
-            return [...deployedNode]
+            propertyNodes = generatePropertyNodes(this.resourceTreeEntity)
         }
+
+        return [...propertyNodes, ...deployedNodes]
     }
 
     public getTreeItem(): vscode.TreeItem {

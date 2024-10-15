@@ -10,7 +10,6 @@ import * as vscode from 'vscode'
 import { getLogger } from '../../../../shared/logger'
 import { ResourceTreeEntity, SamAppLocation, getApp, getStackName } from '../samProject'
 import { ResourceNode, generateResourceNodes } from './resourceNode'
-import { generateStackNode } from './deployedStack'
 import { TreeNode } from '../../../../shared/treeview/resourceTreeDataProvider'
 import { createPlaceholderItem } from '../../../../shared/treeview/utils'
 import { getIcon } from '../../../../shared/icons'
@@ -19,6 +18,7 @@ import { SamCliListResourcesParameters } from '../../../../shared/sam/cli/samCli
 import { getDeployedResources, StackResource } from '../../../../lambda/commands/listSamResources'
 import * as path from 'path'
 import fs from '../../../../shared/fs/fs'
+import { StackNameNode } from './deployedStack'
 
 export class AppNode implements TreeNode {
     public readonly id = this.location.samTemplateUri.toString()
@@ -53,7 +53,7 @@ export class AppNode implements TreeNode {
                 : undefined
             // Skip generating stack node if stack does not exist in region or other errors
             if (deployedResources && deployedResources.length > 0) {
-                resources.push(...generateStackNode(this.location, this.stackName, region))
+                resources.push(new StackNameNode(this.stackName, region))
             }
             resources.push(
                 ...generateResourceNodes(this.location, templateResources, this.stackName, region, deployedResources)

@@ -11,11 +11,17 @@ export interface StackResource {
     PhysicalResourceId: string
 }
 
+/*
+This function return exclusively the deployed resources
+Newly added but yet-to-be deployed resources are not included in this result
+*/
 export async function getDeployedResources(params: any) {
     try {
-        return await runSamCliListResource(params.listResourcesParams, params.invoker).then((output) =>
-            parseSamListResourceOutput(output)
+        const samCliListResourceOutput = await runSamCliListResource(params.listResourcesParams, params.invoker).then(
+            (output) => parseSamListResourceOutput(output)
         )
+        // Filter out resources that are not deployed
+        return samCliListResourceOutput.filter((resource) => resource.PhysicalResourceId !== '-')
     } catch (err) {
         const error = err as Error
         getLogger().error(error)
