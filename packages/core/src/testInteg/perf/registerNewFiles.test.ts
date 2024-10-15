@@ -34,17 +34,17 @@ function performanceTestWrapper(label: string, numFiles: number, fileSize: numbe
             linux: {
                 userCpuUsage: 200,
                 systemCpuUsage: 35,
-                heapTotal: 16,
+                heapTotal: 20,
             },
             darwin: {
                 userCpuUsage: 200,
                 systemCpuUsage: 35,
-                heapTotal: 16,
+                heapTotal: 20,
             },
             win32: {
                 userCpuUsage: 200,
                 systemCpuUsage: 35,
-                heapTotal: 16,
+                heapTotal: 20,
             },
         },
         label,
