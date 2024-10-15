@@ -5,24 +5,23 @@
 
 import { Ec2Node } from './explorer/ec2ParentNode'
 import { SafeEc2Instance, Ec2Client } from '../../shared/clients/ec2Client'
-import { Ec2ConnectionManagerMap } from './activation'
 import { copyToClipboard } from '../../shared/utilities/messages'
 import { getAwsConsoleUrl } from '../../shared/awsConsole'
 import { showRegionPrompter } from '../../auth/utils'
 import { openUrl } from '../../shared/utilities/vsCodeUtils'
 import { Ec2Prompter, Ec2Selection, instanceFilter } from './prompter'
 import { Ec2InstanceNode } from './explorer/ec2InstanceNode'
-import { Ec2ConnectionManager } from './model'
+import { Ec2ConnectionManagerMap } from './connectionManagerMap'
 
 export async function openTerminal(connectionManagers: Ec2ConnectionManagerMap, node?: Ec2Node) {
     const selection = await getSelection(node)
-    const connectionManager = await getConnectionManager(connectionManagers, selection)
+    const connectionManager = connectionManagers.getOrInit(selection.region)
     await connectionManager.attemptToOpenEc2Terminal(selection)
 }
 
 export async function openRemoteConnection(connectionManagers: Ec2ConnectionManagerMap, node?: Ec2Node) {
     const selection = await getSelection(node)
-    const connectionManager = await getConnectionManager(connectionManagers, selection)
+    const connectionManager = connectionManagers.getOrInit(selection.region)
     await connectionManager.tryOpenRemoteConnection(selection)
 }
 
@@ -60,17 +59,4 @@ async function getSelection(node?: Ec2Node, filter?: instanceFilter): Promise<Ec
 
 export async function copyInstanceId(instanceId: string): Promise<void> {
     await copyToClipboard(instanceId, 'Id')
-}
-
-export async function getConnectionManager(
-    connectionManagers: Ec2ConnectionManagerMap,
-    selection: Ec2Selection
-): Promise<Ec2ConnectionManager> {
-    if (connectionManagers.has(selection.region)) {
-        return connectionManagers.get(selection.region)!
-    } else {
-        const newConnectionManager = new Ec2ConnectionManager(selection.region)
-        connectionManagers.set(selection.region, newConnectionManager)
-        return newConnectionManager
-    }
 }

@@ -44,7 +44,7 @@ describe('Ec2RemoteSessionManager', async function () {
         await envManager.addSession('test-instance2', 'test-env2')
         await envManager.addSession('test-instance3', 'test-env3')
 
-        await envManager.closeConnections()
+        await envManager.dispose()
 
         sinon.assert.calledThrice(terminateStub)
         assert(!envManager.isConnectedTo('test-instance'))

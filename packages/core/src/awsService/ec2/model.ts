@@ -40,7 +40,7 @@ export interface Ec2RemoteEnv extends VscodeRemoteConnection {
     ssmSession: SSM.StartSessionResponse
 }
 
-export class Ec2ConnectionManager {
+export class Ec2ConnectionManager implements vscode.Disposable {
     protected ssmClient: SsmClient
     protected ec2Client: Ec2Client
     protected iamClient: DefaultIamClient
@@ -77,8 +77,8 @@ export class Ec2ConnectionManager {
         await this.sessionManager.addSession(instanceId, sessionId)
     }
 
-    public async closeConnections(): Promise<void> {
-        await this.sessionManager.closeConnections()
+    public async dispose(): Promise<void> {
+        await this.sessionManager.dispose()
     }
 
     public isConnectedTo(instanceId: string): boolean {

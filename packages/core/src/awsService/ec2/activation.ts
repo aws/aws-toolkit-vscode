@@ -5,14 +5,11 @@
 import { ExtContext } from '../../shared/extensions'
 import { Commands } from '../../shared/vscode/commands2'
 import { telemetry } from '../../shared/telemetry/telemetry'
-import { Ec2InstanceNode, refreshExplorerNode } from './explorer/ec2InstanceNode'
+import { Ec2InstanceNode, tryRefreshNode } from './explorer/ec2InstanceNode'
 import { copyTextCommand } from '../../awsexplorer/commands/copyText'
 import { Ec2Node } from './explorer/ec2ParentNode'
-import { Ec2ConnectionManager } from './model'
 
-export type Ec2ConnectionManagerMap = Map<string, Ec2ConnectionManager>
-
-const connectionManagers = new Map<string, Ec2ConnectionManager>()
+const connectionManagers = new Ec2ConnectionManagerMap()
 import {
     openRemoteConnection,
     openTerminal,
@@ -21,6 +18,7 @@ import {
     stopInstance,
     linkToLaunchInstance,
 } from './commands'
+import { Ec2ConnectionManagerMap } from './connectionManagerMap'
 
 export async function activate(ctx: ExtContext): Promise<void> {
     ctx.extensionContext.subscriptions.push(
@@ -43,7 +41,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
             await telemetry.ec2_changeState.run(async (span) => {
                 span.record({ ec2InstanceState: 'start' })
                 await startInstance(node)
-                await refreshExplorerNode(node)
+                await tryRefreshNode(node)
             })
         }),
 
@@ -51,7 +49,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
             await telemetry.ec2_changeState.run(async (span) => {
                 span.record({ ec2InstanceState: 'stop' })
                 await stopInstance(node)
-                await refreshExplorerNode(node)
+                await tryRefreshNode(node)
             })
         }),
 
@@ -59,7 +57,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
             await telemetry.ec2_changeState.run(async (span) => {
                 span.record({ ec2InstanceState: 'reboot' })
                 await rebootInstance(node)
-                await refreshExplorerNode(node)
+                await tryRefreshNode(node)
             })
         }),
 
@@ -72,5 +70,5 @@ export async function activate(ctx: ExtContext): Promise<void> {
 }
 
 export async function deactivate(): Promise<void> {
-    connectionManagers.forEach(async (manager) => await manager.closeConnections())
+    connectionManagers.forEach(async (manager) => await manager.dispose())
 }

@@ -5,37 +5,38 @@
 
 import { EC2, SSM } from 'aws-sdk'
 import { SsmClient } from '../../shared/clients/ssmClient'
+import { Disposable } from 'vscode'
 
-export class Ec2RemoteSessionManager {
-    private activeSessions: Map<EC2.InstanceId, SSM.SessionId>
+export class Ec2RemoteSessionManager extends Map<EC2.InstanceId, SSM.SessionId> implements Disposable {
+    //private activeSessions: Map<EC2.InstanceId, SSM.SessionId>
 
     public constructor(
         readonly regionCode: string,
         protected ssmClient: SsmClient
     ) {
-        this.activeSessions = new Map<EC2.InstanceId, SSM.SessionId>()
+        super()
     }
 
     public async addSession(instanceId: EC2.InstanceId, sessionId: SSM.SessionId): Promise<void> {
         if (this.isConnectedTo(instanceId)) {
-            const existingSessionId = this.activeSessions.get(instanceId)!
+            const existingSessionId = this.get(instanceId)!
             await this.ssmClient.terminateSessionFromId(existingSessionId)
-            this.activeSessions.set(instanceId, sessionId)
+            this.set(instanceId, sessionId)
         } else {
-            this.activeSessions.set(instanceId, sessionId)
+            this.set(instanceId, sessionId)
         }
     }
 
     private async disconnectEnv(instanceId: EC2.InstanceId): Promise<void> {
-        await this.ssmClient.terminateSessionFromId(this.activeSessions.get(instanceId)!)
-        this.activeSessions.delete(instanceId)
+        await this.ssmClient.terminateSessionFromId(this.get(instanceId)!)
+        this.delete(instanceId)
     }
 
-    public async closeConnections(): Promise<void> {
-        this.activeSessions.forEach(async (_sessionId, instanceId) => await this.disconnectEnv(instanceId))
+    public async dispose(): Promise<void> {
+        this.forEach(async (_sessionId, instanceId) => await this.disconnectEnv(instanceId))
     }
 
     public isConnectedTo(instanceId: EC2.InstanceId): boolean {
-        return this.activeSessions.has(instanceId)
+        return this.has(instanceId)
     }
 }

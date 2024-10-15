@@ -103,7 +103,7 @@ export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode 
     }
 }
 
-export async function refreshExplorerNode(node?: Ec2Node) {
+export async function tryRefreshNode(node?: Ec2Node) {
     if (node) {
         const n = node instanceof Ec2InstanceNode ? node.parent : node
         try {

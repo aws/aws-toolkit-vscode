@@ -4,16 +4,14 @@
  */
 
 import assert from 'assert'
-import { Ec2ConnectionManagerMap } from '../../../awsService/ec2/activation'
-import { getConnectionManager } from '../../../awsService/ec2/commands'
-import { Ec2ConnectionManager } from '../../../awsService/ec2/model'
 import { Ec2Selection } from '../../../awsService/ec2/prompter'
+import { Ec2ConnectionManagerMap } from '../../../awsService/ec2/connectionManagerMap'
 
 describe('getConnectionManager', async function () {
     let connectionManagers: Ec2ConnectionManagerMap
 
     beforeEach(function () {
-        connectionManagers = new Map<string, Ec2ConnectionManager>()
+        connectionManagers = new Ec2ConnectionManagerMap()
     })
 
     it('only creates new connection managers once for each region ', async function () {
@@ -22,12 +20,12 @@ describe('getConnectionManager', async function () {
             instanceId: 'fake-id',
         }
 
-        const cm = await getConnectionManager(connectionManagers, fakeSelection)
+        const cm = connectionManagers.getOrInit(fakeSelection.region)
         assert.strictEqual(connectionManagers.size, 1)
 
         await cm.addActiveSession('sessionId', 'instanceId')
 
-        const cm2 = await getConnectionManager(connectionManagers, fakeSelection)
+        const cm2 = connectionManagers.getOrInit(fakeSelection.region)
 
         assert.strictEqual(cm2.isConnectedTo('instanceId'), true)
     })
