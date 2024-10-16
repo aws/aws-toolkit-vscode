@@ -4,7 +4,7 @@
  */
 
 import * as logger from '../../logger'
-import { ChildProcess, ChildProcessResult } from '../../utilities/childProcess'
+import { ChildProcess, ChildProcessResult } from '../../utilities/processUtils'
 import {
     addTelemetryEnvVar,
     makeRequiredSamCliProcessInvokeOptions,

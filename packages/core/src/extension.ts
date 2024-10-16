@@ -16,8 +16,8 @@ import * as nls from 'vscode-nls'
 import globals, { initialize, isWeb } from './shared/extensionGlobals'
 import { join } from 'path'
 import { Commands } from './shared/vscode/commands2'
-import { documentationUrl, endpointsFileUrl, githubCreateIssueUrl, githubUrl } from './shared/constants'
-import { getIdeProperties, aboutExtension, isCloud9 } from './shared/extensionUtilities'
+import { endpointsFileUrl, githubCreateIssueUrl, githubUrl } from './shared/constants'
+import { getIdeProperties, aboutExtension, isCloud9, getDocUrl } from './shared/extensionUtilities'
 import { logAndShowError, logAndShowWebviewError } from './shared/utilities/logAndShowUtils'
 import { AuthStatus, telemetry } from './shared/telemetry/telemetry'
 import { openUrl } from './shared/utilities/vsCodeUtils'
@@ -55,7 +55,7 @@ import { registerCommands } from './commands'
 // In web mode everything must be in a single file, so things like the endpoints file will not be available.
 // The following imports the endpoints file, which causes webpack to bundle it in the final output file
 import endpoints from '../resources/endpoints.json'
-import { getLogger, setupUninstallHandler } from './shared'
+import { getLogger, maybeShowMinVscodeWarning, setupUninstallHandler } from './shared'
 import { showViewLogsMessage } from './shared/utilities/messages'
 
 disableAwsSdkWarning()
@@ -101,6 +101,8 @@ export async function activateCommon(
     if (homeDirLogs.length > 0) {
         getLogger().error('fs.init: invalid home directory given by env vars: %O', homeDirLogs)
     }
+
+    void maybeShowMinVscodeWarning('1.83.0')
 
     if (isCloud9()) {
         vscode.window.withProgress = wrapWithProgressForCloud9(globals.outputChannel)
@@ -149,13 +151,13 @@ export async function activateCommon(
         ),
         // register URLs in extension menu
         Commands.register(`aws.toolkit.help`, async () => {
-            void openUrl(vscode.Uri.parse(documentationUrl))
+            void openUrl(getDocUrl())
             telemetry.aws_help.emit()
         })
     )
 
     // Handle AWS Toolkit un-installation.
-    setupUninstallHandler(VSCODE_EXTENSION_ID.awstoolkit, context)
+    setupUninstallHandler(VSCODE_EXTENSION_ID.awstoolkit, context.extension.id, context)
 
     // auth
     await initializeAuth(globals.loginManager)

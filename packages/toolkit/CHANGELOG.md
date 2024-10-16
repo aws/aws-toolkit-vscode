@@ -1,3 +1,22 @@
+## 3.28.0 2024-10-10
+
+- **Breaking Change** Bumping VS Code minimum version to 1.83.0
+- **Bug Fix** update animate graph for infraComposer in toolkit README
+- **Deprecation** The next release of this extension will require VS Code 1.83.0 or newer.
+- **Feature** Show a one-time warning if new VS Code is required
+- **Removal** Minimum required VSCode version is now 1.83
+
+## 3.27.0 2024-10-03
+
+- **Bug Fix** rename Application Composer to Infrastructure Composer
+
+## 3.26.0 2024-09-27
+
+- **Bug Fix** EC2 connect: remote connection will no longer fail with 'too many authentication attempt'
+- **Feature** EC2 connect: use ed25519 to generate ec2 ssh key pair
+- **Feature** EC2 connect: default to ed25519, but fall back on rsa if unsupported
+- **Feature** EC2: Launch ec2 instances from AWS Explorer
+
 ## 3.25.0 2024-09-19
 
 - **Bug Fix** no longer gives option to copy instance id on ec2 parent node.

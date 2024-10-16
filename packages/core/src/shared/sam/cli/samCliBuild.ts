@@ -9,7 +9,7 @@ import { logAndThrowIfUnexpectedExitCode, SamCliProcessInvoker } from './samCliI
 import { pushIf } from '../../utilities/collectionUtils'
 import { localize } from '../../utilities/vsCodeUtils'
 import { Timeout, waitTimeout } from '../../utilities/timeoutUtils'
-import { ChildProcessResult } from '../../utilities/childProcess'
+import { ChildProcessResult } from '../../utilities/processUtils'
 import { dirname } from 'path'
 
 export interface SamCliBuildInvocationArguments {

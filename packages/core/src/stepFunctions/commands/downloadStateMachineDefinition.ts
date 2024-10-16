@@ -8,7 +8,6 @@ import * as os from 'os'
 const localize = nls.loadMessageBundle()
 
 import { StepFunctions } from 'aws-sdk'
-import * as fs from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { DefaultStepFunctionsClient, StepFunctionsClient } from '../../shared/clients/stepFunctionsClient'
@@ -18,6 +17,7 @@ import { Result } from '../../shared/telemetry/telemetry'
 import { StateMachineNode } from '../explorer/stepFunctionsNodes'
 import { previewStateMachineCommand } from '../activation'
 import { telemetry } from '../../shared/telemetry/telemetry'
+import { fs } from '../../shared'
 
 export async function downloadStateMachineDefinition(params: {
     outputChannel: vscode.OutputChannel
@@ -50,7 +50,7 @@ export async function downloadStateMachineDefinition(params: {
 
             if (fileInfo) {
                 const filePath = fileInfo.fsPath
-                fs.writeFileSync(filePath, stateMachineDetails.definition, 'utf8')
+                await fs.writeFile(filePath, stateMachineDetails.definition, 'utf8')
                 const openPath = vscode.Uri.file(filePath)
                 const doc = await vscode.workspace.openTextDocument(openPath)
                 await vscode.window.showTextDocument(doc)

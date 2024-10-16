@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import * as fs from 'fs'
+import * as fs from 'fs' // eslint-disable-line no-restricted-imports
 import * as os from 'os'
 import path from 'path'
 import { getLogger } from '../../shared/logger'
@@ -274,10 +274,13 @@ export async function preTransformationUploadCode() {
         await telemetry.codeTransform_uploadProject.run(async () => {
             telemetry.record({ codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId() })
 
+            const transformZipManifest = new ZipManifest()
+            // if the user chose to skip unit tests, add the custom build command here
+            transformZipManifest.customBuildCommand = transformByQState.getCustomBuildCommand()
             const zipCodeResult = await zipCode({
                 dependenciesFolder: transformByQState.getDependencyFolderInfo()!,
                 modulePath: transformByQState.getProjectPath(),
-                zipManifest: new ZipManifest(),
+                zipManifest: transformZipManifest,
             })
 
             const payloadFilePath = zipCodeResult.tempFilePath

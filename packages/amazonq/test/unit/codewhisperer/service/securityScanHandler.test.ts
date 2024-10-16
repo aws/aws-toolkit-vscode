@@ -17,7 +17,7 @@ import {
 import assert from 'assert'
 import sinon from 'sinon'
 import * as vscode from 'vscode'
-import fs from 'fs'
+import fs from 'fs' // eslint-disable-line no-restricted-imports
 
 const mockCodeScanFindings = JSON.stringify([
     {
@@ -179,6 +179,25 @@ describe('securityScanHandler', function () {
 
             assert.equal(codeScanIssueMap.size, 1)
             assert.equal(codeScanIssueMap.get('file1.ts')?.length, 2)
+        })
+
+        it('should handle issue filtering with redacted code', () => {
+            const json = JSON.stringify([
+                {
+                    filePath: 'file1.ts',
+                    startLine: 1,
+                    endLine: 2,
+                    codeSnippet: [
+                        { number: 1, content: '**** *' },
+                        { number: 2, content: '**** *' },
+                    ],
+                },
+                { filePath: 'file1.ts', startLine: 3, endLine: 3, codeSnippet: [{ number: 3, content: '**** **' }] },
+            ])
+
+            mapToAggregatedList(codeScanIssueMap, json, editor, CodeAnalysisScope.FILE)
+            assert.strictEqual(codeScanIssueMap.size, 1)
+            assert.strictEqual(codeScanIssueMap.get('file1.ts')?.length, 1)
         })
     })
 })

@@ -4,7 +4,6 @@
  */
 
 import assert from 'assert'
-import * as fs from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
 
@@ -25,6 +24,8 @@ import { MockOutputChannel } from '../../../test/mockOutputChannel'
 import admZip from 'adm-zip'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { DefaultSchemaClient } from '../../../shared/clients/schemaClient'
+import { fs } from '../../../shared'
+import * as nodefs from 'fs' // eslint-disable-line no-restricted-imports
 
 describe('CodeDownloader', function () {
     let tempFolder: string
@@ -48,7 +49,7 @@ describe('CodeDownloader', function () {
 
     afterEach(async function () {
         sandbox.restore()
-        await fs.remove(tempFolder)
+        await fs.delete(tempFolder, { recursive: true })
     })
     const testSchemaName = 'testSchema'
     const testRegistryName = 'testRegistry'
@@ -128,7 +129,7 @@ describe('CodeGenerator', function () {
 
     afterEach(async function () {
         sandbox.restore()
-        await fs.remove(tempFolder)
+        await fs.delete(tempFolder, { recursive: true })
     })
     const testSchemaName = 'testSchema'
     const testRegistryName = 'testRegistry'
@@ -201,7 +202,7 @@ describe('CodeGeneratorStatusPoller', function () {
 
     afterEach(async function () {
         sandbox.restore()
-        await fs.remove(tempFolder)
+        await fs.delete(tempFolder, { recursive: true })
     })
     const testSchemaName = 'testSchema'
     const testRegistryName = 'testRegistry'
@@ -352,7 +353,7 @@ describe('SchemaCodeDownload', function () {
 
     afterEach(async function () {
         sandbox.restore()
-        await fs.remove(tempFolder)
+        await fs.delete(tempFolder, { recursive: true })
     })
     const testSchemaName = 'testSchema'
     const testRegistryName = 'testRegistry'
@@ -383,7 +384,7 @@ describe('SchemaCodeDownload', function () {
 
             // should extract the zip file with provided fileContent
             const expectedFilePath = path.join(request.destinationDirectory.fsPath, fileName)
-            const response = fs.readFileSync(expectedFilePath, 'utf8')
+            const response = await fs.readFileText(expectedFilePath)
             assert.strictEqual(response, fileContent, `${expectedFilePath} :file content do not match`)
         })
 
@@ -420,7 +421,7 @@ describe('SchemaCodeDownload', function () {
             )
 
             const expectedFilePath = path.join(request.destinationDirectory.fsPath, fileName)
-            const response = fs.readFileSync(expectedFilePath, 'utf8')
+            const response = await fs.readFileText(expectedFilePath)
             assert.strictEqual(response, fileContent, 'Extracted file content do not match with expected')
         })
 
@@ -449,7 +450,7 @@ describe('CodeExtractor', function () {
     })
 
     afterEach(async function () {
-        await fs.remove(destinationDirectory)
+        await fs.delete(destinationDirectory, { recursive: true })
         sandbox.restore()
     })
 
@@ -524,7 +525,7 @@ describe('CodeExtractor', function () {
 
         afterEach(async function () {
             sandbox.restore()
-            await fs.remove(destinationDirectory)
+            await fs.delete(destinationDirectory, { recursive: true })
         })
 
         it('should extract files if no collision present', async function () {
@@ -546,12 +547,12 @@ describe('CodeExtractor', function () {
             const file2Path = path.join(destinationDirectory, fileName2)
 
             // confirm both file exist
-            assert.ok(fs.existsSync(file1Path), `${file1Path} should exist`)
-            assert.ok(fs.existsSync(file2Path), `${file2Path} should exist`)
+            assert.ok(await fs.exists(file1Path), `${file1Path} should exist`)
+            assert.ok(await fs.exists(file2Path), `${file2Path} should exist`)
 
             //confirm file contents
-            const file1Content = fs.readFileSync(file1Path, { encoding: 'utf8' })
-            const file2Content = fs.readFileSync(file2Path, { encoding: 'utf8' })
+            const file1Content = await fs.readFileText(file1Path)
+            const file2Content = await fs.readFileText(file2Path)
 
             assert.strictEqual(file1Content, 'First file content', `${file1Path} : file content do not match`)
             assert.strictEqual(file2Content, 'Second file content', `${file2Path} : file content do not match`)
@@ -577,7 +578,7 @@ describe('CodeExtractor', function () {
             await codeExtractor.extractAndPlace(buffer, request)
 
             const file1Path = path.join(destinationDirectory, fileName1)
-            const file1Content = fs.readFileSync(file1Path, { encoding: 'utf8' })
+            const file1Content = await fs.readFileText(file1Path)
 
             assert.strictEqual(file1Content, expectedFileContent, `${file1Path} :File content should not be overriden`)
         })
@@ -603,7 +604,7 @@ describe('CodeExtractor', function () {
             await codeExtractor.extractAndPlace(buffer, request)
 
             const file1Path = path.join(destinationDirectory, fileName1)
-            const file1Content = fs.readFileSync(file1Path, { encoding: 'utf8' })
+            const file1Content = await fs.readFileText(file1Path)
 
             assert.strictEqual(file1Content, overridenFileContent, `${file1Path} :File content should be overriden`)
         })
@@ -633,7 +634,7 @@ describe('CodeExtractor', function () {
             )
 
             const file1Path = path.join(destinationDirectory, fileName1)
-            const file1Content = fs.readFileSync(file1Path, { encoding: 'utf8' })
+            const file1Content = await fs.readFileText(file1Path)
 
             assert.strictEqual(file1Content, expectedFileContent, `${file1Path} :File content should not be overriden`)
         })
@@ -681,9 +682,9 @@ describe('CodeExtractor', function () {
         const zip = new admZip()
         zip.addFile(fileName, Buffer.from(fileContent))
         const buffer = zip.toBuffer()
-        const fd = fs.openSync(zipFileName, 'w')
-        fs.writeSync(fd, buffer, 0, buffer.byteLength, 0)
-        fs.closeSync(fd)
+        const fd = nodefs.openSync(zipFileName, 'w')
+        nodefs.writeSync(fd, buffer, 0, buffer.byteLength, 0)
+        nodefs.closeSync(fd)
 
         return zip
     }

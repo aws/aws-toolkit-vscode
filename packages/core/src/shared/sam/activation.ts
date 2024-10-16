@@ -25,7 +25,7 @@ import * as goLensProvider from '../codelens/goCodeLensProvider'
 import { SamTemplateCodeLensProvider } from '../codelens/samTemplateCodeLensProvider'
 import * as jsLensProvider from '../codelens/typescriptCodeLensProvider'
 import { ExtContext, VSCODE_EXTENSION_ID } from '../extensions'
-import { getIdeProperties, getIdeType, IDE, isCloud9 } from '../extensionUtilities'
+import { getIdeProperties, getIdeType, isCloud9 } from '../extensionUtilities'
 import { getLogger } from '../logger/logger'
 import { PerfLog } from '../logger/perfLogger'
 import { NoopWatcher } from '../fs/watchedFiles'
@@ -324,7 +324,7 @@ async function createYamlExtensionPrompt(): Promise<void> {
     // not have a marketplace or contain the YAML plugin.
     if (
         (await settings.isPromptEnabled('yamlExtPrompt')) &&
-        getIdeType() === IDE.vscode &&
+        getIdeType() === 'vscode' &&
         !vscode.extensions.getExtension(VSCODE_EXTENSION_ID.yaml)
     ) {
         // Disposed immediately after showing one, so the user isn't prompted

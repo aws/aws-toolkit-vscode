@@ -24,6 +24,7 @@ import { entries } from '../shared/utilities/tsUtils'
 import { getEnvironmentSpecificMemento } from '../shared/utilities/mementos'
 import { setContext } from '../shared'
 import { telemetry } from '../shared/telemetry'
+import { getSessionId } from '../shared/telemetry/util'
 
 interface MenuOption {
     readonly label: string
@@ -41,6 +42,7 @@ export type DevFunction =
     | 'deleteSsoConnections'
     | 'expireSsoConnections'
     | 'editAuthConnections'
+    | 'forceIdeCrash'
 
 export type DevOptions = {
     context: vscode.ExtensionContext
@@ -104,6 +106,11 @@ const menuOptions: Record<DevFunction, MenuOption> = {
         label: 'Auth: Edit Connections',
         detail: 'Opens editor to all Auth Connections the extension is using.',
         executor: editSsoConnections,
+    },
+    forceIdeCrash: {
+        label: 'Crash: Force IDE ExtHost Crash',
+        detail: `Will SIGKILL ExtHost, { pid: ${process.pid}, sessionId: '${getSessionId().slice(0, 8)}-...' }, but the IDE itself will not crash.`,
+        executor: forceQuitIde,
     },
 }
 
@@ -216,6 +223,7 @@ function isSecrets(obj: vscode.Memento | vscode.SecretStorage): obj is vscode.Se
 
 class VirtualObjectFile implements FileProvider {
     private mTime = 0
+    private size = 0
     private readonly onDidChangeEmitter = new vscode.EventEmitter<void>()
     public readonly onDidChange = this.onDidChangeEmitter.event
 
@@ -227,8 +235,8 @@ class VirtualObjectFile implements FileProvider {
     /** Emits an event indicating this file's content has changed */
     public refresh() {
         /**
-         * Per {@link vscode.FileSystemProvider.onDidChangeFile}, if the mTime does not change, new file content may
-         * not be retrieved. Without this, when we emit a change the text editor did not update.
+         * Per {@link vscode.FileSystemProvider.onDidChangeFile}, if the mTime and/or size does not change, new file content may
+         * not be retrieved due to optimizations. Without this, when we emit a change the text editor did not update.
          */
         this.mTime++
         this.onDidChangeEmitter.fire()
@@ -236,13 +244,15 @@ class VirtualObjectFile implements FileProvider {
 
     public stat(): { ctime: number; mtime: number; size: number } {
         // This would need to be filled out to track conflicts
-        return { ctime: 0, mtime: this.mTime, size: 0 }
+        return { ctime: 0, mtime: this.mTime, size: this.size }
     }
 
     public async read(): Promise<Uint8Array> {
         const encoder = new TextEncoder()
 
-        return encoder.encode(await this.readStore(this.key))
+        const data = encoder.encode(await this.readStore(this.key))
+        this.size = data.length
+        return data
     }
 
     public async write(content: Uint8Array): Promise<void> {
@@ -433,6 +443,15 @@ async function expireSsoConnections() {
         },
         { emit: false, functionId: { name: 'expireSsoConnectionsDev' } }
     )
+}
+
+export function forceQuitIde() {
+    // This current process is the ExtensionHost. Killing it will cause all the extensions to crash
+    // for the current ExtensionHost (unless using "extensions.experimental.affinity").
+    // The IDE instance itself will remaing running, but a new ExtHost will spawn within it.
+    // The PPID (parent process) is vscode itself, killing it crashes all vscode instances.
+    const vsCodePid = process.pid
+    process.kill(vsCodePid, 'SIGKILL') // SIGTERM would be the graceful shutdown
 }
 
 async function showState(path: string) {

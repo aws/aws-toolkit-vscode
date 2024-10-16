@@ -4,12 +4,12 @@
  */
 
 import assert from 'assert'
-import * as fs from 'fs-extra'
 import vscode from 'vscode'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { Logger } from '../../../shared/logger'
 import { makeLogger } from '../../../shared/logger/activation'
 import { ToolkitLogger } from '../../../shared/logger/toolkitLogger'
+import { fs } from '../../../shared'
 
 describe('makeLogger', function () {
     let tempFolder: string
@@ -18,7 +18,7 @@ describe('makeLogger', function () {
     before(async function () {
         tempFolder = await makeTemporaryToolkitFolder()
         const logPath = vscode.Uri.joinPath(vscode.Uri.file(tempFolder), 'log.txt')
-        testLogger = makeLogger({ logLevel: 'debug', logPaths: [logPath] })
+        testLogger = makeLogger({ logLevel: 'debug', logFile: logPath })
     })
 
     after(async function () {
@@ -27,7 +27,7 @@ describe('makeLogger', function () {
         }
 
         testLogger = undefined
-        await fs.remove(tempFolder)
+        await fs.delete(tempFolder, { force: true, recursive: true })
     })
 
     it('creates a logger object', function () {

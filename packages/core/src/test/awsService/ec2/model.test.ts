@@ -44,7 +44,7 @@ describe('Ec2ConnectClient', function () {
 
     describe('hasProperPermissions', async function () {
         it('throws error when sdk throws error', async function () {
-            sinon.stub(DefaultIamClient.prototype, 'listAttachedRolePolicies').throws(new ToolkitError('error'))
+            sinon.stub(DefaultIamClient.prototype, 'simulatePrincipalPolicy').throws(new ToolkitError('error'))
 
             try {
                 await client.hasProperPermissions('')
@@ -139,8 +139,8 @@ describe('Ec2ConnectClient', function () {
                 instanceId: 'test-id',
                 region: 'test-region',
             }
-            const mockKeys = await SshKeyPair.getSshKeyPair('')
-            await client.sendSshKeyToInstance(testSelection, mockKeys, '')
+            const mockKeys = await SshKeyPair.getSshKeyPair('fakeDir', 30000)
+            await client.sendSshKeyToInstance(testSelection, mockKeys, 'test-user')
             sinon.assert.calledWith(sendCommandStub, testSelection.instanceId, 'AWS-RunShellScript')
             sinon.restore()
         })
