@@ -1373,8 +1373,8 @@
                 },
                 {
                     "command": "aws.toolkit.lambda.openWalkthrough",
-                    "when": "view =~ /^(aws.explorer|aws.appBuilder|aws.appBuilderForFileExplorer)$/",
-                    "group": "y_toolkitMeta@3"
+                    "when": "view =~ /^(aws.appBuilder|aws.appBuilderForFileExplorer)$/",
+                    "group": "y_toolkitWalkthrough@1"
                 },
                 {
                     "command": "aws.codecatalyst.cloneRepo",
