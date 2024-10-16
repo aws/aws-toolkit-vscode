@@ -11,7 +11,6 @@ import {
 } from '../../../../lambda/vue/remoteInvoke/invokeLambda'
 import { LambdaClient } from '../../../../shared/clients/lambdaClient'
 import * as vscode from 'vscode'
-import { writeFile, remove } from 'fs-extra'
 import * as path from 'path'
 import { makeTemporaryToolkitFolder } from '../../../../shared/filesystemUtilities'
 import sinon from 'sinon'
@@ -26,6 +25,7 @@ import { ExtContext } from '../../../../shared/extensions'
 import { FakeExtensionContext } from '../../../fakeExtensionContext'
 import { FunctionConfiguration } from 'aws-sdk/clients/lambda'
 import { AWSTreeNodeBase } from '../../../../shared/treeview/nodes/awsTreeNodeBase'
+import { fs } from '../../../../shared'
 
 describe('RemoteInvokeWebview', () => {
     let outputChannel: vscode.OutputChannel
@@ -123,7 +123,7 @@ describe('RemoteInvokeWebview', () => {
         it('loads a file successfully', async () => {
             const tempFolder = await makeTemporaryToolkitFolder()
             const placeholderEventFile = path.join(tempFolder, 'file.json')
-            await writeFile(placeholderEventFile, '{"sample": ""}')
+            await fs.writeFile(placeholderEventFile, '{"sample": ""}')
             const result = await remoteInvokeWebview.loadFile(placeholderEventFile)
 
             assert.strictEqual(result?.sample, '{"sample": ""}')
@@ -132,7 +132,7 @@ describe('RemoteInvokeWebview', () => {
                 path.normalize(placeholderEventFile).toLowerCase()
             )
             assert.strictEqual(result?.selectedFile, 'file.json')
-            await remove(tempFolder)
+            await fs.delete(tempFolder, { recursive: true })
         })
         it('handles file load error', async () => {
             const nonExistentFile = '/path/to/non-existent-file.json'

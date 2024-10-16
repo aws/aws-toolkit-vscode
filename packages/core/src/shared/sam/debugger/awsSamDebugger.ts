@@ -267,11 +267,11 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
                         if (resource) {
                             // we do not know enough to populate the runtime field for Image-based Lambdas
                             const runtimeName = CloudFormation.isZipLambdaResource(resource?.Properties)
-                                ? CloudFormation.getStringForProperty(
+                                ? (CloudFormation.getStringForProperty(
                                       resource?.Properties,
                                       'Runtime',
                                       templateDatum.item
-                                  ) ?? ''
+                                  ) ?? '')
                                 : ''
                             configs.push(
                                 createTemplateAwsSamDebugConfig(

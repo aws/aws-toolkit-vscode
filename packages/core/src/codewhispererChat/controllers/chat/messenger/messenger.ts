@@ -33,6 +33,7 @@ import { CodeScanIssue } from '../../../../codewhisperer/models/model'
 import { marked } from 'marked'
 import { JSDOM } from 'jsdom'
 import { LspController } from '../../../../amazonq/lsp/lspController'
+import { extractCodeBlockLanguage } from '../../../../shared/markdown'
 
 export type StaticTextResponseType = 'quick-action-help' | 'onboarding-help' | 'transform' | 'help'
 
@@ -86,18 +87,29 @@ export class Messenger {
                     relatedSuggestions: undefined,
                     triggerID,
                     messageID: '',
+                    userIntent: undefined,
+                    codeBlockLanguage: undefined,
                 },
                 tabID
             )
         )
     }
-
+    /**
+     * Tries to calculate the total number of code blocks.
+     * NOTES:
+     *  - Not correct on all examples. Some may cause it to return 0 unexpectedly.
+     *  - Plans in place (as of 4/22/2024) to move this server side.
+     *  - See original pr: https://github.com/aws/aws-toolkit-vscode/pull/4761 for more details.
+     * @param message raw message response from codewhisperer client.
+     * @returns count of multi-line code blocks in response.
+     */
     public async countTotalNumberOfCodeBlocks(message: string): Promise<number> {
+        //TODO: remove this when moved to server-side.
         if (message === undefined) {
             return 0
         }
 
-        // // To Convert Markdown text to HTML using marked library
+        // To Convert Markdown text to HTML using marked library
         const html = await marked(message)
 
         const dom = new JSDOM(html)
@@ -121,6 +133,7 @@ export class Messenger {
         let codeReference: CodeReference[] = []
         let followUps: FollowUp[] = []
         let relatedSuggestions: Suggestion[] = []
+        let codeBlockLanguage: string = 'plaintext'
 
         if (response.generateAssistantResponseResponse === undefined) {
             throw new ToolkitError(
@@ -172,7 +185,9 @@ export class Messenger {
                         chatEvent.assistantResponseEvent.content.length > 0
                     ) {
                         message += chatEvent.assistantResponseEvent.content
-
+                        if (codeBlockLanguage === 'plaintext') {
+                            codeBlockLanguage = extractCodeBlockLanguage(message)
+                        }
                         this.dispatcher.sendChatMessage(
                             new ChatMessage(
                                 {
@@ -184,6 +199,8 @@ export class Messenger {
                                     codeReference,
                                     triggerID,
                                     messageID,
+                                    userIntent: triggerPayload.userIntent,
+                                    codeBlockLanguage: codeBlockLanguage,
                                 },
                                 tabID
                             )
@@ -260,6 +277,8 @@ export class Messenger {
                                 relatedSuggestions: undefined,
                                 triggerID,
                                 messageID,
+                                userIntent: triggerPayload.userIntent,
+                                codeBlockLanguage: codeBlockLanguage,
                             },
                             tabID
                         )
@@ -277,6 +296,8 @@ export class Messenger {
                                 relatedSuggestions,
                                 triggerID,
                                 messageID,
+                                userIntent: triggerPayload.userIntent,
+                                codeBlockLanguage: undefined,
                             },
                             tabID
                         )
@@ -293,7 +314,8 @@ export class Messenger {
                             relatedSuggestions: undefined,
                             triggerID,
                             messageID,
-                            traceId: triggerPayload.traceId,
+                            userIntent: triggerPayload.userIntent,
+                            codeBlockLanguage: undefined,
                         },
                         tabID
                     )
@@ -417,6 +439,8 @@ export class Messenger {
                     relatedSuggestions: undefined,
                     triggerID,
                     messageID: 'static_message_' + triggerID,
+                    userIntent: undefined,
+                    codeBlockLanguage: undefined,
                 },
                 tabID
             )

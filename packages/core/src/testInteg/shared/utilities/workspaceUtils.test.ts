@@ -4,10 +4,8 @@
  */
 
 import assert from 'assert'
-import { writeFile, mkdirp, remove } from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import * as fs from 'fs'
 import {
     collectFiles,
     collectFilesForIndex,
@@ -18,10 +16,9 @@ import {
 import { getTestWorkspaceFolder } from '../../integrationTestsUtilities'
 import globals from '../../../shared/extensionGlobals'
 import { CodelensRootRegistry } from '../../../shared/fs/codelensRootRegistry'
-import { assertTelemetry, createTestWorkspace, createTestWorkspaceFolder, toFile } from '../../../test/testUtil'
+import { createTestWorkspace, createTestWorkspaceFolder, toFile } from '../../../test/testUtil'
 import sinon from 'sinon'
-import { performanceTest } from '../../../shared/performance/performance'
-import { randomUUID } from '../../../shared/crypto'
+import { fs } from '../../../shared'
 
 describe('findParentProjectFile', async function () {
     const workspaceDir = getTestWorkspaceFolder()
@@ -75,14 +72,14 @@ describe('findParentProjectFile', async function () {
     ]
 
     before(async function () {
-        await mkdirp(path.join(workspaceDir, 'someproject', 'src'))
-        await mkdirp(path.join(workspaceDir, 'someotherproject'))
+        await fs.mkdir(path.join(workspaceDir, 'someproject', 'src'))
+        await fs.mkdir(path.join(workspaceDir, 'someotherproject'))
         globalRegistry = globals.codelensRootRegistry
     })
 
     after(async function () {
-        await remove(path.join(workspaceDir, 'someproject'))
-        await remove(path.join(workspaceDir, 'someotherproject'))
+        await fs.delete(path.join(workspaceDir, 'someproject'), { recursive: true })
+        await fs.delete(path.join(workspaceDir, 'someotherproject'), { recursive: true })
         globals.codelensRootRegistry = globalRegistry
     })
 
@@ -92,7 +89,7 @@ describe('findParentProjectFile', async function () {
 
     afterEach(async function () {
         for (const file of filesToDelete) {
-            await remove(file.fsPath)
+            await fs.delete(file.fsPath)
         }
         filesToDelete = []
         globals.codelensRootRegistry.dispose()
@@ -102,7 +99,7 @@ describe('findParentProjectFile', async function () {
         it(test.scenario, async () => {
             filesToDelete = test.filesToUse
             for (const file of test.filesToUse) {
-                await writeFile(file.fsPath, '')
+                await fs.writeFile(file.fsPath, '')
                 // Add it to the registry. The registry is async and we are not
                 // testing the registry in this test, so manually use it
                 await globals.codelensRootRegistry.addItem(file)
@@ -299,10 +296,6 @@ describe('collectFiles', function () {
             ] satisfies typeof result,
             result
         )
-
-        assertTelemetry('function_call', {
-            functionName: 'collectFiles',
-        })
     })
 
     it('does not return license files', async function () {
@@ -331,56 +324,6 @@ describe('collectFiles', function () {
         assert.deepStrictEqual(1, result.length)
         assert.deepStrictEqual('non-license.md', result[0].relativeFilePath)
     })
-
-    performanceTest(
-        // collecting all files in the workspace and zipping them is pretty resource intensive
-        {
-            linux: {
-                userCpuUsage: 85,
-                heapTotal: 2,
-                duration: 0.8,
-            },
-        },
-        'calculate cpu and memory usage',
-        function () {
-            const totalFiles = 100
-            return {
-                setup: async () => {
-                    const workspace = await createTestWorkspaceFolder()
-
-                    sinon.stub(vscode.workspace, 'workspaceFolders').value([workspace])
-
-                    const fileContent = randomUUID()
-                    for (let x = 0; x < totalFiles; x++) {
-                        await toFile(fileContent, path.join(workspace.uri.fsPath, `file.${x}`))
-                    }
-
-                    return {
-                        workspace,
-                    }
-                },
-                execute: async ({ workspace }: { workspace: vscode.WorkspaceFolder }) => {
-                    return {
-                        result: await collectFiles([workspace.uri.fsPath], [workspace], true),
-                    }
-                },
-                verify: (
-                    _: { workspace: vscode.WorkspaceFolder },
-                    { result }: { result: Awaited<ReturnType<typeof collectFiles>> }
-                ) => {
-                    assert.deepStrictEqual(result.length, totalFiles)
-                    const sortedFiles = [...result].sort((a, b) => {
-                        const numA = parseInt(a.relativeFilePath.split('.')[1])
-                        const numB = parseInt(b.relativeFilePath.split('.')[1])
-                        return numA - numB
-                    })
-                    for (let x = 0; x < totalFiles; x++) {
-                        assert.deepStrictEqual(sortedFiles[x].relativeFilePath, `file.${x}`)
-                    }
-                },
-            }
-        }
-    )
 })
 
 describe('getWorkspaceFoldersByPrefixes', function () {
@@ -446,7 +389,7 @@ describe('getWorkspaceFoldersByPrefixes', function () {
             subDir: 'test/app',
         })
         const newRoot = path.join(ws1.uri.fsPath, '../app_cdk')
-        await fs.promises.mkdir(newRoot, { recursive: true })
+        await fs.mkdir(newRoot)
         const ws2: vscode.WorkspaceFolder = {
             index: 0,
             uri: vscode.Uri.file(newRoot),

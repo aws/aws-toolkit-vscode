@@ -17,6 +17,7 @@ export const amazonqSettings = {
         "codeWhispererConnectionExpired": {},
         "amazonQWelcomePage": {},
         "amazonQSessionConfigurationMessage": {},
+        "minIdeVersion": {},
         "ssoCacheError": {}
     },
     "amazonQ.showInlineCodeSuggestionsWithCodeReferences": {},

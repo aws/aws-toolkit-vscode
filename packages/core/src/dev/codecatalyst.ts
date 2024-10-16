@@ -217,7 +217,7 @@ async function installVsix(
     if (path.extname(resp) !== '.vsix') {
         progress.report({ message: 'Copying extension...' })
 
-        const packageData = await fs.readFileAsString(path.join(resp, 'package.json'))
+        const packageData = await fs.readFileText(path.join(resp, 'package.json'))
         const targetManfiest: typeof manifest = JSON.parse(packageData)
         const destName = `${extPath}/${extId}-${targetManfiest.version}`
         const source = `${resp}${path.sep}`

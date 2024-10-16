@@ -3,11 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as assert from 'assert'
-import * as fs from 'fs'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { getPattern } from '../../../shared/utilities/downloadPatterns'
 import { createTestWorkspaceFolder } from '../../testUtil'
+import { fs } from '../../../shared'
 
 describe('try', () => {
     let tempFolder: vscode.Uri
@@ -18,7 +18,7 @@ describe('try', () => {
 
     afterEach(async () => {
         try {
-            await fs.promises.rm(tempFolder.fsPath, { recursive: true, force: true })
+            await fs.delete(tempFolder.fsPath, { recursive: true, force: true })
         } catch (err) {
             assert.fail(`Error deleting temporary folder ${tempFolder.fsPath}: ${err}`)
         }
@@ -35,12 +35,12 @@ describe('try', () => {
             await getPattern(owner, repoName, assetName, tempFolder)
 
             console.log(`Extracting zip file to ${tempFolder.fsPath}`)
-            const folderContents = fs.readdirSync(tempFolder.fsPath)
+            const folderContents = await fs.readdir(tempFolder.fsPath)
             console.log(`Contents of ${tempFolder.fsPath}:`, folderContents)
 
             const expectedFolderPath = path.join(tempFolder.fsPath, 'activemq-lambda')
             console.log(`Expected folder path: ${expectedFolderPath}`)
-            assert.ok(fs.existsSync(expectedFolderPath), `Expected folder ${expectedFolderPath} not found`)
+            assert.ok(await fs.exists(expectedFolderPath), `Expected folder ${expectedFolderPath} not found`)
         })
     })
 })

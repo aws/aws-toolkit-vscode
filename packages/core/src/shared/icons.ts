@@ -6,7 +6,7 @@
 import globals, { isWeb } from './extensionGlobals'
 
 import type * as packageJson from '../../package.json'
-import * as fs from 'fs'
+import * as fs from 'fs' // eslint-disable-line no-restricted-imports
 import * as path from 'path'
 import { Uri, ThemeIcon, ThemeColor } from 'vscode'
 import { isCloud9 } from './extensionUtilities'

@@ -4,6 +4,9 @@
  */
 
 // import assert from 'assert'
+// import * as path from 'path'
+// import globals from '../../../shared/extensionGlobals'
+// import assert from 'assert'
 // import * as fs from 'fs-extra'
 // import * as path from 'path'
 // import globals from '../../../shared/extensionGlobals'
@@ -592,11 +595,178 @@
 // }
 import * as vscode from 'vscode'
 import { BucketSource, DeployParams, DeployWizard, ParamsSource } from '../../../lambda/commands/deploySamApplication'
-import { globals, makeTemporaryToolkitFolder } from '../../../shared'
+import { fs, globals, makeTemporaryToolkitFolder } from '../../../shared'
 import { TreeNode } from '../../../shared/treeview/resourceTreeDataProvider'
 import { createWizardTester } from '../../shared/wizards/wizardTestUtils'
 import assert from 'assert'
 import {
+    //     SamCliValidator,
+    //     SamCliValidatorResult,
+    //     SamCliVersionValidation,
+    //     SamCliVersionValidatorResult,
+    // } from '../../../shared/sam/cli/samCliValidator'
+    // import { ChildProcessResult } from '../../../shared/utilities/processUtils'
+    // import { assertLogsContain, getTestLogger } from '../../globalSetup.test'
+    // import { FakeChildProcessResult, TestSamCliProcessInvoker } from '../../shared/sam/cli/testSamCliProcessInvoker'
+    // import { TestSettings } from '../../utilities/testSettingsConfiguration'
+    // import { Settings } from '../../../shared/settings'
+    // import { SamCliSettings } from '../../../shared/sam/cli/samCliSettings'
+    // import { FakeAwsContext } from '../../utilities/fakeAwsContext'
+    // import { fs } from '../../../shared'
+
+    // describe('deploySamApplication', async function () {
+    //     // Bad Validator
+
+    //     const badValidatorResult: SamCliValidatorResult = {
+    //         samCliFound: false,
+    //     }
+
+    //     const badValidator: SamCliValidator = {
+    //         detectValidSamCli: async (): Promise<SamCliValidatorResult> => badValidatorResult,
+    //         getVersionValidatorResult: async (): Promise<SamCliVersionValidatorResult> => {
+    //             return { validation: SamCliVersionValidation.VersionNotParseable }
+    //         },
+    //     }
+
+    //     // Bad Invoker
+
+    //     const badSamCliProcessInvoker = {} as any as SamCliProcessInvoker
+
+    //     const invalidSamCliContext: SamCliContext = {
+    //         invoker: badSamCliProcessInvoker,
+    //         validator: badValidator,
+    //     }
+
+    //     // Good Validator
+
+    //     const goodValidatorResult: SamCliValidatorResult = {
+    //         samCliFound: true,
+    //         versionValidation: {
+    //             version: '',
+    //             validation: SamCliVersionValidation.Valid,
+    //         },
+    //     }
+
+    //     const goodValidator: SamCliValidator = {
+    //         detectValidSamCli: async (): Promise<SamCliValidatorResult> => goodValidatorResult,
+    //         getVersionValidatorResult: async (): Promise<SamCliVersionValidatorResult> => {
+    //             return { validation: SamCliVersionValidation.Valid, version: '' }
+    //         },
+    //     }
+
+    //     // Good Invoker
+
+    //     let invokerCalledCount: number
+    //     let goodSamCliProcessInvoker = new TestSamCliProcessInvoker((spawnOptions, args: any[]): ChildProcessResult => {
+    //         invokerCalledCount++
+
+    //         return new FakeChildProcessResult({})
+    //     })
+
+    //     const goodSamCliContext = (): SamCliContext => {
+    //         return {
+    //             invoker: goodSamCliProcessInvoker,
+    //             validator: goodValidator,
+    //         }
+    //     }
+
+    //     // vscode window stubs
+
+    //     function showMessage(message: string, ...items: string[]): Thenable<string | undefined>
+    //     function showMessage(
+    //         message: string,
+    //         options: vscode.MessageOptions,
+    //         ...items: string[]
+    //     ): Thenable<string | undefined>
+    //     async function showMessage<T extends vscode.MessageItem>(message: string, ...items: T[]): Promise<T | undefined> {
+    //         return undefined
+    //     }
+
+    //     let runningDeployProcess: Thenable<any> | undefined
+    //     function setStatusBarMessage(text: string, hideWhenDone: Thenable<any>): vscode.Disposable {
+    //         runningDeployProcess = hideWhenDone
+
+    //         return new vscode.Disposable(() => {})
+    //     }
+
+    //     const window: WindowFunctions = {
+    //         setStatusBarMessage,
+    //         showErrorMessage: showMessage,
+    //         showInformationMessage: showMessage,
+    //     }
+
+    //     // Other support stubs
+    //     const placeholderCredentials = {} as any as AWS.Credentials
+    //     let testCredentials: AWS.Credentials | undefined
+    //     let profile: string = ''
+    //     let settings: Settings
+    //     let config: SamCliSettings
+    //     let templatePath: string
+    //     let tempToolkitFolder: string
+    //     let samDeployWizardResponse: SamDeployWizardResponse | undefined
+    //     const samDeployWizard = async (): Promise<SamDeployWizardResponse | undefined> => {
+    //         return samDeployWizardResponse
+    //     }
+
+    //     const awsContext = new FakeAwsContext()
+    //     awsContext.getCredentials = async () => testCredentials
+    //     awsContext.getCredentialProfileName = () => profile
+
+    //     // Fake "aws.refreshAwsExplorer" command. 50b5a28b8e35 #1665
+    //     let didRefreshExplorer = false
+    //     function refreshFn() {
+    //         didRefreshExplorer = true
+    //     }
+
+    //     beforeEach(async function () {
+    //         didRefreshExplorer = false
+    //         settings = new TestSettings() as any
+    //         config = new SamCliSettings({ getLocation: async () => ({ path: '', version: '' }) }, settings)
+    //         profile = 'testAcct'
+    //         tempToolkitFolder = await makeTemporaryToolkitFolder()
+    //         templatePath = path.join(tempToolkitFolder, 'template.yaml')
+    //         await fs.writeFile(templatePath, '')
+
+    //         // TODO: is this safe? will add output channel across all tests
+    //         // we are using this pattern in other tests...
+    //         globals.outputChannel = vscode.window.createOutputChannel('test channel')
+
+    //         testCredentials = placeholderCredentials
+    //         invokerCalledCount = 0
+    //         samDeployWizardResponse = {
+    //             parameterOverrides: new Map<string, string>(),
+    //             region: 'region',
+    //             s3Bucket: 'bucket',
+    //             stackName: 'stack',
+    //             template: vscode.Uri.file(templatePath),
+    //         }
+
+    //         runningDeployProcess = undefined
+    //     })
+
+    //     afterEach(async function () {
+    //         await fs.delete(tempToolkitFolder, { recursive: true })
+    //     })
+
+    //     it('deploys with the happy path', async function () {
+    //         await deploySamApplication(
+    //             {
+    //                 samCliContext: goodSamCliContext(),
+    //                 samDeployWizard,
+    //             },
+    //             {
+    //                 awsContext,
+    //                 settings: config,
+    //                 window,
+    //                 refreshFn,
+    //             }
+    //         )
+
+    //         await waitForDeployToComplete()
+    //         assert.strictEqual(invokerCalledCount, 3, 'Unexpected sam cli invoke count')
+    //         assert.deepStrictEqual(config.getSavedBuckets(), {
+    //             [profile]: { region: 'bucket' },
+
     createBaseTemplate,
     makeSampleSamTemplateYaml,
     makeSampleYamlParameters,
@@ -607,7 +777,6 @@ import * as testutil from '../../testUtil'
 import * as pathutil from '../../../shared/utilities/pathUtils'
 import path from 'path'
 import { getWorkspaceFolder } from '../../testUtil'
-import { remove } from 'fs-extra'
 
 describe('DeployWizard', async function () {
     const createTester = async (params?: Partial<DeployParams>, arg?: TreeNode | undefined) =>
@@ -693,7 +862,7 @@ describe('DeployWizard', async function () {
         tester3.bucketName.assertShow(4)
         tester3.projectRoot.assertDoesNotShow()
 
-        await remove(tempFolder)
+        await fs.delete(tempFolder, { recursive: true })
     })
 
     it('set the correct project root', async function () {
@@ -706,3 +875,17 @@ describe('DeployWizard', async function () {
         tester.projectRoot.path.assertValue(workspaceFolder.uri.path)
     })
 })
+
+// function assertGeneralErrorLogged() {
+//     // match string 'AWS.samcli.deploy.general.error'
+//     assertLogsContain('Error deploying a SAM Application.', false, 'error')
+// }
+
+// function assertErrorLogsSwallowed(text: string, exactMatch: boolean) {
+//     assert.ok(
+//         getTestLogger()
+//             .getLoggedEntries('error')
+//             .some((e) => !(e instanceof Error) && (exactMatch ? e === text : e.includes(text))),
+//         `Expected to find "${text}" in the error logs, but not as a thrown error`
+//     )
+// }

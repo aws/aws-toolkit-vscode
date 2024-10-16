@@ -5,8 +5,8 @@
 
 import * as vscode from 'vscode'
 import * as path from 'path'
-import { createWriteStream } from 'fs'
 import * as crypto from 'crypto'
+import { createWriteStream } from 'fs' // eslint-disable-line no-restricted-imports
 import { getLogger } from '../../shared/logger/logger'
 import { CurrentWsFolders, collectFilesForIndex } from '../../shared/utilities/workspaceUtils'
 import fetch from 'node-fetch'
@@ -68,7 +68,7 @@ export interface Manifest {
 }
 const manifestUrl = 'https://aws-toolkit-language-servers.amazonaws.com/q-context/manifest.json'
 // this LSP client in Q extension is only going to work with these LSP server versions
-const supportedLspServerVersions = ['0.1.9']
+const supportedLspServerVersions = ['0.1.13']
 
 const nodeBinName = process.platform === 'win32' ? 'node.exe' : 'node'
 /*
@@ -133,7 +133,7 @@ export class LspController {
     }
 
     async getFileSha384(filePath: string): Promise<string> {
-        const fileBuffer = await fs.readFile(filePath)
+        const fileBuffer = await fs.readFileBytes(filePath)
         const hash = crypto.createHash('sha384')
         hash.update(fileBuffer)
         return hash.digest('hex')
@@ -285,7 +285,7 @@ export class LspController {
         const resp: RelevantTextDocument[] = []
         chunks?.forEach((chunk) => {
             const text = chunk.context ? chunk.context : chunk.content
-            if (chunk.programmingLanguage) {
+            if (chunk.programmingLanguage && chunk.programmingLanguage !== 'unknown') {
                 resp.push({
                     text: text,
                     relativeFilePath: chunk.relativePath ? chunk.relativePath : path.basename(chunk.filePath),
@@ -304,7 +304,7 @@ export class LspController {
     }
 
     async buildIndex() {
-        getLogger().info(`LspController: Starting to build vector index of project`)
+        getLogger().info(`LspController: Starting to build index of project`)
         const start = performance.now()
         const projPaths = getProjectPaths()
         projPaths.sort()
@@ -331,7 +331,7 @@ export class LspController {
                 false
             )
             if (resp) {
-                getLogger().debug(`LspController: Finish building vector index of project`)
+                getLogger().debug(`LspController: Finish building index of project`)
                 const usage = await LspClient.instance.getLspServerUsage()
                 telemetry.amazonq_indexWorkspace.emit({
                     duration: performance.now() - start,
@@ -343,7 +343,7 @@ export class LspController {
                     credentialStartUrl: AuthUtil.instance.startUrl,
                 })
             } else {
-                getLogger().error(`LspController: Failed to build vector index of project`)
+                getLogger().error(`LspController: Failed to build index of project`)
                 telemetry.amazonq_indexWorkspace.emit({
                     duration: performance.now() - start,
                     result: 'Failed',
@@ -352,7 +352,7 @@ export class LspController {
                 })
             }
         } catch (e) {
-            getLogger().error(`LspController: Failed to build vector index of project`)
+            getLogger().error(`LspController: Failed to build index of project`)
             telemetry.amazonq_indexWorkspace.emit({
                 duration: performance.now() - start,
                 result: 'Failed',
@@ -371,12 +371,6 @@ export class LspController {
             return
         }
         setImmediate(async () => {
-            if (!CodeWhispererSettings.instance.isLocalIndexEnabled()) {
-                // only download LSP for users who did not turn on this feature
-                // do not start LSP server
-                await LspController.instance.tryInstallLsp(context)
-                return
-            }
             const ok = await LspController.instance.tryInstallLsp(context)
             if (!ok) {
                 return
@@ -384,7 +378,9 @@ export class LspController {
             try {
                 await activateLsp(context)
                 getLogger().info('LspController: LSP activated')
-                void LspController.instance.buildIndex()
+                if (CodeWhispererSettings.instance.isLocalIndexEnabled()) {
+                    void LspController.instance.buildIndex()
+                }
                 // log the LSP server CPU and Memory usage per 30 minutes.
                 globals.clock.setInterval(
                     async () => {

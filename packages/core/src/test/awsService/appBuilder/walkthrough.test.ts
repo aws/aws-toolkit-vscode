@@ -180,14 +180,14 @@ describe('AppBuilder Walkthrough', function () {
             const workspaceUri = vscode.workspace.workspaceFolders?.[0]?.uri
             assert.ok(workspaceUri)
             await fs.writeFile(vscode.Uri.joinPath(workspaceUri, 'template.yaml'), 'random text')
-            const prevInfo = await fs.readFileAsString(vscode.Uri.joinPath(workspaceUri, 'template.yaml'))
+            const prevInfo = await fs.readFileText(vscode.Uri.joinPath(workspaceUri, 'template.yaml'))
             getTestWindow().onDidShowMessage((message) => {
                 message.selectItem('Yes')
             })
             // When
             await genWalkthroughProject('Visual', workspaceUri, undefined)
             // Then
-            assert.notEqual(await fs.readFileAsString(vscode.Uri.joinPath(workspaceUri, 'template.yaml')), prevInfo)
+            assert.notEqual(await fs.readFileText(vscode.Uri.joinPath(workspaceUri, 'template.yaml')), prevInfo)
         })
 
         it('build an app with appcomposer no overwrite', async function () {
@@ -195,7 +195,7 @@ describe('AppBuilder Walkthrough', function () {
             const workspaceUri = vscode.workspace.workspaceFolders?.[0]?.uri
             assert.ok(workspaceUri)
             await fs.writeFile(vscode.Uri.joinPath(workspaceUri, 'template.yaml'), 'random text')
-            const prevInfo = await fs.readFileAsString(vscode.Uri.joinPath(workspaceUri, 'template.yaml'))
+            const prevInfo = await fs.readFileText(vscode.Uri.joinPath(workspaceUri, 'template.yaml'))
             getTestWindow().onDidShowMessage((message) => {
                 message.selectItem('No')
             })
@@ -208,7 +208,7 @@ describe('AppBuilder Walkthrough', function () {
                 assert.equal((e as Error).message, 'template.yaml already exist')
             }
             // Then
-            assert.equal(await fs.readFileAsString(vscode.Uri.joinPath(workspaceUri, 'template.yaml')), prevInfo)
+            assert.equal(await fs.readFileText(vscode.Uri.joinPath(workspaceUri, 'template.yaml')), prevInfo)
         })
 
         it('download serverlessland proj', async function () {
@@ -217,7 +217,7 @@ describe('AppBuilder Walkthrough', function () {
             assert.ok(workspaceUri)
             // makesure template exist
             await fs.writeFile(vscode.Uri.joinPath(workspaceUri, 'template.yaml'), '')
-            const prevInfo = await fs.readFileAsString(vscode.Uri.joinPath(workspaceUri, 'template.yaml'))
+            const prevInfo = await fs.readFileText(vscode.Uri.joinPath(workspaceUri, 'template.yaml'))
             // select overwrite
             getTestWindow().onDidShowMessage((message) => {
                 message.selectItem('Yes')
@@ -226,7 +226,7 @@ describe('AppBuilder Walkthrough', function () {
             await genWalkthroughProject('API', workspaceUri, 'python')
             // Then template should be overwritten
             assert.equal(await fs.exists(vscode.Uri.joinPath(workspaceUri, 'template.yaml')), true)
-            assert.notEqual(await fs.readFileAsString(vscode.Uri.joinPath(workspaceUri, 'template.yaml')), prevInfo)
+            assert.notEqual(await fs.readFileText(vscode.Uri.joinPath(workspaceUri, 'template.yaml')), prevInfo)
         })
 
         it('download serverlessland proj no overwrite', async function () {
@@ -235,7 +235,7 @@ describe('AppBuilder Walkthrough', function () {
             assert.ok(workspaceUri)
             // makesure template exist
             await fs.writeFile(vscode.Uri.joinPath(workspaceUri, 'template.yaml'), '')
-            const prevInfo = await fs.readFileAsString(vscode.Uri.joinPath(workspaceUri, 'template.yaml'))
+            const prevInfo = await fs.readFileText(vscode.Uri.joinPath(workspaceUri, 'template.yaml'))
             // select do not overwrite
             getTestWindow().onDidShowMessage((message) => {
                 message.selectItem('No')
@@ -248,7 +248,7 @@ describe('AppBuilder Walkthrough', function () {
                 assert.equal((e as Error).message, 'template.yaml already exist')
             }
             // Then no overwrite happens
-            assert.equal(await fs.readFileAsString(vscode.Uri.joinPath(workspaceUri, 'template.yaml')), prevInfo)
+            assert.equal(await fs.readFileText(vscode.Uri.joinPath(workspaceUri, 'template.yaml')), prevInfo)
         })
     })
 

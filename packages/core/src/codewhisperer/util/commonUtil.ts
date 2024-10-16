@@ -5,9 +5,14 @@
 
 import * as vscode from 'vscode'
 import * as semver from 'semver'
+import { distance } from 'fastest-levenshtein'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { getInlineSuggestEnabled } from '../../shared/utilities/editorUtilities'
-import { AWSTemplateCaseInsensitiveKeyWords, AWSTemplateKeyWords } from '../models/constants'
+import {
+    AWSTemplateCaseInsensitiveKeyWords,
+    AWSTemplateKeyWords,
+    JsonConfigFileNamingConvention,
+} from '../models/constants'
 
 export function getLocalDatetime() {
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
@@ -61,13 +66,23 @@ export function getPrefixSuffixOverlap(firstString: string, secondString: string
     return secondString.slice(0, i)
 }
 
-export function checkLeftContextKeywordsForJsonAndYaml(leftFileContent: string, language: string): boolean {
+export function checkLeftContextKeywordsForJson(fileName: string, leftFileContent: string, language: string): boolean {
     if (
-        (language === 'json' || language === 'yaml') &&
+        language === 'json' &&
         !AWSTemplateKeyWords.some((substring) => leftFileContent.includes(substring)) &&
-        !AWSTemplateCaseInsensitiveKeyWords.some((substring) => leftFileContent.toLowerCase().includes(substring))
+        !AWSTemplateCaseInsensitiveKeyWords.some((substring) => leftFileContent.toLowerCase().includes(substring)) &&
+        !JsonConfigFileNamingConvention.has(fileName.toLowerCase())
     ) {
         return true
     }
     return false
+}
+
+// With edit distance, complicate usermodification can be considered as simple edit(add, delete, replace),
+// and thus the unmodified part of recommendation length can be deducted/approximated
+// ex. (modified > original): originalRecom: foo -> modifiedRecom: fobarbarbaro, distance = 9, delta = 12 - 9 = 3
+// ex. (modified == original): originalRecom: helloworld -> modifiedRecom: HelloWorld, distance = 2, delta = 10 - 2 = 8
+// ex. (modified < original): originalRecom: CodeWhisperer -> modifiedRecom: CODE, distance = 12, delta = 13 - 12 = 1
+export function getUnmodifiedAcceptedTokens(origin: string, after: string) {
+    return Math.max(origin.length, after.length) - distance(origin, after)
 }

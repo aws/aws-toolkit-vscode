@@ -18,8 +18,7 @@ import * as utils from '../../../lambda/utils'
 import { HttpResourceFetcher } from '../../../shared/resourcefetcher/httpResourceFetcher'
 import * as vscode from 'vscode'
 import path from 'path'
-import { makeTemporaryToolkitFolder } from '../../../shared'
-import { remove } from 'fs-extra'
+import { fs, makeTemporaryToolkitFolder } from '../../../shared'
 
 const mockResourceData: ResourceData = {
     logicalId: 'MockFunction',
@@ -86,7 +85,7 @@ describe('SamInvokeWebview', () => {
                     `getFileName result should match Node's path.basename for "${input}"`
                 )
             })
-            await remove(tempFolder)
+            await fs.delete(tempFolder, { recursive: true })
         })
     })
 
