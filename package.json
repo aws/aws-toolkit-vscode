@@ -39,11 +39,11 @@
         "generateNonCodeFiles": "npm run generateNonCodeFiles -w packages/ --if-present"
     },
     "devDependencies": {
-        "@aws-toolkits/telemetry": "^1.0.267",
+        "@aws-toolkits/telemetry": "^1.0.272",
         "@playwright/browser-chromium": "^1.43.1",
         "@types/vscode": "^1.68.0",
         "@types/vscode-webview": "^1.57.1",
-        "@types/webpack-env": "^1.18.1",
+        "@types/webpack-env": "^1.18.5",
         "@typescript-eslint/eslint-plugin": "^7.14.1",
         "@typescript-eslint/parser": "^7.14.1",
         "@vscode/codicons": "^0.0.33",
@@ -58,7 +58,7 @@
         "eslint-plugin-security-node": "^1.1.4",
         "eslint-plugin-unicorn": "^54.0.0",
         "husky": "^9.0.7",
-        "prettier": "^3.3.2",
+        "prettier": "^3.3.3",
         "prettier-plugin-sh": "^0.14.0",
         "pretty-quick": "^4.0.0",
         "ts-node": "^10.9.1",

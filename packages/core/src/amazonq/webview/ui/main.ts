@@ -38,7 +38,7 @@ export const createMynahUI = (
     // eslint-disable-next-line prefer-const
     let connector: Connector
     //Store the mapping between messageId and messageUserIntent for amazonq_interactWithMessage telemetry
-    const messageUserIntentMap = new Map<string, string>()
+    const responseMetadata = new Map<string, string[]>()
 
     window.addEventListener('error', (e) => {
         const { error, message } = e
@@ -252,8 +252,12 @@ export const createMynahUI = (
                         ? { type: ChatItemType.CODE_RESULT, fileList: item.fileList }
                         : {}),
                 })
-                if (item.messageId !== undefined && item.userIntent !== undefined) {
-                    messageUserIntentMap.set(item.messageId, item.userIntent)
+                if (
+                    item.messageId !== undefined &&
+                    item.userIntent !== undefined &&
+                    item.codeBlockLanguage !== undefined
+                ) {
+                    responseMetadata.set(item.messageId, [item.userIntent, item.codeBlockLanguage])
                 }
                 ideApi.postMessage({
                     command: 'update-chat-message-telemetry',
@@ -515,7 +519,8 @@ export const createMynahUI = (
                 eventId,
                 codeBlockIndex,
                 totalCodeBlocks,
-                messageUserIntentMap.get(messageId) ?? undefined
+                responseMetadata.get(messageId)?.[0] ?? undefined,
+                responseMetadata.get(messageId)?.[1] ?? undefined
             )
         },
         onCodeBlockActionClicked: (
@@ -582,7 +587,8 @@ export const createMynahUI = (
                 eventId,
                 codeBlockIndex,
                 totalCodeBlocks,
-                messageUserIntentMap.get(messageId) ?? undefined
+                responseMetadata.get(messageId)?.[0] ?? undefined,
+                responseMetadata.get(messageId)?.[1] ?? undefined
             )
             mynahUI.notify({
                 type: NotificationType.SUCCESS,

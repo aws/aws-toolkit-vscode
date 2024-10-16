@@ -258,7 +258,7 @@ export function createRuntimeQuickPick(params: {
     totalSteps?: number
 }): QuickPickPrompter<RuntimeAndPackage> {
     const zipRuntimes = params.runtimeFamily
-        ? getRuntimesForFamily(params.runtimeFamily) ?? samLambdaCreatableRuntimes()
+        ? (getRuntimesForFamily(params.runtimeFamily) ?? samLambdaCreatableRuntimes())
         : samLambdaCreatableRuntimes()
 
     const zipRuntimeItems = zipRuntimes
