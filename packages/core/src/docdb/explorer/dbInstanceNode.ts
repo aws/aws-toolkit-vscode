@@ -12,6 +12,7 @@ import { DBClusterNode } from './dbClusterNode'
 import { ModifyDBInstanceMessage } from '@aws-sdk/client-docdb'
 import { copyToClipboard } from '../../shared/utilities/messages'
 import { toTitleCase } from '../../shared'
+import { getAwsConsoleUrl } from '../../shared/awsConsole'
 
 /**
  * An AWS Explorer node representing a DocumentDB instance.
@@ -70,10 +71,9 @@ export class DBInstanceNode extends DBResourceNode {
     }
 
     override getConsoleUrl() {
-        const region = this.regionCode
-        return vscode.Uri.parse(
-            `https://${region}.console.aws.amazon.com/docdb/home?region=${region}#instance-details/${this.name}`
-        )
+        return getAwsConsoleUrl('docdb', this.regionCode).with({
+            fragment: `instance-details/${this.name}`,
+        })
     }
 
     override copyEndpoint() {

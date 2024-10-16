@@ -16,6 +16,7 @@ import { DBCluster, GlobalCluster, GlobalClusterMember, ModifyGlobalClusterMessa
 import { DBResourceNode } from './dbResourceNode'
 import { DocDBContext } from './docdbContext'
 import { copyToClipboard } from '../../shared/utilities/messages'
+import { getAwsConsoleUrl } from '../../shared/awsConsole'
 
 function getRegionFromArn(arn: string) {
     const match = arn.match(/:rds:([^:]+):.*:cluster:/)
@@ -127,10 +128,9 @@ export class DBGlobalClusterNode extends DBResourceNode {
     }
 
     override getConsoleUrl(): vscode.Uri {
-        const region = this.regionCode
-        return vscode.Uri.parse(
-            `https://${region}.console.aws.amazon.com/docdb/home?region=${region}#global-cluster-details/${this.name}`
-        )
+        return getAwsConsoleUrl('docdb', this.regionCode).with({
+            fragment: `global-cluster-details/${this.name}`,
+        })
     }
 
     public [inspect.custom](): string {

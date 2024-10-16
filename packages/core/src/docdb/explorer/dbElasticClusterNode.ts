@@ -11,6 +11,7 @@ import { DBElasticCluster, DocumentDBClient } from '../../shared/clients/docdbCl
 import { DocDBContext } from './docdbContext'
 import { copyToClipboard } from '../../shared/utilities/messages'
 import { localize } from '../../shared/utilities/vsCodeUtils'
+import { getAwsConsoleUrl } from '../../shared/awsConsole'
 
 /**
  * An AWS Explorer node representing DocumentDB elastic clusters.
@@ -77,10 +78,9 @@ export class DBElasticClusterNode extends DBResourceNode {
     }
 
     override getConsoleUrl() {
-        const region = this.regionCode
-        return vscode.Uri.parse(
-            `https://${region}.console.aws.amazon.com/docdb/home?region=${region}#elastic-cluster-details/${this.arn}`
-        )
+        return getAwsConsoleUrl('docdb', this.regionCode).with({
+            fragment: `elastic-cluster-details/${this.arn}`,
+        })
     }
 
     override async copyEndpoint() {

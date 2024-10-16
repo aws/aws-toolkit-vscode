@@ -18,6 +18,7 @@ import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { DBInstance, DocumentDBClient } from '../../shared/clients/docdbClient'
 import { DocDBContext } from './docdbContext'
 import { toTitleCase } from '../../shared'
+import { getAwsConsoleUrl } from '../../shared/awsConsole'
 
 export type DBClusterRole = 'global' | 'regional' | 'primary' | 'secondary'
 
@@ -136,10 +137,9 @@ export class DBClusterNode extends DBResourceNode {
     }
 
     override getConsoleUrl() {
-        const region = this.regionCode
-        return vscode.Uri.parse(
-            `https://${region}.console.aws.amazon.com/docdb/home?region=${region}#cluster-details/${this.name}`
-        )
+        return getAwsConsoleUrl('docdb', this.regionCode).with({
+            fragment: `cluster-details/${this.name}`,
+        })
     }
 
     override copyEndpoint() {
