@@ -41,14 +41,14 @@ describe('SshKeyUtility', async function () {
     })
 
     it('generates key in target file', async function () {
-        const contents = await fs.readFileBytes(vscode.Uri.file(keyPath))
+        const contents = await fs.readFileBytes(keyPath)
         assert.notStrictEqual(contents.length, 0)
     })
 
     it('generates unique key each time', async function () {
-        const beforeContent = await fs.readFileBytes(vscode.Uri.file(keyPath))
+        const beforeContent = await fs.readFileBytes(keyPath)
         keyPair = await SshKeyPair.getSshKeyPair(keyPath, 30000)
-        const afterContent = await fs.readFileBytes(vscode.Uri.file(keyPath))
+        const afterContent = await fs.readFileBytes(keyPath)
         assert.notStrictEqual(beforeContent, afterContent)
     })
 
