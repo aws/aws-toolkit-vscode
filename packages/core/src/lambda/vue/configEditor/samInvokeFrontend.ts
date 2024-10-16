@@ -390,6 +390,27 @@ export default defineComponent({
             // propagate those through to the `postMessage` command, causing an error. We can stop
             // this by recursively accessing all primitive fields (which is what this line does)
             const launchConfig: AwsSamDebuggerConfigurationLoose = JSON.parse(JSON.stringify(this.launchConfig))
+            const localArgs = launchConfig.sam?.localArguments
+
+            const removeEventArg = () => {
+                if (localArgs) {
+                    const eventArgIndex = localArgs?.findIndex((arg) => arg === '-e' || arg === '--event')
+                    if (eventArgIndex !== -1) {
+                        // Remove the event argument and its value
+                        localArgs?.splice(eventArgIndex, 2)
+                    }
+                }
+            }
+
+            if (localArgs) {
+                if (this.payload && this.payloadOption !== 'localFile') {
+                    removeEventArg()
+                } else if (this.payloadOption === 'localFile' && this.selectedFile) {
+                    payloadJson = undefined
+                } else {
+                    removeEventArg()
+                }
+            }
 
             return {
                 ...launchConfig,
