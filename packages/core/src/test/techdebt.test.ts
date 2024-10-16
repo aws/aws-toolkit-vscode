@@ -35,6 +35,11 @@ describe('tech debt', function () {
             semver.lt(minNodejs, '18.0.0'),
             'with node16+, we can now use AbortController to cancel Node things (child processes, HTTP requests, etc.)'
         )
+
+        assert.ok(
+            semver.lt(minNodejs, '18.0.0'),
+            'with node16+, we can remove `any` workaround in the `copyFiles.ts` scripts'
+        )
     })
 
     it('remove separate sessions login edge cases', async function () {
