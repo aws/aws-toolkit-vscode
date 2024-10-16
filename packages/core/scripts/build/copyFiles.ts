@@ -51,7 +51,7 @@ function copy(task: CopyTask): void {
     const dst = path.resolve(outRoot, task.destination ?? task.target)
 
     try {
-        ;(fs as any).cpSync(src, dst, {
+        fs.cpSync(src, dst, {
             recursive: true,
             force: true,
             errorOnExist: false,
