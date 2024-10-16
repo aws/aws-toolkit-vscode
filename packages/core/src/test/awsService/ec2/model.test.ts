@@ -155,13 +155,14 @@ describe('Ec2ConnectClient', function () {
                 instanceId: 'test-id',
                 region: 'test-region',
             }
-            const keyPath = path.join((await createTestWorkspaceFolder()).uri.path, 'keys')
+            const testWorkspaceFolder = await createTestWorkspaceFolder()
+            const keyPath = path.join(testWorkspaceFolder.uri.path, 'keys')
             const keys = await SshKeyPair.getSshKeyPair(keyPath, 30000)
             await client.sendSshKeyToInstance(testSelection, keys, 'test-user')
             const privKey = await fs.readFileText(keys.getPrivateKeyPath())
             assertNoTelemetryMatch(privKey)
             sinon.restore()
-            await keys.delete()
+            await fs.delete(testWorkspaceFolder.uri)
         })
     })
 

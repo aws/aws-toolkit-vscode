@@ -33,11 +33,18 @@ export class SshKeyPair {
         return new SshKeyPair(keyPath, lifetime)
     }
 
-    public static async generateSshKeyPair(keyPath: string): Promise<void> {
-        const keyGenerated = await this.tryKeyTypes(keyPath, ['ed25519', 'rsa'])
-        if (!keyGenerated || !(await fs.existsFile(keyPath))) {
-            throw new ToolkitError('ec2: Unable to generate ssh key pair')
+    private static async assertGenerated(keyPath: string, keyGenerated: boolean): Promise<never | void> {
+        if (!keyGenerated) {
+            throw new ToolkitError('ec2: Unable to generate ssh key pair with either ed25519 or rsa')
         }
+        if (!(await fs.exists(keyPath))) {
+            throw new ToolkitError(`ec2: Failed to generate keys, resulting key not found at ${keyPath}`)
+        }
+    }
+
+    public static async generateSshKeyPair(keyPath: string): Promise<void> {
+        const keyGenerated = await SshKeyPair.tryKeyTypes(keyPath, ['ed25519', 'rsa'])
+        await SshKeyPair.assertGenerated(keyPath, keyGenerated)
         // Should already be the case, but just in case we assert permissions.
         // skip on Windows since it only allows write permission to be changed.
         if (!globals.isWeb && os.platform() !== 'win32') {
