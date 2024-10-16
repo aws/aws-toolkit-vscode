@@ -70,6 +70,7 @@
     },
     "dependencies": {
         "@types/node": "^22.7.5",
+        "@aws-toolkits/telemetry": "^1.0.242",
         "vscode-nls": "^5.2.0",
         "vscode-nls-dev": "^4.0.4"
     }

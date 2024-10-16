@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import assert from 'assert'
-import { prepareSyncParams, SyncParams, SyncWizard } from '../../../shared/sam/sync'
+import { ParamsSource, prepareSyncParams, SyncParams, SyncWizard } from '../../../shared/sam/sync'
 import {
     createBaseImageTemplate,
     createBaseTemplate,
@@ -24,10 +24,37 @@ describe('SyncWizard', async function () {
 
     it('shows steps in correct order', async function () {
         const tester = await createTester()
-        tester.region.assertShowFirst()
-        tester.template.assertShowSecond()
-        tester.stackName.assertShowThird()
-        tester.bucketName.assertShow(4)
+        tester.template.assertShowFirst()
+        tester.paramsSource.assertShowSecond()
+        tester.projectRoot.assertDoesNotShow()
+
+        const workspaceUri = vscode.workspace.workspaceFolders?.[0]?.uri || vscode.Uri.file('/')
+        const rootFolderUri = vscode.Uri.joinPath(workspaceUri, 'my')
+        const templateUri = vscode.Uri.joinPath(rootFolderUri, 'template.yaml')
+        const tester2 = await createTester({
+            template: { uri: templateUri, data: createBaseTemplate() },
+            paramsSource: ParamsSource.SpecifyAndSave,
+            projectRoot: rootFolderUri,
+        })
+        tester2.region.assertShow(1)
+        tester2.stackName.assertShow(2)
+        tester2.bucketName.assertShow(3)
+        tester2.projectRoot.assertDoesNotShow()
+    })
+
+    it('skips prompts if user chooses samconfig file as params source', async function () {
+        const workspaceUri = vscode.workspace.workspaceFolders?.[0]?.uri || vscode.Uri.file('/')
+        const rootFolderUri = vscode.Uri.joinPath(workspaceUri, 'my')
+        const templateUri = vscode.Uri.joinPath(rootFolderUri, 'template.yaml')
+        const tester = await createTester({
+            template: { uri: templateUri, data: createBaseTemplate() },
+            paramsSource: ParamsSource.SamConfig,
+            projectRoot: rootFolderUri,
+        })
+        tester.template.assertDoesNotShow()
+        tester.region.assertDoesNotShow()
+        tester.stackName.assertDoesNotShow()
+        tester.bucketName.assertDoesNotShow()
     })
 
     it('prompts for ECR repo if template has image-based resource', async function () {
@@ -42,14 +69,16 @@ describe('SyncWizard', async function () {
         tester.ecrRepoUri.assertDoesNotShow()
     })
 
-    it("uses the template's workspace as the project root is not set", async function () {
+    it("uses the template's workspace subfolder as the project root is not set", async function () {
         const workspaceUri = vscode.workspace.workspaceFolders?.[0]?.uri
         assert.ok(workspaceUri)
+        const rootFolderUri = vscode.Uri.joinPath(workspaceUri, 'my')
+        assert.ok(rootFolderUri)
 
-        const templateUri = vscode.Uri.joinPath(workspaceUri, 'my', 'template.yaml')
+        const templateUri = vscode.Uri.joinPath(rootFolderUri, 'template.yaml')
         const template = { uri: templateUri, data: createBaseTemplate() }
-        const tester = await createTester({ template })
-        tester.projectRoot.assertValue(workspaceUri)
+        const tester = await createTester({ template, projectRoot: rootFolderUri })
+        tester.projectRoot.path.assertValue(rootFolderUri.path)
     })
 })
 

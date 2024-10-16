@@ -4,7 +4,7 @@ When you set up your credentials, the AWS Toolkit for Visual Studio Code automat
 
 ## Add a Region to the AWS Explorer
 
-1. [Click here](command:aws.showRegion) to select a Region to add or remove.
+1. [Click here](command:aws.toolkit.showRegion) to select a Region to add or remove.
 
     > This command can also be accessed through the [Command Palette](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/toolkit-navigation.html#command-locations) by choosing **AWS: Show or Hide Regions**\.
     >

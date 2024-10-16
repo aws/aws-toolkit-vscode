@@ -10,12 +10,14 @@ import { ChildProcess, ChildProcessOptions } from './processUtils'
 import { GitExtension } from '../extensions/git'
 import { Settings } from '../settings'
 import { getLogger } from '../logger/logger'
+import { mergeResolvedShellPath } from '../env/resolveEnv'
 
 /** Full path to VSCode CLI. */
 let vscPath: string
 let sshPath: string
 let gitPath: string
 let bashPath: string
+const pathMap = new Map<string, string>()
 
 /**
  * Tries to execute a program at path `p` with the given args and
@@ -34,7 +36,10 @@ export async function tryRun(
     opt?: ChildProcessOptions
 ): Promise<boolean> {
     const proc = new ChildProcess(p, args, { logging: 'no' })
-    const r = await proc.run(opt)
+    const r = await proc.run({
+        ...opt,
+        spawnOptions: { env: await mergeResolvedShellPath(opt?.spawnOptions?.env ?? process.env) },
+    })
     const ok = r.exitCode === 0 && (expected === undefined || r.stdout.includes(expected))
     if (logging === 'noresult') {
         getLogger().info('tryRun: %s: %s', ok ? 'ok' : 'failed', proc)
@@ -176,6 +181,40 @@ export async function findBashPath(): Promise<string | undefined> {
         }
         if (await tryRun(p, ['--version'])) {
             bashPath = p
+            return p
+        }
+    }
+}
+
+/**
+ * Gets a working `name` in $PATH or `paths`. If found, try to run the command with `verifyArgs`.
+ *
+ * @param name the name of executable, E.g. aws|sam|docker
+ * @param paths An array of path to search
+ * @param verifyArgs the array of verify args to run the found executable. typically ['--version']
+ * @returns If found and valid, return a executable path of `name`, else undefined
+ */
+export async function findPath(
+    name: string,
+    paths: Array<string>,
+    verifyArgs: Array<string>
+): Promise<string | undefined> {
+    // get from cache
+    if (pathMap && pathMap.get(name)) {
+        return pathMap.get(name)
+    }
+    // name found in path
+    if (await tryRun(name, verifyArgs)) {
+        pathMap.set(name, name)
+        return name
+    }
+    // find working paths
+    for (const p of paths) {
+        if (!p || !(await fs.exists(p))) {
+            continue
+        }
+        if (await tryRun(p, verifyArgs)) {
+            pathMap.set(name, p)
             return p
         }
     }
