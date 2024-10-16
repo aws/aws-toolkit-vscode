@@ -157,9 +157,9 @@ describe('Ec2ConnectClient', function () {
             }
             const testWorkspaceFolder = await createTestWorkspaceFolder()
             const keyPath = path.join(testWorkspaceFolder.uri.path, 'key')
-            const keys = await SshKeyPair.getSshKeyPair(keyPath, 30000)
+            const keys = await SshKeyPair.getSshKeyPair(keyPath, 60000)
             await client.sendSshKeyToInstance(testSelection, keys, 'test-user')
-            const privKey = await fs.readFileText(keys.getPrivateKeyPath())
+            const privKey = await fs.readFileText(keyPath)
             assertNoTelemetryMatch(privKey)
             sinon.restore()
 
