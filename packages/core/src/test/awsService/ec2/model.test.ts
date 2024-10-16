@@ -162,7 +162,7 @@ describe('Ec2ConnectClient', function () {
             const privKey = await fs.readFileText(keys.getPrivateKeyPath())
             assertNoTelemetryMatch(privKey)
             sinon.restore()
-            await fs.delete(testWorkspaceFolder.uri)
+            await fs.delete(testWorkspaceFolder.uri, { recursive: true, force: true })
         })
     })
 
