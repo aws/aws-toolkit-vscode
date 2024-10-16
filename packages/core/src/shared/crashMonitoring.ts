@@ -15,7 +15,7 @@ import { isNewOsSession } from './utilities/osUtils'
 import nodeFs from 'fs/promises'
 import fs from './fs/fs'
 import { getLogger } from './logger/logger'
-import { crashMonitoringDirNames } from './constants'
+import { crashMonitoringDirName } from './constants'
 import { throwOnUnstableFileSystem } from './filesystemUtilities'
 import { withRetries } from './utilities/functionUtils'
 import { TimeLag } from './utilities/timeoutUtils'
@@ -307,35 +307,26 @@ class CrashChecker {
                     continue
                 }
 
-                // Ext is not running anymore, handle appropriately depending on why it stopped running
-                await state.handleExtNotRunning(ext, {
-                    onShutdown: async () => {
-                        // Nothing to do, just log info if necessary
-                        devLogger?.debug(
-                            `crashMonitoring: SHUTDOWN: following has gracefully shutdown: pid ${ext.extHostPid} + sessionId: ${ext.sessionId}`
-                        )
-                    },
-                    onCrash: async () => {
-                        // Debugger instances may incorrectly look like they crashed, so don't emit.
-                        // Example is if I hit the red square in the debug menu, it is a non-graceful shutdown. But the regular
-                        // 'x' button in the Debug IDE instance is a graceful shutdown.
-                        if (ext.isDebug) {
-                            devLogger?.debug(`crashMonitoring: DEBUG instance crashed: ${JSON.stringify(ext)}`)
-                            return
-                        }
+                await state.handleCrashedExt(ext, () => {
+                    // Debugger instances may incorrectly look like they crashed, so don't emit.
+                    // Example is if I hit the red square in the debug menu, it is a non-graceful shutdown. But the regular
+                    // 'x' button in the Debug IDE instance is a graceful shutdown.
+                    if (ext.isDebug) {
+                        devLogger?.debug(`crashMonitoring: DEBUG instance crashed: ${JSON.stringify(ext)}`)
+                        return
+                    }
 
-                        // This is the metric to let us know the extension crashed
-                        telemetry.session_end.emit({
-                            result: 'Failed',
-                            proxiedSessionId: ext.sessionId,
-                            reason: 'ExtHostCrashed',
-                            passive: true,
-                        })
+                    // This is the metric to let us know the extension crashed
+                    telemetry.session_end.emit({
+                        result: 'Failed',
+                        proxiedSessionId: ext.sessionId,
+                        reason: 'ExtHostCrashed',
+                        passive: true,
+                    })
 
-                        devLogger?.debug(
-                            `crashMonitoring: CRASH: following has crashed: pid ${ext.extHostPid} + sessionId: ${ext.sessionId}`
-                        )
-                    },
+                    devLogger?.debug(
+                        `crashMonitoring: CRASH: following has crashed: pid ${ext.extHostPid} + sessionId: ${ext.sessionId}`
+                    )
                 })
             }
 
@@ -421,7 +412,7 @@ export class FileSystemState {
      * IMORTANT: Use {@link crashMonitoringStateFactory} to make an instance
      */
     constructor(protected readonly deps: MementoStateDependencies) {
-        this.stateDirPath = path.join(this.deps.workDirPath, crashMonitoringDirNames.root)
+        this.stateDirPath = path.join(this.deps.workDirPath, crashMonitoringDirName)
 
         this.deps.devLogger?.debug(`crashMonitoring: pid: ${this.deps.pid}`)
         this.deps.devLogger?.debug(`crashMonitoring: sessionId: ${this.deps.sessionId.slice(0, 8)}-...`)
@@ -447,17 +438,16 @@ export class FileSystemState {
         if (await this.deps.isStateStale()) {
             await this.clearState()
         }
+
+        await withFailCtx('init', () => fs.mkdir(this.stateDirPath))
     }
 
     // ------------------ Heartbeat methods ------------------
     public async sendHeartbeat() {
-        const extId = this.createExtId(this.ext)
-
         try {
             const func = async () => {
-                const dir = await this.runningExtsDir()
                 await fs.writeFile(
-                    path.join(dir, extId),
+                    this.makeStateFilePath(this.extId),
                     JSON.stringify({ ...this.ext, lastHeartbeat: this.deps.now() }, undefined, 4)
                 )
                 this.deps.devLogger?.debug(
@@ -479,7 +469,7 @@ export class FileSystemState {
     }
 
     /**
-     * Signal that this extension is gracefully shutting down. This will prevent the IDE from thinking it crashed.
+     * Indicates that this extension instance has gracefully shutdown.
      *
      * IMPORTANT: This code is being run in `deactivate()` where VS Code api is not available. Due to this we cannot
      * easily update the state to indicate a graceful shutdown. So the next best option is to write to a file on disk,
@@ -489,46 +479,24 @@ export class FileSystemState {
      * function touches.
      */
     public async indicateGracefulShutdown(): Promise<void> {
-        const dir = await this.shutdownExtsDir()
-        await withFailCtx('writeShutdownFile', () => nodeFs.writeFile(path.join(dir, this.extId), ''))
+        // By removing the heartbeat entry, the crash checkers will not be able to find this entry anymore, making it
+        // impossible to report on since the file system is the source of truth
+        await withFailCtx('indicateGracefulShutdown', () => nodeFs.rm(this.makeStateFilePath(this.extId)))
     }
 
     // ------------------ Checker Methods ------------------
 
-    /**
-     * Signals the state that the given extension is not running, allowing the state to appropriately update
-     * depending on a graceful shutdown or crash.
-     *
-     * NOTE: This does NOT run in the `deactivate()` method, so it CAN reliably use the VS Code FS api
-     *
-     * @param opts - functions to run depending on why the extension stopped running
-     */
-    public async handleExtNotRunning(
-        ext: ExtInstance,
-        opts: { onShutdown: () => Promise<void>; onCrash: () => Promise<void> }
-    ): Promise<void> {
-        const extId = this.createExtId(ext)
-        const shutdownFilePath = path.join(await this.shutdownExtsDir(), extId)
-
-        if (await withFailCtx('existsShutdownFile', () => fs.exists(shutdownFilePath))) {
-            await opts.onShutdown()
-            // We intentionally do not clean up the file in shutdown since there may be another
-            // extension may be doing the same thing in parallel, and would read the extension as
-            // crashed since the file was missing. The file  will be cleared on computer restart though.
-
-            // TODO: Be smart and clean up the file after some time.
-        } else {
-            await opts.onCrash()
-        }
-
-        // Clean up the running extension file since it no longer exists
-        await this.deleteHeartbeatFile(extId)
+    public async handleCrashedExt(ext: ExtInstance, fn: () => void) {
+        await withFailCtx('handleCrashedExt', async () => {
+            await this.deleteHeartbeatFile(ext)
+            fn()
+        })
     }
-    public async deleteHeartbeatFile(extId: ExtInstanceId) {
-        const dir = await this.runningExtsDir()
+
+    private async deleteHeartbeatFile(ext: ExtInstanceId | ExtInstance) {
         // Retry file deletion to prevent incorrect crash reports. Common Windows errors seen in telemetry: EPERM/EBUSY.
         // See: https://github.com/aws/aws-toolkit-vscode/pull/5335
-        await withRetries(() => withFailCtx('deleteStaleRunningFile', () => fs.delete(path.join(dir, extId))), {
+        await withRetries(() => withFailCtx('deleteStaleRunningFile', () => fs.delete(this.makeStateFilePath(ext))), {
             maxRetries: 8,
             delay: 100,
             backoff: 2,
@@ -557,17 +525,9 @@ export class FileSystemState {
     protected createExtId(ext: ExtInstance): ExtInstanceId {
         return `${ext.extHostPid}_${ext.sessionId}`
     }
-    private async runningExtsDir(): Promise<string> {
-        const p = path.join(this.stateDirPath, crashMonitoringDirNames.running)
-        // ensure the dir exists
-        await withFailCtx('ensureRunningExtsDir', () => nodeFs.mkdir(p, { recursive: true }))
-        return p
-    }
-    private async shutdownExtsDir() {
-        const p = path.join(this.stateDirPath, crashMonitoringDirNames.shutdown)
-        // Since this runs in `deactivate()` it cannot use the VS Code FS api
-        await withFailCtx('ensureShutdownExtsDir', () => nodeFs.mkdir(p, { recursive: true }))
-        return p
+    private makeStateFilePath(ext: ExtInstance | ExtInstanceId) {
+        const extId = typeof ext === 'string' ? ext : this.createExtId(ext)
+        return path.join(this.stateDirPath, extId)
     }
     public async clearState(): Promise<void> {
         this.deps.devLogger?.debug('crashMonitoring: CLEAR_STATE: Started')
@@ -580,7 +540,7 @@ export class FileSystemState {
         const res = await withFailCtx('getAllExts', async () => {
             // The file names are intentionally the IDs for easy mapping
             const allExtIds: ExtInstanceId[] = await withFailCtx('readdir', async () =>
-                (await fs.readdir(await this.runningExtsDir())).map((k) => k[0])
+                (await fs.readdir(this.stateDirPath)).map((k) => k[0])
             )
 
             const allExts = allExtIds.map<Promise<ExtInstanceHeartbeat | undefined>>(async (extId: string) => {
@@ -591,7 +551,7 @@ export class FileSystemState {
                     () =>
                         withFailCtx('parseRunningExtFile', async () =>
                             ignoreBadFileError(async () => {
-                                const text = await fs.readFileText(path.join(await this.runningExtsDir(), extId))
+                                const text = await fs.readFileText(this.makeStateFilePath(extId))
 
                                 if (!text) {
                                     return undefined
