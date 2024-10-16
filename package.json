@@ -69,6 +69,7 @@
         "webpack-merge": "^5.10.0"
     },
     "dependencies": {
+        "@types/node": "^22.7.5",
         "vscode-nls": "^5.2.0",
         "vscode-nls-dev": "^4.0.4"
     }
