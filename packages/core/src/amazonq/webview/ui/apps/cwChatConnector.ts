@@ -18,7 +18,7 @@ interface ChatPayload {
 export interface ConnectorProps {
     sendMessageToExtension: (message: ExtensionMessage) => void
     onMessageReceived?: (tabID: string, messageData: any, needToShowAPIDocsTab: boolean) => void
-    onChatAnswerReceived?: (tabID: string, message: CWCChatItem) => void
+    onChatAnswerReceived?: (tabID: string, message: CWCChatItem, messageData: any) => void
     onCWCContextCommandMessage: (message: CWCChatItem, command?: string) => string | undefined
     onError: (tabID: string, message: string, title: string) => void
     onWarning: (tabID: string, message: string, title: string) => void
@@ -111,7 +111,8 @@ export class Connector {
         eventId?: string,
         codeBlockIndex?: number,
         totalCodeBlocks?: number,
-        userIntent?: string
+        userIntent?: string,
+        codeBlockLanguage?: string
     ): void => {
         this.sendMessageToExtension({
             tabID: tabID,
@@ -125,6 +126,7 @@ export class Connector {
             codeBlockIndex,
             totalCodeBlocks,
             userIntent,
+            codeBlockLanguage,
         })
     }
 
@@ -137,7 +139,8 @@ export class Connector {
         eventId?: string,
         codeBlockIndex?: number,
         totalCodeBlocks?: number,
-        userIntent?: string
+        userIntent?: string,
+        codeBlockLanguage?: string
     ): void => {
         this.sendMessageToExtension({
             tabID: tabID,
@@ -151,6 +154,7 @@ export class Connector {
             codeBlockIndex,
             totalCodeBlocks,
             userIntent,
+            codeBlockLanguage,
         })
     }
 
@@ -295,6 +299,7 @@ export class Connector {
                 canBeVoted: true,
                 codeReference: messageData.codeReference,
                 userIntent: messageData.userIntent,
+                codeBlockLanguage: messageData.codeBlockLanguage,
             }
 
             // If it is not there we will not set it
@@ -308,7 +313,7 @@ export class Connector {
                     content: messageData.relatedSuggestions,
                 }
             }
-            this.onChatAnswerReceived(messageData.tabID, answer)
+            this.onChatAnswerReceived(messageData.tabID, answer, messageData)
 
             // Exit the function if we received an answer from AI
             if (
@@ -328,6 +333,7 @@ export class Connector {
                 messageId: messageData.messageID,
                 codeReference: messageData.codeReference,
                 userIntent: messageData.userIntent,
+                codeBlockLanguage: messageData.codeBlockLanguage,
                 followUp:
                     messageData.followUps !== undefined && messageData.followUps.length > 0
                         ? {
@@ -336,7 +342,7 @@ export class Connector {
                           }
                         : undefined,
             }
-            this.onChatAnswerReceived(messageData.tabID, answer)
+            this.onChatAnswerReceived(messageData.tabID, answer, messageData)
 
             return
         }
@@ -347,13 +353,17 @@ export class Connector {
             return
         }
 
-        this.onChatAnswerReceived(messageData.tabID, {
-            type: ChatItemType.ANSWER,
-            messageId: messageData.triggerID,
-            body: messageData.message,
-            followUp: this.followUpGenerator.generateAuthFollowUps('cwc', messageData.authType),
-            canBeVoted: false,
-        })
+        this.onChatAnswerReceived(
+            messageData.tabID,
+            {
+                type: ChatItemType.ANSWER,
+                messageId: messageData.triggerID,
+                body: messageData.message,
+                followUp: this.followUpGenerator.generateAuthFollowUps('cwc', messageData.authType),
+                canBeVoted: false,
+            },
+            messageData
+        )
 
         return
     }

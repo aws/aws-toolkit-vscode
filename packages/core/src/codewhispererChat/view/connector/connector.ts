@@ -142,6 +142,7 @@ export interface ChatMessageProps {
     readonly triggerID: string
     readonly messageID: string
     readonly userIntent: string | undefined
+    readonly codeBlockLanguage: string | undefined
 }
 
 export class ChatMessage extends UiMessage {
@@ -155,6 +156,7 @@ export class ChatMessage extends UiMessage {
     readonly triggerID: string
     readonly messageID: string | undefined
     readonly userIntent: string | undefined
+    readonly codeBlockLanguage: string | undefined
     override type = 'chatMessage'
 
     constructor(props: ChatMessageProps, tabID: string) {
@@ -168,6 +170,7 @@ export class ChatMessage extends UiMessage {
         this.triggerID = props.triggerID
         this.messageID = props.messageID
         this.userIntent = props.userIntent
+        this.codeBlockLanguage = props.codeBlockLanguage
     }
 }
 

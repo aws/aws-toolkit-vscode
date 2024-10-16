@@ -15,6 +15,8 @@ import {
 } from '../../../shared/telemetry/telemetry'
 import { ChatSessionStorage } from '../../storages/chatSession'
 import {
+    AcceptDiff,
+    ViewDiff,
     ChatItemFeedbackMessage,
     ChatItemVotedMessage,
     CopyCodeToClipboard,
@@ -171,6 +173,7 @@ export class CWCTelemetryHelper {
 
     public recordInteractWithMessage(
         message:
+            | AcceptDiff
             | InsertCodeAtCursorPosition
             | CopyCodeToClipboard
             | PromptMessage
@@ -178,6 +181,8 @@ export class CWCTelemetryHelper {
             | SourceLinkClickMessage
             | ResponseBodyLinkClickMessage
             | FooterInfoLinkClick
+            | ViewDiff,
+        { result }: { result: Result } = { result: 'Succeeded' }
     ) {
         const conversationId = this.getConversationId(message.tabID)
         let event: AmazonqInteractWithMessage | undefined
@@ -185,7 +190,7 @@ export class CWCTelemetryHelper {
             case 'insert_code_at_cursor_position':
                 message = message as InsertCodeAtCursorPosition
                 event = {
-                    result: 'Succeeded',
+                    result,
                     cwsprChatConversationId: conversationId ?? '',
                     credentialStartUrl: AuthUtil.instance.startUrl,
                     cwsprChatMessageId: message.messageId,
@@ -198,12 +203,13 @@ export class CWCTelemetryHelper {
                     cwsprChatCodeBlockIndex: message.codeBlockIndex,
                     cwsprChatTotalCodeBlocks: message.totalCodeBlocks,
                     cwsprChatHasProjectContext: this.responseWithProjectContext.get(message.messageId),
+                    cwsprChatProgrammingLanguage: message.codeBlockLanguage,
                 }
                 break
             case 'code_was_copied_to_clipboard':
                 message = message as CopyCodeToClipboard
                 event = {
-                    result: 'Succeeded',
+                    result,
                     cwsprChatConversationId: conversationId ?? '',
                     credentialStartUrl: AuthUtil.instance.startUrl,
                     cwsprChatMessageId: message.messageId,
@@ -215,12 +221,45 @@ export class CWCTelemetryHelper {
                     cwsprChatCodeBlockIndex: message.codeBlockIndex,
                     cwsprChatTotalCodeBlocks: message.totalCodeBlocks,
                     cwsprChatHasProjectContext: this.responseWithProjectContext.get(message.messageId),
+                    cwsprChatProgrammingLanguage: message.codeBlockLanguage,
+                }
+                break
+            case 'accept_diff':
+                message = message as AcceptDiff
+                event = {
+                    result,
+                    cwsprChatConversationId: conversationId ?? '',
+                    cwsprChatMessageId: message.messageId,
+                    cwsprChatInteractionType: 'acceptDiff',
+                    credentialStartUrl: AuthUtil.instance.startUrl,
+                    cwsprChatAcceptedCharactersLength: message.code.length,
+                    cwsprChatHasReference:
+                        message.referenceTrackerInformation && message.referenceTrackerInformation.length > 0,
+                    cwsprChatCodeBlockIndex: message.codeBlockIndex,
+                    cwsprChatTotalCodeBlocks: message.totalCodeBlocks,
+                    cwsprChatHasProjectContext: this.responseWithProjectContext.get(message.messageId),
+                }
+                break
+            case 'view_diff':
+                message = message as ViewDiff
+                event = {
+                    result,
+                    cwsprChatConversationId: conversationId ?? '',
+                    cwsprChatMessageId: message.messageId,
+                    cwsprChatInteractionType: 'viewDiff',
+                    credentialStartUrl: AuthUtil.instance.startUrl,
+                    cwsprChatAcceptedCharactersLength: message.code.length,
+                    cwsprChatHasReference:
+                        message.referenceTrackerInformation && message.referenceTrackerInformation.length > 0,
+                    cwsprChatCodeBlockIndex: message.codeBlockIndex,
+                    cwsprChatTotalCodeBlocks: message.totalCodeBlocks,
+                    cwsprChatHasProjectContext: this.responseWithProjectContext.get(message.messageId),
                 }
                 break
             case 'follow-up-was-clicked':
                 message = message as PromptMessage
                 event = {
-                    result: 'Succeeded',
+                    result,
                     cwsprChatConversationId: conversationId ?? '',
                     credentialStartUrl: AuthUtil.instance.startUrl,
                     cwsprChatMessageId: message.messageId,
@@ -231,7 +270,7 @@ export class CWCTelemetryHelper {
             case 'chat-item-voted':
                 message = message as ChatItemVotedMessage
                 event = {
-                    result: 'Succeeded',
+                    result,
                     cwsprChatMessageId: message.messageId,
                     cwsprChatConversationId: conversationId ?? '',
                     credentialStartUrl: AuthUtil.instance.startUrl,
@@ -242,7 +281,7 @@ export class CWCTelemetryHelper {
             case 'source-link-click':
                 message = message as SourceLinkClickMessage
                 event = {
-                    result: 'Succeeded',
+                    result,
                     cwsprChatMessageId: message.messageId,
                     cwsprChatConversationId: conversationId ?? '',
                     credentialStartUrl: AuthUtil.instance.startUrl,
@@ -254,7 +293,7 @@ export class CWCTelemetryHelper {
             case 'response-body-link-click':
                 message = message as ResponseBodyLinkClickMessage
                 event = {
-                    result: 'Succeeded',
+                    result,
                     cwsprChatMessageId: message.messageId,
                     cwsprChatConversationId: conversationId ?? '',
                     credentialStartUrl: AuthUtil.instance.startUrl,
@@ -266,7 +305,7 @@ export class CWCTelemetryHelper {
             case 'footer-info-link-click':
                 message = message as FooterInfoLinkClick
                 event = {
-                    result: 'Succeeded',
+                    result,
                     cwsprChatMessageId: 'footer',
                     cwsprChatConversationId: conversationId ?? '',
                     credentialStartUrl: AuthUtil.instance.startUrl,

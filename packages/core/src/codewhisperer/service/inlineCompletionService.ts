@@ -112,7 +112,6 @@ export class InlineCompletionService {
 
         await this.setState('loading')
 
-        TelemetryHelper.instance.setInvocationStartTime(performance.now())
         RecommendationHandler.instance.checkAndResetCancellationTokens()
         RecommendationHandler.instance.documentUri = editor.document.uri
         let response: GetRecommendationsResponse = {

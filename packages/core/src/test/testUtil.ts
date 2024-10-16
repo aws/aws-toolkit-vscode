@@ -75,7 +75,7 @@ export function getWorkspaceFolder(dir: string): vscode.WorkspaceFolder {
  * But if the day comes that we need it for web, we should be able to add some agnostic FS methods in here.
  */
 export class TestFolder {
-    protected constructor(private readonly rootFolder: string) {}
+    protected constructor(public readonly path: string) {}
 
     /** Creates a folder that deletes itself once all tests are done running. */
     static async create() {
@@ -117,10 +117,6 @@ export class TestFolder {
     /** Returns an absolute path compose of the test folder path and the given relative path. */
     pathFrom(relativePath: string): string {
         return path.join(this.path, relativePath)
-    }
-
-    get path(): string {
-        return path.join(this.rootFolder)
     }
 }
 
@@ -569,9 +565,18 @@ export function captureEvent<T>(event: vscode.Event<T>): EventCapturer<T> {
  * Captures the first value emitted by an event, optionally with a timeout
  */
 export function captureEventOnce<T>(event: vscode.Event<T>, timeout?: number): Promise<T> {
+    return captureEventNTimes(event, 1, timeout)
+}
+
+export function captureEventNTimes<T>(event: vscode.Event<T>, amount: number, timeout?: number): Promise<T> {
     return new Promise<T>((resolve, reject) => {
         const stop = () => reject(new Error('Timed out waiting for event'))
-        event((data) => resolve(data))
+        let count = 0
+        event((data) => {
+            if (++count === amount) {
+                resolve(data)
+            }
+        })
 
         if (timeout !== undefined) {
             setTimeout(stop, timeout)

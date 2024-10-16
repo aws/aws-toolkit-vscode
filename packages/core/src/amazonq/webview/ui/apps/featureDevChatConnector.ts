@@ -19,7 +19,7 @@ export interface ConnectorProps {
     sendMessageToExtension: (message: ExtensionMessage) => void
     onMessageReceived?: (tabID: string, messageData: any, needToShowAPIDocsTab: boolean) => void
     onAsyncEventProgress: (tabID: string, inProgress: boolean, message: string) => void
-    onChatAnswerReceived?: (tabID: string, message: ChatItem) => void
+    onChatAnswerReceived?: (tabID: string, message: ChatItem, messageData: any) => void
     sendFeedback?: (tabId: string, feedbackPayload: FeedbackPayload) => void | undefined
     onError: (tabID: string, message: string, title: string) => void
     onWarning: (tabID: string, message: string, title: string) => void
@@ -154,7 +154,7 @@ export class Connector {
                           }
                         : undefined,
             }
-            this.onChatAnswerReceived(messageData.tabID, answer)
+            this.onChatAnswerReceived(messageData.tabID, answer, messageData)
         }
     }
 
@@ -181,7 +181,7 @@ export class Connector {
                 },
                 body: '',
             }
-            this.onChatAnswerReceived(messageData.tabID, answer)
+            this.onChatAnswerReceived(messageData.tabID, answer, messageData)
         }
     }
 
@@ -190,19 +190,27 @@ export class Connector {
             return
         }
 
-        this.onChatAnswerReceived(messageData.tabID, {
-            type: ChatItemType.ANSWER,
-            body: messageData.message,
-            followUp: undefined,
-            canBeVoted: false,
-        })
+        this.onChatAnswerReceived(
+            messageData.tabID,
+            {
+                type: ChatItemType.ANSWER,
+                body: messageData.message,
+                followUp: undefined,
+                canBeVoted: false,
+            },
+            messageData
+        )
 
-        this.onChatAnswerReceived(messageData.tabID, {
-            type: ChatItemType.SYSTEM_PROMPT,
-            body: undefined,
-            followUp: this.followUpGenerator.generateAuthFollowUps('featuredev', messageData.authType),
-            canBeVoted: false,
-        })
+        this.onChatAnswerReceived(
+            messageData.tabID,
+            {
+                type: ChatItemType.SYSTEM_PROMPT,
+                body: undefined,
+                followUp: this.followUpGenerator.generateAuthFollowUps('featuredev', messageData.authType),
+                canBeVoted: false,
+            },
+            messageData
+        )
 
         return
     }

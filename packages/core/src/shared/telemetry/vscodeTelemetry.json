@@ -104,11 +104,6 @@
             "description": "CPU used by LSP server as a percentage of all available CPUs on the system"
         },
         {
-            "name": "cwsprChatProgrammingLanguage",
-            "type": "string",
-            "description": "Programming language associated with the message"
-        },
-        {
             "name": "cwsprChatConversationType",
             "type": "string",
             "allowedValues": ["Chat", "Assign", "Transform"],
@@ -198,22 +193,6 @@
             "name": "cwsprChatRequestLength",
             "type": "int",
             "description": "Number of characters in request"
-        },
-        {
-            "name": "cwsprChatInteractionType",
-            "allowedValues": [
-                "insertAtCursor",
-                "copySnippet",
-                "copy",
-                "clickLink",
-                "clickFollowUp",
-                "hoverReference",
-                "upvote",
-                "downvote",
-                "clickBodyLink"
-            ],
-            "type": "string",
-            "description": "Indicates the specific interaction type with a message in a conversation"
         },
         {
             "name": "cwsprChatInteractionTarget",
@@ -848,57 +827,6 @@
                 },
                 {
                     "type": "cwsprChatResponseErrorReason",
-                    "required": false
-                }
-            ]
-        },
-        {
-            "name": "amazonq_interactWithMessage",
-            "description": "When a user interacts with a message in the conversation",
-            "metadata": [
-                {
-                    "type": "cwsprChatConversationId"
-                },
-                {
-                    "type": "credentialStartUrl",
-                    "required": false
-                },
-                {
-                    "type": "cwsprChatMessageId"
-                },
-                {
-                    "type": "cwsprChatUserIntent",
-                    "required": false
-                },
-                {
-                    "type": "cwsprChatInteractionType"
-                },
-                {
-                    "type": "cwsprChatInteractionTarget",
-                    "required": false
-                },
-                {
-                    "type": "cwsprChatAcceptedCharactersLength",
-                    "required": false
-                },
-                {
-                    "type": "cwsprChatAcceptedNumberOfLines",
-                    "required": false
-                },
-                {
-                    "type": "cwsprChatHasReference",
-                    "required": false
-                },
-                {
-                    "type": "cwsprChatCodeBlockIndex",
-                    "required": false
-                },
-                {
-                    "type": "cwsprChatTotalCodeBlocks",
-                    "required": false
-                },
-                {
-                    "type": "cwsprChatHasProjectContext",
                     "required": false
                 }
             ]
