@@ -11,15 +11,15 @@ import { showRegionPrompter } from '../../auth/utils'
 import { openUrl } from '../../shared/utilities/vsCodeUtils'
 import { Ec2Prompter, Ec2Selection, instanceFilter } from './prompter'
 import { Ec2InstanceNode } from './explorer/ec2InstanceNode'
-import { Ec2ConnectionManagerMap } from './connectionManagerMap'
+import { Ec2ConnecterMap } from './connectionManagerMap'
 
-export async function openTerminal(connectionManagers: Ec2ConnectionManagerMap, node?: Ec2Node) {
+export async function openTerminal(connectionManagers: Ec2ConnecterMap, node?: Ec2Node) {
     const selection = await getSelection(node)
     const connectionManager = connectionManagers.getOrInit(selection.region)
     await connectionManager.attemptToOpenEc2Terminal(selection)
 }
 
-export async function openRemoteConnection(connectionManagers: Ec2ConnectionManagerMap, node?: Ec2Node) {
+export async function openRemoteConnection(connectionManagers: Ec2ConnecterMap, node?: Ec2Node) {
     const selection = await getSelection(node)
     const connectionManager = connectionManagers.getOrInit(selection.region)
     await connectionManager.tryOpenRemoteConnection(selection)

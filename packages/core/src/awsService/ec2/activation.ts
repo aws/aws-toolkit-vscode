@@ -16,9 +16,9 @@ import {
     stopInstance,
     linkToLaunchInstance,
 } from './commands'
-import { Ec2ConnectionManagerMap } from './connectionManagerMap'
+import { Ec2ConnecterMap } from './connectionManagerMap'
 
-const connectionManagers = new Ec2ConnectionManagerMap()
+const connectionManagers = new Ec2ConnecterMap()
 
 export async function activate(ctx: ExtContext): Promise<void> {
     ctx.extensionContext.subscriptions.push(

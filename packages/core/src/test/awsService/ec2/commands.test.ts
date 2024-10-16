@@ -5,13 +5,13 @@
 
 import assert from 'assert'
 import { Ec2Selection } from '../../../awsService/ec2/prompter'
-import { Ec2ConnectionManagerMap } from '../../../awsService/ec2/connectionManagerMap'
+import { Ec2ConnecterMap } from '../../../awsService/ec2/connectionManagerMap'
 
 describe('getConnectionManager', async function () {
-    let connectionManagers: Ec2ConnectionManagerMap
+    let connectionManagers: Ec2ConnecterMap
 
     beforeEach(function () {
-        connectionManagers = new Ec2ConnectionManagerMap()
+        connectionManagers = new Ec2ConnecterMap()
     })
 
     it('only creates new connection managers once for each region ', async function () {

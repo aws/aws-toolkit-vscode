@@ -29,7 +29,7 @@ import { showMessageWithCancel } from '../../shared/utilities/messages'
 import { SshConfig } from '../../shared/sshConfig'
 import { SshKeyPair } from './sshKeyPair'
 import globals from '../../shared/extensionGlobals'
-import { Ec2RemoteSessionManager } from './remoteSessionManager'
+import { Ec2SessionTracker } from './remoteSessionManager'
 import { getEc2SsmEnv } from './utils'
 
 export type Ec2ConnectErrorCode = 'EC2SSMStatus' | 'EC2SSMPermission' | 'EC2SSMConnect' | 'EC2SSMAgentStatus'
@@ -40,11 +40,11 @@ export interface Ec2RemoteEnv extends VscodeRemoteConnection {
     ssmSession: SSM.StartSessionResponse
 }
 
-export class Ec2ConnectionManager implements vscode.Disposable {
+export class Ec2Connecter implements vscode.Disposable {
     protected ssmClient: SsmClient
     protected ec2Client: Ec2Client
     protected iamClient: DefaultIamClient
-    protected sessionManager: Ec2RemoteSessionManager
+    protected sessionManager: Ec2SessionTracker
 
     private policyDocumentationUri = vscode.Uri.parse(
         'https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-getting-started-instance-profile.html'
@@ -58,7 +58,7 @@ export class Ec2ConnectionManager implements vscode.Disposable {
         this.ssmClient = this.createSsmSdkClient()
         this.ec2Client = this.createEc2SdkClient()
         this.iamClient = this.createIamSdkClient()
-        this.sessionManager = new Ec2RemoteSessionManager(regionCode, this.ssmClient)
+        this.sessionManager = new Ec2SessionTracker(regionCode, this.ssmClient)
     }
 
     protected createSsmSdkClient(): SsmClient {

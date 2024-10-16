@@ -7,7 +7,7 @@ import { EC2, SSM } from 'aws-sdk'
 import { SsmClient } from '../../shared/clients/ssmClient'
 import { Disposable } from 'vscode'
 
-export class Ec2RemoteSessionManager extends Map<EC2.InstanceId, SSM.SessionId> implements Disposable {
+export class Ec2SessionTracker extends Map<EC2.InstanceId, SSM.SessionId> implements Disposable {
     public constructor(
         readonly regionCode: string,
         protected ssmClient: SsmClient

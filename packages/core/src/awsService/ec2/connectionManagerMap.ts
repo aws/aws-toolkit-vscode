@@ -4,22 +4,22 @@
  */
 
 import { getLogger } from '../../shared'
-import { Ec2ConnectionManager } from './model'
+import { Ec2Connecter } from './model'
 
-export class Ec2ConnectionManagerMap extends Map<string, Ec2ConnectionManager> {
+export class Ec2ConnecterMap extends Map<string, Ec2Connecter> {
     private static warnSize: number = 25
 
     public getOrInit(regionCode: string) {
         return this.has(regionCode) ? this.get(regionCode)! : this.initiateManager(regionCode)
     }
 
-    private initiateManager(regionCode: string): Ec2ConnectionManager {
-        if (this.size >= Ec2ConnectionManagerMap.warnSize) {
+    private initiateManager(regionCode: string): Ec2Connecter {
+        if (this.size >= Ec2ConnecterMap.warnSize) {
             getLogger().warn(
-                `Connection manager exceeded threshold of ${Ec2ConnectionManagerMap.warnSize} with ${this.size} active connections`
+                `Connection manager exceeded threshold of ${Ec2ConnecterMap.warnSize} with ${this.size} active connections`
             )
         }
-        const newConnectionManager = new Ec2ConnectionManager(regionCode)
+        const newConnectionManager = new Ec2Connecter(regionCode)
         this.set(regionCode, newConnectionManager)
         return newConnectionManager
     }
