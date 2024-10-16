@@ -5,7 +5,6 @@
 
 import * as semver from 'semver'
 import * as vscode from 'vscode'
-import * as fs from 'fs-extra'
 import * as nls from 'vscode-nls'
 import {
     getCodeRoot,
@@ -67,6 +66,7 @@ import { Logging } from '../../logger/commands'
 import { credentialHelpUrl, samTroubleshootingUrl } from '../../constants'
 import { Auth } from '../../../auth/auth'
 import { openUrl } from '../../utilities/vsCodeUtils'
+import fs from '../../fs/fs'
 
 const localize = nls.loadMessageBundle()
 
@@ -267,11 +267,11 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
                         if (resource) {
                             // we do not know enough to populate the runtime field for Image-based Lambdas
                             const runtimeName = CloudFormation.isZipLambdaResource(resource?.Properties)
-                                ? CloudFormation.getStringForProperty(
+                                ? (CloudFormation.getStringForProperty(
                                       resource?.Properties,
                                       'Runtime',
                                       templateDatum.item
-                                  ) ?? ''
+                                  ) ?? '')
                                 : ''
                             configs.push(
                                 createTemplateAwsSamDebugConfig(
@@ -460,7 +460,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         const handlerName = await getHandlerName(folder, config)
 
         config.baseBuildDir = resolve(folder.uri.fsPath, config.sam?.buildDir ?? (await makeTemporaryToolkitFolder()))
-        await fs.ensureDir(config.baseBuildDir)
+        await fs.mkdir(config.baseBuildDir)
 
         if (templateInvoke?.templatePath) {
             // Normalize to absolute path.

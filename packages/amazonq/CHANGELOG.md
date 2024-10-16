@@ -1,3 +1,38 @@
+## 1.29.0 2024-10-10
+
+- **Bug Fix** Amazon Q /dev: include telemetry for workspace usage when generating new files
+- **Bug Fix** Amazon Q extension may fail to start if AWS Toolkit extension fails to start
+- **Bug Fix** Start language server by default
+- **Bug Fix** Amazon Q Feature Dev: Add error messages when the upload URL expires
+- **Bug Fix** Amazon Q (/dev): view diffs of previous /dev iterations
+- **Bug Fix** Q dev handle no change required
+- **Deprecation** The next release of this extension will require VS Code 1.83.0 or newer.
+- **Feature** Automatically pause and resume @workspace indexing when OS CPU load is high
+- **Feature** Add buttons to code blocks to view and accept diffs.
+- **Feature** Inline completion for more json files, and all yaml files
+- **Feature** Show a one-time warning if new VS Code is required
+- **Removal** Minimum required VSCode version is now 1.83
+
+## 1.28.0 2024-10-03
+
+- **Bug Fix** Amazon Q /dev: define first folder as a root path for LLM-created files when using workspaces
+- **Feature** Amazon Q Code Transformation: allow users to skip running tests
+- **Feature** Amazon Q Developer: Updated legal disclaimer text
+
+## 1.27.0 2024-09-27
+
+- **Bug Fix** Security Scan: Fixes an issue that incorrectly removes hardcoded credentials detections from auto scans.
+
+## 1.26.0 2024-09-19
+
+- **Bug Fix** Security Scan: Fixed an issue where the wrong icon was used in the status bar menu.
+- **Bug Fix** Disable Amazon Q LSP in AL2
+- **Bug Fix** Amazon Q Chat: Fix shifted chat contents when closing and opening chat panel back
+- **Bug Fix** Security Scan: Minor styling improvements in the security issue webview panel
+- **Bug Fix** Amazon Q Chat: Fix tooltip remaining on screen when closing and opening chat panel back
+- **Bug Fix** Auth: Login state not updating across multiple VS Code windows.
+- **Feature** Support @workspace queries for specific files like `@workspace what does test.ts do? `. 
+
 ## 1.25.0 2024-09-12
 
 - **Bug Fix** Amazon Q Chat: Fixed inline code blocks are not vertically aligned with texts

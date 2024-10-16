@@ -25,3 +25,15 @@ export function fromQueryToParameters(query: vscode.Uri['query']): Map<string, s
     }
     return queryMap
 }
+
+/**
+ * Converts a string path to a Uri, or returns the given Uri if it is already a Uri.
+ *
+ * A convenience function so you do not need to care about the type of path received.
+ */
+export function toUri(path: string | vscode.Uri): vscode.Uri {
+    if (path instanceof vscode.Uri) {
+        return path
+    }
+    return vscode.Uri.file(path)
+}

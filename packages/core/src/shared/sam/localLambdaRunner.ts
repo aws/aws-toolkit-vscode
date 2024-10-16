@@ -9,7 +9,6 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import * as pathutil from '../utilities/pathUtils'
 import got, { OptionsOfTextResponseBody, RequestError } from 'got'
-import { copyFile, readFile, remove, writeFile } from 'fs-extra'
 import { isImageLambdaConfig } from '../../lambda/local/debugConfiguration'
 import { getFamily, RuntimeFamily } from '../../lambda/models/samLambdaRuntime'
 import { ExtContext } from '../extensions'
@@ -24,13 +23,14 @@ import { asEnvironmentVariables } from '../../auth/credentials/utils'
 import { buildSamCliStartApiArguments } from './cli/samCliStartApi'
 import { DefaultSamCliProcessInvoker } from './cli/samCliInvoker'
 import { APIGatewayProperties } from './debugger/awsSamDebugConfiguration.gen'
-import { ChildProcess } from '../utilities/childProcess'
+import { ChildProcess } from '../utilities/processUtils'
 import { SamCliSettings } from './cli/samCliSettings'
 import * as CloudFormation from '../cloudformation/cloudformation'
 import { sleep } from '../utilities/timeoutUtils'
 import { showMessageWithCancel } from '../utilities/messages'
 import { ToolkitError, UnknownError } from '../errors'
 import { SamCliError } from './cli/samCliInvokerUtils'
+import fs from '../fs/fs'
 
 const localize = nls.loadMessageBundle()
 
@@ -259,7 +259,7 @@ async function invokeLambdaHandler(
             throw ToolkitError.chain(err, msg)
         } finally {
             if (config.sam?.buildDir === undefined) {
-                await remove(config.templatePath)
+                await fs.delete(config.templatePath)
             }
         }
     }
@@ -307,7 +307,7 @@ export async function runLambdaFunction(
         const payload =
             config.eventPayloadFile === undefined
                 ? undefined
-                : JSON.parse(await readFile(config.eventPayloadFile, { encoding: 'utf-8' }))
+                : JSON.parse(await fs.readFileText(config.eventPayloadFile))
 
         apiRequest = requestLocalApi(timer, config.api!, config.apiPort!, payload)
     }
@@ -347,12 +347,11 @@ export async function runLambdaFunction(
             debugConfig: config,
             retryDelayMillis: attachDebuggerRetryDelayMillis,
         })
-
-        await showDebugConsole()
     }
 
     try {
         await attach()
+        await showOutputChannel(ctx)
     } finally {
         vscode.Disposable.from(timer, terminationListener).dispose()
     }
@@ -536,16 +535,14 @@ export function shouldAppendRelativePathToFuncHandler(runtime: string): boolean 
 }
 
 /**
- * Brings the Debug Console in focus.
- * If the OutputChannel is showing, focus does not consistently switch over to the debug console, so we're
- * helping make this happen.
+ * Brings the Output Channel in focus.
  */
-async function showDebugConsole(): Promise<void> {
+async function showOutputChannel(ctx: ExtContext): Promise<void> {
     try {
-        await vscode.commands.executeCommand('workbench.debug.action.toggleRepl')
+        ctx.outputChannel.show(true)
     } catch (err) {
         // in case the vs code command changes or misbehaves, swallow error
-        getLogger().verbose('Unable to switch to the Debug Console: %O', err as Error)
+        getLogger().verbose('Unable to focus output channel: %O', err as Error)
     }
 }
 
@@ -574,14 +571,14 @@ export async function makeJsonFiles(config: SamLaunchRequestArgs): Promise<void>
     if (Object.keys(configEnv).length !== 0) {
         const env = JSON.stringify(getEnvironmentVariables(makeResourceName(config), configEnv))
         config.envFile = path.join(config.baseBuildDir!, 'env-vars.json')
-        await writeFile(config.envFile, env)
+        await fs.writeFile(config.envFile, env)
     }
 
     // container-env-vars.json
     if (config.containerEnvVars) {
         config.containerEnvFile = path.join(config.baseBuildDir!, 'container-env-vars.json')
         const containerEnv = JSON.stringify(config.containerEnvVars)
-        await writeFile(config.containerEnvFile, containerEnv)
+        await fs.writeFile(config.containerEnvFile, containerEnv)
     }
 
     // event.json
@@ -597,12 +594,12 @@ export async function makeJsonFiles(config: SamLaunchRequestArgs): Promise<void>
     if (payloadPath) {
         const fullpath = tryGetAbsolutePath(config.workspaceFolder, payloadPath)
         try {
-            JSON.parse(await readFile(fullpath, { encoding: 'utf-8' }))
+            JSON.parse(await fs.readFileText(fullpath))
         } catch (e) {
             throw Error(`Invalid JSON in payload file: ${payloadPath}`)
         }
-        await copyFile(fullpath, config.eventPayloadFile)
+        await fs.copy(fullpath, config.eventPayloadFile)
     } else {
-        await writeFile(config.eventPayloadFile, JSON.stringify(payloadObj || {}))
+        await fs.writeFile(config.eventPayloadFile, JSON.stringify(payloadObj || {}))
     }
 }

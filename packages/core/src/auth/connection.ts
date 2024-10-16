@@ -73,7 +73,7 @@ export function hasScopes(target: SsoConnection | SsoProfile | string[], scopes:
  * Not optimized, but the set of possible scopes is currently very small (< 8)
  */
 export function hasExactScopes(target: SsoConnection | SsoProfile | string[], scopes: string[]): boolean {
-    const targetScopes = Array.isArray(target) ? target : target.scopes ?? []
+    const targetScopes = Array.isArray(target) ? target : (target.scopes ?? [])
     return scopes.length === targetScopes.length && scopes.every((s) => targetScopes.includes(s))
 }
 
@@ -201,6 +201,12 @@ export interface ProfileMetadata {
 
 export type StoredProfile<T extends Profile = Profile> = T & { readonly metadata: ProfileMetadata }
 
+export class ProfileNotFoundError extends Error {
+    public constructor(id: string) {
+        super(`Profile does not exist: ${id}`)
+    }
+}
+
 function getTelemetryForProfile(profile: StoredProfile<Profile> | undefined) {
     if (!profile) {
         return {}
@@ -245,7 +251,7 @@ export class ProfileStore {
         try {
             profile = this.getProfile(id)
             if (profile === undefined) {
-                throw new Error(`Profile does not exist: ${id}`)
+                throw new ProfileNotFoundError(id)
             }
         } catch (err) {
             // Always emit failures

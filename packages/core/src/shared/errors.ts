@@ -10,11 +10,12 @@ import { isThrottlingError, isTransientError } from '@smithy/service-error-class
 import { Result } from './telemetry/telemetry'
 import { CancellationError } from './utilities/timeoutUtils'
 import { hasKey, isNonNullable } from './utilities/tsUtils'
-import type * as nodefs from 'fs'
+import type * as nodefs from 'fs' // eslint-disable-line no-restricted-imports
 import type * as os from 'os'
 import { CodeWhispererStreamingServiceException } from '@amzn/codewhisperer-streaming'
 import { driveLetterRegex } from './utilities/pathUtils'
 import { getLogger } from './logger/logger'
+import { crashMonitoringDirNames } from './constants'
 
 let _username = 'unknown-user'
 let _isAutomation = false
@@ -140,23 +141,28 @@ export class ToolkitError extends Error implements ErrorInformation {
      * sensitive information and should be limited in technical detail.
      */
     public override readonly message: string
-    public readonly code = this.info.code
-    public readonly details = this.info.details
+    public readonly code: string | undefined
+    public readonly details: Record<string, unknown> | undefined
 
     /**
      * We guard against mutation to stop a developer from creating a circular chain of errors.
      * The alternative is to truncate errors to an arbitrary depth though that doesn't address
      * why the error chain is deep.
      */
-    readonly #cause = this.info.cause
-    readonly #name = this.info.name ?? super.name
+    readonly #cause: Error | undefined
+    readonly #name: string
+    readonly #documentationUri: any
+    readonly #cancelled: boolean | undefined
 
-    public constructor(
-        message: string,
-        protected readonly info: ErrorInformation = {}
-    ) {
+    public constructor(message: string, info: ErrorInformation = {}) {
         super(message)
         this.message = message
+        this.code = info.code
+        this.details = info.details
+        this.#cause = info.cause
+        this.#name = info.name ?? super.name
+        this.#cancelled = info.cancelled
+        this.#documentationUri = info.documentationUri
     }
 
     /**
@@ -180,14 +186,14 @@ export class ToolkitError extends Error implements ErrorInformation {
      * assignment on construction or by finding a 'cancelled' error within its causal chain.
      */
     public get cancelled(): boolean {
-        return this.info.cancelled ?? isUserCancelledError(this.cause)
+        return this.#cancelled ?? isUserCancelledError(this.cause)
     }
 
     /**
      * The associated documentation, if it exists. Otherwise undefined.
      */
     public get documentationUri(): vscode.Uri | undefined {
-        return this.info.documentationUri
+        return this.#documentationUri
     }
 
     /**
@@ -212,7 +218,24 @@ export class ToolkitError extends Error implements ErrorInformation {
     }
 
     /**
-     * Creates a new {@link ToolkitError} instance that was directly caused by another {@link error}.
+     * Creates a new {@link ToolkitError} instance that was directly caused by another error.
+     *
+     * @param error - The original error that caused this error.
+     * @param message - A descriptive message for the new error.
+     * @param info - Additional information about the error.
+     * @returns {ToolkitError} The new ToolkitError instance.
+     *
+     * @recommendation It is recommended to throw the returned ToolkitError instance instead of just returning it.
+     * This way, the error can be properly propagated and handled in the calling code.
+     *
+     * Example:
+     * ```typescript
+     * try {
+     *   // Some code that might throw an error
+     * } catch (error) {
+     *   throw ToolkitError.chain(error, 'An error occurred during operation', { operation: 'someOperation' });
+     * }
+     * ```
      */
     public static chain(error: unknown, message: string, info?: Omit<ErrorInformation, 'cause'>): ToolkitError {
         return new this(message, {
@@ -371,6 +394,12 @@ export function scrubNames(s: string, username?: string) {
         'Users',
         'users',
         'home',
+        'tmp',
+        'aws-toolkit-vscode',
+        'globalStorage', // from vscode globalStorageUri
+        crashMonitoringDirNames.root,
+        crashMonitoringDirNames.running,
+        crashMonitoringDirNames.shutdown,
     ])
 
     if (username && username.length > 2) {
@@ -425,7 +454,7 @@ export function scrubNames(s: string, username?: string) {
  * @param err Error object, or message text
  */
 export function getTelemetryReasonDesc(err: unknown | undefined): string | undefined {
-    const m = typeof err === 'string' ? err : getErrorMsg(err as Error, true) ?? ''
+    const m = typeof err === 'string' ? err : (getErrorMsg(err as Error, true) ?? '')
     const msg = scrubNames(m, _username)
 
     // Truncate message as these strings can be very long.

@@ -3,7 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
-import { AwsConnection, Connection, getTelemetryMetadataForConn, isSsoConnection } from '../../../../auth/connection'
+import {
+    AwsConnection,
+    Connection,
+    SsoConnection,
+    getTelemetryMetadataForConn,
+    isSsoConnection,
+} from '../../../../auth/connection'
 import { AuthUtil } from '../../../../codewhisperer/util/authUtil'
 import { CommonAuthWebview } from '../backend'
 import { awsIdSignIn } from '../../../../codewhisperer/util/showSsoPrompt'
@@ -39,7 +45,7 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
         }
         await activateExtension(VSCODE_EXTENSION_ID.awstoolkit)
         const toolkitExt = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.awstoolkit)
-        const importedApi = toolkitExt?.exports.getApi(VSCODE_EXTENSION_ID.amazonq)
+        const importedApi = toolkitExt?.exports?.getApi(VSCODE_EXTENSION_ID.amazonq)
         if (importedApi && 'listConnections' in importedApi) {
             return ((await importedApi?.listConnections()) as AwsConnection[]).filter(
                 // No need to display Builder ID as an existing connection,
@@ -176,6 +182,12 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
         this.reauthError = undefined
 
         this.emitAuthMetric()
+    }
+
+    async listSsoConnections(): Promise<SsoConnection[]> {
+        // Amazon Q only supports 1 connection at a time,
+        // so there isn't a need to de-duplicate connections.
+        return []
     }
 
     override startIamCredentialSetup(

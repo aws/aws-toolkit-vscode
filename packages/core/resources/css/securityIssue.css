@@ -194,6 +194,10 @@ pre {
     border: 1px solid var(--vscode-widget-border);
 }
 
+code.language-diff {
+    background-color: unset;
+}
+
 /* These styles are used to render code diff with markdown-it rendered output */
 .hljs-addition {
     background-color: var(--vscode-diffEditor-insertedTextBackground, rgba(155, 185, 85, 0.2));

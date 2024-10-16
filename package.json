@@ -3,8 +3,7 @@
     "workspaces": [
         "packages/core/src/web",
         "packages/*",
-        "plugins/*",
-        "src.gen/@amzn/codewhisperer-streaming"
+        "plugins/*"
     ],
     "version": "0.0.1",
     "private": true,
@@ -21,6 +20,7 @@
     },
     "scripts": {
         "prepare": "ts-node ./scripts/prepare.ts",
+        "preinstall": "cd src.gen/@amzn/codewhisperer-streaming && npm i",
         "postinstall": "npm run buildCustomLintPlugin && npm run postinstall -ws --if-present",
         "buildCustomLintPlugin": "npm run build -w plugins/eslint-plugin-aws-toolkits",
         "compile": "npm run compile -w packages/",
@@ -39,7 +39,7 @@
         "generateNonCodeFiles": "npm run generateNonCodeFiles -w packages/ --if-present"
     },
     "devDependencies": {
-        "@aws-toolkits/telemetry": "^1.0.254",
+        "@aws-toolkits/telemetry": "^1.0.272",
         "@playwright/browser-chromium": "^1.43.1",
         "@types/vscode": "^1.68.0",
         "@types/vscode-webview": "^1.57.1",
@@ -58,7 +58,7 @@
         "eslint-plugin-security-node": "^1.1.4",
         "eslint-plugin-unicorn": "^54.0.0",
         "husky": "^9.0.7",
-        "prettier": "^3.3.2",
+        "prettier": "^3.3.3",
         "prettier-plugin-sh": "^0.14.0",
         "pretty-quick": "^4.0.0",
         "ts-node": "^10.9.1",

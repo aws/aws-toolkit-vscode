@@ -6,10 +6,9 @@
 const { hasPath, dedupComment } = require('./utils')
 
 const testFilesMessage =
-    'This pull request modifies files in src/ but no tests were added/updated. Confirm whether tests should be added or ensure the PR description explains why tests are not required.'
+    'This pull request modifies code in src/ but no tests were added/updated. Confirm whether tests should be added or ensure the PR description explains why tests are not required.'
 
-const changelogMessage =
-    'This pull request modifies a feature or fixes a bug, but it does not include a changelog entry. All pull requests that introduce new features or bug fixes must have a corresponding changelog item describing the changes.'
+const changelogMessage = `This pull request implements a feature or fix, so it must include a changelog entry. See [CONTRIBUTING.md#changelog](https://github.com/aws/aws-toolkit-vscode/blob/master/CONTRIBUTING.md#changelog) for instructions.`
 
 /**
  * Remind partner teams that tests are required. We don't need to remind them if:

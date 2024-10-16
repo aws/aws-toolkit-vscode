@@ -200,7 +200,11 @@ export async function activate(context: ExtContext): Promise<void> {
                 await openSettings('amazonQ')
             }
         }),
-        Commands.register('aws.amazonq.refreshAnnotation', async (forceProceed: boolean = false) => {
+        Commands.register('aws.amazonq.refreshAnnotation', async (forceProceed: boolean) => {
+            telemetry.record({
+                traceId: TelemetryHelper.instance.traceId,
+            })
+
             const editor = vscode.window.activeTextEditor
             if (editor) {
                 if (forceProceed) {

@@ -6,7 +6,7 @@
 import path from 'path'
 import { Uri, Webview } from 'vscode'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
-import { globals } from '../../../shared'
+import { FeatureConfigProvider, FeatureContext, globals } from '../../../shared'
 
 export class WebViewContentGenerator {
     public async generate(extensionURI: Uri, webView: Webview): Promise<string> {
@@ -45,6 +45,15 @@ export class WebViewContentGenerator {
             Uri.joinPath(globals.context.extensionUri, 'resources', 'css', 'amazonq-webview.css')
         )
 
+        let featureConfigs = new Map<string, FeatureContext>()
+        try {
+            await FeatureConfigProvider.instance.fetchFeatureConfigs()
+            featureConfigs = FeatureConfigProvider.getFeatureConfigs()
+        } catch (error) {
+            // eslint-disable-next-line aws-toolkits/no-console-log
+            console.error('Error fetching feature configs:', error)
+        }
+
         return `
         <script type="text/javascript" src="${javascriptEntrypoint.toString()}" defer onload="init()"></script>
         <link rel="stylesheet" href="${cssEntrypoint.toString()}">
@@ -52,7 +61,7 @@ export class WebViewContentGenerator {
             const init = () => {
                 createMynahUI(acquireVsCodeApi(), ${
                     (await AuthUtil.instance.getChatAuthState()).amazonQ === 'connected'
-                });
+                },${JSON.stringify(Array.from(featureConfigs.entries()))});
             }
     </script>
         `

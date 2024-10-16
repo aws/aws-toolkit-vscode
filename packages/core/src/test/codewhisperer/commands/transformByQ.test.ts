@@ -3,9 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import assert from 'assert'
+import assert, { fail } from 'assert'
 import * as vscode from 'vscode'
-import * as fs from 'fs-extra'
 import * as sinon from 'sinon'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { transformByQState, TransformByQStoppedError } from '../../../codewhisperer/models/model'
@@ -37,6 +36,7 @@ import {
 } from '../../../codewhisperer/service/transformByQ/transformProjectValidationHandler'
 import { TransformationCandidateProject, ZipManifest } from '../../../codewhisperer/models/model'
 import globals from '../../../shared/extensionGlobals'
+import { fs } from '../../../shared'
 
 describe('transformByQ', function () {
     let tempDir: string
@@ -48,7 +48,7 @@ describe('transformByQ', function () {
 
     afterEach(async function () {
         sinon.restore()
-        await fs.remove(tempDir)
+        await fs.delete(tempDir, { recursive: true })
     })
 
     it('WHEN converting short duration in milliseconds THEN converts correctly', async function () {
@@ -203,6 +203,32 @@ describe('transformByQ', function () {
         assert.deepStrictEqual(actual, expected)
     })
 
+    it(`WHEN zip created THEN manifest.json contains test-compile custom build command`, async function () {
+        const tempFileName = `testfile-${globals.clock.Date.now()}.zip`
+        transformByQState.setProjectPath(tempDir)
+        const transformManifest = new ZipManifest()
+        transformManifest.customBuildCommand = CodeWhispererConstants.skipUnitTestsBuildCommand
+        return zipCode({
+            dependenciesFolder: {
+                path: tempDir,
+                name: tempFileName,
+            },
+            humanInTheLoopFlag: false,
+            modulePath: tempDir,
+            zipManifest: transformManifest,
+        }).then((zipCodeResult) => {
+            const zip = new AdmZip(zipCodeResult.tempFilePath)
+            const manifestEntry = zip.getEntry('manifest.json')
+            if (!manifestEntry) {
+                fail('manifest.json not found in the zip')
+            }
+            const manifestBuffer = manifestEntry.getData()
+            const manifestText = manifestBuffer.toString('utf8')
+            const manifest = JSON.parse(manifestText)
+            assert.strictEqual(manifest.customBuildCommand, CodeWhispererConstants.skipUnitTestsBuildCommand)
+        })
+    })
+
     it(`WHEN zip created THEN dependencies contains no .sha1 or .repositories files`, async function () {
         const m2Folders = [
             'com/groupid1/artifactid1/version1',
@@ -228,13 +254,13 @@ describe('transformByQ', function () {
             'resolver-status.properties',
         ]
 
-        m2Folders.forEach((folder) => {
+        for (const folder of m2Folders) {
             const folderPath = path.join(tempDir, folder)
-            fs.mkdirSync(folderPath, { recursive: true })
-            filesToAdd.forEach((file) => {
-                fs.writeFileSync(path.join(folderPath, file), 'sample content for the test file')
-            })
-        })
+            await fs.mkdir(folderPath)
+            for (const file of filesToAdd) {
+                await fs.writeFile(path.join(folderPath, file), 'sample content for the test file')
+            }
+        }
 
         const tempFileName = `testfile-${globals.clock.Date.now()}.zip`
         transformByQState.setProjectPath(tempDir)
