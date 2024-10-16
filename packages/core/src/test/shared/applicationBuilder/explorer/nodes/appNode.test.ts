@@ -7,7 +7,8 @@ import assert from 'assert'
 import { AppNode } from '../../../../../awsService/appBuilder/explorer/nodes/appNode'
 import * as SamProjectModule from '../../../../../awsService/appBuilder/explorer/samProject'
 import * as ListSamResourcesModule from '../../../../../lambda/commands/listSamResources'
-import * as ResourceNodeModuel from '../../../../../awsService/appBuilder/explorer/nodes/resourceNode'
+import * as ResourceNodeModule from '../../../../../awsService/appBuilder/explorer/nodes/resourceNode'
+import * as DeployedStackModule from '../../../../../awsService/appBuilder/explorer/nodes/deployedStack'
 import sinon from 'sinon'
 import path from 'path'
 
@@ -58,6 +59,7 @@ describe('AppNode', () => {
     describe('getChildren', () => {
         let getAppStub: sinon.SinonStub
         let getStackNameStub: sinon.SinonStub
+        let generateStackNodeStub: sinon.SinonStub
         let getDeployedResourcesStub: sinon.SinonStub
         let generateResourceNodesStub: sinon.SinonStub
 
@@ -65,8 +67,9 @@ describe('AppNode', () => {
             // Create a stub for helper functions used in getChildren() to call real method if not override in each test
             getAppStub = sandbox.stub(SamProjectModule, 'getApp')
             getStackNameStub = sandbox.stub(SamProjectModule, 'getStackName')
+            generateStackNodeStub = sandbox.stub(DeployedStackModule, 'generateStackNode')
             getDeployedResourcesStub = sandbox.stub(ListSamResourcesModule, 'getDeployedResources')
-            generateResourceNodesStub = sandbox.stub(ResourceNodeModuel, 'generateResourceNodes')
+            generateResourceNodesStub = sandbox.stub(ResourceNodeModule, 'generateResourceNodes')
         })
 
         it('should return placeholder item for an empty App', async () => {
@@ -74,6 +77,8 @@ describe('AppNode', () => {
             getAppStub.resolves(mockGetAppResponse)
             // stub getStackName() and return mock response
             getStackNameStub.resolves(mockGetStackNameResponse)
+            // stub generateStackNode() and return []
+            generateStackNodeStub.resolves([])
             // stub getDeployedResources() and return []
             getDeployedResourcesStub.resolves([])
             // stub  generateResourceNodes to return empty array simulate empty application
@@ -88,6 +93,7 @@ describe('AppNode', () => {
             assert.strictEqual(resourceNode.resource, '[No IaC templates found in Workspaces]')
             assert(getAppStub.calledOnce)
             assert(getStackNameStub.calledOnce)
+            assert(generateStackNodeStub.notCalled)
             assert(getDeployedResourcesStub.calledOnce)
             assert(generateResourceNodesStub.calledOnce)
         })
@@ -105,6 +111,7 @@ describe('AppNode', () => {
             assert.strictEqual(resources[0].id, 'MyProjectLambdaFunction')
             assert(getAppStub.calledOnce)
             assert(getStackNameStub.calledOnce)
+            assert(generateStackNodeStub.notCalled)
             assert(getDeployedResourcesStub.notCalled)
             assert(generateResourceNodesStub.calledOnce)
         })
@@ -114,6 +121,8 @@ describe('AppNode', () => {
             getAppStub.resolves(mockGetAppResponse)
             // stub getStackName() and return stack name and region
             getStackNameStub.resolves(mockGetStackNameResponse)
+            // stub generateStackNode() and return mock response
+            generateStackNodeStub.resolves(mockGenerateStackNodeResponse)
             // stub getDeployedResources() and return mock response
             getDeployedResourcesStub.resolves(mockDeployedResourcesResponse)
             // call actual method
@@ -131,6 +140,7 @@ describe('AppNode', () => {
             )
             assert(getAppStub.calledOnce)
             assert(getStackNameStub.calledOnce)
+            assert(generateStackNodeStub.calledOnce)
             assert(getDeployedResourcesStub.calledOnce)
             assert(generateResourceNodesStub.calledOnce)
         })
@@ -151,6 +161,7 @@ describe('AppNode', () => {
             )
             assert(getAppStub.calledOnce)
             assert(getStackNameStub.notCalled)
+            assert(generateStackNodeStub.notCalled)
             assert(getDeployedResourcesStub.notCalled)
             assert(generateResourceNodesStub.notCalled)
         })
@@ -174,6 +185,14 @@ const mockGetStackNameResponse = {
     stackName: 'my-project-one-stack-name',
     region: 'us-east-1',
 }
+
+const mockGenerateStackNodeResponse = [
+    {
+        stackName: 'my-project-one-stack-name',
+        regionCode: 'us-east-1',
+        id: 'my-project-one-stack-name',
+    },
+]
 
 const mockSamAppLocationResponse = {
     samTemplateUri: vscode.Uri.file(path.join('VSCode Example Workspace', 'Project One Root Folder', 'template.yaml')),

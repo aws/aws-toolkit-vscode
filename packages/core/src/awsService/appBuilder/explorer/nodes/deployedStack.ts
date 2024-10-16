@@ -5,18 +5,21 @@
 import * as vscode from 'vscode'
 import { TreeNode } from '../../../../shared/treeview/resourceTreeDataProvider'
 import { getIcon } from '../../../../shared/icons'
+import { CloudFormationClient, DescribeStacksCommand } from '@aws-sdk/client-cloudformation'
+import { ToolkitError } from '../../../../shared'
 
 export class StackNameNode implements TreeNode {
     public readonly id = this.stackName
-    public readonly resource = this.value
-    public readonly link = `command:aws.explorer.cloudformation.showStack?${encodeURIComponent(JSON.stringify({ stackName: this.stackName, region: this.region }))}`
+    public readonly resource = this
+    public arn: string | undefined
+    public readonly link = `command:aws.explorer.cloudformation.showStack?${encodeURIComponent(JSON.stringify({ stackName: this.stackName, region: this.regionCode }))}`
 
     public constructor(
         public stackName: string,
-        public region: string
+        public regionCode: string
     ) {
         this.stackName = stackName
-        this.region = region
+        this.regionCode = regionCode
     }
 
     public async getChildren(): Promise<TreeNode[]> {
@@ -24,7 +27,7 @@ export class StackNameNode implements TreeNode {
         return []
     }
     public get value(): string {
-        return `Stack: ${this.stackName} (${this.region})`
+        return `Stack: ${this.stackName} (${this.regionCode})`
     }
 
     public getTreeItem() {
@@ -34,4 +37,24 @@ export class StackNameNode implements TreeNode {
         item.iconPath = getIcon('vscode-cloud')
         return item
     }
+}
+
+export async function generateStackNode(stackName?: string, regionCode?: string): Promise<StackNameNode[]> {
+    const client = new CloudFormationClient({ region: regionCode })
+    try {
+        const command = new DescribeStacksCommand({ StackName: stackName })
+        const response = await client.send(command)
+        if (response.Stacks && response.Stacks[0]) {
+            const stackArn = response.Stacks[0].StackId
+            if (stackName === undefined || regionCode === undefined) {
+                return []
+            }
+            const stackNode = new StackNameNode(stackName || '', regionCode || '')
+            stackNode.arn = stackArn
+            return [stackNode]
+        }
+    } catch (error) {
+        throw new ToolkitError(`Failed to generate stack node ${stackName} in region ${regionCode}: ${error}`)
+    }
+    return []
 }

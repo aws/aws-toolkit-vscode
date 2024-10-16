@@ -9,7 +9,7 @@ import { invokeRemoteRestApi } from './vue/invokeRemoteRestApi'
 import { copyUrlCommand } from './commands/copyUrl'
 import { ExtContext } from '../../shared/extensions'
 import { Commands } from '../../shared/vscode/commands2'
-import { isTreeNode, TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
+import { TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
 import { getSourceNode } from '../../shared/utilities/treeNodeUtils'
 
 /**
@@ -23,17 +23,13 @@ export async function activate(activateArguments: {
     const regionProvider = activateArguments.extContext.regionProvider
     extensionContext.subscriptions.push(
         Commands.register('aws.apig.copyUrl', async (node: RestApiNode | TreeNode) => {
-            if (isTreeNode(node)) {
-                node = getSourceNode<RestApiNode>(node)
-            }
-            await copyUrlCommand(node, regionProvider)
+            const sourceNode = getSourceNode<RestApiNode>(node)
+            await copyUrlCommand(sourceNode, regionProvider)
         }),
         Commands.register('aws.apig.invokeRemoteRestApi', async (node: RestApiNode | TreeNode) => {
-            if (isTreeNode(node)) {
-                node = getSourceNode<RestApiNode>(node)
-            }
+            const sourceNode = getSourceNode<RestApiNode>(node)
             await invokeRemoteRestApi(activateArguments.extContext, {
-                apiNode: node,
+                apiNode: sourceNode,
                 outputChannel: activateArguments.outputChannel,
             })
         })

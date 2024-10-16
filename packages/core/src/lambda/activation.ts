@@ -25,11 +25,9 @@ import { getSourceNode } from '../shared/utilities/treeNodeUtils'
 export async function activate(context: ExtContext): Promise<void> {
     context.extensionContext.subscriptions.push(
         Commands.register('aws.deleteLambda', async (node: LambdaFunctionNode | TreeNode) => {
-            if (isTreeNode(node)) {
-                node = getSourceNode<LambdaFunctionNode>(node)
-            }
-            await deleteLambda(node.configuration, new DefaultLambdaClient(node.regionCode))
-            await vscode.commands.executeCommand('aws.refreshAwsExplorerNode', node.parent)
+            const sourceNode = getSourceNode<LambdaFunctionNode>(node)
+            await deleteLambda(sourceNode.configuration, new DefaultLambdaClient(sourceNode.regionCode))
+            await vscode.commands.executeCommand('aws.refreshAwsExplorerNode', sourceNode.parent)
         }),
         Commands.register('aws.invokeLambda', async (node: LambdaFunctionNode | TreeNode) => {
             let source: string = 'AwsExplorerRemoteInvoke'
@@ -53,10 +51,8 @@ export async function activate(context: ExtContext): Promise<void> {
             }
         }),
         Commands.register('aws.downloadLambda', async (node: LambdaFunctionNode | TreeNode) => {
-            if (isTreeNode(node)) {
-                node = getSourceNode<LambdaFunctionNode>(node)
-            }
-            await downloadLambdaCommand(node)
+            const sourceNode = getSourceNode<LambdaFunctionNode>(node)
+            await downloadLambdaCommand(sourceNode)
         }),
         Commands.register({ id: 'aws.uploadLambda', autoconnect: true }, async (arg?: unknown) => {
             if (arg instanceof LambdaFunctionNode) {
@@ -72,10 +68,8 @@ export async function activate(context: ExtContext): Promise<void> {
             }
         }),
         Commands.register('aws.copyLambdaUrl', async (node: LambdaFunctionNode | TreeNode) => {
-            if (isTreeNode(node)) {
-                node = getSourceNode<LambdaFunctionNode>(node)
-            }
-            await copyLambdaUrl(node, new DefaultLambdaClient(node.regionCode))
+            const sourceNode = getSourceNode<LambdaFunctionNode>(node)
+            await copyLambdaUrl(sourceNode, new DefaultLambdaClient(sourceNode.regionCode))
         }),
 
         registerSamInvokeVueCommand(context),

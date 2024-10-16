@@ -32,8 +32,10 @@ import { activateViewsShared, registerToolView } from './activationShared'
 import { isExtensionInstalled } from '../shared/utilities'
 import { CommonAuthViewProvider } from '../login/webview'
 import { setContext } from '../shared'
-import { isTreeNode, TreeNode } from '../shared/treeview/resourceTreeDataProvider'
+import { TreeNode } from '../shared/treeview/resourceTreeDataProvider'
 import { getSourceNode } from '../shared/utilities/treeNodeUtils'
+import { openAwsCFNConsoleCommand, openAwsConsoleCommand } from '../shared/awsConsole'
+import { StackNameNode } from '../awsService/appBuilder/explorer/nodes/deployedStack'
 
 /**
  * Activates the AWS Explorer UI and related functionality.
@@ -199,17 +201,20 @@ async function registerAwsExplorerCommands(
                     isPreviewAndRender: true,
                 })
         ),
-        Commands.register('aws.copyArn', async (node: AWSResourceNode) => {
-            if (isTreeNode(node)) {
-                node = getSourceNode<AWSResourceNode>(node)
-            }
-            await copyTextCommand(node, 'ARN')
+        Commands.register('aws.copyArn', async (node: AWSResourceNode | TreeNode) => {
+            const sourceNode = getSourceNode<AWSResourceNode>(node)
+            await copyTextCommand(sourceNode, 'ARN')
         }),
         Commands.register('aws.copyName', async (node: AWSResourceNode | TreeNode) => {
-            if (isTreeNode(node)) {
-                node = getSourceNode<AWSResourceNode>(node)
-            }
-            await copyTextCommand(node, 'name')
+            const sourceNode = getSourceNode<AWSResourceNode>(node)
+            await copyTextCommand(sourceNode, 'name')
+        }),
+        Commands.register('aws.openAwsConsole', async (node: AWSResourceNode | TreeNode) => {
+            const sourceNode = getSourceNode<AWSResourceNode>(node)
+            await openAwsConsoleCommand(sourceNode)
+        }),
+        Commands.register('aws.openAwsCFNConsole', async (node: StackNameNode) => {
+            await openAwsCFNConsoleCommand(node)
         }),
         Commands.register('aws.refreshAwsExplorerNode', async (element: AWSTreeNodeBase | undefined) => {
             awsExplorer.refresh(element)

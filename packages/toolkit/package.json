@@ -810,6 +810,14 @@
                     "when": "false"
                 },
                 {
+                    "command": "aws.openAwsConsole",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.openAwsCFNConsole",
+                    "when": "false"
+                },
+                {
                     "command": "aws.copyName",
                     "when": "false"
                 },
@@ -1787,6 +1795,16 @@
                     "command": "aws.copyArn",
                     "when": "view =~ /^(aws.explorer|aws.appBuilder|aws.appBuilderForFileExplorer)$/ && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsCloudWatchLogNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode|awsApiGatewayNode|awsEcrRepositoryNode|awsIotThingNode)$|^(awsAppRunnerServiceNode|awsEcsServiceNode|awsIotCertificateNode|awsIotPolicyNode|awsIotPolicyVersionNode|awsMdeInstanceNode|(awsEc2(Running|Pending|Stopped)Node))/",
                     "group": "2@2"
+                },
+                {
+                    "command": "aws.openAwsConsole",
+                    "when": "view =~ /^(aws.explorer|aws.appBuilder|aws.appBuilderForFileExplorer)$/ && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsS3BucketNode)$/",
+                    "group": "2@3"
+                },
+                {
+                    "command": "aws.openAwsCFNConsole",
+                    "when": "view =~ /^(aws.appBuilder|aws.appBuilderForFileExplorer)$/ && viewItem =~ /^(awsAppBuilderStackNode)$/",
+                    "group": "2@3"
                 },
                 {
                     "command": "aws.cwl.searchLogGroup",
@@ -2993,6 +3011,30 @@
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.openAwsConsole",
+                "title": "%AWS.command.openAwsConsole%",
+                "category": "%AWS.title%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
+                "cloud9": {
+                    "cn": {
+                        "title": "%AWS.command.openAwsConsole.cn%",
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.openAwsCFNConsole",
+                "title": "%AWS.command.openAwsConsole%",
+                "category": "%AWS.title%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
+                "cloud9": {
+                    "cn": {
+                        "title": "%AWS.command.openAwsConsole.cn%",
                         "category": "%AWS.title.cn%"
                     }
                 }

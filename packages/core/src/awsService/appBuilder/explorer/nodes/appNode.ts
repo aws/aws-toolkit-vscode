@@ -18,7 +18,7 @@ import { SamCliListResourcesParameters } from '../../../../shared/sam/cli/samCli
 import { getDeployedResources, StackResource } from '../../../../lambda/commands/listSamResources'
 import * as path from 'path'
 import fs from '../../../../shared/fs/fs'
-import { StackNameNode } from './deployedStack'
+import { generateStackNode } from './deployedStack'
 
 export class AppNode implements TreeNode {
     public readonly id = this.location.samTemplateUri.toString()
@@ -53,7 +53,7 @@ export class AppNode implements TreeNode {
                 : undefined
             // Skip generating stack node if stack does not exist in region or other errors
             if (deployedResources && deployedResources.length > 0) {
-                resources.push(new StackNameNode(this.stackName, region))
+                resources.push(...(await generateStackNode(this.stackName, region)))
             }
             resources.push(
                 ...generateResourceNodes(this.location, templateResources, this.stackName, region, deployedResources)

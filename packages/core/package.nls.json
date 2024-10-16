@@ -155,6 +155,8 @@
     "AWS.command.renderStateMachineGraph": "Render graph",
     "AWS.command.copyArn": "Copy ARN",
     "AWS.command.copyName": "Copy Name",
+    "AWS.command.openAwsConsole": "Go to AWS management console",
+    "AWS.command.openAwsConsole.cn": "Go to Amazon management console",
     "AWS.command.listCommands": "Show AWS Commands...",
     "AWS.command.listCommands.cn": "Show Amazon Commands...",
     "AWS.command.downloadStateMachineDefinition": "Download Definition...",

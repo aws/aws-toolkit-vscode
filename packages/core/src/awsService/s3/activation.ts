@@ -25,7 +25,7 @@ import { Commands } from '../../shared/vscode/commands2'
 
 import * as nls from 'vscode-nls'
 import { DefaultS3Client } from '../../shared/clients/s3Client'
-import { isTreeNode, TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
+import { TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
 import { getSourceNode } from '../../shared/utilities/treeNodeUtils'
 const localize = nls.loadMessageBundle()
 
@@ -67,11 +67,9 @@ export async function activate(ctx: ExtContext): Promise<void> {
                     const s3Client = new DefaultS3Client(regionCode)
                     const document = vscode.window.activeTextEditor?.document.uri
                     await uploadFileCommand(s3Client, document)
-                } else if (isTreeNode(node)) {
-                    node = getSourceNode<S3BucketNode>(node)
-                    await uploadFileCommand(node.s3, node)
                 } else {
-                    await uploadFileCommand(node.s3, node)
+                    const sourceNode = getSourceNode<S3BucketNode>(node)
+                    await uploadFileCommand(sourceNode.s3, sourceNode)
                 }
             }
         ),
@@ -82,16 +80,12 @@ export async function activate(ctx: ExtContext): Promise<void> {
             await createBucketCommand(node)
         }),
         Commands.register('aws.s3.createFolder', async (node: S3BucketNode | S3FolderNode | TreeNode) => {
-            if (isTreeNode(node)) {
-                node = getSourceNode<S3BucketNode>(node)
-            }
-            await createFolderCommand(node)
+            const sourceNode = getSourceNode<S3BucketNode>(node)
+            await createFolderCommand(sourceNode)
         }),
         Commands.register('aws.s3.deleteBucket', async (node: S3BucketNode | TreeNode) => {
-            if (isTreeNode(node)) {
-                node = getSourceNode<S3BucketNode>(node)
-            }
-            await deleteBucketCommand(node)
+            const sourceNode = getSourceNode<S3BucketNode>(node)
+            await deleteBucketCommand(sourceNode)
         }),
         Commands.register('aws.s3.deleteFile', async (node: S3FileNode) => {
             await deleteFileCommand(node)

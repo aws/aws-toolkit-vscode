@@ -21,7 +21,7 @@ describe('StackNameNode', () => {
     it('should create an instance of StackNameNode', () => {
         assert.strictEqual(stackNameNode.link, expectedStackLink)
         assert.strictEqual(stackNameNode.stackName, expectedStackName)
-        assert.strictEqual(stackNameNode.region, expectedRegion)
+        assert.strictEqual(stackNameNode.regionCode, expectedRegion)
     })
 
     it('should return empty array when call getChildren()', async () => {
