@@ -25,13 +25,21 @@ describe('UserCredentialsUtils', function () {
     let tempFolder: string
     let defaultConfigFileName: string
     let defaultCredentialsFilename: string
+    // preserve envs
+    const credEnv = process.env['AWS_SHARED_CREDENTIALS_FILE']
+    const configEnv = process.env['AWS_CONFIG_FILE']
 
     before(async function () {
-        defaultConfigFileName = getConfigFilename()
-        defaultCredentialsFilename = getCredentialsFilename()
         // Make a temp folder for all these tests
         // Stick some temp credentials files in there to load from
         tempFolder = await makeTemporaryToolkitFolder()
+
+        // Set env to fake cred/config to avoid the actual aws config being deleted by test
+        process.env.AWS_SHARED_CREDENTIALS_FILE = path.join(tempFolder, 'aws-credentials-tmp')
+        process.env.AWS_CONFIG_FILE = path.join(tempFolder, 'aws-config-tmp')
+
+        defaultConfigFileName = getConfigFilename()
+        defaultCredentialsFilename = getCredentialsFilename()
     })
 
     afterEach(async function () {
@@ -43,6 +51,9 @@ describe('UserCredentialsUtils', function () {
 
     after(async function () {
         await fs.delete(tempFolder, { recursive: true })
+        // restore envs
+        process.env['AWS_SHARED_CREDENTIALS_FILE'] = credEnv
+        process.env['AWS_CONFIG_FILE'] = configEnv
     })
 
     describe('findExistingCredentialsFilenames', function () {
