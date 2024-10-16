@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Fix userCredentialsUtils.test.ts so it won't remove the actual aws config"
+}
