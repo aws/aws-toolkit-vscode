@@ -41,7 +41,7 @@ export class SshKeyPair {
         const maxRetries = 5
         await waitUntil(
             async () => {
-                await fs.exists(keyPath)
+                return await fs.exists(keyPath)
             },
             { maxRetries: maxRetries }
         )
