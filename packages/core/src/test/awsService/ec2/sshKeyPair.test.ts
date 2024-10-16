@@ -2,7 +2,6 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import * as vscode from 'vscode'
 import assert from 'assert'
 import nodefs from 'fs' // eslint-disable-line no-restricted-imports
 import * as sinon from 'sinon'
@@ -14,7 +13,7 @@ import { InstalledClock } from '@sinonjs/fake-timers'
 import { ChildProcess } from '../../../shared/utilities/processUtils'
 import { fs, globals } from '../../../shared'
 
-describe('SshKeyUtility', async function () {
+describe('SshKeyPair', async function () {
     let temporaryDirectory: string
     let keyPath: string
     let keyPair: SshKeyPair
@@ -90,10 +89,10 @@ describe('SshKeyUtility', async function () {
 
     it('does overwrite existing keys on get call', async function () {
         const generateStub = sinon.spy(SshKeyPair, 'generateSshKeyPair')
-        const keyBefore = await fs.readFileBytes(vscode.Uri.file(keyPath))
+        const keyBefore = await fs.readFileBytes(keyPath)
         keyPair = await SshKeyPair.getSshKeyPair(keyPath, 30000)
 
-        const keyAfter = await fs.readFileBytes(vscode.Uri.file(keyPath))
+        const keyAfter = await fs.readFileBytes(keyPath)
         sinon.assert.calledOnce(generateStub)
 
         assert.notStrictEqual(keyBefore, keyAfter)
