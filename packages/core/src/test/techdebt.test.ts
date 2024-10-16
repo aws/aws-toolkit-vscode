@@ -38,7 +38,7 @@ describe('tech debt', function () {
 
         assert.ok(
             semver.lt(minNodejs, '18.0.0'),
-            'with node16+, we can remove `any` workaround in the `copyFiles.ts` scripts'
+            'with node18+, we can use `fs.cpSync` (without casting to `any`) in the `copyFiles.ts` scripts'
         )
     })
 
