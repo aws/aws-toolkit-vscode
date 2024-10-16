@@ -191,6 +191,8 @@ interface WaitUntilOptions {
     readonly interval?: number
     /** Wait for "truthy" result, else wait for any defined result including `false` (default: true) */
     readonly truthy?: boolean
+    /** Max retries (default: unlimited) */
+    readonly maxRetries?: number
 }
 
 /**
@@ -203,7 +205,7 @@ interface WaitUntilOptions {
  */
 export async function waitUntil<T>(fn: () => Promise<T>, options: WaitUntilOptions): Promise<T | undefined> {
     const opt = { timeout: 5000, interval: 500, truthy: true, ...options }
-    for (let i = 0; true; i++) {
+    for (let i = 0; options.maxRetries ?? true; i++) {
         const start: number = globals.clock.Date.now()
         let result: T
 
