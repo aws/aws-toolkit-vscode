@@ -43,8 +43,7 @@ export class SshKeyPair {
                 return await fs.exists(keyPath)
             },
             {
-                timeout: 29000,
-                interval: 5000,
+                timeout: 25000,
             }
         )
 
