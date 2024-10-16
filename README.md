@@ -1,4 +1,5 @@
 # AWS Extensions for Visual Studio Code
+dumb change
 
 [![Coverage](https://img.shields.io/codecov/c/github/aws/aws-toolkit-vscode/master.svg)](https://codecov.io/gh/aws/aws-toolkit-vscode/branch/master)
 
