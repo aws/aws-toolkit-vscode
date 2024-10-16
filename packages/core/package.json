@@ -5,7 +5,7 @@
     "license": "Apache-2.0",
     "engines": {
         "npm": "^10.1.0",
-        "vscode": "^1.68.0"
+        "vscode": "^1.83.0"
     },
     "exports": {
         ".": "./dist/src/extension.js",
@@ -423,7 +423,7 @@
         "@types/node-fetch": "^2.6.8",
         "@types/prismjs": "^1.26.0",
         "@types/proper-lockfile": "^4.1.4",
-        "@types/readline-sync": "^1.4.3",
+        "@types/readline-sync": "^1.4.8",
         "@types/semver": "^7.5.0",
         "@types/sinon": "^10.0.5",
         "@types/sinonjs__fake-timers": "^8.1.2",
@@ -447,7 +447,7 @@
         "mocha-multi-reporters": "^1.5.1",
         "readline-sync": "^1.4.9",
         "sass": "^1.49.8",
-        "sass-loader": "^12.6.0",
+        "sass-loader": "^16.0.2",
         "sinon": "^14.0.0",
         "style-loader": "^3.3.1",
         "ts-node": "^10.9.1",

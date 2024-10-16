@@ -12,6 +12,8 @@ import {
 } from '../../../../awsService/ec2/explorer/ec2InstanceNode'
 import { Ec2Client, SafeEc2Instance, getNameOfInstance } from '../../../../shared/clients/ec2Client'
 import { Ec2ParentNode } from '../../../../awsService/ec2/explorer/ec2ParentNode'
+import * as sinon from 'sinon'
+import { PollingSet } from '../../../../shared/utilities/pollingSet'
 
 describe('ec2InstanceNode', function () {
     let testNode: Ec2InstanceNode
@@ -30,12 +32,16 @@ describe('ec2InstanceNode', function () {
             ],
             LastSeenStatus: 'running',
         }
+        sinon.stub(Ec2InstanceNode.prototype, 'updateStatus')
+        // Don't want to be polling here, that is tested in ../ec2ParentNode.test.ts
+        // disabled here for convenience (avoiding race conditions with timeout)
+        sinon.stub(PollingSet.prototype, 'start')
         const testClient = new Ec2Client('')
         const testParentNode = new Ec2ParentNode(testRegion, testPartition, testClient)
         testNode = new Ec2InstanceNode(testParentNode, testClient, 'testRegion', 'testPartition', testInstance)
     })
 
-    this.beforeEach(function () {
+    beforeEach(function () {
         testNode.updateInstance(testInstance)
     })
 

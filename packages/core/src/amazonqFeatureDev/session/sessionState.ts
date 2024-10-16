@@ -57,7 +57,7 @@ export class ConversationNotStartedState implements Omit<SessionState, 'uploadId
     }
 }
 
-function registerNewFiles(
+export function registerNewFiles(
     fs: VirtualFileSystem,
     newFileContents: NewFileZipContents[],
     uploadId: string,
