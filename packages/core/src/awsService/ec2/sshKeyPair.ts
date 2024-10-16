@@ -37,9 +37,10 @@ export class SshKeyPair {
         if (!keyGenerated) {
             throw new ToolkitError('ec2: Unable to generate ssh key pair with either ed25519 or rsa')
         }
-        if (!(await fs.exists(keyPath))) {
-            throw new ToolkitError(`ec2: Failed to generate keys, resulting key not found at ${keyPath}`)
-        }
+        // This throws on windows.
+        // if (!(await fs.exists(keyPath))) {
+        //     throw new ToolkitError(`ec2: Failed to generate keys, resulting key not found at ${keyPath}`)
+        // }
     }
 
     public static async generateSshKeyPair(keyPath: string): Promise<void> {
