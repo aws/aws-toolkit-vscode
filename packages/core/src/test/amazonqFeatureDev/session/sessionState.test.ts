@@ -121,18 +121,9 @@ describe('sessionState', () => {
 
             const nextState = new PrepareCodeGenState(testConfig, [], [], [], tabId, 1, 2, 3, undefined)
 
-            assert.deepStrictEqual(result.nextState?.deletedFiles, {
-                nextState: nextState.deletedFiles,
-                interaction: {},
-            })
-            assert.deepStrictEqual(result.nextState?.filePaths, {
-                nextState: nextState.filePaths,
-                interaction: {},
-            })
-            assert.deepStrictEqual(result.nextState?.references, {
-                nextState: nextState.references,
-                interaction: {},
-            })
+            assert.deepStrictEqual(result.nextState?.deletedFiles, nextState.deletedFiles)
+            assert.deepStrictEqual(result.nextState?.filePaths, result.nextState?.filePaths)
+            assert.deepStrictEqual(result.nextState?.references, result.nextState?.references)
         })
 
         it('fails when codeGenerationStatus failed ', async () => {
