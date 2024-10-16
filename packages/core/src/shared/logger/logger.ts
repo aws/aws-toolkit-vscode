@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+/**whaaaaat */
+
 import * as vscode from 'vscode'
 import { LogTopic, type ToolkitLogger } from './toolkitLogger'
 
