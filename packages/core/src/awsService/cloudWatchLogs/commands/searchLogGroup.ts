@@ -29,6 +29,7 @@ import { createBackButton, createExitButton, createHelpButton } from '../../../s
 import { PromptResult } from '../../../shared/ui/prompter'
 import { ToolkitError } from '../../../shared/errors'
 import { Messages } from '../../../shared/utilities/messages'
+import { showFile } from '../../../shared/utilities/textDocumentUtilities'
 
 const localize = nls.loadMessageBundle()
 
@@ -65,9 +66,7 @@ export async function prepareDocument(uri: vscode.Uri, logData: CloudWatchLogsDa
     try {
         // Gets the data: calls filterLogEventsFromUri().
         await registry.fetchNextLogEvents(uri)
-        const doc = await vscode.workspace.openTextDocument(uri)
-        await vscode.window.showTextDocument(doc, { preview: false })
-        await vscode.languages.setTextDocumentLanguage(doc, 'log')
+        await showFile(uri)
     } catch (err) {
         if (CancellationError.isUserCancelled(err)) {
             throw err

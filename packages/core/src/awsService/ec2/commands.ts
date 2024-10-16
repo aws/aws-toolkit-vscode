@@ -2,7 +2,6 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import * as vscode from 'vscode'
 import { Ec2InstanceNode } from './explorer/ec2InstanceNode'
 import { Ec2Node } from './explorer/ec2ParentNode'
 import { Ec2ConnectionManager } from './model'
@@ -14,6 +13,7 @@ import { ec2LogSchema } from './ec2LogDocumentProvider'
 import { getAwsConsoleUrl } from '../../shared/awsConsole'
 import { showRegionPrompter } from '../../auth/utils'
 import { openUrl } from '../../shared/utilities/vsCodeUtils'
+import { showFile } from '../../shared/utilities/textDocumentUtilities'
 
 export function refreshExplorer(node?: Ec2Node) {
     if (node) {
@@ -74,8 +74,5 @@ export async function copyInstanceId(instanceId: string): Promise<void> {
 }
 
 export async function openLogDocument(node?: Ec2InstanceNode): Promise<void> {
-    const uri = ec2LogSchema.form(await getSelection(node))
-    const doc = await vscode.workspace.openTextDocument(uri)
-    await vscode.window.showTextDocument(doc, { preview: false })
-    await vscode.languages.setTextDocumentLanguage(doc, 'log')
+    return await showFile(ec2LogSchema.form(await getSelection(node)))
 }
