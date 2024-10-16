@@ -6,7 +6,7 @@ import os from 'os'
 import { fs, globals } from '../../shared'
 import { ToolkitError } from '../../shared/errors'
 import { tryRun } from '../../shared/utilities/pathFind'
-import { Timeout, waitUntil } from '../../shared/utilities/timeoutUtils'
+import { Timeout } from '../../shared/utilities/timeoutUtils'
 import { findAsync } from '../../shared/utilities/collectionUtils'
 import { RunParameterContext } from '../../shared/utilities/processUtils'
 
@@ -37,15 +37,6 @@ export class SshKeyPair {
         if (!keyGenerated) {
             throw new ToolkitError('ec2: Unable to generate ssh key pair with either ed25519 or rsa')
         }
-
-        await waitUntil(
-            async () => {
-                return await fs.exists(keyPath)
-            },
-            {
-                timeout: 25000,
-            }
-        )
 
         if (!(await fs.exists(keyPath))) {
             throw new ToolkitError(`ec2: Failed to generate keys, resulting key not found at ${keyPath}`)
