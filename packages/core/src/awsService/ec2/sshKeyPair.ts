@@ -2,7 +2,8 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { fs } from '../../shared'
+import os from 'os'
+import { fs, globals } from '../../shared'
 import { ToolkitError } from '../../shared/errors'
 import { tryRun } from '../../shared/utilities/pathFind'
 import { Timeout } from '../../shared/utilities/timeoutUtils'
@@ -37,7 +38,11 @@ export class SshKeyPair {
         if (!keyGenerated || !(await fs.existsFile(keyPath))) {
             throw new ToolkitError('ec2: Unable to generate ssh key pair')
         }
-        await fs.chmod(keyPath, 0o600)
+        // Should already be the case, but just in case we assert permissions.
+        // skip on Windows since it only allows write permission to be changed.
+        if (!globals.isWeb && os.platform() !== 'win32') {
+            await fs.chmod(keyPath, 0o600)
+        }
     }
     /**
      * Attempts to generate an ssh key pair. Returns true if successful, false otherwise.
