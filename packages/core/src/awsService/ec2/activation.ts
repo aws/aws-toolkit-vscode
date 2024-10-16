@@ -8,8 +8,6 @@ import { telemetry } from '../../shared/telemetry/telemetry'
 import { Ec2InstanceNode, tryRefreshNode } from './explorer/ec2InstanceNode'
 import { copyTextCommand } from '../../awsexplorer/commands/copyText'
 import { Ec2Node } from './explorer/ec2ParentNode'
-
-const connectionManagers = new Ec2ConnectionManagerMap()
 import {
     openRemoteConnection,
     openTerminal,
@@ -19,6 +17,8 @@ import {
     linkToLaunchInstance,
 } from './commands'
 import { Ec2ConnectionManagerMap } from './connectionManagerMap'
+
+const connectionManagers = new Ec2ConnectionManagerMap()
 
 export async function activate(ctx: ExtContext): Promise<void> {
     ctx.extensionContext.subscriptions.push(
