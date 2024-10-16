@@ -112,13 +112,27 @@ describe('sessionState', () => {
                 codeGenerationRemainingIterationCount: 2,
                 codeGenerationTotalIterationCount: 3,
             })
+
+            const currentCodeGenerationId = crypto.randomUUID()
             mockExportResultArchive = sinon.stub().resolves({ newFileContents: [], deletedFiles: [], references: [] })
 
             const testAction = mockSessionStateAction()
             const state = new CodeGenState(testConfig, [], [], [], tabId, 0, {}, 2, 3)
             const result = await state.interact(testAction)
 
-            const nextState = new PrepareCodeGenState(testConfig, [], [], [], tabId, 1, 2, 3)
+            const nextState = new PrepareCodeGenState(
+                testConfig,
+                [],
+                [],
+                [],
+                tabId,
+                1,
+                2,
+                3,
+                undefined,
+                currentCodeGenerationId,
+                {}
+            )
 
             assert.deepStrictEqual(result, {
                 nextState,
