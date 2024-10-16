@@ -1,5 +1,5 @@
 # AWS Extensions for Visual Studio Code
-dumb change
+dumb change.
 
 somthing else
 
