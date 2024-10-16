@@ -152,7 +152,7 @@ export class CrashMonitoring {
 
     public async cleanup() {
         this.crashChecker?.cleanup()
-        await this.heartbeat?.cleanup()
+        await this.heartbeat?.shutdown()
     }
 }
 
@@ -184,7 +184,7 @@ class Heartbeat {
                 await this.state.sendHeartbeat()
             } catch (e) {
                 try {
-                    await this.cleanup()
+                    await this.shutdown()
                     emitFailure({ functionName: 'sendHeartbeatInterval', error: e })
                 } catch {}
 
@@ -200,23 +200,6 @@ class Heartbeat {
     public async shutdown() {
         globals.clock.clearInterval(this.intervalRef)
         await this.state.indicateGracefulShutdown()
-    }
-
-    /**
-     * Safely attempts to clean up this heartbeat from the state to try and avoid
-     * an incorrectly indicated crash. Use this on failures.
-     *
-     * ---
-     *
-     * IMPORTANT: This function must not throw as this function is run within a catch
-     */
-    public async cleanup() {
-        try {
-            await this.shutdown()
-        } catch {}
-        try {
-            await this.state.clearHeartbeat()
-        } catch {}
     }
 
     /** Mimics a crash, only for testing */
@@ -298,15 +281,17 @@ class CrashChecker {
                 return
             }
 
-            // Iterate all known extensions and for each check if they have crashed
+            // check each extension if it crashed
             const knownExts = await state.getAllExts()
             const runningExts: ExtInstanceHeartbeat[] = []
             for (const ext of knownExts) {
+                // is still running
                 if (!isStoppedHeartbeats(ext, checkInterval)) {
                     runningExts.push(ext)
                     continue
                 }
 
+                // did crash
                 await state.handleCrashedExt(ext, () => {
                     // Debugger instances may incorrectly look like they crashed, so don't emit.
                     // Example is if I hit the red square in the debug menu, it is a non-graceful shutdown. But the regular
