@@ -129,7 +129,7 @@ export const ecsIamPermissionsUrl = vscode.Uri.parse(
  */
 export const CLOUDWATCH_LOGS_SCHEME = 'aws-cwl' // eslint-disable-line @typescript-eslint/naming-convention
 export const AWS_SCHEME = 'aws' // eslint-disable-line @typescript-eslint/naming-convention
-export const EC2_LOGS_SCHEME = 'aws-ec2' // eslint-disable-line @typescript-eslint/naming-convention
+export const ec2LogsScheme = 'aws-ec2'
 export const amazonQDiffScheme = 'amazon-q-diff'
 
 export const lambdaPackageTypeImage = 'Image'
