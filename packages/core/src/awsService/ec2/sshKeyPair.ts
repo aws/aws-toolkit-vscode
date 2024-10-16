@@ -34,7 +34,7 @@ export class SshKeyPair {
 
     public static async generateSshKeyPair(keyPath: string): Promise<void> {
         const keyGenerated = await this.tryKeyTypes(keyPath, ['ed25519', 'rsa'])
-        if (!keyGenerated) {
+        if (!keyGenerated || !(await fs.existsFile(keyPath))) {
             throw new ToolkitError('ec2: Unable to generate ssh key pair')
         }
         await fs.chmod(keyPath, 0o600)
