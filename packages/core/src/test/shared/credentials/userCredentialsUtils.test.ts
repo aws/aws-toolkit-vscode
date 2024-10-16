@@ -52,8 +52,8 @@ describe('UserCredentialsUtils', function () {
     after(async function () {
         await fs.delete(tempFolder, { recursive: true })
         // restore envs
-        process.env['AWS_SHARED_CREDENTIALS_FILE'] = credEnv
-        process.env['AWS_CONFIG_FILE'] = configEnv
+        process.env.AWS_SHARED_CREDENTIALS_FILE = credEnv
+        process.env.AWS_CONFIG_FILE = configEnv
     })
 
     describe('findExistingCredentialsFilenames', function () {
