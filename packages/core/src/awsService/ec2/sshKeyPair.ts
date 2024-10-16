@@ -37,6 +37,7 @@ export class SshKeyPair {
         if (!keyGenerated) {
             throw new ToolkitError('ec2: Unable to generate ssh key pair with either ed25519 or rsa')
         }
+        // waitUntil avoids Windows race condition of using key right after creation.
         const maxRetries = 5
         await waitUntil(
             async () => {
