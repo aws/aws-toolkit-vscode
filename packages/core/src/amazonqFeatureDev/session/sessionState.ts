@@ -278,7 +278,7 @@ export class CodeGenState extends CodeGenBase implements SessionState {
         public deletedFiles: DeletedFileInfo[],
         public references: CodeReference[],
         tabID: string,
-        private currentIteration: number,
+        public currentIteration: number,
         public uploadHistory: UploadHistory,
         public codeGenerationRemainingIterationCount?: number,
         public codeGenerationTotalIterationCount?: number
@@ -485,7 +485,7 @@ export class PrepareCodeGenState implements SessionState {
         public deletedFiles: DeletedFileInfo[],
         public references: CodeReference[],
         public tabID: string,
-        private currentIteration: number,
+        public currentIteration: number,
 
         public codeGenerationRemainingIterationCount?: number,
         public codeGenerationTotalIterationCount?: number,

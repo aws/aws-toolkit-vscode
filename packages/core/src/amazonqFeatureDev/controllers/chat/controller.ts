@@ -450,8 +450,13 @@ export class FeatureDevController {
             // Finish processing the event
 
             if (session?.state?.tokenSource?.token.isCancellationRequested) {
+                this.workOnNewTask(
+                    session,
+                    session.state.codeGenerationRemainingIterationCount || session.state?.currentIteration,
+                    session.state.codeGenerationTotalIterationCount,
+                    session?.state?.tokenSource?.token.isCancellationRequested
+                )
                 this.disposeToken(session)
-                this.workOnNewTask(session)
             } else {
                 this.messenger.sendAsyncEventProgress(tabID, false, undefined)
 
@@ -472,28 +477,41 @@ export class FeatureDevController {
             }
         }
     }
-    private workOnNewTask(message: any) {
-        this.messenger.sendAnswer({
-            message: i18n('AWS.amazonq.featureDev.pillText.stoppedCodeGeneration'),
-            type: 'answer-part',
-            tabID: message.tabID,
-        })
-        this.messenger.sendAnswer({
-            type: 'system-prompt',
-            tabID: message.tabID,
-            followUps: [
-                {
-                    pillText: i18n('AWS.amazonq.featureDev.pillText.newTask'),
-                    type: FollowUpTypes.NewTask,
-                    status: 'info',
-                },
-                {
-                    pillText: i18n('AWS.amazonq.featureDev.pillText.closeSession'),
-                    type: FollowUpTypes.CloseSession,
-                    status: 'info',
-                },
-            ],
-        })
+    private workOnNewTask(
+        message: any,
+        remainingIterations?: number,
+        totalIterations?: number,
+        isStoppedGeneration: boolean = false
+    ) {
+        if (isStoppedGeneration) {
+            this.messenger.sendAnswer({
+                message:
+                    remainingIterations === 0
+                        ? "I stopped generating your code. You don't have more iterations left, however, you can start a new session."
+                        : `I stopped generating your code. If you want to continue working on this task, provide another description. ${!totalIterations ? `You have started ${remainingIterations} code generations.` : `You have ${remainingIterations} out of ${totalIterations} code generations left.`}`,
+                type: 'answer-part',
+                tabID: message.tabID,
+            })
+        }
+
+        if ((remainingIterations === 0 && isStoppedGeneration) || !isStoppedGeneration) {
+            this.messenger.sendAnswer({
+                type: 'system-prompt',
+                tabID: message.tabID,
+                followUps: [
+                    {
+                        pillText: i18n('AWS.amazonq.featureDev.pillText.newTask'),
+                        type: FollowUpTypes.NewTask,
+                        status: 'info',
+                    },
+                    {
+                        pillText: i18n('AWS.amazonq.featureDev.pillText.closeSession'),
+                        type: FollowUpTypes.CloseSession,
+                        status: 'info',
+                    },
+                ],
+            })
+        }
 
         // Ensure that chat input is enabled so that they can provide additional iterations if they choose
         this.messenger.sendChatInputEnabled(message.tabID, true)
@@ -528,7 +546,11 @@ export class FeatureDevController {
                 canBeVoted: true,
             })
 
-            this.workOnNewTask(message)
+            this.workOnNewTask(
+                message,
+                session.state.codeGenerationRemainingIterationCount,
+                session.state.codeGenerationTotalIterationCount
+            )
         } catch (err: any) {
             this.messenger.sendErrorMessage(
                 createUserFacingErrorMessage(`Failed to insert code changes: ${err.message}`),
