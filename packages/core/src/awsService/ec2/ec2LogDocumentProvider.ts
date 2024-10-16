@@ -5,7 +5,7 @@
 import * as vscode from 'vscode'
 import { Ec2Selection } from './prompter'
 import { Ec2Client } from '../../shared/clients/ec2Client'
-import { EC2_LOGS_SCHEME } from '../../shared/constants'
+import { ec2LogsScheme } from '../../shared/constants'
 import { UriSchema } from '../../shared/utilities/uriUtils'
 
 export class Ec2LogDocumentProvider implements vscode.TextDocumentContentProvider {
@@ -27,7 +27,7 @@ export const ec2LogSchema = new UriSchema<Ec2Selection>(parseEc2Uri, formEc2Uri)
 function parseEc2Uri(uri: vscode.Uri): Ec2Selection {
     const parts = uri.path.split(':')
 
-    if (uri.scheme !== EC2_LOGS_SCHEME) {
+    if (uri.scheme !== ec2LogsScheme) {
         throw new Error(`URI ${uri} is not parseable for EC2 Logs`)
     }
 
@@ -38,5 +38,5 @@ function parseEc2Uri(uri: vscode.Uri): Ec2Selection {
 }
 
 function formEc2Uri(selection: Ec2Selection): vscode.Uri {
-    return vscode.Uri.parse(`${EC2_LOGS_SCHEME}:${selection.region}:${selection.instanceId}`)
+    return vscode.Uri.parse(`${ec2LogsScheme}:${selection.region}:${selection.instanceId}`)
 }

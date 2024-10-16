@@ -7,7 +7,7 @@ import assert from 'assert'
 import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import { Ec2LogDocumentProvider } from '../../../awsService/ec2/ec2LogDocumentProvider'
-import { EC2_LOGS_SCHEME } from '../../../shared/constants'
+import { ec2LogsScheme } from '../../../shared/constants'
 import { Ec2Client } from '../../../shared/clients/ec2Client'
 
 describe('LogDataDocumentProvider', async function () {
@@ -26,7 +26,7 @@ describe('LogDataDocumentProvider', async function () {
     })
 
     it('fetches content for valid ec2 log URI', async function () {
-        const validUri = vscode.Uri.parse(`${EC2_LOGS_SCHEME}:us-west1:instance1`)
+        const validUri = vscode.Uri.parse(`${ec2LogsScheme}:us-west1:instance1`)
         const expectedContent = 'log content'
         sinon.stub(Ec2Client.prototype, 'getConsoleOutput').resolves({
             InstanceId: 'instance1',
