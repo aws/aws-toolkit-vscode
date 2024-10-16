@@ -38,10 +38,12 @@ const mockSessionStateConfig = ({
     conversationId,
     uploadId,
     workspaceFolder,
+    currentCodeGenerationId,
 }: {
     conversationId: string
     uploadId: string
     workspaceFolder: vscode.WorkspaceFolder
+    currentCodeGenerationId?: string
 }): SessionStateConfig => ({
     workspaceRoots: ['fake-source'],
     workspaceFolders: [workspaceFolder],
@@ -54,12 +56,14 @@ const mockSessionStateConfig = ({
         exportResultArchive: () => mockExportResultArchive(),
     } as unknown as FeatureDevClient,
     uploadId,
+    currentCodeGenerationId,
 })
 
 describe('sessionState', () => {
     const conversationId = 'conversation-id'
     const uploadId = 'upload-id'
     const tabId = 'tab-id'
+    const currentCodeGenerationId = ''
     let testConfig: SessionStateConfig
 
     beforeEach(async () => {
@@ -67,6 +71,7 @@ describe('sessionState', () => {
             conversationId,
             uploadId,
             workspaceFolder: await createTestWorkspaceFolder('fake-root'),
+            currentCodeGenerationId,
         })
     })
 
