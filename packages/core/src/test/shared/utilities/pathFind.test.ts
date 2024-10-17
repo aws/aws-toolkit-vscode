@@ -10,10 +10,7 @@ import * as path from 'path'
 import * as testutil from '../../testUtil'
 import { fs } from '../../../shared'
 import { findSshPath, findTypescriptCompiler, getVscodeCliPath } from '../../../shared/utilities/pathFind'
-
-function isWin(): boolean {
-    return process.platform === 'win32'
-}
+import { isWin } from '../../../shared/vscode/env'
 
 describe('pathFind', function () {
     it('findTypescriptCompiler()', async function () {
