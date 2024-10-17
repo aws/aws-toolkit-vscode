@@ -30,7 +30,7 @@ export const crashMonitoringTest = async () => {
 
     // Add some buffer since after 1 interval the work is actually done, including file i/o which may be slow.
     // **IF FLAKY**, see if increasing the buffer helps.
-    const oneInterval = checkInterval + 500
+    const oneInterval = checkInterval + 1000
 
     /**
      * Makes N "extension instances" that can be used for testing.
@@ -122,6 +122,7 @@ export const crashMonitoringTest = async () => {
             await exts[i].ext.start()
         }
 
+        // Crash all exts except the 0th one
         for (let i = 1; i < extCount; i++) {
             await exts[i].ext.crash()
             latestCrashedExts.push(exts[i])
