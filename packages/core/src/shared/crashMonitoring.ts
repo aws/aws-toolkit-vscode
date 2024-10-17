@@ -466,7 +466,9 @@ export class FileSystemState {
     public async indicateGracefulShutdown(): Promise<void> {
         // By removing the heartbeat entry, the crash checkers will not be able to find this entry anymore, making it
         // impossible to report on since the file system is the source of truth
-        await withFailCtx('indicateGracefulShutdown', () => nodeFs.rm(this.makeStateFilePath(this.extId)))
+        await withFailCtx('indicateGracefulShutdown', () =>
+            nodeFs.rm(this.makeStateFilePath(this.extId), { force: true })
+        )
     }
 
     // ------------------ Checker Methods ------------------
