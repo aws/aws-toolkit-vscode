@@ -278,7 +278,7 @@ import { LoginOption } from './types'
 import { CommonAuthWebview } from './backend'
 import { WebviewClientFactory } from '../../../webviews/client'
 import { Region } from '../../../shared/regions/endpoints'
-import { ssoUrlFormatRegex, ssoUrlFormatMessage } from '../../../auth/sso/constants'
+import { ssoUrlFormatRegex, ssoUrlProtocolRegex, SsoStartUrlErrorMsg } from '../../../auth/sso/constants'
 
 const client = WebviewClientFactory.create<CommonAuthWebview>()
 
@@ -476,11 +476,12 @@ export default defineComponent({
             }
         },
         handleUrlInput() {
-            if (this.startUrl && !ssoUrlFormatRegex.test(this.startUrl)) {
-                this.startUrlError = ssoUrlFormatMessage
+            if (this.startUrl && !ssoUrlProtocolRegex.test(this.startUrl)) {
+                this.startUrlError = SsoStartUrlErrorMsg.PROTOCOL
+            } else if (this.startUrl && !ssoUrlFormatRegex.test(this.startUrl)) {
+                this.startUrlError = SsoStartUrlErrorMsg.FORMAT
             } else if (this.startUrl && this.existingStartUrls.some((url) => url === this.startUrl)) {
-                this.startUrlError =
-                    'A connection for this start URL already exists. Sign out before creating a new one.'
+                this.startUrlError = SsoStartUrlErrorMsg.ALREADY_EXISTS
             } else {
                 this.startUrlError = ''
                 void client.storeMetricMetadata({
