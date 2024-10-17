@@ -6,16 +6,43 @@
 import * as vscode from 'vscode'
 import * as path from 'path'
 import fs from '../../shared/fs/fs'
+import { ChildProcess, ChildProcessOptions } from './processUtils'
 import { GitExtension } from '../extensions/git'
 import { Settings } from '../settings'
-import { ChildProcess, ChildProcessOptions } from './processUtils'
-import { getLogger } from '..'
+import { getLogger } from '../logger/logger'
 
 /** Full path to VSCode CLI. */
 let vscPath: string
 let sshPath: string
 let gitPath: string
 let bashPath: string
+
+/**
+ * Tries to execute a program at path `p` with the given args and
+ * optionally checks the output for `expected`.
+ *
+ * @param p path to a program to execute
+ * @param args program args
+ * @param doLog log failures
+ * @param expected output must contain this string
+ */
+export async function tryRun(
+    p: string,
+    args: string[],
+    logging: 'yes' | 'no' | 'noresult' = 'yes',
+    expected?: string,
+    opt?: ChildProcessOptions
+): Promise<boolean> {
+    const proc = new ChildProcess(p, args, { logging: 'no' })
+    const r = await proc.run(opt)
+    const ok = r.exitCode === 0 && (expected === undefined || r.stdout.includes(expected))
+    if (logging === 'noresult') {
+        getLogger().info('tryRun: %s: %s', ok ? 'ok' : 'failed', proc)
+    } else if (logging !== 'no') {
+        getLogger().info('tryRun: %s: %s %O', ok ? 'ok' : 'failed', proc, proc.result())
+    }
+    return ok
+}
 
 /**
  * Gets the fullpath to `code` (VSCode CLI), or falls back to "code" (not
@@ -88,7 +115,7 @@ export async function findTypescriptCompiler(): Promise<string | undefined> {
  * Gets the configured `ssh` path, or falls back to "ssh" (not absolute),
  * or tries common locations, or returns undefined.
  */
-export async function findSshPath(useCache: boolean = true): Promise<string | undefined> {
+export async function findSshPath(useCache: boolean): Promise<string | undefined> {
     if (useCache && sshPath !== undefined) {
         return sshPath
     }
@@ -152,31 +179,4 @@ export async function findBashPath(): Promise<string | undefined> {
             return p
         }
     }
-}
-
-/**
- * Tries to execute a program at path `p` with the given args and
- * optionally checks the output for `expected`.
- *
- * @param p path to a program to execute
- * @param args program args
- * @param doLog log failures
- * @param expected output must contain this string
- */
-export async function tryRun(
-    p: string,
-    args: string[],
-    logging: 'yes' | 'no' | 'noresult' = 'yes',
-    expected?: string,
-    opt?: ChildProcessOptions
-): Promise<boolean> {
-    const proc = new ChildProcess(p, args, { logging: 'no' })
-    const r = await proc.run(opt)
-    const ok = r.exitCode === 0 && (expected === undefined || r.stdout.includes(expected))
-    if (logging === 'noresult') {
-        getLogger().info('tryRun: %s: %s', ok ? 'ok' : 'failed', proc)
-    } else if (logging !== 'no') {
-        getLogger().info('tryRun: %s: %s %O', ok ? 'ok' : 'failed', proc, proc.result())
-    }
-    return ok
 }
