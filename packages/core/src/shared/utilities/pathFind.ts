@@ -115,7 +115,7 @@ export async function findTypescriptCompiler(): Promise<string | undefined> {
  * Gets the configured `ssh` path, or falls back to "ssh" (not absolute),
  * or tries common locations, or returns undefined.
  */
-export async function findSshPath(useCache: boolean): Promise<string | undefined> {
+export async function findSshPath(useCache: boolean = true): Promise<string | undefined> {
     if (useCache && sshPath !== undefined) {
         return sshPath
     }
