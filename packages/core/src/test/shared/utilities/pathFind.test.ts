@@ -4,12 +4,14 @@
  */
 
 import assert from 'assert'
+import sinon from 'sinon'
 import * as vscode from 'vscode'
 import * as os from 'os'
 import * as path from 'path'
 import * as testutil from '../../testUtil'
 import { fs } from '../../../shared'
-import { findTypescriptCompiler, getVscodeCliPath } from '../../../shared/utilities/pathFind'
+import { findSshPath, findTypescriptCompiler, getVscodeCliPath } from '../../../shared/utilities/pathFind'
+import * as processUtils from '../../../shared/utilities/processUtils'
 
 describe('pathFind', function () {
     it('findTypescriptCompiler()', async function () {
@@ -42,12 +44,40 @@ describe('pathFind', function () {
         assert.ok(regex.test(vscPath), `expected regex ${regex} to match: "${vscPath}"`)
     })
 
-    // it('does a dry run of ssh before returning it', async function () {
-    //     const tryRunStub = sinon.stub(PathFinder, 'tryRun')
-    //     tryRunStub.resolves(true)
-    //     const path = await pathFinder.findSshPath()
-    //     assert.ok(path)
-    //     assert.ok(tryRunStub.calledOnce)
-    //     assert.ok(tryRunStub.calledWith(path))
-    // })
+    describe('findSshPath', function () {
+        let tryRunStub: sinon.SinonStub
+        before(function () {
+            tryRunStub = sinon.stub(processUtils, 'tryRun')
+        })
+
+        after(function () {
+            tryRunStub.restore()
+        })
+
+        it('first tries $PATH', async function () {
+            tryRunStub.onFirstCall().resolves(true)
+
+            const result = await findSshPath(false)
+            assert.ok(result)
+            testutil.assertEqualPaths(result, 'ssh')
+            tryRunStub.resetHistory()
+        })
+
+        it('if $PATH fails, tries /usr/bin/ssh', async function () {
+            tryRunStub.onFirstCall().resolves(false)
+            tryRunStub.onSecondCall().resolves(true)
+
+            const result = await findSshPath(false)
+            assert.ok(result)
+            testutil.assertEqualPaths(result, '/usr/bin/ssh')
+            tryRunStub.resetHistory()
+        })
+
+        it('dry runs the resulting ssh', async function () {
+            tryRunStub.onFirstCall().resolves(true)
+            await findSshPath(false)
+            assert.ok(tryRunStub.calledOnce)
+            tryRunStub.resetHistory()
+        })
+    })
 })
