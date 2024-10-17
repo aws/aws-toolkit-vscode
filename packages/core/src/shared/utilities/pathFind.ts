@@ -8,7 +8,7 @@ import * as path from 'path'
 import fs from '../../shared/fs/fs'
 import { GitExtension } from '../extensions/git'
 import { Settings } from '../settings'
-import * as processUtils from './processUtils'
+import * as programUtils from './programUtils'
 
 /** Full path to VSCode CLI. */
 let vscPath: string
@@ -50,7 +50,7 @@ export async function getVscodeCliPath(): Promise<string | undefined> {
         if (!vsc || (vsc !== 'code' && !(await fs.exists(vsc)))) {
             continue
         }
-        if (await processUtils.tryRun(vsc, ['--version'])) {
+        if (await programUtils.tryRun(vsc, ['--version'])) {
             vscPath = vsc
             return vsc
         }
@@ -75,7 +75,7 @@ export async function findTypescriptCompiler(): Promise<string | undefined> {
 
     for (const tsc of tscPaths) {
         // Try to run "tsc -v".
-        if (await processUtils.tryRun(tsc, ['-v'], 'yes', 'Version')) {
+        if (await programUtils.tryRun(tsc, ['-v'], 'yes', 'Version')) {
             return tsc
         }
     }
@@ -104,7 +104,7 @@ export async function findSshPath(useCache: boolean = true): Promise<string | un
         if (!p || ('ssh' !== p && !(await fs.exists(p)))) {
             continue
         }
-        if (await processUtils.tryRun(p, ['-G', 'x'], 'noresult' /* "ssh -G" prints quasi-sensitive info. */)) {
+        if (await programUtils.tryRun(p, ['-G', 'x'], 'noresult' /* "ssh -G" prints quasi-sensitive info. */)) {
             sshPath = p
             return p
         }
@@ -126,7 +126,7 @@ export async function findGitPath(): Promise<string | undefined> {
         if (!p || ('git' !== p && !(await fs.exists(p)))) {
             continue
         }
-        if (await processUtils.tryRun(p, ['--version'])) {
+        if (await programUtils.tryRun(p, ['--version'])) {
             gitPath = p
             return p
         }
@@ -146,7 +146,7 @@ export async function findBashPath(): Promise<string | undefined> {
         if (!p || ('bash' !== p && !(await fs.exists(p)))) {
             continue
         }
-        if (await processUtils.tryRun(p, ['--version'])) {
+        if (await programUtils.tryRun(p, ['--version'])) {
             bashPath = p
             return p
         }

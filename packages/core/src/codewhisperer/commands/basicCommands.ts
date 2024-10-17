@@ -43,7 +43,7 @@ import { isBuilderIdConnection } from '../../auth/connection'
 import globals from '../../shared/extensionGlobals'
 import { getVscodeCliPath } from '../../shared/utilities/pathFind'
 import { setContext } from '../../shared/vscode/setContext'
-import { tryRun } from '../../shared/utilities/processUtils'
+import { tryRun } from '../../shared/utilities/programUtils'
 
 const MessageTimeOut = 5_000
 

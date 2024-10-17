@@ -11,7 +11,7 @@ import * as path from 'path'
 import * as testutil from '../../testUtil'
 import { fs } from '../../../shared'
 import { findSshPath, findTypescriptCompiler, getVscodeCliPath } from '../../../shared/utilities/pathFind'
-import * as processUtils from '../../../shared/utilities/processUtils'
+import * as programUtils from '../../../shared/utilities/programUtils'
 
 describe('pathFind', function () {
     it('findTypescriptCompiler()', async function () {
@@ -47,7 +47,7 @@ describe('pathFind', function () {
     describe('findSshPath', function () {
         let tryRunStub: sinon.SinonStub
         before(function () {
-            tryRunStub = sinon.stub(processUtils, 'tryRun')
+            tryRunStub = sinon.stub(programUtils, 'tryRun')
         })
 
         after(function () {
