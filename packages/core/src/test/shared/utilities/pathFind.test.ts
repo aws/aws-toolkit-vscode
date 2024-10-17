@@ -10,7 +10,7 @@ import * as path from 'path'
 import * as sinon from 'sinon'
 import * as testutil from '../../testUtil'
 import { fs } from '../../../shared'
-import pathFinder, { PathFinder } from '../../../shared/utilities/pathFinder'
+import pathFinder, { PathFinder } from '../../../shared/utilities/pathFind'
 
 describe('pathFind', function () {
     it('findTypescriptCompiler()', async function () {

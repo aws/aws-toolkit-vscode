@@ -21,7 +21,7 @@ import { ChildProcess } from './utilities/processUtils'
 import { IamClient } from './clients/iamClient'
 import { IAM } from 'aws-sdk'
 import { getIdeProperties } from './extensionUtilities'
-import { pathFinder } from './utilities/pathFinder'
+import { pathFinder } from './utilities/pathFind'
 
 const policyAttachDelay = 5000
 

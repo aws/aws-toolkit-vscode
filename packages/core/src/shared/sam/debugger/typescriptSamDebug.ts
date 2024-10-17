@@ -16,7 +16,7 @@ import { findParentProjectFile } from '../../utilities/workspaceUtils'
 import { DefaultSamLocalInvokeCommand, waitForDebuggerMessages } from '../cli/samCliLocalInvoke'
 import { runLambdaFunction, waitForPort } from '../localLambdaRunner'
 import { SamLaunchRequestArgs } from './awsSamDebugger'
-import { pathFinder } from '../../utilities/pathFinder'
+import { pathFinder } from '../../utilities/pathFind'
 import fs from '../../fs/fs'
 
 const tsConfigFile = 'aws-toolkit-tsconfig.json'

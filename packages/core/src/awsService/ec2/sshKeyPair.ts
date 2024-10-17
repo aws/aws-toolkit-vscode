@@ -7,7 +7,7 @@ import { ToolkitError } from '../../shared/errors'
 import { Timeout } from '../../shared/utilities/timeoutUtils'
 import { findAsync } from '../../shared/utilities/collectionUtils'
 import { RunParameterContext } from '../../shared/utilities/processUtils'
-import { PathFinder } from '../../shared/utilities/pathFinder'
+import { PathFinder } from '../../shared/utilities/pathFind'
 
 type sshKeyType = 'rsa' | 'ed25519'
 

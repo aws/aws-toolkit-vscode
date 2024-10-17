@@ -42,7 +42,7 @@ import { isRemoteWorkspace } from '../../shared/vscode/env'
 import { isBuilderIdConnection } from '../../auth/connection'
 import globals from '../../shared/extensionGlobals'
 import { setContext } from '../../shared/vscode/setContext'
-import pathFinder, { PathFinder } from '../../shared/utilities/pathFinder'
+import pathFinder, { PathFinder } from '../../shared/utilities/pathFind'
 
 const MessageTimeOut = 5_000
 
