@@ -8,13 +8,19 @@ import * as FakeTimers from '@sinonjs/fake-timers'
 import * as timeoutUtils from '../../../shared/utilities/timeoutUtils'
 import { installFakeClock, tickPromise } from '../../../test/testUtil'
 import { sleep } from '../../../shared/utilities/timeoutUtils'
+import { SinonStub, SinonSandbox, createSandbox } from 'sinon'
 
 // We export this describe() so it can be used in the web tests as well
 export const timeoutUtilsDescribe = describe('timeoutUtils', async function () {
     let clock: FakeTimers.InstalledClock
+    let sandbox: SinonSandbox
 
     before(function () {
         clock = installFakeClock()
+    })
+
+    beforeEach(function () {
+        sandbox = createSandbox()
     })
 
     after(function () {
@@ -24,6 +30,7 @@ export const timeoutUtilsDescribe = describe('timeoutUtils', async function () {
     afterEach(function () {
         clock.reset()
         this.timer?.dispose()
+        sandbox.restore()
     })
 
     describe('Timeout', async function () {
@@ -189,6 +196,53 @@ export const timeoutUtilsDescribe = describe('timeoutUtils', async function () {
                 assert.strictEqual(timer.token.isCancellationRequested, false)
                 assert.strictEqual(await cancellation, 'completed')
             })
+        })
+    })
+
+    describe('Interval', async function () {
+        let interval: timeoutUtils.Interval
+        let onCompletionStub: SinonStub
+
+        beforeEach(async function () {
+            onCompletionStub = sandbox.stub()
+            interval = new timeoutUtils.Interval(1000, onCompletionStub)
+        })
+
+        afterEach(async function () {
+            interval?.dispose()
+        })
+
+        it('Executes the callback on an interval', async function () {
+            await clock.tickAsync(999)
+            assert.strictEqual(onCompletionStub.callCount, 0)
+            await clock.tickAsync(1)
+            assert.strictEqual(onCompletionStub.callCount, 1)
+
+            await clock.tickAsync(500)
+            assert.strictEqual(onCompletionStub.callCount, 1)
+            await clock.tickAsync(500)
+            assert.strictEqual(onCompletionStub.callCount, 2)
+
+            await clock.tickAsync(1000)
+            assert.strictEqual(onCompletionStub.callCount, 3)
+        })
+
+        it('allows to wait for next completion', async function () {
+            clock.uninstall()
+
+            let curr = 'Did Not Change'
+
+            const realInterval = new timeoutUtils.Interval(50, async () => {
+                await sleep(50)
+                curr = 'Did Change'
+            })
+
+            const withoutWait = curr
+            await realInterval.nextCompletion()
+            const withWait = curr
+
+            assert.strictEqual(withoutWait, 'Did Not Change')
+            assert.strictEqual(withWait, 'Did Change')
         })
     })
 
