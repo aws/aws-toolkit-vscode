@@ -18,10 +18,10 @@ import { getLogger } from './logger/logger'
 import { getOrInstallCli } from './utilities/cliUtils'
 import { pushIf } from './utilities/collectionUtils'
 import { ChildProcess } from './utilities/processUtils'
+import { findSshPath, getVscodeCliPath } from './utilities/pathFind'
 import { IamClient } from './clients/iamClient'
 import { IAM } from 'aws-sdk'
 import { getIdeProperties } from './extensionUtilities'
-import { findSshPath, getVscodeCliPath } from './utilities/pathFind'
 
 const policyAttachDelay = 5000
 
@@ -30,7 +30,7 @@ export interface MissingTool {
     readonly reason?: string
 }
 
-export const minimumSsmActions = [
+const minimumSsmActions = [
     'ssmmessages:CreateControlChannel',
     'ssmmessages:CreateDataChannel',
     'ssmmessages:OpenControlChannel',
