@@ -33,7 +33,7 @@ import { ToolkitPromptSettings } from '../settings'
 import { shared } from '../utilities/functionUtils'
 import { SamCliSettings } from './cli/samCliSettings'
 import { Commands } from '../vscode/commands2'
-import { registerSync } from './sync'
+import { runSync } from './sync'
 import { showExtensionPage } from '../utilities/vsCodeUtils'
 import { TreeNode } from '../treeview/resourceTreeDataProvider'
 import { SamAppLocation } from '../../awsService/appBuilder/explorer/samProject'
@@ -116,13 +116,22 @@ export async function activate(ctx: ExtContext): Promise<void> {
         }
     })
 
+    const settings = SamCliSettings.instance
+    settings.onDidChange(({ key }) => {
+        if (key === 'legacyDeploy') {
+            telemetry.aws_modifySetting.run((span) => {
+                span.record({ settingId: 'sam_legacyDeploy' })
+                const state = settings.get('legacyDeploy')
+                span.record({ settingState: state ? 'Enabled' : 'Disabled' })
+            })
+        }
+    })
+
     ctx.extensionContext.subscriptions.push(config)
 
     if (globals.didReload) {
         await resumeCreateNewSamApp(ctx)
     }
-
-    registerSync()
 }
 
 async function registerCommands(ctx: ExtContext, settings: SamCliSettings): Promise<void> {
@@ -173,7 +182,14 @@ async function registerCommands(ctx: ExtContext, settings: SamCliSettings): Prom
             } else if (params === 'sync') {
                 await vscode.commands.executeCommand('aws.samcli.sync', arg)
             }
-        })
+        }),
+        Commands.register(
+            {
+                id: 'aws.samcli.sync',
+                autoconnect: true,
+            },
+            async (arg?, validate?: boolean) => await runSync('infra', arg, validate)
+        )
     )
 }
 

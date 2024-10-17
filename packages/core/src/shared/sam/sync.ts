@@ -19,7 +19,6 @@ import { createRegionPrompter } from '../ui/common/region'
 import { CancellationError } from '../utilities/timeoutUtils'
 import { ChildProcess, ChildProcessResult } from '../utilities/processUtils'
 import { keys, selectFrom } from '../utilities/tsUtils'
-import { Commands } from '../vscode/commands2'
 import { AWSTreeNodeBase } from '../treeview/nodes/awsTreeNodeBase'
 import { ToolkitError, UnknownError } from '../errors'
 import { telemetry } from '../telemetry/telemetry'
@@ -707,53 +706,29 @@ export type SamSyncResult = {
     isSuccess: boolean
 }
 
-export function registerSync() {
-    async function runSync(
-        deployType: SyncParams['deployType'],
-        arg: vscode.Uri | AWSTreeNodeBase | TreeNode | undefined,
-        validate?: boolean
-    ): Promise<SamSyncResult> {
-        return await telemetry.sam_sync.run(async () => {
-            const source = getSource(arg)
-            telemetry.record({ syncedResources: deployType === 'infra' ? 'AllResources' : 'CodeOnly', source: source })
+export async function runSync(
+    deployType: SyncParams['deployType'],
+    arg: vscode.Uri | AWSTreeNodeBase | TreeNode | undefined,
+    validate?: boolean
+): Promise<SamSyncResult> {
+    return await telemetry.sam_sync.run(async () => {
+        const source = getSource(arg)
+        telemetry.record({ syncedResources: deployType === 'infra' ? 'AllResources' : 'CodeOnly', source: source })
 
-            await confirmDevStack()
-            const registry = await globals.templateRegistry
-            const params = await new SyncWizard(
-                { deployType, ...(await prepareSyncParams(arg, validate)) },
-                registry
-            ).run()
-            if (params === undefined) {
-                throw new CancellationError('user')
+        await confirmDevStack()
+        const registry = await globals.templateRegistry
+        const params = await new SyncWizard({ deployType, ...(await prepareSyncParams(arg, validate)) }, registry).run()
+        if (params === undefined) {
+            throw new CancellationError('user')
+        }
+
+        try {
+            await runSamSync({ ...params })
+            return {
+                isSuccess: true,
             }
-
-            try {
-                await runSamSync({ ...params })
-                return {
-                    isSuccess: true,
-                }
-            } catch (err) {
-                throw ToolkitError.chain(err, 'Failed to sync SAM application', { details: { ...params } })
-            }
-        })
-    }
-
-    Commands.register(
-        {
-            id: 'aws.samcli.sync',
-            autoconnect: true,
-        },
-        async (arg?, validate?: boolean) => await runSync('infra', arg, validate)
-    )
-
-    const settings = SamCliSettings.instance
-    settings.onDidChange(({ key }) => {
-        if (key === 'legacyDeploy') {
-            telemetry.aws_modifySetting.run((span) => {
-                span.record({ settingId: 'sam_legacyDeploy' })
-                const state = settings.get('legacyDeploy')
-                span.record({ settingState: state ? 'Enabled' : 'Disabled' })
-            })
+        } catch (err) {
+            throw ToolkitError.chain(err, 'Failed to sync SAM application', { details: { ...params } })
         }
     })
 }
@@ -777,7 +752,7 @@ async function updateRecentResponse(region: string, key: string, value: string |
     }
 }
 
-async function confirmDevStack() {
+export async function confirmDevStack() {
     const canPrompt = await ToolkitPromptSettings.instance.isPromptEnabled('samcliConfirmDevStack')
     if (!canPrompt) {
         return
