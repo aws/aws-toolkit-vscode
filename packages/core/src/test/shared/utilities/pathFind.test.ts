@@ -13,11 +13,14 @@ import { fs } from '../../../shared'
 import { findSshPath, findTypescriptCompiler, getVscodeCliPath } from '../../../shared/utilities/pathFind'
 import * as programUtils from '../../../shared/utilities/programUtils'
 
+function isWin(): boolean {
+    return process.platform === 'win32'
+}
+
 describe('pathFind', function () {
     it('findTypescriptCompiler()', async function () {
-        const iswin = process.platform === 'win32'
         const workspace = vscode.workspace.workspaceFolders![0]
-        const tscNodemodules = path.join(workspace.uri.fsPath, `foo/bar/node_modules/.bin/tsc${iswin ? '.cmd' : ''}`)
+        const tscNodemodules = path.join(workspace.uri.fsPath, `foo/bar/node_modules/.bin/tsc${isWin() ? '.cmd' : ''}`)
         await fs.delete(tscNodemodules, { force: true })
 
         // The test workspace normally doesn't have node_modules so this will
@@ -46,8 +49,13 @@ describe('pathFind', function () {
 
     describe('findSshPath', function () {
         let tryRunStub: sinon.SinonStub
+        // On Windows the first call to tryRun gives a valid path, which changes func behavior.
+        // We can offset our call checks based on this.
+        let callOffset: number
+
         before(function () {
             tryRunStub = sinon.stub(programUtils, 'tryRun')
+            callOffset = isWin() ? 1 : 0
         })
 
         after(function () {
@@ -55,7 +63,7 @@ describe('pathFind', function () {
         })
 
         it('first tries $PATH', async function () {
-            tryRunStub.onFirstCall().resolves(true)
+            tryRunStub.onCall(callOffset).resolves(true)
 
             const result = await findSshPath(false)
             assert.ok(result)
@@ -64,8 +72,8 @@ describe('pathFind', function () {
         })
 
         it('if $PATH fails, tries /usr/bin/ssh', async function () {
-            tryRunStub.onFirstCall().resolves(false)
-            tryRunStub.onSecondCall().resolves(true)
+            tryRunStub.onCall(callOffset).resolves(false)
+            tryRunStub.onCall(callOffset + 1).resolves(true)
 
             const result = await findSshPath(false)
             assert.ok(result)
@@ -74,7 +82,7 @@ describe('pathFind', function () {
         })
 
         it('dry runs the resulting ssh', async function () {
-            tryRunStub.onFirstCall().resolves(true)
+            tryRunStub.onCall(callOffset).resolves(true)
             await findSshPath(false)
             assert.ok(tryRunStub.calledOnce)
             tryRunStub.resetHistory()
