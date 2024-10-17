@@ -8,7 +8,7 @@ import { FeatureConfigProvider, fs } from '../../../shared'
 import path = require('path')
 import { BM25Document, BM25Okapi } from './rankBm25'
 import { ToolkitError } from '../../../shared/errors'
-import { crossFileContextConfig, supplemetalContextFetchingTimeoutMsg } from '../../models/constants'
+import { crossFileContextConfig, supplementalContextTimeoutInMs, supplemetalContextFetchingTimeoutMsg } from '../../models/constants'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { isTestFile } from './codeParsingUtil'
 import { getFileDistance } from '../../../shared/filesystemUtilities'
@@ -16,6 +16,7 @@ import { getOpenFilesInWindow } from '../../../shared/utilities/editorUtilities'
 import { getLogger } from '../../../shared/logger/logger'
 import { CodeWhispererSupplementalContext, CodeWhispererSupplementalContextItem } from '../../models/model'
 import { LspController } from '../../../amazonq/lsp/lspController'
+import { asyncCallWithTimeout } from '../commonUtil'
 
 type CrossFileSupportedLanguage =
     | 'java'
@@ -63,7 +64,7 @@ export async function fetchSupplementalContextForSrc(
         return fetchSupplementalContextForSrcV1(editor, cancellationToken)
     }
     try {
-        return fetchSupplementalContextForSrcV2(editor)
+        return asyncCallWithTimeout(fetchSupplementalContextForSrcV2(editor), "time out when fetching supplemental context", supplementalContextTimeoutInMs)
     } catch (e) {
         getLogger().error(`Failed to fetch supplemental context from LSP ${e}`)
         return fetchSupplementalContextForSrcV1(editor, cancellationToken)
@@ -78,11 +79,9 @@ export async function fetchSupplementalContextForSrcV2(
 
     const inlineProjectContext: { content: string; score: number; filePath: string }[] =
         await LspController.instance.queryInlineProjectContext(inputChunkContent.content, editor.document.uri.fsPath)
-    getLogger().info(JSON.stringify(inlineProjectContext))
 
-    const supContextItems: CodeWhispererSupplementalContextItem[] = []
     return {
-        supplementalContextItems: [...supContextItems],
+        supplementalContextItems: [...inlineProjectContext],
         strategy: 'LSP',
     }
 }
@@ -188,7 +187,7 @@ function getSupplementalContextConfig(languageId: vscode.TextDocument['languageI
     if (FeatureConfigProvider.instance.isNewProjectContextGroup()) {
         return 'v2'
     }
-    return 'v1'
+    return 'v2'
 }
 
 /**
