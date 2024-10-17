@@ -184,3 +184,9 @@ export function getIndentedCode(message: any, doc: vscode.TextDocument, selectio
 
     return indent(message.code, indentation.length)
 }
+
+export async function showFile(uri: vscode.Uri) {
+    const doc = await vscode.workspace.openTextDocument(uri)
+    await vscode.window.showTextDocument(doc, { preview: false })
+    await vscode.languages.setTextDocumentLanguage(doc, 'log')
+}

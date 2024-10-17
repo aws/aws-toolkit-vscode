@@ -12,6 +12,7 @@ import { PromiseResult } from 'aws-sdk/lib/request'
 import { Timeout } from '../utilities/timeoutUtils'
 import { showMessageWithCancel } from '../utilities/messages'
 import { ToolkitError, isAwsError } from '../errors'
+import { decodeBase64 } from '../utilities/textUtilities'
 
 /**
  * A wrapper around EC2.Instance where we can safely assume InstanceId field exists.
@@ -20,6 +21,11 @@ export interface SafeEc2Instance extends EC2.Instance {
     InstanceId: string
     Name?: string
     LastSeenStatus: EC2.InstanceStateName
+}
+
+interface SafeEc2GetConsoleOutputResult extends EC2.GetConsoleOutputRequest {
+    Output: string
+    InstanceId: string
 }
 
 export class Ec2Client {
@@ -228,6 +234,16 @@ export class Ec2Client {
     public async getAttachedIamInstanceProfile(instanceId: string): Promise<IamInstanceProfile | undefined> {
         const association = await this.getIamInstanceProfileAssociation(instanceId)
         return association ? association.IamInstanceProfile : undefined
+    }
+
+    public async getConsoleOutput(instanceId: string, latest: boolean): Promise<SafeEc2GetConsoleOutputResult> {
+        const client = await this.createSdkClient()
+        const response = await client.getConsoleOutput({ InstanceId: instanceId, Latest: latest }).promise()
+        return {
+            ...response,
+            InstanceId: instanceId,
+            Output: response.Output ? decodeBase64(response.Output) : '',
+        }
     }
 }
 

@@ -6,11 +6,7 @@
 import assert from 'assert'
 import { CloudWatchLogs } from 'aws-sdk'
 import * as vscode from 'vscode'
-import {
-    createURIFromArgs,
-    parseCloudWatchLogsUri,
-    uriToKey,
-} from '../../../awsService/cloudWatchLogs/cloudWatchLogsUtils'
+import { cwlUriSchema, uriToKey } from '../../../awsService/cloudWatchLogs/cloudWatchLogsUtils'
 import {
     CloudWatchLogsParameters,
     CloudWatchLogsData,
@@ -170,28 +166,31 @@ export const paginatedData: CloudWatchLogsData = {
     retrieveLogsFunction: returnPaginatedEvents,
     busy: false,
 }
-export const goodUri = createURIFromArgs(testComponents.logGroupInfo, testComponents.parameters)
+export const goodUri = cwlUriSchema.form({
+    logGroupInfo: testComponents.logGroupInfo,
+    parameters: testComponents.parameters,
+})
 
 describe('parseCloudWatchLogsUri', async function () {
     it('converts a valid URI to components', function () {
-        const result = parseCloudWatchLogsUri(goodUri)
+        const result = cwlUriSchema.parse(goodUri)
         assert.deepStrictEqual(result.logGroupInfo, testComponents.logGroupInfo)
         assert.deepStrictEqual(result.parameters, testComponents.parameters)
     })
 
     it('does not convert URIs with an invalid scheme', async function () {
         assert.throws(() => {
-            parseCloudWatchLogsUri(vscode.Uri.parse('wrong:scheme'))
+            cwlUriSchema.parse(vscode.Uri.parse('wrong:scheme'))
         })
     })
 
     it('does not convert URIs with more or less than three elements', async function () {
         assert.throws(() => {
-            parseCloudWatchLogsUri(vscode.Uri.parse(`${CLOUDWATCH_LOGS_SCHEME}:elementOne:elementTwo`))
+            cwlUriSchema.parse(vscode.Uri.parse(`${CLOUDWATCH_LOGS_SCHEME}:elementOne:elementTwo`))
         })
 
         assert.throws(() => {
-            parseCloudWatchLogsUri(
+            cwlUriSchema.parse(
                 vscode.Uri.parse(`${CLOUDWATCH_LOGS_SCHEME}:elementOne:elementTwo:elementThree:whoopsAllElements`)
             )
         })
@@ -208,7 +207,7 @@ describe('createURIFromArgs', function () {
             )}`
         )
         assert.deepStrictEqual(testUri, goodUri)
-        const newTestComponents = parseCloudWatchLogsUri(testUri)
+        const newTestComponents = cwlUriSchema.parse(testUri)
         assert.deepStrictEqual(testComponents, newTestComponents)
     })
 })
@@ -230,8 +229,8 @@ describe('uriToKey', function () {
     it('creates the same key for different order query', function () {
         const param1: CloudWatchLogsParameters = { filterPattern: 'same', startTime: 0 }
         const param2: CloudWatchLogsParameters = { startTime: 0, filterPattern: 'same' }
-        const firstOrder = createURIFromArgs(testComponents.logGroupInfo, param1)
-        const secondOrder = createURIFromArgs(testComponents.logGroupInfo, param2)
+        const firstOrder = cwlUriSchema.form({ logGroupInfo: testComponents.logGroupInfo, parameters: param1 })
+        const secondOrder = cwlUriSchema.form({ logGroupInfo: testComponents.logGroupInfo, parameters: param2 })
 
         assert.notDeepStrictEqual(firstOrder, secondOrder)
         assert.strictEqual(uriToKey(firstOrder), uriToKey(secondOrder))
