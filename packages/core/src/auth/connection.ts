@@ -233,7 +233,7 @@ export class ProfileStore {
     // To de-dupe telemetry
     private _prevGetProfile: { id: string; connectionState: ProfileMetadata['connectionState'] } | undefined
 
-    public constructor(private readonly memento: vscode.Memento) { }
+    public constructor(private readonly memento: vscode.Memento) {}
 
     public getProfile(id: string): StoredProfile | undefined {
         return this.getData()[id]

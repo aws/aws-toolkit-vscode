@@ -138,7 +138,7 @@ export class HttpResourceFetcher implements ResourceFetcher {
     }
 
     private logText(): string {
-        return this.params.showUrl ? this.url : this.params.friendlyName ?? 'resource from URL'
+        return this.params.showUrl ? this.url : (this.params.friendlyName ?? 'resource from URL')
     }
 
     private logCancellation(event: CancelEvent) {
