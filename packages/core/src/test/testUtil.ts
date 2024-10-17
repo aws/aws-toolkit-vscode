@@ -615,11 +615,11 @@ export function getFetchStubWithResponse(response: Partial<Response>) {
     return stub(request, 'fetch').returns({ response: new Promise((res, _) => res(response)) } as any)
 }
 
-function setPath(newPath: string): void {
+export function setEnvPath(newPath: string): void {
     process.env.PATH = newPath
 }
 
-function readPath(): string {
+export function readEnvPath(): string {
     return process.env.PATH || ''
 }
 /**
@@ -628,11 +628,11 @@ function readPath(): string {
  * @param task work to be done with $PATH set.
  */
 export async function withEnvPath(newPath: string, task: () => Promise<void>): Promise<void | never> {
-    const originalPath = readPath()
-    setPath(newPath)
+    const originalPath = readEnvPath()
+    setEnvPath(newPath)
     try {
         await task()
     } finally {
-        setPath(originalPath)
+        setEnvPath(originalPath)
     }
 }
