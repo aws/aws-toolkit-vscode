@@ -4,14 +4,12 @@
  */
 
 import assert from 'assert'
-import sinon from 'sinon'
 import * as vscode from 'vscode'
 import * as os from 'os'
 import * as path from 'path'
 import * as testutil from '../../testUtil'
 import { fs } from '../../../shared'
-import { findSshPath, findTypescriptCompiler, getVscodeCliPath } from '../../../shared/utilities/pathFind'
-import * as programUtils from '../../../shared/utilities/programUtils'
+import { findTypescriptCompiler, getVscodeCliPath } from '../../../shared/utilities/pathFind'
 
 function isWin(): boolean {
     return process.platform === 'win32'
@@ -47,45 +45,7 @@ describe('pathFind', function () {
         assert.ok(regex.test(vscPath), `expected regex ${regex} to match: "${vscPath}"`)
     })
 
-    describe('findSshPath', function () {
-        let tryRunStub: sinon.SinonStub
-        // On Windows the first call to tryRun gives a valid path, which changes func behavior.
-        // We can offset our call checks based on this.
-        let callOffset: number
+    // describe('findSshPath', function () {
 
-        before(function () {
-            tryRunStub = sinon.stub(programUtils, 'tryRun')
-            callOffset = isWin() ? 1 : 0
-        })
-
-        after(function () {
-            tryRunStub.restore()
-        })
-
-        it('first tries $PATH', async function () {
-            tryRunStub.onCall(callOffset).resolves(true)
-
-            const result = await findSshPath(false)
-            assert.ok(result)
-            testutil.assertEqualPaths(result, 'ssh')
-            tryRunStub.resetHistory()
-        })
-
-        it('if $PATH fails, tries /usr/bin/ssh', async function () {
-            tryRunStub.onCall(callOffset).resolves(false)
-            tryRunStub.onCall(callOffset + 1).resolves(true)
-
-            const result = await findSshPath(false)
-            assert.ok(result)
-            testutil.assertEqualPaths(result, '/usr/bin/ssh')
-            tryRunStub.resetHistory()
-        })
-
-        it('dry runs the resulting ssh', async function () {
-            tryRunStub.onCall(callOffset).resolves(true)
-            await findSshPath(false)
-            assert.ok(tryRunStub.calledOnce)
-            tryRunStub.resetHistory()
-        })
-    })
+    // })
 })

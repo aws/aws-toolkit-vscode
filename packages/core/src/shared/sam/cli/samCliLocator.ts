@@ -10,7 +10,7 @@ import { getLogger, Logger } from '../../logger'
 import { SamCliInfoInvocation } from './samCliInfo'
 import { DefaultSamCliValidator, SamCliValidatorContext, SamCliVersionValidation } from './samCliValidator'
 import { PerfLog } from '../../logger/perfLogger'
-import { tryRun } from '../../utilities/programUtils'
+import { tryRun } from '../../utilities/pathFind'
 
 export class SamCliLocationProvider {
     private static samCliLocator: BaseSamCliLocator | undefined
