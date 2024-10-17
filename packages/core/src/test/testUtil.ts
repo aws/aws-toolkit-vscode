@@ -614,3 +614,21 @@ export function tryRegister(command: DeclaredCommand<() => Promise<any>>) {
 export function getFetchStubWithResponse(response: Partial<Response>) {
     return stub(request, 'fetch').returns({ response: new Promise((res, _) => res(response)) } as any)
 }
+
+function setPath(newPath: string): void {
+    process.env.PATH = newPath
+}
+
+function readPath(): string {
+    return process.env.PATH || ''
+}
+
+export async function withEnvPath(newPath: string, task: () => Promise<void>): Promise<void | never> {
+    const originalPath = readPath()
+    setPath(newPath)
+    try {
+        await task()
+    } finally {
+        setPath(originalPath)
+    }
+}

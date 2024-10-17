@@ -106,7 +106,7 @@ export async function findSshPath(useCache: boolean = true): Promise<string | un
             continue
         }
         if (await tryRun(p, ['-G', 'x'], 'noresult' /* "ssh -G" prints quasi-sensitive info. */)) {
-            sshPath = p
+            sshPath = useCache ? p : sshPath
             return p
         }
     }

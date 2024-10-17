@@ -9,7 +9,7 @@ import * as os from 'os'
 import * as path from 'path'
 import * as testutil from '../../testUtil'
 import { fs } from '../../../shared'
-import { findTypescriptCompiler, getVscodeCliPath } from '../../../shared/utilities/pathFind'
+import { findSshPath, findTypescriptCompiler, getVscodeCliPath } from '../../../shared/utilities/pathFind'
 
 function isWin(): boolean {
     return process.platform === 'win32'
@@ -45,7 +45,49 @@ describe('pathFind', function () {
         assert.ok(regex.test(vscPath), `expected regex ${regex} to match: "${vscPath}"`)
     })
 
-    // describe('findSshPath', function () {
+    describe('findSshPath', function () {
+        it('first tries ssh in $PATH', async function () {
+            const workspace = await testutil.createTestWorkspaceFolder()
+            const fakeSshPath = path.join(workspace.uri.fsPath, `ssh${isWin() ? '.cmd' : ''}`)
 
-    // })
+            await testutil.withEnvPath(workspace.uri.fsPath, async () => {
+                const firstResult = await findSshPath(false)
+
+                await testutil.createExecutableFile(fakeSshPath, 'echo "this is ssh"')
+
+                const secondResult = await findSshPath(false)
+
+                assert.notStrictEqual(firstResult, secondResult)
+                assert.strictEqual(secondResult, 'ssh')
+            })
+        })
+
+        it('only returns executable ssh path', async function () {
+            const workspace = await testutil.createTestWorkspaceFolder()
+            const fakeSshPath = path.join(workspace.uri.fsPath, `ssh${isWin() ? '.cmd' : ''}`)
+            await fs.writeFile(fakeSshPath, 'this is not executable')
+
+            await testutil.withEnvPath(workspace.uri.fsPath, async () => {
+                const firstResult = await findSshPath(false)
+                assert.notStrictEqual(firstResult, 'ssh')
+            })
+        })
+
+        it('caches result from previous runs', async function () {
+            const workspace = await testutil.createTestWorkspaceFolder()
+            const fakeSshPath = path.join(workspace.uri.fsPath, `ssh${isWin() ? '.cmd' : ''}`)
+            await testutil.createExecutableFile(fakeSshPath, 'echo "this is ssh"')
+
+            await testutil.withEnvPath(workspace.uri.fsPath, async () => {
+                const firstResult = await findSshPath(true)
+
+                await fs.delete(fakeSshPath)
+
+                const secondResult = await findSshPath(true)
+
+                assert.strictEqual(firstResult, secondResult)
+                assert.strictEqual(secondResult, 'ssh')
+            })
+        })
+    })
 })
