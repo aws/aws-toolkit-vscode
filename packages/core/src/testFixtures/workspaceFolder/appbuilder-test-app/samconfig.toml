@@ -1,0 +1,5 @@
+version = 0.1
+
+[default.global.parameters]
+stack_name = "appbuilder-test-project"
+region = "us-west-2"
