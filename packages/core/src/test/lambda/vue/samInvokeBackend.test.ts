@@ -4,6 +4,7 @@
  */
 
 import {
+    AwsSamDebuggerConfigurationLoose,
     LaunchConfigPickItem,
     ResourceData,
     SamInvokeWebview,
@@ -19,6 +20,20 @@ import { HttpResourceFetcher } from '../../../shared/resourcefetcher/httpResourc
 import * as vscode from 'vscode'
 import path from 'path'
 import { fs, makeTemporaryToolkitFolder } from '../../../shared'
+import { LaunchConfiguration } from '../../../shared/debug/launchConfiguration'
+import { getTestWindow } from '../..'
+import { getLogger } from '../../../shared/logger'
+import * as extensionUtilities from '../../../shared/extensionUtilities'
+import * as samInvokeBackend from '../../../lambda/vue/configEditor/samInvokeBackend'
+import { SamDebugConfigProvider } from '../../../shared/sam/debugger/awsSamDebugger'
+
+function createMockWorkspaceFolder(uriPath: string): vscode.WorkspaceFolder {
+    return {
+        uri: vscode.Uri.file(uriPath),
+        name: 'mock-folder',
+        index: 0,
+    }
+}
 
 const mockResourceData: ResourceData = {
     logicalId: 'MockFunction',
@@ -30,11 +45,13 @@ const mockResourceData: ResourceData = {
     stackName: 'MockStack',
     source: 'path/to/source',
 }
-const mockConfig: AwsSamDebuggerConfiguration = {
+const mockConfig: AwsSamDebuggerConfigurationLoose = {
     invokeTarget: {
         target: 'template',
         logicalId: 'foobar',
         templatePath: 'template.yaml',
+        lambdaHandler: 'index.handler',
+        projectRoot: '/path/to/project',
     },
     name: 'noprune',
     type: 'aws-sam',
@@ -150,6 +167,28 @@ describe('SamInvokeWebview', () => {
             const result = await samInvokeWebview.getSamplePayload()
 
             assert.strictEqual(result, mockSampleContent)
+        })
+
+        it('should throw an error if fetching sample data fails', async () => {
+            getSampleLambdaPayloadsStub.resolves([{ name: 'testEvent', filename: 'testEvent.json' }])
+            createQuickPickStub.returns({})
+            promptUserStub.resolves([{ label: 'testEvent', filename: 'testEvent.json' }])
+            verifySinglePickerOutputStub.returns({ label: 'testEvent', filename: 'testEvent.json' })
+            httpFetcherStub.rejects(new Error('Fetch failed'))
+
+            await assert.rejects(async () => {
+                await samInvokeWebview.getSamplePayload()
+            }, /Error: getting manifest data/)
+        })
+        it('returns undefined if no sample is selected', async () => {
+            const mockPayloads = [{ name: 'testEvent', filename: 'testEvent.json' }]
+            getSampleLambdaPayloadsStub.resolves(mockPayloads)
+            createQuickPickStub.returns({})
+            promptUserStub.resolves([{ label: 'testEvent', filename: 'testEvent.json' }])
+            verifySinglePickerOutputStub.returns(undefined)
+            const result = await samInvokeWebview.getSamplePayload()
+
+            assert.strictEqual(result, undefined)
         })
     })
     describe('loadSamLaunchConfig', () => {
@@ -302,6 +341,278 @@ describe('SamInvokeWebview', () => {
                     )
                 }
             })
+        })
+    })
+
+    describe('SamInvokeWebview - getSamLaunchConfigs', function () {
+        let workspaceFoldersStub: sinon.SinonStub
+        let launchConfigStub: sinon.SinonStub
+        let getLaunchConfigQuickPickItemsStub: sinon.SinonStub
+
+        beforeEach(() => {
+            // Initialize a new webview instance before each test
+            workspaceFoldersStub = sandbox.stub(vscode.workspace, 'workspaceFolders')
+            launchConfigStub = sandbox.stub(LaunchConfiguration.prototype, 'getDebugConfigurations')
+            getLaunchConfigQuickPickItemsStub = sandbox.stub()
+        })
+        afterEach(() => {
+            sandbox.restore()
+        })
+
+        it('should return undefined and show error when no workspace folder is found', async function () {
+            // Mock workspace without folders
+            workspaceFoldersStub.value([])
+            const result = await samInvokeWebview.getSamLaunchConfigs()
+            assert.strictEqual(result, undefined)
+        })
+
+        it('should return picker items if valid configurations exist', async () => {
+            const mockFolder = createMockWorkspaceFolder('/mock-path')
+            const mockUri = mockFolder.uri
+            workspaceFoldersStub.value([mockFolder])
+
+            // Mock a launch configuration
+            launchConfigStub.returns([mockConfig])
+
+            // Mock picker items
+            const mockPickerItems = [{ index: 0, config: mockConfig, label: 'Test Config' }]
+            getLaunchConfigQuickPickItemsStub.resolves(mockPickerItems)
+
+            // Override the internal `getLaunchConfigQuickPickItems` function
+            sandbox.replace(samInvokeWebview as any, 'getLaunchConfigQuickPickItems', getLaunchConfigQuickPickItemsStub)
+
+            const result = await samInvokeWebview.getSamLaunchConfigs()
+
+            assert.deepStrictEqual(result, mockPickerItems)
+            assert(getLaunchConfigQuickPickItemsStub.calledOnceWithExactly(sinon.match.any, mockUri))
+        })
+    })
+    describe('promptFile', () => {
+        it('should return the base name of a file path', async () => {
+            const tempFolder = await makeTemporaryToolkitFolder()
+            const testCases = [{ input: vscode.Uri.file(path.join(tempFolder, 'file.txt')), expected: 'file.txt' }]
+
+            testCases.forEach(({ input, expected }) => {
+                const result = samInvokeWebview.getFileName(input.fsPath)
+                assert.strictEqual(result, expected, `getFileName("${input}") should return "${expected}"`)
+
+                // Double-check using Node's path.basename
+                const nodeResult = path.basename(input.fsPath)
+                assert.strictEqual(
+                    result,
+                    nodeResult,
+                    `getFileName result should match Node's path.basename for "${input}"`
+                )
+            })
+            await fs.delete(tempFolder, { recursive: true })
+        })
+        it('prompts the user for a file and returns the selected file', async () => {
+            const tempFolder = await makeTemporaryToolkitFolder()
+            const placeholderEventFile = path.join(tempFolder, 'file.json')
+            await fs.writeFile(placeholderEventFile, '{"sample": "{test: event}"}')
+            const fileUri = vscode.Uri.file(placeholderEventFile)
+
+            getTestWindow().onDidShowDialog((window) => window.selectItem(fileUri))
+
+            const response = await samInvokeWebview.promptFile()
+            if (response === undefined) {
+                assert.fail('Response should not be undefined')
+            }
+            assert.deepStrictEqual(response.selectedFile, 'file.json')
+            assert.deepStrictEqual(response.selectedFilePath, fileUri.fsPath)
+            await fs.delete(tempFolder, { recursive: true })
+        })
+        it('Returns undefined if no file is selected', async () => {
+            getTestWindow().onDidShowDialog((window) => window.close())
+            const response = await samInvokeWebview.promptFile()
+            assert.strictEqual(response, undefined)
+        })
+        it('logs an error and throws ToolkitError when reading the file fails', async () => {
+            const tempFolder = await makeTemporaryToolkitFolder()
+            const placeholderEventFile = path.join(tempFolder, 'file.json')
+            const fileUri = vscode.Uri.file(placeholderEventFile)
+
+            getTestWindow().onDidShowDialog((window) => window.selectItem(fileUri))
+
+            const loggerErrorStub = sinon.stub(getLogger(), 'error')
+
+            try {
+                await assert.rejects(
+                    async () => await samInvokeWebview.promptFile(),
+                    new Error('Failed to read selected file')
+                )
+                assert.strictEqual(loggerErrorStub.calledOnce, true)
+                assert.strictEqual(loggerErrorStub.firstCall.args[0], 'readFileSync: Failed to read file at path %O')
+                assert.strictEqual(loggerErrorStub.firstCall.args[1], fileUri.fsPath)
+                assert(loggerErrorStub.firstCall.args[2] instanceof Error)
+            } finally {
+                loggerErrorStub.restore()
+                await fs.delete(tempFolder, { recursive: true })
+            }
+        })
+    })
+    describe('getTemplate', () => {
+        let templateRegistryStub: sinon.SinonStub
+        let createQuickPickStub: sinon.SinonStub
+        let promptUserStub: sinon.SinonStub
+        let verifySinglePickerOutputStub: sinon.SinonStub
+
+        beforeEach(() => {
+            templateRegistryStub = sandbox.stub()
+            createQuickPickStub = sinon.stub(picker, 'createQuickPick')
+            promptUserStub = sinon.stub(picker, 'promptUser')
+            verifySinglePickerOutputStub = sinon.stub(picker, 'verifySinglePickerOutput')
+        })
+
+        afterEach(() => {
+            sinon.restore()
+        })
+
+        it('should return undefined if no valid templates are found', async () => {
+            templateRegistryStub.resolves({ items: [] })
+            sandbox.replace(samInvokeWebview as any, 'getTemplateRegistry', templateRegistryStub)
+            const result = await samInvokeWebview.getTemplate()
+
+            assert.strictEqual(result, undefined)
+        })
+
+        it('should return a template if a valid SAM function is found', async () => {
+            const mockTemplate = {
+                path: '/path/to/template.yaml',
+                item: {
+                    Resources: {
+                        MyLambda: { Type: 'AWS::Serverless::Function' },
+                    },
+                },
+            }
+            templateRegistryStub.resolves({ items: [mockTemplate] })
+            createQuickPickStub.returns({})
+            promptUserStub.resolves([{ label: 'MyLambda', templatePath: '/path/to/template.yaml' }])
+            verifySinglePickerOutputStub.returns({ label: 'MyLambda', templatePath: '/path/to/template.yaml' })
+
+            const result = await samInvokeWebview.getTemplate()
+
+            assert.deepEqual(result, {
+                logicalId: 'MyLambda',
+                template: '/path/to/template.yaml',
+            })
+        })
+
+        it('should return undefined if user selects no valid template', async () => {
+            templateRegistryStub.resolves({ items: [] })
+            createQuickPickStub.returns({})
+            promptUserStub.resolves([{ templatePath: 'NOTEMPLATEFOUND' }])
+            verifySinglePickerOutputStub.returns({ templatePath: 'NOTEMPLATEFOUND' })
+
+            const result = await samInvokeWebview.getTemplate()
+
+            assert.strictEqual(result, undefined)
+        })
+
+        it('should handle multiple templates and filter by resource type', async () => {
+            const mockTemplates = [
+                {
+                    path: '/path/to/first.yaml',
+                    item: {
+                        Resources: {
+                            Lambda1: { Type: 'AWS::Serverless::Function' },
+                        },
+                    },
+                },
+                {
+                    path: '/path/to/second.yaml',
+                    item: {
+                        Resources: {
+                            API: { Type: 'AWS::Serverless::Api' },
+                        },
+                    },
+                },
+            ]
+            templateRegistryStub.resolves({ items: mockTemplates })
+            createQuickPickStub.returns({})
+            promptUserStub.resolves([{ label: 'Lambda1', templatePath: '/path/to/first.yaml' }])
+            verifySinglePickerOutputStub.returns({ label: 'Lambda1', templatePath: '/path/to/first.yaml' })
+
+            const result = await samInvokeWebview.getTemplate()
+
+            assert.deepEqual(result, {
+                logicalId: 'Lambda1',
+                template: '/path/to/first.yaml',
+            })
+        })
+
+        it('should return undefined if picker returns no selection', async () => {
+            const mockTemplate = {
+                path: '/path/to/template.yaml',
+                item: {
+                    Resources: {
+                        Lambda1: { Type: 'AWS::Serverless::Function' },
+                    },
+                },
+            }
+            templateRegistryStub.resolves({ items: [mockTemplate] })
+            createQuickPickStub.returns({})
+            promptUserStub.resolves(undefined) // No selection made
+            verifySinglePickerOutputStub.returns(undefined)
+
+            const result = await samInvokeWebview.getTemplate()
+
+            assert.strictEqual(result, undefined)
+        })
+    })
+    describe('InvokeLocalWebview', function () {
+        let sandbox: sinon.SinonSandbox
+        let mockFolder: vscode.WorkspaceFolder
+        let mockUri: vscode.Uri
+        let getUriFromLaunchConfigStub: sinon.SinonStub
+        let workspaceFoldersStub: sinon.SinonStub
+
+        this.beforeEach(async function () {
+            sandbox = sinon.createSandbox()
+            mockFolder = createMockWorkspaceFolder('/mock-path')
+            mockUri = mockFolder.uri
+
+            sandbox.stub(samInvokeBackend, 'finalizeConfig').returns(mockConfig)
+            getUriFromLaunchConfigStub = sinon.stub()
+            sandbox.stub(vscode.workspace, 'getWorkspaceFolder').returns(mockFolder)
+            workspaceFoldersStub = sandbox.stub(vscode.workspace, 'workspaceFolders')
+        })
+        afterEach(() => {
+            sandbox.restore()
+        })
+
+        it('should invoke launch config for non-Cloud9 environment', async () => {
+            workspaceFoldersStub.value([mockFolder])
+            sandbox.stub(extensionUtilities, 'isCloud9').returns(false)
+            sandbox.replace(samInvokeWebview as any, 'getUriFromLaunchConfig', getUriFromLaunchConfigStub)
+            getUriFromLaunchConfigStub.resolves(mockUri)
+
+            const startDebuggingStub = sandbox.stub(vscode.debug, 'startDebugging').resolves(true)
+
+            await samInvokeWebview.invokeLaunchConfig(mockConfig)
+
+            assert(startDebuggingStub.called)
+        })
+
+        it('should invoke launch config for Cloud9 environment', async () => {
+            workspaceFoldersStub.value([mockFolder])
+            sandbox.stub(extensionUtilities, 'isCloud9').returns(true)
+            sandbox.replace(samInvokeWebview as any, 'getUriFromLaunchConfig', getUriFromLaunchConfigStub)
+            getUriFromLaunchConfigStub.resolves(mockUri)
+
+            const startDebuggingStub = sandbox.stub(vscode.debug, 'startDebugging').resolves(true)
+
+            await samInvokeWebview.invokeLaunchConfig(mockConfig)
+
+            assert(startDebuggingStub.notCalled)
+        })
+        it('should use SamDebugConfigProvider for Cloud9 environment', async () => {
+            sandbox.stub(extensionUtilities, 'isCloud9').returns(true)
+            const SamDebugConfigProviderStub = sinon.stub(SamDebugConfigProvider.prototype, 'resolveDebugConfiguration')
+
+            await samInvokeWebview.invokeLaunchConfig(mockConfig)
+
+            assert(SamDebugConfigProviderStub.called)
         })
     })
 })

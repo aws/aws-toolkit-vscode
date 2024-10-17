@@ -108,7 +108,7 @@ export class SamInvokeWebview extends VueWebview {
         }
         const uri = workspaceFolder.uri
         const launchConfig = new LaunchConfiguration(uri)
-        const pickerItems = await getLaunchConfigQuickPickItems(launchConfig, uri)
+        const pickerItems = await this.getLaunchConfigQuickPickItems(launchConfig, uri)
         return pickerItems
     }
 
@@ -175,7 +175,12 @@ export class SamInvokeWebview extends VueWebview {
             return sample
         } catch (err) {
             getLogger().error('Error getting manifest data..: %O', err as Error)
+            throw ToolkitError.chain(err, 'getting manifest data')
         }
+    }
+
+    protected getTemplateRegistry() {
+        return globals.templateRegistry
     }
 
     /**
@@ -185,7 +190,7 @@ export class SamInvokeWebview extends VueWebview {
     public async getTemplate() {
         const items: (vscode.QuickPickItem & { templatePath: string })[] = []
         const noTemplate = 'NOTEMPLATEFOUND'
-        for (const template of (await globals.templateRegistry).items) {
+        for (const template of (await this.getTemplateRegistry()).items) {
             const resources = template.item.Resources
             if (resources) {
                 for (const resource of Object.keys(resources)) {
@@ -279,7 +284,7 @@ export class SamInvokeWebview extends VueWebview {
      * @param config Config to save
      */
     public async saveLaunchConfig(config: AwsSamDebuggerConfiguration): Promise<void> {
-        const uri = await getUriFromLaunchConfig(config)
+        const uri = await this.getUriFromLaunchConfig(config)
         if (!uri) {
             // TODO Localize
             void vscode.window.showErrorMessage(
@@ -289,7 +294,7 @@ export class SamInvokeWebview extends VueWebview {
         }
 
         const launchConfig = new LaunchConfiguration(uri)
-        const launchConfigItems = await getLaunchConfigQuickPickItems(launchConfig, uri)
+        const launchConfigItems = await this.getLaunchConfigQuickPickItems(launchConfig, uri)
         const pickerItems = [
             {
                 label: addCodiconToString(
@@ -349,7 +354,7 @@ export class SamInvokeWebview extends VueWebview {
             resolveWorkspaceFolderVariable(undefined, config),
             'Editor-Created Debug Config'
         )
-        const targetUri = await getUriFromLaunchConfig(finalConfig)
+        const targetUri = await this.getUriFromLaunchConfig(finalConfig)
         const folder = targetUri ? vscode.workspace.getWorkspaceFolder(targetUri) : undefined
 
         // Cloud9 currently can't resolve the `aws-sam` debug config provider.
@@ -363,6 +368,59 @@ export class SamInvokeWebview extends VueWebview {
             // startDebugging on VS Code goes through the whole resolution chain
             await vscode.debug.startDebugging(folder, finalConfig)
         }
+    }
+    public async getLaunchConfigQuickPickItems(
+        launchConfig: LaunchConfiguration,
+        uri: vscode.Uri
+    ): Promise<LaunchConfigPickItem[]> {
+        const existingConfigs = launchConfig.getDebugConfigurations()
+        const samValidator = new DefaultAwsSamDebugConfigurationValidator(vscode.workspace.getWorkspaceFolder(uri))
+        const registry = await globals.templateRegistry
+        const mapped = existingConfigs.map((val, index) => {
+            return {
+                config: val as AwsSamDebuggerConfiguration,
+                index: index,
+                label: val.name,
+            }
+        })
+        // XXX: can't use filter() with async predicate.
+        const filtered: LaunchConfigPickItem[] = []
+        for (const c of mapped) {
+            const valid = await samValidator.validate(c.config, registry, true)
+            if (valid?.isValid) {
+                filtered.push(c)
+            }
+        }
+        return filtered
+    }
+
+    public async getUriFromLaunchConfig(config: AwsSamDebuggerConfiguration): Promise<vscode.Uri | undefined> {
+        let targetPath: string
+        if (isTemplateTargetProperties(config.invokeTarget)) {
+            targetPath = config.invokeTarget.templatePath
+        } else if (isCodeTargetProperties(config.invokeTarget)) {
+            targetPath = config.invokeTarget.projectRoot
+        } else {
+            // error
+            return undefined
+        }
+        if (path.isAbsolute(targetPath)) {
+            return vscode.Uri.file(targetPath)
+        }
+        // TODO: rework this logic (and config variables in general)
+        // we have too many places where we try to resolve these paths when it realistically can be
+        // in a single place. Much less bug-prone when it's centralized.
+        // the following line is a quick-fix for a very narrow edge-case
+        targetPath = targetPath.replace('${workspaceFolder}/', '')
+        const workspaceFolders = vscode.workspace.workspaceFolders || []
+        for (const workspaceFolder of workspaceFolders) {
+            const absolutePath = tryGetAbsolutePath(workspaceFolder, targetPath)
+            if (await fs.exists(absolutePath)) {
+                return vscode.Uri.file(absolutePath)
+            }
+        }
+
+        return undefined
     }
 }
 
@@ -403,60 +461,6 @@ export async function registerSamDebugInvokeVueCommand(context: ExtContext, para
                 viewColumn: vscode.ViewColumn.Beside,
             })
     })
-}
-
-async function getUriFromLaunchConfig(config: AwsSamDebuggerConfiguration): Promise<vscode.Uri | undefined> {
-    let targetPath: string
-    if (isTemplateTargetProperties(config.invokeTarget)) {
-        targetPath = config.invokeTarget.templatePath
-    } else if (isCodeTargetProperties(config.invokeTarget)) {
-        targetPath = config.invokeTarget.projectRoot
-    } else {
-        // error
-        return undefined
-    }
-    if (path.isAbsolute(targetPath)) {
-        return vscode.Uri.file(targetPath)
-    }
-    // TODO: rework this logic (and config variables in general)
-    // we have too many places where we try to resolve these paths when it realistically can be
-    // in a single place. Much less bug-prone when it's centralized.
-    // the following line is a quick-fix for a very narrow edge-case
-    targetPath = targetPath.replace('${workspaceFolder}/', '')
-    const workspaceFolders = vscode.workspace.workspaceFolders || []
-    for (const workspaceFolder of workspaceFolders) {
-        const absolutePath = tryGetAbsolutePath(workspaceFolder, targetPath)
-        if (await fs.exists(absolutePath)) {
-            return vscode.Uri.file(absolutePath)
-        }
-    }
-
-    return undefined
-}
-
-async function getLaunchConfigQuickPickItems(
-    launchConfig: LaunchConfiguration,
-    uri: vscode.Uri
-): Promise<LaunchConfigPickItem[]> {
-    const existingConfigs = launchConfig.getDebugConfigurations()
-    const samValidator = new DefaultAwsSamDebugConfigurationValidator(vscode.workspace.getWorkspaceFolder(uri))
-    const registry = await globals.templateRegistry
-    const mapped = existingConfigs.map((val, index) => {
-        return {
-            config: val as AwsSamDebuggerConfiguration,
-            index: index,
-            label: val.name,
-        }
-    })
-    // XXX: can't use filter() with async predicate.
-    const filtered: LaunchConfigPickItem[] = []
-    for (const c of mapped) {
-        const valid = await samValidator.validate(c.config, registry, true)
-        if (valid?.isValid) {
-            filtered.push(c)
-        }
-    }
-    return filtered
 }
 
 export function finalizeConfig(config: AwsSamDebuggerConfiguration, name: string): AwsSamDebuggerConfiguration {
