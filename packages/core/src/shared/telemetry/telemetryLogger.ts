@@ -118,4 +118,11 @@ export class TelemetryLogger {
     public queryFull(query: MetricQuery): MetricDatum[] {
         return this._metrics.filter((m) => m.MetricName === query.metricName)
     }
+
+    /**
+     * Queries telemetry for metrics with metadata key or value matching the given regex.
+     */
+    public queryRegex(re: RegExp | string): MetricDatum[] {
+        return this._metrics.filter((m) => m.Metadata?.some((md) => md.Value?.match(re) || md.Key?.match(re)))
+    }
 }
