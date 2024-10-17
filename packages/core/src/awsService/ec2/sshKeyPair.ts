@@ -4,7 +4,7 @@
  */
 import { fs } from '../../shared'
 import { ToolkitError } from '../../shared/errors'
-import { tryRun } from '../../shared/utilities/pathFind'
+import { tryRun } from '../../shared/utilities/processUtils'
 import { Timeout } from '../../shared/utilities/timeoutUtils'
 import { findAsync } from '../../shared/utilities/collectionUtils'
 import { RunParameterContext } from '../../shared/utilities/processUtils'
