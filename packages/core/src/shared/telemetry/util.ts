@@ -226,7 +226,7 @@ export function getUserAgent(
  * NOTES:
  * - append `-amzn` for any environment internal to Amazon
  */
-type EnvType =
+export type EnvType =
     | 'cloud9'
     | 'cloud9-codecatalyst'
     | 'cloudDesktop-amzn'
@@ -322,12 +322,13 @@ export function getOptOutPreference() {
     return globals.telemetry.telemetryEnabled ? 'OPTIN' : 'OPTOUT'
 }
 
+export type OperatingSystem = 'MAC' | 'WINDOWS' | 'LINUX'
 /**
  * Useful for populating the sendTelemetryEvent request from codewhisperer's api for publishing custom telemetry events for AB Testing.
  *
  * Returns one of the enum values of the OperatingSystem model (see SendTelemetryRequest model in the codebase)
  */
-export function getOperatingSystem(): 'MAC' | 'WINDOWS' | 'LINUX' {
+export function getOperatingSystem(): OperatingSystem {
     const osId = os.platform() // 'darwin', 'win32', 'linux', etc.
     if (osId === 'darwin') {
         return 'MAC'
