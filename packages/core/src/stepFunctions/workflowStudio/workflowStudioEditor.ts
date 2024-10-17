@@ -8,16 +8,16 @@ import * as vscode from 'vscode'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { getLogger } from '../../shared/logger'
 import { i18n } from '../../shared/i18n-helper'
-import { WebviewContext } from './types'
+import { broadcastFileChange } from './handleMessage'
+import { FileWatchInfo, WebviewContext } from './types'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
+import { handleMessage } from './handleMessage'
 
 /**
  * The main class for Workflow Studio Editor. This class handles the creation and management
  * of the webview panel for integration. It also handles the communication
  * between the webview and the extension context. This class stores the state of the
- * local file that is being edited in the webview panel, in the property 'fileStates'. The
- * 'autoSaveFileStates' property is used to store local changes that are being made in the
- * webview panel.
+ * local file that is being edited in the webview panel, in the property 'fileStates'.
  */
 export class WorkflowStudioEditor {
     public readonly documentUri: vscode.Uri
@@ -29,7 +29,8 @@ export class WorkflowStudioEditor {
     public workSpacePath: string
     public defaultTemplatePath: string
     public defaultTemplateName: string
-    // TODO: add fileStates and autoSaveFileStates variables to store the state of the file and handle auto-save
+    // fileStates is used to store the state of the file being edited and achieve bi-direction sync
+    public fileStates: Record<string, FileWatchInfo>
     private getWebviewContent: () => Promise<string>
 
     public constructor(
@@ -42,6 +43,7 @@ export class WorkflowStudioEditor {
         this.getWebviewContent = getWebviewContent
         this.documentUri = textDocument.uri
         this.webviewPanel = webviewPanel
+        this.fileStates = {}
         this.workSpacePath = path.dirname(textDocument.uri.fsPath)
         this.defaultTemplatePath = textDocument.uri.fsPath
         this.defaultTemplateName = path.basename(this.defaultTemplatePath)
@@ -97,6 +99,7 @@ export class WorkflowStudioEditor {
             workSpacePath: this.workSpacePath,
             defaultTemplatePath: this.defaultTemplatePath,
             defaultTemplateName: this.defaultTemplateName,
+            fileStates: this.fileStates,
             loaderNotification: undefined,
             fileId: this.fileId,
         }
@@ -107,7 +110,7 @@ export class WorkflowStudioEditor {
                 title: i18n('AWS.stepFunctions.workflowStudio.actions.progressMessage'),
                 cancellable: true,
             },
-            (progress, token) => {
+            async (progress, token) => {
                 token.onCancellationRequested(async () => {
                     // Cancel opening in Worflow Studio and open regular code editor instead
                     getLogger().debug('WorkflowStudio: Canceled opening')
@@ -135,9 +138,26 @@ export class WorkflowStudioEditor {
                     this.webviewPanel.webview.html = await this.getWebviewContent()
                     progress.report({ increment: 15 })
 
-                    // TODO: Hook up event handlers so that we can synchronize the webview with the text document.
-                    // Note that a single text document can also be shared between multiple custom
-                    // editors (e.g. this can happen when you split a custom editor)
+                    // The text document acts as our model, thus we send and event to the webview on file save to trigger update
+                    contextObject.disposables.push(
+                        vscode.workspace.onDidSaveTextDocument(async () => {
+                            await telemetry.stepfunctions_saveFile.run(async (span) => {
+                                span.record({
+                                    id: contextObject.fileId,
+                                    saveType: 'MANUAL_SAVE',
+                                    source: 'VSCODE',
+                                })
+                                await broadcastFileChange(contextObject, 'MANUAL_SAVE')
+                            })
+                        })
+                    )
+
+                    // Handle messages from the webview
+                    this.disposables.push(
+                        this.webviewPanel.webview.onDidReceiveMessage((message) =>
+                            handleMessage(message, contextObject)
+                        )
+                    )
 
                     // When the panel is closed, dispose of any disposables/remove subscriptions
                     this.disposables.push(

@@ -140,7 +140,9 @@ export class WorkflowStudioEditorProvider implements vscode.CustomTextEditorProv
                     )
                     this.handleNewVisualization(document.uri.fsPath, newVisualization)
                 } catch (err) {
-                    throw new ToolkitError((err as Error).message, { code: 'OpenWorkflowStudioFailed' })
+                    throw ToolkitError.chain(err, 'Could not open Workflow Studio editor', {
+                        code: 'OpenWorkflowStudioFailed',
+                    })
                 }
             }
         })

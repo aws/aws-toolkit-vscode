@@ -517,6 +517,24 @@
             ]
         },
         {
+            "name": "stepfunctions_saveFile",
+            "description": "Called after the user saves local ASL file (inlcuding autosave) from VSCode editor or Workflow Studio",
+            "metadata": [
+                {
+                    "type": "id",
+                    "required": true
+                },
+                {
+                    "type": "saveType",
+                    "required": true
+                },
+                {
+                    "type": "source",
+                    "required": true
+                }
+            ]
+        },
+        {
             "name": "vscode_activeRegions",
             "description": "Record the number of active regions at startup and when regions are added/removed",
             "unit": "Count",
