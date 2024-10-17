@@ -69,7 +69,8 @@ export class CrashMonitoring {
         private readonly checkInterval: number,
         private readonly isDevMode: boolean,
         private readonly isAutomation: boolean,
-        private readonly devLogger: Logger | undefined
+        private readonly devLogger: Logger | undefined,
+        private readonly timeLag: TimeLag
     ) {}
 
     static #didTryCreate = false
@@ -92,7 +93,8 @@ export class CrashMonitoring {
                 DevSettings.instance.get('crashCheckInterval', 1000 * 60 * 10), // check every 10 minutes
                 isDevMode,
                 isAutomation(),
-                devModeLogger
+                devModeLogger,
+                new TimeLag()
             ))
         } catch (error) {
             emitFailure({ functionName: 'instance', error })
@@ -115,7 +117,13 @@ export class CrashMonitoring {
             this.heartbeat = new Heartbeat(this.state, this.checkInterval, this.isDevMode)
             this.heartbeat.onFailure(() => this.cleanup())
 
-            this.crashChecker = new CrashChecker(this.state, this.checkInterval, this.isDevMode, this.devLogger)
+            this.crashChecker = new CrashChecker(
+                this.state,
+                this.checkInterval,
+                this.isDevMode,
+                this.devLogger,
+                this.timeLag
+            )
             this.crashChecker.onFailure(() => this.cleanup())
 
             await this.heartbeat.start()
@@ -236,7 +244,7 @@ class CrashChecker {
          * Solution: Keep track of the lag, and then skip the next crash check if there was a lag. This will give time for the
          *           next heartbeat to be sent.
          */
-        private readonly timeLag: TimeLag = new TimeLag()
+        private readonly timeLag: TimeLag
     ) {}
 
     public async start() {
