@@ -16,6 +16,10 @@ import { AppBuilderRootNode } from './explorer/nodes/rootNode'
 import { initWalkthroughProjectCommand, walkthroughContextString, getOrInstallCliWrapper } from './walkthrough'
 import { getLogger } from '../../shared/logger'
 import path from 'path'
+import { TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
+import { runBuild } from '../../shared/sam/build'
+import { deployTypePrompt, runOpenHandler, runOpenTemplate } from './utils'
+import { ResourceNode } from './explorer/nodes/resourceNode'
 
 export const templateToOpenAppComposer = 'aws.toolkit.appComposer.templateToOpenOnStart'
 
@@ -156,6 +160,37 @@ async function registerAppBuilderCommands(context: ExtContext): Promise<void> {
                     'amazonwebservices.aws-toolkit-vscode#aws.toolkit.lambda.walkthrough'
                 )
             }
-        )
+        ),
+        Commands.register(
+            {
+                id: 'aws.appBuilder.build',
+                autoconnect: false,
+            },
+            async (arg?: TreeNode | undefined) => await telemetry.sam_build.run(async () => await runBuild(arg))
+        ),
+        Commands.register({ id: 'aws.appBuilder.openTemplate', autoconnect: false }, async (arg: TreeNode) =>
+            telemetry.appBuilder_openTemplate.run(async (span) => {
+                if (arg) {
+                    span.record({ source: 'AppBuilderOpenTemplate' })
+                } else {
+                    span.record({ source: 'commandPalette' })
+                }
+                await runOpenTemplate(arg)
+            })
+        ),
+        Commands.register({ id: 'aws.appBuilder.openHandler', autoconnect: false }, async (arg: ResourceNode) =>
+            telemetry.lambda_goToHandler.run(async (span) => {
+                span.record({ source: 'AppBuilderOpenHandler' })
+                await runOpenHandler(arg)
+            })
+        ),
+        Commands.register({ id: 'aws.appBuilder.deploy', autoconnect: true }, async (arg) => {
+            const params = await deployTypePrompt()
+            if (params === 'deploy') {
+                await vscode.commands.executeCommand('aws.deploySamApplication', arg)
+            } else if (params === 'sync') {
+                await vscode.commands.executeCommand('aws.samcli.sync', arg)
+            }
+        })
     )
 }

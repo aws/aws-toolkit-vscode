@@ -25,6 +25,7 @@ export interface ResourceTreeEntity {
     Id: string
     Type: string
     Runtime?: string
+    CodeUri?: string
     Handler?: string
     Events?: ResourceTreeEntity[]
     Path?: string
@@ -72,8 +73,9 @@ function getResourceEntity(template: any): ResourceTreeEntity[] {
             Id: logicalId,
             Type: resource.Type,
             Runtime: resource.Properties?.Runtime ?? template?.Globals?.Function?.Runtime,
-            Handler: resource.Properties ? resource.Properties.Handler : undefined,
+            Handler: resource.Properties?.Handler ?? template?.Globals?.Function?.Handler,
             Events: resource.Properties?.Events ? getEvents(resource.Properties.Events) : undefined,
+            CodeUri: resource.Properties?.CodeUri ?? template?.Globals?.Function?.CodeUri,
         }
         resourceTree.push(resourceEntity)
     }

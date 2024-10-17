@@ -35,18 +35,8 @@ import { SamCliSettings } from './cli/samCliSettings'
 import { Commands } from '../vscode/commands2'
 import { runSync } from './sync'
 import { showExtensionPage } from '../utilities/vsCodeUtils'
-import { TreeNode } from '../treeview/resourceTreeDataProvider'
-import { SamAppLocation } from '../../awsService/appBuilder/explorer/samProject'
-import { ResourceNode } from '../../awsService/appBuilder/explorer/nodes/resourceNode'
-import { ToolkitError } from '../errors'
 import { runDeploy } from '../../lambda/commands/deploySamApplication'
-import { DataQuickPickItem, createQuickPick } from '../ui/pickerPrompter'
-import { createCommonButtons } from '../ui/buttons'
-import { samDeployUrl } from '../constants'
-import { OpenTemplateParams, OpenTemplateWizard } from '../../awsService/appBuilder/explorer/openTemplate'
-import { telemetry } from '../telemetry'
-import { AppBuilderOpenTemplate, LambdaGoToHandler, Span } from '../telemetry/telemetry.gen'
-import { runBuild } from './build'
+import { telemetry } from '../telemetry/telemetry'
 
 const sharedDetectSamCli = shared(detectSamCli)
 
@@ -132,6 +122,14 @@ export async function activate(ctx: ExtContext): Promise<void> {
     if (globals.didReload) {
         await resumeCreateNewSamApp(ctx)
     }
+
+    Commands.register(
+        {
+            id: 'aws.samcli.sync',
+            autoconnect: true,
+        },
+        async (arg?, validate?: boolean) => await runSync('infra', arg, validate)
+    )
 }
 
 async function registerCommands(ctx: ExtContext, settings: SamCliSettings): Promise<void> {
@@ -149,13 +147,6 @@ async function registerCommands(ctx: ExtContext, settings: SamCliSettings): Prom
             codelensUtils.pickAddSamDebugConfiguration
         ),
         Commands.register(
-            {
-                id: 'aws.appBuilder.build',
-                autoconnect: false,
-            },
-            async (arg?: TreeNode | undefined) => await telemetry.sam_build.run(async () => await runBuild(arg))
-        ),
-        Commands.register(
             { id: 'aws.deploySamApplication', autoconnect: true },
             async (arg) =>
                 // `arg` is one of :
@@ -168,84 +159,8 @@ async function registerCommands(ctx: ExtContext, settings: SamCliSettings): Prom
         Commands.register({ id: 'aws.toggleSamCodeLenses', autoconnect: false }, async () => {
             const toggled = !settings.get('enableCodeLenses', false)
             await settings.update('enableCodeLenses', toggled)
-        }),
-        Commands.register({ id: 'aws.appBuilder.openTemplate', autoconnect: false }, async (arg: TreeNode) =>
-            telemetry.appBuilder_openTemplate.run(async (span) => await runOpenTemplate(span, arg))
-        ),
-        Commands.register({ id: 'aws.appBuilder.openHandler', autoconnect: false }, async (arg: ResourceNode) =>
-            telemetry.lambda_goToHandler.run(async (span) => await runOpenHandler(span, arg))
-        ),
-        Commands.register({ id: 'aws.appBuilder.deploy', autoconnect: true }, async (arg) => {
-            const params = await (await deployTypePrompt()).prompt()
-            if (params === 'deploy') {
-                await vscode.commands.executeCommand('aws.deploySamApplication', arg)
-            } else if (params === 'sync') {
-                await vscode.commands.executeCommand('aws.samcli.sync', arg)
-            }
-        }),
-        Commands.register(
-            {
-                id: 'aws.samcli.sync',
-                autoconnect: true,
-            },
-            async (arg?, validate?: boolean) => await runSync('infra', arg, validate)
-        )
+        })
     )
-}
-
-async function runOpenTemplate(span: Span<AppBuilderOpenTemplate>, arg: TreeNode) {
-    if (arg) {
-        span.record({ source: 'AppBuilderOpenTemplate' })
-    } else {
-        span.record({ source: 'commandPalette' })
-    }
-    const templateUri = arg ? (arg.resource as SamAppLocation).samTemplateUri : await promptUserForTemplate()
-    if (!templateUri) {
-        throw new ToolkitError('No template provided', { code: 'NoTemplateProvided' })
-    }
-    const document = await vscode.workspace.openTextDocument(templateUri)
-    await vscode.window.showTextDocument(document)
-}
-
-async function runOpenHandler(span: Span<LambdaGoToHandler>, arg: ResourceNode) {
-    span.record({ source: 'AppBuilderOpenHandler' })
-    const folderUri = arg.resource.workspaceFolder.uri
-    let handler: string | undefined
-    let extension = '*'
-    if (arg.resource.resource.Runtime?.includes('java')) {
-        handler = arg.resource.resource.Handler?.split('::')[0]
-        if (handler?.includes('.')) {
-            handler = handler.split('.')[1]
-        }
-        extension = 'java'
-    } else if (arg.resource.resource.Runtime?.includes('dotnet')) {
-        handler = arg.resource.resource.Handler?.split('::')[1]
-        if (handler?.includes('.')) {
-            handler = handler.split('.')[1]
-        }
-        extension = 'cs'
-    } else {
-        handler = arg.resource.resource.Handler?.split('.')[0]
-    }
-    const handlerFile = (
-        await vscode.workspace.findFiles(
-            new vscode.RelativePattern(folderUri, `**/${handler}.${extension}`),
-            new vscode.RelativePattern(folderUri, '.aws-sam')
-        )
-    )[0]
-    if (!handlerFile) {
-        throw new ToolkitError(`No handler file found with name "${handler}"`, { code: 'NoHandlerFound' })
-    }
-    const document = await vscode.workspace.openTextDocument(handlerFile)
-    await vscode.window.showTextDocument(document)
-}
-
-async function promptUserForTemplate() {
-    const registry = await globals.templateRegistry
-    const openTemplateParams: Partial<OpenTemplateParams> = {}
-
-    const param = await new OpenTemplateWizard(openTemplateParams, registry).run()
-    return param?.template.uri
 }
 
 async function activateCodeLensRegistry(context: ExtContext) {
@@ -524,27 +439,4 @@ async function promptInstallYamlPlugin(disposables: vscode.Disposable[]) {
         case permanentlySuppress:
             await settings.disablePrompt('yamlExtPrompt')
     }
-}
-
-async function deployTypePrompt() {
-    const items: DataQuickPickItem<string>[] = [
-        {
-            label: 'Sync',
-            data: 'sync',
-            detail: 'Speed up your development and testing experience in the AWS Cloud. With the --watch parameter, sync will build, deploy and watch for local changes',
-            description: 'Development environments',
-        },
-        {
-            label: 'Deploy',
-            data: 'deploy',
-            detail: 'Deploys your template through CloudFormation',
-            description: 'Production environments',
-        },
-    ]
-
-    return createQuickPick(items, {
-        title: localize('AWS.appBuilder.deployType.title', 'Select deployment command'),
-        placeholder: 'Press enter to proceed with highlighted option',
-        buttons: createCommonButtons(samDeployUrl),
-    })
 }
