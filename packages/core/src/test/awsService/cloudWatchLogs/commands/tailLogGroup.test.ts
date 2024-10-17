@@ -73,15 +73,11 @@ describe('TailLogGroup', function () {
 
         //Test that closing all tabs the session's document is open in will cause the session to close
         const window = getTestWindow()
-        window.tabGroups.all.forEach(async (tabGroup) =>
-            tabGroup.tabs.forEach(async (tab) => {
-                if (tab.input instanceof vscode.TabInputText) {
-                    if (sessionUri!.toString() === tab.input.uri.toString()) {
-                        await window.tabGroups.close(tab)
-                    }
-                }
-            })
-        )
+        let tabs: vscode.Tab[] = []
+        window.tabGroups.all.forEach((tabGroup) => {
+            tabs = tabs.concat(getLiveTailSessionTabsFromTabGroup(tabGroup, sessionUri!))
+        })
+        await Promise.all(tabs.map((tab) => window.tabGroups.close(tab)))
         assert.strictEqual(registry.size, 0)
         assert.strictEqual(stopLiveTailSessionSpy.calledOnce, true)
     })
@@ -118,6 +114,14 @@ describe('TailLogGroup', function () {
         await clearDocument(document)
         assert.strictEqual(document.getText(), '')
     })
+
+    function getLiveTailSessionTabsFromTabGroup(tabGroup: vscode.TabGroup, sessionUri: vscode.Uri): vscode.Tab[] {
+        return tabGroup.tabs.filter((tab) => {
+            if (tab.input instanceof vscode.TabInputText) {
+                return sessionUri!.toString() === tab.input.uri.toString()
+            }
+        })
+    }
 
     function getTestWizardResponse(): TailLogGroupWizardResponse {
         return {
