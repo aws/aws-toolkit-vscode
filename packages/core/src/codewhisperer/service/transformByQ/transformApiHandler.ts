@@ -287,13 +287,15 @@ interface ZipCodeResult {
     fileSize: number
 }
 
-export async function zipCode({ dependenciesFolder, humanInTheLoopFlag, modulePath, zipManifest }: IZipCodeParams) {
+export async function zipCode(
+    { dependenciesFolder, humanInTheLoopFlag, modulePath, zipManifest }: IZipCodeParams,
+    zip: AdmZip = new AdmZip()
+) {
     let tempFilePath = undefined
     let logFilePath = undefined
     let dependenciesCopied = false
     try {
         throwIfCancelled()
-        const zip = new AdmZip()
 
         // If no modulePath is passed in, we are not uploaded the source folder
         // NOTE: We only upload dependencies for human in the loop work
