@@ -51,7 +51,7 @@ export async function runSamCliListResource(
         if (message.includes('does not exist on Cloudformation')) {
             getLogger().info(message)
         } else {
-            void vscode.window.showErrorMessage(`Failed to run SAM CLI list resources: ${message}`)
+            void vscode.window.showWarningMessage(`Failed to run SAM CLI list resources: ${message}`)
         }
         return []
     }
