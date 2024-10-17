@@ -186,7 +186,7 @@ export const crashMonitoringTest = async () => {
         }
 
         // Give some extra time since there is a lot of file i/o
-        await awaitIntervals(oneInterval * 2)
+        await awaitIntervals(oneInterval * 3)
 
         assertCrashedExtensions(latestCrashedExts)
     })
