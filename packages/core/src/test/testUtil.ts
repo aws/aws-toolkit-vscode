@@ -622,7 +622,11 @@ function setPath(newPath: string): void {
 function readPath(): string {
     return process.env.PATH || ''
 }
-
+/**
+ * Overwrite the $PATH environment variable for the span of the provided task, then reset it.
+ * @param newPath temporary $PATH value
+ * @param task work to be done with $PATH set.
+ */
 export async function withEnvPath(newPath: string, task: () => Promise<void>): Promise<void | never> {
     const originalPath = readPath()
     setPath(newPath)
