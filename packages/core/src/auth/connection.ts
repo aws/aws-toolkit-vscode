@@ -73,7 +73,7 @@ export function hasScopes(target: SsoConnection | SsoProfile | string[], scopes:
  * Not optimized, but the set of possible scopes is currently very small (< 8)
  */
 export function hasExactScopes(target: SsoConnection | SsoProfile | string[], scopes: string[]): boolean {
-    const targetScopes = Array.isArray(target) ? target : target.scopes ?? []
+    const targetScopes = Array.isArray(target) ? target : (target.scopes ?? [])
     return scopes.length === targetScopes.length && scopes.every((s) => targetScopes.includes(s))
 }
 
@@ -233,7 +233,7 @@ export class ProfileStore {
     // To de-dupe telemetry
     private _prevGetProfile: { id: string; connectionState: ProfileMetadata['connectionState'] } | undefined
 
-    public constructor(private readonly memento: vscode.Memento) {}
+    public constructor(private readonly memento: vscode.Memento) { }
 
     public getProfile(id: string): StoredProfile | undefined {
         return this.getData()[id]

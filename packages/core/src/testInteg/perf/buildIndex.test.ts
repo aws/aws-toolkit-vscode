@@ -10,7 +10,7 @@ import assert from 'assert'
 import { LspClient, LspController } from '../../amazonq'
 import { LanguageClient, ServerOptions } from 'vscode-languageclient'
 import { createTestWorkspace } from '../../test/testUtil'
-import { GetUsageRequestType } from '../../amazonq/lsp/types'
+import { BuildIndexRequestType, GetUsageRequestType } from '../../amazonq/lsp/types'
 import { getRandomString } from '../../shared'
 
 interface SetupResult {
@@ -19,7 +19,7 @@ interface SetupResult {
 
 async function verifyResult(setup: SetupResult) {
     assert.ok(setup.clientReqStub.calledTwice)
-    // assert.ok(setup.clientReqStub.firstCall.calledWith(IndexRequestType))
+    assert.ok(setup.clientReqStub.firstCall.calledWith(BuildIndexRequestType))
     assert.ok(setup.clientReqStub.secondCall.calledWith(GetUsageRequestType))
 }
 
