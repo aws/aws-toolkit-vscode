@@ -21,7 +21,7 @@ phases:
     install:
         run-as: root
         runtime-versions:
-            nodejs: 16
+            nodejs: 18
             dotnet: 6.0
             java: latest
 
