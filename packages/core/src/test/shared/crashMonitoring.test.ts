@@ -11,6 +11,8 @@ import { isCI } from '../../shared/vscode/env'
 import { getLogger } from '../../shared/logger/logger'
 import { TimeLag } from '../../shared/utilities/timeoutUtils'
 import { SinonSandbox, createSandbox } from 'sinon'
+import { fs } from '../../shared'
+import path from 'path'
 
 class TestCrashMonitoring extends CrashMonitoring {
     public constructor(...deps: ConstructorParameters<typeof CrashMonitoring>) {
@@ -271,6 +273,31 @@ export const crashMonitoringTest = async () => {
     function deduplicate<T>(array: T[], predicate: (a: T, b: T) => boolean): T[] {
         return array.filter((item, index, self) => index === self.findIndex((t) => predicate(item, t)))
     }
+
+    describe('FileSystemState', async function () {
+        it('ignores irrelevant files in state', async function () {
+            const state = await crashMonitoringStateFactory({
+                workDirPath: testFolder.path,
+                isStateStale: () => Promise.resolve(false),
+                pid: 1111,
+                sessionId: 'sessionId_1111',
+                now: () => globals.clock.Date.now(),
+                memento: globals.globalState,
+                isDevMode: true,
+                devLogger: getLogger(),
+            })
+            const stateDirPath = state.stateDirPath
+
+            assert.deepStrictEqual((await fs.readdir(stateDirPath)).length, 0)
+            await fs.writeFile(path.join(stateDirPath, 'ignoreMe.json'), '')
+            await fs.mkdir(path.join(stateDirPath, 'ignoreMe'))
+            await state.sendHeartbeat() // creates a relevant file in the state
+            assert.deepStrictEqual((await fs.readdir(stateDirPath)).length, 3)
+
+            const result = await state.getAllExts()
+            assert.deepStrictEqual(result.length, 1)
+        })
+    })
 }
 // This test is slow, so we only want to run it locally and not in CI. It will be run in the integ CI tests though.
 ;(isCI() ? describe.skip : describe)('CrashReporting', crashMonitoringTest)

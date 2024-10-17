@@ -399,7 +399,7 @@ export async function crashMonitoringStateFactory(deps = getDefaultDependencies(
  *   - is not truly reliable since filesystems are not reliable
  */
 export class FileSystemState {
-    private readonly stateDirPath: string
+    public readonly stateDirPath: string
 
     /**
      * IMORTANT: Use {@link crashMonitoringStateFactory} to make an instance
@@ -520,9 +520,10 @@ export class FileSystemState {
     protected createExtId(ext: ExtInstance): ExtInstanceId {
         return `${ext.extHostPid}_${ext.sessionId}`
     }
+    private readonly fileSuffix = 'running'
     private makeStateFilePath(ext: ExtInstance | ExtInstanceId) {
         const extId = typeof ext === 'string' ? ext : this.createExtId(ext)
-        return path.join(this.stateDirPath, extId)
+        return path.join(this.stateDirPath, extId + `.${this.fileSuffix}`)
     }
     public async clearState(): Promise<void> {
         this.deps.devLogger?.debug('crashMonitoring: CLEAR_STATE: Started')
@@ -533,10 +534,26 @@ export class FileSystemState {
     }
     public async getAllExts(): Promise<ExtInstanceHeartbeat[]> {
         const res = await withFailCtx('getAllExts', async () => {
-            // The file names are intentionally the IDs for easy mapping
-            const allExtIds: ExtInstanceId[] = await withFailCtx('readdir', async () =>
-                (await fs.readdir(this.stateDirPath)).map((k) => k[0])
-            )
+            // Read all the exts from the filesystem, deserializing as needed
+            const allExtIds: ExtInstanceId[] = await withFailCtx('readdir', async () => {
+                const filesInDir = await fs.readdir(this.stateDirPath)
+                const relevantFiles = filesInDir.filter((file: [string, vscode.FileType]) => {
+                    const name = file[0]
+                    const type = file[1]
+                    if (type !== vscode.FileType.File) {
+                        return false
+                    }
+                    if (path.extname(name) !== `.${this.fileSuffix}`) {
+                        return false
+                    }
+                    return true
+                })
+                const idsFromFileNames = relevantFiles.map((file: [string, vscode.FileType]) => {
+                    const name = file[0]
+                    return name.split('.')[0]
+                })
+                return idsFromFileNames
+            })
 
             const allExts = allExtIds.map<Promise<ExtInstanceHeartbeat | undefined>>(async (extId: string) => {
                 // Due to a race condition, a separate extension instance may have removed this file by this point. It is okay since
