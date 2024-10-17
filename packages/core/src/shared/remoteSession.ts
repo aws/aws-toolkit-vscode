@@ -30,7 +30,7 @@ export interface MissingTool {
     readonly reason?: string
 }
 
-const minimumSsmActions = [
+export const minimumSsmActions = [
     'ssmmessages:CreateControlChannel',
     'ssmmessages:CreateDataChannel',
     'ssmmessages:OpenControlChannel',
