@@ -78,9 +78,9 @@ export function registerNewFiles(
             workspaceFolderPrefixes === undefined
                 ? workspaceFolders[0]
                 : (workspaceFolderPrefixes[prefix] ??
-                    workspaceFolderPrefixes[
-                    Object.values(workspaceFolderPrefixes).find((val) => val.index === 0)?.name ?? ''
-                    ])
+                  workspaceFolderPrefixes[
+                      Object.values(workspaceFolderPrefixes).find((val) => val.index === 0)?.name ?? ''
+                  ])
         if (folder === undefined) {
             telemetry.toolkit_trackScenario.emit({
                 count: 1,
