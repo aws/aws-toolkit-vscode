@@ -43,20 +43,29 @@ describe('pathFind', function () {
     })
 
     describe('findSshPath', function () {
+        let previousEnv: NodeJS.ProcessEnv
+
+        beforeEach(function () {
+            previousEnv = testutil.readEnv()
+        })
+
+        afterEach(function () {
+            testutil.setEnv(previousEnv)
+        })
+
         it('first tries ssh in $PATH', async function () {
             const workspace = await testutil.createTestWorkspaceFolder()
             const fakeSshPath = path.join(workspace.uri.fsPath, `ssh${isWin() ? '.cmd' : ''}`)
 
-            await testutil.withEnv(testutil.envWithNewPath(workspace.uri.fsPath), async () => {
-                const firstResult = await findSshPath(false)
+            testutil.setEnv(testutil.envWithNewPath(workspace.uri.fsPath))
+            const firstResult = await findSshPath(false)
 
-                await testutil.createExecutableFile(fakeSshPath, 'echo "this is ssh"')
+            await testutil.createExecutableFile(fakeSshPath, 'echo "this is ssh"')
 
-                const secondResult = await findSshPath(false)
+            const secondResult = await findSshPath(false)
 
-                assert.notStrictEqual(firstResult, secondResult)
-                assert.strictEqual(secondResult, 'ssh')
-            })
+            assert.notStrictEqual(firstResult, secondResult)
+            assert.strictEqual(secondResult, 'ssh')
         })
 
         it('only returns executable ssh path', async function () {
@@ -64,10 +73,9 @@ describe('pathFind', function () {
             const fakeSshPath = path.join(workspace.uri.fsPath, `ssh${isWin() ? '.cmd' : ''}`)
             await fs.writeFile(fakeSshPath, 'this is not executable')
 
-            await testutil.withEnv(testutil.envWithNewPath(workspace.uri.fsPath), async () => {
-                const firstResult = await findSshPath(false)
-                assert.notStrictEqual(firstResult, 'ssh')
-            })
+            testutil.setEnv(testutil.envWithNewPath(workspace.uri.fsPath))
+            const firstResult = await findSshPath(false)
+            assert.notStrictEqual(firstResult, 'ssh')
         })
 
         it('caches result from previous runs', async function () {
@@ -75,16 +83,15 @@ describe('pathFind', function () {
             const fakeSshPath = path.join(workspace.uri.fsPath, `ssh${isWin() ? '.cmd' : ''}`)
             await testutil.createExecutableFile(fakeSshPath, 'echo "this is ssh"')
 
-            await testutil.withEnv(testutil.envWithNewPath(workspace.uri.fsPath), async () => {
-                const firstResult = await findSshPath(true)
+            testutil.setEnv(testutil.envWithNewPath(workspace.uri.fsPath))
+            const firstResult = await findSshPath(true)
 
-                await fs.delete(fakeSshPath)
+            await fs.delete(fakeSshPath)
 
-                const secondResult = await findSshPath(true)
+            const secondResult = await findSshPath(true)
 
-                assert.strictEqual(firstResult, secondResult)
-                assert.strictEqual(secondResult, 'ssh')
-            })
+            assert.strictEqual(firstResult, secondResult)
+            assert.strictEqual(secondResult, 'ssh')
         })
     })
 })

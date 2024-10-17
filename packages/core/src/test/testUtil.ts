@@ -622,20 +622,6 @@ export function setEnv(newEnv: NodeJS.ProcessEnv): void {
 export function readEnv(): NodeJS.ProcessEnv {
     return process.env
 }
-/**
- * Overwrite the $PATH environment variable for the span of the provided task, then reset it.
- * @param newPath temporary $PATH value
- * @param task work to be done with $PATH set.
- */
-export async function withEnv(newEnv: NodeJS.ProcessEnv, task: () => Promise<void>): Promise<void | never> {
-    const originalEnv = readEnv()
-    setEnv(newEnv)
-    try {
-        await task()
-    } finally {
-        setEnv(originalEnv)
-    }
-}
 
 export function envWithNewPath(newPath: string): NodeJS.ProcessEnv {
     return { ...process.env, PATH: newPath }
