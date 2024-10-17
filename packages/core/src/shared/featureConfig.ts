@@ -24,7 +24,7 @@ export class FeatureContext {
         public name: string,
         public variation: string,
         public value: FeatureValue
-    ) {}
+    ) { }
 }
 
 const featureConfigPollIntervalInMs = 30 * 60 * 1000 // 30 mins
@@ -32,6 +32,7 @@ const featureConfigPollIntervalInMs = 30 * 60 * 1000 // 30 mins
 export const Features = {
     customizationArnOverride: 'customizationArnOverride',
     dataCollectionFeature: 'IDEProjectContextDataCollection',
+    projectContextFeature: 'NewProjectContext',
     test: 'testFeature',
 } as const
 
@@ -52,6 +53,8 @@ export class FeatureConfigProvider {
 
     private _isDataCollectionGroup = false
 
+    private _isNewProjectContextGroup = false
+
     constructor() {
         this.fetchFeatureConfigs().catch((e) => {
             getLogger().error('fetchFeatureConfigs failed: %s', (e as Error).message)
@@ -68,6 +71,9 @@ export class FeatureConfigProvider {
         return this._isDataCollectionGroup
     }
 
+    isNewProjectContextGroup(): boolean {
+        return this._isNewProjectContextGroup
+    }
     public async listFeatureEvaluations(): Promise<ListFeatureEvaluationsResponse> {
         const request: ListFeatureEvaluationsRequest = {
             userContext: {
@@ -150,6 +156,10 @@ export class FeatureConfigProvider {
                     await CodeWhispererSettings.instance.enableLocalIndex()
                     globals.globalState.tryUpdate('aws.amazonq.workspaceIndexToggleOn', true)
                 }
+            }
+            const projectContextFeatureValue = this.featureConfigs.get(Features.projectContextFeature)?.value.stringValue
+            if (projectContextFeatureValue) {
+                this._isNewProjectContextGroup = true
             }
         } catch (e) {
             getLogger().error(`CodeWhisperer: Error when fetching feature configs ${e}`, e)

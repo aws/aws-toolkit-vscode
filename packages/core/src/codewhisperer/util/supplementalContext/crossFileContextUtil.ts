@@ -4,11 +4,11 @@
  */
 
 import * as vscode from 'vscode'
-import { fs } from '../../../shared'
+import { FeatureConfigProvider, fs } from '../../../shared'
 import path = require('path')
 import { BM25Document, BM25Okapi } from './rankBm25'
 import { ToolkitError } from '../../../shared/errors'
-import { crossFileContextConfig, supplemetalContextFetchingTimeoutMsg, UserGroup } from '../../models/constants'
+import { crossFileContextConfig, supplemetalContextFetchingTimeoutMsg } from '../../models/constants'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { isTestFile } from './codeParsingUtil'
 import { getFileDistance } from '../../../shared/filesystemUtilities'
@@ -16,7 +16,6 @@ import { getOpenFilesInWindow } from '../../../shared/utilities/editorUtilities'
 import { getLogger } from '../../../shared/logger/logger'
 import { CodeWhispererSupplementalContext, CodeWhispererSupplementalContextItem } from '../../models/model'
 import { LspController } from '../../../amazonq/lsp/lspController'
-import { CodeWhispererUserGroupSettings } from '../userGroupUtil'
 
 type CrossFileSupportedLanguage =
     | 'java'
@@ -49,35 +48,27 @@ interface Chunk {
     score?: number
 }
 
+type SupplementalContextConfig = 'none' | 'v1' | 'v2'
+
 export async function fetchSupplementalContextForSrc(
     editor: vscode.TextEditor,
     cancellationToken: vscode.CancellationToken
 ): Promise<Pick<CodeWhispererSupplementalContext, 'supplementalContextItems' | 'strategy'> | undefined> {
-    const shouldProceed = shouldFetchCrossFileContext(
-        editor.document.languageId,
-        CodeWhispererUserGroupSettings.instance.userGroup
-    )
+    const supplementalContextConfig = getSupplementalContextConfig(editor.document.languageId)
 
-    if (!shouldProceed) {
-        return shouldProceed === undefined
-            ? undefined
-            : {
-                  supplementalContextItems: [],
-                  strategy: 'Empty',
-              }
+    if (supplementalContextConfig === 'none') {
+        return undefined
     }
-
-    // TODO:
-    if (false) {
+    if (supplementalContextConfig === 'v1') {
         return fetchSupplementalContextForSrcV1(editor, cancellationToken)
-    } else {
-        try {
-            return fetchSupplementalContextForSrcV2(editor)
-        } catch (e) {
-            getLogger().error(`Failed to fetch supplemental context from LSP ${e}`)
-            return fetchSupplementalContextForSrcV1(editor, cancellationToken)
-        }
     }
+    try {
+        return fetchSupplementalContextForSrcV2(editor)
+    } catch (e) {
+        getLogger().error(`Failed to fetch supplemental context from LSP ${e}`)
+        return fetchSupplementalContextForSrcV1(editor, cancellationToken)
+    }
+
 }
 
 export async function fetchSupplementalContextForSrcV2(
@@ -100,20 +91,6 @@ export async function fetchSupplementalContextForSrcV1(
     editor: vscode.TextEditor,
     cancellationToken: vscode.CancellationToken
 ): Promise<Pick<CodeWhispererSupplementalContext, 'supplementalContextItems' | 'strategy'> | undefined> {
-    const shouldProceed = shouldFetchCrossFileContext(
-        editor.document.languageId,
-        CodeWhispererUserGroupSettings.instance.userGroup
-    )
-
-    if (!shouldProceed) {
-        return shouldProceed === undefined
-            ? undefined
-            : {
-                  supplementalContextItems: [],
-                  strategy: 'Empty',
-              }
-    }
-
     const codeChunksCalculated = crossFileContextConfig.numberOfChunkToFetch
 
     // Step 1: Get relevant cross files to refer
@@ -204,15 +181,14 @@ function getInputChunk(editor: vscode.TextEditor) {
  * @returns specifically returning undefined if the langueage is not supported,
  * otherwise true/false depending on if the language is fully supported or not belonging to the user group
  */
-function shouldFetchCrossFileContext(
-    languageId: vscode.TextDocument['languageId'],
-    userGroup: UserGroup
-): boolean | undefined {
+function getSupplementalContextConfig(languageId: vscode.TextDocument['languageId']): SupplementalContextConfig {
     if (!isCrossFileSupported(languageId)) {
-        return undefined
+        return 'none'
     }
-
-    return true
+    if (FeatureConfigProvider.instance.isNewProjectContextGroup()) {
+        return 'v2'
+    }
+    return 'v1'
 }
 
 /**
