@@ -3,26 +3,26 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import assert from 'assert'
-import { createTestWorkspaceFolder, readEnvPath, withEnvPath } from '../../testUtil'
+import { createTestWorkspaceFolder, envWithNewPath, readEnv, withEnv } from '../../testUtil'
 
-describe('withEnvPath', function () {
+describe('withEnv', function () {
     it('resets path when error in task', async function () {
-        const originalPath = readEnvPath()
+        const originalEnv = readEnv()
         const tempFolder = await createTestWorkspaceFolder()
         try {
-            await withEnvPath(tempFolder.uri.fsPath, async () => {
+            await withEnv(envWithNewPath(tempFolder.uri.fsPath), async () => {
                 throw new Error()
             })
         } catch {}
-        assert.strictEqual(readEnvPath(), originalPath)
+        assert.strictEqual(readEnv().PATH, originalEnv.PATH)
     })
 
     it('changes $PATH temporarily', async function () {
-        const originalPath = readEnvPath()
+        const originalEnv = readEnv()
         const tempFolder = await createTestWorkspaceFolder()
-        await withEnvPath(tempFolder.uri.fsPath, async () => {
-            assert.strictEqual(readEnvPath(), tempFolder.uri.fsPath)
+        await withEnv(envWithNewPath(tempFolder.uri.fsPath), async () => {
+            assert.strictEqual(readEnv().PATH, tempFolder.uri.fsPath)
         })
-        assert.strictEqual(readEnvPath(), originalPath)
+        assert.strictEqual(readEnv().PATH, originalEnv.PATH)
     })
 })

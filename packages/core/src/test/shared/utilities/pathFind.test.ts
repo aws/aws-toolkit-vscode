@@ -47,7 +47,7 @@ describe('pathFind', function () {
             const workspace = await testutil.createTestWorkspaceFolder()
             const fakeSshPath = path.join(workspace.uri.fsPath, `ssh${isWin() ? '.cmd' : ''}`)
 
-            await testutil.withEnvPath(workspace.uri.fsPath, async () => {
+            await testutil.withEnv(testutil.envWithNewPath(workspace.uri.fsPath), async () => {
                 const firstResult = await findSshPath(false)
 
                 await testutil.createExecutableFile(fakeSshPath, 'echo "this is ssh"')
@@ -64,7 +64,7 @@ describe('pathFind', function () {
             const fakeSshPath = path.join(workspace.uri.fsPath, `ssh${isWin() ? '.cmd' : ''}`)
             await fs.writeFile(fakeSshPath, 'this is not executable')
 
-            await testutil.withEnvPath(workspace.uri.fsPath, async () => {
+            await testutil.withEnv(testutil.envWithNewPath(workspace.uri.fsPath), async () => {
                 const firstResult = await findSshPath(false)
                 assert.notStrictEqual(firstResult, 'ssh')
             })
@@ -75,7 +75,7 @@ describe('pathFind', function () {
             const fakeSshPath = path.join(workspace.uri.fsPath, `ssh${isWin() ? '.cmd' : ''}`)
             await testutil.createExecutableFile(fakeSshPath, 'echo "this is ssh"')
 
-            await testutil.withEnvPath(workspace.uri.fsPath, async () => {
+            await testutil.withEnv(testutil.envWithNewPath(workspace.uri.fsPath), async () => {
                 const firstResult = await findSshPath(true)
 
                 await fs.delete(fakeSshPath)

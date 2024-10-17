@@ -615,24 +615,28 @@ export function getFetchStubWithResponse(response: Partial<Response>) {
     return stub(request, 'fetch').returns({ response: new Promise((res, _) => res(response)) } as any)
 }
 
-export function setEnvPath(newPath: string): void {
-    process.env.PATH = newPath
+export function setEnv(newEnv: NodeJS.ProcessEnv): void {
+    process.env = newEnv
 }
 
-export function readEnvPath(): string {
-    return process.env.PATH || ''
+export function readEnv(): NodeJS.ProcessEnv {
+    return process.env
 }
 /**
  * Overwrite the $PATH environment variable for the span of the provided task, then reset it.
  * @param newPath temporary $PATH value
  * @param task work to be done with $PATH set.
  */
-export async function withEnvPath(newPath: string, task: () => Promise<void>): Promise<void | never> {
-    const originalPath = readEnvPath()
-    setEnvPath(newPath)
+export async function withEnv(newEnv: NodeJS.ProcessEnv, task: () => Promise<void>): Promise<void | never> {
+    const originalEnv = readEnv()
+    setEnv(newEnv)
     try {
         await task()
     } finally {
-        setEnvPath(originalPath)
+        setEnv(originalEnv)
     }
+}
+
+export function envWithNewPath(newPath: string): NodeJS.ProcessEnv {
+    return { ...process.env, PATH: newPath }
 }
