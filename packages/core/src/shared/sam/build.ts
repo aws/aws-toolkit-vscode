@@ -34,7 +34,7 @@ export enum ParamsSource {
     DefaultValues,
 }
 
-function createParamsSourcePrompter(existValidSamconfig: boolean) {
+export function createParamsSourcePrompter(existValidSamconfig: boolean) {
     const items: DataQuickPickItem<ParamsSource>[] = [
         {
             label: 'Specify build flags',
@@ -62,7 +62,7 @@ function createParamsSourcePrompter(existValidSamconfig: boolean) {
     })
 }
 
-async function buildFlagsPrompter(): Promise<DataQuickPickItem<string>[] | undefined> {
+export async function buildFlagsPrompter(): Promise<DataQuickPickItem<string>[] | undefined> {
     const items: DataQuickPickItem<string>[] = [
         {
             label: 'Beta features',
@@ -180,7 +180,7 @@ export class BuildWizard extends Wizard<BuildParams> {
  * @param defaultFlags
  * @returns
  */
-async function getBuildFlags(
+export async function getBuildFlags(
     paramsSource: ParamsSource,
     projectRoot: vscode.Uri,
     defaultFlags: string[]
