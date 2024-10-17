@@ -477,7 +477,7 @@
         "@smithy/shared-ini-file-loader": "^2.2.8",
         "@smithy/util-retry": "^2.2.0",
         "@vscode/debugprotocol": "^1.57.0",
-        "adm-zip": "^0.5.10",
+        "adm-zip": "^0.5.16",
         "amazon-states-language-service": "^1.11.0",
         "archiver": "^7.0.1",
         "async-lock": "^1.4.0",
