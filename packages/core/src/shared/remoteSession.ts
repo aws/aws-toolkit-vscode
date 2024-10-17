@@ -21,7 +21,7 @@ import { ChildProcess } from './utilities/processUtils'
 import { IamClient } from './clients/iamClient'
 import { IAM } from 'aws-sdk'
 import { getIdeProperties } from './extensionUtilities'
-import { pathFinder } from './utilities/pathFind'
+import { findSshPath, getVscodeCliPath } from './utilities/pathFind'
 
 const policyAttachDelay = 5000
 
@@ -139,7 +139,7 @@ async function ensureSsmCli() {
 }
 
 export async function ensureTools() {
-    const [vsc, ssh, ssm] = await Promise.all([pathFinder.getVscodeCliPath(), pathFinder.findSshPath(), ensureSsmCli()])
+    const [vsc, ssh, ssm] = await Promise.all([getVscodeCliPath(), findSshPath(), ensureSsmCli()])
 
     const missing: MissingTool[] = []
     pushIf(missing, vsc === undefined, { name: 'code' })
