@@ -24,7 +24,7 @@ import {
 } from './shared/extensionUtilities'
 import { getLogger, Logger } from './shared/logger/logger'
 import { activate as activateEcr } from './awsService/ecr/activation'
-import { activate as activateEc2 } from './awsService/ec2/activation'
+import { activate as activateEc2, deactivate as deactivateEc2 } from './awsService/ec2/activation'
 import { activate as activateSam } from './shared/sam/activation'
 import { activate as activateS3 } from './awsService/s3/activation'
 import * as filetypes from './shared/filetypes'
@@ -255,7 +255,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
 export async function deactivate() {
     // Run concurrently to speed up execution. stop() does not throw so it is safe
-    await Promise.all([await (await CrashMonitoring.instance())?.shutdown(), deactivateCommon()])
+    await Promise.all([await (await CrashMonitoring.instance())?.shutdown(), deactivateCommon(), deactivateEc2()])
     await globals.resourceManager.dispose()
 }
 
