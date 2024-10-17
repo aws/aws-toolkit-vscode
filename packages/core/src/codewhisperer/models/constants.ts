@@ -711,8 +711,7 @@ export const runSecurityScanButtonTitle = 'Run security scan'
 export const crossFileContextConfig = {
     numberOfChunkToFetch: 60,
     topK: 3,
-    numberOfLinesEachChunk: 50,
-    filenameMark: 'q-inline',
+    numberOfLinesEachChunk: 50
 }
 
 export const utgConfig = {
