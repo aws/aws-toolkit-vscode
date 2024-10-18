@@ -60,7 +60,7 @@ describe('pathFind', function () {
             testutil.setEnv(testutil.envWithNewPath(workspace.uri.fsPath))
             const firstResult = await findSshPath(false)
 
-            await testutil.createExecutableFile(fakeSshPath, 'echo "this is ssh"')
+            await testutil.createExecutableFile(fakeSshPath, '')
 
             const secondResult = await findSshPath(false)
 
@@ -81,7 +81,7 @@ describe('pathFind', function () {
         it('caches result from previous runs', async function () {
             const workspace = await testutil.createTestWorkspaceFolder()
             const fakeSshPath = path.join(workspace.uri.fsPath, `ssh`)
-            await testutil.createExecutableFile(fakeSshPath, 'echo "this is ssh"')
+            await testutil.createExecutableFile(fakeSshPath, '')
 
             testutil.setEnv(testutil.envWithNewPath(workspace.uri.fsPath))
             const firstResult = await findSshPath(true)
