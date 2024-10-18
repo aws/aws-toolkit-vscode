@@ -9,7 +9,7 @@ import * as sinon from 'sinon'
 import * as path from 'path'
 import * as os from 'os'
 import { SshKeyPair } from '../../../awsService/ec2/sshKeyPair'
-import { createTestWorkspaceFolder, installFakeClock } from '../../testUtil'
+import { installFakeClock } from '../../testUtil'
 import { InstalledClock } from '@sinonjs/fake-timers'
 import { ChildProcess } from '../../../shared/utilities/processUtils'
 import { fs, globals } from '../../../shared'
@@ -21,7 +21,10 @@ describe('SshKeyUtility', async function () {
     let clock: InstalledClock
 
     before(async function () {
-        temporaryDirectory = (await createTestWorkspaceFolder()).uri.fsPath
+        // Setup a temporary directory inside of globalStorage since keys need to be inside globalStorage
+        temporaryDirectory = path.join(globals.context.globalStorageUri.fsPath, 'SshKeyUtilityTests')
+        await fs.mkdir(temporaryDirectory)
+
         keyPath = path.join(temporaryDirectory, 'testKeyPair')
         clock = installFakeClock()
     })
@@ -132,6 +135,12 @@ describe('SshKeyUtility', async function () {
         await fs.delete(keyPair.getPublicKeyPath())
 
         assert(keyPair.isDeleted())
+    })
+
+    it('does not allow writing keys to non-global storage', async function () {
+        await assert.rejects(async () => await SshKeyPair.getSshKeyPair('~/.ssh/someKey', 2000))
+
+        await assert.rejects(async () => await SshKeyPair.getSshKeyPair('/a/path/that/isnt/real/key', 2000))
     })
 
     describe('isDeleted', async function () {

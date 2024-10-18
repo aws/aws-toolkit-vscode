@@ -2,12 +2,13 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { fs } from '../../shared'
+import { fs, globals } from '../../shared'
 import { ToolkitError } from '../../shared/errors'
 import { tryRun } from '../../shared/utilities/pathFind'
 import { Timeout } from '../../shared/utilities/timeoutUtils'
 import { findAsync } from '../../shared/utilities/collectionUtils'
 import { RunParameterContext } from '../../shared/utilities/processUtils'
+import path from 'path'
 
 type sshKeyType = 'rsa' | 'ed25519'
 
@@ -28,8 +29,23 @@ export class SshKeyPair {
     }
 
     public static async getSshKeyPair(keyPath: string, lifetime: number) {
+        SshKeyPair.assertValidKeypath(
+            keyPath,
+            `ec2: unable to generate key outside of global storage in path ${keyPath}`
+        )
         await SshKeyPair.generateSshKeyPair(keyPath)
         return new SshKeyPair(keyPath, lifetime)
+    }
+
+    private static isValidKeyPath(keyPath: string): boolean {
+        const relative = path.relative(globals.context.globalStorageUri.fsPath, keyPath)
+        return relative !== undefined && !relative.startsWith('..') && !path.isAbsolute(relative)
+    }
+
+    private static assertValidKeypath(keyPath: string, message: string): void | never {
+        if (!SshKeyPair.isValidKeyPath(keyPath)) {
+            throw new ToolkitError(message)
+        }
     }
 
     public static async generateSshKeyPair(keyPath: string): Promise<void> {
@@ -72,6 +88,10 @@ export class SshKeyPair {
     }
 
     public async delete(): Promise<void> {
+        SshKeyPair.assertValidKeypath(
+            this.keyPath,
+            `ec2: keyPath became invalid after creation, not deleting key at ${this.keyPath}`
+        )
         await fs.delete(this.keyPath)
         await fs.delete(this.publicKeyPath)
 
