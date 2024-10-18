@@ -6,6 +6,7 @@ import assert from 'assert'
 import { createExecutableFile, createTestWorkspaceFolder, envWithNewPath, readEnv, setEnv } from '../../testUtil'
 import path from 'path'
 import { fs } from '../../../shared'
+import { isWin } from '../../../shared/vscode/env'
 import { tryRun } from '../../../shared/utilities/pathFind'
 
 describe('envWithNewPath', function () {
@@ -30,7 +31,7 @@ describe('writeEnv', function () {
 describe('createExecutableFile', function () {
     it('creates a file that can be executed', async function () {
         const tempDir = await createTestWorkspaceFolder()
-        const filePath = path.join(tempDir.uri.fsPath, `exec`)
+        const filePath = path.join(tempDir.uri.fsPath, `exec${isWin() ? '.cmd' : ''}`)
         await createExecutableFile(filePath, '')
 
         const result = await tryRun(filePath, [], 'yes')

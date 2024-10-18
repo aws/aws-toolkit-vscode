@@ -9,8 +9,8 @@ import * as os from 'os'
 import * as path from 'path'
 import * as testutil from '../../testUtil'
 import { fs } from '../../../shared'
-import { findSshPath, findTypescriptCompiler, getVscodeCliPath } from '../../../shared/utilities/pathFind'
-import { isWin } from '../../../shared/vscode/env'
+import { findSshPath, findTypescriptCompiler, getVscodeCliPath, tryRun } from '../../../shared/utilities/pathFind'
+import { isCI, isWin } from '../../../shared/vscode/env'
 
 describe('pathFind', function () {
     it('findTypescriptCompiler()', async function () {
@@ -53,7 +53,11 @@ describe('pathFind', function () {
             testutil.setEnv(previousEnv)
         })
 
-        it('first tries ssh in $PATH', async function () {
+        it('first tries ssh in $PATH (Non-Windows)', async function () {
+            // skip on windows because ssh in path will never work with .exe extension.
+            if (isWin()) {
+                return
+            }
             const workspace = await testutil.createTestWorkspaceFolder()
             const fakeSshPath = path.join(workspace.uri.fsPath, `ssh`)
 
@@ -68,30 +72,54 @@ describe('pathFind', function () {
             assert.strictEqual(secondResult, 'ssh')
         })
 
-        it('only returns executable ssh path', async function () {
-            const workspace = await testutil.createTestWorkspaceFolder()
-            const fakeSshPath = path.join(workspace.uri.fsPath, `ssh`)
-            await fs.writeFile(fakeSshPath, 'this is not executable')
+        it('only returns valid executable ssh path (CI + Local Non-Windows)', async function () {
+            // In CI, we can assume Windows machines will have ssh.
+            if (!isCI()) {
+                return
+            }
+            // On local non-windows, we can overwrite path and create our own executable to find.
+            if (!isWin()) {
+                const workspace = await testutil.createTestWorkspaceFolder()
+                const fakeSshPath = path.join(workspace.uri.fsPath, `ssh`)
 
-            testutil.setEnv(testutil.envWithNewPath(workspace.uri.fsPath))
-            const firstResult = await findSshPath(false)
-            assert.notStrictEqual(firstResult, 'ssh')
+                testutil.setEnv(testutil.envWithNewPath(workspace.uri.fsPath))
+
+                await testutil.createExecutableFile(fakeSshPath, '')
+            }
+
+            const ssh = await findSshPath(false)
+            assert.ok(ssh)
+            const result = await tryRun(ssh, [])
+            assert.ok(result)
         })
 
-        it('caches result from previous runs', async function () {
+        it('caches result from previous runs (CI + Local Non-Windows)', async function () {
+            // In CI, we can assume Windows machines will have ssh.
+            if (!isCI()) {
+                return
+            }
+            // On local non-windows, we can overwrite path and create our own executable to find.
             const workspace = await testutil.createTestWorkspaceFolder()
-            const fakeSshPath = path.join(workspace.uri.fsPath, `ssh`)
-            await testutil.createExecutableFile(fakeSshPath, '')
+            // We move the ssh to a temp directory temporarily to test if cache works.
+            const tempLocation = path.join(workspace.uri.fsPath, 'temp-ssh')
 
-            testutil.setEnv(testutil.envWithNewPath(workspace.uri.fsPath))
-            const firstResult = await findSshPath(true)
+            if (!isWin()) {
+                const fakeSshPath = path.join(workspace.uri.fsPath, `ssh`)
 
-            await fs.delete(fakeSshPath)
+                testutil.setEnv(testutil.envWithNewPath(workspace.uri.fsPath))
 
-            const secondResult = await findSshPath(true)
+                await testutil.createExecutableFile(fakeSshPath, '')
+            }
 
-            assert.strictEqual(firstResult, secondResult)
-            assert.ok(secondResult)
+            const ssh1 = await findSshPath(true)
+
+            await fs.rename(ssh1!, tempLocation)
+
+            const ssh2 = await findSshPath(true)
+
+            assert.strictEqual(ssh1, ssh2)
+
+            await fs.rename(tempLocation, ssh1!)
         })
     })
 })
