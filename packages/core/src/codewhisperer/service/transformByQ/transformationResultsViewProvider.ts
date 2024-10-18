@@ -242,6 +242,7 @@ export class DiffModel {
 
     public clearChanges() {
         this.patchFileNodes = []
+        this.currentPatchIndex = 0
     }
 }
 
@@ -344,7 +345,6 @@ export class ProposedTransformationExplorer {
             }
 
             diffModel.clearChanges()
-            diffModel.currentPatchIndex = 0
             transformByQState.setSummaryFilePath('')
             transformByQState.setProjectCopyFilePath('')
             transformByQState.setResultArchiveFilePath('')
