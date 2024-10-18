@@ -74,7 +74,7 @@ describe('pathFind', function () {
 
         it('only returns valid executable ssh path (CI + Local Non-Windows)', async function () {
             // In CI, we can assume Windows machines will have ssh.
-            if (!isCI()) {
+            if (!isCI() && isWin()) {
                 return
             }
             // On local non-windows, we can overwrite path and create our own executable to find.
@@ -95,31 +95,31 @@ describe('pathFind', function () {
 
         it('caches result from previous runs (CI + Local Non-Windows)', async function () {
             // In CI, we can assume Windows machines will have ssh.
-            if (!isCI()) {
+            if (!isCI() && isWin()) {
                 return
             }
             // On local non-windows, we can overwrite path and create our own executable to find.
             const workspace = await testutil.createTestWorkspaceFolder()
             // We move the ssh to a temp directory temporarily to test if cache works.
             const tempLocation = path.join(workspace.uri.fsPath, 'temp-ssh')
+            const fakeSshPath = path.join(workspace.uri.fsPath, `ssh`)
 
             if (!isWin()) {
-                const fakeSshPath = path.join(workspace.uri.fsPath, `ssh`)
-
                 testutil.setEnv(testutil.envWithNewPath(workspace.uri.fsPath))
 
                 await testutil.createExecutableFile(fakeSshPath, '')
             }
 
             const ssh1 = await findSshPath(true)
+            const originalSshPath = ssh1! === 'ssh' ? fakeSshPath : ssh1!
 
-            await fs.rename(ssh1!, tempLocation)
+            await fs.rename(originalSshPath, tempLocation)
 
             const ssh2 = await findSshPath(true)
 
             assert.strictEqual(ssh1, ssh2)
 
-            await fs.rename(tempLocation, ssh1!)
+            await fs.rename(tempLocation, originalSshPath)
         })
     })
 })
