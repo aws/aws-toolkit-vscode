@@ -6,24 +6,22 @@ import assert from 'assert'
 import sinon from 'sinon'
 import os from 'os'
 import { DiffModel, AddedChangeNode, ModifiedChangeNode } from 'aws-core-vscode/codewhisperer/node'
+import { PatchInfo } from 'aws-core-vscode/codewhisperer'
 import path from 'path'
 import { getTestResourceFilePath } from './amazonQGumbyUtil'
 import { fs } from 'aws-core-vscode/shared'
 
-type PatchDescription = {
-    name: string
-    fileName: string
-    isSuccessful: boolean
-}
-
 describe('DiffModel', function () {
+    let parsedTestDescription: PatchInfo
+    beforeEach(() => {
+        parsedTestDescription = JSON.parse(
+            '{"name": "Added file", "fileName": "resources/files/addedFile.diffs", "isSuccessful": true}'
+        )
+    })
+
     afterEach(() => {
         sinon.restore()
     })
-
-    const testDescription =
-        '{"name": "Added file", "fileName": "resources/files/addedFile.diffs", "isSuccessful": true}'
-    const parsedTestDescription: PatchDescription = JSON.parse(testDescription)
 
     it('WHEN parsing a diff patch where a file was added THEN returns an array representing the added file', async function () {
         const testDiffModel = new DiffModel()
