@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import assert from 'assert'
-import { createExecutableFile, createTestWorkspaceFolder, envWithNewPath, readEnv, setEnv } from '../../testUtil'
+import { createExecutableFile, createTestWorkspaceFolder, envWithNewPath, copyEnv } from '../../testUtil'
 import path from 'path'
 import { fs } from '../../../shared'
 import { isWin } from '../../../shared/vscode/env'
@@ -18,13 +18,13 @@ describe('envWithNewPath', function () {
 
 describe('setEnv', function () {
     it('modifies the node environment variables', function () {
-        const originalEnv = readEnv()
+        const originalEnv = copyEnv()
         const fakePath = 'fakePath'
-        setEnv(envWithNewPath('fakePath'))
-        assert.strictEqual(readEnv().PATH, fakePath)
+        process.env = envWithNewPath('fakePath')
+        assert.strictEqual(copyEnv().PATH, fakePath)
 
-        setEnv(originalEnv)
-        assert.deepStrictEqual(readEnv(), originalEnv)
+        process.env = originalEnv
+        assert.deepStrictEqual(copyEnv(), originalEnv)
     })
 })
 

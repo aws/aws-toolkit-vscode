@@ -46,11 +46,11 @@ describe('pathFind', function () {
         let previousEnv: NodeJS.ProcessEnv
 
         beforeEach(function () {
-            previousEnv = testutil.readEnv()
+            previousEnv = testutil.copyEnv()
         })
 
         afterEach(function () {
-            testutil.setEnv(previousEnv)
+            process.env = previousEnv
         })
 
         it('first tries ssh in $PATH (Non-Windows)', async function () {
@@ -61,7 +61,7 @@ describe('pathFind', function () {
             const workspace = await testutil.createTestWorkspaceFolder()
             const fakeSshPath = path.join(workspace.uri.fsPath, `ssh`)
 
-            testutil.setEnv(testutil.envWithNewPath(workspace.uri.fsPath))
+            process.env = testutil.envWithNewPath(workspace.uri.fsPath)
             const firstResult = await findSshPath(false)
 
             await testutil.createExecutableFile(fakeSshPath, '')
@@ -80,7 +80,7 @@ describe('pathFind', function () {
             const workspace = await testutil.createTestWorkspaceFolder()
             const fakeSshPath = path.join(workspace.uri.fsPath, `ssh`)
 
-            testutil.setEnv(testutil.envWithNewPath(workspace.uri.fsPath))
+            process.env = testutil.envWithNewPath(workspace.uri.fsPath)
 
             await testutil.createExecutableFile(fakeSshPath, '')
 
@@ -99,7 +99,7 @@ describe('pathFind', function () {
             // We move the ssh to a temp directory temporarily to test if cache works.
             const fakeSshPath = path.join(workspace.uri.fsPath, `ssh`)
 
-            testutil.setEnv(testutil.envWithNewPath(workspace.uri.fsPath))
+            process.env = testutil.envWithNewPath(workspace.uri.fsPath)
 
             await testutil.createExecutableFile(fakeSshPath, '')
 

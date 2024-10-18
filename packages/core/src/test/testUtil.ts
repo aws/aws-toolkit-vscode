@@ -615,11 +615,7 @@ export function getFetchStubWithResponse(response: Partial<Response>) {
     return stub(request, 'fetch').returns({ response: new Promise((res, _) => res(response)) } as any)
 }
 
-export function setEnv(newEnv: NodeJS.ProcessEnv): void {
-    process.env = newEnv
-}
-
-export function readEnv(): NodeJS.ProcessEnv {
+export function copyEnv(): NodeJS.ProcessEnv {
     return { ...process.env }
 }
 
