@@ -322,15 +322,19 @@ export async function zipCode(
         if (transformByQState.getMetadataPathSQL() && zipManifest instanceof ZipManifest) {
             // user is doing a SQL conversion since metadataPath is defined
             // also, it must be a ZipManifest since only other option is HilZipManifest which is not used for SQL conversions
-            zip.addLocalFile(
-                transformByQState.getMetadataPathSQL(),
-                path.join(zipManifest.sourcesRoot, 'qct-sct-metadata')
-            )
-            zipManifest.customConversions['source'] = transformByQState.getSourceDB()
-            zipManifest.customConversions['target'] = transformByQState.getTargetDB()
-            zipManifest.customConversions['type'] = 'SQL'
-            zipManifest.customConversions['schema'] = transformByQState.getSchema()
-            zipManifest.customConversions['host'] = transformByQState.getSourceServerName()
+            zipManifest.requestedConversions.sqlConversion = {
+                source: transformByQState.getSourceDB(),
+                target: transformByQState.getTargetDB(),
+                schema: transformByQState.getSchema(),
+                host: transformByQState.getSourceServerName(),
+            }
+            const metadataZip = new AdmZip(transformByQState.getMetadataPathSQL())
+            // TO-DO: later make this add to path.join(zipManifest.dependenciesRoot, 'qct-sct-metadata', entry.entryName) so that it's more organized
+            metadataZip
+                .getEntries()
+                .forEach((entry) =>
+                    zip.addFile(path.join(zipManifest.dependenciesRoot, entry.entryName), entry.getData())
+                )
             const sqlMetadataSize = (await nodefs.promises.stat(transformByQState.getMetadataPathSQL())).size
             getLogger().info(`CodeTransformation: SQL metadata file size = ${sqlMetadataSize}`)
         }
@@ -356,10 +360,6 @@ export async function zipCode(
             }
             getLogger().info(`CodeTransformation: dependency files size = ${dependencyFilesSize}`)
             dependenciesCopied = true
-        } else {
-            if (zipManifest instanceof ZipManifest) {
-                zipManifest.dependenciesRoot = undefined
-            }
         }
 
         zip.addFile('manifest.json', Buffer.from(JSON.stringify(zipManifest)), 'utf-8')
