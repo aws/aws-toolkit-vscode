@@ -7,15 +7,19 @@ import assert, { fail } from 'assert'
 import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
-import { transformByQState, TransformByQStoppedError } from '../../../codewhisperer/models/model'
-import { parseBuildFile, stopTransformByQ } from '../../../codewhisperer/commands/startTransformByQ'
+import { DB, transformByQState, TransformByQStoppedError } from '../../../codewhisperer/models/model'
+import {
+    parseBuildFile,
+    stopTransformByQ,
+    validateSQLMetadataFile,
+} from '../../../codewhisperer/commands/startTransformByQ'
 import { HttpResponse } from 'aws-sdk'
 import * as codeWhisperer from '../../../codewhisperer/client/codewhisperer'
 import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
 import { convertToTimeString, convertDateToTimestamp } from '../../../shared/utilities/textUtilities'
 import path from 'path'
 import AdmZip from 'adm-zip'
-import { createTestWorkspaceFolder, toFile } from '../../testUtil'
+import { createTestWorkspaceFolder, TestFolder, toFile } from '../../testUtil'
 import {
     NoJavaProjectsFoundError,
     NoMavenJavaProjectsFoundError,
@@ -214,7 +218,7 @@ describe('transformByQ', function () {
                 name: tempFileName,
             },
             humanInTheLoopFlag: false,
-            modulePath: tempDir,
+            projectPath: tempDir,
             zipManifest: transformManifest,
         }).then((zipCodeResult) => {
             const zip = new AdmZip(zipCodeResult.tempFilePath)
@@ -270,7 +274,7 @@ describe('transformByQ', function () {
                 name: tempFileName,
             },
             humanInTheLoopFlag: false,
-            modulePath: tempDir,
+            projectPath: tempDir,
             zipManifest: new ZipManifest(),
         }).then((zipCodeResult) => {
             const zip = new AdmZip(zipCodeResult.tempFilePath)
@@ -332,13 +336,161 @@ describe('transformByQ', function () {
     })
 
     it(`WHEN parseBuildFile on pom.xml with absolute path THEN absolute path detected`, async function () {
-        const dirPath = await createTestWorkspaceFolder()
-        transformByQState.setProjectPath(dirPath.uri.fsPath)
-        const pomPath = path.join(dirPath.uri.fsPath, 'pom.xml')
+        const dirPath = await TestFolder.create()
+        transformByQState.setProjectPath(dirPath.path)
+        const pomPath = path.join(dirPath.path, 'pom.xml')
         await toFile('<project><properties><path>system/name/here</path></properties></project>', pomPath)
         const expectedWarning =
             'I detected 1 potential absolute file path(s) in your pom.xml file: **system/**. Absolute file paths might cause issues when I build your code. Any errors will show up in the build log.'
         const warningMessage = await parseBuildFile()
         assert.strictEqual(expectedWarning, warningMessage)
+    })
+
+    it(`WHEN validateMetadataFile on fully valid .sct file THEN passes validation`, async function () {
+        const sampleFileContents = `<?xml version="1.0" encoding="UTF-8"?>
+        <tree>
+        <instances>
+            <ProjectModel>
+            <entities>
+                <sources>
+                <DbServer vendor="oracle" name="sample.rds.amazonaws.com">
+                </DbServer>
+                </sources>
+                <targets>
+                <DbServer vendor="aurora_postgresql" />
+                </targets>
+            </entities>
+            <relations>
+                <server-node-location>
+                <FullNameNodeInfoList>
+                    <nameParts>
+                    <FullNameNodeInfo typeNode="schema" nameNode="schema1"/>
+                    <FullNameNodeInfo typeNode="table" nameNode="table1"/>
+                    </nameParts>
+                </FullNameNodeInfoList>
+                </server-node-location>
+                <server-node-location>
+                <FullNameNodeInfoList>
+                    <nameParts>
+                    <FullNameNodeInfo typeNode="schema" nameNode="schema2"/>
+                    <FullNameNodeInfo typeNode="table" nameNode="table2"/>
+                    </nameParts>
+                </FullNameNodeInfoList>
+                </server-node-location>
+                <server-node-location>
+                <FullNameNodeInfoList>
+                    <nameParts>
+                    <FullNameNodeInfo typeNode="schema" nameNode="schema3"/>
+                    <FullNameNodeInfo typeNode="table" nameNode="table3"/>
+                    </nameParts>
+                </FullNameNodeInfoList>
+                </server-node-location>
+            </relations>
+            </ProjectModel>
+        </instances>
+        </tree>`
+        const isValidMetadata = await validateSQLMetadataFile(sampleFileContents, { tabID: 'abc123' })
+        assert.strictEqual(isValidMetadata, true)
+        assert.strictEqual(transformByQState.getSourceDB(), DB.ORACLE)
+        assert.strictEqual(transformByQState.getTargetDB(), DB.AURORA_POSTGRESQL)
+        assert.strictEqual(transformByQState.getSourceServerName(), 'sample.rds.amazonaws.com')
+        const expectedSchemaOptions = ['SCHEMA1', 'SCHEMA2', 'SCHEMA3']
+        expectedSchemaOptions.forEach((schema) => {
+            assert(transformByQState.getSchemaOptions().has(schema))
+        })
+    })
+
+    it(`WHEN validateMetadataFile on .sct file with unsupported source DB THEN fails validation`, async function () {
+        const sampleFileContents = `<?xml version="1.0" encoding="UTF-8"?>
+        <tree>
+        <instances>
+            <ProjectModel>
+            <entities>
+                <sources>
+                <DbServer vendor="not-oracle" name="sample.rds.amazonaws.com">
+                </DbServer>
+                </sources>
+                <targets>
+                <DbServer vendor="aurora_postgresql" />
+                </targets>
+            </entities>
+            <relations>
+                <server-node-location>
+                <FullNameNodeInfoList>
+                    <nameParts>
+                    <FullNameNodeInfo typeNode="schema" nameNode="schema1"/>
+                    <FullNameNodeInfo typeNode="table" nameNode="table1"/>
+                    </nameParts>
+                </FullNameNodeInfoList>
+                </server-node-location>
+                <server-node-location>
+                <FullNameNodeInfoList>
+                    <nameParts>
+                    <FullNameNodeInfo typeNode="schema" nameNode="schema2"/>
+                    <FullNameNodeInfo typeNode="table" nameNode="table2"/>
+                    </nameParts>
+                </FullNameNodeInfoList>
+                </server-node-location>
+                <server-node-location>
+                <FullNameNodeInfoList>
+                    <nameParts>
+                    <FullNameNodeInfo typeNode="schema" nameNode="schema3"/>
+                    <FullNameNodeInfo typeNode="table" nameNode="table3"/>
+                    </nameParts>
+                </FullNameNodeInfoList>
+                </server-node-location>
+            </relations>
+            </ProjectModel>
+        </instances>
+        </tree>`
+        const isValidMetadata = await validateSQLMetadataFile(sampleFileContents, { tabID: 'abc123' })
+        assert.strictEqual(isValidMetadata, false)
+    })
+
+    it(`WHEN validateMetadataFile on .sct file with unsupported target DB THEN fails validation`, async function () {
+        const sampleFileContents = `<?xml version="1.0" encoding="UTF-8"?>
+        <tree>
+        <instances>
+            <ProjectModel>
+            <entities>
+                <sources>
+                <DbServer vendor="oracle" name="sample.rds.amazonaws.com">
+                </DbServer>
+                </sources>
+                <targets>
+                <DbServer vendor="not-postgresql" />
+                </targets>
+            </entities>
+            <relations>
+                <server-node-location>
+                <FullNameNodeInfoList>
+                    <nameParts>
+                    <FullNameNodeInfo typeNode="schema" nameNode="schema1"/>
+                    <FullNameNodeInfo typeNode="table" nameNode="table1"/>
+                    </nameParts>
+                </FullNameNodeInfoList>
+                </server-node-location>
+                <server-node-location>
+                <FullNameNodeInfoList>
+                    <nameParts>
+                    <FullNameNodeInfo typeNode="schema" nameNode="schema2"/>
+                    <FullNameNodeInfo typeNode="table" nameNode="table2"/>
+                    </nameParts>
+                </FullNameNodeInfoList>
+                </server-node-location>
+                <server-node-location>
+                <FullNameNodeInfoList>
+                    <nameParts>
+                    <FullNameNodeInfo typeNode="schema" nameNode="schema3"/>
+                    <FullNameNodeInfo typeNode="table" nameNode="table3"/>
+                    </nameParts>
+                </FullNameNodeInfoList>
+                </server-node-location>
+            </relations>
+            </ProjectModel>
+        </instances>
+        </tree>`
+        const isValidMetadata = await validateSQLMetadataFile(sampleFileContents, { tabID: 'abc123' })
+        assert.strictEqual(isValidMetadata, false)
     })
 })

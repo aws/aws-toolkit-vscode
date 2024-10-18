@@ -17,6 +17,7 @@ import { References } from '../client/codewhisperer'
 import globals from '../../shared/extensionGlobals'
 import { ChatControllerEventEmitters } from '../../amazonqGumby/chat/controller/controller'
 import { TransformationSteps } from '../client/codewhispereruserclient'
+import { Messenger } from '../../amazonqGumby/chat/controller/messenger/messenger'
 
 // unavoidable global variables
 interface VsCodeState {
@@ -303,6 +304,13 @@ export enum JDKVersion {
     UNSUPPORTED = 'UNSUPPORTED',
 }
 
+export enum DB {
+    ORACLE = 'ORACLE',
+    RDS_POSTGRESQL = 'RDS_POSTGRESQL', // TO-DO: these should all match what source/target vendor look like in sct-rules.json
+    AURORA_POSTGRESQL = 'AURORA_POSTGRESQL',
+    OTHER = 'OTHER',
+}
+
 export enum BuildSystem {
     Maven = 'Maven',
     Gradle = 'Gradle',
@@ -311,12 +319,22 @@ export enum BuildSystem {
 
 export class ZipManifest {
     sourcesRoot: string = 'sources/'
-    dependenciesRoot: string | undefined = 'dependencies/'
+    dependenciesRoot: string = 'dependencies/'
     buildLogs: string = 'build-logs.txt'
     version: string = '1.0'
     hilCapabilities: string[] = ['HIL_1pDependency_VersionUpgrade']
-    transformCapabilities: string[] = ['EXPLAINABILITY_V1']
+    transformCapabilities: string[] = ['EXPLAINABILITY_V1'] // TO-DO: for SQL conversions, maybe make this = []
     customBuildCommand: string = 'clean test'
+    requestedConversions: {
+        sqlConversion:
+            | {
+                  source: string | undefined
+                  target: string | undefined
+                  schema: string | undefined
+                  host: string | undefined
+              }
+            | undefined
+    } = { sqlConversion: undefined }
 }
 
 export interface IHilZipManifestParams {
@@ -377,6 +395,18 @@ export class TransformByQState {
 
     private customBuildCommand: string = ''
 
+    private sourceDB: DB | undefined = undefined
+
+    private targetDB: DB | undefined = undefined
+
+    private schema: string = ''
+
+    private schemaOptions: Set<string> = new Set()
+
+    private sourceServerName: string = ''
+
+    private metadataPathSQL: string = ''
+
     private planFilePath: string = ''
     private summaryFilePath: string = ''
     private preBuildLogFilePath: string = ''
@@ -401,6 +431,7 @@ export class TransformByQState {
     private javaHome: string | undefined = undefined
 
     private chatControllers: ChatControllerEventEmitters | undefined = undefined
+    private chatMessenger: Messenger | undefined = undefined
 
     private dependencyFolderInfo: FolderInfo | undefined = undefined
 
@@ -464,6 +495,30 @@ export class TransformByQState {
         return this.targetJDKVersion
     }
 
+    public getSourceDB() {
+        return this.sourceDB
+    }
+
+    public getTargetDB() {
+        return this.targetDB
+    }
+
+    public getSchema() {
+        return this.schema
+    }
+
+    public getSchemaOptions() {
+        return this.schemaOptions
+    }
+
+    public getSourceServerName() {
+        return this.sourceServerName
+    }
+
+    public getMetadataPathSQL() {
+        return this.metadataPathSQL
+    }
+
     public getStatus() {
         return this.transformByQState
     }
@@ -518,6 +573,10 @@ export class TransformByQState {
 
     public getChatControllers() {
         return this.chatControllers
+    }
+
+    public getChatMessenger() {
+        return this.chatMessenger
     }
 
     public getDependencyFolderInfo(): FolderInfo | undefined {
@@ -588,6 +647,30 @@ export class TransformByQState {
         this.targetJDKVersion = version
     }
 
+    public setSourceDB(db: DB) {
+        this.sourceDB = db
+    }
+
+    public setTargetDB(db: DB) {
+        this.targetDB = db
+    }
+
+    public setSchema(schema: string) {
+        this.schema = schema
+    }
+
+    public setSchemaOptions(schemaOptions: Set<string>) {
+        this.schemaOptions = schemaOptions
+    }
+
+    public setSourceServerName(serverName: string) {
+        this.sourceServerName = serverName
+    }
+
+    public setMetadataPathSQL(path: string) {
+        this.metadataPathSQL = path
+    }
+
     public setPlanFilePath(filePath: string) {
         this.planFilePath = filePath
     }
@@ -636,6 +719,10 @@ export class TransformByQState {
         this.chatControllers = controllers
     }
 
+    public setChatMessenger(messenger: Messenger) {
+        this.chatMessenger = messenger
+    }
+
     public setDependencyFolderInfo(folderInfo: FolderInfo) {
         this.dependencyFolderInfo = folderInfo
     }
@@ -666,6 +753,13 @@ export class TransformByQState {
         this.jobFailureErrorChatMessage = undefined
         this.jobFailureMetadata = ''
         this.payloadFilePath = ''
+        this.metadataPathSQL = ''
+        this.sourceJDKVersion = undefined
+        this.targetJDKVersion = JDKVersion.JDK17
+        this.sourceDB = undefined
+        this.targetDB = undefined
+        this.sourceServerName = ''
+        this.schemaOptions.clear()
         this.errorLog = ''
         this.customBuildCommand = ''
         this.intervalId = undefined
