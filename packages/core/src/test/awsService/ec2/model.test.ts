@@ -13,6 +13,8 @@ import { ToolkitError } from '../../../shared/errors'
 import { IAM } from 'aws-sdk'
 import { SshKeyPair } from '../../../awsService/ec2/sshKeyPair'
 import { DefaultIamClient } from '../../../shared/clients/iamClient'
+import path from 'path'
+import { fs, globals } from '../../../shared'
 
 describe('Ec2ConnectClient', function () {
     let client: Ec2ConnectionManager
@@ -132,17 +134,19 @@ describe('Ec2ConnectClient', function () {
         it('calls the sdk with the proper parameters', async function () {
             const sendCommandStub = sinon.stub(SsmClient.prototype, 'sendCommandAndWait')
 
-            sinon.stub(SshKeyPair, 'generateSshKeyPair')
-            sinon.stub(SshKeyPair.prototype, 'getPublicKey').resolves('test-key')
-
             const testSelection = {
                 instanceId: 'test-id',
                 region: 'test-region',
             }
-            const mockKeys = await SshKeyPair.getSshKeyPair('fakeDir', 30000)
-            await client.sendSshKeyToInstance(testSelection, mockKeys, 'test-user')
+            const temporaryDirectory = path.join(globals.context.globalStorageUri.fsPath, 'ModelTests')
+            await fs.mkdir(temporaryDirectory)
+
+            const keys = await SshKeyPair.getSshKeyPair(path.join(temporaryDirectory, 'key'), 30000)
+            await client.sendSshKeyToInstance(testSelection, keys, 'test-user')
             sinon.assert.calledWith(sendCommandStub, testSelection.instanceId, 'AWS-RunShellScript')
             sinon.restore()
+
+            await fs.delete(temporaryDirectory, { force: true, recursive: true })
         })
     })
 

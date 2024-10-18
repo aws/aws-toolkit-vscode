@@ -21,7 +21,7 @@ describe('SshKeyUtility', async function () {
     let clock: InstalledClock
 
     before(async function () {
-        // Setup a temporary directory inside of globalStorage since keys need to be in dir controlled by toolkit.
+        // Setup a temporary directory inside of globalStorage since keys need to be in globalStorage subdir
         temporaryDirectory = path.join(globals.context.globalStorageUri.fsPath, 'SshKeyUtilityTests')
         await fs.mkdir(temporaryDirectory)
 
