@@ -22,12 +22,6 @@ import { ChatSessionManager } from '../../../amazonqGumby/chat/storages/chatSess
 import { setContext } from '../../../shared/vscode/setContext'
 import * as codeWhisperer from '../../client/codewhisperer'
 
-type PatchDescription = {
-    name: string
-    fileName: string
-    isSuccessful: boolean
-}
-
 export abstract class ProposedChangeNode {
     abstract readonly resourcePath: string
 
@@ -161,7 +155,7 @@ export class DiffModel {
      * @param pathToWorkspace Path to the project that was transformed
      * @returns List of nodes containing the paths of files that were modified, added, or removed
      */
-    public parseDiff(pathToDiff: string, pathToWorkspace: string, diffDescription: PatchDescription): PatchFileNode {
+    public parseDiff(pathToDiff: string, pathToWorkspace: string, diffDescription: PatchInfo): PatchFileNode {
         this.patchFileNodes = []
         const diffContents = fs.readFileSync(pathToDiff, 'utf8')
 
@@ -248,9 +242,6 @@ export class DiffModel {
 
     public clearChanges() {
         this.patchFileNodes = []
-        // transformByQState.setSummaryFilePath('')
-        // transformByQState.setProjectCopyFilePath('')
-        // transformByQState.setResultArchiveFilePath('')
     }
 }
 
@@ -327,7 +318,7 @@ export class ProposedTransformationExplorer {
                 getLogger().error(err)
             } else {
                 files.forEach((file) => {
-                    const filePath = path.join(path.join(pathContainingArchive, 'patch'), file)
+                    const filePath = path.join(pathContainingArchive, 'patch', file)
                     if (file.endsWith('.patch')) {
                         patchFiles.push(filePath)
                     }
@@ -338,7 +329,7 @@ export class ProposedTransformationExplorer {
         const pathContainingPatchFileDescriptions = path.join(pathContainingArchive, 'patch', 'diff.json')
 
         const jsonData = fs.readFileSync(pathContainingPatchFileDescriptions, 'utf-8')
-        const patchFilesDescriptions: PatchDescription[] = JSON.parse(jsonData)
+        const patchFilesDescriptions: PatchInfo[] = JSON.parse(jsonData)
 
         const reset = async () => {
             await setContext('gumby.transformationProposalReviewInProgress', false)
@@ -353,6 +344,7 @@ export class ProposedTransformationExplorer {
             }
 
             diffModel.clearChanges()
+            diffModel.currentPatchIndex = 0
             transformByQState.setSummaryFilePath('')
             transformByQState.setProjectCopyFilePath('')
             transformByQState.setResultArchiveFilePath('')
@@ -446,7 +438,7 @@ export class ProposedTransformationExplorer {
                 // const zip = new AdmZip(pathToArchive)
                 // zip.extractAllTo(pathContainingArchive)
 
-                getLogger().info('descriptions', patchFilesDescriptions.toString())
+                //Because multiple patches are returned once the ZIP is downloaded, we want to show the first one to start
                 diffModel.parseDiff(patchFiles[0], transformByQState.getProjectPath(), patchFilesDescriptions[0])
 
                 await setContext('gumby.reviewState', TransformByQReviewStatus.InReview)
@@ -508,7 +500,8 @@ export class ProposedTransformationExplorer {
             diffModel.saveChanges()
             telemetry.ui_click.emit({ elementId: 'transformationHub_acceptChanges' })
             void vscode.window.showInformationMessage(CodeWhispererConstants.changesAppliedNotification)
-            if (!diffModel.currentPatchIndex) {
+            //We do this to ensure that the changesAppliedChatMessage is only sent to user when they accept the first diff.patch
+            if (diffModel.currentPatchIndex === 0) {
                 transformByQState.getChatControllers()?.transformationFinished.fire({
                     message: CodeWhispererConstants.changesAppliedChatMessage,
                     tabID: ChatSessionManager.Instance.getSession().tabID,
@@ -540,7 +533,6 @@ export class ProposedTransformationExplorer {
 
         vscode.commands.registerCommand('aws.amazonq.transformationHub.reviewChanges.rejectChanges', async () => {
             diffModel.rejectChanges()
-            diffModel.currentPatchIndex = 0
             await reset()
             telemetry.ui_click.emit({ elementId: 'transformationHub_rejectChanges' })
 
