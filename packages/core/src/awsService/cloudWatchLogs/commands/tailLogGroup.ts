@@ -73,8 +73,8 @@ async function handleSessionStream(
 ) {
     try {
         for await (const event of stream) {
-            if (event.sessionUpdate !== undefined) {
-                const formattedLogEvents = event.sessionUpdate.sessionResults!.map<string>((logEvent) =>
+            if (event.sessionUpdate !== undefined && event.sessionUpdate.sessionResults !== undefined) {
+                const formattedLogEvents = event.sessionUpdate.sessionResults.map<string>((logEvent) =>
                     formatLogEvent(logEvent)
                 )
                 if (formattedLogEvents.length !== 0) {
