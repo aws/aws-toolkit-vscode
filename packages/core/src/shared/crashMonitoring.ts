@@ -60,8 +60,8 @@ const className = 'CrashMonitoring'
  *   - To mitigate this we do not run crash reporting on machines that we detect have a flaky filesystem
  */
 export class CrashMonitoring {
-    protected heartbeat: Heartbeat | undefined
-    protected crashChecker: CrashChecker | undefined
+    protected heartbeat: Heartbeat
+    protected crashChecker: CrashChecker
 
     constructor(
         private readonly state: FileSystemState,
@@ -69,7 +69,13 @@ export class CrashMonitoring {
         private readonly isDevMode: boolean,
         private readonly isAutomation: boolean,
         private readonly devLogger: Logger | undefined
-    ) {}
+    ) {
+        this.heartbeat = new Heartbeat(this.state, this.checkInterval, this.isDevMode)
+        this.heartbeat.onFailure(() => this.cleanup())
+
+        this.crashChecker = new CrashChecker(this.state, this.checkInterval, this.isDevMode, this.devLogger)
+        this.crashChecker.onFailure(() => this.cleanup())
+    }
 
     static #didTryCreate = false
     static #instance: CrashMonitoring | undefined
@@ -111,12 +117,6 @@ export class CrashMonitoring {
         }
 
         try {
-            this.heartbeat = new Heartbeat(this.state, this.checkInterval, this.isDevMode)
-            this.heartbeat.onFailure(() => this.cleanup())
-
-            this.crashChecker = new CrashChecker(this.state, this.checkInterval, this.isDevMode, this.devLogger)
-            this.crashChecker.onFailure(() => this.cleanup())
-
             await this.heartbeat.start()
             await this.crashChecker.start()
         } catch (error) {
@@ -135,8 +135,8 @@ export class CrashMonitoring {
     /** Stop the Crash Monitoring process, signifying a graceful shutdown */
     public async shutdown() {
         try {
-            this.crashChecker?.cleanup()
-            await this.heartbeat?.shutdown()
+            this.crashChecker.cleanup()
+            await this.heartbeat.shutdown()
         } catch (error) {
             try {
                 // This probably wont emit in time before shutdown, but may be written to the logs
@@ -150,8 +150,8 @@ export class CrashMonitoring {
     }
 
     public async cleanup() {
-        this.crashChecker?.cleanup()
-        await this.heartbeat?.shutdown()
+        this.crashChecker.cleanup()
+        await this.heartbeat.shutdown()
     }
 }
 
@@ -214,13 +214,16 @@ class CrashChecker {
     private intervalRef: NodeJS.Timer | undefined
     private _onFailure = new vscode.EventEmitter<void>()
     public onFailure = this._onFailure.event
+    public timeLag: TimeLag
 
     constructor(
         private readonly state: FileSystemState,
         private readonly checkInterval: number,
         private readonly isDevMode: boolean,
         private readonly devLogger: Logger | undefined
-    ) {}
+    ) {
+        this.timeLag = new TimeLag(this.checkInterval)
+    }
 
     public async start() {
         {
@@ -231,10 +234,26 @@ class CrashChecker {
                 tryCheckCrash(this.state, this.checkInterval, this.isDevMode, this.devLogger)
             )
 
+            this.timeLag.init()
+
             // check on an interval
             this.intervalRef = globals.clock.setInterval(async () => {
                 try {
-                    await tryCheckCrash(this.state, this.checkInterval, this.isDevMode, this.devLogger)
+                    // Due to sleep+wake the heartbeat has not been sent consistently. Skip 1 crash check interval
+                    // to allow for a new heartbeat to be sent
+                    if (this.timeLag.didLag()) {
+                        this.devLogger?.warn('crashMonitoring: LAG detected time lag and skipped a crash check')
+                        telemetry.function_call.emit({
+                            className: className,
+                            functionName: 'timeLag',
+                            result: 'Succeeded',
+                            duration: this.timeLag.getLag(), // How much the lag actually was
+                        })
+                    } else {
+                        await tryCheckCrash(this.state, this.checkInterval, this.isDevMode, this.devLogger)
+                    }
+
+                    this.timeLag.updateLastExecution()
                 } catch (e) {
                     emitFailure({ functionName: 'checkCrashInterval', error: e })
 
@@ -320,6 +339,43 @@ class CrashChecker {
 }
 
 /**
+ * Helper class to detect when an interval does not execute at the expected cadence.
+ * It works by calculating the time diff between interval executions, indicating a lag if this diff
+ * is greater than the expected interval.
+ *
+ * When the computer goes to sleep, intervals do not run. So when the computer wakes it will
+ * pick up where it left off. We have cases where we want to detect this.
+ *
+ * TODO: Merge this in with the Interval class so that it comes for free with it.
+ */
+class TimeLag {
+    private lastExecution: number = 0
+
+    constructor(private readonly interval: number) {}
+
+    /** Call this right before the interval is defined */
+    public init() {
+        this.updateLastExecution()
+    }
+
+    /** Call this at the beginning of each interval execution to determine if a lag was detected */
+    public didLag() {
+        const buffer = 10_000 // accounts for the actual work done in an interval
+        return this.getLag() > this.interval + buffer
+    }
+
+    /** Get the time diff between the last interval execution and now */
+    public getLag() {
+        return globals.clock.Date.now() - this.lastExecution
+    }
+
+    /** Call this at the end of your interval callback */
+    public updateLastExecution() {
+        this.lastExecution = globals.clock.Date.now()
+    }
+}
+
+/**
  * We define this externally so that we have a single source of truth for the contructor args.
  * Ideally we'd use ConstructorParameters, but it does not work when the constructor is protected.
  */
@@ -385,12 +441,7 @@ export class FileSystemState {
      */
     public async init() {
         // IMPORTANT: do not run crash reporting on unstable filesystem to reduce invalid crash data
-        //
-        // NOTE: Emits a metric to know how many clients we skipped
-        await telemetry.function_call.run(async (span) => {
-            span.record({ className, functionName: 'FileSystemStateValidation' })
-            await withFailCtx('validateFileSystemStability', () => throwOnUnstableFileSystem())
-        })
+        await withFailCtx('validateFileSystemStability', () => throwOnUnstableFileSystem())
 
         // Clear the state if the user did something like a computer restart
         if (await this.deps.isStateStale()) {

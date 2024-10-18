@@ -19,8 +19,12 @@ class TestCrashMonitoring extends CrashMonitoring {
     }
     /** Imitates an extension crash */
     public async crash() {
-        this.crashChecker?.testCrash()
-        this.heartbeat?.testCrash()
+        this.crashChecker.testCrash()
+        this.heartbeat.testCrash()
+    }
+
+    public getTimeLag() {
+        return this.crashChecker.timeLag
     }
 }
 
@@ -185,6 +189,32 @@ export const crashMonitoringTest = async () => {
         await awaitIntervals(oneInterval * 3)
 
         assertCrashedExtensions(latestCrashedExts)
+    })
+
+    it('does not check for crashes when there is a time lag', async function () {
+        // This test handles the case for a users computer doing a sleep+wake and
+        // then a crash was incorrectly reported since a new heartbeat could not be sent in time
+
+        // Load up a crash
+        const ext0 = await makeTestExtension(0)
+        await ext0.ext.start()
+        await ext0.ext.crash()
+
+        const ext1 = await makeTestExtension(1)
+        // Indicate that we have a time lag, and until it returns false
+        // we will skip crash checking
+        const didLagStub = sandbox.stub(ext1.ext.getTimeLag(), 'didLag')
+        didLagStub.returns(true)
+        await ext1.ext.start()
+
+        // Since we have a time lag the crash checker will not run
+        await awaitIntervals(oneInterval * 2)
+        assertCrashedExtensions([])
+
+        // Now that the time lag is true, we will check for a crash
+        didLagStub.returns(false)
+        await awaitIntervals(oneInterval)
+        assertCrashedExtensions([ext0])
     })
 
     /**
