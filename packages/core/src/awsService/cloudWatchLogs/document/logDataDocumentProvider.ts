@@ -5,8 +5,8 @@
 import * as vscode from 'vscode'
 import { CloudWatchLogsGroupInfo, LogDataRegistry, UriString } from '../registry/logDataRegistry'
 import { getLogger } from '../../../shared/logger'
-import { isCwlUri } from '../cloudWatchLogsUtils'
 import { generateTextFromLogEvents, LineToLogStreamMap } from './textContent'
+import { cwlUriSchema } from '../cloudWatchLogsUtils'
 
 export class LogDataDocumentProvider implements vscode.TextDocumentContentProvider {
     /** Resolves the correct {@link LineToLogStreamMap} instance for a given URI */
@@ -26,7 +26,7 @@ export class LogDataDocumentProvider implements vscode.TextDocumentContentProvid
     }
 
     public provideTextDocumentContent(uri: vscode.Uri): string {
-        if (!isCwlUri(uri)) {
+        if (!cwlUriSchema.isValid(uri)) {
             throw new Error(`Uri is not a CWL Uri, so no text can be provided: ${uri.toString()}`)
         }
         const events = this.registry.fetchCachedLogEvents(uri)

@@ -2,6 +2,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
+import * as vscode from 'vscode'
 import { ExtContext } from '../../shared/extensions'
 import { Commands } from '../../shared/vscode/commands2'
 import { telemetry } from '../../shared/telemetry/telemetry'
@@ -15,10 +16,16 @@ import {
     startInstance,
     stopInstance,
     refreshExplorer,
+    openLogDocument,
     linkToLaunchInstance,
 } from './commands'
+import { ec2LogsScheme } from '../../shared/constants'
+import { Ec2LogDocumentProvider } from './ec2LogDocumentProvider'
 
 export async function activate(ctx: ExtContext): Promise<void> {
+    ctx.extensionContext.subscriptions.push(
+        vscode.workspace.registerTextDocumentContentProvider(ec2LogsScheme, new Ec2LogDocumentProvider())
+    )
     ctx.extensionContext.subscriptions.push(
         Commands.register('aws.ec2.openTerminal', async (node?: Ec2InstanceNode) => {
             await telemetry.ec2_connectToInstance.run(async (span) => {
@@ -29,6 +36,9 @@ export async function activate(ctx: ExtContext): Promise<void> {
 
         Commands.register('aws.ec2.copyInstanceId', async (node: Ec2InstanceNode) => {
             await copyTextCommand(node, 'id')
+        }),
+        Commands.register('aws.ec2.viewLogs', async (node?: Ec2InstanceNode) => {
+            await openLogDocument(node)
         }),
 
         Commands.register('aws.ec2.openRemoteConnection', async (node?: Ec2Node) => {
