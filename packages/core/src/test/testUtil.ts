@@ -620,7 +620,7 @@ export function setEnv(newEnv: NodeJS.ProcessEnv): void {
 }
 
 export function readEnv(): NodeJS.ProcessEnv {
-    return process.env
+    return { ...process.env }
 }
 
 export function envWithNewPath(newPath: string): NodeJS.ProcessEnv {
