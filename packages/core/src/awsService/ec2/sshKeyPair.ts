@@ -29,10 +29,10 @@ export class SshKeyPair {
     }
 
     public static async getSshKeyPair(keyPath: string, lifetime: number) {
-        const validKey = SshKeyPair.isValidKeyPath(keyPath)
-        if (!validKey) {
-            throw new ToolkitError(`ec2: unable to generate key outside of global storage in path ${keyPath}`)
-        }
+        SshKeyPair.assertValidKeypath(
+            keyPath,
+            `ec2: unable to generate key outside of global storage in path ${keyPath}`
+        )
         await SshKeyPair.generateSshKeyPair(keyPath)
         return new SshKeyPair(keyPath, lifetime)
     }
@@ -40,6 +40,12 @@ export class SshKeyPair {
     private static isValidKeyPath(keyPath: string): boolean {
         const relative = path.relative(globals.context.globalStorageUri.fsPath, keyPath)
         return relative !== undefined && !relative.startsWith('..') && !path.isAbsolute(relative)
+    }
+
+    private static assertValidKeypath(keyPath: string, message: string): void | never {
+        if (!SshKeyPair.isValidKeyPath(keyPath)) {
+            throw new ToolkitError(message)
+        }
     }
 
     public static async generateSshKeyPair(keyPath: string): Promise<void> {
@@ -82,6 +88,10 @@ export class SshKeyPair {
     }
 
     public async delete(): Promise<void> {
+        SshKeyPair.assertValidKeypath(
+            this.keyPath,
+            `ec2: keyPath became invalid after creation, not deleting key at ${this.keyPath}`
+        )
         await fs.delete(this.keyPath)
         await fs.delete(this.publicKeyPath)
 
