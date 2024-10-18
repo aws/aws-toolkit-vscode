@@ -55,7 +55,7 @@ describe('pathFind', function () {
 
         it('first tries ssh in $PATH', async function () {
             const workspace = await testutil.createTestWorkspaceFolder()
-            const fakeSshPath = path.join(workspace.uri.fsPath, `ssh${isWin() ? '.cmd' : ''}`)
+            const fakeSshPath = path.join(workspace.uri.fsPath, `ssh`)
 
             testutil.setEnv(testutil.envWithNewPath(workspace.uri.fsPath))
             const firstResult = await findSshPath(false)
@@ -70,7 +70,7 @@ describe('pathFind', function () {
 
         it('only returns executable ssh path', async function () {
             const workspace = await testutil.createTestWorkspaceFolder()
-            const fakeSshPath = path.join(workspace.uri.fsPath, `ssh${isWin() ? '.cmd' : ''}`)
+            const fakeSshPath = path.join(workspace.uri.fsPath, `ssh`)
             await fs.writeFile(fakeSshPath, 'this is not executable')
 
             testutil.setEnv(testutil.envWithNewPath(workspace.uri.fsPath))
