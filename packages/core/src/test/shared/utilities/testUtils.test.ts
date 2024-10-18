@@ -31,7 +31,7 @@ describe('writeEnv', function () {
 describe('createExecutableFile', function () {
     it('creates a file that can be executes in a child process', async function () {
         const tempDir = await createTestWorkspaceFolder()
-        const filePath = path.join(tempDir.uri.fsPath, `exec${isWin() ? '.exe' : ''}`)
+        const filePath = path.join(tempDir.uri.fsPath, `exec${isWin() ? '.cmd' : ''}`)
         await createExecutableFile(filePath, '')
 
         const proc = new ChildProcess(filePath)
