@@ -70,7 +70,7 @@
     },
     "dependencies": {
         "net-browserify": "^0.2.4",
-        "@types/node": "^22.7.5",
+        "@types/node": "^18.19.55",
         "vscode-nls": "^5.2.0",
         "vscode-nls-dev": "^4.0.4"
     }
