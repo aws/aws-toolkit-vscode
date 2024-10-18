@@ -48,7 +48,7 @@ export type UtgStrategy = 'ByName' | 'ByContent'
 
 export type CrossFileStrategy = 'OpenTabs_BM25'
 
-export type SupplementalContextStrategy = CrossFileStrategy | UtgStrategy | 'Empty'
+export type SupplementalContextStrategy = CrossFileStrategy | UtgStrategy | 'Empty' | 'LSP'
 
 export interface CodeWhispererSupplementalContext {
     isUtg: boolean
