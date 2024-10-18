@@ -29,7 +29,6 @@ import { addTelemetryEnvVar } from '../../shared/sam/cli/samCliInvokerUtils'
 import { getProjectRoot, getSource } from '../../shared/sam/utils'
 import { telemetry } from '../../shared/telemetry'
 import { getParameters } from '../config/parameterUtils'
-import { filter } from '../../shared/utilities/collectionUtils'
 import { createInputBox } from '../../shared/ui/inputPrompter'
 import { getSpawnEnv } from '../../shared/env/resolveEnv'
 import * as CloudFormation from '../../shared/cloudformation/cloudformation'
@@ -306,18 +305,17 @@ export async function runDeploy(arg: any): Promise<DeployResult> {
         }
 
         const samTemplateParameters = await getParameters(params.template.uri)
+        if (samTemplateParameters.size > 0) {
+            const parameterNames = new Set<string>(samTemplateParameters.keys())
 
-        const requiredParameterNames = new Set<string>(
-            filter(samTemplateParameters.keys(), (name) => samTemplateParameters.get(name)!.required)
-        )
-
-        const paramsToSet: string[] = []
-        requiredParameterNames.forEach((name) => {
-            if (params[name]) {
-                paramsToSet.push(`ParameterKey=${name},ParameterValue=${params[name]}`)
-            }
-            deployFlags.push('--parameter-overrides', ...paramsToSet)
-        })
+            const paramsToSet: string[] = []
+            parameterNames.forEach((name) => {
+                if (params[name]) {
+                    paramsToSet.push(`ParameterKey=${name},ParameterValue=${params[name]}`)
+                }
+                deployFlags.push('--parameter-overrides', ...paramsToSet)
+            })
+        }
 
         try {
             const { path: samCliPath } = await getSamCliPathAndVersion()
