@@ -64,6 +64,7 @@ function parseCommand(section: Record<string, unknown>): Omit<Command, 'name'> {
 export enum SamConfigErrorCode {
     samNoConfigFound = 'samNoConfigFound',
     samConfigParseError = 'samConfigParseError',
+    samNoProjectRootFound = 'samNoProjectRootFound',
 }
 
 export class SamConfig {
@@ -90,7 +91,7 @@ export class SamConfig {
      */
     public static async fromProjectRoot(projectRoot: vscode.Uri) {
         if (!projectRoot) {
-            throw new ToolkitError('No project root found')
+            throw new ToolkitError('No project folder found', { code: SamConfigErrorCode.samNoProjectRootFound })
         }
         const uri = await getConfigFileUri(projectRoot)
         return this.fromConfigFileUri(uri)

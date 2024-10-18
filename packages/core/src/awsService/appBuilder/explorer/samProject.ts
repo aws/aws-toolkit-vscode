@@ -39,16 +39,18 @@ export async function getStackName(projectRoot: vscode.Uri): Promise<any> {
         const region = await samConfig.getCommandParam('global', 'region')
 
         return { stackName, region }
-    } catch (error) {
-        if (error instanceof ToolkitError) {
-            if (error.code === SamConfigErrorCode.samNoConfigFound) {
+    } catch (error: any) {
+        switch (error.code) {
+            case SamConfigErrorCode.samNoConfigFound:
                 getLogger().info('No stack name or region information available in samconfig.toml', error)
-            } else if (error.code === SamConfigErrorCode.samConfigParseError) {
+                break
+            case SamConfigErrorCode.samConfigParseError:
                 getLogger().error(`Error getting stack name or region information: ${error.message}`, error)
-                await showViewLogsMessage('Encounter an issue reading samconfig.toml')
-            }
+                void showViewLogsMessage('Encountered an issue reading samconfig.toml')
+                break
+            default:
+                getLogger().warn(`Error getting stack name or region information: ${error.message}`, error)
         }
-
         return {}
     }
 }
