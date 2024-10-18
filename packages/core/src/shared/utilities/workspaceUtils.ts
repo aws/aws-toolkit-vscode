@@ -582,7 +582,7 @@ export async function collectFilesForIndex(
                 continue
             }
 
-            const fileStat = await vscode.workspace.fs.stat(file)
+            const fileStat = await fs.stat(file)
             // ignore single file over 10 MB
             if (fileStat.size > 10 * 1024 * 1024) {
                 continue
