@@ -6,6 +6,7 @@
 import * as vscode from 'vscode'
 import { getLogger } from '../../shared/logger'
 import { runSamCliListResource } from '../../shared/sam/cli/samCliListResources'
+
 export interface StackResource {
     LogicalResourceId: string
     PhysicalResourceId: string
@@ -30,8 +31,8 @@ export async function getDeployedResources(params: any) {
 
 function parseSamListResourceOutput(output: any): StackResource[] {
     try {
-        if (Array.isArray(output) && Array.from(output).length === 0) {
-            // Handle empty array avoid parsing error
+        if ((Array.isArray(output) && output.length === 0) || '[]' === output) {
+            // Handle if the output is instance or stringify version of an empty array to avoid parsing error
             return []
         }
         return JSON.parse(output) as StackResource[]
