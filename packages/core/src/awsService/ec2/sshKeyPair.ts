@@ -2,12 +2,13 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { fs } from '../../shared'
+import { fs, globals } from '../../shared'
 import { ToolkitError } from '../../shared/errors'
 import { tryRun } from '../../shared/utilities/pathFind'
 import { Timeout } from '../../shared/utilities/timeoutUtils'
 import { findAsync } from '../../shared/utilities/collectionUtils'
 import { RunParameterContext } from '../../shared/utilities/processUtils'
+import path from 'path'
 
 type sshKeyType = 'rsa' | 'ed25519'
 
@@ -28,8 +29,16 @@ export class SshKeyPair {
     }
 
     public static async getSshKeyPair(keyPath: string, lifetime: number) {
+        if (!SshKeyPair.isValidKeyPath) {
+            throw new ToolkitError(`ec2: unable to generate key outside of global storage in path ${keyPath}`)
+        }
         await SshKeyPair.generateSshKeyPair(keyPath)
         return new SshKeyPair(keyPath, lifetime)
+    }
+
+    private static isValidKeyPath(keyPath: string): boolean {
+        const relative = path.relative(globals.context.globalStorageUri.fsPath, keyPath)
+        return relative !== undefined && !relative.startsWith('..') && !path.isAbsolute(relative)
     }
 
     public static async generateSshKeyPair(keyPath: string): Promise<void> {
