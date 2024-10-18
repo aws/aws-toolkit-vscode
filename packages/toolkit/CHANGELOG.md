@@ -1,3 +1,7 @@
+## 3.29.0 2024-10-17
+
+- **Bug Fix** Fix userCredentialsUtils.test.ts so it won't remove the actual aws config
+
 ## 3.28.0 2024-10-10
 
 - **Breaking Change** Bumping VS Code minimum version to 1.83.0
