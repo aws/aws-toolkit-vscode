@@ -19,7 +19,6 @@ import { mkdirSync, existsSync } from 'fs' // eslint-disable-line no-restricted-
 import { randomBytes } from 'crypto'
 import request from '../shared/request'
 import { stub } from 'sinon'
-import { isWin } from '../shared/vscode/env'
 
 const testTempDirs: string[] = []
 
@@ -625,5 +624,5 @@ export function readEnv(): NodeJS.ProcessEnv {
 }
 
 export function envWithNewPath(newPath: string): NodeJS.ProcessEnv {
-    return isWin() ? { ...process.env, Path: newPath } : { ...process.env, PATH: newPath }
+    return { ...process.env, PATH: newPath }
 }
