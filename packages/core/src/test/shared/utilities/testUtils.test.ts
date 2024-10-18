@@ -16,7 +16,7 @@ describe('envWithNewPath', function () {
     })
 })
 
-describe('writeEnv', function () {
+describe('setEnv', function () {
     it('modifies the node environment variables', function () {
         const originalEnv = readEnv()
         const fakePath = 'fakePath'
