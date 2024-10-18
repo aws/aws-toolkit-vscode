@@ -5,7 +5,10 @@
 
 import * as vscode from 'vscode'
 
-export function getAwsConsoleUrl(service: 'ecr' | 'cloudformation' | 'ec2-launch', region: string): vscode.Uri {
+export function getAwsConsoleUrl(
+    service: 'ecr' | 'cloudformation' | 'ec2-launch' | 'docdb',
+    region: string
+): vscode.Uri {
     switch (service) {
         case 'ecr':
             return vscode.Uri.parse(`https://${region}.console.aws.amazon.com/ecr/repositories?region=${region}`)
@@ -15,6 +18,8 @@ export function getAwsConsoleUrl(service: 'ecr' | 'cloudformation' | 'ec2-launch
             return vscode.Uri.parse(
                 `https://${region}.console.aws.amazon.com/ec2/home?region=${region}#LaunchInstances:`
             )
+        case 'docdb':
+            return vscode.Uri.parse(`https://${region}.console.aws.amazon.com/docdb/home?region=${region}`)
         default:
             throw Error()
     }
