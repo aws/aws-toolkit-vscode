@@ -44,7 +44,6 @@ export async function runSamCliListResource(
         })
 
         logAndThrowIfUnexpectedExitCode(childProcessResult, 0)
-
         return childProcessResult.stdout
     } catch (error: any) {
         const message = error.message
