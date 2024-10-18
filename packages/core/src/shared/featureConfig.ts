@@ -24,7 +24,7 @@ export class FeatureContext {
         public name: string,
         public variation: string,
         public value: FeatureValue
-    ) { }
+    ) {}
 }
 
 const featureConfigPollIntervalInMs = 30 * 60 * 1000 // 30 mins
@@ -32,7 +32,7 @@ const featureConfigPollIntervalInMs = 30 * 60 * 1000 // 30 mins
 export const Features = {
     customizationArnOverride: 'customizationArnOverride',
     dataCollectionFeature: 'IDEProjectContextDataCollection',
-    projectContextFeature: 'NewProjectContext',
+    projectContextFeature: 'ProjectContextV2',
     test: 'testFeature',
 } as const
 
@@ -157,8 +157,9 @@ export class FeatureConfigProvider {
                     globals.globalState.tryUpdate('aws.amazonq.workspaceIndexToggleOn', true)
                 }
             }
-            const projectContextFeatureValue = this.featureConfigs.get(Features.projectContextFeature)?.value.stringValue
-            if (projectContextFeatureValue) {
+            const projectContextFeatureValue = this.featureConfigs.get(Features.projectContextFeature)?.value
+                .stringValue
+            if (projectContextFeatureValue === 'TREATMENT') {
                 this._isNewProjectContextGroup = true
             }
         } catch (e) {
