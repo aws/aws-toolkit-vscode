@@ -72,26 +72,17 @@ describe('pathFind', function () {
             assert.strictEqual(secondResult, 'ssh')
         })
 
-        it('only returns valid executable ssh path (CI + Local Non-Windows)', async function () {
-            // In CI, we can assume Windows machines will have ssh.
-            if (!isCI() && isWin()) {
+        it('only returns valid executable ssh path (Non-Windows)', async function () {
+            if (isWin()) {
                 return
             }
-            // On local non-windows, we can overwrite path and create our own executable to find.
-            // On CI windows, we ensure executable exists in first path tried.
-            if (!isWin()) {
-                const workspace = await testutil.createTestWorkspaceFolder()
-                const fakeSshPath = path.join(workspace.uri.fsPath, `ssh`)
+            // On non-windows, we can overwrite path and create our own executable to find.
+            const workspace = await testutil.createTestWorkspaceFolder()
+            const fakeSshPath = path.join(workspace.uri.fsPath, `ssh`)
 
-                testutil.setEnv(testutil.envWithNewPath(workspace.uri.fsPath))
+            testutil.setEnv(testutil.envWithNewPath(workspace.uri.fsPath))
 
-                await testutil.createExecutableFile(fakeSshPath, '')
-            } else {
-                const expectedWindowsPath = 'C:/Windows/System32/OpenSSH/ssh.exe'
-                if (!(await fs.exists(expectedWindowsPath))) {
-                    await testutil.createExecutableFile(expectedWindowsPath, '')
-                }
-            }
+            await testutil.createExecutableFile(fakeSshPath, '')
 
             const ssh = await findSshPath(false)
             assert.ok(ssh)
@@ -100,11 +91,10 @@ describe('pathFind', function () {
         })
 
         it('caches result from previous runs (Non-Windows)', async function () {
-            // In CI, we can assume Windows machines will have ssh.
-            if (!isCI() && isWin()) {
+            if (isWin()) {
                 return
             }
-            // On local non-windows, we can overwrite path and create our own executable to find.
+            // On non-windows, we can overwrite path and create our own executable to find.
             const workspace = await testutil.createTestWorkspaceFolder()
             // We move the ssh to a temp directory temporarily to test if cache works.
             const tempLocation = path.join(workspace.uri.fsPath, 'temp-ssh')
@@ -123,6 +113,21 @@ describe('pathFind', function () {
             assert.strictEqual(ssh1, ssh2)
 
             await fs.rename(tempLocation, ssh1)
+        })
+
+        it('finds valid executable path (Windows CI)', async function () {
+            // Don't want to be messing with System32 on peoples local machines.
+            if (!isWin() || !isCI()) {
+                return
+            }
+            const expectedPathInCI = 'C:/Windows/System32/OpenSSH/ssh.exe'
+
+            if (!(await fs.exists(expectedPathInCI))) {
+                await testutil.createExecutableFile(expectedPathInCI, '')
+            }
+            const ssh = (await findSshPath(true))!
+            const result = await tryRun(ssh, [])
+            assert.ok(result)
         })
     })
 })
