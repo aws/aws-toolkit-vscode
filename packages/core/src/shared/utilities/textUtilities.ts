@@ -406,6 +406,9 @@ export function undefinedIfEmpty(str: string | undefined): string | undefined {
     return undefined
 }
 
+export function decodeBase64(base64Str: string): string {
+    return Buffer.from(base64Str, 'base64').toString()
+}
 /**
  * Extracts the file path and selection context from the message.
  *
