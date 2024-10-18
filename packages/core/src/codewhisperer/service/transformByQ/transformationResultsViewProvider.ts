@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import AdmZip from 'adm-zip'
+// import AdmZip from 'adm-zip'
 import os from 'os'
 import fs from 'fs' // eslint-disable-line no-restricted-imports
 import { parsePatch, applyPatches, ParsedDiff } from 'diff'
@@ -17,10 +17,16 @@ import { telemetry } from '../../../shared/telemetry/telemetry'
 import { CodeTransformTelemetryState } from '../../../amazonqGumby/telemetry/codeTransformTelemetryState'
 import { MetadataResult } from '../../../shared/telemetry/telemetryClient'
 import * as CodeWhispererConstants from '../../models/constants'
-import { createCodeWhispererChatStreamingClient } from '../../../shared/clients/codewhispererChatClient'
+// import { createCodeWhispererChatStreamingClient } from '../../../shared/clients/codewhispererChatClient'
 import { ChatSessionManager } from '../../../amazonqGumby/chat/storages/chatSession'
 import { setContext } from '../../../shared/vscode/setContext'
 import * as codeWhisperer from '../../client/codewhisperer'
+
+type PatchDescription = {
+    name: string
+    fileName: string
+    isSuccessful: boolean
+}
 
 export abstract class ProposedChangeNode {
     abstract readonly resourcePath: string
@@ -107,6 +113,17 @@ export class AddedChangeNode extends ProposedChangeNode {
     }
 }
 
+export class PatchFileNode {
+    readonly label: string
+    readonly patchFilePath: string
+    children: ProposedChangeNode[] = []
+
+    constructor(patchFilePath: string) {
+        this.patchFilePath = patchFilePath
+        this.label = path.basename(patchFilePath)
+    }
+}
+
 enum ReviewState {
     ToReview,
     Reviewed_Accepted,
@@ -114,7 +131,8 @@ enum ReviewState {
 }
 
 export class DiffModel {
-    changes: ProposedChangeNode[] = []
+    patchFileNodes: PatchFileNode[] = []
+    currentPatchIndex: number = 0
 
     /**
      * This function creates a copy of the changed files of the user's project so that the diff.patch can be applied to them
@@ -143,7 +161,8 @@ export class DiffModel {
      * @param pathToWorkspace Path to the project that was transformed
      * @returns List of nodes containing the paths of files that were modified, added, or removed
      */
-    public parseDiff(pathToDiff: string, pathToWorkspace: string): ProposedChangeNode[] {
+    public parseDiff(pathToDiff: string, pathToWorkspace: string, diffDescription: PatchDescription): PatchFileNode {
+        this.patchFileNodes = []
         const diffContents = fs.readFileSync(pathToDiff, 'utf8')
 
         if (!diffContents.trim()) {
@@ -184,7 +203,8 @@ export class DiffModel {
                 }
             },
         })
-        this.changes = changedFiles.flatMap((file) => {
+        const patchFileNode = new PatchFileNode(diffDescription.name)
+        patchFileNode.children = changedFiles.flatMap((file) => {
             /* ex. file.oldFileName = 'a/src/java/com/project/component/MyFile.java'
              * ex. file.newFileName = 'b/src/java/com/project/component/MyFile.java'
              * use substring(2) to ignore the 'a/' and 'b/'
@@ -202,24 +222,24 @@ export class DiffModel {
             }
             return []
         })
-
-        return this.changes
+        this.patchFileNodes.push(patchFileNode)
+        return patchFileNode
     }
 
     public getChanges() {
-        return this.changes
+        return this.patchFileNodes.flatMap((patchFileNode) => patchFileNode.children)
     }
 
     public getRoot() {
-        return this.changes[0]
+        return this.patchFileNodes.length > 0 ? this.patchFileNodes[0] : undefined
     }
 
     public saveChanges() {
-        this.changes.forEach((file) => {
-            file.saveChange()
+        this.patchFileNodes.forEach((patchFileNode) => {
+            patchFileNode.children.forEach((changeNode) => {
+                changeNode.saveChange()
+            })
         })
-
-        this.clearChanges()
     }
 
     public rejectChanges() {
@@ -227,11 +247,14 @@ export class DiffModel {
     }
 
     public clearChanges() {
-        this.changes = []
+        this.patchFileNodes = []
+        // transformByQState.setSummaryFilePath('')
+        // transformByQState.setProjectCopyFilePath('')
+        // transformByQState.setResultArchiveFilePath('')
     }
 }
 
-export class TransformationResultsProvider implements vscode.TreeDataProvider<ProposedChangeNode> {
+export class TransformationResultsProvider implements vscode.TreeDataProvider<ProposedChangeNode | PatchFileNode> {
     public static readonly viewType = 'aws.amazonq.transformationProposedChangesTree'
 
     private _onDidChangeTreeData: vscode.EventEmitter<any> = new vscode.EventEmitter<any>()
@@ -243,26 +266,49 @@ export class TransformationResultsProvider implements vscode.TreeDataProvider<Pr
         this._onDidChangeTreeData.fire(undefined)
     }
 
-    public getTreeItem(element: ProposedChangeNode): vscode.TreeItem {
-        const treeItem = {
-            resourceUri: vscode.Uri.file(element.resourcePath),
-            command: element.generateCommand(),
-            description: element.generateDescription(),
+    public getTreeItem(element: ProposedChangeNode | PatchFileNode): vscode.TreeItem {
+        if (element instanceof PatchFileNode) {
+            return {
+                label: element.label,
+                collapsibleState: vscode.TreeItemCollapsibleState.Collapsed,
+            }
+        } else {
+            return {
+                resourceUri: vscode.Uri.file(element.resourcePath),
+                command: element.generateCommand(),
+                description: element.generateDescription(),
+            }
         }
-        return treeItem
     }
 
-    public getChildren(element?: ProposedChangeNode): ProposedChangeNode[] | Thenable<ProposedChangeNode[]> {
-        return element ? Promise.resolve([]) : this.model.getChanges()
+    /*
+    Here we check if the element is a PatchFileNode instance. If it is, we return its 
+    children array, which contains ProposedChangeNode instances. This ensures that when the user expands a 
+    PatchFileNode (representing a diff.patch file), its children (proposed change nodes) are displayed as indented nodes under it.
+    */
+    public getChildren(
+        element?: ProposedChangeNode | PatchFileNode
+    ): (ProposedChangeNode | PatchFileNode)[] | Thenable<(ProposedChangeNode | PatchFileNode)[]> {
+        if (!element) {
+            return this.model.patchFileNodes
+        } else if (element instanceof PatchFileNode) {
+            return element.children
+        } else {
+            return Promise.resolve([])
+        }
     }
 
-    public getParent(element: ProposedChangeNode): ProposedChangeNode | undefined {
+    public getParent(element: ProposedChangeNode | PatchFileNode): PatchFileNode | undefined {
+        if (element instanceof ProposedChangeNode) {
+            const patchFileNode = this.model.patchFileNodes.find((p) => p.children.includes(element))
+            return patchFileNode
+        }
         return undefined
     }
 }
 
 export class ProposedTransformationExplorer {
-    private changeViewer: vscode.TreeView<ProposedChangeNode>
+    private changeViewer: vscode.TreeView<PatchFileNode>
 
     public static TmpDir = os.tmpdir()
 
@@ -272,6 +318,27 @@ export class ProposedTransformationExplorer {
         this.changeViewer = vscode.window.createTreeView(TransformationResultsProvider.viewType, {
             treeDataProvider: transformDataProvider,
         })
+
+        const pathContainingArchive = '/private/var/folders/mn/l6c4t6sd1jn7g4p4nb6wqhh80000gq/T/ExportResultArchive'
+
+        const patchFiles: string[] = []
+        fs.readdir(path.join(pathContainingArchive, 'patch'), (err, files) => {
+            if (err) {
+                getLogger().error(err)
+            } else {
+                files.forEach((file) => {
+                    const filePath = path.join(path.join(pathContainingArchive, 'patch'), file)
+                    if (file.endsWith('.patch')) {
+                        patchFiles.push(filePath)
+                    }
+                })
+            }
+        })
+
+        const pathContainingPatchFileDescriptions = path.join(pathContainingArchive, 'patch', 'diff.json')
+
+        const jsonData = fs.readFileSync(pathContainingPatchFileDescriptions, 'utf-8')
+        const patchFilesDescriptions: PatchDescription[] = JSON.parse(jsonData)
 
         const reset = async () => {
             await setContext('gumby.transformationProposalReviewInProgress', false)
@@ -321,15 +388,15 @@ export class ProposedTransformationExplorer {
         vscode.commands.registerCommand('aws.amazonq.transformationHub.reviewChanges.startReview', async () => {
             await setContext('gumby.reviewState', TransformByQReviewStatus.PreparingReview)
 
-            const pathToArchive = path.join(
-                ProposedTransformationExplorer.TmpDir,
-                transformByQState.getJobId(),
-                'ExportResultsArchive.zip'
-            )
-            let exportResultsArchiveSize = 0
+            // const pathToArchive = path.join(
+            //     ProposedTransformationExplorer.TmpDir,
+            //     transformByQState.getJobId(),
+            //     'ExportResultsArchive.zip'
+            // )
+            const exportResultsArchiveSize = 0
             let downloadErrorMessage = undefined
 
-            const cwStreamingClient = await createCodeWhispererChatStreamingClient()
+            // const cwStreamingClient = await createCodeWhispererChatStreamingClient()
             try {
                 await telemetry.codeTransform_downloadArtifact.run(async () => {
                     telemetry.record({
@@ -338,17 +405,17 @@ export class ProposedTransformationExplorer {
                         codeTransformJobId: transformByQState.getJobId(),
                     })
 
-                    await downloadExportResultArchive(
-                        cwStreamingClient,
-                        {
-                            exportId: transformByQState.getJobId(),
-                            exportIntent: ExportIntent.TRANSFORMATION,
-                        },
-                        pathToArchive
-                    )
+                    // await downloadExportResultArchive(
+                    //     cwStreamingClient,
+                    //     {
+                    //         exportId: transformByQState.getJobId(),
+                    //         exportIntent: ExportIntent.TRANSFORMATION,
+                    //     },
+                    //     pathToArchive
+                    // )
 
                     // Update downloaded artifact size
-                    exportResultsArchiveSize = (await fs.promises.stat(pathToArchive)).size
+                    // exportResultsArchiveSize = (await fs.promises.stat(pathToArchive)).size
 
                     telemetry.record({ codeTransformTotalByteSize: exportResultsArchiveSize })
                 })
@@ -369,20 +436,19 @@ export class ProposedTransformationExplorer {
                 getLogger().error(`CodeTransformation: ExportResultArchive error = ${downloadErrorMessage}`)
                 throw new Error('Error downloading diff')
             } finally {
-                cwStreamingClient.destroy()
+                // cwStreamingClient.destroy()
             }
 
             let deserializeErrorMessage = undefined
-            let pathContainingArchive = ''
             try {
                 // Download and deserialize the zip
-                pathContainingArchive = path.dirname(pathToArchive)
-                const zip = new AdmZip(pathToArchive)
-                zip.extractAllTo(pathContainingArchive)
-                diffModel.parseDiff(
-                    path.join(pathContainingArchive, ExportResultArchiveStructure.PathToDiffPatch),
-                    transformByQState.getProjectPath()
-                )
+                // pathContainingArchive = path.dirname(pathToArchive)
+                // const zip = new AdmZip(pathToArchive)
+                // zip.extractAllTo(pathContainingArchive)
+
+                getLogger().info('descriptions', patchFilesDescriptions.toString())
+                diffModel.parseDiff(patchFiles[0], transformByQState.getProjectPath(), patchFilesDescriptions[0])
+
                 await setContext('gumby.reviewState', TransformByQReviewStatus.InReview)
                 transformDataProvider.refresh()
                 transformByQState.setSummaryFilePath(
@@ -442,11 +508,24 @@ export class ProposedTransformationExplorer {
             diffModel.saveChanges()
             telemetry.ui_click.emit({ elementId: 'transformationHub_acceptChanges' })
             void vscode.window.showInformationMessage(CodeWhispererConstants.changesAppliedNotification)
-            transformByQState.getChatControllers()?.transformationFinished.fire({
-                message: CodeWhispererConstants.changesAppliedChatMessage,
-                tabID: ChatSessionManager.Instance.getSession().tabID,
-            })
-            await reset()
+            if (!diffModel.currentPatchIndex) {
+                transformByQState.getChatControllers()?.transformationFinished.fire({
+                    message: CodeWhispererConstants.changesAppliedChatMessage,
+                    tabID: ChatSessionManager.Instance.getSession().tabID,
+                })
+            }
+
+            // Load the next patch file
+            diffModel.currentPatchIndex++
+            if (diffModel.currentPatchIndex < patchFiles.length) {
+                const nextPatchFile = patchFiles[diffModel.currentPatchIndex]
+                const nextPatchFileDescription = patchFilesDescriptions[diffModel.currentPatchIndex]
+                diffModel.parseDiff(nextPatchFile, transformByQState.getProjectPath(), nextPatchFileDescription)
+                transformDataProvider.refresh()
+            } else {
+                // All patches have been applied, reset the state
+                await reset()
+            }
 
             telemetry.codeTransform_viewArtifact.emit({
                 codeTransformArtifactType: 'ClientInstructions',
@@ -461,6 +540,7 @@ export class ProposedTransformationExplorer {
 
         vscode.commands.registerCommand('aws.amazonq.transformationHub.reviewChanges.rejectChanges', async () => {
             diffModel.rejectChanges()
+            diffModel.currentPatchIndex = 0
             await reset()
             telemetry.ui_click.emit({ elementId: 'transformationHub_rejectChanges' })
 

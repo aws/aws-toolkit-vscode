@@ -661,6 +661,9 @@ export const windowsJavaHomeHelpChatMessage =
 export const macJavaVersionHomeHelpChatMessage = (version: number) =>
     `To find the JDK path, run the following command in a new terminal:  \`/usr/libexec/java_home -v ${version}\``
 
+export const macJava17HomeHelpChatMessage =
+    'To find the JDK path, run the following command in a new terminal:  `/usr/libexec/java_home -v 17`'
+
 export const linuxJavaHomeHelpChatMessage =
     'To find the JDK path, run the following command in a new terminal: `update-java-alternatives --list`'
 

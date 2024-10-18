@@ -10,10 +10,20 @@ import path from 'path'
 import { getTestResourceFilePath } from './amazonQGumbyUtil'
 import { fs } from 'aws-core-vscode/shared'
 
+type PatchDescription = {
+    name: string
+    fileName: string
+    isSuccessful: boolean
+}
+
 describe('DiffModel', function () {
     afterEach(() => {
         sinon.restore()
     })
+
+    const testDescription =
+        '{"name": "Added file", "fileName": "resources/files/addedFile.diffs", "isSuccessful": true}'
+    const parsedTestDescription: PatchDescription = JSON.parse(testDescription)
 
     it('WHEN parsing a diff patch where a file was added THEN returns an array representing the added file', async function () {
         const testDiffModel = new DiffModel()
@@ -29,10 +39,14 @@ describe('DiffModel', function () {
             return true
         })
 
-        testDiffModel.parseDiff(getTestResourceFilePath('resources/files/addedFile.diff'), workspacePath)
+        testDiffModel.parseDiff(
+            getTestResourceFilePath('resources/files/addedFile.diff'),
+            workspacePath,
+            parsedTestDescription
+        )
 
-        assert.strictEqual(testDiffModel.changes.length, 1)
-        const change = testDiffModel.changes[0]
+        assert.strictEqual(testDiffModel.patchFileNodes[0].children.length, 1)
+        const change = testDiffModel.patchFileNodes[0].children[0]
 
         assert.strictEqual(change instanceof AddedChangeNode, true)
     })
@@ -49,10 +63,14 @@ describe('DiffModel', function () {
             'This guide walks you through using Gradle to build a simple Java project.'
         )
 
-        testDiffModel.parseDiff(getTestResourceFilePath('resources/files/modifiedFile.diff'), workspacePath)
+        testDiffModel.parseDiff(
+            getTestResourceFilePath('resources/files/modifiedFile.diff'),
+            workspacePath,
+            parsedTestDescription
+        )
 
-        assert.strictEqual(testDiffModel.changes.length, 1)
-        const change = testDiffModel.changes[0]
+        assert.strictEqual(testDiffModel.patchFileNodes[0].children.length, 1)
+        const change = testDiffModel.patchFileNodes[0].children[0]
 
         assert.strictEqual(change instanceof ModifiedChangeNode, true)
 
