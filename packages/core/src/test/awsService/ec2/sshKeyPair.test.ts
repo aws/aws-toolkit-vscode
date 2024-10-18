@@ -135,12 +135,18 @@ describe('SshKeyUtility', async function () {
     })
 
     it('does not allow writing keys to non-global storage', async function () {
-        assert.throws(async () => SshKeyPair.getSshKeyPair('~/.ssh/someKey', 2000))
+        await assert.rejects(async () => await SshKeyPair.getSshKeyPair('~/.ssh/someKey', 2000))
 
-        assert.throws(async () => SshKeyPair.getSshKeyPair('/a/path/that/isnt/real/key', 2000))
+        await assert.rejects(async () => await SshKeyPair.getSshKeyPair('/a/path/that/isnt/real/key', 2000))
     })
 
-    it('checks path is still valid before deleting', async function () {})
+    it('checks the key path again before deleting', async function () {
+        let keyPath = path.join(globals.context.globalStorageUri.fsPath)
+        const keys = await SshKeyPair.getSshKeyPair(keyPath, 5000)
+        keyPath = '~/.ssh/aws-toolkit-test-key'
+        assert.ok(keys.getPrivateKeyPath(), keyPath)
+        await assert.rejects(async () => await keys.delete())
+    })
 
     describe('isDeleted', async function () {
         it('returns false if key files exist', async function () {

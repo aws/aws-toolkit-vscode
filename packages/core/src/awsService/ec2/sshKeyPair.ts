@@ -29,7 +29,8 @@ export class SshKeyPair {
     }
 
     public static async getSshKeyPair(keyPath: string, lifetime: number) {
-        if (!SshKeyPair.isValidKeyPath) {
+        const validKey = SshKeyPair.isValidKeyPath(keyPath)
+        if (!validKey) {
             throw new ToolkitError(`ec2: unable to generate key outside of global storage in path ${keyPath}`)
         }
         await SshKeyPair.generateSshKeyPair(keyPath)
