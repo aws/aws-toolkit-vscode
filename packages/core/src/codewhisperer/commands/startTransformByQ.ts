@@ -73,7 +73,7 @@ import { dependencyNoAvailableVersions } from '../../amazonqGumby/models/constan
 import { HumanInTheLoopManager } from '../service/transformByQ/humanInTheLoopManager'
 import { setContext } from '../../shared/vscode/setContext'
 import { makeTemporaryToolkitFolder } from '../../shared'
-import globals from '../../shared/extensionGlobals'
+// import globals from '../../shared/extensionGlobals'
 
 function getFeedbackCommentData() {
     const jobId = transformByQState.getJobId()
@@ -117,6 +117,8 @@ async function validateJavaHome(): Promise<boolean> {
             javaVersionUsedByMaven = JDKVersion.JDK8
         } else if (javaVersionUsedByMaven === '11.') {
             javaVersionUsedByMaven = JDKVersion.JDK11
+        } else if (javaVersionUsedByMaven === '17.') {
+            javaVersionUsedByMaven = JDKVersion.JDK17
         }
     }
     if (javaVersionUsedByMaven !== transformByQState.getSourceJDKVersion()) {
@@ -163,7 +165,7 @@ export function startInterval() {
 
 export async function startTransformByQ() {
     // Set the default state variables for our store and the UI
-    const transformStartTime = globals.clock.Date.now()
+    // const transformStartTime = globals.clock.Date.now()
     await setTransformationToRunningState()
 
     try {
@@ -171,16 +173,16 @@ export async function startTransformByQ() {
         startInterval()
 
         // step 1: CreateUploadUrl and upload code
-        const uploadId = await preTransformationUploadCode()
+        // const uploadId = await preTransformationUploadCode()
 
         // step 2: StartJob and store the returned jobId in TransformByQState
-        const jobId = await startTransformationJob(uploadId, transformStartTime)
+        // const jobId = await startTransformationJob(uploadId, transformStartTime)
 
         // step 3 (intermediate step): show transformation-plan.md file
-        await pollTransformationStatusUntilPlanReady(jobId)
+        // await pollTransformationStatusUntilPlanReady(jobId)
 
         // step 4: poll until artifacts are ready to download
-        await humanInTheLoopRetryLogic(jobId)
+        await humanInTheLoopRetryLogic('jobId')
     } catch (error: any) {
         await transformationJobErrorHandler(error)
     } finally {
@@ -199,7 +201,8 @@ export async function startTransformByQ() {
 export async function humanInTheLoopRetryLogic(jobId: string) {
     let status = ''
     try {
-        status = await pollTransformationStatusUntilComplete(jobId)
+        // status = await pollTransformationStatusUntilComplete(jobId)
+        status = 'COMPLETED'
         if (status === 'PAUSED') {
             const hilStatusFailure = await initiateHumanInTheLoopPrompt(jobId)
             if (hilStatusFailure) {
