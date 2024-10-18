@@ -7,7 +7,7 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
-import { isLogStreamUri, parseCloudWatchLogsUri } from '../cloudWatchLogsUtils'
+import { cwlUriSchema, isLogStreamUri } from '../cloudWatchLogsUtils'
 import { copyToClipboard } from '../../../shared/utilities/messages'
 
 export async function copyLogResource(uri?: vscode.Uri): Promise<void> {
@@ -20,7 +20,7 @@ export async function copyLogResource(uri?: vscode.Uri): Promise<void> {
                 throw new Error('no active text editor, or undefined URI')
             }
         }
-        const parsedUri = parseCloudWatchLogsUri(uri)
+        const parsedUri = cwlUriSchema.parse(uri)
         const resourceName = isLogStreamUri(uri) ? parsedUri.logGroupInfo.streamName : parsedUri.logGroupInfo.groupName
 
         if (!resourceName) {

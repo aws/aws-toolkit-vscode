@@ -131,6 +131,7 @@ export const CLOUDWATCH_LOGS_SCHEME = 'aws-cwl' // eslint-disable-line @typescri
 export const CLOUDWATCH_LOGS_LIVETAIL_SCHEME = 'aws-cwl-lt' // eslint-disable-line @typescript-eslint/naming-convention
 
 export const AWS_SCHEME = 'aws' // eslint-disable-line @typescript-eslint/naming-convention
+export const ec2LogsScheme = 'aws-ec2'
 export const amazonQDiffScheme = 'amazon-q-diff'
 
 export const startLiveTailHelpUrl =

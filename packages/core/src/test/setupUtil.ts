@@ -11,6 +11,7 @@ import { hasKey } from '../shared/utilities/tsUtils'
 import { getTestWindow, printPendingUiElements } from './shared/vscode/window'
 import { ToolkitError, formatError } from '../shared/errors'
 import { proceedToBrowser } from '../auth/sso/model'
+import { decodeBase64 } from '../shared'
 
 const runnableTimeout = Symbol('runnableTimeout')
 
@@ -164,7 +165,7 @@ export async function invokeLambda(id: string, request: unknown): Promise<unknow
         })
 
     if (response.LogResult) {
-        const logs = Buffer.from(response.LogResult, 'base64').toString()
+        const logs = decodeBase64(response.LogResult)
         getLogger().debug('lambda invocation logs: %s', maskArns(logs))
     } else {
         getLogger().debug('lambda invocation request id: %s', response.$response.requestId)
