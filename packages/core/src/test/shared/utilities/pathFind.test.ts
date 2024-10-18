@@ -78,6 +78,7 @@ describe('pathFind', function () {
                 return
             }
             // On local non-windows, we can overwrite path and create our own executable to find.
+            // On CI windows, we ensure executable exists in first path tried.
             if (!isWin()) {
                 const workspace = await testutil.createTestWorkspaceFolder()
                 const fakeSshPath = path.join(workspace.uri.fsPath, `ssh`)
@@ -85,15 +86,20 @@ describe('pathFind', function () {
                 testutil.setEnv(testutil.envWithNewPath(workspace.uri.fsPath))
 
                 await testutil.createExecutableFile(fakeSshPath, '')
+            } else {
+                const expectedWindowsPath = 'C:/Windows/System32/OpenSSH/ssh.exe'
+                if (!(await fs.exists(expectedWindowsPath))) {
+                    await testutil.createExecutableFile(expectedWindowsPath, '')
+                }
             }
 
             const ssh = await findSshPath(false)
             assert.ok(ssh)
-            const result = await tryRun(ssh, [])
+            const result = await tryRun(ssh, [], 'yes')
             assert.ok(result)
         })
 
-        it('caches result from previous runs (CI + Local Non-Windows)', async function () {
+        it('caches result from previous runs (Non-Windows)', async function () {
             // In CI, we can assume Windows machines will have ssh.
             if (!isCI() && isWin()) {
                 return
@@ -104,22 +110,19 @@ describe('pathFind', function () {
             const tempLocation = path.join(workspace.uri.fsPath, 'temp-ssh')
             const fakeSshPath = path.join(workspace.uri.fsPath, `ssh`)
 
-            if (!isWin()) {
-                testutil.setEnv(testutil.envWithNewPath(workspace.uri.fsPath))
+            testutil.setEnv(testutil.envWithNewPath(workspace.uri.fsPath))
 
-                await testutil.createExecutableFile(fakeSshPath, '')
-            }
+            await testutil.createExecutableFile(fakeSshPath, '')
 
-            const ssh1 = await findSshPath(true)
-            const originalSshPath = ssh1! === 'ssh' ? fakeSshPath : ssh1!
+            const ssh1 = (await findSshPath(true))!
 
-            await fs.rename(originalSshPath, tempLocation)
+            await fs.rename(ssh1, tempLocation)
 
             const ssh2 = await findSshPath(true)
 
             assert.strictEqual(ssh1, ssh2)
 
-            await fs.rename(tempLocation, originalSshPath)
+            await fs.rename(tempLocation, ssh1)
         })
     })
 })
