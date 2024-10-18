@@ -50,6 +50,12 @@ export type CrossFileStrategy = 'OpenTabs_BM25'
 
 export type SupplementalContextStrategy = CrossFileStrategy | UtgStrategy | 'Empty'
 
+export type PatchInfo = {
+    name: string
+    fileName: string
+    isSuccessful: boolean
+}
+
 export interface CodeWhispererSupplementalContext {
     isUtg: boolean
     isProcessTimeout: boolean
