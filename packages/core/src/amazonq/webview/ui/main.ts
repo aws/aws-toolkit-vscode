@@ -635,6 +635,7 @@ export const createMynahUI = (
             maxTabs: 10,
             feedbackOptions: feedbackOptions,
             texts: uiComponentsTexts,
+            autoFocus: false,
         },
     })
 
