@@ -85,8 +85,8 @@ export class SshKeyPair {
     }
 
     public async delete(): Promise<void> {
-        await fs.delete(this.keyPath)
-        await fs.delete(this.publicKeyPath)
+        await fs.delete(this.keyPath, { force: true })
+        await fs.delete(this.publicKeyPath, { force: true })
 
         if (!this.lifeTimeout.completed) {
             this.lifeTimeout.cancel()
