@@ -61,6 +61,7 @@ import { getAuthType } from '../../../codewhisperer/service/transformByQ/transfo
 import DependencyVersions from '../../models/dependencies'
 import { getStringHash } from '../../../shared/utilities/textUtilities'
 import { getVersionData } from '../../../codewhisperer/service/transformByQ/transformMavenHandler'
+import AdmZip from 'adm-zip'
 
 // These events can be interactions within the chat,
 // or elsewhere in the IDE
@@ -532,7 +533,7 @@ export class GumbyController {
             canSelectMany: false,
             openLabel: 'Select',
             filters: {
-                'SCT metadata': ['sct'], // Restrict user to only pick a .sct file
+                'SCT metadata': ['zip'], // Restrict user to only pick a .zip file
             },
         })
 
@@ -545,7 +546,15 @@ export class GumbyController {
             return
         }
 
-        const fileContents = nodefs.readFileSync(fileUri[0].fsPath, 'utf-8')
+        const metadataZip = new AdmZip(fileUri[0].fsPath)
+        const fileEntries = metadataZip.getEntries()
+        const metadataFile = fileEntries.find((entry) => entry.name.endsWith('.sct'))
+        if (!metadataFile) {
+            this.messenger.sendUnrecoverableErrorResponse('invalid-zip-no-sct-file', message.tabID)
+            return
+        }
+
+        const fileContents = metadataFile.getData().toString('utf-8')
 
         const isValidMetadata = await validateSQLMetadataFile(fileContents, message)
         if (!isValidMetadata) {

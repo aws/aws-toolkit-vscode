@@ -319,19 +319,22 @@ export enum BuildSystem {
 
 export class ZipManifest {
     sourcesRoot: string = 'sources/'
-    dependenciesRoot: string | undefined = 'dependencies/'
+    dependenciesRoot: string = 'dependencies/'
     buildLogs: string = 'build-logs.txt'
     version: string = '1.0'
     hilCapabilities: string[] = ['HIL_1pDependency_VersionUpgrade']
-    transformCapabilities: string[] = ['EXPLAINABILITY_V1']
+    transformCapabilities: string[] = ['EXPLAINABILITY_V1'] // TO-DO: for SQL conversions, maybe make this = []
     customBuildCommand: string = 'clean test'
-    customConversions: {
-        type: string | undefined
-        source: string | undefined
-        target: string | undefined
-        schema: string | undefined
-        host: string | undefined
-    } = { type: undefined, source: undefined, target: undefined, schema: undefined, host: undefined }
+    requestedConversions: {
+        sqlConversion:
+            | {
+                  source: string | undefined
+                  target: string | undefined
+                  schema: string | undefined
+                  host: string | undefined
+              }
+            | undefined
+    } = { sqlConversion: undefined }
 }
 
 export interface IHilZipManifestParams {

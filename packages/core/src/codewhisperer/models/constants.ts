@@ -503,13 +503,18 @@ export const absolutePathDetectedMessage = (numPaths: number, buildFile: string,
 export const unsupportedJavaVersionChatMessage = `Sorry, currently I can only upgrade Java 8 or Java 11 projects. For more information, see the [Amazon Q documentation](${codeTransformPrereqDoc}).`
 
 export const selectSQLMetadataFileHelpMessage =
-    'Next, I need the .sct metadata file of your project. You can download the .sct file by going to AWS Console -> AWS DMS -> Migration Projects. Open the schema conversion project and navigate to the S3 bucket linked to it. You will find the ZIP containing the .sct file under the {schema-conversion-project}/ directory.'
+    'Next, I need the metadata ZIP file of your project. You can download the metadata ZIP file by going to AWS Console -> AWS DMS -> Migration Projects. Open the schema conversion project and navigate to the S3 bucket linked to it. You will find the ZIP file under the {schema-conversion-project}/ directory.'
 
-export const invalidMetadataFileUnsupportedSourceDB = `Sorry, your .sct metadata file appears to be invalid; the source DB must be Oracle.`
+export const invalidMetadataFileUnsupportedSourceDB = `Sorry, the .sct file in the provided ZIP appears to be invalid; the source DB must be Oracle.`
 
-export const invalidMetadataFileUnsupportedTargetDB = `Sorry, your .sct metadata file appears to be invalid; the target DB must be Aurora PostgreSQL or Amazon RDS for PostgreSQL.`
+export const invalidMetadataFileUnsupportedTargetDB = `Sorry, the .sct file in the provided ZIP appears to be invalid; the target DB must be Aurora PostgreSQL or Amazon RDS for PostgreSQL.`
 
-export const invalidMetadataFileErrorParsing = 'Sorry, the .sct metadata file you provided appears to be invalid.'
+export const invalidMetadataFileErrorParsing = 'Sorry, the .sct file in the provided ZIP appears to be invalid.'
+
+export const invalidMetadataFileNoSctFile =
+    'Sorry, the provided ZIP does not contain a .sct file, which is needed to do the transformation.'
+
+export const sqlMetadataFileReceived = 'I detected the following in the .sct file from the provided ZIP.'
 
 export const failedToStartJobChatMessage =
     "Sorry, I couldn't begin the transformation. Please try starting the transformation again."

@@ -51,6 +51,7 @@ export type UnrecoverableErrorType =
     | 'unsupported-source-db'
     | 'unsupported-target-db'
     | 'error-parsing-sct-file'
+    | 'invalid-zip-no-sct-file'
 
 export enum GumbyNamedMessages {
     COMPILATION_PROGRESS_MESSAGE = 'gumbyProjectCompilationMessage',
@@ -440,6 +441,8 @@ export class Messenger {
                 break
             case 'error-parsing-sct-file':
                 message = CodeWhispererConstants.invalidMetadataFileErrorParsing
+            case 'invalid-zip-no-sct-file':
+                message = CodeWhispererConstants.invalidMetadataFileNoSctFile
         }
 
         const buttons: ChatItemButton[] = []
@@ -558,7 +561,7 @@ export class Messenger {
     `
         this.dispatcher.sendChatMessage(
             new ChatMessage(
-                { message: 'I detected the following in your .sct metadata file.', messageType: 'ai-prompt' },
+                { message: CodeWhispererConstants.sqlMetadataFileReceived, messageType: 'ai-prompt' },
                 tabID
             )
         )
