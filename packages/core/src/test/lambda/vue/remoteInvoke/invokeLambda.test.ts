@@ -4,49 +4,55 @@
  */
 
 import assert from 'assert'
-import {
-    RemoteInvokeWebview,
-    listRemoteTestEvents,
-    invokeRemoteLambda,
-} from '../../../../lambda/vue/remoteInvoke/invokeLambda'
-import { LambdaClient } from '../../../../shared/clients/lambdaClient'
+import { RemoteInvokeWebview, invokeRemoteLambda, InitialData } from '../../../../lambda/vue/remoteInvoke/invokeLambda'
+import { LambdaClient, DefaultLambdaClient } from '../../../../shared/clients/lambdaClient'
 import * as vscode from 'vscode'
 import * as path from 'path'
 import { makeTemporaryToolkitFolder } from '../../../../shared/filesystemUtilities'
-import sinon from 'sinon'
+import sinon, { SinonStubbedInstance, createStubInstance } from 'sinon'
+import { fs } from '../../../../shared'
 import * as picker from '../../../../shared/ui/picker'
+import { getTestWindow } from '../../../shared/vscode/window'
 import { LambdaFunctionNode } from '../../../../lambda/explorer/lambdaFunctionNode'
 import * as utils from '../../../../lambda/utils'
 import { HttpResourceFetcher } from '../../../../shared/resourcefetcher/httpResourceFetcher'
-import * as samCliRemoteTestEvents from '../../../../shared/sam/cli/samCliRemoteTestEvent'
 import { getLogger } from '../../../../shared/logger'
-import * as samCliContext from '../../../../shared/sam/cli/samCliContext'
 import { ExtContext } from '../../../../shared/extensions'
 import { FakeExtensionContext } from '../../../fakeExtensionContext'
-import { FunctionConfiguration } from 'aws-sdk/clients/lambda'
-import { AWSTreeNodeBase } from '../../../../shared/treeview/nodes/awsTreeNodeBase'
-import { fs } from '../../../../shared'
+import * as samCliRemoteTestEvent from '../../../../shared/sam/cli/samCliRemoteTestEvent'
+import { TestEventsOperation, SamCliRemoteTestEventsParameters } from '../../../../shared/sam/cli/samCliRemoteTestEvent'
 
 describe('RemoteInvokeWebview', () => {
     let outputChannel: vscode.OutputChannel
-    let lambdaClient: LambdaClient
+    let client: SinonStubbedInstance<LambdaClient>
     let remoteInvokeWebview: RemoteInvokeWebview
+    let data: InitialData
 
     beforeEach(() => {
+        client = createStubInstance(DefaultLambdaClient)
         outputChannel = {
             appendLine: (line: string) => {},
             show: () => {},
         } as vscode.OutputChannel
-
-        lambdaClient = {
-            invoke: async () => {},
-        } as any
-
-        remoteInvokeWebview = new RemoteInvokeWebview(outputChannel, lambdaClient, {
+        data = {
             FunctionName: 'testFunction',
             FunctionArn: 'arn:aws:lambda:us-west-2:123456789012:function:testFunction',
             FunctionRegion: 'us-west-2',
             InputSamples: [],
+        } as InitialData
+
+        remoteInvokeWebview = new RemoteInvokeWebview(outputChannel, client, data)
+    })
+    describe('init', () => {
+        it('should return the data property', () => {
+            const mockData: InitialData = {
+                FunctionName: 'testFunction',
+                FunctionArn: 'arn:aws:lambda:us-west-2:123456789012:function:testFunction',
+                FunctionRegion: 'us-west-2',
+                InputSamples: [],
+            }
+            const result = remoteInvokeWebview.init()
+            assert.deepEqual(result, mockData)
         })
     })
     describe('invokeLambda', () => {
@@ -56,15 +62,7 @@ describe('RemoteInvokeWebview', () => {
                 LogResult: Buffer.from('Test log').toString('base64'),
                 Payload: '{"result": "success"}',
             }
-
-            let invokedArn: string | undefined
-            let invokedInput: string | undefined
-
-            lambdaClient.invoke = async (arn: string, payload: string) => {
-                invokedArn = arn
-                invokedInput = payload
-                return mockResponse
-            }
+            client.invoke.resolves(mockResponse)
 
             const appendedLines: string[] = []
             outputChannel.appendLine = (line: string) => {
@@ -72,8 +70,8 @@ describe('RemoteInvokeWebview', () => {
             }
 
             await remoteInvokeWebview.invokeLambda(input)
-            assert.strictEqual(invokedArn, 'arn:aws:lambda:us-west-2:123456789012:function:testFunction')
-            assert.strictEqual(invokedInput, input)
+            assert(client.invoke.calledOnce)
+            assert(client.invoke.calledWith(data.FunctionArn, input))
             assert.deepStrictEqual(appendedLines, [
                 'Loading response...',
                 'Invocation result for arn:aws:lambda:us-west-2:123456789012:function:testFunction',
@@ -85,14 +83,61 @@ describe('RemoteInvokeWebview', () => {
                 '',
             ])
         })
+        it('handles Lambda invocation with no payload', async () => {
+            const mockResponse = {
+                LogResult: Buffer.from('Test log').toString('base64'),
+                Payload: '',
+            }
 
+            client.invoke.resolves(mockResponse)
+            const appendedLines: string[] = []
+            outputChannel.appendLine = (line: string) => {
+                appendedLines.push(line)
+            }
+
+            await remoteInvokeWebview.invokeLambda('')
+
+            assert.deepStrictEqual(appendedLines, [
+                'Loading response...',
+                'Invocation result for arn:aws:lambda:us-west-2:123456789012:function:testFunction',
+                'Logs:',
+                'Test log',
+                '',
+                'Payload:',
+                '{}',
+                '',
+            ])
+        })
+        it('handles Lambda invocation with undefined LogResult', async () => {
+            const mockResponse = {
+                Payload: '{"result": "success"}',
+            }
+
+            client.invoke.resolves(mockResponse)
+
+            const appendedLines: string[] = []
+            outputChannel.appendLine = (line: string) => {
+                appendedLines.push(line)
+            }
+
+            await remoteInvokeWebview.invokeLambda('{}')
+
+            assert.deepStrictEqual(appendedLines, [
+                'Loading response...',
+                'Invocation result for arn:aws:lambda:us-west-2:123456789012:function:testFunction',
+                'Logs:',
+                '',
+                '',
+                'Payload:',
+                '{"result": "success"}',
+                '',
+            ])
+        })
         it('handles Lambda invocation error', async () => {
             const input = '{"key": "value"}'
             const mockError = new Error('Lambda invocation failed')
 
-            lambdaClient.invoke = async () => {
-                throw mockError
-            }
+            client.invoke.rejects(mockError)
 
             const appendedLines: string[] = []
             outputChannel.appendLine = (line: string) => {
@@ -119,6 +164,49 @@ describe('RemoteInvokeWebview', () => {
         })
     })
 
+    describe('promptFile', () => {
+        it('prompts the user for a file and returns the selected file', async () => {
+            const tempFolder = await makeTemporaryToolkitFolder()
+            const placeholderEventFile = path.join(tempFolder, 'file.json')
+            await fs.writeFile(placeholderEventFile, '{"sample": ""}')
+            const fileUri = vscode.Uri.file(placeholderEventFile)
+
+            getTestWindow().onDidShowDialog((d) => d.selectItem(fileUri))
+
+            const response = await remoteInvokeWebview.promptFile()
+            assert.deepStrictEqual(response?.sample, '{"sample": ""}')
+            assert.deepStrictEqual(response.selectedFile, 'file.json')
+            assert.deepStrictEqual(response.selectedFilePath, fileUri.fsPath)
+        })
+        it('Returns undefined if no file is selected', async () => {
+            getTestWindow().onDidShowDialog((d) => d.close())
+            const response = await remoteInvokeWebview.promptFile()
+            assert.strictEqual(response, undefined)
+        })
+        it('logs an error and throws ToolkitError when reading the file fails', async () => {
+            const tempFolder = await makeTemporaryToolkitFolder()
+            const placeholderEventFile = path.join(tempFolder, 'file.json')
+            const fileUri = vscode.Uri.file(placeholderEventFile)
+
+            getTestWindow().onDidShowDialog((d) => d.selectItem(fileUri))
+
+            const loggerErrorStub = sinon.stub(getLogger(), 'error')
+
+            try {
+                await assert.rejects(
+                    async () => await remoteInvokeWebview.promptFile(),
+                    new Error('Failed to read selected file')
+                )
+                assert.strictEqual(loggerErrorStub.calledOnce, true)
+                assert.strictEqual(loggerErrorStub.firstCall.args[0], 'readFileSync: Failed to read file at path %O')
+                assert.strictEqual(loggerErrorStub.firstCall.args[1], fileUri.fsPath)
+                assert(loggerErrorStub.firstCall.args[2] instanceof Error)
+            } finally {
+                loggerErrorStub.restore()
+            }
+        })
+    })
+
     describe('loadFile', () => {
         it('loads a file successfully', async () => {
             const tempFolder = await makeTemporaryToolkitFolder()
@@ -134,6 +222,19 @@ describe('RemoteInvokeWebview', () => {
             assert.strictEqual(result?.selectedFile, 'file.json')
             await fs.delete(tempFolder, { recursive: true })
         })
+        it('handles invalid JSON file', async () => {
+            const tempFolder = await makeTemporaryToolkitFolder()
+            const invalidJsonFile = path.join(tempFolder, 'invalid.json')
+            await fs.writeFile(invalidJsonFile, '{"invalid": "json",}')
+            try {
+                await remoteInvokeWebview.loadFile(invalidJsonFile)
+                assert.fail('Failed to parse selected file')
+            } catch (err) {
+                assert.ok(err instanceof Error)
+                assert.strictEqual(err.message, 'Failed to parse selected file')
+            }
+            await fs.delete(tempFolder, { recursive: true })
+        })
         it('handles file load error', async () => {
             const nonExistentFile = '/path/to/non-existent-file.json'
             try {
@@ -144,116 +245,134 @@ describe('RemoteInvokeWebview', () => {
                 assert.strictEqual(err.message, `Failed to read selected file`)
             }
         })
+        it('should return undefined if filePath is empty in loadFile', async () => {
+            const result = await remoteInvokeWebview.loadFile('')
+            assert.strictEqual(result, undefined, 'Expected result to be undefined for empty file path')
+        })
     })
 
     describe('listRemoteTestEvents', () => {
-        const functionArn = 'arn:aws:lambda:us-west-2:123456789012:function:testFunction'
-        const functionRegion = 'us-west-2'
-        const mockEvents = ['event1', 'event2']
-        let runListSamCliStub: sinon.SinonStub
+        let runSamCliRemoteTestEventsStub: sinon.SinonStub
         beforeEach(() => {
-            runListSamCliStub = sinon.stub(remoteInvokeWebview, 'listRemoteTestEvents')
+            runSamCliRemoteTestEventsStub = sinon.stub(samCliRemoteTestEvent, 'runSamCliRemoteTestEvents')
         })
         afterEach(() => {
             sinon.restore()
         })
 
-        it('returns a list of remote test events', async () => {
-            runListSamCliStub.resolves(mockEvents)
-            const result = await remoteInvokeWebview.listRemoteTestEvents(functionArn, functionRegion)
-            assert.ok(runListSamCliStub.calledOnce)
-            assert(runListSamCliStub.calledWithExactly(functionArn, functionRegion))
-            assert.deepStrictEqual(result, mockEvents)
-        })
-        it('should return an empty array when an error occurs', async () => {
-            runListSamCliStub.resolves([])
-            const result = await remoteInvokeWebview.listRemoteTestEvents(functionArn, functionRegion)
-            assert(runListSamCliStub.calledOnce, 'runSamCliRemoteTestEvents should be called once')
-            assert.deepStrictEqual(result, [])
-        })
-        it('should handle errors from remoteTestEvents', async () => {
-            const errorMessage = 'Failed to list remote test events'
-            runListSamCliStub.rejects(new Error(errorMessage))
-            let caughtError: Error | undefined
-            try {
-                await remoteInvokeWebview.listRemoteTestEvents(functionArn, functionRegion)
-            } catch (error: any) {
-                caughtError = error
+        it('should call remoteTestEvents with correct parameters and return a split result', async () => {
+            const functionArn = 'arn:aws:lambda:us-west-2:123456789012:function:TestLambda'
+            const region = 'us-west-2'
+            const mockResponse = 'event1\nevent2\nevent3'
+            const expectedParams = {
+                functionArn: functionArn,
+                operation: TestEventsOperation.List,
+                region: region,
             }
-            assert.strictEqual(caughtError?.message, errorMessage)
-            assert(runListSamCliStub.calledOnce, 'runSamCliRemoteTestEvents should be called once')
+            runSamCliRemoteTestEventsStub.resolves(mockResponse)
+            const result = await remoteInvokeWebview.listRemoteTestEvents(functionArn, region)
+            assert(runSamCliRemoteTestEventsStub.calledOnce)
+            assert(runSamCliRemoteTestEventsStub.calledWith(expectedParams))
+            const expectedResult = ['event1', 'event2', 'event3']
+            assert.deepEqual(result, expectedResult)
         })
-    })
 
-    describe('getRemoteTestEvents', () => {
-        const mockEvent = {
-            name: 'TestEvent',
-            arn: 'arn:aws:lambda:us-west-2:123456789012:function:myFunction',
-            region: 'us-west-2',
-        }
-        let runGetSamCliStub: sinon.SinonStub
-        beforeEach(() => {
-            runGetSamCliStub = sinon.stub(remoteInvokeWebview, 'getRemoteTestEvents')
-        })
-        afterEach(() => {
-            sinon.restore()
-        })
-        it('should return a remote test event', async () => {
-            runGetSamCliStub.resolves(mockEvent)
-            const result = await remoteInvokeWebview.getRemoteTestEvents(mockEvent)
-            assert.ok(runGetSamCliStub.calledOnce)
-            assert.deepStrictEqual(result, mockEvent)
-        })
-        it('handles errors from remoteTestEvents', async () => {
-            const errorMessage = 'Failed to fetch remote test events'
-            runGetSamCliStub.rejects(new Error(errorMessage))
-            let caughtError: Error | undefined
-            try {
-                await remoteInvokeWebview.getRemoteTestEvents(mockEvent)
-            } catch (error: any) {
-                caughtError = error
-            }
-            assert.strictEqual(caughtError?.message, errorMessage)
-            assert(runGetSamCliStub.calledOnce, 'runSamCliRemoteTestEvents should be called once')
+        it('should handle errors thrown by remoteTestEvents', async () => {
+            const functionArn = 'arn:aws:lambda:us-west-2:123456789012:function:TestLambda'
+            const region = 'us-west-2'
+            const errorMessage = 'Error listing remote test events'
+            runSamCliRemoteTestEventsStub.rejects(new Error(errorMessage))
+            await assert.rejects(async () => {
+                await remoteInvokeWebview.listRemoteTestEvents(functionArn, region)
+            }, new RegExp(errorMessage))
+            assert(runSamCliRemoteTestEventsStub.calledOnce)
         })
     })
 
     describe('createRemoteTestEvents', () => {
-        let runCreateSamCliStub: sinon.SinonStub
-        const mockEvent = {
-            name: 'TestEvent',
-            arn: 'arn:aws:lambda:us-west-2:123456789012:function:myFunction',
-            event: '{"key": "value"}',
-            region: 'us-west-2',
-        }
+        let runSamCliRemoteTestEventsStub: sinon.SinonStub
         beforeEach(() => {
-            runCreateSamCliStub = sinon.stub(remoteInvokeWebview, 'createRemoteTestEvents')
+            runSamCliRemoteTestEventsStub = sinon.stub(samCliRemoteTestEvent, 'runSamCliRemoteTestEvents')
         })
         afterEach(() => {
             sinon.restore()
         })
-        it('creates a remote test event', async () => {
-            const expectedParams = {
-                arn: 'arn:aws:lambda:us-west-2:123456789012:function:myFunction',
-                event: '{"key": "value"}',
+        it('should call remoteTestEvents with correct parameters', async () => {
+            const mockPutEvent = {
+                arn: 'arn:aws:lambda:us-west-2:123456789012:function:TestLambda',
                 name: 'TestEvent',
+                event: '{"key": "value"}',
                 region: 'us-west-2',
             }
-            runCreateSamCliStub.resolves()
-            await remoteInvokeWebview.createRemoteTestEvents(mockEvent)
-            const calledParams = runCreateSamCliStub.getCall(0).args[0]
-            assert.ok(runCreateSamCliStub.calledOnce)
-            assert.deepStrictEqual(calledParams, expectedParams)
-        })
-        it('calls invoker with correct arguments for Put operation', async () => {
-            const errorMessage = 'Failed to create remote test events'
-            runCreateSamCliStub.rejects(new Error(errorMessage))
-            try {
-                await remoteInvokeWebview.createRemoteTestEvents(mockEvent)
-            } catch (error: any) {
-                assert.strictEqual(error.message, errorMessage)
+            await remoteInvokeWebview.createRemoteTestEvents(mockPutEvent)
+            const expectedParams: SamCliRemoteTestEventsParameters = {
+                functionArn: mockPutEvent.arn,
+                operation: TestEventsOperation.Put,
+                name: mockPutEvent.name,
+                eventSample: mockPutEvent.event,
+                region: mockPutEvent.region,
             }
-            assert.ok(runCreateSamCliStub.calledOnce)
+            assert(runSamCliRemoteTestEventsStub.calledOnce, 'remoteTestEvents should be called once')
+            assert(
+                runSamCliRemoteTestEventsStub.calledWith(expectedParams),
+                'remoteTestEvents should be called with correct parameters'
+            )
+        })
+
+        it('should return the result from remoteTestEvents', async () => {
+            const mockPutEvent = {
+                arn: 'arn:aws:lambda:us-west-2:123456789012:function:TestLambda',
+                name: 'TestEvent',
+                event: '{"key": "value"}',
+                region: 'us-west-2',
+            }
+            const mockResponse = 'Success'
+            runSamCliRemoteTestEventsStub.resolves(mockResponse)
+            const result = await remoteInvokeWebview.createRemoteTestEvents(mockPutEvent)
+            assert.strictEqual(result, mockResponse, 'The result should match the mock response')
+        })
+    })
+
+    describe('getRemoteTestEvents', () => {
+        let runSamCliRemoteTestEventsStub: sinon.SinonStub
+        beforeEach(() => {
+            runSamCliRemoteTestEventsStub = sinon.stub(samCliRemoteTestEvent, 'runSamCliRemoteTestEvents')
+        })
+        afterEach(() => {
+            sinon.restore()
+        })
+        it('should call remoteTestEvents with correct parameters', async () => {
+            const mockEvent = {
+                name: 'TestLambda',
+                arn: 'arn:aws:lambda:us-west-2:123456789012:function:TestLambda',
+                region: 'us-west-2',
+            }
+            const expectedParams = {
+                name: mockEvent.name,
+                operation: TestEventsOperation.Get,
+                functionArn: mockEvent.arn,
+                region: mockEvent.region,
+            }
+            const mockResponse = 'mockResponse'
+            runSamCliRemoteTestEventsStub.resolves(mockResponse)
+            const result = await remoteInvokeWebview.getRemoteTestEvents(mockEvent)
+            assert(runSamCliRemoteTestEventsStub.calledOnce)
+            assert(runSamCliRemoteTestEventsStub.calledWith(expectedParams))
+            assert.strictEqual(result, mockResponse)
+        })
+
+        it('should handle errors thrown by remoteTestEvents', async () => {
+            const mockEvent = {
+                name: 'TestLambda',
+                arn: 'arn:aws:lambda:us-west-2:123456789012:function:TestLambda',
+                region: 'us-west-2',
+            }
+            const errorMessage = 'Error invoking remote test events'
+            runSamCliRemoteTestEventsStub.rejects(new Error(errorMessage))
+            await assert.rejects(async () => {
+                await remoteInvokeWebview.getRemoteTestEvents(mockEvent)
+            }, new RegExp(errorMessage))
+            assert(runSamCliRemoteTestEventsStub.calledOnce)
         })
     })
 
@@ -302,16 +421,48 @@ describe('RemoteInvokeWebview', () => {
                 await remoteInvokeWebview.getSamplePayload()
             }, /getting manifest data/)
         })
+        it('returns undefined when no file is selected', async () => {
+            const mockPayloads = [{ name: 'testEvent', filename: 'testEvent.json' }]
+            getSampleLambdaPayloadsStub.resolves(mockPayloads)
+            createQuickPickStub.returns({})
+            promptUserStub.resolves([{ label: 'testEvent', filename: 'testEvent.json' }])
+            verifySinglePickerOutputStub.returns(undefined)
+            const result = await remoteInvokeWebview.getSamplePayload()
+            assert.strictEqual(result, undefined)
+        })
     })
     describe('invokeRemoteLambda', () => {
         let sandbox: sinon.SinonSandbox
         let outputChannel: vscode.OutputChannel
         let mockExtContext: ExtContext
+        let mockFunctionNode: LambdaFunctionNode
+        let createWebviewPanelStub: sinon.SinonStub
+        let getSampleLambdaPayloadsStub: sinon.SinonStub
 
         beforeEach(async function () {
             sandbox = sinon.createSandbox()
             outputChannel = { append: sandbox.stub(), appendLine: sandbox.stub() } as unknown as vscode.OutputChannel
             mockExtContext = await FakeExtensionContext.getFakeExtContext()
+            mockFunctionNode = {
+                configuration: {
+                    FunctionName: 'testFunction',
+                    FunctionArn: 'arn:aws:lambda:us-west-2:123456789012:function:testFunction',
+                },
+                regionCode: 'us-west-2',
+            } as LambdaFunctionNode
+            createWebviewPanelStub = sandbox.stub(vscode.window, 'createWebviewPanel').returns({
+                webview: {
+                    html: '',
+                    asWebviewUri: sandbox.stub().returns(vscode.Uri.parse('https://mock-webview-uri.com')),
+                    onDidReceiveMessage: sandbox.stub(),
+                },
+                onDidDispose: sandbox.stub(),
+                reveal: sandbox.stub(),
+            } as unknown as vscode.WebviewPanel)
+            getSampleLambdaPayloadsStub = sandbox.stub(utils, 'getSampleLambdaPayloads').resolves([
+                { name: 'Sample1', filename: 'sample1.json' },
+                { name: 'Sample2', filename: 'sample2.json' },
+            ])
         })
 
         afterEach(() => {
@@ -319,111 +470,16 @@ describe('RemoteInvokeWebview', () => {
         })
 
         it('should invoke lambda with a LambdaFunctionNode', async () => {
-            const samplePayloadsStub = sandbox.stub(utils, 'getSampleLambdaPayloads').resolves([])
-            const functionNode: LambdaFunctionNode = {
-                configuration: {
-                    FunctionArn: 'arn:aws:lambda:region:function:functionName',
-                    FunctionName: 'functionName',
-                },
-                regionCode: 'us-east-1',
-                parent: {} as any,
-                update: function (configuration: FunctionConfiguration): void {
-                    throw new Error('Function not implemented.')
-                },
-                functionName: '',
-                arn: '',
-                name: '',
-                serviceId: undefined,
-                getChildren: function (): Thenable<AWSTreeNodeBase[]> {
-                    throw new Error('Function not implemented.')
-                },
-                refresh: function (): void {
-                    throw new Error('Function not implemented.')
-                },
-            }
-
-            await invokeRemoteLambda(mockExtContext, { outputChannel, functionNode })
-
-            sinon.assert.calledOnce(samplePayloadsStub)
-        })
-
-        it('should log an error if listing remote test events fails', async () => {
-            const functionNode: LambdaFunctionNode = {
-                configuration: {
-                    FunctionArn: 'arn:aws:lambda:region:function:functionName',
-                    FunctionName: 'functionName',
-                },
-                regionCode: 'us-east-1',
-                parent: {} as any,
-                update: function (configuration: FunctionConfiguration): void {
-                    throw new Error('Function not implemented.')
-                },
-                functionName: '',
-                arn: '',
-                name: '',
-                serviceId: undefined,
-                getChildren: function (): Thenable<AWSTreeNodeBase[]> {
-                    throw new Error('Function not implemented.')
-                },
-                refresh: function (): void {
-                    throw new Error('Function not implemented.')
-                },
-            }
-
-            const samplePayloadsStub = sandbox.stub(utils, 'getSampleLambdaPayloads').resolves([])
-            const loggerErrorStub = sandbox.stub(getLogger(), 'error')
-
-            await invokeRemoteLambda(mockExtContext, { functionNode, outputChannel })
-
-            sinon.assert.calledOnce(samplePayloadsStub)
-            sinon.assert.calledOnce(loggerErrorStub)
-        })
-    })
-
-    describe('listRemoteTestEvents', () => {
-        let runSamCliRemoteTestEventsStub: sinon.SinonStub
-        let getSamCliContextStub: sinon.SinonStub
-        let loggerStub: sinon.SinonStub
-        const mockArn = 'arn:aws:lambda:us-east-1:123456789012:function:MyFunction'
-        const mockRegion = 'us-east-1'
-
-        beforeEach(() => {
-            runSamCliRemoteTestEventsStub = sinon.stub(samCliRemoteTestEvents, 'runSamCliRemoteTestEvents')
-            getSamCliContextStub = sinon.stub(samCliContext, 'getSamCliContext')
-            getSamCliContextStub.returns({ invoker: 'samCliInvoker' })
-            loggerStub = sinon.stub(getLogger(), 'debug')
-        })
-
-        afterEach(() => {
-            sinon.restore()
-        })
-
-        it('should return list of remote test events when command succeeds', async () => {
-            const mockResponse = 'event1\nevent2\nevent3'
-            runSamCliRemoteTestEventsStub.resolves(mockResponse)
-
-            const result = await listRemoteTestEvents(mockArn, mockRegion)
-
-            assert.deepStrictEqual(result, ['event1', 'event2', 'event3'])
-            assert(runSamCliRemoteTestEventsStub.calledOnce)
-            assert(
-                runSamCliRemoteTestEventsStub.calledWith({
-                    functionArn: mockArn,
-                    operation: 'list',
-                    region: mockRegion,
-                })
+            await invokeRemoteLambda(mockExtContext, { outputChannel: outputChannel, functionNode: mockFunctionNode })
+            assert(getSampleLambdaPayloadsStub.calledOnce)
+            assert(createWebviewPanelStub.calledOnce)
+            const createWebviewPanelArgs = createWebviewPanelStub.getCall(0).args
+            assert.strictEqual(createWebviewPanelArgs[0], 'remoteInvoke')
+            assert.strictEqual(
+                createWebviewPanelArgs[1],
+                `Invoke Lambda ${mockFunctionNode.configuration.FunctionName}`
             )
-        })
-
-        it('should return an empty array and log error when command fails', async () => {
-            const mockError = new Error('Command failed')
-            runSamCliRemoteTestEventsStub.rejects(mockError)
-
-            const result = await listRemoteTestEvents(mockArn, mockRegion)
-
-            assert.deepStrictEqual(result, [])
-            assert(runSamCliRemoteTestEventsStub.calledOnce)
-            assert(loggerStub.calledOnceWith('Error listing remote test events:', mockError))
+            assert.deepStrictEqual(createWebviewPanelArgs[2], { viewColumn: -1 })
         })
     })
 })

@@ -248,12 +248,6 @@ export async function invokeRemoteLambda(
     const inputs = await getSampleLambdaPayloads()
     const resource: any = params.functionNode
     const source: string = params.source || 'AwsExplorerRemoteInvoke'
-    const functionArn = params.functionNode.configuration.FunctionArn
-    try {
-        functionArn ? await listRemoteTestEvents(functionArn, resource.regionCode) : []
-    } catch (err) {
-        getLogger().error('InvokeLambda: Error listing remote test events:', err)
-    }
     const client = new DefaultLambdaClient(resource.regionCode)
     const wv = new Panel(context.extensionContext, context.outputChannel, client, {
         FunctionName: resource.configuration.FunctionName ?? '',
@@ -267,19 +261,4 @@ export async function invokeRemoteLambda(
     await wv.show({
         title: localize('AWS.invokeLambda.title', 'Invoke Lambda {0}', resource.configuration.FunctionName),
     })
-}
-
-export async function listRemoteTestEvents(arn: string, region: string): Promise<string[]> {
-    try {
-        const params: SamCliRemoteTestEventsParameters = {
-            functionArn: arn,
-            operation: TestEventsOperation.List,
-            region: region,
-        }
-        const result = await runSamCliRemoteTestEvents(params, getSamCliContext().invoker)
-        return result.split('\n')
-    } catch (err) {
-        getLogger().debug('Error listing remote test events:', err)
-        return []
-    }
 }
