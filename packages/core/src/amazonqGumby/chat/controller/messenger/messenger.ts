@@ -185,6 +185,10 @@ export class Messenger {
                     label: JDKVersion.JDK11.toString(),
                 },
                 {
+                    value: JDKVersion.JDK17,
+                    label: JDKVersion.JDK17.toString(),
+                },
+                {
                     value: JDKVersion.UNSUPPORTED,
                     label: 'Other',
                 },
