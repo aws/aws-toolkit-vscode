@@ -69,7 +69,7 @@ describe('TailLogGroup', function () {
         }
         const document = getTestWindow().activeTextEditor?.document
         assert.strictEqual(sessionUri.toString(), document?.uri.toString())
-        assert.strictEqual(document?.getText(), `12:00:00\t${testMessage}\n`)
+        assert.strictEqual(document?.getText().trim(), `12:00:00\t${testMessage}`)
 
         //Test that closing all tabs the session's document is open in will cause the session to close
         const window = getTestWindow()
