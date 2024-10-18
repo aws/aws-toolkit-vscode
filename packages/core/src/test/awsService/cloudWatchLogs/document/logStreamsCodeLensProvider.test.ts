@@ -9,8 +9,8 @@ import { LogDataRegistry } from '../../../../awsService/cloudWatchLogs/registry/
 import { LogDataDocumentProvider } from '../../../../awsService/cloudWatchLogs/document/logDataDocumentProvider'
 import { CancellationToken, CodeLens, TextDocument } from 'vscode'
 import assert = require('assert')
-import { createURIFromArgs } from '../../../../awsService/cloudWatchLogs/cloudWatchLogsUtils'
 import { createStubInstance, SinonStubbedInstance } from 'sinon'
+import { cwlUriSchema } from '../../../../awsService/cloudWatchLogs/cloudWatchLogsUtils'
 
 describe('LogStreamCodeLensProvider', async () => {
     describe('provideCodeLenses()', async () => {
@@ -18,7 +18,7 @@ describe('LogStreamCodeLensProvider', async () => {
         let documentProvider: SinonStubbedInstance<LogDataDocumentProvider>
 
         const logGroupInfo = { groupName: 'MyGroupName', regionName: 'MyRegionName' }
-        const logUri = createURIFromArgs(logGroupInfo, {})
+        const logUri = cwlUriSchema.form({ logGroupInfo: logGroupInfo, parameters: {} })
 
         before(async () => {
             const registry: LogDataRegistry = {} as LogDataRegistry
