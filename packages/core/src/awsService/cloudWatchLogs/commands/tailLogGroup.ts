@@ -115,6 +115,18 @@ async function updateTextDocumentWithNewLogEvents(
     await vscode.workspace.applyEdit(edit)
 }
 
+/**
+ * The LiveTail session should be automatically closed if the user does not have the session's
+ * document in any Tab in their editor.
+ *
+ * `onDidCloseTextDocument` doesn't work for our case because the tailLogGroup command will keep the stream
+ * writing to the doc even when all its tabs/editors are closed, seemingly keeping the doc 'open'.
+ * Also there is no guarantee that this event fires when an editor tab is closed
+ *
+ * `onDidChangeVisibleTextEditors` returns editors that the user can see its contents. An editor that is open, but hidden
+ * from view, will not be returned. Meaning a Tab that is created (shown in top bar), but not open, will not be returned. Even if
+ * the tab isn't visible, we want to continue writing to the doc, and keep the session alive.
+ */
 function registerTabChangeCallback(
     session: LiveTailSession,
     registry: LiveTailSessionRegistry,
