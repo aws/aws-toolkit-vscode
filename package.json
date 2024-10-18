@@ -47,7 +47,7 @@
         "@typescript-eslint/eslint-plugin": "^7.14.1",
         "@typescript-eslint/parser": "^7.14.1",
         "@vscode/codicons": "^0.0.33",
-        "@vscode/test-electron": "^2.4.1",
+        "@vscode/test-electron": "^2.3.8",
         "@vscode/test-web": "^0.0.54",
         "@vscode/vsce": "^2.19.0",
         "eslint": "^8.56.0",
@@ -69,7 +69,7 @@
         "webpack-merge": "^5.10.0"
     },
     "dependencies": {
-        "@types/node": "^22.7.5",
+        "@types/node": "^18.19.55",
         "vscode-nls": "^5.2.0",
         "vscode-nls-dev": "^4.0.4"
     }
