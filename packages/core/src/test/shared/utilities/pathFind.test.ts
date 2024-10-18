@@ -97,7 +97,6 @@ describe('pathFind', function () {
             // On non-windows, we can overwrite path and create our own executable to find.
             const workspace = await testutil.createTestWorkspaceFolder()
             // We move the ssh to a temp directory temporarily to test if cache works.
-            const tempLocation = path.join(workspace.uri.fsPath, 'temp-ssh')
             const fakeSshPath = path.join(workspace.uri.fsPath, `ssh`)
 
             testutil.setEnv(testutil.envWithNewPath(workspace.uri.fsPath))
@@ -106,13 +105,11 @@ describe('pathFind', function () {
 
             const ssh1 = (await findSshPath(true))!
 
-            await fs.rename(ssh1, tempLocation)
+            await fs.delete(fakeSshPath)
 
             const ssh2 = await findSshPath(true)
 
             assert.strictEqual(ssh1, ssh2)
-
-            await fs.rename(tempLocation, ssh1)
         })
 
         it('finds valid executable path (Windows CI)', async function () {
@@ -126,7 +123,7 @@ describe('pathFind', function () {
                 await testutil.createExecutableFile(expectedPathInCI, '')
             }
             const ssh = (await findSshPath(true))!
-            const result = await tryRun(ssh, [])
+            const result = await tryRun(ssh, ['-G', 'x'], 'noresult')
             assert.ok(result)
         })
     })
