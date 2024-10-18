@@ -7,6 +7,7 @@ import { createExecutableFile, createTestWorkspaceFolder, envWithNewPath, readEn
 import path from 'path'
 import { ChildProcess } from '../../../shared/utilities/processUtils'
 import { fs } from '../../../shared'
+import { isWin } from '../../../shared/vscode/env'
 
 describe('envWithNewPath', function () {
     it('gives current path with new PATH', function () {
@@ -30,7 +31,7 @@ describe('writeEnv', function () {
 describe('createExecutableFile', function () {
     it('creates a file that can be executes in a child process', async function () {
         const tempDir = await createTestWorkspaceFolder()
-        const filePath = path.join(tempDir.uri.fsPath, 'exec')
+        const filePath = path.join(tempDir.uri.fsPath, `exec${isWin() ? '.exe' : ''}`)
         await createExecutableFile(filePath, '')
 
         const proc = new ChildProcess(filePath)
