@@ -26,7 +26,7 @@ import { isValidationExemptMetric } from './exemptMetrics'
 import { isAmazonQ, isCloud9, isSageMaker } from '../../shared/extensionUtilities'
 import { isUuid, randomUUID } from '../crypto'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
-import { FunctionEntry } from './spans'
+import { asStringifiedStack, FunctionEntry } from './spans'
 import { telemetry } from './telemetry'
 import { v5 as uuidV5 } from 'uuid'
 import { ToolkitError } from '../errors'
@@ -409,9 +409,15 @@ export function withTelemetryContext(opts: TelemetryContextArgs) {
     ) {
         function decoratedMethod(this: This, ...args: Args): Return {
             return telemetry.function_call.run(
-                () => {
+                (span) => {
                     try {
-                        // DEVELOPERS: Set a breakpoint here and step in to it to debug the original function
+                        span.record({
+                            functionName: opts.name,
+                            className: opts.class,
+                            source: asStringifiedStack(telemetry.getFunctionStack()),
+                        })
+
+                        // DEVELOPERS: Set a breakpoint here and step in and debug the original function
                         const result = originalMethod.call(this, ...args)
 
                         if (result instanceof Promise) {
@@ -431,7 +437,7 @@ export function withTelemetryContext(opts: TelemetryContextArgs) {
                     }
                 },
                 {
-                    emit: false,
+                    emit: opts.emit !== undefined ? opts.emit : false,
                     functionId: opts,
                 }
             )

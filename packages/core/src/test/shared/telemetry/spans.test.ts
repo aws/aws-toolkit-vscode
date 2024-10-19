@@ -579,6 +579,41 @@ describe('TelemetryTracer', function () {
     })
 
     describe('withTelemetryContext', async function () {
+        class TestEmit {
+            @withTelemetryContext({ name: 'doesNotEmit', class: 'TestEmit' })
+            doesNotEmit() {
+                return
+            }
+
+            @withTelemetryContext({ name: 'doesEmit', class: 'TestEmit', emit: false })
+            doesEmit() {
+                return this.doesEmitNested()
+            }
+
+            @withTelemetryContext({ name: 'doesEmitNested', class: 'TestEmit', emit: true })
+            doesEmitNested() {
+                return
+            }
+        }
+
+        it(`does NOT emit an event if not explicitly set`, function () {
+            const inst = new TestEmit()
+            inst.doesNotEmit()
+            assertTelemetry('function_call', [])
+        })
+
+        it(`does emit an event on its own when explicitly set`, function () {
+            const inst = new TestEmit()
+            inst.doesEmit()
+            assertTelemetry('function_call', [
+                {
+                    functionName: 'doesEmitNested',
+                    className: 'TestEmit',
+                    source: 'TestEmit#doesEmit,doesEmitNested',
+                },
+            ])
+        })
+
         class TestThrows {
             @withTelemetryContext({ name: 'throwsError', class: 'TestThrows', errorCtx: true })
             throwsError() {
