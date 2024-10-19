@@ -4,7 +4,7 @@
  */
 
 import assert from 'assert'
-import { ToolkitError } from '../../../shared/errors'
+import { getErrorId, ToolkitError } from '../../../shared/errors'
 import { asStringifiedStack, FunctionEntry, TelemetrySpan, TelemetryTracer } from '../../../shared/telemetry/spans'
 import { MetricName, MetricShapes, telemetry } from '../../../shared/telemetry/telemetry'
 import { assertTelemetry, getMetrics, installFakeClock } from '../../testUtil'
@@ -575,19 +575,80 @@ describe('TelemetryTracer', function () {
                     'A#a1,a2:B#b1,b2'
                 )
             })
+        })
+    })
 
-            class TestEmit {
-                @withTelemetryContext({ name: 'doesNotEmit', class: 'TestEmit' })
-                doesNotEmit() {
-                    return
-                }
+    describe('withTelemetryContext', async function () {
+        class TestThrows {
+            @withTelemetryContext({ name: 'throwsError', class: 'TestThrows', errorCtx: true })
+            throwsError() {
+                throw arbitraryError
             }
 
-            it(`withTelemetryContext does not emit an event on its own`, function () {
-                const inst = new TestEmit()
-                inst.doesNotEmit()
-                assertTelemetry('function_call', [])
-            })
+            @withTelemetryContext({ name: 'throwsError', errorCtx: true })
+            throwsErrorButNoClass() {
+                throw arbitraryError
+            }
+
+            @withTelemetryContext({ name: 'throwsError', errorCtx: true })
+            async throwsAsyncError() {
+                throw arbitraryError
+            }
+
+            @withTelemetryContext({ name: 'throwsErrorButNoCtx', class: 'TestThrows' })
+            throwsErrorButNoCtx() {
+                throw arbitraryError
+            }
+        }
+        const arbitraryError = new Error('arbitrary error')
+
+        it(`wraps errors with function id context`, async function () {
+            const inst = new TestThrows()
+            assert.throws(
+                () => inst.throwsError(),
+                (e) => {
+                    if (!(e instanceof ToolkitError)) {
+                        return false
+                    }
+                    const id = getErrorId(e)
+                    const message = e.message
+                    const cause = e.cause
+                    return id === 'TestThrows' && message === 'ctx: throwsError' && cause === arbitraryError
+                }
+            )
+            assert.throws(
+                () => inst.throwsErrorButNoClass(),
+                (e) => {
+                    if (!(e instanceof ToolkitError)) {
+                        return false
+                    }
+                    const id = getErrorId(e)
+                    const message = e.message
+                    const cause = e.cause
+                    return id === 'Error' && message === 'ctx: throwsError' && cause === arbitraryError
+                }
+            )
+            await assert.rejects(
+                () => inst.throwsAsyncError(),
+                (e) => {
+                    if (!(e instanceof ToolkitError)) {
+                        return false
+                    }
+                    const id = getErrorId(e)
+                    const message = e.message
+                    const cause = e.cause
+                    return id === 'Error' && message === 'ctx: throwsError' && cause === arbitraryError
+                }
+            )
+        })
+
+        it('does not add error context by default', async function () {
+            const inst = new TestThrows()
+
+            assert.throws(
+                () => inst.throwsErrorButNoCtx(),
+                (e) => e === arbitraryError
+            )
         })
     })
 

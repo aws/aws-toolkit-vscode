@@ -142,7 +142,10 @@ Finally, if `setupStep2()` was the thing that failed we would see a metric like:
 
 ## Adding a "Stack Trace" to your metric
 
-### Problem
+When errors are thrown we do not attach the stack trace in telemetry. We only know about the error itself, but
+not the path it took to get there. We sometimes need this stack trace to debug, and only have telemetry to get insight on what happened since we do not have access to logs.
+
+### Scenario
 
 Common example: _"I have a function, `thisFailsSometimes()` that is called in multiple places. The function sometimes fails, I know from telemetry, but I do not know if it is failing when it is a specific caller. If I knew the call stack/trace that it took to call my function that would help me debug."_
 
@@ -168,33 +171,66 @@ function thisFailsSometimes(num: number) {
 ### Solution
 
 Add a value to `function` in the options of a `run()`. This will result in a stack of functions identifiers that were previously called
-before `thisFailsSometimes()` was run. You can then retrieve the stack in the `run()` of your final metric using `getFunctionStack()`.
+before `failsDependingOnInput()` was run. You can then retrieve the stack in the `run()` of your final metric using `getFunctionStack()`.
 
 ```typescript
-function outerA() {
-    telemetry.my_Metric.run(() => thisFailsSometimes(1), { functionId: { name: 'outerA' }})
+function runsSuccessfully() {
+    telemetry.my_Metric.run(() => failsDependingOnInput(1), { functionId: { name: 'runsSuccessfully' }})
 }
 
-function outerB() {
-    telemetry.my_Metric.run(() => thisFailsSometimes(0), { functionId: { source: 'outerB' }})
+function thisThrows() {
+    telemetry.my_Metric.run(() => failsDependingOnInput(0), { functionId: { source: 'thisThrows' }})
 }
 
-function thisFailsSometimes(num: number) {
+function failsDependingOnInput(num: number) {
     return telemetry.my_Metric.run(() => {
         telemetry.record({ theCallStack: asStringifiedStack(telemetry.getFunctionStack())})
         if (number === 0) {
             throw Error('Cannot be 0')
         }
         ...
-    }, { functionId: { name: 'thisFailsSometimes' }})
+    }, { functionId: { name: 'failsDependingOnInput' }})
 }
 
-// Results in a metric: { theCallStack: 'outerB:thisFailsSometimes', result: 'Failed' }
-// { theCallStack: 'outerB:thisFailsSometimes' } implies 'outerB' was run first, then 'thisFailsSometimes'. See docstrings for more info.
-outerB()
+// Results in a metric: { theCallStack: 'thisThrows:failsDependingOnInput', result: 'Failed' }
+// { theCallStack: 'thisThrows:failsDependingOnInput' } implies 'thisThrows' was run first, then 'failsDependingOnInput'. See docstrings for more info.
+thisThrows()
+```
+
+Additionally the `@withTelemetryContext()` decorator can be added to methods to do the same as above, but with a cleaner syntax.
+
+```typescript
+class MyClass {
+    @withTelemetryContext({ name: 'runsSuccessfully', class: 'MyClass' })
+    public runsSuccessfully() {
+        failsDependingOnInput(1)
+    }
+
+    @withTelemetryContext({ name: 'thisThrows', class: 'MyClass' })
+    public thisThrows() {
+        failsDependingOnInput(0)
+    }
+
+    private failsDependingOnInput(num: number) {
+        return telemetry.my_Metric.run(() => {
+            telemetry.record({ theCallStack: asStringifiedStack(telemetry.getFunctionStack())})
+            if (number === 0) {
+                throw Error('Cannot be 0')
+            }
+            ...
+        }, { functionId: { name: 'failsDependingOnInput' }})
+    }
+
+}
+
+
+// Results in a metric: { theCallStack: 'MyClass#thisThrows,failsDependingOnInput', result: 'Failed' }
+new MyClass().thisThrows()
 ```
 
 ### Important Notes
+
+-   Using `@withTelemetryContext` + setting `errorCtx` will wrap errors with the functionId properties
 
 -   If a nested function does not use a `run()` then it will not be part of the call stack.
 
@@ -214,25 +250,6 @@ outerB()
     }
 
     c() // result: 'a:c', note that 'b' is not included
-    ```
-
--   If you are using `run()` with a class method, you can also add the class to the entry for more context
-
-    ```typescript
-    class A {
-        a() {
-            return telemetry.my_Metric.run(() => this.b(), { functionId: { name: 'a', class: 'A' } })
-        }
-
-        b() {
-            return telemetry.my_Metric.run(() => asStringifiedStack(telemetry.getFunctionStack()), {
-                functionId: { name: 'b', class: 'A' },
-            })
-        }
-    }
-
-    const inst = new A()
-    inst.a() // 'A#a,b'
     ```
 
 -   If you do not want your `run()` to emit telemetry, set `emit: false` in the options
