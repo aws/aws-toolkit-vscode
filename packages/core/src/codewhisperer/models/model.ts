@@ -332,6 +332,7 @@ export class ZipManifest {
                   target: string | undefined
                   schema: string | undefined
                   host: string | undefined
+                  sctFileName: string | undefined
               }
             | undefined
     } = { sqlConversion: undefined }
