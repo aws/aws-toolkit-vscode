@@ -26,9 +26,10 @@ import { isValidationExemptMetric } from './exemptMetrics'
 import { isAmazonQ, isCloud9, isSageMaker } from '../../shared/extensionUtilities'
 import { isUuid, randomUUID } from '../crypto'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
-import { FunctionEntry, type TelemetryTracer } from './spans'
+import { FunctionEntry } from './spans'
 import { telemetry } from './telemetry'
 import { v5 as uuidV5 } from 'uuid'
+import { ToolkitError } from '../errors'
 
 const legacySettingsTelemetryValueDisable = 'Disable'
 const legacySettingsTelemetryValueEnable = 'Enable'
@@ -365,9 +366,10 @@ export function getOperatingSystem(): OperatingSystem {
     }
 }
 
+type TelemetryContextArgs = FunctionEntry & { emit?: boolean; errorCtx?: boolean }
 /**
  * Decorator that simply wraps the method with a non-emitting telemetry `run()`, automatically
- * `record()`ing the provided function id for later use by {@link TelemetryTracer.getFunctionStack()}
+ * `record()`ing the provided function id for later use by TelemetryTracer.getFunctionStack()
  *
  * This saves us from needing to wrap the entire function:
  *
@@ -393,8 +395,14 @@ export function getOperatingSystem(): OperatingSystem {
  *     }
  * }
  * ```
+ *
+ * @param opts.name The name of the function
+ * @param opts.class The class name of the function
+ * @param opts.emit Whether or not to emit the telemetry event (default: false)
+ * @param opts.errorCtx Whether or not to add the error context to the error (default: false)
  */
-export function withTelemetryContext(functionId: FunctionEntry) {
+export function withTelemetryContext(opts: TelemetryContextArgs) {
+    const shouldErrorCtx = opts.errorCtx !== undefined ? opts.errorCtx : false
     function decorator<This, Args extends any[], Return>(
         originalMethod: (this: This, ...args: Args) => Return,
         _context: ClassMethodDecoratorContext // we dont need this currently but it keeps the compiler happy
@@ -402,16 +410,39 @@ export function withTelemetryContext(functionId: FunctionEntry) {
         function decoratedMethod(this: This, ...args: Args): Return {
             return telemetry.function_call.run(
                 () => {
-                    // DEVELOPERS: Set a breakpoint here and step in to it to debug the original function
-                    return originalMethod.call(this, ...args)
+                    try {
+                        // DEVELOPERS: Set a breakpoint here and step in to it to debug the original function
+                        const result = originalMethod.call(this, ...args)
+
+                        if (result instanceof Promise) {
+                            return result.catch((e) => {
+                                if (shouldErrorCtx) {
+                                    throw addContextToError(e, opts)
+                                }
+                                throw e
+                            }) as Return
+                        }
+                        return result
+                    } catch (e) {
+                        if (shouldErrorCtx) {
+                            throw addContextToError(e, opts)
+                        }
+                        throw e
+                    }
                 },
                 {
                     emit: false,
-                    functionId: functionId,
+                    functionId: opts,
                 }
             )
         }
         return decoratedMethod
     }
     return decorator
+
+    function addContextToError(e: unknown, functionId: FunctionEntry) {
+        return ToolkitError.chain(e, `ctx: ${functionId.name}`, {
+            code: functionId.class,
+        })
+    }
 }
