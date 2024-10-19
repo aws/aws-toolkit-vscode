@@ -1116,6 +1116,10 @@
                 {
                     "type": "className",
                     "required": false
+                },
+                {
+                    "type": "source",
+                    "required": false
                 }
             ],
             "passive": true
