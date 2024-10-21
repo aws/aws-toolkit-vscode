@@ -53,8 +53,6 @@ export class FeatureConfigProvider {
 
     private _isDataCollectionGroup = false
 
-    private _isNewProjectContextGroup = false
-
     constructor() {
         this.fetchFeatureConfigs().catch((e) => {
             getLogger().error('fetchFeatureConfigs failed: %s', (e as Error).message)
@@ -72,8 +70,9 @@ export class FeatureConfigProvider {
     }
 
     isNewProjectContextGroup(): boolean {
-        return this._isNewProjectContextGroup
+        return this.featureConfigs.get(Features.projectContextFeature)?.variation === 'TREATMENT'
     }
+
     public async listFeatureEvaluations(): Promise<ListFeatureEvaluationsResponse> {
         const request: ListFeatureEvaluationsRequest = {
             userContext: {
@@ -156,11 +155,6 @@ export class FeatureConfigProvider {
                     await CodeWhispererSettings.instance.enableLocalIndex()
                     globals.globalState.tryUpdate('aws.amazonq.workspaceIndexToggleOn', true)
                 }
-            }
-            const projectContextFeatureValue = this.featureConfigs.get(Features.projectContextFeature)?.value
-                .stringValue
-            if (projectContextFeatureValue === 'TREATMENT') {
-                this._isNewProjectContextGroup = true
             }
         } catch (e) {
             getLogger().error(`CodeWhisperer: Error when fetching feature configs ${e}`, e)
