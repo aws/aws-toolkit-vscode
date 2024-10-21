@@ -15,7 +15,7 @@ describe('DiffModel', function () {
     let parsedTestDescription: PatchInfo
     beforeEach(() => {
         parsedTestDescription = JSON.parse(
-            '{"name": "Added file", "fileName": "resources/files/addedFile.diffs", "isSuccessful": true}'
+            '{"name": "Added file", "fileName": "resources/files/addedFile.diff", "isSuccessful": true}'
         )
     })
 
@@ -43,7 +43,37 @@ describe('DiffModel', function () {
             parsedTestDescription
         )
 
+        assert.strictEqual(testDiffModel.patchFileNodes.length, 1)
         assert.strictEqual(testDiffModel.patchFileNodes[0].children.length, 1)
+        assert.strictEqual(testDiffModel.patchFileNodes[0].patchFilePath, parsedTestDescription.name)
+        const change = testDiffModel.patchFileNodes[0].children[0]
+
+        assert.strictEqual(change instanceof AddedChangeNode, true)
+    })
+
+    it('WHEN parsing a diff patch with no diff.json where a file was added THEN returns an array representing the added file', async function () {
+        const testDiffModel = new DiffModel()
+
+        const workspacePath = 'workspace'
+
+        sinon.replace(fs, 'exists', async (path) => {
+            const pathStr = path.toString()
+            if (pathStr.includes(workspacePath)) {
+                return false
+            }
+
+            return true
+        })
+
+        testDiffModel.parseDiff(
+            getTestResourceFilePath('resources/files/addedFile.diff'),
+            workspacePath,
+            parsedTestDescription
+        )
+
+        assert.strictEqual(testDiffModel.patchFileNodes.length, 1)
+        assert.strictEqual(testDiffModel.patchFileNodes[0].children.length, 1)
+        assert.strictEqual(testDiffModel.patchFileNodes[0].patchFilePath, parsedTestDescription.name)
         const change = testDiffModel.patchFileNodes[0].children[0]
 
         assert.strictEqual(change instanceof AddedChangeNode, true)
@@ -67,7 +97,9 @@ describe('DiffModel', function () {
             parsedTestDescription
         )
 
+        assert.strictEqual(testDiffModel.patchFileNodes.length, 1)
         assert.strictEqual(testDiffModel.patchFileNodes[0].children.length, 1)
+        assert.strictEqual(testDiffModel.patchFileNodes[0].patchFilePath, parsedTestDescription.name)
         const change = testDiffModel.patchFileNodes[0].children[0]
 
         assert.strictEqual(change instanceof ModifiedChangeNode, true)
