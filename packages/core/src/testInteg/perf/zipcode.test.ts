@@ -12,15 +12,13 @@ import { performanceTest } from '../../shared/performance/performance'
 import { zipCode } from '../../codewhisperer/indexNode'
 import { FileSystem } from '../../shared/fs/fs'
 import AdmZip from 'adm-zip'
-import { assertEfficientAdmZip, getFsCallsUpperBound } from './utilities'
+import { getFsCallsUpperBound } from './utilities'
 
 interface SetupResult {
     tempDir: string
     tempFileName: string
     transformQManifest: ZipManifest
     fsSpy: sinon.SinonSpiedInstance<FileSystem>
-    zipSpy: sinon.SinonSpiedInstance<AdmZip>
-    zip: AdmZip
 }
 
 async function setup(numberOfFiles: number, fileSize: number): Promise<SetupResult> {
@@ -34,12 +32,10 @@ async function setup(numberOfFiles: number, fileSize: number): Promise<SetupResu
         })
     ).uri.fsPath
     const fsSpy = sinon.spy(fs)
-    const zip = new AdmZip()
-    const zipSpy = sinon.spy(zip)
     const transformQManifest = new ZipManifest()
     transformByQState.setProjectPath(tempDir)
     transformQManifest.customBuildCommand = CodeWhispererConstants.skipUnitTestsBuildCommand
-    return { tempDir, tempFileName, transformQManifest, fsSpy, zipSpy, zip }
+    return { tempDir, tempFileName, transformQManifest, fsSpy }
 }
 
 function performanceTestWrapper(numberOfFiles: number, fileSize: number) {
@@ -67,18 +63,15 @@ function performanceTestWrapper(numberOfFiles: number, fileSize: number) {
             return {
                 setup: async () => await setup(numberOfFiles, fileSize),
                 execute: async (setup: SetupResult) => {
-                    await zipCode(
-                        {
-                            dependenciesFolder: {
-                                path: setup.tempDir,
-                                name: setup.tempFileName,
-                            },
-                            humanInTheLoopFlag: false,
-                            modulePath: setup.tempDir,
-                            zipManifest: setup.transformQManifest,
+                    await zipCode({
+                        dependenciesFolder: {
+                            path: setup.tempDir,
+                            name: setup.tempFileName,
                         },
-                        setup.zip
-                    )
+                        humanInTheLoopFlag: false,
+                        modulePath: setup.tempDir,
+                        zipManifest: setup.transformQManifest,
+                    })
                 },
                 verify: async (setup: SetupResult) => {
                     assert.ok(
@@ -88,7 +81,6 @@ function performanceTestWrapper(numberOfFiles: number, fileSize: number) {
                     )
 
                     assert.ok(getFsCallsUpperBound(setup.fsSpy) <= 15)
-                    assertEfficientAdmZip(setup.zipSpy, numberOfFiles, 2, 1)
                 },
             }
         }

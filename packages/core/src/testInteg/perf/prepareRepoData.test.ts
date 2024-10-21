@@ -11,8 +11,7 @@ import { prepareRepoData, TelemetryHelper } from '../../amazonqFeatureDev'
 import { AmazonqCreateUpload, fs, getRandomString } from '../../shared'
 import { Span } from '../../shared/telemetry'
 import { FileSystem } from '../../shared/fs/fs'
-import AdmZip from 'adm-zip'
-import { assertEfficientAdmZip, getFsCallsUpperBound } from './utilities'
+import { getFsCallsUpperBound } from './utilities'
 
 type resultType = {
     zipFileBuffer: Buffer
@@ -21,9 +20,7 @@ type resultType = {
 
 type setupResult = {
     workspace: WorkspaceFolder
-    initialZip: AdmZip
     fsSpy: sinon.SinonSpiedInstance<FileSystem>
-    zipSpy: sinon.SinonSpiedInstance<AdmZip>
     numFiles: number
     fileSize: number
 }
@@ -53,26 +50,18 @@ function performanceTestWrapper(numFiles: number, fileSize: number) {
             const telemetry = new TelemetryHelper()
             return {
                 setup: async () => {
-                    const initialZip = new AdmZip()
                     const fsSpy = sinon.spy(fs)
-                    const zipSpy = sinon.spy(initialZip)
                     const workspace = await createTestWorkspace(numFiles, {
                         fileNamePrefix: 'file',
                         fileContent: getRandomString(fileSize),
                         fileNameSuffix: '.md',
                     })
-                    return { workspace, initialZip, fsSpy, zipSpy, numFiles, fileSize }
+                    return { workspace, fsSpy, numFiles, fileSize }
                 },
                 execute: async (setup: setupResult) => {
-                    return await prepareRepoData(
-                        [setup.workspace.uri.fsPath],
-                        [setup.workspace],
-                        telemetry,
-                        {
-                            record: () => {},
-                        } as unknown as Span<AmazonqCreateUpload>,
-                        setup.initialZip
-                    )
+                    return await prepareRepoData([setup.workspace.uri.fsPath], [setup.workspace], telemetry, {
+                        record: () => {},
+                    } as unknown as Span<AmazonqCreateUpload>)
                 },
                 verify: async (setup: setupResult, result: resultType) => {
                     verifyResult(setup, result, telemetry, numFiles * fileSize)
@@ -89,7 +78,6 @@ function verifyResult(setup: setupResult, result: resultType, telemetry: Telemet
     assert.strictEqual(result.zipFileChecksum.length, 44)
 
     assert.ok(getFsCallsUpperBound(setup.fsSpy) <= setup.numFiles * 4, 'total system calls should be under 4 per file')
-    assertEfficientAdmZip(setup.zipSpy, setup.numFiles)
 }
 
 describe('prepareRepoData', function () {

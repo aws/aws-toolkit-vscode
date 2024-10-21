@@ -2,10 +2,8 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import assert from 'assert'
 import * as sinon from 'sinon'
 import { FileSystem } from '../../shared/fs/fs'
-import AdmZip from 'adm-zip'
 
 /**
  * Provide an upper bound on total number of system calls done through our fs module.
@@ -48,21 +46,4 @@ export function getFsWritesUpperBound(fsSpy: sinon.SinonSpiedInstance<FileSystem
         fsSpy.delete.callCount +
         fsSpy.copy.callCount
     )
-}
-/**
- * Check that each file is added to zip at most (factor * numFiles + offset) times, and written to buffer done exactly once.
- * @param zipSpy spied AdmZip instance used by code.
- * @param numFiles number of files in the workspace expected to be zipped.
- */
-export function assertEfficientAdmZip(
-    zipSpy: sinon.SinonSpiedInstance<AdmZip>,
-    numFiles: number,
-    factor: number = 1,
-    offset: number = 0
-): void | never {
-    assert.ok(
-        zipSpy.addLocalFile.callCount <= factor * numFiles + offset,
-        'add files to zip at factor*numFiles + offset times'
-    )
-    assert.strictEqual(zipSpy.toBuffer.callCount, 1, 'creates buffer once')
 }
