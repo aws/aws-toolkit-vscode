@@ -99,7 +99,7 @@ describe('pathFind', function () {
             // We move the ssh to a temp directory temporarily to test if cache works.
             const fakeSshPath = path.join(workspace.uri.fsPath, `ssh`)
 
-            process.env = testutil.envWithNewPath(workspace.uri.fsPath)
+            process.env.PATH = workspace.uri.fsPath
 
             await testutil.createExecutableFile(fakeSshPath, '')
 
