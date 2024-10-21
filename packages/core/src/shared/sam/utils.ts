@@ -36,9 +36,14 @@ export function getSource(arg: vscode.Uri | AWSTreeNodeBase | TreeNode | undefin
         return undefined
     }
 }
-
-export async function isDotnetRuntime(templateUri: vscode.Uri): Promise<boolean> {
-    const samTemplate = await CloudFormation.tryLoad(templateUri)
+/**
+ * Returns if a corresponding SAM template (received as a URI or string content) has
+ * any function using .NET runtime
+ * @param path A uri with the absolute path to the template file
+ * @param contents The contents of the template file, directly as a string
+ */
+export async function isDotnetRuntime(templateUri: vscode.Uri, contents?: string): Promise<boolean> {
+    const samTemplate = await CloudFormation.tryLoad(templateUri, contents)
 
     if (!samTemplate.template?.Resources) {
         return false

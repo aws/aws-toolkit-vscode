@@ -12,7 +12,6 @@ import { RegionNode } from '../../../awsexplorer/regionNode'
 import { Region } from '../../../shared/regions/endpoints'
 import { RegionProvider } from '../../../shared'
 import { DeployedResource, DeployedResourceNode } from '../../../awsService/appBuilder/explorer/nodes/deployedNode'
-import * as CloudFormation from '../../../shared/cloudformation/cloudformation'
 
 describe('SAM utils', async function () {
     it('returns the projectRoot', async function () {
@@ -60,43 +59,77 @@ describe('SAM utils', async function () {
 
     describe('checks if it is DotNet', async function () {
         let sandbox: sinon.SinonSandbox
+        const noUri = vscode.Uri.parse('untitled://')
         const testScenarios = [
             {
                 name: 'DotNet function',
-                template: { Resources: [{ Type: 'AWS::Serverless::Function', Properties: { Runtime: 'dotnet8' } }] },
+                template: `
+                    Transform: 'AWS::Serverless-2016-10-31'
+                    Resources:
+                        Func1:
+                            Type: 'AWS::Serverless::Function'
+                            Properties:
+                                Runtime: 'dotnet8'
+                `,
                 expected: true,
             },
             {
                 name: 'Global DotNet property',
-                template: {
-                    Globals: { Function: { Runtime: 'dotnet8' } },
-                    Resources: [{ Type: 'AWS::Serverless::Function', Properties: {} }],
-                },
+                template: `
+                    Transform: 'AWS::Serverless-2016-10-31'
+                    Globals:
+                        Function:
+                            Runtime: 'dotnet8'
+                    Resources:
+                        Func1:
+                            Type: 'AWS::Serverless::Function'
+                            Properties: {}
+                `,
                 expected: true,
             },
             {
                 name: 'different runtime',
-                template: { Resources: [{ Type: 'AWS::Serverless::Function', Properties: { Runtime: 'nodejs20.x' } }] },
+                template: `
+                    Transform: 'AWS::Serverless-2016-10-31'
+                    Resources:
+                        Func1:
+                            Type: 'AWS::Serverless::Function'
+                            Properties:
+                                Runtime: 'nodejs20.x'
+                `,
                 expected: false,
             },
             {
                 name: 'two functions, one DotNet',
-                template: {
-                    Resources: [
-                        { Type: 'AWS::Serverless::Function', Properties: { Runtime: 'nodejs20.x' } },
-                        { Type: 'AWS::Serverless::Function', Properties: { Runtime: 'dotnet8' } },
-                    ],
-                },
+                template: `
+                    Transform: 'AWS::Serverless-2016-10-31'
+                    Resources:
+                        Func1:
+                            Type: 'AWS::Serverless::Function'
+                            Properties:
+                                Runtime: 'nodejs20.x'
+                        Func2:
+                            Type: 'AWS::Serverless::Function'
+                            Properties:
+                                Runtime: 'dotnet8'
+                `,
                 expected: true,
             },
             {
                 name: 'no function',
-                template: { Resources: [{ Type: 'AWS::S3::Bucket', Properties: { Runtime: 'nodejs20.x' } }] },
+                template: `
+                    Transform: 'AWS::Serverless-2016-10-31'
+                    Resources:
+                        Func1:
+                            Type: 'AWS::S3::Bucket'
+                            Properties:
+                                Runtime: 'nodejs20.x'
+                `,
                 expected: false,
             },
             {
                 name: 'no resources',
-                template: {},
+                template: ``,
                 expected: false,
             },
         ]
@@ -110,11 +143,8 @@ describe('SAM utils', async function () {
 
         testScenarios.forEach((scenario) => {
             it(`returns isDotNetRuntime for ${scenario.name}`, async () => {
-                const tryLoadStub = sandbox.stub(CloudFormation, 'tryLoad')
-                tryLoadStub.resolves({ template: scenario.template as any, kind: 'sam' })
-                const templateFile = vscode.Uri.file('file://file') // File doesn't matter, because we're mocking the call where it's being used
-                assert.strictEqual(await isDotnetRuntime(templateFile), scenario.expected)
-                assert(tryLoadStub.calledWith(templateFile))
+                const response = await isDotnetRuntime(noUri, scenario.template)
+                assert.strictEqual(response, scenario.expected)
             })
         })
     })
