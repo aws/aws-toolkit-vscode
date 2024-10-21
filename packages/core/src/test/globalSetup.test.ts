@@ -103,6 +103,7 @@ export const mochaHooks = {
         TelemetryDebounceInfo.instance.clear()
         // mochaGlobalSetup() set this to a fake, so it's safe to clear it here.
         await globals.globalState.clear()
+        await fs.delete(globals.context.globalStorageUri.fsPath, { recursive: true, force: true })
 
         await testUtil.closeAllEditors()
     },
