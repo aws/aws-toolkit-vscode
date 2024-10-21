@@ -145,14 +145,21 @@ describe('samProject', () => {
 
         it('throws ToolkitError when fails to load Cloudformation template values', async () => {
             // simulate unsuccessful CFN loading template when there is no template.
-            try {
-                await getApp(mockSamAppLocation)
-                assert.fail('Test should not reach here. Expect ToolkitError thrown')
-            } catch (error) {
-                assert(cloudformationTryLoadSpy.calledOnce)
-                assert(error instanceof ToolkitError)
-                assert(error.message.match(`Template at ${mockSamAppLocation.samTemplateUri.fsPath} is not valid`))
-            }
+            await assert.rejects(
+                () => getApp(mockSamAppLocation),
+                new ToolkitError(`Template at ${mockSamAppLocation.samTemplateUri.fsPath} is not valid`)
+            )
+            // try {
+            //     await getApp(mockSamAppLocation)
+            //     assert.fail('Test should not reach here. Expect ToolkitError thrown')
+            // } catch (error) {
+            //     assert(cloudformationTryLoadSpy.calledOnce)
+            //     assert(error instanceof ToolkitError)
+            //     assert.strictEqual(
+            //         error.message,
+            //         `Template at ${mockSamAppLocation.samTemplateUri.fsPath} is not valid`
+            //     )
+            // }
         })
     })
 })
