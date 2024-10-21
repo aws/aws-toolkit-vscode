@@ -69,7 +69,8 @@ export class CrashMonitoring {
         private readonly checkInterval: number,
         private readonly isDevMode: boolean,
         private readonly isAutomation: boolean,
-        private readonly devLogger: Logger | undefined
+        private readonly devLogger: Logger | undefined,
+        private readonly timeLag: TimeLag
     ) {}
 
     static #didTryCreate = false
@@ -92,7 +93,8 @@ export class CrashMonitoring {
                 DevSettings.instance.get('crashCheckInterval', 1000 * 60 * 10), // check every 10 minutes
                 isDevMode,
                 isAutomation(),
-                devModeLogger
+                devModeLogger,
+                new TimeLag()
             ))
         } catch (error) {
             emitFailure({ functionName: 'instance', error })
@@ -115,7 +117,13 @@ export class CrashMonitoring {
             this.heartbeat = new Heartbeat(this.state, this.checkInterval, this.isDevMode)
             this.heartbeat.onFailure(() => this.cleanup())
 
-            this.crashChecker = new CrashChecker(this.state, this.checkInterval, this.isDevMode, this.devLogger)
+            this.crashChecker = new CrashChecker(
+                this.state,
+                this.checkInterval,
+                this.isDevMode,
+                this.devLogger,
+                this.timeLag
+            )
             this.crashChecker.onFailure(() => this.cleanup())
 
             await this.heartbeat.start()
@@ -236,7 +244,7 @@ class CrashChecker {
          * Solution: Keep track of the lag, and then skip the next crash check if there was a lag. This will give time for the
          *           next heartbeat to be sent.
          */
-        private readonly timeLag: TimeLag = new TimeLag()
+        private readonly timeLag: TimeLag
     ) {}
 
     public async start() {
@@ -391,7 +399,7 @@ export async function crashMonitoringStateFactory(deps = getDefaultDependencies(
  *   - is not truly reliable since filesystems are not reliable
  */
 export class FileSystemState {
-    private readonly stateDirPath: string
+    public readonly stateDirPath: string
 
     /**
      * IMORTANT: Use {@link crashMonitoringStateFactory} to make an instance
@@ -512,9 +520,10 @@ export class FileSystemState {
     protected createExtId(ext: ExtInstance): ExtInstanceId {
         return `${ext.extHostPid}_${ext.sessionId}`
     }
+    private readonly fileSuffix = 'running'
     private makeStateFilePath(ext: ExtInstance | ExtInstanceId) {
         const extId = typeof ext === 'string' ? ext : this.createExtId(ext)
-        return path.join(this.stateDirPath, extId)
+        return path.join(this.stateDirPath, extId + `.${this.fileSuffix}`)
     }
     public async clearState(): Promise<void> {
         this.deps.devLogger?.debug('crashMonitoring: CLEAR_STATE: Started')
@@ -525,10 +534,26 @@ export class FileSystemState {
     }
     public async getAllExts(): Promise<ExtInstanceHeartbeat[]> {
         const res = await withFailCtx('getAllExts', async () => {
-            // The file names are intentionally the IDs for easy mapping
-            const allExtIds: ExtInstanceId[] = await withFailCtx('readdir', async () =>
-                (await fs.readdir(this.stateDirPath)).map((k) => k[0])
-            )
+            // Read all the exts from the filesystem, deserializing as needed
+            const allExtIds: ExtInstanceId[] = await withFailCtx('readdir', async () => {
+                const filesInDir = await fs.readdir(this.stateDirPath)
+                const relevantFiles = filesInDir.filter((file: [string, vscode.FileType]) => {
+                    const name = file[0]
+                    const type = file[1]
+                    if (type !== vscode.FileType.File) {
+                        return false
+                    }
+                    if (path.extname(name) !== `.${this.fileSuffix}`) {
+                        return false
+                    }
+                    return true
+                })
+                const idsFromFileNames = relevantFiles.map((file: [string, vscode.FileType]) => {
+                    const name = file[0]
+                    return name.split('.')[0]
+                })
+                return idsFromFileNames
+            })
 
             const allExts = allExtIds.map<Promise<ExtInstanceHeartbeat | undefined>>(async (extId: string) => {
                 // Due to a race condition, a separate extension instance may have removed this file by this point. It is okay since
