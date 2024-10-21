@@ -9,7 +9,7 @@ import { fs } from '../../../shared'
 import { isWin } from '../../../shared/vscode/env'
 import { tryRun } from '../../../shared/utilities/pathFind'
 
-describe('setEnv', function () {
+describe('copyEnv', function () {
     it('modifies the node environment variables (Non-Windows)', function () {
         // PATH returns undefined on Windows.
         if (isWin()) {
