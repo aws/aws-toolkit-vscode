@@ -410,30 +410,27 @@ describe('MultiPick', function () {
     let picker: TestQuickPick<DataQuickPickItem<string>>
     let testPrompter: QuickPickPrompter<string>
 
-    it('can handle back button', async function () {
+    const prepareMultipick = async (itemsToLoad: DataQuickPickItem<string>[]) => {
         picker = getTestWindow().createQuickPick() as typeof picker
         picker.canSelectMany = true
         testPrompter = new QuickPickPrompter(picker)
-        testPrompter.loadItems(items)
+        await testPrompter.loadItems(itemsToLoad)
+    }
+
+    it('can handle back button', async function () {
+        await prepareMultipick(items)
         testPrompter.onDidShow(() => picker.pressButton(createBackButton()))
         assert.strictEqual(await testPrompter.prompt(), WIZARD_BACK)
     })
 
     it('can handle exit button', async function () {
-        picker = getTestWindow().createQuickPick() as typeof picker
-        picker.canSelectMany = true
-        testPrompter = new QuickPickPrompter(picker)
-        testPrompter.loadItems(items)
+        await prepareMultipick(items)
         testPrompter.onDidShow(() => picker.dispose())
         assert.strictEqual(await testPrompter.prompt(), WIZARD_EXIT)
     })
 
     it('applies picked options', async function () {
-        picker = getTestWindow().createQuickPick() as typeof picker
-        picker.canSelectMany = true
-        testPrompter = new QuickPickPrompter(picker)
-        testPrompter.loadItems(items)
-
+        await prepareMultipick(items)
         picker.onDidShow(async () => {
             picker.acceptDefault()
         })
@@ -446,14 +443,11 @@ describe('MultiPick', function () {
         })
 
         const result = await testPrompter.prompt()
-        assert.deepStrictEqual(result, '["yes"]')
+        assert.deepStrictEqual(result, JSON.stringify(['yes']))
     })
 
     it('pick non should return empty array', async function () {
-        picker = getTestWindow().createQuickPick() as typeof picker
-        picker.canSelectMany = true
-        testPrompter = new QuickPickPrompter(picker)
-        testPrompter.loadItems(itemsNoPicked)
+        await prepareMultipick(itemsNoPicked)
 
         picker.onDidShow(async () => {
             picker.acceptDefault()
@@ -467,7 +461,18 @@ describe('MultiPick', function () {
         })
 
         const result = await testPrompter.prompt()
-        assert.deepStrictEqual(result, '[]')
+        assert.deepStrictEqual(result, JSON.stringify([]))
+    })
+
+    it('accept all should return array', async function () {
+        await prepareMultipick(itemsNoPicked)
+        picker.onDidShow(async () => {
+            await picker.untilReady()
+            picker.acceptItems(itemsNoPicked[0], itemsNoPicked[1])
+        })
+
+        const result = await testPrompter.prompt()
+        assert.deepStrictEqual(result, JSON.stringify(['yes', 'no']))
     })
 
     it('creates a new prompter with options', async function () {
