@@ -43,7 +43,7 @@ describe('pathFind', function () {
     })
 
     describe('findSshPath', function () {
-        let previousPath: string
+        let previousPath: string | undefined
 
         beforeEach(function () {
             previousPath = testutil.env.PATH
