@@ -352,7 +352,7 @@ export const newCustomizationMessage = 'You have access to new Amazon Q customiz
 // Start of QCT Strings
 
 // feature flag for SQL transformations
-export const isSQLTransformReady = true
+export const isSQLTransformReady = false
 
 export const uploadZipSizeLimitInBytes = 2000000000 // 2GB
 

@@ -107,16 +107,7 @@ export async function processSQLConversionTransformFormInput(pathToProject: stri
 
 export async function validateSQLMetadataFile(fileContents: string, message: any) {
     try {
-        let sctData: any = undefined
-        xml2js.parseString(fileContents, (err, result) => {
-            if (err) {
-                getLogger().error('CodeTransformation: Error parsing .sct file, not valid XML.', err)
-                throw new Error(`Invalid XML encountered`)
-            } else {
-                sctData = result
-            }
-        })
-
+        const sctData = await xml2js.parseStringPromise(fileContents)
         const dbEntities = sctData['tree']['instances'][0]['ProjectModel'][0]['entities'][0]
         const sourceDB = dbEntities['sources'][0]['DbServer'][0]['$']['vendor'].trim().toUpperCase()
         const targetDB = dbEntities['targets'][0]['DbServer'][0]['$']['vendor'].trim().toUpperCase()

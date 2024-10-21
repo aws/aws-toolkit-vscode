@@ -441,8 +441,10 @@ export class Messenger {
                 break
             case 'error-parsing-sct-file':
                 message = CodeWhispererConstants.invalidMetadataFileErrorParsing
+                break
             case 'invalid-zip-no-sct-file':
                 message = CodeWhispererConstants.invalidMetadataFileNoSctFile
+                break
         }
 
         const buttons: ChatItemButton[] = []
