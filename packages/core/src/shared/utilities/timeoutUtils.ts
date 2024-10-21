@@ -184,6 +184,34 @@ export class Timeout {
     }
 }
 
+export class Interval {
+    private _setCompleted: (() => void) | undefined
+    private _nextCompletion: Promise<void>
+    private ref: NodeJS.Timer | number | undefined
+
+    constructor(intervalMillis: number, onCompletion: () => Promise<void>) {
+        this._nextCompletion = new Promise<void>((resolve) => {
+            this._setCompleted = () => resolve()
+        })
+        this.ref = globals.clock.setInterval(async () => {
+            await onCompletion()
+            this._setCompleted!()
+            this._nextCompletion = new Promise<void>((resolve) => {
+                this._setCompleted = () => resolve()
+            })
+        }, intervalMillis)
+    }
+
+    /** Allows to wait for the next interval to finish running */
+    public async nextCompletion() {
+        await this._nextCompletion
+    }
+
+    public dispose() {
+        globals.clock.clearInterval(this.ref)
+    }
+}
+
 interface WaitUntilOptions {
     /** Timeout in ms (default: 5000) */
     readonly timeout?: number
