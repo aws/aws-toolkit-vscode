@@ -12,7 +12,7 @@ import { InstalledClock } from '@sinonjs/fake-timers'
 import { ChildProcess } from '../../../shared/utilities/processUtils'
 import { fs, globals } from '../../../shared'
 
-describe('SshKeyUtility', async function () {
+describe('SshKeyPair', async function () {
     let clock: InstalledClock
     let keyPair: SshKeyPair
     let keyName: string
