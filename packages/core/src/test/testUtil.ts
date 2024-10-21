@@ -630,3 +630,7 @@ export function tryRegister(command: DeclaredCommand<() => Promise<any>>) {
 export function getFetchStubWithResponse(response: Partial<Response>) {
     return stub(request, 'fetch').returns({ response: new Promise((res, _) => res(response)) } as any)
 }
+
+export function copyEnv(): NodeJS.ProcessEnv {
+    return { ...process.env }
+}
