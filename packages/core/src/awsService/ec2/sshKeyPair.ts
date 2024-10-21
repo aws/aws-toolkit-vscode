@@ -45,11 +45,11 @@ export class SshKeyPair {
 
     public static async generateSshKeyPair(keyPath: string): Promise<void> {
         const keyGenerated = await SshKeyPair.tryKeyTypes(keyPath, ['ed25519', 'rsa'])
-        await SshKeyPair.assertGenerated(keyPath, keyGenerated)
         // Should already be the case, but just in case we assert permissions.
         // skip on Windows since it only allows write permission to be changed.
         if (!globals.isWeb && os.platform() !== 'win32') {
             await fs.chmod(keyPath, 0o600)
+            await SshKeyPair.assertGenerated(keyPath, keyGenerated)
         }
     }
     /**
