@@ -241,6 +241,10 @@ export function createLabelQuickPick<T extends string>(
 
 function acceptItems<T>(picker: DataQuickPick<T>, resolve: (items: DataQuickPickItem<T>[]) => void): void {
     if (picker.selectedItems.length === 0) {
+        if (picker.canSelectMany) {
+            // Allow empty choice in multipick
+            resolve(Array.from(picker.selectedItems))
+        }
         return
     }
 
@@ -559,16 +563,18 @@ export class QuickPickPrompter<T> extends Prompter<T> {
             return choices
         }
 
-        this._lastPicked = choices[0]
-        const result = choices[0].data
-
         if (this.quickPick.canSelectMany) {
             // return if control signal
-            if (isWizardControl(result)) {
-                return result
+            if (choices.length !== 0 && isWizardControl(choices[0].data)) {
+                return choices[0].data
             }
             // reset before setting recent again
-            this.quickPick.items.map((item) => (item.recentlyUsed = false))
+            this.quickPick.items.map((item) => {
+                ;(item.recentlyUsed = false),
+                    // picked will only work on the first choice. Once choosen, remove the picked flag.
+                    (item.picked = false)
+            })
+            // note this can be empty
             return JSON.stringify(
                 await Promise.all(
                     choices.map(async (choice) => {
@@ -578,6 +584,9 @@ export class QuickPickPrompter<T> extends Prompter<T> {
                 )
             ) as T
         }
+        // else single pick
+        this._lastPicked = choices[0]
+        const result = choices[0].data
 
         return result instanceof Function ? await result() : result
     }
