@@ -80,7 +80,7 @@ describe('pathFind', function () {
             const workspace = await testutil.createTestWorkspaceFolder()
             const fakeSshPath = path.join(workspace.uri.fsPath, `ssh`)
 
-            process.env = testutil.envWithNewPath(workspace.uri.fsPath)
+            process.env.PATH = workspace.uri.fsPath
 
             await testutil.createExecutableFile(fakeSshPath, '')
 
