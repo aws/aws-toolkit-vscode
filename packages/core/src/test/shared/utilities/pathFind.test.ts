@@ -43,14 +43,14 @@ describe('pathFind', function () {
     })
 
     describe('findSshPath', function () {
-        let previousEnv: NodeJS.ProcessEnv
+        let previousPath: string
 
         beforeEach(function () {
-            previousEnv = testutil.copyEnv()
+            previousPath = testutil.copyEnv().PATH!
         })
 
         afterEach(function () {
-            process.env = previousEnv
+            process.env.PATH = previousPath
         })
 
         it('first tries ssh in $PATH (Non-Windows)', async function () {

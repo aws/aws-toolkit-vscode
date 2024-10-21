@@ -17,7 +17,7 @@ describe('setEnv', function () {
         assert.strictEqual(copyEnv().PATH, fakePath)
 
         process.env.PATH = originalPath
-        assert.strictEqual(copyEnv(), originalPath)
+        assert.strictEqual(copyEnv().PATH, originalPath)
     })
 })
 
