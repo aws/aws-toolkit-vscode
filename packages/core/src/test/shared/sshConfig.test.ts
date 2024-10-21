@@ -5,13 +5,11 @@
 import assert from 'assert'
 import * as sinon from 'sinon'
 import * as path from 'path'
-import * as vscode from 'vscode'
 import * as http from 'http'
 import { ToolkitError } from '../../shared/errors'
 import { Result } from '../../shared/utilities/result'
 import { ChildProcess, ChildProcessResult } from '../../shared/utilities/processUtils'
 import { SshConfig, ensureConnectScript, sshLogFileLocation } from '../../shared/sshConfig'
-import { FakeExtensionContext } from '../fakeExtensionContext'
 import { fileExists, makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import {
     DevEnvironmentId,
@@ -20,7 +18,7 @@ import {
     getCodeCatalystSsmEnv,
 } from '../../codecatalyst/model'
 import { StartDevEnvironmentSessionRequest } from 'aws-sdk/clients/codecatalyst'
-import { mkdir, readFile, writeFile } from 'fs/promises'
+import { mkdir, readFile } from 'fs/promises'
 import fs from '../../shared/fs/fs'
 import { globals } from '../../shared'
 
