@@ -10,7 +10,12 @@ import { isWin } from '../../../shared/vscode/env'
 import { tryRun } from '../../../shared/utilities/pathFind'
 
 describe('setEnv', function () {
-    it('modifies the node environment variables', function () {
+    it('modifies the node environment variables (Non-Windows)', function () {
+        // PATH returns undefined on Windows.
+        if (isWin()) {
+            this.skip()
+        }
+
         const originalPath = copyEnv().PATH
         const fakePath = 'fakePath'
         process.env.PATH = fakePath
