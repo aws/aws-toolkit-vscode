@@ -2,5 +2,5 @@
     "report-dir": "../../coverage/toolkit",
     "reporter": ["lcov"],
     "all": true,
-    "exclude": ["**/test*/**", "**/node_modules/**"]
+    "exclude": ["**/test*/**", "**/node_modules/**", "**/ssmServer.js", "**/ssmDocument/external *"]
 }
