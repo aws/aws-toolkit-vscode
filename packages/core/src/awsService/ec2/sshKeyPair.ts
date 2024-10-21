@@ -20,7 +20,7 @@ export class SshKeyPair {
         private readonly keyPath: string,
         lifetime: number
     ) {
-        this.publicKeyPath = `${keyPath}.pub`
+        this.publicKeyPath = `${this.keyPath}.pub`
         this.lifeTimeout = new Timeout(lifetime)
 
         this.lifeTimeout.onCompletion(async () => {
@@ -28,18 +28,19 @@ export class SshKeyPair {
         })
     }
 
-    public static async getSshKeyPair(keyPath: string, lifetime: number) {
-        SshKeyPair.assertValidKeypath(
-            keyPath,
-            `ec2: unable to generate key outside of global storage in path ${keyPath}`
-        )
+    private static getKeypath(keyName: string): string {
+        return path.join(globals.context.globalStorageUri.fsPath, keyName)
+    }
+
+    public static async getSshKeyPair(keyName: string, lifetime: number) {
+        const keyPath = SshKeyPair.getKeypath(keyName)
         await SshKeyPair.generateSshKeyPair(keyPath)
         return new SshKeyPair(keyPath, lifetime)
     }
 
     private static isValidKeyPath(keyPath: string): boolean {
         const relative = path.relative(globals.context.globalStorageUri.fsPath, keyPath)
-        return relative !== undefined && !relative.startsWith('..') && !path.isAbsolute(relative)
+        return relative !== undefined && !relative.startsWith('..') && !path.isAbsolute(relative) && keyPath.length > 4
     }
 
     private static assertValidKeypath(keyPath: string, message: string): void | never {

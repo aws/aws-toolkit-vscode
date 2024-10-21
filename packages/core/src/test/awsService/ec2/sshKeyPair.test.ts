@@ -2,11 +2,9 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import * as vscode from 'vscode'
 import assert from 'assert'
 import nodefs from 'fs' // eslint-disable-line no-restricted-imports
 import * as sinon from 'sinon'
-import * as path from 'path'
 import * as os from 'os'
 import { SshKeyPair } from '../../../awsService/ec2/sshKeyPair'
 import { installFakeClock } from '../../testUtil'
@@ -15,22 +13,17 @@ import { ChildProcess } from '../../../shared/utilities/processUtils'
 import { fs, globals } from '../../../shared'
 
 describe('SshKeyUtility', async function () {
-    let temporaryDirectory: string
-    let keyPath: string
-    let keyPair: SshKeyPair
     let clock: InstalledClock
+    let keyPair: SshKeyPair
+    let keyName: string
 
     before(async function () {
-        // Setup a temporary directory inside of globalStorage since keys need to be inside globalStorage
-        temporaryDirectory = path.join(globals.context.globalStorageUri.fsPath, 'SshKeyUtilityTests')
-        await fs.mkdir(temporaryDirectory)
-
-        keyPath = path.join(temporaryDirectory, 'testKeyPair')
         clock = installFakeClock()
     })
 
     beforeEach(async function () {
-        keyPair = await SshKeyPair.getSshKeyPair(keyPath, 30000)
+        keyName = 'testKeyPair'
+        keyPair = await SshKeyPair.getSshKeyPair(keyName, 30000)
     })
 
     afterEach(async function () {
@@ -38,21 +31,20 @@ describe('SshKeyUtility', async function () {
     })
 
     after(async function () {
-        await fs.delete(temporaryDirectory, { recursive: true })
         clock.uninstall()
         sinon.restore()
     })
 
     it('generates key in target file', async function () {
-        const contents = await fs.readFileBytes(vscode.Uri.file(keyPath))
+        const contents = await fs.readFileBytes(keyPair.getPrivateKeyPath())
         assert.notStrictEqual(contents.length, 0)
     })
 
     it('generates unique key each time', async function () {
-        const beforeContent = await fs.readFileBytes(vscode.Uri.file(keyPath))
-        keyPair = await SshKeyPair.getSshKeyPair(keyPath, 30000)
-        const afterContent = await fs.readFileBytes(vscode.Uri.file(keyPath))
-        assert.notStrictEqual(beforeContent, afterContent)
+        const keyPair2 = await SshKeyPair.getSshKeyPair(`${keyName}2`, 30000)
+        const content1 = await fs.readFileBytes(keyPair2.getPrivateKeyPath())
+        const content2 = await fs.readFileBytes(keyPair.getPrivateKeyPath())
+        assert.notStrictEqual(content1, content2)
     })
 
     it('sets permission of the file to read/write owner', async function () {
@@ -63,7 +55,7 @@ describe('SshKeyUtility', async function () {
     })
 
     it('defaults to ed25519 key type', async function () {
-        const process = new ChildProcess(`ssh-keygen`, ['-vvv', '-l', '-f', keyPath])
+        const process = new ChildProcess(`ssh-keygen`, ['-vvv', '-l', '-f', keyPair.getPrivateKeyPath()])
         const result = await process.run()
         // Check private key header for algorithm name
         assert.strictEqual(result.stdout.includes('[ED25519 256]'), true)
@@ -74,16 +66,12 @@ describe('SshKeyUtility', async function () {
         const stub = sinon.stub(SshKeyPair, 'tryKeyGen')
         stub.onFirstCall().resolves(false)
         stub.callThrough()
-        keyPair = await SshKeyPair.getSshKeyPair(keyPath, 30000)
-        const process = new ChildProcess(`ssh-keygen`, ['-vvv', '-l', '-f', keyPath])
+        const rsaKey = await SshKeyPair.getSshKeyPair('rsa', 30000)
+        const process = new ChildProcess(`ssh-keygen`, ['-vvv', '-l', '-f', rsaKey.getPrivateKeyPath()])
         const result = await process.run()
         // Check private key header for algorithm name
         assert.strictEqual(result.stdout.includes('[RSA'), true)
         stub.restore()
-    })
-
-    it('properly names the public key', function () {
-        assert.strictEqual(keyPair.getPublicKeyPath(), `${keyPath}.pub`)
     })
 
     it('reads in public ssh key that is non-empty', async function () {
@@ -93,10 +81,10 @@ describe('SshKeyUtility', async function () {
 
     it('does overwrite existing keys on get call', async function () {
         const generateStub = sinon.spy(SshKeyPair, 'generateSshKeyPair')
-        const keyBefore = await fs.readFileBytes(vscode.Uri.file(keyPath))
-        keyPair = await SshKeyPair.getSshKeyPair(keyPath, 30000)
+        const keyBefore = await fs.readFileBytes(keyPair.getPrivateKeyPath())
+        keyPair = await SshKeyPair.getSshKeyPair(keyName, 30000)
 
-        const keyAfter = await fs.readFileBytes(vscode.Uri.file(keyPath))
+        const keyAfter = await fs.readFileBytes(keyPair.getPrivateKeyPath())
         sinon.assert.calledOnce(generateStub)
 
         assert.notStrictEqual(keyBefore, keyAfter)
@@ -122,7 +110,7 @@ describe('SshKeyUtility', async function () {
         sinon.stub(SshKeyPair, 'generateSshKeyPair')
         const deleteStub = sinon.stub(SshKeyPair.prototype, 'delete')
 
-        keyPair = await SshKeyPair.getSshKeyPair(keyPath, 50)
+        keyPair = await SshKeyPair.getSshKeyPair(keyName, 50)
         await clock.tickAsync(10)
         sinon.assert.notCalled(deleteStub)
         await clock.tickAsync(100)
