@@ -328,6 +328,7 @@ export const codefileExtensions = new Set([
     '.ts',
     '.tsx',
     '.tu',
+    '.txt',
     '.v',
     '.vala',
     '.vapi',
