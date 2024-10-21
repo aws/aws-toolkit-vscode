@@ -101,6 +101,8 @@ export const mochaHooks = {
         globals.telemetry.clearRecords()
         globals.telemetry.logger.clear()
         TelemetryDebounceInfo.instance.clear()
+        await fs.delete(globals.context.globalStorageUri.fsPath, { recursive: true, force: true })
+
         // mochaGlobalSetup() set this to a fake, so it's safe to clear it here.
         await globals.globalState.clear()
 
