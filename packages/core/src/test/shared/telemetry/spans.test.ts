@@ -11,7 +11,7 @@ import { assertTelemetry, getMetrics, installFakeClock } from '../../testUtil'
 import { selectFrom } from '../../../shared/utilities/tsUtils'
 import { getAwsServiceError } from '../errors.test'
 import { sleep } from '../../../shared'
-import { withTelemetryContext } from '../../../shared/telemetry/util'
+import { withTelemetryContext, withTelemetryContextFactory } from '../../../shared/telemetry/util'
 import { SinonSandbox } from 'sinon'
 import sinon from 'sinon'
 import * as crypto from '../../../shared/crypto'
@@ -684,6 +684,44 @@ describe('TelemetryTracer', function () {
                 () => inst.throwsErrorButNoCtx(),
                 (e) => e === arbitraryError
             )
+        })
+
+        const customWithTelemetryContext = withTelemetryContextFactory({ class: 'TestCustomContext', emit: true })
+
+        class TestCustomContext {
+            @customWithTelemetryContext({ name: 'testMethod' })
+            testMethod() {
+                return
+            }
+
+            @customWithTelemetryContext({ name: 'overridesTheClass', class: 'Overidden' })
+            overridesTheClass() {
+                return
+            }
+        }
+
+        it('Uses predefined context', function () {
+            const inst = new TestCustomContext()
+            inst.testMethod()
+            assertTelemetry('function_call', [
+                {
+                    functionName: 'testMethod',
+                    className: 'TestCustomContext',
+                    source: 'TestCustomContext#testMethod',
+                },
+            ])
+        })
+
+        it('can override the predefined context', function () {
+            const inst = new TestCustomContext()
+            inst.overridesTheClass()
+            assertTelemetry('function_call', [
+                {
+                    functionName: 'overridesTheClass',
+                    className: 'Overidden',
+                    source: 'Overidden#overridesTheClass',
+                },
+            ])
         })
     })
 
