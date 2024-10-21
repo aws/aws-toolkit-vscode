@@ -3,7 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
-import { CloudWatchLogsClient, StartLiveTailCommand, StartLiveTailCommandOutput } from '@aws-sdk/client-cloudwatch-logs'
+import {
+    CloudWatchLogsClient,
+    StartLiveTailCommand,
+    StartLiveTailResponseStream,
+} from '@aws-sdk/client-cloudwatch-logs'
 import { LogStreamFilterResponse } from '../wizard/liveTailLogStreamSubmenu'
 import { CloudWatchLogsSettings } from '../cloudWatchLogsUtils'
 import { Settings, ToolkitError } from '../../../shared'
@@ -58,12 +62,16 @@ export class LiveTailSession {
         return this._logGroupName
     }
 
-    public startLiveTailSession(): Promise<StartLiveTailCommandOutput> {
+    public async startLiveTailSession(): Promise<AsyncIterable<StartLiveTailResponseStream>> {
         const command = this.buildStartLiveTailCommand()
         try {
-            return this.liveTailClient.cwlClient.send(command, {
+            const commandOutput = await this.liveTailClient.cwlClient.send(command, {
                 abortSignal: this.liveTailClient.abortController.signal,
             })
+            if (!commandOutput.responseStream) {
+                throw new ToolkitError('LiveTail session response stream is undefined.')
+            }
+            return commandOutput.responseStream
         } catch (e) {
             throw new ToolkitError('Encountered error while trying to start LiveTail session.')
         }
