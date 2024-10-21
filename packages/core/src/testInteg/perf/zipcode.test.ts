@@ -11,7 +11,6 @@ import * as CodeWhispererConstants from '../../codewhisperer/models/constants'
 import { performanceTest } from '../../shared/performance/performance'
 import { zipCode } from '../../codewhisperer/indexNode'
 import { FileSystem } from '../../shared/fs/fs'
-import AdmZip from 'adm-zip'
 import { getFsCallsUpperBound } from './utilities'
 
 interface SetupResult {
