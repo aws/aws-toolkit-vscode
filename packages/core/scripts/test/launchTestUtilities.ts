@@ -10,7 +10,6 @@ import { join, resolve } from 'path'
 import { runTests } from '@vscode/test-electron'
 import { VSCODE_EXTENSION_ID } from '../../src/shared/extensions'
 import { TestOptions } from '@vscode/test-electron/out/runTest'
-import { isWin } from '../../src/shared/vscode/env'
 
 const envvarVscodeTestVersion = 'VSCODE_TEST_VERSION'
 
@@ -187,6 +186,7 @@ async function invokeVSCodeCli(vsCodeExecutablePath: string, args: string[]): Pr
     const spawnResult = proc.spawnSync(cli, cmdArgs, {
         encoding: 'utf-8',
         stdio: 'pipe',
+        shell: process.platform === 'win32',
     })
 
     if (spawnResult.status !== 0) {
