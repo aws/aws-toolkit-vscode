@@ -13,7 +13,7 @@ describe('setEnv', function () {
     it('modifies the node environment variables', function () {
         const originalEnv = copyEnv()
         const fakePath = 'fakePath'
-        process.env.PATH = 'fakePath'
+        process.env.PATH = fakePath
         assert.strictEqual(copyEnv().PATH, fakePath)
 
         process.env = originalEnv
