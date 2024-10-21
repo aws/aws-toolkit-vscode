@@ -18,31 +18,20 @@ import {
 import { UserCredentialsUtils } from '../../../shared/credentials/userCredentialsUtils'
 import { EnvironmentVariables } from '../../../shared/environmentVariables'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
-import { getConfigFilename, getCredentialsFilename } from '../../../auth/credentials/sharedCredentialsFile'
 import { fs } from '../../../shared'
 
 describe('UserCredentialsUtils', function () {
     let tempFolder: string
-    let defaultConfigFileName: string
-    let defaultCredentialsFilename: string
 
-    before(async function () {
-        defaultConfigFileName = getConfigFilename()
-        defaultCredentialsFilename = getCredentialsFilename()
+    beforeEach(async function () {
         // Make a temp folder for all these tests
         // Stick some temp credentials files in there to load from
         tempFolder = await makeTemporaryToolkitFolder()
     })
 
     afterEach(async function () {
-        await fs.delete(defaultConfigFileName, { recursive: true })
-        await fs.delete(defaultCredentialsFilename, { recursive: true })
-
-        sinon.restore()
-    })
-
-    after(async function () {
         await fs.delete(tempFolder, { recursive: true })
+        sinon.restore()
     })
 
     describe('findExistingCredentialsFilenames', function () {

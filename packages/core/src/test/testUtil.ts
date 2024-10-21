@@ -295,6 +295,13 @@ export function partialDeepCompare<T>(actual: unknown, expected: T, message?: st
     const partial = selectFrom(actual, ...keys(expected as object))
     assert.deepStrictEqual(partial, expected, message)
 }
+/**
+ * Asserts that no metrics metadata (key OR value) matches the given regex.
+ * @param keyword target substring to search for
+ */
+export function assertNoTelemetryMatch(re: RegExp | string): void | never {
+    return assert.ok(globals.telemetry.logger.queryRegex(re).length === 0)
+}
 
 /**
  * Finds the emitted telemetry metrics with the given `name`, then checks if the metadata fields
@@ -565,9 +572,18 @@ export function captureEvent<T>(event: vscode.Event<T>): EventCapturer<T> {
  * Captures the first value emitted by an event, optionally with a timeout
  */
 export function captureEventOnce<T>(event: vscode.Event<T>, timeout?: number): Promise<T> {
+    return captureEventNTimes(event, 1, timeout)
+}
+
+export function captureEventNTimes<T>(event: vscode.Event<T>, amount: number, timeout?: number): Promise<T> {
     return new Promise<T>((resolve, reject) => {
         const stop = () => reject(new Error('Timed out waiting for event'))
-        event((data) => resolve(data))
+        let count = 0
+        event((data) => {
+            if (++count === amount) {
+                resolve(data)
+            }
+        })
 
         if (timeout !== undefined) {
             setTimeout(stop, timeout)

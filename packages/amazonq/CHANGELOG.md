@@ -1,3 +1,7 @@
+## 1.30.0 2024-10-17
+
+- **Bug Fix** Various fixes and changes
+
 ## 1.29.0 2024-10-10
 
 - **Bug Fix** Amazon Q /dev: include telemetry for workspace usage when generating new files

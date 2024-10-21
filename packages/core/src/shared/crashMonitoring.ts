@@ -15,9 +15,10 @@ import { isNewOsSession } from './utilities/osUtils'
 import nodeFs from 'fs/promises'
 import fs from './fs/fs'
 import { getLogger } from './logger/logger'
-import { crashMonitoringDirNames } from './constants'
+import { crashMonitoringDirName } from './constants'
 import { throwOnUnstableFileSystem } from './filesystemUtilities'
 import { withRetries } from './utilities/functionUtils'
+import { TimeLag } from './utilities/timeoutUtils'
 
 const className = 'CrashMonitoring'
 
@@ -68,7 +69,8 @@ export class CrashMonitoring {
         private readonly checkInterval: number,
         private readonly isDevMode: boolean,
         private readonly isAutomation: boolean,
-        private readonly devLogger: Logger | undefined
+        private readonly devLogger: Logger | undefined,
+        private readonly timeLag: TimeLag
     ) {}
 
     static #didTryCreate = false
@@ -91,7 +93,8 @@ export class CrashMonitoring {
                 DevSettings.instance.get('crashCheckInterval', 1000 * 60 * 10), // check every 10 minutes
                 isDevMode,
                 isAutomation(),
-                devModeLogger
+                devModeLogger,
+                new TimeLag()
             ))
         } catch (error) {
             emitFailure({ functionName: 'instance', error })
@@ -112,15 +115,23 @@ export class CrashMonitoring {
 
         try {
             this.heartbeat = new Heartbeat(this.state, this.checkInterval, this.isDevMode)
-            this.crashChecker = new CrashChecker(this.state, this.checkInterval, this.isDevMode, this.devLogger)
+            this.heartbeat.onFailure(() => this.cleanup())
+
+            this.crashChecker = new CrashChecker(
+                this.state,
+                this.checkInterval,
+                this.isDevMode,
+                this.devLogger,
+                this.timeLag
+            )
+            this.crashChecker.onFailure(() => this.cleanup())
 
             await this.heartbeat.start()
             await this.crashChecker.start()
         } catch (error) {
             emitFailure({ functionName: 'start', error })
             try {
-                this.crashChecker?.cleanup()
-                await this.heartbeat?.cleanup()
+                await this.cleanup()
             } catch {}
 
             // Surface errors during development, otherwise it can be missed.
@@ -146,6 +157,11 @@ export class CrashMonitoring {
             }
         }
     }
+
+    public async cleanup() {
+        this.crashChecker?.cleanup()
+        await this.heartbeat?.shutdown()
+    }
 }
 
 /**
@@ -154,15 +170,19 @@ export class CrashMonitoring {
  */
 class Heartbeat {
     private intervalRef: NodeJS.Timer | undefined
+    private _onFailure = new vscode.EventEmitter<void>()
+    public onFailure: vscode.Event<void> = this._onFailure.event
+    private readonly heartbeatInterval: number
+
     constructor(
         private readonly state: FileSystemState,
-        private readonly checkInterval: number,
+        checkInterval: number,
         private readonly isDevMode: boolean
-    ) {}
+    ) {
+        this.heartbeatInterval = checkInterval / 2
+    }
 
     public async start() {
-        const heartbeatInterval = this.checkInterval / 2
-
         // Send an initial heartbeat immediately
         await withFailCtx('initialSendHeartbeat', () => this.state.sendHeartbeat())
 
@@ -172,38 +192,22 @@ class Heartbeat {
                 await this.state.sendHeartbeat()
             } catch (e) {
                 try {
-                    await this.cleanup()
+                    await this.shutdown()
                     emitFailure({ functionName: 'sendHeartbeatInterval', error: e })
                 } catch {}
 
                 if (this.isDevMode) {
                     throw e
                 }
+                this._onFailure.fire()
             }
-        }, heartbeatInterval)
+        }, this.heartbeatInterval)
     }
 
     /** Stops everything, signifying a graceful shutdown */
     public async shutdown() {
         globals.clock.clearInterval(this.intervalRef)
-        return this.state.indicateGracefulShutdown()
-    }
-
-    /**
-     * Safely attempts to clean up this heartbeat from the state to try and avoid
-     * an incorrectly indicated crash. Use this on failures.
-     *
-     * ---
-     *
-     * IMPORTANT: This function must not throw as this function is run within a catch
-     */
-    public async cleanup() {
-        try {
-            await this.shutdown()
-        } catch {}
-        try {
-            await this.state.clearHeartbeat()
-        } catch {}
+        await this.state.indicateGracefulShutdown()
     }
 
     /** Mimics a crash, only for testing */
@@ -217,34 +221,55 @@ class Heartbeat {
  */
 class CrashChecker {
     private intervalRef: NodeJS.Timer | undefined
+    private _onFailure = new vscode.EventEmitter<void>()
+    public onFailure = this._onFailure.event
 
     constructor(
         private readonly state: FileSystemState,
         private readonly checkInterval: number,
         private readonly isDevMode: boolean,
-        private readonly devLogger: Logger | undefined
+        private readonly devLogger: Logger | undefined,
+        /**
+         * This class is required for the following edge case:
+         * 1. Heartbeat is sent
+         * 2. Computer goes to sleep for X minutes
+         * 3. Wake up computer. But before a new heartbeat can be sent, a crash checker (can be from another ext instance) runs
+         *   and sees a stale heartbeat. It assumes a crash.
+         *
+         * Why? Intervals do not run while the computer is asleep, so the latest heartbeat has a "lag" since it wasn't able to send
+         *      a new heartbeat.
+         *      Then on wake, there is a racecondition for the next heartbeat to be sent before the next crash check. If the crash checker
+         *      runs first it will incorrectly conclude a crash.
+         *
+         * Solution: Keep track of the lag, and then skip the next crash check if there was a lag. This will give time for the
+         *           next heartbeat to be sent.
+         */
+        private readonly timeLag: TimeLag
     ) {}
 
     public async start() {
         {
             this.devLogger?.debug(`crashMonitoring: checkInterval ${this.checkInterval}`)
 
+            this.timeLag.start()
+
             // do an initial check
             await withFailCtx('initialCrashCheck', () =>
-                tryCheckCrash(this.state, this.checkInterval, this.isDevMode, this.devLogger)
+                tryCheckCrash(this.state, this.checkInterval, this.isDevMode, this.devLogger, this.timeLag)
             )
 
             // check on an interval
             this.intervalRef = globals.clock.setInterval(async () => {
                 try {
-                    await tryCheckCrash(this.state, this.checkInterval, this.isDevMode, this.devLogger)
+                    await tryCheckCrash(this.state, this.checkInterval, this.isDevMode, this.devLogger, this.timeLag)
                 } catch (e) {
                     emitFailure({ functionName: 'checkCrashInterval', error: e })
-                    this.cleanup()
 
                     if (this.isDevMode) {
                         throw e
                     }
+
+                    this._onFailure.fire()
                 }
             }, this.checkInterval)
         }
@@ -255,46 +280,46 @@ class CrashChecker {
             state: FileSystemState,
             checkInterval: number,
             isDevMode: boolean,
-            devLogger: Logger | undefined
+            devLogger: Logger | undefined,
+            timeLag: TimeLag
         ) {
-            // Iterate all known extensions and for each check if they have crashed
+            if (await timeLag.didLag()) {
+                timeLag.reset()
+                devLogger?.warn('crashMonitoring: SKIPPED check crash due to time lag')
+                return
+            }
+
+            // check each extension if it crashed
             const knownExts = await state.getAllExts()
             const runningExts: ExtInstanceHeartbeat[] = []
             for (const ext of knownExts) {
+                // is still running
                 if (!isStoppedHeartbeats(ext, checkInterval)) {
                     runningExts.push(ext)
                     continue
                 }
 
-                // Ext is not running anymore, handle appropriately depending on why it stopped running
-                await state.handleExtNotRunning(ext, {
-                    onShutdown: async () => {
-                        // Nothing to do, just log info if necessary
-                        devLogger?.debug(
-                            `crashMonitoring: SHUTDOWN: following has gracefully shutdown: pid ${ext.extHostPid} + sessionId: ${ext.sessionId}`
-                        )
-                    },
-                    onCrash: async () => {
-                        // Debugger instances may incorrectly look like they crashed, so don't emit.
-                        // Example is if I hit the red square in the debug menu, it is a non-graceful shutdown. But the regular
-                        // 'x' button in the Debug IDE instance is a graceful shutdown.
-                        if (ext.isDebug) {
-                            devLogger?.debug(`crashMonitoring: DEBUG instance crashed: ${JSON.stringify(ext)}`)
-                            return
-                        }
+                // did crash
+                await state.handleCrashedExt(ext, () => {
+                    // Debugger instances may incorrectly look like they crashed, so don't emit.
+                    // Example is if I hit the red square in the debug menu, it is a non-graceful shutdown. But the regular
+                    // 'x' button in the Debug IDE instance is a graceful shutdown.
+                    if (ext.isDebug) {
+                        devLogger?.debug(`crashMonitoring: DEBUG instance crashed: ${JSON.stringify(ext)}`)
+                        return
+                    }
 
-                        // This is the metric to let us know the extension crashed
-                        telemetry.session_end.emit({
-                            result: 'Failed',
-                            proxiedSessionId: ext.sessionId,
-                            reason: 'ExtHostCrashed',
-                            passive: true,
-                        })
+                    // This is the metric to let us know the extension crashed
+                    telemetry.session_end.emit({
+                        result: 'Failed',
+                        proxiedSessionId: ext.sessionId,
+                        reason: 'ExtHostCrashed',
+                        passive: true,
+                    })
 
-                        devLogger?.debug(
-                            `crashMonitoring: CRASH: following has crashed: pid ${ext.extHostPid} + sessionId: ${ext.sessionId}`
-                        )
-                    },
+                    devLogger?.debug(
+                        `crashMonitoring: CRASH: following has crashed: pid ${ext.extHostPid} + sessionId: ${ext.sessionId}`
+                    )
                 })
             }
 
@@ -320,11 +345,12 @@ class CrashChecker {
     /** Use this on failures to terminate the crash checker */
     public cleanup() {
         globals.clock.clearInterval(this.intervalRef)
+        this.timeLag.cleanup()
     }
 
     /** Mimics a crash, only for testing */
     public testCrash() {
-        globals.clock.clearInterval(this.intervalRef)
+        this.cleanup()
     }
 }
 
@@ -373,13 +399,13 @@ export async function crashMonitoringStateFactory(deps = getDefaultDependencies(
  *   - is not truly reliable since filesystems are not reliable
  */
 export class FileSystemState {
-    private readonly stateDirPath: string
+    public readonly stateDirPath: string
 
     /**
      * IMORTANT: Use {@link crashMonitoringStateFactory} to make an instance
      */
     constructor(protected readonly deps: MementoStateDependencies) {
-        this.stateDirPath = path.join(this.deps.workDirPath, crashMonitoringDirNames.root)
+        this.stateDirPath = path.join(this.deps.workDirPath, crashMonitoringDirName)
 
         this.deps.devLogger?.debug(`crashMonitoring: pid: ${this.deps.pid}`)
         this.deps.devLogger?.debug(`crashMonitoring: sessionId: ${this.deps.sessionId.slice(0, 8)}-...`)
@@ -405,17 +431,16 @@ export class FileSystemState {
         if (await this.deps.isStateStale()) {
             await this.clearState()
         }
+
+        await withFailCtx('init', () => fs.mkdir(this.stateDirPath))
     }
 
     // ------------------ Heartbeat methods ------------------
     public async sendHeartbeat() {
-        const extId = this.createExtId(this.ext)
-
         try {
             const func = async () => {
-                const dir = await this.runningExtsDir()
                 await fs.writeFile(
-                    path.join(dir, extId),
+                    this.makeStateFilePath(this.extId),
                     JSON.stringify({ ...this.ext, lastHeartbeat: this.deps.now() }, undefined, 4)
                 )
                 this.deps.devLogger?.debug(
@@ -437,7 +462,7 @@ export class FileSystemState {
     }
 
     /**
-     * Signal that this extension is gracefully shutting down. This will prevent the IDE from thinking it crashed.
+     * Indicates that this extension instance has gracefully shutdown.
      *
      * IMPORTANT: This code is being run in `deactivate()` where VS Code api is not available. Due to this we cannot
      * easily update the state to indicate a graceful shutdown. So the next best option is to write to a file on disk,
@@ -447,46 +472,26 @@ export class FileSystemState {
      * function touches.
      */
     public async indicateGracefulShutdown(): Promise<void> {
-        const dir = await this.shutdownExtsDir()
-        await withFailCtx('writeShutdownFile', () => nodeFs.writeFile(path.join(dir, this.extId), ''))
+        // By removing the heartbeat entry, the crash checkers will not be able to find this entry anymore, making it
+        // impossible to report on since the file system is the source of truth
+        await withFailCtx('indicateGracefulShutdown', () =>
+            nodeFs.rm(this.makeStateFilePath(this.extId), { force: true })
+        )
     }
 
     // ------------------ Checker Methods ------------------
 
-    /**
-     * Signals the state that the given extension is not running, allowing the state to appropriately update
-     * depending on a graceful shutdown or crash.
-     *
-     * NOTE: This does NOT run in the `deactivate()` method, so it CAN reliably use the VS Code FS api
-     *
-     * @param opts - functions to run depending on why the extension stopped running
-     */
-    public async handleExtNotRunning(
-        ext: ExtInstance,
-        opts: { onShutdown: () => Promise<void>; onCrash: () => Promise<void> }
-    ): Promise<void> {
-        const extId = this.createExtId(ext)
-        const shutdownFilePath = path.join(await this.shutdownExtsDir(), extId)
-
-        if (await withFailCtx('existsShutdownFile', () => fs.exists(shutdownFilePath))) {
-            await opts.onShutdown()
-            // We intentionally do not clean up the file in shutdown since there may be another
-            // extension may be doing the same thing in parallel, and would read the extension as
-            // crashed since the file was missing. The file  will be cleared on computer restart though.
-
-            // TODO: Be smart and clean up the file after some time.
-        } else {
-            await opts.onCrash()
-        }
-
-        // Clean up the running extension file since it no longer exists
-        await this.deleteHeartbeatFile(extId)
+    public async handleCrashedExt(ext: ExtInstance, fn: () => void) {
+        await withFailCtx('handleCrashedExt', async () => {
+            await this.deleteHeartbeatFile(ext)
+            fn()
+        })
     }
-    public async deleteHeartbeatFile(extId: ExtInstanceId) {
-        const dir = await this.runningExtsDir()
+
+    private async deleteHeartbeatFile(ext: ExtInstanceId | ExtInstance) {
         // Retry file deletion to prevent incorrect crash reports. Common Windows errors seen in telemetry: EPERM/EBUSY.
         // See: https://github.com/aws/aws-toolkit-vscode/pull/5335
-        await withRetries(() => withFailCtx('deleteStaleRunningFile', () => fs.delete(path.join(dir, extId))), {
+        await withRetries(() => withFailCtx('deleteStaleRunningFile', () => fs.delete(this.makeStateFilePath(ext))), {
             maxRetries: 8,
             delay: 100,
             backoff: 2,
@@ -515,17 +520,10 @@ export class FileSystemState {
     protected createExtId(ext: ExtInstance): ExtInstanceId {
         return `${ext.extHostPid}_${ext.sessionId}`
     }
-    private async runningExtsDir(): Promise<string> {
-        const p = path.join(this.stateDirPath, crashMonitoringDirNames.running)
-        // ensure the dir exists
-        await withFailCtx('ensureRunningExtsDir', () => nodeFs.mkdir(p, { recursive: true }))
-        return p
-    }
-    private async shutdownExtsDir() {
-        const p = path.join(this.stateDirPath, crashMonitoringDirNames.shutdown)
-        // Since this runs in `deactivate()` it cannot use the VS Code FS api
-        await withFailCtx('ensureShutdownExtsDir', () => nodeFs.mkdir(p, { recursive: true }))
-        return p
+    private readonly fileSuffix = 'running'
+    private makeStateFilePath(ext: ExtInstance | ExtInstanceId) {
+        const extId = typeof ext === 'string' ? ext : this.createExtId(ext)
+        return path.join(this.stateDirPath, extId + `.${this.fileSuffix}`)
     }
     public async clearState(): Promise<void> {
         this.deps.devLogger?.debug('crashMonitoring: CLEAR_STATE: Started')
@@ -536,10 +534,26 @@ export class FileSystemState {
     }
     public async getAllExts(): Promise<ExtInstanceHeartbeat[]> {
         const res = await withFailCtx('getAllExts', async () => {
-            // The file names are intentionally the IDs for easy mapping
-            const allExtIds: ExtInstanceId[] = await withFailCtx('readdir', async () =>
-                (await fs.readdir(await this.runningExtsDir())).map((k) => k[0])
-            )
+            // Read all the exts from the filesystem, deserializing as needed
+            const allExtIds: ExtInstanceId[] = await withFailCtx('readdir', async () => {
+                const filesInDir = await fs.readdir(this.stateDirPath)
+                const relevantFiles = filesInDir.filter((file: [string, vscode.FileType]) => {
+                    const name = file[0]
+                    const type = file[1]
+                    if (type !== vscode.FileType.File) {
+                        return false
+                    }
+                    if (path.extname(name) !== `.${this.fileSuffix}`) {
+                        return false
+                    }
+                    return true
+                })
+                const idsFromFileNames = relevantFiles.map((file: [string, vscode.FileType]) => {
+                    const name = file[0]
+                    return name.split('.')[0]
+                })
+                return idsFromFileNames
+            })
 
             const allExts = allExtIds.map<Promise<ExtInstanceHeartbeat | undefined>>(async (extId: string) => {
                 // Due to a race condition, a separate extension instance may have removed this file by this point. It is okay since
@@ -549,7 +563,7 @@ export class FileSystemState {
                     () =>
                         withFailCtx('parseRunningExtFile', async () =>
                             ignoreBadFileError(async () => {
-                                const text = await fs.readFileText(path.join(await this.runningExtsDir(), extId))
+                                const text = await fs.readFileText(this.makeStateFilePath(extId))
 
                                 if (!text) {
                                     return undefined
@@ -617,7 +631,10 @@ export type ExtInstance = {
     isDebug?: boolean
 }
 
-type ExtInstanceHeartbeat = ExtInstance & { lastHeartbeat: number }
+type ExtInstanceHeartbeat = ExtInstance & {
+    /** Timestamp of the last heartbeat in milliseconds */
+    lastHeartbeat: number
+}
 
 function isExtHeartbeat(ext: unknown): ext is ExtInstanceHeartbeat {
     return typeof ext === 'object' && ext !== null && 'lastHeartbeat' in ext && ext.lastHeartbeat !== undefined
