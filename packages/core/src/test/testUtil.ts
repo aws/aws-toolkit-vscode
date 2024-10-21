@@ -618,7 +618,3 @@ export function getFetchStubWithResponse(response: Partial<Response>) {
 export function copyEnv(): NodeJS.ProcessEnv {
     return { ...process.env }
 }
-
-export function envWithNewPath(newPath: string): NodeJS.ProcessEnv {
-    return { ...process.env, PATH: newPath }
-}
