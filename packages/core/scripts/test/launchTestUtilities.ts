@@ -187,7 +187,6 @@ async function invokeVSCodeCli(vsCodeExecutablePath: string, args: string[]): Pr
     const spawnResult = proc.spawnSync(cli, cmdArgs, {
         encoding: 'utf-8',
         stdio: 'pipe',
-        shell: isWin(),
     })
 
     if (spawnResult.status !== 0) {
