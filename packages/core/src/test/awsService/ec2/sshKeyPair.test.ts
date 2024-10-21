@@ -45,6 +45,7 @@ describe('SshKeyPair', async function () {
         const content1 = await fs.readFileBytes(keyPair2.getPrivateKeyPath())
         const content2 = await fs.readFileBytes(keyPair.getPrivateKeyPath())
         assert.notStrictEqual(content1, content2)
+        await keyPair2.delete()
     })
 
     it('sets permission of the file to read/write owner', async function () {
