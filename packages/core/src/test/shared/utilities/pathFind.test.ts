@@ -46,7 +46,7 @@ describe('pathFind', function () {
         let previousPath: string
 
         beforeEach(function () {
-            previousPath = testutil.copyEnv().PATH!
+            previousPath = testutil.env.PATH
         })
 
         afterEach(function () {
