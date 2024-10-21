@@ -10,6 +10,7 @@ import { join, resolve } from 'path'
 import { runTests } from '@vscode/test-electron'
 import { VSCODE_EXTENSION_ID } from '../../src/shared/extensions'
 import { TestOptions } from '@vscode/test-electron/out/runTest'
+import { isWin } from '../../src/shared/vscode/env'
 
 const envvarVscodeTestVersion = 'VSCODE_TEST_VERSION'
 
@@ -182,10 +183,11 @@ async function invokeVSCodeCli(vsCodeExecutablePath: string, args: string[]): Pr
     }
 
     console.log(`Invoking vscode CLI command:\n    "${cli}" ${JSON.stringify(cmdArgs)}`)
+    // Shell option must be true on windows to avoid security error: https://nodejs.org/en/blog/vulnerability/april-2024-security-releases-2
     const spawnResult = proc.spawnSync(cli, cmdArgs, {
         encoding: 'utf-8',
         stdio: 'pipe',
-        shell: true,
+        shell: isWin(),
     })
 
     if (spawnResult.status !== 0) {
