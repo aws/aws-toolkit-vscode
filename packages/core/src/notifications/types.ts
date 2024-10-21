@@ -74,6 +74,22 @@ export interface Notifications {
     notifications: ToolkitNotification[]
 }
 
+export type NotificationData = {
+    payload?: Notifications
+    eTag?: string
+}
+
+export type NotificationsState = {
+    // Categories
+    startUp: NotificationData
+    emergency: NotificationData
+
+    // Util
+    dismissed: string[]
+}
+
+export type NotificationType = keyof Omit<NotificationsState, 'dismissed'>
+
 export interface RuleContext {
     readonly ideVersion: typeof vscode.version
     readonly extensionVersion: string

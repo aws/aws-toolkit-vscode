@@ -10,12 +10,13 @@ import * as vscode from 'vscode'
  *
  * New keys must start with "aws." or "amazonq.".
  */
-type contextKey =
+export type contextKey =
     | 'aws.isDevMode'
     | 'aws.isSageMaker'
     | 'aws.isWebExtHost'
     | 'aws.isInternalUser'
     | 'aws.amazonq.showLoginView'
+    | 'aws.amazonq.notifications.show'
     | 'aws.codecatalyst.connected'
     | 'aws.codewhisperer.connected'
     | 'aws.codewhisperer.connectionExpired'
@@ -23,6 +24,7 @@ type contextKey =
     | 'aws.explorer.showAuthView'
     | 'aws.toolkit.amazonq.dismissed'
     | 'aws.toolkit.amazonqInstall.dismissed'
+    | 'aws.toolkit.notifications.show'
     // Deprecated/legacy names. New keys should start with "aws.".
     | 'codewhisperer.activeLine'
     | 'gumby.isPlanAvailable'
