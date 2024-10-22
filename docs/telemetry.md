@@ -150,15 +150,15 @@ not the path it took to get there. We sometimes need this stack trace to debug, 
 Common example: _"I have a function, `thisFailsSometimes()` that is called in multiple places. The function sometimes fails, I know from telemetry, but I do not know if it is failing when it is a specific caller. If I knew the call stack/trace that it took to call my function that would help me debug."_
 
 ```typescript
-function outerA() {
+function runsSuccessfully() {
     thisFailsSometimes(1) // this succeeds
 }
 
-function outerB() {
+function thisThrows() {
     thisFailsSometimes(0) // this fails
 }
 
-function thisFailsSometimes(num: number) {
+function failsDependingOnInput(num: number) {
     return telemetry.my_Metric.run(() => {
         if (number === 0) {
             throw Error('Cannot be 0')
@@ -170,7 +170,37 @@ function thisFailsSometimes(num: number) {
 
 ### Solution
 
-Add a value to `function` in the options of a `run()`. This will result in a stack of functions identifiers that were previously called
+On class methods use the `@withTelemetryContext()` decorator add context to the execution. Depending on the args set, it provides features like emitting the result, or adding it's context to errors.
+
+> NOTE: Decorators are currently only supported for methods and not functions
+
+```typescript
+class MyClass {
+    @withTelemetryContext({ name: 'runsSuccessfully', class: 'MyClass' })
+    public runsSuccessfully() {
+        failsDependingOnInput(1)
+    }
+
+    @withTelemetryContext({ name: 'thisThrows', class: 'MyClass', errorCtx: true })
+    public thisThrows() {
+        failsDependingOnInput(0)
+    }
+
+    @withTelemetryContext({ name: 'failsDependingOnInput' class: 'MyClass', emit: true, errorCtx: true})
+    private failsDependingOnInput(num: number) {
+        if (number === 0) {
+            throw Error('Cannot be 0')
+        }
+        ...
+    }
+}
+
+// Results in a metric: { source: 'MyClass#thisThrows,failsDependingOnInput', result: 'Failed' }
+// Results in an error that has context about the methods that lead up to it.
+new MyClass().thisThrows()
+```
+
+Separately if you must use a function, add a value to `function` in the options of a `run()`. This will result in a stack of functions identifiers that were previously called
 before `failsDependingOnInput()` was run. You can then retrieve the stack in the `run()` of your final metric using `getFunctionStack()`.
 
 ```typescript
@@ -197,40 +227,9 @@ function failsDependingOnInput(num: number) {
 thisThrows()
 ```
 
-Additionally the `@withTelemetryContext()` decorator can be added to methods to do the same as above, but with a cleaner syntax.
-
-```typescript
-class MyClass {
-    @withTelemetryContext({ name: 'runsSuccessfully', class: 'MyClass' })
-    public runsSuccessfully() {
-        failsDependingOnInput(1)
-    }
-
-    @withTelemetryContext({ name: 'thisThrows', class: 'MyClass' })
-    public thisThrows() {
-        failsDependingOnInput(0)
-    }
-
-    private failsDependingOnInput(num: number) {
-        return telemetry.my_Metric.run(() => {
-            telemetry.record({ theCallStack: asStringifiedStack(telemetry.getFunctionStack())})
-            if (number === 0) {
-                throw Error('Cannot be 0')
-            }
-            ...
-        }, { functionId: { name: 'failsDependingOnInput' }})
-    }
-
-}
-
-
-// Results in a metric: { theCallStack: 'MyClass#thisThrows,failsDependingOnInput', result: 'Failed' }
-new MyClass().thisThrows()
-```
-
 ### Important Notes
 
--   Using `@withTelemetryContext` + setting `errorCtx` will wrap errors with the functionId properties
+-   You can avoid redundancy when repeating fields like `class` in `@withTelemetryContext` by using `withTelemetryContextFactory()`. It builds a new decorator with pre-defined values that you choose.
 
 -   If a nested function does not use a `run()` then it will not be part of the call stack.
 
