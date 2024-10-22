@@ -33,7 +33,7 @@ enum DeployType {
 // This only handles a subset of possible user configs
 // `@iarna/toml@2.25` supports 0.5.0 of the spec while SAM CLI 1.67.0 supports 1.0.0
 // In practive this is likely good enough for the vast majority of users
-async function parseConfig(contents: string): Promise<Config> {
+export async function parseConfig(contents: string): Promise<Config> {
     const data = await parse.async(contents)
     const objs = Object.entries(data).filter(([_, v]) => typeof v === 'object') as [string, Record<string, unknown>][]
     const environments = {} as Config['environments']

@@ -58,3 +58,52 @@ export async function isDotnetRuntime(templateUri: vscode.Uri, contents?: string
     const globalRuntime = samTemplate.template.Globals?.Function?.Runtime as string
     return globalRuntime ? globalRuntime.startsWith('dotnet') : false
 }
+
+// Quickpick items from the Sync flags prompter
+export const syncFlagsItems = [
+    {
+        label: 'Build in source',
+        data: '--build-in-source',
+        description: 'Opts in to build project in the source folder. Only for node apps',
+    },
+    {
+        label: 'Code',
+        data: '--code',
+        description: 'Sync only code resources (Lambda Functions, API Gateway, Step Functions)',
+    },
+    {
+        label: 'Dependency layer',
+        data: '--dependency-layer',
+        description: 'Separate dependencies of individual function into Lambda layers',
+    },
+    {
+        label: 'Skip deploy sync',
+        data: '--skip-deploy-sync',
+        description: "This will skip the initial infrastructure deployment if it's not required",
+    },
+    {
+        label: 'Use container',
+        data: '--use-container',
+        description: 'Build functions with an AWS Lambda-like container',
+    },
+    {
+        label: 'Watch',
+        data: '--watch',
+        description: 'Watch local files and automatically sync with cloud',
+    },
+    {
+        label: 'Save parameters',
+        data: '--save-params',
+        description: 'Save to samconfig.toml as default parameters',
+    },
+    {
+        label: 'Beta features',
+        data: '--beta-features',
+        description: 'Enable beta features',
+    },
+    {
+        label: 'Debug',
+        data: '--debug',
+        description: 'Turn on debug logging to print debug messages and display timestamps',
+    },
+]

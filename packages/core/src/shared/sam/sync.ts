@@ -74,7 +74,7 @@ enum BucketSource {
     UserProvided,
 }
 
-async function syncFlagsPrompter(): Promise<DataQuickPickItem<string>[] | undefined> {
+export async function syncFlagsPrompter(): Promise<DataQuickPickItem<string>[] | undefined> {
     const items: DataQuickPickItem<string>[] = [
         {
             label: 'Build in source',
@@ -146,7 +146,7 @@ async function syncFlagsPrompter(): Promise<DataQuickPickItem<string>[] | undefi
     })
 }
 
-function paramsSourcePrompter(existValidSamconfig: boolean | undefined) {
+export function paramsSourcePrompter(existValidSamconfig: boolean | undefined) {
     const items: DataQuickPickItem<ParamsSource>[] = [
         {
             label: 'Specify required parameters and save as defaults',
@@ -243,7 +243,7 @@ export function createStackPrompter(client: DefaultCloudFormationClient) {
     })
 }
 
-function createEcrPrompter(client: DefaultEcrClient) {
+export function createEcrPrompter(client: DefaultEcrClient) {
     const recentEcrRepo = getRecentResponse(client.regionCode, 'ecrRepoUri')
     const consoleUrl = getAwsConsoleUrl('ecr', client.regionCode)
     const items = client.listAllRepositories().map((list) =>
@@ -319,8 +319,8 @@ export function createTemplatePrompter(registry: CloudFormationTemplateRegistry,
 
     const trimmedItems = folders.size === 1 ? items.map((item) => ({ ...item, description: undefined })) : items
     return createQuickPick(trimmedItems, {
-        title: 'Select a SAM CloudFormation Template',
-        placeholder: 'Select a SAM template.yaml file',
+        title: 'Select a SAM/CloudFormation Template',
+        placeholder: 'Select a SAM/CloudFormation Template',
         buttons: createCommonButtons(samSyncUrl),
         noItemsFoundItem: {
             label: localize('aws.sam.noWorkspace', 'No SAM template.yaml file(s) found. Select for help'),
@@ -399,7 +399,7 @@ export function bindDataToParams<T extends BindableData>(data: T, bindings: { [P
     return params
 }
 
-async function ensureBucket(resp: Pick<SyncParams, 'region' | 'bucketName'>) {
+export async function ensureBucket(resp: Pick<SyncParams, 'region' | 'bucketName'>) {
     const newBucketName = resp.bucketName.match(/^newbucket:(.*)/)?.[1]
     if (newBucketName === undefined) {
         return resp.bucketName
@@ -414,7 +414,7 @@ async function ensureBucket(resp: Pick<SyncParams, 'region' | 'bucketName'>) {
     }
 }
 
-async function ensureRepo(resp: Pick<SyncParams, 'region' | 'ecrRepoUri'>) {
+export async function ensureRepo(resp: Pick<SyncParams, 'region' | 'ecrRepoUri'>) {
     const newRepoName = resp.ecrRepoUri?.match(/^newrepo:(.*)/)?.[1]
     if (newRepoName === undefined) {
         return resp.ecrRepoUri
@@ -429,7 +429,7 @@ async function ensureRepo(resp: Pick<SyncParams, 'region' | 'ecrRepoUri'>) {
     }
 }
 
-async function saveAndBindArgs(args: SyncParams): Promise<{ readonly boundArgs: string[] }> {
+export async function saveAndBindArgs(args: SyncParams): Promise<{ readonly boundArgs: string[] }> {
     const data = {
         codeOnly: args.deployType === 'code',
         templatePath: args.template?.uri?.fsPath,
@@ -623,7 +623,7 @@ const configKeyMapping: Record<string, string | string[]> = {
     templatePath: ['template', 'template_file'],
 }
 
-function getSyncParamsFromConfig(config: SamConfig) {
+export function getSyncParamsFromConfig(config: SamConfig) {
     const samConfigParams: string[] = []
     const params = toRecord(keys(configKeyMapping), (k) => {
         const key = configKeyMapping[k]
@@ -734,13 +734,13 @@ export async function runSync(
 }
 
 const mementoRootKey = 'samcli.sync.params'
-function getRecentResponse(region: string, key: string): string | undefined {
+export function getRecentResponse(region: string, key: string): string | undefined {
     const root = globals.context.workspaceState.get(mementoRootKey, {} as Record<string, Record<string, string>>)
 
     return root[region]?.[key]
 }
 
-async function updateRecentResponse(region: string, key: string, value: string | undefined) {
+export async function updateRecentResponse(region: string, key: string, value: string | undefined) {
     try {
         const root = globals.context.workspaceState.get(mementoRootKey, {} as Record<string, Record<string, string>>)
         await globals.context.workspaceState.update(mementoRootKey, {
