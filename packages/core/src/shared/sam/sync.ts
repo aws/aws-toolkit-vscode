@@ -149,11 +149,11 @@ async function syncFlagsPrompter(): Promise<DataQuickPickItem<string>[] | undefi
 function paramsSourcePrompter(existValidSamconfig: boolean | undefined) {
     const items: DataQuickPickItem<ParamsSource>[] = [
         {
-            label: 'Specify only required parameters and save as defaults',
+            label: 'Specify required parameters and save as defaults',
             data: ParamsSource.SpecifyAndSave,
         },
         {
-            label: 'Specify only required parameters',
+            label: 'Specify required parameters',
             data: ParamsSource.Flags,
         },
     ]
