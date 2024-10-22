@@ -22,7 +22,7 @@ import { createRegionPrompter } from '../../shared/ui/common/region'
 import { DefaultCloudFormationClient } from '../../shared/clients/cloudFormationClient'
 import { DefaultS3Client } from '../../shared/clients/s3Client'
 import { ToolkitError, globals } from '../../shared'
-import { validateSamDeployConfig, writeSamconfigGlobal } from '../../shared/sam/config'
+import { SamConfig, validateSamDeployConfig, writeSamconfigGlobal } from '../../shared/sam/config'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { ChildProcess } from '../../shared/utilities/processUtils'
 import { addTelemetryEnvVar } from '../../shared/sam/cli/samCliInvokerUtils'
@@ -257,18 +257,6 @@ export class DeployWizard extends Wizard<DeployParams> {
     }
 }
 
-async function getConfigFileUri(projectRoot: vscode.Uri) {
-    const samConfigFilename = 'samconfig'
-    const samConfigFile = (
-        await vscode.workspace.findFiles(new vscode.RelativePattern(projectRoot, `${samConfigFilename}.*`))
-    )[0]
-    if (samConfigFile) {
-        return samConfigFile
-    } else {
-        throw new ToolkitError(`No samconfig.toml file found in ${projectRoot.fsPath}`)
-    }
-}
-
 export async function runDeploy(arg: any): Promise<DeployResult> {
     return await telemetry.sam_deploy.run(async () => {
         const source = getSource(arg)
@@ -289,8 +277,12 @@ export async function runDeploy(arg: any): Promise<DeployResult> {
         const buildFlags: string[] = ['--cached']
 
         if (params.paramsSource === ParamsSource.SamConfig) {
-            const samConfigFile = await getConfigFileUri(params.projectRoot)
-            deployFlags.push('--config-file', `${samConfigFile.fsPath}`)
+            const samconfig = await SamConfig.fromProjectRoot(params.projectRoot)
+            const samconfigRegionInfo = `${await samconfig.getCommandParam('global', 'region')}`
+
+            // When entry point is RegionNode, the params.region should take precedence
+            deployFlags.push('--region', `${params.region || samconfigRegionInfo}`)
+            deployFlags.push('--config-file', `${samconfig.location.fsPath}`)
         } else {
             deployFlags.push('--region', `${params.region}`)
             deployFlags.push('--stack-name', `${params.stackName}`)
@@ -313,8 +305,8 @@ export async function runDeploy(arg: any): Promise<DeployResult> {
                 if (params[name]) {
                     paramsToSet.push(`ParameterKey=${name},ParameterValue=${params[name]}`)
                 }
-                deployFlags.push('--parameter-overrides', ...paramsToSet)
             })
+            paramsToSet.length > 0 && deployFlags.push('--parameter-overrides', paramsToSet.join(' '))
         }
 
         try {

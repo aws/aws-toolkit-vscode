@@ -2,890 +2,1068 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-
-// import assert from 'assert'
-// import * as path from 'path'
-// import globals from '../../../shared/extensionGlobals'
-// import assert from 'assert'
-// import * as fs from 'fs-extra'
-// import * as path from 'path'
-// import globals from '../../../shared/extensionGlobals'
-// import * as vscode from 'vscode'
-// import { deploySamApplication, WindowFunctions } from '../../../lambda/commands/deploySamApplication'
-// import { SamDeployWizardResponse } from '../../../lambda/wizards/samDeployWizard'
-// import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
-// import { SamCliContext } from '../../../shared/sam/cli/samCliContext'
-// import { SamCliProcessInvoker } from '../../../shared/sam/cli/samCliInvokerUtils'
-// import {
-//     SamCliValidator,
-//     SamCliValidatorResult,
-//     SamCliVersionValidation,
-//     SamCliVersionValidatorResult,
-// } from '../../../shared/sam/cli/samCliValidator'
-// import { ChildProcessResult } from '../../../shared/utilities/childProcess'
-// import { assertLogsContain, getTestLogger } from '../../globalSetup.test'
-// import { FakeChildProcessResult, TestSamCliProcessInvoker } from '../../shared/sam/cli/testSamCliProcessInvoker'
-// import { TestSettings } from '../../utilities/testSettingsConfiguration'
-// import { Settings } from '../../../shared/settings'
-// import { SamCliSettings } from '../../../shared/sam/cli/samCliSettings'
-// import { FakeAwsContext } from '../../utilities/fakeAwsContext'
-
-// describe('deploySamApplication', async function () {
-//     // Bad Validator
-
-//     const badValidatorResult: SamCliValidatorResult = {
-//         samCliFound: false,
-//     }
-
-//     const badValidator: SamCliValidator = {
-//         detectValidSamCli: async (): Promise<SamCliValidatorResult> => badValidatorResult,
-//         getVersionValidatorResult: async (): Promise<SamCliVersionValidatorResult> => {
-//             return { validation: SamCliVersionValidation.VersionNotParseable }
-//         },
-//     }
-
-//     // Bad Invoker
-
-//     const badSamCliProcessInvoker = {} as any as SamCliProcessInvoker
-
-//     const invalidSamCliContext: SamCliContext = {
-//         invoker: badSamCliProcessInvoker,
-//         validator: badValidator,
-//     }
-
-//     // Good Validator
-
-//     const goodValidatorResult: SamCliValidatorResult = {
-//         samCliFound: true,
-//         versionValidation: {
-//             version: '',
-//             validation: SamCliVersionValidation.Valid,
-//         },
-//     }
-
-//     const goodValidator: SamCliValidator = {
-//         detectValidSamCli: async (): Promise<SamCliValidatorResult> => goodValidatorResult,
-//         getVersionValidatorResult: async (): Promise<SamCliVersionValidatorResult> => {
-//             return { validation: SamCliVersionValidation.Valid, version: '' }
-//         },
-//     }
-
-//     // Good Invoker
-
-//     let invokerCalledCount: number
-//     let goodSamCliProcessInvoker = new TestSamCliProcessInvoker((spawnOptions, args: any[]): ChildProcessResult => {
-//         invokerCalledCount++
-
-//         return new FakeChildProcessResult({})
-//     })
-
-//     const goodSamCliContext = (): SamCliContext => {
-//         return {
-//             invoker: goodSamCliProcessInvoker,
-//             validator: goodValidator,
-//         }
-//     }
-
-//     // vscode window stubs
-
-//     function showMessage(message: string, ...items: string[]): Thenable<string | undefined>
-//     function showMessage(
-//         message: string,
-//         options: vscode.MessageOptions,
-//         ...items: string[]
-//     ): Thenable<string | undefined>
-//     async function showMessage<T extends vscode.MessageItem>(message: string, ...items: T[]): Promise<T | undefined> {
-//         return undefined
-//     }
-
-//     let runningDeployProcess: Thenable<any> | undefined
-//     function setStatusBarMessage(text: string, hideWhenDone: Thenable<any>): vscode.Disposable {
-//         runningDeployProcess = hideWhenDone
-
-//         return new vscode.Disposable(() => {})
-//     }
-
-//     const window: WindowFunctions = {
-//         setStatusBarMessage,
-//         showErrorMessage: showMessage,
-//         showInformationMessage: showMessage,
-//     }
-
-//     // Other support stubs
-//     const placeholderCredentials = {} as any as AWS.Credentials
-//     let testCredentials: AWS.Credentials | undefined
-//     let profile: string = ''
-//     let settings: Settings
-//     let config: SamCliSettings
-//     let templatePath: string
-//     let tempToolkitFolder: string
-//     let samDeployWizardResponse: SamDeployWizardResponse | undefined
-//     const samDeployWizard = async (): Promise<SamDeployWizardResponse | undefined> => {
-//         return samDeployWizardResponse
-//     }
-
-//     const awsContext = new FakeAwsContext()
-//     awsContext.getCredentials = async () => testCredentials
-//     awsContext.getCredentialProfileName = () => profile
-
-//     // Fake "aws.refreshAwsExplorer" command. 50b5a28b8e35 #1665
-//     let didRefreshExplorer = false
-//     function refreshFn() {
-//         didRefreshExplorer = true
-//     }
-
-//     beforeEach(async function () {
-//         didRefreshExplorer = false
-//         settings = new TestSettings() as any
-//         config = new SamCliSettings({ getLocation: async () => ({ path: '', version: '' }) }, settings)
-//         profile = 'testAcct'
-//         tempToolkitFolder = await makeTemporaryToolkitFolder()
-//         templatePath = path.join(tempToolkitFolder, 'template.yaml')
-//         writeFile(templatePath)
-
-//         // TODO: is this safe? will add output channel across all tests
-//         // we are using this pattern in other tests...
-//         globals.outputChannel = vscode.window.createOutputChannel('test channel')
-
-//         testCredentials = placeholderCredentials
-//         invokerCalledCount = 0
-//         samDeployWizardResponse = {
-//             parameterOverrides: new Map<string, string>(),
-//             region: 'region',
-//             s3Bucket: 'bucket',
-//             stackName: 'stack',
-//             template: vscode.Uri.file(templatePath),
-//         }
-
-//         runningDeployProcess = undefined
-//     })
-
-//     afterEach(async function () {
-//         await fs.remove(tempToolkitFolder)
-//     })
-
-//     it('deploys with the happy path', async function () {
-//         await deploySamApplication(
-//             {
-//                 samCliContext: goodSamCliContext(),
-//                 samDeployWizard,
-//             },
-//             {
-//                 awsContext,
-//                 settings: config,
-//                 window,
-//                 refreshFn,
-//             }
-//         )
-
-//         await waitForDeployToComplete()
-//         assert.strictEqual(invokerCalledCount, 3, 'Unexpected sam cli invoke count')
-//         assert.deepStrictEqual(config.getSavedBuckets(), {
-//             [profile]: { region: 'bucket' },
-//         })
-//         assert.ok(didRefreshExplorer)
-//     })
-
-//     it('handles previously stored stringified buckets', async () => {
-//         const testSavedBuckets = {
-//             profile1: {
-//                 region1: 'mybucket1',
-//                 region2: 'mybucket2',
-//             },
-//             profile2: {
-//                 region1: 'mybucket3',
-//                 region3: 'mybucket4',
-//             },
-//         }
-//         await settings.update('aws.samcli.manuallySelectedBuckets', JSON.stringify(testSavedBuckets))
-
-//         await deploySamApplication(
-//             {
-//                 samCliContext: goodSamCliContext(),
-//                 samDeployWizard,
-//             },
-//             {
-//                 awsContext,
-//                 settings: config,
-//                 window,
-//                 refreshFn,
-//             }
-//         )
-
-//         await waitForDeployToComplete()
-//         assert.strictEqual(invokerCalledCount, 3, 'Unexpected sam cli invoke count')
-//         assert.deepStrictEqual(config.getSavedBuckets(), { ...testSavedBuckets, [profile]: { region: 'bucket' } })
-//         assert.ok(didRefreshExplorer)
-//     })
-
-//     it('handles malformed stored buckets', async () => {
-//         await settings.update('aws.samcli.manuallySelectedBuckets', 'ilovebuckets')
-
-//         await deploySamApplication(
-//             {
-//                 samCliContext: goodSamCliContext(),
-//                 samDeployWizard,
-//             },
-//             {
-//                 awsContext,
-//                 settings: config,
-//                 window,
-//                 refreshFn,
-//             }
-//         )
-
-//         await waitForDeployToComplete()
-//         assert.deepStrictEqual(config.getSavedBuckets(), { [profile]: { region: 'bucket' } })
-//         assert.ok(didRefreshExplorer)
-//     })
-
-//     it('overwrites recently selected bucket', async () => {
-//         await config.updateSavedBuckets(profile, 'region', 'oldBucket')
-
-//         await deploySamApplication(
-//             {
-//                 samCliContext: goodSamCliContext(),
-//                 samDeployWizard,
-//             },
-//             {
-//                 awsContext,
-//                 settings: config,
-//                 window,
-//                 refreshFn,
-//             }
-//         )
-
-//         await waitForDeployToComplete()
-//         assert.strictEqual(invokerCalledCount, 3, 'Unexpected sam cli invoke count')
-//         assert.deepStrictEqual(config.getSavedBuckets(), { [profile]: { region: 'bucket' } })
-//         assert.ok(didRefreshExplorer)
-//     })
-
-//     it('saves one bucket max to multiple regions', async () => {
-//         samDeployWizardResponse = {
-//             parameterOverrides: new Map<string, string>(),
-//             region: 'region0',
-//             s3Bucket: 'bucket0',
-//             stackName: 'stack',
-//             template: vscode.Uri.file(templatePath),
-//         }
-
-//         await deploySamApplication(
-//             {
-//                 samCliContext: goodSamCliContext(),
-//                 samDeployWizard,
-//             },
-//             {
-//                 awsContext,
-//                 settings: config,
-//                 window,
-//                 refreshFn,
-//             }
-//         )
-
-//         await waitForDeployToComplete()
-//         samDeployWizardResponse = {
-//             parameterOverrides: new Map<string, string>(),
-//             region: 'region1',
-//             s3Bucket: 'bucket1',
-//             stackName: 'stack',
-//             template: vscode.Uri.file(templatePath),
-//         }
-//         await deploySamApplication(
-//             {
-//                 samCliContext: goodSamCliContext(),
-//                 samDeployWizard,
-//             },
-//             {
-//                 awsContext,
-//                 settings: config,
-//                 window,
-//                 refreshFn,
-//             }
-//         )
-
-//         await waitForDeployToComplete()
-//         samDeployWizardResponse = {
-//             parameterOverrides: new Map<string, string>(),
-//             region: 'region2',
-//             s3Bucket: 'bucket2',
-//             stackName: 'stack',
-//             template: vscode.Uri.file(templatePath),
-//         }
-//         await deploySamApplication(
-//             {
-//                 samCliContext: goodSamCliContext(),
-//                 samDeployWizard,
-//             },
-//             {
-//                 awsContext,
-//                 settings: config,
-//                 window,
-//                 refreshFn,
-//             }
-//         )
-
-//         await waitForDeployToComplete()
-//         samDeployWizardResponse = {
-//             parameterOverrides: new Map<string, string>(),
-//             region: 'region0',
-//             s3Bucket: 'bucket3',
-//             stackName: 'stack',
-//             template: vscode.Uri.file(templatePath),
-//         }
-//         await deploySamApplication(
-//             {
-//                 samCliContext: goodSamCliContext(),
-//                 samDeployWizard,
-//             },
-//             {
-//                 awsContext,
-//                 settings: config,
-//                 window,
-//                 refreshFn,
-//             }
-//         )
-
-//         await waitForDeployToComplete()
-//         assert.strictEqual(invokerCalledCount, 12, 'Unexpected sam cli invoke count')
-//         assert.deepStrictEqual(config.getSavedBuckets(), {
-//             [profile]: {
-//                 region0: 'bucket3',
-//                 region1: 'bucket1',
-//                 region2: 'bucket2',
-//             },
-//         })
-//         assert.ok(didRefreshExplorer)
-//     })
-
-//     it('saves one bucket per region per profile', async () => {
-//         profile = 'testAcct0'
-//         samDeployWizardResponse = {
-//             parameterOverrides: new Map<string, string>(),
-//             region: 'region0',
-//             s3Bucket: 'bucket0',
-//             stackName: 'stack',
-//             template: vscode.Uri.file(templatePath),
-//         }
-
-//         await deploySamApplication(
-//             {
-//                 samCliContext: goodSamCliContext(),
-//                 samDeployWizard,
-//             },
-//             {
-//                 awsContext,
-//                 settings: config,
-//                 window,
-//                 refreshFn,
-//             }
-//         )
-
-//         await waitForDeployToComplete()
-//         profile = 'testAcct1'
-//         samDeployWizardResponse = {
-//             parameterOverrides: new Map<string, string>(),
-//             region: 'region0',
-//             s3Bucket: 'bucket1',
-//             stackName: 'stack',
-//             template: vscode.Uri.file(templatePath),
-//         }
-//         await deploySamApplication(
-//             {
-//                 samCliContext: goodSamCliContext(),
-//                 samDeployWizard,
-//             },
-//             {
-//                 awsContext,
-//                 settings: config,
-//                 window,
-//                 refreshFn,
-//             }
-//         )
-
-//         await waitForDeployToComplete()
-//         assert.strictEqual(invokerCalledCount, 6, 'Unexpected sam cli invoke count')
-//         assert.deepStrictEqual(config.getSavedBuckets(), {
-//             testAcct0: {
-//                 region0: 'bucket0',
-//             },
-//             testAcct1: {
-//                 region0: 'bucket1',
-//             },
-//         })
-//     })
-
-//     it('informs user of error when user is not logged in', async function () {
-//         testCredentials = undefined
-
-//         await deploySamApplication(
-//             {
-//                 samCliContext: goodSamCliContext(),
-//                 samDeployWizard,
-//             },
-//             {
-//                 awsContext,
-//                 settings: config,
-//                 window,
-//                 refreshFn,
-//             }
-//         )
-
-//         assertGeneralErrorLogged()
-//         // Deploy aborted, so this is false.
-//         assert.ok(!didRefreshExplorer)
-//     })
-
-//     it('informs user of error when sam cli is invalid', async function () {
-//         await deploySamApplication(
-//             {
-//                 samCliContext: invalidSamCliContext,
-//                 samDeployWizard,
-//             },
-//             {
-//                 awsContext,
-//                 settings: config,
-//                 window,
-//                 refreshFn,
-//             }
-//         )
-
-//         assertGeneralErrorLogged()
-//         // Deploy aborted, so this is false.
-//         assert.ok(!didRefreshExplorer)
-//     })
-
-//     it('exits if the wizard is cancelled', async function () {
-//         samDeployWizardResponse = undefined
-
-//         await deploySamApplication(
-//             {
-//                 samCliContext: goodSamCliContext(),
-//                 samDeployWizard,
-//             },
-//             {
-//                 awsContext,
-//                 settings: config,
-//                 window,
-//                 refreshFn,
-//             }
-//         )
-
-//         assert.strictEqual(invokerCalledCount, 0, 'Did not expect sam cli to get invoked')
-//         // Deploy aborted, so this is false.
-//         assert.ok(!didRefreshExplorer)
-//     })
-
-//     it('continues deploying with initial template if invoking sam build fails', async function () {
-//         goodSamCliProcessInvoker = new TestSamCliProcessInvoker((spawnOptions, args: any[]): ChildProcessResult => {
-//             invokerCalledCount++
-
-//             const isDeployInvoke = args.includes('build')
-
-//             return new FakeChildProcessResult({
-//                 exitCode: isDeployInvoke ? -1 : 0,
-//                 error: isDeployInvoke ? new Error('broken build') : undefined,
-//             })
-//         })
-
-//         await deploySamApplication(
-//             {
-//                 samCliContext: goodSamCliContext(),
-//                 samDeployWizard,
-//             },
-//             {
-//                 awsContext,
-//                 settings: config,
-//                 window,
-//                 refreshFn,
-//             }
-//         )
-
-//         await waitForDeployToComplete()
-//         assert.strictEqual(invokerCalledCount, 3, 'Unexpected sam cli invoke count')
-//         assertErrorLogsSwallowed('broken build', false)
-//         assert.ok(didRefreshExplorer)
-//     })
-
-//     it('informs user of error if invoking sam package fails', async function () {
-//         goodSamCliProcessInvoker = new TestSamCliProcessInvoker((spawnOptions, args: any[]): ChildProcessResult => {
-//             invokerCalledCount++
-
-//             const isDeployInvoke = args.includes('package')
-
-//             return new FakeChildProcessResult({
-//                 exitCode: isDeployInvoke ? -1 : 0,
-//                 error: isDeployInvoke ? new Error('broken package') : undefined,
-//             })
-//         })
-
-//         await deploySamApplication(
-//             {
-//                 samCliContext: goodSamCliContext(),
-//                 samDeployWizard,
-//             },
-//             {
-//                 awsContext,
-//                 settings: config,
-//                 window,
-//                 refreshFn,
-//             }
-//         )
-
-//         assert.strictEqual(invokerCalledCount, 2, 'Unexpected sam cli invoke count')
-//         assertLogsContain('broken package', false, 'error')
-//         assertGeneralErrorLogged()
-//         // Deploy aborted, so this is false.
-//         assert.ok(!didRefreshExplorer)
-//     })
-
-//     it('informs user of error if invoking sam deploy fails', async function () {
-//         goodSamCliProcessInvoker = new TestSamCliProcessInvoker((spawnOptions, args: any[]): ChildProcessResult => {
-//             invokerCalledCount++
-
-//             const isDeployInvoke = args.includes('deploy')
-
-//             return new FakeChildProcessResult({
-//                 exitCode: isDeployInvoke ? -1 : 0,
-//                 error: isDeployInvoke ? new Error('broken deploy') : undefined,
-//             })
-//         })
-
-//         await deploySamApplication(
-//             {
-//                 samCliContext: goodSamCliContext(),
-//                 samDeployWizard,
-//             },
-//             {
-//                 awsContext,
-//                 settings: config,
-//                 window,
-//                 refreshFn,
-//             }
-//         )
-
-//         assert.strictEqual(invokerCalledCount, 3, 'Unexpected sam cli invoke count')
-//         assertLogsContain('broken deploy', false, 'error')
-//         assertGeneralErrorLogged()
-//         assert.strictEqual(config.getSavedBuckets(), undefined)
-//     })
-
-//     async function waitForDeployToComplete(): Promise<void> {
-//         assert.ok(runningDeployProcess)
-//         await runningDeployProcess
-//     }
-// })
-
-// function assertGeneralErrorLogged() {
-//     // match string 'AWS.samcli.deploy.general.error'
-//     assertLogsContain('Error deploying a SAM Application.', false, 'error')
-// }
-
-// function assertErrorLogsSwallowed(text: string, exactMatch: boolean) {
-//     assert.ok(
-//         getTestLogger()
-//             .getLoggedEntries('error')
-//             .some((e) => !(e instanceof Error) && (exactMatch ? e === text : e.includes(text))),
-//         `Expected to find "${text}" in the error logs, but not as a thrown error`
-//     )
-// }
-
-// function writeFile(filename: string): void {
-//     fs.writeFileSync(filename, '')
-// }
 import * as vscode from 'vscode'
-import { BucketSource, DeployParams, DeployWizard, ParamsSource } from '../../../lambda/commands/deploySamApplication'
-import { fs, globals, makeTemporaryToolkitFolder } from '../../../shared'
-import { TreeNode } from '../../../shared/treeview/resourceTreeDataProvider'
-import { createWizardTester } from '../../shared/wizards/wizardTestUtils'
-import assert from 'assert'
-import {
-    //     SamCliValidator,
-    //     SamCliValidatorResult,
-    //     SamCliVersionValidation,
-    //     SamCliVersionValidatorResult,
-    // } from '../../../shared/sam/cli/samCliValidator'
-    // import { ChildProcessResult } from '../../../shared/utilities/processUtils'
-    // import { assertLogsContain, getTestLogger } from '../../globalSetup.test'
-    // import { FakeChildProcessResult, TestSamCliProcessInvoker } from '../../shared/sam/cli/testSamCliProcessInvoker'
-    // import { TestSettings } from '../../utilities/testSettingsConfiguration'
-    // import { Settings } from '../../../shared/settings'
-    // import { SamCliSettings } from '../../../shared/sam/cli/samCliSettings'
-    // import { FakeAwsContext } from '../../utilities/fakeAwsContext'
-    // import { fs } from '../../../shared'
-
-    // describe('deploySamApplication', async function () {
-    //     // Bad Validator
-
-    //     const badValidatorResult: SamCliValidatorResult = {
-    //         samCliFound: false,
-    //     }
-
-    //     const badValidator: SamCliValidator = {
-    //         detectValidSamCli: async (): Promise<SamCliValidatorResult> => badValidatorResult,
-    //         getVersionValidatorResult: async (): Promise<SamCliVersionValidatorResult> => {
-    //             return { validation: SamCliVersionValidation.VersionNotParseable }
-    //         },
-    //     }
-
-    //     // Bad Invoker
-
-    //     const badSamCliProcessInvoker = {} as any as SamCliProcessInvoker
-
-    //     const invalidSamCliContext: SamCliContext = {
-    //         invoker: badSamCliProcessInvoker,
-    //         validator: badValidator,
-    //     }
-
-    //     // Good Validator
-
-    //     const goodValidatorResult: SamCliValidatorResult = {
-    //         samCliFound: true,
-    //         versionValidation: {
-    //             version: '',
-    //             validation: SamCliVersionValidation.Valid,
-    //         },
-    //     }
-
-    //     const goodValidator: SamCliValidator = {
-    //         detectValidSamCli: async (): Promise<SamCliValidatorResult> => goodValidatorResult,
-    //         getVersionValidatorResult: async (): Promise<SamCliVersionValidatorResult> => {
-    //             return { validation: SamCliVersionValidation.Valid, version: '' }
-    //         },
-    //     }
-
-    //     // Good Invoker
-
-    //     let invokerCalledCount: number
-    //     let goodSamCliProcessInvoker = new TestSamCliProcessInvoker((spawnOptions, args: any[]): ChildProcessResult => {
-    //         invokerCalledCount++
-
-    //         return new FakeChildProcessResult({})
-    //     })
-
-    //     const goodSamCliContext = (): SamCliContext => {
-    //         return {
-    //             invoker: goodSamCliProcessInvoker,
-    //             validator: goodValidator,
-    //         }
-    //     }
-
-    //     // vscode window stubs
-
-    //     function showMessage(message: string, ...items: string[]): Thenable<string | undefined>
-    //     function showMessage(
-    //         message: string,
-    //         options: vscode.MessageOptions,
-    //         ...items: string[]
-    //     ): Thenable<string | undefined>
-    //     async function showMessage<T extends vscode.MessageItem>(message: string, ...items: T[]): Promise<T | undefined> {
-    //         return undefined
-    //     }
-
-    //     let runningDeployProcess: Thenable<any> | undefined
-    //     function setStatusBarMessage(text: string, hideWhenDone: Thenable<any>): vscode.Disposable {
-    //         runningDeployProcess = hideWhenDone
-
-    //         return new vscode.Disposable(() => {})
-    //     }
-
-    //     const window: WindowFunctions = {
-    //         setStatusBarMessage,
-    //         showErrorMessage: showMessage,
-    //         showInformationMessage: showMessage,
-    //     }
-
-    //     // Other support stubs
-    //     const placeholderCredentials = {} as any as AWS.Credentials
-    //     let testCredentials: AWS.Credentials | undefined
-    //     let profile: string = ''
-    //     let settings: Settings
-    //     let config: SamCliSettings
-    //     let templatePath: string
-    //     let tempToolkitFolder: string
-    //     let samDeployWizardResponse: SamDeployWizardResponse | undefined
-    //     const samDeployWizard = async (): Promise<SamDeployWizardResponse | undefined> => {
-    //         return samDeployWizardResponse
-    //     }
-
-    //     const awsContext = new FakeAwsContext()
-    //     awsContext.getCredentials = async () => testCredentials
-    //     awsContext.getCredentialProfileName = () => profile
-
-    //     // Fake "aws.refreshAwsExplorer" command. 50b5a28b8e35 #1665
-    //     let didRefreshExplorer = false
-    //     function refreshFn() {
-    //         didRefreshExplorer = true
-    //     }
-
-    //     beforeEach(async function () {
-    //         didRefreshExplorer = false
-    //         settings = new TestSettings() as any
-    //         config = new SamCliSettings({ getLocation: async () => ({ path: '', version: '' }) }, settings)
-    //         profile = 'testAcct'
-    //         tempToolkitFolder = await makeTemporaryToolkitFolder()
-    //         templatePath = path.join(tempToolkitFolder, 'template.yaml')
-    //         await fs.writeFile(templatePath, '')
-
-    //         // TODO: is this safe? will add output channel across all tests
-    //         // we are using this pattern in other tests...
-    //         globals.outputChannel = vscode.window.createOutputChannel('test channel')
-
-    //         testCredentials = placeholderCredentials
-    //         invokerCalledCount = 0
-    //         samDeployWizardResponse = {
-    //             parameterOverrides: new Map<string, string>(),
-    //             region: 'region',
-    //             s3Bucket: 'bucket',
-    //             stackName: 'stack',
-    //             template: vscode.Uri.file(templatePath),
-    //         }
-
-    //         runningDeployProcess = undefined
-    //     })
-
-    //     afterEach(async function () {
-    //         await fs.delete(tempToolkitFolder, { recursive: true })
-    //     })
-
-    //     it('deploys with the happy path', async function () {
-    //         await deploySamApplication(
-    //             {
-    //                 samCliContext: goodSamCliContext(),
-    //                 samDeployWizard,
-    //             },
-    //             {
-    //                 awsContext,
-    //                 settings: config,
-    //                 window,
-    //                 refreshFn,
-    //             }
-    //         )
-
-    //         await waitForDeployToComplete()
-    //         assert.strictEqual(invokerCalledCount, 3, 'Unexpected sam cli invoke count')
-    //         assert.deepStrictEqual(config.getSavedBuckets(), {
-    //             [profile]: { region: 'bucket' },
-
-    createBaseTemplate,
-    makeSampleSamTemplateYaml,
-    makeSampleYamlParameters,
-} from '../../shared/cloudformation/cloudformationTestUtils'
+import { CloudFormation, S3 } from 'aws-sdk'
 import { AppNode } from '../../../awsService/appBuilder/explorer/nodes/appNode'
+import { assertTelemetry, getWorkspaceFolder, TestFolder } from '../../testUtil'
+import {
+    BucketSource,
+    DeployParams,
+    DeployWizard,
+    ParamsSource,
+    runDeploy,
+} from '../../../lambda/commands/deploySamApplication'
+import { globals, ToolkitError } from '../../../shared'
+import sinon from 'sinon'
+import { samconfigCompleteData, samconfigInvalidData, validTemplateData } from '../../shared/sam/samTestUtils'
+
+import assert from 'assert'
+import { getTestWindow } from '../../shared/vscode/window'
+import { DefaultCloudFormationClient } from '../../../shared/clients/cloudFormationClient'
+import { intoCollection } from '../../../shared/utilities/collectionUtils'
+import { PrompterTester } from '../../shared/wizards/prompterTester'
+import { RegionNode } from '../../../awsexplorer/regionNode'
+import { createTestRegionProvider } from '../../shared/regions/testUtil'
+import { DefaultS3Client } from '../../../shared/clients/s3Client'
+import * as CloudFormationClientModule from '../../../shared/clients/cloudFormationClient'
+import * as S3ClientModule from '../../../shared/clients/s3Client'
+import * as ProcessUtilsModule from '../../../shared/utilities/processUtils'
+import * as ResolveEnvModule from '../../../shared/env/resolveEnv'
+import * as SyncModule from '../../../shared/sam/sync'
+import * as SamConfiModule from '../../../shared/sam/config'
+import { RequiredProps } from '../../../shared/utilities/tsUtils'
+import { UserAgent as __UserAgent } from '@smithy/types'
+import { TemplateItem } from '../../../shared/sam/sync'
 import { SamAppLocation } from '../../../awsService/appBuilder/explorer/samProject'
-import * as testutil from '../../testUtil'
-import * as pathutil from '../../../shared/utilities/pathUtils'
-import path from 'path'
-import { getWorkspaceFolder } from '../../testUtil'
+import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 
 describe('DeployWizard', async function () {
-    const createTester = async (params?: Partial<DeployParams>, arg?: TreeNode | undefined) =>
-        createWizardTester(new DeployWizard({ ...params }, await globals.templateRegistry, arg))
+    let sandbox: sinon.SinonSandbox
+    let testFolder: TestFolder
+    let projectRoot: vscode.Uri
+    let workspaceFolder: vscode.WorkspaceFolder
+    let templateFile: vscode.Uri
 
-    it('shows steps in correct order when triggered from command palette', async function () {
-        const tester = await createTester()
-        tester.template.assertShowFirst()
-        tester.paramsSource.assertShowSecond()
+    let mockDefaultCFNClient: sinon.SinonStubbedInstance<DefaultCloudFormationClient>
+    let mockDefaultS3Client: sinon.SinonStubbedInstance<DefaultS3Client>
 
-        const workspaceUri = vscode.workspace.workspaceFolders?.[0]?.uri || vscode.Uri.file('/')
-        const rootFolderUri = vscode.Uri.joinPath(workspaceUri, 'my')
-        const templateUri = vscode.Uri.joinPath(rootFolderUri, 'template.yaml')
-        const tester2 = await createTester({
-            template: { uri: templateUri, data: createBaseTemplate() },
-            paramsSource: ParamsSource.SpecifyAndSave,
-            projectRoot: rootFolderUri,
-        })
-        tester2.region.assertShow(1)
-        tester2.stackName.assertShow(2)
-        tester2.bucketSource.assertShow(3)
-        tester2.bucketName.assertDoesNotShow()
-        tester2.projectRoot.assertDoesNotShow()
+    beforeEach(async () => {
+        testFolder = await TestFolder.create()
+        projectRoot = vscode.Uri.file(testFolder.path)
+        workspaceFolder = getWorkspaceFolder(testFolder.path)
+        sandbox = sinon.createSandbox()
 
-        const tester3 = await createTester({
-            template: { uri: templateUri, data: createBaseTemplate() },
-            paramsSource: ParamsSource.Specify,
-            projectRoot: rootFolderUri,
-            bucketSource: BucketSource.UserProvided,
-        })
-        tester3.region.assertShow(1)
-        tester3.stackName.assertShow(2)
-        tester3.bucketSource.assertDoesNotShow()
-        tester3.bucketName.assertShow(3)
+        // Simulate return of deployed stacks
+        mockDefaultCFNClient = sandbox.createStubInstance(CloudFormationClientModule.DefaultCloudFormationClient)
+        sandbox.stub(CloudFormationClientModule, 'DefaultCloudFormationClient').returns(mockDefaultCFNClient)
+        mockDefaultCFNClient.listAllStacks.returns(intoCollection(stackSummaries))
+
+        // Simulate return of list bucket
+        mockDefaultS3Client = sandbox.createStubInstance(S3ClientModule.DefaultS3Client)
+        sandbox.stub(S3ClientModule, 'DefaultS3Client').returns(mockDefaultS3Client)
+        mockDefaultS3Client.listBucketsIterable.returns(intoCollection(s3BucketListSummary))
+
+        // generate template.yaml in temporary test folder and add to registery
+        templateFile = vscode.Uri.file(await testFolder.write('template.yaml', validTemplateData))
+        await (await globals.templateRegistry).addItem(templateFile)
     })
 
-    it('shows steps in correct order when triggered from appBuilder', async function () {
-        const tempFolder = await makeTemporaryToolkitFolder()
-        const folder = getWorkspaceFolder(tempFolder)
-        const tempFile = vscode.Uri.file(path.join(tempFolder, 'template.yaml'))
-        const srcPath = 'src'
-        const codeUriPath = pathutil.normalize(path.join(tempFolder, srcPath))
-        const paramStr = makeSampleYamlParameters({
-            defaultOverride: {
-                Type: 'String',
-                Default: 'thisWillOverride',
-            },
-        })
-
-        await testutil.toFile(
-            makeSampleSamTemplateYaml(true, { codeUri: codeUriPath, handler: '!Ref defaultOverride' }, paramStr),
-            tempFile.fsPath
-        )
-
-        const samAppLocation = { samTemplateUri: tempFile, workspaceFolder: folder } as SamAppLocation
-        const appNode = new AppNode(samAppLocation) as TreeNode
-        const tester = await createTester({}, appNode)
-        tester.defaultOverride.assertShowFirst()
-        tester.paramsSource.assertShowSecond()
-
-        const tester2 = await createTester({ paramsSource: ParamsSource.SpecifyAndSave }, appNode)
-        tester2.template.assertDoesNotShow()
-        tester2.paramsSource.assertDoesNotShow()
-        tester2.defaultOverride.assertShowFirst()
-        tester2.region.assertShowSecond()
-        tester2.stackName.assertShowThird()
-        tester2.bucketSource.assertShow(4)
-
-        const tester3 = await createTester(
-            {
-                paramsSource: ParamsSource.Specify,
-                bucketSource: BucketSource.UserProvided,
-            },
-            appNode
-        )
-
-        tester3.template.assertDoesNotShow()
-        tester3.paramsSource.assertDoesNotShow()
-        tester3.defaultOverride.assertShowFirst()
-        tester3.region.assertShowSecond()
-        tester3.stackName.assertShowThird()
-        tester3.bucketSource.assertDoesNotShow()
-        tester3.bucketName.assertShow(4)
-        tester3.projectRoot.assertDoesNotShow()
-
-        await fs.delete(tempFolder, { recursive: true })
+    afterEach(() => {
+        sandbox.restore()
     })
 
-    it('set the correct project root', async function () {
-        const workspaceFolder = vscode.workspace.workspaceFolders?.[0]
-        assert.ok(workspaceFolder)
+    describe('entry: template file', () => {
+        it('happy path with invalid samconfig.toml', async () => {
+            /**
+             * Selection:
+             *  - SourceBucketName      : [Select]   prefill value
+             *  - DestinationBucketName : [Select]   prefill value
+             *
+             *  - template              : [Skip]     automatically set
+             *  - projectRoot           : [Skip]     automatically set
+             *  - paramsSource          : [Select]   1. ('Specify only required parameters and save as defaults')
+             *  - region                : [Select]   'us-west-2'
+             *  - stackName             : [Select]   1. 'stack1'
+             *  - bucketSource          : [Select]   1. ('Create a SAM CLI managed S3 bucket')
+             *  - bucketName            : [Skip]     automatically set for bucketSource option 1
+             */
 
-        const templateUri = vscode.Uri.joinPath(workspaceFolder.uri, 'template.yaml')
-        const template = { uri: templateUri, data: createBaseTemplate() }
-        const tester = await createTester({ template })
-        tester.projectRoot.path.assertValue(workspaceFolder.uri.path)
+            // generate samconfig.toml in temporary test folder
+            await testFolder.write('samconfig.toml', samconfigInvalidData)
+
+            PrompterTester.init()
+                .handleInputBox('Specify SAM parameter value for SourceBucketName', (inputBox) => {
+                    inputBox.acceptValue('my-source-bucket-name')
+                })
+                .handleInputBox('Specify SAM parameter value for DestinationBucketName', (inputBox) => {
+                    inputBox.acceptValue('my-destination-bucket-name')
+                })
+                .handleQuickPick('Specify parameters for deploy', async (quickPick) => {
+                    // Need time to check samconfig.toml file and generate options
+                    await quickPick.untilReady()
+
+                    assert.strictEqual(quickPick.items.length, 2)
+                    assert.strictEqual(
+                        quickPick.items[0].label,
+                        'Specify only required parameters and save as defaults'
+                    )
+                    assert.strictEqual(quickPick.items[1].label, 'Specify only required parameters')
+                    quickPick.acceptItem(quickPick.items[0])
+                })
+                .handleQuickPick('Select a region', (quickPick) => {
+                    const select = quickPick.items.filter((i) => i.detail === 'us-west-2')[0]
+                    quickPick.acceptItem(select || quickPick.items[0])
+                })
+                .handleQuickPick('Select a CloudFormation Stack', async (quickPick) => {
+                    // The prompt will need some time to generate option
+                    await quickPick.untilReady()
+
+                    assert.strictEqual(quickPick.items.length, 3)
+                    assert.strictEqual(quickPick.items[0].label, 'stack1')
+                    assert.strictEqual(quickPick.items[1].label, 'stack2')
+                    assert.strictEqual(quickPick.items[2].label, 'stack3')
+                    quickPick.acceptItem(quickPick.items[0])
+                })
+                .handleQuickPick('Specify S3 bucket for deployment artifacts', (quickPick) => {
+                    assert.strictEqual(quickPick.items.length, 2)
+                    assert.strictEqual(quickPick.items[0].label, 'Create a SAM CLI managed S3 bucket')
+                    assert.strictEqual(quickPick.items[1].label, 'Specify an S3 bucket')
+                    quickPick.acceptItem(quickPick.items[0])
+                })
+                .build()
+
+            const parameters = await new DeployWizard({}, await globals.templateRegistry, templateFile).run()
+
+            assert(parameters)
+            assert.strictEqual(parameters.SourceBucketName, 'my-source-bucket-name')
+            assert.strictEqual(parameters.DestinationBucketName, 'my-destination-bucket-name')
+
+            assert.strictEqual(parameters.template.uri.fsPath, templateFile.fsPath)
+            assert.strictEqual(parameters.projectRoot.fsPath, projectRoot.fsPath)
+            assert.strictEqual(parameters.paramsSource, 0)
+            assert.strictEqual(parameters.region, 'us-west-2')
+            assert.strictEqual(parameters.stackName, 'stack1')
+            assert.strictEqual(parameters.bucketSource, 0)
+        })
+
+        it('happy path with valid samconfig.toml', async () => {
+            /**
+             * Selection:
+             *  - SourceBucketName      : [Select]  prefill value
+             *  - DestinationBucketName : [Select]  prefill value
+             *
+             *  - template              : [Skip]    automatically set
+             *  - projectRoot           : [Skip]    automatically set
+             *  - paramsSource          : [Select]  3. ('Use default values from samconfig')
+             *  - region                : [Skip]    null; will use 'us-west-2' from samconfig
+             *  - stackName             : [Skip]    null; will use 'project-1' from samconfig
+             *  - bucketSource          : [Skip]    null; will use value from from samconfig
+             *  - bucketName            : [Skip]    automatically set for bucketSource option 1
+             */
+
+            // generate samconfig.toml in temporary test folder
+            await testFolder.write('samconfig.toml', samconfigCompleteData)
+
+            PrompterTester.init()
+                .handleInputBox('Specify SAM parameter value for SourceBucketName', (inputBox) => {
+                    inputBox.acceptValue('my-source-bucket-name')
+                })
+                .handleInputBox('Specify SAM parameter value for DestinationBucketName', (inputBox) => {
+                    inputBox.acceptValue('my-destination-bucket-name')
+                })
+                .handleQuickPick('Specify parameters for deploy', async (quickPick) => {
+                    // Need time to check samconfig.toml file and generate options
+                    await quickPick.untilReady()
+
+                    assert.strictEqual(quickPick.items.length, 3)
+                    assert.strictEqual(
+                        quickPick.items[0].label,
+                        'Specify only required parameters and save as defaults'
+                    )
+                    assert.strictEqual(quickPick.items[1].label, 'Specify only required parameters')
+                    assert.strictEqual(quickPick.items[2].label, 'Use default values from samconfig')
+                    quickPick.acceptItem(quickPick.items[2])
+                })
+                .build()
+
+            const parameters = await new DeployWizard({}, await globals.templateRegistry, templateFile).run()
+
+            assert(parameters)
+            assert.strictEqual(parameters.SourceBucketName, 'my-source-bucket-name')
+            assert.strictEqual(parameters.DestinationBucketName, 'my-destination-bucket-name')
+
+            assert.strictEqual(parameters.template.uri.fsPath, templateFile.fsPath)
+            assert.strictEqual(parameters.projectRoot.fsPath, projectRoot.fsPath)
+            assert.strictEqual(parameters.paramsSource, 2)
+            assert(!parameters.region)
+            assert(!parameters.stackName)
+            assert(!parameters.bucketSource)
+        })
+    })
+
+    describe('entry: region node', () => {
+        const expectedRegionId = 'us-west-2'
+        let regionNode: RegionNode
+
+        beforeEach(async () => {
+            // Create RegionNode as entry point
+            regionNode = new RegionNode(
+                { id: expectedRegionId, name: 'US West (N. California)' },
+                createTestRegionProvider()
+            )
+        })
+
+        it('happy path without/invalid samconfig.toml', async () => {
+            /**
+             * Selection:
+             *  - SourceBucketName      : [Skip?]   undefined
+             *  - DestinationBucketName : [Skip?]   undefined
+             *
+             *  - template              : [Select]   template/yaml set
+             *  - projectRoot           : [Skip]     automatically set
+             *  - paramsSource          : [Select]   2. ('Specify only required parameters')
+             *  - region                : [Skip]     automatically set from region node 'us-west-2'
+             *  - stackName             : [Select]   1. 'stack1'
+             *  - bucketSource          : [Select]   2. ('Specify an S3 bucket')
+             *  - bucketName            : [Select]   1. 'stack-1-bucket'
+             */
+
+            // provide testWindow so that we can call other api
+            const testWindow = getTestWindow()
+
+            PrompterTester.init(testWindow)
+                .handleQuickPick('Select a SAM CloudFormation Template', async (quickPick) => {
+                    // Need sometime to wait for the template to search for template file
+                    await quickPick.untilReady()
+                    assert.strictEqual(quickPick.items.length, 1)
+                    assert.strictEqual(quickPick.items[0].label, templateFile.fsPath)
+                    quickPick.acceptItem(quickPick.items[0])
+                })
+                .handleQuickPick('Specify parameters for deploy', async (quickPick) => {
+                    // Need time to check samconfig.toml file and generate options
+                    await quickPick.untilReady()
+
+                    assert.strictEqual(quickPick.items.length, 2)
+                    assert.strictEqual(
+                        quickPick.items[0].label,
+                        'Specify only required parameters and save as defaults'
+                    )
+                    assert.strictEqual(quickPick.items[1].label, 'Specify only required parameters')
+                    quickPick.acceptItem(quickPick.items[1])
+                })
+                .handleQuickPick('Select a CloudFormation Stack', async (quickPick) => {
+                    // The prompt will need some time to generate option
+                    await quickPick.untilReady()
+                    assert.strictEqual(quickPick.items.length, 3)
+                    assert.strictEqual(quickPick.items[0].label, 'stack1')
+                    quickPick.acceptItem(quickPick.items[0])
+                })
+                .handleQuickPick('Specify S3 bucket for deployment artifacts', (quickPick) => {
+                    assert.strictEqual(quickPick.items.length, 2)
+                    assert.strictEqual(quickPick.items[0].label, 'Create a SAM CLI managed S3 bucket')
+                    assert.strictEqual(quickPick.items[1].label, 'Specify an S3 bucket')
+                    quickPick.acceptItem(quickPick.items[1])
+                })
+                .handleQuickPick('Select an S3 Bucket', async (quickPick) => {
+                    // The prompt will need some time to generate option
+                    await quickPick.untilReady()
+
+                    assert.strictEqual(quickPick.items.length, 3)
+                    assert.strictEqual(quickPick.items[0].label, 'stack-1-bucket')
+                    assert.strictEqual(quickPick.items[1].label, 'stack-2-bucket')
+                    assert.strictEqual(quickPick.items[2].label, 'stack-3-bucket')
+                    quickPick.acceptItem(quickPick.items[0])
+                })
+                .build()
+
+            const parameters = await new DeployWizard({}, await globals.templateRegistry, regionNode).run()
+
+            assert(parameters)
+            // assert.strictEqual(parameters.SourceBucketName, 'my-source-bucket-name')
+            // assert.strictEqual(parameters.DestinationBucketName, 'my-destination-bucket-name')
+
+            assert.strictEqual(parameters.template.uri.fsPath, templateFile.fsPath)
+            assert.strictEqual(parameters.projectRoot.fsPath, projectRoot.fsPath)
+            assert.strictEqual(parameters.paramsSource, 1)
+            assert.strictEqual(parameters.region, 'us-west-2')
+            assert.strictEqual(parameters.stackName, 'stack1')
+            assert.strictEqual(parameters.bucketSource, 1)
+            assert.strictEqual(parameters.bucketName, 'stack-1-bucket')
+        })
+
+        it('happy path with samconfig.toml', async () => {
+            /**
+             * Selection:
+             *  - SourceBucketName      : [Skip?]   undefined
+             *  - DestinationBucketName : [Skip?]   undefined
+             *
+             *  - template              : [Select]  template.yaml
+             *  - projectRoot           : [Skip]    automatically set
+             *  - paramsSource          : [Select]  3. ('Use default values from samconfig')
+             *  - region                : [Skip]    automatically set from region node 'us-west-2'
+             *  - stackName             : [Skip]    null; will use 'project-1' from samconfig
+             *  - bucketSource          : [Skip]    null; will use value from from samconfig
+             *  - bucketName            : [Skip]    null; will use value from samconfig file skip from bucketSource option
+             */
+
+            await testFolder.write('samconfig.toml', samconfigCompleteData)
+
+            PrompterTester.init()
+                .handleQuickPick('Select a SAM CloudFormation Template', async (quickPick) => {
+                    // Need sometime to wait for the template to search for template file
+                    await quickPick.untilReady()
+                    assert.strictEqual(quickPick.items.length, 1)
+                    assert.strictEqual(quickPick.items[0].label, templateFile.fsPath)
+                    quickPick.acceptItem(quickPick.items[0])
+                })
+                .handleQuickPick('Specify parameters for deploy', async (quickPick) => {
+                    // Need time to check samconfig.toml file and generate options
+                    await quickPick.untilReady()
+
+                    assert.strictEqual(quickPick.items.length, 3)
+                    assert.strictEqual(
+                        quickPick.items[0].label,
+                        'Specify only required parameters and save as defaults'
+                    )
+                    assert.strictEqual(quickPick.items[1].label, 'Specify only required parameters')
+                    assert.strictEqual(quickPick.items[2].label, 'Use default values from samconfig')
+                    quickPick.acceptItem(quickPick.items[2])
+                })
+                .build()
+
+            const parameters = await new DeployWizard({}, await globals.templateRegistry, regionNode).run()
+
+            assert(parameters)
+
+            assert.strictEqual(parameters.template.uri.fsPath, templateFile.fsPath)
+            assert.strictEqual(parameters.projectRoot.fsPath, projectRoot.fsPath)
+            assert.strictEqual(parameters.paramsSource, 2)
+            assert.strictEqual(parameters.region, 'us-west-2')
+            assert(!parameters.stackName)
+            assert(!parameters.bucketSource)
+        })
+    })
+
+    describe('entry: appBuilder', () => {
+        let appNode: AppNode
+
+        beforeEach(async () => {
+            // Create a mock samAppLocation object
+            const expectedSamAppLocation = {
+                workspaceFolder: workspaceFolder,
+                samTemplateUri: templateFile,
+                projectRoot: projectRoot,
+            }
+            appNode = new AppNode(expectedSamAppLocation)
+        })
+
+        it('happy path without/invalid samconfig.toml', async () => {
+            /**
+             * Selection:
+             *  - SourceBucketName      : [Select]   prefill value
+             *  - DestinationBucketName : [Select]   prefill value
+             *
+             *  - template              : [Skip]     automatically set
+             *  - projectRoot           : [Skip]     automatically set
+             *  - paramsSource          : [Select]   2. ('Specify only required parameters')
+             *  - region                : [Select]   'us-west-2'
+             *  - stackName             : [Select]   2. 'stack2'
+             *  - bucketSource          : [Select]   1. ('Create a SAM CLI managed S3 bucket')
+             *  - bucketName            : [Skip]     automatically set for bucketSource option 1
+             */
+
+            PrompterTester.init()
+                .handleInputBox('Specify SAM parameter value for SourceBucketName', (inputBox) => {
+                    inputBox.acceptValue('my-source-bucket-name')
+                })
+                .handleInputBox('Specify SAM parameter value for DestinationBucketName', (inputBox) => {
+                    inputBox.acceptValue('my-destination-bucket-name')
+                })
+                .handleQuickPick('Specify parameters for deploy', async (quickPick) => {
+                    // Need time to check samconfig.toml file and generate options
+                    await quickPick.untilReady()
+
+                    assert.strictEqual(quickPick.items.length, 2)
+                    assert.strictEqual(
+                        quickPick.items[0].label,
+                        'Specify only required parameters and save as defaults'
+                    )
+                    assert.strictEqual(quickPick.items[1].label, 'Specify only required parameters')
+                    quickPick.acceptItem(quickPick.items[1])
+                })
+                .handleQuickPick('Select a region', (quickPick) => {
+                    const select = quickPick.items.filter((i) => i.detail === 'us-west-2')[0]
+                    quickPick.acceptItem(select || quickPick.items[0])
+                })
+                .handleQuickPick('Select a CloudFormation Stack', async (quickPick) => {
+                    // The prompt will need some time to generate option
+                    await quickPick.untilReady()
+                    assert.strictEqual(quickPick.items.length, 3)
+                    assert.strictEqual(quickPick.items[0].label, 'stack1')
+                    assert.strictEqual(quickPick.items[1].label, 'stack2')
+                    assert.strictEqual(quickPick.items[2].label, 'stack3')
+                    quickPick.acceptItem(quickPick.items[1])
+                })
+                .handleQuickPick('Specify S3 bucket for deployment artifacts', (quickPick) => {
+                    assert.strictEqual(quickPick.items.length, 2)
+                    assert.strictEqual(quickPick.items[0].label, 'Create a SAM CLI managed S3 bucket')
+                    assert.strictEqual(quickPick.items[1].label, 'Specify an S3 bucket')
+                    quickPick.acceptItem(quickPick.items[0])
+                })
+                .build()
+
+            const parameters = await new DeployWizard({}, await globals.templateRegistry, appNode).run()
+
+            assert(parameters)
+            assert.strictEqual(parameters.SourceBucketName, 'my-source-bucket-name')
+            assert.strictEqual(parameters.DestinationBucketName, 'my-destination-bucket-name')
+
+            assert.strictEqual(parameters.template.uri.fsPath, templateFile.fsPath)
+            assert.strictEqual(parameters.projectRoot.fsPath, projectRoot.fsPath)
+            assert.strictEqual(parameters.paramsSource, 1)
+            assert.strictEqual(parameters.region, 'us-west-2')
+            assert.strictEqual(parameters.stackName, 'stack2')
+            assert.strictEqual(parameters.bucketSource, 0)
+            assert(!parameters.bucketName)
+        })
+
+        it('happy path with valid samconfig.toml', async () => {
+            /**
+             * Selection:
+             *  - SourceBucketName      : [Select]   prefill value
+             *  - DestinationBucketName : [Select]   prefill value
+             *
+             *  - template              : [Skip]     automatically set
+             *  - projectRoot           : [Skip]     automatically set
+             *  - paramsSource          : [Select]  3. ('Use default values from samconfig')
+             *  - region                : [Skip]    null; will use value from samconfig file
+             *  - stackName             : [Skip]    null; will use value from samconfig file
+             *  - bucketSource          : [Skip]    null; will use value from samconfig file
+             *  - bucketName            : [Skip]    automatically set for bucketSource option 1
+             */
+
+            // generate samconfig.toml in temporary test folder
+            await testFolder.write('samconfig.toml', samconfigCompleteData)
+
+            PrompterTester.init()
+                .handleInputBox('Specify SAM parameter value for SourceBucketName', (inputBox) => {
+                    inputBox.acceptValue('my-source-bucket-name')
+                })
+                .handleInputBox('Specify SAM parameter value for DestinationBucketName', (inputBox) => {
+                    inputBox.acceptValue('my-destination-bucket-name')
+                })
+                .handleQuickPick('Specify parameters for deploy', async (quickPick) => {
+                    // Need time to check samconfig.toml file and generate options
+                    await quickPick.untilReady()
+
+                    assert.strictEqual(quickPick.items.length, 3)
+                    assert.strictEqual(
+                        quickPick.items[0].label,
+                        'Specify only required parameters and save as defaults'
+                    )
+                    assert.strictEqual(quickPick.items[1].label, 'Specify only required parameters')
+                    assert.strictEqual(quickPick.items[2].label, 'Use default values from samconfig')
+                    quickPick.acceptItem(quickPick.items[2])
+                })
+                .build()
+
+            const parameters = await new DeployWizard({}, await globals.templateRegistry, appNode).run()
+
+            assert(parameters)
+            assert.strictEqual(parameters.SourceBucketName, 'my-source-bucket-name')
+            assert.strictEqual(parameters.DestinationBucketName, 'my-destination-bucket-name')
+
+            assert.strictEqual(parameters.template.uri.fsPath, templateFile.fsPath)
+            assert.strictEqual(parameters.projectRoot.fsPath, projectRoot.fsPath)
+            assert.strictEqual(parameters.paramsSource, 2)
+            assert(!parameters.region)
+            assert(!parameters.stackName)
+            assert(!parameters.bucketSource)
+        })
+    })
+
+    describe('entry: command palette', () => {
+        it('happy path without/invalid samconfig.toml', async () => {
+            /**
+             * Selection:
+             *  - SourceBucketName      : [Skip?]   undefined
+             *  - DestinationBucketName : [Skip?]   undefined
+             *
+             *  - template              : [Select]   template/yaml set
+             *  - projectRoot           : [Skip]     automatically set
+             *  - paramsSource          : [Select]   2. ('Specify only required parameters')
+             *  - region                : [Skip]     automatically set from region node 'us-west-2'
+             *  - stackName             : [Select]   3. 'stack3'
+             *  - bucketSource          : [Select]   2. ('Specify an S3 bucket')
+             *  - bucketName            : [Select]   3. 'stack-3-bucket'
+             */
+
+            // Create a second project folder to simulate multiple project in 1 workspace
+            const testFolder2 = await TestFolder.create()
+            const templateFile2 = vscode.Uri.file(await testFolder2.write('template.yaml', validTemplateData))
+            await (await globals.templateRegistry).addItem(templateFile2)
+
+            PrompterTester.init()
+                .handleQuickPick('Select a SAM CloudFormation Template', async (quickPick) => {
+                    // Need sometime to wait for the template to search for template file
+                    await quickPick.untilReady()
+                    assert.strictEqual(quickPick.items.length, 2)
+                    assert.strictEqual(quickPick.items[0].label, templateFile.fsPath)
+                    quickPick.acceptItem(quickPick.items[0])
+                })
+                .handleQuickPick('Specify parameters for deploy', async (quickPick) => {
+                    // Need time to check samconfig.toml file and generate options
+                    await quickPick.untilReady()
+                    assert.strictEqual(quickPick.items.length, 2)
+                    assert.strictEqual(
+                        quickPick.items[0].label,
+                        'Specify only required parameters and save as defaults'
+                    )
+                    assert.strictEqual(quickPick.items[1].label, 'Specify only required parameters')
+                    quickPick.acceptItem(quickPick.items[1])
+                })
+                .handleQuickPick('Select a region', (quickPick) => {
+                    const select = quickPick.items.filter((i) => i.detail === 'us-west-2')[0]
+                    quickPick.acceptItem(select || quickPick.items[0])
+                })
+                .handleQuickPick('Select a CloudFormation Stack', async (quickPick) => {
+                    // The prompt will need some time to generate option
+                    await quickPick.untilReady()
+
+                    assert.strictEqual(quickPick.items.length, 3)
+                    assert.strictEqual(quickPick.items[0].label, 'stack1')
+                    assert.strictEqual(quickPick.items[1].label, 'stack2')
+                    assert.strictEqual(quickPick.items[2].label, 'stack3')
+                    quickPick.acceptItem(quickPick.items[2])
+                })
+                .handleQuickPick('Specify S3 bucket for deployment artifacts', (quickPick) => {
+                    assert.strictEqual(quickPick.items.length, 2)
+                    assert.strictEqual(quickPick.items[0].label, 'Create a SAM CLI managed S3 bucket')
+                    assert.strictEqual(quickPick.items[1].label, 'Specify an S3 bucket')
+                    quickPick.acceptItem(quickPick.items[1])
+                })
+                .handleQuickPick('Select an S3 Bucket', async (quickPick) => {
+                    // The prompt will need some time to generate option
+                    await quickPick.untilReady()
+                    assert.strictEqual(quickPick.items.length, 3)
+                    assert.strictEqual(quickPick.items[0].label, 'stack-1-bucket')
+                    assert.strictEqual(quickPick.items[1].label, 'stack-2-bucket')
+                    assert.strictEqual(quickPick.items[2].label, 'stack-3-bucket')
+                    quickPick.acceptItem(quickPick.items[2])
+                })
+                .build()
+
+            const parameters = await new DeployWizard({}, await globals.templateRegistry).run()
+            assert(parameters)
+
+            assert.strictEqual(parameters.template.uri.fsPath, templateFile.fsPath)
+            assert.strictEqual(parameters.projectRoot.fsPath, projectRoot.fsPath)
+            assert.strictEqual(parameters.paramsSource, 1)
+            assert.strictEqual(parameters.region, 'us-west-2')
+            assert.strictEqual(parameters.stackName, 'stack3')
+            assert.strictEqual(parameters.bucketSource, 1)
+            assert.strictEqual(parameters.bucketName, 'stack-3-bucket')
+        })
+
+        it('happy path with samconfig.toml', async () => {
+            /**
+             * Selection:
+             *  - SourceBucketName      : [Skip?]   undefined
+             *  - DestinationBucketName : [Skip?]   undefined
+             *
+             *  - template              : [Select]  template.yaml
+             *  - projectRoot           : [Skip]    automatically set
+             *  - paramsSource          : [Select]  3. ('Use default values from samconfig')
+             *  - region                : [Skip]    null; will use value from samconfig file
+             *  - stackName             : [Skip]    null; will use value from samconfig file
+             *  - bucketSource          : [Skip]    null; will use value from samconfig file
+             *  - bucketName            : [Skip]    automatically set for bucketSource option 1
+             */
+
+            // Create a second project folder to simulate multiple project in 1 workspace
+            const testFolder2 = await TestFolder.create()
+            const templateFile2 = vscode.Uri.file(await testFolder2.write('template.yaml', validTemplateData))
+            await (await globals.templateRegistry).addItem(templateFile2)
+
+            await testFolder.write('samconfig.toml', samconfigCompleteData)
+            // Simulate return of deployed stacks
+
+            PrompterTester.init()
+                .handleQuickPick('Select a SAM CloudFormation Template', async (quickPick) => {
+                    // Need sometime to wait for the template to search for template file
+                    await quickPick.untilReady()
+
+                    assert.strictEqual(quickPick.items.length, 2)
+                    assert.strictEqual(quickPick.items[0].label, templateFile.fsPath)
+                    quickPick.acceptItem(quickPick.items[0])
+                })
+                .handleQuickPick('Specify parameters for deploy', async (quickPick) => {
+                    // Need time to check samconfig.toml file and generate options
+                    await quickPick.untilReady()
+                    assert.strictEqual(quickPick.items.length, 3)
+                    assert.strictEqual(
+                        quickPick.items[0].label,
+                        'Specify only required parameters and save as defaults'
+                    )
+                    assert.strictEqual(quickPick.items[1].label, 'Specify only required parameters')
+                    assert.strictEqual(quickPick.items[2].label, 'Use default values from samconfig')
+                    quickPick.acceptItem(quickPick.items[2])
+                })
+                .build()
+            const parameters = await new DeployWizard({}, await globals.templateRegistry).run()
+            assert(parameters)
+            assert.strictEqual(parameters.template.uri.fsPath, templateFile.fsPath)
+            assert.strictEqual(parameters.projectRoot.fsPath, projectRoot.fsPath)
+            assert.strictEqual(parameters.paramsSource, 2)
+            assert(!parameters.region)
+            assert(!parameters.stackName)
+            assert(!parameters.bucketSource)
+        })
     })
 })
 
-// function assertGeneralErrorLogged() {
-//     // match string 'AWS.samcli.deploy.general.error'
-//     assertLogsContain('Error deploying a SAM Application.', false, 'error')
-// }
+describe('SAM Deploy', () => {
+    let sandbox: sinon.SinonSandbox
+    let testFolder: TestFolder
+    let projectRoot: vscode.Uri
+    let workspaceFolder: vscode.WorkspaceFolder
+    let templateFile: vscode.Uri
 
-// function assertErrorLogsSwallowed(text: string, exactMatch: boolean) {
-//     assert.ok(
-//         getTestLogger()
-//             .getLoggedEntries('error')
-//             .some((e) => !(e instanceof Error) && (exactMatch ? e === text : e.includes(text))),
-//         `Expected to find "${text}" in the error logs, but not as a thrown error`
-//     )
-// }
+    let mockDeployParams: DeployParams
+    let mockGetSpawnEnv: sinon.SinonStub
+    let mockGetSamCliPath: sinon.SinonStub
+    let mockRunInTerminal: sinon.SinonStub
+    let spyWriteSamconfigGlobal: sinon.SinonSpy
+
+    let appNode: AppNode
+
+    // Dependency clients
+    let mockChildProcess: sinon.SinonStub
+    beforeEach(async function () {
+        testFolder = await TestFolder.create()
+        projectRoot = vscode.Uri.file(testFolder.path)
+        workspaceFolder = getWorkspaceFolder(testFolder.path)
+        sandbox = sinon.createSandbox()
+
+        // Create template.yaml in temporary test folder and add to registery
+        templateFile = vscode.Uri.file(await testFolder.write('template.yaml', validTemplateData))
+        await (await globals.templateRegistry).addItem(templateFile)
+
+        spyWriteSamconfigGlobal = sandbox.spy(SamConfiModule, 'writeSamconfigGlobal')
+
+        mockGetSpawnEnv = sandbox.stub().resolves({
+            AWS_TOOLING_USER_AGENT: 'AWS-Toolkit-For-VSCode/testPluginVersion',
+            SAM_CLI_TELEMETRY: '0',
+        })
+        sandbox.stub(ResolveEnvModule, 'getSpawnEnv').callsFake(mockGetSpawnEnv)
+
+        appNode = new AppNode({
+            samTemplateUri: templateFile,
+            workspaceFolder: workspaceFolder,
+        } as SamAppLocation)
+    })
+
+    afterEach(() => {
+        sandbox.restore()
+    })
+
+    describe(':) path', () => {
+        beforeEach(() => {
+            mockGetSamCliPath = sandbox.stub().resolves({ path: 'sam-cli-path' })
+            sandbox.stub(SyncModule, 'getSamCliPathAndVersion').callsFake(mockGetSamCliPath)
+
+            mockChildProcess = sandbox.stub().resolves({})
+            sandbox.stub(ProcessUtilsModule, 'ChildProcess').callsFake(mockChildProcess)
+
+            mockRunInTerminal = sandbox.stub().resolves(Promise.resolve())
+            sandbox.stub(SyncModule, 'runInTerminal').callsFake(mockRunInTerminal)
+        })
+
+        it('[ParamsSource.SamConfig] should instantiate the correct ChildProcess', async () => {
+            // Mock result from DeployWizard; the Wizard is already tested separately
+            mockDeployParams = {
+                paramsSource: ParamsSource.SamConfig,
+                SourceBucketName: 'my-source-bucket-name',
+                DestinationBucketName: 'my-destination-bucket-name',
+                region: undefined,
+                stackName: undefined,
+                bucketName: undefined,
+                template: { uri: templateFile, data: {} } as TemplateItem,
+                bucketSource: BucketSource.UserProvided,
+                projectRoot: projectRoot,
+            } as unknown as DeployParams
+
+            // Create samconfig.toml in temporary test folder
+            const samconfigFile = await testFolder.write('samconfig.toml', samconfigCompleteData)
+
+            // Stub the DeployWizard output
+            sandbox.stub(DeployWizard.prototype, 'run').resolves(mockDeployParams)
+
+            await runDeploy(appNode)
+
+            // Check that ChildProcess for build and deploy are instantiated correctly
+            assert.strictEqual(mockChildProcess.callCount, 2)
+            const buildChildProcess = mockChildProcess.getCall(0)
+            const deployChildProcess = mockChildProcess.getCall(1)
+
+            assert.deepEqual(buildChildProcess.args, [
+                'sam-cli-path',
+                ['build', '--cached'],
+                {
+                    spawnOptions: {
+                        cwd: mockDeployParams.projectRoot?.fsPath,
+                        env: {
+                            AWS_TOOLING_USER_AGENT: 'AWS-Toolkit-For-VSCode/testPluginVersion',
+                            SAM_CLI_TELEMETRY: '0',
+                        },
+                    },
+                },
+            ])
+            assert.deepEqual(deployChildProcess.args, [
+                'sam-cli-path',
+                [
+                    'deploy',
+                    '--no-confirm-changeset',
+                    '--region',
+                    // Expect region information from samconfig.toml
+                    'us-west-2',
+                    '--config-file',
+                    `${samconfigFile}`,
+                    '--parameter-overrides',
+                    `ParameterKey=SourceBucketName,ParameterValue=${mockDeployParams.SourceBucketName} ` +
+                        `ParameterKey=DestinationBucketName,ParameterValue=${mockDeployParams.DestinationBucketName}`,
+                    '--template-file',
+                    vscode.Uri.joinPath(projectRoot, '.aws-sam', 'build', 'template.yaml').fsPath,
+                ],
+                {
+                    spawnOptions: {
+                        cwd: mockDeployParams.projectRoot?.fsPath,
+                        env: {
+                            AWS_TOOLING_USER_AGENT: 'AWS-Toolkit-For-VSCode/testPluginVersion',
+                            SAM_CLI_TELEMETRY: '0',
+                        },
+                    },
+                },
+            ])
+            assert(spyWriteSamconfigGlobal.notCalled)
+            // Check that runInTerminal is called with the correct arguments for build
+            assert.strictEqual(mockRunInTerminal.callCount, 2)
+            const buildProcess = mockChildProcess.getCall(0).returnValue
+            assert.deepEqual(mockRunInTerminal.getCall(0).args, [buildProcess, 'build'])
+
+            const deployProcess = mockChildProcess.getCall(1).returnValue // Get the instance from the first call
+            assert.deepEqual(mockRunInTerminal.getCall(1).args, [deployProcess, 'deploy'])
+
+            assertTelemetry('sam_deploy', { result: 'Succeeded', source: 'appBuilderDeploy' })
+        })
+
+        it('[ParamsSource.SamConfig] when trigger from region node should instantiate the correct ChildProcess without region flag', async () => {
+            // Mock result from DeployWizard; the Wizard is already tested separately
+            mockDeployParams = {
+                paramsSource: ParamsSource.SamConfig,
+                SourceBucketName: 'my-source-bucket-name',
+                DestinationBucketName: 'my-destination-bucket-name',
+                // Simulate entry from region node when region ('us-east-1') differ from 'us-west-2' in samconfig.toml
+                region: 'us-east-1',
+                stackName: undefined,
+                bucketName: undefined,
+                template: { uri: templateFile, data: {} } as TemplateItem,
+                bucketSource: BucketSource.UserProvided,
+                projectRoot: projectRoot,
+            } as unknown as DeployParams
+
+            // Create samconfig.toml in temporary test folder
+            const samconfigFile = await testFolder.write('samconfig.toml', samconfigCompleteData)
+
+            // Stub the DeployWizard output
+            sandbox.stub(DeployWizard.prototype, 'run').resolves(mockDeployParams)
+
+            await runDeploy(appNode)
+
+            // Check that ChildProcess for build and deploy are instantiated correctly
+            assert.strictEqual(mockChildProcess.callCount, 2)
+            const buildChildProcess = mockChildProcess.getCall(0)
+            const deployChildProcess = mockChildProcess.getCall(1)
+
+            assert.deepEqual(buildChildProcess.args, [
+                'sam-cli-path',
+                ['build', '--cached'],
+                {
+                    spawnOptions: {
+                        cwd: mockDeployParams.projectRoot?.fsPath,
+                        env: {
+                            AWS_TOOLING_USER_AGENT: 'AWS-Toolkit-For-VSCode/testPluginVersion',
+                            SAM_CLI_TELEMETRY: '0',
+                        },
+                    },
+                },
+            ])
+            assert.deepEqual(deployChildProcess.args, [
+                'sam-cli-path',
+                [
+                    'deploy',
+                    '--no-confirm-changeset',
+                    '--region',
+                    `${mockDeployParams.region}`,
+                    '--config-file',
+                    `${samconfigFile}`,
+                    '--parameter-overrides',
+                    `ParameterKey=SourceBucketName,ParameterValue=${mockDeployParams.SourceBucketName} ` +
+                        `ParameterKey=DestinationBucketName,ParameterValue=${mockDeployParams.DestinationBucketName}`,
+                    '--template-file',
+                    vscode.Uri.joinPath(projectRoot, '.aws-sam', 'build', 'template.yaml').fsPath,
+                ],
+                {
+                    spawnOptions: {
+                        cwd: mockDeployParams.projectRoot?.fsPath,
+                        env: {
+                            AWS_TOOLING_USER_AGENT: 'AWS-Toolkit-For-VSCode/testPluginVersion',
+                            SAM_CLI_TELEMETRY: '0',
+                        },
+                    },
+                },
+            ])
+            assert(spyWriteSamconfigGlobal.notCalled)
+            // Check that runInTerminal is called with the correct arguments for build
+            assert.strictEqual(mockRunInTerminal.callCount, 2)
+            const buildProcess = mockChildProcess.getCall(0).returnValue
+            assert.deepEqual(mockRunInTerminal.getCall(0).args, [buildProcess, 'build'])
+
+            const deployProcess = mockChildProcess.getCall(1).returnValue // Get the instance from the first call
+            assert.deepEqual(mockRunInTerminal.getCall(1).args, [deployProcess, 'deploy'])
+
+            assertTelemetry('sam_deploy', { result: 'Succeeded', source: 'appBuilderDeploy' })
+        })
+
+        it('[ParamsSource.SpecifyAndSave] should instantiate the correct ChildProcess for sam build and deploy', async () => {
+            // Mock result from DeployWizard; the Wizard is already tested separately
+            mockDeployParams = {
+                paramsSource: ParamsSource.SpecifyAndSave,
+                SourceBucketName: 'my-source-bucket-name',
+                DestinationBucketName: 'my-destination-bucket-name',
+                region: 'us-east-1',
+                stackName: 'stack1',
+                bucketName: undefined,
+                template: { uri: templateFile, data: {} } as TemplateItem,
+                bucketSource: BucketSource.SamCliManaged,
+                projectRoot: projectRoot,
+            } as unknown as DeployParams
+
+            // Stub the DeployWizard output
+            sandbox.stub(DeployWizard.prototype, 'run').resolves(mockDeployParams)
+
+            await runDeploy(appNode)
+
+            // Check that ChildProcess for build and deploy are instantiated correctly
+            assert.strictEqual(mockChildProcess.callCount, 2)
+            const buildChildProcess = mockChildProcess.getCall(0)
+            const deployChildProcess = mockChildProcess.getCall(1)
+
+            assert.deepEqual(buildChildProcess.args, [
+                'sam-cli-path',
+                ['build', '--cached'],
+                {
+                    spawnOptions: {
+                        cwd: mockDeployParams.projectRoot?.fsPath,
+                        env: {
+                            AWS_TOOLING_USER_AGENT: 'AWS-Toolkit-For-VSCode/testPluginVersion',
+                            SAM_CLI_TELEMETRY: '0',
+                        },
+                    },
+                },
+            ])
+
+            assert.deepEqual(deployChildProcess.args, [
+                'sam-cli-path',
+                [
+                    'deploy',
+                    '--no-confirm-changeset',
+                    '--region',
+                    `${mockDeployParams.region}`,
+                    '--stack-name',
+                    `${mockDeployParams.stackName}`,
+                    '--resolve-s3',
+                    '--capabilities',
+                    'CAPABILITY_IAM',
+                    'CAPABILITY_NAMED_IAM',
+                    '--save-params',
+                    '--parameter-overrides',
+                    `ParameterKey=SourceBucketName,ParameterValue=${mockDeployParams.SourceBucketName} ` +
+                        `ParameterKey=DestinationBucketName,ParameterValue=${mockDeployParams.DestinationBucketName}`,
+                    '--template-file',
+                    vscode.Uri.joinPath(projectRoot, '.aws-sam', 'build', 'template.yaml').fsPath,
+                ],
+                {
+                    spawnOptions: {
+                        cwd: mockDeployParams.projectRoot?.fsPath,
+                        env: {
+                            AWS_TOOLING_USER_AGENT: 'AWS-Toolkit-For-VSCode/testPluginVersion',
+                            SAM_CLI_TELEMETRY: '0',
+                        },
+                    },
+                },
+            ])
+
+            assert(
+                spyWriteSamconfigGlobal.calledOnceWith(projectRoot, mockDeployParams.stackName, mockDeployParams.region)
+            )
+
+            // Check that runInTerminal is called with the correct arguments for build
+            assert.strictEqual(mockRunInTerminal.callCount, 2)
+            const buildProcess = mockChildProcess.getCall(0).returnValue
+            assert.deepEqual(mockRunInTerminal.getCall(0).args, [buildProcess, 'build'])
+
+            const deployProcess = mockChildProcess.getCall(1).returnValue // Get the instance from the first call
+            assert.deepEqual(mockRunInTerminal.getCall(1).args, [deployProcess, 'deploy'])
+
+            assertTelemetry('sam_deploy', { result: 'Succeeded', source: 'appBuilderDeploy' })
+        })
+    })
+
+    describe(':( path', () => {
+        let mockDeployParams: DeployParams
+        beforeEach(async () => {
+            mockDeployParams = {
+                paramsSource: ParamsSource.SpecifyAndSave,
+                SourceBucketName: 'my-source-bucket-name',
+                DestinationBucketName: 'my-destination-bucket-name',
+                region: 'us-east-1',
+                stackName: 'stack1',
+                bucketName: undefined,
+                template: { uri: templateFile, data: {} } as TemplateItem,
+                bucketSource: BucketSource.SamCliManaged,
+                projectRoot: projectRoot,
+            } as unknown as DeployParams
+        })
+
+        it('should gracefully shut down when cancel by user', async () => {
+            try {
+                // Breaking point
+                sandbox.stub(DeployWizard.prototype, 'run').resolves(undefined as unknown as DeployParams)
+
+                await runDeploy(appNode)
+                assert.fail('Should have thrown an CancellationError')
+            } catch (err) {
+                assert(spyWriteSamconfigGlobal.notCalled)
+                assert(err instanceof CancellationError)
+            }
+        })
+
+        it('should throw error given issue with sam cli prerequisite version', async () => {
+            try {
+                // Expect to be called
+                sandbox.stub(DeployWizard.prototype, 'run').resolves(mockDeployParams)
+
+                // Break point
+                mockGetSamCliPath = sandbox
+                    .stub(SyncModule, 'getSamCliPathAndVersion')
+                    .rejects(
+                        new ToolkitError('SAM CLI version 1.53.0 or higher is required', { code: 'VersionTooLow' })
+                    )
+
+                // Not expect to be called
+                mockChildProcess = sandbox.stub().resolves({})
+                sandbox.stub(ProcessUtilsModule, 'ChildProcess').callsFake(mockChildProcess)
+                mockRunInTerminal = sandbox.stub().resolves(Promise.resolve())
+                sandbox.stub(SyncModule, 'runInTerminal').callsFake(mockRunInTerminal)
+
+                await runDeploy(appNode)
+                assert.fail('Should have thrown an Error')
+            } catch (err) {
+                assert(err instanceof ToolkitError)
+                assert(mockGetSamCliPath.calledOnce)
+                assert(mockChildProcess.notCalled)
+                assert(mockRunInTerminal.notCalled)
+                assert(spyWriteSamconfigGlobal.notCalled)
+                assert.strictEqual(err.message, 'Failed to deploy SAM template')
+            }
+        })
+
+        it('should throw error given issue with building template', async () => {
+            try {
+                // Happy Stub
+                sandbox.stub(DeployWizard.prototype, 'run').resolves(mockDeployParams)
+                mockGetSamCliPath = sandbox.stub().resolves({ path: 'sam-cli-path' })
+                sandbox.stub(SyncModule, 'getSamCliPathAndVersion').callsFake(mockGetSamCliPath)
+                mockChildProcess = sandbox.stub().resolves({})
+                sandbox.stub(ProcessUtilsModule, 'ChildProcess').callsFake(mockChildProcess)
+
+                // Breaking point
+                mockRunInTerminal = sandbox
+                    .stub(SyncModule, 'runInTerminal')
+                    .rejects(new ToolkitError('SAM CLI was cancelled before exiting', { cancelled: true }))
+
+                await runDeploy(appNode)
+                assert.fail('Should have thrown an Error')
+            } catch (err) {
+                assert(err instanceof ToolkitError)
+                assert(mockGetSamCliPath.calledOnce)
+                assert(mockChildProcess.calledOnce)
+                assert(mockRunInTerminal.calledOnce)
+                assert(spyWriteSamconfigGlobal.notCalled)
+                assert.strictEqual(err.message, 'Failed to deploy SAM template')
+            }
+        })
+
+        it('should throw error and write to samconfig.toml given no update when deploying template', async () => {
+            try {
+                // Happy Stub
+                sandbox.stub(DeployWizard.prototype, 'run').resolves(mockDeployParams)
+                mockGetSamCliPath = sandbox.stub().resolves({ path: 'sam-cli-path' })
+                sandbox.stub(SyncModule, 'getSamCliPathAndVersion').callsFake(mockGetSamCliPath)
+                mockChildProcess = sandbox.stub().resolves({})
+                sandbox.stub(ProcessUtilsModule, 'ChildProcess').callsFake(mockChildProcess)
+
+                // Breaking point
+                mockRunInTerminal = sandbox.stub(SyncModule, 'runInTerminal').callsFake((input, cmd) => {
+                    if (cmd === 'deploy') {
+                        throw new ToolkitError('The stack is up to date', {
+                            code: 'NoUpdateExitCode',
+                        })
+                    }
+                    return Promise.resolve()
+                })
+
+                await runDeploy(appNode)
+                assert.fail('Should have thrown an Error')
+            } catch (err) {
+                assert(err instanceof ToolkitError)
+                assert(mockGetSamCliPath.calledOnce)
+                assert(mockChildProcess.calledTwice)
+                assert(mockRunInTerminal.calledTwice)
+                assert(spyWriteSamconfigGlobal.calledOnce)
+                assert.strictEqual(err.message, 'Failed to deploy SAM template')
+            }
+        })
+    })
+})
+
+const s3BucketListSummary: Array<
+    RequiredProps<S3.Bucket, 'Name'> & {
+        readonly region: string
+    }
+> = [
+    { Name: 'stack-1-bucket', region: 'us-west-2' },
+    { Name: 'stack-2-bucket', region: 'us-west-2' },
+    { Name: 'stack-3-bucket', region: 'us-west-2' },
+]
+
+const stackSummaries: CloudFormation.StackSummary[][] = [
+    [
+        {
+            StackName: 'stack1',
+            StackStatus: 'CREATE_COMPLETE',
+            CreationTime: new Date(),
+        } as CloudFormation.StackSummary,
+        {
+            StackName: 'stack2',
+            StackStatus: 'CREATE_COMPLETE',
+            CreationTime: new Date(),
+        } as CloudFormation.StackSummary,
+        {
+            StackName: 'stack3',
+            StackStatus: 'CREATE_COMPLETE',
+            CreationTime: new Date(),
+        } as CloudFormation.StackSummary,
+    ],
+]
