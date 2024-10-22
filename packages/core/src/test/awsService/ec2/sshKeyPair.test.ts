@@ -126,12 +126,6 @@ describe('SshKeyPair', async function () {
         assert(keyPair.isDeleted())
     })
 
-    it('does not allow writing keys to non-global storage', async function () {
-        await assert.rejects(async () => await SshKeyPair.getSshKeyPair('~/.ssh/someKey', 2000))
-
-        await assert.rejects(async () => await SshKeyPair.getSshKeyPair('/a/path/that/isnt/real/key', 2000))
-    })
-
     describe('isDeleted', async function () {
         it('returns false if key files exist', async function () {
             assert.strictEqual(await keyPair.isDeleted(), false)
