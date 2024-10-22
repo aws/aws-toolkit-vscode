@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
-import { CLOUDWATCH_LOGS_LIVETAIL_SCHEME } from '../../../shared/constants'
+import { cloudwatchLogsLiveTailScheme } from '../../../shared/constants'
 import { LiveTailSession, LiveTailSessionConfiguration } from './liveTailSession'
 
 export class LiveTailSessionRegistry extends Map<vscode.Uri, LiveTailSession> {
@@ -19,7 +19,7 @@ export class LiveTailSessionRegistry extends Map<vscode.Uri, LiveTailSession> {
 }
 
 export function createLiveTailURIFromArgs(sessionData: LiveTailSessionConfiguration): vscode.Uri {
-    let uriStr = `${CLOUDWATCH_LOGS_LIVETAIL_SCHEME}:${sessionData.region}:${sessionData.logGroupName}`
+    let uriStr = `${cloudwatchLogsLiveTailScheme}:${sessionData.region}:${sessionData.logGroupName}`
 
     if (sessionData.logStreamFilter) {
         if (sessionData.logStreamFilter.type !== 'all') {

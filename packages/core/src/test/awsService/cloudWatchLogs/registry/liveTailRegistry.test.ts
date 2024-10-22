@@ -6,12 +6,12 @@ import * as vscode from 'vscode'
 import assert from 'assert'
 import { LiveTailSessionConfiguration } from '../../../../awsService/cloudWatchLogs/registry/liveTailSession'
 import { createLiveTailURIFromArgs } from '../../../../awsService/cloudWatchLogs/registry/liveTailSessionRegistry'
-import { CLOUDWATCH_LOGS_LIVETAIL_SCHEME } from '../../../../shared/constants'
+import { cloudwatchLogsLiveTailScheme } from '../../../../shared/constants'
 
 describe('LiveTailSession URI', async function () {
     const testLogGroupName = 'test-log-group'
     const testRegion = 'test-region'
-    const expectedUriBase = `${CLOUDWATCH_LOGS_LIVETAIL_SCHEME}:${testRegion}:${testLogGroupName}`
+    const expectedUriBase = `${cloudwatchLogsLiveTailScheme}:${testRegion}:${testLogGroupName}`
 
     it('is correct with no logStream filter, no filter pattern', function () {
         const config: LiveTailSessionConfiguration = {

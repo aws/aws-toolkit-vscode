@@ -46,7 +46,7 @@ export class LiveTailSession {
             }),
             abortController: new AbortController(),
         }
-        this._maxLines = LiveTailSession.settings.get('liveTailMaxEvents', 10000)
+        this._maxLines = LiveTailSession.settings.get('limit', 10000)
         this._uri = createLiveTailURIFromArgs(configuration)
     }
 
