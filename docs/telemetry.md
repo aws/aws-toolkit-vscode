@@ -170,7 +170,7 @@ function failsDependingOnInput(num: number) {
 
 ### Solution
 
-On class methods use the `@withTelemetryContext()` decorator add context to the execution. Depending on the args set, it provides features like emitting the result, or adding it's context to errors.
+On class methods, use the `@withTelemetryContext()` decorator to add context to the execution. Depending on the args set, it provides features like emitting the result, or adding it's context to errors.
 
 > NOTE: Decorators are currently only supported for methods and not functions
 
