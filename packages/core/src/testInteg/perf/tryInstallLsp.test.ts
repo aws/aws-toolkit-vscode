@@ -10,7 +10,7 @@ import path from 'path'
 import { LspController } from '../../amazonq'
 import { fs, getRandomString, globals } from '../../shared'
 import { createTestWorkspace } from '../../test/testUtil'
-import { performanceTest } from '../../shared/performance/performance'
+import { getEqualOSTestOptions, performanceTest } from '../../shared/performance/performance'
 import { getFsCallsUpperBound } from './utilities'
 import { FileSystem } from '../../shared/fs/fs'
 
@@ -73,27 +73,12 @@ const getFakeDownload = function (numberOfFiles: number, fileSize: number) {
 
 function performanceTestWrapper(numFiles: number, fileSize: number, message: string) {
     return performanceTest(
-        {
-            testRuns: 10,
-            linux: {
-                userCpuUsage: 150,
-                systemCpuUsage: 35,
-                heapTotal: 6,
-                duration: 15,
-            },
-            darwin: {
-                userCpuUsage: 150,
-                systemCpuUsage: 35,
-                heapTotal: 6,
-                duration: 15,
-            },
-            win32: {
-                userCpuUsage: 150,
-                systemCpuUsage: 35,
-                heapTotal: 6,
-                duration: 15,
-            },
-        },
+        getEqualOSTestOptions({
+            userCpuUsage: 150,
+            systemCpuUsage: 35,
+            heapTotal: 6,
+            duration: 15,
+        }),
         message,
         function () {
             return {

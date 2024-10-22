@@ -5,7 +5,7 @@
 import assert from 'assert'
 import * as vscode from 'vscode'
 import * as sinon from 'sinon'
-import { performanceTest } from '../../shared/performance/performance'
+import { getEqualOSTestOptions, performanceTest } from '../../shared/performance/performance'
 import { createTestWorkspaceFolder, toFile } from '../../test/testUtil'
 import path from 'path'
 import { fs, randomUUID } from '../../shared'
@@ -15,23 +15,11 @@ import { FileSystem } from '../../shared/fs/fs'
 
 function performanceTestWrapper(totalFiles: number) {
     return performanceTest(
-        {
-            darwin: {
-                userCpuUsage: 100,
-                systemCpuUsage: 35,
-                heapTotal: 2,
-            },
-            linux: {
-                userCpuUsage: 100,
-                systemCpuUsage: 35,
-                heapTotal: 2,
-            },
-            win32: {
-                userCpuUsage: 100,
-                systemCpuUsage: 35,
-                heapTotal: 2,
-            },
-        },
+        getEqualOSTestOptions({
+            userCpuUsage: 100,
+            systemCpuUsage: 35,
+            heapTotal: 2,
+        }),
         'calculate cpu and memory usage',
         function () {
             return {

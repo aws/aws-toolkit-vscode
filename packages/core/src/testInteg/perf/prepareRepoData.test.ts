@@ -5,7 +5,7 @@
 import assert from 'assert'
 import * as sinon from 'sinon'
 import { WorkspaceFolder } from 'vscode'
-import { performanceTest } from '../../shared/performance/performance'
+import { getEqualOSTestOptions, performanceTest } from '../../shared/performance/performance'
 import { createTestWorkspace } from '../../test/testUtil'
 import { prepareRepoData, TelemetryHelper } from '../../amazonqFeatureDev'
 import { AmazonqCreateUpload, fs, getRandomString } from '../../shared'
@@ -27,24 +27,11 @@ type setupResult = {
 
 function performanceTestWrapper(numFiles: number, fileSize: number) {
     return performanceTest(
-        {
-            testRuns: 10,
-            linux: {
-                userCpuUsage: 150,
-                systemCpuUsage: 35,
-                heapTotal: 4,
-            },
-            darwin: {
-                userCpuUsage: 150,
-                systemCpuUsage: 35,
-                heapTotal: 4,
-            },
-            win32: {
-                userCpuUsage: 150,
-                systemCpuUsage: 35,
-                heapTotal: 4,
-            },
-        },
+        getEqualOSTestOptions({
+            userCpuUsage: 150,
+            systemCpuUsage: 35,
+            heapTotal: 4,
+        }),
         `handles ${numFiles} files of size ${fileSize} bytes`,
         function () {
             const telemetry = new TelemetryHelper()

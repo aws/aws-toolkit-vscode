@@ -22,7 +22,7 @@ import {
 import { getTestWindow } from '../../test/shared/vscode/window'
 import { SeverityLevel } from '../../test/shared/vscode/message'
 import { CodeAnalysisScope, ZipUtil } from '../../codewhisperer'
-import { performanceTest } from '../../shared/performance/performance'
+import { getEqualOSTestOptions, performanceTest } from '../../shared/performance/performance'
 import { createClient } from '../../test/codewhisperer/testUtil'
 import { fs } from '../../shared'
 import { FileSystem } from '../../shared/fs/fs'
@@ -69,23 +69,11 @@ describe('startSecurityScanPerformanceTest', function () {
     }
 
     performanceTest(
-        {
-            darwin: {
-                userCpuUsage: 150,
-                systemCpuUsage: 35,
-                heapTotal: 2,
-            },
-            linux: {
-                userCpuUsage: 150,
-                systemCpuUsage: 35,
-                heapTotal: 2,
-            },
-            win32: {
-                userCpuUsage: 150,
-                systemCpuUsage: 35,
-                heapTotal: 2,
-            },
-        },
+        getEqualOSTestOptions({
+            userCpuUsage: 150,
+            systemCpuUsage: 35,
+            heapTotal: 2,
+        }),
         'Should calculate cpu and memory usage for file scans',
         function () {
             return {

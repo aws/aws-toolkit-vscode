@@ -8,7 +8,7 @@ import { TransformByQState, ZipManifest } from '../../codewhisperer'
 import { fs, getRandomString, globals } from '../../shared'
 import { createTestWorkspace } from '../../test/testUtil'
 import * as CodeWhispererConstants from '../../codewhisperer/models/constants'
-import { performanceTest } from '../../shared/performance/performance'
+import { getEqualOSTestOptions, performanceTest } from '../../shared/performance/performance'
 import { zipCode } from '../../codewhisperer/indexNode'
 import { FileSystem } from '../../shared/fs/fs'
 import { getFsCallsUpperBound } from './utilities'
@@ -39,24 +39,11 @@ async function setup(numberOfFiles: number, fileSize: number): Promise<SetupResu
 
 function performanceTestWrapper(numberOfFiles: number, fileSize: number) {
     return performanceTest(
-        {
-            testRuns: 10,
-            linux: {
-                userCpuUsage: 200,
-                systemCpuUsage: 50,
-                heapTotal: 4,
-            },
-            darwin: {
-                userCpuUsage: 200,
-                systemCpuUsage: 50,
-                heapTotal: 4,
-            },
-            win32: {
-                userCpuUsage: 200,
-                systemCpuUsage: 50,
-                heapTotal: 4,
-            },
-        },
+        getEqualOSTestOptions({
+            userCpuUsage: 200,
+            systemCpuUsage: 50,
+            heapTotal: 4,
+        }),
         'zipCode',
         function () {
             return {

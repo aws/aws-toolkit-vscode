@@ -8,7 +8,7 @@ import sinon from 'sinon'
 import { getTestWorkspaceFolder } from '../integrationTestsUtilities'
 import { fs, getRandomString } from '../../shared'
 import { LspController } from '../../amazonq'
-import { performanceTest } from '../../shared/performance/performance'
+import { getEqualOSTestOptions, performanceTest } from '../../shared/performance/performance'
 import { FileSystem } from '../../shared/fs/fs'
 import { getFsCallsUpperBound } from './utilities'
 
@@ -19,24 +19,11 @@ interface SetupResult {
 
 function performanceTestWrapper(label: string, fileSize: number) {
     return performanceTest(
-        {
-            testRuns: 10,
-            linux: {
-                userCpuUsage: 400,
-                systemCpuUsage: 35,
-                heapTotal: 4,
-            },
-            darwin: {
-                userCpuUsage: 400,
-                systemCpuUsage: 35,
-                heapTotal: 4,
-            },
-            win32: {
-                userCpuUsage: 400,
-                systemCpuUsage: 35,
-                heapTotal: 4,
-            },
-        },
+        getEqualOSTestOptions({
+            userCpuUsage: 400,
+            systemCpuUsage: 35,
+            heapTotal: 4,
+        }),
         label,
         function () {
             return {
