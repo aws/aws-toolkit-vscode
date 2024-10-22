@@ -226,6 +226,7 @@ export class DefaultCodeWhispererClient {
         const client = await this.createUserSdkClient()
         const requester = async (request: CodeWhispererUserClient.ListAvailableCustomizationsRequest) =>
             client.listAvailableCustomizations(request).promise()
+        // @ts-ignore
         return pageableToCollection(requester, {}, 'nextToken')
             .promise()
             .then((resps) => {
