@@ -33,8 +33,9 @@ describe('Amazon Q LSP client', function () {
             encryptFunc.calledWith(
                 JSON.stringify({
                     filePaths: ['fileA'],
-                    rootPath: 'path',
-                    refresh: false,
+                    projectRoot: 'path',
+                    config: 'all',
+                    language: '',
                 })
             )
         )
