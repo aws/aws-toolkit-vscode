@@ -491,7 +491,7 @@ export class FeatureDevController {
         if (isStoppedGeneration) {
             this.messenger.sendAnswer({
                 message:
-                    remainingIterations === 0
+                    (remainingIterations ?? 0) <= 0
                         ? "I stopped generating your code. You don't have more iterations left, however, you can start a new session."
                         : `I stopped generating your code. If you want to continue working on this task, provide another description. You have ${remainingIterations} out of ${totalIterations} code generations left.`,
                 type: 'answer-part',
@@ -499,7 +499,7 @@ export class FeatureDevController {
             })
         }
 
-        if ((remainingIterations === 0 && isStoppedGeneration) || !isStoppedGeneration) {
+        if (((remainingIterations ?? 0) <= 0 && isStoppedGeneration) || !isStoppedGeneration) {
             this.messenger.sendAnswer({
                 type: 'system-prompt',
                 tabID: message.tabID,
