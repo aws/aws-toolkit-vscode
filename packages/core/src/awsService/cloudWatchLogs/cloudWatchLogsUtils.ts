@@ -111,7 +111,4 @@ function createURIFromArgs(args: CloudWatchLogsArgs): vscode.Uri {
 }
 export const cwlUriSchema = new UriSchema<CloudWatchLogsArgs>(parseCloudWatchLogsUri, createURIFromArgs)
 
-export class CloudWatchLogsSettings extends fromExtensionManifest('aws.cwl', {
-    limit: Number,
-    liveTailMaxEvents: Number,
-}) {}
+export class CloudWatchLogsSettings extends fromExtensionManifest('aws.cwl', { limit: Number }) {}

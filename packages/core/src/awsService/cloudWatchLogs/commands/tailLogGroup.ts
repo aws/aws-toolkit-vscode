@@ -71,19 +71,15 @@ async function handleSessionStream(
     document: vscode.TextDocument,
     session: LiveTailSession
 ) {
-    try {
-        for await (const event of stream) {
-            if (event.sessionUpdate !== undefined && event.sessionUpdate.sessionResults !== undefined) {
-                const formattedLogEvents = event.sessionUpdate.sessionResults.map<string>((logEvent) =>
-                    formatLogEvent(logEvent)
-                )
-                if (formattedLogEvents.length !== 0) {
-                    await updateTextDocumentWithNewLogEvents(formattedLogEvents, document, session.maxLines)
-                }
+    for await (const event of stream) {
+        if (event.sessionUpdate !== undefined && event.sessionUpdate.sessionResults !== undefined) {
+            const formattedLogEvents = event.sessionUpdate.sessionResults.map<string>((logEvent) =>
+                formatLogEvent(logEvent)
+            )
+            if (formattedLogEvents.length !== 0) {
+                await updateTextDocumentWithNewLogEvents(formattedLogEvents, document, session.maxLines)
             }
         }
-    } catch (err) {
-        throw new ToolkitError('Caught on-stream exception')
     }
 }
 

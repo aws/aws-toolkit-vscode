@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { CLOUDWATCH_LOGS_LIVETAIL_SCHEME, CLOUDWATCH_LOGS_SCHEME } from '../../shared/constants'
+import { cloudwatchLogsLiveTailScheme, CLOUDWATCH_LOGS_SCHEME } from '../../shared/constants'
 import { Settings } from '../../shared/settings'
 import { addLogEvents } from './commands/addLogEvents'
 import { copyLogResource } from './commands/copyLogResource'
@@ -45,7 +45,7 @@ export async function activate(context: vscode.ExtensionContext, configuration: 
     )
 
     context.subscriptions.push(
-        vscode.workspace.registerTextDocumentContentProvider(CLOUDWATCH_LOGS_LIVETAIL_SCHEME, liveTailDocumentProvider)
+        vscode.workspace.registerTextDocumentContentProvider(cloudwatchLogsLiveTailScheme, liveTailDocumentProvider)
     )
 
     context.subscriptions.push(
