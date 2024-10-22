@@ -6,7 +6,6 @@
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { telemetry } from '../../shared/telemetry/telemetry'
-import { getLogger } from '../../shared/logger'
 import { i18n } from '../../shared/i18n-helper'
 import { broadcastFileChange } from './handleMessage'
 import { FileWatchInfo, WebviewContext } from './types'
@@ -113,7 +112,6 @@ export class WorkflowStudioEditor {
             async (progress, token) => {
                 token.onCancellationRequested(async () => {
                     // Cancel opening in Worflow Studio and open regular code editor instead
-                    getLogger().debug('WorkflowStudio: Canceled opening')
                     contextObject.panel.dispose()
                     await vscode.commands.executeCommand('vscode.openWith', documentUri, 'default')
                     throw new CancellationError('user')

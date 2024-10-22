@@ -41,6 +41,9 @@ export async function handleMessage(message: Message, context: WebviewContext) {
             case Command.AUTO_SAVE_FILE:
                 void autoSaveFileMessageHandler(message as SaveFileRequestMessage, context)
                 break
+            case Command.CLOSE_WFS:
+                void closeCustomEditorMessageHandler(context)
+                break
             case Command.OPEN_FEEDBACK:
                 void submitFeedback(placeholder, 'Workflow Studio')
                 break
@@ -105,6 +108,20 @@ async function loadStageMessageHandler(context: WebviewContext) {
     setTimeout(() => {
         context.loaderNotification?.resolve()
     }, 100)
+}
+
+/**
+ * Handler for closing WFS custom editor. When called, disposes webview panel and opens default VSCode editor
+ * @param context The context object containing the necessary information for the webview.
+ */
+export function closeCustomEditorMessageHandler(context: WebviewContext) {
+    telemetry.stepfunctions_closeWorkflowStudio.run((span) => {
+        span.record({
+            id: context.fileId,
+        })
+        context.panel.dispose()
+        void vscode.commands.executeCommand('vscode.openWith', context.textDocument.uri, 'default')
+    })
 }
 
 /**

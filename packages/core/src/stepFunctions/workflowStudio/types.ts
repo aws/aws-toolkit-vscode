@@ -38,6 +38,7 @@ export enum Command {
     FILE_CHANGED = 'FILE_CHANGED',
     LOAD_STAGE = 'LOAD_STAGE',
     OPEN_FEEDBACK = 'OPEN_FEEDBACK',
+    CLOSE_WFS = 'CLOSE_WFS',
 }
 
 export type FileWatchInfo = {

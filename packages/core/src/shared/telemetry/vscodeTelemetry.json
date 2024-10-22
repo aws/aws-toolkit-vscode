@@ -517,6 +517,16 @@
             ]
         },
         {
+            "name": "stepfunctions_closeWorkflowStudio",
+            "description": "Called after closing Step Functions Workflow Studio custom editor",
+            "metadata": [
+                {
+                    "type": "id",
+                    "required": true
+                }
+            ]
+        },
+        {
             "name": "stepfunctions_saveFile",
             "description": "Called after the user saves local ASL file (inlcuding autosave) from VSCode editor or Workflow Studio",
             "metadata": [
