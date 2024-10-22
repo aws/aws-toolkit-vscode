@@ -47,6 +47,8 @@ import { openDeletedDiff, openDiff } from '../../../amazonq/commons/diff'
 import { i18n } from '../../../shared/i18n-helper'
 import globals from '../../../shared/extensionGlobals'
 
+export const TotalSteps = 3
+
 export interface ChatControllerEventEmitters {
     readonly processHumanChatMessage: EventEmitter<any>
     readonly followUpClicked: EventEmitter<any>
@@ -454,8 +456,9 @@ export class FeatureDevController {
             if (session?.state?.tokenSource?.token.isCancellationRequested) {
                 this.workOnNewTask(
                     session,
-                    session.state.codeGenerationRemainingIterationCount || session.state?.currentIteration,
-                    session.state.codeGenerationTotalIterationCount,
+                    session.state.codeGenerationRemainingIterationCount ||
+                        TotalSteps - (session.state?.currentIteration || 0),
+                    session.state.codeGenerationTotalIterationCount || TotalSteps,
                     session?.state?.tokenSource?.token.isCancellationRequested
                 )
                 this.disposeToken(session)
@@ -490,7 +493,7 @@ export class FeatureDevController {
                 message:
                     remainingIterations === 0
                         ? "I stopped generating your code. You don't have more iterations left, however, you can start a new session."
-                        : `I stopped generating your code. If you want to continue working on this task, provide another description. ${!totalIterations ? `You have started ${remainingIterations} code generations.` : `You have ${remainingIterations} out of ${totalIterations} code generations left.`}`,
+                        : `I stopped generating your code. If you want to continue working on this task, provide another description. You have ${remainingIterations} out of ${totalIterations} code generations left.`,
                 type: 'answer-part',
                 tabID: message.tabID,
             })
@@ -513,6 +516,9 @@ export class FeatureDevController {
                     },
                 ],
             })
+            this.messenger.sendChatInputEnabled(message.tabID, false)
+            this.messenger.sendUpdatePlaceholder(message.tabID, i18n('AWS.amazonq.featureDev.pillText.selectOption'))
+            return
         }
 
         // Ensure that chat input is enabled so that they can provide additional iterations if they choose
