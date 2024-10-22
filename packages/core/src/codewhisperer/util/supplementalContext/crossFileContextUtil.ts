@@ -183,7 +183,6 @@ function getInputChunk(editor: vscode.TextEditor) {
 /**
  * Util to decide if we need to fetch crossfile context since CodeWhisperer CrossFile Context feature is gated by userGroup and language level
  * @param languageId: VSCode language Identifier
- * @param userGroup: CodeWhisperer user group settings, refer to userGroupUtil.ts
  * @returns specifically returning undefined if the langueage is not supported,
  * otherwise true/false depending on if the language is fully supported or not belonging to the user group
  */
@@ -194,7 +193,7 @@ function getSupplementalContextConfig(languageId: vscode.TextDocument['languageI
     if (FeatureConfigProvider.instance.isNewProjectContextGroup()) {
         return 'v2'
     }
-    return 'v2'
+    return 'v1'
 }
 
 /**
