@@ -642,37 +642,34 @@ describe('TelemetryTracer', function () {
             assert.throws(
                 () => inst.throwsError(),
                 (e) => {
-                    if (!(e instanceof ToolkitError)) {
-                        return false
-                    }
-                    const id = getErrorId(e)
-                    const message = e.message
-                    const cause = e.cause
-                    return id === 'TestThrows' && message === 'ctx: throwsError' && cause === arbitraryError
+                    return (
+                        e instanceof ToolkitError &&
+                        getErrorId(e) === 'TestThrows' &&
+                        e.message === 'ctx: throwsError' &&
+                        e.cause === arbitraryError
+                    )
                 }
             )
             assert.throws(
                 () => inst.throwsErrorButNoClass(),
                 (e) => {
-                    if (!(e instanceof ToolkitError)) {
-                        return false
-                    }
-                    const id = getErrorId(e)
-                    const message = e.message
-                    const cause = e.cause
-                    return id === 'Error' && message === 'ctx: throwsError' && cause === arbitraryError
+                    return (
+                        e instanceof ToolkitError &&
+                        getErrorId(e) === 'Error' &&
+                        e.message === 'ctx: throwsError' &&
+                        e.cause === arbitraryError
+                    )
                 }
             )
             await assert.rejects(
                 () => inst.throwsAsyncError(),
                 (e) => {
-                    if (!(e instanceof ToolkitError)) {
-                        return false
-                    }
-                    const id = getErrorId(e)
-                    const message = e.message
-                    const cause = e.cause
-                    return id === 'Error' && message === 'ctx: throwsError' && cause === arbitraryError
+                    return (
+                        e instanceof ToolkitError &&
+                        getErrorId(e) === 'Error' &&
+                        e.message === 'ctx: throwsError' &&
+                        e.cause === arbitraryError
+                    )
                 }
             )
         })
