@@ -355,13 +355,21 @@
                     "group": "cw_chat@4"
                 },
                 {
-                    "command": "aws.amazonq.generateUnitTests",
-                    "group": "cw_chat@5",
-                    "when": "aws.codewhisperer.connected && aws.isInternalUser"
+                    "command": "aws.amazonq.sendToPrompt",
+                    "group": "cw_chat@5"
                 },
                 {
-                    "command": "aws.amazonq.sendToPrompt",
-                    "group": "cw_chat@6"
+                    "command": "aws.amazonq.contextMenu.Agent.title",
+                    "group": "cw_chat_agents@1"
+                },
+                {
+                    "command": "aws.amazonq.security.scan",
+                    "group": "cw_chat_agents@1"
+                },
+                {
+                    "command": "aws.amazonq.generateUnitTests",
+                    "group": "cw_chat_agents@2",
+                    "when": "aws.codewhisperer.connected && aws.isInternalUser"
                 }
             ],
             "editor/context": [
@@ -576,6 +584,11 @@
                 "title": "%AWS.amazonq.toggleCodeScan%",
                 "category": "%AWS.amazonq.title%",
                 "enablement": "aws.codewhisperer.connected"
+            },
+            {
+                "command": "aws.amazonq.contextMenu.Agent.title",
+                "title": "%AWS.amazonq.contextMenu.Agent.title%",
+                "enablement": "false"
             }
         ],
         "keybindings": [
