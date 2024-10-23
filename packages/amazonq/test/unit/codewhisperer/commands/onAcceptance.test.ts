@@ -8,18 +8,14 @@ import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import {
     onAcceptance,
-    UserGroup,
     AcceptedSuggestionEntry,
     session,
     CodeWhispererTracker,
     RecommendationHandler,
-    CodeWhispererUserGroupSettings,
     AuthUtil,
 } from 'aws-core-vscode/codewhisperer'
 import { resetCodeWhispererGlobalVariables, createMockTextEditor } from 'aws-core-vscode/test'
 import { assertTelemetryCurried } from 'aws-core-vscode/test'
-import { globals } from 'aws-core-vscode/shared'
-import { extensionVersion } from 'aws-core-vscode/shared'
 
 describe('onAcceptance', function () {
     describe('onAcceptance', function () {
@@ -31,7 +27,6 @@ describe('onAcceptance', function () {
         afterEach(function () {
             sinon.restore()
             session.reset()
-            CodeWhispererUserGroupSettings.instance.reset()
         })
 
         it('Should enqueue an event object to tracker', async function () {
@@ -75,11 +70,6 @@ describe('onAcceptance', function () {
         })
 
         it('Should report telemetry that records this user decision event', async function () {
-            await globals.globalState.update('CODEWHISPERER_USER_GROUP', {
-                group: UserGroup.Control,
-                version: extensionVersion,
-            })
-
             const testStartUrl = 'testStartUrl'
             sinon.stub(AuthUtil.instance, 'startUrl').value(testStartUrl)
             const mockEditor = createMockTextEditor()
@@ -117,7 +107,6 @@ describe('onAcceptance', function () {
                 codewhispererCompletionType: 'Line',
                 codewhispererLanguage: 'python',
                 credentialStartUrl: testStartUrl,
-                codewhispererUserGroup: 'Control',
             })
         })
     })

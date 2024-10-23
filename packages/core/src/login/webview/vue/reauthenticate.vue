@@ -169,12 +169,14 @@ export default defineComponent({
     justify-content: space-between;
     /** The overall height of the container, then spacing is automatic between child elements */
     height: 7rem;
+    text-align: center;
 }
 
 #content-container > * {
     display: flex;
     flex-direction: column;
     align-items: center;
+    text-align: center;
 }
 
 #icon-container {
@@ -203,6 +205,7 @@ button#reauthenticate {
     padding: 0.3rem;
     width: 80%;
     user-select: none;
+    max-width: 260px;
 }
 
 button#signout {

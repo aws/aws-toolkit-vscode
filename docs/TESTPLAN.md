@@ -42,11 +42,15 @@ The test suite has the following categories of tests:
     -   Live in `src/testE2E`
     -   These tests are heavier than Integration tests.
     -   Some E2E tests have a more complicated architecture, described in [TEST_E2E](./TEST_E2E.md)
+-   Performance Tests: **slow** tests
+    -   Live in `src/testInteg/perf`.
+    -   A subset of integration tests focused on catching performance regressions.
+    -   Use a combination of operation counting and system usage statistics such as cpu usage, memory usage, and duration.
+    -   Each test is often repeated 10 or more times for less variant system usage statistics, then median of runs is used.
 
 ## Test files
 
-Currently, most if not all testing code lives in the subproject `packages/core/`.
-For more information, see [arch_develop.md](./arch_develop.md#monorepo-structure)
+Currently, most testing code lives in the subproject `packages/core/` due to the move to monorepo. See [arch_develop.md](./arch_develop.md#monorepo-structure).
 
 -   `src/test/` : unit tests
     -   `src/test/globalSetup.test.ts` :
@@ -59,6 +63,8 @@ For more information, see [arch_develop.md](./arch_develop.md#monorepo-structure
     -   used by both unit and integration tests
 -   `.vscode/launch.json` : defines VSCode launch configs useful for Toolkit
     developers, e.g. the `Extension Tests` config runs all tests in `src/test/`.
+
+Many tests required running in an activated extension environment, but the core-lib is just a library and does not have any extension to activate itself. Core-lib tests are run from `packages/toolkit`, and web tests are run from `packages/amazonq`.
 
 ## How we test
 

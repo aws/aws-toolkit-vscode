@@ -22,6 +22,20 @@ export const AWSTemplateKeyWords = ['AWSTemplateFormatVersion', 'Resources', 'AW
 
 export const AWSTemplateCaseInsensitiveKeyWords = ['cloudformation', 'cfn', 'template', 'description']
 
+export const JsonConfigFileNamingConvention = new Set([
+    'app.json',
+    'appsettings.json',
+    'bower.json',
+    'composer.json',
+    'db.json',
+    'manifest.json',
+    'package.json',
+    'schema.json',
+    'settings.json',
+    'tsconfig.json',
+    'vcpkg.json',
+])
+
 export const normalTextChangeRegex = /[A-Za-z0-9]/g
 
 export const autoSuggestionConfig = {
@@ -98,6 +112,14 @@ export const platformLanguageIds = [
     'packer',
     'plaintext',
     'jsonc',
+    'systemverilog',
+    'verilog',
+    'powershell',
+    'dart',
+    'lua',
+    'r',
+    'swift',
+    'vue',
 ] as const
 
 export type PlatformLanguageId = (typeof platformLanguageIds)[number]
@@ -626,6 +648,25 @@ export const JDK8VersionNumber = '52'
 
 export const JDK11VersionNumber = '55'
 
+export const chooseProjectFormTitle = 'Choose a project to transform'
+
+export const chooseSourceVersionFormTitle = 'Choose the source code version'
+
+export const chooseTargetVersionFormTitle = 'Choose the target code version'
+
+export const skipUnitTestsFormTitle = 'Choose to skip unit tests'
+
+export const skipUnitTestsFormMessage =
+    'I will build your project using `mvn test` by default. If you would like me to build your project without running unit tests, I will use `mvn test-compile`.'
+
+export const runUnitTestsMessage = 'Run unit tests'
+
+export const doNotSkipUnitTestsBuildCommand = 'clean test'
+
+export const skipUnitTestsMessage = 'Skip unit tests'
+
+export const skipUnitTestsBuildCommand = 'clean test-compile'
+
 export const planTitle = 'Code Transformation plan by Amazon Q'
 
 export const planIntroductionMessage =
@@ -670,7 +711,7 @@ export const runSecurityScanButtonTitle = 'Run security scan'
 export const crossFileContextConfig = {
     numberOfChunkToFetch: 60,
     topK: 3,
-    numberOfLinesEachChunk: 10,
+    numberOfLinesEachChunk: 50,
 }
 
 export const utgConfig = {

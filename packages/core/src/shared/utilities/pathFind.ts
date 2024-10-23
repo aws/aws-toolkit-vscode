@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import * as path from 'path'
 import fs from '../../shared/fs/fs'
-import { ChildProcess } from './childProcess'
+import { ChildProcess, ChildProcessOptions } from './processUtils'
 import { GitExtension } from '../extensions/git'
 import { Settings } from '../settings'
 import { getLogger } from '../logger/logger'
@@ -30,10 +30,11 @@ export async function tryRun(
     p: string,
     args: string[],
     logging: 'yes' | 'no' | 'noresult' = 'yes',
-    expected?: string
+    expected?: string,
+    opt?: ChildProcessOptions
 ): Promise<boolean> {
     const proc = new ChildProcess(p, args, { logging: 'no' })
-    const r = await proc.run()
+    const r = await proc.run(opt)
     const ok = r.exitCode === 0 && (expected === undefined || r.stdout.includes(expected))
     if (logging === 'noresult') {
         getLogger().info('tryRun: %s: %s', ok ? 'ok' : 'failed', proc)
@@ -114,8 +115,8 @@ export async function findTypescriptCompiler(): Promise<string | undefined> {
  * Gets the configured `ssh` path, or falls back to "ssh" (not absolute),
  * or tries common locations, or returns undefined.
  */
-export async function findSshPath(): Promise<string | undefined> {
-    if (sshPath !== undefined) {
+export async function findSshPath(useCache: boolean = true): Promise<string | undefined> {
+    if (useCache && sshPath !== undefined) {
         return sshPath
     }
 
@@ -132,7 +133,7 @@ export async function findSshPath(): Promise<string | undefined> {
             continue
         }
         if (await tryRun(p, ['-G', 'x'], 'noresult' /* "ssh -G" prints quasi-sensitive info. */)) {
-            sshPath = p
+            sshPath = useCache ? p : sshPath
             return p
         }
     }

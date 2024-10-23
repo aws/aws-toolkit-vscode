@@ -38,10 +38,17 @@ module.exports = (env, argv) => {
             }),
             /**
              * HACK: the HttpResourceFetcher breaks Web mode if imported, BUT we still dynamically import this module for non web mode
-             * environments. The following allows compilation to pass in Web mode by never bundling the module in the final output.
+             * environments. The following allows compilation to pass in Web mode by never bundling the module in the final output for web mode.
              */
             new webpack.IgnorePlugin({
                 resourceRegExp: /httpResourceFetcher/, // matches the path in the require() statement
+            }),
+            /**
+             * HACK: the ps-list module breaks Web mode if imported, BUT we still dynamically import this module for non web mode
+             * environments. The following allows compilation to pass by never bundling the module in the final output for web mode.
+             */
+            new webpack.IgnorePlugin({
+                resourceRegExp: /ps-list/, // matches the path in the require() statement
             }),
         ],
         resolve: {

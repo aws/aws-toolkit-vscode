@@ -2,7 +2,6 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-
 import { Ec2InstanceNode } from './explorer/ec2InstanceNode'
 import { Ec2Node } from './explorer/ec2ParentNode'
 import { Ec2ConnectionManager } from './model'
@@ -10,9 +9,11 @@ import { Ec2Prompter, instanceFilter, Ec2Selection } from './prompter'
 import { SafeEc2Instance, Ec2Client } from '../../shared/clients/ec2Client'
 import { copyToClipboard } from '../../shared/utilities/messages'
 import { getLogger } from '../../shared/logger'
+import { ec2LogSchema } from './ec2LogDocumentProvider'
 import { getAwsConsoleUrl } from '../../shared/awsConsole'
 import { showRegionPrompter } from '../../auth/utils'
 import { openUrl } from '../../shared/utilities/vsCodeUtils'
+import { showFile } from '../../shared/utilities/textDocumentUtilities'
 
 export function refreshExplorer(node?: Ec2Node) {
     if (node) {
@@ -70,4 +71,8 @@ async function getSelection(node?: Ec2Node, filter?: instanceFilter): Promise<Ec
 
 export async function copyInstanceId(instanceId: string): Promise<void> {
     await copyToClipboard(instanceId, 'Id')
+}
+
+export async function openLogDocument(node?: Ec2InstanceNode): Promise<void> {
+    return await showFile(ec2LogSchema.form(await getSelection(node)))
 }

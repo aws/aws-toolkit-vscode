@@ -4,7 +4,7 @@
  */
 
 import { _Blob } from 'aws-sdk/clients/lambda'
-import { readFileSync } from 'fs'
+import { readFileSync } from 'fs' // eslint-disable-line no-restricted-imports
 import * as _ from 'lodash'
 import * as vscode from 'vscode'
 import { DefaultLambdaClient, LambdaClient } from '../../../shared/clients/lambdaClient'
@@ -20,6 +20,7 @@ import * as nls from 'vscode-nls'
 import { VueWebview } from '../../../webviews/main'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 import { Result } from '../../../shared/telemetry/telemetry'
+import { decodeBase64 } from '../../../shared'
 
 const localize = nls.loadMessageBundle()
 
@@ -61,7 +62,7 @@ export class RemoteInvokeWebview extends VueWebview {
 
         try {
             const funcResponse = await this.client.invoke(this.data.FunctionArn, input)
-            const logs = funcResponse.LogResult ? Buffer.from(funcResponse.LogResult, 'base64').toString() : ''
+            const logs = funcResponse.LogResult ? decodeBase64(funcResponse.LogResult) : ''
             const payload = funcResponse.Payload ? funcResponse.Payload : JSON.stringify({})
 
             this.channel.appendLine(`Invocation result for ${this.data.FunctionArn}`)

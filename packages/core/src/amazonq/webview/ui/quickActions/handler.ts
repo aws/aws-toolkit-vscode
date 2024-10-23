@@ -163,7 +163,7 @@ export class QuickActionHandler {
                     promptInputDisabledState: true,
                 })
 
-                void this.connector.requestGenerativeAIAnswer(affectedTabId, {
+                void this.connector.requestGenerativeAIAnswer(affectedTabId, '', {
                     chatMessage: realPromptText,
                 })
             }

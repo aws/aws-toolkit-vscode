@@ -105,7 +105,7 @@ export class ThreatComposerEditorProvider implements vscode.CustomTextEditorProv
         html = `${htmlFileSplit[0]} script-src 'self' 'nonce-${nonce}' ${localDevURL} ${htmlFileSplit[1]}`
 
         htmlFileSplit = html.split('<body>')
-        const script = await fs.readFileAsString(
+        const script = await fs.readFileText(
             vscode.Uri.joinPath(this.extensionContext.extensionUri, 'resources', 'js', 'vsCodeExtensionInterface.js')
         )
 
@@ -148,6 +148,7 @@ export class ThreatComposerEditorProvider implements vscode.CustomTextEditorProv
                         this.getWebviewContent
                     )
                     this.handleNewVisualization(document.uri.fsPath, newVisualization)
+                    span.record({ id: fileId })
                 } catch (err) {
                     this.handleErr(err as Error)
                     throw new ToolkitError((err as Error).message, { code: 'Failed to Open Threat Composer' })
