@@ -18,11 +18,6 @@ import { withRetries } from '../shared/utilities/functionUtils'
 import { FileResourceFetcher } from '../shared/resourcefetcher/fileResourceFetcher'
 import { isAmazonQ } from '../shared/extensionUtilities'
 
-const startUpEndpoint = 'https://idetoolkits-hostedfiles.amazonaws.com/Notifications/VSCode/startup/1.x.json'
-const emergencyEndpoint = 'https://idetoolkits-hostedfiles.amazonaws.com/Notifications/VSCode/emergency/1.x.json'
-
-type ResourceResponse = Awaited<ReturnType<HttpResourceFetcher['getNewETagContent']>>
-
 /**
  * Handles fetching and maintaining the state of in-IDE notifications.
  * Notifications are constantly polled from a known endpoint and then stored in global state.
@@ -36,8 +31,6 @@ type ResourceResponse = Awaited<ReturnType<HttpResourceFetcher['getNewETagConten
  * Emergency notifications - fetched at a regular interval.
  */
 export class NotificationsController {
-    public static readonly retryNumber = 5
-    public static readonly retryIntervalMs = 30000
     public static readonly suggestedPollIntervalMs = 1000 * 60 * 10 // 10 minutes
 
     public readonly storageKey: globalKey
@@ -47,8 +40,12 @@ export class NotificationsController {
 
     static #instance: NotificationsController | undefined
 
-    constructor(private readonly notificationsNode: NotificationsNode) {
+    constructor(
+        private readonly notificationsNode: NotificationsNode,
+        private readonly fetcher: NotificationFetcher = new RemoteFetcher()
+    ) {
         if (!NotificationsController.#instance) {
+            // Register on first creation only.
             registerDismissCommand()
         }
         NotificationsController.#instance = this
@@ -119,7 +116,7 @@ export class NotificationsController {
      * Fetch notifications from the endpoint and store them in the global state.
      */
     private async fetchNotifications(category: NotificationType) {
-        const response = _useLocalFiles ? await this.fetchLocally(category) : await this.fetchRemotely(category)
+        const response = await this.fetcher.fetch(category, this.state[category].eTag)
         if (!response.content) {
             getLogger('notifications').verbose('No new notifications for category: %s', category)
             return
@@ -137,38 +134,6 @@ export class NotificationsController {
             this.state[category].payload?.schemaVersion,
             this.state[category].payload?.notifications?.length
         )
-    }
-
-    private fetchRemotely(category: NotificationType): Promise<ResourceResponse> {
-        const fetcher = new HttpResourceFetcher(category === 'startUp' ? startUpEndpoint : emergencyEndpoint, {
-            showUrl: true,
-        })
-
-        return withRetries(async () => await fetcher.getNewETagContent(this.state[category].eTag), {
-            maxRetries: NotificationsController.retryNumber,
-            delay: NotificationsController.retryIntervalMs,
-            // No exponential backoff - necessary?
-        })
-    }
-
-    /**
-     * Fetch notifications from local files.
-     * Intended development purposes only. In the future, we may support adding notifications
-     * directly to the codebase.
-     */
-    private async fetchLocally(category: NotificationType): Promise<ResourceResponse> {
-        if (!_useLocalFiles) {
-            throw new ToolkitError('fetchLocally: Local file fetching is not enabled.')
-        }
-
-        const uri = category === 'startUp' ? startUpLocalPath : emergencyLocalPath
-        const content = await new FileResourceFetcher(globals.context.asAbsolutePath(uri)).get()
-
-        getLogger('notifications').verbose('Fetched notifications locally for category: %s at path: %s', category, uri)
-        return {
-            content,
-            eTag: 'LOCAL_PATH',
-        }
     }
 
     /**
@@ -217,13 +182,79 @@ function registerDismissCommand() {
     )
 }
 
-/**
- * For development purposes only.
- * Enable this option to test the notifications system locally.
- */
-const _useLocalFiles = false
-export const _useLocalFilesCheck = _useLocalFiles // export for testing
+export type ResourceResponse = Awaited<ReturnType<HttpResourceFetcher['getNewETagContent']>>
 
-// Paths relative to current extension
-const startUpLocalPath = '../core/src/test/notifications/resources/startup/1.x.json'
-const emergencyLocalPath = '../core/src/test/notifications/resources/emergency/1.x.json'
+export interface NotificationFetcher {
+    /**
+     * Fetch notifications from some source. If there is no (new) data to fetch, then the response's
+     * content value will be undefined.
+     *
+     * @param type typeof NotificationType
+     * @param versionTag last known version of the data aka ETAG. Can be used to determine if the data changed.
+     */
+    fetch(type: NotificationType, versionTag?: string): Promise<ResourceResponse>
+}
+
+export class RemoteFetcher implements NotificationFetcher {
+    public static readonly retryNumber = 5
+    public static readonly retryIntervalMs = 30000
+
+    private readonly startUpEndpoint: string =
+        'https://idetoolkits-hostedfiles.amazonaws.com/Notifications/VSCode/startup/1.x.json'
+    private readonly emergencyEndpoint: string =
+        'https://idetoolkits-hostedfiles.amazonaws.com/Notifications/VSCode/emergency/1.x.json'
+
+    constructor(startUpPath?: string, emergencyPath?: string) {
+        this.startUpEndpoint = startUpPath ?? this.startUpEndpoint
+        this.emergencyEndpoint = emergencyPath ?? this.emergencyEndpoint
+    }
+
+    fetch(category: NotificationType, versionTag?: string): Promise<ResourceResponse> {
+        const endpoint = category === 'startUp' ? this.startUpEndpoint : this.emergencyEndpoint
+        const fetcher = new HttpResourceFetcher(endpoint, {
+            showUrl: true,
+        })
+        getLogger('notifications').verbose(
+            'Attempting to fetch notifications for category: %s at endpoint: %s',
+            category,
+            endpoint
+        )
+
+        return withRetries(async () => await fetcher.getNewETagContent(versionTag), {
+            maxRetries: RemoteFetcher.retryNumber,
+            delay: RemoteFetcher.retryIntervalMs,
+            // No exponential backoff - necessary?
+        })
+    }
+}
+
+/**
+ * Can be used when developing locally. This may be expanded at some point to allow notifications
+ * to be published via github rather than internally.
+ *
+ * versionTag (ETAG) is ignored.
+ */
+export class LocalFetcher implements NotificationFetcher {
+    // Paths relative to running extension root folder (e.g. packages/amazonq/).
+    private readonly startUpLocalPath: string = '../core/src/test/notifications/resources/startup/1.x.json'
+    private readonly emergencyLocalPath: string = '../core/src/test/notifications/resources/emergency/1.x.json'
+
+    constructor(startUpPath?: string, emergencyPath?: string) {
+        this.startUpLocalPath = startUpPath ?? this.startUpLocalPath
+        this.emergencyLocalPath = emergencyPath ?? this.emergencyLocalPath
+    }
+
+    async fetch(category: NotificationType, versionTag?: string): Promise<ResourceResponse> {
+        const uri = category === 'startUp' ? this.startUpLocalPath : this.emergencyLocalPath
+        getLogger('notifications').verbose(
+            'Attempting to fetch notifications locally for category: %s at path: %s',
+            category,
+            uri
+        )
+
+        return {
+            content: await new FileResourceFetcher(globals.context.asAbsolutePath(uri)).get(),
+            eTag: 'LOCAL_PATH',
+        }
+    }
+}

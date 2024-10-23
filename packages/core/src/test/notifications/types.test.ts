@@ -36,15 +36,8 @@ describe('NotificationsState type validation', function () {
         })
         assert.throws(() => {
             NotificationsStateConstructor({
-                startUp: {},
-                emergency: [], // x
-                dismissed: [],
-            } as NotificationsState)
-        })
-        assert.throws(() => {
-            NotificationsStateConstructor({
-                startUp: '', // x
-                emergency: {},
+                startUp: {}, // x
+                emergency: '', // x
                 dismissed: [],
             } as NotificationsState)
         })

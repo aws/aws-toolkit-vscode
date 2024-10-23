@@ -90,20 +90,20 @@ export type NotificationsState = {
 }
 
 export const NotificationsStateConstructor: TypeConstructor<NotificationsState> = (v: unknown): NotificationsState => {
-    if (v && typeof v === 'object' && isNotificationsState(v as Partial<NotificationsState>)) {
-        return v as NotificationsState
+    const isNotificationsState = (v: Partial<NotificationsState>): v is NotificationsState => {
+        const requiredKeys: (keyof NotificationsState)[] = ['startUp', 'emergency', 'dismissed']
+        return (
+            requiredKeys.every((key) => key in v) &&
+            Array.isArray(v.dismissed) &&
+            typeof v.startUp === 'object' &&
+            typeof v.emergency === 'object'
+        )
+    }
+
+    if (v && typeof v === 'object' && isNotificationsState(v)) {
+        return v
     }
     throw new Error('Cannot cast to NotificationsState.')
-}
-
-function isNotificationsState(v: Partial<NotificationsState>): v is NotificationsState {
-    const requiredKeys: (keyof NotificationsState)[] = ['startUp', 'emergency', 'dismissed']
-    return (
-        requiredKeys.every((key) => key in v) &&
-        Array.isArray(v.dismissed) &&
-        typeof v.startUp === 'object' &&
-        typeof v.emergency === 'object'
-    )
 }
 
 export type NotificationType = keyof Omit<NotificationsState, 'dismissed'>

@@ -4,20 +4,19 @@
  */
 
 import * as vscode from 'vscode'
+import * as FakeTimers from '@sinonjs/fake-timers'
 import assert from 'assert'
 import sinon from 'sinon'
 import { NotificationsController, NotificationsNode, RuleEngine } from '../../notifications'
-import * as HttpResourceFetcherModule from '../../shared/resourcefetcher/httpResourceFetcher'
 import globals from '../../shared/extensionGlobals'
-import { NotificationData, ToolkitNotification } from '../../notifications/types'
-import { _useLocalFilesCheck } from '../../notifications/controller'
+import { NotificationData, NotificationType, ToolkitNotification } from '../../notifications/types'
 import { randomUUID } from '../../shared'
 import { installFakeClock } from '../testUtil'
-import * as FakeTimers from '@sinonjs/fake-timers'
+import { NotificationFetcher, RemoteFetcher, ResourceResponse } from '../../notifications/controller'
+import { HttpResourceFetcher } from '../../shared/resourcefetcher/httpResourceFetcher'
 
 describe('Notifications Controller', function () {
     const panelNode: NotificationsNode = new NotificationsNode()
-    let controller: NotificationsController
     const ruleEngine: RuleEngine = new RuleEngine({
         ideVersion: '1.83.0',
         extensionVersion: '1.20.0',
@@ -31,12 +30,11 @@ describe('Notifications Controller', function () {
         activeExtensions: ['ext1', 'ext2'],
     })
 
-    let clock: FakeTimers.InstalledClock
-    let sandbox: sinon.SinonSandbox
-    let getNewETagContentStub: sinon.SinonStub
+    let controller: NotificationsController
+    let fetcher: TestFetcher
+
     let ruleEngineSpy: sinon.SinonSpy
     let focusPanelSpy: sinon.SinonSpy
-    let fetchUrl: string
 
     function dismissNotification(notification: ToolkitNotification) {
         // We could call `controller.dismissNotification()`, but this emulates a call
@@ -53,25 +51,36 @@ describe('Notifications Controller', function () {
         })
     }
 
-    before(function () {
-        assert.ok(!_useLocalFilesCheck)
-        clock = installFakeClock()
-    })
+    class TestFetcher implements NotificationFetcher {
+        private startUpContent: ResourceResponse = {
+            eTag: 'unset',
+            content: undefined,
+        }
+        private emergencyContent: ResourceResponse = {
+            eTag: 'unset',
+            content: undefined,
+        }
+
+        setStartUpContent(content: ResourceResponse) {
+            this.startUpContent = content
+        }
+
+        setEmergencyContent(content: ResourceResponse) {
+            this.emergencyContent = content
+        }
+
+        async fetch(category: NotificationType): Promise<ResourceResponse> {
+            return category === 'startUp' ? this.startUpContent : this.emergencyContent
+        }
+    }
 
     beforeEach(async function () {
         panelNode.setNotifications([], [])
-        controller = new NotificationsController(panelNode)
+        fetcher = new TestFetcher()
+        controller = new NotificationsController(panelNode, fetcher)
 
-        sandbox = sinon.createSandbox()
-
-        getNewETagContentStub = sandbox.stub()
-        ruleEngineSpy = sandbox.spy(ruleEngine, 'shouldDisplayNotification')
-        focusPanelSpy = sandbox.spy(panelNode, 'focusPanel')
-        sandbox.stub(HttpResourceFetcherModule, 'HttpResourceFetcher').callsFake(function (this: any, url: string) {
-            fetchUrl = url
-            this.getNewETagContent = getNewETagContentStub
-            return this
-        })
+        ruleEngineSpy = sinon.spy(ruleEngine, 'shouldDisplayNotification')
+        focusPanelSpy = sinon.spy(panelNode, 'focusPanel')
 
         await globals.globalState.update(controller.storageKey, {
             startUp: {} as NotificationData,
@@ -81,12 +90,8 @@ describe('Notifications Controller', function () {
     })
 
     afterEach(function () {
-        sandbox?.restore()
-        clock.reset()
-    })
-
-    after(function () {
-        clock.uninstall()
+        ruleEngineSpy.restore()
+        focusPanelSpy.restore()
     })
 
     it('can fetch and store startup notifications', async function () {
@@ -95,14 +100,13 @@ describe('Notifications Controller', function () {
             schemaVersion: '1.x',
             notifications: [getValidTestNotification('id:startup1'), getInvalidTestNotification('id:startup2')],
         }
-        getNewETagContentStub.resolves({
+        fetcher.setStartUpContent({
             eTag,
             content: JSON.stringify(content),
         })
 
         await controller.pollForStartUp(ruleEngine)
 
-        assert.equal(getNewETagContentStub.callCount, 1)
         assert.equal(ruleEngineSpy.callCount, 2)
         assert.deepStrictEqual(ruleEngineSpy.args, [[content.notifications[0]], [content.notifications[1]]])
         assert.deepStrictEqual(await globals.globalState.get(controller.storageKey), {
@@ -126,14 +130,13 @@ describe('Notifications Controller', function () {
             schemaVersion: '1.x',
             notifications: [getValidTestNotification('id:emergency1'), getInvalidTestNotification('id:emergency2')],
         }
-        getNewETagContentStub.resolves({
+        fetcher.setEmergencyContent({
             eTag,
             content: JSON.stringify(content),
         })
 
         await controller.pollForEmergencies(ruleEngine)
 
-        assert.equal(getNewETagContentStub.callCount, 1)
         assert.equal(ruleEngineSpy.callCount, 2)
         assert.deepStrictEqual(ruleEngineSpy.args, [[content.notifications[0]], [content.notifications[1]]])
         assert.deepStrictEqual(await globals.globalState.get(controller.storageKey), {
@@ -162,24 +165,17 @@ describe('Notifications Controller', function () {
             schemaVersion: '1.x',
             notifications: [getValidTestNotification('id:emergency1'), getInvalidTestNotification('id:emergency2')],
         }
-        getNewETagContentStub.callsFake(async () => {
-            if (fetchUrl.includes('startup')) {
-                return {
-                    eTag: eTag1,
-                    content: JSON.stringify(startUpContent),
-                }
-            } else {
-                return {
-                    eTag: eTag2,
-                    content: JSON.stringify(emergencyContent),
-                }
-            }
+        fetcher.setStartUpContent({
+            eTag: eTag1,
+            content: JSON.stringify(startUpContent),
+        })
+        fetcher.setEmergencyContent({
+            eTag: eTag2,
+            content: JSON.stringify(emergencyContent),
         })
 
         await controller.pollForStartUp(ruleEngine)
         await controller.pollForEmergencies(ruleEngine)
-
-        assert.equal(getNewETagContentStub.callCount, 2)
 
         // There are only 4 notifications in this test.
         // However, each time there is a poll, ALL notifications are evaluated for display.
@@ -221,7 +217,7 @@ describe('Notifications Controller', function () {
             schemaVersion: '1.x',
             notifications: [getValidTestNotification('id:startup1'), getValidTestNotification('id:startup2')],
         }
-        getNewETagContentStub.resolves({
+        fetcher.setStartUpContent({
             eTag,
             content: JSON.stringify(content),
         })
@@ -261,7 +257,7 @@ describe('Notifications Controller', function () {
             schemaVersion: '1.x',
             notifications: [getValidTestNotification('id:startup1')],
         }
-        getNewETagContentStub.resolves({
+        fetcher.setStartUpContent({
             eTag: '1',
             content: JSON.stringify(content),
         })
@@ -273,7 +269,7 @@ describe('Notifications Controller', function () {
         assert.equal(panelNode.getChildren().length, 0)
 
         content.notifications.push(getValidTestNotification('id:startup2'))
-        getNewETagContentStub.resolves({
+        fetcher.setStartUpContent({
             eTag: '1',
             content: JSON.stringify(content),
         })
@@ -302,25 +298,19 @@ describe('Notifications Controller', function () {
             schemaVersion: '1.x',
             notifications: [getValidTestNotification('id:emergency1')],
         }
-        getNewETagContentStub.callsFake(async () => {
-            if (fetchUrl.includes('startup')) {
-                return {
-                    eTag: '1',
-                    content: JSON.stringify(startUpContent),
-                }
-            } else {
-                return {
-                    eTag: '1',
-                    content: JSON.stringify(emergencyContent),
-                }
-            }
+        fetcher.setStartUpContent({
+            eTag: '1',
+            content: JSON.stringify(startUpContent),
+        })
+        fetcher.setEmergencyContent({
+            eTag: '1',
+            content: JSON.stringify(emergencyContent),
         })
 
         await controller.pollForEmergencies(ruleEngine)
         await controller.pollForEmergencies(ruleEngine)
         await controller.pollForStartUp(ruleEngine)
 
-        assert.equal(getNewETagContentStub.callCount, 3)
         assert.equal(focusPanelSpy.callCount, 1)
         assert.equal(panelNode.getChildren().length, 2)
     })
@@ -331,7 +321,7 @@ describe('Notifications Controller', function () {
             schemaVersion: '1.x',
             notifications: [getValidTestNotification('id:startup1'), getInvalidTestNotification('id:startup2')],
         }
-        getNewETagContentStub.resolves({
+        fetcher.setStartUpContent({
             eTag,
             content: JSON.stringify(content),
         })
@@ -348,7 +338,7 @@ describe('Notifications Controller', function () {
         })
         assert.equal(panelNode.getChildren().length, 1)
 
-        getNewETagContentStub.resolves({
+        fetcher.setStartUpContent({
             eTag,
             content: undefined,
         })
@@ -374,18 +364,13 @@ describe('Notifications Controller', function () {
             schemaVersion: '1.x',
             notifications: [getValidTestNotification('id:emergency1')],
         }
-        getNewETagContentStub.callsFake(async () => {
-            if (fetchUrl.includes('startup')) {
-                return {
-                    eTag: '1',
-                    content: JSON.stringify(startUpContent),
-                }
-            } else {
-                return {
-                    eTag: '1',
-                    content: JSON.stringify(emergencyContent),
-                }
-            }
+        fetcher.setStartUpContent({
+            eTag: '1',
+            content: JSON.stringify(startUpContent),
+        })
+        fetcher.setEmergencyContent({
+            eTag: '1',
+            content: JSON.stringify(emergencyContent),
         })
 
         await controller.pollForStartUp(ruleEngine)
@@ -409,11 +394,9 @@ describe('Notifications Controller', function () {
             schemaVersion: '1.x',
             notifications: [],
         }
-        getNewETagContentStub.callsFake(async () => {
-            return {
-                eTag: '1',
-                content: JSON.stringify(emptyContent),
-            }
+        fetcher.setStartUpContent({
+            eTag: '1',
+            content: JSON.stringify(emptyContent),
         })
 
         await controller.pollForStartUp(ruleEngine)
@@ -429,6 +412,11 @@ describe('Notifications Controller', function () {
             dismissed: [emergencyContent.notifications[0].id],
         })
         assert.equal(panelNode.getChildren().length, 1)
+
+        fetcher.setEmergencyContent({
+            eTag: '1',
+            content: JSON.stringify(emptyContent),
+        })
 
         await controller.pollForEmergencies(ruleEngine)
         assert.deepStrictEqual(await globals.globalState.get(controller.storageKey), {
@@ -446,27 +434,58 @@ describe('Notifications Controller', function () {
         assert.equal(panelNode.getChildren().length, 0)
     })
 
-    it('retries if HttpResourceFetcher throws an error and does not rethrow the error', async function () {
-        getNewETagContentStub.throws(new Error('network error'))
+    it('does not rethrow errors when fetching', async function () {
+        let wasCalled = false
+        const fetcher = new (class _ extends TestFetcher {
+            override async fetch(): Promise<ResourceResponse> {
+                wasCalled = true
+                throw new Error('test error')
+            }
+        })()
+        assert.doesNotThrow(() => new NotificationsController(panelNode, fetcher).pollForStartUp(ruleEngine))
+        assert.ok(wasCalled)
+    })
+})
+
+describe('RemoteFetcher', function () {
+    let clock: FakeTimers.InstalledClock
+
+    before(function () {
+        clock = installFakeClock()
+    })
+
+    afterEach(function () {
+        clock.reset()
+    })
+
+    after(function () {
+        clock.uninstall()
+    })
+
+    it('retries and throws error', async function () {
+        const httpStub = sinon.stub(HttpResourceFetcher.prototype, 'getNewETagContent')
+        httpStub.throws(new Error('network error'))
 
         const runClock = (async () => {
             await clock.tickAsync(1)
-            for (let n = 1; n <= NotificationsController.retryNumber; n++) {
-                assert.equal(getNewETagContentStub.callCount, n)
-                await clock.tickAsync(NotificationsController.retryIntervalMs)
+            for (let n = 1; n <= RemoteFetcher.retryNumber; n++) {
+                assert.equal(httpStub.callCount, n)
+                await clock.tickAsync(RemoteFetcher.retryIntervalMs)
             }
 
             // Stop trying
-            await clock.tickAsync(NotificationsController.retryNumber)
-            assert.equal(getNewETagContentStub.callCount, NotificationsController.retryNumber)
+            await clock.tickAsync(RemoteFetcher.retryNumber)
+            assert.equal(httpStub.callCount, RemoteFetcher.retryNumber)
         })()
 
-        await controller.pollForStartUp(ruleEngine).catch((err) => {
-            assert.doesNotThrow(() => {
-                throw err
-            })
-        })
+        const fetcher = new RemoteFetcher()
+        await fetcher
+            .fetch('startUp', 'any')
+            .then(() => assert.ok(false, 'Did not throw exception.'))
+            .catch(() => assert.ok(true))
         await runClock
+
+        httpStub.restore()
     })
 })
 

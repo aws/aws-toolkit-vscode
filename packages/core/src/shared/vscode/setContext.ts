@@ -45,6 +45,9 @@ export type contextKey =
  * Use "setContext" only as a last resort, to set flags that are detectable in package.json
  * declarations. Do not use it as a general way to store global state (which should be avoided
  * anyway).
+ *
+ * Warning: vscode context keys/values are NOT isolated to individual extensions. Other extensions
+ * can read and modify them.
  */
 export async function setContext(key: contextKey, val: any): Promise<void> {
     // eslint-disable-next-line aws-toolkits/no-banned-usages
