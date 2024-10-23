@@ -60,7 +60,6 @@ module.exports = (env, argv) => {
                 assert: require.resolve('assert'),
                 fs: false,
                 crypto: require.resolve('crypto-browserify'),
-                net: require.resolve('net-browserify'),
                 'fs-extra': false,
                 perf_hooks: false, // should be using globalThis.performance instead
 
@@ -76,6 +75,7 @@ module.exports = (env, argv) => {
                 // These do not have a straight forward replacement
                 child_process: false, // Reason for error: 'TypeError: The "original" argument must be of type Function'
                 async_hooks: false,
+                net: false,
             },
         },
         optimization: {
