@@ -313,6 +313,15 @@ export class FeatureDevController {
         }
     }
 
+    /**
+     *
+     * This function dispose cancellation token to free resources and provide a new token.
+     * Since user can abort a call in the same session, when the processing ends, we need provide a new one
+     * to start with the new prompt and allow the ability to stop again.
+     *
+     * @param session
+     */
+
     private disposeToken(session: Session | undefined) {
         if (session?.state?.tokenSource?.token.isCancellationRequested) {
             session?.state.tokenSource?.dispose()
@@ -484,7 +493,7 @@ export class FeatureDevController {
     }
     private workOnNewTask(
         message: any,
-        remainingIterations?: number,
+        remainingIterations: number = 0,
         totalIterations?: number,
         isStoppedGeneration: boolean = false
     ) {
@@ -499,7 +508,7 @@ export class FeatureDevController {
             })
         }
 
-        if (((remainingIterations ?? 0) <= 0 && isStoppedGeneration) || !isStoppedGeneration) {
+        if ((remainingIterations <= 0 && isStoppedGeneration) || !isStoppedGeneration) {
             this.messenger.sendAnswer({
                 type: 'system-prompt',
                 tabID: message.tabID,

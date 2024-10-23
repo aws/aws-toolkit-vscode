@@ -177,8 +177,13 @@ export class Connector {
     }
 
     onStopChatResponse = (tabID: string): void => {
-        if (this.tabsStorage.getTab(tabID)?.type === 'featuredev') {
-            this.featureDevChatConnector.onStopChatResponse(tabID)
+        switch (this.tabsStorage.getTab(tabID)?.type) {
+            case 'featuredev':
+                this.featureDevChatConnector.onStopChatResponse(tabID)
+                break
+            case 'cwc':
+                this.cwChatConnector.onStopChatResponse(tabID)
+                break
         }
     }
 
