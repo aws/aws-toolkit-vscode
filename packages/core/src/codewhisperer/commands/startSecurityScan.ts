@@ -93,7 +93,8 @@ export async function startSecurityScan(
     editor: vscode.TextEditor | undefined,
     client: DefaultCodeWhispererClient,
     context: vscode.ExtensionContext,
-    scope: CodeWhispererConstants.CodeAnalysisScope
+    scope: CodeWhispererConstants.CodeAnalysisScope,
+    zipUtil: ZipUtil = new ZipUtil()
 ) {
     const logger = getLoggerForScope(scope)
     /**
@@ -130,7 +131,6 @@ export async function startSecurityScan(
          * Step 1: Generate zip
          */
         throwIfCancelled(scope, codeScanStartTime)
-        const zipUtil = new ZipUtil()
         const zipMetadata = await zipUtil.generateZip(editor?.document.uri, scope)
         const projectPaths = zipUtil.getProjectPaths()
 
