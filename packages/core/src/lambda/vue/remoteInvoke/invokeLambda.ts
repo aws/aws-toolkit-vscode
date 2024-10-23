@@ -19,8 +19,8 @@ import { getSampleLambdaPayloads, SampleRequest } from '../../utils'
 
 import * as nls from 'vscode-nls'
 import { VueWebview } from '../../../webviews/main'
-import { telemetry } from '../../../shared/telemetry/telemetry'
-import { Result } from '../../../shared/telemetry/telemetry'
+import { telemetry, Result } from '../../../shared/telemetry/telemetry'
+import { decodeBase64 } from '../../../shared'
 import {
     runSamCliRemoteTestEvents,
     SamCliRemoteTestEventsParameters,
@@ -90,7 +90,7 @@ export class RemoteInvokeWebview extends VueWebview {
 
         try {
             const funcResponse = await this.client.invoke(this.data.FunctionArn, input)
-            const logs = funcResponse.LogResult ? Buffer.from(funcResponse.LogResult, 'base64').toString() : ''
+            const logs = funcResponse.LogResult ? decodeBase64(funcResponse.LogResult) : ''
             const payload = funcResponse.Payload ? funcResponse.Payload : JSON.stringify({})
 
             this.channel.appendLine(`Invocation result for ${this.data.FunctionArn}`)

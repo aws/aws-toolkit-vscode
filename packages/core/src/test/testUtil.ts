@@ -295,6 +295,13 @@ export function partialDeepCompare<T>(actual: unknown, expected: T, message?: st
     const partial = selectFrom(actual, ...keys(expected as object))
     assert.deepStrictEqual(partial, expected, message)
 }
+/**
+ * Asserts that no metrics metadata (key OR value) matches the given regex.
+ * @param keyword target substring to search for
+ */
+export function assertNoTelemetryMatch(re: RegExp | string): void | never {
+    return assert.ok(globals.telemetry.logger.queryRegex(re).length === 0)
+}
 
 /**
  * Finds the emitted telemetry metrics with the given `name`, then checks if the metadata fields
@@ -622,4 +629,8 @@ export function tryRegister(command: DeclaredCommand<() => Promise<any>>) {
 // Returns a stubbed fetch for other tests.
 export function getFetchStubWithResponse(response: Partial<Response>) {
     return stub(request, 'fetch').returns({ response: new Promise((res, _) => res(response)) } as any)
+}
+
+export function copyEnv(): NodeJS.ProcessEnv {
+    return { ...process.env }
 }

@@ -2,7 +2,8 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { fs } from '../../shared'
+import os from 'os'
+import { fs, globals } from '../../shared'
 import { ToolkitError } from '../../shared/errors'
 import { tryRun } from '../../shared/utilities/pathFind'
 import { Timeout } from '../../shared/utilities/timeoutUtils'
@@ -32,12 +33,24 @@ export class SshKeyPair {
         return new SshKeyPair(keyPath, lifetime)
     }
 
-    public static async generateSshKeyPair(keyPath: string): Promise<void> {
-        const keyGenerated = await this.tryKeyTypes(keyPath, ['ed25519', 'rsa'])
+    private static async assertGenerated(keyPath: string, keyGenerated: boolean): Promise<never | void> {
         if (!keyGenerated) {
-            throw new ToolkitError('ec2: Unable to generate ssh key pair')
+            throw new ToolkitError('ec2: Unable to generate ssh key pair with either ed25519 or rsa')
         }
-        await fs.chmod(keyPath, 0o600)
+
+        if (!(await fs.exists(keyPath))) {
+            throw new ToolkitError(`ec2: Failed to generate keys, resulting key not found at ${keyPath}`)
+        }
+    }
+
+    public static async generateSshKeyPair(keyPath: string): Promise<void> {
+        const keyGenerated = await SshKeyPair.tryKeyTypes(keyPath, ['ed25519', 'rsa'])
+        // Should already be the case, but just in case we assert permissions.
+        // skip on Windows since it only allows write permission to be changed.
+        if (!globals.isWeb && os.platform() !== 'win32') {
+            await fs.chmod(keyPath, 0o600)
+            await SshKeyPair.assertGenerated(keyPath, keyGenerated)
+        }
     }
     /**
      * Attempts to generate an ssh key pair. Returns true if successful, false otherwise.
@@ -72,8 +85,8 @@ export class SshKeyPair {
     }
 
     public async delete(): Promise<void> {
-        await fs.delete(this.keyPath)
-        await fs.delete(this.publicKeyPath)
+        await fs.delete(this.keyPath, { force: true })
+        await fs.delete(this.publicKeyPath, { force: true })
 
         if (!this.lifeTimeout.completed) {
             this.lifeTimeout.cancel()

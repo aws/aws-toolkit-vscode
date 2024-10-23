@@ -226,6 +226,15 @@ export class PickerTester<T extends vscode.QuickPickItem> {
     }
 
     /**
+     * Attempts to accept the default state. Used to test Multipick
+     *
+     * See {@link acceptItem}.
+     */
+    public acceptDefault(): void {
+        this.triggers.onDidAccept.fire()
+    }
+
+    /**
      * Asserts that the given items are loaded in the QuickPick, in the given order.
      *
      * Must include all visible items. Filtered items will not be considered.
