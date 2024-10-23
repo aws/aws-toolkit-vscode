@@ -20,6 +20,7 @@ import { ClassToInterfaceType } from '../utilities/tsUtils'
 import { getClientId, validateMetricEvent } from './util'
 import { telemetry, MetricBase } from './telemetry'
 import fs from '../fs/fs'
+import fsNode from 'fs/promises'
 import * as collectionUtil from '../utilities/collectionUtils'
 
 export type TelemetryService = ClassToInterfaceType<DefaultTelemetryService>
@@ -116,7 +117,10 @@ export class DefaultTelemetryService {
             })
 
             try {
-                await fs.writeFile(this.persistFilePath, JSON.stringify(this._eventQueue))
+                /**
+                 * This function runs in deactivate() so we must use node fs. See the vscode behavior doc for more info.
+                 */
+                await fsNode.writeFile(this.persistFilePath, JSON.stringify(this._eventQueue))
             } catch {}
         }
     }

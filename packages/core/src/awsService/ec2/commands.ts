@@ -2,16 +2,17 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-
+import { Ec2InstanceNode } from './explorer/ec2InstanceNode'
 import { Ec2Node } from './explorer/ec2ParentNode'
 import { SafeEc2Instance, Ec2Client } from '../../shared/clients/ec2Client'
 import { copyToClipboard } from '../../shared/utilities/messages'
+import { ec2LogSchema } from './ec2LogDocumentProvider'
 import { getAwsConsoleUrl } from '../../shared/awsConsole'
 import { showRegionPrompter } from '../../auth/utils'
 import { openUrl } from '../../shared/utilities/vsCodeUtils'
-import { Ec2Prompter, Ec2Selection, instanceFilter } from './prompter'
-import { Ec2InstanceNode } from './explorer/ec2InstanceNode'
+import { showFile } from '../../shared/utilities/textDocumentUtilities'
 import { Ec2ConnecterMap } from './connectionManagerMap'
+import { Ec2Prompter, Ec2Selection, instanceFilter } from './prompter'
 
 export async function openTerminal(connectionManagers: Ec2ConnecterMap, node?: Ec2Node) {
     const selection = await getSelection(node)
@@ -59,4 +60,8 @@ async function getSelection(node?: Ec2Node, filter?: instanceFilter): Promise<Ec
 
 export async function copyInstanceId(instanceId: string): Promise<void> {
     await copyToClipboard(instanceId, 'Id')
+}
+
+export async function openLogDocument(node?: Ec2InstanceNode): Promise<void> {
+    return await showFile(ec2LogSchema.form(await getSelection(node)))
 }
