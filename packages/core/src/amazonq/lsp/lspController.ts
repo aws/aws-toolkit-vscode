@@ -360,6 +360,7 @@ export class LspController {
                     result: 'Failed',
                     amazonqIndexFileCount: 0,
                     amazonqIndexFileSizeInMB: 0,
+                    reason: `Unknown`,
                 })
             }
         } catch (e) {
@@ -369,6 +370,7 @@ export class LspController {
                 result: 'Failed',
                 amazonqIndexFileCount: 0,
                 amazonqIndexFileSizeInMB: 0,
+                reason: `${e}`,
             })
         } finally {
             this._isIndexingInProgress = false
