@@ -9,14 +9,14 @@ import { AuthUtil } from '../../codewhisperer/util/authUtil'
 import { getUserAgent } from '../telemetry/util'
 
 // Create a client for featureDev streaming based off of aws sdk v3
-export async function createCodeWhispererChatStreamingClient(): Promise<CodeWhispererStreaming> {
-    const bearerToken = await AuthUtil.instance.getBearerToken()
+export async function createCodeWhispererChatStreamingClient(bearerToken?: string): Promise<CodeWhispererStreaming> {
+    bearerToken = bearerToken ?? (await AuthUtil.instance.getBearerToken())
     const cwsprConfig = getCodewhispererConfig()
     const streamingClient = new CodeWhispererStreaming({
         region: cwsprConfig.region,
         endpoint: cwsprConfig.endpoint,
         token: { token: bearerToken },
-        customUserAgent: getUserAgent(),
+        customUserAgent: getUserAgent({ includePlatform: true, includeClientId: true }),
         // SETTING max attempts to 0 FOR BETA. RE-ENABLE FOR RE-INVENT
         // Implement exponential back off starting with a base of 500ms (500 + attempt^10)
         retryStrategy: new ConfiguredRetryStrategy(0, (attempt: number) => 500 + attempt ** 10),
