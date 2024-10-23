@@ -19,6 +19,7 @@ import {
     ZipManifest,
     TransformByQStatus,
     DB,
+    TransformationType,
 } from '../models/model'
 import { convertDateToTimestamp } from '../../shared/utilities/textUtilities'
 import {
@@ -91,6 +92,7 @@ export async function processLanguageUpgradeTransformFormInput(
     fromJDKVersion: JDKVersion,
     toJDKVersion: JDKVersion
 ) {
+    transformByQState.setTransformationType(TransformationType.LANGUAGE_UPGRADE)
     transformByQState.setProjectName(path.basename(pathToProject))
     transformByQState.setProjectPath(pathToProject)
     transformByQState.setSourceJDKVersion(fromJDKVersion)
@@ -98,6 +100,7 @@ export async function processLanguageUpgradeTransformFormInput(
 }
 
 export async function processSQLConversionTransformFormInput(pathToProject: string, schema: string) {
+    transformByQState.setTransformationType(TransformationType.SQL_CONVERSION)
     transformByQState.setProjectName(path.basename(pathToProject))
     transformByQState.setProjectPath(pathToProject)
     transformByQState.setSchema(schema)
@@ -782,7 +785,7 @@ export async function postTransformationJob() {
     const durationInMs = calculateTotalLatency(CodeTransformTelemetryState.instance.getStartTime())
     const resultStatusMessage = transformByQState.getStatus()
 
-    if (!transformByQState.getSchema()) {
+    if (transformByQState.getTransformationType() !== TransformationType.SQL_CONVERSION) {
         // the below is only applicable when user is doing a Java 8/11 language upgrade
         const versionInfo = await getVersionData()
         const mavenVersionInfoMessage = `${versionInfo[0]} (${transformByQState.getMavenName()})`

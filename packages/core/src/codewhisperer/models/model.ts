@@ -284,6 +284,11 @@ export enum TransformByQStatus {
     PartiallySucceeded = 'Partially Succeeded',
 }
 
+export enum TransformationType {
+    LANGUAGE_UPGRADE = 'Language Upgrade',
+    SQL_CONVERSION = 'SQL Conversion',
+}
+
 export enum TransformByQReviewStatus {
     NotStarted = 'NotStarted',
     PreparingReview = 'PreparingReview',
@@ -383,6 +388,8 @@ export let sessionJobHistory: {
 export class TransformByQState {
     private transformByQState: TransformByQStatus = TransformByQStatus.NotStarted
 
+    private transformationType: TransformationType | undefined = undefined
+
     private projectName: string = ''
     private projectPath: string = ''
 
@@ -462,6 +469,10 @@ export class TransformByQState {
 
     public isPartiallySucceeded() {
         return this.transformByQState === TransformByQStatus.PartiallySucceeded
+    }
+
+    public getTransformationType() {
+        return this.transformationType
     }
 
     public getProjectName() {
@@ -620,6 +631,10 @@ export class TransformByQState {
         this.transformByQState = TransformByQStatus.PartiallySucceeded
     }
 
+    public setTransformationType(type: TransformationType) {
+        this.transformationType = type
+    }
+
     public setProjectName(name: string) {
         this.projectName = name
     }
@@ -761,6 +776,7 @@ export class TransformByQState {
         this.targetDB = undefined
         this.sourceServerName = ''
         this.schemaOptions.clear()
+        this.schema = ''
         this.errorLog = ''
         this.customBuildCommand = ''
         this.intervalId = undefined

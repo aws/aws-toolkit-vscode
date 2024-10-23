@@ -6,7 +6,13 @@
 import * as vscode from 'vscode'
 import globals from '../../../shared/extensionGlobals'
 import * as CodeWhispererConstants from '../../models/constants'
-import { StepProgress, jobPlanProgress, sessionJobHistory, transformByQState } from '../../models/model'
+import {
+    StepProgress,
+    TransformationType,
+    jobPlanProgress,
+    sessionJobHistory,
+    transformByQState,
+} from '../../models/model'
 import { convertToTimeString } from '../../../shared/utilities/textUtilities'
 import { getLogger } from '../../../shared/logger'
 import { getTransformationSteps } from './transformApiHandler'
@@ -264,7 +270,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
             case 'PREPARING':
             case 'PREPARED':
                 // for SQL conversions, skip to planningMessage since we don't build the code
-                return transformByQState.getSchema()
+                return transformByQState.getTransformationType() === TransformationType.SQL_CONVERSION
                     ? CodeWhispererConstants.planningMessage
                     : CodeWhispererConstants.buildingCodeMessage.replace(
                           'JAVA_VERSION_HERE',
@@ -334,7 +340,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                 activeStepId === 0
             )
             const buildMarkup =
-                activeStepId >= 1 && !transformByQState.getSchema() // for SQL conversions, don't show buildCode step
+                activeStepId >= 1 && transformByQState.getTransformationType() !== TransformationType.SQL_CONVERSION // for SQL conversions, don't show buildCode step
                     ? simpleStep(
                           this.getProgressIconMarkup(jobPlanProgress['buildCode']),
                           CodeWhispererConstants.buildCodeStepMessage,
