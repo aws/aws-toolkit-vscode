@@ -3,21 +3,21 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-// import AdmZip from 'adm-zip'
+import AdmZip from 'adm-zip'
 import os from 'os'
 import fs from 'fs' // eslint-disable-line no-restricted-imports
 import { parsePatch, applyPatches, ParsedDiff } from 'diff'
 import path from 'path'
 import vscode from 'vscode'
-// import { ExportIntent } from '@amzn/codewhisperer-streaming'
+import { ExportIntent } from '@amzn/codewhisperer-streaming'
 import { TransformByQReviewStatus, transformByQState, PatchInfo } from '../../models/model'
-import { ExportResultArchiveStructure } from '../../../shared/utilities/download'
+import { ExportResultArchiveStructure, downloadExportResultArchive } from '../../../shared/utilities/download'
 import { getLogger } from '../../../shared/logger'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 import { CodeTransformTelemetryState } from '../../../amazonqGumby/telemetry/codeTransformTelemetryState'
 import { MetadataResult } from '../../../shared/telemetry/telemetryClient'
 import * as CodeWhispererConstants from '../../models/constants'
-// import { createCodeWhispererChatStreamingClient } from '../../../shared/clients/codewhispererChatClient'
+import { createCodeWhispererChatStreamingClient } from '../../../shared/clients/codewhispererChatClient'
 import { ChatSessionManager } from '../../../amazonqGumby/chat/storages/chatSession'
 import { setContext } from '../../../shared/vscode/setContext'
 
@@ -154,7 +154,11 @@ export class DiffModel {
      * @param pathToWorkspace Path to the project that was transformed
      * @returns List of nodes containing the paths of files that were modified, added, or removed
      */
-    public parseDiff(pathToDiff: string, pathToWorkspace: string, diffDescription: PatchInfo): PatchFileNode {
+    public parseDiff(
+        pathToDiff: string,
+        pathToWorkspace: string,
+        diffDescription: PatchInfo | undefined
+    ): PatchFileNode {
         this.patchFileNodes = []
         const diffContents = fs.readFileSync(pathToDiff, 'utf8')
         const changedFiles = parsePatch(diffContents)
@@ -190,7 +194,7 @@ export class DiffModel {
                 }
             },
         })
-        const patchFileNode = new PatchFileNode(diffDescription.name)
+        const patchFileNode = new PatchFileNode(diffDescription ? diffDescription.name : pathToDiff)
         patchFileNode.children = changedFiles.flatMap((file) => {
             /* ex. file.oldFileName = 'a/src/java/com/project/component/MyFile.java'
              * ex. file.newFileName = 'b/src/java/com/project/component/MyFile.java'
@@ -304,26 +308,9 @@ export class ProposedTransformationExplorer {
             treeDataProvider: transformDataProvider,
         })
 
-        const pathContainingArchive = '/private/var/folders/mn/l6c4t6sd1jn7g4p4nb6wqhh80000gq/T/ExportResultArchive'
-
+        // const pathContainingArchive = '/private/var/folders/mn/l6c4t6sd1jn7g4p4nb6wqhh80000gq/T/ExportResultArchive'
         const patchFiles: string[] = []
-        fs.readdir(path.join(pathContainingArchive, 'patch'), (err, files) => {
-            if (err) {
-                getLogger().error(err)
-            } else {
-                files.forEach((file) => {
-                    const filePath = path.join(pathContainingArchive, 'patch', file)
-                    if (file.endsWith('.patch')) {
-                        patchFiles.push(filePath)
-                    }
-                })
-            }
-        })
-
-        const pathContainingPatchFileDescriptions = path.join(pathContainingArchive, 'patch', 'diff.json')
-
-        const jsonData = fs.readFileSync(pathContainingPatchFileDescriptions, 'utf-8')
-        const patchFilesDescriptions: PatchInfo[] = JSON.parse(jsonData)
+        let patchFilesDescriptions: PatchInfo[] | undefined = undefined
 
         const reset = async () => {
             await setContext('gumby.transformationProposalReviewInProgress', false)
@@ -373,15 +360,15 @@ export class ProposedTransformationExplorer {
         vscode.commands.registerCommand('aws.amazonq.transformationHub.reviewChanges.startReview', async () => {
             await setContext('gumby.reviewState', TransformByQReviewStatus.PreparingReview)
 
-            // const pathToArchive = path.join(
-            //     ProposedTransformationExplorer.TmpDir,
-            //     transformByQState.getJobId(),
-            //     'ExportResultsArchive.zip'
-            // )
-            const exportResultsArchiveSize = 0
+            const pathToArchive = path.join(
+                ProposedTransformationExplorer.TmpDir,
+                transformByQState.getJobId(),
+                'ExportResultsArchive.zip'
+            )
+            let exportResultsArchiveSize = 0
             let downloadErrorMessage = undefined
 
-            // const cwStreamingClient = await createCodeWhispererChatStreamingClient()
+            const cwStreamingClient = await createCodeWhispererChatStreamingClient()
             try {
                 await telemetry.codeTransform_downloadArtifact.run(async () => {
                     telemetry.record({
@@ -390,17 +377,17 @@ export class ProposedTransformationExplorer {
                         codeTransformJobId: transformByQState.getJobId(),
                     })
 
-                    // await downloadExportResultArchive(
-                    //     cwStreamingClient,
-                    //     {
-                    //         exportId: transformByQState.getJobId(),
-                    //         exportIntent: ExportIntent.TRANSFORMATION,
-                    //     },
-                    //     pathToArchive
-                    // )
+                    await downloadExportResultArchive(
+                        cwStreamingClient,
+                        {
+                            exportId: transformByQState.getJobId(),
+                            exportIntent: ExportIntent.TRANSFORMATION,
+                        },
+                        pathToArchive
+                    )
 
                     // Update downloaded artifact size
-                    // exportResultsArchiveSize = (await fs.promises.stat(pathToArchive)).size
+                    exportResultsArchiveSize = (await fs.promises.stat(pathToArchive)).size
 
                     telemetry.record({ codeTransformTotalByteSize: exportResultsArchiveSize })
                 })
@@ -421,18 +408,34 @@ export class ProposedTransformationExplorer {
                 getLogger().error(`CodeTransformation: ExportResultArchive error = ${downloadErrorMessage}`)
                 throw new Error('Error downloading diff')
             } finally {
-                // cwStreamingClient.destroy()
+                cwStreamingClient.destroy()
             }
 
             let deserializeErrorMessage = undefined
+            let pathContainingArchive = ''
             try {
                 // Download and deserialize the zip
-                // pathContainingArchive = path.dirname(pathToArchive)
-                // const zip = new AdmZip(pathToArchive)
-                // zip.extractAllTo(pathContainingArchive)
+                pathContainingArchive = path.dirname(pathToArchive)
+                const zip = new AdmZip(pathToArchive)
+                zip.extractAllTo(pathContainingArchive)
+
+                const files = fs.readdirSync(path.join(pathContainingArchive, ExportResultArchiveStructure.PathToPatch))
+                files.forEach((file) => {
+                    const filePath = path.join(pathContainingArchive, ExportResultArchiveStructure.PathToPatch, file)
+                    if (file.endsWith('.patch')) {
+                        patchFiles.push(filePath)
+                    } else if (file.endsWith('.json')) {
+                        const jsonData = fs.readFileSync(filePath, 'utf-8')
+                        patchFilesDescriptions = JSON.parse(jsonData)
+                    }
+                })
 
                 //Because multiple patches are returned once the ZIP is downloaded, we want to show the first one to start
-                diffModel.parseDiff(patchFiles[0], transformByQState.getProjectPath(), patchFilesDescriptions[0])
+                diffModel.parseDiff(
+                    patchFiles[0],
+                    transformByQState.getProjectPath(),
+                    patchFilesDescriptions ? patchFilesDescriptions[0] : undefined
+                )
 
                 await setContext('gumby.reviewState', TransformByQReviewStatus.InReview)
                 transformDataProvider.refresh()
@@ -478,7 +481,9 @@ export class ProposedTransformationExplorer {
             diffModel.currentPatchIndex++
             if (diffModel.currentPatchIndex < patchFiles.length) {
                 const nextPatchFile = patchFiles[diffModel.currentPatchIndex]
-                const nextPatchFileDescription = patchFilesDescriptions[diffModel.currentPatchIndex]
+                const nextPatchFileDescription = patchFilesDescriptions
+                    ? patchFilesDescriptions[diffModel.currentPatchIndex]
+                    : undefined
                 diffModel.parseDiff(nextPatchFile, transformByQState.getProjectPath(), nextPatchFileDescription)
                 transformDataProvider.refresh()
             } else {
