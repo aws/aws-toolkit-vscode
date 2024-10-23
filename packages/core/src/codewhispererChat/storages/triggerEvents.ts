@@ -12,6 +12,7 @@ export type TriggerEventType =
     | 'follow_up'
     | 'onboarding_page_interaction'
     | 'quick_action'
+    | 'inline_chat'
 
 export interface TriggerEvent {
     readonly id: string

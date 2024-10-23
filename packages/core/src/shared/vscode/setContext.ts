@@ -31,6 +31,7 @@ type contextKey =
     | 'gumby.reviewState'
     | 'gumby.transformationProposalReviewInProgress'
     | 'gumby.wasQCodeTransformationUsed'
+    | 'amazonq.inline.codelensShortcutEnabled'
 
 /**
  * Calls the vscode "setContext" command.
