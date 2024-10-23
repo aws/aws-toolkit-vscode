@@ -335,22 +335,24 @@ export default defineComponent({
                 }
             )
 
-            client.getResourceData().then(
-                (data) => {
-                    this.resourceData = data
-                    if (this.launchConfig && this.resourceData) {
-                        this.launchConfig.invokeTarget.logicalId = this.resourceData.logicalId
-                        this.launchConfig.invokeTarget.templatePath = this.resourceData.location
-                        this.launchConfig.invokeTarget.lambdaHandler = this.resourceData.handler
-                        if (this.launchConfig.lambda) {
-                            this.launchConfig.lambda.runtime = this.resourceData.runtime
+            if (this.launchConfig.invokeTarget.templatePath === '') {
+                client.getResourceData().then(
+                    (data) => {
+                        this.resourceData = data
+                        if (this.launchConfig && this.resourceData) {
+                            this.launchConfig.invokeTarget.logicalId = this.resourceData.logicalId
+                            this.launchConfig.invokeTarget.templatePath = this.resourceData.location
+                            this.launchConfig.invokeTarget.lambdaHandler = this.resourceData.handler
+                            if (this.launchConfig.lambda) {
+                                this.launchConfig.lambda.runtime = this.resourceData.runtime
+                            }
                         }
+                    },
+                    (e) => {
+                        console.error('client.getResourceData failed: %s', (e as Error).message)
                     }
-                },
-                (e) => {
-                    console.error('client.getResourceData failed: %s', (e as Error).message)
-                }
-            )
+                )
+            }
 
             client.getRuntimes().then(
                 (runtimes) => {
