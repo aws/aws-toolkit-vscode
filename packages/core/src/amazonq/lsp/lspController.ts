@@ -354,14 +354,15 @@ export class LspController {
                     credentialStartUrl: buildIndexConfig.startUrl,
                 })
             } else {
-                getLogger().error(`LspController: Failed to build index of project`)
-                telemetry.amazonq_indexWorkspace.emit({
-                    duration: performance.now() - start,
-                    result: 'Failed',
-                    amazonqIndexFileCount: 0,
-                    amazonqIndexFileSizeInMB: 0,
-                    reason: `Unknown`,
-                })
+                // TODO: Re-enable this code path for LSP 0.1.20+
+                // getLogger().error(`LspController: Failed to build index of project`)
+                // telemetry.amazonq_indexWorkspace.emit({
+                //     duration: performance.now() - start,
+                //     result: 'Failed',
+                //     amazonqIndexFileCount: 0,
+                //     amazonqIndexFileSizeInMB: 0,
+                //     reason: `Unknown`,
+                // })
             }
         } catch (e) {
             getLogger().error(`LspController: Failed to build index of project`)
