@@ -81,7 +81,7 @@ describe('DeployWizard', async function () {
              *
              *  - template              : [Skip]     automatically set
              *  - projectRoot           : [Skip]     automatically set
-             *  - paramsSource          : [Select]   1. ('Specify only required parameters and save as defaults')
+             *  - paramsSource          : [Select]   1. ('Specify required parameters and save as defaults')
              *  - region                : [Select]   'us-west-2'
              *  - stackName             : [Select]   1. 'stack1'
              *  - bucketSource          : [Select]   1. ('Create a SAM CLI managed S3 bucket')
@@ -103,11 +103,8 @@ describe('DeployWizard', async function () {
                     await quickPick.untilReady()
 
                     assert.strictEqual(quickPick.items.length, 2)
-                    assert.strictEqual(
-                        quickPick.items[0].label,
-                        'Specify only required parameters and save as defaults'
-                    )
-                    assert.strictEqual(quickPick.items[1].label, 'Specify only required parameters')
+                    assert.strictEqual(quickPick.items[0].label, 'Specify required parameters and save as defaults')
+                    assert.strictEqual(quickPick.items[1].label, 'Specify required parameters')
                     quickPick.acceptItem(quickPick.items[0])
                 })
                 .handleQuickPick('Select a region', (quickPick) => {
@@ -176,11 +173,8 @@ describe('DeployWizard', async function () {
                     await quickPick.untilReady()
 
                     assert.strictEqual(quickPick.items.length, 3)
-                    assert.strictEqual(
-                        quickPick.items[0].label,
-                        'Specify only required parameters and save as defaults'
-                    )
-                    assert.strictEqual(quickPick.items[1].label, 'Specify only required parameters')
+                    assert.strictEqual(quickPick.items[0].label, 'Specify required parameters and save as defaults')
+                    assert.strictEqual(quickPick.items[1].label, 'Specify required parameters')
                     assert.strictEqual(quickPick.items[2].label, 'Use default values from samconfig')
                     quickPick.acceptItem(quickPick.items[2])
                 })
@@ -221,7 +215,7 @@ describe('DeployWizard', async function () {
              *
              *  - template              : [Select]   template/yaml set
              *  - projectRoot           : [Skip]     automatically set
-             *  - paramsSource          : [Select]   2. ('Specify only required parameters')
+             *  - paramsSource          : [Select]   2. ('Specify required parameters')
              *  - region                : [Skip]     automatically set from region node 'us-west-2'
              *  - stackName             : [Select]   1. 'stack1'
              *  - bucketSource          : [Select]   2. ('Specify an S3 bucket')
@@ -232,7 +226,7 @@ describe('DeployWizard', async function () {
             const testWindow = getTestWindow()
 
             PrompterTester.init(testWindow)
-                .handleQuickPick('Select a SAM CloudFormation Template', async (quickPick) => {
+                .handleQuickPick('Select a SAM/CloudFormation Template', async (quickPick) => {
                     // Need sometime to wait for the template to search for template file
                     await quickPick.untilReady()
                     assert.strictEqual(quickPick.items.length, 1)
@@ -244,11 +238,8 @@ describe('DeployWizard', async function () {
                     await quickPick.untilReady()
 
                     assert.strictEqual(quickPick.items.length, 2)
-                    assert.strictEqual(
-                        quickPick.items[0].label,
-                        'Specify only required parameters and save as defaults'
-                    )
-                    assert.strictEqual(quickPick.items[1].label, 'Specify only required parameters')
+                    assert.strictEqual(quickPick.items[0].label, 'Specify required parameters and save as defaults')
+                    assert.strictEqual(quickPick.items[1].label, 'Specify required parameters')
                     quickPick.acceptItem(quickPick.items[1])
                 })
                 .handleQuickPick('Select a CloudFormation Stack', async (quickPick) => {
@@ -309,7 +300,7 @@ describe('DeployWizard', async function () {
             await testFolder.write('samconfig.toml', samconfigCompleteData)
 
             PrompterTester.init()
-                .handleQuickPick('Select a SAM CloudFormation Template', async (quickPick) => {
+                .handleQuickPick('Select a SAM/CloudFormation Template', async (quickPick) => {
                     // Need sometime to wait for the template to search for template file
                     await quickPick.untilReady()
                     assert.strictEqual(quickPick.items.length, 1)
@@ -321,11 +312,8 @@ describe('DeployWizard', async function () {
                     await quickPick.untilReady()
 
                     assert.strictEqual(quickPick.items.length, 3)
-                    assert.strictEqual(
-                        quickPick.items[0].label,
-                        'Specify only required parameters and save as defaults'
-                    )
-                    assert.strictEqual(quickPick.items[1].label, 'Specify only required parameters')
+                    assert.strictEqual(quickPick.items[0].label, 'Specify required parameters and save as defaults')
+                    assert.strictEqual(quickPick.items[1].label, 'Specify required parameters')
                     assert.strictEqual(quickPick.items[2].label, 'Use default values from samconfig')
                     quickPick.acceptItem(quickPick.items[2])
                 })
@@ -365,7 +353,7 @@ describe('DeployWizard', async function () {
              *
              *  - template              : [Skip]     automatically set
              *  - projectRoot           : [Skip]     automatically set
-             *  - paramsSource          : [Select]   2. ('Specify only required parameters')
+             *  - paramsSource          : [Select]   2. ('Specify required parameters')
              *  - region                : [Select]   'us-west-2'
              *  - stackName             : [Select]   2. 'stack2'
              *  - bucketSource          : [Select]   1. ('Create a SAM CLI managed S3 bucket')
@@ -384,11 +372,8 @@ describe('DeployWizard', async function () {
                     await quickPick.untilReady()
 
                     assert.strictEqual(quickPick.items.length, 2)
-                    assert.strictEqual(
-                        quickPick.items[0].label,
-                        'Specify only required parameters and save as defaults'
-                    )
-                    assert.strictEqual(quickPick.items[1].label, 'Specify only required parameters')
+                    assert.strictEqual(quickPick.items[0].label, 'Specify required parameters and save as defaults')
+                    assert.strictEqual(quickPick.items[1].label, 'Specify required parameters')
                     quickPick.acceptItem(quickPick.items[1])
                 })
                 .handleQuickPick('Select a region', (quickPick) => {
@@ -457,11 +442,8 @@ describe('DeployWizard', async function () {
                     await quickPick.untilReady()
 
                     assert.strictEqual(quickPick.items.length, 3)
-                    assert.strictEqual(
-                        quickPick.items[0].label,
-                        'Specify only required parameters and save as defaults'
-                    )
-                    assert.strictEqual(quickPick.items[1].label, 'Specify only required parameters')
+                    assert.strictEqual(quickPick.items[0].label, 'Specify required parameters and save as defaults')
+                    assert.strictEqual(quickPick.items[1].label, 'Specify required parameters')
                     assert.strictEqual(quickPick.items[2].label, 'Use default values from samconfig')
                     quickPick.acceptItem(quickPick.items[2])
                 })
@@ -491,7 +473,7 @@ describe('DeployWizard', async function () {
              *
              *  - template              : [Select]   template/yaml set
              *  - projectRoot           : [Skip]     automatically set
-             *  - paramsSource          : [Select]   2. ('Specify only required parameters')
+             *  - paramsSource          : [Select]   2. ('Specify required parameters')
              *  - region                : [Skip]     automatically set from region node 'us-west-2'
              *  - stackName             : [Select]   3. 'stack3'
              *  - bucketSource          : [Select]   2. ('Specify an S3 bucket')
@@ -504,7 +486,7 @@ describe('DeployWizard', async function () {
             await (await globals.templateRegistry).addItem(templateFile2)
 
             PrompterTester.init()
-                .handleQuickPick('Select a SAM CloudFormation Template', async (quickPick) => {
+                .handleQuickPick('Select a SAM/CloudFormation Template', async (quickPick) => {
                     // Need sometime to wait for the template to search for template file
                     await quickPick.untilReady()
                     assert.strictEqual(quickPick.items.length, 2)
@@ -515,11 +497,8 @@ describe('DeployWizard', async function () {
                     // Need time to check samconfig.toml file and generate options
                     await quickPick.untilReady()
                     assert.strictEqual(quickPick.items.length, 2)
-                    assert.strictEqual(
-                        quickPick.items[0].label,
-                        'Specify only required parameters and save as defaults'
-                    )
-                    assert.strictEqual(quickPick.items[1].label, 'Specify only required parameters')
+                    assert.strictEqual(quickPick.items[0].label, 'Specify required parameters and save as defaults')
+                    assert.strictEqual(quickPick.items[1].label, 'Specify required parameters')
                     quickPick.acceptItem(quickPick.items[1])
                 })
                 .handleQuickPick('Select a region', (quickPick) => {
@@ -589,7 +568,7 @@ describe('DeployWizard', async function () {
             // Simulate return of deployed stacks
 
             PrompterTester.init()
-                .handleQuickPick('Select a SAM CloudFormation Template', async (quickPick) => {
+                .handleQuickPick('Select a SAM/CloudFormation Template', async (quickPick) => {
                     // Need sometime to wait for the template to search for template file
                     await quickPick.untilReady()
 
@@ -601,11 +580,8 @@ describe('DeployWizard', async function () {
                     // Need time to check samconfig.toml file and generate options
                     await quickPick.untilReady()
                     assert.strictEqual(quickPick.items.length, 3)
-                    assert.strictEqual(
-                        quickPick.items[0].label,
-                        'Specify only required parameters and save as defaults'
-                    )
-                    assert.strictEqual(quickPick.items[1].label, 'Specify only required parameters')
+                    assert.strictEqual(quickPick.items[0].label, 'Specify required parameters and save as defaults')
+                    assert.strictEqual(quickPick.items[1].label, 'Specify required parameters')
                     assert.strictEqual(quickPick.items[2].label, 'Use default values from samconfig')
                     quickPick.acceptItem(quickPick.items[2])
                 })

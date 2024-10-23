@@ -269,11 +269,11 @@ describe('paramsSourcePrompter', () => {
     it('should return a prompter with the correct items with no valid samconfig', () => {
         const expectedItems: DataQuickPickItem<ParamsSource>[] = [
             {
-                label: 'Specify only required parameters and save as defaults',
+                label: 'Specify required parameters and save as defaults',
                 data: ParamsSource.SpecifyAndSave,
             },
             {
-                label: 'Specify only required parameters',
+                label: 'Specify required parameters',
                 data: ParamsSource.Flags,
             },
         ]
@@ -288,11 +288,11 @@ describe('paramsSourcePrompter', () => {
     it('should return a prompter with the correct items with valid samconfig', () => {
         const expectedItems: DataQuickPickItem<ParamsSource>[] = [
             {
-                label: 'Specify only required parameters and save as defaults',
+                label: 'Specify required parameters and save as defaults',
                 data: ParamsSource.SpecifyAndSave,
             },
             {
-                label: 'Specify only required parameters',
+                label: 'Specify required parameters',
                 data: ParamsSource.Flags,
             },
             {
@@ -857,7 +857,7 @@ describe('getSyncParamsFromConfig', () => {
     })
 })
 
-describe('DeployWizard', async () => {
+describe('SyncWizard', async () => {
     let sandbox: sinon.SinonSandbox
     let testFolder: TestFolder
     let projectRoot: vscode.Uri
@@ -910,8 +910,8 @@ describe('DeployWizard', async () => {
             getTestWindow().onDidShowQuickPick(async (picker) => {
                 if (picker.title === 'Specify parameters for deploy') {
                     assert.strictEqual(picker.items.length, 2)
-                    assert.strictEqual(picker.items[0].label, 'Specify only required parameters and save as defaults')
-                    assert.strictEqual(picker.items[1].label, 'Specify only required parameters')
+                    assert.strictEqual(picker.items[0].label, 'Specify required parameters and save as defaults')
+                    assert.strictEqual(picker.items[1].label, 'Specify required parameters')
                     picker.acceptItem(picker.items[1])
                 } else if (picker.title === 'Select a region') {
                     await picker.untilReady()
