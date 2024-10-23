@@ -13,6 +13,7 @@ import { Commands } from '../../../../shared/vscode/commands2'
 import { AppNode } from './appNode'
 import { detectSamProjects } from '../detectSamProjects'
 import globals from '../../../../shared/extensionGlobals'
+import { WalkthroughNode } from './walkthroughNode'
 
 export async function getAppNodes(): Promise<TreeNode[]> {
     // no active workspace, show buttons in welcomeview
@@ -35,29 +36,6 @@ export async function getAppNodes(): Promise<TreeNode[]> {
         .sort((a, b) => a.label.localeCompare(b.label) ?? 0)
 
     return nodesToReturn
-}
-
-/**
- * Create Open Walkthrough Node in App builder sidebar
- *
- */
-export class WalkthroughNode implements TreeNode {
-    public readonly id = 'walkthrough'
-    public readonly resource = this
-    public constructor() {}
-
-    public getTreeItem() {
-        const itemLabel = localize('AWS.appBuilder.openWalkthroughTitle', 'Walkthrough of Application Builder')
-
-        const item = new vscode.TreeItem(itemLabel)
-        item.contextValue = 'awsWalkthroughNode'
-        item.command = {
-            title: localize('AWS.appBuilder.openWalkthroughTitle', 'Walkthrough of Application Builder'),
-            command: 'aws.toolkit.lambda.openWalkthrough',
-        }
-
-        return item
-    }
 }
 
 export class AppBuilderRootNode implements TreeNode {

@@ -11,11 +11,7 @@ import * as VsCodeUtils from '../../../../../shared/utilities/vsCodeUtils'
 import * as DetectSamProjects from '../../../../../../src/awsService/appBuilder/explorer/detectSamProjects'
 import globals from '../../../../../shared/extensionGlobals'
 
-import {
-    AppBuilderRootNode,
-    getAppNodes,
-    WalkthroughNode,
-} from '../../../../../awsService/appBuilder/explorer/nodes/rootNode'
+import { AppBuilderRootNode, getAppNodes } from '../../../../../awsService/appBuilder/explorer/nodes/rootNode'
 
 import { AppNode } from '../../../../../awsService/appBuilder/explorer/nodes/appNode'
 
@@ -47,28 +43,6 @@ describe('getAppNodes', async () => {
         const appNodes = await getAppNodes()
         assert.strictEqual(appNodes.length, mockProjects.length)
         assert(appNodes.every((node) => node instanceof AppNode))
-    })
-})
-
-describe('WalkthroughNode', () => {
-    const walkthroughNode = new WalkthroughNode()
-    describe('constructor', () => {
-        it('should create a WalkthroughNode with correct properties', () => {
-            assert.strictEqual(walkthroughNode.id, 'walkthrough')
-            assert.strictEqual(walkthroughNode.resource, walkthroughNode)
-        })
-    })
-    describe('getTreeItem', () => {
-        it('should generate correct TreeItem', () => {
-            const treeItem = walkthroughNode.getTreeItem()
-
-            assert.strictEqual(treeItem.label, 'Walkthrough of Application Builder')
-            assert.strictEqual(treeItem.contextValue, 'awsWalkthroughNode')
-            assert.deepStrictEqual(treeItem.command, {
-                title: 'Walkthrough of Application Builder',
-                command: 'aws.toolkit.lambda.openWalkthrough',
-            })
-        })
     })
 })
 
