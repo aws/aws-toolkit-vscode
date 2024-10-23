@@ -788,24 +788,22 @@ export class FeatureDevController {
     }
 
     private async stopResponse(message: any) {
-        await telemetry.amazonq_stopCodeGeneration.run(async (span) => {
-            span.record({ tabID: message.tabID })
-            this.messenger.sendAnswer({
-                message: i18n('AWS.amazonq.featureDev.pillText.stoppingCodeGeneration'),
-                type: 'answer-part',
-                tabID: message.tabID,
-            })
-            this.messenger.sendUpdatePlaceholder(
-                message.tabID,
-                i18n('AWS.amazonq.featureDev.pillText.stoppingCodeGeneration')
-            )
-            this.messenger.sendChatInputEnabled(message.tabID, false)
-
-            const session = await this.sessionStorage.getSession(message.tabID)
-            if (session.state?.tokenSource) {
-                session.state?.tokenSource?.cancel()
-            }
+        telemetry.ui_click.emit({ elementId: 'amazonq_stopCodeGeneration' })
+        this.messenger.sendAnswer({
+            message: i18n('AWS.amazonq.featureDev.pillText.stoppingCodeGeneration'),
+            type: 'answer-part',
+            tabID: message.tabID,
         })
+        this.messenger.sendUpdatePlaceholder(
+            message.tabID,
+            i18n('AWS.amazonq.featureDev.pillText.stoppingCodeGeneration')
+        )
+        this.messenger.sendChatInputEnabled(message.tabID, false)
+
+        const session = await this.sessionStorage.getSession(message.tabID)
+        if (session.state?.tokenSource) {
+            session.state?.tokenSource?.cancel()
+        }
     }
 
     private async tabOpened(message: any) {

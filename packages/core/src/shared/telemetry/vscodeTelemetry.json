@@ -335,11 +335,6 @@
             "name": "amazonqMessageDisplayedMs",
             "type": "int",
             "description": "Duration between the partner teams code receiving the message and when the message was finally displayed in ms"
-        },
-        {
-            "name": "tabID",
-            "type": "string",
-            "description": "The unique identifier of a tab"
         }
     ],
     "metrics": [
@@ -1189,16 +1184,6 @@
                 {
                     "type": "proxiedSessionId",
                     "required": false
-                }
-            ]
-        },
-        {
-            "name": "amazonq_stopCodeGeneration",
-            "description": "User stopped the code generation",
-            "metadata": [
-                {
-                    "type": "tabID",
-                    "required": true
                 }
             ]
         }
