@@ -30,17 +30,6 @@ export function asyncCallWithTimeout<T>(asyncPromise: Promise<T>, message: strin
     })
 }
 
-export function asyncCallWithTimeoutSwallowErrors<T>(asyncPromise: Promise<T>, timeLimit: number): Promise<T> {
-    let timeoutHandle: NodeJS.Timeout
-    const timeoutPromise = new Promise((resolve) => {
-        timeoutHandle = setTimeout(() => resolve(undefined), timeLimit)
-    })
-    return Promise.race([asyncPromise, timeoutPromise]).then((result) => {
-        clearTimeout(timeoutHandle)
-        return result as T
-    })
-}
-
 export function isInlineCompletionEnabled() {
     return getInlineSuggestEnabled() && !isCloud9()
 }

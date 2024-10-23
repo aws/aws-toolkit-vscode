@@ -66,7 +66,7 @@ export interface Manifest {
 }
 const manifestUrl = 'https://aws-toolkit-language-servers.amazonaws.com/q-context/manifest.json'
 // this LSP client in Q extension is only going to work with these LSP server versions
-const supportedLspServerVersions = ['0.1.20', '0.1.19']
+const supportedLspServerVersions = ['0.1.22', '0.1.19']
 
 const nodeBinName = process.platform === 'win32' ? 'node.exe' : 'node'
 
@@ -364,14 +364,15 @@ export class LspController {
                 //     reason: `Unknown`,
                 // })
             }
-        } catch (e) {
+        } catch (error) {
+            //TODO: use telemetry.run()q
             getLogger().error(`LspController: Failed to build index of project`)
             telemetry.amazonq_indexWorkspace.emit({
                 duration: performance.now() - start,
                 result: 'Failed',
                 amazonqIndexFileCount: 0,
                 amazonqIndexFileSizeInMB: 0,
-                reason: `${e}`,
+                reason: `Error when building index. ${error instanceof Error ? error.message : error}`,
             })
         } finally {
             this._isIndexingInProgress = false

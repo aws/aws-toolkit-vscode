@@ -109,8 +109,8 @@ export class LspClient {
                 query: query,
                 filePath: path,
             })
-            const encrpted = await this.encrypt(request)
-            const resp: any = await this.client?.sendRequest(QueryInlineProjectContextRequestType, encrpted)
+            const encrypted = await this.encrypt(request)
+            const resp: any = await this.client?.sendRequest(QueryInlineProjectContextRequestType, encrypted)
             return resp
         } catch (e) {
             getLogger().error(`LspClient: queryInlineProjectContext error: ${e}`)

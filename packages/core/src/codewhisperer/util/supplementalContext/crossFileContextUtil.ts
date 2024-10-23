@@ -13,14 +13,13 @@ import {
     supplementalContextTimeoutInMs,
     supplemetalContextFetchingTimeoutMsg,
 } from '../../models/constants'
-import { CancellationError } from '../../../shared/utilities/timeoutUtils'
+import { tryTimeout, CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { isTestFile } from './codeParsingUtil'
 import { getFileDistance } from '../../../shared/filesystemUtilities'
 import { getOpenFilesInWindow } from '../../../shared/utilities/editorUtilities'
 import { getLogger } from '../../../shared/logger/logger'
 import { CodeWhispererSupplementalContext, CodeWhispererSupplementalContextItem } from '../../models/model'
 import { LspController } from '../../../amazonq/lsp/lspController'
-import { asyncCallWithTimeoutSwallowErrors } from '../commonUtil'
 
 type CrossFileSupportedLanguage =
     | 'java'
@@ -67,14 +66,11 @@ export async function fetchSupplementalContextForSrc(
     if (supplementalContextConfig === 'v1') {
         return fetchSupplementalContextForSrcV1(editor, cancellationToken)
     }
-    const promiseV1 = asyncCallWithTimeoutSwallowErrors(
+    const promiseV1 = tryTimeout(
         fetchSupplementalContextForSrcV1(editor, cancellationToken),
         supplementalContextTimeoutInMs
     )
-    const promiseV2 = asyncCallWithTimeoutSwallowErrors(
-        fetchSupplementalContextForSrcV2(editor),
-        supplementalContextTimeoutInMs
-    )
+    const promiseV2 = tryTimeout(fetchSupplementalContextForSrcV2(editor), supplementalContextTimeoutInMs)
     const [resultV1, resultV2] = await Promise.all([promiseV1, promiseV2])
     return resultV2 ?? resultV1
 }
