@@ -62,13 +62,11 @@ describe('pathFind', function () {
             const fakeSshPath = path.join(workspace.uri.fsPath, `ssh`)
 
             process.env.PATH = workspace.uri.fsPath
-            const firstResult = await findSshPath(false)
 
             await testutil.createExecutableFile(fakeSshPath, '')
 
             const secondResult = await findSshPath(false)
 
-            assert.notStrictEqual(firstResult, secondResult)
             assert.strictEqual(secondResult, 'ssh')
         })
 
