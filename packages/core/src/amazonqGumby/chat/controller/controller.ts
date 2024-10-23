@@ -40,7 +40,6 @@ import {
     JavaHomeNotSetError,
     JobStartError,
     ModuleUploadError,
-    NoAuthError,
     NoJavaProjectsFoundError,
     NoMavenJavaProjectsFoundError,
     NoOpenProjectsError,
@@ -62,6 +61,7 @@ import DependencyVersions from '../../models/dependencies'
 import { getStringHash } from '../../../shared/utilities/textUtilities'
 import { getVersionData } from '../../../codewhisperer/service/transformByQ/transformMavenHandler'
 import AdmZip from 'adm-zip'
+import { AuthError } from '../../../auth/sso/server'
 
 // These events can be interactions within the chat,
 // or elsewhere in the IDE
@@ -238,7 +238,7 @@ export class GumbyController {
             if (authState.amazonQ !== 'connected') {
                 this.sessionStorage.getSession().isAuthenticating = true
                 await this.messenger.sendAuthNeededExceptionMessage(authState, message.tabID)
-                throw new NoAuthError()
+                throw new AuthError('Not connected to Amazon Q', `AuthState=${authState.amazonQ}`)
             }
             this.messenger.sendTransformationIntroduction(message.tabID)
         })
