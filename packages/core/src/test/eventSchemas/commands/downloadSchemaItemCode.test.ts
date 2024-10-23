@@ -25,7 +25,7 @@ import admZip from 'adm-zip'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { DefaultSchemaClient } from '../../../shared/clients/schemaClient'
 import { fs } from '../../../shared'
-import * as nodefs from 'fs'
+import * as nodefs from 'fs' // eslint-disable-line no-restricted-imports
 
 describe('CodeDownloader', function () {
     let tempFolder: string

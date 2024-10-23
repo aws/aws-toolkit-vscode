@@ -8,7 +8,7 @@ import * as path from 'path'
 import * as os from 'os'
 import xml2js = require('xml2js')
 import * as CodeWhispererConstants from '../../models/constants'
-import { existsSync, writeFileSync } from 'fs'
+import { existsSync, writeFileSync } from 'fs' // eslint-disable-line no-restricted-imports
 import { BuildSystem, FolderInfo, transformByQState } from '../../models/model'
 import { IManifestFile } from '../../../amazonqFeatureDev/models'
 import fs from '../../../shared/fs/fs'

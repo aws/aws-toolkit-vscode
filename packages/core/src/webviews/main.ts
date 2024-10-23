@@ -349,7 +349,7 @@ function createWebviewPanel(ctx: vscode.ExtensionContext, params: WebviewPanelPa
     const viewColumn =
         isCloud9() && params.viewColumn === vscode.ViewColumn.Beside
             ? vscode.ViewColumn.Two
-            : params.viewColumn ?? vscode.ViewColumn.Active
+            : (params.viewColumn ?? vscode.ViewColumn.Active)
 
     const panel = vscode.window.createWebviewPanel(
         params.id,

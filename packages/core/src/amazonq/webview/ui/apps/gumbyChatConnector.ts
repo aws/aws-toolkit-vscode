@@ -17,7 +17,7 @@ export interface ConnectorProps {
     sendMessageToExtension: (message: ExtensionMessage) => void
     onMessageReceived?: (tabID: string, messageData: any, needToShowAPIDocsTab: boolean) => void
     onAsyncEventProgress: (tabID: string, inProgress: boolean, message: string, messageId: string) => void
-    onChatAnswerReceived?: (tabID: string, message: ChatItem) => void
+    onChatAnswerReceived?: (tabID: string, message: ChatItem, messageData: any) => void
     onChatAnswerUpdated?: (tabID: string, message: ChatItem) => void
     onQuickHandlerCommand: (tabID: string, command: string, eventId?: string) => void
     onError: (tabID: string, message: string, title: string) => void
@@ -90,7 +90,7 @@ export class Connector {
             canBeVoted: false,
         }
 
-        this.onChatAnswerReceived(tabID, answer)
+        this.onChatAnswerReceived(tabID, answer, messageData)
 
         return
     }
@@ -114,7 +114,7 @@ export class Connector {
                 return
             }
 
-            this.onChatAnswerReceived(messageData.tabID, answer)
+            this.onChatAnswerReceived(messageData.tabID, answer, messageData)
         }
     }
 
@@ -143,10 +143,14 @@ export class Connector {
             return
         }
 
-        this.onChatAnswerReceived(messageData.tabID, {
-            type: ChatItemType.SYSTEM_PROMPT,
-            body: messageData.message,
-        })
+        this.onChatAnswerReceived(
+            messageData.tabID,
+            {
+                type: ChatItemType.SYSTEM_PROMPT,
+                body: messageData.message,
+            },
+            messageData
+        )
     }
 
     onCustomFormAction(

@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import * as fs from 'fs'
+import * as fs from 'fs' // eslint-disable-line no-restricted-imports
 import * as os from 'os'
 import path from 'path'
 import { getLogger } from '../../shared/logger'

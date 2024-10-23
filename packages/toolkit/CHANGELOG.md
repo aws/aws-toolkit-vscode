@@ -1,3 +1,15 @@
+## 3.29.0 2024-10-17
+
+- **Bug Fix** Fix userCredentialsUtils.test.ts so it won't remove the actual aws config
+
+## 3.28.0 2024-10-10
+
+- **Breaking Change** Bumping VS Code minimum version to 1.83.0
+- **Bug Fix** update animate graph for infraComposer in toolkit README
+- **Deprecation** The next release of this extension will require VS Code 1.83.0 or newer.
+- **Feature** Show a one-time warning if new VS Code is required
+- **Removal** Minimum required VSCode version is now 1.83
+
 ## 3.27.0 2024-10-03
 
 - **Bug Fix** rename Application Composer to Infrastructure Composer

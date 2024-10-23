@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import * as fs from 'fs'
+import * as fs from 'fs' // eslint-disable-line no-restricted-imports
 import * as path from 'path'
 import { samImageLambdaRuntimes, samZipLambdaRuntimes } from '../../../lambda/models/samLambdaRuntime'
 import * as CloudFormation from '../../cloudformation/cloudformation'

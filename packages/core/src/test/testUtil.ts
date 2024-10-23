@@ -15,7 +15,7 @@ import { MetricName, MetricShapes } from '../shared/telemetry/telemetry'
 import { keys, selectFrom } from '../shared/utilities/tsUtils'
 import fs from '../shared/fs/fs'
 import { DeclaredCommand } from '../shared/vscode/commands2'
-import { mkdirSync, existsSync } from 'fs'
+import { mkdirSync, existsSync } from 'fs' // eslint-disable-line no-restricted-imports
 import { randomBytes } from 'crypto'
 import request from '../shared/request'
 import { stub } from 'sinon'
@@ -75,7 +75,7 @@ export function getWorkspaceFolder(dir: string): vscode.WorkspaceFolder {
  * But if the day comes that we need it for web, we should be able to add some agnostic FS methods in here.
  */
 export class TestFolder {
-    protected constructor(private readonly rootFolder: string) {}
+    protected constructor(public readonly path: string) {}
 
     /** Creates a folder that deletes itself once all tests are done running. */
     static async create() {
@@ -117,10 +117,6 @@ export class TestFolder {
     /** Returns an absolute path compose of the test folder path and the given relative path. */
     pathFrom(relativePath: string): string {
         return path.join(this.path, relativePath)
-    }
-
-    get path(): string {
-        return path.join(this.rootFolder)
     }
 }
 
@@ -298,6 +294,13 @@ export function partialDeepCompare<T>(actual: unknown, expected: T, message?: st
 
     const partial = selectFrom(actual, ...keys(expected as object))
     assert.deepStrictEqual(partial, expected, message)
+}
+/**
+ * Asserts that no metrics metadata (key OR value) matches the given regex.
+ * @param keyword target substring to search for
+ */
+export function assertNoTelemetryMatch(re: RegExp | string): void | never {
+    return assert.ok(globals.telemetry.logger.queryRegex(re).length === 0)
 }
 
 /**
@@ -569,9 +572,18 @@ export function captureEvent<T>(event: vscode.Event<T>): EventCapturer<T> {
  * Captures the first value emitted by an event, optionally with a timeout
  */
 export function captureEventOnce<T>(event: vscode.Event<T>, timeout?: number): Promise<T> {
+    return captureEventNTimes(event, 1, timeout)
+}
+
+export function captureEventNTimes<T>(event: vscode.Event<T>, amount: number, timeout?: number): Promise<T> {
     return new Promise<T>((resolve, reject) => {
         const stop = () => reject(new Error('Timed out waiting for event'))
-        event((data) => resolve(data))
+        let count = 0
+        event((data) => {
+            if (++count === amount) {
+                resolve(data)
+            }
+        })
 
         if (timeout !== undefined) {
             setTimeout(stop, timeout)
@@ -617,4 +629,8 @@ export function tryRegister(command: DeclaredCommand<() => Promise<any>>) {
 // Returns a stubbed fetch for other tests.
 export function getFetchStubWithResponse(response: Partial<Response>) {
     return stub(request, 'fetch').returns({ response: new Promise((res, _) => res(response)) } as any)
+}
+
+export function copyEnv(): NodeJS.ProcessEnv {
+    return { ...process.env }
 }

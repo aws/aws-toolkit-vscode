@@ -1,3 +1,22 @@
+## 1.30.0 2024-10-17
+
+- **Bug Fix** Various fixes and changes
+
+## 1.29.0 2024-10-10
+
+- **Bug Fix** Amazon Q /dev: include telemetry for workspace usage when generating new files
+- **Bug Fix** Amazon Q extension may fail to start if AWS Toolkit extension fails to start
+- **Bug Fix** Start language server by default
+- **Bug Fix** Amazon Q Feature Dev: Add error messages when the upload URL expires
+- **Bug Fix** Amazon Q (/dev): view diffs of previous /dev iterations
+- **Bug Fix** Q dev handle no change required
+- **Deprecation** The next release of this extension will require VS Code 1.83.0 or newer.
+- **Feature** Automatically pause and resume @workspace indexing when OS CPU load is high
+- **Feature** Add buttons to code blocks to view and accept diffs.
+- **Feature** Inline completion for more json files, and all yaml files
+- **Feature** Show a one-time warning if new VS Code is required
+- **Removal** Minimum required VSCode version is now 1.83
+
 ## 1.28.0 2024-10-03
 
 - **Bug Fix** Amazon Q /dev: define first folder as a root path for LLM-created files when using workspaces

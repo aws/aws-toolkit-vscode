@@ -108,6 +108,7 @@ export class UIMessageListener {
             tabID: msg.tabID,
             filePath: msg.filePath,
             deleted: msg.deleted,
+            messageId: msg.messageId,
         })
     }
 

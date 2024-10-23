@@ -180,6 +180,10 @@ module.exports = {
                         message:
                             'Avoid fs-extra, use shared/fs/fs.ts. Notify the Toolkit team if your required functionality is not available.',
                     },
+                    {
+                        name: 'fs',
+                        message: 'Avoid node:fs and use shared/fs/fs.ts when possible.',
+                    },
                 ],
             },
         ],
