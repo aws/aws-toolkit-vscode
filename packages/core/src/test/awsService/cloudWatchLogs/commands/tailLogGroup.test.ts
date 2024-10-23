@@ -8,7 +8,7 @@ import * as vscode from 'vscode'
 
 import assert from 'assert'
 import { clearDocument, closeSession, tailLogGroup } from '../../../../awsService/cloudWatchLogs/commands/tailLogGroup'
-import { StartLiveTailResponseStream } from '@aws-sdk/client-cloudwatch-logs'
+import { LiveTailSessionLogEvent, StartLiveTailResponseStream } from '@aws-sdk/client-cloudwatch-logs'
 import { LiveTailSessionRegistry } from '../../../../awsService/cloudWatchLogs/registry/liveTailSessionRegistry'
 import { LiveTailSession } from '../../../../awsService/cloudWatchLogs/registry/liveTailSession'
 import { asyncGenerator } from '../../../../shared/utilities/collectionUtils'
@@ -17,6 +17,7 @@ import {
     TailLogGroupWizardResponse,
 } from '../../../../awsService/cloudWatchLogs/wizard/tailLogGroupWizard'
 import { getTestWindow } from '../../../shared/vscode/window'
+import { CloudWatchLogsSettings } from '../../../../awsService/cloudWatchLogs/cloudWatchLogsUtils'
 
 describe('TailLogGroup', function () {
     const testLogGroup = 'test-log-group'
@@ -27,6 +28,7 @@ describe('TailLogGroup', function () {
     let registry: LiveTailSessionRegistry
     let startLiveTailSessionSpy: sinon.SinonSpy
     let stopLiveTailSessionSpy: sinon.SinonSpy
+    let cloudwatchSettingsSpy: sinon.SinonSpy
     let wizardSpy: sinon.SinonSpy
 
     beforeEach(function () {
@@ -42,21 +44,42 @@ describe('TailLogGroup', function () {
         wizardSpy = sandbox.stub(TailLogGroupWizard.prototype, 'run').callsFake(async function () {
             return getTestWizardResponse()
         })
+        const testMessage2 = `${testMessage}-2`
+        const testMessage3 = `${testMessage}-3`
         startLiveTailSessionSpy = sandbox
             .stub(LiveTailSession.prototype, 'startLiveTailSession')
             .callsFake(async function () {
-                return getTestResponseStream()
+                return getTestResponseStream([
+                    {
+                        message: testMessage,
+                        timestamp: 876830400000,
+                    },
+                    {
+                        message: testMessage2,
+                        timestamp: 876830402000,
+                    },
+                    {
+                        message: testMessage3,
+                        timestamp: 876830403000,
+                    },
+                ])
             })
         stopLiveTailSessionSpy = sandbox
             .stub(LiveTailSession.prototype, 'stopLiveTailSession')
             .callsFake(async function () {
                 return
             })
+
+        //Set maxLines to 1.
+        cloudwatchSettingsSpy = sandbox.stub(CloudWatchLogsSettings.prototype, 'get').callsFake(() => {
+            return 1
+        })
         await tailLogGroup(registry, {
             groupName: testLogGroup,
             regionName: testRegion,
         })
         assert.strictEqual(wizardSpy.calledOnce, true)
+        assert.strictEqual(cloudwatchSettingsSpy.calledOnce, true)
         assert.strictEqual(startLiveTailSessionSpy.calledOnce, true)
         assert.strictEqual(registry.size, 1)
 
@@ -69,7 +92,8 @@ describe('TailLogGroup', function () {
         }
         const document = getTestWindow().activeTextEditor?.document
         assert.strictEqual(sessionUri.toString(), document?.uri.toString())
-        assert.strictEqual(document?.getText().trim(), `12:00:00\t${testMessage}`)
+        //Test responseStream has 3 events, maxLines is set to 1. Only 3rd event should be in doc.
+        assert.strictEqual(document?.getText().trim(), `12:00:03\t${testMessage3}`)
 
         //Test that closing all tabs the session's document is open in will cause the session to close
         const window = getTestWindow()
@@ -136,23 +160,23 @@ describe('TailLogGroup', function () {
         }
     }
 
-    function getTestResponseStream(): AsyncIterable<StartLiveTailResponseStream> {
+    //Creates a test response stream. Each log event provided will be its own "frame" of the input stream.
+    function getTestResponseStream(logEvents: LiveTailSessionLogEvent[]): AsyncIterable<StartLiveTailResponseStream> {
         const sessionStartFrame: StartLiveTailResponseStream = {
             sessionStart: {
                 logGroupIdentifiers: [testLogGroup],
             },
             sessionUpdate: undefined,
         }
-        const sessionUpdateFrame: StartLiveTailResponseStream = {
-            sessionUpdate: {
-                sessionResults: [
-                    {
-                        message: testMessage,
-                        timestamp: 876830400000,
-                    },
-                ],
-            },
-        }
-        return asyncGenerator([sessionStartFrame, sessionUpdateFrame])
+
+        const updateFrames: StartLiveTailResponseStream[] = logEvents.map((event) => {
+            return {
+                sessionUpdate: {
+                    sessionResults: [event],
+                },
+            }
+        })
+
+        return asyncGenerator([sessionStartFrame, ...updateFrames])
     }
 })
