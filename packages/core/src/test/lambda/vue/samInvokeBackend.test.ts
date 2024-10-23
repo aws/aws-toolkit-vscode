@@ -13,19 +13,23 @@ import {
 import { ExtContext } from '../../../shared/extensions'
 import { AwsSamDebuggerConfiguration } from '../../../shared/sam/debugger/awsSamDebugConfiguration'
 import assert from 'assert'
-import sinon from 'sinon'
 import * as picker from '../../../shared/ui/picker'
+import * as input from '../../../shared/ui/input'
 import * as utils from '../../../lambda/utils'
 import { HttpResourceFetcher } from '../../../shared/resourcefetcher/httpResourceFetcher'
 import * as vscode from 'vscode'
 import path from 'path'
-import { fs, makeTemporaryToolkitFolder } from '../../../shared'
+import { addCodiconToString, fs, makeTemporaryToolkitFolder } from '../../../shared'
 import { LaunchConfiguration } from '../../../shared/debug/launchConfiguration'
 import { getTestWindow } from '../..'
 import { getLogger } from '../../../shared/logger'
 import * as extensionUtilities from '../../../shared/extensionUtilities'
 import * as samInvokeBackend from '../../../lambda/vue/configEditor/samInvokeBackend'
 import { SamDebugConfigProvider } from '../../../shared/sam/debugger/awsSamDebugger'
+import sinon from 'sinon'
+import * as nls from 'vscode-nls'
+
+const localize = nls.loadMessageBundle()
 
 function createMockWorkspaceFolder(uriPath: string): vscode.WorkspaceFolder {
     return {
@@ -552,7 +556,7 @@ describe('SamInvokeWebview', () => {
             }
             templateRegistryStub.resolves({ items: [mockTemplate] })
             createQuickPickStub.returns({})
-            promptUserStub.resolves(undefined) // No selection made
+            promptUserStub.resolves(undefined)
             verifySinglePickerOutputStub.returns(undefined)
 
             const result = await samInvokeWebview.getTemplate()
@@ -613,6 +617,219 @@ describe('SamInvokeWebview', () => {
             await samInvokeWebview.invokeLaunchConfig(mockConfig)
 
             assert(SamDebugConfigProviderStub.called)
+        })
+    })
+    describe('saveLaunchConfig', function () {
+        let sandbox: sinon.SinonSandbox
+        let mockFolder: vscode.WorkspaceFolder
+        let mockUri: vscode.Uri
+        let getUriFromLaunchConfigStub: sinon.SinonStub
+        let workspaceFoldersStub: sinon.SinonStub
+        let getUriStub: sinon.SinonStub
+        let launchConfigurationsStub: sinon.SinonStub
+        let getLaunchConfigQuickPickItemsStub: sinon.SinonStub
+        let editDebugConfigurationStub: sinon.SinonStub
+        let verifySinglePickerOutputStub: sinon.SinonStub
+        let createQuickPickStub: sinon.SinonStub
+
+        this.beforeEach(async function () {
+            sandbox = sinon.createSandbox()
+            mockFolder = createMockWorkspaceFolder('/mock-path')
+            mockUri = mockFolder.uri
+
+            getUriStub = sandbox.stub(samInvokeWebview as any, 'getUriFromLaunchConfig')
+            getUriFromLaunchConfigStub = sinon.stub()
+            sandbox.stub(vscode.workspace, 'getWorkspaceFolder').returns(mockFolder)
+            workspaceFoldersStub = sandbox.stub(vscode.workspace, 'workspaceFolders')
+            launchConfigurationsStub = sandbox.stub(LaunchConfiguration.prototype, 'getDebugConfigurations')
+            editDebugConfigurationStub = sandbox.stub(LaunchConfiguration.prototype, 'editDebugConfiguration')
+            getLaunchConfigQuickPickItemsStub = sandbox.stub()
+
+            verifySinglePickerOutputStub = sandbox.stub(picker, 'verifySinglePickerOutput')
+            createQuickPickStub = sandbox.stub(picker, 'createQuickPick')
+        })
+        afterEach(() => {
+            sandbox.restore()
+        })
+
+        it('should create quick pick with correct items', async () => {
+            getUriFromLaunchConfigStub.resolves(mockUri)
+            getLaunchConfigQuickPickItemsStub.resolves([{ label: 'Existing Config', index: 0 }])
+            verifySinglePickerOutputStub.returns(undefined)
+            createQuickPickStub.returns({})
+            sandbox.stub(picker, 'promptUser').resolves([])
+
+            sandbox.replace(samInvokeWebview as any, 'getLaunchConfigQuickPickItems', getLaunchConfigQuickPickItemsStub)
+            sandbox.replace(samInvokeWebview as any, 'getUriFromLaunchConfig', getUriFromLaunchConfigStub)
+
+            await samInvokeWebview.saveLaunchConfig(mockConfig)
+            assert(getLaunchConfigQuickPickItemsStub.called)
+
+            sinon.assert.calledWith(
+                createQuickPickStub,
+                sinon.match({
+                    items: sinon.match.array.deepEquals([
+                        {
+                            label: addCodiconToString(
+                                'add',
+                                localize(
+                                    'AWS.command.addSamDebugConfiguration',
+                                    'Add Local Invoke and Debug Configuration'
+                                )
+                            ),
+                            index: -1,
+                            alwaysShow: true,
+                        },
+                        { label: 'Existing Config', index: 0 },
+                    ]),
+                })
+            )
+        })
+        describe('Save Launch Config with no URI', () => {
+            let promptUserStub: sinon.SinonStub
+            let testConfig: any
+            beforeEach(() => {
+                const testConfig = {
+                    label: '$(add) Add Local Invoke and Debug Configuration',
+                    index: -1,
+                    alwaysShow: true,
+                }
+                // Create a stub for the promptUser function
+                promptUserStub = sinon.stub(picker, 'promptUser')
+
+                // Configure the stub to return the desired array
+                promptUserStub.resolves([testConfig])
+            })
+            afterEach(() => {
+                // Restore the original function after each test
+                promptUserStub.restore()
+            })
+            it('should not save launch config', async () => {
+                workspaceFoldersStub.value([mockFolder])
+                sandbox.stub(extensionUtilities, 'isCloud9').returns(false)
+                sandbox.replace(samInvokeWebview as any, 'getUriFromLaunchConfig', getUriFromLaunchConfigStub)
+                const launchConfigItems = launchConfigurationsStub.resolves([])
+                getUriFromLaunchConfigStub.resolves(mockUri)
+
+                const mockPickerItems = [
+                    {
+                        label: addCodiconToString(
+                            'add',
+                            localize('AWS.command.addSamDebugConfiguration', 'Add Local Invoke and Debug Configuration')
+                        ),
+                        index: -1,
+                        alwaysShow: true,
+                    },
+                    launchConfigItems,
+                ]
+                verifySinglePickerOutputStub.resolves([testConfig])
+                getLaunchConfigQuickPickItemsStub.resolves(mockPickerItems)
+                sandbox.replace(
+                    samInvokeWebview as any,
+                    'getLaunchConfigQuickPickItems',
+                    getLaunchConfigQuickPickItemsStub
+                )
+                sinon.stub(input, 'createInputBox').resolves('testConfig')
+                const updateStub = sandbox.stub(vscode.workspace, 'updateWorkspaceFolders')
+
+                await samInvokeWebview.saveLaunchConfig(mockConfig)
+                assert(getLaunchConfigQuickPickItemsStub.called)
+                assert(verifySinglePickerOutputStub.called)
+                assert(updateStub.notCalled)
+            })
+        })
+
+        describe('Save Launch Config with no URI', () => {
+            it('should not save if no URI is found', async () => {
+                getUriStub.resolves(undefined)
+                await samInvokeWebview.saveLaunchConfig(mockConfig)
+                assert(launchConfigurationsStub.notCalled)
+            })
+        })
+        describe('Save Launch Config', () => {
+            let promptUserStub: sinon.SinonStub
+            let mockSavedConfig: AwsSamDebuggerConfiguration
+
+            beforeEach(() => {
+                mockSavedConfig = {
+                    type: 'aws-sam',
+                    request: 'direct-invoke',
+                    invokeTarget: {
+                        target: 'template',
+                        logicalId: 'HelloWorldFunction',
+                        templatePath: 'template.yaml',
+                    },
+                    lambda: {
+                        runtime: 'python3.9',
+                    },
+                    sam: {
+                        containerBuild: false,
+                        localArguments: ['-e', '/tester/events.json'],
+                        skipNewImageCheck: false,
+                    },
+                    api: {
+                        path: 'asdad',
+                        httpMethod: 'get',
+                    },
+                    name: 'tester',
+                }
+                // Create a stub for the promptUser function
+                promptUserStub = sinon.stub(picker, 'promptUser')
+
+                // Configure the stub to return the desired array
+                promptUserStub.resolves([mockSavedConfig])
+            })
+
+            afterEach(() => {
+                // Restore the original function after each test
+                promptUserStub.restore()
+            })
+
+            it('should save launch config', async () => {
+                workspaceFoldersStub.value([mockFolder])
+                sandbox.stub(extensionUtilities, 'isCloud9').returns(false)
+                getUriFromLaunchConfigStub.resolves(mockUri)
+                sandbox.replace(samInvokeWebview as any, 'getUriFromLaunchConfig', getUriFromLaunchConfigStub)
+                const launchConfigItems = launchConfigurationsStub.resolves([
+                    {
+                        config: mockSavedConfig,
+                        index: 0,
+                        label: 'tester',
+                    },
+                ])
+                const mockPickerItems = [
+                    {
+                        label: addCodiconToString(
+                            'add',
+                            localize('AWS.command.addSamDebugConfiguration', 'Add Local Invoke and Debug Configuration')
+                        ),
+                        index: -1,
+                        alwaysShow: true,
+                    },
+                    launchConfigItems,
+                ]
+                verifySinglePickerOutputStub.resolves([
+                    {
+                        label: 'tester',
+                        index: 0,
+                        alwaysShow: true,
+                    },
+                ])
+                getLaunchConfigQuickPickItemsStub.resolves(mockPickerItems)
+                sandbox.replace(
+                    samInvokeWebview as any,
+                    'getLaunchConfigQuickPickItems',
+                    getLaunchConfigQuickPickItemsStub
+                )
+                const updateStub = sandbox.stub(vscode.workspace, 'updateWorkspaceFolders')
+
+                await samInvokeWebview.saveLaunchConfig(mockSavedConfig)
+
+                assert(getLaunchConfigQuickPickItemsStub.called)
+                assert(editDebugConfigurationStub.called)
+                assert(verifySinglePickerOutputStub.called)
+                assert(updateStub.notCalled)
+            })
         })
     })
 })
