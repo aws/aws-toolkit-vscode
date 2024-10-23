@@ -94,7 +94,7 @@ export class CrashMonitoring {
             const state = await crashMonitoringStateFactory() // can throw
             return (this.#instance ??= new CrashMonitoring(
                 state,
-                DevSettings.instance.get('crashCheckInterval', 1000 * 60 * 10), // check every 10 minutes
+                DevSettings.instance.get('crashCheckInterval', 1000 * 60 * 30), // check every 30 minutes
                 isDevMode,
                 isAutomation(),
                 devModeLogger
@@ -123,7 +123,9 @@ export class CrashMonitoring {
             emitFailure({ functionName: 'start', error })
             try {
                 await this.cleanup()
-            } catch {}
+            } catch (e) {
+                emitFailure({ functionName: 'startErrorHandler', error: e })
+            }
 
             // Surface errors during development, otherwise it can be missed.
             if (this.isDevMode) {
@@ -183,9 +185,12 @@ class Heartbeat {
                 await this.state.sendHeartbeat()
             } catch (e) {
                 try {
+                    // Since something went wrong cleanup everything to prevent false crash report
                     await this.shutdown()
                     emitFailure({ functionName: 'sendHeartbeatInterval', error: e })
-                } catch {}
+                } catch (e) {
+                    emitFailure({ functionName: 'sendHeartbeatIntervalErrorHandler', error: e })
+                }
 
                 if (this.isDevMode) {
                     throw e
@@ -445,7 +450,10 @@ export class FileSystemState {
 
         // Clear the state if the user did something like a computer restart
         if (await this.deps.isStateStale()) {
-            await this.clearState()
+            await telemetry.function_call.run(async (span) => {
+                span.record({ functionName: 'handleComputerRestart', className })
+                await this.clearState()
+            })
         }
 
         await withFailCtx('init', () => fs.mkdir(this.stateDirPath))
@@ -455,13 +463,20 @@ export class FileSystemState {
     public async sendHeartbeat() {
         try {
             const func = async () => {
-                await fs.writeFile(
-                    this.makeStateFilePath(this.extId),
-                    JSON.stringify({ ...this.ext, lastHeartbeat: this.deps.now() }, undefined, 4)
-                )
+                const filePath = this.makeStateFilePath(this.extId)
+                const lastHeartbeat = this.deps.now()
+
+                await fs.writeFile(filePath, JSON.stringify({ ...this.ext, lastHeartbeat }, undefined, 4))
+
                 this.deps.devLogger?.debug(
                     `crashMonitoring: HEARTBEAT pid ${this.deps.pid} + sessionId: ${this.deps.sessionId.slice(0, 8)}-...`
                 )
+
+                // Sanity check to verify the write is accessible immediately after
+                const heartbeatData = JSON.parse(await fs.readFileText(filePath)) as ExtInstanceHeartbeat
+                if (heartbeatData.lastHeartbeat !== lastHeartbeat) {
+                    throw new CrashMonitoringError('Heartbeat write validation failed', { code: className })
+                }
             }
             const funcWithCtx = () => withFailCtx('sendHeartbeatState', func)
             const funcWithRetries = withRetries(funcWithCtx, { maxRetries: 8, delay: 100, backoff: 2 })
