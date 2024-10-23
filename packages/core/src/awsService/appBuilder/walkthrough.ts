@@ -41,7 +41,7 @@ interface IServerlessLandProject {
     handler?: string
 }
 
-const appMap = new Map<string, IServerlessLandProject>([
+export const appMap = new Map<string, IServerlessLandProject>([
     ['APIdotnet', { asset: 'apigw-rest-api-lambda-dotnet.zip', handler: 'src/HelloWorld/Function.cs' }],
     ['APInode', { asset: 'apigw-rest-api-lambda-node.zip', handler: 'hello_world/app.mjs' }],
     ['APIpython', { asset: 'apigw-rest-api-lambda-python.zip', handler: 'hello_world/app.py' }],
@@ -52,8 +52,8 @@ const appMap = new Map<string, IServerlessLandProject>([
             handler: 'HelloWorldFunction/src/main/java/helloworld/App.java',
         },
     ],
-    ['S3dotnet', { asset: 's3-lambda-dotnet.zip', handler: 'ImageResize/Function.cs' }],
-    ['S3node', { asset: 's3-lambda.zip', handler: 'src/app.js' }],
+    ['S3dotnet', { asset: 's3-lambda-resizing-dotnet.zip', handler: 'ImageResize/Function.cs' }],
+    ['S3node', { asset: 's3-lambda-resizing-node.zip', handler: 'src/app.js' }],
     ['S3python', { asset: 's3-lambda-resizing-python.zip', handler: 'src/app.py' }],
     [
         'S3java',
