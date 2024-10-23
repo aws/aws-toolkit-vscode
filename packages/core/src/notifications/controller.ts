@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import { ToolkitError } from '../shared/errors'
 import globals from '../shared/extensionGlobals'
 import { globalKey } from '../shared/globalState'
-import { NotificationsState, NotificationType, NotificationData, ToolkitNotification } from './types'
+import { NotificationsState, NotificationsStateConstructor, NotificationType, ToolkitNotification } from './types'
 import { HttpResourceFetcher } from '../shared/resourcefetcher/httpResourceFetcher'
 import { getLogger } from '../shared/logger/logger'
 import { NotificationsNode } from './panelNode'
@@ -16,6 +16,7 @@ import { RuleEngine } from './rules'
 import { TreeNode } from '../shared/treeview/resourceTreeDataProvider'
 import { withRetries } from '../shared/utilities/functionUtils'
 import { FileResourceFetcher } from '../shared/resourcefetcher/fileResourceFetcher'
+import { isAmazonQ } from '../shared/extensionUtilities'
 
 const startUpEndpoint = 'https://idetoolkits-hostedfiles.amazonaws.com/Notifications/VSCode/startup/1.x.json'
 const emergencyEndpoint = 'https://idetoolkits-hostedfiles.amazonaws.com/Notifications/VSCode/emergency/1.x.json'
@@ -43,27 +44,21 @@ export class NotificationsController {
 
     /** Internal memory state that is written to global state upon modification. */
     private readonly state: NotificationsState
-    private readonly notificationsNode: NotificationsNode
 
     static #instance: NotificationsController | undefined
 
-    constructor(extPrefix: 'amazonq' | 'toolkit', node: NotificationsNode) {
+    constructor(private readonly notificationsNode: NotificationsNode) {
         if (!NotificationsController.#instance) {
-            registerDismissCommand(extPrefix)
+            registerDismissCommand()
         }
         NotificationsController.#instance = this
 
-        this.storageKey = `aws.${extPrefix}.notifications`
-        this.notificationsNode = node
-
-        this.state = globals.globalState.get(this.storageKey) ?? {
-            startUp: {} as NotificationData,
-            emergency: {} as NotificationData,
+        this.storageKey = 'aws.notifications'
+        this.state = globals.globalState.tryGet<NotificationsState>(this.storageKey, NotificationsStateConstructor, {
+            startUp: {},
+            emergency: {},
             dismissed: [],
-        }
-        this.state.startUp = this.state.startUp ?? {}
-        this.state.emergency = this.state.emergency ?? {}
-        this.state.dismissed = this.state.dismissed ?? []
+        })
     }
 
     public pollForStartUp(ruleEngine: RuleEngine) {
@@ -78,7 +73,7 @@ export class NotificationsController {
         try {
             await this.fetchNotifications(category)
         } catch (err: any) {
-            getLogger().error(`Unable to fetch %s notifications: %s`, category, err)
+            getLogger('notifications').error(`Unable to fetch %s notifications: %s`, category, err)
         }
 
         await this.displayNotifications(ruleEngine)
@@ -113,7 +108,7 @@ export class NotificationsController {
      * hide all notifications.
      */
     public async dismissNotification(notificationId: string) {
-        getLogger().debug('Dismissing notification: %s', notificationId)
+        getLogger('notifications').debug('Dismissing notification: %s', notificationId)
         this.state.dismissed.push(notificationId)
         await this.writeState()
 
@@ -126,17 +121,17 @@ export class NotificationsController {
     private async fetchNotifications(category: NotificationType) {
         const response = _useLocalFiles ? await this.fetchLocally(category) : await this.fetchRemotely(category)
         if (!response.content) {
-            getLogger().verbose('No new notifications for category: %s', category)
+            getLogger('notifications').verbose('No new notifications for category: %s', category)
             return
         }
 
-        getLogger().verbose('ETAG has changed for notifications category: %s', category)
+        getLogger('notifications').verbose('ETAG has changed for notifications category: %s', category)
 
         this.state[category].payload = JSON.parse(response.content)
         this.state[category].eTag = response.eTag
         await this.writeState()
 
-        getLogger().verbose(
+        getLogger('notifications').verbose(
             "Fetched notifications JSON for category '%s' with schema version: %s. There were %d notifications.",
             category,
             this.state[category].payload?.schemaVersion,
@@ -169,7 +164,7 @@ export class NotificationsController {
         const uri = category === 'startUp' ? startUpLocalPath : emergencyLocalPath
         const content = await new FileResourceFetcher(globals.context.asAbsolutePath(uri)).get()
 
-        getLogger().verbose('Fetched notifications locally for category: %s at path: %s', category, uri)
+        getLogger('notifications').verbose('Fetched notifications locally for category: %s at path: %s', category, uri)
         return {
             content,
             eTag: 'LOCAL_PATH',
@@ -180,7 +175,7 @@ export class NotificationsController {
      * Write the latest memory state to global state.
      */
     private async writeState() {
-        getLogger().debug('NotificationsController: Updating notifications state at %s', this.storageKey)
+        getLogger('notifications').debug('NotificationsController: Updating notifications state at %s', this.storageKey)
 
         // Clean out anything in 'dismissed' that doesn't exist anymore.
         const notifications = new Set(
@@ -203,8 +198,8 @@ export class NotificationsController {
     }
 }
 
-function registerDismissCommand(extPrefix: string) {
-    const name = `_aws.${extPrefix}.notifications.dismiss`
+function registerDismissCommand() {
+    const name = isAmazonQ() ? '_aws.amazonq.notifications.dismiss' : '_aws.toolkit.notifications.dismiss'
 
     globals.context.subscriptions.push(
         Commands.register(name, async (node: TreeNode) => {
@@ -216,7 +211,7 @@ function registerDismissCommand(extPrefix: string) {
 
                 await NotificationsController.instance.dismissNotification(notification.id)
             } else {
-                getLogger().error(`${name}: Cannot dismiss notification: item is not a vscode.TreeItem`)
+                getLogger('notifications').error(`${name}: Cannot dismiss notification: item is not a vscode.TreeItem`)
             }
         })
     )
@@ -229,5 +224,6 @@ function registerDismissCommand(extPrefix: string) {
 const _useLocalFiles = false
 export const _useLocalFilesCheck = _useLocalFiles // export for testing
 
+// Paths relative to current extension
 const startUpLocalPath = '../core/src/test/notifications/resources/startup/1.x.json'
 const emergencyLocalPath = '../core/src/test/notifications/resources/emergency/1.x.json'

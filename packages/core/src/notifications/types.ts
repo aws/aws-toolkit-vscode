@@ -5,6 +5,7 @@
 
 import * as vscode from 'vscode'
 import { EnvType, OperatingSystem } from '../shared/telemetry/util'
+import { TypeConstructor } from '../shared/utilities/typeConstructors'
 
 /** Types of information that we can use to determine whether to show a notification or not. */
 export type Criteria =
@@ -86,6 +87,23 @@ export type NotificationsState = {
 
     // Util
     dismissed: string[]
+}
+
+export const NotificationsStateConstructor: TypeConstructor<NotificationsState> = (v: unknown): NotificationsState => {
+    if (v && typeof v === 'object' && isNotificationsState(v as Partial<NotificationsState>)) {
+        return v as NotificationsState
+    }
+    throw new Error('Cannot cast to NotificationsState.')
+}
+
+function isNotificationsState(v: Partial<NotificationsState>): v is NotificationsState {
+    const requiredKeys: (keyof NotificationsState)[] = ['startUp', 'emergency', 'dismissed']
+    return (
+        requiredKeys.every((key) => key in v) &&
+        Array.isArray(v.dismissed) &&
+        typeof v.startUp === 'object' &&
+        typeof v.emergency === 'object'
+    )
 }
 
 export type NotificationType = keyof Omit<NotificationsState, 'dismissed'>

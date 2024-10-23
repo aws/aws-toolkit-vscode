@@ -32,7 +32,7 @@ export type globalKey =
     | 'aws.amazonq.hasShownWalkthrough'
     | 'aws.amazonq.showTryChatCodeLens'
     | 'aws.amazonq.notifications'
-    | 'aws.toolkit.notifications'
+    | 'aws.notifications'
     | 'aws.downloadPath'
     | 'aws.lastTouchedS3Folder'
     | 'aws.lastUploadedToS3Folder'

@@ -10,6 +10,7 @@ import { getIcon } from '../shared/icons'
 import { contextKey, setContext } from '../shared/vscode/setContext'
 import { NotificationType, ToolkitNotification } from './types'
 import { ToolkitError } from '../shared/errors'
+import { isAmazonQ } from '../shared/extensionUtilities'
 
 /**
  * Controls the "Notifications" side panel/tree in each extension. It takes purely UX actions
@@ -37,17 +38,25 @@ export class NotificationsNode implements TreeNode {
 
     static #instance: NotificationsNode
 
-    constructor(extPrefix: 'amazonq' | 'toolkit') {
+    constructor() {
         NotificationsNode.#instance = this
 
         this.openNotificationCmd = Commands.register(
-            `_aws.${extPrefix}.notifications.open`,
+            isAmazonQ() ? '_aws.amazonq.notifications.open' : '_aws.toolkit.notifications.open',
             async (n: ToolkitNotification) => this.openNotification(n)
         )
-        this.focusCmdStr = `aws.${extPrefix}.notifications.focus`
-        this.showContextStr = `aws.${extPrefix}.notifications.show`
-        this.startUpNodeContext = `${extPrefix}NotificationStartUp`
-        this.emergencyNodeContext = `${extPrefix}NotificationEmergency`
+
+        if (isAmazonQ()) {
+            this.focusCmdStr = 'aws.amazonq.notifications.focus'
+            this.showContextStr = 'aws.amazonq.notifications.show'
+            this.startUpNodeContext = 'amazonqNotificationStartUp'
+            this.emergencyNodeContext = 'amazonqNotificationEmergency'
+        } else {
+            this.focusCmdStr = 'aws.toolkit.notifications.focus'
+            this.showContextStr = 'aws.toolkit.notifications.show'
+            this.startUpNodeContext = 'toolkitNotificationStartUp'
+            this.emergencyNodeContext = 'toolkitNotificationEmergency'
+        }
     }
 
     public getTreeItem() {
@@ -73,7 +82,7 @@ export class NotificationsNode implements TreeNode {
 
     public getChildren() {
         const buildNode = (n: ToolkitNotification, type: NotificationType) => {
-            return this.openNotificationCmd!.build(n).asTreeNode({
+            return this.openNotificationCmd.build(n).asTreeNode({
                 label: n.uiRenderInstructions.content['en-US'].title,
                 iconPath: type === 'startUp' ? getIcon('vscode-question') : getIcon('vscode-alert'),
                 contextValue: type === 'startUp' ? this.startUpNodeContext : this.emergencyNodeContext,
@@ -103,7 +112,6 @@ export class NotificationsNode implements TreeNode {
      * Only dismisses startup notifications.
      */
     public dismissStartUpNotification(id: string) {
-        // Only startup notifications can be dismissed.
         this.startUpNotifications = this.startUpNotifications.filter((n) => n.id !== id)
         this.refresh()
     }
@@ -118,6 +126,8 @@ export class NotificationsNode implements TreeNode {
     /**
      * Fired when a notification is clicked on in the panel. It will run any rendering
      * instructions included in the notification. See {@link ToolkitNotification.uiRenderInstructions}.
+     *
+     * TODO: implement more rendering possibilites.
      */
     private async openNotification(notification: ToolkitNotification) {
         await vscode.window.showTextDocument(

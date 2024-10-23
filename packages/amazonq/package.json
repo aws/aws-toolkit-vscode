@@ -411,7 +411,7 @@
         "commands": [
             {
                 "command": "_aws.amazonq.notifications.dismiss",
-                "title": "%AWS.notifications.dismiss.title%",
+                "title": "%AWS.generic.dismiss%",
                 "category": "%AWS.amazonq.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(remove-close)"

@@ -16,7 +16,7 @@ import { installFakeClock } from '../testUtil'
 import * as FakeTimers from '@sinonjs/fake-timers'
 
 describe('Notifications Controller', function () {
-    const panelNode: NotificationsNode = new NotificationsNode('toolkit')
+    const panelNode: NotificationsNode = new NotificationsNode()
     let controller: NotificationsController
     const ruleEngine: RuleEngine = new RuleEngine({
         ideVersion: '1.83.0',
@@ -60,7 +60,7 @@ describe('Notifications Controller', function () {
 
     beforeEach(async function () {
         panelNode.setNotifications([], [])
-        controller = new NotificationsController('toolkit', panelNode)
+        controller = new NotificationsController(panelNode)
 
         sandbox = sinon.createSandbox()
 

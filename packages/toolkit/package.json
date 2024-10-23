@@ -2053,7 +2053,7 @@
         "commands": [
             {
                 "command": "_aws.toolkit.notifications.dismiss",
-                "title": "%AWS.notifications.dismiss.title%",
+                "title": "%AWS.generic.dismiss%",
                 "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(remove-close)"
