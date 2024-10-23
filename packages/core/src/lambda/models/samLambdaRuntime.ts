@@ -22,6 +22,7 @@ export enum RuntimeFamily {
     DotNet,
     Go,
     Java,
+    Ruby,
 }
 
 export type RuntimePackageType = 'Image' | 'Zip'
@@ -65,6 +66,7 @@ export const javaRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>([
     'java21',
 ])
 export const dotNetRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>(['dotnet6', 'dotnet8'])
+export const rubyRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>(['ruby3.2', 'ruby3.3'])
 
 /**
  * Deprecated runtimes can be found at https://docs.aws.amazon.com/lambda/latest/dg/runtime-support-policy.html
@@ -83,6 +85,8 @@ export const deprecatedRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>([
     'nodejs8.10',
     'nodejs10.x',
     'nodejs12.x',
+    'ruby2.5',
+    'ruby2.7',
 ])
 const defaultRuntimes = ImmutableMap<RuntimeFamily, Runtime>([
     [RuntimeFamily.NodeJS, 'nodejs20.x'],
@@ -90,6 +94,7 @@ const defaultRuntimes = ImmutableMap<RuntimeFamily, Runtime>([
     [RuntimeFamily.DotNet, 'dotnet6'],
     [RuntimeFamily.Go, 'go1.x'],
     [RuntimeFamily.Java, 'java17'],
+    [RuntimeFamily.Ruby, 'ruby3.3'],
 ])
 
 export const samZipLambdaRuntimes: ImmutableSet<Runtime> = ImmutableSet.union([
@@ -163,6 +168,8 @@ export function getFamily(runtime: string): RuntimeFamily {
         return RuntimeFamily.Go
     } else if (javaRuntimes.has(runtime)) {
         return RuntimeFamily.Java
+    } else if (rubyRuntimes.has(runtime)) {
+        return RuntimeFamily.Ruby
     }
     return RuntimeFamily.Unknown
 }
@@ -212,6 +219,10 @@ export function getRuntimeFamily(langId: string): RuntimeFamily {
             return RuntimeFamily.Python
         case 'go':
             return RuntimeFamily.Go
+        case 'java':
+            return RuntimeFamily.Java
+        case 'ruby':
+            return RuntimeFamily.Ruby
         default:
             return RuntimeFamily.Unknown
     }

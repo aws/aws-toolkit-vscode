@@ -33,7 +33,7 @@ const scenarios: TestScenario[] = [
         handler: 'resizer.App::handleRequest',
         codeUri: 'ResizerFunction',
         fileLocation: 'ResizerFunction/src/main/java/resizer/App.java',
-        fileInfo: 'test',
+        fileInfo: 'testjava',
         regex: /App.java/g,
     },
     {
@@ -41,7 +41,7 @@ const scenarios: TestScenario[] = [
         handler: 'ImageResize::ImageResize.Function::FunctionHandler',
         codeUri: 'ImageResize/',
         fileLocation: 'ImageResize/Function.cs',
-        fileInfo: 'test',
+        fileInfo: 'testdotnet',
         regex: /Function.cs/g,
     },
     {
@@ -49,7 +49,7 @@ const scenarios: TestScenario[] = [
         handler: 'app.lambda_handler',
         codeUri: 'hello_world/',
         fileLocation: 'hello_world/app.py',
-        fileInfo: 'test',
+        fileInfo: 'testpython',
         regex: /app.py/g,
     },
     {
@@ -57,8 +57,56 @@ const scenarios: TestScenario[] = [
         handler: 'app.handler',
         codeUri: 'src/',
         fileLocation: 'src/app.js',
-        fileInfo: 'test',
+        fileInfo: 'testnode',
         regex: /app.js/g,
+    },
+    {
+        runtime: 'ruby3.2',
+        handler: 'app.lambda_handler',
+        codeUri: 'hello_world/',
+        fileLocation: 'hello_world/app.rb',
+        fileInfo: 'testruby',
+        regex: /app.rb/g,
+    },
+    {
+        runtime: 'java21',
+        handler: 'resizer.App::handleRequest',
+        codeUri: 'ResizerFunction',
+        fileLocation: 'ResizerFunction/src/foo/bar/main/java/resizer/App.java',
+        fileInfo: 'testjava2',
+        regex: /App.java/g,
+    },
+    {
+        runtime: 'dotnet8',
+        handler: 'ImageResize::ImageResize.Function::FunctionHandler',
+        codeUri: 'ImageResize/src/test',
+        fileLocation: 'ImageResize/src/test/Function.cs',
+        fileInfo: 'testdotnet2',
+        regex: /Function.cs/g,
+    },
+    {
+        runtime: 'python3.12',
+        handler: 'app.foo.bar.lambda_handler',
+        codeUri: 'hello_world/test123',
+        fileLocation: 'hello_world/test123/app/foo/bar.py',
+        fileInfo: 'testpython2',
+        regex: /bar.py/g,
+    },
+    {
+        runtime: 'nodejs20.x',
+        handler: 'app.foo.bar.handler',
+        codeUri: 'src/test123',
+        fileLocation: 'src/test123/app/foo/bar.js',
+        fileInfo: 'testnode2',
+        regex: /bar.js/g,
+    },
+    {
+        runtime: 'ruby3.3',
+        handler: 'app/foo/bar.lambda_handler',
+        codeUri: 'hello_world/test456',
+        fileLocation: 'hello_world/test456/app/foo/bar.rb',
+        fileInfo: 'testruby2',
+        regex: /bar.rb/g,
     },
 ]
 
@@ -165,6 +213,43 @@ describe('AppBuilder Utils', function () {
                     await assertTextEditorContains(scenario.fileInfo)
                 })
             }
+
+            it(`should warn for multiple java handler found`, async function () {
+                const rNode = new ResourceNode(
+                    {
+                        samTemplateUri: vscode.Uri.file(path.join(tempFolder, 'template.yaml')),
+                        workspaceFolder: workspace,
+                        projectRoot: vscode.Uri.file(tempFolder),
+                    },
+                    {
+                        Id: 'MyFunction',
+                        Type: SERVERLESS_FUNCTION_TYPE,
+                        Runtime: 'java21',
+                        Handler: 'resizer.App::handleRequest',
+                        CodeUri: 'ResizerFunction',
+                    }
+                )
+                // When 2 java handler with right name under code URI
+                await fs.mkdir(
+                    path.join(tempFolder, ...path.dirname('ResizerFunction/src/main/java/resizer/App.java').split('/'))
+                )
+                await fs.writeFile(
+                    path.join(tempFolder, ...'ResizerFunction/src/main/java/resizer/App.java'.split('/')),
+                    'testjava'
+                )
+                await fs.mkdir(
+                    path.join(tempFolder, ...path.dirname('ResizerFunction/src/main/java/resizer2/App.java').split('/'))
+                )
+                await fs.writeFile(
+                    path.join(tempFolder, ...'ResizerFunction/src/main/java/resizer2/App.java'.split('/')),
+                    'testjava'
+                )
+                // Then should warn
+                getTestWindow().onDidShowMessage((msg) =>
+                    assert(msg.assertWarn('Multiple handler files found with name App.java"'))
+                )
+                await runOpenHandler(rNode)
+            })
         }),
         describe('open template', function () {
             let sandbox: sinon.SinonSandbox
