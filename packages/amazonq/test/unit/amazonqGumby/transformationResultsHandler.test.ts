@@ -12,10 +12,11 @@ import { getTestResourceFilePath } from './amazonQGumbyUtil'
 import { fs } from 'aws-core-vscode/shared'
 
 describe('DiffModel', function () {
-    let parsedTestDescription: PatchInfo
+    let parsedTestDescriptions: PatchInfo[]
     beforeEach(() => {
-        parsedTestDescription = JSON.parse(
-            '{"name": "Added file", "fileName": "resources/files/addedFile.diff", "isSuccessful": true}'
+        const fs = require('fs')
+        parsedTestDescriptions = JSON.parse(
+            fs.readFileSync(getTestResourceFilePath('resources/files/diff.json'), 'utf-8')
         )
     })
 
@@ -36,16 +37,15 @@ describe('DiffModel', function () {
 
             return true
         })
-
         testDiffModel.parseDiff(
             getTestResourceFilePath('resources/files/addedFile.diff'),
             workspacePath,
-            parsedTestDescription
+            parsedTestDescriptions[0]
         )
 
         assert.strictEqual(testDiffModel.patchFileNodes.length, 1)
         assert.strictEqual(testDiffModel.patchFileNodes[0].children.length, 1)
-        assert.strictEqual(testDiffModel.patchFileNodes[0].patchFilePath, parsedTestDescription.name)
+        assert.strictEqual(testDiffModel.patchFileNodes[0].patchFilePath, parsedTestDescriptions[0].name)
         const change = testDiffModel.patchFileNodes[0].children[0]
 
         assert.strictEqual(change instanceof AddedChangeNode, true)
@@ -66,12 +66,39 @@ describe('DiffModel', function () {
         testDiffModel.parseDiff(
             getTestResourceFilePath('resources/files/modifiedFile.diff'),
             workspacePath,
-            parsedTestDescription
+            parsedTestDescriptions[0]
         )
 
         assert.strictEqual(testDiffModel.patchFileNodes.length, 1)
         assert.strictEqual(testDiffModel.patchFileNodes[0].children.length, 1)
-        assert.strictEqual(testDiffModel.patchFileNodes[0].patchFilePath, parsedTestDescription.name)
+        assert.strictEqual(testDiffModel.patchFileNodes[0].patchFilePath, parsedTestDescriptions[0].name)
+        const change = testDiffModel.patchFileNodes[0].children[0]
+
+        assert.strictEqual(change instanceof ModifiedChangeNode, true)
+
+        await fs.delete(path.join(workspacePath, 'README.md'), { recursive: true })
+    })
+
+    it('WHEN parsing a diff patch where diff.json is not present and a file was modified THEN returns an array representing the modified file', async function () {
+        const testDiffModel = new DiffModel()
+
+        const workspacePath = os.tmpdir()
+
+        sinon.replace(fs, 'exists', async (path) => true)
+
+        await fs.writeFile(
+            path.join(workspacePath, 'README.md'),
+            'This guide walks you through using Gradle to build a simple Java project.'
+        )
+
+        testDiffModel.parseDiff(getTestResourceFilePath('resources/files/modifiedFile.diff'), workspacePath, undefined)
+
+        assert.strictEqual(testDiffModel.patchFileNodes.length, 1)
+        assert.strictEqual(testDiffModel.patchFileNodes[0].children.length, 1)
+        assert.strictEqual(
+            testDiffModel.patchFileNodes[0].patchFilePath,
+            getTestResourceFilePath('resources/files/modifiedFile.diff')
+        )
         const change = testDiffModel.patchFileNodes[0].children[0]
 
         assert.strictEqual(change instanceof ModifiedChangeNode, true)
