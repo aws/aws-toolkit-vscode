@@ -131,8 +131,8 @@ function getDeletedFileInfos(deletedFiles: string[], workspaceFolders: CurrentWs
 }
 
 abstract class CodeGenBase {
-    private pollCount = 180
-    private requestDelay = 10000
+    private pollCount = 360
+    private requestDelay = 5000
     readonly tokenSource: vscode.CancellationTokenSource
     public phase: SessionStatePhase = DevPhase.CODEGEN
     public readonly conversationId: string
