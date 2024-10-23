@@ -60,6 +60,7 @@ module.exports = (env, argv) => {
                 assert: require.resolve('assert'),
                 fs: false,
                 crypto: require.resolve('crypto-browserify'),
+                net: require.resolve('net-browserify'),
                 'fs-extra': false,
                 perf_hooks: false, // should be using globalThis.performance instead
 

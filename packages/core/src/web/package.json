@@ -7,7 +7,8 @@
         "os-browserify": "^0.3.0",
         "path-browserify": "^1.0.1",
         "process": "^0.11.10",
-        "stream-browserify": "^3.0.0"
+        "stream-browserify": "^3.0.0",
+        "net-browserify": "^0.2.4"
     },
     "devDependencies": {
         "assert": "^2.1.0"
