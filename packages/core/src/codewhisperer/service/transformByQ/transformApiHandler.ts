@@ -16,6 +16,7 @@ import {
     jobPlanProgress,
     sessionJobHistory,
     StepProgress,
+    TransformationType,
     transformByQState,
     TransformByQStatus,
     TransformByQStoppedError,
@@ -212,7 +213,7 @@ export async function uploadPayload(payloadFileName: string, uploadContext?: Upl
         transformByQState.setJobId(encodeHTML(response.uploadId))
     }
     jobPlanProgress['uploadCode'] = StepProgress.Succeeded
-    if (transformByQState.getSchema()) {
+    if (transformByQState.getTransformationType() === TransformationType.SQL_CONVERSION) {
         // if doing a SQL conversion, we don't build the code, so mark this step as succeeded immediately so that next step renders
         jobPlanProgress['buildCode'] = StepProgress.Succeeded
     }
