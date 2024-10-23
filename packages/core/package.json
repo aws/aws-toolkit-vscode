@@ -1397,6 +1397,11 @@
                     "command": "aws.openInApplicationComposer",
                     "when": "isFileSystemResource && !(resourceFilename =~ /^.*\\.tc\\.json$/) && resourceFilename =~ /^.*\\.(json|yml|yaml|template)$/",
                     "group": "z_aws@1"
+                },
+                {
+                    "command": "aws.stepfunctions.openWithWorkflowStudio",
+                    "when": "isFileSystemResource && resourceFilename =~ /^.*\\.asl\\.(json|yml|yaml)$/",
+                    "group": "z_aws@1"
                 }
             ],
             "view/item/context": [
@@ -3573,6 +3578,16 @@
             {
                 "command": "aws.newThreatComposerFile",
                 "title": "%AWS.command.threatComposer.newFile%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.stepfunctions.openWithWorkflowStudio",
+                "title": "%AWS.command.stepFunctions.openWithWorkflowStudio%",
                 "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {

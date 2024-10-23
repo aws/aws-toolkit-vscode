@@ -144,6 +144,13 @@ function initializeCodeLens(context: vscode.ExtensionContext) {
         public async provideCodeLenses(document: vscode.TextDocument): Promise<vscode.CodeLens[]> {
             const topOfDocument = new vscode.Range(0, 0, 0, 0)
 
+            const openCustomEditorCommand: vscode.Command = {
+                command: 'aws.stepfunctions.switchToWorkflowStudio',
+                title: localize('AWS.command.stepFunctions.openWithWorkflowStudio', 'Open with Workflow Studio'),
+                arguments: [document.uri],
+            }
+            const openCustomEditor = new vscode.CodeLens(topOfDocument, openCustomEditorCommand)
+
             const renderCodeLens = previewStateMachineCommand.build().asCodeLens(topOfDocument, {
                 title: localize('AWS.stepFunctions.render', 'Render graph'),
             })
@@ -155,9 +162,9 @@ function initializeCodeLens(context: vscode.ExtensionContext) {
                 }
                 const publishCodeLens = new vscode.CodeLens(topOfDocument, publishCommand)
 
-                return [publishCodeLens, renderCodeLens]
+                return [openCustomEditor, publishCodeLens, renderCodeLens]
             } else {
-                return [renderCodeLens]
+                return [openCustomEditor, renderCodeLens]
             }
         }
     }
