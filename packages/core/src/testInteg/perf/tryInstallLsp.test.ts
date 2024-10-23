@@ -10,7 +10,9 @@ import path from 'path'
 import { LspController } from '../../amazonq'
 import { fs, getRandomString, globals } from '../../shared'
 import { createTestWorkspace } from '../../test/testUtil'
-import { performanceTest } from '../../shared/performance/performance'
+import { getEqualOSTestOptions, performanceTest } from '../../shared/performance/performance'
+import { getFsCallsUpperBound } from './utilities'
+import { FileSystem } from '../../shared/fs/fs'
 
 // fakeFileContent is matched to fakeQServerContent based on hash.
 const fakeHash = '4eb2865c8f40a322aa04e17d8d83bdaa605d6f1cb363af615240a5442a010e0aef66e21bcf4c88f20fabff06efe8a214'
@@ -31,7 +33,7 @@ const fakeNodeContent = {
     serverVersion: '1.1.1',
 }
 
-function createStubs(numberOfFiles: number, fileSize: number) {
+function createStubs(numberOfFiles: number, fileSize: number): sinon.SinonSpiedInstance<FileSystem> {
     // Avoid making HTTP request or mocking giant manifest, stub what we need directly from request.
     sinon.stub(LspController.prototype, 'fetchManifest')
     // Directly feed the runtime specifications.
@@ -41,8 +43,11 @@ function createStubs(numberOfFiles: number, fileSize: number) {
     sinon.stub(LspController.prototype, '_download').callsFake(getFakeDownload(numberOfFiles, fileSize))
     // Hard code the hash since we are creating files on the spot, whose hashes can't be predicted.
     sinon.stub(LspController.prototype, 'getFileSha384').resolves(fakeHash)
-    // Don't allow tryInstallLsp to move runtimes out of temporary folder.
-    sinon.stub(fs, 'rename')
+    const fsSpy = sinon.spy(fs)
+    fsSpy.rename.restore()
+    // Don't allow tryInstallLsp to move runtimes out of temporary folder
+    sinon.stub(fsSpy, 'rename')
+    return fsSpy
 }
 
 /**
@@ -66,40 +71,26 @@ const getFakeDownload = function (numberOfFiles: number, fileSize: number) {
     }
 }
 
-function performanceTestWrapper(numFiles: number, fileSize: number) {
+function performanceTestWrapper(numFiles: number, fileSize: number, message: string) {
     return performanceTest(
-        {
-            testRuns: 10,
-            linux: {
-                userCpuUsage: 100,
-                systemCpuUsage: 35,
-                heapTotal: 6,
-                duration: 15,
-            },
-            darwin: {
-                userCpuUsage: 100,
-                systemCpuUsage: 35,
-                heapTotal: 6,
-                duration: 15,
-            },
-            win32: {
-                userCpuUsage: 100,
-                systemCpuUsage: 35,
-                heapTotal: 6,
-                duration: 15,
-            },
-        },
-        'many small files in zip',
+        getEqualOSTestOptions({
+            userCpuUsage: 150,
+            systemCpuUsage: 35,
+            heapTotal: 6,
+            duration: 15,
+        }),
+        message,
         function () {
             return {
                 setup: async () => {
-                    createStubs(numFiles, fileSize)
+                    return createStubs(numFiles, fileSize)
                 },
                 execute: async () => {
                     return await LspController.instance.tryInstallLsp(globals.context)
                 },
-                verify: async (_setup: any, result: boolean) => {
+                verify: async (fsSpy: sinon.SinonSpiedInstance<FileSystem>, result: boolean) => {
                     assert.ok(result)
+                    assert.ok(getFsCallsUpperBound(fsSpy) <= 6 * numFiles)
                 },
             }
         }
@@ -111,7 +102,7 @@ describe('tryInstallLsp', function () {
         sinon.restore()
     })
     describe('performance tests', function () {
-        performanceTestWrapper(250, 10)
-        performanceTestWrapper(10, 1000)
+        performanceTestWrapper(250, 10, '250x10')
+        performanceTestWrapper(10, 1000, '10x1000')
     })
 })
