@@ -37,6 +37,23 @@ s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-lftqponsaxsr"
 dependency_layer = false
 watch = false
 `
+export const samconfigCompleteDataWithoutGlobal = `
+version = 0.1
+
+[default.build.parameters]
+cached = true
+parallel = true
+use_container = true
+
+[default.deploy.parameters]
+confirm_changeset = false
+resolve_s3 = true
+
+[default.sync.parameters]
+s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-lftqponsaxsr"
+dependency_layer = false
+watch = false
+`
 export const samconfigInvalidData = `
 version = 0.1
 

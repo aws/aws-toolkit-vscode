@@ -119,13 +119,6 @@ export class SamConfig {
 
         return Object.entries(envs).map(([name, data]) => ({ name, ...data }))
     }
-
-    public static async fromUri(uri: vscode.Uri) {
-        const contents = await fs.readFileText(uri)
-        const config = await parseConfig(contents)
-
-        return new this(uri, config)
-    }
 }
 
 function generateConfigFileName(projectRoot: vscode.Uri) {
@@ -179,6 +172,13 @@ export async function writeSamconfigGlobal(projectRoot: vscode.Uri, stackName: s
     await fs.writeFile(path, obj)
 }
 
+/**
+ * @description Create a new samconfig.toml file under the provided project folder. 
+ *              This will overwrite the existing file.
+
+ * @param projectRoot The root folder of the application project
+ * @param data The data to be written to the new samconfig.toml file
+ */
 export async function createNewConfigFile(projectRoot: vscode.Uri, data: JsonMap) {
     const path = generateConfigFileName(projectRoot)
     await fs.writeFile(path, 'version = 0.1\n\n')
