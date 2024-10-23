@@ -79,8 +79,8 @@ export async function activate(
 
         if (globals.telemetry.telemetryEnabled) {
             // Only log the IDs if telemetry is enabled, so that users who have it disabled do not think we are sending events.
-            getLogger().info(`Telemetry Client ID: ${globals.telemetry.clientId}`)
-            getLogger().info(`Telemetry Session ID: ${getSessionId()}`)
+            getLogger().info(`Telemetry clientId: ${globals.telemetry.clientId}`)
+            getLogger().info(`Telemetry sessionId: ${getSessionId()}`)
         }
     } catch (e) {
         // Only throw in a production build because:
