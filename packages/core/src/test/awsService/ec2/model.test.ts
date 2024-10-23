@@ -15,7 +15,6 @@ import { SshKeyPair } from '../../../awsService/ec2/sshKeyPair'
 import { DefaultIamClient } from '../../../shared/clients/iamClient'
 import { assertNoTelemetryMatch, createTestWorkspaceFolder } from '../../testUtil'
 import { fs } from '../../../shared'
-import path from 'path'
 
 describe('Ec2ConnectClient', function () {
     let client: Ec2ConnectionManager
@@ -135,15 +134,13 @@ describe('Ec2ConnectClient', function () {
         it('calls the sdk with the proper parameters', async function () {
             const sendCommandStub = sinon.stub(SsmClient.prototype, 'sendCommandAndWait')
 
-            sinon.stub(SshKeyPair, 'generateSshKeyPair')
-            sinon.stub(SshKeyPair.prototype, 'getPublicKey').resolves('test-key')
-
             const testSelection = {
                 instanceId: 'test-id',
                 region: 'test-region',
             }
-            const mockKeys = await SshKeyPair.getSshKeyPair('fakeDir', 30000)
-            await client.sendSshKeyToInstance(testSelection, mockKeys, 'test-user')
+
+            const keys = await SshKeyPair.getSshKeyPair('key', 30000)
+            await client.sendSshKeyToInstance(testSelection, keys, 'test-user')
             sinon.assert.calledWith(sendCommandStub, testSelection.instanceId, 'AWS-RunShellScript')
             sinon.restore()
         })
@@ -156,10 +153,9 @@ describe('Ec2ConnectClient', function () {
                 region: 'test-region',
             }
             const testWorkspaceFolder = await createTestWorkspaceFolder()
-            const keyPath = path.join(testWorkspaceFolder.uri.fsPath, 'key')
-            const keys = await SshKeyPair.getSshKeyPair(keyPath, 60000)
+            const keys = await SshKeyPair.getSshKeyPair('key', 60000)
             await client.sendSshKeyToInstance(testSelection, keys, 'test-user')
-            const privKey = await fs.readFileText(keyPath)
+            const privKey = await fs.readFileText(keys.getPrivateKeyPath())
             assertNoTelemetryMatch(privKey)
             sinon.restore()
 
