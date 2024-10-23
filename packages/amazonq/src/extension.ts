@@ -44,6 +44,7 @@ import {
     setContext,
     setupUninstallHandler,
     maybeShowMinVscodeWarning,
+    isSageMaker,
 } from 'aws-core-vscode/shared'
 import { ExtStartUpSources, telemetry } from 'aws-core-vscode/telemetry'
 import { VSCODE_EXTENSION_ID } from 'aws-core-vscode/utils'
@@ -193,7 +194,7 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
                 }
             }
             const currConn = AuthUtil.instance.conn
-            if (currConn !== undefined && !isAnySsoConnection(currConn)) {
+            if (currConn !== undefined && !(isAnySsoConnection(currConn) || isSageMaker())) {
                 getLogger().error(`Current Amazon Q connection is not SSO, type is: %s`, currConn?.type)
             }
 
