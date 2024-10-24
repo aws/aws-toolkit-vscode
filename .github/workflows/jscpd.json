@@ -1,0 +1,7 @@
+{
+    "pattern": "packages/**/*.ts",
+    "ignore": ["**node_modules**", "**dist**"],
+    "gitignore": true,
+    "threshold": 1.34,
+    "minLines": 15
+}
