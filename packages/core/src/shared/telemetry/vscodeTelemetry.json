@@ -170,7 +170,7 @@
             "description": "The time between when the conversation id was created and the final response from the server was received"
         },
         {
-            "name": "cwsprChatTimeFirstUsableChunk",
+            "name": "cwsprChatTimeToFirstUsableChunk",
             "type": "int",
             "description": "The time between the initial server request, including creating the conversation id, and the first usable result"
         },
@@ -763,7 +763,7 @@
                     "type": "cwsprChatFullResponseLatency"
                 },
                 {
-                    "type": "cwsprChatTimeFirstUsableChunk"
+                    "type": "cwsprChatTimeToFirstUsableChunk"
                 },
                 {
                     "type": "cwsprChatFullServerResponseLatency"
