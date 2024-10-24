@@ -10,7 +10,7 @@ import { CrashMonitoring, ExtInstance, crashMonitoringStateFactory } from '../..
 import { isCI } from '../../shared/vscode/env'
 import { getLogger } from '../../shared/logger/logger'
 import { SinonSandbox, createSandbox } from 'sinon'
-import { fs } from '../../shared'
+import { fs, randomUUID } from '../../shared'
 import path from 'path'
 
 class TestCrashMonitoring extends CrashMonitoring {
@@ -55,13 +55,11 @@ export const crashMonitoringTest = async () => {
 
     async function makeTestExtension(id: number, opts?: { isStateStale: () => Promise<boolean> }) {
         const isStateStale = opts?.isStateStale ?? (() => Promise.resolve(false))
-        const sessionId = `sessionId-${id}`
-        const pid = Number(String(id).repeat(6))
+        const sessionId = randomUUID()
 
         const state = await crashMonitoringStateFactory({
             workDirPath: testFolder.path,
             isStateStale,
-            pid,
             sessionId: sessionId,
             now: () => globals.clock.Date.now(),
             memento: globals.globalState,
@@ -71,7 +69,6 @@ export const crashMonitoringTest = async () => {
         const ext = new TestCrashMonitoring(state, checkInterval, true, false, getLogger())
         spawnedExtensions.push(ext)
         const metadata = {
-            extHostPid: pid,
             sessionId,
             lastHeartbeat: globals.clock.Date.now(),
             isDebug: undefined,
@@ -276,8 +273,7 @@ export const crashMonitoringTest = async () => {
             const state = await crashMonitoringStateFactory({
                 workDirPath: testFolder.path,
                 isStateStale: () => Promise.resolve(false),
-                pid: 1111,
-                sessionId: 'sessionId_1111',
+                sessionId: randomUUID(),
                 now: () => globals.clock.Date.now(),
                 memento: globals.globalState,
                 isDevMode: true,

@@ -18,6 +18,7 @@ import { getLogger } from './logger/logger'
 import { crashMonitoringDirName } from './constants'
 import { throwOnUnstableFileSystem } from './filesystemUtilities'
 import { withRetries } from './utilities/functionUtils'
+import { truncateUuid } from './crypto'
 
 const className = 'CrashMonitoring'
 
@@ -307,17 +308,15 @@ class CrashChecker {
                         timestamp: ext.lastHeartbeat,
                     })
 
-                    devLogger?.debug(
-                        `crashMonitoring: CRASH: following has crashed: pid ${ext.extHostPid} + sessionId: ${ext.sessionId}`
-                    )
+                    devLogger?.debug(`crashMonitoring: CRASH: following has crashed: sessionId: ${ext.sessionId}`)
                 })
             }
 
             if (isDevMode) {
-                const before = knownExts.map((i) => i.extHostPid)
-                const after = runningExts.map((i) => i.extHostPid)
+                const before = knownExts.map((i) => truncateUuid(i.sessionId))
+                const after = runningExts.map((i) => truncateUuid(i.sessionId))
                 // Sanity check: ENSURE THAT AFTER === ACTUAL or this implies that our data is out of sync
-                const afterActual = (await state.getAllExts()).map((i) => i.extHostPid)
+                const afterActual = (await state.getAllExts()).map((i) => truncateUuid(i.sessionId))
                 devLogger?.debug(
                     `crashMonitoring: CHECKED: Result of cleaning up stopped instances\nBEFORE: ${JSON.stringify(before)}\nAFTER:  ${JSON.stringify(after)}\nACTUAL: ${JSON.stringify(afterActual)}`
                 )
@@ -386,7 +385,6 @@ class TimeLag {
  */
 type MementoStateDependencies = {
     memento: vscode.Memento
-    pid: number
     sessionId: string
     workDirPath: string
     isDevMode: boolean
@@ -401,7 +399,6 @@ function getDefaultDependencies(): MementoStateDependencies {
         workDirPath: path.join(globals.context.globalStorageUri.fsPath),
         memento: globals.globalState as vscode.Memento,
         isStateStale: () => isNewOsSession(),
-        pid: process.pid,
         sessionId: _getSessionId(),
         isDevMode: getIsDevMode(),
         devLogger: getIsDevMode() ? getLogger() : undefined,
@@ -433,7 +430,6 @@ export class FileSystemState {
     constructor(protected readonly deps: MementoStateDependencies) {
         this.stateDirPath = path.join(this.deps.workDirPath, crashMonitoringDirName)
 
-        this.deps.devLogger?.debug(`crashMonitoring: pid: ${this.deps.pid}`)
         this.deps.devLogger?.debug(`crashMonitoring: sessionId: ${this.deps.sessionId.slice(0, 8)}-...`)
         this.deps.devLogger?.debug(`crashMonitoring: dir: ${this.stateDirPath}`)
     }
@@ -538,7 +534,6 @@ export class FileSystemState {
     protected get ext(): ExtInstance {
         return {
             sessionId: this.deps.sessionId,
-            extHostPid: this.deps.pid,
             isDebug: isDebugInstance() ? true : undefined,
         }
     }
@@ -550,9 +545,9 @@ export class FileSystemState {
      * - The Extension Host PID used in addition to the session ID should be good enough to uniquely identiy.
      */
     protected createExtId(ext: ExtInstance): ExtInstanceId {
-        return `${ext.extHostPid}_${ext.sessionId}`
+        return ext.sessionId
     }
-    private readonly fileSuffix = 'running'
+    private readonly fileSuffix = 'v1'
     private makeStateFilePath(ext: ExtInstance | ExtInstanceId) {
         const extId = typeof ext === 'string' ? ext : this.createExtId(ext)
         return path.join(this.stateDirPath, extId + `.${this.fileSuffix}`)
@@ -654,7 +649,6 @@ type ExtInstanceId = string
 
 /** The static metadata of an instance of this extension */
 export type ExtInstance = {
-    extHostPid: number
     sessionId: string
     lastHeartbeat?: number
     /**
