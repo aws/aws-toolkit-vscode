@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import { Auth } from './auth'
 import { LoginManager } from './deprecated/loginManager'
 import { fromString } from './providers/credentials'
@@ -17,9 +18,16 @@ import { Ec2CredentialsProvider } from './providers/ec2CredentialsProvider'
 import { EcsCredentialsProvider } from './providers/ecsCredentialsProvider'
 import { EnvVarsCredentialsProvider } from './providers/envVarsCredentialsProvider'
 
+interface SagemakerCookie {
+    authMode?: string
+}
+
 export async function initialize(loginManager: LoginManager): Promise<void> {
     if (isAmazonQ() && isSageMaker()) {
-        initializeCredentialsProviderManager()
+        const result = (await vscode.commands.executeCommand('sagemaker.parseCookies')) as SagemakerCookie
+        if (result.authMode !== 'Sso') {
+            initializeCredentialsProviderManager()
+        }
     }
     Auth.instance.onDidChangeActiveConnection(async (conn) => {
         // This logic needs to be moved to `Auth.useConnection` to correctly record `passive`
