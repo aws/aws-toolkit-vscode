@@ -108,7 +108,23 @@ async function updateTextDocumentWithNewLogEvents(
     formattedLogEvents.forEach((formattedLogEvent) =>
         edit.insert(document.uri, new vscode.Position(document.lineCount, 0), formattedLogEvent)
     )
+    if (document.lineCount + formattedLogEvents.length > maxLines) {
+        trimOldestLines(formattedLogEvents.length, maxLines, document, edit)
+    }
     await vscode.workspace.applyEdit(edit)
+}
+
+function trimOldestLines(
+    numNewLines: number,
+    maxLines: number,
+    document: vscode.TextDocument,
+    edit: vscode.WorkspaceEdit
+) {
+    const numLinesToTrim = document.lineCount + numNewLines - maxLines
+    const startPosition = new vscode.Position(0, 0)
+    const endPosition = new vscode.Position(numLinesToTrim, 0)
+    const range = new vscode.Range(startPosition, endPosition)
+    edit.delete(document.uri, range)
 }
 
 /**
