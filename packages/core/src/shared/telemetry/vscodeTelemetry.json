@@ -322,6 +322,11 @@
             "description": "The CPU architecture"
         },
         {
+            "name": "timestamp",
+            "type": "int",
+            "description": "A timestamp in milliseconds"
+        },
+        {
             "name": "traceId",
             "type": "string",
             "description": "The unique identifier of a trace"
@@ -1200,8 +1205,31 @@
                 {
                     "type": "proxiedSessionId",
                     "required": false
+                },
+                {
+                    "type": "timestamp",
+                    "required": false
                 }
             ]
+        },
+        {
+            "name": "ide_heartbeat",
+            "description": "A heartbeat sent by the extension",
+            "metadata": [
+                {
+                    "type": "id",
+                    "required": true
+                },
+                {
+                    "type": "name",
+                    "required": false
+                },
+                {
+                    "type": "timestamp",
+                    "required": false
+                }
+            ],
+            "passive": true
         }
     ]
 }
