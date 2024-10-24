@@ -47,15 +47,13 @@ describe('crypto', function () {
 
 describe('truncateUUID', function () {
     it('should return the first 4 and last 4 characters of a valid UUID', function () {
-        const fullUUID = 'aaaabbbb-cccc-dddd-eeee-ffffhhhhiiii'
-        const result = truncateUuid(fullUUID)
-        assert.strictEqual(result, 'aaaa...iiii')
-    })
+        const fullUUID1 = 'aaaabbbb-cccc-dddd-eeee-ffffhhhhiiii'
+        const result1 = truncateUuid(fullUUID1)
+        assert.strictEqual(result1, 'aaaa...iiii')
 
-    it('should handle a different valid UUID correctly', function () {
-        const fullUUID = '12340000-0000-0000-0000-000000005678'
-        const result = truncateUuid(fullUUID)
-        assert.strictEqual(result, '1234...5678')
+        const fullUUID2 = '12340000-0000-0000-0000-000000005678'
+        const result2 = truncateUuid(fullUUID2)
+        assert.strictEqual(result2, '1234...5678')
     })
 
     it('should throw an error if the input is not 36 characters long', function () {
