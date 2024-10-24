@@ -5,7 +5,7 @@
 
 import { TextDocument } from 'vscode'
 
-const validLanguageIds = [
+const defaultLanguages = [
     'yaml',
     'xsl',
     'xml',
@@ -55,7 +55,7 @@ export function extractLanguageNameFromFile(file: TextDocument): string | undefi
     if (languageId === undefined) {
         return undefined
     }
-    if (validLanguageIds.includes(languageId)) {
+    if (defaultLanguages.includes(languageId)) {
         return languageId
     }
     switch (languageId) {
@@ -117,7 +117,7 @@ export function extractLanguageNameFromFile(file: TextDocument): string | undefi
 export function extractAdditionalLanguageMatchPoliciesFromFile(file: TextDocument): Set<string> {
     const languageId = file.languageId
 
-    if (languageId === undefined || validLanguageIds.includes(languageId)) {
+    if (languageId === undefined || defaultLanguages.includes(languageId)) {
         return new Set<string>()
     }
     switch (languageId) {
