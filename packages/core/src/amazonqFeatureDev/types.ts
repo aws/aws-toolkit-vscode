@@ -49,6 +49,8 @@ export enum FollowUpTypes {
     NewTask = 'NewTask',
     CloseSession = 'CloseSession',
     SendFeedback = 'SendFeedback',
+    AcceptAutoBuild = 'AcceptAutoBuild',
+    DenyAutoBuild = 'DenyAutoBuild',
 }
 
 export type SessionStatePhase = DevPhase.INIT | DevPhase.CODEGEN

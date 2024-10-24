@@ -7,6 +7,7 @@ import * as path from 'path'
 
 import { ConversationNotStartedState, PrepareCodeGenState } from './sessionState'
 import {
+    FollowUpTypes,
     type DeletedFileInfo,
     type Interaction,
     type NewFileInfo,
@@ -26,6 +27,8 @@ import { ReferenceLogViewProvider } from '../../codewhisperer/service/referenceL
 import { AuthUtil } from '../../codewhisperer/util/authUtil'
 import { getLogger } from '../../shared'
 import { logWithConversationId } from '../userFacingText'
+import { CodeWhispererSettings } from '../../codewhisperer'
+
 export class Session {
     private _state?: SessionState | Omit<SessionState, 'uploadId'>
     private task: string = ''
@@ -59,12 +62,48 @@ export class Session {
      * Preload any events that have to run before a chat message can be sent
      */
     async preloader(msg: string) {
-        if (!this.preloaderFinished) {
+        const root = this.config.workspaceRoots[0]
+        const projects = CodeWhispererSettings.instance.getAutoBuildFeatureProjects()
+
+        if (Object.keys(projects).includes(root) && !this.preloaderFinished) {
             await this.setupConversation(msg)
             this.preloaderFinished = true
             this.messenger.sendAsyncEventProgress(this.tabID, true, undefined)
             await this.proxyClient.sendFeatureDevTelemetryEvent(this.conversationId) // send the event only once per conversation.
+        } else {
+            await this.promptUserConsent()
         }
+    }
+
+    /**
+     *
+     */
+
+    private async promptUserConsent() {
+        this.messenger.sendAnswer({
+            tabID: this.tabID,
+            message:
+                'Would you like to use the auto build feature that will allow Amazon Q feature development agent to build and test your project?',
+            type: 'answer',
+        })
+
+        this.messenger.sendAnswer({
+            message: undefined,
+            type: 'system-prompt',
+            followUps: [
+                {
+                    pillText: 'Accept for this project',
+                    type: FollowUpTypes.AcceptAutoBuild,
+                    status: 'info',
+                },
+                {
+                    pillText: 'Deny for this project',
+                    type: FollowUpTypes.DenyAutoBuild,
+                    status: 'info',
+                },
+            ],
+            tabID: this.tabID,
+        })
     }
 
     /**

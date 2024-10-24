@@ -12,6 +12,7 @@ const description = {
     workspaceIndexWorkerThreads: Number,
     workspaceIndexUseGPU: Boolean,
     workspaceIndexMaxSize: Number,
+    autoBuildFeatureProjects: Object,
 }
 
 export class CodeWhispererSettings extends fromExtensionManifest('amazonQ', description) {
@@ -62,6 +63,18 @@ export class CodeWhispererSettings extends fromExtensionManifest('amazonQ', desc
     public getMaxIndexSize(): number {
         // minimal 1MB
         return Math.max(this.get('workspaceIndexMaxSize', 250), 1)
+    }
+
+    public getAutoBuildFeatureProjects(): { [key: string]: boolean } {
+        return this.get('autoBuildFeatureProjects', {})
+    }
+
+    public async updateToAutoBuildFeatureProjects(projectName: string, setting: boolean) {
+        const projects = this.getAutoBuildFeatureProjects()
+
+        projects[projectName] = setting
+
+        await this.update('autoBuildFeatureProjects', projects)
     }
 
     static #instance: CodeWhispererSettings

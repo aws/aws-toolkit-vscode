@@ -19,6 +19,7 @@ import { TelemetryHelper } from './telemetryHelper'
 import { maxRepoSizeBytes } from '../constants'
 import { isCodeFile } from '../../shared/filetypes'
 import { fs } from '../../shared'
+import { CodeWhispererSettings } from '../../codewhisperer'
 
 const getSha256 = (file: Buffer) => createHash('sha256').update(file).digest('base64')
 
@@ -34,6 +35,10 @@ export async function prepareRepoData(
 ) {
     try {
         const files = await collectFiles(repoRootPaths, workspaceFolders, true, maxRepoSizeBytes)
+        const zip = new AdmZip()
+        const autoBuildFeatureProjects = CodeWhispererSettings.instance.getAutoBuildFeatureProjects()
+        const useAutoBuildFeature = autoBuildFeatureProjects[repoRootPaths[0]] ?? false
+        getLogger().info(`featureDev: useAutoBuildFeature: ${useAutoBuildFeature} - ${repoRootPaths[0]}`)
 
         let totalBytes = 0
         const ignoredExtensionMap = new Map<string, number>()
@@ -41,9 +46,11 @@ export async function prepareRepoData(
         for (const file of files) {
             const fileSize = (await fs.stat(file.fileUri)).size
             const isCodeFile_ = isCodeFile(file.relativeFilePath)
+            // True only when the file is not a code file & auto build feature is not enabled
+            const isFilterNonCodeFile = !useAutoBuildFeature && !isCodeFile_
 
-            if (fileSize >= maxFileSizeBytes || !isCodeFile_) {
-                if (!isCodeFile_) {
+            if (fileSize >= maxFileSizeBytes || isFilterNonCodeFile) {
+                if (isFilterNonCodeFile) {
                     const re = /(?:\.([^.]+))?$/
                     const extensionArray = re.exec(file.relativeFilePath)
                     const extension = extensionArray?.length ? extensionArray[1] : undefined

@@ -17,10 +17,12 @@ import {
     sessionRegisterProvider,
     sessionWriteFile,
     assertTelemetry,
+    getTestWorkspaceFolder,
 } from 'aws-core-vscode/test'
 import { CurrentWsFolders, CodeGenState, FeatureDevClient, Messenger } from 'aws-core-vscode/amazonqFeatureDev'
 import path from 'path'
 import { fs } from 'aws-core-vscode/shared'
+import { CodeWhispererSettings } from 'aws-core-vscode/codewhisperer'
 
 describe('session', () => {
     const conversationID = '12345'
@@ -36,6 +38,7 @@ describe('session', () => {
 
     describe('preloader', () => {
         it('emits start chat telemetry', async () => {
+            await CodeWhispererSettings.instance.updateToAutoBuildFeatureProjects(getTestWorkspaceFolder(), false)
             const session = await createSession({ messenger, conversationID })
 
             await session.preloader('implement twosum in typescript')
