@@ -197,6 +197,7 @@ export const createMynahUI = (
                 mynahUI.updateStore(tabID, {
                     loadingChat: true,
                     promptInputDisabledState: true,
+                    cancelButtonWhenLoading: true,
                 })
 
                 if (message && messageId) {
@@ -307,6 +308,7 @@ export const createMynahUI = (
             ) {
                 mynahUI.updateStore(tabID, {
                     loadingChat: true,
+                    cancelButtonWhenLoading: false,
                     promptInputDisabledState: true,
                 })
 
@@ -462,6 +464,13 @@ export const createMynahUI = (
         onTabRemove: connector.onTabRemove,
         onTabChange: connector.onTabChange,
         // TODO: update mynah-ui this type doesn't seem correct https://github.com/aws/mynah-ui/blob/3777a39eb534a91fd6b99d6cf421ce78ee5c7526/src/main.ts#L372
+        onStopChatResponse: (tabID: string) => {
+            mynahUI.updateStore(tabID, {
+                loadingChat: false,
+                promptInputDisabledState: false,
+            })
+            connector.onStopChatResponse(tabID)
+        },
         onChatPrompt: (tabID: string, prompt: ChatPrompt, eventId: string | undefined) => {
             if ((prompt.prompt ?? '') === '' && (prompt.command ?? '') === '') {
                 return
