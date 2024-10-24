@@ -178,11 +178,15 @@ export class Messenger {
             options: [
                 {
                     value: JDKVersion.JDK8,
-                    label: JDKVersion.JDK8.toString(),
+                    label: JDKVersion.JDK8,
                 },
                 {
                     value: JDKVersion.JDK11,
-                    label: JDKVersion.JDK11.toString(),
+                    label: JDKVersion.JDK11,
+                },
+                {
+                    value: JDKVersion.JDK17,
+                    label: JDKVersion.JDK17,
                 },
                 {
                     value: JDKVersion.UNSUPPORTED,
