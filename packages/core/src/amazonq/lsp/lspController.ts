@@ -372,7 +372,8 @@ export class LspController {
                 result: 'Failed',
                 amazonqIndexFileCount: 0,
                 amazonqIndexFileSizeInMB: 0,
-                reason: `Error when building index. ${error instanceof Error ? error.message : error}`,
+                reason: error.code ? error.code : error.name ? error.name : 'Unknown',
+                reasonDesc: `Error when building index. ${error instanceof Error ? error.message : error}`,
             })
         } finally {
             this._isIndexingInProgress = false
