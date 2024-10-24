@@ -8,7 +8,7 @@ import * as localizedText from '../../shared/localizedText'
 import { Auth } from '../../auth/auth'
 import { ToolkitError, isNetworkError, tryRun } from '../../shared/errors'
 import { getSecondaryAuth, setScopes } from '../../auth/secondaryAuth'
-import { isCloud9, isSageMaker } from '../../shared/extensionUtilities'
+import { isAmazonQ, isCloud9, isSageMaker } from '../../shared/extensionUtilities'
 import { AmazonQPromptSettings } from '../../shared/settings'
 import {
     scopesCodeWhispererCore,
@@ -60,7 +60,7 @@ export const isValidCodeWhispererCoreConnection = (conn?: Connection): conn is C
     }
 
     if (isSageMaker()) {
-        return isIamConnection(conn)
+        return isIamConnection(conn) || (isSsoConnection(conn) && hasScopes(conn, codeWhispererCoreScopes))
     }
 
     return (
@@ -70,6 +70,10 @@ export const isValidCodeWhispererCoreConnection = (conn?: Connection): conn is C
 }
 /** Superset that includes all of CodeWhisperer + Amazon Q */
 export const isValidAmazonQConnection = (conn?: Connection): conn is Connection => {
+    if (isSageMaker() && isAmazonQ()) {
+        return isIamConnection(conn) || (isSsoConnection(conn) && hasScopes(conn, amazonQScopes))
+    }
+
     return (
         (isSsoConnection(conn) || isBuilderIdConnection(conn)) &&
         isValidCodeWhispererCoreConnection(conn) &&
@@ -442,9 +446,6 @@ export class AuthUtil {
         if (conn === undefined) {
             return buildFeatureAuthState(AuthStates.disconnected)
         }
-        if (!isSsoConnection(conn)) {
-            throw new ToolkitError(`Connection "${conn.id}" is not a valid type: ${conn.type}`)
-        }
 
         // default to expired to indicate reauth is needed if unmodified
         const state: FeatureAuthState = buildFeatureAuthState(AuthStates.expired)
@@ -453,7 +454,7 @@ export class AuthUtil {
             return state
         }
 
-        if (isBuilderIdConnection(conn) || isIdcSsoConnection(conn)) {
+        if (isBuilderIdConnection(conn) || isIdcSsoConnection(conn) || isSageMaker()) {
             if (isValidCodeWhispererCoreConnection(conn)) {
                 state[Features.codewhispererCore] = AuthStates.connected
             }
