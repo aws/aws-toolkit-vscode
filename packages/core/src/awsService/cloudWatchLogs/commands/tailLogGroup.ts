@@ -116,9 +116,8 @@ function getTextEditorsToScroll(document: vscode.TextDocument): vscode.TextEdito
 }
 
 function scrollTextEditorToBottom(editor: vscode.TextEditor) {
-    const topPosition = new vscode.Position(Math.max(editor.document.lineCount - 2, 0), 0)
-    const bottomPosition = new vscode.Position(Math.max(editor.document.lineCount - 2, 0), 0)
-    editor.revealRange(new vscode.Range(topPosition, bottomPosition), vscode.TextEditorRevealType.Default)
+    const position = new vscode.Position(Math.max(editor.document.lineCount - 2, 0), 0)
+    editor.revealRange(new vscode.Range(position, position), vscode.TextEditorRevealType.Default)
 }
 
 async function updateTextDocumentWithNewLogEvents(
