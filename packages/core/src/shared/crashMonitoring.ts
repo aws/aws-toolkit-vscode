@@ -4,7 +4,7 @@
  */
 import path from 'path'
 import globals, { isWeb } from './extensionGlobals'
-import { getSessionId as _getSessionId } from './telemetry/util'
+import { getSessionId as _getSessionId, getComputeEnvType } from './telemetry/util'
 import { getErrorId, getTelemetryReason, getTelemetryReasonDesc, isFileNotFoundError, ToolkitError } from './errors'
 import { isAutomation, isDebugInstance } from './vscode/env'
 import { DevSettings } from './settings'
@@ -82,6 +82,12 @@ export class CrashMonitoring {
     static #instance: CrashMonitoring | undefined
     /** Returns an instance of this class or undefined if any initial validation fails. */
     public static async instance(): Promise<CrashMonitoring | undefined> {
+        // - We do not support web due to some incompatibilities
+        // - We do not support cloud desktop due to false crash reports due to sleep+vpn+ssh timeouts with the IDE
+        if (isWeb() || (await getComputeEnvType()) === 'cloudDesktop-amzn') {
+            return undefined
+        }
+
         // Since the first attempt to create an instance may have failed, we do not
         // attempt to create an instance again and return whatever we have
         if (this.#didTryCreate === true) {
@@ -108,10 +114,6 @@ export class CrashMonitoring {
 
     /** Start the Crash Monitoring process */
     public async start() {
-        if (isWeb()) {
-            return
-        }
-
         // During tests, the Prod code also runs this function. It interferes with telemetry assertion since it reports additional heartbeats.
         if (this.isAutomation) {
             return
