@@ -148,7 +148,6 @@ export class SessionId {
      * - This should ONLY be used by {@link getSessionId}.
      * - This value MUST NOT change during runtime, otherwise {@link getSessionId} will lose its
      *   idempotency. But, if there was a reason to change the value in a PR, it would not be an issue.
-     * - This is exported only for testing.
      */
     private static readonly sessionIdNonce = '44cfdb20-b30b-4585-a66c-9f48f24f99b5'
 }
