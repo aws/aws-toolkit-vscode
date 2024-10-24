@@ -1,0 +1,33 @@
+{
+    "schemaVersion": "1.x",
+    "notifications": [
+        {
+            "id": "amazonq_startUp_local_1",
+            "displayIf": {
+                "extensionId": "amazonwebservices.amazon-q-vscode"
+            },
+            "uiRenderInstructions": {
+                "content": {
+                    "en-US": {
+                        "title": "[local] What's New",
+                        "description": "Check out this new stuff!"
+                    }
+                }
+            }
+        },
+        {
+            "id": "toolkit_startUp_local_1",
+            "displayIf": {
+                "extensionId": "amazonwebservices.aws-toolkit-vscode"
+            },
+            "uiRenderInstructions": {
+                "content": {
+                    "en-US": {
+                        "title": "[local] What's New",
+                        "description": "Check out this new stuff!"
+                    }
+                }
+            }
+        }
+    ]
+}

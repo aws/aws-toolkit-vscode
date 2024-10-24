@@ -189,6 +189,11 @@
         "views": {
             "amazonq": [
                 {
+                    "id": "aws.amazonq.notifications",
+                    "name": "%AWS.notifications.title%",
+                    "when": "!isCloud9 && !aws.isSageMaker && aws.amazonq.notifications.show"
+                },
+                {
                     "type": "webview",
                     "id": "aws.amazonq.AmazonCommonAuth",
                     "name": "%AWS.amazonq.login%",
@@ -370,6 +375,13 @@
                     "group": "cw_chat"
                 }
             ],
+            "view/item/context": [
+                {
+                    "command": "_aws.amazonq.notifications.dismiss",
+                    "when": "viewItem == amazonqNotificationStartUp",
+                    "group": "inline@1"
+                }
+            ],
             "aws.amazonq.submenu.feedback": [
                 {
                     "command": "aws.amazonq.submitFeedback",
@@ -397,6 +409,13 @@
             ]
         },
         "commands": [
+            {
+                "command": "_aws.amazonq.notifications.dismiss",
+                "title": "%AWS.generic.dismiss%",
+                "category": "%AWS.amazonq.title%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
+                "icon": "$(remove-close)"
+            },
             {
                 "command": "aws.amazonq.explainCode",
                 "title": "%AWS.command.amazonq.explainCode%",

@@ -5,6 +5,7 @@
 
 import * as vscode from 'vscode'
 import { EnvType, OperatingSystem } from '../shared/telemetry/util'
+import { TypeConstructor } from '../shared/utilities/typeConstructors'
 
 /** Types of information that we can use to determine whether to show a notification or not. */
 export type Criteria =
@@ -73,6 +74,39 @@ export interface Notifications {
     schemaVersion: string
     notifications: ToolkitNotification[]
 }
+
+export type NotificationData = {
+    payload?: Notifications
+    eTag?: string
+}
+
+export type NotificationsState = {
+    // Categories
+    startUp: NotificationData
+    emergency: NotificationData
+
+    // Util
+    dismissed: string[]
+}
+
+export const NotificationsStateConstructor: TypeConstructor<NotificationsState> = (v: unknown): NotificationsState => {
+    const isNotificationsState = (v: Partial<NotificationsState>): v is NotificationsState => {
+        const requiredKeys: (keyof NotificationsState)[] = ['startUp', 'emergency', 'dismissed']
+        return (
+            requiredKeys.every((key) => key in v) &&
+            Array.isArray(v.dismissed) &&
+            typeof v.startUp === 'object' &&
+            typeof v.emergency === 'object'
+        )
+    }
+
+    if (v && typeof v === 'object' && isNotificationsState(v)) {
+        return v
+    }
+    throw new Error('Cannot cast to NotificationsState.')
+}
+
+export type NotificationType = keyof Omit<NotificationsState, 'dismissed'>
 
 export interface RuleContext {
     readonly ideVersion: typeof vscode.version
