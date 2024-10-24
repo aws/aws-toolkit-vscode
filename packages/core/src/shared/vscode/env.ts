@@ -145,13 +145,16 @@ const UIKind = {
 export type ExtensionHostUI = (typeof UIKind)[keyof typeof UIKind]
 export type ExtensionHostLocation = 'local' | 'remote' | 'webworker'
 
-// where extension is running
+/**
+ * Detects where the ui and the extension host are running
+ */
 export function getExtRuntimeContext(): {
     ui: ExtensionHostUI
     extensionHost: ExtensionHostLocation
 } {
     const extensionHost =
-        // i found it in vscode
+        // taken from https://github.com/microsoft/vscode/blob/7c9e4bb23992c63f20cd86bbe7a52a3aa4bed89d/extensions/github-authentication/src/githubServer.ts#L121 to help determine which auth flows
+        // should be used
         typeof navigator === 'undefined'
             ? globals.context.extension.extensionKind === vscode.ExtensionKind.UI
                 ? 'local'
