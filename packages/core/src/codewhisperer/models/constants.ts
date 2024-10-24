@@ -350,6 +350,10 @@ export const updateInlineLockKey = 'CODEWHISPERER_INLINE_UPDATE_LOCK_KEY'
 export const newCustomizationMessage = 'You have access to new Amazon Q customizations.'
 
 // Start of QCT Strings
+
+// feature flag for SQL transformations
+export const isSQLTransformReady = true
+
 export const uploadZipSizeLimitInBytes = 2000000000 // 2GB
 
 export const maxBufferSize = 1024 * 1024 * 8 // this is 8MB; the default max buffer size for stdout for spawnSync is 1MB
@@ -448,14 +452,14 @@ export const buildCodeStepMessage = 'Build uploaded code in secure build environ
 
 export const generatePlanStepMessage = 'Generate transformation plan'
 
-export const transformStepMessage = 'Transform your code to Java 17 using transformation plan'
+export const transformStepMessage = 'Transform your code'
 
 export const filesUploadedMessage =
     'Files have been uploaded to Amazon Q, transformation job has been accepted and is preparing to start.'
 
 export const planningMessage = 'Amazon Q is analyzing your code in order to generate a transformation plan.'
 
-export const transformingMessage = 'Amazon Q is transforming your code. Details will appear soon.'
+export const transformingMessage = 'Amazon Q is transforming your code.'
 
 export const stoppingJobMessage = 'Stopping the transformation...'
 
@@ -497,6 +501,20 @@ export const absolutePathDetectedMessage = (numPaths: number, buildFile: string,
     `I detected ${numPaths} potential absolute file path(s) in your ${buildFile} file: **${listOfPaths}**. Absolute file paths might cause issues when I build your code. Any errors will show up in the build log.`
 
 export const unsupportedJavaVersionChatMessage = `Sorry, currently I can only upgrade Java 8 or Java 11 projects. For more information, see the [Amazon Q documentation](${codeTransformPrereqDoc}).`
+
+export const selectSQLMetadataFileHelpMessage =
+    'Next, I need the metadata ZIP file of your project. You can download the metadata ZIP file by going to AWS Console -> AWS DMS -> Migration Projects. Open the schema conversion project and navigate to the S3 bucket linked to it. You will find the ZIP file under the {schema-conversion-project}/ directory.'
+
+export const invalidMetadataFileUnsupportedSourceDB = `Sorry, the .sct file in the provided ZIP appears to be invalid; the source DB must be Oracle.`
+
+export const invalidMetadataFileUnsupportedTargetDB = `Sorry, the .sct file in the provided ZIP appears to be invalid; the target DB must be Aurora PostgreSQL or Amazon RDS for PostgreSQL.`
+
+export const invalidMetadataFileErrorParsing = 'Sorry, the .sct file in the provided ZIP appears to be invalid.'
+
+export const invalidMetadataFileNoSctFile =
+    'Sorry, the provided ZIP does not contain a .sct file, which is needed to do the transformation.'
+
+export const sqlMetadataFileReceived = 'I detected the following in the .sct file from the provided ZIP.'
 
 export const failedToStartJobChatMessage =
     "Sorry, I couldn't begin the transformation. Please try starting the transformation again."
@@ -626,7 +644,7 @@ export const cleanInstallErrorNotification = `Amazon Q could not run the Maven c
 export const enterJavaHomeChatMessage = 'Enter the path to JDK '
 
 export const projectPromptChatMessage =
-    'I can upgrade your JAVA_VERSION_HERE. To start the transformation, I need some information from you. Choose the project you want to upgrade and the target code version to upgrade to. Then, choose Transform.'
+    'I can upgrade your JAVA_VERSION_HERE. To start the transformation, I need some information from you. Choose the project you want to upgrade and the target code version to upgrade to. Then, choose Confirm.'
 
 export const windowsJavaHomeHelpChatMessage =
     'To find the JDK path, run the following commands in a new terminal: `cd "C:/Program Files/Java"` and then `dir`. If you see your JDK version, run `cd <version>` and then `cd` to show the path.'
@@ -657,7 +675,7 @@ export const chooseTargetVersionFormTitle = 'Choose the target code version'
 export const skipUnitTestsFormTitle = 'Choose to skip unit tests'
 
 export const skipUnitTestsFormMessage =
-    'I will build your project using `mvn test` by default. If you would like me to build your project without running unit tests, I will use `mvn test-compile`.'
+    'I will build your project using `mvn clean test` by default. If you would like me to build your project without running unit tests, I will use `mvn clean test-compile`.'
 
 export const runUnitTestsMessage = 'Run unit tests'
 

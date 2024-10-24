@@ -55,7 +55,7 @@ function performanceTestWrapper(numberOfFiles: number, fileSize: number) {
                             name: setup.tempFileName,
                         },
                         humanInTheLoopFlag: false,
-                        modulePath: setup.tempDir,
+                        projectPath: setup.tempDir,
                         zipManifest: setup.transformQManifest,
                     })
                 },
