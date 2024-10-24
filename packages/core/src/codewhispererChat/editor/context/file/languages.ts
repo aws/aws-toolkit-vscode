@@ -117,10 +117,7 @@ export function extractLanguageNameFromFile(file: TextDocument): string | undefi
 export function extractAdditionalLanguageMatchPoliciesFromFile(file: TextDocument): Set<string> {
     const languageId = file.languageId
 
-    if (languageId === undefined) {
-        return new Set<string>()
-    }
-    if (validLanguageIds.includes(languageId)) {
+    if (languageId === undefined || validLanguageIds.includes(languageId)) {
         return new Set<string>()
     }
     switch (languageId) {
