@@ -10,7 +10,7 @@ import { parsePatch, applyPatches, ParsedDiff } from 'diff'
 import path from 'path'
 import vscode from 'vscode'
 import { ExportIntent } from '@amzn/codewhisperer-streaming'
-import { TransformByQReviewStatus, transformByQState } from '../../models/model'
+import { TransformByQReviewStatus, transformByQState, PatchInfo } from '../../models/model'
 import { ExportResultArchiveStructure, downloadExportResultArchive } from '../../../shared/utilities/download'
 import { getLogger } from '../../../shared/logger'
 import { telemetry } from '../../../shared/telemetry/telemetry'
@@ -106,6 +106,17 @@ export class AddedChangeNode extends ProposedChangeNode {
     }
 }
 
+export class PatchFileNode {
+    readonly label: string
+    readonly patchFilePath: string
+    children: ProposedChangeNode[] = []
+
+    constructor(patchFilePath: string) {
+        this.patchFilePath = patchFilePath
+        this.label = path.basename(patchFilePath)
+    }
+}
+
 enum ReviewState {
     ToReview,
     Reviewed_Accepted,
@@ -113,7 +124,8 @@ enum ReviewState {
 }
 
 export class DiffModel {
-    changes: ProposedChangeNode[] = []
+    patchFileNodes: PatchFileNode[] = []
+    currentPatchIndex: number = 0
 
     /**
      * This function creates a copy of the changed files of the user's project so that the diff.patch can be applied to them
@@ -142,7 +154,12 @@ export class DiffModel {
      * @param pathToWorkspace Path to the project that was transformed
      * @returns List of nodes containing the paths of files that were modified, added, or removed
      */
-    public parseDiff(pathToDiff: string, pathToWorkspace: string): ProposedChangeNode[] {
+    public parseDiff(
+        pathToDiff: string,
+        pathToWorkspace: string,
+        diffDescription: PatchInfo | undefined
+    ): PatchFileNode {
+        this.patchFileNodes = []
         const diffContents = fs.readFileSync(pathToDiff, 'utf8')
         const changedFiles = parsePatch(diffContents)
         // path to the directory containing copy of the changed files in the transformed project
@@ -177,7 +194,8 @@ export class DiffModel {
                 }
             },
         })
-        this.changes = changedFiles.flatMap((file) => {
+        const patchFileNode = new PatchFileNode(diffDescription ? diffDescription.name : pathToDiff)
+        patchFileNode.children = changedFiles.flatMap((file) => {
             /* ex. file.oldFileName = 'a/src/java/com/project/component/MyFile.java'
              * ex. file.newFileName = 'b/src/java/com/project/component/MyFile.java'
              * use substring(2) to ignore the 'a/' and 'b/'
@@ -195,24 +213,24 @@ export class DiffModel {
             }
             return []
         })
-
-        return this.changes
+        this.patchFileNodes.push(patchFileNode)
+        return patchFileNode
     }
 
     public getChanges() {
-        return this.changes
+        return this.patchFileNodes.flatMap((patchFileNode) => patchFileNode.children)
     }
 
     public getRoot() {
-        return this.changes[0]
+        return this.patchFileNodes.length > 0 ? this.patchFileNodes[0] : undefined
     }
 
     public saveChanges() {
-        this.changes.forEach((file) => {
-            file.saveChange()
+        this.patchFileNodes.forEach((patchFileNode) => {
+            patchFileNode.children.forEach((changeNode) => {
+                changeNode.saveChange()
+            })
         })
-
-        this.clearChanges()
     }
 
     public rejectChanges() {
@@ -220,11 +238,12 @@ export class DiffModel {
     }
 
     public clearChanges() {
-        this.changes = []
+        this.patchFileNodes = []
+        this.currentPatchIndex = 0
     }
 }
 
-export class TransformationResultsProvider implements vscode.TreeDataProvider<ProposedChangeNode> {
+export class TransformationResultsProvider implements vscode.TreeDataProvider<ProposedChangeNode | PatchFileNode> {
     public static readonly viewType = 'aws.amazonq.transformationProposedChangesTree'
 
     private _onDidChangeTreeData: vscode.EventEmitter<any> = new vscode.EventEmitter<any>()
@@ -236,26 +255,49 @@ export class TransformationResultsProvider implements vscode.TreeDataProvider<Pr
         this._onDidChangeTreeData.fire(undefined)
     }
 
-    public getTreeItem(element: ProposedChangeNode): vscode.TreeItem {
-        const treeItem = {
-            resourceUri: vscode.Uri.file(element.resourcePath),
-            command: element.generateCommand(),
-            description: element.generateDescription(),
+    public getTreeItem(element: ProposedChangeNode | PatchFileNode): vscode.TreeItem {
+        if (element instanceof PatchFileNode) {
+            return {
+                label: element.label,
+                collapsibleState: vscode.TreeItemCollapsibleState.Collapsed,
+            }
+        } else {
+            return {
+                resourceUri: vscode.Uri.file(element.resourcePath),
+                command: element.generateCommand(),
+                description: element.generateDescription(),
+            }
         }
-        return treeItem
     }
 
-    public getChildren(element?: ProposedChangeNode): ProposedChangeNode[] | Thenable<ProposedChangeNode[]> {
-        return element ? Promise.resolve([]) : this.model.getChanges()
+    /*
+    Here we check if the element is a PatchFileNode instance. If it is, we return its 
+    children array, which contains ProposedChangeNode instances. This ensures that when the user expands a 
+    PatchFileNode (representing a diff.patch file), its children (proposed change nodes) are displayed as indented nodes under it.
+    */
+    public getChildren(
+        element?: ProposedChangeNode | PatchFileNode
+    ): (ProposedChangeNode | PatchFileNode)[] | Thenable<(ProposedChangeNode | PatchFileNode)[]> {
+        if (!element) {
+            return this.model.patchFileNodes
+        } else if (element instanceof PatchFileNode) {
+            return element.children
+        } else {
+            return Promise.resolve([])
+        }
     }
 
-    public getParent(element: ProposedChangeNode): ProposedChangeNode | undefined {
+    public getParent(element: ProposedChangeNode | PatchFileNode): PatchFileNode | undefined {
+        if (element instanceof ProposedChangeNode) {
+            const patchFileNode = this.model.patchFileNodes.find((p) => p.children.includes(element))
+            return patchFileNode
+        }
         return undefined
     }
 }
 
 export class ProposedTransformationExplorer {
-    private changeViewer: vscode.TreeView<ProposedChangeNode>
+    private changeViewer: vscode.TreeView<PatchFileNode>
 
     public static TmpDir = os.tmpdir()
 
@@ -265,6 +307,10 @@ export class ProposedTransformationExplorer {
         this.changeViewer = vscode.window.createTreeView(TransformationResultsProvider.viewType, {
             treeDataProvider: transformDataProvider,
         })
+
+        // const pathContainingArchive = '/private/var/folders/mn/l6c4t6sd1jn7g4p4nb6wqhh80000gq/T/ExportResultArchive'
+        const patchFiles: string[] = []
+        let patchFilesDescriptions: PatchInfo[] | undefined = undefined
 
         const reset = async () => {
             await setContext('gumby.transformationProposalReviewInProgress', false)
@@ -372,10 +418,25 @@ export class ProposedTransformationExplorer {
                 pathContainingArchive = path.dirname(pathToArchive)
                 const zip = new AdmZip(pathToArchive)
                 zip.extractAllTo(pathContainingArchive)
+
+                const files = fs.readdirSync(path.join(pathContainingArchive, ExportResultArchiveStructure.PathToPatch))
+                files.forEach((file) => {
+                    const filePath = path.join(pathContainingArchive, ExportResultArchiveStructure.PathToPatch, file)
+                    if (file.endsWith('.patch')) {
+                        patchFiles.push(filePath)
+                    } else if (file.endsWith('.json')) {
+                        const jsonData = fs.readFileSync(filePath, 'utf-8')
+                        patchFilesDescriptions = JSON.parse(jsonData)
+                    }
+                })
+
+                //Because multiple patches are returned once the ZIP is downloaded, we want to show the first one to start
                 diffModel.parseDiff(
-                    path.join(pathContainingArchive, ExportResultArchiveStructure.PathToDiffPatch),
-                    transformByQState.getProjectPath()
+                    patchFiles[0],
+                    transformByQState.getProjectPath(),
+                    patchFilesDescriptions ? patchFilesDescriptions[0] : undefined
                 )
+
                 await setContext('gumby.reviewState', TransformByQReviewStatus.InReview)
                 transformDataProvider.refresh()
                 transformByQState.setSummaryFilePath(
@@ -408,11 +469,27 @@ export class ProposedTransformationExplorer {
             diffModel.saveChanges()
             telemetry.ui_click.emit({ elementId: 'transformationHub_acceptChanges' })
             void vscode.window.showInformationMessage(CodeWhispererConstants.changesAppliedNotification)
-            transformByQState.getChatControllers()?.transformationFinished.fire({
-                message: CodeWhispererConstants.changesAppliedChatMessage,
-                tabID: ChatSessionManager.Instance.getSession().tabID,
-            })
-            await reset()
+            //We do this to ensure that the changesAppliedChatMessage is only sent to user when they accept the first diff.patch
+            if (diffModel.currentPatchIndex === 0) {
+                transformByQState.getChatControllers()?.transformationFinished.fire({
+                    message: CodeWhispererConstants.changesAppliedChatMessage,
+                    tabID: ChatSessionManager.Instance.getSession().tabID,
+                })
+            }
+
+            // Load the next patch file
+            diffModel.currentPatchIndex++
+            if (diffModel.currentPatchIndex < patchFiles.length) {
+                const nextPatchFile = patchFiles[diffModel.currentPatchIndex]
+                const nextPatchFileDescription = patchFilesDescriptions
+                    ? patchFilesDescriptions[diffModel.currentPatchIndex]
+                    : undefined
+                diffModel.parseDiff(nextPatchFile, transformByQState.getProjectPath(), nextPatchFileDescription)
+                transformDataProvider.refresh()
+            } else {
+                // All patches have been applied, reset the state
+                await reset()
+            }
 
             telemetry.codeTransform_viewArtifact.emit({
                 codeTransformArtifactType: 'ClientInstructions',
