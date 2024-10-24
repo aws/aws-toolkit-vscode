@@ -412,7 +412,7 @@ export function withTelemetryContext(opts: TelemetryContextArgs) {
                 },
                 {
                     emit: opts.emit !== undefined ? opts.emit : false,
-                    functionId: opts,
+                    functionId: { name: opts.name, class: opts.class },
                 }
             )
         }
