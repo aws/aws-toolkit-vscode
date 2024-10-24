@@ -332,6 +332,7 @@ export class TelemetryHelper {
                         suggestionReferenceCount: referenceCount,
                         generatedLine: generatedLines,
                         numberOfRecommendations: suggestionCount,
+                        acceptedCharacterCount: acceptedRecommendationContent.length,
                     },
                 },
             })
