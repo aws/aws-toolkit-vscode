@@ -26,7 +26,6 @@ import { ReferenceLogViewProvider } from '../../codewhisperer/service/referenceL
 import { AuthUtil } from '../../codewhisperer/util/authUtil'
 import { getLogger } from '../../shared'
 import { logWithConversationId } from '../userFacingText'
-
 export class Session {
     private _state?: SessionState | Omit<SessionState, 'uploadId'>
     private task: string = ''
@@ -89,6 +88,7 @@ export class Session {
                 ...this.getSessionStateConfig(),
                 conversationId: this.conversationId,
                 uploadId: '',
+                currentCodeGenerationId: undefined,
             },
             [],
             [],
@@ -130,13 +130,14 @@ export class Session {
             fs: this.config.fs,
             messenger: this.messenger,
             telemetry: this.telemetry,
+            tokenSource: this.state.tokenSource,
             uploadHistory: this.state.uploadHistory,
         })
 
         if (resp.nextState) {
-            // Cancel the request before moving to a new state
-            this.state.tokenSource.cancel()
-
+            if (!this.state?.tokenSource?.token.isCancellationRequested) {
+                this.state?.tokenSource?.cancel()
+            }
             // Move to the next state
             this._state = resp.nextState
         }
@@ -180,6 +181,10 @@ export class Session {
             throw new Error("State should be initialized before it's read")
         }
         return this._state
+    }
+
+    get currentCodeGenerationId() {
+        return this.state.currentCodeGenerationId
     }
 
     get uploadId() {

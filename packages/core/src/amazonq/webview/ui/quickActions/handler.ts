@@ -79,6 +79,7 @@ export class QuickActionHandler {
         if (this.tabsStorage.getTab(affectedTabId)?.type !== 'unknown') {
             affectedTabId = this.mynahUI.updateStore('', {
                 loadingChat: true,
+                cancelButtonWhenLoading: false,
             })
         }
 
@@ -103,6 +104,7 @@ export class QuickActionHandler {
             // disable chat prompt
             this.mynahUI.updateStore(affectedTabId, {
                 loadingChat: true,
+                cancelButtonWhenLoading: false,
             })
 
             this.connector.transform(affectedTabId)
@@ -161,6 +163,7 @@ export class QuickActionHandler {
                 this.mynahUI.updateStore(affectedTabId, {
                     loadingChat: true,
                     promptInputDisabledState: true,
+                    cancelButtonWhenLoading: false,
                 })
 
                 void this.connector.requestGenerativeAIAnswer(affectedTabId, '', {
