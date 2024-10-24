@@ -94,7 +94,7 @@ export class CrashMonitoring {
             const state = await crashMonitoringStateFactory() // can throw
             return (this.#instance ??= new CrashMonitoring(
                 state,
-                DevSettings.instance.get('crashCheckInterval', 1000 * 60 * 30), // check every 30 minutes
+                DevSettings.instance.get('crashCheckInterval', 1000 * 60 * 20), // check every 20 minutes
                 isDevMode,
                 isAutomation(),
                 devModeLogger
@@ -305,6 +305,7 @@ class CrashChecker {
                         proxiedSessionId: ext.sessionId,
                         reason: 'ExtHostCrashed',
                         passive: true,
+                        timestamp: ext.lastHeartbeat,
                     })
 
                     devLogger?.debug(
@@ -462,25 +463,26 @@ export class FileSystemState {
     // ------------------ Heartbeat methods ------------------
     public async sendHeartbeat() {
         try {
+            const now = this.deps.now()
             const func = async () => {
                 const filePath = this.makeStateFilePath(this.extId)
-                const lastHeartbeat = this.deps.now()
 
-                await fs.writeFile(filePath, JSON.stringify({ ...this.ext, lastHeartbeat }, undefined, 4))
-
-                this.deps.devLogger?.debug(
-                    `crashMonitoring: HEARTBEAT pid ${this.deps.pid} + sessionId: ${this.deps.sessionId.slice(0, 8)}-...`
-                )
+                await fs.writeFile(filePath, JSON.stringify({ ...this.ext, lastHeartbeat: now }, undefined, 4))
 
                 // Sanity check to verify the write is accessible immediately after
                 const heartbeatData = JSON.parse(await fs.readFileText(filePath)) as ExtInstanceHeartbeat
-                if (heartbeatData.lastHeartbeat !== lastHeartbeat) {
+                if (heartbeatData.lastHeartbeat !== now) {
                     throw new CrashMonitoringError('Heartbeat write validation failed', { code: className })
                 }
             }
             const funcWithCtx = () => withFailCtx('sendHeartbeatState', func)
-            const funcWithRetries = withRetries(funcWithCtx, { maxRetries: 8, delay: 100, backoff: 2 })
-            return await funcWithRetries
+            const funcWithRetries = withRetries(funcWithCtx, { maxRetries: 6, delay: 100, backoff: 2 })
+            const funcWithTelemetryRun = await telemetry.ide_heartbeat.run((span) => {
+                span.record({ id: className, timestamp: now })
+                return funcWithRetries
+            })
+
+            return funcWithTelemetryRun
         } catch (e) {
             // delete this ext from the state to avoid an incorrectly reported crash since we could not send a new heartbeat
             await withFailCtx('sendHeartbeatFailureCleanup', () => this.clearHeartbeat())
@@ -523,7 +525,7 @@ export class FileSystemState {
         // Retry file deletion to prevent incorrect crash reports. Common Windows errors seen in telemetry: EPERM/EBUSY.
         // See: https://github.com/aws/aws-toolkit-vscode/pull/5335
         await withRetries(() => withFailCtx('deleteStaleRunningFile', () => fs.delete(this.makeStateFilePath(ext))), {
-            maxRetries: 8,
+            maxRetries: 6,
             delay: 100,
             backoff: 2,
         })
