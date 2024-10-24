@@ -463,6 +463,10 @@ export class FileSystemState {
             const func = async () => {
                 const filePath = this.makeStateFilePath(extId)
 
+                // We were seeing weird behavior where we possibly read an old file, even though we overwrote it.
+                // So this is a sanity check.
+                await fs.delete(filePath, { force: true })
+
                 await fs.writeFile(filePath, JSON.stringify({ ...this.ext, lastHeartbeat: now }, undefined, 4))
 
                 // Sanity check to verify the write is accessible immediately after
