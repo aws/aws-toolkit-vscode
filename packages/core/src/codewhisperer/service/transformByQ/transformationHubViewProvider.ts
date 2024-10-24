@@ -269,16 +269,19 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                 return CodeWhispererConstants.filesUploadedMessage
             case 'PREPARING':
             case 'PREPARED':
-                // for SQL conversions, skip to planningMessage since we don't build the code
+                // for SQL conversions, skip to transformingMessage since we don't build the code
                 return transformByQState.getTransformationType() === TransformationType.SQL_CONVERSION
-                    ? CodeWhispererConstants.planningMessage
+                    ? CodeWhispererConstants.transformingMessage
                     : CodeWhispererConstants.buildingCodeMessage.replace(
                           'JAVA_VERSION_HERE',
                           transformByQState.getSourceJDKVersion() ?? ''
                       )
             case 'PLANNING':
             case 'PLANNED':
-                return CodeWhispererConstants.planningMessage
+                // for SQL conversions, skip to transformingMessage since we don't generate a plan
+                return transformByQState.getTransformationType() === TransformationType.SQL_CONVERSION
+                    ? CodeWhispererConstants.transformingMessage
+                    : CodeWhispererConstants.planningMessage
             case 'TRANSFORMING':
             case 'TRANSFORMED':
             case 'COMPLETED':
@@ -316,7 +319,12 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
         }
 
         let planSteps = transformByQState.getPlanSteps()
-        if (jobPlanProgress['generatePlan'] === StepProgress.Succeeded && transformByQState.isRunning()) {
+        // no plan for SQL conversions
+        if (
+            transformByQState.getTransformationType() !== TransformationType.SQL_CONVERSION &&
+            jobPlanProgress['generatePlan'] === StepProgress.Succeeded &&
+            transformByQState.isRunning()
+        ) {
             planSteps = await getTransformationSteps(transformByQState.getJobId(), false)
             transformByQState.setPlanSteps(planSteps)
         }
@@ -348,7 +356,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                       )
                     : ''
             const planMarkup =
-                activeStepId >= 2
+                activeStepId >= 2 && transformByQState.getTransformationType() !== TransformationType.SQL_CONVERSION // for SQL conversions, don't show generatePlan step
                     ? simpleStep(
                           this.getProgressIconMarkup(jobPlanProgress['generatePlan']),
                           CodeWhispererConstants.generatePlanStepMessage,

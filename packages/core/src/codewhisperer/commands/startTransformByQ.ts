@@ -668,6 +668,10 @@ export async function pollTransformationStatusUntilPlanReady(jobId: string) {
             throw new PollJobError()
         }
     }
+    if (transformByQState.getTransformationType() === TransformationType.SQL_CONVERSION) {
+        // for now, no plan shown with SQL conversions. later, we may add one
+        return
+    }
     let plan = undefined
     try {
         plan = await getTransformationPlan(jobId)

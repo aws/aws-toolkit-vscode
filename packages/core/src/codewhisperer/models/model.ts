@@ -311,7 +311,7 @@ export enum JDKVersion {
 
 export enum DB {
     ORACLE = 'ORACLE',
-    RDS_POSTGRESQL = 'RDS_POSTGRESQL', // TO-DO: these should all match what source/target vendor look like in sct-rules.json
+    RDS_POSTGRESQL = 'RDS_POSTGRESQL',
     AURORA_POSTGRESQL = 'AURORA_POSTGRESQL',
     OTHER = 'OTHER',
 }

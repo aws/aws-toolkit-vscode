@@ -214,8 +214,9 @@ export async function uploadPayload(payloadFileName: string, uploadContext?: Upl
     }
     jobPlanProgress['uploadCode'] = StepProgress.Succeeded
     if (transformByQState.getTransformationType() === TransformationType.SQL_CONVERSION) {
-        // if doing a SQL conversion, we don't build the code, so mark this step as succeeded immediately so that next step renders
+        // if doing a SQL conversion, we don't build the code or generate a plan, so mark these steps as succeeded immediately so that next step renders
         jobPlanProgress['buildCode'] = StepProgress.Succeeded
+        jobPlanProgress['generatePlan'] = StepProgress.Succeeded
     }
     updateJobHistory()
     return response.uploadId
@@ -626,7 +627,6 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
                 transformationJobId: jobId,
             })
             status = response.transformationJob.status!
-            // if doing a SQL conversion, we don't build the code, so mark this step as succeeded immediately so that next step gets rendered
             if (CodeWhispererConstants.validStatesForBuildSucceeded.includes(status)) {
                 jobPlanProgress['buildCode'] = StepProgress.Succeeded
             }
