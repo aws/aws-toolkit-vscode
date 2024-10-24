@@ -46,6 +46,7 @@ import { getWorkspaceFoldersByPrefixes } from '../../../shared/utilities/workspa
 import { openDeletedDiff, openDiff } from '../../../amazonq/commons/diff'
 import { i18n } from '../../../shared/i18n-helper'
 import globals from '../../../shared/extensionGlobals'
+import { CodeWhispererSettings } from '../../../codewhisperer'
 
 export const TotalSteps = 3
 
@@ -122,7 +123,7 @@ export class FeatureDevController {
                 getLogger().error('processChatItemFeedbackMessage failed: %s', (e as Error).message)
             })
         })
-        this.chatControllerMessageListeners.followUpClicked.event((data) => {
+        this.chatControllerMessageListeners.followUpClicked.event(async (data) => {
             switch (data.followUp.type) {
                 case FollowUpTypes.InsertCode:
                     return this.insertCode(data)
@@ -147,6 +148,12 @@ export class FeatureDevController {
                 case FollowUpTypes.SendFeedback:
                     this.sendFeedback()
                     break
+                case FollowUpTypes.AcceptAutoBuild:
+                    await this.processAutoBuildSetting(true)
+                    return this.retryRequest(data)
+                case FollowUpTypes.DenyAutoBuild:
+                    await this.processAutoBuildSetting(false)
+                    return this.retryRequest(data)
             }
         })
         this.chatControllerMessageListeners.openDiff.event((data) => {
@@ -537,6 +544,16 @@ export class FeatureDevController {
             i18n('AWS.amazonq.featureDev.placeholder.additionalImprovements')
         )
     }
+
+    private async processAutoBuildSetting(setting: boolean) {
+        const workspaceFolders = vscode.workspace.workspaceFolders
+        const workspaceRoots = workspaceFolders?.map((f) => f.uri.fsPath)
+
+        if (workspaceRoots) {
+            await CodeWhispererSettings.instance.updateToAutoBuildFeatureProjects(workspaceRoots[0], setting)
+        }
+    }
+
     // TODO add type
     private async insertCode(message: any) {
         let session
