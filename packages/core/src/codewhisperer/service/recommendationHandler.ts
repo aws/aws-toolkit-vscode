@@ -14,7 +14,7 @@ import { AWSError } from 'aws-sdk'
 import { isAwsError } from '../../shared/errors'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { getLogger } from '../../shared/logger'
-import { isCloud9, isSageMaker } from '../../shared/extensionUtilities'
+import { isCloud9 } from '../../shared/extensionUtilities'
 import { hasVendedIamCredentials } from '../../auth/auth'
 import {
     asyncCallWithTimeout,
@@ -157,9 +157,7 @@ export class RecommendationHandler {
         config: ConfigurationEntry,
         autoTriggerType?: CodewhispererAutomatedTriggerType,
         pagination: boolean = true,
-        page: number = 0,
-        isSM: boolean = isSageMaker(),
-        retry: boolean = false
+        page: number = 0
     ): Promise<GetRecommendationsResponse> {
         let invocationResult: 'Succeeded' | 'Failed' = 'Failed'
         let errorMessage: string | undefined = undefined
@@ -186,7 +184,7 @@ export class RecommendationHandler {
         ).language
         session.taskType = await this.getTaskTypeFromEditorFileName(editor.document.fileName)
 
-        if (pagination && !isSM) {
+        if (pagination) {
             if (page === 0) {
                 session.requestContext = await EditorContext.buildListRecommendationRequest(
                     editor as vscode.TextEditor,
@@ -240,8 +238,9 @@ export class RecommendationHandler {
             startTime = performance.now()
             this.lastInvocationTime = startTime
             const mappedReq = runtimeLanguageContext.mapToRuntimeLanguage(request)
-            const codewhispererPromise =
-                pagination && !isSM ? client.listRecommendations(mappedReq) : client.generateRecommendations(mappedReq)
+            const codewhispererPromise = pagination
+                ? client.listRecommendations(mappedReq)
+                : client.generateRecommendations(mappedReq)
             const resp = await this.getServerResponse(triggerType, config.isManualTriggerEnabled, codewhispererPromise)
             TelemetryHelper.instance.setSdkApiCallEndTime()
             latency = startTime !== 0 ? performance.now() - startTime : 0
@@ -333,8 +332,7 @@ export class RecommendationHandler {
                         config,
                         autoTriggerType,
                         pagination,
-                        page,
-                        true
+                        page
                     )
                 }
             }
