@@ -457,10 +457,11 @@ export class FileSystemState {
 
     // ------------------ Heartbeat methods ------------------
     public async sendHeartbeat() {
+        const extId = this.extId
         try {
             const now = this.deps.now()
             const func = async () => {
-                const filePath = this.makeStateFilePath(this.extId)
+                const filePath = this.makeStateFilePath(extId)
 
                 await fs.writeFile(filePath, JSON.stringify({ ...this.ext, lastHeartbeat: now }, undefined, 4))
 
@@ -480,13 +481,9 @@ export class FileSystemState {
             return funcWithTelemetryRun
         } catch (e) {
             // delete this ext from the state to avoid an incorrectly reported crash since we could not send a new heartbeat
-            await withFailCtx('sendHeartbeatFailureCleanup', () => this.clearHeartbeat())
+            await this.deleteHeartbeatFile(extId, 'sendHeartbeatFailureCleanup')
             throw e
         }
-    }
-    /** Clears this extentions heartbeat from the state */
-    public async clearHeartbeat() {
-        await this.deleteHeartbeatFile(this.extId)
     }
 
     /**
@@ -502,28 +499,22 @@ export class FileSystemState {
     public async indicateGracefulShutdown(): Promise<void> {
         // By removing the heartbeat entry, the crash checkers will not be able to find this entry anymore, making it
         // impossible to report on since the file system is the source of truth
-        await withFailCtx('indicateGracefulShutdown', () =>
-            nodeFs.rm(this.makeStateFilePath(this.extId), { force: true })
-        )
+        await this.deleteHeartbeatFile(this.extId, 'indicateGracefulShutdown')
     }
 
     // ------------------ Checker Methods ------------------
 
     public async handleCrashedExt(ext: ExtInstance, fn: () => void) {
-        await withFailCtx('handleCrashedExt', async () => {
-            await this.deleteHeartbeatFile(ext)
-            fn()
-        })
+        await this.deleteHeartbeatFile(ext, 'handleCrashedExt')
+        await withFailCtx('handleCrashedExt', async () => fn())
     }
 
-    private async deleteHeartbeatFile(ext: ExtInstanceId | ExtInstance) {
-        // Retry file deletion to prevent incorrect crash reports. Common Windows errors seen in telemetry: EPERM/EBUSY.
-        // See: https://github.com/aws/aws-toolkit-vscode/pull/5335
-        await withRetries(() => withFailCtx('deleteStaleRunningFile', () => fs.delete(this.makeStateFilePath(ext))), {
-            maxRetries: 6,
-            delay: 100,
-            backoff: 2,
-        })
+    private async deleteHeartbeatFile(ext: ExtInstanceId | ExtInstance, ctx: string) {
+        // IMPORTANT: Must use NodeFs here since this is used during shutdown
+        const func = () => nodeFs.rm(this.makeStateFilePath(ext), { force: true })
+        const funcWithCtx = () => withFailCtx(ctx, func)
+        const funcWithRetries = withRetries(funcWithCtx, { maxRetries: 6, delay: 100, backoff: 2 })
+        await funcWithRetries
     }
 
     // ------------------ State data ------------------
