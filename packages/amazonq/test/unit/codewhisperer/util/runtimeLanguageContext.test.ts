@@ -211,9 +211,6 @@ describe('runtimeLanguageContext', function () {
         ]
 
         for (const [inputCwsprLanguageId, expectedCwsprLanguageId] of codewhispererLanguageIds) {
-            if (inputCwsprLanguageId === 'systemVerilog') {
-                console.log()
-            }
             it(`should return ${expectedCwsprLanguageId} if input codewhispererLanguageId is - ${inputCwsprLanguageId}`, function () {
                 const actual = languageContext.toRuntimeLanguage(inputCwsprLanguageId)
                 assert.strictEqual(actual, expectedCwsprLanguageId)
