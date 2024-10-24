@@ -25,7 +25,11 @@ export async function activate(context: ExtensionContext) {
     await amazonq.TryChatCodeLensProvider.register(appInitContext.onDidChangeAmazonQVisibility.event)
 
     const setupLsp = funcUtil.debounce(async () => {
-        void amazonq.LspController.instance.trySetupLsp(context)
+        void amazonq.LspController.instance.trySetupLsp(context, {
+            startUrl: AuthUtil.instance.startUrl,
+            maxIndexSize: CodeWhispererSettings.instance.getMaxIndexSize(),
+            isVectorIndexEnabled: CodeWhispererSettings.instance.isLocalIndexEnabled(),
+        })
     }, 5000)
 
     context.subscriptions.push(

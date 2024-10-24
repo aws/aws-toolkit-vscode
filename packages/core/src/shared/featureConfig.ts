@@ -32,6 +32,7 @@ const featureConfigPollIntervalInMs = 30 * 60 * 1000 // 30 mins
 export const Features = {
     customizationArnOverride: 'customizationArnOverride',
     dataCollectionFeature: 'IDEProjectContextDataCollection',
+    projectContextFeature: 'ProjectContextV2',
     test: 'testFeature',
 } as const
 
@@ -66,6 +67,10 @@ export class FeatureConfigProvider {
 
     isAmznDataCollectionGroup(): boolean {
         return this._isDataCollectionGroup
+    }
+
+    isNewProjectContextGroup(): boolean {
+        return this.featureConfigs.get(Features.projectContextFeature)?.variation === 'TREATMENT'
     }
 
     public async listFeatureEvaluations(): Promise<ListFeatureEvaluationsResponse> {

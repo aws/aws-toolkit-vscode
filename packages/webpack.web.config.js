@@ -75,6 +75,7 @@ module.exports = (env, argv) => {
                 // These do not have a straight forward replacement
                 child_process: false, // Reason for error: 'TypeError: The "original" argument must be of type Function'
                 async_hooks: false,
+                net: false,
             },
         },
         optimization: {

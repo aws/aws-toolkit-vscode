@@ -15,12 +15,10 @@ import { LspClient } from './lspClient'
 import AdmZip from 'adm-zip'
 import { RelevantTextDocument } from '@amzn/codewhisperer-streaming'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../shared/filesystemUtilities'
-import { CodeWhispererSettings } from '../../codewhisperer/util/codewhispererSettings'
 import { activate as activateLsp } from './lspClient'
 import { telemetry } from '../../shared/telemetry'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { fs, globals, ToolkitError } from '../../shared'
-import { AuthUtil } from '../../codewhisperer'
 import { isWeb } from '../../shared/extensionGlobals'
 import { getUserAgent } from '../../shared/telemetry/util'
 import { isAmazonInternalOs } from '../../shared/vscode/env'
@@ -68,9 +66,16 @@ export interface Manifest {
 }
 const manifestUrl = 'https://aws-toolkit-language-servers.amazonaws.com/q-context/manifest.json'
 // this LSP client in Q extension is only going to work with these LSP server versions
-const supportedLspServerVersions = ['0.1.13']
+const supportedLspServerVersions = ['0.1.22', '0.1.19']
 
 const nodeBinName = process.platform === 'win32' ? 'node.exe' : 'node'
+
+export interface BuildIndexConfig {
+    startUrl?: string
+    maxIndexSize: number
+    isVectorIndexEnabled: boolean
+}
+
 /*
  * LSP Controller manages the status of Amazon Q LSP:
  * 1. Downloading, verifying and installing LSP using DEXP LSP manifest and CDN.
@@ -281,7 +286,7 @@ export class LspController {
     }
 
     async query(s: string): Promise<RelevantTextDocument[]> {
-        const chunks: Chunk[] | undefined = await LspClient.instance.query(s)
+        const chunks: Chunk[] | undefined = await LspClient.instance.queryVectorIndex(s)
         const resp: RelevantTextDocument[] = []
         chunks?.forEach((chunk) => {
             const text = chunk.context ? chunk.context : chunk.content
@@ -303,7 +308,15 @@ export class LspController {
         return resp
     }
 
-    async buildIndex() {
+    async queryInlineProjectContext(query: string, path: string) {
+        try {
+            return await LspClient.instance.queryInlineProjectContext(query, path)
+        } catch (e) {
+            return []
+        }
+    }
+
+    async buildIndex(buildIndexConfig: BuildIndexConfig) {
         getLogger().info(`LspController: Starting to build index of project`)
         const start = performance.now()
         const projPaths = getProjectPaths()
@@ -318,18 +331,16 @@ export class LspController {
                 projPaths,
                 vscode.workspace.workspaceFolders as CurrentWsFolders,
                 true,
-                CodeWhispererSettings.instance.getMaxIndexSize() * 1024 * 1024
+                buildIndexConfig.maxIndexSize * 1024 * 1024
             )
             const totalSizeBytes = files.reduce(
                 (accumulator, currentFile) => accumulator + currentFile.fileSizeBytes,
                 0
             )
             getLogger().info(`LspController: Found ${files.length} files in current project ${getProjectPaths()}`)
-            const resp = await LspClient.instance.indexFiles(
-                files.map((f) => f.fileUri.fsPath),
-                projRoot,
-                false
-            )
+            const config = buildIndexConfig.isVectorIndexEnabled ? 'all' : 'default'
+            const r = files.map((f) => f.fileUri.fsPath)
+            const resp = await LspClient.instance.buildIndex(r, projRoot, config)
             if (resp) {
                 getLogger().debug(`LspController: Finish building index of project`)
                 const usage = await LspClient.instance.getLspServerUsage()
@@ -340,31 +351,36 @@ export class LspController {
                     amazonqIndexMemoryUsageInMB: usage ? usage.memoryUsage / (1024 * 1024) : undefined,
                     amazonqIndexCpuUsagePercentage: usage ? usage.cpuUsage : undefined,
                     amazonqIndexFileSizeInMB: totalSizeBytes / (1024 * 1024),
-                    credentialStartUrl: AuthUtil.instance.startUrl,
+                    credentialStartUrl: buildIndexConfig.startUrl,
                 })
             } else {
-                getLogger().error(`LspController: Failed to build index of project`)
-                telemetry.amazonq_indexWorkspace.emit({
-                    duration: performance.now() - start,
-                    result: 'Failed',
-                    amazonqIndexFileCount: 0,
-                    amazonqIndexFileSizeInMB: 0,
-                })
+                // TODO: Re-enable this code path for LSP 0.1.20+
+                // getLogger().error(`LspController: Failed to build index of project`)
+                // telemetry.amazonq_indexWorkspace.emit({
+                //     duration: performance.now() - start,
+                //     result: 'Failed',
+                //     amazonqIndexFileCount: 0,
+                //     amazonqIndexFileSizeInMB: 0,
+                //     reason: `Unknown`,
+                // })
             }
-        } catch (e) {
+        } catch (error) {
+            //TODO: use telemetry.run()
             getLogger().error(`LspController: Failed to build index of project`)
             telemetry.amazonq_indexWorkspace.emit({
                 duration: performance.now() - start,
                 result: 'Failed',
                 amazonqIndexFileCount: 0,
                 amazonqIndexFileSizeInMB: 0,
+                reason: `${error instanceof Error ? error.name : 'Unknown'}`,
+                reasonDesc: `Error when building index. ${error instanceof Error ? error.message : error}`,
             })
         } finally {
             this._isIndexingInProgress = false
         }
     }
 
-    async trySetupLsp(context: vscode.ExtensionContext) {
+    async trySetupLsp(context: vscode.ExtensionContext, buildIndexConfig: BuildIndexConfig) {
         if (isCloud9() || isWeb() || isAmazonInternalOs()) {
             getLogger().warn('LspController: Skipping LSP setup. LSP is not compatible with the current environment. ')
             // do not do anything if in Cloud9 or Web mode or in AL2 (AL2 does not support node v18+)
@@ -378,9 +394,7 @@ export class LspController {
             try {
                 await activateLsp(context)
                 getLogger().info('LspController: LSP activated')
-                if (CodeWhispererSettings.instance.isLocalIndexEnabled()) {
-                    void LspController.instance.buildIndex()
-                }
+                void LspController.instance.buildIndex(buildIndexConfig)
                 // log the LSP server CPU and Memory usage per 30 minutes.
                 globals.clock.setInterval(
                     async () => {
