@@ -44,8 +44,18 @@ jobs:
             - name: Run jscpd on entire codebase
               run: jscpd --config "$GITHUB_WORKSPACE/.github/workflows/jscpd.json"
 
+            - name: Get current branch and target branch
+              id: get_branches
+              run: |
+                  if [ "${{ github.event_name }}" == "pull_request" ]; then
+                      echo "CURRENT_BRANCH=${{ github.head_ref }}" >> $GITHUB_ENV
+                      echo "TARGET_BRANCH=${{ github.event.pull_request.base.ref }}" >> $GITHUB_ENV
+                  else
+                      echo "CURRENT_BRANCH=${{ github.head_ref }}" >> $GITHUB_ENV
+                      echo "TARGET_BRANCH=master" >> $GITHUB_ENV  # Default target branch
+                  fi
             - name: Get the diff
-              run: git diff --name-only origin/${{ github.event.pull_request.base.ref }}..${{ github.head_ref }} >> diff_output.txt
+              run: git diff --name-only origin/$TARGET_BRANCH $CURRENT_BRANCH > diff_output.txt
 
             - name: Upload unfiltered jscpd report
               if: always()
