@@ -9,9 +9,8 @@ import globals from '../../shared/extensionGlobals'
 import { CrashMonitoring, ExtInstance, crashMonitoringStateFactory } from '../../shared/crashMonitoring'
 import { isCI } from '../../shared/vscode/env'
 import { getLogger } from '../../shared/logger/logger'
-import { TimeLag } from '../../shared/utilities/timeoutUtils'
 import { SinonSandbox, createSandbox } from 'sinon'
-import { fs } from '../../shared'
+import { fs, randomUUID } from '../../shared'
 import path from 'path'
 
 class TestCrashMonitoring extends CrashMonitoring {
@@ -20,15 +19,18 @@ class TestCrashMonitoring extends CrashMonitoring {
     }
     /** Imitates an extension crash */
     public async crash() {
-        this.crashChecker?.testCrash()
-        this.heartbeat?.testCrash()
+        this.crashChecker.testCrash()
+        this.heartbeat.testCrash()
+    }
+
+    public getTimeLag() {
+        return this.crashChecker.timeLag
     }
 }
 
 export const crashMonitoringTest = async () => {
     let testFolder: TestFolder
     let spawnedExtensions: TestCrashMonitoring[]
-    let timeLag: TimeLag
     let sandbox: SinonSandbox
 
     // Scale down the default interval we heartbeat and check for crashes to something much short for testing.
@@ -46,30 +48,27 @@ export const crashMonitoringTest = async () => {
     async function makeTestExtensions(amount: number) {
         const extensions: TestExtension[] = []
         for (let i = 0; i < amount; i++) {
-            extensions[i] = await makeTestExtension(i, new TimeLag())
+            extensions[i] = await makeTestExtension(i)
         }
         return extensions
     }
 
-    async function makeTestExtension(id: number, timeLag: TimeLag, opts?: { isStateStale: () => Promise<boolean> }) {
+    async function makeTestExtension(id: number, opts?: { isStateStale: () => Promise<boolean> }) {
         const isStateStale = opts?.isStateStale ?? (() => Promise.resolve(false))
-        const sessionId = `sessionId-${id}`
-        const pid = Number(String(id).repeat(6))
+        const sessionId = randomUUID()
 
         const state = await crashMonitoringStateFactory({
             workDirPath: testFolder.path,
             isStateStale,
-            pid,
             sessionId: sessionId,
             now: () => globals.clock.Date.now(),
             memento: globals.globalState,
             isDevMode: true,
             devLogger: getLogger(),
         })
-        const ext = new TestCrashMonitoring(state, checkInterval, true, false, getLogger(), timeLag)
+        const ext = new TestCrashMonitoring(state, checkInterval, true, false, getLogger())
         spawnedExtensions.push(ext)
         const metadata = {
-            extHostPid: pid,
             sessionId,
             lastHeartbeat: globals.clock.Date.now(),
             isDebug: undefined,
@@ -80,14 +79,12 @@ export const crashMonitoringTest = async () => {
     beforeEach(async function () {
         testFolder = await TestFolder.create()
         spawnedExtensions = []
-        timeLag = new TimeLag()
         sandbox = createSandbox()
     })
 
     afterEach(async function () {
         // clean up all running instances
         spawnedExtensions?.forEach((e) => e.crash())
-        timeLag.cleanup()
         sandbox.restore()
     })
 
@@ -164,7 +161,7 @@ export const crashMonitoringTest = async () => {
         assertTelemetry('session_end', [])
 
         // This extension clears the state due to it being stale, not reporting the previously crashed ext
-        const ext1 = await makeTestExtension(1, timeLag, { isStateStale: () => Promise.resolve(true) })
+        const ext1 = await makeTestExtension(1, { isStateStale: () => Promise.resolve(true) })
         await ext1.ext.start()
         await awaitIntervals(oneInterval * 1)
         assertCrashedExtensions([])
@@ -195,27 +192,24 @@ export const crashMonitoringTest = async () => {
         // This test handles the case for a users computer doing a sleep+wake and
         // then a crash was incorrectly reported since a new heartbeat could not be sent in time
 
-        const timeLagStub = sandbox.stub(timeLag)
-        timeLagStub.start.resolves()
-        timeLagStub.didLag.resolves(false)
-
         // Load up a crash
-        const ext0 = await makeTestExtension(0, timeLagStub as unknown as TimeLag)
+        const ext0 = await makeTestExtension(0)
         await ext0.ext.start()
         await ext0.ext.crash()
 
-        const ext1 = await makeTestExtension(1, timeLagStub as unknown as TimeLag)
-        await ext1.ext.start()
-
+        const ext1 = await makeTestExtension(1)
         // Indicate that we have a time lag, and until it returns false
         // we will skip crash checking
-        timeLagStub.didLag.resolves(true)
-        await awaitIntervals(oneInterval)
+        const didLagStub = sandbox.stub(ext1.ext.getTimeLag(), 'didLag')
+        didLagStub.returns(true)
+        await ext1.ext.start()
+
+        // Since we have a time lag the crash checker will not run
+        await awaitIntervals(oneInterval * 2)
         assertCrashedExtensions([])
-        await awaitIntervals(oneInterval)
-        assertCrashedExtensions([])
+
         // Now that the time lag is true, we will check for a crash
-        timeLagStub.didLag.resolves(false)
+        didLagStub.returns(false)
         await awaitIntervals(oneInterval)
         assertCrashedExtensions([ext0])
     })
@@ -279,8 +273,7 @@ export const crashMonitoringTest = async () => {
             const state = await crashMonitoringStateFactory({
                 workDirPath: testFolder.path,
                 isStateStale: () => Promise.resolve(false),
-                pid: 1111,
-                sessionId: 'sessionId_1111',
+                sessionId: randomUUID(),
                 now: () => globals.clock.Date.now(),
                 memento: globals.globalState,
                 isDevMode: true,
