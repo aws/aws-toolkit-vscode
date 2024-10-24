@@ -549,24 +549,15 @@ export class FileSystemState {
         })
     }
     public async getAllExts(): Promise<ExtInstanceHeartbeat[]> {
-        const res = await withFailCtx('getAllExts', async () => {
+        return withFailCtx('getAllExts', async () => {
             // Read all the exts from the filesystem, deserializing as needed
             const allExtIds: ExtInstanceId[] = await withFailCtx('readdir', async () => {
                 const filesInDir = await fs.readdir(this.stateDirPath)
-                const relevantFiles = filesInDir.filter((file: [string, vscode.FileType]) => {
-                    const name = file[0]
-                    const type = file[1]
-                    if (type !== vscode.FileType.File) {
-                        return false
-                    }
-                    if (path.extname(name) !== `.${this.fileSuffix}`) {
-                        return false
-                    }
-                    return true
+                const relevantFiles = filesInDir.filter((file: [name: string, type: vscode.FileType]) => {
+                    return file[1] === vscode.FileType.File && path.extname(file[0]) === `.${this.fileSuffix}`
                 })
-                const idsFromFileNames = relevantFiles.map((file: [string, vscode.FileType]) => {
-                    const name = file[0]
-                    return name.split('.')[0]
+                const idsFromFileNames = relevantFiles.map((file: [name: string, type: vscode.FileType]) => {
+                    return file[0].split('.')[0]
                 })
                 return idsFromFileNames
             })
@@ -575,22 +566,21 @@ export class FileSystemState {
                 // Due to a race condition, a separate extension instance may have removed this file by this point. It is okay since
                 // we will assume that other instance handled its termination appropriately.
                 // NOTE: On Windows we were failing on EBUSY, so we retry on failure.
-                const ext: ExtInstanceHeartbeat | undefined = await withRetries(
-                    () =>
-                        withFailCtx('parseRunningExtFile', async () =>
-                            ignoreBadFileError(async () => {
-                                const text = await fs.readFileText(this.makeStateFilePath(extId))
+                const loadExtFromDisk = async () => {
+                    const text = await fs.readFileText(this.makeStateFilePath(extId))
 
-                                if (!text) {
-                                    return undefined
-                                }
+                    if (!text) {
+                        return undefined
+                    }
 
-                                // This was sometimes throwing SyntaxError
-                                return JSON.parse(text) as ExtInstanceHeartbeat
-                            })
-                        ),
-                    { maxRetries: 6, delay: 100, backoff: 2 }
-                )
+                    // This was sometimes throwing SyntaxError
+                    return JSON.parse(text) as ExtInstanceHeartbeat
+                }
+                const funcWithIgnoreBadFile = () => ignoreBadFileError(loadExtFromDisk)
+                const funcWithRetries = () =>
+                    withRetries(funcWithIgnoreBadFile, { maxRetries: 6, delay: 100, backoff: 2 })
+                const funcWithCtx = () => withFailCtx('parseRunningExtFile', funcWithRetries)
+                const ext: ExtInstanceHeartbeat | undefined = await funcWithCtx()
 
                 if (ext === undefined) {
                     return
@@ -602,10 +592,8 @@ export class FileSystemState {
                 return ext
             })
             // filter out undefined before returning
-            const result = (await Promise.all(allExts)).filter<ExtInstanceHeartbeat>(isExtHeartbeat)
-            return result
+            return (await Promise.all(allExts)).filter<ExtInstanceHeartbeat>(isExtHeartbeat)
         })
-        return res
     }
 }
 
