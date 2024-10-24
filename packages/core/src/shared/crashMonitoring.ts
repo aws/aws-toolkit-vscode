@@ -307,8 +307,6 @@ class CrashChecker {
                         passive: true,
                         timestamp: ext.lastHeartbeat,
                     })
-
-                    devLogger?.debug(`crashMonitoring: CRASH: following has crashed: sessionId: ${ext.sessionId}`)
                 })
             }
 
@@ -318,7 +316,7 @@ class CrashChecker {
                 // Sanity check: ENSURE THAT AFTER === ACTUAL or this implies that our data is out of sync
                 const afterActual = (await state.getAllExts()).map((i) => truncateUuid(i.sessionId))
                 devLogger?.debug(
-                    `crashMonitoring: CHECKED: Result of cleaning up stopped instances\nBEFORE: ${JSON.stringify(before)}\nAFTER:  ${JSON.stringify(after)}\nACTUAL: ${JSON.stringify(afterActual)}`
+                    `crashMonitoring: CHECKED: Result of cleaning up crashed instances\nBEFORE: ${JSON.stringify(before)}\nAFTER:  ${JSON.stringify(after)}\nACTUAL: ${JSON.stringify(afterActual)}`
                 )
             }
 
