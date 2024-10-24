@@ -372,7 +372,7 @@ export class LspController {
                 result: 'Failed',
                 amazonqIndexFileCount: 0,
                 amazonqIndexFileSizeInMB: 0,
-                reason: error.code ? error.code : error.name ? error.name : 'Unknown',
+                reason: `${error instanceof Error ? error.name : 'Unknown'}`,
                 reasonDesc: `Error when building index. ${error instanceof Error ? error.message : error}`,
             })
         } finally {
