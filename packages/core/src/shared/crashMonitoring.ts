@@ -137,8 +137,7 @@ export class CrashMonitoring {
     /** Stop the Crash Monitoring process, signifying a graceful shutdown */
     public async shutdown() {
         try {
-            this.crashChecker.cleanup()
-            await this.heartbeat.shutdown()
+            await this.cleanup()
         } catch (error) {
             try {
                 // This probably wont emit in time before shutdown, but may be written to the logs
