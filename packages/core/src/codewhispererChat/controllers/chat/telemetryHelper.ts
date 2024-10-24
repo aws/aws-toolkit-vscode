@@ -450,7 +450,7 @@ export class CWCTelemetryHelper {
             ),
             cwsprChatFullResponseLatency: this.responseStreamTotalTime.get(message.tabID) ?? 0,
             cwsprChatTimeToFirstDisplay: this.getFirstDisplayTime(tabID, startTime),
-            cwsprChatTimeFirstUsableChunk: this.getFirstUsableChunkTime(message.tabID) ?? 0,
+            cwsprChatTimeToFirstUsableChunk: this.getFirstUsableChunkTime(message.tabID) ?? 0,
             cwsprChatFullServerResponseLatency: this.conversationStreamTotalTime.get(message.tabID) ?? 0,
             cwsprChatTimeBetweenDisplays: JSON.stringify(this.getTimeBetweenChunks(tabID, this.displayTimeForChunks)),
             cwsprChatFullDisplayLatency: fullDisplayLatency,
