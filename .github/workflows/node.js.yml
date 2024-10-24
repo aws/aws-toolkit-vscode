@@ -44,6 +44,11 @@ jobs:
             - name: Run jscpd on entire codebase
               run: jscpd --config "$GITHUB_WORKSPACE/.github/workflows/jscpd.json"
 
+            - name: Set up Git
+              run: |
+                  git remote add upstream https://github.com/aws/aws-toolkit-vscode/${{ github.base_ref }}  # Add the base repo as upstream
+                  git fetch upstream  # Fetch the target branch from the base repo
+
             - name: Get current branch and target branch
               id: get_branches
               run: |
