@@ -10,7 +10,6 @@ import { ServiceOptions } from '../../shared/awsClientBuilder'
 import globals from '../../shared/extensionGlobals'
 import { getLogger } from '../../shared/logger'
 import * as FeatureDevProxyClient from './featuredevproxyclient'
-import apiConfig = require('./codewhispererruntime-2022-11-11.json')
 import { featureName } from '../constants'
 import { CodeReference } from '../../amazonq/webview/ui/connector'
 import {
@@ -25,6 +24,7 @@ import { getCodewhispererConfig } from '../../codewhisperer/client/codewhisperer
 import { createCodeWhispererChatStreamingClient } from '../../shared/clients/codewhispererChatClient'
 import { getClientId, getOptOutPreference, getOperatingSystem } from '../../shared/telemetry/util'
 import { extensionVersion } from '../../shared/vscode/env'
+import apiConfig = require('./codewhispererruntime-2022-11-11.json')
 
 // Re-enable once BE is able to handle retries.
 const writeAPIRetryOptions = {
@@ -87,7 +87,12 @@ export class FeatureDevClient {
         }
     }
 
-    public async createUploadUrl(conversationId: string, contentChecksumSha256: string, contentLength: number) {
+    public async createUploadUrl(
+        conversationId: string,
+        contentChecksumSha256: string,
+        contentLength: number,
+        uploadId: string
+    ) {
         try {
             const client = await this.getClient(writeAPIRetryOptions)
             const params = {
@@ -96,6 +101,7 @@ export class FeatureDevClient {
                         conversationId,
                     },
                 },
+                uploadId,
                 contentChecksum: contentChecksumSha256,
                 contentChecksumType: 'SHA_256',
                 artifactType: 'SourceCode',
@@ -105,7 +111,7 @@ export class FeatureDevClient {
             getLogger().debug(`Executing createUploadUrl with %O`, omit(params, 'contentChecksum'))
             const response = await client.createUploadUrl(params).promise()
             getLogger().debug(`${featureName}: Created upload url: %O`, {
-                uploadId: response.uploadId,
+                uploadId: uploadId,
                 requestId: response.$response.requestId,
             })
             return response
@@ -124,10 +130,17 @@ export class FeatureDevClient {
         }
     }
 
-    public async startCodeGeneration(conversationId: string, uploadId: string, message: string) {
+    public async startCodeGeneration(
+        conversationId: string,
+        uploadId: string,
+        message: string,
+        codeGenerationId: string,
+        currentCodeGenerationId?: string
+    ) {
         try {
             const client = await this.getClient(writeAPIRetryOptions)
             const params = {
+                codeGenerationId,
                 conversationState: {
                     conversationId,
                     currentMessage: {
@@ -139,6 +152,9 @@ export class FeatureDevClient {
                     uploadId,
                     programmingLanguage: { languageName: 'javascript' },
                 },
+            } as FeatureDevProxyClient.Types.StartTaskAssistCodeGenerationRequest
+            if (currentCodeGenerationId) {
+                params.currentCodeGenerationId = currentCodeGenerationId
             }
             getLogger().debug(`Executing startTaskAssistCodeGeneration with %O`, params)
             const response = await client.startTaskAssistCodeGeneration(params).promise()

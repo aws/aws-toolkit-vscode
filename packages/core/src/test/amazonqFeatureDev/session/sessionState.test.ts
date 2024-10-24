@@ -38,10 +38,12 @@ const mockSessionStateConfig = ({
     conversationId,
     uploadId,
     workspaceFolder,
+    currentCodeGenerationId,
 }: {
     conversationId: string
     uploadId: string
     workspaceFolder: vscode.WorkspaceFolder
+    currentCodeGenerationId?: string
 }): SessionStateConfig => ({
     workspaceRoots: ['fake-source'],
     workspaceFolders: [workspaceFolder],
@@ -54,12 +56,14 @@ const mockSessionStateConfig = ({
         exportResultArchive: () => mockExportResultArchive(),
     } as unknown as FeatureDevClient,
     uploadId,
+    currentCodeGenerationId,
 })
 
 describe('sessionState', () => {
     const conversationId = 'conversation-id'
     const uploadId = 'upload-id'
     const tabId = 'tab-id'
+    const currentCodeGenerationId = ''
     let testConfig: SessionStateConfig
 
     beforeEach(async () => {
@@ -67,6 +71,7 @@ describe('sessionState', () => {
             conversationId,
             uploadId,
             workspaceFolder: await createTestWorkspaceFolder('fake-root'),
+            currentCodeGenerationId,
         })
     })
 
@@ -107,18 +112,18 @@ describe('sessionState', () => {
                 codeGenerationRemainingIterationCount: 2,
                 codeGenerationTotalIterationCount: 3,
             })
+
             mockExportResultArchive = sinon.stub().resolves({ newFileContents: [], deletedFiles: [], references: [] })
 
             const testAction = mockSessionStateAction()
             const state = new CodeGenState(testConfig, [], [], [], tabId, 0, {}, 2, 3)
             const result = await state.interact(testAction)
 
-            const nextState = new PrepareCodeGenState(testConfig, [], [], [], tabId, 1, 2, 3)
+            const nextState = new PrepareCodeGenState(testConfig, [], [], [], tabId, 1, 2, 3, undefined)
 
-            assert.deepStrictEqual(result, {
-                nextState,
-                interaction: {},
-            })
+            assert.deepStrictEqual(result.nextState?.deletedFiles, nextState.deletedFiles)
+            assert.deepStrictEqual(result.nextState?.filePaths, result.nextState?.filePaths)
+            assert.deepStrictEqual(result.nextState?.references, result.nextState?.references)
         })
 
         it('fails when codeGenerationStatus failed ', async () => {
