@@ -28,14 +28,14 @@ jobs:
 
         steps:
             - name: Checkout code
-              uses: actions/checkout@v4
+              uses: actions/checkout@v1
               with:
                   fetch-depth: 0
 
             - name: Set up Node.js
               uses: actions/setup-node@v4
               with:
-                  node-version: '20'
+                  node-version: '18'
 
             - name: Install dependencies
               run: |
