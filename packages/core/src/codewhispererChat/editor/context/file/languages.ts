@@ -5,57 +5,57 @@
 
 import { TextDocument } from 'vscode'
 
+const defaultLanguages = [
+    'yaml',
+    'xsl',
+    'xml',
+    'vue',
+    'tex',
+    'typescript',
+    'swift',
+    'stylus',
+    'sql',
+    'slim',
+    'shaderlab',
+    'sass',
+    'rust',
+    'ruby',
+    'r',
+    'python',
+    'pug',
+    'powershell',
+    'php',
+    'perl',
+    'markdown',
+    'makefile',
+    'lua',
+    'less',
+    'latex',
+    'json',
+    'javascript',
+    'java',
+    'ini',
+    'html',
+    'haml',
+    'handlebars',
+    'groovy',
+    'go',
+    'diff',
+    'css',
+    'c',
+    'coffeescript',
+    'clojure',
+    'bibtex',
+    'abap',
+]
+
 export function extractLanguageNameFromFile(file: TextDocument): string | undefined {
     const languageId = file.languageId
 
     if (languageId === undefined) {
         return undefined
     }
-    if (
-        [
-            'yaml',
-            'xsl',
-            'xml',
-            'vue',
-            'tex',
-            'typescript',
-            'swift',
-            'stylus',
-            'sql',
-            'slim',
-            'shaderlab',
-            'sass',
-            'rust',
-            'ruby',
-            'r',
-            'python',
-            'pug',
-            'powershell',
-            'php',
-            'perl',
-            'markdown',
-            'makefile',
-            'lua',
-            'less',
-            'latex',
-            'json',
-            'javascript',
-            'java',
-            'ini',
-            'html',
-            'haml',
-            'handlebars',
-            'groovy',
-            'go',
-            'diff',
-            'css',
-            'c',
-            'coffeescript',
-            'clojure',
-            'bibtex',
-            'abap',
-        ].includes(languageId)
-    ) {
+    if (defaultLanguages.includes(languageId)) {
         return languageId
     }
     switch (languageId) {
@@ -117,54 +117,7 @@ export function extractLanguageNameFromFile(file: TextDocument): string | undefi
 export function extractAdditionalLanguageMatchPoliciesFromFile(file: TextDocument): Set<string> {
     const languageId = file.languageId
 
-    if (languageId === undefined) {
-        return new Set<string>()
-    }
-    if (
-        [
-            'yaml',
-            'xsl',
-            'xml',
-            'vue',
-            'tex',
-            'typescript',
-            'swift',
-            'stylus',
-            'sql',
-            'slim',
-            'shaderlab',
-            'sass',
-            'rust',
-            'ruby',
-            'r',
-            'python',
-            'pug',
-            'powershell',
-            'php',
-            'perl',
-            'markdown',
-            'makefile',
-            'lua',
-            'less',
-            'latex',
-            'json',
-            'javascript',
-            'java',
-            'ini',
-            'html',
-            'haml',
-            'handlebars',
-            'groovy',
-            'go',
-            'diff',
-            'css',
-            'c',
-            'coffeescript',
-            'clojure',
-            'bibtex',
-            'abap',
-        ].includes(languageId)
-    ) {
+    if (languageId === undefined || defaultLanguages.includes(languageId)) {
         return new Set<string>()
     }
     switch (languageId) {
