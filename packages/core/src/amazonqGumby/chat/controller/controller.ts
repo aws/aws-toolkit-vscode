@@ -411,14 +411,17 @@ export class GumbyController {
             const fromJDKVersion: JDKVersion = message.formSelectedValues['GumbyTransformJdkFromForm']
 
             telemetry.record({
+                // TODO: remove JavaSource/TargetVersionsAllowed when BI is updated to use source/target
                 codeTransformJavaSourceVersionsAllowed: JDKToTelemetryValue(
                     fromJDKVersion
                 ) as CodeTransformJavaSourceVersionsAllowed,
                 codeTransformJavaTargetVersionsAllowed: JDKToTelemetryValue(
                     toJDKVersion
                 ) as CodeTransformJavaTargetVersionsAllowed,
+                source: fromJDKVersion,
+                target: toJDKVersion,
                 codeTransformProjectId: pathToProject === undefined ? telemetryUndefined : getStringHash(pathToProject),
-                userChoice: 'Confirm-Language-Upgrade',
+                userChoice: 'Confirm-Java',
             })
 
             const projectName = path.basename(pathToProject)
@@ -446,7 +449,9 @@ export class GumbyController {
 
             telemetry.record({
                 codeTransformProjectId: pathToProject === undefined ? telemetryUndefined : getStringHash(pathToProject),
-                userChoice: 'Confirm-SQL-Conversion',
+                source: transformByQState.getSourceDB(),
+                target: transformByQState.getTargetDB(),
+                userChoice: 'Confirm-SQL',
             })
 
             const projectName = path.basename(pathToProject)
