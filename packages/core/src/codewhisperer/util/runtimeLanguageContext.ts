@@ -21,6 +21,7 @@ const runtimeLanguageSet: ReadonlySet<RuntimeLanguage> = new Set([
     'kotlin',
     'php',
     'python',
+    'powershell',
     'r',
     'dart',
     'ruby',
