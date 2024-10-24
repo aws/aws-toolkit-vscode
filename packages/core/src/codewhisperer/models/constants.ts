@@ -452,7 +452,7 @@ export const buildCodeStepMessage = 'Build uploaded code in secure build environ
 
 export const generatePlanStepMessage = 'Generate transformation plan'
 
-export const transformStepMessage = 'Transform your code to Java 17'
+export const transformStepMessage = 'Transform your code'
 
 export const filesUploadedMessage =
     'Files have been uploaded to Amazon Q, transformation job has been accepted and is preparing to start.'
