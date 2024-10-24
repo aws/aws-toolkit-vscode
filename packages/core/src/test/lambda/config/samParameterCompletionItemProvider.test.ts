@@ -13,6 +13,32 @@ import {
 import * as CloudFormation from '../../../shared/cloudformation/cloudformation'
 import { Logger } from '../../../shared/logger'
 
+function getTestProviderWithTemplate(
+    template: CloudFormation.Template,
+    templatesSymbol: vscode.DocumentSymbol
+): SamParameterCompletionItemProvider {
+    return new SamParameterCompletionItemProvider(
+        new MockSamParamComplItemProviderContext({
+            executeCommand: async <T>() => [templatesSymbol] as any as T,
+            getWorkspaceFolder: () => ({ uri: vscode.Uri.file('') }) as any as vscode.WorkspaceFolder,
+            loadTemplate: async () => template,
+        })
+    )
+}
+
+async function getProvidedItems(
+    document: vscode.TextDocument,
+    provider: SamParameterCompletionItemProvider,
+    position: vscode.Position
+) {
+    return await provider.provideCompletionItems(
+        document,
+        position,
+        {} as any as vscode.CancellationToken,
+        {} as any as vscode.CompletionContext
+    )
+}
+
 function createTemplatesSymbol({
     uri = vscode.Uri.file(path.join('my', 'template', 'uri')),
     includeOverrides = false,
@@ -112,12 +138,7 @@ describe('SamParameterCompletionItemProvider', async function () {
         const document: vscode.TextDocument = {
             uri: vscode.Uri.file(path.join('my', 'path')),
         } as any as vscode.TextDocument
-        const actualItems = await provider.provideCompletionItems(
-            document,
-            new vscode.Position(0, 0),
-            {} as any as vscode.CancellationToken,
-            {} as any as vscode.CompletionContext
-        )
+        const actualItems = await getProvidedItems(document, provider, new vscode.Position(0, 0))
 
         assert.ok(actualItems)
         assert.strictEqual(actualItems.length, 0)
@@ -140,12 +161,7 @@ describe('SamParameterCompletionItemProvider', async function () {
         const document: vscode.TextDocument = {
             uri: vscode.Uri.file(path.join('my', 'path')),
         } as any as vscode.TextDocument
-        const actualItems = await provider.provideCompletionItems(
-            document,
-            new vscode.Position(0, 0),
-            {} as any as vscode.CancellationToken,
-            {} as any as vscode.CompletionContext
-        )
+        const actualItems = await getProvidedItems(document, provider, new vscode.Position(0, 0))
 
         assert.ok(actualItems)
         assert.strictEqual(actualItems.length, 0)
@@ -162,12 +178,7 @@ describe('SamParameterCompletionItemProvider', async function () {
         const document: vscode.TextDocument = {
             uri: vscode.Uri.file(path.join('my', 'path')),
         } as any as vscode.TextDocument
-        const actualItems = await provider.provideCompletionItems(
-            document,
-            new vscode.Position(0, 0),
-            {} as any as vscode.CancellationToken,
-            {} as any as vscode.CompletionContext
-        )
+        const actualItems = await getProvidedItems(document, provider, new vscode.Position(0, 0))
 
         assert.ok(actualItems)
         assert.strictEqual(actualItems.length, 0)
@@ -179,22 +190,17 @@ describe('SamParameterCompletionItemProvider', async function () {
             parameterName: 'myParamName',
         })
 
-        const provider = new SamParameterCompletionItemProvider(
-            new MockSamParamComplItemProviderContext({
-                executeCommand: async <T>() => [templatesSymbol] as any as T,
-                getWorkspaceFolder: () => ({ uri: vscode.Uri.file('') }) as any as vscode.WorkspaceFolder,
-                loadTemplate: async () => ({
-                    Parameters: {
-                        MyParamName1: {
-                            Type: 'String',
-                        },
-                        MyParamName2: {
-                            Type: 'String',
-                        },
-                    },
-                }),
-            })
-        )
+        const template: CloudFormation.Template = {
+            Parameters: {
+                MyParamName1: {
+                    Type: 'String',
+                },
+                MyParamName2: {
+                    Type: 'String',
+                },
+            },
+        }
+        const provider = getTestProviderWithTemplate(template, templatesSymbol)
 
         const document: vscode.TextDocument = {
             uri: vscode.Uri.file(path.join('.aws', 'templates.json')),
@@ -202,12 +208,7 @@ describe('SamParameterCompletionItemProvider', async function () {
             getText: () => '',
         } as any as vscode.TextDocument
 
-        const actualItems = await provider.provideCompletionItems(
-            document,
-            new vscode.Position(3, 0),
-            {} as any as vscode.CancellationToken,
-            {} as any as vscode.CompletionContext
-        )
+        const actualItems = await getProvidedItems(document, provider, new vscode.Position(3, 0))
 
         assert.ok(actualItems)
         assert.strictEqual(actualItems.length, 2)
@@ -221,25 +222,20 @@ describe('SamParameterCompletionItemProvider', async function () {
             parameterName: 'myParamName',
         })
 
-        const provider = new SamParameterCompletionItemProvider(
-            new MockSamParamComplItemProviderContext({
-                executeCommand: async <T>() => [templatesSymbol] as any as T,
-                getWorkspaceFolder: () => ({ uri: vscode.Uri.file('') }) as any as vscode.WorkspaceFolder,
-                loadTemplate: async () => ({
-                    Parameters: {
-                        MyParamName1: {
-                            Type: 'String',
-                        },
-                        MyParamName2: {
-                            Type: 'String',
-                        },
-                        MyOtherParamName: {
-                            Type: 'String',
-                        },
-                    },
-                }),
-            })
-        )
+        const template: CloudFormation.Template = {
+            Parameters: {
+                MyParamName1: {
+                    Type: 'String',
+                },
+                MyParamName2: {
+                    Type: 'String',
+                },
+                MyOtherParamName: {
+                    Type: 'String',
+                },
+            },
+        }
+        const provider = getTestProviderWithTemplate(template, templatesSymbol)
 
         const document: vscode.TextDocument = {
             uri: vscode.Uri.file(path.join('.aws', 'templates.json')),
@@ -247,12 +243,7 @@ describe('SamParameterCompletionItemProvider', async function () {
             getText: () => 'MyParamName',
         } as any as vscode.TextDocument
 
-        const actualItems = await provider.provideCompletionItems(
-            document,
-            new vscode.Position(3, 0),
-            {} as any as vscode.CancellationToken,
-            {} as any as vscode.CompletionContext
-        )
+        const actualItems = await getProvidedItems(document, provider, new vscode.Position(3, 0))
 
         assert.ok(actualItems)
         assert.strictEqual(actualItems.length, 2)
@@ -268,11 +259,10 @@ describe('SamParameterCompletionItemProvider', async function () {
             })
         )
 
-        const actualItems = await provider.provideCompletionItems(
+        const actualItems = await getProvidedItems(
             { uri: vscode.Uri.file(path.join('.aws', 'templates.json')) } as any as vscode.TextDocument,
-            new vscode.Position(0, 0),
-            {} as any as vscode.CancellationToken,
-            {} as any as vscode.CompletionContext
+            provider,
+            new vscode.Position(0, 0)
         )
 
         assert.ok(actualItems)
@@ -285,25 +275,20 @@ describe('SamParameterCompletionItemProvider', async function () {
             parameterName: 'myParamName',
         })
 
-        const provider = new SamParameterCompletionItemProvider(
-            new MockSamParamComplItemProviderContext({
-                executeCommand: async <T>() => [templatesSymbol] as any as T,
-                getWorkspaceFolder: () => ({ uri: vscode.Uri.file('') }) as any as vscode.WorkspaceFolder,
-                loadTemplate: async () => ({
-                    Parameters: {
-                        MyParamName1: {
-                            Type: 'String',
-                        },
-                        MyParamName2: {
-                            Type: 'String',
-                        },
-                        MyOtherParamName: {
-                            Type: 'String',
-                        },
-                    },
-                }),
-            })
-        )
+        const template: CloudFormation.Template = {
+            Parameters: {
+                MyParamName1: {
+                    Type: 'String',
+                },
+                MyParamName2: {
+                    Type: 'String',
+                },
+                MyOtherParamName: {
+                    Type: 'String',
+                },
+            },
+        }
+        const provider = getTestProviderWithTemplate(template, templatesSymbol)
 
         const document: vscode.TextDocument = {
             uri: vscode.Uri.file(path.join('.aws', 'templates.json')),
@@ -311,12 +296,7 @@ describe('SamParameterCompletionItemProvider', async function () {
             getText: () => 'MyParamName',
         } as any as vscode.TextDocument
 
-        const actualItems = await provider.provideCompletionItems(
-            document,
-            new vscode.Position(11, 0),
-            {} as any as vscode.CancellationToken,
-            {} as any as vscode.CompletionContext
-        )
+        const actualItems = await getProvidedItems(document, provider, new vscode.Position(11, 0))
 
         assert.ok(actualItems)
         assert.strictEqual(actualItems.length, 0)
@@ -324,25 +304,20 @@ describe('SamParameterCompletionItemProvider', async function () {
 
     it('recovers gracefully if `parameterOverrides` is not defined for this template', async function () {
         const templatesSymbol = createTemplatesSymbol({})
-        const provider = new SamParameterCompletionItemProvider(
-            new MockSamParamComplItemProviderContext({
-                executeCommand: async <T>() => [templatesSymbol] as any as T,
-                getWorkspaceFolder: () => ({ uri: vscode.Uri.file('') }) as any as vscode.WorkspaceFolder,
-                loadTemplate: async () => ({
-                    Parameters: {
-                        MyParamName1: {
-                            Type: 'String',
-                        },
-                        MyParamName2: {
-                            Type: 'String',
-                        },
-                        MyOtherParamName: {
-                            Type: 'String',
-                        },
-                    },
-                }),
-            })
-        )
+        const template: CloudFormation.Template = {
+            Parameters: {
+                MyParamName1: {
+                    Type: 'String',
+                },
+                MyParamName2: {
+                    Type: 'String',
+                },
+                MyOtherParamName: {
+                    Type: 'String',
+                },
+            },
+        }
+        const provider = getTestProviderWithTemplate(template, templatesSymbol)
 
         const document: vscode.TextDocument = {
             uri: vscode.Uri.file(path.join('.aws', 'templates.json')),
@@ -350,12 +325,7 @@ describe('SamParameterCompletionItemProvider', async function () {
             getText: () => 'MyParamName',
         } as any as vscode.TextDocument
 
-        const actualItems = await provider.provideCompletionItems(
-            document,
-            new vscode.Position(11, 0),
-            {} as any as vscode.CancellationToken,
-            {} as any as vscode.CompletionContext
-        )
+        const actualItems = await getProvidedItems(document, provider, new vscode.Position(11, 0))
 
         assert.ok(actualItems)
         assert.strictEqual(actualItems.length, 0)
@@ -367,25 +337,20 @@ describe('SamParameterCompletionItemProvider', async function () {
             parameterName: 'myParamName',
         })
 
-        const provider = new SamParameterCompletionItemProvider(
-            new MockSamParamComplItemProviderContext({
-                executeCommand: async <T>() => [templatesSymbol] as any as T,
-                getWorkspaceFolder: () => ({ uri: vscode.Uri.file('') }) as any as vscode.WorkspaceFolder,
-                loadTemplate: async () => ({
-                    Parameters: {
-                        MyParamName1: {
-                            Type: 'String',
-                        },
-                        MyParamName2: {
-                            Type: 'String',
-                        },
-                        MyOtherParamName: {
-                            Type: 'String',
-                        },
-                    },
-                }),
-            })
-        )
+        const template: CloudFormation.Template = {
+            Parameters: {
+                MyParamName1: {
+                    Type: 'String',
+                },
+                MyParamName2: {
+                    Type: 'String',
+                },
+                MyOtherParamName: {
+                    Type: 'String',
+                },
+            },
+        }
+        const provider = getTestProviderWithTemplate(template, templatesSymbol)
 
         const document: vscode.TextDocument = {
             uri: vscode.Uri.file(path.join('.aws', 'templates.json')),
@@ -393,12 +358,7 @@ describe('SamParameterCompletionItemProvider', async function () {
             getText: () => 'MyParamName',
         } as any as vscode.TextDocument
 
-        const actualItems = await provider.provideCompletionItems(
-            document,
-            new vscode.Position(9, 0),
-            {} as any as vscode.CancellationToken,
-            {} as any as vscode.CompletionContext
-        )
+        const actualItems = await getProvidedItems(document, provider, new vscode.Position(9, 0))
 
         assert.ok(actualItems)
         assert.strictEqual(actualItems.length, 0)
@@ -410,25 +370,20 @@ describe('SamParameterCompletionItemProvider', async function () {
             parameterName: 'myParamName',
         })
 
-        const provider = new SamParameterCompletionItemProvider(
-            new MockSamParamComplItemProviderContext({
-                executeCommand: async <T>() => [templatesSymbol] as any as T,
-                getWorkspaceFolder: () => ({ uri: vscode.Uri.file('') }) as any as vscode.WorkspaceFolder,
-                loadTemplate: async () => ({
-                    Parameters: {
-                        MyParamName1: {
-                            Type: 'String',
-                        },
-                        MyParamName2: {
-                            Type: 'String',
-                        },
-                        MyOtherParamName: {
-                            Type: 'String',
-                        },
-                    },
-                }),
-            })
-        )
+        const template: CloudFormation.Template = {
+            Parameters: {
+                MyParamName1: {
+                    Type: 'String',
+                },
+                MyParamName2: {
+                    Type: 'String',
+                },
+                MyOtherParamName: {
+                    Type: 'String',
+                },
+            },
+        }
+        const provider = getTestProviderWithTemplate(template, templatesSymbol)
 
         const document: vscode.TextDocument = {
             uri: vscode.Uri.file(path.join('.aws', 'templates.json')),
@@ -436,12 +391,7 @@ describe('SamParameterCompletionItemProvider', async function () {
             getText: () => 'MyParamName',
         } as any as vscode.TextDocument
 
-        const actualItems = await provider.provideCompletionItems(
-            document,
-            new vscode.Position(4, 0),
-            {} as any as vscode.CancellationToken,
-            {} as any as vscode.CompletionContext
-        )
+        const actualItems = await getProvidedItems(document, provider, new vscode.Position(4, 0))
 
         assert.ok(actualItems)
         assert.strictEqual(actualItems.length, 0)
