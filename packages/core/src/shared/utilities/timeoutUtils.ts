@@ -387,21 +387,3 @@ export class TimeLag {
         globals.clock.clearInterval(this.intervalRef)
     }
 }
-/**
- * Tries to execute an asynchronous Promise with a specified time limit.
- * If the Promise is not resolved within the time limit, it returns `undefined`.
- *
- * @param {Promise<T>} asyncPromise - The asynchronous Promise to execute.
- * @param {number} timeLimit - The time limit in milliseconds.
- * @returns {Promise<T | undefined>} A Promise that resolves with the result of the original Promise if it completes within the time limit, or `undefined` if the time limit is exceeded.
- */
-export function tryTimeout<T>(asyncPromise: Promise<T>, timeLimit: number): Promise<T> {
-    let timeoutHandle: NodeJS.Timeout
-    const timeoutPromise = new Promise((resolve) => {
-        timeoutHandle = setTimeout(() => resolve(undefined), timeLimit)
-    })
-    return Promise.race([asyncPromise, timeoutPromise]).then((result) => {
-        clearTimeout(timeoutHandle)
-        return result as T
-    })
-}
