@@ -321,9 +321,11 @@ export async function zipCode(
             getLogger().info(`CodeTransformation: source code files size = ${sourceFilesSize}`)
         }
 
-        if (transformByQState.getMetadataPathSQL() && zipManifest instanceof ZipManifest) {
-            // user is doing a SQL conversion since metadataPath is defined
-            // also, it must be a ZipManifest since only other option is HilZipManifest which is not used for SQL conversions
+        if (
+            transformByQState.getTransformationType() === TransformationType.SQL_CONVERSION &&
+            zipManifest instanceof ZipManifest
+        ) {
+            // note that zipManifest must be a ZipManifest since only other option is HilZipManifest which is not used for SQL conversions
             const metadataZip = new AdmZip(transformByQState.getMetadataPathSQL())
             zipManifest.requestedConversions.sqlConversion = {
                 source: transformByQState.getSourceDB(),
@@ -332,7 +334,7 @@ export async function zipCode(
                 host: transformByQState.getSourceServerName(),
                 sctFileName: metadataZip.getEntries().filter((entry) => entry.entryName.endsWith('.sct'))[0].entryName,
             }
-            // TO-DO: later make this add to path.join(zipManifest.dependenciesRoot, 'qct-sct-metadata', entry.entryName) so that it's more organized
+            // TO-DO: later consider making this add to path.join(zipManifest.dependenciesRoot, 'qct-sct-metadata', entry.entryName) so that it's more organized
             metadataZip
                 .getEntries()
                 .forEach((entry) =>

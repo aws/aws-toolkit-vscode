@@ -597,9 +597,6 @@ export async function startTransformationJob(uploadId: string, transformStartTim
             telemetry.record({
                 codeTransformJobId: jobId,
                 codeTransformRunTimeLatency: calculateTotalLatency(transformStartTime),
-                codeTransformTarget: transformByQState.getMetadataPathSQL()
-                    ? transformByQState.getTargetDB()
-                    : transformByQState.getTargetJDKVersion(),
             })
         })
     } catch (error) {
