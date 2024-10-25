@@ -9,6 +9,7 @@ import { Ec2InstanceNode } from '../../../awsService/ec2/explorer/ec2InstanceNod
 import { Ec2ParentNode } from '../../../awsService/ec2/explorer/ec2ParentNode'
 import { Ec2Client } from '../../../shared/clients/ec2Client'
 import { Ec2ConnectionManager } from '../../../awsService/ec2/model'
+import { PollingSet } from '../../../shared/utilities/pollingSet'
 
 describe('ec2 telemetry', function () {
     let testNode: Ec2InstanceNode
@@ -16,6 +17,9 @@ describe('ec2 telemetry', function () {
     before(function () {
         const testRegion = 'test-region'
         const testPartition = 'test-partition'
+        // Don't want to be polling here, that is tested in ../ec2ParentNode.test.ts
+        // disabled here for convenience (avoiding race conditions with timeout)
+        sinon.stub(PollingSet.prototype, 'start')
         const testClient = new Ec2Client(testRegion)
         const parentNode = new Ec2ParentNode(testRegion, testPartition, new Ec2Client(testRegion))
         testNode = new Ec2InstanceNode(parentNode, testClient, testRegion, testPartition, {
