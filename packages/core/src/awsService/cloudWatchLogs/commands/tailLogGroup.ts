@@ -107,8 +107,7 @@ function formatLogEvent(logEvent: LiveTailSessionLogEvent): string {
 //This allows for newly added log events to stay in view.
 function getTextEditorsToScroll(document: vscode.TextDocument): vscode.TextEditor[] {
     return vscode.window.visibleTextEditors.filter((editor) => {
-        const isEditorForSession = editor.document === document
-        if (!isEditorForSession) {
+        if (editor.document !== document) {
             return false
         }
         return editor.visibleRanges[0].contains(new vscode.Position(document.lineCount - 1, 0))
