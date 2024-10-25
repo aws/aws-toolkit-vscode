@@ -13,7 +13,6 @@ import {
 import { GenerateRecommendationsRequest, ListRecommendationsRequest, Recommendation } from '../client/codewhisperer'
 import { Position } from 'vscode'
 import { CodeWhispererSupplementalContext, vsCodeState } from '../models/model'
-import { resolveTransitionHooks } from 'vue'
 
 class CodeWhispererSession {
     static #instance: CodeWhispererSession
