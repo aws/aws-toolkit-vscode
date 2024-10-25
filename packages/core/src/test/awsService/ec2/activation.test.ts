@@ -27,6 +27,10 @@ describe('ec2 telemetry', function () {
             LastSeenStatus: 'status',
         })
     })
+
+    after(function () {
+        sinon.restore()
+    })
     it('emits correct telemetry on terminal open', async function () {
         const terminalStub = sinon.stub(Ec2ConnectionManager.prototype, 'attemptToOpenEc2Terminal')
         await vscode.commands.executeCommand('aws.ec2.openTerminal', testNode)
