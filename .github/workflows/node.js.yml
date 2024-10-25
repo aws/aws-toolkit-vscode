@@ -64,14 +64,12 @@ jobs:
         env:
             NODE_OPTIONS: '--max-old-space-size=8192'
         steps:
-            - name: check out repo
-              uses: actions/checkout@v4
+            - uses: actions/checkout@v4
             - name: Use Node.js ${{ matrix.node-version }}
               uses: actions/setup-node@v4
               with:
                   node-version: ${{ matrix.node-version }}
-            - name: install jscpd
-              run: npm install jscpd
+            - run: npm install jscpd
             - name: Run jscpd
               run: npx jscpd --config "$GITHUB_WORKSPACE/.github/workflows/jscpd.json"
 
