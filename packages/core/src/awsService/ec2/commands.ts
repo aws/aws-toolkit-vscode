@@ -76,15 +76,3 @@ export async function copyInstanceId(instanceId: string): Promise<void> {
 export async function openLogDocument(node?: Ec2InstanceNode): Promise<void> {
     return await showFile(ec2LogSchema.form(await getSelection(node)))
 }
-
-export function getIconCode(instance: SafeEc2Instance) {
-    if (instance.LastSeenStatus === 'running') {
-        return 'pass'
-    }
-
-    if (instance.LastSeenStatus === 'stopped') {
-        return 'circle-slash'
-    }
-
-    return 'loading~spin'
-}
