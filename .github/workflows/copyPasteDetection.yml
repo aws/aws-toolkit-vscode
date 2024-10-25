@@ -15,11 +15,6 @@ on:
             - reopened
             - synchronize
 
-# Cancel old jobs when a pull request is updated.
-concurrency:
-    group: ${{ github.head_ref || github.run_id }}
-    cancel-in-progress: true
-
 jobs:
     jscpd:
         runs-on: ubuntu-latest
