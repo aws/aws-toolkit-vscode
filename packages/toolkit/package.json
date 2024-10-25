@@ -702,6 +702,11 @@
         "views": {
             "aws-explorer": [
                 {
+                    "id": "aws.toolkit.notifications",
+                    "name": "%AWS.notifications.title%",
+                    "when": "!isCloud9 && !aws.isSageMaker && aws.toolkit.notifications.show"
+                },
+                {
                     "id": "aws.amazonq.codewhisperer",
                     "name": "%AWS.amazonq.codewhisperer.title%",
                     "when": "!isCloud9 && !aws.isSageMaker && !aws.toolkit.amazonq.dismissed && !aws.explorer.showAuthView"
@@ -1359,6 +1364,11 @@
                 }
             ],
             "view/item/context": [
+                {
+                    "command": "_aws.toolkit.notifications.dismiss",
+                    "when": "viewItem == toolkitNotificationStartUp",
+                    "group": "inline@1"
+                },
                 {
                     "command": "aws.apig.invokeRemoteRestApi",
                     "when": "view == aws.explorer && viewItem =~ /^(awsApiGatewayNode)$/",
@@ -2041,6 +2051,13 @@
             ]
         },
         "commands": [
+            {
+                "command": "_aws.toolkit.notifications.dismiss",
+                "title": "%AWS.generic.dismiss%",
+                "category": "%AWS.title%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
+                "icon": "$(remove-close)"
+            },
             {
                 "command": "aws.accessanalyzer.iamPolicyChecks",
                 "title": "%AWS.command.accessanalyzer.iamPolicyChecks%",
