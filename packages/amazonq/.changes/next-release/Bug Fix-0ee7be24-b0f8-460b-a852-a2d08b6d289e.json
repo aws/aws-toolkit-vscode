@@ -1,4 +1,4 @@
 {
 	"type": "Bug Fix",
-	"description": "Use SM IAM Credentials for Code Completion"
+	"description": "Use Sagemaker environment IAM Credentials for Code Completion when they're available"
 }
