@@ -290,7 +290,7 @@ sequenceDiagram
 
   rect rgb(121, 210, 121)
     alt Extension Startup
-        VSC ->> Service: activate() - Start Monitoring
+        VSC ->> Service: activate() - Start Service
 
         Service ->> Heartbeat: Start Heartbeats
         Heartbeat ->> State: Send Initial Heartbeat <br/> (in a folder add a unique file w/ timestamp)
@@ -317,7 +317,7 @@ sequenceDiagram
 
   rect rgb(255, 128, 128)
     alt Graceful Shutdown
-        VSC ->> Service: deactivate() - Stop Monitoring
+        VSC ->> Service: deactivate() - Stop Service
         Service ->> Checker: Stop
         Service ->> Heartbeat: Stop
         Heartbeat ->> State: Delete timestamp file <br/> (This is missed when a crash happens)
