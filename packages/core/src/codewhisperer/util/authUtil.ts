@@ -8,7 +8,7 @@ import * as localizedText from '../../shared/localizedText'
 import { Auth } from '../../auth/auth'
 import { ToolkitError, isNetworkError, tryRun } from '../../shared/errors'
 import { getSecondaryAuth, setScopes } from '../../auth/secondaryAuth'
-import { isAmazonQ, isCloud9, isSageMaker } from '../../shared/extensionUtilities'
+import { isCloud9, isSageMaker } from '../../shared/extensionUtilities'
 import { AmazonQPromptSettings } from '../../shared/settings'
 import {
     scopesCodeWhispererCore,
@@ -50,6 +50,9 @@ export const codeWhispererCoreScopes = [...scopesCodeWhispererCore]
 export const codeWhispererChatScopes = [...codeWhispererCoreScopes, ...scopesCodeWhispererChat]
 export const amazonQScopes = [...codeWhispererChatScopes, ...scopesGumby, ...scopesFeatureDev]
 
+function isValidSageMakerConnection(conn?: Connection) {
+    return isIamConnection(conn) || isSsoConnection(conn)
+}
 /**
  * "Core" are the CW scopes that existed before the addition of new scopes
  * for Amazon Q.
@@ -59,25 +62,19 @@ export const isValidCodeWhispererCoreConnection = (conn?: Connection): conn is C
         return isIamConnection(conn)
     }
 
-    if (isSageMaker()) {
-        return isIamConnection(conn) || (isSsoConnection(conn) && hasScopes(conn, codeWhispererCoreScopes))
-    }
-
     return (
+        isValidSageMakerConnection(conn) ||
         (isCloud9('codecatalyst') && isIamConnection(conn)) ||
         (isSsoConnection(conn) && hasScopes(conn, codeWhispererCoreScopes))
     )
 }
 /** Superset that includes all of CodeWhisperer + Amazon Q */
 export const isValidAmazonQConnection = (conn?: Connection): conn is Connection => {
-    if (isSageMaker() && isAmazonQ()) {
-        return isIamConnection(conn) || (isSsoConnection(conn) && hasScopes(conn, amazonQScopes))
-    }
-
     return (
-        (isSsoConnection(conn) || isBuilderIdConnection(conn)) &&
-        isValidCodeWhispererCoreConnection(conn) &&
-        hasScopes(conn, amazonQScopes)
+        isValidSageMakerConnection(conn) ||
+        ((isSsoConnection(conn) || isBuilderIdConnection(conn)) &&
+            isValidCodeWhispererCoreConnection(conn) &&
+            hasScopes(conn, amazonQScopes))
     )
 }
 

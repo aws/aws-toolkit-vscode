@@ -709,7 +709,7 @@
                 {
                     "id": "aws.amazonq.codewhisperer",
                     "name": "%AWS.amazonq.codewhisperer.title%",
-                    "when": "!isCloud9 && !isSageMaker && !aws.toolkit.amazonq.dismissed && !aws.explorer.showAuthView"
+                    "when": "!isCloud9 && !aws.isSageMaker && !aws.toolkit.amazonq.dismissed && !aws.explorer.showAuthView"
                 },
                 {
                     "id": "aws.explorer",
