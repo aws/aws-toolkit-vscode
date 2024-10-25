@@ -12,6 +12,7 @@ import { ReferenceInlineProvider } from './referenceInlineProvider'
 import { ImportAdderProvider } from './importAdderProvider'
 import { application } from '../util/codeWhispererApplication'
 import path from 'path'
+import { vsCodeState } from '../indexNode'
 
 export class CWInlineCompletionItemProvider implements vscode.InlineCompletionItemProvider {
     private activeItemIndex: number | undefined
@@ -169,6 +170,7 @@ export class CWInlineCompletionItemProvider implements vscode.InlineCompletionIt
             ImportAdderProvider.instance.onShowRecommendation(document, this.startPos.line, r)
             this.nextMove = 0
             TelemetryHelper.instance.setFirstSuggestionShowTime()
+            session.setPerceivedLatency()
             this._onDidShow.fire()
             if (matchedCount >= 2 || this.nextToken !== '') {
                 const result = [item]

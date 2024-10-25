@@ -13,6 +13,7 @@ import {
 import { GenerateRecommendationsRequest, ListRecommendationsRequest, Recommendation } from '../client/codewhisperer'
 import { Position } from 'vscode'
 import { CodeWhispererSupplementalContext, vsCodeState } from '../models/model'
+import { resolveTransitionHooks } from 'vue'
 
 class CodeWhispererSession {
     static #instance: CodeWhispererSession
@@ -43,6 +44,7 @@ class CodeWhispererSession {
     invokeSuggestionStartTime = 0
     timeToFirstRecommendation = 0
     firstSuggestionShowTime = 0
+    perceivedLatency = 0
 
     public static get instance() {
         return (this.#instance ??= new CodeWhispererSession())
@@ -88,6 +90,17 @@ class CodeWhispererSession {
             return this.timeToFirstRecommendation
         } else {
             return session.firstSuggestionShowTime - vsCodeState.lastUserModificationTime
+        }
+    }
+
+    setPerceivedLatency() {
+        if (this.perceivedLatency !== 0) {
+            return
+        }
+        if (this.triggerType === 'OnDemand') {
+            this.perceivedLatency = this.timeToFirstRecommendation
+        } else {
+            this.perceivedLatency = this.firstSuggestionShowTime - vsCodeState.lastUserModificationTime
         }
     }
 
