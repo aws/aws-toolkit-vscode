@@ -22,7 +22,7 @@ import {
     paramsSourcePrompter,
     prepareSyncParams,
     saveAndBindArgs,
-    syncFlagsPrompter,
+    syncFlagItems,
     SyncParams,
     SyncWizard,
     TemplateItem,
@@ -32,13 +32,15 @@ import {
     createBaseTemplate,
     makeSampleSamTemplateYaml,
 } from '../cloudformation/cloudformationTestUtils'
+import * as deploySamApplication from '../../../shared/sam/deploy'
+import * as syncSam from '../../../shared/sam/sync'
 import { createWizardTester } from '../wizards/wizardTestUtils'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { ToolkitError } from '../../../shared/errors'
 import globals from '../../../shared/extensionGlobals'
 import fs from '../../../shared/fs/fs'
-import { DataQuickPickItem } from '../../../shared/ui/pickerPrompter'
+import { createMultiPick, DataQuickPickItem } from '../../../shared/ui/pickerPrompter'
 import sinon from 'sinon'
 import { getTestWindow } from '../vscode/window'
 import { DefaultS3Client } from '../../../shared/clients/s3Client'
@@ -53,7 +55,7 @@ import { SamConfig, Environment, parseConfig } from '../../../shared/sam/config'
 import { RegionProvider } from '../../../shared/regions/regionProvider'
 import { Region } from '../../../shared/regions/endpoints'
 import { RegionNode } from '../../../awsexplorer/regionNode'
-import { getProjectRootUri, syncFlagsItems } from '../../../shared/sam/utils'
+import { getProjectRootUri } from '../../../shared/sam/utils'
 import { AppNode } from '../../../awsService/appBuilder/explorer/nodes/appNode'
 import * as Cfn from '../../../shared/cloudformation/cloudformation'
 import { CloudFormationTemplateRegistry } from '../../../shared/fs/templateRegistry'
@@ -325,8 +327,8 @@ describe('syncFlagsPrompter', () => {
         getTestWindow().onDidShowQuickPick(async (picker) => {
             await picker.untilReady()
             assert.strictEqual(picker.items.length, 9)
-            assert.strictEqual(picker.title, 'Select sync flags')
-            assert.deepStrictEqual(picker.items, syncFlagsItems)
+            assert.strictEqual(picker.title, 'Specify parameters for sync')
+            assert.deepStrictEqual(picker.items, syncFlagItems)
             const buildInSource = picker.items[0]
             const code = picker.items[1]
             const dependencyLayer = picker.items[2]
@@ -337,9 +339,12 @@ describe('syncFlagsPrompter', () => {
             picker.acceptItems(...acceptedItems)
         })
 
-        const flags = await syncFlagsPrompter()
+        const flags = await createMultiPick(syncFlagItems, {
+            title: 'Specify parameters for sync',
+            placeholder: 'Press enter to proceed with highlighted option',
+        }).prompt()
 
-        assert.deepStrictEqual(flags, acceptedItems)
+        assert.deepStrictEqual(flags, JSON.stringify(acceptedItems.map((i) => i.data)))
     })
 })
 
@@ -892,63 +897,140 @@ describe('SyncWizard', async () => {
         sandbox.restore()
     })
 
-    describe('appBuilder', () => {
-        let appNode: AppNode
-        beforeEach(async () => {
-            const expectedSamAppLocation = {
-                workspaceFolder: workspaceFolder,
-                samTemplateUri: templateFile,
-                projectRoot: projectRoot,
-            }
-            appNode = new AppNode(expectedSamAppLocation)
+    describe('deploy sync prompt', function () {
+        let sandbox: sinon.SinonSandbox
+        beforeEach(function () {
+            sandbox = sinon.createSandbox()
         })
-        afterEach(() => {
+
+        afterEach(function () {
             sandbox.restore()
         })
 
-        it('should return correct params from quickPicks', async () => {
+        it('customer exit should not call any function', async function () {
+            // Given
+            const deploy = sandbox.stub(deploySamApplication, 'runDeploy').resolves()
+            const sync = sandbox.stub(syncSam, 'runSync').resolves()
             getTestWindow().onDidShowQuickPick(async (picker) => {
-                if (picker.title === 'Specify parameters for deploy') {
+                if (picker.title === 'Select deployment command') {
+                    await picker.untilReady()
+                    assert.strictEqual(picker.items[0].label, 'Sync')
+                    assert.strictEqual(picker.items[1].label, 'Deploy')
                     assert.strictEqual(picker.items.length, 2)
-                    assert.strictEqual(picker.items[0].label, 'Specify required parameters and save as defaults')
-                    assert.strictEqual(picker.items[1].label, 'Specify required parameters')
+                    picker.dispose()
+                }
+            })
+            await vscode.commands.executeCommand('aws.appBuilder.deploy')
+            // Then
+            assert(deploy.notCalled)
+            assert(sync.notCalled)
+        })
+
+        it('deploy is selected', async function () {
+            // Given
+            const deploy = sandbox.stub(deploySamApplication, 'runDeploy').resolves()
+            const sync = sandbox.stub(syncSam, 'runSync').resolves()
+            getTestWindow().onDidShowQuickPick(async (picker) => {
+                if (picker.title === 'Select deployment command') {
+                    await picker.untilReady()
+                    assert.strictEqual(picker.items[0].label, 'Sync')
+                    assert.strictEqual(picker.items[1].label, 'Deploy')
+                    assert.strictEqual(picker.items.length, 2)
                     picker.acceptItem(picker.items[1])
-                } else if (picker.title === 'Select a region') {
+                } else {
                     await picker.untilReady()
-                    const select = picker.items.filter((i) => i.detail === 'us-west-2')[0]
-                    picker.acceptItem(select || picker.items[0])
-                } else if (picker.title === 'Select a CloudFormation Stack') {
-                    await picker.untilReady()
-                    assert.strictEqual(picker.items.length, 3)
-                    assert.strictEqual(picker.items[0].label, 'stack1')
-                    assert.strictEqual(picker.items[1].label, 'stack2')
-                    assert.strictEqual(picker.items[2].label, 'stack3')
-                    picker.acceptItem(picker.items[1])
-                } else if (picker.title === 'Select an S3 Bucket') {
-                    await picker.untilReady()
-                    assert.strictEqual(picker.items.length, 3)
-                    assert.strictEqual(picker.items[0].label, 'stack-1-bucket')
-                    assert.strictEqual(picker.items[1].label, 'stack-2-bucket')
-                    assert.strictEqual(picker.items[2].label, 'stack-3-bucket')
                     picker.acceptItem(picker.items[0])
                 }
             })
-
-            const parameters = await new SyncWizard(
-                { deployType: 'infra', template: { uri: appNode.resource.samTemplateUri, data: {} } },
-                await globals.templateRegistry
-            ).run()
-
-            assert(parameters)
-
-            assert.strictEqual(parameters.template.uri.path, templateFile.path)
-            assert.strictEqual(parameters.projectRoot.path, projectRoot.path)
-            assert.strictEqual(parameters.paramsSource, ParamsSource.Flags)
-            assert.strictEqual(parameters.region, 'us-west-2')
-            assert.strictEqual(parameters.stackName, 'stack2')
-            assert.strictEqual(parameters.bucketName, 'stack-1-bucket')
+            await vscode.commands.executeCommand('aws.appBuilder.deploy')
+            // Then
+            assert(deploy.called)
+            assert(sync.notCalled)
         })
-    })
+
+        it('sync is selected', async function () {
+            // Given
+            const deploy = sandbox.stub(deploySamApplication, 'runDeploy').resolves()
+            const sync = sandbox.stub(syncSam, 'runSync').resolves()
+            getTestWindow().onDidShowQuickPick(async (picker) => {
+                if (picker.title === 'Select deployment command') {
+                    await picker.untilReady()
+                    assert.strictEqual(picker.items[0].label, 'Sync')
+                    assert.strictEqual(picker.items[1].label, 'Deploy')
+                    assert.strictEqual(picker.items.length, 2)
+                    picker.acceptItem(picker.items[0])
+                } else {
+                    await picker.untilReady()
+                    picker.acceptItem(picker.items[0])
+                }
+            })
+            await vscode.commands.executeCommand('aws.appBuilder.deploy')
+            // Then
+            assert(deploy.notCalled)
+            assert(sync.called)
+        })
+    }),
+        describe('appBuilder', () => {
+            let appNode: AppNode
+            beforeEach(async () => {
+                const expectedSamAppLocation = {
+                    workspaceFolder: workspaceFolder,
+                    samTemplateUri: templateFile,
+                    projectRoot: projectRoot,
+                }
+                appNode = new AppNode(expectedSamAppLocation)
+            })
+            afterEach(() => {
+                sandbox.restore()
+            })
+
+            it('should return correct params from quickPicks', async () => {
+                getTestWindow().onDidShowQuickPick(async (picker) => {
+                    if (picker.title === 'Specify parameters for deploy') {
+                        assert.strictEqual(picker.items.length, 2)
+                        assert.strictEqual(picker.items[0].label, 'Specify required parameters and save as defaults')
+                        assert.strictEqual(picker.items[1].label, 'Specify required parameters')
+                        picker.acceptItem(picker.items[1])
+                    } else if (picker.title === 'Select a region') {
+                        await picker.untilReady()
+                        const select = picker.items.filter((i) => i.detail === 'us-west-2')[0]
+                        picker.acceptItem(select || picker.items[0])
+                    } else if (picker.title === 'Select a CloudFormation Stack') {
+                        await picker.untilReady()
+                        assert.strictEqual(picker.items.length, 3)
+                        assert.strictEqual(picker.items[0].label, 'stack1')
+                        assert.strictEqual(picker.items[1].label, 'stack2')
+                        assert.strictEqual(picker.items[2].label, 'stack3')
+                        picker.acceptItem(picker.items[1])
+                    } else if (picker.title === 'Select an S3 Bucket') {
+                        await picker.untilReady()
+                        assert.strictEqual(picker.items.length, 3)
+                        assert.strictEqual(picker.items[0].label, 'stack-1-bucket')
+                        assert.strictEqual(picker.items[1].label, 'stack-2-bucket')
+                        assert.strictEqual(picker.items[2].label, 'stack-3-bucket')
+                        picker.acceptItem(picker.items[0])
+                    } else if (picker.title === 'Specify parameters for sync') {
+                        await picker.untilReady()
+                        assert.strictEqual(picker.items.length, 9)
+                        picker.acceptDefault()
+                    }
+                })
+
+                const parameters = await new SyncWizard(
+                    { deployType: 'infra', template: { uri: appNode.resource.samTemplateUri, data: {} } },
+                    await globals.templateRegistry
+                ).run()
+
+                assert(parameters)
+
+                assert.strictEqual(parameters.template.uri.path, templateFile.path)
+                assert.strictEqual(parameters.projectRoot.path, projectRoot.path)
+                assert.strictEqual(parameters.paramsSource, ParamsSource.Flags)
+                assert.strictEqual(parameters.region, 'us-west-2')
+                assert.strictEqual(parameters.stackName, 'stack2')
+                assert.strictEqual(parameters.bucketName, 'stack-1-bucket')
+            })
+        })
 })
 
 describe('saveAndBindArgs', () => {

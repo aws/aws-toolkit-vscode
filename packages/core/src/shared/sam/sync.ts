@@ -11,7 +11,7 @@ import * as nls from 'vscode-nls'
 import * as localizedText from '../localizedText'
 import { DefaultS3Client } from '../clients/s3Client'
 import { Wizard } from '../wizards/wizard'
-import { DataQuickPickItem, createQuickPick } from '../ui/pickerPrompter'
+import { DataQuickPickItem, createMultiPick, createQuickPick } from '../ui/pickerPrompter'
 import { DefaultCloudFormationClient } from '../clients/cloudFormationClient'
 import * as CloudFormation from '../cloudformation/cloudformation'
 import { DefaultEcrClient } from '../clients/ecrClient'
@@ -22,7 +22,7 @@ import { keys, selectFrom } from '../utilities/tsUtils'
 import { AWSTreeNodeBase } from '../treeview/nodes/awsTreeNodeBase'
 import { ToolkitError, UnknownError } from '../errors'
 import { telemetry } from '../telemetry/telemetry'
-import { createBackButton, createCommonButtons, createExitButton } from '../ui/buttons'
+import { createCommonButtons } from '../ui/buttons'
 import { ToolkitPromptSettings } from '../settings'
 import { getLogger } from '../logger'
 import { getSamInitDocUrl, isCloud9 } from '../extensionUtilities'
@@ -38,7 +38,7 @@ import { parse } from 'semver'
 import { isAutomation } from '../vscode/env'
 import { getOverriddenParameters } from '../../lambda/config/parameterUtils'
 import { addTelemetryEnvVar } from './cli/samCliInvokerUtils'
-import { samSyncUrl, samUpgradeUrl } from '../constants'
+import { samSyncParamUrl, samSyncUrl, samUpgradeUrl } from '../constants'
 import { getAwsConsoleUrl } from '../awsConsole'
 import { openUrl } from '../utilities/vsCodeUtils'
 import { showOnce } from '../utilities/messages'
@@ -62,6 +62,7 @@ export interface SyncParams {
     readonly ecrRepoUri?: string
     readonly connection: IamConnection
     readonly skipDependencyLayer?: boolean
+    readonly syncFlags?: string
 }
 
 export enum ParamsSource {
@@ -72,78 +73,6 @@ export enum ParamsSource {
 enum BucketSource {
     SamCliManaged,
     UserProvided,
-}
-
-export async function syncFlagsPrompter(): Promise<DataQuickPickItem<string>[] | undefined> {
-    const items: DataQuickPickItem<string>[] = [
-        {
-            label: 'Build in source',
-            data: '--build-in-source',
-            description: 'Opts in to build project in the source folder. Only for node apps',
-        },
-        {
-            label: 'Code',
-            data: '--code',
-            description: 'Sync only code resources (Lambda Functions, API Gateway, Step Functions)',
-        },
-        {
-            label: 'Dependency layer',
-            data: '--dependency-layer',
-            description: 'Separate dependencies of individual function into Lambda layers',
-        },
-        {
-            label: 'Skip deploy sync',
-            data: '--skip-deploy-sync',
-            description: "This will skip the initial infrastructure deployment if it's not required",
-        },
-        {
-            label: 'Use container',
-            data: '--use-container',
-            description: 'Build functions with an AWS Lambda-like container',
-        },
-        {
-            label: 'Watch',
-            data: '--watch',
-            description: 'Watch local files and automatically sync with cloud',
-        },
-        {
-            label: 'Save parameters',
-            data: '--save-params',
-            description: 'Save to samconfig.toml as default parameters',
-        },
-        {
-            label: 'Beta features',
-            data: '--beta-features',
-            description: 'Enable beta features',
-        },
-        {
-            label: 'Debug',
-            data: '--debug',
-            description: 'Turn on debug logging to print debug messages and display timestamps',
-        },
-    ]
-    const quickPick = vscode.window.createQuickPick<DataQuickPickItem<string>>()
-    quickPick.title = 'Select sync flags'
-    quickPick.items = items
-    quickPick.canSelectMany = true
-    quickPick.step = 3
-    quickPick.buttons = [createBackButton(), createExitButton()]
-    const defaultItems = items.filter((item) => item.data === '--watch' || item.data === '--save-params')
-    quickPick.selectedItems = defaultItems
-
-    return new Promise((resolve) => {
-        quickPick.onDidAccept(() => {
-            resolve(quickPick.selectedItems.map((item) => item))
-            quickPick.hide()
-        })
-
-        quickPick.onDidHide(() => {
-            resolve(undefined)
-            quickPick.dispose()
-        })
-
-        quickPick.show()
-    })
 }
 
 export function paramsSourcePrompter(existValidSamconfig: boolean | undefined) {
@@ -341,17 +270,65 @@ function hasImageBasedResources(template: CloudFormation.Template) {
               .includes('Image')
 }
 
+export const syncFlagItems: DataQuickPickItem<string>[] = [
+    {
+        label: 'Build in source',
+        data: '--build-in-source',
+        description: 'Opts in to build project in the source folder. Only for node apps',
+    },
+    {
+        label: 'Code',
+        data: '--code',
+        description: 'Sync only code resources (Lambda Functions, API Gateway, Step Functions)',
+    },
+    {
+        label: 'Dependency layer',
+        data: '--dependency-layer',
+        description: 'Separate dependencies of individual function into Lambda layers',
+    },
+    {
+        label: 'Skip deploy sync',
+        data: '--skip-deploy-sync',
+        description: "This will skip the initial infrastructure deployment if it's not required",
+    },
+    {
+        label: 'Use container',
+        data: '--use-container',
+        description: 'Build functions with an AWS Lambda-like container',
+    },
+    {
+        label: 'Watch',
+        data: '--watch',
+        description: 'Watch local files and automatically sync with cloud',
+        picked: true,
+    },
+    {
+        label: 'Save parameters',
+        data: '--save-params',
+        description: 'Save to samconfig.toml as default parameters',
+        picked: true,
+    },
+    {
+        label: 'Beta features',
+        data: '--beta-features',
+        description: 'Enable beta features',
+    },
+    {
+        label: 'Debug',
+        data: '--debug',
+        description: 'Turn on debug logging to print debug messages and display timestamps',
+    },
+]
+
 export class SyncWizard extends Wizard<SyncParams> {
     registry: CloudFormationTemplateRegistry
     public constructor(
         state: Pick<SyncParams, 'deployType'> & Partial<SyncParams>,
-        registry: CloudFormationTemplateRegistry
+        registry: CloudFormationTemplateRegistry,
+        shouldPromptExit: boolean = true
     ) {
-        super({ initState: state, exitPrompterProvider: createExitPrompter })
+        super({ initState: state, exitPrompterProvider: shouldPromptExit ? createExitPrompter : undefined })
         this.registry = registry
-    }
-
-    public override async init(): Promise<this> {
         this.form.template.bindPrompter(() => createTemplatePrompter(this.registry))
         this.form.projectRoot.setDefault(({ template }) => getProjectRoot(template))
 
@@ -380,7 +357,14 @@ export class SyncWizard extends Wizard<SyncParams> {
             showWhen: ({ template }) => !!template && hasImageBasedResources(template.data),
         })
 
-        return this
+        // todo wrap with localize
+        this.form.syncFlags.bindPrompter(() =>
+            createMultiPick(syncFlagItems, {
+                title: 'Specify parameters for sync',
+                placeholder: 'Press enter to proceed with highlighted option',
+                buttons: createCommonButtons(samSyncParamUrl),
+            })
+        )
     }
 }
 
@@ -580,19 +564,10 @@ export async function runSamSync(args: SyncParams) {
         })
     }
 
-    const syncFlags: string[] = []
-
-    if (args.paramsSource === ParamsSource.Flags) {
-        const flagItems = await syncFlagsPrompter()
-        if (flagItems) {
-            flagItems.forEach((item) => {
-                syncFlags.push(item.data as string)
-            })
-        }
-    }
+    const syncFlags: string[] = args.syncFlags ? JSON.parse(args.syncFlags) : []
     boundArgs.push(...syncFlags)
 
-    const sam = new ChildProcess(samCliPath, ['sync', ...boundArgs], {
+    const sam = new ChildProcess(samCliPath, ['sync', ...resolveSyncArgConflict(boundArgs)], {
         spawnOptions: await addTelemetryEnvVar({
             cwd: args.projectRoot.fsPath,
             env: await getSpawnEnv(process.env, { promptForInvalidCredential: true }),
@@ -602,6 +577,21 @@ export async function runSamSync(args: SyncParams) {
     const { paramsSource, stackName, region, projectRoot } = args
     const shouldWriteSyncSamconfigGlobal = paramsSource !== ParamsSource.SamConfig && !!stackName && !!region
     shouldWriteSyncSamconfigGlobal && (await writeSamconfigGlobal(projectRoot, stackName, region))
+}
+
+export async function getSyncWizard(
+    deployType: SyncParams['deployType'],
+    arg: any,
+    validate?: boolean,
+    shouldPromptExit?: boolean
+): Promise<SyncWizard> {
+    const registry = await globals.templateRegistry
+    const wizard = new SyncWizard(
+        { deployType, ...(await prepareSyncParams(arg, validate)) },
+        registry,
+        shouldPromptExit
+    )
+    return wizard
 }
 
 export const getWorkspaceUri = (template: TemplateItem) => vscode.workspace.getWorkspaceFolder(template.uri)?.uri
@@ -709,15 +699,17 @@ export type SamSyncResult = {
 export async function runSync(
     deployType: SyncParams['deployType'],
     arg: vscode.Uri | AWSTreeNodeBase | TreeNode | undefined,
-    validate?: boolean
+    validate?: boolean,
+    syncParam?: SyncParams
 ): Promise<SamSyncResult> {
     return await telemetry.sam_sync.run(async () => {
         const source = getSource(arg)
         telemetry.record({ syncedResources: deployType === 'infra' ? 'AllResources' : 'CodeOnly', source: source })
 
         await confirmDevStack()
-        const registry = await globals.templateRegistry
-        const params = await new SyncWizard({ deployType, ...(await prepareSyncParams(arg, validate)) }, registry).run()
+        const params = syncParam ?? (await (await getSyncWizard(deployType, arg, validate)).run())
+        getLogger().info(JSON.stringify(params))
+
         if (params === undefined) {
             throw new CancellationError('user')
         }
@@ -859,4 +851,37 @@ class ProcessTerminal implements vscode.Pseudoterminal {
             this.onDidWriteEmitter.fire(line)
         }
     }
+}
+
+function resolveSyncArgConflict(boundArgs: string[]): string[] {
+    const boundArgsSet = new Set(boundArgs)
+    if (boundArgsSet.has('--watch')) {
+        boundArgsSet.delete('--no-watch')
+    }
+    if (boundArgsSet.has('--dependency-layer')) {
+        boundArgsSet.delete('--no--dependency-layer')
+    }
+    if (boundArgsSet.has('--build-in-source')) {
+        boundArgsSet.delete('--no-build-in-source')
+    }
+    if (boundArgsSet.has('--use-container') || boundArgsSet.has('-u')) {
+        boundArgsSet.delete('--build-in-source')
+    }
+
+    // TODO phase 2: add anti param
+    // // apply anti param if param is not set
+    // if (!boundArgsSet.has('--cached')) {
+    //     boundArgsSet.add('--no-cached')
+    // }
+    // if (!boundArgsSet.has('--build-in-source')) {
+    //     boundArgsSet.add('--no-build-in-source')
+    // }
+    // if (!boundArgsSet.has('--dependency-layer')) {
+    //     boundArgsSet.add('--no-dependency-layer')
+    // }
+    // if (!boundArgsSet.has('--skip-deploy-sync')) {
+    //     boundArgsSet.add('--no-skip-deploy-sync')
+    // }
+
+    return Array.from(boundArgsSet)
 }

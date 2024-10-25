@@ -4,34 +4,34 @@
  */
 
 import * as vscode from 'vscode'
+import { ToolkitError, getLogger, globals } from '../../shared'
+import * as CloudFormation from '../../shared/cloudformation/cloudformation'
+import { getParameters } from '../../lambda/config/parameterUtils'
+import { DefaultCloudFormationClient } from '../clients/cloudFormationClient'
+import { DefaultS3Client } from '../clients/s3Client'
+import { samDeployUrl } from '../constants'
+import { getSpawnEnv } from '../env/resolveEnv'
+import { CloudFormationTemplateRegistry } from '../fs/templateRegistry'
+import { telemetry } from '../telemetry'
+import { createCommonButtons } from '../ui/buttons'
+import { createExitPrompter } from '../ui/common/exitPrompter'
+import { createRegionPrompter } from '../ui/common/region'
+import { createInputBox } from '../ui/inputPrompter'
+import { DataQuickPickItem, createQuickPick } from '../ui/pickerPrompter'
+import { ChildProcess } from '../utilities/processUtils'
+import { CancellationError } from '../utilities/timeoutUtils'
+import { Wizard } from '../wizards/wizard'
+import { addTelemetryEnvVar } from './cli/samCliInvokerUtils'
+import { validateSamDeployConfig, SamConfig, writeSamconfigGlobal } from './config'
 import {
     TemplateItem,
-    createBucketPrompter,
     createStackPrompter,
+    createBucketPrompter,
     createTemplatePrompter,
     getSamCliPathAndVersion,
     runInTerminal,
-} from '../../shared/sam/sync'
-import { DataQuickPickItem, createQuickPick } from '../../shared/ui/pickerPrompter'
-import { createCommonButtons } from '../../shared/ui/buttons'
-import { samDeployUrl } from '../../shared/constants'
-import { Wizard } from '../../shared/wizards/wizard'
-import { CloudFormationTemplateRegistry } from '../../shared/fs/templateRegistry'
-import { createExitPrompter } from '../../shared/ui/common/exitPrompter'
-import { createRegionPrompter } from '../../shared/ui/common/region'
-import { DefaultCloudFormationClient } from '../../shared/clients/cloudFormationClient'
-import { DefaultS3Client } from '../../shared/clients/s3Client'
-import { ToolkitError, globals } from '../../shared'
-import { SamConfig, validateSamDeployConfig, writeSamconfigGlobal } from '../../shared/sam/config'
-import { CancellationError } from '../../shared/utilities/timeoutUtils'
-import { ChildProcess } from '../../shared/utilities/processUtils'
-import { addTelemetryEnvVar } from '../../shared/sam/cli/samCliInvokerUtils'
-import { getProjectRoot, getSource } from '../../shared/sam/utils'
-import { telemetry } from '../../shared/telemetry'
-import { getParameters } from '../config/parameterUtils'
-import { createInputBox } from '../../shared/ui/inputPrompter'
-import { getSpawnEnv } from '../../shared/env/resolveEnv'
-import * as CloudFormation from '../../shared/cloudformation/cloudformation'
+} from './sync'
+import { getProjectRoot, getSource } from './utils'
 
 export interface DeployParams {
     readonly paramsSource: ParamsSource
@@ -45,14 +45,32 @@ export interface DeployParams {
     [key: string]: any
 }
 
-function createParamPromptProvider(name: string, defaultValue: string | undefined) {
+const mementoRootKey = 'samcli.deploy.params'
+export function getRecentParams(identifier: string, key: string): string | undefined {
+    const root = globals.context.workspaceState.get(mementoRootKey, {} as Record<string, Record<string, string>>)
+
+    return root[identifier]?.[key]
+}
+
+export async function updateRecentParams(identifier: string, key: string, value: string | undefined) {
+    try {
+        const root = globals.context.workspaceState.get(mementoRootKey, {} as Record<string, Record<string, string>>)
+        await globals.context.workspaceState.update(mementoRootKey, {
+            ...root,
+            [identifier]: { ...root[identifier], [key]: value },
+        })
+    } catch (err) {
+        getLogger().warn(`sam: unable to save response at key "${key}": %s`, err)
+    }
+}
+
+function createParamPromptProvider(name: string, defaultValue: string | undefined, templateFsPath: string = 'default') {
     return createInputBox({
         title: `Specify SAM parameter value for ${name}`,
         buttons: createCommonButtons(samDeployUrl),
-        value: defaultValue,
+        value: getRecentParams(templateFsPath, name) ?? defaultValue,
     })
 }
-
 function bucketSourcePrompter() {
     const items: DataQuickPickItem<BucketSource>[] = [
         {
@@ -71,7 +89,6 @@ function bucketSourcePrompter() {
         buttons: createCommonButtons(samDeployUrl),
     })
 }
-
 function paramsSourcePrompter(existValidSamconfig: boolean | undefined) {
     const items: DataQuickPickItem<ParamsSource>[] = [
         {
@@ -97,7 +114,6 @@ function paramsSourcePrompter(existValidSamconfig: boolean | undefined) {
         buttons: createCommonButtons(samDeployUrl),
     })
 }
-
 type DeployResult = {
     isSuccess: boolean
 }
@@ -116,26 +132,35 @@ export class DeployWizard extends Wizard<DeployParams> {
     registry: CloudFormationTemplateRegistry
     state: Partial<DeployParams>
     arg: any
-    public constructor(state: Partial<DeployParams>, registry: CloudFormationTemplateRegistry, arg?: any) {
-        super({ initState: state, exitPrompterProvider: createExitPrompter })
+    samTemplateParameters: Map<string, { required: boolean }> | undefined
+    preloadedTemplate: CloudFormation.Template | undefined
+    public constructor(
+        state: Partial<DeployParams>,
+        registry: CloudFormationTemplateRegistry,
+        arg?: any,
+        samTemplateParameters?: Map<string, { required: boolean }>,
+        preloadedTemplate?: CloudFormation.Template,
+        shouldPromptExit: boolean = true
+    ) {
+        super({ initState: state, exitPrompterProvider: shouldPromptExit ? createExitPrompter : undefined })
         this.registry = registry
         this.state = state
         this.arg = arg
-    }
-
-    public override async init(): Promise<this> {
+        this.samTemplateParameters = samTemplateParameters
+        this.preloadedTemplate = preloadedTemplate
         if (this.arg && this.arg.path) {
             // "Deploy" command was invoked on a template.yaml file.
             const templateUri = this.arg as vscode.Uri
             const templateItem = { uri: templateUri, data: {} } as TemplateItem
             const projectRootFolder = getProjectRoot(templateItem)
-            const existValidSamConfig: boolean | undefined = await validateSamDeployConfig(projectRootFolder)
 
-            await this.addParameterPromptersIfApplicable(templateUri)
+            this.addParameterPromptersIfApplicable(templateUri)
 
             this.form.template.setDefault(templateItem)
             this.form.projectRoot.setDefault(() => projectRootFolder)
-            this.form.paramsSource.bindPrompter(() => paramsSourcePrompter(existValidSamConfig))
+            this.form.paramsSource.bindPrompter(async () =>
+                paramsSourcePrompter(await validateSamDeployConfig(projectRootFolder))
+            )
 
             this.form.region.bindPrompter(() => createRegionPrompter().transform((r) => r.id), {
                 showWhen: ({ paramsSource }) =>
@@ -183,12 +208,12 @@ export class DeployWizard extends Wizard<DeployParams> {
             const templateUri = this.arg.getTreeItem().resourceUri as vscode.Uri
             const templateItem = { uri: templateUri, data: {} } as TemplateItem
             const projectRootFolder = getProjectRoot(templateItem)
-            const existValidSamConfig: boolean | undefined = await validateSamDeployConfig(projectRootFolder)
 
-            await this.addParameterPromptersIfApplicable(templateUri)
-
+            this.addParameterPromptersIfApplicable(templateUri)
             this.form.template.setDefault(templateItem)
-            this.form.paramsSource.bindPrompter(() => paramsSourcePrompter(existValidSamConfig))
+            this.form.paramsSource.bindPrompter(async () =>
+                paramsSourcePrompter(await validateSamDeployConfig(projectRootFolder))
+            )
 
             this.form.region.bindPrompter(() => createRegionPrompter().transform((r) => r.id), {
                 showWhen: ({ paramsSource }) =>
@@ -244,31 +269,56 @@ export class DeployWizard extends Wizard<DeployParams> {
      * Parse the template for parameters and add prompters for them if applicable.
      * @param templateUri the uri of the template
      */
-    async addParameterPromptersIfApplicable(templateUri: vscode.Uri) {
-        const template = await CloudFormation.load(templateUri.fsPath)
-        const samTemplateParameters = await getParameters(templateUri)
-        if (samTemplateParameters.size > 0) {
-            const parameterNames = new Set<string>(samTemplateParameters.keys())
-            parameterNames.forEach((name) => {
-                const defaultValue = template.Parameters ? (template.Parameters[name]?.Default as string) : undefined
-                this.form[name].bindPrompter(() => createParamPromptProvider(name, defaultValue))
-            })
+    addParameterPromptersIfApplicable(templateUri: vscode.Uri) {
+        if (!this.samTemplateParameters || this.samTemplateParameters.size === 0) {
+            return
         }
+        const parameterNames = new Set<string>(this.samTemplateParameters.keys())
+        parameterNames.forEach((name) => {
+            if (this.preloadedTemplate) {
+                const defaultValue = this.preloadedTemplate.Parameters
+                    ? (this.preloadedTemplate.Parameters[name]?.Default as string)
+                    : undefined
+                this.form[name].bindPrompter(() => createParamPromptProvider(name, defaultValue, templateUri.fsPath))
+            }
+        })
     }
 }
 
-export async function runDeploy(arg: any): Promise<DeployResult> {
+export async function getDeployWizard(arg?: any, shouldPromptExit?: boolean): Promise<DeployWizard> {
+    let samTemplateParameters = new Map<string, { required: boolean }>()
+    let preloadedTemplate: CloudFormation.Template | undefined
+    if (arg && arg.path) {
+        // "Deploy" command was invoked on a template.yaml file.
+        const templateUri = arg as vscode.Uri
+        samTemplateParameters = await getParameters(templateUri)
+        preloadedTemplate = await CloudFormation.load(templateUri.fsPath)
+    } else if (arg && arg.regionCode) {
+        // region node, do nothing
+    } else if (arg && arg.getTreeItem().resourceUri) {
+        const templateUri = arg.getTreeItem().resourceUri as vscode.Uri
+        samTemplateParameters = await getParameters(templateUri)
+        preloadedTemplate = await CloudFormation.load(templateUri.fsPath)
+    }
+
+    const deployParams: Partial<DeployParams> = {}
+    const wizard = new DeployWizard(
+        deployParams,
+        await globals.templateRegistry,
+        arg,
+        samTemplateParameters,
+        preloadedTemplate,
+        shouldPromptExit
+    )
+    return wizard
+}
+
+export async function runDeploy(arg: any, wizardParams?: DeployParams): Promise<DeployResult> {
     return await telemetry.sam_deploy.run(async () => {
         const source = getSource(arg)
         telemetry.record({ source: source })
-
-        // Prepare Build params
-        const deployParams: Partial<DeployParams> = {}
-
         const deployEnv = await getSpawnEnv(process.env, { promptForInvalidCredential: true })
-
-        const registry = await globals.templateRegistry
-        const params = await new DeployWizard(deployParams, registry, arg).run()
+        const params = wizardParams ?? (await (await getDeployWizard(arg)).run())
         if (params === undefined) {
             throw new CancellationError('user')
         }
@@ -299,13 +349,13 @@ export async function runDeploy(arg: any): Promise<DeployResult> {
         const samTemplateParameters = await getParameters(params.template.uri)
         if (samTemplateParameters.size > 0) {
             const parameterNames = new Set<string>(samTemplateParameters.keys())
-
             const paramsToSet: string[] = []
-            parameterNames.forEach((name) => {
+            for (const name of parameterNames) {
                 if (params[name]) {
+                    await updateRecentParams(params.template.uri.fsPath, name, params[name])
                     paramsToSet.push(`ParameterKey=${name},ParameterValue=${params[name]}`)
                 }
-            })
+            }
             paramsToSet.length > 0 && deployFlags.push('--parameter-overrides', paramsToSet.join(' '))
         }
 

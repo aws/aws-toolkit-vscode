@@ -18,8 +18,11 @@ import { getLogger } from '../../shared/logger'
 import path from 'path'
 import { TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
 import { runBuild } from '../../shared/sam/build'
-import { deployTypePrompt, runOpenHandler, runOpenTemplate } from './utils'
+import { runOpenHandler, runOpenTemplate } from './utils'
 import { ResourceNode } from './explorer/nodes/resourceNode'
+import { getSyncWizard, runSync } from '../../shared/sam/sync'
+import { getDeployWizard, runDeploy } from '../../shared/sam/deploy'
+import { DeployTypeWizard } from './wizards/deployTypeWizard'
 
 export const templateToOpenAppComposer = 'aws.toolkit.appComposer.templateToOpenOnStart'
 
@@ -185,11 +188,17 @@ async function registerAppBuilderCommands(context: ExtContext): Promise<void> {
             })
         ),
         Commands.register({ id: 'aws.appBuilder.deploy', autoconnect: true }, async (arg) => {
-            const params = await deployTypePrompt()
-            if (params === 'deploy') {
-                await vscode.commands.executeCommand('aws.deploySamApplication', arg)
-            } else if (params === 'sync') {
-                await vscode.commands.executeCommand('aws.samcli.sync', arg)
+            const wizard = new DeployTypeWizard(
+                await getSyncWizard('infra', arg, undefined, false),
+                await getDeployWizard(arg, false)
+            )
+            const choices = await wizard.run()
+            if (choices) {
+                if (choices.choice === 'deploy' && choices.deployParam) {
+                    await runDeploy(arg, choices.deployParam)
+                } else if (choices.choice === 'sync' && choices.syncParam) {
+                    await runSync('infra', arg, undefined, choices.syncParam)
+                }
             }
         })
     )

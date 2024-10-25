@@ -10,9 +10,9 @@ import { addTelemetryEnvVar } from './cli/samCliInvokerUtils'
 import { Wizard } from '../wizards/wizard'
 import { CloudFormationTemplateRegistry } from '../fs/templateRegistry'
 import { createExitPrompter } from '../ui/common/exitPrompter'
-import { DataQuickPickItem, createQuickPick } from '../ui/pickerPrompter'
-import { createBackButton, createCommonButtons, createExitButton } from '../ui/buttons'
-import { samBuildUrl } from '../constants'
+import { DataQuickPickItem, createMultiPick, createQuickPick } from '../ui/pickerPrompter'
+import { createCommonButtons } from '../ui/buttons'
+import { samBuildParamUrl, samBuildUrl } from '../constants'
 import { CancellationError } from '../utilities/timeoutUtils'
 import { ToolkitError } from '../errors'
 import globals from '../extensionGlobals'
@@ -26,6 +26,7 @@ export interface BuildParams {
     readonly template: TemplateItem
     readonly projectRoot: vscode.Uri
     readonly paramsSource: ParamsSource.Specify | ParamsSource.SamConfig | ParamsSource.DefaultValues
+    readonly buildFlags?: string
 }
 
 export enum ParamsSource {
@@ -62,75 +63,53 @@ export function createParamsSourcePrompter(existValidSamconfig: boolean) {
     })
 }
 
-export async function buildFlagsPrompter(): Promise<DataQuickPickItem<string>[] | undefined> {
-    const items: DataQuickPickItem<string>[] = [
-        {
-            label: 'Beta features',
-            data: '--beta-features',
-            description: 'Enable beta features',
-        },
-        {
-            label: 'Build in source',
-            data: '--build-in-source',
-            description: 'Opts in to build project in the source folder',
-        },
-        {
-            label: 'Cached',
-            data: '--cached',
-            description: 'Reuse build artifacts that have not changed from previous builds',
-        },
-        {
-            label: 'Debug',
-            data: '--debug',
-            description: 'Turn on debug logging to print debug messages and display timestamps',
-        },
-        {
-            label: 'Parallel',
-            data: '--parallel',
-            description: 'Enable parallel builds for AWS SAM template functions and layers',
-        },
-        {
-            label: 'Skip prepare infra',
-            data: '--skip-prepare-infra',
-            description: 'Skip preparation stage when there are no infrastructure changes',
-        },
-        {
-            label: 'Skip pull image',
-            data: '--skip-pull-image',
-            description: 'Skip pulling down the latest Docker image for Lambda runtime',
-        },
-        {
-            label: 'Use container',
-            data: '--use-container',
-            description: 'Build functions with an AWS Lambda-like container',
-        },
-        {
-            label: 'Save parameters',
-            data: '--save-params',
-            description: 'Save to samconfig.toml as default parameters',
-        },
-    ]
-    const quickPick = vscode.window.createQuickPick<DataQuickPickItem<string>>()
-    quickPick.title = 'Select build flags'
-    quickPick.items = items
-    quickPick.canSelectMany = true
-    quickPick.step = 3
-    quickPick.buttons = [createBackButton(), createExitButton()]
-
-    return new Promise((resolve) => {
-        quickPick.onDidAccept(() => {
-            resolve(quickPick.selectedItems.map((item) => item))
-            quickPick.hide()
-        })
-
-        quickPick.onDidHide(() => {
-            resolve(undefined)
-            quickPick.dispose()
-        })
-
-        quickPick.show()
-    })
-}
+const buildFlagItems: DataQuickPickItem<string>[] = [
+    {
+        label: 'Beta features',
+        data: '--beta-features',
+        description: 'Enable beta features',
+    },
+    {
+        label: 'Build in source',
+        data: '--build-in-source',
+        description: 'Opts in to build project in the source folder',
+    },
+    {
+        label: 'Cached',
+        data: '--cached',
+        description: 'Reuse build artifacts that have not changed from previous builds',
+    },
+    {
+        label: 'Debug',
+        data: '--debug',
+        description: 'Turn on debug logging to print debug messages and display timestamps',
+    },
+    {
+        label: 'Parallel',
+        data: '--parallel',
+        description: 'Enable parallel builds for AWS SAM template functions and layers',
+    },
+    {
+        label: 'Skip prepare infra',
+        data: '--skip-prepare-infra',
+        description: 'Skip preparation stage when there are no infrastructure changes',
+    },
+    {
+        label: 'Skip pull image',
+        data: '--skip-pull-image',
+        description: 'Skip pulling down the latest Docker image for Lambda runtime',
+    },
+    {
+        label: 'Use container',
+        data: '--use-container',
+        description: 'Build functions with an AWS Lambda-like container',
+    },
+    {
+        label: 'Save parameters',
+        data: '--save-params',
+        description: 'Save to samconfig.toml as default parameters',
+    },
+]
 export type SamBuildResult = {
     isSuccess: boolean
 }
@@ -146,9 +125,6 @@ export class BuildWizard extends Wizard<BuildParams> {
         super({ initState: state, exitPrompterProvider: createExitPrompter })
         this.registry = registry
         this.arg = arg
-    }
-
-    public override async init(): Promise<this> {
         if (this.arg === undefined) {
             // "Build" command was invoked on the command palette.
             this.form.template.bindPrompter(() => createTemplatePrompter(this.registry))
@@ -169,7 +145,18 @@ export class BuildWizard extends Wizard<BuildParams> {
             })
             this.form.projectRoot.setDefault(() => getProjectRoot(templateItem))
         }
-        return this
+
+        this.form.buildFlags.bindPrompter(
+            () =>
+                createMultiPick(buildFlagItems, {
+                    title: 'Select build flags',
+                    buttons: createCommonButtons(samBuildParamUrl),
+                    ignoreFocusOut: true,
+                }),
+            {
+                showWhen: ({ paramsSource }) => paramsSource === ParamsSource.Specify,
+            }
+        )
     }
 }
 
@@ -185,26 +172,15 @@ export async function getBuildFlags(
     projectRoot: vscode.Uri,
     defaultFlags: string[]
 ): Promise<string[]> {
-    switch (paramsSource) {
-        case ParamsSource.Specify:
-            // eslint-disable-next-line no-case-declarations
-            const flagItems = await buildFlagsPrompter()
-            if (flagItems === undefined) {
-                throw new CancellationError('user')
-            }
-            return flagItems ? flagItems.map((item) => item.data as string) : defaultFlags
-
-        case ParamsSource.SamConfig:
-            try {
-                const samConfigFile = await getConfigFileUri(projectRoot)
-                return ['--config-file', samConfigFile.fsPath]
-            } catch (error) {
-                return defaultFlags
-            }
-
-        default:
+    if (paramsSource === ParamsSource.SamConfig) {
+        try {
+            const samConfigFile = await getConfigFileUri(projectRoot)
+            return ['--config-file', samConfigFile.fsPath]
+        } catch (error) {
             return defaultFlags
+        }
     }
+    return defaultFlags
 }
 
 export async function runBuild(arg?: TreeNode): Promise<SamBuildResult> {
@@ -223,12 +199,16 @@ export async function runBuild(arg?: TreeNode): Promise<SamBuildResult> {
     const projectRoot = params.projectRoot
 
     const defaultFlags: string[] = ['--cached', '--parallel', '--save-params', '--use-container']
-    const buildFlags: string[] = await getBuildFlags(params.paramsSource, projectRoot, defaultFlags)
+    // refactor
+    const buildFlags: string[] =
+        params.paramsSource === ParamsSource.Specify && params.buildFlags
+            ? JSON.parse(params.buildFlags)
+            : await getBuildFlags(params.paramsSource, projectRoot, defaultFlags)
 
+    // todo remove
     if (await isDotnetRuntime(params.template.uri)) {
-        buildFlags.push('--mount-with', 'WRITE')
-        if (!buildFlags.includes('--use-container')) {
-            buildFlags.push('--use-container')
+        if (buildFlags.includes('--use-container')) {
+            buildFlags.push('--mount-with', 'WRITE')
         }
     }
 
@@ -253,6 +233,37 @@ export async function runBuild(arg?: TreeNode): Promise<SamBuildResult> {
             isSuccess: true,
         }
     } catch (error) {
-        throw ToolkitError.chain(error, 'Failed to build SAM template', { details: { ...buildFlags } })
+        throw ToolkitError.chain(error, 'Failed to build SAM template', {
+            details: { ...resolveBuildArgConflict(buildFlags) },
+        })
     }
+}
+
+function resolveBuildArgConflict(boundArgs: string[]): string[] {
+    const boundArgsSet = new Set(boundArgs)
+    if (boundArgsSet.has('--watch')) {
+        boundArgsSet.delete('--no-watch')
+    }
+    if (boundArgsSet.has('--dependency-layer')) {
+        boundArgsSet.delete('--no--dependency-layer')
+    }
+    if (boundArgsSet.has('--use-container') || boundArgsSet.has('-u')) {
+        boundArgsSet.delete('--build-in-source')
+    }
+    if (boundArgsSet.has('--build-in-source')) {
+        boundArgsSet.delete('--no-build-in-source')
+    }
+
+    // TODO phase 2: add anti param
+    // apply anti param if param is not set
+    // if (!boundArgsSet.has('--cached')) {
+    //     boundArgsSet.add('--no-cached')
+    // }
+    // if (!boundArgsSet.has('--build-in-source')) {
+    //     boundArgsSet.add('--no-build-in-source')
+    // }
+    // if (!boundArgsSet.has('--beta-features')) {
+    //     boundArgsSet.add('--no-beta-features')
+    // }
+    return Array.from(boundArgsSet)
 }

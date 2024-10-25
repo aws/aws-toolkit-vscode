@@ -11,19 +11,20 @@ import {
     DeployParams,
     DeployWizard,
     ParamsSource,
+    getDeployWizard,
     runDeploy,
-} from '../../../lambda/commands/deploySamApplication'
+} from '../../../shared/sam/deploy'
 import { globals, ToolkitError } from '../../../shared'
 import sinon from 'sinon'
-import { samconfigCompleteData, samconfigInvalidData, validTemplateData } from '../../shared/sam/samTestUtils'
+import { samconfigCompleteData, samconfigInvalidData, validTemplateData } from './samTestUtils'
 
 import assert from 'assert'
-import { getTestWindow } from '../../shared/vscode/window'
+import { getTestWindow } from '../vscode/window'
 import { DefaultCloudFormationClient } from '../../../shared/clients/cloudFormationClient'
 import { intoCollection } from '../../../shared/utilities/collectionUtils'
-import { PrompterTester } from '../../shared/wizards/prompterTester'
+import { PrompterTester } from '../wizards/prompterTester'
 import { RegionNode } from '../../../awsexplorer/regionNode'
-import { createTestRegionProvider } from '../../shared/regions/testUtil'
+import { createTestRegionProvider } from '../regions/testUtil'
 import { DefaultS3Client } from '../../../shared/clients/s3Client'
 import * as CloudFormationClientModule from '../../../shared/clients/cloudFormationClient'
 import * as S3ClientModule from '../../../shared/clients/s3Client'
@@ -129,7 +130,7 @@ describe('DeployWizard', async function () {
                 })
                 .build()
 
-            const parameters = await new DeployWizard({}, await globals.templateRegistry, templateFile).run()
+            const parameters = await (await getDeployWizard(templateFile)).run()
 
             assert(parameters)
             assert.strictEqual(parameters.SourceBucketName, 'my-source-bucket-name')
@@ -180,7 +181,7 @@ describe('DeployWizard', async function () {
                 })
                 .build()
 
-            const parameters = await new DeployWizard({}, await globals.templateRegistry, templateFile).run()
+            const parameters = await (await getDeployWizard(templateFile)).run()
 
             assert(parameters)
             assert.strictEqual(parameters.SourceBucketName, 'my-source-bucket-name')
@@ -267,7 +268,7 @@ describe('DeployWizard', async function () {
                 })
                 .build()
 
-            const parameters = await new DeployWizard({}, await globals.templateRegistry, regionNode).run()
+            const parameters = await (await getDeployWizard(regionNode)).run()
 
             assert(parameters)
             // assert.strictEqual(parameters.SourceBucketName, 'my-source-bucket-name')
@@ -319,7 +320,7 @@ describe('DeployWizard', async function () {
                 })
                 .build()
 
-            const parameters = await new DeployWizard({}, await globals.templateRegistry, regionNode).run()
+            const parameters = await (await getDeployWizard(regionNode)).run()
 
             assert(parameters)
 
@@ -397,7 +398,7 @@ describe('DeployWizard', async function () {
                 })
                 .build()
 
-            const parameters = await new DeployWizard({}, await globals.templateRegistry, appNode).run()
+            const parameters = await (await getDeployWizard(appNode)).run()
 
             assert(parameters)
             assert.strictEqual(parameters.SourceBucketName, 'my-source-bucket-name')
@@ -449,7 +450,7 @@ describe('DeployWizard', async function () {
                 })
                 .build()
 
-            const parameters = await new DeployWizard({}, await globals.templateRegistry, appNode).run()
+            const parameters = await (await getDeployWizard(appNode)).run()
 
             assert(parameters)
             assert.strictEqual(parameters.SourceBucketName, 'my-source-bucket-name')
@@ -532,7 +533,7 @@ describe('DeployWizard', async function () {
                 })
                 .build()
 
-            const parameters = await new DeployWizard({}, await globals.templateRegistry).run()
+            const parameters = await (await getDeployWizard()).run()
             assert(parameters)
 
             assert.strictEqual(parameters.template.uri.fsPath, templateFile.fsPath)
@@ -586,7 +587,7 @@ describe('DeployWizard', async function () {
                     quickPick.acceptItem(quickPick.items[2])
                 })
                 .build()
-            const parameters = await new DeployWizard({}, await globals.templateRegistry).run()
+            const parameters = await (await getDeployWizard()).run()
             assert(parameters)
             assert.strictEqual(parameters.template.uri.fsPath, templateFile.fsPath)
             assert.strictEqual(parameters.projectRoot.fsPath, projectRoot.fsPath)

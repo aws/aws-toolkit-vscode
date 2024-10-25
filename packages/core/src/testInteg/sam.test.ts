@@ -34,9 +34,9 @@ import { getTestWindow } from '../test/shared/vscode/window'
 import { ParamsSource, runBuild } from '../shared/sam/build'
 import { DataQuickPickItem } from '../shared/ui/pickerPrompter'
 import fs from '../shared/fs/fs'
-import { BucketSource, DeployParams, DeployWizard, runDeploy } from '../lambda/commands/deploySamApplication'
+import { BucketSource, DeployParams, DeployWizard, runDeploy } from '../shared/sam/deploy'
 import * as sync from '../shared/sam/sync'
-import * as deploySamApplication from '../lambda/commands/deploySamApplication'
+import * as deploy from '../shared/sam/deploy'
 import * as processUtils from '../shared/utilities/processUtils'
 import * as resolveEnv from '../shared/env/resolveEnv'
 import * as cfnClient from '../shared/clients/cloudFormationClient'
@@ -772,7 +772,7 @@ describe('SAM Integration Tests', async function () {
             cfnTemplatePath = path.join(testDir, samApplicationName, 'template.yaml')
 
             mockDeployParams = {
-                paramsSource: deploySamApplication.ParamsSource.Specify,
+                paramsSource: deploy.ParamsSource.Specify,
                 region: 'us-east-1',
                 stackName: 'my-stack',
                 bucketName: 'my-bucket-name',

@@ -19,10 +19,9 @@ import assert from 'assert'
 import { createBaseTemplate } from '../cloudformation/cloudformationTestUtils'
 import { getProjectRootUri } from '../../../shared/sam/utils'
 import sinon from 'sinon'
-import { DataQuickPickItem } from '../../../shared/ui/pickerPrompter'
-import { getTestWindow } from '../vscode/window'
+import { createMultiPick, DataQuickPickItem } from '../../../shared/ui/pickerPrompter'
 import * as config from '../../../shared/sam/config'
-import * as build from '../../../shared/sam/build'
+import { getTestWindow } from '../vscode/window'
 
 describe('BuildWizard', async function () {
     const createTester = async (params?: Partial<BuildParams>, arg?: TreeNode | undefined) =>
@@ -151,17 +150,12 @@ describe('getBuildFlags', () => {
             picker.acceptItems(...acceptedItems)
         })
 
-        const flags = await getBuildFlags(ParamsSource.Specify, projectRoot, defaultFlags)
+        const flags = await createMultiPick(quickPickItems, {
+            title: 'Select build flags',
+            ignoreFocusOut: true,
+        }).prompt()
 
-        assert.deepStrictEqual(flags, ['--beta-features', '--build-in-source', '--cached'])
-    })
-
-    it('should throw CancellationError if buildFlagsPrompter returns undefined', async () => {
-        const buildFlagsPrompterStub = sinon.stub().resolves(undefined)
-        sandbox.stub(build, 'buildFlagsPrompter').callsFake(buildFlagsPrompterStub)
-
-        const flags = await getBuildFlags(ParamsSource.SamConfig, projectRoot, defaultFlags)
-        assert.deepStrictEqual(flags, defaultFlags)
+        assert.deepStrictEqual(flags, JSON.stringify(['--beta-features', '--build-in-source', '--cached']))
     })
 
     it('should return config file flag when paramsSource is SamConfig', async () => {

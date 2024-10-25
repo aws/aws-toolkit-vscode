@@ -35,7 +35,7 @@ import { SamCliSettings } from './cli/samCliSettings'
 import { Commands } from '../vscode/commands2'
 import { runSync } from './sync'
 import { showExtensionPage } from '../utilities/vsCodeUtils'
-import { runDeploy } from '../../lambda/commands/deploySamApplication'
+import { runDeploy } from './deploy'
 import { telemetry } from '../telemetry/telemetry'
 
 const sharedDetectSamCli = shared(detectSamCli)
@@ -122,14 +122,6 @@ export async function activate(ctx: ExtContext): Promise<void> {
     if (globals.didReload) {
         await resumeCreateNewSamApp(ctx)
     }
-
-    Commands.register(
-        {
-            id: 'aws.samcli.sync',
-            autoconnect: true,
-        },
-        async (arg?, validate?: boolean) => await runSync('infra', arg, validate)
-    )
 }
 
 async function registerCommands(ctx: ExtContext, settings: SamCliSettings): Promise<void> {
@@ -159,7 +151,14 @@ async function registerCommands(ctx: ExtContext, settings: SamCliSettings): Prom
         Commands.register({ id: 'aws.toggleSamCodeLenses', autoconnect: false }, async () => {
             const toggled = !settings.get('enableCodeLenses', false)
             await settings.update('enableCodeLenses', toggled)
-        })
+        }),
+        Commands.register(
+            {
+                id: 'aws.samcli.sync',
+                autoconnect: true,
+            },
+            async (arg?, validate?: boolean) => await runSync('infra', arg, validate)
+        )
     )
 }
 
