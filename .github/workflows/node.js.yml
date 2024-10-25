@@ -85,7 +85,7 @@ jobs:
                   echo "TARGET_BRANCH=${{ github.event.pull_request.base.ref }}" >> $GITHUB_ENV
             - run: git diff --name-only origin/$TARGET_BRANCH forkUpstream/$CURRENT_BRANCH > diff_output.txt
             - run: |
-                  npm install -g jscpd diff-so-fancy
+                  npm install -g jscpd
 
             - run: jscpd --config "$GITHUB_WORKSPACE/.github/workflows/jscpd.json"
 
