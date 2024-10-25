@@ -8,22 +8,18 @@ import { Auth } from './auth'
 import { LoginManager } from './deprecated/loginManager'
 import { fromString } from './providers/credentials'
 import { getLogger } from '../shared/logger'
-import { ExtensionUse } from './utils'
+import { ExtensionUse, initializeCredentialsProviderManager } from './utils'
 import { isAmazonQ, isCloud9, isSageMaker } from '../shared/extensionUtilities'
 import { isInDevEnv } from '../shared/vscode/env'
 import { isWeb } from '../shared/extensionGlobals'
-import { CredentialsProviderManager } from './providers/credentialsProviderManager'
-import { SharedCredentialsProviderFactory } from './providers/sharedCredentialsProviderFactory'
-import { Ec2CredentialsProvider } from './providers/ec2CredentialsProvider'
-import { EcsCredentialsProvider } from './providers/ecsCredentialsProvider'
-import { EnvVarsCredentialsProvider } from './providers/envVarsCredentialsProvider'
 
 interface SagemakerCookie {
-    authMode?: string
+    authMode?: 'Sso' | 'Iam'
 }
 
 export async function initialize(loginManager: LoginManager): Promise<void> {
     if (isAmazonQ() && isSageMaker()) {
+        // The command `sagemaker.parseCookies` is registered in VS Code Sagemaker environment.
         const result = (await vscode.commands.executeCommand('sagemaker.parseCookies')) as SagemakerCookie
         if (result.authMode !== 'Sso') {
             initializeCredentialsProviderManager()
@@ -39,12 +35,6 @@ export async function initialize(loginManager: LoginManager): Promise<void> {
     })
 
     await showManageConnectionsOnStartup()
-}
-
-function initializeCredentialsProviderManager() {
-    const manager = CredentialsProviderManager.getInstance()
-    manager.addProviderFactory(new SharedCredentialsProviderFactory())
-    manager.addProviders(new Ec2CredentialsProvider(), new EcsCredentialsProvider(), new EnvVarsCredentialsProvider())
 }
 
 /**

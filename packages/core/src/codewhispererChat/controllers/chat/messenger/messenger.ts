@@ -18,7 +18,6 @@ import {
     ChatResponseStream as cwChatResponseStream,
     CodeWhispererStreamingServiceException,
     SupplementaryWebLink,
-    __MetadataBearer,
 } from '@amzn/codewhisperer-streaming'
 import { ChatMessage, ErrorMessage, FollowUp, Suggestion } from '../../../view/connector/connector'
 import { ChatSession } from '../../../clients/chat/v0/chat'
@@ -39,7 +38,8 @@ import { extractAuthFollowUp } from '../../../../amazonq/util/authUtils'
 
 export type StaticTextResponseType = 'quick-action-help' | 'onboarding-help' | 'transform' | 'help'
 
-export type MessengerResponseType = __MetadataBearer & {
+export type MessengerResponseType = {
+    $metadata: { requestId?: string; httpStatusCode?: number }
     message?: AsyncIterable<cwChatResponseStream | qdevChatResponseStream>
 }
 
