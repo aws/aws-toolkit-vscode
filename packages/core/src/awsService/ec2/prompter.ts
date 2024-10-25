@@ -10,6 +10,8 @@ import { isValidResponse } from '../../shared/wizards/wizard'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { AsyncCollection } from '../../shared/utilities/asyncCollection'
 import { getIconCode } from './utils'
+import { Ec2Node } from './explorer/ec2ParentNode'
+import { Ec2InstanceNode } from './explorer/ec2InstanceNode'
 
 export type instanceFilter = (instance: SafeEc2Instance) => boolean
 export interface Ec2Selection {
@@ -71,4 +73,10 @@ export class Ec2Prompter {
             'Instances'
         )
     }
+}
+
+export async function getSelection(node?: Ec2Node, filter?: instanceFilter): Promise<Ec2Selection> {
+    const prompter = new Ec2Prompter(filter)
+    const selection = node && node instanceof Ec2InstanceNode ? node.toSelection() : await prompter.promptUser()
+    return selection
 }
