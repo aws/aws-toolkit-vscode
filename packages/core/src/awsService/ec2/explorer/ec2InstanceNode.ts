@@ -10,8 +10,9 @@ import { SafeEc2Instance } from '../../../shared/clients/ec2Client'
 import globals from '../../../shared/extensionGlobals'
 import { getIconCode } from '../utils'
 import { Ec2Selection } from '../prompter'
-import { Ec2ParentNode } from './ec2ParentNode'
+import { Ec2Node, Ec2ParentNode } from './ec2ParentNode'
 import { EC2 } from 'aws-sdk'
+import { getLogger } from '../../../shared'
 
 export const Ec2InstanceRunningContext = 'awsEc2RunningNode'
 export const Ec2InstanceStoppedContext = 'awsEc2StoppedNode'
@@ -99,5 +100,16 @@ export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode 
     public async refreshNode(): Promise<void> {
         await this.updateStatus()
         await vscode.commands.executeCommand('aws.refreshAwsExplorerNode', this)
+    }
+}
+
+export async function tryRefreshNode(node?: Ec2Node) {
+    if (node) {
+        const n = node instanceof Ec2InstanceNode ? node.parent : node
+        try {
+            await n.refreshNode()
+        } catch (e) {
+            getLogger().error('refreshNode failed: %s', (e as Error).message)
+        }
     }
 }
