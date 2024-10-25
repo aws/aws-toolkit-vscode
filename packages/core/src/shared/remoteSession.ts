@@ -20,8 +20,10 @@ import { pushIf } from './utilities/collectionUtils'
 import { ChildProcess } from './utilities/processUtils'
 import { findSshPath, getVscodeCliPath } from './utilities/pathFind'
 import { IamClient } from './clients/iamClient'
-import { IAM } from 'aws-sdk'
+import { IAM, SSM } from 'aws-sdk'
 import { getIdeProperties } from './extensionUtilities'
+import { Ec2Selection } from '../awsService/ec2/prompter'
+import { sshLogFileLocation } from './sshConfig'
 
 const policyAttachDelay = 5000
 
@@ -250,4 +252,22 @@ export async function getDeniedSsmActions(client: IamClient, roleArn: string): P
     })
 
     return deniedActions
+}
+
+export function getEc2SsmEnv(
+    selection: Ec2Selection,
+    ssmPath: string,
+    session: SSM.StartSessionResponse
+): NodeJS.ProcessEnv {
+    return Object.assign(
+        {
+            AWS_REGION: selection.region,
+            AWS_SSM_CLI: ssmPath,
+            LOG_FILE_LOCATION: sshLogFileLocation('ec2', selection.instanceId),
+            STREAM_URL: session.StreamUrl,
+            SESSION_ID: session.SessionId,
+            TOKEN: session.TokenValue,
+        },
+        process.env
+    )
 }
