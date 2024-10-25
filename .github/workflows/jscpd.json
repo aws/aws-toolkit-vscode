@@ -3,7 +3,7 @@
     "ignore": ["**node_modules**", "**dist**"],
     "gitignore": true,
     "threshold": 3.0,
-    "minLines": 5,
+    "minLines": 3,
     "output": "./",
     "reporters": ["json"]
 }
