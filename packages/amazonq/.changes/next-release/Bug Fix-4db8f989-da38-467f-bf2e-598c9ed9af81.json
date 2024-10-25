@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Inline: Code completion not working for Sagemaker Pro Tier users."
+}

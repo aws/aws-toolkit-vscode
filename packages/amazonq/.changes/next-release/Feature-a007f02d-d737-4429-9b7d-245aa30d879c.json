@@ -1,4 +1,4 @@
 {
 	"type": "Feature",
-	"description": "Enable Free Tier Chat for IAM users & Fix code completion for Sagemaker Pro Tier users"
+	"description": "Enable Free Tier Chat for IAM users"
 }
