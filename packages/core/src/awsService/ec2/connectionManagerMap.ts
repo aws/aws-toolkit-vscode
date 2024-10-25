@@ -10,10 +10,10 @@ export class Ec2ConnecterMap extends Map<string, Ec2Connecter> {
     private static warnSize: number = 25
 
     public getOrInit(regionCode: string) {
-        return this.has(regionCode) ? this.get(regionCode)! : this.initiateManager(regionCode)
+        return this.has(regionCode) ? this.get(regionCode)! : this.initManager(regionCode)
     }
 
-    private initiateManager(regionCode: string): Ec2Connecter {
+    private initManager(regionCode: string): Ec2Connecter {
         if (this.size >= Ec2ConnecterMap.warnSize) {
             getLogger().warn(
                 `Connection manager exceeded threshold of ${Ec2ConnecterMap.warnSize} with ${this.size} active connections`

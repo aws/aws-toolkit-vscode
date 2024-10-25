@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
-import * as path from 'path'
 import { Session } from 'aws-sdk/clients/ssm'
 import { EC2, IAM, SSM } from 'aws-sdk'
 import { Ec2Selection } from './prompter'
@@ -28,7 +27,6 @@ import { CancellationError, Timeout } from '../../shared/utilities/timeoutUtils'
 import { showMessageWithCancel } from '../../shared/utilities/messages'
 import { SshConfig } from '../../shared/sshConfig'
 import { SshKeyPair } from './sshKeyPair'
-import globals from '../../shared/extensionGlobals'
 import { Ec2SessionTracker } from './remoteSessionManager'
 import { getEc2SsmEnv } from './utils'
 
@@ -256,8 +254,7 @@ export class Ec2Connecter implements vscode.Disposable {
     }
 
     public async configureSshKeys(selection: Ec2Selection, remoteUser: string): Promise<SshKeyPair> {
-        const keyPath = path.join(globals.context.globalStorageUri.fsPath, `aws-ec2-key`)
-        const keyPair = await SshKeyPair.getSshKeyPair(keyPath, 30000)
+        const keyPair = await SshKeyPair.getSshKeyPair(`aws-ec2-key`, 30000)
         await this.sendSshKeyToInstance(selection, keyPair, remoteUser)
         return keyPair
     }

@@ -1,0 +1,4 @@
+{
+    "type": "Bug Fix",
+    "description": "fixed device code detection when running auth through tunneled vscode"
+}

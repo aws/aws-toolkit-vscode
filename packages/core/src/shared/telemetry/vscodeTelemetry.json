@@ -157,7 +157,7 @@
         {
             "name": "cwsprChatTimeToFirstChunk",
             "type": "int",
-            "description": "The time between the initial server request and when we got back the first usable result"
+            "description": "The time between when the conversation id was created and when we got back the first usable result"
         },
         {
             "name": "cwsprChatTimeBetweenChunks",
@@ -167,10 +167,20 @@
         {
             "name": "cwsprChatFullResponseLatency",
             "type": "int",
-            "description": "The time between the initial server request and the final response from the server"
+            "description": "The time between when the conversation id was created and the final response from the server was received"
         },
         {
-            "name": "cwsprTimeToFirstDisplay",
+            "name": "cwsprChatTimeToFirstUsableChunk",
+            "type": "int",
+            "description": "The time between the initial server request, including creating the conversation id, and the first usable result"
+        },
+        {
+            "name": "cwsprChatFullServerResponseLatency",
+            "type": "int",
+            "description": "The time between the initial server request, including creating the conversation id, and the final response from the server"
+        },
+        {
+            "name": "cwsprChatTimeToFirstDisplay",
             "type": "int",
             "description": "The time between the user pressing enter and when the first chunk of data is displayed to the user"
         },
@@ -310,6 +320,11 @@
             "name": "architecture",
             "type": "string",
             "description": "The CPU architecture"
+        },
+        {
+            "name": "timestamp",
+            "type": "int",
+            "description": "A timestamp in milliseconds"
         },
         {
             "name": "traceId",
@@ -753,7 +768,13 @@
                     "type": "cwsprChatFullResponseLatency"
                 },
                 {
-                    "type": "cwsprTimeToFirstDisplay"
+                    "type": "cwsprChatTimeToFirstUsableChunk"
+                },
+                {
+                    "type": "cwsprChatFullServerResponseLatency"
+                },
+                {
+                    "type": "cwsprChatTimeToFirstDisplay"
                 },
                 {
                     "type": "cwsprChatFullDisplayLatency"
@@ -1184,8 +1205,31 @@
                 {
                     "type": "proxiedSessionId",
                     "required": false
+                },
+                {
+                    "type": "timestamp",
+                    "required": false
                 }
             ]
+        },
+        {
+            "name": "ide_heartbeat",
+            "description": "A heartbeat sent by the extension",
+            "metadata": [
+                {
+                    "type": "id",
+                    "required": true
+                },
+                {
+                    "type": "name",
+                    "required": false
+                },
+                {
+                    "type": "timestamp",
+                    "required": false
+                }
+            ],
+            "passive": true
         }
     ]
 }

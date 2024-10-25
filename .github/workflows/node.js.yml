@@ -41,7 +41,7 @@ jobs:
         runs-on: ubuntu-latest
         strategy:
             matrix:
-                node-version: [16.x]
+                node-version: [18.x]
                 vscode-version: [stable]
         env:
             NODE_OPTIONS: '--max-old-space-size=8192'
@@ -55,6 +55,24 @@ jobs:
             - run: npm run testCompile
             - run: npm run lint
 
+    jscpd:
+        needs: lint-commits
+        runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                node-version: [18.x]
+        env:
+            NODE_OPTIONS: '--max-old-space-size=8192'
+        steps:
+            - uses: actions/checkout@v4
+            - name: Use Node.js ${{ matrix.node-version }}
+              uses: actions/setup-node@v4
+              with:
+                  node-version: ${{ matrix.node-version }}
+            - run: npm install jscpd
+            - name: Run jscpd
+              run: npx jscpd --config "$GITHUB_WORKSPACE/.github/workflows/jscpd.json"
+
     macos:
         needs: lint-commits
         name: test macOS
@@ -62,7 +80,7 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                node-version: [16.x]
+                node-version: [18.x]
                 vscode-version: [minimum, stable, insiders]
         env:
             VSCODE_TEST_VERSION: ${{ matrix.vscode-version }}
@@ -110,7 +128,7 @@ jobs:
         strategy:
             fail-fast: true
             matrix:
-                node-version: [16.x]
+                node-version: [18.x]
                 vscode-version: [stable, insiders]
         env:
             VSCODE_TEST_VERSION: ${{ matrix.vscode-version }}
@@ -136,7 +154,7 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                node-version: [16.x]
+                node-version: [18.x]
                 vscode-version: [stable, insiders]
         env:
             VSCODE_TEST_VERSION: ${{ matrix.vscode-version }}

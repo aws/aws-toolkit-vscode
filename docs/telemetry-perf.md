@@ -258,3 +258,70 @@ How long it took from when the user stopped pressing a key to when they were sho
         rHandler->>User: add to already shown results
         end
 ```
+
+## Crash Monitoring
+
+We make an attempt to gather information regarding when the IDE crashes, then report it to telemetry. This is the diagram of the steps that take place.
+
+### Sequence Diagram
+
+> Keep in mind that the entire sequence below is duplicated for each instance of our extension.
+> They all work together to "crash check" on behalf of the other crashed extension instance.
+
+`Crash Service`: The high level "service" that starts the heartbeats and crash checks
+
+`Heartbeat`: Sends heartbeats which signal that the extension is still running and has not crashed
+
+`Crash Checker`: Observes the heartbeats, reporting a telemetry event if a crash is detected
+
+`File System State`: The user's file system where we store the heartbeat files from each extension instance
+
+```mermaid
+%%{init: {'theme':'default'}}%%
+sequenceDiagram
+  autonumber
+
+  participant VSC as VS Code
+  participant Service as Crash Service
+  participant Checker as Crash Checker
+  participant Heartbeat as Heartbeat
+  participant State as File System State
+  participant Telemetry as Telemetry
+
+  rect rgb(121, 210, 121)
+    alt Extension Startup
+        VSC ->> Service: activate() - Start Service
+
+        Service ->> Heartbeat: Start Heartbeats
+        Heartbeat ->> State: Send Initial Heartbeat <br/> (in a folder add a unique file w/ timestamp)
+        rect rgb(64, 191, 64)
+            par every N minutes
+                Heartbeat ->> State: Send Heartbeat <br/> (overwrite the unique file w/ new timestamp)
+            end
+        end
+
+        Service ->> Checker: Start Crash Checking
+        rect rgb(64, 191, 64)
+            par every N*2 minutes
+                Checker ->> Checker: If computer went to sleep, skip this iteration (gives time for a heartbeat)
+                Checker ->> State: Request all heartbeat timestamps (readdir all heartbeat files)
+                State ->> Checker: Receive all heartbeat timestamps
+                loop for each crashed extension (it's timestamp >= N*2 minutes)
+                    Checker ->> State: Delete heartbeat file
+                    Checker ->> Telemetry: Send metric representing a crash: session_end
+                end
+            end
+        end
+    end
+  end
+
+  rect rgb(255, 128, 128)
+    alt Graceful Shutdown
+        VSC ->> Service: deactivate() - Stop Service
+        Service ->> Checker: Stop
+        Service ->> Heartbeat: Stop
+        Heartbeat ->> State: Delete timestamp file <br/> (This is missed when a crash happens)
+    end
+  end
+
+```

@@ -4,7 +4,7 @@
  */
 
 import assert from 'assert'
-import { isUuid, randomUUID } from '../../shared/crypto'
+import { isUuid, randomUUID, truncateUuid } from '../../shared/crypto'
 
 describe('crypto', function () {
     describe('randomUUID()', function () {
@@ -42,5 +42,23 @@ describe('crypto', function () {
         // The telemetry services indicates that per postel's law, uppercase is valid to pass in
         // as they will lowerCase when necessary.
         assert.equal(isUuid('47fe01cf-f37a-4e7c-b971-d10fe5897763'.toUpperCase()), true)
+    })
+})
+
+describe('truncateUUID', function () {
+    it('should return the first 4 and last 4 characters of a valid UUID', function () {
+        const fullUUID1 = 'aaaabbbb-cccc-dddd-eeee-ffffhhhhiiii'
+        const result1 = truncateUuid(fullUUID1)
+        assert.strictEqual(result1, 'aaaa...iiii')
+
+        const fullUUID2 = '12340000-0000-0000-0000-000000005678'
+        const result2 = truncateUuid(fullUUID2)
+        assert.strictEqual(result2, '1234...5678')
+    })
+
+    it('should throw an error if the input is not 36 characters long', function () {
+        assert.throws(() => {
+            truncateUuid('invalid-uuid')
+        }, /Cannot truncate uuid of value: "invalid-uuid"/)
     })
 })

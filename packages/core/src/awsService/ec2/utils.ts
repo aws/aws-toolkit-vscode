@@ -3,11 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { SSM } from 'aws-sdk'
 import { SafeEc2Instance } from '../../shared/clients/ec2Client'
 import { copyToClipboard } from '../../shared/utilities/messages'
 import { Ec2Selection } from './prompter'
 import { sshLogFileLocation } from '../../shared/sshConfig'
+import { SSM } from 'aws-sdk'
 
 export function getIconCode(instance: SafeEc2Instance) {
     if (instance.LastSeenStatus === 'running') {
