@@ -30,6 +30,7 @@ export { TryChatCodeLensProvider, tryChatCodeLensCommand } from '../codewhispere
 export { createAmazonQUri, openDiff, openDeletedDiff, getOriginalFileUri, getFileDiffUris } from './commons/diff'
 export { CodeReference } from '../codewhispererChat/view/connector/connector'
 export { AuthMessageDataMap, AuthFollowUpType } from './auth/model'
+export { extractAuthFollowUp } from './util/authUtils'
 import { FeatureContext } from '../shared'
 
 /**

@@ -23,11 +23,7 @@ export function responseTransformer(
             return decodedResponse
         }
     } catch (err) {
-        if (err instanceof Error) {
-            getLogger().error(err)
-        } else {
-            getLogger().error(`An unknown error occurred: ${err}`)
-        }
+        getLogger().error('An unknown error occurred: %s', (err as Error).message)
         return undefined
     }
 }

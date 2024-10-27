@@ -19,12 +19,12 @@ import {
     triggerPayloadToChatRequest,
     UserIntentRecognizer,
 } from 'aws-core-vscode/codewhispererChat'
-import { AwsClientResponseError, getLogger, isAwsError } from 'aws-core-vscode/shared'
+import { AwsClientResponseError, getLogger, isAwsError, ToolkitError } from 'aws-core-vscode/shared'
 import { randomUUID } from 'crypto'
-import { AuthFollowUpType, AuthMessageDataMap } from 'aws-core-vscode/amazonq'
 import { codeWhispererClient } from 'aws-core-vscode/codewhisperer'
 import type { InlineChatEvent } from 'aws-core-vscode/codewhisperer'
 import { InlineTask } from '../controller/inlineTask'
+import { extractAuthFollowUp } from 'aws-core-vscode/amazonq'
 
 export class InlineChatProvider {
     private readonly editorContextExtractor: EditorContextExtractor
@@ -100,12 +100,12 @@ export class InlineChatProvider {
         const tabID = triggerEvent.tabID
 
         const credentialsState = await AuthUtil.instance.getChatAuthState()
-
         if (
             !(credentialsState.codewhispererChat === 'connected' && credentialsState.codewhispererCore === 'connected')
         ) {
-            await this.sendAuthNeededExceptionMessage(credentialsState, tabID, triggerID)
-            return
+            const { message } = extractAuthFollowUp(credentialsState)
+            this.errorEmitter.fire()
+            throw new ToolkitError(message)
         }
         triggerPayload.useRelevantDocuments = false
 
@@ -128,22 +128,19 @@ export class InlineChatProvider {
             )
         } catch (e: any) {
             this.processException(e, tabID)
-            this.errorEmitter.fire()
-            return undefined
         }
 
         return response
     }
 
     private processException(e: any, tabID: string) {
-        let errorMessage = ''
-        let requestID = undefined
-        const defaultMessage = 'Failed to get response'
+        let errorMessage: string | undefined
+        let requestID: string | undefined
         if (typeof e === 'string') {
             errorMessage = e.toUpperCase()
         } else if (e instanceof SyntaxError) {
             // Workaround to handle case when LB returns web-page with error and our client doesn't return proper exception
-            errorMessage = AwsClientResponseError.tryExtractReasonFromSyntaxError(e) ?? defaultMessage
+            errorMessage = AwsClientResponseError.tryExtractReasonFromSyntaxError(e)
         } else if (e instanceof CodeWhispererStreamingServiceException) {
             errorMessage = e.message
             requestID = e.$metadata.requestId
@@ -152,34 +149,14 @@ export class InlineChatProvider {
         }
 
         this.errorEmitter.fire()
-        void vscode.window.showErrorMessage(errorMessage)
-        getLogger().error(`error: ${errorMessage} tabID: ${tabID} requestID: ${requestID}`)
         this.sessionStorage.deleteSession(tabID)
-    }
 
-    private async sendAuthNeededExceptionMessage(credentialState: FeatureAuthState, tabID: string, triggerID: string) {
-        let authType: AuthFollowUpType = 'full-auth'
-        let message = AuthMessageDataMap[authType].message
-        if (
-            credentialState.codewhispererChat === 'disconnected' &&
-            credentialState.codewhispererCore === 'disconnected'
-        ) {
-            authType = 'full-auth'
-            message = AuthMessageDataMap[authType].message
-        }
-
-        if (credentialState.codewhispererCore === 'connected' && credentialState.codewhispererChat === 'expired') {
-            authType = 'missing_scopes'
-            message = AuthMessageDataMap[authType].message
-        }
-
-        if (credentialState.codewhispererChat === 'expired' && credentialState.codewhispererCore === 'expired') {
-            authType = 're-auth'
-            message = AuthMessageDataMap[authType].message
-        }
-
-        this.errorEmitter.fire()
-        void vscode.window.showErrorMessage(message)
+        throw ToolkitError.chain(e, errorMessage ?? 'Failed to get response', {
+            details: {
+                tabID,
+                requestID,
+            },
+        })
     }
 
     public sendTelemetryEvent(inlineChatEvent: InlineChatEvent, currentTask?: InlineTask) {
