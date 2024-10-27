@@ -121,10 +121,10 @@ export class InlineTask {
         for (const diff of this.diff) {
             if (diff.type === 'insertion') {
                 numSuggestionAddChars += diff.replacementText.length
-                numSuggestionAddLines += diff.range.start.line - diff.range.end.line + 1
+                numSuggestionAddLines += diff.range.end.line - diff.range.start.line + 1
             } else {
                 numSuggestionDelChars += diff.originalText.length
-                numSuggestionDelLines += diff.range.start.line - diff.range.end.line + 1
+                numSuggestionDelLines += diff.range.end.line - diff.range.start.line + 1
             }
         }
 
