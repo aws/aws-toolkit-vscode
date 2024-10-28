@@ -41,7 +41,7 @@ getRuleTester().run('no-json-stringify-in-log', rules['no-json-stringify-in-log'
         },
         {
             code: 'devLogger?.debug(`crashMonitoring: CHECKED: Result of cleaning up crashed instances\nBEFORE: ${JSON.stringify(before)}\nAFTER:  ${JSON.stringify(after)}\nACTUAL: ${JSON.stringify(afterActual)}`)',
-            errors: [errMsg, errMsg, errMsg],
+            errors: [errMsg],
         },
         {
             code: 'getLogger().warn(`skipping invalid item in telemetry cache: ${JSON.stringify(item)}\n`)',

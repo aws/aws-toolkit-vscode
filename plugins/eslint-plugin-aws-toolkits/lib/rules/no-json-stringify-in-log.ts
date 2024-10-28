@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { AST_NODE_TYPES, ESLintUtils } from '@typescript-eslint/utils'
+import { AST_NODE_TYPES, ESLintUtils, TSESTree } from '@typescript-eslint/utils'
 import { Rule } from 'eslint'
 
 export const errMsg = 'Avoid using JSON.stringify within logging and error messages, prefer %O.'
@@ -11,8 +11,7 @@ export const errMsg = 'Avoid using JSON.stringify within logging and error messa
 /**
  * Check if a given expression is a JSON.stringify call.
  */
-
-function isJsonStringifyCall(node: any): boolean {
+function isJsonStringifyCall(node: TSESTree.CallExpressionArgument): boolean {
     return (
         node.type === AST_NODE_TYPES.CallExpression &&
         node.callee.type === AST_NODE_TYPES.MemberExpression &&
@@ -23,16 +22,24 @@ function isJsonStringifyCall(node: any): boolean {
     )
 }
 
+function isTemplateWithStringifyCall(node: TSESTree.CallExpressionArgument): boolean {
+    return (
+        node.type === AST_NODE_TYPES.TemplateLiteral &&
+        node.expressions.some((e: TSESTree.Expression) => isJsonStringifyCall(e))
+    )
+}
+
 /**
  * Check if node is representing syntax of the form getLogger().f(msg) for some f and msg.
  *
  */
-function isLoggerCall(node: any): boolean {
+function isLoggerCall(node: TSESTree.CallExpression): boolean {
     return (
-        node.callee.type === AST_NODE_TYPES.MemberExpression &&
-        node.callee.object.type === AST_NODE_TYPES.CallExpression &&
-        node.callee.object.callee.type === AST_NODE_TYPES.Identifier &&
-        node.callee.object.callee.name === 'getLogger'
+        (node.callee.type === AST_NODE_TYPES.MemberExpression &&
+            node.callee.object.type === AST_NODE_TYPES.CallExpression &&
+            node.callee.object.callee.type === AST_NODE_TYPES.Identifier &&
+            node.callee.object.callee.name === 'getLogger') ||
+        isDisguisedLoggerCall(node)
     )
 }
 
@@ -45,13 +52,14 @@ function isLoggerCall(node: any): boolean {
  *  1) If the left side is an identifier including the word logger
  *  2) If the left side is a property of some object, including the word logger.
  */
-function isDisguisedLoggerCall(node: any): boolean {
+function isDisguisedLoggerCall(node: TSESTree.CallExpression): boolean {
     return (
         (node.callee.type === AST_NODE_TYPES.MemberExpression &&
             node.callee.object.type === AST_NODE_TYPES.Identifier &&
             node.callee.object.name.toLowerCase().includes('logger')) ||
         (node.callee.type === AST_NODE_TYPES.MemberExpression &&
             node.callee.object.type === AST_NODE_TYPES.MemberExpression &&
+            node.callee.object.property.type === AST_NODE_TYPES.Identifier &&
             node.callee.object.property.name.toLowerCase().includes('logger'))
     )
 }
@@ -72,30 +80,14 @@ export default ESLintUtils.RuleCreator.withoutDocs({
     defaultOptions: [],
     create(context) {
         return {
-            CallExpression(node) {
-                // Look for a getLogger().f() call or a disguised one, see isDisguisedLoggerCall for more info.
-                if (isLoggerCall(node) || isDisguisedLoggerCall(node)) {
-                    // For each argument to the call above, check if it contains a JSON.stringify
-                    node.arguments.forEach((arg) => {
-                        // Check if arg itself if a JSON.stringify call
-                        if (isJsonStringifyCall(arg)) {
-                            return context.report({
-                                node: node,
-                                messageId: 'errMsg',
-                            })
-                        }
-                        // Check if the arg contains a template ex. '${...}'
-                        if (arg.type === AST_NODE_TYPES.TemplateLiteral) {
-                            arg.expressions.forEach((e) => {
-                                // Check the template for a JSON.stringify call.
-                                if (isJsonStringifyCall(e)) {
-                                    return context.report({
-                                        node: node,
-                                        messageId: 'errMsg',
-                                    })
-                                }
-                            })
-                        }
+            CallExpression(node: TSESTree.CallExpression) {
+                if (
+                    isLoggerCall(node) &&
+                    node.arguments.some((arg) => isJsonStringifyCall(arg) || isTemplateWithStringifyCall(arg))
+                ) {
+                    return context.report({
+                        node: node,
+                        messageId: 'errMsg',
                     })
                 }
             },
