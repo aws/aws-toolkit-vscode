@@ -13,7 +13,7 @@ import { computeDecorations } from '../decorations/computeDecorations'
 import { CodelensProvider } from '../codeLenses/codeLenseProvider'
 import { ReferenceLogController } from 'aws-core-vscode/codewhispererChat'
 import { CodeWhispererSettings } from 'aws-core-vscode/codewhisperer'
-import { addEofNewline, codicon, getIcon, getLogger, messages, setContext, Timeout } from 'aws-core-vscode/shared'
+import { codicon, getIcon, getLogger, messages, setContext, Timeout, textDocumentUtil } from 'aws-core-vscode/shared'
 import { InlineLineAnnotationController } from '../decorations/inlineLineAnnotationController'
 
 export class InlineChatController {
@@ -180,7 +180,7 @@ export class InlineChatController {
                 if (!query) {
                     return
                 }
-                await addEofNewline(editor)
+                await textDocumentUtil.addEofNewline(editor)
                 this.task = await this.createTask(query, editor.document, editor.selection)
                 await this.inlineLineAnnotationController.disable(editor)
                 await this.computeDiffAndRenderOnEditor(query, editor.document).catch(async (err) => {

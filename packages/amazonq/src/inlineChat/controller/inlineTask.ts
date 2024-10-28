@@ -8,7 +8,7 @@ import type { InlineChatEvent } from 'aws-core-vscode/codewhisperer'
 import type { Decorations } from '../decorations/inlineDecorator'
 import { computeDecorations } from '../decorations/computeDecorations'
 import { extractLanguageNameFromFile } from 'aws-core-vscode/codewhispererChat'
-import { expandSelectionToFullLines } from 'aws-core-vscode/shared'
+import { textDocumentUtil } from 'aws-core-vscode/shared'
 
 interface TextToInsert {
     type: 'insertion'
@@ -65,7 +65,7 @@ export class InlineTask {
         public document: vscode.TextDocument,
         selection: vscode.Selection
     ) {
-        this.selectedRange = expandSelectionToFullLines(document, selection)
+        this.selectedRange = textDocumentUtil.expandSelectionToFullLines(document, selection)
         this.selectedText = document.getText(this.selectedRange)
         this.languageName = extractLanguageNameFromFile(document)
     }
