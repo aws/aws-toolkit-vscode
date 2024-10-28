@@ -102,6 +102,7 @@ export function registerNewFiles(
                 workspaceFolderPrefixes === undefined ? 0 : prefix.length > 0 ? prefix.length + 1 : 0
             ),
             rejected: false,
+            changeApplied: false,
         })
     }
 
@@ -127,6 +128,7 @@ function getDeletedFileInfos(deletedFiles: string[], workspaceFolders: CurrentWs
                 workspaceFolder: folder,
                 relativePath: deletedFilePath.substring(prefixLength),
                 rejected: false,
+                changeApplied: false,
             }
         })
         .filter(isPresent)
@@ -426,6 +428,7 @@ export class MockCodeGenState implements SessionState {
                     workspaceFolder: this.config.workspaceFolders[0],
                     relativePath: 'src/this-file-should-be-deleted.ts',
                     rejected: false,
+                    changeApplied: false,
                 },
             ]
             action.messenger.sendCodeResult(

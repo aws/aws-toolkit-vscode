@@ -10,7 +10,13 @@ import { DiffTreeFileInfo } from './types'
 export function getDetails(filePaths: DiffTreeFileInfo[]): Record<string, TreeNodeDetails> {
     const details: Record<string, TreeNodeDetails> = {}
     for (const filePath of filePaths) {
-        if (filePath.rejected) {
+        if (filePath.changeApplied) {
+            details[filePath.relativePath] = {
+                status: 'success',
+                label: 'File accepted',
+                icon: MynahIcons.OK,
+            }
+        } else if (filePath.rejected) {
             details[filePath.relativePath] = {
                 status: 'error',
                 label: 'File rejected',
@@ -24,25 +30,32 @@ export function getDetails(filePaths: DiffTreeFileInfo[]): Record<string, TreeNo
 export function getActions(filePaths: DiffTreeFileInfo[]): Record<string, FileNodeAction[]> {
     const actions: Record<string, FileNodeAction[]> = {}
     for (const filePath of filePaths) {
+        if (filePath.changeApplied) {
+            continue
+        }
+        actions[filePath.relativePath] = [
+            {
+                icon: MynahIcons.OK,
+                status: 'success',
+                name: 'accept-change',
+                description: 'Accept file change',
+            },
+        ]
         switch (filePath.rejected) {
             case true:
-                actions[filePath.relativePath] = [
-                    {
-                        icon: MynahIcons.REVERT,
-                        name: 'revert-rejection',
-                        description: 'Revert rejection',
-                    },
-                ]
+                actions[filePath.relativePath].push({
+                    icon: MynahIcons.REVERT,
+                    name: 'revert-rejection',
+                    description: 'Revert rejection',
+                })
                 break
             case false:
-                actions[filePath.relativePath] = [
-                    {
-                        icon: MynahIcons.CANCEL_CIRCLE,
-                        status: 'error',
-                        name: 'reject-change',
-                        description: 'Reject change',
-                    },
-                ]
+                actions[filePath.relativePath].push({
+                    icon: MynahIcons.CANCEL_CIRCLE,
+                    status: 'error',
+                    name: 'reject-change',
+                    description: 'Reject change',
+                })
                 break
         }
     }

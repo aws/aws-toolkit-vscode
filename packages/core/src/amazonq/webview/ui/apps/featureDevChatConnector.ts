@@ -100,6 +100,17 @@ export class Connector extends BaseConnector {
 
     private processCodeResultMessage = async (messageData: any): Promise<void> => {
         if (this.onChatAnswerReceived !== undefined) {
+            const messageId =
+                messageData.codeGenerationId ??
+                messageData.messageID ??
+                messageData.triggerID ??
+                messageData.conversationID
+            this.sendMessageToExtension({
+                tabID: messageData.tabID,
+                command: 'store-code-result-message-id',
+                messageId,
+                tabType: 'featuredev',
+            })
             const actions = getActions([...messageData.filePaths, ...messageData.deletedFiles])
             const answer: ChatItem = {
                 type: ChatItemType.ANSWER,
@@ -107,12 +118,7 @@ export class Connector extends BaseConnector {
                 followUp: undefined,
                 canBeVoted: true,
                 codeReference: messageData.references,
-                // TODO get the backend to store a message id in addition to conversationID
-                messageId:
-                    messageData.codeGenerationId ??
-                    messageData.messageID ??
-                    messageData.triggerID ??
-                    messageData.conversationID,
+                messageId,
                 fileList: {
                     rootFolderTitle: 'Changes',
                     filePaths: messageData.filePaths.map((f: DiffTreeFileInfo) => f.zipFilePath),

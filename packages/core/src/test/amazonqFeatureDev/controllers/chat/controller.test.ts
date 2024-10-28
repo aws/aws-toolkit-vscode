@@ -53,6 +53,7 @@ describe('Controller', () => {
             rejected: false,
             virtualMemoryUri: generateVirtualMemoryUri(uploadID, 'myfile1.js'),
             workspaceFolder: controllerSetup.workspaceFolder,
+            changeApplied: false,
         },
         {
             zipFilePath: 'myfile2.js',
@@ -61,6 +62,7 @@ describe('Controller', () => {
             rejected: true,
             virtualMemoryUri: generateVirtualMemoryUri(uploadID, 'myfile2.js'),
             workspaceFolder: controllerSetup.workspaceFolder,
+            changeApplied: false,
         },
     ]
 
@@ -70,12 +72,14 @@ describe('Controller', () => {
             relativePath: 'myfile3.js',
             rejected: false,
             workspaceFolder: controllerSetup.workspaceFolder,
+            changeApplied: false,
         },
         {
             zipFilePath: 'myfile4.js',
             relativePath: 'myfile4.js',
             rejected: true,
             workspaceFolder: controllerSetup.workspaceFolder,
+            changeApplied: false,
         },
     ]
 

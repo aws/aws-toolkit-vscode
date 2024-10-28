@@ -12,6 +12,8 @@ import { createSingleFileDialog } from '../../../shared/ui/common/openDialog'
 import {
     CodeIterationLimitError,
     ContentLengthError,
+    createUserFacingErrorMessage,
+    denyListedErrors,
     FeatureDevServiceError,
     MonthlyConversationLimitError,
     NoChangeRequiredException,
@@ -24,8 +26,6 @@ import {
     UserMessageNotFoundError,
     WorkspaceFolderNotFoundError,
     ZipFileError,
-    createUserFacingErrorMessage,
-    denyListedErrors,
 } from '../../errors'
 import { codeGenRetryLimit, defaultRetryLimit } from '../../limits'
 import { Session } from '../../session/session'
@@ -62,6 +62,7 @@ export interface ChatControllerEventEmitters {
     readonly processResponseBodyLinkClick: EventEmitter<any>
     readonly insertCodeAtPositionClicked: EventEmitter<any>
     readonly fileClicked: EventEmitter<any>
+    readonly storeCodeResultMessageId: EventEmitter<any>
 }
 
 type OpenDiffMessage = {
@@ -79,6 +80,12 @@ type fileClickedMessage = {
     filePath: string
     actionName: string
 }
+
+type StoreMessageIdMessage = {
+    tabID: string
+    messageId: string
+}
+
 export class FeatureDevController {
     private readonly messenger: Messenger
     private readonly sessionStorage: ChatSessionStorage
@@ -172,6 +179,9 @@ export class FeatureDevController {
         })
         this.chatControllerMessageListeners.fileClicked.event(async (data) => {
             return await this.fileClicked(data)
+        })
+        this.chatControllerMessageListeners.storeCodeResultMessageId.event(async (data) => {
+            return await this.storeCodeResultMessageId(data)
         })
     }
 
@@ -737,18 +747,30 @@ export class FeatureDevController {
         const tabId: string = message.tabID
         const messageId = message.messageId
         const filePathToUpdate: string = message.filePath
+        const action = message.actionName
 
         const session = await this.sessionStorage.getSession(tabId)
         const filePathIndex = (session.state.filePaths ?? []).findIndex((obj) => obj.relativePath === filePathToUpdate)
-        if (filePathIndex !== -1 && session.state.filePaths) {
-            session.state.filePaths[filePathIndex].rejected = !session.state.filePaths[filePathIndex].rejected
-        }
         const deletedFilePathIndex = (session.state.deletedFiles ?? []).findIndex(
             (obj) => obj.relativePath === filePathToUpdate
         )
+
+        if (filePathIndex !== -1 && session.state.filePaths) {
+            if (action === 'accept-change') {
+                await session.insertNewFiles([session.state.filePaths[filePathIndex]])
+                await session.insertCodeReferenceLogs(session.state.references ?? [])
+            } else {
+                session.state.filePaths[filePathIndex].rejected = !session.state.filePaths[filePathIndex].rejected
+            }
+        }
         if (deletedFilePathIndex !== -1 && session.state.deletedFiles) {
-            session.state.deletedFiles[deletedFilePathIndex].rejected =
-                !session.state.deletedFiles[deletedFilePathIndex].rejected
+            if (action === 'accept-change') {
+                await session.applyDeleteFiles([session.state.deletedFiles[deletedFilePathIndex]])
+                await session.insertCodeReferenceLogs(session.state.references ?? [])
+            } else {
+                session.state.deletedFiles[deletedFilePathIndex].rejected =
+                    !session.state.deletedFiles[deletedFilePathIndex].rejected
+            }
         }
 
         await session.updateFilesPaths(
@@ -757,6 +779,16 @@ export class FeatureDevController {
             session.state.deletedFiles ?? [],
             messageId
         )
+
+        // TODO: update accept code button
+    }
+
+    private async storeCodeResultMessageId(message: StoreMessageIdMessage) {
+        const tabId: string = message.tabID
+        const messageId = message.messageId
+        const session = await this.sessionStorage.getSession(tabId)
+
+        session.updateCodeResultMessageId(messageId)
     }
 
     private async openDiff(message: OpenDiffMessage) {

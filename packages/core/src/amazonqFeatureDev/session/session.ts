@@ -26,6 +26,7 @@ import { ReferenceLogViewProvider } from '../../codewhisperer/service/referenceL
 import { AuthUtil } from '../../codewhisperer/util/authUtil'
 import { getLogger } from '../../shared'
 import { logWithConversationId } from '../userFacingText'
+import { CodeReference } from '../../amazonq/webview/ui/connector'
 export class Session {
     private _state?: SessionState | Omit<SessionState, 'uploadId'>
     private task: string = ''
@@ -35,6 +36,7 @@ export class Session {
     private preloaderFinished = false
     private _latestMessage: string = ''
     private _telemetry: TelemetryHelper
+    private _codeResultMessageId: string | undefined = undefined
 
     // Used to keep track of whether or not the current session is currently authenticating/needs authenticating
     public isAuthenticating: boolean
@@ -155,7 +157,27 @@ export class Session {
     }
 
     public async insertChanges() {
-        for (const filePath of this.state.filePaths?.filter((i) => !i.rejected) ?? []) {
+        const newFilePaths = this.state.filePaths?.filter((i) => !i.rejected && !i.changeApplied) ?? []
+        await this.insertNewFiles(newFilePaths)
+
+        const deletedFiles = this.state.deletedFiles?.filter((i) => !i.rejected && !i.changeApplied) ?? []
+        await this.applyDeleteFiles(deletedFiles)
+
+        await this.insertCodeReferenceLogs(this.state.references ?? [])
+
+        if (this._codeResultMessageId) {
+            await this.updateFilesPaths(
+                this.state.tabID,
+                this.state.filePaths ?? [],
+                this.state.deletedFiles ?? [],
+                this._codeResultMessageId
+            )
+            this._codeResultMessageId = undefined
+        }
+    }
+
+    public async insertNewFiles(newFilePaths: NewFileInfo[]) {
+        for (const filePath of newFilePaths) {
             const absolutePath = path.join(filePath.workspaceFolder.uri.fsPath, filePath.relativePath)
 
             const uri = filePath.virtualMemoryUri
@@ -164,16 +186,26 @@ export class Session {
 
             await fs.mkdir(path.dirname(absolutePath))
             await fs.writeFile(absolutePath, decodedContent)
+            filePath.changeApplied = true
         }
+    }
 
-        for (const filePath of this.state.deletedFiles?.filter((i) => !i.rejected) ?? []) {
+    public async applyDeleteFiles(deletedFiles: DeletedFileInfo[]) {
+        for (const filePath of deletedFiles) {
             const absolutePath = path.join(filePath.workspaceFolder.uri.fsPath, filePath.relativePath)
             await fs.delete(absolutePath)
+            filePath.changeApplied = true
         }
+    }
 
-        for (const ref of this.state.references ?? []) {
+    public async insertCodeReferenceLogs(codeReferences: CodeReference[]) {
+        for (const ref of codeReferences) {
             ReferenceLogViewProvider.instance.addReferenceLog(referenceLogText(ref))
         }
+    }
+
+    public updateCodeResultMessageId(messageId?: string) {
+        this._codeResultMessageId = messageId
     }
 
     get state() {
