@@ -50,9 +50,6 @@ export const codeWhispererCoreScopes = [...scopesCodeWhispererCore]
 export const codeWhispererChatScopes = [...codeWhispererCoreScopes, ...scopesCodeWhispererChat]
 export const amazonQScopes = [...codeWhispererChatScopes, ...scopesGumby, ...scopesFeatureDev]
 
-function isValidSageMakerConnection(conn?: Connection) {
-    return isIamConnection(conn) || isSsoConnection(conn)
-}
 /**
  * "Core" are the CW scopes that existed before the addition of new scopes
  * for Amazon Q.
@@ -63,7 +60,7 @@ export const isValidCodeWhispererCoreConnection = (conn?: Connection): conn is C
     }
 
     return (
-        isValidSageMakerConnection(conn) ||
+        (isSageMaker() && isIamConnection(conn)) ||
         (isCloud9('codecatalyst') && isIamConnection(conn)) ||
         (isSsoConnection(conn) && hasScopes(conn, codeWhispererCoreScopes))
     )
@@ -71,7 +68,7 @@ export const isValidCodeWhispererCoreConnection = (conn?: Connection): conn is C
 /** Superset that includes all of CodeWhisperer + Amazon Q */
 export const isValidAmazonQConnection = (conn?: Connection): conn is Connection => {
     return (
-        isValidSageMakerConnection(conn) ||
+        (isSageMaker() && isIamConnection(conn)) ||
         ((isSsoConnection(conn) || isBuilderIdConnection(conn)) &&
             isValidCodeWhispererCoreConnection(conn) &&
             hasScopes(conn, amazonQScopes))
@@ -442,6 +439,10 @@ export class AuthUtil {
     public getChatAuthStateSync(conn = this.conn): FeatureAuthState {
         if (conn === undefined) {
             return buildFeatureAuthState(AuthStates.disconnected)
+        }
+
+        if (!isSsoConnection(conn) && !isSageMaker()) {
+            throw new ToolkitError(`Connection "${conn.id}" is not a valid type: ${conn.type}`)
         }
 
         // default to expired to indicate reauth is needed if unmodified
