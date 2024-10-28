@@ -712,6 +712,7 @@ export const crossFileContextConfig = {
     numberOfChunkToFetch: 60,
     topK: 3,
     numberOfLinesEachChunk: 50,
+    maximumTotalLength: 20480,
 }
 
 export const utgConfig = {
