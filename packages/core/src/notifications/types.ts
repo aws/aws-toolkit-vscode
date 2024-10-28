@@ -51,9 +51,21 @@ export interface UIRenderInstructions {
         [`en-US`]: {
             title: string
             description: string
+            descriptionPreview?: string // optional property for toast
         }
     }
-    // TODO actions
+    onRecieve: string
+    onClick: {
+        type: string
+        url?: string // optional property for 'openUrl'
+    }
+    buttons?: Array<{
+        type: string
+        displayText: {
+            [`en-US`]: string
+        }
+        url?: string // optional property for 'openUrl'
+    }>
 }
 
 /** Condition/criteria section of a notification. */

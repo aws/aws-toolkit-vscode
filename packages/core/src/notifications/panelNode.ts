@@ -11,6 +11,10 @@ import { contextKey, setContext } from '../shared/vscode/setContext'
 import { NotificationType, ToolkitNotification } from './types'
 import { ToolkitError } from '../shared/errors'
 import { isAmazonQ } from '../shared/extensionUtilities'
+import { getLogger } from '../shared/logger/logger'
+import { tempDirPath } from '../shared/filesystemUtilities'
+import path from 'path'
+import fs from '../shared/fs/fs'
 
 /**
  * Controls the "Notifications" side panel/tree in each extension. It takes purely UX actions
@@ -129,12 +133,105 @@ export class NotificationsNode implements TreeNode {
      *
      * TODO: implement more rendering possibilites.
      */
-    private async openNotification(notification: ToolkitNotification) {
-        await vscode.window.showTextDocument(
-            await vscode.workspace.openTextDocument({
-                content: notification.uiRenderInstructions.content['en-US'].description,
-            })
+    public async openNotification(notification: ToolkitNotification) {
+        switch (notification.uiRenderInstructions.onClick.type) {
+            case 'modal':
+                // Handle modal case
+                await this.renderModal(notification)
+                break
+            case 'openUrl':
+                if (!notification.uiRenderInstructions.onClick.url) {
+                    throw new ToolkitError('No url provided for onclick open url')
+                }
+                // Handle openUrl case
+                await vscode.env.openExternal(vscode.Uri.parse(notification.uiRenderInstructions.onClick.url))
+                break
+            case 'openTextDocument':
+                // Handle openTextDocument case
+                await this.showReadonlyTextDocument(notification.uiRenderInstructions.content['en-US'].description)
+                break
+        }
+    }
+
+    /**
+     * Shows a read only txt file for the contect of notification on a side column
+     * It's read-only so that the "save" option doesn't appear when user closes the notification
+     */
+    private async showReadonlyTextDocument(content: string): Promise<void> {
+        getLogger('notifications').info('showing txt document ... ')
+        try {
+            const tempFilePath = path.join(tempDirPath, 'AWSToolkitNotifications.txt')
+
+            if (await fs.existsFile(tempFilePath)) {
+                // If file exist, make sure it has write permission (0o644)
+                await fs.chmod(tempFilePath, 0o644)
+            }
+
+            await fs.writeFile(tempFilePath, content)
+
+            // Set the file permissions to read-only (0o444)
+            await fs.chmod(tempFilePath, 0o444)
+
+            // Now, open the document
+            const document = await vscode.workspace.openTextDocument(tempFilePath)
+
+            const options: vscode.TextDocumentShowOptions = {
+                viewColumn: vscode.ViewColumn.Beside,
+                preserveFocus: true,
+                preview: true,
+            }
+
+            await vscode.window.showTextDocument(document, options)
+        } catch (error) {
+            throw new ToolkitError(`Error showing text document: ${error}`)
+        }
+    }
+
+    public async renderModal(notification: ToolkitNotification) {
+        getLogger('notifications').info('rendering modal ... ')
+        if (!notification.uiRenderInstructions.buttons) {
+            throw new ToolkitError('no button defined for modal')
+            return
+        }
+
+        const buttons = notification.uiRenderInstructions.buttons
+
+        const buttonLabels = buttons.map((buttons) => buttons.displayText['en-US'])
+
+        const detail = notification.uiRenderInstructions.content['en-US'].description
+
+        const selectedButton = await vscode.window.showInformationMessage(
+            notification.uiRenderInstructions.content['en-US'].title,
+            { modal: true, detail },
+            ...buttonLabels
         )
+
+        if (selectedButton) {
+            const buttons = notification.uiRenderInstructions.buttons.find(
+                (buttons) => buttons.displayText['en-US'] === selectedButton
+            )
+
+            if (buttons) {
+                switch (buttons.type) {
+                    case 'updateAndReload':
+                        await this.updateAndReload(notification.displayIf.extensionId)
+                        break
+                    case 'openUrl':
+                        if (buttons.url) {
+                            await vscode.env.openExternal(vscode.Uri.parse(buttons.url))
+                        }
+                        break
+                    default:
+                        getLogger().warn(`Unhandled button type: ${buttons.type}`)
+                }
+            }
+        }
+    }
+
+    private async updateAndReload(id: string) {
+        getLogger('notifications').info('Updating and reloading the extension...')
+        await vscode.commands.executeCommand('workbench.extensions.installExtension', id)
+        await vscode.commands.executeCommand('workbench.action.reloadWindow')
     }
 
     /**

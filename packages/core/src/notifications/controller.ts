@@ -42,7 +42,7 @@ export class NotificationsController {
 
     constructor(
         private readonly notificationsNode: NotificationsNode,
-        private readonly fetcher: NotificationFetcher = new RemoteFetcher()
+        private readonly fetcher: NotificationFetcher = new LocalFetcher()
     ) {
         if (!NotificationsController.#instance) {
             // Register on first creation only.
@@ -63,6 +63,7 @@ export class NotificationsController {
     }
 
     public pollForEmergencies(ruleEngine: RuleEngine) {
+        getLogger().info('polling .....')
         return this.poll(ruleEngine, 'emergency')
     }
 
@@ -121,8 +122,25 @@ export class NotificationsController {
             getLogger('notifications').verbose('No new notifications for category: %s', category)
             return
         }
+        // Parse the notifications
+        const newPayload = JSON.parse(response.content)
+        const newNotifications = newPayload.notifications ?? []
 
-        getLogger('notifications').verbose('ETAG has changed for notifications category: %s', category)
+        // Get the current notifications
+        const currentNotifications = this.state[category].payload?.notifications ?? []
+        const currentNotificationIds = new Set(currentNotifications.map((n: any) => n.id))
+
+        // Compare and find if there's any notifications newly added
+        const addedNotifications = newNotifications.filter((n: any) => !currentNotificationIds.has(n.id))
+
+        if (addedNotifications.length > 0) {
+            getLogger('notifications').info(
+                'New notifications received for category %s, ids: %s',
+                category,
+                addedNotifications.map((n: any) => n.id).join(', ')
+            )
+            await this.onReceiveNotifications(addedNotifications)
+        }
 
         this.state[category].payload = JSON.parse(response.content)
         this.state[category].eTag = response.eTag
@@ -136,6 +154,23 @@ export class NotificationsController {
         )
     }
 
+    private async onReceiveNotifications(notifications: ToolkitNotification[]) {
+        for (const notification of notifications) {
+            switch (notification.uiRenderInstructions.onRecieve) {
+                case 'modal':
+                    // Handle modal case
+                    void this.notificationsNode.renderModal(notification)
+                    break
+                case 'toast':
+                    // toast case, no user input needed
+                    void vscode.window.showInformationMessage(
+                        notification.uiRenderInstructions.content['en-US'].descriptionPreview ??
+                            notification.uiRenderInstructions.content['en-US'].title
+                    )
+                    break
+            }
+        }
+    }
     /**
      * Write the latest memory state to global state.
      */
