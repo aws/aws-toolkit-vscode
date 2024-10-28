@@ -1,4 +1,4 @@
 {
 	"type": "Bug Fix",
-	"description": "Fix error thrown if plugins send out supplementalContext with the length greather than 10240 characters"
+	"description": "Inline Suggestions: Occasional `ValidationException` if user context has too many characters."
 }

@@ -136,16 +136,16 @@ export async function fetchSupplementalContextForSrcV1(
     for (const chunk of bestChunks) {
         throwIfCancelled(cancellationToken)
 
-        if (totalLength > crossFileContextConfig.maximumTotalLength) {
-            break
-        }
-
         supplementalContexts.push({
             filePath: chunk.fileName,
             content: chunk.nextContent,
             score: chunk.score,
         })
         totalLength += chunk.nextContent.length
+
+        if (totalLength > crossFileContextConfig.maximumTotalLength) {
+            break
+        }
     }
 
     // DO NOT send code chunk with empty content
