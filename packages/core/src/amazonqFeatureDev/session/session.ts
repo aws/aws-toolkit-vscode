@@ -151,9 +151,10 @@ export class Session {
         tabID: string,
         filePaths: NewFileInfo[],
         deletedFiles: DeletedFileInfo[],
-        messageId: string
+        messageId: string,
+        disableFileActions: boolean = false
     ) {
-        this.messenger.updateFileComponent(tabID, filePaths, deletedFiles, messageId)
+        this.messenger.updateFileComponent(tabID, filePaths, deletedFiles, messageId, disableFileActions)
     }
 
     public async insertChanges() {
@@ -170,7 +171,8 @@ export class Session {
                 this.state.tabID,
                 this.state.filePaths ?? [],
                 this.state.deletedFiles ?? [],
-                this._codeResultMessageId
+                this._codeResultMessageId,
+                true
             )
             this._codeResultMessageId = undefined
         }

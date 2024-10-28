@@ -132,9 +132,12 @@ export class Messenger {
         tabID: string,
         filePaths: NewFileInfo[],
         deletedFiles: DeletedFileInfo[],
-        messageId: string
+        messageId: string,
+        disableFileActions: boolean
     ) {
-        this.dispatcher.updateFileComponent(new FileComponent(tabID, filePaths, deletedFiles, messageId))
+        this.dispatcher.updateFileComponent(
+            new FileComponent(tabID, filePaths, deletedFiles, messageId, disableFileActions)
+        )
     }
 
     public sendUpdatePlaceholder(tabID: string, newPlaceholder: string) {

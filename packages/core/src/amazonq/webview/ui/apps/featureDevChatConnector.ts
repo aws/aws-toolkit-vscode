@@ -22,7 +22,8 @@ export interface ConnectorProps extends BaseConnectorProps {
         tabID: string,
         filePaths: DiffTreeFileInfo[],
         deletedFiles: DiffTreeFileInfo[],
-        messageId: string
+        messageId: string,
+        disableFileActions: boolean
     ) => void
     onFileActionClick: (tabID: string, messageId: string, filePath: string, actionName: string) => void
     onUpdatePlaceholder: (tabID: string, newPlaceholder: string) => void
@@ -137,7 +138,8 @@ export class Connector extends BaseConnector {
                 messageData.tabID,
                 messageData.filePaths,
                 messageData.deletedFiles,
-                messageData.messageId
+                messageData.messageId,
+                messageData.disableFileActions
             )
             return
         }
