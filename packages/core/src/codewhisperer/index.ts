@@ -25,6 +25,7 @@ export type {
     Completion,
     SendTelemetryEventResponse,
     TelemetryEvent,
+    InlineChatEvent,
 } from './client/codewhispereruserclient.d.ts'
 export type { default as CodeWhispererUserClient } from './client/codewhispereruserclient.d.ts'
 export { SecurityPanelViewProvider } from './views/securityPanelViewProvider'
@@ -87,3 +88,5 @@ export * as supplementalContextUtil from './util/supplementalContext/supplementa
 export * from './service/diagnosticsProvider'
 export * as diagnosticsProvider from './service/diagnosticsProvider'
 export * from './ui/codeWhispererNodes'
+export { getSelectedCustomization } from './util/customizationUtil'
+export { Container } from './service/serviceContainer'
