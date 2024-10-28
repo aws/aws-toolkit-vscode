@@ -8,7 +8,7 @@ import {
     CodeWhispererStreamingServiceException,
     GenerateAssistantResponseCommandOutput,
 } from '@amzn/codewhisperer-streaming'
-import { AuthUtil, FeatureAuthState, getSelectedCustomization } from 'aws-core-vscode/codewhisperer'
+import { AuthUtil, getSelectedCustomization } from 'aws-core-vscode/codewhisperer'
 import {
     ChatSessionStorage,
     ChatTriggerType,

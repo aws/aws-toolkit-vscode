@@ -3,11 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
-import { Decorations } from '../decorations/inlineDecorator'
-import { CodeReference } from 'aws-core-vscode/amazonq'
-import { computeDecorations } from '../decorations/computeDecorations'
+import type { CodeReference } from 'aws-core-vscode/amazonq'
 import type { InlineChatEvent } from 'aws-core-vscode/codewhisperer'
+import type { Decorations } from '../decorations/inlineDecorator'
+import { computeDecorations } from '../decorations/computeDecorations'
 import { expandSelectionToFullLines } from './utils'
+import { extractLanguageNameFromFile } from 'aws-core-vscode/codewhispererChat'
 
 interface TextToInsert {
     type: 'insertion'
@@ -44,6 +45,7 @@ export class InlineTask {
     public diffBlock: DiffBlock[] = []
     public codeReferences: CodeReference[] = []
     public selectedText: string
+    public languageName: string | undefined
 
     public partialSelectedText: string | undefined
     public partialSelectedTextRight: string | undefined
@@ -65,6 +67,7 @@ export class InlineTask {
     ) {
         this.selectedRange = expandSelectionToFullLines(document, selection)
         this.selectedText = document.getText(this.selectedRange)
+        this.languageName = extractLanguageNameFromFile(document)
     }
 
     public revertDiff(): void {
@@ -128,6 +131,12 @@ export class InlineTask {
             }
         }
 
+        const programmingLanguage = this.languageName
+            ? {
+                  languageName: this.languageName,
+              }
+            : undefined
+
         const event: Partial<InlineChatEvent> = {
             requestId: this.requestId,
             timestamp: new Date(),
@@ -140,6 +149,7 @@ export class InlineTask {
             numSuggestionAddLines,
             numSuggestionDelChars,
             numSuggestionDelLines,
+            programmingLanguage,
         }
         return event
     }

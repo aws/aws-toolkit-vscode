@@ -1263,8 +1263,7 @@
                 "userDecision": { "shape": "InlineChatUserDecision" },
                 "responseStartLatency": { "shape": "Double" },
                 "responseEndLatency": { "shape": "Double" },
-                "charactersAdded": { "shape": "PrimitiveInteger" },
-                "charactersRemoved": { "shape": "PrimitiveInteger" }
+                "programmingLanguage": { "shape": "ProgrammingLanguage" }
             }
         },
         "InlineChatUserDecision": {
