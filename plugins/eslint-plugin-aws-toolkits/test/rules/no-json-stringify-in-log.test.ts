@@ -14,6 +14,8 @@ getRuleTester().run('no-json-stringify-in-log', rules['no-json-stringify-in-log'
         'getLogger().debug(`this does not include anything`)',
         'getLogger().debug(`another example ${JSON.notString(something)}`)',
         'getLogger().fakeFunction(`another example ${JSON.notString(something)}`)',
+        'this.deps.devLogger?.debug("crashMonitoring: CLEAR_STATE: Succeeded")',
+        'getLogger().debug(`called startBuilderIdSetup()`)',
     ],
 
     invalid: [
@@ -35,6 +37,18 @@ getRuleTester().run('no-json-stringify-in-log', rules['no-json-stringify-in-log'
         },
         {
             code: 'getLogger().verbose(`provideDebugConfigurations: debugconfigs: ${JSON.stringify(configs)}`)',
+            errors: [errMsg],
+        },
+        {
+            code: 'devLogger?.debug(`crashMonitoring: CHECKED: Result of cleaning up crashed instances\nBEFORE: ${JSON.stringify(before)}\nAFTER:  ${JSON.stringify(after)}\nACTUAL: ${JSON.stringify(afterActual)}`)',
+            errors: [errMsg, errMsg, errMsg],
+        },
+        {
+            code: 'getLogger().warn(`skipping invalid item in telemetry cache: ${JSON.stringify(item)}\n`)',
+            errors: [errMsg],
+        },
+        {
+            code: 'this.deps.devLogger?.debug(`crashMonitoring: CLEAR_STATE: Succeeded ${JSON.stringify(item)}`)',
             errors: [errMsg],
         },
     ],
