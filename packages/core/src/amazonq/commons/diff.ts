@@ -32,3 +32,11 @@ export function createAmazonQUri(path: string, tabId: string) {
     // TODO change the featureDevScheme to a more general amazon q scheme
     return vscode.Uri.from({ scheme: featureDevScheme, path, query: `tabID=${tabId}` })
 }
+
+export async function openFile(path: string) {
+    if (!(await fs.exists(path))) {
+        return
+    }
+    const fileUri = vscode.Uri.file(path)
+    await vscode.commands.executeCommand('vscode.open', fileUri)
+}

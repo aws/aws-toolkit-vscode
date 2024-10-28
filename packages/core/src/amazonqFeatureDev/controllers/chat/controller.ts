@@ -31,7 +31,7 @@ import { codeGenRetryLimit, defaultRetryLimit } from '../../limits'
 import { Session } from '../../session/session'
 import { featureName } from '../../constants'
 import { ChatSessionStorage } from '../../storages/chatSession'
-import { DevPhase, FollowUpTypes, SessionStatePhase } from '../../types'
+import { DevPhase, FollowUpTypes, type NewFileInfo, SessionStatePhase } from '../../types'
 import { Messenger } from './messenger/messenger'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { AuthController } from '../../../amazonq/auth/controller'
@@ -43,7 +43,7 @@ import { openUrl } from '../../../shared/utilities/vsCodeUtils'
 import { getPathsFromZipFilePath } from '../../util/files'
 import { examples, messageWithConversationId } from '../../userFacingText'
 import { getWorkspaceFoldersByPrefixes } from '../../../shared/utilities/workspaceUtils'
-import { openDeletedDiff, openDiff } from '../../../amazonq/commons/diff'
+import { openDeletedDiff, openDiff, openFile } from '../../../amazonq/commons/diff'
 import { i18n } from '../../../shared/i18n-helper'
 import globals from '../../../shared/extensionGlobals'
 
@@ -759,6 +759,7 @@ export class FeatureDevController {
             if (action === 'accept-change') {
                 await session.insertNewFiles([session.state.filePaths[filePathIndex]])
                 await session.insertCodeReferenceLogs(session.state.references ?? [])
+                await this.openFile(session.state.filePaths[filePathIndex])
             } else {
                 session.state.filePaths[filePathIndex].rejected = !session.state.filePaths[filePathIndex].rejected
             }
@@ -817,6 +818,11 @@ export class FeatureDevController {
             const rightPath = path.join(uploadId, zipFilePath)
             await openDiff(pathInfos.absolutePath, rightPath, tabId)
         }
+    }
+
+    private async openFile(filePath: NewFileInfo) {
+        const absolutePath = path.join(filePath.workspaceFolder.uri.fsPath, filePath.relativePath)
+        await openFile(absolutePath)
     }
 
     private async stopResponse(message: any) {
