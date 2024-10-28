@@ -77,7 +77,11 @@ async function handleSessionStream(
                 formatLogEvent(logEvent)
             )
             if (formattedLogEvents.length !== 0) {
+                //Determine should scroll before adding new lines to doc because adding large
+                //amount of new lines can push bottom of file out of view before scrolling.
+                const editorsToScroll = getTextEditorsToScroll(document)
                 await updateTextDocumentWithNewLogEvents(formattedLogEvents, document, session.maxLines)
+                editorsToScroll.forEach(scrollTextEditorToBottom)
             }
         }
     }
@@ -97,6 +101,22 @@ function formatLogEvent(logEvent: LiveTailSessionLogEvent): string {
         line = line.concat('\n')
     }
     return line
+}
+
+//Auto scroll visible LiveTail session editors if the end-of-file is in view.
+//This allows for newly added log events to stay in view.
+function getTextEditorsToScroll(document: vscode.TextDocument): vscode.TextEditor[] {
+    return vscode.window.visibleTextEditors.filter((editor) => {
+        if (editor.document !== document) {
+            return false
+        }
+        return editor.visibleRanges[0].contains(new vscode.Position(document.lineCount - 1, 0))
+    })
+}
+
+function scrollTextEditorToBottom(editor: vscode.TextEditor) {
+    const position = new vscode.Position(Math.max(editor.document.lineCount - 2, 0), 0)
+    editor.revealRange(new vscode.Range(position, position), vscode.TextEditorRevealType.Default)
 }
 
 async function updateTextDocumentWithNewLogEvents(
