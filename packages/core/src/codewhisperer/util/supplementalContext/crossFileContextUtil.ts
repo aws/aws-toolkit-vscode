@@ -132,14 +132,20 @@ export async function fetchSupplementalContextForSrcV1(
 
     // Step 4: Transform best chunks to supplemental contexts
     const supplementalContexts: CodeWhispererSupplementalContextItem[] = []
+    let totalLength = 0
     for (const chunk of bestChunks) {
         throwIfCancelled(cancellationToken)
+
+        if (totalLength > crossFileContextConfig.maximumTotalLength) {
+            break
+        }
 
         supplementalContexts.push({
             filePath: chunk.fileName,
             content: chunk.nextContent,
             score: chunk.score,
         })
+        totalLength += chunk.nextContent.length
     }
 
     // DO NOT send code chunk with empty content
