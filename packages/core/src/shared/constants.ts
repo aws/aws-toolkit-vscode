@@ -75,6 +75,24 @@ export const lambdaFunctionUrlConfigUrl: string = 'https://docs.aws.amazon.com/l
 export const samSyncUrl = vscode.Uri.parse(
     'https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/accelerate-getting-started.html'
 )
+// URLs for "sam build param selection"
+export const samBuildParamUrl = vscode.Uri.parse(
+    'https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-cli-command-reference-sam-build.html'
+)
+// URLs for "sam sync prarm selection"
+export const samSyncParamUrl = vscode.Uri.parse(
+    'https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-cli-command-reference-sam-sync.html'
+)
+
+//URLs for "sam build" wizard.
+export const samBuildUrl = vscode.Uri.parse(
+    'https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-building.html'
+)
+
+//URLs for "sam deploy" wizard.
+export const samDeployUrl = vscode.Uri.parse(
+    'https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/using-sam-cli-deploy.html'
+)
 
 // URLs for CDK
 export const cdkProvideFeedbackUrl: string = `${githubUrl}/issues/new/choose`
