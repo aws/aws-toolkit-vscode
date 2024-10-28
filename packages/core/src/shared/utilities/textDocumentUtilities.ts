@@ -7,8 +7,10 @@ import * as _path from 'path'
 import * as vscode from 'vscode'
 import { getTabSizeSetting } from './editorUtilities'
 import { tempDirPath } from '../filesystemUtilities'
-import { fs, indent, ToolkitError } from '../index'
 import { getLogger } from '../logger'
+import fs from '../fs/fs'
+import { ToolkitError } from '../errors'
+import { indent } from './textUtilities'
 
 /**
  * Finds occurences of text in a document. Currently only used for highlighting cloudwatchlogs data.
