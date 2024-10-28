@@ -7,8 +7,8 @@ import type { CodeReference } from 'aws-core-vscode/amazonq'
 import type { InlineChatEvent } from 'aws-core-vscode/codewhisperer'
 import type { Decorations } from '../decorations/inlineDecorator'
 import { computeDecorations } from '../decorations/computeDecorations'
-import { expandSelectionToFullLines } from './utils'
 import { extractLanguageNameFromFile } from 'aws-core-vscode/codewhispererChat'
+import { expandSelectionToFullLines } from 'aws-core-vscode/shared'
 
 interface TextToInsert {
     type: 'insertion'

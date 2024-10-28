@@ -13,9 +13,8 @@ import { computeDecorations } from '../decorations/computeDecorations'
 import { CodelensProvider } from '../codeLenses/codeLenseProvider'
 import { ReferenceLogController } from 'aws-core-vscode/codewhispererChat'
 import { CodeWhispererSettings } from 'aws-core-vscode/codewhisperer'
-import { codicon, getIcon, getLogger, messages, setContext, Timeout } from 'aws-core-vscode/shared'
+import { addEofNewline, codicon, getIcon, getLogger, messages, setContext, Timeout } from 'aws-core-vscode/shared'
 import { InlineLineAnnotationController } from '../decorations/inlineLineAnnotationController'
-import { fixEofNewline } from './utils'
 
 export class InlineChatController {
     private task: InlineTask | undefined
@@ -181,7 +180,7 @@ export class InlineChatController {
                 if (!query) {
                     return
                 }
-                await fixEofNewline(editor)
+                await addEofNewline(editor)
                 this.task = await this.createTask(query, editor.document, editor.selection)
                 await this.inlineLineAnnotationController.disable(editor)
                 await this.computeDiffAndRenderOnEditor(query, editor.document).catch(async (err) => {
@@ -356,46 +355,6 @@ export class InlineChatController {
             await vscode.workspace.applyEdit(edit)
         }
     }
-
-    // private async applyDiff(
-    //     task: InlineTask,
-    //     textDiff: TextDiff[],
-    //     undoOption?: { undoStopBefore: boolean; undoStopAfter: boolean }
-    // ) {
-    //     // const adjustedTextDiff = adjustTextDiffForEditing(textDiff)
-    //     const visibleEditor = vscode.window.visibleTextEditors.find(
-    //         (editor) => editor.document.uri === task.document.uri
-    //     )
-    //     const range = task.newSelectedRange ?? task.selectedRange
-    //     const newRange = new vscode.Range(
-    //         range!.start,
-    //         new vscode.Position(range.start.line + task.estimatedResponse!.split('\n').length - 1, 0)
-    //     )
-    //     task.newSelectedRange = newRange
-    //     if (visibleEditor) {
-    //         await visibleEditor.edit(
-    //             (editBuilder) => {
-    //                 editBuilder.replace(range, task.estimatedResponse!)
-    //             },
-    //             undoOption ?? { undoStopBefore: true, undoStopAfter: false }
-    //         )
-    //     } else {
-    //         // if (previousDiff) {
-    //         //     const edit = new vscode.WorkspaceEdit()
-    //         //     for (const insertion of previousDiff) {
-    //         //         edit.delete(task.document.uri, insertion.range)
-    //         //     }
-    //         //     await vscode.workspace.applyEdit(edit)
-    //         // }
-    //         // const edit = new vscode.WorkspaceEdit()
-    //         // for (const change of textDiff) {
-    //         //     if (change.type === 'insertion') {
-    //         //         edit.insert(task.document.uri, change.range.start, change.replacementText)
-    //         //     }
-    //         // }
-    //         // await vscode.workspace.applyEdit(edit)
-    //     }
-    // }
 
     private undoListener(task: InlineTask) {
         const listener: vscode.Disposable = vscode.workspace.onDidChangeTextDocument(async (event) => {

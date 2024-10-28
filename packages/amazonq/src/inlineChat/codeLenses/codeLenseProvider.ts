@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode'
+import * as os from 'os'
 import { InlineTask, TaskState } from '../controller/inlineTask'
 
 export class CodelensProvider implements vscode.CodeLensProvider {
@@ -27,7 +28,7 @@ export class CodelensProvider implements vscode.CodeLensProvider {
             return
         }
         switch (task.state) {
-            case TaskState.InProgress:
+            case TaskState.InProgress: {
                 this.codeLenses = []
                 this.codeLenses.push(
                     new vscode.CodeLens(new vscode.Range(task.selectedRange.start, task.selectedRange.start), {
@@ -36,26 +37,39 @@ export class CodelensProvider implements vscode.CodeLensProvider {
                     })
                 )
                 break
-            case TaskState.WaitingForDecision:
+            }
+            case TaskState.WaitingForDecision: {
+                let acceptTitle: string
+                let rejectTitle: string
+                if (os.platform() === 'darwin') {
+                    acceptTitle = 'Accept ($(newline))'
+                    rejectTitle = `Reject ( \u238B )`
+                } else {
+                    acceptTitle = 'Accept (Enter)'
+                    rejectTitle = `Reject (Esc)`
+                }
+
                 this.codeLenses = []
                 this.codeLenses.push(
                     new vscode.CodeLens(new vscode.Range(task.selectedRange.start, task.selectedRange.start), {
-                        title: 'Accept ($(newline))',
+                        title: acceptTitle,
                         command: 'aws.amazonq.inline.waitForUserDecisionAcceptAll',
                         arguments: [task],
                     })
                 )
                 this.codeLenses.push(
                     new vscode.CodeLens(new vscode.Range(task.selectedRange.start, task.selectedRange.start), {
-                        title: `Reject ( \u238B )`,
+                        title: rejectTitle,
                         command: 'aws.amazonq.inline.waitForUserDecisionRejectAll',
                         arguments: [task],
                     })
                 )
                 break
-            default:
+            }
+            default: {
                 this.codeLenses = []
                 break
+            }
         }
         this._onDidChangeCodeLenses.fire()
     }
