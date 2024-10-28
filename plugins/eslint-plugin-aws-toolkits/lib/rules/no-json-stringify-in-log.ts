@@ -30,8 +30,8 @@ function isTemplateWithStringifyCall(node: TSESTree.CallExpressionArgument): boo
 }
 
 /**
- * Check if node is representing syntax of the form getLogger().f(msg) for some f and msg.
- *
+ * Check if node is representing syntax of the form getLogger().f(msg) for some f and msg or
+ * if it is doing so indirectly via a logger variable.
  */
 function isLoggerCall(node: TSESTree.CallExpression): boolean {
     return (
@@ -44,7 +44,7 @@ function isLoggerCall(node: TSESTree.CallExpression): boolean {
 }
 
 /**
- * Use two simple heuristics to detect `disguised` logger calls. This is when we log without getLogger.
+ * Use two simple heuristics to detect `disguised` logger calls. This is when we log without getLogger in the same statement.
  * Ex.
  *      const logger = getLogger()
  *      logger.debug(m)
