@@ -1,4 +1,4 @@
 {
 	"type": "Bug Fix",
-	"description": "Fix potential validatiokn exception thrown from service if plugins send out supplementalContext with length greather than 10240 characters long"
+	"description": "Fix error thrown if plugins send out supplementalContext with the length greather than 10240 characters"
 }
