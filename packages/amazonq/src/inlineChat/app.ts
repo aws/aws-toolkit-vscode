@@ -5,8 +5,13 @@
 import * as vscode from 'vscode'
 import { InlineChatController } from '../inlineChat/controller/inlineChatController'
 import { registerInlineCommands } from '../inlineChat/command/registerInlineCommands'
+import { isSageMaker } from 'aws-core-vscode/shared'
+import { isIamConnection } from '../../../core/dist/src/auth/connection'
+import { AuthUtil } from 'aws-core-vscode/codewhisperer'
 
 export function init(context: vscode.ExtensionContext) {
-    const inlineChatController = new InlineChatController(context)
-    registerInlineCommands(context, inlineChatController)
+    if (!(isSageMaker() && isIamConnection(AuthUtil.instance.conn))) {
+        const inlineChatController = new InlineChatController(context)
+        registerInlineCommands(context, inlineChatController)
+    }
 }
