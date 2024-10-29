@@ -1,0 +1,34 @@
+{
+	"date": "2024-10-29",
+	"version": "1.31.0",
+	"entries": [
+		{
+			"type": "Breaking Change",
+			"description": "Change keybind for focusing chat to ctrl+win+i on Windows, ctrl+cmd+i on macOS and ctrl+meta+i on Linux"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Inline Suggestions: Occasional `ValidationException` if user context has too many characters."
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Update `@workspace` index when adding or deleting a file"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "fixed device code detection when running auth through tunneled vscode"
+		},
+		{
+			"type": "Feature",
+			"description": "Use inline chat to select code and transform it with natural language instructions"
+		},
+		{
+			"type": "Feature",
+			"description": "Amazon Q /dev: Add stop generation action"
+		},
+		{
+			"type": "Feature",
+			"description": "Provide more frequent updates about code changes made by agent"
+		}
+	]
+}
