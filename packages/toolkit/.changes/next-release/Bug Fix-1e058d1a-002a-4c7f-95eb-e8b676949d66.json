@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "EC2 connect: improve management of SSM sessions to minimize chance they are left active."
-}
