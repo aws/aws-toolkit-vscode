@@ -24,6 +24,8 @@ import { getIcon } from '../../../../../shared/icons'
 import _ from 'lodash'
 import { isTreeNode } from '../../../../../shared/treeview/resourceTreeDataProvider'
 import { Any } from '../../../../../shared/utilities/typeConstructors'
+import { IamConnection, ProfileMetadata } from '../../../../../auth/connection'
+import * as AuthUtils from '../../../../../auth/utils'
 
 describe('DeployedResourceNode', () => {
     const expectedStackName = 'myStack'
@@ -138,6 +140,13 @@ describe('generateDeployedNode', () => {
     describe('LambdaFunctionNode', () => {
         let mockDefaultLambdaClientInstance: sinon.SinonStubbedInstance<LambdaClientModule.DefaultLambdaClient>
         let mockLambdaNodeInstance: sinon.SinonStubbedInstance<LambdaNodeModule.LambdaNode>
+        const iamConnection: IamConnection & { readonly state: ProfileMetadata['connectionState'] } = {
+            type: 'iam',
+            id: '0',
+            label: 'iam',
+            getCredentials: sinon.stub(),
+            state: 'valid',
+        }
 
         const lambdaDeployedNodeInput = {
             deployedResource: {
@@ -158,6 +167,7 @@ describe('generateDeployedNode', () => {
             //  Stub the constructor of LambdaNode to return stub instance
             mockLambdaNodeInstance = sandbox.createStubInstance(LambdaNodeModule.LambdaNode)
             sandbox.stub(LambdaNodeModule, 'LambdaNode').returns(mockLambdaNodeInstance)
+            sandbox.stub(AuthUtils, 'getIAMConnection').resolves(iamConnection)
         })
 
         it('should return a DeployedResourceNode for valid Lambda function happy path', async () => {

@@ -7,6 +7,7 @@ import { TreeNode } from '../../../../shared/treeview/resourceTreeDataProvider'
 import { getIcon } from '../../../../shared/icons'
 import { CloudFormationClient, DescribeStacksCommand } from '@aws-sdk/client-cloudformation'
 import { ToolkitError } from '../../../../shared'
+import { getIAMConnection } from '../../../../auth/utils'
 
 export class StackNameNode implements TreeNode {
     public readonly id = this.stackName
@@ -40,7 +41,12 @@ export class StackNameNode implements TreeNode {
 }
 
 export async function generateStackNode(stackName?: string, regionCode?: string): Promise<StackNameNode[]> {
-    const client = new CloudFormationClient({ region: regionCode })
+    const connection = await getIAMConnection({ prompt: false })
+    if (!connection || connection.type !== 'iam') {
+        return []
+    }
+    const cred = await connection.getCredentials()
+    const client = new CloudFormationClient({ region: regionCode, credentials: cred })
     try {
         const command = new DescribeStacksCommand({ StackName: stackName })
         const response = await client.send(command)

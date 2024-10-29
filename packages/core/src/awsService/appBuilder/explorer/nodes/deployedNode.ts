@@ -28,6 +28,7 @@ import {
     s3BucketType,
 } from '../../../../shared/cloudformation/cloudformation'
 import { ToolkitError } from '../../../../shared'
+import { getIAMConnection } from '../../../../auth/utils'
 
 const localize = nls.loadMessageBundle()
 export interface DeployedResource {
@@ -100,7 +101,20 @@ export async function generateDeployedNode(
                         code: 'lambdaClientError',
                     })
                 }
-                const v3Client = new LambdaClient({ region: regionCode })
+                const connection = await getIAMConnection({ prompt: false })
+                if (!connection || connection.type !== 'iam') {
+                    return [
+                        createPlaceholderItem(
+                            localize(
+                                'AWS.appBuilder.explorerNode.unavailableDeployedResource',
+                                '[Failed to retrive deployed resource.]'
+                            )
+                        ),
+                    ]
+                }
+                const cred = await connection.getCredentials()
+                const v3Client = new LambdaClient({ region: regionCode, credentials: cred })
+
                 const v3command = new GetFunctionCommand({ FunctionName: deployedResource.PhysicalResourceId })
                 try {
                     v3configuration = (await v3Client.send(v3command)).Configuration as FunctionConfiguration
