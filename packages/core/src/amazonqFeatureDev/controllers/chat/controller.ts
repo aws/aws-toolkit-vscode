@@ -900,6 +900,7 @@ export class FeatureDevController {
     }
 
     private async newTask(message: any) {
+        await this.disablePreviousFileList(message.tabID)
         // Old session for the tab is ending, delete it so we can create a new one for the message id
         const session = await this.sessionStorage.getSession(message.tabID)
         telemetry.amazonq_endChat.emit({
@@ -917,6 +918,7 @@ export class FeatureDevController {
     }
 
     private async closeSession(message: any) {
+        await this.disablePreviousFileList(message.tabID)
         this.messenger.sendAnswer({
             type: 'answer',
             tabID: message.tabID,
