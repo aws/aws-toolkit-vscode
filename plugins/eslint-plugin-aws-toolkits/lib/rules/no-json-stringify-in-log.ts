@@ -6,7 +6,8 @@
 import { AST_NODE_TYPES, ESLintUtils, TSESTree } from '@typescript-eslint/utils'
 import { Rule } from 'eslint'
 
-export const errMsg = 'Avoid using JSON.stringify within logging and error messages, prefer %O.'
+export const errMsg =
+    'Avoid using JSON.stringify within logging and error messages, prefer %O. Note: %O has a depth limit of 2'
 
 /**
  * Check if a given expression is a JSON.stringify call.
