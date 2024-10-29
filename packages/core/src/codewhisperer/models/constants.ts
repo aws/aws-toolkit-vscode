@@ -352,7 +352,7 @@ export const newCustomizationMessage = 'You have access to new Amazon Q customiz
 // Start of QCT Strings
 
 // feature flag for SQL transformations
-export const isSQLTransformReady = true
+export const isSQLTransformReady = false
 
 export const uploadZipSizeLimitInBytes = 2000000000 // 2GB
 
@@ -503,18 +503,22 @@ export const absolutePathDetectedMessage = (numPaths: number, buildFile: string,
 export const unsupportedJavaVersionChatMessage = `Sorry, currently I can only upgrade Java 8 or Java 11 projects. For more information, see the [Amazon Q documentation](${codeTransformPrereqDoc}).`
 
 export const selectSQLMetadataFileHelpMessage =
-    'Next, I need the metadata ZIP file of your project. You can download the metadata ZIP file by going to AWS Console -> AWS DMS -> Migration Projects. Open the schema conversion project and navigate to the S3 bucket linked to it. You will find the ZIP file under the {schema-conversion-project}/ directory.'
+    'Next, I need the zipped metadata file from your schema conversion. You can download the metadata by going to your migration project in the the AWS DMS console. Open the schema conversion and choose **Convert the embedded SQL in your application**. You can downloaded the metadata from Amazon S3 in the {schema-conversion-project}/ directory.'
 
-export const invalidMetadataFileUnsupportedSourceDB = `Sorry, the .sct file in the provided ZIP appears to be invalid; the source DB must be Oracle.`
+export const invalidMetadataFileUnsupportedSourceDB =
+    'I can only convert SQL for migrations from an Oracle source database. The provided .sct file indicates another source database for this migration.'
 
-export const invalidMetadataFileUnsupportedTargetDB = `Sorry, the .sct file in the provided ZIP appears to be invalid; the target DB must be Aurora PostgreSQL or Amazon RDS for PostgreSQL.`
+export const invalidMetadataFileUnsupportedTargetDB =
+    'I can only convert SQL for migrations to Aurora PostgreSQL or Amazon RDS for PostgreSQL target databases. The provided .sct file indicates another target database for this migration.'
 
-export const invalidMetadataFileErrorParsing = 'Sorry, the .sct file in the provided ZIP appears to be invalid.'
+export const invalidMetadataFileErrorParsing =
+    "It looks like the .sct file you provided isn't valid. Make sure that you've uploaded the .zip file you retrieved from your schema conversion in AWS DMS."
 
 export const invalidMetadataFileNoSctFile =
-    'Sorry, the provided ZIP does not contain a .sct file, which is needed to do the transformation.'
+    "An .sct file is required for transformation. Make sure that you've uploaded the .zip file you retrieved from your schema conversion in AWS DMS."
 
-export const sqlMetadataFileReceived = 'I detected the following in the .sct file from the provided ZIP.'
+export const sqlMetadataFileReceived =
+    'I found the following source database, target database, and host based on the schema conversion metadata you provided:'
 
 export const failedToStartJobChatMessage =
     "Sorry, I couldn't begin the transformation. Please try starting the transformation again."

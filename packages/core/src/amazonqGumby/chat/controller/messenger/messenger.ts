@@ -519,8 +519,6 @@ export class Messenger {
                 message: CodeWhispererConstants.checkingForProjectsChatMessage,
             })
         )
-
-        // TO-DO: add a delay for 2s here to match IntelliJ
     }
 
     public sendLanguageUpgradeProjectChoiceMessage(

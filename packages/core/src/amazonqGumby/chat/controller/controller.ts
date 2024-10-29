@@ -220,7 +220,7 @@ export class GumbyController {
         // Start /transform chat flow
         CodeTransformTelemetryState.instance.setSessionId()
 
-        this.sessionStorage.getSession().conversationState = ConversationState.WAITING_FOR_OBJECTIVE
+        this.sessionStorage.getSession().conversationState = ConversationState.WAITING_FOR_TRANSFORMATION_OBJECTIVE
         this.messenger.sendStaticTextResponse('choose-transformation-objective', message.tabID)
         this.messenger.sendChatInputEnabled(message.tabID, true)
         this.messenger.sendUpdatePlaceholder(message.tabID, "Enter 'language upgrade' or 'SQL conversion'")
@@ -621,7 +621,7 @@ export class GumbyController {
                 break
             }
 
-            case ConversationState.WAITING_FOR_OBJECTIVE: {
+            case ConversationState.WAITING_FOR_TRANSFORMATION_OBJECTIVE: {
                 const objective = data.message.trim().toLowerCase()
                 if (objective === 'language upgrade') {
                     await this.handleLanguageUpgrade(data)

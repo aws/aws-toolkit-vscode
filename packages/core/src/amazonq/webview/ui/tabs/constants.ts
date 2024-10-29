@@ -35,11 +35,10 @@ What would you like to work on?`,
         title: 'Q - Code Transformation',
         placeholder: 'Open a new tab to chat with Q',
         welcome: isSQLTransformReady
-            ? `Welcome to Code Transformation!
+            ? `Welcome to code transformation!
 
-I can help you upgrade your Java 8 and 11 codebases to Java 17 ("language upgrade") & 
-I can also convert embedded SQL from Oracle to PostgreSQL ("SQL conversion"). What would you like to do?`
-            : `Welcome to Code Transformation!
+I can help you upgrade your Java 8 and Java 11 codebases ("language upgrade") and convert embedded SQL from Oracle databases to PostgreSQL ("SQL conversion"). What would you like to do?`
+            : `Welcome to code transformation!
 
 I can help you upgrade your Java 8 and 11 codebases to Java 17.`,
     },

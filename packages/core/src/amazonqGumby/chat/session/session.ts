@@ -11,7 +11,7 @@ export enum ConversationState {
     COMPILING,
     JOB_SUBMITTED,
     WAITING_FOR_HIL_INPUT,
-    WAITING_FOR_OBJECTIVE,
+    WAITING_FOR_TRANSFORMATION_OBJECTIVE,
 }
 
 export interface ProjectDetails {
