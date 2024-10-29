@@ -191,7 +191,7 @@ export class InlineChatController {
             })
             .then(async (query) => {
                 if (!query || query.trim() === '') {
-                    void vscode.window.showWarningMessage('Amazon Q: Instructions for cannot be empty')
+                    getLogger().info('inlineQuickPick query is empty')
                     return
                 }
 
