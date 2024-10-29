@@ -31,8 +31,7 @@ import { tryNewMap } from '../../util/functionUtils'
 export const createMynahUI = (
     ideApi: any,
     amazonQEnabled: boolean,
-    featureConfigsSerialized: [string, FeatureContext][],
-    disabledCommands?: string[]
+    featureConfigsSerialized: [string, FeatureContext][]
 ) => {
     // eslint-disable-next-line prefer-const
     let mynahUI: MynahUI
@@ -78,7 +77,6 @@ export const createMynahUI = (
     let tabDataGenerator = new TabDataGenerator({
         isFeatureDevEnabled,
         isGumbyEnabled,
-        disabledCommands,
     })
 
     // eslint-disable-next-line prefer-const
@@ -120,13 +118,11 @@ export const createMynahUI = (
                 tabsStorage,
                 isFeatureDevEnabled,
                 isGumbyEnabled,
-                disabledCommands,
             })
 
             tabDataGenerator = new TabDataGenerator({
                 isFeatureDevEnabled,
                 isGumbyEnabled,
-                disabledCommands,
             })
 
             featureConfigs = tryNewMap(featureConfigsSerialized)

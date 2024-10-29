@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Disable /transform and /dev commands for sagemaker users as they're not supported"
-}

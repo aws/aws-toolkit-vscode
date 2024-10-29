@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Use Sagemaker environment IAM Credentials for Code Completion when they're available"
-}
