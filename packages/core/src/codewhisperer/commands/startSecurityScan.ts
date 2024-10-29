@@ -225,7 +225,7 @@ export async function startSecurityScan(
 
         logger.verbose(`Security scan completed.`)
     } catch (error) {
-        getLogger().error('Security scan failed.', error)
+        getLogger().error('Security scan failed. %O', error)
         if (error instanceof CodeScanStoppedError) {
             codeScanTelemetryEntry.result = 'Cancelled'
         } else {
