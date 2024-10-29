@@ -63,7 +63,6 @@ export class NotificationsController {
     }
 
     public pollForEmergencies(ruleEngine: RuleEngine) {
-        getLogger().info('polling .....')
         return this.poll(ruleEngine, 'emergency')
     }
 
@@ -134,12 +133,12 @@ export class NotificationsController {
         const addedNotifications = newNotifications.filter((n: any) => !currentNotificationIds.has(n.id))
 
         if (addedNotifications.length > 0) {
-            getLogger('notifications').info(
+            getLogger('notifications').verbose(
                 'New notifications received for category %s, ids: %s',
                 category,
                 addedNotifications.map((n: any) => n.id).join(', ')
             )
-            await this.onReceiveNotifications(addedNotifications)
+            await this.notificationsNode.onReceiveNotifications(addedNotifications)
         }
 
         this.state[category].payload = JSON.parse(response.content)
@@ -154,23 +153,6 @@ export class NotificationsController {
         )
     }
 
-    private async onReceiveNotifications(notifications: ToolkitNotification[]) {
-        for (const notification of notifications) {
-            switch (notification.uiRenderInstructions.onRecieve) {
-                case 'modal':
-                    // Handle modal case
-                    void this.notificationsNode.renderModal(notification)
-                    break
-                case 'toast':
-                    // toast case, no user input needed
-                    void vscode.window.showInformationMessage(
-                        notification.uiRenderInstructions.content['en-US'].descriptionPreview ??
-                            notification.uiRenderInstructions.content['en-US'].title
-                    )
-                    break
-            }
-        }
-    }
     /**
      * Write the latest memory state to global state.
      */

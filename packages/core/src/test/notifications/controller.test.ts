@@ -14,9 +14,10 @@ import { randomUUID } from '../../shared'
 import { installFakeClock } from '../testUtil'
 import { NotificationFetcher, RemoteFetcher, ResourceResponse } from '../../notifications/controller'
 import { HttpResourceFetcher } from '../../shared/resourcefetcher/httpResourceFetcher'
+import { testNotificationsNode } from '../../notifications/panelNode'
 
 describe('Notifications Controller', function () {
-    const panelNode: NotificationsNode = new NotificationsNode()
+    const panelNode: NotificationsNode = testNotificationsNode
     const ruleEngine: RuleEngine = new RuleEngine({
         ideVersion: '1.83.0',
         extensionVersion: '1.20.0',
@@ -501,6 +502,11 @@ function getValidTestNotification(id: string) {
                     title: 'test',
                     description: 'test',
                 },
+            },
+            onRecieve: 'toast',
+            onClick: {
+                type: 'openUrl',
+                url: 'https://aws.amazon.com/visualstudiocode/',
             },
         },
     }

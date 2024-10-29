@@ -59,7 +59,7 @@ export interface UIRenderInstructions {
         type: string
         url?: string // optional property for 'openUrl'
     }
-    buttons?: Array<{
+    actions?: Array<{
         type: string
         displayText: {
             [`en-US`]: string

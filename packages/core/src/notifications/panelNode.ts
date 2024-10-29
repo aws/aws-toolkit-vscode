@@ -130,24 +130,25 @@ export class NotificationsNode implements TreeNode {
     /**
      * Fired when a notification is clicked on in the panel. It will run any rendering
      * instructions included in the notification. See {@link ToolkitNotification.uiRenderInstructions}.
-     *
-     * TODO: implement more rendering possibilites.
      */
     public async openNotification(notification: ToolkitNotification) {
         switch (notification.uiRenderInstructions.onClick.type) {
             case 'modal':
-                // Handle modal case
+                // Render blocking modal
+                getLogger('notifications').verbose(`rendering modal for notificaiton: ${notification.id} ...`)
                 await this.renderModal(notification)
                 break
             case 'openUrl':
                 if (!notification.uiRenderInstructions.onClick.url) {
                     throw new ToolkitError('No url provided for onclick open url')
                 }
-                // Handle openUrl case
+                // Show open url option
+                getLogger('notifications').verbose(`opening url for notification: ${notification.id} ...`)
                 await vscode.env.openExternal(vscode.Uri.parse(notification.uiRenderInstructions.onClick.url))
                 break
             case 'openTextDocument':
-                // Handle openTextDocument case
+                // Display read-only txt document
+                getLogger('notifications').verbose(`showing txt document for notification: ${notification.id} ...`)
                 await this.showReadonlyTextDocument(notification.uiRenderInstructions.content['en-US'].description)
                 break
         }
@@ -158,7 +159,6 @@ export class NotificationsNode implements TreeNode {
      * It's read-only so that the "save" option doesn't appear when user closes the notification
      */
     private async showReadonlyTextDocument(content: string): Promise<void> {
-        getLogger('notifications').info('showing txt document ... ')
         try {
             const tempFilePath = path.join(tempDirPath, 'AWSToolkitNotifications.txt')
 
@@ -187,16 +187,19 @@ export class NotificationsNode implements TreeNode {
         }
     }
 
+    /**
+     * Renders a blocking modal with the notification's content and buttons.
+     * Handles the button click actions based on the button type.
+     */
     public async renderModal(notification: ToolkitNotification) {
-        getLogger('notifications').info('rendering modal ... ')
-        if (!notification.uiRenderInstructions.buttons) {
+        if (!notification.uiRenderInstructions.actions) {
             throw new ToolkitError('no button defined for modal')
             return
         }
 
-        const buttons = notification.uiRenderInstructions.buttons
+        const buttons = notification.uiRenderInstructions.actions
 
-        const buttonLabels = buttons.map((buttons) => buttons.displayText['en-US'])
+        const buttonLabels = buttons.map((actions) => actions.displayText['en-US'])
 
         const detail = notification.uiRenderInstructions.content['en-US'].description
 
@@ -207,12 +210,17 @@ export class NotificationsNode implements TreeNode {
         )
 
         if (selectedButton) {
-            const buttons = notification.uiRenderInstructions.buttons.find(
-                (buttons) => buttons.displayText['en-US'] === selectedButton
+            const buttons = notification.uiRenderInstructions.actions.find(
+                (actions) => actions.displayText['en-US'] === selectedButton
             )
-
+            // Different button options
             if (buttons) {
                 switch (buttons.type) {
+                    case 'openTxt':
+                        await this.showReadonlyTextDocument(
+                            notification.uiRenderInstructions.content['en-US'].description
+                        )
+                        break
                     case 'updateAndReload':
                         await this.updateAndReload(notification.displayIf.extensionId)
                         break
@@ -222,14 +230,32 @@ export class NotificationsNode implements TreeNode {
                         }
                         break
                     default:
-                        getLogger().warn(`Unhandled button type: ${buttons.type}`)
+                        throw new ToolkitError('button action not defined')
                 }
             }
         }
     }
 
+    public async onReceiveNotifications(notifications: ToolkitNotification[]) {
+        for (const notification of notifications) {
+            switch (notification.uiRenderInstructions.onRecieve) {
+                case 'modal':
+                    // Handle modal case
+                    void this.renderModal(notification)
+                    break
+                case 'toast':
+                    // toast case, no user input needed
+                    void vscode.window.showInformationMessage(
+                        notification.uiRenderInstructions.content['en-US'].descriptionPreview ??
+                            notification.uiRenderInstructions.content['en-US'].title
+                    )
+                    break
+            }
+        }
+    }
+
     private async updateAndReload(id: string) {
-        getLogger('notifications').info('Updating and reloading the extension...')
+        getLogger('notifications').verbose('Updating and reloading the extension...')
         await vscode.commands.executeCommand('workbench.extensions.installExtension', id)
         await vscode.commands.executeCommand('workbench.action.reloadWindow')
     }
@@ -258,3 +284,5 @@ export class NotificationsNode implements TreeNode {
 export function registerProvider(provider: ResourceTreeDataProvider) {
     NotificationsNode.instance.provider = provider
 }
+
+export const testNotificationsNode = new NotificationsNode()

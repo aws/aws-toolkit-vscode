@@ -9,14 +9,20 @@
             "uiRenderInstructions": {
                 "content": {
                     "en-US": {
-                        "title": "[local] What's New",
-                        "description": "Check out this new stuff!"
+                        "title": "[local] What's New, url",
+                        "description": "Check out this new stuff!",
+                        "descriptionPreview": "omg"
                     }
+                },
+                "onRecieve": "toast",
+                "onClick": {
+                    "type": "openUrl",
+                    "url": "https://aws.amazon.com/visualstudiocode/"
                 }
             }
         },
         {
-            "id": "toolkit_startUp_local_1",
+            "id": "toolkit_startUp_local_2",
             "displayIf": {
                 "extensionId": "amazonwebservices.aws-toolkit-vscode"
             },
