@@ -5,7 +5,6 @@
 
 import vscode from 'vscode'
 import { VSCODE_EXTENSION_ID } from '../shared/utilities'
-import { SendMessageCommandOutput, SendMessageRequest } from '@amzn/amazon-q-developer-streaming-client'
 import { GenerateAssistantResponseCommandOutput, GenerateAssistantResponseRequest } from '@amzn/codewhisperer-streaming'
 import { FeatureAuthState } from '../codewhisperer/util/authUtil'
 import { ToolkitError } from '../shared'
@@ -17,7 +16,6 @@ import { ToolkitError } from '../shared'
 export interface api {
     chatApi: {
         chat(request: GenerateAssistantResponseRequest): Promise<GenerateAssistantResponseCommandOutput>
-        chatIam(request: SendMessageRequest): Promise<SendMessageCommandOutput>
     }
     authApi: {
         reauthIfNeeded(): Promise<void>
