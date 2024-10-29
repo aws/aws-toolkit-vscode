@@ -349,6 +349,8 @@ export class FeatureDevController {
             return
         }
 
+        await this.disablePreviousFileList(message.tabID)
+
         /**
          * Don't attempt to process any chat messages when a workspace folder is not set.
          * When the tab is first opened we will throw an error and lock the chat if the workspace
@@ -586,6 +588,11 @@ export class FeatureDevController {
                 session?.conversationIdUnsafe
             )
         }
+    }
+
+    private async disablePreviousFileList(tabId: string) {
+        const session = await this.sessionStorage.getSession(tabId)
+        await session.disableFileList()
     }
 
     private async provideFeedbackAndRegenerateCode(message: any) {

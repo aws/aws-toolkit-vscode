@@ -171,10 +171,8 @@ export class Session {
                 this.state.tabID,
                 this.state.filePaths ?? [],
                 this.state.deletedFiles ?? [],
-                this._codeResultMessageId,
-                true
+                this._codeResultMessageId
             )
-            this._codeResultMessageId = undefined
         }
     }
 
@@ -204,6 +202,21 @@ export class Session {
         for (const ref of codeReferences) {
             ReferenceLogViewProvider.instance.addReferenceLog(referenceLogText(ref))
         }
+    }
+
+    public async disableFileList() {
+        if (this._codeResultMessageId === undefined) {
+            return
+        }
+
+        await this.updateFilesPaths(
+            this.state.tabID,
+            this.state.filePaths ?? [],
+            this.state.deletedFiles ?? [],
+            this._codeResultMessageId,
+            true
+        )
+        this._codeResultMessageId = undefined
     }
 
     public updateCodeResultMessageId(messageId?: string) {
