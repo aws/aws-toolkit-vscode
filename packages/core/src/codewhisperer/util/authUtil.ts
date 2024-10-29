@@ -59,8 +59,11 @@ export const isValidCodeWhispererCoreConnection = (conn?: Connection): conn is C
         return isIamConnection(conn)
     }
 
+    if (isSageMaker()) {
+        return isIamConnection(conn)
+    }
+
     return (
-        (isSageMaker() && isIamConnection(conn)) ||
         (isCloud9('codecatalyst') && isIamConnection(conn)) ||
         (isSsoConnection(conn) && hasScopes(conn, codeWhispererCoreScopes))
     )
@@ -68,10 +71,9 @@ export const isValidCodeWhispererCoreConnection = (conn?: Connection): conn is C
 /** Superset that includes all of CodeWhisperer + Amazon Q */
 export const isValidAmazonQConnection = (conn?: Connection): conn is Connection => {
     return (
-        (isSageMaker() && isIamConnection(conn)) ||
-        ((isSsoConnection(conn) || isBuilderIdConnection(conn)) &&
-            isValidCodeWhispererCoreConnection(conn) &&
-            hasScopes(conn, amazonQScopes))
+        (isSsoConnection(conn) || isBuilderIdConnection(conn)) &&
+        isValidCodeWhispererCoreConnection(conn) &&
+        hasScopes(conn, amazonQScopes)
     )
 }
 
@@ -440,8 +442,7 @@ export class AuthUtil {
         if (conn === undefined) {
             return buildFeatureAuthState(AuthStates.disconnected)
         }
-
-        if (!isSsoConnection(conn) && !isSageMaker()) {
+        if (!isSsoConnection(conn)) {
             throw new ToolkitError(`Connection "${conn.id}" is not a valid type: ${conn.type}`)
         }
 
@@ -452,7 +453,7 @@ export class AuthUtil {
             return state
         }
 
-        if (isBuilderIdConnection(conn) || isIdcSsoConnection(conn) || isSageMaker()) {
+        if (isBuilderIdConnection(conn) || isIdcSsoConnection(conn)) {
             if (isValidCodeWhispererCoreConnection(conn)) {
                 state[Features.codewhispererCore] = AuthStates.connected
             }
