@@ -683,17 +683,17 @@
                 "win": "ctrl+i",
                 "mac": "cmd+i",
                 "linux": "ctrl+i",
-                "when": "editorTextFocus && aws.codewhisperer.connected && !aws.isSageMaker"
+                "when": "editorTextFocus && aws.codewhisperer.connected"
             },
             {
                 "command": "aws.amazonq.inline.waitForUserDecisionAcceptAll",
                 "key": "enter",
-                "when": "editorTextFocus && aws.codewhisperer.connected && amazonq.inline.codelensShortcutEnabled && !aws.isSageMaker"
+                "when": "editorTextFocus && aws.codewhisperer.connected && amazonq.inline.codelensShortcutEnabled"
             },
             {
                 "command": "aws.amazonq.inline.waitForUserDecisionRejectAll",
                 "key": "escape",
-                "when": "editorTextFocus && aws.codewhisperer.connected && amazonq.inline.codelensShortcutEnabled && !aws.isSageMaker"
+                "when": "editorTextFocus && aws.codewhisperer.connected && amazonq.inline.codelensShortcutEnabled"
             }
         ],
         "icons": {
