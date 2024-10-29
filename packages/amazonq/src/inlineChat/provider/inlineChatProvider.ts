@@ -120,7 +120,7 @@ export class InlineChatProvider {
         let response: GenerateAssistantResponseCommandOutput | undefined = undefined
         session.createNewTokenSource()
         try {
-            response = await session.chatSso(request)
+            response = await session.chat(request)
             getLogger().info(
                 `response to tab: ${tabID} conversationID: ${session.sessionIdentifier} requestID: ${response.$metadata.requestId} metadata: ${JSON.stringify(
                     response.$metadata

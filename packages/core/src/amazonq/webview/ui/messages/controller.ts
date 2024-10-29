@@ -15,7 +15,6 @@ export interface MessageControllerProps {
     tabsStorage: TabsStorage
     isFeatureDevEnabled: boolean
     isGumbyEnabled: boolean
-    disabledCommands?: string[]
 }
 
 export class MessageController {
@@ -31,7 +30,6 @@ export class MessageController {
         this.tabDataGenerator = new TabDataGenerator({
             isFeatureDevEnabled: props.isFeatureDevEnabled,
             isGumbyEnabled: props.isGumbyEnabled,
-            disabledCommands: props.disabledCommands,
         })
     }
 

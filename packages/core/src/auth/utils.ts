@@ -52,11 +52,6 @@ import { ExtStartUpSources } from '../shared/telemetry'
 import { CommonAuthWebview } from '../login/webview/vue/backend'
 import { AuthSource } from '../login/webview/util'
 import { setContext } from '../shared/vscode/setContext'
-import { CredentialsProviderManager } from './providers/credentialsProviderManager'
-import { SharedCredentialsProviderFactory } from './providers/sharedCredentialsProviderFactory'
-import { Ec2CredentialsProvider } from './providers/ec2CredentialsProvider'
-import { EcsCredentialsProvider } from './providers/ecsCredentialsProvider'
-import { EnvVarsCredentialsProvider } from './providers/envVarsCredentialsProvider'
 
 // iam-only excludes Builder ID and IAM Identity Center from the list of valid connections
 // TODO: Understand if "iam" should include these from the list at all
@@ -735,10 +730,4 @@ export function getAuthFormIdsFromConnection(conn?: Connection): AuthFormId[] {
     }
 
     return authIds
-}
-
-export function initializeCredentialsProviderManager() {
-    const manager = CredentialsProviderManager.getInstance()
-    manager.addProviderFactory(new SharedCredentialsProviderFactory())
-    manager.addProviders(new Ec2CredentialsProvider(), new EcsCredentialsProvider(), new EnvVarsCredentialsProvider())
 }
