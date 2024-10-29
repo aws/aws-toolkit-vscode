@@ -12,6 +12,7 @@ import { TabTypeDataMap } from './constants'
 export interface TabDataGeneratorProps {
     isFeatureDevEnabled: boolean
     isGumbyEnabled: boolean
+    disabledCommands?: string[]
 }
 
 export class TabDataGenerator {
@@ -23,6 +24,7 @@ export class TabDataGenerator {
         this.quickActionsGenerator = new QuickActionGenerator({
             isFeatureDevEnabled: props.isFeatureDevEnabled,
             isGumbyEnabled: props.isGumbyEnabled,
+            disableCommands: props.disabledCommands,
         })
     }
 
