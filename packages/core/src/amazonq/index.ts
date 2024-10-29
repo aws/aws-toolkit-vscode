@@ -42,11 +42,12 @@ import { FeatureContext } from '../shared'
 export function createMynahUI(
     ideApi: any,
     amazonQEnabled: boolean,
-    featureConfigsSerialized: [string, FeatureContext][]
+    featureConfigsSerialized: [string, FeatureContext][],
+    disabledCommands?: string[]
 ) {
     if (typeof window !== 'undefined') {
         const mynahUI = require('./webview/ui/main')
-        return mynahUI.createMynahUI(ideApi, amazonQEnabled, featureConfigsSerialized)
+        return mynahUI.createMynahUI(ideApi, amazonQEnabled, featureConfigsSerialized, disabledCommands)
     }
     throw new Error('Not implemented for node')
 }
