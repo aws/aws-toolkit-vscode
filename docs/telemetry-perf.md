@@ -284,20 +284,21 @@ Measures sequential response times in Q chat, from user input to message display
         vscode->>chat: display message
         chat->>vscode: send stop-chat-message-telemetry event
         vscode->>event: record messageDisplayed timestamp
-        vscode->>telemetry: emit amazonq_chatRoundTrip
+        event->>vscode: get the telemetry timestamps
+        vscode->>telemetry: emit amazonq_chatRoundTrip with telemetry timestamps
 ```
 
 ### cwsprChatTimeToFirstChunk
 
-The time between when the conversation id was created and when we got back the first usable result
+The time between when the conversation stream is created and when we got back the first usable result
 
 ```mermaid
     sequenceDiagram
         participant user as User
         participant chat as Chat UI
-        participant vscode as VSCode
+        participant vscode as VSCode extension host
         participant generateResponse as Generate response
-        participant backend
+        participant backend as Q service backend
 
         user->>chat: Presses enter with message
         chat->>vscode: Tell VSCode to generate a response
@@ -322,15 +323,15 @@ The time between when the conversation id was created and when we got back the f
 
 ### cwsprChatTimeBetweenChunks
 
-An array of time when successive chunks of data are received from the server
+An array of time when successive pieces of data are received from the server
 
 ```mermaid
     sequenceDiagram
         participant user as User
         participant chat as Chat UI
-        participant vscode as VSCode
+        participant vscode as VSCode extension host
         participant generateResponse as Generate response
-        participant backend
+        participant backend as Q service backend
 
         user->>chat: Presses enter with message
         chat->>vscode: Tell VSCode to generate a response
@@ -360,9 +361,9 @@ The time between when the conversation id was created and the final response fro
     sequenceDiagram
         participant user as User
         participant chat as Chat UI
-        participant vscode as VSCode
+        participant vscode as VSCode extension host
         participant generateResponse as Generate response
-        participant backend
+        participant backend as Q service backend
 
         user->>chat: Presses enter with message
         chat->>vscode: Tell VSCode to generate a response
@@ -387,15 +388,15 @@ The time between when the conversation id was created and the final response fro
 
 ### cwsprChatTimeToFirstUsableChunk
 
-The time between the initial server request, including creating the conversation id, and the first usable result
+The time between the initial server request, including creating the conversation stream, and the first usable result
 
 ```mermaid
     sequenceDiagram
         participant user as User
         participant chat as Chat UI
-        participant vscode as VSCode
+        participant vscode as VSCode extension host
         participant generateResponse as Generate response
-        participant backend
+        participant backend as Q service backend
 
         user->>chat: Presses enter with message
         chat->>vscode: Tell VSCode to generate a response
@@ -420,15 +421,15 @@ The time between the initial server request, including creating the conversation
 
 ### cwsprChatFullServerResponseLatency
 
-The time between the initial server request, including creating the conversation id, and the final response from the server
+The time between the initial server request, including creating the conversation stream, and the final response from the server
 
 ```mermaid
     sequenceDiagram
         participant user as User
         participant chat as Chat UI
-        participant vscode as VSCode
+        participant vscode as VSCode extension host
         participant generateResponse as Generate response
-        participant backend
+        participant backend as Q service backend
 
         user->>chat: Presses enter with message
         chat->>vscode: Tell VSCode to generate a response
@@ -452,15 +453,15 @@ The time between the initial server request, including creating the conversation
 
 ### cwsprChatTimeToFirstDisplay
 
-The time between the user pressing enter and when the first chunk of data is displayed to the user
+The time between the user pressing enter and when the first piece of data is displayed to the user
 
 ```mermaid
     sequenceDiagram
         participant user as User
         participant chat as Chat UI
-        participant vscode as VSCode
+        participant vscode as VSCode extension host
         participant generateResponse as Generate response
-        participant backend
+        participant backend as Q service backend
         note over backend, user: cwsprChatTimeToFirstDisplay
         rect rgb(230, 230, 230, 0.5)
             user->>chat: Presses enter with message
@@ -484,15 +485,15 @@ The time between the user pressing enter and when the first chunk of data is dis
 
 ### cwsprChatTimeBetweenDisplays
 
-An array of time when successive chunks of server responses are displayed to the user
+An array of time when successive pieces of server responses are displayed to the user
 
 ```mermaid
     sequenceDiagram
         participant user as User
         participant chat as Chat UI
-        participant vscode as VSCode
+        participant vscode as VSCode extension host
         participant generateResponse as Generate response
-        participant backend
+        participant backend as Q service backend
 
         user->>chat: Presses enter with message
         chat->>vscode: Tell VSCode to generate a response
@@ -521,9 +522,9 @@ The time between the user pressing enter and the entire response being rendered
     sequenceDiagram
         participant user as User
         participant chat as Chat UI
-        participant vscode as VSCode
+        participant vscode as VSCode extension host
         participant generateResponse as Generate response
-        participant backend
+        participant backend as Q service backend
 
         note over backend, user: cwsprChatFullDisplayLatency
         rect rgb(230, 230, 230, 0.5)
