@@ -6,7 +6,8 @@
 import { AST_NODE_TYPES, ESLintUtils, TSESTree } from '@typescript-eslint/utils'
 import { Rule } from 'eslint'
 
-export const errMsg = 'Avoid using JSON.stringify within logging and error messages, prefer %O.'
+export const errMsg =
+    'Avoid using JSON.stringify within logging and error messages, prefer %O. Note: %O has a depth limit of 2'
 
 /**
  * Check if a given expression is a JSON.stringify call.
@@ -35,11 +36,18 @@ function isTemplateWithStringifyCall(node: TSESTree.CallExpressionArgument): boo
  */
 export function isLoggerCall(node: TSESTree.CallExpression): boolean {
     return (
-        (node.callee.type === AST_NODE_TYPES.MemberExpression &&
-            node.callee.object.type === AST_NODE_TYPES.CallExpression &&
-            node.callee.object.callee.type === AST_NODE_TYPES.Identifier &&
-            node.callee.object.callee.name === 'getLogger') ||
-        isDisguisedLoggerCall(node)
+        node.callee.type === AST_NODE_TYPES.MemberExpression &&
+        (isGetLoggerCall(node.callee.object) || isDisguisedGetLoggerCall(node.callee.object)) &&
+        node.callee.property.type === AST_NODE_TYPES.Identifier &&
+        ['debug', 'verbose', 'info', 'warn', 'error'].includes(node.callee.property.name)
+    )
+}
+
+function isGetLoggerCall(node: TSESTree.Expression): boolean {
+    return (
+        node.type === AST_NODE_TYPES.CallExpression &&
+        node.callee.type === AST_NODE_TYPES.Identifier &&
+        node.callee.name === 'getLogger'
     )
 }
 
@@ -52,15 +60,12 @@ export function isLoggerCall(node: TSESTree.CallExpression): boolean {
  *  1) If the left side is an identifier including the word logger
  *  2) If the left side is a property of some object, including the word logger.
  */
-function isDisguisedLoggerCall(node: TSESTree.CallExpression): boolean {
+function isDisguisedGetLoggerCall(node: TSESTree.Expression): boolean {
     return (
-        (node.callee.type === AST_NODE_TYPES.MemberExpression &&
-            node.callee.object.type === AST_NODE_TYPES.Identifier &&
-            node.callee.object.name.toLowerCase().includes('logger')) ||
-        (node.callee.type === AST_NODE_TYPES.MemberExpression &&
-            node.callee.object.type === AST_NODE_TYPES.MemberExpression &&
-            node.callee.object.property.type === AST_NODE_TYPES.Identifier &&
-            node.callee.object.property.name.toLowerCase().includes('logger'))
+        (node.type === AST_NODE_TYPES.Identifier && node.name.toLowerCase().includes('logger')) ||
+        (node.type === AST_NODE_TYPES.MemberExpression &&
+            node.property.type === AST_NODE_TYPES.Identifier &&
+            node.property.name.toLowerCase().includes('logger'))
     )
 }
 

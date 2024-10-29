@@ -16,6 +16,7 @@ getRuleTester().run('no-json-stringify-in-log', rules['no-json-stringify-in-log'
         'getLogger().fakeFunction(`another example ${JSON.notString(something)}`)',
         'this.deps.devLogger?.debug("crashMonitoring: CLEAR_STATE: Succeeded")',
         'getLogger().debug(`called startBuilderIdSetup()`)',
+        'this.logger.exit(`${JSON.stringify(obj)}`)',
     ],
 
     invalid: [
