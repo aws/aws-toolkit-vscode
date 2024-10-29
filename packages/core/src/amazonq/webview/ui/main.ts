@@ -357,7 +357,7 @@ export const createMynahUI = (
                     rootFolderTitle: 'Changes',
                     filePaths: filePaths.map((i) => i.zipFilePath),
                     deletedFiles: deletedFiles.map((i) => i.zipFilePath),
-                    details: getDetails(filePaths),
+                    details: getDetails([...filePaths, ...deletedFiles]),
                     actions: disableFileActions ? undefined : getActions([...filePaths, ...deletedFiles]),
                 },
             }
