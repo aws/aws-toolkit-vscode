@@ -314,7 +314,7 @@ function outputDeployError(error: Error) {
     getLogger().error(error)
 
     globals.outputChannel.show(true)
-    getLogger().error('AWS.samcli.deploy.general.error', 'Error deploying a SAM Application. {0}', checklogs())
+    getLogger().error('AWS.samcli.deploy.general.error: Error deploying a SAM Application. %O', checklogs())
 }
 
 function getDefaultWindowFunctions(): WindowFunctions {

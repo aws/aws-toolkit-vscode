@@ -107,7 +107,7 @@ export class RemoteInvokeWebview extends VueWebview {
                 selectedFile: fileLocations[0].path,
             }
         } catch (e) {
-            getLogger().error('readFileSync: Failed to read file at path %O', fileLocations[0].fsPath, e)
+            getLogger().error('readFileSync: Failed to read file at path %s \n %O', fileLocations[0].fsPath, e)
             void vscode.window.showErrorMessage((e as Error).message)
         }
     }

@@ -62,7 +62,7 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
         const childProcess = new ChildProcess(params.command, params.args, {
             spawnOptions: await addTelemetryEnvVar(options),
         })
-        getLogger().info('AWS.running.command', 'Command: {0}', `${childProcess}`)
+        getLogger().info('AWS.running.command: Command: %O', `${childProcess}`)
         // "sam local invoke", "sam local start-api", etc.
         const samCommandName = `sam ${params.args[0]} ${params.args[1]}`
 
