@@ -11,7 +11,7 @@ import { responseTransformer } from '../output/responseTransformer'
 import { adjustTextDiffForEditing, computeDiff } from '../output/computeDiff'
 import { computeDecorations } from '../decorations/computeDecorations'
 import { CodelensProvider } from '../codeLenses/codeLenseProvider'
-import { ReferenceLogController } from 'aws-core-vscode/codewhispererChat'
+import { PromptMessage, ReferenceLogController } from 'aws-core-vscode/codewhispererChat'
 import { CodeWhispererSettings } from 'aws-core-vscode/codewhisperer'
 import { codicon, getIcon, getLogger, messages, setContext, Timeout, textDocumentUtil } from 'aws-core-vscode/shared'
 import { InlineLineAnnotationController } from '../decorations/inlineLineAnnotationController'
@@ -176,10 +176,12 @@ export class InlineChatController {
                 prompt: codicon`${getIcon('aws-amazonq-q-white')} Edit code`,
             })
             .then(async (query) => {
-                this.userQuery = query
-                if (!query) {
+                if (!query || query.trim() === '') {
+                    void vscode.window.showWarningMessage('Amazon Q: Instructions for cannot be empty')
                     return
                 }
+
+                this.userQuery = query
                 await textDocumentUtil.addEofNewline(editor)
                 this.task = await this.createTask(query, editor.document, editor.selection)
                 await this.inlineLineAnnotationController.disable(editor)
@@ -201,11 +203,10 @@ export class InlineChatController {
         }
 
         await this.updateTaskAndLenses(this.task, TaskState.InProgress)
-        const prompt = query
-        getLogger().info(`prompt:\n${prompt}`)
+        getLogger().info(`inline chat query:\n${query}`)
         const uuid = randomUUID()
-        const message = {
-            message: prompt,
+        const message: PromptMessage = {
+            message: query,
             messageId: uuid,
             command: undefined,
             userIntent: undefined,
