@@ -176,6 +176,17 @@ export class Connector {
         this.gumbyChatConnector.transform(tabID)
     }
 
+    onStopChatResponse = (tabID: string): void => {
+        switch (this.tabsStorage.getTab(tabID)?.type) {
+            case 'featuredev':
+                this.featureDevChatConnector.onStopChatResponse(tabID)
+                break
+            case 'cwc':
+                this.cwChatConnector.onStopChatResponse(tabID)
+                break
+        }
+    }
+
     handleMessageReceive = async (message: MessageEvent): Promise<void> => {
         if (message.data === undefined) {
             return
@@ -453,17 +464,6 @@ export class Connector {
         switch (this.tabsStorage.getTab(tabID)?.type) {
             case 'featuredev':
                 this.featureDevChatConnector.onOpenDiff(tabID, filePath, deleted, messageId)
-                break
-        }
-    }
-
-    onStopChatResponse = (tabID: string): void => {
-        switch (this.tabsStorage.getTab(tabID)?.type) {
-            case 'featuredev':
-                this.featureDevChatConnector.onStopChatResponse(tabID)
-                break
-            case 'cwc':
-                this.cwChatConnector.onStopChatResponse(tabID)
                 break
         }
     }

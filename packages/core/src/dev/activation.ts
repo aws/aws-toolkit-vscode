@@ -61,57 +61,59 @@ let targetAuth: Auth
  * on selection. There is no support for name-spacing. Just add the relevant
  * feature/module as a description so it can be moved around easier.
  */
-const menuOptions: Record<DevFunction, MenuOption> = {
-    installVsix: {
-        label: 'Install VSIX on Remote Environment',
-        description: 'CodeCatalyst',
-        detail: 'Automatically upload/install a VSIX to a remote host',
-        executor: installVsixCommand,
-    },
-    openTerminal: {
-        label: 'Open Remote Terminal',
-        description: 'CodeCatalyst',
-        detail: 'Opens a new terminal connected to the remote environment',
-        executor: openTerminalCommand,
-    },
-    deleteDevEnv: {
-        label: 'Delete Workspace',
-        description: 'CodeCatalyst',
-        detail: 'Deletes the selected Dev Environment',
-        executor: deleteDevEnvCommand,
-    },
-    editStorage: {
-        label: 'Show or Edit globalState',
-        description: 'VS Code',
-        detail: 'Shows all globalState values, or edit a globalState/secret item',
-        executor: openStorageFromInput,
-    },
-    showEnvVars: {
-        label: 'Show Environment Variables',
-        description: 'AWS Toolkit',
-        detail: 'Shows all environment variable values',
-        executor: () => showState('envvars'),
-    },
-    deleteSsoConnections: {
-        label: 'Auth: Delete SSO Connections',
-        detail: 'Deletes all SSO Connections the extension is using.',
-        executor: deleteSsoConnections,
-    },
-    expireSsoConnections: {
-        label: 'Auth: Expire SSO Connections',
-        detail: 'Force expires all SSO Connections, in to a "needs reauthentication" state.',
-        executor: expireSsoConnections,
-    },
-    editAuthConnections: {
-        label: 'Auth: Edit Connections',
-        detail: 'Opens editor to all Auth Connections the extension is using.',
-        executor: editSsoConnections,
-    },
-    forceIdeCrash: {
-        label: 'Crash: Force IDE ExtHost Crash',
-        detail: `Will SIGKILL ExtHost, { pid: ${process.pid}, sessionId: '${getSessionId().slice(0, 8)}-...' }, but the IDE itself will not crash.`,
-        executor: forceQuitIde,
-    },
+const menuOptions: () => Record<DevFunction, MenuOption> = () => {
+    return {
+        installVsix: {
+            label: 'Install VSIX on Remote Environment',
+            description: 'CodeCatalyst',
+            detail: 'Automatically upload/install a VSIX to a remote host',
+            executor: installVsixCommand,
+        },
+        openTerminal: {
+            label: 'Open Remote Terminal',
+            description: 'CodeCatalyst',
+            detail: 'Opens a new terminal connected to the remote environment',
+            executor: openTerminalCommand,
+        },
+        deleteDevEnv: {
+            label: 'Delete Workspace',
+            description: 'CodeCatalyst',
+            detail: 'Deletes the selected Dev Environment',
+            executor: deleteDevEnvCommand,
+        },
+        editStorage: {
+            label: 'Show or Edit globalState',
+            description: 'VS Code',
+            detail: 'Shows all globalState values, or edit a globalState/secret item',
+            executor: openStorageFromInput,
+        },
+        showEnvVars: {
+            label: 'Show Environment Variables',
+            description: 'AWS Toolkit',
+            detail: 'Shows all environment variable values',
+            executor: () => showState('envvars'),
+        },
+        deleteSsoConnections: {
+            label: 'Auth: Delete SSO Connections',
+            detail: 'Deletes all SSO Connections the extension is using.',
+            executor: deleteSsoConnections,
+        },
+        expireSsoConnections: {
+            label: 'Auth: Expire SSO Connections',
+            detail: 'Force expires all SSO Connections, in to a "needs reauthentication" state.',
+            executor: expireSsoConnections,
+        },
+        editAuthConnections: {
+            label: 'Auth: Edit Connections',
+            detail: 'Opens editor to all Auth Connections the extension is using.',
+            executor: editSsoConnections,
+        },
+        forceIdeCrash: {
+            label: 'Crash: Force IDE ExtHost Crash',
+            detail: `Will SIGKILL ExtHost, { pid: ${process.pid}, sessionId: '${getSessionId().slice(0, 8)}-...' }, but the IDE itself will not crash.`,
+            executor: forceQuitIde,
+        },
+    }
 }
 
 /**
@@ -167,7 +169,7 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
             globalState = targetContext.globalState
             targetAuth = opts.auth
             void openMenu(
-                entries(menuOptions)
+                entries(menuOptions())
                     .filter((e) => (opts.menuOptions ?? Object.keys(menuOptions)).includes(e[0]))
                     .map((e) => e[1])
             )

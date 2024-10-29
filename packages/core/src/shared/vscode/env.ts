@@ -10,7 +10,7 @@ import * as os from 'os'
 import { getLogger } from '../logger'
 import { onceChanged } from '../utilities/functionUtils'
 import { ChildProcess } from '../utilities/processUtils'
-import { isWeb } from '../extensionGlobals'
+import globals, { isWeb } from '../extensionGlobals'
 
 /**
  * Returns true if the current build is running on CI (build server).
@@ -138,8 +138,33 @@ export function isWin(): boolean {
     return process.platform === 'win32'
 }
 
-export function isWebWorkspace(): boolean {
-    return vscode.env.uiKind === vscode.UIKind.Web
+const UIKind = {
+    [vscode.UIKind.Desktop]: 'desktop',
+    [vscode.UIKind.Web]: 'web',
+} as const
+export type ExtensionHostUI = (typeof UIKind)[keyof typeof UIKind]
+export type ExtensionHostLocation = 'local' | 'remote' | 'webworker'
+
+/**
+ * Detects where the ui and the extension host are running
+ */
+export function getExtRuntimeContext(): {
+    ui: ExtensionHostUI
+    extensionHost: ExtensionHostLocation
+} {
+    const extensionHost =
+        // taken from https://github.com/microsoft/vscode/blob/7c9e4bb23992c63f20cd86bbe7a52a3aa4bed89d/extensions/github-authentication/src/githubServer.ts#L121 to help determine which auth flows
+        // should be used
+        typeof navigator === 'undefined'
+            ? globals.context.extension.extensionKind === vscode.ExtensionKind.UI
+                ? 'local'
+                : 'remote'
+            : 'webworker'
+
+    return {
+        ui: UIKind[vscode.env.uiKind],
+        extensionHost,
+    }
 }
 
 export function getCodeCatalystProjectName(): string | undefined {

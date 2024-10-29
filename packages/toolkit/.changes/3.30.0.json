@@ -1,0 +1,18 @@
+{
+	"date": "2024-10-29",
+	"version": "3.30.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "EC2 connect: improve management of SSM sessions to minimize chance they are left active."
+		},
+		{
+			"type": "Bug Fix",
+			"description": "fixed device code detection when running auth through tunneled vscode"
+		},
+		{
+			"type": "Feature",
+			"description": "EC2: provide view of ec2 system logs"
+		}
+	]
+}

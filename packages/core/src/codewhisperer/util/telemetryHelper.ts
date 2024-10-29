@@ -325,13 +325,12 @@ export class TelemetryHelper {
                         suggestionState: this.getSendTelemetrySuggestionState(aggregatedSuggestionState),
                         recommendationLatencyMilliseconds: e2eLatency,
                         triggerToResponseLatencyMilliseconds: session.timeToFirstRecommendation,
-                        perceivedLatencyMilliseconds: session.getPerceivedLatency(
-                            this.sessionDecisions[0].codewhispererTriggerType
-                        ),
+                        perceivedLatencyMilliseconds: session.perceivedLatency,
                         timestamp: new Date(Date.now()),
                         suggestionReferenceCount: referenceCount,
                         generatedLine: generatedLines,
                         numberOfRecommendations: suggestionCount,
+                        acceptedCharacterCount: acceptedRecommendationContent.length,
                     },
                 },
             })
@@ -387,6 +386,7 @@ export class TelemetryHelper {
         this.typeAheadLength = 0
         this.timeSinceLastModification = 0
         session.timeToFirstRecommendation = 0
+        session.perceivedLatency = 0
         this.classifierResult = undefined
         this.classifierThreshold = undefined
     }

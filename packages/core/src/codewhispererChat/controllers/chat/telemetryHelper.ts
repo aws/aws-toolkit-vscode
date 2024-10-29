@@ -65,6 +65,8 @@ export class CWCTelemetryHelper {
     private triggerEventsStorage: TriggerEventsStorage
     private responseStreamStartTime: Map<string, number> = new Map()
     private responseStreamTotalTime: Map<string, number> = new Map()
+    private conversationStreamStartTime: Map<string, number> = new Map()
+    private conversationStreamTotalTime: Map<string, number> = new Map()
     private responseStreamTimeForChunks: Map<string, number[]> = new Map()
     private responseWithProjectContext: Map<string, boolean> = new Map()
 
@@ -447,7 +449,9 @@ export class CWCTelemetryHelper {
                 this.getTimeBetweenChunks(message.tabID, this.responseStreamTimeForChunks)
             ),
             cwsprChatFullResponseLatency: this.responseStreamTotalTime.get(message.tabID) ?? 0,
-            cwsprTimeToFirstDisplay: this.getFirstDisplayTime(tabID, startTime),
+            cwsprChatTimeToFirstDisplay: this.getFirstDisplayTime(tabID, startTime),
+            cwsprChatTimeToFirstUsableChunk: this.getFirstUsableChunkTime(message.tabID) ?? 0,
+            cwsprChatFullServerResponseLatency: this.conversationStreamTotalTime.get(message.tabID) ?? 0,
             cwsprChatTimeBetweenDisplays: JSON.stringify(this.getTimeBetweenChunks(tabID, this.displayTimeForChunks)),
             cwsprChatFullDisplayLatency: fullDisplayLatency,
             cwsprChatRequestLength: triggerPayload.message?.length ?? 0,
@@ -549,6 +553,10 @@ export class CWCTelemetryHelper {
         this.responseWithProjectContext.set(messageId, true)
     }
 
+    public setConversationStreamStartTime(tabID: string) {
+        this.conversationStreamStartTime.set(tabID, performance.now())
+    }
+
     private getResponseStreamTimeToFirstChunk(tabID: string): number {
         const chunkTimes = this.responseStreamTimeForChunks.get(tabID) ?? [0, 0]
         if (chunkTimes.length === 1) {
@@ -568,6 +576,13 @@ export class CWCTelemetryHelper {
         return Math.round(chunkTimes[0] - startTime)
     }
 
+    private getFirstUsableChunkTime(tabID: string) {
+        const startTime = this.conversationStreamStartTime.get(tabID) ?? 0
+        const chunkTimes = this.responseStreamTimeForChunks.get(tabID) ?? [0, 0]
+        // first chunk is the start time, we use the second because thats the first actual usable chunk time
+        return Math.round(chunkTimes[1] - startTime)
+    }
+
     private getTimeBetweenChunks(tabID: string, chunks: Map<string, number[]>): number[] {
         try {
             const chunkDeltaTimes: number[] = []
@@ -584,8 +599,13 @@ export class CWCTelemetryHelper {
     }
 
     public setResponseStreamTotalTime(tabID: string) {
-        const totalTime = performance.now() - (this.responseStreamStartTime.get(tabID) ?? 0)
-        this.responseStreamTotalTime.set(tabID, Math.round(totalTime))
+        // time from when the requests started streaming until the end of the stream
+        const totalStreamingTime = performance.now() - (this.responseStreamStartTime.get(tabID) ?? 0)
+        this.responseStreamTotalTime.set(tabID, Math.round(totalStreamingTime))
+
+        // time from the initial server request, including creating the conversation id, until the end of the stream
+        const totalConversationTime = performance.now() - (this.conversationStreamStartTime.get(tabID) ?? 0)
+        this.conversationStreamTotalTime.set(tabID, Math.round(totalConversationTime))
     }
 
     public getConversationId(tabID: string): string | undefined {

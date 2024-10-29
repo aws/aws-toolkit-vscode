@@ -660,6 +660,7 @@ export class ChatController {
         session.createNewTokenSource()
         try {
             this.messenger.sendInitalStream(tabID, triggerID)
+            this.telemetryHelper.setConversationStreamStartTime(tabID)
             response = await session.chat(request)
             this.telemetryHelper.recordEnterFocusConversation(triggerEvent.tabID)
             this.telemetryHelper.recordStartConversation(triggerEvent, triggerPayload)

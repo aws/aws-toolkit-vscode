@@ -27,13 +27,13 @@ import { getHttpStatusCode, getRequestId, ToolkitError } from '../../../../share
 import { keys } from '../../../../shared/utilities/tsUtils'
 import { getLogger } from '../../../../shared/logger/logger'
 import { FeatureAuthState } from '../../../../codewhisperer/util/authUtil'
-import { AuthFollowUpType, AuthMessageDataMap } from '../../../../amazonq/auth/model'
 import { userGuideURL } from '../../../../amazonq/webview/ui/texts/constants'
 import { CodeScanIssue } from '../../../../codewhisperer/models/model'
 import { marked } from 'marked'
 import { JSDOM } from 'jsdom'
 import { LspController } from '../../../../amazonq/lsp/lspController'
 import { extractCodeBlockLanguage } from '../../../../shared/markdown'
+import { extractAuthFollowUp } from '../../../../amazonq/util/authUtils'
 
 export type StaticTextResponseType = 'quick-action-help' | 'onboarding-help' | 'transform' | 'help'
 
@@ -44,26 +44,7 @@ export class Messenger {
     ) {}
 
     public async sendAuthNeededExceptionMessage(credentialState: FeatureAuthState, tabID: string, triggerID: string) {
-        let authType: AuthFollowUpType = 'full-auth'
-        let message = AuthMessageDataMap[authType].message
-        if (
-            credentialState.codewhispererChat === 'disconnected' &&
-            credentialState.codewhispererCore === 'disconnected'
-        ) {
-            authType = 'full-auth'
-            message = AuthMessageDataMap[authType].message
-        }
-
-        if (credentialState.codewhispererCore === 'connected' && credentialState.codewhispererChat === 'expired') {
-            authType = 'missing_scopes'
-            message = AuthMessageDataMap[authType].message
-        }
-
-        if (credentialState.codewhispererChat === 'expired' && credentialState.codewhispererCore === 'expired') {
-            authType = 're-auth'
-            message = AuthMessageDataMap[authType].message
-        }
-
+        const { message, authType } = extractAuthFollowUp(credentialState)
         this.dispatcher.sendAuthNeededExceptionMessage(
             new AuthNeededException(
                 {

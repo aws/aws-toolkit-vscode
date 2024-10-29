@@ -66,7 +66,8 @@ export class RuleEngine {
     }
 
     private evaluate(condition: DisplayIf): boolean {
-        if (condition.extensionId !== globals.context.extension.id) {
+        const currentExt = globals.context.extension.id
+        if (condition.extensionId !== currentExt) {
             return false
         }
 
@@ -113,6 +114,7 @@ export class RuleEngine {
         // So... YAGNI
         switch (criteria.type) {
             case 'OS':
+                // todo: allow lowercase?
                 return isExpected(this.context.os)
             case 'ComputeEnv':
                 return isExpected(this.context.computeEnv)

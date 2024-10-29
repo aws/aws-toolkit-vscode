@@ -5,6 +5,7 @@
     "AWS.productName.cn": "Amazon Toolkit",
     "AWS.amazonq.productName": "Amazon Q",
     "AWS.codecatalyst.submenu.title": "Manage CodeCatalyst",
+    "AWS.notifications.title": "Notifications",
     "AWS.configuration.profileDescription": "The name of the credential profile to obtain credentials from.",
     "AWS.configuration.description.lambda.recentlyUploaded": "Recently selected Lambda upload targets.",
     "AWS.configuration.description.ecs.openTerminalCommand": "The command to run when starting a new interactive terminal session.",
@@ -245,6 +246,7 @@
     "AWS.generic.promptUpdate": "Update...",
     "AWS.generic.preview": "Preview",
     "AWS.generic.viewDocs": "View Documentation",
+    "AWS.generic.dismiss": "Dismiss",
     "AWS.ssmDocument.ssm.maxItemsComputed.desc": "Controls the maximum number of problems produced by the SSM Document language server.",
     "AWS.walkthrough.gettingStarted.title": "Get started with AWS",
     "AWS.walkthrough.gettingStarted.description": "These walkthroughs help you set up the AWS Toolkit.",
@@ -299,6 +301,7 @@
     "AWS.amazonq.featureDev.pillText.generatingCode": "Generating code...",
     "AWS.amazonq.featureDev.pillText.requestingChanges": "Requesting changes ...",
     "AWS.amazonq.featureDev.pillText.insertCode": "Accept code",
+    "AWS.amazonq.featureDev.pillText.stoppingCodeGeneration": "Stopping code generation...",
     "AWS.amazonq.featureDev.pillText.sendFeedback": "Send feedback",
     "AWS.amazonq.featureDev.pillText.selectFiles": "Select files for context",
     "AWS.amazonq.featureDev.pillText.retry": "Retry",
@@ -315,8 +318,9 @@
     "AWS.amazonq.featureDev.answer.sessionClosed": "Okay, I've ended this chat session. You can open a new tab to chat or start another workflow.",
     "AWS.amazonq.featureDev.answer.newTaskChanges": "What new task would you like to work on?",
     "AWS.amazonq.featureDev.placeholder.chatInputDisabled": "Chat input is disabled",
-    "AWS.amazonq.featureDev.placeholder.additionalImprovements": "Choose an option to proceed",
+    "AWS.amazonq.featureDev.placeholder.additionalImprovements": "Describe your task or issue in detail",
     "AWS.amazonq.featureDev.placeholder.feedback": "Provide feedback or comments",
     "AWS.amazonq.featureDev.placeholder.describe": "Describe your task or issue in detail",
-    "AWS.amazonq.featureDev.placeholder.sessionClosed": "Open a new chat tab to continue"
+    "AWS.amazonq.featureDev.placeholder.sessionClosed": "Open a new chat tab to continue",
+    "AWS.amazonq.inline.invokeChat": "Inline chat"
 }

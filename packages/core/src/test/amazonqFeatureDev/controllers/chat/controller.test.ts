@@ -508,4 +508,15 @@ describe('Controller', () => {
             })
         })
     })
+
+    describe('stopResponse', () => {
+        it('should emit ui_click telemetry with elementId amazonq_stopCodeGeneration', async () => {
+            const getSessionStub = sinon.stub(controllerSetup.sessionStorage, 'getSession').resolves(session)
+            controllerSetup.emitters.stopResponse.fire({ tabID, conversationID })
+            await waitUntil(() => {
+                return Promise.resolve(getSessionStub.callCount > 0)
+            }, {})
+            assertTelemetry('ui_click', { elementId: 'amazonq_stopCodeGeneration' })
+        })
+    })
 })

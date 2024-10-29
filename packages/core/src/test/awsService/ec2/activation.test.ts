@@ -8,7 +8,7 @@ import { assertTelemetry } from '../../testUtil'
 import { Ec2InstanceNode } from '../../../awsService/ec2/explorer/ec2InstanceNode'
 import { Ec2ParentNode } from '../../../awsService/ec2/explorer/ec2ParentNode'
 import { Ec2Client } from '../../../shared/clients/ec2Client'
-import { Ec2ConnectionManager } from '../../../awsService/ec2/model'
+import { Ec2Connecter } from '../../../awsService/ec2/model'
 import { PollingSet } from '../../../shared/utilities/pollingSet'
 
 describe('ec2 telemetry', function () {
@@ -32,7 +32,7 @@ describe('ec2 telemetry', function () {
         sinon.restore()
     })
     it('emits correct telemetry on terminal open', async function () {
-        const terminalStub = sinon.stub(Ec2ConnectionManager.prototype, 'attemptToOpenEc2Terminal')
+        const terminalStub = sinon.stub(Ec2Connecter.prototype, 'attemptToOpenEc2Terminal')
         await vscode.commands.executeCommand('aws.ec2.openTerminal', testNode)
 
         assertTelemetry('ec2_connectToInstance', { ec2ConnectionType: 'ssm' })
@@ -40,7 +40,7 @@ describe('ec2 telemetry', function () {
     })
 
     it('emits correct telemetry on remote window open', async function () {
-        const remoteWindowStub = sinon.stub(Ec2ConnectionManager.prototype, 'tryOpenRemoteConnection')
+        const remoteWindowStub = sinon.stub(Ec2Connecter.prototype, 'tryOpenRemoteConnection')
         await vscode.commands.executeCommand('aws.ec2.openRemoteConnection', testNode)
 
         assertTelemetry('ec2_connectToInstance', { ec2ConnectionType: 'remoteWorkspace' })

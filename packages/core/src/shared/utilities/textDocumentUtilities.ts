@@ -7,8 +7,10 @@ import * as _path from 'path'
 import * as vscode from 'vscode'
 import { getTabSizeSetting } from './editorUtilities'
 import { tempDirPath } from '../filesystemUtilities'
-import { fs, indent, ToolkitError } from '../index'
 import { getLogger } from '../logger'
+import fs from '../fs/fs'
+import { ToolkitError } from '../errors'
+import { indent } from './textUtilities'
 
 /**
  * Finds occurences of text in a document. Currently only used for highlighting cloudwatchlogs data.
@@ -189,4 +191,35 @@ export async function showFile(uri: vscode.Uri) {
     const doc = await vscode.workspace.openTextDocument(uri)
     await vscode.window.showTextDocument(doc, { preview: false })
     await vscode.languages.setTextDocumentLanguage(doc, 'log')
+}
+
+/**
+ * Expands the given selection to full line(s) in the document.
+ * If the selection is partial, it will be extended to include the entire line(s).
+ * @param document The current text document
+ * @param selection The current selection
+ * @returns A new Range that covers full line(s) of the selection
+ */
+export function expandSelectionToFullLines(document: vscode.TextDocument, selection: vscode.Selection): vscode.Range {
+    const startLine = document.lineAt(selection.start.line)
+    const endLine = document.lineAt(selection.end.line)
+    return new vscode.Range(startLine.range.start, endLine.range.end)
+}
+
+/**
+ * Ensures the document ends with a newline character.
+ * If the selection is at the end of the last line and the document doesn't end with a newline,
+ * this function inserts one.
+ * @param editor The VS Code text editor to modify
+ */
+export async function addEofNewline(editor: vscode.TextEditor) {
+    if (
+        editor.selection.end.line === editor.document.lineCount - 1 &&
+        editor.selection.end.character === editor.document.lineAt(editor.selection.end.line).text.length &&
+        !editor.document.getText().endsWith('\n')
+    ) {
+        await editor.edit((editBuilder) => {
+            editBuilder.insert(editor.selection.end, '\n')
+        })
+    }
 }

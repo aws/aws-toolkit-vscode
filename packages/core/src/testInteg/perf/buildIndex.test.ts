@@ -10,7 +10,7 @@ import assert from 'assert'
 import { LspClient, LspController } from '../../amazonq'
 import { LanguageClient, ServerOptions } from 'vscode-languageclient'
 import { createTestWorkspace } from '../../test/testUtil'
-import { GetUsageRequestType, IndexRequestType } from '../../amazonq/lsp/types'
+import { BuildIndexRequestType, GetUsageRequestType } from '../../amazonq/lsp/types'
 import { fs, getRandomString } from '../../shared'
 import { FileSystem } from '../../shared/fs/fs'
 import { getFsCallsUpperBound } from './utilities'
@@ -23,7 +23,7 @@ interface SetupResult {
 
 async function verifyResult(setup: SetupResult) {
     assert.ok(setup.clientReqStub.calledTwice)
-    assert.ok(setup.clientReqStub.firstCall.calledWith(IndexRequestType))
+    assert.ok(setup.clientReqStub.firstCall.calledWith(BuildIndexRequestType))
     assert.ok(setup.clientReqStub.secondCall.calledWith(GetUsageRequestType))
 
     assert.strictEqual(getFsCallsUpperBound(setup.fsSpy), 0, 'should not make any fs calls')
@@ -52,7 +52,11 @@ describe('buildIndex', function () {
             return {
                 setup: async () => setupWithWorkspace(250, { fileContent: '0123456789' }),
                 execute: async () => {
-                    await LspController.instance.buildIndex()
+                    await LspController.instance.buildIndex({
+                        startUrl: '',
+                        maxIndexSize: 30,
+                        isVectorIndexEnabled: true,
+                    })
                 },
                 verify: verifyResult,
             }
@@ -61,7 +65,11 @@ describe('buildIndex', function () {
             return {
                 setup: async () => setupWithWorkspace(10, { fileContent: getRandomString(1000) }),
                 execute: async () => {
-                    await LspController.instance.buildIndex()
+                    await LspController.instance.buildIndex({
+                        startUrl: '',
+                        maxIndexSize: 30,
+                        isVectorIndexEnabled: true,
+                    })
                 },
                 verify: verifyResult,
             }

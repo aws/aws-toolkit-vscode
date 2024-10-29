@@ -2,7 +2,7 @@
     "name": "amazon-q-vscode",
     "displayName": "Amazon Q",
     "description": "Amazon Q is your generative AI-powered assistant across the software development lifecycle.",
-    "version": "1.31.0-SNAPSHOT",
+    "version": "1.32.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -71,7 +71,6 @@
     "dependencies": {
         "aws-core-vscode": "file:../core/"
     },
-    "devDependencies": {},
     "contributesComments": {
         "configuration": {
             "properties": "Any settings also defined in packages/core/package.json will override same-named settings in this file."
@@ -188,6 +187,11 @@
         },
         "views": {
             "amazonq": [
+                {
+                    "id": "aws.amazonq.notifications",
+                    "name": "%AWS.notifications.title%",
+                    "when": "!isCloud9 && !aws.isSageMaker && aws.amazonq.notifications.show"
+                },
                 {
                     "type": "webview",
                     "id": "aws.amazonq.AmazonCommonAuth",
@@ -362,12 +366,23 @@
                 {
                     "command": "aws.amazonq.sendToPrompt",
                     "group": "cw_chat@6"
+                },
+                {
+                    "command": "aws.amazonq.inline.invokeChat",
+                    "group": "cw_chat@7"
                 }
             ],
             "editor/context": [
                 {
                     "submenu": "amazonqEditorContextSubmenu",
                     "group": "cw_chat"
+                }
+            ],
+            "view/item/context": [
+                {
+                    "command": "_aws.amazonq.notifications.dismiss",
+                    "when": "viewItem == amazonqNotificationStartUp",
+                    "group": "inline@1"
                 }
             ],
             "aws.amazonq.submenu.feedback": [
@@ -397,6 +412,13 @@
             ]
         },
         "commands": [
+            {
+                "command": "_aws.amazonq.notifications.dismiss",
+                "title": "%AWS.generic.dismiss%",
+                "category": "%AWS.amazonq.title%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
+                "icon": "$(remove-close)"
+            },
             {
                 "command": "aws.amazonq.explainCode",
                 "title": "%AWS.command.amazonq.explainCode%",
@@ -576,14 +598,20 @@
                 "title": "%AWS.amazonq.toggleCodeScan%",
                 "category": "%AWS.amazonq.title%",
                 "enablement": "aws.codewhisperer.connected"
+            },
+            {
+                "command": "aws.amazonq.inline.invokeChat",
+                "title": "%AWS.amazonq.inline.invokeChat%",
+                "category": "%AWS.amazonq.title%",
+                "enablement": "aws.codewhisperer.connected"
             }
         ],
         "keybindings": [
             {
                 "command": "_aws.amazonq.focusChat.keybinding",
-                "win": "win+i",
-                "mac": "cmd+i",
-                "linux": "meta+i"
+                "win": "ctrl+win+i",
+                "mac": "ctrl+cmd+i",
+                "linux": "ctrl+meta+i"
             },
             {
                 "command": "aws.amazonq.explainCode",
@@ -649,6 +677,23 @@
                 "key": "left",
                 "command": "editor.action.inlineSuggest.showPrevious",
                 "when": "inlineSuggestionVisible && !editorReadonly && aws.codewhisperer.connected"
+            },
+            {
+                "command": "aws.amazonq.inline.invokeChat",
+                "win": "ctrl+i",
+                "mac": "cmd+i",
+                "linux": "ctrl+i",
+                "when": "editorTextFocus && aws.codewhisperer.connected"
+            },
+            {
+                "command": "aws.amazonq.inline.waitForUserDecisionAcceptAll",
+                "key": "enter",
+                "when": "editorTextFocus && aws.codewhisperer.connected && amazonq.inline.codelensShortcutEnabled"
+            },
+            {
+                "command": "aws.amazonq.inline.waitForUserDecisionRejectAll",
+                "key": "escape",
+                "when": "editorTextFocus && aws.codewhisperer.connected && amazonq.inline.codelensShortcutEnabled"
             }
         ],
         "icons": {

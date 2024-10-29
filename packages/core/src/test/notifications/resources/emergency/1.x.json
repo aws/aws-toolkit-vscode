@@ -1,0 +1,33 @@
+{
+    "schemaVersion": "1.x",
+    "notifications": [
+        {
+            "id": "amazonq_emergency_local_1",
+            "displayIf": {
+                "extensionId": "amazonwebservices.amazon-q-vscode"
+            },
+            "uiRenderInstructions": {
+                "content": {
+                    "en-US": {
+                        "title": "[local] Emergency: Broken stuff",
+                        "description": "Something crazy is happening! Please update your extension."
+                    }
+                }
+            }
+        },
+        {
+            "id": "toolkit_emergency_local_1",
+            "displayIf": {
+                "extensionId": "amazonwebservices.aws-toolkit-vscode"
+            },
+            "uiRenderInstructions": {
+                "content": {
+                    "en-US": {
+                        "title": "[local] Emergency: Broken stuff",
+                        "description": "Something crazy is happening! Please update your extension."
+                    }
+                }
+            }
+        }
+    ]
+}

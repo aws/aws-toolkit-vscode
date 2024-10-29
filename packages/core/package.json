@@ -27,7 +27,8 @@
         "./utils": "./dist/src/shared/utilities/index.js",
         "./feedback": "./dist/src/feedback/index.js",
         "./telemetry": "./dist/src/shared/telemetry/index.js",
-        "./dev": "./dist/src/dev/index.js"
+        "./dev": "./dist/src/dev/index.js",
+        "./notifications": "./dist/src/notifications/index.js"
     },
     "contributes": {
         "icons": {
@@ -405,7 +406,6 @@
         "@cspotcode/source-map-support": "^0.8.1",
         "@sinonjs/fake-timers": "^10.0.2",
         "@types/adm-zip": "^0.4.34",
-        "@types/archiver": "^6.0.2",
         "@types/async-lock": "^1.4.0",
         "@types/bytes": "^3.1.0",
         "@types/circular-dependency-plugin": "^5.0.8",
@@ -480,7 +480,6 @@
         "@zip.js/zip.js": "^2.7.41",
         "adm-zip": "^0.5.10",
         "amazon-states-language-service": "^1.11.0",
-        "archiver": "^7.0.1",
         "async-lock": "^1.4.0",
         "aws-sdk": "^2.1384.0",
         "aws-ssm-document-language-service": "^1.0.0",

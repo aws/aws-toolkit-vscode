@@ -38,7 +38,7 @@ import { getIdeProperties, isAmazonQ, isCloud9 } from '../../shared/extensionUti
 import { randomBytes, createHash } from 'crypto'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { randomUUID } from '../../shared/crypto'
-import { isRemoteWorkspace, isWebWorkspace } from '../../shared/vscode/env'
+import { getExtRuntimeContext } from '../../shared/vscode/env'
 import { showInputBox } from '../../shared/ui/inputPrompter'
 import { AmazonQPromptSettings, DevSettings, PromptSettings, ToolkitPromptSettings } from '../../shared/settings'
 import { onceChanged } from '../../shared/utilities/functionUtils'
@@ -304,10 +304,10 @@ export abstract class SsoAccessTokenProvider {
              *
              * Since we are unable to serve the final authorization page
              */
-            return isRemoteWorkspace() || isWebWorkspace()
+            return getExtRuntimeContext().extensionHost === 'remote'
         }
     ) {
-        if (DevSettings.instance.get('webAuth', false) && isWebWorkspace()) {
+        if (DevSettings.instance.get('webAuth', false) && getExtRuntimeContext().extensionHost === 'webworker') {
             return new WebAuthorization(profile, cache, oidc, reAuthState)
         }
         if (useDeviceFlow()) {

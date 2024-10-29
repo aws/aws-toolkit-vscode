@@ -129,7 +129,7 @@ async function findSourceFileByContent(
 
     throwIfCancelled(cancellationToken)
 
-    testElementList.push(...extractClasses(editor.document.fileName, languageConfig.classExtractionPattern))
+    testElementList.push(...extractClasses(testFileContent, languageConfig.classExtractionPattern))
 
     throwIfCancelled(cancellationToken)
 
