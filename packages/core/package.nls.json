@@ -321,5 +321,6 @@
     "AWS.amazonq.featureDev.placeholder.additionalImprovements": "Describe your task or issue in detail",
     "AWS.amazonq.featureDev.placeholder.feedback": "Provide feedback or comments",
     "AWS.amazonq.featureDev.placeholder.describe": "Describe your task or issue in detail",
-    "AWS.amazonq.featureDev.placeholder.sessionClosed": "Open a new chat tab to continue"
+    "AWS.amazonq.featureDev.placeholder.sessionClosed": "Open a new chat tab to continue",
+    "AWS.amazonq.inline.invokeChat": "Inline chat"
 }

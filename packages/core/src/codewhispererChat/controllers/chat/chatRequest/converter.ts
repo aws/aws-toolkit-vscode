@@ -4,14 +4,14 @@
  */
 
 import {
+    ConversationState,
     CursorState,
     DocumentSymbol,
-    GenerateAssistantResponseRequest,
     RelevantTextDocument,
     SymbolType,
     TextDocument,
 } from '@amzn/codewhisperer-streaming'
-import { TriggerPayload } from '../model'
+import { ChatTriggerType, TriggerPayload } from '../model'
 import { undefinedIfEmpty } from '../../../../shared'
 
 const fqnNameSizeDownLimit = 1
@@ -37,7 +37,7 @@ export const supportedLanguagesList = [
 const filePathSizeLimit = 4_000
 const customerMessageSizeLimit = 4_000
 
-export function triggerPayloadToChatRequest(triggerPayload: TriggerPayload): GenerateAssistantResponseRequest {
+export function triggerPayloadToChatRequest(triggerPayload: TriggerPayload): { conversationState: ConversationState } {
     let document: TextDocument | undefined = undefined
     let cursorState: CursorState | undefined = undefined
 
@@ -98,6 +98,7 @@ export function triggerPayloadToChatRequest(triggerPayload: TriggerPayload): Gen
     const useRelevantDocuments = triggerPayload.useRelevantDocuments
     // service will throw validation exception if string is empty
     const customizationArn: string | undefined = undefinedIfEmpty(triggerPayload.customization.arn)
+    const chatTriggerType = triggerPayload.trigger === ChatTriggerType.InlineChatMessage ? 'INLINE_CHAT' : 'MANUAL'
 
     return {
         conversationState: {
@@ -117,7 +118,7 @@ export function triggerPayloadToChatRequest(triggerPayload: TriggerPayload): Gen
                     userIntent: triggerPayload.userIntent,
                 },
             },
-            chatTriggerType: 'MANUAL',
+            chatTriggerType,
             customizationArn: customizationArn,
         },
     }

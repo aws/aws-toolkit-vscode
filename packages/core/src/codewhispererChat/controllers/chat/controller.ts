@@ -5,7 +5,7 @@
 import { Event as VSCodeEvent, Uri } from 'vscode'
 import { EditorContextExtractor } from '../../editor/context/extractor'
 import { ChatSessionStorage } from '../../storages/chatSession'
-import { Messenger, StaticTextResponseType } from './messenger/messenger'
+import { Messenger, MessengerResponseType, StaticTextResponseType } from './messenger/messenger'
 import {
     PromptMessage,
     ChatTriggerType,
@@ -34,10 +34,8 @@ import { EditorContentController } from '../../../amazonq/commons/controllers/co
 import { EditorContextCommand } from '../../commands/registerCommands'
 import { PromptsGenerator } from './prompts/promptsGenerator'
 import { TriggerEventsStorage } from '../../storages/triggerEvents'
-import {
-    CodeWhispererStreamingServiceException,
-    GenerateAssistantResponseCommandOutput,
-} from '@amzn/codewhisperer-streaming'
+import { SendMessageRequest } from '@amzn/amazon-q-developer-streaming-client'
+import { CodeWhispererStreamingServiceException } from '@amzn/codewhisperer-streaming'
 import { UserIntentRecognizer } from './userIntent/userIntentRecognizer'
 import { CWCTelemetryHelper, recordTelemetryChatRunCommand } from './telemetryHelper'
 import { CodeWhispererTracker } from '../../../codewhisperer/tracker/codewhispererTracker'
@@ -54,6 +52,7 @@ import { getHttpStatusCode, AwsClientResponseError } from '../../../shared/error
 import { uiEventRecorder } from '../../../amazonq/util/eventRecorder'
 import { globals } from '../../../shared'
 import { telemetry } from '../../../shared/telemetry'
+import { isSsoConnection } from '../../../auth/connection'
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
@@ -652,12 +651,24 @@ export class ChatController {
         const request = triggerPayloadToChatRequest(triggerPayload)
         const session = this.sessionStorage.getSession(tabID)
         getLogger().info(`request from tab: ${tabID} conversationID: ${session.sessionIdentifier} request: %O`, request)
-        let response: GenerateAssistantResponseCommandOutput | undefined = undefined
+        let response: MessengerResponseType | undefined = undefined
         session.createNewTokenSource()
         try {
             this.messenger.sendInitalStream(tabID, triggerID)
             this.telemetryHelper.setConversationStreamStartTime(tabID)
-            response = await session.chat(request)
+            if (isSsoConnection(AuthUtil.instance.conn)) {
+                const { $metadata, generateAssistantResponseResponse } = await session.chatSso(request)
+                response = {
+                    $metadata: $metadata,
+                    message: generateAssistantResponseResponse,
+                }
+            } else {
+                const { $metadata, sendMessageResponse } = await session.chatIam(request as SendMessageRequest)
+                response = {
+                    $metadata: $metadata,
+                    message: sendMessageResponse,
+                }
+            }
             this.telemetryHelper.recordEnterFocusConversation(triggerEvent.tabID)
             this.telemetryHelper.recordStartConversation(triggerEvent, triggerPayload)
 

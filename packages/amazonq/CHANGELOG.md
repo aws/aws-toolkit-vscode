@@ -1,3 +1,13 @@
+## 1.31.0 2024-10-29
+
+- **Breaking Change** Change keybind for focusing chat to ctrl+win+i on Windows, ctrl+cmd+i on macOS and ctrl+meta+i on Linux
+- **Bug Fix** Inline Suggestions: Occasional `ValidationException` if user context has too many characters.
+- **Bug Fix** Update `@workspace` index when adding or deleting a file
+- **Bug Fix** fixed device code detection when running auth through tunneled vscode
+- **Feature** Use inline chat to select code and transform it with natural language instructions
+- **Feature** Amazon Q /dev: Add stop generation action
+- **Feature** Provide more frequent updates about code changes made by agent
+
 ## 1.30.0 2024-10-17
 
 - **Bug Fix** Various fixes and changes
