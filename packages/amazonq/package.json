@@ -366,6 +366,10 @@
                 {
                     "command": "aws.amazonq.sendToPrompt",
                     "group": "cw_chat@6"
+                },
+                {
+                    "command": "aws.amazonq.inline.invokeChat",
+                    "group": "cw_chat@7"
                 }
             ],
             "editor/context": [
@@ -594,6 +598,12 @@
                 "title": "%AWS.amazonq.toggleCodeScan%",
                 "category": "%AWS.amazonq.title%",
                 "enablement": "aws.codewhisperer.connected"
+            },
+            {
+                "command": "aws.amazonq.inline.invokeChat",
+                "title": "%AWS.amazonq.inline.invokeChat%",
+                "category": "%AWS.amazonq.title%",
+                "enablement": "aws.codewhisperer.connected"
             }
         ],
         "keybindings": [
@@ -669,7 +679,7 @@
                 "when": "inlineSuggestionVisible && !editorReadonly && aws.codewhisperer.connected"
             },
             {
-                "command": "aws.amazonq.inline.waitForUserInput",
+                "command": "aws.amazonq.inline.invokeChat",
                 "win": "ctrl+i",
                 "mac": "cmd+i",
                 "linux": "ctrl+i",
