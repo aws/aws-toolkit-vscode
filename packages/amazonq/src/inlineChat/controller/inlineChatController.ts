@@ -13,16 +13,7 @@ import { computeDecorations } from '../decorations/computeDecorations'
 import { CodelensProvider } from '../codeLenses/codeLenseProvider'
 import { PromptMessage, ReferenceLogController } from 'aws-core-vscode/codewhispererChat'
 import { CodeWhispererSettings } from 'aws-core-vscode/codewhisperer'
-import {
-    codicon,
-    getIcon,
-    getLogger,
-    messages,
-    setContext,
-    Timeout,
-    textDocumentUtil,
-    isSageMaker,
-} from 'aws-core-vscode/shared'
+import { codicon, getIcon, getLogger, messages, setContext, Timeout, textDocumentUtil } from 'aws-core-vscode/shared'
 import { InlineLineAnnotationController } from '../decorations/inlineLineAnnotationController'
 
 export class InlineChatController {
@@ -168,11 +159,6 @@ export class InlineChatController {
     public async inlineQuickPick(previouseQuery?: string) {
         const editor = vscode.window.activeTextEditor
         if (!editor) {
-            return
-        }
-
-        if (isSageMaker()) {
-            void vscode.window.showWarningMessage('Amazon Q: Inline chat is not supported in Sagemaker')
             return
         }
 

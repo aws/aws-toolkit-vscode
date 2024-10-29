@@ -13,10 +13,9 @@ import {
     QuickActionMessage,
 } from '../../../view/connector/connector'
 import { EditorContextCommandType } from '../../../commands/registerCommands'
-import { ChatResponseStream as qdevChatResponseStream } from '@amzn/amazon-q-developer-streaming-client'
 import {
-    ChatResponseStream as cwChatResponseStream,
     CodeWhispererStreamingServiceException,
+    GenerateAssistantResponseCommandOutput,
     SupplementaryWebLink,
 } from '@amzn/codewhisperer-streaming'
 import { ChatMessage, ErrorMessage, FollowUp, Suggestion } from '../../../view/connector/connector'
@@ -37,11 +36,6 @@ import { extractCodeBlockLanguage } from '../../../../shared/markdown'
 import { extractAuthFollowUp } from '../../../../amazonq/util/authUtils'
 
 export type StaticTextResponseType = 'quick-action-help' | 'onboarding-help' | 'transform' | 'help'
-
-export type MessengerResponseType = {
-    $metadata: { requestId?: string; httpStatusCode?: number }
-    message?: AsyncIterable<cwChatResponseStream | qdevChatResponseStream>
-}
 
 export class Messenger {
     public constructor(
@@ -109,7 +103,7 @@ export class Messenger {
     }
 
     public async sendAIResponse(
-        response: MessengerResponseType,
+        response: GenerateAssistantResponseCommandOutput,
         session: ChatSession,
         tabID: string,
         triggerID: string,
@@ -122,7 +116,7 @@ export class Messenger {
         let relatedSuggestions: Suggestion[] = []
         let codeBlockLanguage: string = 'plaintext'
 
-        if (response.message === undefined) {
+        if (response.generateAssistantResponseResponse === undefined) {
             throw new ToolkitError(
                 `Empty response from CodeWhisperer Streaming service. Request ID: ${response.$metadata.requestId}`
             )
@@ -139,7 +133,7 @@ export class Messenger {
         const eventCounts = new Map<string, number>()
         waitUntil(
             async () => {
-                for await (const chatEvent of response.message!) {
+                for await (const chatEvent of response.generateAssistantResponseResponse!) {
                     for (const key of keys(chatEvent)) {
                         if ((chatEvent[key] as any) !== undefined) {
                             eventCounts.set(key, (eventCounts.get(key) ?? 0) + 1)

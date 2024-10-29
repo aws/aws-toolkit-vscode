@@ -4,9 +4,9 @@
  */
 
 import {
-    ConversationState,
     CursorState,
     DocumentSymbol,
+    GenerateAssistantResponseRequest,
     RelevantTextDocument,
     SymbolType,
     TextDocument,
@@ -37,7 +37,7 @@ export const supportedLanguagesList = [
 const filePathSizeLimit = 4_000
 const customerMessageSizeLimit = 4_000
 
-export function triggerPayloadToChatRequest(triggerPayload: TriggerPayload): { conversationState: ConversationState } {
+export function triggerPayloadToChatRequest(triggerPayload: TriggerPayload): GenerateAssistantResponseRequest {
     let document: TextDocument | undefined = undefined
     let cursorState: CursorState | undefined = undefined
 

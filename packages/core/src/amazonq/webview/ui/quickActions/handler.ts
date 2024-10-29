@@ -15,7 +15,6 @@ export interface QuickActionsHandlerProps {
     tabsStorage: TabsStorage
     isFeatureDevEnabled: boolean
     isGumbyEnabled: boolean
-    disabledCommands?: string[]
 }
 
 export class QuickActionHandler {
@@ -33,7 +32,6 @@ export class QuickActionHandler {
         this.tabDataGenerator = new TabDataGenerator({
             isFeatureDevEnabled: props.isFeatureDevEnabled,
             isGumbyEnabled: props.isGumbyEnabled,
-            disabledCommands: props.disabledCommands,
         })
         this.isFeatureDevEnabled = props.isFeatureDevEnabled
         this.isGumbyEnabled = props.isGumbyEnabled

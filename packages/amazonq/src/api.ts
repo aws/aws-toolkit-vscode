@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { SendMessageCommandOutput, SendMessageRequest } from '@amzn/amazon-q-developer-streaming-client'
 import { GenerateAssistantResponseCommandOutput, GenerateAssistantResponseRequest } from '@amzn/codewhisperer-streaming'
 import { AuthUtil } from 'aws-core-vscode/codewhisperer'
 import { ChatSession } from 'aws-core-vscode/codewhispererChat'
@@ -13,11 +12,7 @@ export default {
     chatApi: {
         async chat(request: GenerateAssistantResponseRequest): Promise<GenerateAssistantResponseCommandOutput> {
             const chatSession = new ChatSession()
-            return chatSession.chatSso(request)
-        },
-        async chatIam(request: SendMessageRequest): Promise<SendMessageCommandOutput> {
-            const chatSession = new ChatSession()
-            return chatSession.chatIam(request)
+            return chatSession.chat(request)
         },
     },
     authApi: {

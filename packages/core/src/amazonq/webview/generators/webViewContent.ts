@@ -6,7 +6,7 @@
 import path from 'path'
 import { Uri, Webview } from 'vscode'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
-import { FeatureConfigProvider, FeatureContext, globals, isSageMaker } from '../../../shared'
+import { FeatureConfigProvider, FeatureContext, globals } from '../../../shared'
 
 export class WebViewContentGenerator {
     private async generateFeatureConfigsData(): Promise<string> {
@@ -77,8 +77,6 @@ export class WebViewContentGenerator {
         // Fetch featureConfigs and use it within the script
         const featureConfigsString = await this.generateFeatureConfigsData()
 
-        const disabledCommandsString = isSageMaker() ? `['/dev', '/transform']` : '[]'
-
         return `
         <script type="text/javascript" src="${javascriptEntrypoint.toString()}" defer onload="init()"></script>
         ${cssLinks}
@@ -86,7 +84,7 @@ export class WebViewContentGenerator {
             const init = () => {
                 createMynahUI(acquireVsCodeApi(), ${
                     (await AuthUtil.instance.getChatAuthState()).amazonQ === 'connected'
-                },${featureConfigsString},${disabledCommandsString});
+                },${featureConfigsString});
             }
         </script>
         `
