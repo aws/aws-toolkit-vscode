@@ -11,7 +11,7 @@ import { Ec2Client } from '../../../shared/clients/ec2Client'
 import { Ec2Connecter } from '../../../awsService/ec2/model'
 import { PollingSet } from '../../../shared/utilities/pollingSet'
 
-describe('ec2 telemetry', function () {
+describe('ec2 activation', function () {
     let testNode: Ec2InstanceNode
 
     before(function () {
@@ -31,7 +31,7 @@ describe('ec2 telemetry', function () {
     after(function () {
         sinon.restore()
     })
-    it('emits correct telemetry on terminal open', async function () {
+    it('terminal open', async function () {
         const terminalStub = sinon.stub(Ec2Connecter.prototype, 'attemptToOpenEc2Terminal')
         await vscode.commands.executeCommand('aws.ec2.openTerminal', testNode)
 
@@ -39,7 +39,7 @@ describe('ec2 telemetry', function () {
         terminalStub.restore()
     })
 
-    it('emits correct telemetry on remote window open', async function () {
+    it('remote window open', async function () {
         const remoteWindowStub = sinon.stub(Ec2Connecter.prototype, 'tryOpenRemoteConnection')
         await vscode.commands.executeCommand('aws.ec2.openRemoteConnection', testNode)
 
@@ -47,7 +47,7 @@ describe('ec2 telemetry', function () {
         remoteWindowStub.restore()
     })
 
-    it('emits correct telemetry on state stop', async function () {
+    it('state stop', async function () {
         const stopInstanceStub = sinon.stub(Ec2Client.prototype, 'stopInstanceWithCancel')
         await vscode.commands.executeCommand('aws.ec2.stopInstance', testNode)
 
@@ -55,7 +55,7 @@ describe('ec2 telemetry', function () {
         stopInstanceStub.restore()
     })
 
-    it('emits correct telemetry on state start', async function () {
+    it('state start', async function () {
         const startInstanceStub = sinon.stub(Ec2Client.prototype, 'startInstance')
         await vscode.commands.executeCommand('aws.ec2.startInstance', testNode)
 
@@ -63,7 +63,7 @@ describe('ec2 telemetry', function () {
         startInstanceStub.restore()
     })
 
-    it('emits correct telemetry on state reboot', async function () {
+    it('state reboot', async function () {
         const rebootInstanceStub = sinon.stub(Ec2Client.prototype, 'rebootInstance')
         await vscode.commands.executeCommand('aws.ec2.rebootInstance', testNode)
 
