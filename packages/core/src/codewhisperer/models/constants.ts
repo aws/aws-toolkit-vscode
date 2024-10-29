@@ -627,9 +627,11 @@ export const viewProposedChangesChatMessage =
 export const viewProposedChangesNotification =
     'Download complete. You can view a summary of the transformation and accept or reject the proposed changes in the Transformation Hub.'
 
-export const changesAppliedChatMessage = 'I applied the changes to your project.'
+export const changesAppliedChatMessage = (currentPatchIndex: number, totalPatchFiles: number) =>
+    `I applied the changes in diff patch ${currentPatchIndex + 1} of ${totalPatchFiles} to your project.`
 
-export const changesAppliedNotification = 'Amazon Q applied the changes to your project.'
+export const changesAppliedNotification = (currentPatchIndex: number, totalPatchFiles: number) =>
+    `Amazon Q applied the changes in diff patch ${currentPatchIndex + 1} of ${totalPatchFiles} to your project.`
 
 export const noOpenProjectsFoundChatMessage = `I couldn\'t find a project that I can upgrade. Currently, I support Java 8, Java 11, and Java 17 projects built on Maven. Make sure your project is open in the IDE. For more information, see the [Amazon Q documentation](${codeTransformPrereqDoc}).`
 
@@ -660,9 +662,6 @@ export const windowsJavaHomeHelpChatMessage =
 
 export const macJavaVersionHomeHelpChatMessage = (version: number) =>
     `To find the JDK path, run the following command in a new terminal:  \`/usr/libexec/java_home -v ${version}\``
-
-export const macJava17HomeHelpChatMessage =
-    'To find the JDK path, run the following command in a new terminal:  `/usr/libexec/java_home -v 17`'
 
 export const linuxJavaHomeHelpChatMessage =
     'To find the JDK path, run the following command in a new terminal: `update-java-alternatives --list`'

@@ -40,12 +40,14 @@ describe('DiffModel', function () {
         testDiffModel.parseDiff(
             getTestResourceFilePath('resources/files/addedFile.diff'),
             workspacePath,
-            parsedTestDescriptions[0]
+            parsedTestDescriptions[0],
+            1
         )
 
         assert.strictEqual(testDiffModel.patchFileNodes.length, 1)
         assert.strictEqual(testDiffModel.patchFileNodes[0].children.length, 1)
         assert.strictEqual(testDiffModel.patchFileNodes[0].patchFilePath, parsedTestDescriptions[0].name)
+        assert(testDiffModel.patchFileNodes[0].label.endsWith(parsedTestDescriptions[0].name))
         const change = testDiffModel.patchFileNodes[0].children[0]
 
         assert.strictEqual(change instanceof AddedChangeNode, true)
@@ -66,12 +68,14 @@ describe('DiffModel', function () {
         testDiffModel.parseDiff(
             getTestResourceFilePath('resources/files/modifiedFile.diff'),
             workspacePath,
-            parsedTestDescriptions[0]
+            parsedTestDescriptions[0],
+            1
         )
 
         assert.strictEqual(testDiffModel.patchFileNodes.length, 1)
         assert.strictEqual(testDiffModel.patchFileNodes[0].children.length, 1)
         assert.strictEqual(testDiffModel.patchFileNodes[0].patchFilePath, parsedTestDescriptions[0].name)
+        assert(testDiffModel.patchFileNodes[0].label.endsWith(parsedTestDescriptions[0].name))
         const change = testDiffModel.patchFileNodes[0].children[0]
 
         assert.strictEqual(change instanceof ModifiedChangeNode, true)
@@ -91,7 +95,12 @@ describe('DiffModel', function () {
             'This guide walks you through using Gradle to build a simple Java project.'
         )
 
-        testDiffModel.parseDiff(getTestResourceFilePath('resources/files/modifiedFile.diff'), workspacePath, undefined)
+        testDiffModel.parseDiff(
+            getTestResourceFilePath('resources/files/modifiedFile.diff'),
+            workspacePath,
+            undefined,
+            1
+        )
 
         assert.strictEqual(testDiffModel.patchFileNodes.length, 1)
         assert.strictEqual(testDiffModel.patchFileNodes[0].children.length, 1)
@@ -99,6 +108,7 @@ describe('DiffModel', function () {
             testDiffModel.patchFileNodes[0].patchFilePath,
             getTestResourceFilePath('resources/files/modifiedFile.diff')
         )
+        assert(testDiffModel.patchFileNodes[0].label.endsWith('modifiedFile.diff'))
         const change = testDiffModel.patchFileNodes[0].children[0]
 
         assert.strictEqual(change instanceof ModifiedChangeNode, true)

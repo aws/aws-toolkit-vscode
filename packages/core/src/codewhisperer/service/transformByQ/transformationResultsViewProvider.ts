@@ -108,7 +108,7 @@ export class AddedChangeNode extends ProposedChangeNode {
 }
 
 export class PatchFileNode {
-    readonly label: string
+    label: string
     readonly patchFilePath: string
     children: ProposedChangeNode[] = []
 
@@ -158,7 +158,8 @@ export class DiffModel {
     public parseDiff(
         pathToDiff: string,
         pathToWorkspace: string,
-        diffDescription: PatchInfo | undefined
+        diffDescription: PatchInfo | undefined,
+        totalDiffPatches: number
     ): PatchFileNode {
         this.patchFileNodes = []
         const diffContents = fs.readFileSync(pathToDiff, 'utf8')
@@ -202,6 +203,7 @@ export class DiffModel {
             },
         })
         const patchFileNode = new PatchFileNode(diffDescription ? diffDescription.name : pathToDiff)
+        patchFileNode.label = `Patch ${this.currentPatchIndex + 1} of ${totalDiffPatches}: ${patchFileNode.label}`
         patchFileNode.children = changedFiles.flatMap((file) => {
             /* ex. file.oldFileName = 'a/src/java/com/project/component/MyFile.java'
              * ex. file.newFileName = 'b/src/java/com/project/component/MyFile.java'
@@ -266,7 +268,7 @@ export class TransformationResultsProvider implements vscode.TreeDataProvider<Pr
         if (element instanceof PatchFileNode) {
             return {
                 label: element.label,
-                collapsibleState: vscode.TreeItemCollapsibleState.Collapsed,
+                collapsibleState: vscode.TreeItemCollapsibleState.Expanded,
             }
         } else {
             return {
@@ -315,7 +317,6 @@ export class ProposedTransformationExplorer {
             treeDataProvider: transformDataProvider,
         })
 
-        // const pathContainingArchive = '/private/var/folders/mn/l6c4t6sd1jn7g4p4nb6wqhh80000gq/T/ExportResultArchive'
         const patchFiles: string[] = []
         let patchFilesDescriptions: PatchInfo[] | undefined = undefined
 
@@ -410,6 +411,7 @@ export class ProposedTransformationExplorer {
                 transformByQState.getChatControllers()?.transformationFinished.fire({
                     message: `${CodeWhispererConstants.errorDownloadingDiffChatMessage} The download failed due to: ${downloadErrorMessage}`,
                     tabID: ChatSessionManager.Instance.getSession().tabID,
+                    includeStartNewTransformationButton: 'true',
                 })
                 await setContext('gumby.reviewState', TransformByQReviewStatus.NotStarted)
                 getLogger().error(`CodeTransformation: ExportResultArchive error = ${downloadErrorMessage}`)
@@ -441,7 +443,8 @@ export class ProposedTransformationExplorer {
                 diffModel.parseDiff(
                     patchFiles[0],
                     transformByQState.getProjectPath(),
-                    patchFilesDescriptions ? patchFilesDescriptions[0] : undefined
+                    patchFilesDescriptions ? patchFilesDescriptions[0] : undefined,
+                    patchFiles.length
                 )
 
                 await setContext('gumby.reviewState', TransformByQReviewStatus.InReview)
@@ -457,6 +460,7 @@ export class ProposedTransformationExplorer {
                 transformByQState.getChatControllers()?.transformationFinished.fire({
                     message: CodeWhispererConstants.viewProposedChangesChatMessage,
                     tabID: ChatSessionManager.Instance.getSession().tabID,
+                    includeStartNewTransformationButton: 'true',
                 })
                 await vscode.commands.executeCommand('aws.amazonq.transformationHub.summary.reveal')
             } catch (e: any) {
@@ -465,6 +469,7 @@ export class ProposedTransformationExplorer {
                 transformByQState.getChatControllers()?.transformationFinished.fire({
                     message: `${CodeWhispererConstants.errorDeserializingDiffChatMessage} ${deserializeErrorMessage}`,
                     tabID: ChatSessionManager.Instance.getSession().tabID,
+                    includeStartNewTransformationButton: 'true',
                 })
                 void vscode.window.showErrorMessage(
                     `${CodeWhispererConstants.errorDeserializingDiffNotification} ${deserializeErrorMessage}`
@@ -502,12 +507,27 @@ export class ProposedTransformationExplorer {
         vscode.commands.registerCommand('aws.amazonq.transformationHub.reviewChanges.acceptChanges', async () => {
             diffModel.saveChanges()
             telemetry.ui_click.emit({ elementId: 'transformationHub_acceptChanges' })
-            void vscode.window.showInformationMessage(CodeWhispererConstants.changesAppliedNotification)
+            void vscode.window.showInformationMessage(
+                CodeWhispererConstants.changesAppliedNotification(diffModel.currentPatchIndex, patchFiles.length)
+            )
             //We do this to ensure that the changesAppliedChatMessage is only sent to user when they accept the first diff.patch
-            if (diffModel.currentPatchIndex === 0) {
+            if (diffModel.currentPatchIndex === patchFiles.length - 1) {
                 transformByQState.getChatControllers()?.transformationFinished.fire({
-                    message: CodeWhispererConstants.changesAppliedChatMessage,
+                    message: CodeWhispererConstants.changesAppliedChatMessage(
+                        diffModel.currentPatchIndex,
+                        patchFiles.length
+                    ),
                     tabID: ChatSessionManager.Instance.getSession().tabID,
+                    includeStartNewTransformationButton: 'true',
+                })
+            } else {
+                transformByQState.getChatControllers()?.transformationFinished.fire({
+                    message: CodeWhispererConstants.changesAppliedChatMessage(
+                        diffModel.currentPatchIndex,
+                        patchFiles.length
+                    ),
+                    tabID: ChatSessionManager.Instance.getSession().tabID,
+                    includeStartNewTransformationButton: 'false',
                 })
             }
 
@@ -518,7 +538,12 @@ export class ProposedTransformationExplorer {
                 const nextPatchFileDescription = patchFilesDescriptions
                     ? patchFilesDescriptions[diffModel.currentPatchIndex]
                     : undefined
-                diffModel.parseDiff(nextPatchFile, transformByQState.getProjectPath(), nextPatchFileDescription)
+                diffModel.parseDiff(
+                    nextPatchFile,
+                    transformByQState.getProjectPath(),
+                    nextPatchFileDescription,
+                    patchFiles.length
+                )
                 transformDataProvider.refresh()
             } else {
                 // All patches have been applied, reset the state

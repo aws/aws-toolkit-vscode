@@ -185,15 +185,11 @@ export class Messenger {
             options: [
                 {
                     value: JDKVersion.JDK8,
-                    label: JDKVersion.JDK8,
+                    label: JDKVersion.JDK8.toString(),
                 },
                 {
                     value: JDKVersion.JDK11,
-                    label: JDKVersion.JDK11,
-                },
-                {
-                    value: JDKVersion.JDK17,
-                    label: JDKVersion.JDK17,
+                    label: JDKVersion.JDK11.toString(),
                 },
                 {
                     value: JDKVersion.UNSUPPORTED,
@@ -477,13 +473,19 @@ export class Messenger {
         this.dispatcher.sendCommandMessage(new SendCommandMessage(message.command, message.tabID, message.eventId))
     }
 
-    public sendJobFinishedMessage(tabID: string, message: string) {
+    public sendJobFinishedMessage(
+        tabID: string,
+        message: string,
+        includeStartNewTransformationButton: string = 'true'
+    ) {
         const buttons: ChatItemButton[] = []
-        buttons.push({
-            keepCardAfterClick: false,
-            text: CodeWhispererConstants.startTransformationButtonText,
-            id: ButtonActions.CONFIRM_START_TRANSFORMATION_FLOW,
-        })
+        if (includeStartNewTransformationButton === 'true') {
+            buttons.push({
+                keepCardAfterClick: false,
+                text: CodeWhispererConstants.startTransformationButtonText,
+                id: ButtonActions.CONFIRM_START_TRANSFORMATION_FLOW,
+            })
+        }
 
         this.dispatcher.sendChatMessage(
             new ChatMessage(
