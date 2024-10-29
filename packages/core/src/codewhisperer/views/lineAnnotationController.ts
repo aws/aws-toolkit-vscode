@@ -46,6 +46,7 @@ function fromId(id: string | undefined): AnnotationState | undefined {
 interface AnnotationState {
     id: string
     suppressWhileRunning: boolean
+    decorationRenderOptions?: vscode.ThemableDecorationAttachmentRenderOptions
 
     text: () => string
     updateState(changeSource: AnnotationChangeSource, force: boolean): AnnotationState | undefined
@@ -199,6 +200,26 @@ export class EndState implements AnnotationState {
     }
 }
 
+export class InlineChatState implements AnnotationState {
+    static static = 'amazonq_annotation_inline_chat'
+    id = InlineChatState.static
+    suppressWhileRunning = false
+
+    text = () => {
+        if (os.platform() === 'darwin') {
+            return 'Amazon Q: Edit \u2318I'
+        } else {
+            return 'Amazon Q: Edit (Ctrl+I)'
+        }
+    }
+    updateState(_changeSource: AnnotationChangeSource, _force: boolean): AnnotationState {
+        return this
+    }
+    isNextState(_state: AnnotationState | undefined): boolean {
+        return false
+    }
+}
+
 /**
  * There are
  * - existing users
@@ -312,6 +333,26 @@ export class LineAnnotationController implements vscode.Disposable {
         this._currentState = new EndState()
         await setContext('aws.codewhisperer.tutorial.workInProgress', false)
         await globals.globalState.update(inlinehintKey, this._currentState.id)
+    }
+
+    /**
+     * Trys to show the inline hint, if the tutorial is not finished it will not be shown
+     */
+    async tryShowInlineHint(): Promise<boolean> {
+        if (this.isTutorialDone()) {
+            this._isReady = true
+            this._currentState = new InlineChatState()
+            return true
+        }
+        return false
+    }
+
+    async tryHideInlineHint(): Promise<boolean> {
+        if (this._currentState instanceof InlineChatState) {
+            this._currentState = new EndState()
+            return true
+        }
+        return false
     }
 
     private async onActiveLinesChanged(e: LinesChangeEvent) {
@@ -438,7 +479,7 @@ export class LineAnnotationController implements vscode.Disposable {
     ): Partial<vscode.DecorationOptions> | undefined {
         const isCWRunning = RecommendationService.instance.isRunning
 
-        const textOptions = {
+        const textOptions: vscode.ThemableDecorationAttachmentRenderOptions = {
             contentText: '',
             fontWeight: 'normal',
             fontStyle: 'normal',

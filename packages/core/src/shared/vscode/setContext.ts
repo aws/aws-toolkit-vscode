@@ -33,6 +33,7 @@ export type contextKey =
     | 'gumby.reviewState'
     | 'gumby.transformationProposalReviewInProgress'
     | 'gumby.wasQCodeTransformationUsed'
+    | 'amazonq.inline.codelensShortcutEnabled'
     | 'aws.toolkit.lambda.walkthroughSelected'
 
 /**
