@@ -1,0 +1,17 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "npm test",
+      "type": "node",
+      "protocol": "inspector",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["test"],
+      "stopOnEntry": false,
+      "env": {},
+      "sourceMaps": true
+    }
+  ]
+}

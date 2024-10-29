@@ -1,0 +1,116 @@
+{
+  "name": "@aws-sdk/core",
+  "version": "3.658.1",
+  "description": "Core functions & classes shared by multiple AWS SDK clients.",
+  "scripts": {
+    "build": "yarn lint && concurrently 'yarn:build:cjs' 'yarn:build:es' 'yarn:build:types'",
+    "build:cjs": "node ../../scripts/compilation/inline core",
+    "build:es": "tsc -p tsconfig.es.json",
+    "build:include:deps": "lerna run --scope $npm_package_name --include-dependencies build",
+    "build:types": "tsc -p tsconfig.types.json",
+    "build:types:downlevel": "downlevel-dts dist-types dist-types/ts3.4",
+    "lint": "node ./scripts/lint.js",
+    "clean": "rimraf ./dist-* && rimraf *.tsbuildinfo",
+    "extract:docs": "api-extractor run --local",
+    "test": "jest",
+    "test:integration": "jest -c jest.config.integ.js"
+  },
+  "main": "./dist-cjs/index.js",
+  "module": "./dist-es/index.js",
+  "types": "./dist-types/index.d.ts",
+  "exports": {
+    ".": {
+      "module": "./dist-es/index.js",
+      "node": "./dist-cjs/index.js",
+      "import": "./dist-es/index.js",
+      "require": "./dist-cjs/index.js",
+      "types": "./dist-types/index.d.ts"
+    },
+    "./package.json": {
+      "module": "./package.json",
+      "node": "./package.json",
+      "import": "./package.json",
+      "require": "./package.json"
+    },
+    "./client": {
+      "module": "./dist-es/submodules/client/index.js",
+      "node": "./dist-cjs/submodules/client/index.js",
+      "import": "./dist-es/submodules/client/index.js",
+      "require": "./dist-cjs/submodules/client/index.js",
+      "types": "./dist-types/submodules/client/index.d.ts"
+    },
+    "./httpAuthSchemes": {
+      "module": "./dist-es/submodules/httpAuthSchemes/index.js",
+      "node": "./dist-cjs/submodules/httpAuthSchemes/index.js",
+      "import": "./dist-es/submodules/httpAuthSchemes/index.js",
+      "require": "./dist-cjs/submodules/httpAuthSchemes/index.js",
+      "types": "./dist-types/submodules/httpAuthSchemes/index.d.ts"
+    },
+    "./account-id-endpoint": {
+      "module": "./dist-es/submodules/account-id-endpoint/index.js",
+      "node": "./dist-cjs/submodules/account-id-endpoint/index.js",
+      "import": "./dist-es/submodules/account-id-endpoint/index.js",
+      "require": "./dist-cjs/submodules/account-id-endpoint/index.js",
+      "types": "./dist-types/submodules/account-id-endpoint/index.d.ts"
+    },
+    "./protocols": {
+      "module": "./dist-es/submodules/protocols/index.js",
+      "node": "./dist-cjs/submodules/protocols/index.js",
+      "import": "./dist-es/submodules/protocols/index.js",
+      "require": "./dist-cjs/submodules/protocols/index.js",
+      "types": "./dist-types/submodules/protocols/index.d.ts"
+    }
+  },
+  "files": [
+    "./account-id-endpoint.d.ts",
+    "./account-id-endpoint.js",
+    "./client.d.ts",
+    "./client.js",
+    "./httpAuthSchemes.d.ts",
+    "./httpAuthSchemes.js",
+    "./protocols.d.ts",
+    "./protocols.js",
+    "dist-*/**"
+  ],
+  "sideEffects": false,
+  "author": {
+    "name": "AWS SDK for JavaScript Team",
+    "url": "https://aws.amazon.com/javascript/"
+  },
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@smithy/core": "^2.4.6",
+    "@smithy/node-config-provider": "^3.1.7",
+    "@smithy/property-provider": "^3.1.6",
+    "@smithy/protocol-http": "^4.1.3",
+    "@smithy/signature-v4": "^4.1.4",
+    "@smithy/smithy-client": "^3.3.5",
+    "@smithy/types": "^3.4.2",
+    "@smithy/util-middleware": "^3.0.6",
+    "fast-xml-parser": "4.4.1",
+    "tslib": "^2.6.2"
+  },
+  "devDependencies": {
+    "@tsconfig/recommended": "1.0.1",
+    "concurrently": "7.0.0",
+    "downlevel-dts": "0.10.1",
+    "rimraf": "3.0.2",
+    "typescript": "~4.9.5"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "typesVersions": {
+    "<4.0": {
+      "dist-types/*": [
+        "dist-types/ts3.4/*"
+      ]
+    }
+  },
+  "homepage": "https://github.com/aws/aws-sdk-js-v3/tree/main/packages/core",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aws/aws-sdk-js-v3.git",
+    "directory": "packages/core"
+  }
+}

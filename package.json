@@ -20,7 +20,9 @@
     },
     "scripts": {
         "prepare": "ts-node ./scripts/prepare.ts",
-        "preinstall": "cd src.gen/@amzn/codewhisperer-streaming && npm i",
+        "preinstall": "npm run installCwStreamingClient && npm run installQStreamingClient",
+        "installCwStreamingClient": "cd src.gen/@amzn/codewhisperer-streaming && npm i",
+        "installQStreamingClient": "cd src.gen/@amzn/amazon-q-developer-streaming-client && npm i",
         "postinstall": "npm run buildCustomLintPlugin && npm run postinstall -ws --if-present",
         "buildCustomLintPlugin": "npm run build -w plugins/eslint-plugin-aws-toolkits",
         "compile": "npm run compile -w packages/",

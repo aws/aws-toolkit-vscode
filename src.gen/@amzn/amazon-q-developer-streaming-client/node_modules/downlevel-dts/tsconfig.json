@@ -1,0 +1,13 @@
+{
+    "compilerOptions": {
+        "strict": true,
+        "allowJs": true,
+        "checkJs": true,
+        "noEmit": true,
+        "target": "esnext",
+        "module": "commonjs",
+    },
+    "files": [
+        "index.js"
+    ]
+}

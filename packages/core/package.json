@@ -458,6 +458,7 @@
     },
     "dependencies": {
         "@amzn/codewhisperer-streaming": "file:../../src.gen/@amzn/codewhisperer-streaming",
+        "@amzn/amazon-q-developer-streaming-client": "file:../../src.gen/@amzn/amazon-q-developer-streaming-client",
         "@aws-sdk/client-cognito-identity": "^3.637.0",
         "@aws-sdk/client-lambda": "^3.637.0",
         "@aws-sdk/client-sso": "^3.342.0",
