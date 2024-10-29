@@ -470,7 +470,7 @@ export function filterTelemetryCacheEvents(input: any): MetricDatum[] {
                 !Object.prototype.hasOwnProperty.call(item, 'EpochTimestamp') ||
                 !Object.prototype.hasOwnProperty.call(item, 'Unit')
             ) {
-                getLogger().warn(`skipping invalid item in telemetry cache: ${JSON.stringify(item)}\n`)
+                getLogger().warn(`skipping invalid item in telemetry cache: %O\n`, item)
 
                 return false
             }

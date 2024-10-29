@@ -452,16 +452,11 @@ export async function attachDebugger({
     },
     ...params
 }: AttachDebuggerContext): Promise<void> {
-    getLogger().debug(
-        `localLambdaRunner.attachDebugger: startDebugging with config: ${JSON.stringify(
-            {
-                name: params.debugConfig.name,
-                invokeTarget: params.debugConfig.invokeTarget,
-            },
-            undefined,
-            2
-        )}`
-    )
+    const obj = {
+        name: params.debugConfig.name,
+        invokeTarget: params.debugConfig.invokeTarget,
+    }
+    getLogger().debug(`localLambdaRunner.attachDebugger: startDebugging with config: %O`, obj)
 
     getLogger().info(localize('AWS.output.sam.local.attaching', 'Attaching debugger to SAM application...'))
 
