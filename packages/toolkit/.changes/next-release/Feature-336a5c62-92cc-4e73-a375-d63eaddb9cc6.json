@@ -1,4 +1,4 @@
 {
 	"type": "Feature",
-	"description": "Added icons for easy build, local invoke, deploy, and remote invoke actions"
+	"description": "AWS Lambda: AWS Explorer Command Pallette actions and hover buttons to build, local invoke, deploy, and remote invoke"
 }
