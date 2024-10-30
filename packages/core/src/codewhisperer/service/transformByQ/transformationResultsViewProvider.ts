@@ -408,7 +408,7 @@ export class ProposedTransformationExplorer {
                 const metricsPath = path.join(pathContainingArchive, ExportResultArchiveStructure.PathToMetrics)
                 const metricsData = JSON.parse(fs.readFileSync(metricsPath, 'utf8'))
 
-                codeWhispererClient.sendTelemetryEvent({
+                await codeWhispererClient.sendTelemetryEvent({
                     telemetryEvent: {
                         transformEvent: {
                             jobId: transformByQState.getJobId(),
