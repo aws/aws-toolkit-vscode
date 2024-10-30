@@ -16,7 +16,13 @@ import { ChatPayload } from '../connector'
 export interface ConnectorProps {
     sendMessageToExtension: (message: ExtensionMessage) => void
     onMessageReceived?: (tabID: string, messageData: any, needToShowAPIDocsTab: boolean) => void
-    onAsyncEventProgress: (tabID: string, inProgress: boolean, message: string, messageId: string) => void
+    onAsyncEventProgress: (
+        tabID: string,
+        inProgress: boolean,
+        message: string,
+        messageId: string,
+        enableStopAction: boolean
+    ) => void
     onChatAnswerReceived?: (tabID: string, message: ChatItem, messageData: any) => void
     onChatAnswerUpdated?: (tabID: string, message: ChatItem) => void
     onQuickHandlerCommand: (tabID: string, command: string, eventId?: string) => void
@@ -196,7 +202,8 @@ export class Connector {
                     messageData.tabID,
                     messageData.inProgress,
                     messageData.message,
-                    messageData.messageId
+                    messageData.messageId,
+                    false
                 )
                 break
             case 'authNeededException':
