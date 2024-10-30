@@ -24,7 +24,7 @@ async function fetchUrl(owner: string, repoName: string, assetName: string): Pro
 }
 
 /**
- * Asynchronously extracts a ZIP file from a buffer into a specified directory, with optional removal 
+ * Asynchronously extracts a ZIP file from a buffer into a specified directory, with optional removal
  * of the top-level directory from the extracted paths. Pattern in this case refers to sample application
  * patterns like those found in Serverlessland or other AWS repositories.
  *
