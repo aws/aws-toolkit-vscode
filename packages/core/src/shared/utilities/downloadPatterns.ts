@@ -23,6 +23,12 @@ async function fetchUrl(owner: string, repoName: string, assetName: string): Pro
     return Buffer.from(await response.arrayBuffer())
 }
 
+/**
+ * Asynchronously extracts a ZIP file from a buffer into a specified directory, with optional removal 
+ * of the top-level directory from the extracted paths. Pattern in this case refers to sample application
+ * patterns like those found in Serverlessland or other AWS repositories.
+ *
+ */
 async function unzipPattern(buffer: Buffer, outputDir: vscode.Uri, removeTopDir: boolean): Promise<void> {
     const zip = new AdmZip(buffer)
     const zipEntries = zip.getEntries()
