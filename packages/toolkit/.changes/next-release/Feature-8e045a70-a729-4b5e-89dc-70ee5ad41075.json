@@ -1,4 +1,0 @@
-{
-	"type": "Feature",
-	"description": "AWS Lambda: Improved local test and debug and remote invoke to streamline creating and sharing sample events"
-}
