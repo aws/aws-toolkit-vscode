@@ -412,18 +412,8 @@ export class TransformByQState {
     private sourceServerName: string = ''
 
     private metadataPathSQL: string = ''
+
     private linesOfCodeSubmitted: number | undefined = undefined
-    private sourceDB: DB | undefined = undefined
-
-    private targetDB: DB | undefined = undefined
-
-    private schema: string = ''
-
-    private schemaOptions: Set<string> = new Set()
-
-    private sourceServerName: string = ''
-
-    private metadataPathSQL: string = ''
 
     private planFilePath: string = ''
     private summaryFilePath: string = ''
