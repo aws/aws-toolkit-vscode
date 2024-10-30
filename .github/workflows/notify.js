@@ -69,7 +69,12 @@ function requiresChangelogMessage(filenames, title) {
  * Require the test files message if there are changes to source files but aren't any
  * changes to the test files
  */
-function requiresTestFilesMessage(filenames) {
+function requiresTestFilesMessage(filenames, title) {
+    if (/^\s*[mM]erge/.test(title)) {
+        console.log('"Merge" pull request')
+        return
+    }
+
     // Check if src directory changed
     if (!hasPath(filenames, 'src/')) {
         console.log('Did not find src files in the code changes')
