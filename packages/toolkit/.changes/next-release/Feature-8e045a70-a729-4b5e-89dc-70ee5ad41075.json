@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "Improved webviews for local and remote lambda invoke to streamline choosing sample events and autopopulating some necessary fields"
+}

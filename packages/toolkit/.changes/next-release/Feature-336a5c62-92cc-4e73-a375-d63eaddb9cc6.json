@@ -1,4 +1,4 @@
 {
 	"type": "Feature",
-	"description": "Added quick action icons and guided walkthrough to more easily build Lambda applications"
+	"description": "Added icons for easy build, local invoke, deploy, and remote invoke actions"
 }
