@@ -412,6 +412,7 @@ export class TransformByQState {
     private sourceServerName: string = ''
 
     private metadataPathSQL: string = ''
+    private linesOfCodeSubmitted: number | undefined = undefined
 
     private planFilePath: string = ''
     private summaryFilePath: string = ''
@@ -483,6 +484,10 @@ export class TransformByQState {
 
     public getCustomBuildCommand() {
         return this.customBuildCommand
+    }
+
+    public getLinesOfCodeSubmitted() {
+        return this.linesOfCodeSubmitted
     }
 
     public getPreBuildLogFilePath() {
@@ -643,6 +648,10 @@ export class TransformByQState {
 
     public setCustomBuildCommand(command: string) {
         this.customBuildCommand = command
+    }
+
+    public setLinesOfCodeSubmitted(lines: number) {
+        this.linesOfCodeSubmitted = lines
     }
 
     public setStartTime(time: string) {

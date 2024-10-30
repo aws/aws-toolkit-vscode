@@ -20,6 +20,7 @@ import * as CodeWhispererConstants from '../../models/constants'
 import { createCodeWhispererChatStreamingClient } from '../../../shared/clients/codewhispererChatClient'
 import { ChatSessionManager } from '../../../amazonqGumby/chat/storages/chatSession'
 import { setContext } from '../../../shared/vscode/setContext'
+import { codeWhispererClient } from '../../indexNode'
 
 export abstract class ProposedChangeNode {
     abstract readonly resourcePath: string
@@ -401,6 +402,29 @@ export class ProposedTransformationExplorer {
                 void vscode.window.showErrorMessage(
                     `${CodeWhispererConstants.errorDeserializingDiffNotification} ${deserializeErrorMessage}`
                 )
+            }
+
+            try {
+                const metricsPath = path.join(pathContainingArchive, ExportResultArchiveStructure.PathToMetrics)
+                const metricsData = JSON.parse(fs.readFileSync(metricsPath, 'utf8'))
+
+                codeWhispererClient.sendTelemetryEvent({
+                    telemetryEvent: {
+                        transformEvent: {
+                            jobId: transformByQState.getJobId(),
+                            timestamp: new Date(),
+                            ideCategory: 'VSCODE',
+                            programmingLanguage: {
+                                languageName: 'JAVA', // TO-DO: use transformByQState.getTransformationType() to tell if JAVA or SQL
+                            },
+                            linesOfCodeChanged: metricsData.linesOfCodeChanged,
+                            charsOfCodeChanged: metricsData.charsOfCodeChanged,
+                            linesOfCodeSubmitted: transformByQState.getLinesOfCodeSubmitted(),
+                        },
+                    },
+                })
+            } catch (err: any) {
+                getLogger().error(`CodeTransformation: SendTelemetryEvent error = ${err.message}`)
             }
         })
 
