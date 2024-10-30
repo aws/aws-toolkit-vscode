@@ -21,6 +21,7 @@ export const AuthSources = {
     cwTreeNode: cwTreeNodeSource,
     amazonQChat: amazonQChatSource,
     authNode: 'authNode', // deprecated?
+    appBuilderWalkthrough: 'AppBuilderWalkthrough',
     unknown: 'unknown',
 } as const
 
