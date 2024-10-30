@@ -18,7 +18,13 @@ interface ChatPayload {
 export interface ConnectorProps {
     sendMessageToExtension: (message: ExtensionMessage) => void
     onMessageReceived?: (tabID: string, messageData: any, needToShowAPIDocsTab: boolean) => void
-    onAsyncEventProgress: (tabID: string, inProgress: boolean, message: string) => void
+    onAsyncEventProgress: (
+        tabID: string,
+        inProgress: boolean,
+        message: string,
+        messageId: string | undefined,
+        enableStopAction: boolean
+    ) => void
     onChatAnswerReceived?: (tabID: string, message: ChatItem, messageData: any) => void
     sendFeedback?: (tabId: string, feedbackPayload: FeedbackPayload) => void | undefined
     onError: (tabID: string, message: string, title: string) => void
@@ -246,7 +252,14 @@ export class Connector {
         }
 
         if (messageData.type === 'asyncEventProgressMessage') {
-            this.onAsyncEventProgress(messageData.tabID, messageData.inProgress, messageData.message ?? undefined)
+            const enableStopAction = true
+            this.onAsyncEventProgress(
+                messageData.tabID,
+                messageData.inProgress,
+                messageData.message ?? undefined,
+                messageData.messageId ?? undefined,
+                enableStopAction
+            )
             return
         }
 
