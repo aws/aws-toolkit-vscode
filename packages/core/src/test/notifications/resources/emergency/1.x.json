@@ -11,7 +11,7 @@
                     "en-US": {
                         "title": "[local] Emergency: url",
                         "description": "Something crazy is happening! Please update your extension.",
-                        "descriptionPreview": "omg"
+                        "toastPreview": "omg"
                     }
                 },
                 "onRecieve": "toast",
@@ -45,7 +45,7 @@
                     "en-US": {
                         "title": "[local] Emergency: txt",
                         "description": "Something crazy is happening! Please update your extension.",
-                        "descriptionPreview": "omg"
+                        "toastPreview": "omg"
                     }
                 },
                 "onRecieve": "toast",
@@ -55,36 +55,37 @@
             }
         },
         {
-            "id": "toolkit_emergency_local_3",
-            "displayIf": {
-                "extensionId": "amazonwebservices.aws-toolkit-vscode"
-            },
-            "uiRenderInstructions": {
-                "content": {
-                    "en-US": {
-                        "title": "[local] Emergency: Broken stuff",
-                        "description": "Something crazy is happening! Please update your extension."
-                    }
-                }
-            }
-        },
-        {
-            "id": "amazonq_emergency_local_5",
+            "id": "amazonq_emergency_local_3",
             "displayIf": {
                 "extensionId": "amazonwebservices.amazon-q-vscode"
             },
             "uiRenderInstructions": {
                 "content": {
                     "en-US": {
-                        "title": "[local] Emergency: 1",
+                        "title": "[local] Emergency: modal",
                         "description": "Something crazy is happening! Please update your extension.",
-                        "descriptionPreview": "new notification: something crazy is happening!"
+                        "toastPreview": "new notification: something crazy is happening! Please update your entension and look on our wiki."
                     }
                 },
                 "onRecieve": "toast",
                 "onClick": {
                     "type": "openTextDocument"
-                }
+                },
+                "actions": [
+                    {
+                        "type": "updateAndReload",
+                        "displayText": {
+                            "en-US": "Update and Reload"
+                        }
+                    },
+                    {
+                        "type": "openUrl",
+                        "url": "https://aws.amazon.com/visualstudiocode/",
+                        "displayText": {
+                            "en-US": "Proceed to wiki"
+                        }
+                    }
+                ]
             }
         }
     ]

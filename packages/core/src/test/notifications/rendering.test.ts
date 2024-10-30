@@ -6,16 +6,15 @@
 import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import assert from 'assert'
-import { testNotificationsNode, NotificationsNode } from '../../notifications/panelNode'
 import { ToolkitNotification } from '../../notifications/types'
 import fs from '../../shared/fs/fs'
 import path from 'path'
 import { tempDirPath } from '../../shared/filesystemUtilities'
 import { getTestWindow } from '../shared/vscode/window'
+import { panelNode } from './controller.test'
 
 describe('Notifications Rendering', function () {
     let sandbox: sinon.SinonSandbox
-    const panelNode: NotificationsNode = testNotificationsNode
 
     beforeEach(function () {
         sandbox = sinon.createSandbox()
@@ -33,13 +32,15 @@ describe('Notifications Rendering', function () {
             .stub(vscode.workspace, 'openTextDocument')
             .resolves({} as vscode.TextDocument)
         const writeFileStub = sandbox.stub(fs, 'writeFile').resolves()
+        const expectedFilePath = path.join(tempDirPath, 'AWSToolkitNotifications.txt')
+
+        await fs.writeFile(expectedFilePath, '')
 
         await panelNode.openNotification(notification)
 
         assert.ok(openTxtDocumentStub.calledOnce)
         assert.ok(txtDocumentStub.calledOnce)
 
-        const expectedFilePath = path.join(tempDirPath, 'AWSToolkitNotifications.txt')
         assert.ok(writeFileStub.calledWith(expectedFilePath, expectedContent))
     }
 
@@ -62,7 +63,7 @@ describe('Notifications Rendering', function () {
         await panelNode.onReceiveNotifications([notification])
 
         const expectedMessage =
-            notification.uiRenderInstructions.content['en-US'].descriptionPreview ??
+            notification.uiRenderInstructions.content['en-US'].toastPreview ??
             notification.uiRenderInstructions.content['en-US'].title
 
         const shownMessages = testWindow.shownMessages
@@ -146,7 +147,7 @@ function getToastURLTestNotification(): ToolkitNotification {
                 [`en-US`]: {
                     title: 'test',
                     description: 'This is a url notification.',
-                    descriptionPreview: 'test toast preview',
+                    toastPreview: 'test toast preview',
                 },
             },
             onRecieve: 'toast',

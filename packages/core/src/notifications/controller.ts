@@ -42,7 +42,7 @@ export class NotificationsController {
 
     constructor(
         private readonly notificationsNode: NotificationsNode,
-        private readonly fetcher: NotificationFetcher = new LocalFetcher()
+        private readonly fetcher: NotificationFetcher = new RemoteFetcher()
     ) {
         if (!NotificationsController.#instance) {
             // Register on first creation only.
@@ -55,6 +55,7 @@ export class NotificationsController {
             startUp: {},
             emergency: {},
             dismissed: [],
+            newlyReceived: [],
         })
     }
 
@@ -97,6 +98,16 @@ export class NotificationsController {
             await this.writeState()
             void this.notificationsNode.focusPanel()
         }
+
+        // Process on-receive behavior for newly received notifications that passes rule engine
+        const newlyReceivedToDisplay = [...startUp, ...emergency].filter((n) => this.state.newlyReceived.includes(n.id))
+        if (newlyReceivedToDisplay.length > 0) {
+            await this.notificationsNode.onReceiveNotifications(newlyReceivedToDisplay)
+            // remove displayed notifications from newlyReceived
+            this.state.newlyReceived = this.state.newlyReceived.filter(
+                (id) => !newlyReceivedToDisplay.some((n) => n.id === id)
+            )
+        }
     }
 
     /**
@@ -138,10 +149,10 @@ export class NotificationsController {
                 category,
                 addedNotifications.map((n: any) => n.id).join(', ')
             )
-            await this.notificationsNode.onReceiveNotifications(addedNotifications)
+            this.state.newlyReceived.push(...addedNotifications.map((n: any) => n.id))
         }
 
-        this.state[category].payload = JSON.parse(response.content)
+        this.state[category].payload = newPayload
         this.state[category].eTag = response.eTag
         await this.writeState()
 

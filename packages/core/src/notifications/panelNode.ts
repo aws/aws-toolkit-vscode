@@ -136,7 +136,7 @@ export class NotificationsNode implements TreeNode {
             case 'modal':
                 // Render blocking modal
                 getLogger('notifications').verbose(`rendering modal for notificaiton: ${notification.id} ...`)
-                await this.renderModal(notification)
+                await this.showInformationWindow(notification, 'modal')
                 break
             case 'openUrl':
                 if (!notification.uiRenderInstructions.onClick.url) {
@@ -188,34 +188,39 @@ export class NotificationsNode implements TreeNode {
     }
 
     /**
-     * Renders a blocking modal with the notification's content and buttons.
+     * Renders information window with the notification's content and buttons.
+     * Can be either a blocking modal or a bottom-right corner toast
      * Handles the button click actions based on the button type.
      */
-    public async renderModal(notification: ToolkitNotification) {
-        if (!notification.uiRenderInstructions.actions) {
+    public async showInformationWindow(notification: ToolkitNotification, type: string = 'toast') {
+        const isModal = type === 'modal'
+
+        // modal has to have defined actions(buttons)
+        if (!notification.uiRenderInstructions.actions && isModal) {
             throw new ToolkitError('no button defined for modal')
             return
         }
-
-        const buttons = notification.uiRenderInstructions.actions
-
+        const buttons = notification.uiRenderInstructions.actions ?? []
         const buttonLabels = buttons.map((actions) => actions.displayText['en-US'])
-
         const detail = notification.uiRenderInstructions.content['en-US'].description
 
-        const selectedButton = await vscode.window.showInformationMessage(
-            notification.uiRenderInstructions.content['en-US'].title,
-            { modal: true, detail },
+        // we use toastPreview to display as titlefor toast, since detail won't be shown
+        const title = isModal
+            ? notification.uiRenderInstructions.content['en-US'].title
+            : (notification.uiRenderInstructions.content['en-US'].toastPreview ??
+              notification.uiRenderInstructions.content['en-US'].title)
+
+        const selectedText = await vscode.window.showInformationMessage(
+            title,
+            { modal: isModal, detail },
             ...buttonLabels
         )
 
-        if (selectedButton) {
-            const buttons = notification.uiRenderInstructions.actions.find(
-                (actions) => actions.displayText['en-US'] === selectedButton
-            )
+        if (selectedText) {
+            const selectedButton = buttons.find((actions) => actions.displayText['en-US'] === selectedText)
             // Different button options
-            if (buttons) {
-                switch (buttons.type) {
+            if (selectedButton) {
+                switch (selectedButton.type) {
                     case 'openTxt':
                         await this.showReadonlyTextDocument(
                             notification.uiRenderInstructions.content['en-US'].description
@@ -225,8 +230,10 @@ export class NotificationsNode implements TreeNode {
                         await this.updateAndReload(notification.displayIf.extensionId)
                         break
                     case 'openUrl':
-                        if (buttons.url) {
-                            await vscode.env.openExternal(vscode.Uri.parse(buttons.url))
+                        if (selectedButton.url) {
+                            await vscode.env.openExternal(vscode.Uri.parse(selectedButton.url))
+                        } else {
+                            throw new ToolkitError('url not provided')
                         }
                         break
                     default:
@@ -238,19 +245,7 @@ export class NotificationsNode implements TreeNode {
 
     public async onReceiveNotifications(notifications: ToolkitNotification[]) {
         for (const notification of notifications) {
-            switch (notification.uiRenderInstructions.onRecieve) {
-                case 'modal':
-                    // Handle modal case
-                    void this.renderModal(notification)
-                    break
-                case 'toast':
-                    // toast case, no user input needed
-                    void vscode.window.showInformationMessage(
-                        notification.uiRenderInstructions.content['en-US'].descriptionPreview ??
-                            notification.uiRenderInstructions.content['en-US'].title
-                    )
-                    break
-            }
+            void this.showInformationWindow(notification, notification.uiRenderInstructions.onRecieve)
         }
     }
 
@@ -285,4 +280,4 @@ export function registerProvider(provider: ResourceTreeDataProvider) {
     NotificationsNode.instance.provider = provider
 }
 
-export const testNotificationsNode = new NotificationsNode()
+//export const testNotificationsNode = new NotificationsNode()

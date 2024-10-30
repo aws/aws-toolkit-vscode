@@ -12,6 +12,7 @@ describe('NotificationsState type validation', function () {
             startUp: {},
             emergency: {},
             dismissed: [],
+            newlyReceived: [],
         }
         let ret
         assert.doesNotThrow(() => {
@@ -39,6 +40,7 @@ describe('NotificationsState type validation', function () {
                 startUp: {},
                 emergency: '', // x
                 dismissed: [],
+                newlyReceived: [],
             } as NotificationsState)
         })
         assert.throws(() => {
@@ -46,6 +48,7 @@ describe('NotificationsState type validation', function () {
                 startUp: '', // x
                 emergency: {},
                 dismissed: [],
+                newlyReceived: [],
             } as NotificationsState)
         })
     })
