@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "AWS Lambda: Added missing strings in guided walkthrough"
-}
