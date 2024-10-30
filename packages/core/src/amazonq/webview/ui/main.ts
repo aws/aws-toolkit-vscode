@@ -90,10 +90,10 @@ export const createMynahUI = (
     // eslint-disable-next-line prefer-const
     let messageController: MessageController
 
+    // @ts-ignore
     let featureConfigs: Map<string, FeatureContext> = tryNewMap(featureConfigsSerialized)
 
     function shouldDisplayDiff(messageData: any) {
-        const isEnabled = featureConfigs.get('ViewDiffInChat')?.variation === 'TREATMENT'
         const tab = tabsStorage.getTab(messageData?.tabID || '')
         const allowedCommands = [
             'aws.amazonq.refactorCode',
@@ -101,7 +101,7 @@ export const createMynahUI = (
             'aws.amazonq.optimizeCode',
             'aws.amazonq.sendToPrompt',
         ]
-        if (isEnabled && tab?.type === 'cwc' && allowedCommands.includes(tab.lastCommand || '')) {
+        if (tab?.type === 'cwc' && allowedCommands.includes(tab.lastCommand || '')) {
             return true
         }
         return false
