@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "SAM: Added support for .NET 8.0 Lambda runtime"
+}

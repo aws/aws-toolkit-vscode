@@ -34,6 +34,7 @@ export type contextKey =
     | 'gumby.transformationProposalReviewInProgress'
     | 'gumby.wasQCodeTransformationUsed'
     | 'amazonq.inline.codelensShortcutEnabled'
+    | 'aws.toolkit.lambda.walkthroughSelected'
 
 /**
  * Calls the vscode "setContext" command.
