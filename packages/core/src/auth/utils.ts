@@ -52,6 +52,11 @@ import { ExtStartUpSources } from '../shared/telemetry'
 import { CommonAuthWebview } from '../login/webview/vue/backend'
 import { AuthSource } from '../login/webview/util'
 import { setContext } from '../shared/vscode/setContext'
+import { CredentialsProviderManager } from './providers/credentialsProviderManager'
+import { SharedCredentialsProviderFactory } from './providers/sharedCredentialsProviderFactory'
+import { Ec2CredentialsProvider } from './providers/ec2CredentialsProvider'
+import { EcsCredentialsProvider } from './providers/ecsCredentialsProvider'
+import { EnvVarsCredentialsProvider } from './providers/envVarsCredentialsProvider'
 import { showMessageWithUrl } from '../shared/utilities/messages'
 import { credentialHelpUrl } from '../shared/constants'
 
@@ -772,4 +777,10 @@ export function getAuthFormIdsFromConnection(conn?: Connection): AuthFormId[] {
     }
 
     return authIds
+}
+
+export function initializeCredentialsProviderManager() {
+    const manager = CredentialsProviderManager.getInstance()
+    manager.addProviderFactory(new SharedCredentialsProviderFactory())
+    manager.addProviders(new Ec2CredentialsProvider(), new EcsCredentialsProvider(), new EnvVarsCredentialsProvider())
 }

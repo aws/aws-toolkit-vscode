@@ -9,22 +9,25 @@ import { TabType } from '../storages/tabsStorage'
 export interface QuickActionGeneratorProps {
     isFeatureDevEnabled: boolean
     isGumbyEnabled: boolean
+    disableCommands?: string[]
 }
 
 export class QuickActionGenerator {
     public isFeatureDevEnabled: boolean
     private isGumbyEnabled: boolean
+    private disabledCommands: string[]
 
     constructor(props: QuickActionGeneratorProps) {
         this.isFeatureDevEnabled = props.isFeatureDevEnabled
         this.isGumbyEnabled = props.isGumbyEnabled
+        this.disabledCommands = props.disableCommands ?? []
     }
 
     public generateForTab(tabType: TabType): QuickActionCommandGroup[] {
         const quickActionCommands = [
             {
                 commands: [
-                    ...(this.isFeatureDevEnabled
+                    ...(this.isFeatureDevEnabled && !this.disabledCommands.includes('/dev')
                         ? [
                               {
                                   command: '/dev',
@@ -33,7 +36,7 @@ export class QuickActionGenerator {
                               },
                           ]
                         : []),
-                    ...(this.isGumbyEnabled
+                    ...(this.isGumbyEnabled && !this.disabledCommands.includes('/transform')
                         ? [
                               {
                                   command: '/transform',
@@ -55,7 +58,7 @@ export class QuickActionGenerator {
                     },
                 ],
             },
-        ]
+        ].filter((section) => section.commands.length > 0)
 
         const commandUnavailability: Record<
             TabType,

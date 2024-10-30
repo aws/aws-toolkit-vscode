@@ -1,3 +1,9 @@
+## 3.30.0 2024-10-29
+
+- **Bug Fix** EC2 connect: improve management of SSM sessions to minimize chance they are left active.
+- **Bug Fix** fixed device code detection when running auth through tunneled vscode
+- **Feature** EC2: provide view of ec2 system logs
+
 ## 3.29.0 2024-10-17
 
 - **Bug Fix** Fix userCredentialsUtils.test.ts so it won't remove the actual aws config

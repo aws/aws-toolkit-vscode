@@ -10,8 +10,6 @@ import * as codecatalyst from './codecatalyst/activation'
 import { activate as activateAppBuilder } from './awsService/appBuilder/activation'
 import { activate as activateAwsExplorer } from './awsexplorer/activation'
 import { activate as activateCloudWatchLogs } from './awsService/cloudWatchLogs/activation'
-import { CredentialsProviderManager } from './auth/providers/credentialsProviderManager'
-import { SharedCredentialsProviderFactory } from './auth/providers/sharedCredentialsProviderFactory'
 import { activate as activateSchemas } from './eventSchemas/activation'
 import { activate as activateLambda } from './lambda/activation'
 import { activate as activateCloudFormationTemplateRegistry } from './shared/cloudformation/activation'
@@ -40,9 +38,6 @@ import { activate as activateDev } from './dev/activation'
 import { activate as activateApplicationComposer } from './applicationcomposer/activation'
 import { activate as activateRedshift } from './awsService/redshift/activation'
 import { activate as activateIamPolicyChecks } from './awsService/accessanalyzer/activation'
-import { Ec2CredentialsProvider } from './auth/providers/ec2CredentialsProvider'
-import { EnvVarsCredentialsProvider } from './auth/providers/envVarsCredentialsProvider'
-import { EcsCredentialsProvider } from './auth/providers/ecsCredentialsProvider'
 import { SchemaService } from './shared/schemas'
 import { AwsResourceManager } from './dynamicResources/awsResourceManager'
 import globals from './shared/extensionGlobals'
@@ -56,7 +51,7 @@ import { learnMoreAmazonQCommand, qExtensionPageCommand, dismissQTree } from './
 import { AuthUtil, codeWhispererCoreScopes, isPreviousQUser } from './codewhisperer/util/authUtil'
 import { installAmazonQExtension } from './codewhisperer/commands/basicCommands'
 import { isExtensionInstalled, VSCODE_EXTENSION_ID } from './shared/utilities'
-import { ExtensionUse } from './auth/utils'
+import { ExtensionUse, initializeCredentialsProviderManager } from './auth/utils'
 import { ExtStartUpSources } from './shared/telemetry'
 import { activate as activateThreatComposerEditor } from './threatComposer/activation'
 import { isSsoConnection, hasScopes } from './auth/connection'
@@ -311,12 +306,6 @@ async function handleAmazonQInstall() {
                 })
         }
     })
-}
-
-function initializeCredentialsProviderManager() {
-    const manager = CredentialsProviderManager.getInstance()
-    manager.addProviderFactory(new SharedCredentialsProviderFactory())
-    manager.addProviders(new Ec2CredentialsProvider(), new EcsCredentialsProvider(), new EnvVarsCredentialsProvider())
 }
 
 function recordToolkitInitialization(activationStartedOn: number, settingsValid: boolean, logger?: Logger) {
