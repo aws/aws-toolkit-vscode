@@ -16,6 +16,7 @@ import { TimeFilterResponse, TimeFilterSubmenu } from '../../../../awsService/cl
 import { createQuickPickPrompterTester, QuickPickPrompterTester } from '../../../shared/ui/testUtils'
 import { getTestWindow } from '../../../shared/vscode/window'
 import { createWizardTester } from '../../../shared/wizards/wizardTestUtils'
+import { DeployedResourceNode, DeployedResource } from '../../../../awsService/appBuilder/explorer/nodes/deployedNode'
 
 describe('searchLogGroup', async function () {
     describe('Wizard', async function () {
@@ -54,6 +55,53 @@ describe('searchLogGroup', async function () {
             const filterPatternPrompter = createSearchPatternPrompter(logGroup, logParams, {}, false, true)
             const result = await filterPatternPrompter.prompt()
             assert.strictEqual(result, testInput)
+        })
+
+        it('should get correct input from a deployed Lambda function with LoggingConfig', async function () {
+            const mockResource: DeployedResource = {
+                stackName: 'test-stack',
+                regionCode: 'us-east-1',
+                explorerNode: {
+                    FunctionName: 'my-lambda-function',
+                    LoggingConfig: {
+                        LogGroup: 'my-lambda-loggroup',
+                    },
+                },
+                arn: 'arn:aws:lambda:us-east-1:111111111:function:my-lambda-function',
+                contextValue: 'awsRegionFunctionNode',
+            }
+            const mockLambdaNode = new DeployedResourceNode(mockResource)
+            const nodeTestWizard = await createWizardTester(
+                new SearchLogGroupWizard({
+                    groupName: mockLambdaNode.resource.explorerNode.LoggingConfig!.LogGroup || '',
+                    regionName: mockLambdaNode.resource.regionCode,
+                })
+            )
+            nodeTestWizard.timeRange.assertShowFirst()
+            nodeTestWizard.filterPattern.assertShowSecond()
+            nodeTestWizard.submenuResponse.assertDoesNotShow()
+        })
+
+        it('should get correct input from a deployed Lambda function without LoggingConfig', async function () {
+            const mockResource: DeployedResource = {
+                stackName: 'test-stack',
+                regionCode: 'us-east-1',
+                explorerNode: {
+                    FunctionName: 'my-lambda-function',
+                },
+                arn: 'arn:aws:lambda:us-east-1:111111111:function:my-lambda-function',
+                contextValue: 'awsRegionFunctionNode',
+            }
+            const mockLambdaNode = new DeployedResourceNode(mockResource)
+            const nodeTestWizard = await createWizardTester(
+                new SearchLogGroupWizard({
+                    groupName: '/aws/lambda/' + mockLambdaNode.resource.explorerNode.FunctionName,
+                    regionName: mockLambdaNode.resource.regionCode,
+                })
+            )
+            nodeTestWizard.timeRange.assertShowFirst()
+            nodeTestWizard.filterPattern.assertShowSecond()
+            nodeTestWizard.submenuResponse.assertDoesNotShow()
         })
     })
 
