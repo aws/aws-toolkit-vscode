@@ -13,8 +13,9 @@ export async function openDiff(leftPath: string, rightPath: string, tabId: strin
 }
 
 export async function openDeletedDiff(filePath: string, name: string, tabId: string) {
-    const fileUri = await getOriginalFileUri(filePath, tabId)
-    await vscode.commands.executeCommand('vscode.open', fileUri, {}, `${name} (Deleted)`)
+    const left = await getOriginalFileUri(filePath, tabId)
+    const right = createAmazonQUri('empty', tabId)
+    await vscode.commands.executeCommand('vscode.diff', left, right, `${name} (Deleted)`)
 }
 
 export async function getOriginalFileUri(fullPath: string, tabId: string) {
