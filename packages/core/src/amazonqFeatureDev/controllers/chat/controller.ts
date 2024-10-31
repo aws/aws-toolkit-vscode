@@ -31,7 +31,7 @@ import { codeGenRetryLimit, defaultRetryLimit } from '../../limits'
 import { Session } from '../../session/session'
 import { featureName } from '../../constants'
 import { ChatSessionStorage } from '../../storages/chatSession'
-import { DevPhase, FollowUpTypes, type NewFileInfo } from '../../types'
+import { DeletedFileInfo, DevPhase, FollowUpTypes, type NewFileInfo } from '../../types'
 import { Messenger } from './messenger/messenger'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { AuthController } from '../../../amazonq/auth/controller'
@@ -484,7 +484,7 @@ export class FeatureDevController {
 
             if (session?.state?.tokenSource?.token.isCancellationRequested) {
                 this.workOnNewTask(
-                    session,
+                    session.tabID,
                     session.state.codeGenerationRemainingIterationCount ||
                         TotalSteps - (session.state?.currentIteration || 0),
                     session.state.codeGenerationTotalIterationCount || TotalSteps,
@@ -511,8 +511,18 @@ export class FeatureDevController {
             }
         }
     }
+
+    private sendUpdateCodeMessage(tabID: string) {
+        this.messenger.sendAnswer({
+            type: 'answer',
+            tabID,
+            message: i18n('AWS.amazonq.featureDev.answer.updateCode'),
+            canBeVoted: true,
+        })
+    }
+
     private workOnNewTask(
-        message: any,
+        tabID: string,
         remainingIterations: number = 0,
         totalIterations?: number,
         isStoppedGeneration: boolean = false
@@ -524,14 +534,14 @@ export class FeatureDevController {
                         ? "I stopped generating your code. You don't have more iterations left, however, you can start a new session."
                         : `I stopped generating your code. If you want to continue working on this task, provide another description. You have ${remainingIterations} out of ${totalIterations} code generations left.`,
                 type: 'answer-part',
-                tabID: message.tabID,
+                tabID,
             })
         }
 
         if ((remainingIterations <= 0 && isStoppedGeneration) || !isStoppedGeneration) {
             this.messenger.sendAnswer({
                 type: 'system-prompt',
-                tabID: message.tabID,
+                tabID,
                 followUps: [
                     {
                         pillText: i18n('AWS.amazonq.featureDev.pillText.newTask'),
@@ -545,17 +555,14 @@ export class FeatureDevController {
                     },
                 ],
             })
-            this.messenger.sendChatInputEnabled(message.tabID, false)
-            this.messenger.sendUpdatePlaceholder(message.tabID, i18n('AWS.amazonq.featureDev.pillText.selectOption'))
+            this.messenger.sendChatInputEnabled(tabID, false)
+            this.messenger.sendUpdatePlaceholder(tabID, i18n('AWS.amazonq.featureDev.pillText.selectOption'))
             return
         }
 
         // Ensure that chat input is enabled so that they can provide additional iterations if they choose
-        this.messenger.sendChatInputEnabled(message.tabID, true)
-        this.messenger.sendUpdatePlaceholder(
-            message.tabID,
-            i18n('AWS.amazonq.featureDev.placeholder.additionalImprovements')
-        )
+        this.messenger.sendChatInputEnabled(tabID, true)
+        this.messenger.sendUpdatePlaceholder(tabID, i18n('AWS.amazonq.featureDev.placeholder.additionalImprovements'))
     }
     // TODO add type
     private async insertCode(message: any) {
@@ -576,15 +583,9 @@ export class FeatureDevController {
                 result: 'Succeeded',
             })
             await session.insertChanges()
-            this.messenger.sendAnswer({
-                type: 'answer',
-                tabID: message.tabID,
-                message: i18n('AWS.amazonq.featureDev.answer.updateCode'),
-                canBeVoted: true,
-            })
-
+            this.sendUpdateCodeMessage(message.tabID)
             this.workOnNewTask(
-                message,
+                message.tabID,
                 session.state.codeGenerationRemainingIterationCount,
                 session.state.codeGenerationTotalIterationCount
             )
@@ -774,7 +775,20 @@ export class FeatureDevController {
             messageId
         )
 
-        // TODO: update accept code button
+        const allFilePathsAccepted = session.state.filePaths?.every(
+            (filePath: NewFileInfo) => !filePath.rejected && filePath.changeApplied
+        )
+        const allDeletedFilePathsAccepted = session.state.deletedFiles?.every(
+            (filePath: DeletedFileInfo) => !filePath.rejected && filePath.changeApplied
+        )
+        if (allFilePathsAccepted && allDeletedFilePathsAccepted) {
+            this.sendUpdateCodeMessage(tabId)
+            this.workOnNewTask(
+                tabId,
+                session.state.codeGenerationRemainingIterationCount,
+                session.state.codeGenerationTotalIterationCount
+            )
+        }
     }
 
     private async storeCodeResultMessageId(message: StoreMessageIdMessage) {
