@@ -20,7 +20,7 @@ import * as CodeWhispererConstants from '../../models/constants'
 import { createCodeWhispererChatStreamingClient } from '../../../shared/clients/codewhispererChatClient'
 import { ChatSessionManager } from '../../../amazonqGumby/chat/storages/chatSession'
 import { setContext } from '../../../shared/vscode/setContext'
-import { codeWhispererClient } from '../../indexNode'
+import * as codeWhisperer from '../../client/codewhisperer'
 
 export abstract class ProposedChangeNode {
     abstract readonly resourcePath: string
@@ -408,7 +408,7 @@ export class ProposedTransformationExplorer {
                 const metricsPath = path.join(pathContainingArchive, ExportResultArchiveStructure.PathToMetrics)
                 const metricsData = JSON.parse(fs.readFileSync(metricsPath, 'utf8'))
 
-                await codeWhispererClient.sendTelemetryEvent({
+                await codeWhisperer.codeWhispererClient.sendTelemetryEvent({
                     telemetryEvent: {
                         transformEvent: {
                             jobId: transformByQState.getJobId(),
