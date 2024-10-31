@@ -308,4 +308,8 @@ export class Session {
     get telemetry() {
         return this._telemetry
     }
+
+    get acceptCodeMessageId() {
+        return this._acceptCodeMessageId
+    }
 }

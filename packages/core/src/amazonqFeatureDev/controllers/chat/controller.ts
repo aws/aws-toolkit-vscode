@@ -583,12 +583,15 @@ export class FeatureDevController {
                 result: 'Succeeded',
             })
             await session.insertChanges()
-            this.sendUpdateCodeMessage(message.tabID)
-            this.workOnNewTask(
-                message.tabID,
-                session.state.codeGenerationRemainingIterationCount,
-                session.state.codeGenerationTotalIterationCount
-            )
+            if (session.acceptCodeMessageId) {
+                this.sendUpdateCodeMessage(message.tabID)
+                this.workOnNewTask(
+                    message.tabID,
+                    session.state.codeGenerationRemainingIterationCount,
+                    session.state.codeGenerationTotalIterationCount
+                )
+                await this.clearAcceptCodeMessageId(message.tabID)
+            }
         } catch (err: any) {
             this.messenger.sendErrorMessage(
                 createUserFacingErrorMessage(`Failed to insert code changes: ${err.message}`),
@@ -775,19 +778,22 @@ export class FeatureDevController {
             messageId
         )
 
-        const allFilePathsAccepted = session.state.filePaths?.every(
-            (filePath: NewFileInfo) => !filePath.rejected && filePath.changeApplied
-        )
-        const allDeletedFilePathsAccepted = session.state.deletedFiles?.every(
-            (filePath: DeletedFileInfo) => !filePath.rejected && filePath.changeApplied
-        )
-        if (allFilePathsAccepted && allDeletedFilePathsAccepted) {
-            this.sendUpdateCodeMessage(tabId)
-            this.workOnNewTask(
-                tabId,
-                session.state.codeGenerationRemainingIterationCount,
-                session.state.codeGenerationTotalIterationCount
+        if (session.acceptCodeMessageId) {
+            const allFilePathsAccepted = session.state.filePaths?.every(
+                (filePath: NewFileInfo) => !filePath.rejected && filePath.changeApplied
             )
+            const allDeletedFilePathsAccepted = session.state.deletedFiles?.every(
+                (filePath: DeletedFileInfo) => !filePath.rejected && filePath.changeApplied
+            )
+            if (allFilePathsAccepted && allDeletedFilePathsAccepted) {
+                this.sendUpdateCodeMessage(tabId)
+                this.workOnNewTask(
+                    tabId,
+                    session.state.codeGenerationRemainingIterationCount,
+                    session.state.codeGenerationTotalIterationCount
+                )
+                await this.clearAcceptCodeMessageId(tabId)
+            }
         }
     }
 
@@ -949,5 +955,10 @@ export class FeatureDevController {
 
     private retriesRemaining(session: Session | undefined) {
         return session?.retries ?? defaultRetryLimit
+    }
+
+    private async clearAcceptCodeMessageId(tabID: string) {
+        const session = await this.sessionStorage.getSession(tabID)
+        session.updateAcceptCodeMessageId(undefined)
     }
 }
