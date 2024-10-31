@@ -609,9 +609,9 @@
         "keybindings": [
             {
                 "command": "_aws.amazonq.focusChat.keybinding",
-                "win": "ctrl+win+i",
-                "mac": "ctrl+cmd+i",
-                "linux": "ctrl+meta+i"
+                "win": "win+alt+i",
+                "mac": "cmd+alt+i",
+                "linux": "meta+alt+i"
             },
             {
                 "command": "aws.amazonq.explainCode",
