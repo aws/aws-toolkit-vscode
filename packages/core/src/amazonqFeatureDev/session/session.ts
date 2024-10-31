@@ -8,6 +8,7 @@ import * as path from 'path'
 import { ConversationNotStartedState, PrepareCodeGenState } from './sessionState'
 import {
     type DeletedFileInfo,
+    FollowUpTypes,
     type Interaction,
     type NewFileInfo,
     type SessionState,
@@ -27,6 +28,9 @@ import { AuthUtil } from '../../codewhisperer/util/authUtil'
 import { getLogger } from '../../shared'
 import { logWithConversationId } from '../userFacingText'
 import { CodeReference } from '../../amazonq/webview/ui/connector'
+import { UpdateAnswerMessage } from '../views/connector/connector'
+import { MynahIcons } from '@aws/mynah-ui'
+import { i18n } from '../../shared/i18n-helper'
 export class Session {
     private _state?: SessionState | Omit<SessionState, 'uploadId'>
     private task: string = ''
@@ -37,6 +41,7 @@ export class Session {
     private _latestMessage: string = ''
     private _telemetry: TelemetryHelper
     private _codeResultMessageId: string | undefined = undefined
+    private _acceptCodeMessageId: string | undefined = undefined
 
     // Used to keep track of whether or not the current session is currently authenticating/needs authenticating
     public isAuthenticating: boolean
@@ -155,6 +160,38 @@ export class Session {
         disableFileActions: boolean = false
     ) {
         this.messenger.updateFileComponent(tabID, filePaths, deletedFiles, messageId, disableFileActions)
+        if ([...filePaths, ...deletedFiles].some((file) => file.rejected || file.changeApplied)) {
+            await this.updateChatAnswer(tabID, 'Accept remaining changes')
+        } else {
+            await this.updateChatAnswer(tabID, 'Accept all changes')
+        }
+    }
+
+    public async updateChatAnswer(tabID: string, insertCodePillText: string) {
+        if (this._acceptCodeMessageId) {
+            const answer = new UpdateAnswerMessage(
+                {
+                    messageId: this._acceptCodeMessageId,
+                    messageType: 'system-prompt',
+                    followUps: [
+                        {
+                            pillText: insertCodePillText,
+                            type: FollowUpTypes.InsertCode,
+                            icon: 'ok' as MynahIcons,
+                            status: 'success',
+                        },
+                        {
+                            pillText: i18n('AWS.amazonq.featureDev.pillText.provideFeedback'),
+                            type: FollowUpTypes.ProvideFeedbackAndRegenerateCode,
+                            icon: 'refresh' as MynahIcons,
+                            status: 'info',
+                        },
+                    ],
+                },
+                tabID
+            )
+            this.messenger.updateChatAnswer(answer)
+        }
     }
 
     public async insertChanges() {
@@ -221,6 +258,10 @@ export class Session {
 
     public updateCodeResultMessageId(messageId?: string) {
         this._codeResultMessageId = messageId
+    }
+
+    public updateAcceptCodeMessageId(messageId?: string) {
+        this._acceptCodeMessageId = messageId
     }
 
     get state() {

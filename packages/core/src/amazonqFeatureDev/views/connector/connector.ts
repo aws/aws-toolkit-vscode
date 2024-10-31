@@ -162,6 +162,7 @@ export interface ChatMessageProps {
     readonly relatedSuggestions: SourceLink[] | undefined
     readonly canBeVoted: boolean
     readonly snapToTop: boolean
+    readonly messageId?: string
 }
 
 export class ChatMessage extends UiMessage {
@@ -172,6 +173,7 @@ export class ChatMessage extends UiMessage {
     readonly canBeVoted: boolean
     readonly requestID!: string
     readonly snapToTop: boolean
+    readonly messageId: string | undefined
     override type = 'chatMessage'
 
     constructor(props: ChatMessageProps, tabID: string) {
@@ -182,6 +184,27 @@ export class ChatMessage extends UiMessage {
         this.relatedSuggestions = props.relatedSuggestions
         this.canBeVoted = props.canBeVoted
         this.snapToTop = props.snapToTop
+        this.messageId = props.messageId
+    }
+}
+
+export interface UpdateAnswerMessageProps {
+    readonly messageId: string
+    readonly messageType: ChatItemType
+    readonly followUps: ChatItemAction[] | undefined
+}
+
+export class UpdateAnswerMessage extends UiMessage {
+    readonly messageId: string
+    readonly messageType: ChatItemType
+    readonly followUps: ChatItemAction[] | undefined
+    override type = 'updateChatAnswer'
+
+    constructor(props: UpdateAnswerMessageProps, tabID: string) {
+        super(tabID)
+        this.messageId = props.messageId
+        this.messageType = props.messageType
+        this.followUps = props.followUps
     }
 }
 
@@ -224,7 +247,11 @@ export class AppToWebViewMessageDispatcher {
         this.appsToWebViewMessagePublisher.publish(message)
     }
 
-    public updateFileComponent(message: any) {
+    public updateFileComponent(message: FileComponent) {
+        this.appsToWebViewMessagePublisher.publish(message)
+    }
+
+    public updateChatAnswer(message: UpdateAnswerMessage) {
         this.appsToWebViewMessagePublisher.publish(message)
     }
 }

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ChatItemAction, MynahIcons } from '@aws/mynah-ui'
+import { MynahIcons } from '@aws/mynah-ui'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { EventEmitter } from 'vscode'
@@ -31,7 +31,7 @@ import { codeGenRetryLimit, defaultRetryLimit } from '../../limits'
 import { Session } from '../../session/session'
 import { featureName } from '../../constants'
 import { ChatSessionStorage } from '../../storages/chatSession'
-import { DevPhase, FollowUpTypes, type NewFileInfo, SessionStatePhase } from '../../types'
+import { DevPhase, FollowUpTypes, type NewFileInfo } from '../../types'
 import { Messenger } from './messenger/messenger'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { AuthController } from '../../../amazonq/auth/controller'
@@ -46,6 +46,7 @@ import { getWorkspaceFoldersByPrefixes } from '../../../shared/utilities/workspa
 import { openDeletedDiff, openDiff, openFile } from '../../../amazonq/commons/diff'
 import { i18n } from '../../../shared/i18n-helper'
 import globals from '../../../shared/extensionGlobals'
+import { randomUUID } from '../../../shared'
 
 export const TotalSteps = 3
 
@@ -464,12 +465,19 @@ export class FeatureDevController {
                 })
             }
 
-            this.messenger.sendAnswer({
-                message: undefined,
-                type: 'system-prompt',
-                followUps: this.getFollowUpOptions(session?.state.phase),
-                tabID: tabID,
-            })
+            if (session?.state.phase === DevPhase.CODEGEN) {
+                const messageId = randomUUID()
+                session.updateAcceptCodeMessageId(messageId)
+                // need to add the followUps with an extra update here, or it will double-render them
+                this.messenger.sendAnswer({
+                    message: undefined,
+                    type: 'system-prompt',
+                    followUps: [],
+                    tabID: tabID,
+                    messageId,
+                })
+                await session.updateChatAnswer(tabID, 'Accept all changes')
+            }
             this.messenger.sendUpdatePlaceholder(tabID, i18n('AWS.amazonq.featureDev.pillText.selectOption'))
         } finally {
             // Finish processing the event
@@ -641,28 +649,6 @@ export class FeatureDevController {
         } finally {
             // Finish processing the event
             this.messenger.sendAsyncEventProgress(message.tabID, false, undefined)
-        }
-    }
-
-    private getFollowUpOptions(phase: SessionStatePhase | undefined): ChatItemAction[] {
-        switch (phase) {
-            case DevPhase.CODEGEN:
-                return [
-                    {
-                        pillText: i18n('AWS.amazonq.featureDev.pillText.insertCode'),
-                        type: FollowUpTypes.InsertCode,
-                        icon: 'ok' as MynahIcons,
-                        status: 'success',
-                    },
-                    {
-                        pillText: i18n('AWS.amazonq.featureDev.pillText.provideFeedback'),
-                        type: FollowUpTypes.ProvideFeedbackAndRegenerateCode,
-                        icon: 'refresh' as MynahIcons,
-                        status: 'info',
-                    },
-                ]
-            default:
-                return []
         }
     }
 

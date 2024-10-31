@@ -445,6 +445,7 @@ export class MockCodeGenState implements SessionState {
                 this.uploadId,
                 this.codeGenerationId ?? ''
             )
+            // TODO: store id and update logic for testing
             action.messenger.sendAnswer({
                 message: undefined,
                 type: 'system-prompt',

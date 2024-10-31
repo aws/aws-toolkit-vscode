@@ -15,6 +15,7 @@ import {
     AuthNeededException,
     OpenNewTabMessage,
     FileComponent,
+    UpdateAnswerMessage,
 } from '../../../views/connector/connector'
 import { AppToWebViewMessageDispatcher } from '../../../views/connector/connector'
 import { ChatItemAction } from '@aws/mynah-ui'
@@ -33,6 +34,7 @@ export class Messenger {
         tabID: string
         canBeVoted?: boolean
         snapToTop?: boolean
+        messageId?: string
     }) {
         this.dispatcher.sendChatMessage(
             new ChatMessage(
@@ -43,6 +45,7 @@ export class Messenger {
                     relatedSuggestions: undefined,
                     canBeVoted: params.canBeVoted ?? false,
                     snapToTop: params.snapToTop ?? false,
+                    messageId: params.messageId,
                 },
                 params.tabID
             )
@@ -138,6 +141,10 @@ export class Messenger {
         this.dispatcher.updateFileComponent(
             new FileComponent(tabID, filePaths, deletedFiles, messageId, disableFileActions)
         )
+    }
+
+    public updateChatAnswer(message: UpdateAnswerMessage) {
+        this.dispatcher.updateChatAnswer(message)
     }
 
     public sendUpdatePlaceholder(tabID: string, newPlaceholder: string) {

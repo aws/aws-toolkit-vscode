@@ -75,26 +75,31 @@ export class Connector extends BaseConnector {
         })
     }
 
+    private createAnswer = (messageData: any): ChatItem => {
+        return {
+            type: messageData.messageType,
+            body: messageData.message ?? undefined,
+            messageId: messageData.messageId ?? messageData.messageID ?? messageData.triggerID ?? '',
+            relatedContent: undefined,
+            canBeVoted: messageData.canBeVoted ?? undefined,
+            snapToTop: messageData.snapToTop ?? undefined,
+            followUp:
+                messageData.followUps !== undefined && Array.isArray(messageData.followUps)
+                    ? {
+                          text:
+                              messageData.messageType === ChatItemType.SYSTEM_PROMPT ||
+                              messageData.followUps.length === 0
+                                  ? ''
+                                  : 'Please follow up with one of these',
+                          options: messageData.followUps,
+                      }
+                    : undefined,
+        }
+    }
+
     private processChatMessage = async (messageData: any): Promise<void> => {
         if (this.onChatAnswerReceived !== undefined) {
-            const answer: ChatItem = {
-                type: messageData.messageType,
-                body: messageData.message ?? undefined,
-                messageId: messageData.messageID ?? messageData.triggerID ?? '',
-                relatedContent: undefined,
-                canBeVoted: messageData.canBeVoted,
-                snapToTop: messageData.snapToTop,
-                followUp:
-                    messageData.followUps !== undefined && messageData.followUps.length > 0
-                        ? {
-                              text:
-                                  messageData.messageType === ChatItemType.SYSTEM_PROMPT
-                                      ? ''
-                                      : 'Please follow up with one of these',
-                              options: messageData.followUps,
-                          }
-                        : undefined,
-            }
+            const answer = this.createAnswer(messageData)
             this.onChatAnswerReceived(messageData.tabID, answer, messageData)
         }
     }
@@ -103,6 +108,7 @@ export class Connector extends BaseConnector {
         if (this.onChatAnswerReceived !== undefined) {
             const messageId =
                 messageData.codeGenerationId ??
+                messageData.messageId ??
                 messageData.messageID ??
                 messageData.triggerID ??
                 messageData.conversationID
@@ -141,6 +147,11 @@ export class Connector extends BaseConnector {
                 messageData.messageId,
                 messageData.disableFileActions
             )
+            return
+        }
+        if (messageData.type === 'updateChatAnswer') {
+            const answer = this.createAnswer(messageData)
+            this.onChatAnswerUpdated?.(messageData.tabID, answer)
             return
         }
 
