@@ -1,3 +1,7 @@
+## 1.33.0 2024-10-30
+
+- **Bug Fix** Amazon Q /dev: fix for stop button showing for Code Transformation
+
 ## 1.32.0 2024-10-29
 
 - **Bug Fix** Remove warning when no input is provided to inline chat input box

@@ -1,0 +1,10 @@
+{
+	"date": "2024-10-30",
+	"version": "1.33.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q /dev: fix for stop button showing for Code Transformation"
+		}
+	]
+}

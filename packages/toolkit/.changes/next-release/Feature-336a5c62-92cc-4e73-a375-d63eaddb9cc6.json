@@ -1,4 +1,0 @@
-{
-	"type": "Feature",
-	"description": "AWS Lambda: AWS Explorer command palette actions and hover buttons to build, local invoke, deploy, and remote invoke"
-}
