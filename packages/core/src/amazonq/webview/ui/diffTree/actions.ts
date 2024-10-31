@@ -33,29 +33,31 @@ export function getActions(filePaths: DiffTreeFileInfo[]): Record<string, FileNo
         if (filePath.changeApplied) {
             continue
         }
-        actions[filePath.relativePath] = [
-            {
-                icon: MynahIcons.OK,
-                status: 'success',
-                name: 'accept-change',
-                description: 'Accept file change',
-            },
-        ]
         switch (filePath.rejected) {
             case true:
-                actions[filePath.relativePath].push({
-                    icon: MynahIcons.REVERT,
-                    name: 'revert-rejection',
-                    description: 'Revert rejection',
-                })
+                actions[filePath.relativePath] = [
+                    {
+                        icon: MynahIcons.REVERT,
+                        name: 'revert-rejection',
+                        description: 'Revert rejection',
+                    },
+                ]
                 break
             case false:
-                actions[filePath.relativePath].push({
-                    icon: MynahIcons.CANCEL_CIRCLE,
-                    status: 'error',
-                    name: 'reject-change',
-                    description: 'Reject change',
-                })
+                actions[filePath.relativePath] = [
+                    {
+                        icon: MynahIcons.OK,
+                        status: 'success',
+                        name: 'accept-change',
+                        description: 'Accept file change',
+                    },
+                    {
+                        icon: MynahIcons.CANCEL_CIRCLE,
+                        status: 'error',
+                        name: 'reject-change',
+                        description: 'Reject change',
+                    },
+                ]
                 break
         }
     }
