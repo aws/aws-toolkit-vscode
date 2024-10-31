@@ -590,9 +590,9 @@ export const jobPartiallyCompletedChatMessage =
 export const jobPartiallyCompletedNotification =
     'Amazon Q upgraded part of your code. You can review the diff to see my proposed changes and accept or reject them. The transformation summary has details about the files I updated and the errors that prevented a complete transformation.'
 
-export const noPomXmlFoundChatMessage = `I couldn\'t find a project that I can upgrade. A pom.xml is required to begin a transformation. Currently, I can upgrade Java 8, Java 11, and Java 17 projects built on Maven. For more information, see the [Amazon Q documentation](${codeTransformPrereqDoc}).`
+export const noPomXmlFoundChatMessage = `I couldn\'t find a project that I can upgrade. Your Java project must be built on Maven and contain a pom.xml file. For more information, see the [Amazon Q documentation](${codeTransformPrereqDoc}).`
 
-export const noPomXmlFoundNotification = `None of your open projects are supported by the Amazon Q agent for code transformation. Currently, Amazon Q can only upgrade Java 8, Java 11, and Java 17 projects built on Maven. For more information, see the [Amazon Q documentation](${codeTransformPrereqDoc}).`
+export const noPomXmlFoundNotification = `None of your open modules are supported for code transformation with Amazon Q. A pom.xml is required for transformation.`
 
 export const noJavaHomeFoundChatMessage = `Sorry, I couldn\'t locate your Java installation. For more information, see the [Amazon Q documentation](${codeTransformPrereqDoc}).`
 
@@ -630,9 +630,9 @@ export const changesAppliedChatMessage = 'I applied the changes to your project.
 
 export const changesAppliedNotification = 'Amazon Q applied the changes to your project.'
 
-export const noOpenProjectsFoundChatMessage = `I couldn\'t find a project that I can upgrade. Currently, I can upgrade Java 8, Java 11, and Java 17 projects built on Maven. For more information, see the [Amazon Q documentation](${codeTransformPrereqDoc}).`
+export const noOpenProjectsFoundChatMessage = `I couldn\'t find a project that I can upgrade. Currently, I support Java 8, Java 11, and Java 17 projects built on Maven. Make sure your project is open in the IDE. For more information, see the [Amazon Q documentation](${codeTransformPrereqDoc}).`
 
-export const noJavaProjectsFoundChatMessage = `I couldn\'t find a project that I can upgrade. Currently, I can upgrade Java 8, Java 11, and Java 17 projects built on Maven. For more information, see the [Amazon Q documentation](${codeTransformPrereqDoc}).`
+export const noJavaProjectsFoundChatMessage = `I couldn\'t find a project that I can upgrade. Currently, I support Java 8, Java 11, and Java 17 projects built on Maven. Make sure your project is open in the IDE. For more information, see the [Amazon Q documentation](${codeTransformPrereqDoc}).`
 
 export const linkToDocsHome = 'https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/code-transformation.html'
 
