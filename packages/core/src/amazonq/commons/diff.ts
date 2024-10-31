@@ -39,5 +39,5 @@ export async function openFile(path: string) {
         return
     }
     const fileUri = vscode.Uri.file(path)
-    await vscode.commands.executeCommand('vscode.open', fileUri)
+    await vscode.commands.executeCommand('vscode.diff', fileUri, fileUri)
 }
