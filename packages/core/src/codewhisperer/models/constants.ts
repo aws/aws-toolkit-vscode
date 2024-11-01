@@ -351,9 +351,6 @@ export const newCustomizationMessage = 'You have access to new Amazon Q customiz
 
 // Start of QCT Strings
 
-// feature flag for SQL transformations
-export const isSQLTransformReady = false
-
 export const uploadZipSizeLimitInBytes = 2000000000 // 2GB
 
 export const maxBufferSize = 1024 * 1024 * 8 // this is 8MB; the default max buffer size for stdout for spawnSync is 1MB
@@ -446,7 +443,7 @@ export const codeTransformLocThreshold = 100000
 export const jobStartedChatMessage =
     'I am starting to transform your code. It can take 10 to 30 minutes to upgrade your code, depending on the size of your project. To monitor progress, go to the Transformation Hub. If I run into any issues, I might pause the transformation to get input from you on how to proceed.'
 
-export const uploadingCodeStepMessage = 'Uploading your code'
+export const uploadingCodeStepMessage = 'Upload your code'
 
 export const buildCodeStepMessage = 'Build uploaded code in secure build environment'
 
@@ -503,7 +500,7 @@ export const absolutePathDetectedMessage = (numPaths: number, buildFile: string,
 export const unsupportedJavaVersionChatMessage = `Sorry, currently I can only upgrade Java 8 or Java 11 projects. For more information, see the [Amazon Q documentation](${codeTransformPrereqDoc}).`
 
 export const selectSQLMetadataFileHelpMessage =
-    'Next, I need the zipped metadata file from your schema conversion. You can download the metadata by going to your migration project in the the AWS DMS console. Open the schema conversion and choose **Convert the embedded SQL in your application**. You can downloaded the metadata from Amazon S3 in the {schema-conversion-project}/ directory.'
+    'Next, I need the zipped metadata file from your schema conversion. You can download the metadata by going to your migration project in the AWS DMS console. Open the schema conversion and choose **Convert the embedded SQL in your application**. You can downloaded the metadata from Amazon S3 in the {schema-conversion-project}/ directory.'
 
 export const invalidMetadataFileUnsupportedSourceDB =
     'I can only convert SQL for migrations from an Oracle source database. The provided .sct file indicates another source database for this migration.'
@@ -575,16 +572,16 @@ export const jobCancelledChatMessage =
 export const jobCancelledNotification = 'You cancelled the transformation.'
 
 export const jobCompletedChatMessage =
-    'I upgraded your code to Java 17. You can review the diff to see my proposed changes and accept or reject them. The transformation summary has details about the files I updated.'
+    'I upgraded your code. You can review the diff to see my proposed changes and accept or reject them. The transformation summary has details about the files I updated.'
 
 export const jobCompletedNotification =
-    'Amazon Q upgraded your code to Java 17. You can review the diff to see my proposed changes and accept or reject them. The transformation summary has details about the files I updated.'
+    'Amazon Q upgraded your code. You can review the diff to see my proposed changes and accept or reject them. The transformation summary has details about the files I updated.'
 
 export const jobPartiallyCompletedChatMessage =
-    'I upgraded part of your code to Java 17. You can review the diff to see my proposed changes and accept or reject them. The transformation summary has details about the files I updated and the errors that prevented a complete transformation.'
+    'I upgraded part of your code. You can review the diff to see my proposed changes and accept or reject them. The transformation summary has details about the files I updated and the errors that prevented a complete transformation.'
 
 export const jobPartiallyCompletedNotification =
-    'Amazon Q upgraded part of your code to Java 17. You can review the diff to see my proposed changes and accept or reject them. The transformation summary has details about the files I updated and the errors that prevented a complete transformation.'
+    'Amazon Q upgraded part of your code. You can review the diff to see my proposed changes and accept or reject them. The transformation summary has details about the files I updated and the errors that prevented a complete transformation.'
 
 export const noPomXmlFoundChatMessage = `Sorry, I couldn\'t find a project that I can upgrade. I couldn\'t find a pom.xml file in any of your open projects. Currently, I can only upgrade Java 8 or Java 11 projects built on Maven. For more information, see the [Amazon Q documentation](${codeTransformPrereqDoc}).`
 
