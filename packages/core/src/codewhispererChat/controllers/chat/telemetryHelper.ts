@@ -358,6 +358,10 @@ export class CWCTelemetryHelper {
                 return 'UPVOTE'
             case 'downvote':
                 return 'DOWNVOTE'
+            case 'acceptDiff':
+                return 'ACCEPT_DIFF'
+            case 'viewDiff':
+                return 'VIEW_DIFF'
             default:
                 return 'UNKNOWN'
         }
