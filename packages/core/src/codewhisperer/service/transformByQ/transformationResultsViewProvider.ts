@@ -10,7 +10,7 @@ import { parsePatch, applyPatches, ParsedDiff } from 'diff'
 import path from 'path'
 import vscode from 'vscode'
 import { ExportIntent } from '@amzn/codewhisperer-streaming'
-import { TransformByQReviewStatus, transformByQState } from '../../models/model'
+import { TransformationType, TransformByQReviewStatus, transformByQState } from '../../models/model'
 import { ExportResultArchiveStructure, downloadExportResultArchive } from '../../../shared/utilities/download'
 import { getLogger } from '../../../shared/logger'
 import { telemetry } from '../../../shared/telemetry/telemetry'
@@ -408,14 +408,18 @@ export class ProposedTransformationExplorer {
                 const metricsPath = path.join(pathContainingArchive, ExportResultArchiveStructure.PathToMetrics)
                 const metricsData = JSON.parse(fs.readFileSync(metricsPath, 'utf8'))
 
-                codeWhisperer.codeWhispererClient.sendTelemetryEvent({
+                // TO-DO: add support for SQL conversions; right now these metrics are only available for Java upgrades
+                await codeWhisperer.codeWhispererClient.sendTelemetryEvent({
                     telemetryEvent: {
                         transformEvent: {
                             jobId: transformByQState.getJobId(),
                             timestamp: new Date(),
                             ideCategory: 'VSCODE',
                             programmingLanguage: {
-                                languageName: 'JAVA', // TO-DO: use transformByQState.getTransformationType() to tell if JAVA or SQL
+                                languageName:
+                                    transformByQState.getTransformationType() === TransformationType.LANGUAGE_UPGRADE
+                                        ? 'JAVA'
+                                        : 'SQL',
                             },
                             linesOfCodeChanged: metricsData.linesOfCodeChanged,
                             charsOfCodeChanged: metricsData.charsOfCodeChanged,
