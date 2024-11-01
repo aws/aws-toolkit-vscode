@@ -1,3 +1,6 @@
+## 3.33.0 2024-11-06
+- **Bug Fix** SAM: Save SAM deploy parameters to correct samconfig.toml in project folder
+
 ## 3.31.0 2024-10-30
 
 - **Feature** SAM: Added support for Java 21 Lambda runtime
