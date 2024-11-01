@@ -6,6 +6,7 @@
 import * as vscode from 'vscode'
 import * as fs from 'fs' // eslint-disable-line no-restricted-imports
 import * as os from 'os'
+import * as xml2js from 'xml2js'
 import path from 'path'
 import { getLogger } from '../../shared/logger'
 import * as CodeWhispererConstants from '../models/constants'
@@ -15,9 +16,10 @@ import {
     JDKVersion,
     jobPlanProgress,
     FolderInfo,
-    TransformationCandidateProject,
     ZipManifest,
     TransformByQStatus,
+    DB,
+    TransformationType,
 } from '../models/model'
 import { convertDateToTimestamp } from '../../shared/utilities/textUtilities'
 import {
@@ -37,7 +39,11 @@ import {
     uploadPayload,
     zipCode,
 } from '../service/transformByQ/transformApiHandler'
-import { getOpenProjects, validateOpenProjects } from '../service/transformByQ/transformProjectValidationHandler'
+import {
+    getJavaProjects,
+    getOpenProjects,
+    validateOpenProjects,
+} from '../service/transformByQ/transformProjectValidationHandler'
 import {
     getVersionData,
     prepareProjectDependencies,
@@ -81,15 +87,66 @@ function getFeedbackCommentData() {
     return s
 }
 
-export async function processTransformFormInput(
+export async function processLanguageUpgradeTransformFormInput(
     pathToProject: string,
     fromJDKVersion: JDKVersion,
     toJDKVersion: JDKVersion
 ) {
+    transformByQState.setTransformationType(TransformationType.LANGUAGE_UPGRADE)
     transformByQState.setProjectName(path.basename(pathToProject))
     transformByQState.setProjectPath(pathToProject)
     transformByQState.setSourceJDKVersion(fromJDKVersion)
     transformByQState.setTargetJDKVersion(toJDKVersion)
+}
+
+export async function processSQLConversionTransformFormInput(pathToProject: string, schema: string) {
+    transformByQState.setTransformationType(TransformationType.SQL_CONVERSION)
+    transformByQState.setProjectName(path.basename(pathToProject))
+    transformByQState.setProjectPath(pathToProject)
+    transformByQState.setSchema(schema)
+    transformByQState.setSourceJDKVersion(JDKVersion.JDK8) // use dummy value of JDK8 so that startJob API can be called
+    // targetJDKVersion defaults to JDK17, the only supported version, which is fine
+}
+
+export async function validateSQLMetadataFile(fileContents: string, message: any) {
+    try {
+        const sctData = await xml2js.parseStringPromise(fileContents)
+        const dbEntities = sctData['tree']['instances'][0]['ProjectModel'][0]['entities'][0]
+        const sourceDB = dbEntities['sources'][0]['DbServer'][0]['$']['vendor'].trim().toUpperCase()
+        const targetDB = dbEntities['targets'][0]['DbServer'][0]['$']['vendor'].trim().toUpperCase()
+        const sourceServerName = dbEntities['sources'][0]['DbServer'][0]['$']['name'].trim()
+        transformByQState.setSourceServerName(sourceServerName)
+        if (sourceDB !== DB.ORACLE) {
+            transformByQState.getChatMessenger()?.sendUnrecoverableErrorResponse('unsupported-source-db', message.tabID)
+            return false
+        } else if (targetDB !== DB.AURORA_POSTGRESQL && targetDB !== DB.RDS_POSTGRESQL) {
+            transformByQState.getChatMessenger()?.sendUnrecoverableErrorResponse('unsupported-target-db', message.tabID)
+            return false
+        }
+        transformByQState.setSourceDB(sourceDB)
+        transformByQState.setTargetDB(targetDB)
+
+        const serverNodeLocations =
+            sctData['tree']['instances'][0]['ProjectModel'][0]['relations'][0]['server-node-location']
+        const schemaNames = new Set<string>()
+        serverNodeLocations.forEach((serverNodeLocation: any) => {
+            const schemaNodes = serverNodeLocation['FullNameNodeInfoList'][0]['nameParts'][0][
+                'FullNameNodeInfo'
+            ].filter((node: any) => node['$']['typeNode'].toLowerCase() === 'schema')
+            schemaNodes.forEach((node: any) => {
+                schemaNames.add(node['$']['nameNode'].toUpperCase())
+            })
+        })
+        transformByQState.setSchemaOptions(schemaNames) // user will choose one of these
+        getLogger().info(
+            `CodeTransformation: Parsed .sct file with source DB: ${sourceDB}, target DB: ${targetDB}, source host name: ${sourceServerName}, and schema names: ${Array.from(schemaNames)}`
+        )
+    } catch (err: any) {
+        getLogger().error('CodeTransformation: Error parsing .sct file.', err)
+        transformByQState.getChatMessenger()?.sendUnrecoverableErrorResponse('error-parsing-sct-file', message.tabID)
+        return false
+    }
+    return true
 }
 
 export async function setMaven() {
@@ -278,8 +335,9 @@ export async function preTransformationUploadCode() {
             // if the user chose to skip unit tests, add the custom build command here
             transformZipManifest.customBuildCommand = transformByQState.getCustomBuildCommand()
             const zipCodeResult = await zipCode({
-                dependenciesFolder: transformByQState.getDependencyFolderInfo()!,
-                modulePath: transformByQState.getProjectPath(),
+                // dependenciesFolder will be undefined for SQL conversions since we don't compileProject
+                dependenciesFolder: transformByQState.getDependencyFolderInfo(),
+                projectPath: transformByQState.getProjectPath(),
                 zipManifest: transformZipManifest,
             })
 
@@ -607,6 +665,10 @@ export async function pollTransformationStatusUntilPlanReady(jobId: string) {
             throw new PollJobError()
         }
     }
+    if (transformByQState.getTransformationType() === TransformationType.SQL_CONVERSION) {
+        // for now, no plan shown with SQL conversions. later, we may add one
+        return
+    }
     let plan = undefined
     try {
         plan = await getTransformationPlan(jobId)
@@ -663,9 +725,16 @@ export async function finalizeTransformationJob(status: string) {
     jobPlanProgress['transformCode'] = StepProgress.Succeeded
 }
 
-export async function getValidCandidateProjects(): Promise<TransformationCandidateProject[]> {
+export async function getValidLanguageUpgradeCandidateProjects() {
     const openProjects = await getOpenProjects()
-    return validateOpenProjects(openProjects)
+    const javaMavenProjects = await validateOpenProjects(openProjects)
+    return javaMavenProjects
+}
+
+export async function getValidSQLConversionCandidateProjects() {
+    const openProjects = await getOpenProjects()
+    const javaProjects = await getJavaProjects(openProjects)
+    return javaProjects
 }
 
 export async function setTransformationToRunningState() {
@@ -717,20 +786,23 @@ export async function postTransformationJob() {
     const durationInMs = calculateTotalLatency(CodeTransformTelemetryState.instance.getStartTime())
     const resultStatusMessage = transformByQState.getStatus()
 
-    const versionInfo = await getVersionData()
-    const mavenVersionInfoMessage = `${versionInfo[0]} (${transformByQState.getMavenName()})`
-    const javaVersionInfoMessage = `${versionInfo[1]} (${transformByQState.getMavenName()})`
+    if (transformByQState.getTransformationType() !== TransformationType.SQL_CONVERSION) {
+        // the below is only applicable when user is doing a Java 8/11 language upgrade
+        const versionInfo = await getVersionData()
+        const mavenVersionInfoMessage = `${versionInfo[0]} (${transformByQState.getMavenName()})`
+        const javaVersionInfoMessage = `${versionInfo[1]} (${transformByQState.getMavenName()})`
 
-    // Note: IntelliJ implementation of ResultStatusMessage includes additional metadata such as jobId.
-    telemetry.codeTransform_totalRunTime.emit({
-        buildSystemVersion: mavenVersionInfoMessage,
-        codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-        codeTransformResultStatusMessage: resultStatusMessage,
-        codeTransformRunTimeLatency: durationInMs,
-        codeTransformLocalJavaVersion: javaVersionInfoMessage,
-        result: resultStatusMessage === TransformByQStatus.Succeeded ? MetadataResult.Pass : MetadataResult.Fail,
-        reason: resultStatusMessage,
-    })
+        // Note: IntelliJ implementation of ResultStatusMessage includes additional metadata such as jobId.
+        telemetry.codeTransform_totalRunTime.emit({
+            buildSystemVersion: mavenVersionInfoMessage,
+            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
+            codeTransformResultStatusMessage: resultStatusMessage,
+            codeTransformRunTimeLatency: durationInMs,
+            codeTransformLocalJavaVersion: javaVersionInfoMessage,
+            result: resultStatusMessage === TransformByQStatus.Succeeded ? MetadataResult.Pass : MetadataResult.Fail,
+            reason: resultStatusMessage,
+        })
+    }
 
     if (transformByQState.isSucceeded()) {
         void vscode.window.showInformationMessage(CodeWhispererConstants.jobCompletedNotification)

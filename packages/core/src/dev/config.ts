@@ -7,3 +7,6 @@
 // Nothing in this file should have a truthy value on mainline
 
 export const betaUrl = ''
+
+// feature flag for SQL transformations
+export const isSQLTransformReady = false
