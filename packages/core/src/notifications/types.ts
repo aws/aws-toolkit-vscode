@@ -51,9 +51,21 @@ export interface UIRenderInstructions {
         [`en-US`]: {
             title: string
             description: string
+            toastPreview?: string // optional property for toast
         }
     }
-    // TODO actions
+    onRecieve: string
+    onClick: {
+        type: string
+        url?: string // optional property for 'openUrl'
+    }
+    actions?: Array<{
+        type: string
+        displayText: {
+            [`en-US`]: string
+        }
+        url?: string // optional property for 'openUrl'
+    }>
 }
 
 /** Condition/criteria section of a notification. */
@@ -87,14 +99,16 @@ export type NotificationsState = {
 
     // Util
     dismissed: string[]
+    newlyReceived: string[]
 }
 
 export const NotificationsStateConstructor: TypeConstructor<NotificationsState> = (v: unknown): NotificationsState => {
     const isNotificationsState = (v: Partial<NotificationsState>): v is NotificationsState => {
-        const requiredKeys: (keyof NotificationsState)[] = ['startUp', 'emergency', 'dismissed']
+        const requiredKeys: (keyof NotificationsState)[] = ['startUp', 'emergency', 'dismissed', 'newlyReceived']
         return (
             requiredKeys.every((key) => key in v) &&
             Array.isArray(v.dismissed) &&
+            Array.isArray(v.newlyReceived) &&
             typeof v.startUp === 'object' &&
             typeof v.emergency === 'object'
         )
@@ -106,7 +120,7 @@ export const NotificationsStateConstructor: TypeConstructor<NotificationsState> 
     throw new Error('Cannot cast to NotificationsState.')
 }
 
-export type NotificationType = keyof Omit<NotificationsState, 'dismissed'>
+export type NotificationType = keyof Omit<NotificationsState, 'dismissed' | 'newlyReceived'>
 
 export interface RuleContext {
     readonly ideVersion: typeof vscode.version
