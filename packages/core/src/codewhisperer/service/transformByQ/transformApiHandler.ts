@@ -16,6 +16,7 @@ import {
     jobPlanProgress,
     sessionJobHistory,
     StepProgress,
+    TransformationType,
     transformByQState,
     TransformByQStatus,
     TransformByQStoppedError,
@@ -212,6 +213,11 @@ export async function uploadPayload(payloadFileName: string, uploadContext?: Upl
         transformByQState.setJobId(encodeHTML(response.uploadId))
     }
     jobPlanProgress['uploadCode'] = StepProgress.Succeeded
+    if (transformByQState.getTransformationType() === TransformationType.SQL_CONVERSION) {
+        // if doing a SQL conversion, we don't build the code or generate a plan, so mark these steps as succeeded immediately so that next step renders
+        jobPlanProgress['buildCode'] = StepProgress.Succeeded
+        jobPlanProgress['generatePlan'] = StepProgress.Succeeded
+    }
     updateJobHistory()
     return response.uploadId
 }
@@ -275,9 +281,9 @@ export function createZipManifest({ hilZipParams }: IZipManifestParams) {
 }
 
 interface IZipCodeParams {
-    dependenciesFolder: FolderInfo
+    dependenciesFolder?: FolderInfo
     humanInTheLoopFlag?: boolean
-    modulePath?: string
+    projectPath?: string
     zipManifest: ZipManifest | HilZipManifest
 }
 
@@ -288,7 +294,7 @@ interface ZipCodeResult {
 }
 
 export async function zipCode(
-    { dependenciesFolder, humanInTheLoopFlag, modulePath, zipManifest }: IZipCodeParams,
+    { dependenciesFolder, humanInTheLoopFlag, projectPath, zipManifest }: IZipCodeParams,
     zip: AdmZip = new AdmZip()
 ) {
     let tempFilePath = undefined
@@ -297,17 +303,17 @@ export async function zipCode(
     try {
         throwIfCancelled()
 
-        // If no modulePath is passed in, we are not uploaded the source folder
-        // NOTE: We only upload dependencies for human in the loop work
-        if (modulePath) {
-            const sourceFiles = getFilesRecursively(modulePath, false)
+        // if no project Path is passed in, we are not uploaded the source folder
+        // we only upload dependencies for human in the loop work
+        if (projectPath) {
+            const sourceFiles = getFilesRecursively(projectPath, false)
             let sourceFilesSize = 0
             for (const file of sourceFiles) {
                 if (nodefs.statSync(file).isDirectory()) {
                     getLogger().info('CodeTransformation: Skipping directory, likely a symlink')
                     continue
                 }
-                const relativePath = path.relative(modulePath, file)
+                const relativePath = path.relative(projectPath, file)
                 const paddedPath = path.join('sources', relativePath)
                 zip.addLocalFile(file, path.dirname(paddedPath))
                 sourceFilesSize += (await nodefs.promises.stat(file)).size
@@ -315,14 +321,37 @@ export async function zipCode(
             getLogger().info(`CodeTransformation: source code files size = ${sourceFilesSize}`)
         }
 
+        if (
+            transformByQState.getTransformationType() === TransformationType.SQL_CONVERSION &&
+            zipManifest instanceof ZipManifest
+        ) {
+            // note that zipManifest must be a ZipManifest since only other option is HilZipManifest which is not used for SQL conversions
+            const metadataZip = new AdmZip(transformByQState.getMetadataPathSQL())
+            zipManifest.requestedConversions.sqlConversion = {
+                source: transformByQState.getSourceDB(),
+                target: transformByQState.getTargetDB(),
+                schema: transformByQState.getSchema(),
+                host: transformByQState.getSourceServerName(),
+                sctFileName: metadataZip.getEntries().filter((entry) => entry.entryName.endsWith('.sct'))[0].entryName,
+            }
+            // TO-DO: later consider making this add to path.join(zipManifest.dependenciesRoot, 'qct-sct-metadata', entry.entryName) so that it's more organized
+            metadataZip
+                .getEntries()
+                .forEach((entry) =>
+                    zip.addFile(path.join(zipManifest.dependenciesRoot, entry.entryName), entry.getData())
+                )
+            const sqlMetadataSize = (await nodefs.promises.stat(transformByQState.getMetadataPathSQL())).size
+            getLogger().info(`CodeTransformation: SQL metadata file size = ${sqlMetadataSize}`)
+        }
+
         throwIfCancelled()
 
         let dependencyFiles: string[] = []
-        if (await fs.exists(dependenciesFolder.path)) {
+        if (dependenciesFolder && (await fs.exists(dependenciesFolder.path))) {
             dependencyFiles = getFilesRecursively(dependenciesFolder.path, true)
         }
 
-        if (dependencyFiles.length > 0) {
+        if (dependenciesFolder && dependencyFiles.length > 0) {
             let dependencyFilesSize = 0
             for (const file of dependencyFiles) {
                 if (isExcludedDependencyFile(file)) {
@@ -336,10 +365,6 @@ export async function zipCode(
             }
             getLogger().info(`CodeTransformation: dependency files size = ${dependencyFilesSize}`)
             dependenciesCopied = true
-        } else {
-            if (zipManifest instanceof ZipManifest) {
-                zipManifest.dependenciesRoot = undefined
-            }
         }
 
         zip.addFile('manifest.json', Buffer.from(JSON.stringify(zipManifest)), 'utf-8')
@@ -356,10 +381,11 @@ export async function zipCode(
 
         tempFilePath = path.join(os.tmpdir(), 'zipped-code.zip')
         await fs.writeFile(tempFilePath, zip.toBuffer())
-        if (await fs.exists(dependenciesFolder.path)) {
+        if (dependenciesFolder && (await fs.exists(dependenciesFolder.path))) {
             await fs.delete(dependenciesFolder.path, { recursive: true, force: true })
         }
     } catch (e: any) {
+        getLogger().error(`CodeTransformation: zipCode error = ${e}`)
         throw Error('Failed to zip project')
     } finally {
         if (logFilePath) {
@@ -394,9 +420,9 @@ export async function startJob(uploadId: string) {
                 programmingLanguage: { languageName: CodeWhispererConstants.defaultLanguage.toLowerCase() },
             },
             transformationSpec: {
-                transformationType: CodeWhispererConstants.transformationType,
-                source: { language: sourceLanguageVersion },
-                target: { language: targetLanguageVersion },
+                transformationType: CodeWhispererConstants.transformationType, // shared b/w language upgrades & sql conversions for now
+                source: { language: sourceLanguageVersion }, // dummy value of JDK8 used for SQL conversions just so that this API can be called
+                target: { language: targetLanguageVersion }, // always JDK17
             },
         })
         if (response.$response.requestId) {
