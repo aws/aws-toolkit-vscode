@@ -818,7 +818,7 @@ export async function postTransformationJob() {
     transformByQState.getChatControllers()?.transformationFinished.fire({
         message: chatMessage,
         tabID: ChatSessionManager.Instance.getSession().tabID,
-        includeStartNewTransformationButton: 'true',
+        includeStartNewTransformationButton: true,
     })
     const durationInMs = calculateTotalLatency(CodeTransformTelemetryState.instance.getStartTime())
     const resultStatusMessage = transformByQState.getStatus()

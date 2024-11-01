@@ -10,7 +10,7 @@ import { parsePatch, applyPatches, ParsedDiff } from 'diff'
 import path from 'path'
 import vscode from 'vscode'
 import { ExportIntent } from '@amzn/codewhisperer-streaming'
-import { TransformationType, TransformByQReviewStatus, transformByQState } from '../../models/model'
+import { TransformByQReviewStatus, transformByQState, PatchInfo, DescriptionContent } from '../../models/model'
 import { ExportResultArchiveStructure, downloadExportResultArchive } from '../../../shared/utilities/download'
 import { getLogger } from '../../../shared/logger'
 import { telemetry } from '../../../shared/telemetry/telemetry'
@@ -112,9 +112,9 @@ export class PatchFileNode {
     readonly patchFilePath: string
     children: ProposedChangeNode[] = []
 
-    constructor(patchFilePath: string) {
+    constructor(description: PatchInfo | undefined = undefined, patchFilePath: string) {
         this.patchFilePath = patchFilePath
-        this.label = path.basename(patchFilePath)
+        this.label = description ? description.name : path.basename(patchFilePath)
     }
 }
 
@@ -202,7 +202,7 @@ export class DiffModel {
                 }
             },
         })
-        const patchFileNode = new PatchFileNode(diffDescription ? diffDescription.name : pathToDiff)
+        const patchFileNode = new PatchFileNode(diffDescription, pathToDiff)
         patchFileNode.label = `Patch ${this.currentPatchIndex + 1} of ${totalDiffPatches}: ${patchFileNode.label}`
         patchFileNode.children = changedFiles.flatMap((file) => {
             /* ex. file.oldFileName = 'a/src/java/com/project/component/MyFile.java'
@@ -318,7 +318,8 @@ export class ProposedTransformationExplorer {
         })
 
         const patchFiles: string[] = []
-        let patchFilesDescriptions: PatchInfo[] | undefined = undefined
+        let singlePatchFile: string = ''
+        let patchFilesDescriptions: DescriptionContent | undefined = undefined
 
         const reset = async () => {
             await setContext('gumby.transformationProposalReviewInProgress', false)
@@ -411,7 +412,7 @@ export class ProposedTransformationExplorer {
                 transformByQState.getChatControllers()?.transformationFinished.fire({
                     message: `${CodeWhispererConstants.errorDownloadingDiffChatMessage} The download failed due to: ${downloadErrorMessage}`,
                     tabID: ChatSessionManager.Instance.getSession().tabID,
-                    includeStartNewTransformationButton: 'true',
+                    includeStartNewTransformationButton: true,
                 })
                 await setContext('gumby.reviewState', TransformByQReviewStatus.NotStarted)
                 getLogger().error(`CodeTransformation: ExportResultArchive error = ${downloadErrorMessage}`)
@@ -431,19 +432,32 @@ export class ProposedTransformationExplorer {
                 const files = fs.readdirSync(path.join(pathContainingArchive, ExportResultArchiveStructure.PathToPatch))
                 files.forEach((file) => {
                     const filePath = path.join(pathContainingArchive, ExportResultArchiveStructure.PathToPatch, file)
-                    if (file.endsWith('.patch')) {
-                        patchFiles.push(filePath)
+                    if (file === 'diff.patch') {
+                        singlePatchFile = filePath
                     } else if (file.endsWith('.json')) {
                         const jsonData = fs.readFileSync(filePath, 'utf-8')
                         patchFilesDescriptions = JSON.parse(jsonData)
                     }
                 })
+                if (patchFilesDescriptions !== undefined) {
+                    for (const patchInfo of patchFilesDescriptions.content) {
+                        patchFiles.push(
+                            path.join(
+                                pathContainingArchive,
+                                ExportResultArchiveStructure.PathToPatch,
+                                patchInfo.filename
+                            )
+                        )
+                    }
+                } else {
+                    patchFiles.push(singlePatchFile)
+                }
 
                 //Because multiple patches are returned once the ZIP is downloaded, we want to show the first one to start
                 diffModel.parseDiff(
                     patchFiles[0],
                     transformByQState.getProjectPath(),
-                    patchFilesDescriptions ? patchFilesDescriptions[0] : undefined,
+                    patchFilesDescriptions ? patchFilesDescriptions.content[0] : undefined,
                     patchFiles.length
                 )
 
@@ -460,7 +474,7 @@ export class ProposedTransformationExplorer {
                 transformByQState.getChatControllers()?.transformationFinished.fire({
                     message: CodeWhispererConstants.viewProposedChangesChatMessage,
                     tabID: ChatSessionManager.Instance.getSession().tabID,
-                    includeStartNewTransformationButton: 'true',
+                    includeStartNewTransformationButton: true,
                 })
                 await vscode.commands.executeCommand('aws.amazonq.transformationHub.summary.reveal')
             } catch (e: any) {
@@ -469,7 +483,7 @@ export class ProposedTransformationExplorer {
                 transformByQState.getChatControllers()?.transformationFinished.fire({
                     message: `${CodeWhispererConstants.errorDeserializingDiffChatMessage} ${deserializeErrorMessage}`,
                     tabID: ChatSessionManager.Instance.getSession().tabID,
-                    includeStartNewTransformationButton: 'true',
+                    includeStartNewTransformationButton: true,
                 })
                 void vscode.window.showErrorMessage(
                     `${CodeWhispererConstants.errorDeserializingDiffNotification} ${deserializeErrorMessage}`
@@ -518,7 +532,7 @@ export class ProposedTransformationExplorer {
                         patchFiles.length
                     ),
                     tabID: ChatSessionManager.Instance.getSession().tabID,
-                    includeStartNewTransformationButton: 'true',
+                    includeStartNewTransformationButton: true,
                 })
             } else {
                 transformByQState.getChatControllers()?.transformationFinished.fire({
@@ -527,7 +541,7 @@ export class ProposedTransformationExplorer {
                         patchFiles.length
                     ),
                     tabID: ChatSessionManager.Instance.getSession().tabID,
-                    includeStartNewTransformationButton: 'false',
+                    includeStartNewTransformationButton: false,
                 })
             }
 
@@ -536,7 +550,7 @@ export class ProposedTransformationExplorer {
             if (diffModel.currentPatchIndex < patchFiles.length) {
                 const nextPatchFile = patchFiles[diffModel.currentPatchIndex]
                 const nextPatchFileDescription = patchFilesDescriptions
-                    ? patchFilesDescriptions[diffModel.currentPatchIndex]
+                    ? patchFilesDescriptions.content[diffModel.currentPatchIndex]
                     : undefined
                 diffModel.parseDiff(
                     nextPatchFile,

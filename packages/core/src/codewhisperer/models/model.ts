@@ -53,8 +53,12 @@ export type SupplementalContextStrategy = CrossFileStrategy | UtgStrategy | 'Emp
 
 export type PatchInfo = {
     name: string
-    fileName: string
+    filename: string
     isSuccessful: boolean
+}
+
+export type DescriptionContent = {
+    content: PatchInfo[]
 }
 
 export interface CodeWhispererSupplementalContext {

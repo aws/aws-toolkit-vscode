@@ -594,7 +594,7 @@ export class GumbyController {
     private transformationFinished(data: {
         message: string | undefined
         tabID: string
-        includeStartNewTransformationButton: string
+        includeStartNewTransformationButton: boolean
     }) {
         this.resetTransformationChatFlow()
         // at this point job is either completed, partially_completed, cancelled, or failed
@@ -708,7 +708,7 @@ export class GumbyController {
             this.transformationFinished({
                 tabID: message.tabID,
                 message: (err as Error).message,
-                includeStartNewTransformationButton: 'true',
+                includeStartNewTransformationButton: true,
             })
         }
 

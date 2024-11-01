@@ -473,13 +473,9 @@ export class Messenger {
         this.dispatcher.sendCommandMessage(new SendCommandMessage(message.command, message.tabID, message.eventId))
     }
 
-    public sendJobFinishedMessage(
-        tabID: string,
-        message: string,
-        includeStartNewTransformationButton: string = 'true'
-    ) {
+    public sendJobFinishedMessage(tabID: string, message: string, includeStartNewTransformationButton: boolean = true) {
         const buttons: ChatItemButton[] = []
-        if (includeStartNewTransformationButton === 'true') {
+        if (includeStartNewTransformationButton) {
             buttons.push({
                 keepCardAfterClick: false,
                 text: CodeWhispererConstants.startTransformationButtonText,

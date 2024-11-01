@@ -6,13 +6,13 @@ import assert from 'assert'
 import sinon from 'sinon'
 import os from 'os'
 import { DiffModel, AddedChangeNode, ModifiedChangeNode } from 'aws-core-vscode/codewhisperer/node'
-import { PatchInfo } from 'aws-core-vscode/codewhisperer'
+import { DescriptionContent } from 'aws-core-vscode/codewhisperer'
 import path from 'path'
 import { getTestResourceFilePath } from './amazonQGumbyUtil'
 import { fs } from 'aws-core-vscode/shared'
 
 describe('DiffModel', function () {
-    let parsedTestDescriptions: PatchInfo[]
+    let parsedTestDescriptions: DescriptionContent
     beforeEach(() => {
         const fs = require('fs')
         parsedTestDescriptions = JSON.parse(
@@ -40,14 +40,17 @@ describe('DiffModel', function () {
         testDiffModel.parseDiff(
             getTestResourceFilePath('resources/files/addedFile.diff'),
             workspacePath,
-            parsedTestDescriptions[0],
+            parsedTestDescriptions.content[0],
             1
         )
 
         assert.strictEqual(testDiffModel.patchFileNodes.length, 1)
         assert.strictEqual(testDiffModel.patchFileNodes[0].children.length, 1)
-        assert.strictEqual(testDiffModel.patchFileNodes[0].patchFilePath, parsedTestDescriptions[0].name)
-        assert(testDiffModel.patchFileNodes[0].label.endsWith(parsedTestDescriptions[0].name))
+        assert.strictEqual(
+            testDiffModel.patchFileNodes[0].patchFilePath,
+            getTestResourceFilePath('resources/files/addedFile.diff')
+        )
+        assert(testDiffModel.patchFileNodes[0].label.endsWith(parsedTestDescriptions.content[0].name))
         const change = testDiffModel.patchFileNodes[0].children[0]
 
         assert.strictEqual(change instanceof AddedChangeNode, true)
@@ -68,14 +71,17 @@ describe('DiffModel', function () {
         testDiffModel.parseDiff(
             getTestResourceFilePath('resources/files/modifiedFile.diff'),
             workspacePath,
-            parsedTestDescriptions[0],
+            parsedTestDescriptions.content[0],
             1
         )
 
         assert.strictEqual(testDiffModel.patchFileNodes.length, 1)
         assert.strictEqual(testDiffModel.patchFileNodes[0].children.length, 1)
-        assert.strictEqual(testDiffModel.patchFileNodes[0].patchFilePath, parsedTestDescriptions[0].name)
-        assert(testDiffModel.patchFileNodes[0].label.endsWith(parsedTestDescriptions[0].name))
+        assert.strictEqual(
+            testDiffModel.patchFileNodes[0].patchFilePath,
+            getTestResourceFilePath('resources/files/modifiedFile.diff')
+        )
+        assert(testDiffModel.patchFileNodes[0].label.endsWith(parsedTestDescriptions.content[0].name))
         const change = testDiffModel.patchFileNodes[0].children[0]
 
         assert.strictEqual(change instanceof ModifiedChangeNode, true)
