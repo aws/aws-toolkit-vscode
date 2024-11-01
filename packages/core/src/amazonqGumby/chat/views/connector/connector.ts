@@ -117,7 +117,8 @@ export class ChatPrompt extends UiMessage {
             keepCardAfterClick: false,
             waitMandatoryFormItems: false,
             text: 'Cancel',
-            id: `gumby${promptIDPrefix}Cancel`,
+            // makes the Cancel button shared in all forms, which is fine since we respond the same exact way each time
+            id: 'gumbyTransformFormCancel',
         })
     }
 }
