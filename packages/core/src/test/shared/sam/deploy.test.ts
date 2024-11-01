@@ -709,8 +709,6 @@ describe('SAM Deploy', () => {
                     '--parameter-overrides',
                     `ParameterKey=SourceBucketName,ParameterValue=${mockDeployParams.SourceBucketName} ` +
                         `ParameterKey=DestinationBucketName,ParameterValue=${mockDeployParams.DestinationBucketName}`,
-                    '--template-file',
-                    vscode.Uri.joinPath(projectRoot, '.aws-sam', 'build', 'template.yaml').fsPath,
                 ],
                 {
                     spawnOptions: {
@@ -787,8 +785,6 @@ describe('SAM Deploy', () => {
                     '--parameter-overrides',
                     `ParameterKey=SourceBucketName,ParameterValue=${mockDeployParams.SourceBucketName} ` +
                         `ParameterKey=DestinationBucketName,ParameterValue=${mockDeployParams.DestinationBucketName}`,
-                    '--template-file',
-                    vscode.Uri.joinPath(projectRoot, '.aws-sam', 'build', 'template.yaml').fsPath,
                 ],
                 {
                     spawnOptions: {
@@ -867,8 +863,6 @@ describe('SAM Deploy', () => {
                     '--parameter-overrides',
                     `ParameterKey=SourceBucketName,ParameterValue=${mockDeployParams.SourceBucketName} ` +
                         `ParameterKey=DestinationBucketName,ParameterValue=${mockDeployParams.DestinationBucketName}`,
-                    '--template-file',
-                    vscode.Uri.joinPath(projectRoot, '.aws-sam', 'build', 'template.yaml').fsPath,
                 ],
                 {
                     spawnOptions: {
