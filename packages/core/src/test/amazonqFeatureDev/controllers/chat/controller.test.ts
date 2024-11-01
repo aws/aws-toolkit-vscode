@@ -402,6 +402,7 @@ describe('Controller', () => {
         }
 
         describe('processErrorChatMessage', function () {
+            // TODO: fix disablePreviousFileList error
             const runs = [
                 { name: 'ContentLengthError', error: new ContentLengthError() },
                 {

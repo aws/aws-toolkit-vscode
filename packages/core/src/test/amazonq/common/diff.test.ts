@@ -61,7 +61,7 @@ describe('diff', () => {
             await openDeletedDiff(filePath, name, tabId)
 
             const expectedPath = vscode.Uri.file(filePath)
-            assert.ok(executeCommandSpy.calledWith('vscode.open', expectedPath, {}, `${name} (Deleted)`))
+            assert.ok(executeCommandSpy.calledWith('vscode.diff', expectedPath, expectedPath, `${name} (Deleted)`))
         })
 
         it('file does not exists locally', async () => {
@@ -69,7 +69,7 @@ describe('diff', () => {
             await openDeletedDiff(filePath, name, tabId)
 
             const expectedPath = createAmazonQUri('empty', tabId)
-            assert.ok(executeCommandSpy.calledWith('vscode.open', expectedPath, {}, `${name} (Deleted)`))
+            assert.ok(executeCommandSpy.calledWith('vscode.open', expectedPath, expectedPath, `${name} (Deleted)`))
         })
     })
 
