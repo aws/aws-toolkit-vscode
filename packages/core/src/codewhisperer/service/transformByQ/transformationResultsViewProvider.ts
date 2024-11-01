@@ -408,6 +408,11 @@ export class ProposedTransformationExplorer {
                 const metricsPath = path.join(pathContainingArchive, ExportResultArchiveStructure.PathToMetrics)
                 const metricsData = JSON.parse(fs.readFileSync(metricsPath, 'utf8'))
 
+                console.log('locChanged = ', metricsData.linesOfCodeChanged)
+                console.log('charsChanged = ', metricsData.charsOfCodeChanged)
+                console.log('linesSubmitted = ', transformByQState.getLinesOfCodeSubmitted())
+
+                // TO-DO: add support for SQL conversions; right now these metrics are only available for Java upgrades
                 await codeWhisperer.codeWhispererClient.sendTelemetryEvent({
                     telemetryEvent: {
                         transformEvent: {
@@ -415,7 +420,7 @@ export class ProposedTransformationExplorer {
                             timestamp: new Date(),
                             ideCategory: 'VSCODE',
                             programmingLanguage: {
-                                languageName: 'JAVA', // TO-DO: use transformByQState.getTransformationType() to tell if JAVA or SQL
+                                languageName: 'JAVA',
                             },
                             linesOfCodeChanged: metricsData.linesOfCodeChanged,
                             charsOfCodeChanged: metricsData.charsOfCodeChanged,
