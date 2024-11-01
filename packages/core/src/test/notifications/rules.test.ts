@@ -35,6 +35,11 @@ describe('Notifications Rule Engine', function () {
                         description: 'Something crazy is happening! Please update your extension.',
                     },
                 },
+                onRecieve: 'toast',
+                onClick: {
+                    type: 'openUrl',
+                    url: 'https://aws.amazon.com/visualstudiocode/',
+                },
             },
         }
     }
