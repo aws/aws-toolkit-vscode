@@ -107,6 +107,7 @@ export class NotificationsController {
             this.state.newlyReceived = this.state.newlyReceived.filter(
                 (id) => !newlyReceivedToDisplay.some((n) => n.id === id)
             )
+            await this.writeState()
         }
     }
 

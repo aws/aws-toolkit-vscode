@@ -196,10 +196,6 @@ export class NotificationsNode implements TreeNode {
         const isModal = type === 'modal'
 
         // modal has to have defined actions(buttons)
-        if (!notification.uiRenderInstructions.actions && isModal) {
-            throw new ToolkitError('no button defined for modal')
-            return
-        }
         const buttons = notification.uiRenderInstructions.actions ?? []
         const buttonLabels = buttons.map((actions) => actions.displayText['en-US'])
         const detail = notification.uiRenderInstructions.content['en-US'].description
@@ -279,5 +275,3 @@ export class NotificationsNode implements TreeNode {
 export function registerProvider(provider: ResourceTreeDataProvider) {
     NotificationsNode.instance.provider = provider
 }
-
-//export const testNotificationsNode = new NotificationsNode()
