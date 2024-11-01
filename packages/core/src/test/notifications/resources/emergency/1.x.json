@@ -9,24 +9,83 @@
             "uiRenderInstructions": {
                 "content": {
                     "en-US": {
-                        "title": "[local] Emergency: Broken stuff",
-                        "description": "Something crazy is happening! Please update your extension."
+                        "title": "[local] Emergency: url",
+                        "description": "Something crazy is happening! Please update your extension.",
+                        "toastPreview": "omg"
                     }
-                }
+                },
+                "onRecieve": "toast",
+                "onClick": {
+                    "type": "modal"
+                },
+                "actions": [
+                    {
+                        "type": "updateAndReload",
+                        "displayText": {
+                            "en-US": "Update and Reload"
+                        }
+                    },
+                    {
+                        "type": "openUrl",
+                        "url": "https://aws.amazon.com/visualstudiocode/",
+                        "displayText": {
+                            "en-US": "Proceed to wiki"
+                        }
+                    }
+                ]
             }
         },
         {
-            "id": "toolkit_emergency_local_1",
+            "id": "amazonq_emergency_local_2",
             "displayIf": {
-                "extensionId": "amazonwebservices.aws-toolkit-vscode"
+                "extensionId": "amazonwebservices.amazon-q-vscode"
             },
             "uiRenderInstructions": {
                 "content": {
                     "en-US": {
-                        "title": "[local] Emergency: Broken stuff",
-                        "description": "Something crazy is happening! Please update your extension."
+                        "title": "[local] Emergency: txt",
+                        "description": "Something crazy is happening! Please update your extension.",
+                        "toastPreview": "omg"
                     }
+                },
+                "onRecieve": "toast",
+                "onClick": {
+                    "type": "openTextDocument"
                 }
+            }
+        },
+        {
+            "id": "amazonq_emergency_local_3",
+            "displayIf": {
+                "extensionId": "amazonwebservices.amazon-q-vscode"
+            },
+            "uiRenderInstructions": {
+                "content": {
+                    "en-US": {
+                        "title": "[local] Emergency: modal",
+                        "description": "Something crazy is happening! Please update your extension.",
+                        "toastPreview": "new notification: something crazy is happening! Please update your entension and look on our wiki."
+                    }
+                },
+                "onRecieve": "toast",
+                "onClick": {
+                    "type": "openTextDocument"
+                },
+                "actions": [
+                    {
+                        "type": "updateAndReload",
+                        "displayText": {
+                            "en-US": "Update and Reload"
+                        }
+                    },
+                    {
+                        "type": "openUrl",
+                        "url": "https://aws.amazon.com/visualstudiocode/",
+                        "displayText": {
+                            "en-US": "Proceed to wiki"
+                        }
+                    }
+                ]
             }
         }
     ]
