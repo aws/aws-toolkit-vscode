@@ -354,16 +354,24 @@ export class SyncWizard extends Wizard<SyncParams> {
         })
 
         this.form.ecrRepoUri.bindPrompter(({ region }) => createEcrPrompter(new DefaultEcrClient(region!)), {
-            showWhen: ({ template }) => !!template && hasImageBasedResources(template.data),
+            showWhen: ({ template, paramsSource }) =>
+                !!template &&
+                hasImageBasedResources(template.data) &&
+                (paramsSource === ParamsSource.Flags || paramsSource === ParamsSource.SpecifyAndSave),
         })
 
         // todo wrap with localize
-        this.form.syncFlags.bindPrompter(() =>
-            createMultiPick(syncFlagItems, {
-                title: 'Specify parameters for sync',
-                placeholder: 'Press enter to proceed with highlighted option',
-                buttons: createCommonButtons(samSyncParamUrl),
-            })
+        this.form.syncFlags.bindPrompter(
+            () =>
+                createMultiPick(syncFlagItems, {
+                    title: 'Specify parameters for sync',
+                    placeholder: 'Press enter to proceed with highlighted option',
+                    buttons: createCommonButtons(samSyncParamUrl),
+                }),
+            {
+                showWhen: ({ paramsSource }) =>
+                    paramsSource === ParamsSource.Flags || paramsSource === ParamsSource.SpecifyAndSave,
+            }
         )
     }
 }

@@ -105,14 +105,26 @@ describe('SyncWizard', async function () {
     })
 
     it('prompts for ECR repo if template has image-based resource', async function () {
-        const template = { uri: vscode.Uri.file('/'), data: createBaseImageTemplate() }
-        const tester = await createTester({ template })
+        const workspaceUri = vscode.workspace.workspaceFolders?.[0]?.uri || vscode.Uri.file('/')
+        const rootFolderUri = vscode.Uri.joinPath(workspaceUri, 'my')
+        const templateUri = vscode.Uri.joinPath(rootFolderUri, 'template.yaml')
+        const template = { uri: templateUri, data: createBaseImageTemplate() }
+        const tester = await createTester({
+            template,
+            paramsSource: ParamsSource.Flags,
+        })
         tester.ecrRepoUri.assertShow()
     })
 
     it('skips prompt for ECR repo if template has no image-based resources', async function () {
         const template = { uri: vscode.Uri.file('/'), data: createBaseTemplate() }
         const tester = await createTester({ template })
+        tester.ecrRepoUri.assertDoesNotShow()
+    })
+
+    it('skips prompt for ECR repo if param source is to use samconfig', async function () {
+        const template = { uri: vscode.Uri.file('/'), data: createBaseTemplate() }
+        const tester = await createTester({ template, paramsSource: ParamsSource.SamConfig })
         tester.ecrRepoUri.assertDoesNotShow()
     })
 
