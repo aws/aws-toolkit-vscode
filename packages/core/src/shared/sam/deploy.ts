@@ -377,10 +377,6 @@ export async function runDeploy(arg: any, wizardParams?: DeployParams): Promise<
                 throw ToolkitError.chain(error, 'Failed to build SAM template', { details: { ...buildFlags } })
             }
 
-            // Pass built template to deployFlags
-            const templatePath = vscode.Uri.joinPath(params.projectRoot, '.aws-sam', 'build', 'template.yaml').fsPath
-            deployFlags.push('--template-file', `${templatePath}`)
-
             // Create a child process to run the SAM deploy command
             const deployProcess = new ChildProcess(samCliPath, ['deploy', ...deployFlags], {
                 spawnOptions: await addTelemetryEnvVar({

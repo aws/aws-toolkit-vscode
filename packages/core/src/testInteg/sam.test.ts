@@ -883,8 +883,6 @@ describe('SAM Integration Tests', async function () {
                 '--capabilities',
                 'CAPABILITY_IAM',
                 'CAPABILITY_NAMED_IAM',
-                '--template-file',
-                vscode.Uri.joinPath(mockDeployParams.projectRoot, '.aws-sam', 'build', 'template.yaml').fsPath,
             ])
 
             // Check that runInTerminal is called with the correct arguments for deploy
