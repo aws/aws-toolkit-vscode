@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "SAM: Skip unnecessary prompters for sync operation when using flag from samconfig.toml file"
+}
