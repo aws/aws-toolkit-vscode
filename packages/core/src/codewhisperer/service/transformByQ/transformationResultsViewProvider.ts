@@ -422,7 +422,7 @@ export class ProposedTransformationExplorer {
                                         : 'SQL',
                             },
                             linesOfCodeChanged: metricsData.linesOfCodeChanged,
-                            charsOfCodeChanged: metricsData.charsOfCodeChanged,
+                            charsOfCodeChanged: metricsData.charactersOfCodeChanged,
                             linesOfCodeSubmitted: transformByQState.getLinesOfCodeSubmitted(),
                         },
                     },
