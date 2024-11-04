@@ -208,7 +208,8 @@ function logSupplementalContext(supplementalContext: CodeWhispererSupplementalCo
         isUtg: ${supplementalContext.isUtg},
         isProcessTimeout: ${supplementalContext.isProcessTimeout},
         contentsLength: ${supplementalContext.contentsLength},
-        latency: ${supplementalContext.latency}`,
+        latency: ${supplementalContext.latency}
+        strategy: ${supplementalContext.strategy}`,
         4,
         true
     ).trimStart()
