@@ -215,12 +215,11 @@ function logSupplementalContext(supplementalContext: CodeWhispererSupplementalCo
     ).trimStart()
 
     supplementalContext.supplementalContextItems.forEach((context, index) => {
+        logString += indent(`\nChunk ${index}:\n`, 4, true)
         logString += indent(
-            `\nChunk ${index}:
-            Path: ${context.filePath}
-            Length: ${context.content}
-            Score: ${context.score}
-            -----------------------------------------------`,
+            `Path: ${context.filePath}
+            Length: ${context.content.length}
+            Score: ${context.score}`,
             8,
             true
         )
