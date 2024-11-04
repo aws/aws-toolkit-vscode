@@ -438,7 +438,7 @@ export class Messenger {
         let message = ''
         switch (quickAction) {
             case 'help':
-                message = 'What can Amazon Q help me with?'
+                message = 'How can Amazon Q help me?'
                 break
         }
 
