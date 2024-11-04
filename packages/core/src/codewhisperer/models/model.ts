@@ -330,17 +330,19 @@ export class ZipManifest {
     hilCapabilities: string[] = ['HIL_1pDependency_VersionUpgrade']
     transformCapabilities: string[] = ['EXPLAINABILITY_V1'] // TO-DO: for SQL conversions, maybe make this = []
     customBuildCommand: string = 'clean test'
-    requestedConversions: {
-        sqlConversion:
-            | {
-                  source: string | undefined
-                  target: string | undefined
-                  schema: string | undefined
-                  host: string | undefined
-                  sctFileName: string | undefined
-              }
-            | undefined
-    } = { sqlConversion: undefined }
+    requestedConversions:
+        | {
+              sqlConversion:
+                  | {
+                        source: string | undefined
+                        target: string | undefined
+                        schema: string | undefined
+                        host: string | undefined
+                        sctFileName: string | undefined
+                    }
+                  | undefined
+          }
+        | undefined = undefined
 }
 
 export interface IHilZipManifestParams {
