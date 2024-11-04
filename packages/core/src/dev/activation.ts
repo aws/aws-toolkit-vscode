@@ -15,7 +15,7 @@ import { createInputBox } from '../shared/ui/inputPrompter'
 import { Wizard } from '../shared/wizards/wizard'
 import { deleteDevEnvCommand, installVsixCommand, openTerminalCommand } from './codecatalyst'
 import { watchBetaVSIX } from './beta'
-import { isCloud9 } from '../shared/extensionUtilities'
+import { isCloud9, isAmazonQ } from '../shared/extensionUtilities'
 import { isReleaseVersion } from '../shared/vscode/env'
 import { isAnySsoConnection } from '../auth/connection'
 import { Auth } from '../auth/auth'
@@ -195,8 +195,9 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
     const editor = new ObjectEditor()
     ctx.subscriptions.push(openStorageCommand.register(editor))
 
-    if (!isCloud9() && !isReleaseVersion() && config.betaUrl) {
-        ctx.subscriptions.push(watchBetaVSIX(config.betaUrl))
+    const betaUrl = isAmazonQ() ? config.betaUrl.amazonq : config.betaUrl.toolkit
+    if (!isCloud9() && !isReleaseVersion() && betaUrl) {
+        ctx.subscriptions.push(watchBetaVSIX(betaUrl))
     }
 }
 
