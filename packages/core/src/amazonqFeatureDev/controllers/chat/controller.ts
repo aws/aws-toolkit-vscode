@@ -350,8 +350,6 @@ export class FeatureDevController {
             return
         }
 
-        await this.disablePreviousFileList(message.tabID)
-
         /**
          * Don't attempt to process any chat messages when a workspace folder is not set.
          * When the tab is first opened we will throw an error and lock the chat if the workspace
@@ -367,6 +365,7 @@ export class FeatureDevController {
             getLogger().debug(`${featureName}: Processing message: ${message.message}`)
 
             session = await this.sessionStorage.getSession(message.tabID)
+            await session.disableFileList()
             const authState = await AuthUtil.instance.getChatAuthState()
             if (authState.amazonQ !== 'connected') {
                 await this.messenger.sendAuthNeededExceptionMessage(authState, message.tabID)
@@ -600,11 +599,6 @@ export class FeatureDevController {
                 session?.conversationIdUnsafe
             )
         }
-    }
-
-    private async disablePreviousFileList(tabId: string) {
-        const session = await this.sessionStorage.getSession(tabId)
-        await session.disableFileList()
     }
 
     private async provideFeedbackAndRegenerateCode(message: any) {
@@ -906,9 +900,9 @@ export class FeatureDevController {
     }
 
     private async newTask(message: any) {
-        await this.disablePreviousFileList(message.tabID)
         // Old session for the tab is ending, delete it so we can create a new one for the message id
         const session = await this.sessionStorage.getSession(message.tabID)
+        await session.disableFileList()
         telemetry.amazonq_endChat.emit({
             amazonqConversationId: session.conversationId,
             amazonqEndOfTheConversationLatency: performance.now() - session.telemetry.sessionStartTime,
@@ -924,7 +918,6 @@ export class FeatureDevController {
     }
 
     private async closeSession(message: any) {
-        await this.disablePreviousFileList(message.tabID)
         this.messenger.sendAnswer({
             type: 'answer',
             tabID: message.tabID,
@@ -934,6 +927,7 @@ export class FeatureDevController {
         this.messenger.sendChatInputEnabled(message.tabID, false)
 
         const session = await this.sessionStorage.getSession(message.tabID)
+        await session.disableFileList()
         telemetry.amazonq_endChat.emit({
             amazonqConversationId: session.conversationId,
             amazonqEndOfTheConversationLatency: performance.now() - session.telemetry.sessionStartTime,
