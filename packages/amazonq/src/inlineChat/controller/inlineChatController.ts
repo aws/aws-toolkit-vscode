@@ -13,7 +13,16 @@ import { computeDecorations } from '../decorations/computeDecorations'
 import { CodelensProvider } from '../codeLenses/codeLenseProvider'
 import { PromptMessage, ReferenceLogController } from 'aws-core-vscode/codewhispererChat'
 import { CodeWhispererSettings } from 'aws-core-vscode/codewhisperer'
-import { codicon, getIcon, getLogger, messages, setContext, Timeout, textDocumentUtil } from 'aws-core-vscode/shared'
+import {
+    codicon,
+    getIcon,
+    getLogger,
+    messages,
+    setContext,
+    Timeout,
+    textDocumentUtil,
+    isSageMaker,
+} from 'aws-core-vscode/shared'
 import { InlineLineAnnotationController } from '../decorations/inlineLineAnnotationController'
 
 export class InlineChatController {
@@ -162,6 +171,11 @@ export class InlineChatController {
             return
         }
 
+        if (isSageMaker()) {
+            void vscode.window.showWarningMessage('Amazon Q: Inline chat is not supported in Sagemaker')
+            return
+        }
+
         if (this.task && this.task.isActiveState()) {
             void vscode.window.showWarningMessage(
                 'Amazon Q: Reject or Accept the current suggestion before creating a new one'
@@ -177,7 +191,7 @@ export class InlineChatController {
             })
             .then(async (query) => {
                 if (!query || query.trim() === '') {
-                    void vscode.window.showWarningMessage('Amazon Q: Instructions for cannot be empty')
+                    getLogger().info('inlineQuickPick query is empty')
                     return
                 }
 
