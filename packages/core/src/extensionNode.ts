@@ -35,6 +35,7 @@ import { activate as activateEcs } from './awsService/ecs/activation'
 import { activate as activateAppRunner } from './awsService/apprunner/activation'
 import { activate as activateIot } from './awsService/iot/activation'
 import { activate as activateDev } from './dev/activation'
+import * as beta from './dev/beta'
 import { activate as activateApplicationComposer } from './applicationcomposer/activation'
 import { activate as activateRedshift } from './awsService/redshift/activation'
 import { activate as activateIamPolicyChecks } from './awsService/accessanalyzer/activation'
@@ -106,6 +107,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
         try {
             await activateDev(context)
+            await beta.activate(context)
         } catch (error) {
             getLogger().debug(`Developer Tools (internal): failed to activate: ${(error as Error).message}`)
         }

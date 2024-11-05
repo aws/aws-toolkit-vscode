@@ -4,7 +4,6 @@
  */
 
 import * as vscode from 'vscode'
-import * as config from './config'
 import { createCommonButtons } from '../shared/ui/buttons'
 import { createQuickPick } from '../shared/ui/pickerPrompter'
 import { SkipPrompter } from '../shared/ui/common/skipPrompter'
@@ -14,9 +13,6 @@ import { Commands } from '../shared/vscode/commands2'
 import { createInputBox } from '../shared/ui/inputPrompter'
 import { Wizard } from '../shared/wizards/wizard'
 import { deleteDevEnvCommand, installVsixCommand, openTerminalCommand } from './codecatalyst'
-import { watchBetaVSIX } from './beta'
-import { isCloud9 } from '../shared/extensionUtilities'
-import { isReleaseVersion } from '../shared/vscode/env'
 import { isAnySsoConnection } from '../auth/connection'
 import { Auth } from '../auth/auth'
 import { getLogger } from '../shared/logger'
@@ -194,10 +190,6 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
 
     const editor = new ObjectEditor()
     ctx.subscriptions.push(openStorageCommand.register(editor))
-
-    if (!isCloud9() && !isReleaseVersion() && config.betaUrl) {
-        ctx.subscriptions.push(watchBetaVSIX(config.betaUrl))
-    }
 }
 
 async function openMenu(options: MenuOption[]): Promise<void> {
