@@ -216,6 +216,8 @@ export interface SamCliLocalInvokeInvocationArguments {
     extraArgs?: string[]
     /** Debug session name */
     name?: string
+    /** AWS region */
+    region?: string
 }
 
 /**
@@ -256,6 +258,7 @@ export class SamCliLocalInvokeInvocation {
         pushIf(invokeArgs, !!this.args.debuggerPath, '--debugger-path', this.args.debuggerPath!)
         pushIf(invokeArgs, !!this.args.debugArgs, '--debug-args', ...(this.args.debugArgs ?? []))
         pushIf(invokeArgs, !!this.args.containerEnvFile, '--container-env-vars', this.args.containerEnvFile)
+        pushIf(invokeArgs, !!this.args.region, '--region', this.args.region)
 
         pushIf(
             invokeArgs,

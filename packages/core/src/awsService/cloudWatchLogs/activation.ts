@@ -19,6 +19,10 @@ import { searchLogGroup } from './commands/searchLogGroup'
 import { changeLogSearchParams } from './changeLogSearch'
 import { CloudWatchLogsNode } from './explorer/cloudWatchLogsNode'
 import { loadAndOpenInitialLogStreamFile, LogStreamCodeLensProvider } from './document/logStreamsCodeLensProvider'
+import { DeployedResourceNode } from '../appBuilder/explorer/nodes/deployedNode'
+import { isTreeNode } from '../../shared/treeview/resourceTreeDataProvider'
+import { getLogger } from '../../shared/logger/logger'
+import { ToolkitError } from '../../shared'
 
 export async function activate(context: vscode.ExtensionContext, configuration: Settings): Promise<void> {
     const registry = LogDataRegistry.instance
@@ -89,6 +93,26 @@ export async function activate(context: vscode.ExtensionContext, configuration: 
 
         Commands.register('aws.cwl.changeFilterPattern', async () => changeLogSearchParams(registry, 'filterPattern')),
 
-        Commands.register('aws.cwl.changeTimeFilter', async () => changeLogSearchParams(registry, 'timeFilter'))
+        Commands.register('aws.cwl.changeTimeFilter', async () => changeLogSearchParams(registry, 'timeFilter')),
+
+        Commands.register('aws.appBuilder.searchLogs', async (node: DeployedResourceNode) => {
+            try {
+                const logGroupInfo = isTreeNode(node)
+                    ? {
+                          regionName: node.resource.regionCode,
+                          groupName: getFunctionLogGroupName(node.resource.explorerNode.configuration),
+                      }
+                    : undefined
+                const source: string = logGroupInfo ? 'AppBuilderSearchLogs' : 'CommandPaletteSearchLogs'
+                await searchLogGroup(registry, source, logGroupInfo)
+            } catch (err) {
+                getLogger().error('Failed to search logs: %s', err)
+                throw ToolkitError.chain(err, 'Failed to search logs')
+            }
+        })
     )
+}
+function getFunctionLogGroupName(configuration: any) {
+    const logGroupPrefix = '/aws/lambda/'
+    return configuration.logGroupName || logGroupPrefix + configuration.FunctionName
 }

@@ -259,6 +259,292 @@ How long it took from when the user stopped pressing a key to when they were sho
         end
 ```
 
+## Amazon Q Chat
+
+### amazonq_chatRoundTrip
+
+Measures sequential response times in Q chat, from user input to message display. Tracks time intervals between key events: editor receiving the message, feature processing, and final message rendering
+
+```mermaid
+    sequenceDiagram
+        participant User
+        participant chat as Chat UI
+        participant vscode as VSCode
+        participant event as Event Recorder
+        participant partner as Partner team code
+        participant telemetry
+
+        User->>chat: Write chat message and press enter
+        chat->>vscode: send message with timestamp
+        vscode->>event: record chatMessageSent/editorReceivedMessage timestamps
+        vscode->>partner: forward chat message
+        partner->>event: record featureReceivedMessage timestamp
+        partner->>partner: call backend/get response
+        partner->>vscode: forward response contents
+        vscode->>chat: display message
+        chat->>vscode: send stop-chat-message-telemetry event
+        vscode->>event: record messageDisplayed timestamp
+        event->>vscode: get the telemetry timestamps
+        vscode->>telemetry: emit amazonq_chatRoundTrip with telemetry timestamps
+```
+
+### cwsprChatTimeToFirstChunk
+
+The time between when the conversation stream is created and when we got back the first usable result
+
+```mermaid
+    sequenceDiagram
+        participant user as User
+        participant chat as Chat UI
+        participant vscode as VSCode extension host
+        participant generateResponse as Generate response
+        participant backend as Q service backend
+
+        user->>chat: Presses enter with message
+        chat->>vscode: Tell VSCode to generate a response
+        vscode->>generateResponse: start generating
+        generateResponse->>backend: start stream
+        backend->>backend: create conversation id
+        backend->>generateResponse: get conversation id
+        note over backend, generateResponse: cwsprChatTimeToFirstChunk
+        rect rgb(230, 230, 230, 0.5)
+            backend->>backend: generate first chunk
+            backend->>generateResponse: chunk received
+        end
+        generateResponse->>vscode: send chunk to display
+        vscode->>chat: display chunk
+        loop for each subsequent chunk
+            backend->>backend: generate next chunk
+            backend->>generateResponse: chunk received
+            generateResponse->>vscode: send chunk to display
+            vscode->>chat: display chunk
+        end
+```
+
+### cwsprChatTimeBetweenChunks
+
+An array of time when successive pieces of data are received from the server
+
+```mermaid
+    sequenceDiagram
+        participant user as User
+        participant chat as Chat UI
+        participant vscode as VSCode extension host
+        participant generateResponse as Generate response
+        participant backend as Q service backend
+
+        user->>chat: Presses enter with message
+        chat->>vscode: Tell VSCode to generate a response
+        vscode->>generateResponse: start generating
+        generateResponse->>backend: start stream
+        backend->>backend: create conversation id
+        backend->>generateResponse: get conversation id
+
+        loop for each subsequent chunk
+            note over backend, generateResponse: cwsprChatTimeBetweenChunks
+            rect rgb(230, 230, 230, 0.5)
+                backend->>backend: generate next chunk
+                backend->>generateResponse: chunk received
+                generateResponse->>generateResponse: record timestamp
+            end
+
+            generateResponse->>vscode: send chunk to display
+            vscode->>chat: display chunk
+        end
+```
+
+### cwsprChatFullResponseLatency
+
+The time between when the conversation id was created and the final response from the server was received
+
+```mermaid
+    sequenceDiagram
+        participant user as User
+        participant chat as Chat UI
+        participant vscode as VSCode extension host
+        participant generateResponse as Generate response
+        participant backend as Q service backend
+
+        user->>chat: Presses enter with message
+        chat->>vscode: Tell VSCode to generate a response
+        vscode->>generateResponse: start generating
+        generateResponse->>backend: start stream
+        backend->>backend: create conversation id
+        backend->>generateResponse: get conversation id
+
+        note over backend, chat: cwsprChatFullResponseLatency
+        rect rgb(230, 230, 230, 0.5)
+            loop for each subsequent chunk
+                backend->>backend: generate next chunk
+                backend->>generateResponse: chunk received
+                generateResponse->>vscode: send chunk to display
+                vscode->>chat: display chunk
+            end
+            backend->>generateResponse: final chunk received
+        end
+        generateResponse->>vscode: send chunk to display
+        vscode->>chat: display chunk
+```
+
+### cwsprChatTimeToFirstUsableChunk
+
+The time between the initial server request, including creating the conversation stream, and the first usable result
+
+```mermaid
+    sequenceDiagram
+        participant user as User
+        participant chat as Chat UI
+        participant vscode as VSCode extension host
+        participant generateResponse as Generate response
+        participant backend as Q service backend
+
+        user->>chat: Presses enter with message
+        chat->>vscode: Tell VSCode to generate a response
+        vscode->>generateResponse: start generating
+        note over backend, generateResponse: cwsprChatTimeToFirstUsableChunk
+        rect rgb(230, 230, 230, 0.5)
+        generateResponse->>backend: start stream
+            backend->>backend: create conversation id
+            backend->>generateResponse: get conversation id
+            backend->>backend: generate first chunk
+            backend->>generateResponse: chunk received
+        end
+        generateResponse->>vscode: send chunk to display
+        vscode->>chat: display chunk
+        loop for each subsequent chunk
+            backend->>backend: generate next chunk
+            backend->>generateResponse: chunk received
+            generateResponse->>vscode: send chunk to display
+            vscode->>chat: display chunk
+        end
+```
+
+### cwsprChatFullServerResponseLatency
+
+The time between the initial server request, including creating the conversation stream, and the final response from the server
+
+```mermaid
+    sequenceDiagram
+        participant user as User
+        participant chat as Chat UI
+        participant vscode as VSCode extension host
+        participant generateResponse as Generate response
+        participant backend as Q service backend
+
+        user->>chat: Presses enter with message
+        chat->>vscode: Tell VSCode to generate a response
+        vscode->>generateResponse: start generating
+        note over backend, chat: cwsprChatFullServerResponseLatency
+        rect rgb(230, 230, 230, 0.5)
+            generateResponse->>backend: start stream
+            backend->>backend: create conversation id
+            backend->>generateResponse: get conversation id
+            loop for each subsequent chunk
+                backend->>backend: generate next chunk
+                backend->>generateResponse: chunk received
+                generateResponse->>vscode: send chunk to display
+                vscode->>chat: display chunk
+            end
+            backend->>generateResponse: final chunk received
+        end
+        generateResponse->>vscode: send chunk to display
+        vscode->>chat: display chunk
+```
+
+### cwsprChatTimeToFirstDisplay
+
+The time between the user pressing enter and when the first piece of data is displayed to the user
+
+```mermaid
+    sequenceDiagram
+        participant user as User
+        participant chat as Chat UI
+        participant vscode as VSCode extension host
+        participant generateResponse as Generate response
+        participant backend as Q service backend
+        note over backend, user: cwsprChatTimeToFirstDisplay
+        rect rgb(230, 230, 230, 0.5)
+            user->>chat: Presses enter with message
+            chat->>vscode: Tell VSCode to generate a response
+            vscode->>generateResponse: start generating
+            generateResponse->>backend: start stream
+            backend->>backend: create conversation id
+            backend->>generateResponse: get conversation id
+            backend->>backend: generate first chunk
+            backend->>generateResponse: chunk received
+            generateResponse->>vscode: send chunk to display
+            vscode->>chat: display chunk
+        end
+        loop for each subsequent chunk
+            backend->>backend: generate next chunk
+            backend->>generateResponse: chunk received
+            generateResponse->>vscode: send chunk to display
+            vscode->>chat: display chunk
+        end
+```
+
+### cwsprChatTimeBetweenDisplays
+
+An array of time when successive pieces of server responses are displayed to the user
+
+```mermaid
+    sequenceDiagram
+        participant user as User
+        participant chat as Chat UI
+        participant vscode as VSCode extension host
+        participant generateResponse as Generate response
+        participant backend as Q service backend
+
+        user->>chat: Presses enter with message
+        chat->>vscode: Tell VSCode to generate a response
+        vscode->>generateResponse: start generating
+        generateResponse->>backend: start stream
+        backend->>backend: create conversation id
+        backend->>generateResponse: get conversation id
+
+        note over backend, chat: cwsprChatTimeBetweenDisplays
+        rect rgb(230, 230, 230, 0.5)
+            loop for each subsequent chunk
+                backend->>backend: generate next chunk
+                backend->>generateResponse: chunk received
+                generateResponse->>vscode: send chunk to display
+                vscode->>chat: display chunk
+                chat->>vscode: record display timestamp
+            end
+        end
+```
+
+### cwsprChatFullDisplayLatency
+
+The time between the user pressing enter and the entire response being rendered
+
+```mermaid
+    sequenceDiagram
+        participant user as User
+        participant chat as Chat UI
+        participant vscode as VSCode extension host
+        participant generateResponse as Generate response
+        participant backend as Q service backend
+
+        note over backend, user: cwsprChatFullDisplayLatency
+        rect rgb(230, 230, 230, 0.5)
+            user->>chat: Presses enter with message
+            chat->>vscode: Tell VSCode to generate a response
+            vscode->>generateResponse: start generating
+            generateResponse->>backend: start stream
+            backend->>backend: create conversation id
+            backend->>generateResponse: get conversation id
+            generateResponse->>backend: start stream
+            backend->>backend: create conversation id
+            loop for each subsequent chunk
+                backend->>backend: generate next chunk
+                backend->>vscode: send chunk to display
+                vscode->>chat: display chunk
+            end
+        end
+
+```
+
 ## Crash Monitoring
 
 We make an attempt to gather information regarding when the IDE crashes, then report it to telemetry. This is the diagram of the steps that take place.

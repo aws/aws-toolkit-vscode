@@ -25,9 +25,24 @@ import { AwsSamDebuggerConfiguration } from '../shared/sam/debugger/awsSamDebugC
 import { AwsSamTargetType } from '../shared/sam/debugger/awsSamDebugConfiguration'
 import { insertTextIntoFile } from '../shared/utilities/textUtilities'
 import globals from '../shared/extensionGlobals'
-import { closeAllEditors } from '../test/testUtil'
+import { assertTelemetry, closeAllEditors, getWorkspaceFolder } from '../test/testUtil'
 import { ToolkitError } from '../shared/errors'
-import { fs } from '../shared'
+import { SamAppLocation } from '../awsService/appBuilder/explorer/samProject'
+import { AppNode } from '../awsService/appBuilder/explorer/nodes/appNode'
+import sinon from 'sinon'
+import { getTestWindow } from '../test/shared/vscode/window'
+import { ParamsSource, runBuild } from '../shared/sam/build'
+import { DataQuickPickItem } from '../shared/ui/pickerPrompter'
+import fs from '../shared/fs/fs'
+import { BucketSource, DeployParams, DeployWizard, runDeploy } from '../shared/sam/deploy'
+import * as sync from '../shared/sam/sync'
+import * as deploy from '../shared/sam/deploy'
+import * as processUtils from '../shared/utilities/processUtils'
+import * as resolveEnv from '../shared/env/resolveEnv'
+import * as cfnClient from '../shared/clients/cloudFormationClient'
+import { runSync, SyncParams, SyncWizard, TemplateItem } from '../shared/sam/sync'
+import { AsyncCollection } from '../shared/utilities/asyncCollection'
+import { StackSummary } from 'aws-sdk/clients/cloudformation'
 
 const projectFolder = testUtils.getTestWorkspaceFolder()
 
@@ -650,6 +665,361 @@ describe('SAM Integration Tests', async function () {
             })
         })
     }
+
+    describe('SAM Build', async function () {
+        let workspaceFolder: vscode.WorkspaceFolder
+        // We're testing only one case (python 3.10 (ZIP)) on the integration tests. More niche cases are handled as unit tests.
+        const scenarioIndex = 2
+        const scenario = scenarios[scenarioIndex]
+        let testRoot: string
+        let sandbox: sinon.SinonSandbox
+        let testDir: string
+        let cfnTemplatePath: string
+
+        before(async function () {
+            workspaceFolder = getWorkspaceFolder(testSuiteRoot)
+            testRoot = path.join(testSuiteRoot, scenario.runtime)
+            await fs.mkdir(testRoot)
+
+            testDir = mkdtempSync(path.join(testRoot, 'samapp-'))
+            console.log(`testDir: ${testDir}`)
+
+            await createSamApplication(testDir, scenario)
+
+            cfnTemplatePath = path.join(testDir, samApplicationName, 'template.yaml')
+        })
+
+        after(async function () {
+            await tryRemoveFolder(testSuiteRoot)
+            // don't clean up after java tests so the java language server doesn't freak out
+            if (scenario.language !== 'java') {
+                await tryRemoveFolder(testRoot)
+            }
+        })
+
+        beforeEach(async function () {
+            sandbox = sinon.createSandbox()
+            await closeAllEditors()
+        })
+
+        afterEach(async function () {
+            sandbox.restore()
+        })
+
+        it('can build a SAM Template', async function () {
+            // Instantiate AppNode
+            const samAppLocation = {
+                samTemplateUri: vscode.Uri.file(cfnTemplatePath),
+                workspaceFolder: workspaceFolder,
+            } as SamAppLocation
+            const appNode = new AppNode(samAppLocation)
+
+            getTestWindow().onDidShowQuickPick((input) => {
+                if (input.title?.includes('Specify parameters for build')) {
+                    input.acceptItem(input.items[0])
+                    const item = input.items[0] as DataQuickPickItem<ParamsSource>
+                    assert.deepStrictEqual(item.data as ParamsSource, ParamsSource.Specify)
+                } else if (input.title?.includes('Select build flags')) {
+                    const item1 = input.items[2] as DataQuickPickItem<string>
+                    const item2 = input.items[4] as DataQuickPickItem<string>
+                    const item3 = input.items[7] as DataQuickPickItem<string>
+                    input.acceptItems(item1, item2, item3) //--cached, --parallel, --use-container
+
+                    assert.strictEqual(item1.data as string, '--cached')
+                    assert.strictEqual(item2.data as string, '--parallel')
+                    assert.strictEqual(item3.data as string, '--use-container')
+                }
+            })
+
+            const response = await runBuild(appNode)
+
+            assert.deepStrictEqual(response, {
+                isSuccess: true,
+            })
+
+            const builtTemplatePath = path.join(testDir, samApplicationName, '.aws-sam', 'build', 'template.yaml')
+            assert.ok(await fs.existsFile(builtTemplatePath))
+        })
+    })
+
+    describe('SAM Deploy', () => {
+        let sandbox: sinon.SinonSandbox
+        let workspaceFolder: vscode.WorkspaceFolder
+        let childProcessStub: sinon.SinonStub
+        // We're testing only one case (python 3.10 (ZIP)) on the integration tests. More niche cases are handled as unit tests.
+        const scenarioIndex = 2
+        const scenario = scenarios[scenarioIndex]
+        let testRoot: string
+        let testDir: string
+        let cfnTemplatePath: string
+        let mockDeployParams: DeployParams
+        let mockGetSpawnEnv: sinon.SinonStub
+        let mockGetSamCliPath: sinon.SinonStub
+        let mockRunInTerminal: sinon.SinonStub
+        let cfnClientStub: sinon.SinonStub
+        let appNode: AppNode
+
+        before(async function () {
+            workspaceFolder = getWorkspaceFolder(testSuiteRoot)
+            testRoot = path.join(testSuiteRoot, scenario.runtime)
+            await fs.mkdir(testRoot)
+
+            testDir = mkdtempSync(path.join(testRoot, 'samapp-'))
+            console.log(`testDir: ${testDir}`)
+
+            await createSamApplication(testDir, scenario)
+
+            cfnTemplatePath = path.join(testDir, samApplicationName, 'template.yaml')
+
+            mockDeployParams = {
+                paramsSource: deploy.ParamsSource.Specify,
+                region: 'us-east-1',
+                stackName: 'my-stack',
+                bucketName: 'my-bucket-name',
+                template: { uri: vscode.Uri.file(cfnTemplatePath), data: {} } as TemplateItem,
+                bucketSource: BucketSource.UserProvided,
+                projectRoot: vscode.Uri.file(path.join(testDir, samApplicationName)),
+            }
+        })
+
+        after(async function () {
+            await tryRemoveFolder(testSuiteRoot)
+            // don't clean up after java tests so the java language server doesn't freak out
+            if (scenario.language !== 'java') {
+                await tryRemoveFolder(testRoot)
+            }
+        })
+
+        beforeEach(() => {
+            sandbox = sinon.createSandbox()
+            childProcessStub = sandbox.stub().returns({})
+            cfnClientStub = sandbox.stub().returns({
+                listAllStacks: () =>
+                    Promise.resolve([
+                        [
+                            {
+                                StackName: 'my-stack',
+                                StackStatus: 'CREATE_COMPLETE',
+                            },
+                        ],
+                    ] as unknown as AsyncCollection<StackSummary[]>),
+            })
+            sandbox.stub(cfnClient, 'DefaultCloudFormationClient').returns(cfnClientStub)
+            sandbox.stub(processUtils, 'ChildProcess').callsFake(childProcessStub)
+            mockGetSpawnEnv = sandbox.stub().returns(Promise.resolve({}))
+            mockGetSamCliPath = sandbox.stub().returns(Promise.resolve({ path: 'sam-cli-path' }))
+            mockRunInTerminal = sandbox.stub().returns(Promise.resolve())
+
+            const samAppLocation = {
+                samTemplateUri: vscode.Uri.file(cfnTemplatePath),
+                workspaceFolder: workspaceFolder,
+            } as SamAppLocation
+            appNode = new AppNode(samAppLocation)
+        })
+
+        afterEach(() => {
+            sandbox.restore()
+        })
+
+        it('should instantiate ChildProcess with the correct arguments for build', async () => {
+            // Stubbing necessary functions
+            sandbox.stub(DeployWizard.prototype, 'run').returns(Promise.resolve(mockDeployParams))
+            sandbox.stub(resolveEnv, 'getSpawnEnv').callsFake(mockGetSpawnEnv)
+            sandbox.stub(sync, 'getSamCliPathAndVersion').callsFake(mockGetSamCliPath)
+            sandbox.stub(sync, 'runInTerminal').callsFake(mockRunInTerminal)
+
+            // Execute the function
+            await runDeploy(appNode)
+
+            // Check that ChildProcess is instantiated correctly
+            assert.strictEqual(childProcessStub.callCount, 2) // ChildProcess should be called twice'
+            assert.deepEqual(childProcessStub.getCall(0).args, [
+                'sam-cli-path',
+                ['build', '--cached'],
+                {
+                    spawnOptions: {
+                        cwd: mockDeployParams.projectRoot?.fsPath,
+                        env: {
+                            AWS_TOOLING_USER_AGENT: 'AWS-Toolkit-For-VSCode/testPluginVersion',
+                            SAM_CLI_TELEMETRY: '0',
+                        },
+                    },
+                },
+            ])
+
+            // Check that runInTerminal is called with the correct arguments for build
+            assert.strictEqual(mockRunInTerminal.callCount, 2)
+            const buildProcess = childProcessStub.getCall(0).returnValue // Get the instance from the first call
+            assert.deepEqual(mockRunInTerminal.getCall(0).args, [buildProcess, 'build'])
+            assertTelemetry('sam_deploy', { result: 'Succeeded', source: 'appBuilderDeploy' })
+        })
+
+        it('should instantiate ChildProcess with the correct arguments for deploy', async () => {
+            const mockGetSpawnEnv = sandbox.stub().returns(Promise.resolve({}))
+            const mockGetSamCliPath = sandbox.stub().returns(Promise.resolve({ path: 'sam-cli-path' }))
+            const mockRunInTerminal = sandbox.stub().returns(Promise.resolve())
+
+            // Stubbing necessary functions
+            sandbox.stub(DeployWizard.prototype, 'run').returns(Promise.resolve(mockDeployParams))
+            sandbox.stub(resolveEnv, 'getSpawnEnv').callsFake(mockGetSpawnEnv)
+            sandbox.stub(sync, 'getSamCliPathAndVersion').callsFake(mockGetSamCliPath)
+            sandbox.stub(sync, 'runInTerminal').callsFake(mockRunInTerminal)
+
+            // Execute the function
+            await runDeploy(appNode)
+
+            // Check that ChildProcess is instantiated correctly for deploy
+            assert.strictEqual(childProcessStub.callCount, 2) // ChildProcess should be called twice'
+            assert.deepEqual(childProcessStub.getCall(1).args[0], 'sam-cli-path')
+            assert.deepEqual(childProcessStub.getCall(1).args[1], [
+                'deploy',
+                '--no-confirm-changeset',
+                '--region',
+                `${mockDeployParams.region}`,
+                '--stack-name',
+                `${mockDeployParams.stackName}`,
+                '--s3-bucket',
+                `${mockDeployParams.bucketName}`,
+                '--capabilities',
+                'CAPABILITY_IAM',
+                'CAPABILITY_NAMED_IAM',
+            ])
+
+            // Check that runInTerminal is called with the correct arguments for deploy
+            const deployProcess = childProcessStub.getCall(1).returnValue // Get the instance from the second call
+            assert.ok(
+                mockRunInTerminal.calledTwice,
+                'runInTerminal should be called twice, once for build and once for deploy'
+            )
+            assert.deepEqual(mockRunInTerminal.getCall(1).args, [deployProcess, 'deploy'])
+            assertTelemetry('sam_deploy', { result: 'Succeeded', source: 'appBuilderDeploy' })
+        })
+    })
+
+    describe('SAM Sync', () => {
+        let sandbox: sinon.SinonSandbox
+        let childProcessStub: sinon.SinonStub
+        let workspaceFolder: vscode.WorkspaceFolder
+        // We're testing only one case (python 3.10 (ZIP)) on the integration tests. More niche cases are handled as unit tests.
+        const scenarioIndex = 2
+        const scenario = scenarios[scenarioIndex]
+        let testRoot: string
+        let testDir: string
+        let cfnTemplatePath: string
+        let mockSyncParams: SyncParams
+        let mockGetSpawnEnv: sinon.SinonStub
+        let mockGetSamCliPath: sinon.SinonStub
+        let mockRunInTerminal: sinon.SinonStub
+
+        before(async function () {
+            workspaceFolder = getWorkspaceFolder(testSuiteRoot)
+            testRoot = path.join(testSuiteRoot, scenario.runtime)
+            await fs.mkdir(testRoot)
+
+            testDir = mkdtempSync(path.join(testRoot, 'samapp-'))
+            console.log(`testDir: ${testDir}`)
+
+            await createSamApplication(testDir, scenario)
+
+            cfnTemplatePath = path.join(testDir, samApplicationName, 'template.yaml')
+
+            mockSyncParams = {
+                paramsSource: sync.ParamsSource.SpecifyAndSave,
+                region: 'us-east-1',
+                stackName: 'my-stack',
+                bucketName: 'my-bucket-name',
+                deployType: 'code',
+                skipDependencyLayer: true,
+                connection: {
+                    id: '',
+                    type: 'iam',
+                    label: '',
+                    getCredentials: () => Promise.resolve({ accessKeyId: 'AAAAA', secretAccessKey: 'XXXXXX' }),
+                },
+                template: { uri: vscode.Uri.file(cfnTemplatePath), data: {} } as TemplateItem,
+                bucketSource: BucketSource.UserProvided,
+                projectRoot: vscode.Uri.file(path.join(testDir, samApplicationName)),
+            }
+        })
+
+        after(async function () {
+            await tryRemoveFolder(testSuiteRoot)
+            // don't clean up after java tests so the java language server doesn't freak out
+            if (scenario.language !== 'java') {
+                await tryRemoveFolder(testRoot)
+            }
+        })
+
+        beforeEach(() => {
+            sandbox = sinon.createSandbox()
+            childProcessStub = sandbox.stub().returns({})
+            sandbox.stub(processUtils, 'ChildProcess').callsFake(childProcessStub)
+            mockGetSpawnEnv = sandbox.stub().returns(Promise.resolve({}))
+            mockGetSamCliPath = sandbox.stub().returns(Promise.resolve({ path: 'sam-cli-path' }))
+            mockRunInTerminal = sandbox.stub().returns(Promise.resolve())
+        })
+
+        afterEach(() => {
+            sandbox.restore()
+        })
+
+        it('should instantiate ChildProcess with the correct arguments for sync', async () => {
+            // Stubbing necessary functions
+            sandbox.stub(SyncWizard.prototype, 'run').returns(Promise.resolve(mockSyncParams))
+            sandbox.stub(resolveEnv, 'getSpawnEnv').callsFake(mockGetSpawnEnv)
+            sandbox.stub(sync, 'getSamCliPathAndVersion').callsFake(mockGetSamCliPath)
+            sandbox.stub(sync, 'runInTerminal').callsFake(mockRunInTerminal)
+            const mockConfirmDevStack = sandbox.stub().returns(Promise.resolve())
+            sandbox.stub(sync, 'confirmDevStack').callsFake(mockConfirmDevStack)
+
+            const samAppLocation = {
+                samTemplateUri: vscode.Uri.file(cfnTemplatePath),
+                workspaceFolder: workspaceFolder,
+            } as SamAppLocation
+            const appNode = new AppNode(samAppLocation)
+
+            // Execute the function
+            await runSync('infra', appNode)
+
+            // Check that ChildProcess is instantiated correctly
+            assert.strictEqual(childProcessStub.callCount, 1) // ChildProcess should be called once'
+            assert.deepEqual(childProcessStub.getCall(0).args, [
+                'sam-cli-path',
+                [
+                    'sync',
+                    '--codeOnly',
+                    '--template',
+                    `${mockSyncParams.template.uri.fsPath}`,
+                    '--s3-bucket',
+                    `${mockSyncParams.bucketName}`,
+                    '--stack-name',
+                    `${mockSyncParams.stackName}`,
+                    '--region',
+                    `${mockSyncParams.region}`,
+                    '--no-dependency-layer',
+                ],
+                {
+                    spawnOptions: {
+                        cwd: mockSyncParams.projectRoot?.fsPath,
+                        env: {
+                            AWS_TOOLING_USER_AGENT: 'AWS-Toolkit-For-VSCode/testPluginVersion',
+                            SAM_CLI_TELEMETRY: '0',
+                        },
+                    },
+                },
+            ])
+
+            // Check that runInTerminal is called with the correct arguments for build
+            assert.strictEqual(mockRunInTerminal.callCount, 1)
+            const syncProcess = childProcessStub.getCall(0).returnValue // Get the instance from the first call
+            assert.deepEqual(mockRunInTerminal.getCall(0).args, [syncProcess, 'sync'])
+            assertTelemetry('sam_sync', {
+                result: 'Succeeded',
+                syncedResources: 'AllResources',
+                source: 'appBuilderSync',
+            })
+        })
+    })
 
     async function createSamApplication(location: string, scenario: TestScenario): Promise<void> {
         const initArguments: SamCliInitArgs = {

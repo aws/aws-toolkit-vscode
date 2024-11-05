@@ -55,6 +55,7 @@ export class NotificationsController {
             startUp: {},
             emergency: {},
             dismissed: [],
+            newlyReceived: [],
         })
     }
 
@@ -97,6 +98,17 @@ export class NotificationsController {
             await this.writeState()
             void this.notificationsNode.focusPanel()
         }
+
+        // Process on-receive behavior for newly received notifications that passes rule engine
+        const newlyReceivedToDisplay = [...startUp, ...emergency].filter((n) => this.state.newlyReceived.includes(n.id))
+        if (newlyReceivedToDisplay.length > 0) {
+            await this.notificationsNode.onReceiveNotifications(newlyReceivedToDisplay)
+            // remove displayed notifications from newlyReceived
+            this.state.newlyReceived = this.state.newlyReceived.filter(
+                (id) => !newlyReceivedToDisplay.some((n) => n.id === id)
+            )
+            await this.writeState()
+        }
     }
 
     /**
@@ -121,10 +133,27 @@ export class NotificationsController {
             getLogger('notifications').verbose('No new notifications for category: %s', category)
             return
         }
+        // Parse the notifications
+        const newPayload = JSON.parse(response.content)
+        const newNotifications = newPayload.notifications ?? []
 
-        getLogger('notifications').verbose('ETAG has changed for notifications category: %s', category)
+        // Get the current notifications
+        const currentNotifications = this.state[category].payload?.notifications ?? []
+        const currentNotificationIds = new Set(currentNotifications.map((n: any) => n.id))
 
-        this.state[category].payload = JSON.parse(response.content)
+        // Compare and find if there's any notifications newly added
+        const addedNotifications = newNotifications.filter((n: any) => !currentNotificationIds.has(n.id))
+
+        if (addedNotifications.length > 0) {
+            getLogger('notifications').verbose(
+                'New notifications received for category %s, ids: %s',
+                category,
+                addedNotifications.map((n: any) => n.id).join(', ')
+            )
+            this.state.newlyReceived.push(...addedNotifications.map((n: any) => n.id))
+        }
+
+        this.state[category].payload = newPayload
         this.state[category].eTag = response.eTag
         await this.writeState()
 

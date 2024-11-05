@@ -8,6 +8,7 @@ import { readFileSync } from 'fs' // eslint-disable-line no-restricted-imports
 import * as _ from 'lodash'
 import * as vscode from 'vscode'
 import { DefaultLambdaClient, LambdaClient } from '../../../shared/clients/lambdaClient'
+import * as picker from '../../../shared/ui/picker'
 import { ExtContext } from '../../../shared/extensions'
 
 import { getLogger } from '../../../shared/logger'
@@ -18,17 +19,35 @@ import { getSampleLambdaPayloads, SampleRequest } from '../../utils'
 
 import * as nls from 'vscode-nls'
 import { VueWebview } from '../../../webviews/main'
-import { telemetry } from '../../../shared/telemetry/telemetry'
-import { Result } from '../../../shared/telemetry/telemetry'
+import { telemetry, Result } from '../../../shared/telemetry/telemetry'
 import { decodeBase64 } from '../../../shared'
+import {
+    runSamCliRemoteTestEvents,
+    SamCliRemoteTestEventsParameters,
+    TestEventsOperation,
+} from '../../../shared/sam/cli/samCliRemoteTestEvent'
+import { getSamCliContext } from '../../../shared/sam/cli/samCliContext'
+import { ToolkitError } from '../../../shared'
+import { basename } from 'path'
 
 const localize = nls.loadMessageBundle()
+
+type Event = {
+    name: string
+    region: string
+    arn: string
+    event?: string
+}
 
 export interface InitialData {
     FunctionName: string
     FunctionArn: string
     FunctionRegion: string
     InputSamples: SampleRequest[]
+    TestEvents?: string[]
+    Source?: string
+    StackName?: string
+    LogicalId?: string
 }
 
 export interface RemoteInvokeData {
@@ -36,6 +55,15 @@ export interface RemoteInvokeData {
     selectedSampleRequest: string
     sampleText: string
     selectedFile: string
+    selectedFilePath: string
+    selectedTestEvent: string
+    payload: string
+    showNameInput: boolean
+    newTestEventName: string
+    selectedFunction: string
+}
+interface SampleQuickPickItem extends vscode.QuickPickItem {
+    filename: string
 }
 
 export class RemoteInvokeWebview extends VueWebview {
@@ -54,7 +82,7 @@ export class RemoteInvokeWebview extends VueWebview {
         return this.data
     }
 
-    public async invokeLambda(input: string): Promise<void> {
+    public async invokeLambda(input: string, source?: string): Promise<void> {
         let result: Result = 'Succeeded'
 
         this.channel.show()
@@ -79,15 +107,8 @@ export class RemoteInvokeWebview extends VueWebview {
             this.channel.appendLine('')
             result = 'Failed'
         } finally {
-            telemetry.lambda_invokeRemote.emit({ result, passive: false })
+            telemetry.lambda_invokeRemote.emit({ result, passive: false, source: source })
         }
-    }
-
-    public async getSample(requestName: string) {
-        const sampleUrl = `${sampleRequestPath}${requestName}`
-        const sample = (await new HttpResourceFetcher(sampleUrl, { showUrl: true }).get()) ?? ''
-
-        return sample
     }
 
     public async promptFile() {
@@ -101,14 +122,109 @@ export class RemoteInvokeWebview extends VueWebview {
 
         try {
             const fileContent = readFileSync(fileLocations[0].fsPath, { encoding: 'utf8' })
+            return {
+                sample: fileContent,
+                selectedFilePath: fileLocations[0].fsPath,
+                selectedFile: this.getFileName(fileLocations[0].fsPath),
+            }
+        } catch (e) {
+            getLogger().error('readFileSync: Failed to read file at path %O', fileLocations[0].fsPath, e)
+            throw ToolkitError.chain(e, 'Failed to read selected file')
+        }
+    }
+
+    public async loadFile(fileLocations: string) {
+        return await this.readFile(fileLocations)
+    }
+
+    private async readFile(filePath: string) {
+        if (!filePath) {
+            return undefined
+        }
+        const fileLocation = vscode.Uri.file(filePath)
+        try {
+            const fileContent = readFileSync(fileLocation.fsPath, { encoding: 'utf8' })
 
             return {
                 sample: fileContent,
-                selectedFile: fileLocations[0].path,
+                selectedFilePath: fileLocation.fsPath,
+                selectedFile: this.getFileName(fileLocation.fsPath),
             }
         } catch (e) {
-            getLogger().error('readFileSync: Failed to read file at path %s \n %O', fileLocations[0].fsPath, e)
-            void vscode.window.showErrorMessage((e as Error).message)
+            getLogger().error('readFileSync: Failed to read file at path %O', fileLocation.fsPath, e)
+            throw ToolkitError.chain(e, 'Failed to read selected file')
+        }
+    }
+
+    private getFileName(filePath: string): string {
+        return basename(filePath)
+    }
+
+    public async listRemoteTestEvents(functionArn: string, region: string): Promise<string[]> {
+        const params: SamCliRemoteTestEventsParameters = {
+            functionArn: functionArn,
+            operation: TestEventsOperation.List,
+            region: region,
+        }
+        const result = await this.remoteTestEvents(params)
+        return result.split('\n')
+    }
+
+    public async createRemoteTestEvents(putEvent: Event) {
+        const params: SamCliRemoteTestEventsParameters = {
+            functionArn: putEvent.arn,
+            operation: TestEventsOperation.Put,
+            name: putEvent.name,
+            eventSample: putEvent.event,
+            region: putEvent.region,
+        }
+        return await this.remoteTestEvents(params)
+    }
+    public async getRemoteTestEvents(getEvents: Event) {
+        const params: SamCliRemoteTestEventsParameters = {
+            name: getEvents.name,
+            operation: TestEventsOperation.Get,
+            functionArn: getEvents.arn,
+            region: getEvents.region,
+        }
+        return await this.remoteTestEvents(params)
+    }
+
+    private async remoteTestEvents(params: SamCliRemoteTestEventsParameters) {
+        return await runSamCliRemoteTestEvents(params, getSamCliContext().invoker)
+    }
+
+    public async getSamplePayload(): Promise<string | undefined> {
+        try {
+            const inputs: SampleQuickPickItem[] = (await getSampleLambdaPayloads()).map((entry) => {
+                return { label: entry.name ?? '', filename: entry.filename ?? '' }
+            })
+
+            const qp = picker.createQuickPick({
+                items: inputs,
+                options: {
+                    title: localize(
+                        'AWS.lambda.form.pickSampleInput',
+                        'Enter keywords to filter the list of sample events'
+                    ),
+                },
+            })
+
+            const choices = await picker.promptUser({
+                picker: qp,
+            })
+            const pickerResponse = picker.verifySinglePickerOutput<SampleQuickPickItem>(choices)
+
+            if (!pickerResponse) {
+                return
+            }
+            const sampleUrl = `${sampleRequestPath}${pickerResponse.filename}`
+            const sample = (await new HttpResourceFetcher(sampleUrl, { showUrl: true }).get()) ?? ''
+
+            return sample
+        } catch (err) {
+            getLogger().error('Error getting manifest data..: %O', err as Error)
+            throw ToolkitError.chain(err, 'getting manifest data')
         }
     }
 }
@@ -126,17 +242,23 @@ export async function invokeRemoteLambda(
          */
         outputChannel: vscode.OutputChannel
         functionNode: LambdaFunctionNode
+        source?: string
     }
 ) {
     const inputs = await getSampleLambdaPayloads()
-    const client = new DefaultLambdaClient(params.functionNode.regionCode)
-
+    const resource: any = params.functionNode
+    const source: string = params.source || 'AwsExplorerRemoteInvoke'
+    const client = new DefaultLambdaClient(resource.regionCode)
     const wv = new Panel(context.extensionContext, context.outputChannel, client, {
-        FunctionName: params.functionNode.configuration.FunctionName ?? '',
-        FunctionArn: params.functionNode.configuration.FunctionArn ?? '',
-        FunctionRegion: params.functionNode.regionCode,
+        FunctionName: resource.configuration.FunctionName ?? '',
+        FunctionArn: resource.configuration.FunctionArn ?? '',
+        FunctionRegion: resource.regionCode,
         InputSamples: inputs,
+        TestEvents: [],
+        Source: source,
     })
 
-    await wv.show({ title: localize('AWS.invokeLambda.title', 'Invoke Lambda {0}', params.functionNode.functionName) })
+    await wv.show({
+        title: localize('AWS.invokeLambda.title', 'Invoke Lambda {0}', resource.configuration.FunctionName),
+    })
 }
