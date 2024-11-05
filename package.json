@@ -39,7 +39,7 @@
         "generateNonCodeFiles": "npm run generateNonCodeFiles -w packages/ --if-present"
     },
     "devDependencies": {
-        "@aws-toolkits/telemetry": "^1.0.272",
+        "@aws-toolkits/telemetry": "^1.0.274",
         "@playwright/browser-chromium": "^1.43.1",
         "@types/he": "^1.2.3",
         "@types/vscode": "^1.68.0",
@@ -70,7 +70,8 @@
         "webpack-merge": "^5.10.0"
     },
     "dependencies": {
-        "@types/node": "^18.19.55",
+        "@types/node": "^22.7.5",
+        "@aws-toolkits/telemetry": "^1.0.242",
         "vscode-nls": "^5.2.0",
         "vscode-nls-dev": "^4.0.4"
     }

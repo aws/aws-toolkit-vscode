@@ -7,6 +7,7 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 
 import * as codecatalyst from './codecatalyst/activation'
+import { activate as activateAppBuilder } from './awsService/appBuilder/activation'
 import { activate as activateAwsExplorer } from './awsexplorer/activation'
 import { activate as activateCloudWatchLogs } from './awsService/cloudWatchLogs/activation'
 import { activate as activateSchemas } from './eventSchemas/activation'
@@ -202,6 +203,8 @@ export async function activate(context: vscode.ExtensionContext) {
         await activateStepFunctions(context, globals.awsContext, globals.outputChannel)
 
         await activateRedshift(extContext)
+
+        await activateAppBuilder(extContext)
 
         await activateIamPolicyChecks(extContext)
 

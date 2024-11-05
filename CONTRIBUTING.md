@@ -188,11 +188,11 @@ To run a single test in VSCode, do any one of:
 
     -   Unix/macOS/POSIX shell:
         ```
-        TEST_FILE=src/test/foo.test.ts npm run test
+        TEST_FILE=../core/src/test/foo.test.ts npm run test
         ```
     -   Powershell:
         ```
-        $Env:TEST_FILE = "src/test/foo.test.ts"; npm run test
+        $Env:TEST_FILE = "../core/src/test/foo.test.ts"; npm run test
         ```
 
 -   To run all tests in a particular subdirectory, you can edit
@@ -209,11 +209,11 @@ To run tests against a specific folder in VSCode, do any one of:
 -   Run in your terminal
     -   Unix/macOS/POSIX shell:
         ```
-        TEST_DIR=src/test/foo npm run test
+        TEST_DIR=../core/src/test/foo npm run test
         ```
     -   Powershell:
         ```
-        $Env:TEST_DIR = "src/test/foo"; npm run test
+        $Env:TEST_DIR = "../core/src/test/foo"; npm run test
         ```
 
 ### Coverage report

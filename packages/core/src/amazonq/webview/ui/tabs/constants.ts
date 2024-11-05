@@ -2,6 +2,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
+import { isSQLTransformReady } from '../../../../dev/config'
 import { TabType } from '../storages/tabsStorage'
 
 export type TabTypeData = {
@@ -33,7 +34,15 @@ What would you like to work on?`,
     gumby: {
         title: 'Q - Code Transformation',
         placeholder: 'Open a new tab to chat with Q',
-        welcome: `Welcome to Code Transformation!
+        welcome: isSQLTransformReady
+            ? `Welcome to code transformation!
+
+I can help you with the following tasks:
+- Upgrade your Java 8 and Java 11 codebases to Java 17
+- Convert embedded SQL from Oracle databases to PostgreSQL
+
+What would you like to do? You can enter 'language upgrade' or 'SQL conversion'.`
+            : `Welcome to code transformation!
 
 I can help you upgrade your Java 8 and 11 codebases to Java 17.`,
     },
