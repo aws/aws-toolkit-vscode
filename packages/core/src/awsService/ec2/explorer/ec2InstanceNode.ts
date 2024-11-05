@@ -11,8 +11,8 @@ import globals from '../../../shared/extensionGlobals'
 import { getIconCode } from '../utils'
 import { Ec2Selection } from '../prompter'
 import { Ec2Node, Ec2ParentNode } from './ec2ParentNode'
-import { EC2 } from 'aws-sdk'
 import { getLogger } from '../../../shared'
+import { InstanceStateName } from '@aws-sdk/client-ec2'
 
 export const Ec2InstanceRunningContext = 'awsEc2RunningNode'
 export const Ec2InstanceStoppedContext = 'awsEc2StoppedNode'
@@ -68,7 +68,7 @@ export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode 
         return Ec2InstancePendingContext
     }
 
-    public setInstanceStatus(instanceStatus: string) {
+    public setInstanceStatus(instanceStatus: InstanceStateName) {
         this.instance.LastSeenStatus = instanceStatus
     }
 
@@ -79,7 +79,7 @@ export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode 
         }
     }
 
-    public getStatus(): EC2.InstanceStateName {
+    public getStatus(): InstanceStateName {
         return this.instance.LastSeenStatus
     }
 

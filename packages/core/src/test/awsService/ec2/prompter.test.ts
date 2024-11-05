@@ -58,7 +58,7 @@ describe('Ec2Prompter', async function () {
                 Name: 'testName',
                 InstanceId: 'testInstanceId',
                 LastSeenStatus: 'running',
-            }
+            } as SafeEc2Instance
 
             const result = prompter.testAsQuickPickItem(testInstance)
             const expected = {
@@ -73,7 +73,7 @@ describe('Ec2Prompter', async function () {
             const testInstance = {
                 InstanceId: 'testInstanceId',
                 LastSeenStatus: 'running',
-            }
+            } as SafeEc2Instance
 
             const result = prompter.testAsQuickPickItem(testInstance)
             const expected = {

@@ -3,10 +3,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { CredentialsShim } from '../auth/deprecated/loginManager'
 import { AwsContext } from './awsContext'
+import { AwsCredentialIdentityProvider } from '@smithy/types'
 
 interface AwsClient {}
-interface AwsClientOptions {}
+interface AwsClientOptions {
+    credentials: AwsCredentialIdentityProvider
+    region: string
+}
 
 export interface AWSClientBuilderV3 {
     createAwsService<T extends AwsClient>(
@@ -20,13 +25,34 @@ export interface AWSClientBuilderV3 {
 export class DefaultAWSClientBuilderV3 implements AWSClientBuilderV3 {
     public constructor(private readonly context: AwsContext) {}
 
+    private getShim(): CredentialsShim {
+        const shim = this.context.credentialsShim
+        if (!shim) {
+            throw new Error('Toolkit is not logged-in.')
+        }
+        return shim
+    }
+
     public async createAwsService<T extends AwsClient>(
-        type: new (o: AwsClientOptions) => T,
+        type: new (o: Partial<AwsClientOptions>) => T,
         options?: AwsClientOptions,
         region?: string,
         userAgent?: string
     ): Promise<T> {
         const opt = { ...options }
+        const shim = this.getShim()
+
+        if (!opt.region && region) {
+            opt.region = region
+        }
+
+        opt.credentials = async () => {
+            const creds = await shim.get()
+            if (creds.expiration && creds.expiration.getTime() < Date.now()) {
+                return shim.refresh()
+            }
+            return creds
+        }
         const service = new type(opt)
         return service
     }

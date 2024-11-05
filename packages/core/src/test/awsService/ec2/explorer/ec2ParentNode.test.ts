@@ -27,7 +27,7 @@ export const testInstance = {
         },
     ],
     LastSeenStatus: 'running',
-}
+} as SafeEc2Instance
 export const testClient = new Ec2Client('')
 export const testParentNode = new Ec2ParentNode('fake-region', 'testPartition', testClient)
 
@@ -87,7 +87,7 @@ describe('ec2ParentNode', function () {
         const instances = [
             { Name: 'firstOne', InstanceId: '0', LastSeenStatus: 'running' },
             { Name: 'secondOne', InstanceId: '1', LastSeenStatus: 'stopped' },
-        ]
+        ] as SafeEc2Instance[]
         getInstanceStub.resolves(mapToInstanceCollection(instances))
         const childNodes = await testNode.getChildren()
 
@@ -108,7 +108,7 @@ describe('ec2ParentNode', function () {
             { Name: 'aa', InstanceId: '3', LastSeenStatus: 'running' },
             { Name: 'cc', InstanceId: '4', LastSeenStatus: 'running' },
             { Name: 'cd', InstanceId: '5', LastSeenStatus: 'running' },
-        ]
+        ] as SafeEc2Instance[]
 
         getInstanceStub.resolves(mapToInstanceCollection(instances))
 
@@ -131,7 +131,7 @@ describe('ec2ParentNode', function () {
             { Name: 'firstOne', InstanceId: '0', LastSeenStatus: 'running' },
             { Name: 'secondOne', InstanceId: '1', LastSeenStatus: 'running' },
             { Name: 'firstOne', InstanceId: '2', LastSeenStatus: 'running' },
-        ]
+        ] as SafeEc2Instance[]
 
         getInstanceStub.resolves(mapToInstanceCollection(instances))
 
@@ -145,7 +145,7 @@ describe('ec2ParentNode', function () {
             { Name: 'firstOne', InstanceId: '0', LastSeenStatus: 'pending' },
             { Name: 'secondOne', InstanceId: '1', LastSeenStatus: 'stopped' },
             { Name: 'thirdOne', InstanceId: '2', LastSeenStatus: 'running' },
-        ]
+        ] as SafeEc2Instance[]
 
         getInstanceStub.resolves(mapToInstanceCollection(instances))
         await testNode.updateChildren()
@@ -159,7 +159,7 @@ describe('ec2ParentNode', function () {
             { Name: 'firstOne', InstanceId: '0', LastSeenStatus: 'pending' },
             { Name: 'secondOne', InstanceId: '1', LastSeenStatus: 'stopped' },
             { Name: 'thirdOne', InstanceId: '2', LastSeenStatus: 'running' },
-        ]
+        ] as SafeEc2Instance[]
 
         getInstanceStub.resolves(mapToInstanceCollection(instances))
 
@@ -171,7 +171,7 @@ describe('ec2ParentNode', function () {
 
     it('does refresh explorer when timer goes and status changed', async function () {
         statusUpdateStub = statusUpdateStub.resolves('running')
-        const instances = [{ Name: 'firstOne', InstanceId: '0', LastSeenStatus: 'pending' }]
+        const instances = [{ Name: 'firstOne', InstanceId: '0', LastSeenStatus: 'pending' }] as SafeEc2Instance[]
 
         getInstanceStub.resolves(mapToInstanceCollection(instances))
         await testNode.updateChildren()
@@ -182,7 +182,7 @@ describe('ec2ParentNode', function () {
     })
 
     it('returns the node when in the map', async function () {
-        const instances = [{ Name: 'firstOne', InstanceId: 'node1', LastSeenStatus: 'pending' }]
+        const instances = [{ Name: 'firstOne', InstanceId: 'node1', LastSeenStatus: 'pending' }] as SafeEc2Instance[]
 
         getInstanceStub.resolves(mapToInstanceCollection(instances))
         await testNode.updateChildren()
@@ -192,7 +192,7 @@ describe('ec2ParentNode', function () {
     })
 
     it('throws error when node not in map', async function () {
-        const instances = [{ Name: 'firstOne', InstanceId: 'node1', LastSeenStatus: 'pending' }]
+        const instances = [{ Name: 'firstOne', InstanceId: 'node1', LastSeenStatus: 'pending' }] as SafeEc2Instance[]
 
         getInstanceStub.resolves(mapToInstanceCollection(instances))
         await testNode.updateChildren()
@@ -201,7 +201,7 @@ describe('ec2ParentNode', function () {
     })
 
     it('adds node to polling set when asked to track it', async function () {
-        const instances = [{ Name: 'firstOne', InstanceId: 'node1', LastSeenStatus: 'pending' }]
+        const instances = [{ Name: 'firstOne', InstanceId: 'node1', LastSeenStatus: 'pending' }] as SafeEc2Instance[]
 
         getInstanceStub.resolves(mapToInstanceCollection(instances))
         await testNode.updateChildren()
@@ -211,7 +211,7 @@ describe('ec2ParentNode', function () {
     })
 
     it('throws error when asked to track non-child node', async function () {
-        const instances = [{ Name: 'firstOne', InstanceId: 'node1', LastSeenStatus: 'pending' }]
+        const instances = [{ Name: 'firstOne', InstanceId: 'node1', LastSeenStatus: 'pending' }] as SafeEc2Instance[]
 
         getInstanceStub.resolves(mapToInstanceCollection(instances))
         await testNode.updateChildren()

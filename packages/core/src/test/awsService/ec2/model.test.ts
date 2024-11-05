@@ -15,6 +15,7 @@ import { SshKeyPair } from '../../../awsService/ec2/sshKeyPair'
 import { DefaultIamClient } from '../../../shared/clients/iamClient'
 import { assertNoTelemetryMatch, createTestWorkspaceFolder } from '../../testUtil'
 import { fs } from '../../../shared'
+import { InstanceStateName } from '@aws-sdk/client-ec2'
 
 describe('Ec2ConnectClient', function () {
     let client: Ec2Connecter
@@ -61,7 +62,9 @@ describe('Ec2ConnectClient', function () {
 
     describe('isInstanceRunning', async function () {
         it('only returns true with the instance is running', async function () {
-            sinon.stub(Ec2Client.prototype, 'getInstanceStatus').callsFake(async (input: string) => input.split(':')[0])
+            sinon
+                .stub(Ec2Client.prototype, 'getInstanceStatus')
+                .callsFake(async (input: string) => input.split(':')[0] as InstanceStateName)
 
             const actualFirstResult = await client.isInstanceRunning('running:instance')
             const actualSecondResult = await client.isInstanceRunning('stopped:instance')

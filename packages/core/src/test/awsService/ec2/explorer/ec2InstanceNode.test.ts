@@ -79,22 +79,22 @@ describe('ec2InstanceNode', function () {
     })
 
     it('sets context value based on status', async function () {
-        const stoppedInstance = { ...testInstance, LastSeenStatus: 'stopped' }
+        const stoppedInstance = { ...testInstance, LastSeenStatus: 'stopped' } as SafeEc2Instance
         testNode.updateInstance(stoppedInstance)
         assert.strictEqual(testNode.contextValue, Ec2InstanceStoppedContext)
 
-        const runningInstance = { ...testInstance, LastSeenStatus: 'running' }
+        const runningInstance = { ...testInstance, LastSeenStatus: 'running' } as SafeEc2Instance
         testNode.updateInstance(runningInstance)
         assert.strictEqual(testNode.contextValue, Ec2InstanceRunningContext)
 
-        const pendingInstance = { ...testInstance, LastSeenStatus: 'pending' }
+        const pendingInstance = { ...testInstance, LastSeenStatus: 'pending' } as SafeEc2Instance
         testNode.updateInstance(pendingInstance)
         assert.strictEqual(testNode.contextValue, Ec2InstancePendingContext)
     })
 
     it('updates status with new instance', async function () {
         const newStatus = 'pending'
-        const newIdInstance = { ...testInstance, InstanceId: 'testId2', LastSeenStatus: newStatus }
+        const newIdInstance = { ...testInstance, InstanceId: 'testId2', LastSeenStatus: newStatus } as SafeEc2Instance
         testNode.updateInstance(newIdInstance)
         assert.strictEqual(testNode.getStatus(), newStatus)
     })

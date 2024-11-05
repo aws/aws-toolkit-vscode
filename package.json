@@ -70,8 +70,10 @@
         "webpack-merge": "^5.10.0"
     },
     "dependencies": {
-        "@types/node": "^22.7.5",
+        "@aws-sdk/client-ec2": "^3.683.0",
         "@aws-toolkits/telemetry": "^1.0.242",
+        "@smithy/types": "^3.6.0",
+        "@types/node": "^22.7.5",
         "vscode-nls": "^5.2.0",
         "vscode-nls-dev": "^4.0.4"
     }

@@ -3,12 +3,33 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { AWSError, EC2 } from 'aws-sdk'
+import {
+    DescribeIamInstanceProfileAssociationsCommand,
+    DescribeIamInstanceProfileAssociationsRequest,
+    DescribeInstancesCommand,
+    DescribeInstancesRequest,
+    DescribeInstanceStatusCommand,
+    DescribeInstanceStatusRequest,
+    EC2Client,
+    Filter,
+    GetConsoleOutputCommand,
+    GetConsoleOutputRequest,
+    IamInstanceProfile,
+    IamInstanceProfileAssociation,
+    Instance,
+    InstanceStateName,
+    RebootInstancesCommand,
+    RebootInstancesCommandOutput,
+    Reservation,
+    StartInstancesCommand,
+    StartInstancesCommandOutput,
+    StopInstancesCommand,
+    StopInstancesCommandOutput,
+    Tag,
+} from '@aws-sdk/client-ec2'
 import { AsyncCollection } from '../utilities/asyncCollection'
 import { pageableToCollection } from '../utilities/collectionUtils'
-import { IamInstanceProfile } from 'aws-sdk/clients/ec2'
 import globals from '../extensionGlobals'
-import { PromiseResult } from 'aws-sdk/lib/request'
 import { Timeout } from '../utilities/timeoutUtils'
 import { showMessageWithCancel } from '../utilities/messages'
 import { ToolkitError, isAwsError } from '../errors'
@@ -17,13 +38,13 @@ import { decodeBase64 } from '../utilities/textUtilities'
 /**
  * A wrapper around EC2.Instance where we can safely assume InstanceId field exists.
  */
-export interface SafeEc2Instance extends EC2.Instance {
+export interface SafeEc2Instance extends Instance {
     InstanceId: string
     Name?: string
-    LastSeenStatus: EC2.InstanceStateName
+    LastSeenStatus: InstanceStateName
 }
 
-interface SafeEc2GetConsoleOutputResult extends EC2.GetConsoleOutputRequest {
+interface SafeEc2GetConsoleOutputResult extends GetConsoleOutputRequest {
     Output: string
     InstanceId: string
 }
@@ -31,18 +52,19 @@ interface SafeEc2GetConsoleOutputResult extends EC2.GetConsoleOutputRequest {
 export class Ec2Client {
     public constructor(public readonly regionCode: string) {}
 
-    private async createSdkClient(): Promise<EC2> {
-        return await globals.sdkClientBuilder.createAwsService(EC2, undefined, this.regionCode)
+    private async createSdkClient(): Promise<EC2Client> {
+        return await globals.sdkClientBuilderV3.createAwsService(EC2Client, undefined, this.regionCode)
     }
 
-    public async getInstances(filters?: EC2.Filter[]): Promise<AsyncCollection<SafeEc2Instance>> {
+    public async getInstances(filters?: Filter[]): Promise<AsyncCollection<SafeEc2Instance>> {
         const client = await this.createSdkClient()
 
-        const requester = async (request: EC2.DescribeInstancesRequest) => client.describeInstances(request).promise()
+        const requester = async (request: DescribeInstancesRequest) =>
+            await client.send(new DescribeInstancesCommand(request))
         const collection = pageableToCollection(
             requester,
             filters ? { Filters: filters } : {},
-            'NextToken',
+            'NextToken' as never,
             'Reservations'
         )
         const extractedInstances = this.getInstancesFromReservations(collection)
@@ -53,10 +75,10 @@ export class Ec2Client {
 
     /** Updates status and name in-place for displaying to humans. */
     protected async updateInstancesDetail(
-        instances: AsyncCollection<EC2.Instance>
+        instances: AsyncCollection<Instance>
     ): Promise<AsyncCollection<SafeEc2Instance>> {
         // Intermediate interface so that I can coerce EC2.Instance to SafeEc2Instnace
-        interface SafeEc2InstanceWithoutStatus extends EC2.Instance {
+        interface SafeEc2InstanceWithoutStatus extends Instance {
             InstanceId: string
             Name?: string
         }
@@ -77,8 +99,8 @@ export class Ec2Client {
     }
 
     public getInstancesFromReservations(
-        reservations: AsyncCollection<EC2.ReservationList | undefined>
-    ): AsyncCollection<EC2.Instance> {
+        reservations: AsyncCollection<Reservation[] | undefined>
+    ): AsyncCollection<Instance> {
         return reservations
             .flatten()
             .map((instanceList) => instanceList?.Instances)
@@ -86,15 +108,15 @@ export class Ec2Client {
             .filter((instance) => instance!.InstanceId !== undefined)
     }
 
-    public async getInstanceStatus(instanceId: string): Promise<EC2.InstanceStateName> {
+    public async getInstanceStatus(instanceId: string): Promise<InstanceStateName> {
         const client = await this.createSdkClient()
-        const requester = async (request: EC2.DescribeInstanceStatusRequest) =>
-            client.describeInstanceStatus(request).promise()
+        const requester = async (request: DescribeInstanceStatusRequest) =>
+            await client.send(new DescribeInstanceStatusCommand(request))
 
         const response = await pageableToCollection(
             requester,
             { InstanceIds: [instanceId], IncludeAllInstances: true },
-            'NextToken',
+            'NextToken' as never,
             'InstanceStatuses'
         )
             .flatten()
@@ -109,7 +131,7 @@ export class Ec2Client {
         return status === 'running'
     }
 
-    public getInstancesFilter(instanceIds: string[]): EC2.Filter[] {
+    public getInstancesFilter(instanceIds: string[]): Filter[] {
         return [
             {
                 Name: 'instance-id',
@@ -137,10 +159,10 @@ export class Ec2Client {
         }
     }
 
-    public async startInstance(instanceId: string): Promise<PromiseResult<EC2.StartInstancesResult, AWSError>> {
+    public async startInstance(instanceId: string): Promise<StartInstancesCommandOutput> {
         const client = await this.createSdkClient()
 
-        const response = await client.startInstances({ InstanceIds: [instanceId] }).promise()
+        const response = await client.send(new StartInstancesCommand({ InstanceIds: [instanceId] }))
 
         return response
     }
@@ -160,10 +182,10 @@ export class Ec2Client {
         }
     }
 
-    public async stopInstance(instanceId: string): Promise<PromiseResult<EC2.StopInstancesResult, AWSError>> {
+    public async stopInstance(instanceId: string): Promise<StopInstancesCommandOutput> {
         const client = await this.createSdkClient()
 
-        const response = await client.stopInstances({ InstanceIds: [instanceId] }).promise()
+        const response = await client.send(new StopInstancesCommand({ InstanceIds: [instanceId] }))
 
         return response
     }
@@ -183,10 +205,10 @@ export class Ec2Client {
         }
     }
 
-    public async rebootInstance(instanceId: string): Promise<void> {
+    public async rebootInstance(instanceId: string): Promise<RebootInstancesCommandOutput> {
         const client = await this.createSdkClient()
 
-        await client.rebootInstances({ InstanceIds: [instanceId] }).promise()
+        return await client.send(new RebootInstancesCommand({ InstanceIds: [instanceId] }))
     }
 
     public async rebootInstanceWithCancel(instanceId: string): Promise<void> {
@@ -208,15 +230,15 @@ export class Ec2Client {
      * @param instanceId target EC2 instance ID
      * @returns IAM Association for instance
      */
-    private async getIamInstanceProfileAssociation(instanceId: string): Promise<EC2.IamInstanceProfileAssociation> {
+    private async getIamInstanceProfileAssociation(instanceId: string): Promise<IamInstanceProfileAssociation> {
         const client = await this.createSdkClient()
         const instanceFilter = this.getInstancesFilter([instanceId])
-        const requester = async (request: EC2.DescribeIamInstanceProfileAssociationsRequest) =>
-            client.describeIamInstanceProfileAssociations(request).promise()
+        const requester = async (request: DescribeIamInstanceProfileAssociationsRequest) =>
+            await client.send(new DescribeIamInstanceProfileAssociationsCommand(request))
         const response = await pageableToCollection(
             requester,
             { Filters: instanceFilter },
-            'NextToken',
+            'NextToken' as never,
             'IamInstanceProfileAssociations'
         )
             .flatten()
@@ -238,7 +260,7 @@ export class Ec2Client {
 
     public async getConsoleOutput(instanceId: string, latest: boolean): Promise<SafeEc2GetConsoleOutputResult> {
         const client = await this.createSdkClient()
-        const response = await client.getConsoleOutput({ InstanceId: instanceId, Latest: latest }).promise()
+        const response = await client.send(new GetConsoleOutputCommand({ InstanceId: instanceId, Latest: latest }))
         return {
             ...response,
             InstanceId: instanceId,
@@ -247,14 +269,14 @@ export class Ec2Client {
     }
 }
 
-export function getNameOfInstance(instance: EC2.Instance): string | undefined {
+export function getNameOfInstance(instance: Instance): string | undefined {
     return instanceHasName(instance) ? lookupTagKey(instance.Tags!, 'Name')! : undefined
 }
 
-export function instanceHasName(instance: EC2.Instance): boolean {
+export function instanceHasName(instance: Instance): boolean {
     return instance.Tags !== undefined && instance.Tags.some((tag) => tag.Key === 'Name')
 }
 
-function lookupTagKey(tags: EC2.Tag[], targetKey: string) {
+function lookupTagKey(tags: Tag[], targetKey: string) {
     return tags.filter((tag) => tag.Key === targetKey)[0].Value
 }

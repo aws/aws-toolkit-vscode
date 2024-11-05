@@ -57,6 +57,7 @@ import { registerCommands } from './commands'
 import endpoints from '../resources/endpoints.json'
 import { getLogger, maybeShowMinVscodeWarning, setupUninstallHandler } from './shared'
 import { showViewLogsMessage } from './shared/utilities/messages'
+import { DefaultAWSClientBuilderV3 } from './shared/awsClientBuilderV3'
 
 disableAwsSdkWarning()
 
@@ -121,6 +122,7 @@ export async function activateCommon(
     globals.machineId = await getMachineId()
     globals.awsContext = new DefaultAwsContext()
     globals.sdkClientBuilder = new DefaultAWSClientBuilder(globals.awsContext)
+    globals.sdkClientBuilderV3 = new DefaultAWSClientBuilderV3(globals.awsContext)
     globals.loginManager = new LoginManager(globals.awsContext, new CredentialsStore())
 
     // order matters here
