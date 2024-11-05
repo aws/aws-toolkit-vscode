@@ -59,6 +59,7 @@ import { EcsCredentialsProvider } from './providers/ecsCredentialsProvider'
 import { EnvVarsCredentialsProvider } from './providers/envVarsCredentialsProvider'
 import { showMessageWithUrl } from '../shared/utilities/messages'
 import { credentialHelpUrl } from '../shared/constants'
+import { ExtStartUpSource } from '../shared/telemetry/util'
 
 // iam-only excludes Builder ID and IAM Identity Center from the list of valid connections
 // TODO: Understand if "iam" should include these from the list at all
@@ -732,6 +733,19 @@ export class ExtensionUse {
         this.updateMemento(this.lastExtensionVersionKey, currentVersion)
 
         return this.wasExtensionUpdated
+    }
+
+    /**
+     * Returns a {@link ExtStartUpSource} based on the current state of the extension.
+     */
+    sourceForTelemetry(): ExtStartUpSource {
+        if (this.isFirstUse()) {
+            return ExtStartUpSources.firstStartUp
+        } else if (this.wasUpdated()) {
+            return ExtStartUpSources.update
+        } else {
+            return ExtStartUpSources.reload
+        }
     }
 
     private updateMemento(key: 'isExtensionFirstUse' | 'lastExtensionVersion', val: any) {
