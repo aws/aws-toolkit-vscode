@@ -308,7 +308,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
                     }
                 }
             }
-            getLogger().verbose(`provideDebugConfigurations: debugconfigs: ${JSON.stringify(configs)}`)
+            getLogger().verbose(`provideDebugConfigurations: debugconfigs: %O`, configs)
         }
 
         return configs
@@ -449,7 +449,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             } else if (rv.message) {
                 void vscode.window.showInformationMessage(rv.message)
             }
-            getLogger().verbose(`SAM debug: config: ${JSON.stringify(config.name)}`)
+            getLogger().verbose(`SAM debug: config %s:`, config.name)
         }
 
         const editor = vscode.window.activeTextEditor

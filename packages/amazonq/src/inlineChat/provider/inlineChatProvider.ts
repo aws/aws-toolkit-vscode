@@ -111,20 +111,15 @@ export class InlineChatProvider {
 
         const request = triggerPayloadToChatRequest(triggerPayload)
         const session = this.sessionStorage.getSession(tabID)
-        getLogger().info(
-            `request from tab: ${tabID} conversationID: ${session.sessionIdentifier} request: ${JSON.stringify(
-                request
-            )}`
-        )
+        getLogger().info(`request from tab: ${tabID} conversationID: ${session.sessionIdentifier} request: %O`, request)
 
         let response: GenerateAssistantResponseCommandOutput | undefined = undefined
         session.createNewTokenSource()
         try {
             response = await session.chatSso(request)
             getLogger().info(
-                `response to tab: ${tabID} conversationID: ${session.sessionIdentifier} requestID: ${response.$metadata.requestId} metadata: ${JSON.stringify(
-                    response.$metadata
-                )}`
+                `response to tab: ${tabID} conversationID: ${session.sessionIdentifier} requestID: ${response.$metadata.requestId} metadata: %O`,
+                response.$metadata
             )
         } catch (e: any) {
             this.processException(e, tabID)
