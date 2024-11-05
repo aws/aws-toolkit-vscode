@@ -17,6 +17,7 @@ import { DevOptions } from 'aws-core-vscode/dev'
 import { Auth } from 'aws-core-vscode/auth'
 import api from './api'
 import { activate as activateCWChat } from './app/chat/activation'
+import { beta } from 'aws-core-vscode/dev'
 
 export async function activate(context: vscode.ExtensionContext) {
     // IMPORTANT: No other code should be added to this function. Place it in one of the following 2 functions where appropriate.
@@ -59,6 +60,7 @@ async function activateAmazonQNode(context: vscode.ExtensionContext) {
     filetypes.activate()
 
     await setupDevMode(context)
+    await beta.activate(context)
 }
 
 /**
