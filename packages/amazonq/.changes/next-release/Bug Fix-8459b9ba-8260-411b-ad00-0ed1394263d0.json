@@ -1,4 +1,4 @@
 {
 	"type": "Bug Fix",
-	"description": "Improve `@workspace` index auto pause start strategy, avoid out-of-memory issue. "
+	"description": "Improve `@workspace` index auto pause start strategy. "
 }
