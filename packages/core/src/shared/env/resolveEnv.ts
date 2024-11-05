@@ -246,7 +246,7 @@ async function doResolveUnixShellEnv(timeout: Timeout): Promise<typeof process.e
             }
         }
 
-        getLogger().debug(`getUnixShellEnvironment#spawn:${JSON.stringify(shellArgs)}, command:${command}`)
+        getLogger().debug(`getUnixShellEnvironment#spawn:%O, command:${command}`, shellArgs)
 
         const child = new ChildProcess(systemShellUnix, [...shellArgs, command], {
             spawnOptions: {
