@@ -35,6 +35,9 @@ export type StaticTextResponseType =
     | 'start-transformation-confirmed'
     | 'job-transmitted'
     | 'end-HIL-early'
+    | 'choose-transformation-objective'
+    | 'language-upgrade-selected'
+    | 'sql-conversion-selected'
 
 export type UnrecoverableErrorType =
     | 'no-project-found'
@@ -45,6 +48,10 @@ export type UnrecoverableErrorType =
     | 'unsupported-source-jdk-version'
     | 'upload-to-s3-failed'
     | 'job-start-failed'
+    | 'unsupported-source-db'
+    | 'unsupported-target-db'
+    | 'error-parsing-sct-file'
+    | 'invalid-zip-no-sct-file'
 
 export enum GumbyNamedMessages {
     COMPILATION_PROGRESS_MESSAGE = 'gumbyProjectCompilationMessage',
@@ -148,7 +155,7 @@ export class Messenger {
         )
     }
 
-    public async sendProjectPrompt(projects: TransformationCandidateProject[], tabID: string) {
+    public async sendLanguageUpgradeProjectPrompt(projects: TransformationCandidateProject[], tabID: string) {
         const projectFormOptions: { value: any; label: string }[] = []
         const detectedJavaVersions = new Array<JDKVersion | undefined>()
 
@@ -162,7 +169,7 @@ export class Messenger {
 
         const formItems: ChatItemFormItem[] = []
         formItems.push({
-            id: 'GumbyTransformProjectForm',
+            id: 'GumbyTransformLanguageUpgradeProjectForm',
             type: 'select',
             title: CodeWhispererConstants.chooseProjectFormTitle,
             mandatory: true,
@@ -178,11 +185,11 @@ export class Messenger {
             options: [
                 {
                     value: JDKVersion.JDK8,
-                    label: JDKVersion.JDK8.toString(),
+                    label: JDKVersion.JDK8,
                 },
                 {
                     value: JDKVersion.JDK11,
-                    label: JDKVersion.JDK11.toString(),
+                    label: JDKVersion.JDK11,
                 },
                 {
                     value: JDKVersion.UNSUPPORTED,
@@ -207,7 +214,7 @@ export class Messenger {
         this.dispatcher.sendAsyncEventProgress(
             new AsyncEventProgressMessage(tabID, {
                 inProgress: true,
-                message: MessengerUtils.createTransformationConfirmationPrompt(detectedJavaVersions),
+                message: MessengerUtils.createLanguageUpgradeConfirmationPrompt(detectedJavaVersions),
             })
         )
 
@@ -224,7 +231,64 @@ export class Messenger {
                     message: 'Q Code Transformation',
                     formItems: formItems,
                 },
-                'TransformForm',
+                'LanguageUpgradeTransformForm',
+                tabID,
+                false
+            )
+        )
+    }
+
+    public async sendSQLConversionProjectPrompt(projects: TransformationCandidateProject[], tabID: string) {
+        const projectFormOptions: { value: any; label: string }[] = []
+
+        projects.forEach((candidateProject) => {
+            projectFormOptions.push({
+                value: candidateProject.path,
+                label: candidateProject.name,
+            })
+        })
+
+        const formItems: ChatItemFormItem[] = []
+        formItems.push({
+            id: 'GumbyTransformSQLConversionProjectForm',
+            type: 'select',
+            title: 'Choose a project to transform',
+            mandatory: true,
+            options: projectFormOptions,
+        })
+
+        formItems.push({
+            id: 'GumbyTransformSQLSchemaForm',
+            type: 'select',
+            title: 'Choose the schema of the database',
+            mandatory: true,
+            options: Array.from(transformByQState.getSchemaOptions()).map((schema) => ({
+                value: schema,
+                label: schema,
+            })),
+        })
+
+        this.dispatcher.sendAsyncEventProgress(
+            new AsyncEventProgressMessage(tabID, {
+                inProgress: true,
+                message: 'I can convert your embedded SQL, but I need some more info from you first.',
+            })
+        )
+
+        this.dispatcher.sendAsyncEventProgress(
+            new AsyncEventProgressMessage(tabID, {
+                inProgress: false,
+                message: undefined,
+            })
+        )
+
+        this.dispatcher.sendChatPrompt(
+            new ChatPrompt(
+                {
+                    message: 'Q Code Transformation',
+                    formItems: formItems,
+                },
+                'SQLConversionTransformForm',
                 tabID,
                 false
             )
@@ -315,15 +379,18 @@ export class Messenger {
         )
     }
 
-    public sendStaticTextResponse(type: StaticTextResponseType, tabID: string) {
+    public sendStaticTextResponse(messageType: StaticTextResponseType, tabID: string) {
         let message = '...'
 
-        switch (type) {
+        switch (messageType) {
             case 'java-home-not-set':
                 message = MessengerUtils.createJavaHomePrompt()
                 break
             case 'end-HIL-early':
-                message = `I will continue transforming your code without upgrading this dependency.`
+                message = 'I will continue transforming your code without upgrading this dependency.'
+                break
+            case 'choose-transformation-objective':
+                message = 'Choose your transformation objective.'
                 break
         }
 
@@ -365,6 +432,18 @@ export class Messenger {
                 break
             case 'unsupported-source-jdk-version':
                 message = CodeWhispererConstants.unsupportedJavaVersionChatMessage
+                break
+            case 'unsupported-source-db':
+                message = CodeWhispererConstants.invalidMetadataFileUnsupportedSourceDB
+                break
+            case 'unsupported-target-db':
+                message = CodeWhispererConstants.invalidMetadataFileUnsupportedTargetDB
+                break
+            case 'error-parsing-sct-file':
+                message = CodeWhispererConstants.invalidMetadataFileErrorParsing
+                break
+            case 'invalid-zip-no-sct-file':
+                message = CodeWhispererConstants.invalidMetadataFileNoSctFile
                 break
         }
 
@@ -442,7 +521,7 @@ export class Messenger {
         )
     }
 
-    public sendProjectSelectionMessage(
+    public sendLanguageUpgradeProjectChoiceMessage(
         projectName: string,
         fromJDKVersion: JDKVersion,
         toJDKVersion: JDKVersion,
@@ -458,6 +537,35 @@ export class Messenger {
     `
 
         this.dispatcher.sendChatMessage(new ChatMessage({ message, messageType: 'prompt' }, tabID))
+    }
+
+    public sendSQLConversionProjectSelectionMessage(projectName: string, schema: string, tabID: string) {
+        const message = `### Transformation details
+-------------
+| | |
+| :------------------- | -------: |
+| **Project**             |   ${projectName}   |
+| **Schema** |  ${schema}   |
+    `
+        this.dispatcher.sendChatMessage(new ChatMessage({ message, messageType: 'prompt' }, tabID))
+    }
+
+    public sendSQLConversionMetadataReceivedMessage(tabID: any) {
+        const message = `### Transformation details
+-------------
+| | |
+| :------------------- | -------: |
+| **Source DB**             |   ${transformByQState.getSourceDB()}   |
+| **Target DB** |  ${transformByQState.getTargetDB()}   |
+| **Host** |  ${transformByQState.getSourceServerName()}   |
+    `
+        this.dispatcher.sendChatMessage(
+            new ChatMessage(
+                { message: CodeWhispererConstants.sqlMetadataFileReceived, messageType: 'ai-prompt' },
+                tabID
+            )
+        )
+        this.dispatcher.sendChatMessage(new ChatMessage({ message, messageType: 'ai-prompt' }, tabID))
     }
 
     public sendSkipTestsSelectionMessage(skipTestsSelection: string, tabID: string) {
@@ -606,6 +714,34 @@ ${codeSnippet}
                     message,
                     messageType: 'ai-prompt',
                     messageId,
+                    buttons,
+                },
+                tabID
+            )
+        )
+    }
+
+    public async sendSelectSQLMetadataFileMessage(tabID: string) {
+        const message = CodeWhispererConstants.selectSQLMetadataFileHelpMessage
+        const buttons: ChatItemButton[] = []
+
+        buttons.push({
+            keepCardAfterClick: true,
+            text: 'Select metadata file',
+            id: ButtonActions.SELECT_SQL_CONVERSION_METADATA_FILE,
+        })
+
+        buttons.push({
+            keepCardAfterClick: false,
+            text: 'Cancel',
+            id: ButtonActions.CANCEL_TRANSFORMATION_FORM,
+        })
+
+        this.dispatcher.sendChatMessage(
+            new ChatMessage(
+                {
+                    message,
+                    messageType: 'ai-prompt',
                     buttons,
                 },
                 tabID

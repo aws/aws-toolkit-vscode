@@ -9,7 +9,7 @@ import { InlineTask } from '../controller/inlineTask'
 
 export function registerInlineCommands(context: vscode.ExtensionContext, inlineChatController: InlineChatController) {
     context.subscriptions.push(
-        vscode.commands.registerCommand('aws.amazonq.inline.waitForUserInput', async () => {
+        vscode.commands.registerCommand('aws.amazonq.inline.invokeChat', async () => {
             await inlineChatController.inlineQuickPick()
         }),
         vscode.commands.registerCommand('aws.amazonq.inline.waitForUserDecisionAcceptAll', async (task: InlineTask) => {

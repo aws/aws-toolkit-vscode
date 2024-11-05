@@ -750,6 +750,7 @@ const devSettings = {
     forceCloud9: Boolean,
     forceDevMode: Boolean,
     forceInstallTools: Boolean,
+    forceResolveEnv: Boolean,
     telemetryEndpoint: String,
     telemetryUserPool: String,
     renderDebugDetails: Boolean,

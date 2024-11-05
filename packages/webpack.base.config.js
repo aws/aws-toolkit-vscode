@@ -101,6 +101,10 @@ module.exports = (env = {}, argv = {}) => {
             new webpack.DefinePlugin({
                 EXTENSION_VERSION: JSON.stringify(packageJson.version),
             }),
+            new webpack.DefinePlugin({
+                __VUE_OPTIONS_API__: 'true',
+                __VUE_PROD_DEVTOOLS__: 'false',
+            }),
             new CircularDependencyPlugin({
                 exclude: /node_modules|testFixtures/,
                 failOnError: true,

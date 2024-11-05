@@ -1,3 +1,20 @@
+## 3.31.0 2024-10-30
+
+- **Feature** SAM: Added support for Java 21 Lambda runtime
+- **Feature** AWS Lambda: AWS Explorer command palette actions and hover buttons to build, local invoke, deploy, and remote invoke
+- **Feature** AWS Lambda: Improved local test and debug and remote invoke to streamline creating and sharing sample events
+- **Feature** AWS Lambda: 'Application Builder' is a new sidebar view for viewing application resources and links to create, build, debug, and test serverless applications
+- **Feature** SAM: Added support for Ruby 3.3 Lambda runtime
+- **Feature** SAM: Added support for Ruby 3.2 Lambda runtime
+- **Feature** AWS Lambda: Guided walkthrough contains links to set up local IDE environment, install required tools, several starter templates, and guidance on how to get started building serverless applications
+- **Feature** SAM: Added support for .NET 8.0 Lambda runtime
+
+## 3.30.0 2024-10-29
+
+- **Bug Fix** EC2 connect: improve management of SSM sessions to minimize chance they are left active.
+- **Bug Fix** fixed device code detection when running auth through tunneled vscode
+- **Feature** EC2: provide view of ec2 system logs
+
 ## 3.29.0 2024-10-17
 
 - **Bug Fix** Fix userCredentialsUtils.test.ts so it won't remove the actual aws config

@@ -71,4 +71,5 @@ export function init(appContext: AmazonQAppInitContext) {
     showTransformationHub.register()
 
     transformByQState.setChatControllers(gumbyChatControllerEventEmitters)
+    transformByQState.setChatMessenger(messenger)
 }
