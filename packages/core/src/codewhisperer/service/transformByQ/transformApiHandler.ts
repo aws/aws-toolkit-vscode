@@ -334,16 +334,13 @@ export async function zipCode(
                     target: transformByQState.getTargetDB(),
                     schema: transformByQState.getSchema(),
                     host: transformByQState.getSourceServerName(),
-                    sctFileName: metadataZip.getEntries().filter((entry) => entry.entryName.endsWith('.sct'))[0]
-                        .entryName,
+                    sctFileName: metadataZip.getEntries().filter((entry) => entry.name.endsWith('.sct'))[0].name,
                 },
             }
             // TO-DO: later consider making this add to path.join(zipManifest.dependenciesRoot, 'qct-sct-metadata', entry.entryName) so that it's more organized
             metadataZip
                 .getEntries()
-                .forEach((entry) =>
-                    zip.addFile(path.join(zipManifest.dependenciesRoot, entry.entryName), entry.getData())
-                )
+                .forEach((entry) => zip.addFile(path.join(zipManifest.dependenciesRoot, entry.name), entry.getData()))
             const sqlMetadataSize = (await nodefs.promises.stat(transformByQState.getMetadataPathSQL())).size
             getLogger().info(`CodeTransformation: SQL metadata file size = ${sqlMetadataSize}`)
         }
