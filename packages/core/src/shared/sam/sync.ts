@@ -7,7 +7,6 @@ import globals from '../extensionGlobals'
 
 import * as vscode from 'vscode'
 import * as path from 'path'
-import * as nls from 'vscode-nls'
 import * as localizedText from '../localizedText'
 import { DefaultS3Client } from '../clients/s3Client'
 import { Wizard } from '../wizards/wizard'
@@ -17,38 +16,41 @@ import * as CloudFormation from '../cloudformation/cloudformation'
 import { DefaultEcrClient } from '../clients/ecrClient'
 import { createRegionPrompter } from '../ui/common/region'
 import { CancellationError } from '../utilities/timeoutUtils'
-import { ChildProcess, ChildProcessResult } from '../utilities/processUtils'
+import { ChildProcess } from '../utilities/processUtils'
 import { keys, selectFrom } from '../utilities/tsUtils'
 import { AWSTreeNodeBase } from '../treeview/nodes/awsTreeNodeBase'
-import { ToolkitError, UnknownError } from '../errors'
+import { ToolkitError } from '../errors'
 import { telemetry } from '../telemetry/telemetry'
 import { createCommonButtons } from '../ui/buttons'
 import { ToolkitPromptSettings } from '../settings'
 import { getLogger } from '../logger'
-import { getSamInitDocUrl, isCloud9 } from '../extensionUtilities'
-import { removeAnsi } from '../utilities/textUtilities'
 import { createExitPrompter } from '../ui/common/exitPrompter'
-import { StackSummary } from 'aws-sdk/clients/cloudformation'
-import { SamCliSettings } from './cli/samCliSettings'
 import { getConfigFileUri, SamConfig, validateSamSyncConfig, writeSamconfigGlobal } from './config'
 import { cast, Optional } from '../utilities/typeConstructors'
 import { pushIf, toRecord } from '../utilities/collectionUtils'
-import { SamCliInfoInvocation } from './cli/samCliInfo'
-import { parse } from 'semver'
-import { isAutomation } from '../vscode/env'
 import { getOverriddenParameters } from '../../lambda/config/parameterUtils'
 import { addTelemetryEnvVar } from './cli/samCliInvokerUtils'
 import { samSyncParamUrl, samSyncUrl, samUpgradeUrl } from '../constants'
-import { getAwsConsoleUrl } from '../awsConsole'
 import { openUrl } from '../utilities/vsCodeUtils'
 import { showOnce } from '../utilities/messages'
 import { IamConnection } from '../../auth/connection'
 import { CloudFormationTemplateRegistry } from '../fs/templateRegistry'
 import { TreeNode } from '../treeview/resourceTreeDataProvider'
 import { getSpawnEnv } from '../env/resolveEnv'
-import { getProjectRoot, getProjectRootUri, getSource } from './utils'
-
-const localize = nls.loadMessageBundle()
+import {
+    getProjectRoot,
+    getProjectRootUri,
+    getRecentResponse,
+    getSamCliPathAndVersion,
+    getSource,
+    runInTerminal,
+    updateRecentResponse,
+} from './utils'
+import { TemplateItem, createTemplatePrompter } from '../ui/common/samTemplate'
+import { createStackPrompter } from '../ui/common/stack'
+import { ParamsSource, createSyncParamsSourcePrompter } from '../ui/common/paramsSource'
+import { createEcrPrompter } from '../ui/common/ecr'
+import { BucketSource, createBucketPrompter } from '../ui/common/bucket'
 
 export interface SyncParams {
     readonly paramsSource: ParamsSource
@@ -65,148 +67,13 @@ export interface SyncParams {
     readonly syncFlags?: string
 }
 
-export enum ParamsSource {
-    SpecifyAndSave,
-    SamConfig,
-    Flags,
-}
-enum BucketSource {
-    SamCliManaged,
-    UserProvided,
-}
-
-export function paramsSourcePrompter(existValidSamconfig: boolean | undefined) {
-    const items: DataQuickPickItem<ParamsSource>[] = [
-        {
-            label: 'Specify required parameters and save as defaults',
-            data: ParamsSource.SpecifyAndSave,
-        },
-        {
-            label: 'Specify required parameters',
-            data: ParamsSource.Flags,
-        },
-    ]
-
-    if (existValidSamconfig) {
-        items.push({
-            label: 'Use default values from samconfig',
-            data: ParamsSource.SamConfig,
-        })
-    }
-
-    return createQuickPick(items, {
-        title: 'Specify parameters for deploy',
-        placeholder: 'Press enter to proceed with highlighted option',
-        buttons: createCommonButtons(samSyncUrl),
-    })
-}
-
 export const prefixNewBucketName = (name: string) => `newbucket:${name}`
 export const prefixNewRepoName = (name: string) => `newrepo:${name}`
-
-export function createBucketPrompter(client: DefaultS3Client) {
-    const recentBucket = getRecentResponse(client.regionCode, 'bucketName')
-    const items = client.listBucketsIterable().map((b) => [
-        {
-            label: b.Name,
-            data: b.Name as SyncParams['bucketName'],
-            recentlyUsed: b.Name === recentBucket,
-        },
-    ])
-
-    return createQuickPick(items, {
-        title: 'Select an S3 Bucket',
-        placeholder: 'Select a bucket (or enter a name to create one)',
-        buttons: createCommonButtons(samSyncUrl),
-        filterBoxInputSettings: {
-            label: 'Create a New Bucket',
-            // This is basically a hack. I need to refactor `createQuickPick` a bit.
-            transform: (v) => prefixNewBucketName(v),
-        },
-        noItemsFoundItem: {
-            label: localize(
-                'aws.cfn.noStacks',
-                'No S3 buckets for region "{0}". Enter a name to create a new one.',
-                client.regionCode
-            ),
-            data: undefined,
-            onClick: undefined,
-        },
-    })
-}
-
-const canPickStack = (s: StackSummary) => s.StackStatus.endsWith('_COMPLETE')
-const canShowStack = (s: StackSummary) =>
-    (s.StackStatus.endsWith('_COMPLETE') || s.StackStatus.endsWith('_IN_PROGRESS')) && !s.StackStatus.includes('DELETE')
-
-export function createStackPrompter(client: DefaultCloudFormationClient) {
-    const recentStack = getRecentResponse(client.regionCode, 'stackName')
-    const consoleUrl = getAwsConsoleUrl('cloudformation', client.regionCode)
-    const items = client.listAllStacks().map((stacks) =>
-        stacks.filter(canShowStack).map((s) => ({
-            label: s.StackName,
-            data: s.StackName,
-            invalidSelection: !canPickStack(s),
-            recentlyUsed: s.StackName === recentStack,
-            description: !canPickStack(s) ? 'stack create/update already in progress' : undefined,
-        }))
-    )
-
-    return createQuickPick(items, {
-        title: 'Select a CloudFormation Stack',
-        placeholder: 'Select a stack (or enter a name to create one)',
-        filterBoxInputSettings: {
-            label: 'Create a New Stack',
-            transform: (v) => v,
-        },
-        buttons: createCommonButtons(samSyncUrl, consoleUrl),
-        noItemsFoundItem: {
-            label: localize(
-                'aws.cfn.noStacks',
-                'No stacks in region "{0}". Enter a name to create a new one.',
-                client.regionCode
-            ),
-            data: undefined,
-            onClick: undefined,
-        },
-    })
-}
-
-export function createEcrPrompter(client: DefaultEcrClient) {
-    const recentEcrRepo = getRecentResponse(client.regionCode, 'ecrRepoUri')
-    const consoleUrl = getAwsConsoleUrl('ecr', client.regionCode)
-    const items = client.listAllRepositories().map((list) =>
-        list.map((repo) => ({
-            label: repo.repositoryName,
-            data: repo.repositoryUri,
-            detail: repo.repositoryArn,
-            recentlyUsed: repo.repositoryUri === recentEcrRepo,
-        }))
-    )
-
-    return createQuickPick(items, {
-        title: 'Select an ECR Repository',
-        placeholder: 'Select a repository (or enter a name to create one)',
-        buttons: createCommonButtons(samSyncUrl, consoleUrl),
-        filterBoxInputSettings: {
-            label: 'Create a New Repository',
-            transform: (v) => prefixNewRepoName(v),
-        },
-        noItemsFoundItem: {
-            label: localize(
-                'aws.ecr.noRepos',
-                'No ECR repositories in region "{0}". Enter a name to create a new one.',
-                client.regionCode
-            ),
-            data: undefined,
-            onClick: undefined,
-        },
-    })
-}
+export const syncMementoRootKey = 'samcli.sync.params'
 
 // TODO: hook this up so it prompts the user when more than 1 environment is present in `samconfig.toml`
 export function createEnvironmentPrompter(config: SamConfig, environments = config.listEnvironments()) {
-    const recentEnvironmentName = getRecentResponse(config.location.fsPath, 'environmentName')
+    const recentEnvironmentName = getRecentResponse(syncMementoRootKey, config.location.fsPath, 'environmentName')
     const items = environments.map((env) => ({
         label: env.name,
         data: env,
@@ -217,45 +84,6 @@ export function createEnvironmentPrompter(config: SamConfig, environments = conf
         title: 'Select an Environment to Use',
         placeholder: 'Select an environment',
         buttons: createCommonButtons(samSyncUrl),
-    })
-}
-
-export interface TemplateItem {
-    readonly uri: vscode.Uri
-    readonly data: CloudFormation.Template
-}
-
-export function createTemplatePrompter(registry: CloudFormationTemplateRegistry, projectRoot?: vscode.Uri) {
-    const folders = new Set<string>()
-    const recentTemplatePath = getRecentResponse('global', 'templatePath')
-    const filterTemplates = projectRoot
-        ? registry.items.filter(({ path: filePath }) => !path.relative(projectRoot.fsPath, filePath).startsWith('..'))
-        : registry.items
-
-    const items = filterTemplates.map(({ item, path: filePath }) => {
-        const uri = vscode.Uri.file(filePath)
-        const workspaceFolder = vscode.workspace.getWorkspaceFolder(uri)
-        const label = workspaceFolder ? path.relative(workspaceFolder.uri.fsPath, uri.fsPath) : uri.fsPath
-        folders.add(workspaceFolder?.name ?? '')
-
-        return {
-            label,
-            data: { uri, data: item },
-            description: workspaceFolder?.name,
-            recentlyUsed: recentTemplatePath === uri.fsPath,
-        }
-    })
-
-    const trimmedItems = folders.size === 1 ? items.map((item) => ({ ...item, description: undefined })) : items
-    return createQuickPick(trimmedItems, {
-        title: 'Select a SAM/CloudFormation Template',
-        placeholder: 'Select a SAM/CloudFormation Template',
-        buttons: createCommonButtons(samSyncUrl),
-        noItemsFoundItem: {
-            label: localize('aws.sam.noWorkspace', 'No SAM template.yaml file(s) found. Select for help'),
-            data: undefined,
-            onClick: () => openUrl(getSamInitDocUrl()),
-        },
     })
 }
 
@@ -329,36 +157,42 @@ export class SyncWizard extends Wizard<SyncParams> {
     ) {
         super({ initState: state, exitPrompterProvider: shouldPromptExit ? createExitPrompter : undefined })
         this.registry = registry
-        this.form.template.bindPrompter(() => createTemplatePrompter(this.registry))
+        this.form.template.bindPrompter(() => createTemplatePrompter(this.registry, syncMementoRootKey))
         this.form.projectRoot.setDefault(({ template }) => getProjectRoot(template))
 
         this.form.paramsSource.bindPrompter(async ({ projectRoot }) => {
             const existValidSamConfig: boolean | undefined = await validateSamSyncConfig(projectRoot)
-            return paramsSourcePrompter(existValidSamConfig)
+            return createSyncParamsSourcePrompter(existValidSamConfig)
         })
         this.form.region.bindPrompter(() => createRegionPrompter().transform((r) => r.id), {
             showWhen: ({ paramsSource }) =>
-                paramsSource === ParamsSource.Flags || paramsSource === ParamsSource.SpecifyAndSave,
+                paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
         })
         this.form.stackName.bindPrompter(
-            ({ region }) => createStackPrompter(new DefaultCloudFormationClient(region!)),
+            ({ region }) => createStackPrompter(new DefaultCloudFormationClient(region!), syncMementoRootKey),
             {
                 showWhen: ({ paramsSource }) =>
-                    paramsSource === ParamsSource.Flags || paramsSource === ParamsSource.SpecifyAndSave,
+                    paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
             }
         )
 
-        this.form.bucketName.bindPrompter(({ region }) => createBucketPrompter(new DefaultS3Client(region!)), {
-            showWhen: ({ paramsSource }) =>
-                paramsSource === ParamsSource.Flags || paramsSource === ParamsSource.SpecifyAndSave,
-        })
+        this.form.bucketName.bindPrompter(
+            ({ region }) => createBucketPrompter(new DefaultS3Client(region!), syncMementoRootKey),
+            {
+                showWhen: ({ paramsSource }) =>
+                    paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
+            }
+        )
 
-        this.form.ecrRepoUri.bindPrompter(({ region }) => createEcrPrompter(new DefaultEcrClient(region!)), {
-            showWhen: ({ template, paramsSource }) =>
-                !!template &&
-                hasImageBasedResources(template.data) &&
-                (paramsSource === ParamsSource.Flags || paramsSource === ParamsSource.SpecifyAndSave),
-        })
+        this.form.ecrRepoUri.bindPrompter(
+            ({ region }) => createEcrPrompter(new DefaultEcrClient(region!), syncMementoRootKey),
+            {
+                showWhen: ({ template, paramsSource }) =>
+                    !!template &&
+                    hasImageBasedResources(template.data) &&
+                    (paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave),
+            }
+        )
 
         // todo wrap with localize
         this.form.syncFlags.bindPrompter(
@@ -370,7 +204,7 @@ export class SyncWizard extends Wizard<SyncParams> {
                 }),
             {
                 showWhen: ({ paramsSource }) =>
-                    paramsSource === ParamsSource.Flags || paramsSource === ParamsSource.SpecifyAndSave,
+                    paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
             }
         )
     }
@@ -431,10 +265,10 @@ export async function saveAndBindArgs(args: SyncParams): Promise<{ readonly boun
     }
 
     await Promise.all([
-        updateRecentResponse(args.region, 'stackName', data.stackName),
-        updateRecentResponse(args.region, 'bucketName', data.bucketName),
-        updateRecentResponse(args.region, 'ecrRepoUri', data.ecrRepoUri),
-        updateRecentResponse('global', 'templatePath', data.templatePath),
+        updateSyncRecentResponse(args.region, 'stackName', data.stackName),
+        updateSyncRecentResponse(args.region, 'bucketName', data.bucketName),
+        updateSyncRecentResponse(args.region, 'ecrRepoUri', data.ecrRepoUri),
+        updateSyncRecentResponse('global', 'templatePath', data.templatePath),
     ])
 
     const boundArgs = bindDataToParams(data, {
@@ -457,71 +291,6 @@ export async function saveAndBindArgs(args: SyncParams): Promise<{ readonly boun
     }
 
     return { boundArgs }
-}
-
-export async function getSamCliPathAndVersion() {
-    const { path: samCliPath } = await SamCliSettings.instance.getOrDetectSamCli()
-    if (samCliPath === undefined) {
-        throw new ToolkitError('SAM CLI could not be found', { code: 'MissingExecutable' })
-    }
-
-    const info = await new SamCliInfoInvocation(samCliPath).execute()
-    const parsedVersion = parse(info.version)
-    telemetry.record({ version: info.version })
-
-    if (parsedVersion?.compare('1.53.0') === -1) {
-        throw new ToolkitError('SAM CLI version 1.53.0 or higher is required', { code: 'VersionTooLow' })
-    }
-
-    return { path: samCliPath, parsedVersion }
-}
-
-let oldTerminal: ProcessTerminal | undefined
-export async function runInTerminal(proc: ChildProcess, cmd: string) {
-    const handleResult = (result?: ChildProcessResult) => {
-        if (result && result.exitCode !== 0) {
-            const message = `sam ${cmd} exited with a non-zero exit code: ${result.exitCode}`
-            if (result.stderr.includes('is up to date')) {
-                throw ToolkitError.chain(result.error, message, {
-                    code: 'NoUpdateExitCode',
-                })
-            }
-            throw ToolkitError.chain(result.error, message, {
-                code: 'NonZeroExitCode',
-            })
-        }
-    }
-
-    // `createTerminal` doesn't work on C9 so we use the output channel instead
-    if (isCloud9()) {
-        globals.outputChannel.show()
-
-        const result = proc.run({
-            onStdout: (text) => globals.outputChannel.append(removeAnsi(text)),
-            onStderr: (text) => globals.outputChannel.append(removeAnsi(text)),
-        })
-        await proc.send('\n')
-
-        return handleResult(await result)
-    }
-
-    // The most recent terminal won't get garbage collected until the next run
-    if (oldTerminal?.stopped === true) {
-        oldTerminal.close()
-    }
-    const pty = (oldTerminal = new ProcessTerminal(proc))
-    const terminal = vscode.window.createTerminal({ pty, name: `SAM ${cmd}` })
-    terminal.sendText('\n')
-    terminal.show()
-
-    const result = await new Promise<ChildProcessResult>((resolve) => pty.onDidExit(resolve))
-    if (pty.cancelled) {
-        throw result.error !== undefined
-            ? ToolkitError.chain(result.error, 'SAM CLI was cancelled before exiting', { cancelled: true })
-            : new CancellationError('user')
-    } else {
-        return handleResult(result)
-    }
 }
 
 async function loadLegacyParameterOverrides(template: TemplateItem) {
@@ -602,7 +371,6 @@ export async function getSyncWizard(
     return wizard
 }
 
-export const getWorkspaceUri = (template: TemplateItem) => vscode.workspace.getWorkspaceFolder(template.uri)?.uri
 const getStringParam = (config: SamConfig, key: string) => {
     try {
         return cast(config.getCommandParam('sync', key), Optional(String))
@@ -733,23 +501,8 @@ export async function runSync(
     })
 }
 
-const mementoRootKey = 'samcli.sync.params'
-export function getRecentResponse(region: string, key: string): string | undefined {
-    const root = globals.context.workspaceState.get(mementoRootKey, {} as Record<string, Record<string, string>>)
-
-    return root[region]?.[key]
-}
-
-export async function updateRecentResponse(region: string, key: string, value: string | undefined) {
-    try {
-        const root = globals.context.workspaceState.get(mementoRootKey, {} as Record<string, Record<string, string>>)
-        await globals.context.workspaceState.update(mementoRootKey, {
-            ...root,
-            [region]: { ...root[region], [key]: value },
-        })
-    } catch (err) {
-        getLogger().warn(`sam: unable to save response at key "${key}": %s`, err)
-    }
+async function updateSyncRecentResponse(region: string, key: string, value: string | undefined) {
+    return await updateRecentResponse(syncMementoRootKey, region, key, value)
 }
 
 export async function confirmDevStack() {
@@ -774,90 +527,6 @@ Confirm that you are synchronizing a development stack.
 
     if (resp === okDontShow) {
         await ToolkitPromptSettings.instance.disablePrompt('samcliConfirmDevStack')
-    }
-}
-
-// This is a decent improvement over using the output channel but it isn't a tty/pty
-// SAM CLI uses `click` which has reduced functionality if `os.isatty` returns false
-// Historically, Windows lack of a pty-equivalent is why it's not available in libuv
-// Maybe it's doable now with the ConPTY API? https://github.com/libuv/libuv/issues/2640
-class ProcessTerminal implements vscode.Pseudoterminal {
-    private readonly onDidCloseEmitter = new vscode.EventEmitter<number | void>()
-    private readonly onDidWriteEmitter = new vscode.EventEmitter<string>()
-    private readonly onDidExitEmitter = new vscode.EventEmitter<ChildProcessResult>()
-    public readonly onDidWrite = this.onDidWriteEmitter.event
-    public readonly onDidClose = this.onDidCloseEmitter.event
-    public readonly onDidExit = this.onDidExitEmitter.event
-
-    public constructor(private readonly process: ChildProcess) {
-        // Used in integration tests
-        if (isAutomation()) {
-            // Disable because it is a test.
-            // eslint-disable-next-line aws-toolkits/no-console-log
-            this.onDidWrite((text) => console.log(text.trim()))
-        }
-    }
-
-    #cancelled = false
-    public get cancelled() {
-        return this.#cancelled
-    }
-
-    public get stopped() {
-        return this.process.stopped
-    }
-
-    public open(initialDimensions: vscode.TerminalDimensions | undefined): void {
-        this.process
-            .run({
-                onStdout: (text) => this.mapStdio(text),
-                onStderr: (text) => this.mapStdio(text),
-            })
-            .then((result) => this.onDidExitEmitter.fire(result))
-            .catch((err) =>
-                this.onDidExitEmitter.fire({ error: UnknownError.cast(err), exitCode: -1, stderr: '', stdout: '' })
-            )
-            .finally(() => this.onDidWriteEmitter.fire('\r\nPress any key to close this terminal'))
-    }
-
-    public close(): void {
-        this.process.stop()
-        this.onDidCloseEmitter.fire()
-    }
-
-    public handleInput(data: string) {
-        // ETX
-        if (data === '\u0003' || this.process.stopped) {
-            this.#cancelled ||= data === '\u0003'
-            return this.close()
-        }
-
-        // enter
-        if (data === '\u000D') {
-            this.process.send('\n').then(undefined, (e) => {
-                getLogger().error('ProcessTerminal: process.send() failed: %s', (e as Error).message)
-            })
-            this.onDidWriteEmitter.fire('\r\n')
-        } else {
-            this.process.send(data).then(undefined, (e) => {
-                getLogger().error('ProcessTerminal: process.send() failed: %s', (e as Error).message)
-            })
-            this.onDidWriteEmitter.fire(data)
-        }
-    }
-
-    private mapStdio(text: string): void {
-        const lines = text.split('\n')
-        const first = lines.shift()
-
-        if (first) {
-            this.onDidWriteEmitter.fire(first)
-        }
-
-        for (const line of lines) {
-            this.onDidWriteEmitter.fire('\r\n')
-            this.onDidWriteEmitter.fire(line)
-        }
     }
 }
 

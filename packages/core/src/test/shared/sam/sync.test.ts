@@ -4,29 +4,21 @@
  */
 
 import * as vscode from 'vscode'
-import * as sync from '../../../shared/sam/sync'
-import * as awsConsole from '../../../shared/awsConsole'
+import * as SamUtilsModule from '../../../shared/sam/utils'
 import * as S3ClientModule from '../../../shared/clients/s3Client'
 import * as CloudFormationClientModule from '../../../shared/clients/cloudFormationClient'
-import * as buttons from '../../../shared/ui/buttons'
 import assert from 'assert'
 import {
-    createBucketPrompter,
-    createEcrPrompter,
     createEnvironmentPrompter,
-    createStackPrompter,
-    createTemplatePrompter,
     ensureBucket,
     getSyncParamsFromConfig,
-    ParamsSource,
-    paramsSourcePrompter,
     prepareSyncParams,
     saveAndBindArgs,
     syncFlagItems,
     SyncParams,
     SyncWizard,
-    TemplateItem,
 } from '../../../shared/sam/sync'
+
 import {
     createBaseImageTemplate,
     createBaseTemplate,
@@ -44,13 +36,11 @@ import { createMultiPick, DataQuickPickItem } from '../../../shared/ui/pickerPro
 import sinon from 'sinon'
 import { getTestWindow } from '../vscode/window'
 import { DefaultS3Client } from '../../../shared/clients/s3Client'
-import { AsyncCollection } from '../../../shared/utilities/asyncCollection'
 import { RequiredProps } from '../../../shared/utilities/tsUtils'
 import S3 from 'aws-sdk/clients/s3'
 import { DefaultCloudFormationClient } from '../../../shared/clients/cloudFormationClient'
 import CloudFormation from 'aws-sdk/clients/cloudformation'
 import { intoCollection } from '../../../shared/utilities/collectionUtils'
-import { DefaultEcrClient, EcrRepository } from '../../../shared/clients/ecrClient'
 import { SamConfig, Environment, parseConfig } from '../../../shared/sam/config'
 import { RegionProvider } from '../../../shared/regions/regionProvider'
 import { Region } from '../../../shared/regions/endpoints'
@@ -58,12 +48,11 @@ import { RegionNode } from '../../../awsexplorer/regionNode'
 import { getProjectRootUri } from '../../../shared/sam/utils'
 import { AppNode } from '../../../awsService/appBuilder/explorer/nodes/appNode'
 import * as Cfn from '../../../shared/cloudformation/cloudformation'
-import { CloudFormationTemplateRegistry } from '../../../shared/fs/templateRegistry'
-import { WatchedItem } from '../../../shared/fs/watchedFiles'
 import { validTemplateData } from '../../shared/sam/samTestUtils'
 //import { beforeEach } from 'mocha'
-import { assertEqualPaths, getWorkspaceFolder, TestFolder } from '../../testUtil'
-import { samSyncUrl } from '../../../shared/constants'
+import { getWorkspaceFolder, TestFolder } from '../../testUtil'
+import { TemplateItem } from '../../../shared/ui/common/samTemplate'
+import { ParamsSource } from '../../../shared/ui/common/paramsSource'
 
 describe('SyncWizard', async function () {
     const createTester = async (params?: Partial<SyncParams>) =>
@@ -111,7 +100,7 @@ describe('SyncWizard', async function () {
         const template = { uri: templateUri, data: createBaseImageTemplate() }
         const tester = await createTester({
             template,
-            paramsSource: ParamsSource.Flags,
+            paramsSource: ParamsSource.Specify,
         })
         tester.ecrRepoUri.assertShow()
     })
@@ -279,50 +268,6 @@ describe('prepareSyncParams', function () {
     })
 })
 
-describe('paramsSourcePrompter', () => {
-    it('should return a prompter with the correct items with no valid samconfig', () => {
-        const expectedItems: DataQuickPickItem<ParamsSource>[] = [
-            {
-                label: 'Specify required parameters and save as defaults',
-                data: ParamsSource.SpecifyAndSave,
-            },
-            {
-                label: 'Specify required parameters',
-                data: ParamsSource.Flags,
-            },
-        ]
-        const prompter = paramsSourcePrompter(false)
-        const quickPick = prompter.quickPick
-        assert.strictEqual(quickPick.title, 'Specify parameters for deploy')
-        assert.strictEqual(quickPick.placeholder, 'Press enter to proceed with highlighted option')
-        assert.strictEqual(quickPick.items.length, 2)
-        assert.deepStrictEqual(quickPick.items, expectedItems)
-    })
-
-    it('should return a prompter with the correct items with valid samconfig', () => {
-        const expectedItems: DataQuickPickItem<ParamsSource>[] = [
-            {
-                label: 'Specify required parameters and save as defaults',
-                data: ParamsSource.SpecifyAndSave,
-            },
-            {
-                label: 'Specify required parameters',
-                data: ParamsSource.Flags,
-            },
-            {
-                label: 'Use default values from samconfig',
-                data: ParamsSource.SamConfig,
-            },
-        ]
-        const prompter = paramsSourcePrompter(true)
-        const quickPick = prompter.quickPick
-        assert.strictEqual(quickPick.title, 'Specify parameters for deploy')
-        assert.strictEqual(quickPick.placeholder, 'Press enter to proceed with highlighted option')
-        assert.strictEqual(quickPick.items.length, 3)
-        assert.deepStrictEqual(quickPick.items, expectedItems)
-    })
-})
-
 describe('syncFlagsPrompter', () => {
     let sandbox: sinon.SinonSandbox
     let acceptedItems: DataQuickPickItem<string>[]
@@ -360,295 +305,6 @@ describe('syncFlagsPrompter', () => {
     })
 })
 
-describe('createBucketPrompter', () => {
-    let sandbox: sinon.SinonSandbox
-    const s3Client = new DefaultS3Client('us-east-1', 'aws')
-
-    beforeEach(() => {
-        sandbox = sinon.createSandbox()
-    })
-
-    afterEach(() => {
-        sandbox.restore()
-    })
-
-    it('should create a prompter with existing buckets', () => {
-        // Arrange
-        const buckets = [
-            { Name: 'bucket1', region: 'us-east-1' },
-            { Name: 'bucket2', region: 'us-east-1' },
-            { Name: 'bucket3', region: 'us-east-1' },
-        ] as unknown as AsyncCollection<RequiredProps<S3.Bucket, 'Name'> & { readonly region: string }>
-
-        const stub = sandbox.stub(s3Client, 'listBucketsIterable').callsFake(() => {
-            return buckets
-        })
-        sandbox.stub(sync, 'getRecentResponse').returns(undefined) // Mock recent bucket
-
-        // Act
-        const prompter = createBucketPrompter(s3Client)
-
-        // Assert
-        assert.ok(stub.calledOnce)
-        const expectedItems = buckets.map((b) => [
-            {
-                label: b.Name,
-                data: b.Name,
-                recentlyUsed: false,
-            },
-        ])
-        assert.strictEqual(prompter.quickPick.title, 'Select an S3 Bucket')
-        assert.strictEqual(prompter.quickPick.placeholder, 'Select a bucket (or enter a name to create one)')
-        assert.strictEqual(prompter.quickPick.items.length, 3)
-        assert.deepStrictEqual(prompter.quickPick.items, expectedItems)
-    })
-
-    it('should include no items found message if no stacks exist', () => {
-        const stub = sandbox.stub(s3Client, 'listBucketsIterable').callsFake(() => {
-            return [] as unknown as AsyncCollection<RequiredProps<S3.Bucket, 'Name'> & { readonly region: string }>
-        })
-        sandbox.stub(sync, 'getRecentResponse').returns(undefined) // Mock recent bucket
-
-        // Act
-        const prompter = createBucketPrompter(s3Client)
-
-        // Assert
-        assert.ok(stub.calledOnce)
-        assert.strictEqual(prompter.quickPick.title, 'Select an S3 Bucket')
-        assert.strictEqual(prompter.quickPick.placeholder, 'Select a bucket (or enter a name to create one)')
-        assert.strictEqual(prompter.quickPick.items.length, 1)
-        assert.strictEqual(
-            prompter.quickPick.items[0].label,
-            'No S3 buckets for region "us-east-1". Enter a name to create a new one.'
-        )
-    })
-})
-
-describe('createStackPrompter', () => {
-    let sandbox: sinon.SinonSandbox
-    const cfnClient = new DefaultCloudFormationClient('us-east-1')
-
-    beforeEach(() => {
-        sandbox = sinon.createSandbox()
-    })
-
-    afterEach(() => {
-        sandbox.restore()
-    })
-
-    it('should create a prompter with existing stacks', async () => {
-        // Arrange
-        const stackSummaries: CloudFormation.StackSummary[][] = [
-            [
-                {
-                    StackName: 'stack1',
-                    StackStatus: 'CREATE_COMPLETE',
-                    CreationTime: new Date(),
-                } as CloudFormation.StackSummary,
-                {
-                    StackName: 'stack2',
-                    StackStatus: 'CREATE_COMPLETE',
-                    CreationTime: new Date(),
-                } as CloudFormation.StackSummary,
-                {
-                    StackName: 'stack3',
-                    StackStatus: 'CREATE_COMPLETE',
-                    CreationTime: new Date(),
-                } as CloudFormation.StackSummary,
-            ],
-        ]
-        const expectedItems = [
-            {
-                label: 'stack1',
-                data: 'stack1',
-                description: undefined,
-                invalidSelection: false,
-                recentlyUsed: false,
-            },
-            {
-                label: 'stack2',
-                data: 'stack2',
-                description: undefined,
-                invalidSelection: false,
-                recentlyUsed: false,
-            },
-            {
-                label: 'stack3',
-                data: 'stack3',
-                description: undefined,
-                invalidSelection: false,
-                recentlyUsed: false,
-            },
-        ]
-        const listAllStacksStub = sandbox.stub(cfnClient, 'listAllStacks').returns(intoCollection(stackSummaries))
-        sandbox.stub(sync, 'getRecentResponse').returns(undefined)
-        const createCommonButtonsStub = sandbox.stub(buttons, 'createCommonButtons')
-        sandbox
-            .stub(awsConsole, 'getAwsConsoleUrl')
-            .returns(vscode.Uri.parse(`https://us-east-1.console.aws.amazon.com/cloudformation/home?region=us-east-1`))
-
-        // Act
-        const prompter = createStackPrompter(cfnClient)
-        await new Promise((f) => setTimeout(f, 50))
-
-        // Assert
-        assert.ok(createCommonButtonsStub.calledOnce)
-        assert.ok(
-            createCommonButtonsStub.calledWithExactly(
-                samSyncUrl,
-                vscode.Uri.parse(`https://us-east-1.console.aws.amazon.com/cloudformation/home?region=us-east-1`)
-            )
-        )
-        assert.ok(listAllStacksStub.calledOnce)
-        assert.strictEqual(prompter.quickPick.title, 'Select a CloudFormation Stack')
-        assert.strictEqual(prompter.quickPick.placeholder, 'Select a stack (or enter a name to create one)')
-        assert.strictEqual(prompter.quickPick.items.length, 3)
-        assert.deepStrictEqual(prompter.quickPick.items, expectedItems)
-    })
-
-    it('should include no items found message if no stacks exist', async () => {
-        const listAllStacksStub = sandbox.stub(cfnClient, 'listAllStacks').returns(intoCollection([]))
-        sandbox.stub(sync, 'getRecentResponse').returns(undefined)
-        const createCommonButtonsStub = sandbox.stub(buttons, 'createCommonButtons')
-        sandbox
-            .stub(awsConsole, 'getAwsConsoleUrl')
-            .returns(vscode.Uri.parse(`https://us-east-1.console.aws.amazon.com/cloudformation/home?region=us-east-1`))
-
-        // Act
-        const prompter = createStackPrompter(cfnClient)
-        await new Promise((f) => setTimeout(f, 50))
-
-        // Assert
-        assert.ok(createCommonButtonsStub.calledOnce)
-        assert.ok(
-            createCommonButtonsStub.calledWithExactly(
-                samSyncUrl,
-                vscode.Uri.parse(`https://us-east-1.console.aws.amazon.com/cloudformation/home?region=us-east-1`)
-            )
-        )
-        assert.ok(listAllStacksStub.calledOnce)
-        assert.strictEqual(prompter.quickPick.title, 'Select a CloudFormation Stack')
-        assert.strictEqual(prompter.quickPick.placeholder, 'Select a stack (or enter a name to create one)')
-        assert.strictEqual(prompter.quickPick.items.length, 1)
-        assert.deepStrictEqual(
-            prompter.quickPick.items[0].label,
-            'No stacks in region "us-east-1". Enter a name to create a new one.'
-        )
-        assert.deepStrictEqual(prompter.quickPick.items[0].data, undefined)
-    })
-})
-
-describe('createEcrPrompter', () => {
-    let sandbox: sinon.SinonSandbox
-    const ecrClient = new DefaultEcrClient('us-east-1')
-
-    beforeEach(() => {
-        sandbox = sinon.createSandbox()
-    })
-
-    afterEach(() => {
-        sandbox.restore()
-    })
-
-    it('should create a prompter with existing repos', async () => {
-        // Arrange
-        const ecrRepos: EcrRepository[][] = [
-            [
-                {
-                    repositoryName: 'repo1',
-                    repositoryUri: 'repoUri1',
-                    repositoryArn: 'repoArn1',
-                } as EcrRepository,
-                {
-                    repositoryName: 'repo2',
-                    repositoryUri: 'repoUri2',
-                    repositoryArn: 'repoArn2',
-                } as EcrRepository,
-                {
-                    repositoryName: 'repo3',
-                    repositoryUri: 'repoUri3',
-                    repositoryArn: 'repoArn3',
-                } as EcrRepository,
-            ],
-        ]
-        const expectedItems = [
-            {
-                label: 'repo1',
-                data: 'repoUri1',
-                detail: 'repoArn1',
-                recentlyUsed: false,
-            },
-            {
-                label: 'repo2',
-                data: 'repoUri2',
-                detail: 'repoArn2',
-                recentlyUsed: false,
-            },
-            {
-                label: 'repo3',
-                data: 'repoUri3',
-                detail: 'repoArn3',
-                recentlyUsed: false,
-            },
-        ]
-        const listAllRepositoriesStub = sandbox.stub(ecrClient, 'listAllRepositories').returns(intoCollection(ecrRepos))
-        sandbox.stub(sync, 'getRecentResponse').returns(undefined)
-        const createCommonButtonsStub = sandbox.stub(buttons, 'createCommonButtons')
-        sandbox
-            .stub(awsConsole, 'getAwsConsoleUrl')
-            .returns(vscode.Uri.parse(`https://us-east-1.console.aws.amazon.com/cloudformation/home?region=us-east-1`))
-
-        // Act
-        const prompter = createEcrPrompter(ecrClient)
-        await new Promise((f) => setTimeout(f, 50))
-
-        // Assert
-        assert.ok(createCommonButtonsStub.calledOnce)
-        assert.ok(
-            createCommonButtonsStub.calledWithExactly(
-                samSyncUrl,
-                vscode.Uri.parse(`https://us-east-1.console.aws.amazon.com/cloudformation/home?region=us-east-1`)
-            )
-        )
-        assert.ok(listAllRepositoriesStub.calledOnce)
-        assert.strictEqual(prompter.quickPick.title, 'Select an ECR Repository')
-        assert.strictEqual(prompter.quickPick.placeholder, 'Select a repository (or enter a name to create one)')
-        assert.strictEqual(prompter.quickPick.items.length, 3)
-        assert.deepStrictEqual(prompter.quickPick.items, expectedItems)
-    })
-
-    it('should include no items found message if no repos exist', async () => {
-        const listAllStacksStub = sandbox.stub(ecrClient, 'listAllRepositories').returns(intoCollection([]))
-        sandbox.stub(sync, 'getRecentResponse').returns(undefined)
-        const createCommonButtonsStub = sandbox.stub(buttons, 'createCommonButtons')
-        sandbox
-            .stub(awsConsole, 'getAwsConsoleUrl')
-            .returns(vscode.Uri.parse(`https://us-east-1.console.aws.amazon.com/cloudformation/home?region=us-east-1`))
-
-        // Act
-        const prompter = createEcrPrompter(ecrClient)
-        await new Promise((f) => setTimeout(f, 50))
-
-        // Assert
-        assert.ok(createCommonButtonsStub.calledOnce)
-        assert.ok(
-            createCommonButtonsStub.calledWithExactly(
-                samSyncUrl,
-                vscode.Uri.parse(`https://us-east-1.console.aws.amazon.com/cloudformation/home?region=us-east-1`)
-            )
-        )
-        assert.ok(listAllStacksStub.calledOnce)
-        assert.strictEqual(prompter.quickPick.title, 'Select an ECR Repository')
-        assert.strictEqual(prompter.quickPick.placeholder, 'Select a repository (or enter a name to create one)')
-        assert.strictEqual(prompter.quickPick.items.length, 1)
-        assert.deepStrictEqual(
-            prompter.quickPick.items[0].label,
-            'No ECR repositories in region "us-east-1". Enter a name to create a new one.'
-        )
-        assert.deepStrictEqual(prompter.quickPick.items[0].data, undefined)
-    })
-})
-
 describe('createEnvironmentPrompter', () => {
     let sandbox: sinon.SinonSandbox
     let config: SamConfig
@@ -682,7 +338,7 @@ describe('createEnvironmentPrompter', () => {
         const envs: Environment[] = [defaultEnv, stagingEnv, prodEnv]
 
         listEnvironmentsStub.returns(envs)
-        sandbox.stub(sync, 'getRecentResponse').returns(undefined)
+        sandbox.stub(SamUtilsModule, 'getRecentResponse').returns(undefined)
 
         // Act
         const prompter = createEnvironmentPrompter(config)
@@ -709,44 +365,6 @@ describe('createEnvironmentPrompter', () => {
                 recentlyUsed: false,
             },
         ])
-    })
-})
-
-describe('createTemplatePrompter', () => {
-    let registry: CloudFormationTemplateRegistry
-    let sandbox: sinon.SinonSandbox
-
-    beforeEach(() => {
-        sandbox = sinon.createSandbox()
-        //Create a mock instance of CloudFormationTemplateRegistry
-        registry = {
-            items: [
-                { path: '/path/to/template1.yaml', item: {} } as WatchedItem<Cfn.Template>,
-                { path: '/path/to/template2.yaml', item: {} } as WatchedItem<Cfn.Template>,
-            ],
-        } as CloudFormationTemplateRegistry // Typecasting to match expected type
-    })
-
-    afterEach(() => {
-        sandbox.restore()
-    })
-
-    it('should create quick pick items from registry items', () => {
-        // Arrange
-        const recentTemplatePathStub = sinon.stub().returns(undefined)
-        sandbox.replace(sync, 'getRecentResponse', recentTemplatePathStub)
-        const workspaceFolder = vscode.workspace.workspaceFolders?.[0]
-        assert.ok(workspaceFolder)
-
-        const prompter = createTemplatePrompter(registry)
-
-        // Assert
-        assert.strictEqual(prompter.quickPick.items.length, 2)
-        assertEqualPaths(prompter.quickPick.items[0].label, '/path/to/template1.yaml')
-        //assert.strictEqual(prompter.quickPick.items[0].label, '/path/to/template1.yaml')
-        assertEqualPaths(prompter.quickPick.items[1].label, '/path/to/template2.yaml')
-        assert.strictEqual(prompter.quickPick.title, 'Select a SAM/CloudFormation Template')
-        assert.strictEqual(prompter.quickPick.placeholder, 'Select a SAM/CloudFormation Template')
     })
 })
 
@@ -1037,7 +655,7 @@ describe('SyncWizard', async () => {
 
                 assert.strictEqual(parameters.template.uri.path, templateFile.path)
                 assert.strictEqual(parameters.projectRoot.path, projectRoot.path)
-                assert.strictEqual(parameters.paramsSource, ParamsSource.Flags)
+                assert.strictEqual(parameters.paramsSource, ParamsSource.Specify)
                 assert.strictEqual(parameters.region, 'us-west-2')
                 assert.strictEqual(parameters.stackName, 'stack2')
                 assert.strictEqual(parameters.bucketName, 'stack-1-bucket')
@@ -1054,7 +672,7 @@ describe('saveAndBindArgs', () => {
         getConfigFileUriStub = sandbox.stub()
 
         // Replace the real implementations with stubs
-        sandbox.stub(sync, 'updateRecentResponse').resolves()
+        sandbox.stub(SamUtilsModule, 'updateRecentResponse').resolves()
     })
 
     afterEach(() => {

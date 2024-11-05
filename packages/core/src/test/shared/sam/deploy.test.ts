@@ -6,18 +6,11 @@ import * as vscode from 'vscode'
 import { CloudFormation, S3 } from 'aws-sdk'
 import { AppNode } from '../../../awsService/appBuilder/explorer/nodes/appNode'
 import { assertTelemetry, getWorkspaceFolder, TestFolder } from '../../testUtil'
-import {
-    BucketSource,
-    DeployParams,
-    DeployWizard,
-    ParamsSource,
-    getDeployWizard,
-    runDeploy,
-} from '../../../shared/sam/deploy'
+import { DeployParams, DeployWizard, getDeployWizard, runDeploy } from '../../../shared/sam/deploy'
 import { globals, ToolkitError } from '../../../shared'
 import sinon from 'sinon'
 import { samconfigCompleteData, samconfigInvalidData, validTemplateData } from './samTestUtils'
-
+import * as SamUtilsModule from '../../../shared/sam/utils'
 import assert from 'assert'
 import { getTestWindow } from '../vscode/window'
 import { DefaultCloudFormationClient } from '../../../shared/clients/cloudFormationClient'
@@ -30,13 +23,16 @@ import * as CloudFormationClientModule from '../../../shared/clients/cloudFormat
 import * as S3ClientModule from '../../../shared/clients/s3Client'
 import * as ProcessUtilsModule from '../../../shared/utilities/processUtils'
 import * as ResolveEnvModule from '../../../shared/env/resolveEnv'
-import * as SyncModule from '../../../shared/sam/sync'
+
 import * as SamConfiModule from '../../../shared/sam/config'
 import { RequiredProps } from '../../../shared/utilities/tsUtils'
 import { UserAgent as __UserAgent } from '@smithy/types'
-import { TemplateItem } from '../../../shared/sam/sync'
+
 import { SamAppLocation } from '../../../awsService/appBuilder/explorer/samProject'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
+import { TemplateItem } from '../../../shared/ui/common/samTemplate'
+import { ParamsSource } from '../../../shared/ui/common/paramsSource'
+import { BucketSource } from '../../../shared/ui/common/bucket'
 
 describe('DeployWizard', async function () {
     let sandbox: sinon.SinonSandbox
@@ -647,13 +643,13 @@ describe('SAM Deploy', () => {
     describe(':) path', () => {
         beforeEach(() => {
             mockGetSamCliPath = sandbox.stub().resolves({ path: 'sam-cli-path' })
-            sandbox.stub(SyncModule, 'getSamCliPathAndVersion').callsFake(mockGetSamCliPath)
+            sandbox.stub(SamUtilsModule, 'getSamCliPathAndVersion').callsFake(mockGetSamCliPath)
 
             mockChildProcess = sandbox.stub().resolves({})
             sandbox.stub(ProcessUtilsModule, 'ChildProcess').callsFake(mockChildProcess)
 
             mockRunInTerminal = sandbox.stub().resolves(Promise.resolve())
-            sandbox.stub(SyncModule, 'runInTerminal').callsFake(mockRunInTerminal)
+            sandbox.stub(SamUtilsModule, 'runInTerminal').callsFake(mockRunInTerminal)
         })
 
         it('[ParamsSource.SamConfig] should instantiate the correct ChildProcess', async () => {
@@ -927,7 +923,7 @@ describe('SAM Deploy', () => {
 
                 // Break point
                 mockGetSamCliPath = sandbox
-                    .stub(SyncModule, 'getSamCliPathAndVersion')
+                    .stub(SamUtilsModule, 'getSamCliPathAndVersion')
                     .rejects(
                         new ToolkitError('SAM CLI version 1.53.0 or higher is required', { code: 'VersionTooLow' })
                     )
@@ -936,7 +932,7 @@ describe('SAM Deploy', () => {
                 mockChildProcess = sandbox.stub().resolves({})
                 sandbox.stub(ProcessUtilsModule, 'ChildProcess').callsFake(mockChildProcess)
                 mockRunInTerminal = sandbox.stub().resolves(Promise.resolve())
-                sandbox.stub(SyncModule, 'runInTerminal').callsFake(mockRunInTerminal)
+                sandbox.stub(SamUtilsModule, 'runInTerminal').callsFake(mockRunInTerminal)
 
                 await runDeploy(appNode)
                 assert.fail('Should have thrown an Error')
@@ -955,13 +951,13 @@ describe('SAM Deploy', () => {
                 // Happy Stub
                 sandbox.stub(DeployWizard.prototype, 'run').resolves(mockDeployParams)
                 mockGetSamCliPath = sandbox.stub().resolves({ path: 'sam-cli-path' })
-                sandbox.stub(SyncModule, 'getSamCliPathAndVersion').callsFake(mockGetSamCliPath)
+                sandbox.stub(SamUtilsModule, 'getSamCliPathAndVersion').callsFake(mockGetSamCliPath)
                 mockChildProcess = sandbox.stub().resolves({})
                 sandbox.stub(ProcessUtilsModule, 'ChildProcess').callsFake(mockChildProcess)
 
                 // Breaking point
                 mockRunInTerminal = sandbox
-                    .stub(SyncModule, 'runInTerminal')
+                    .stub(SamUtilsModule, 'runInTerminal')
                     .rejects(new ToolkitError('SAM CLI was cancelled before exiting', { cancelled: true }))
 
                 await runDeploy(appNode)
@@ -981,12 +977,12 @@ describe('SAM Deploy', () => {
                 // Happy Stub
                 sandbox.stub(DeployWizard.prototype, 'run').resolves(mockDeployParams)
                 mockGetSamCliPath = sandbox.stub().resolves({ path: 'sam-cli-path' })
-                sandbox.stub(SyncModule, 'getSamCliPathAndVersion').callsFake(mockGetSamCliPath)
+                sandbox.stub(SamUtilsModule, 'getSamCliPathAndVersion').callsFake(mockGetSamCliPath)
                 mockChildProcess = sandbox.stub().resolves({})
                 sandbox.stub(ProcessUtilsModule, 'ChildProcess').callsFake(mockChildProcess)
 
                 // Breaking point
-                mockRunInTerminal = sandbox.stub(SyncModule, 'runInTerminal').callsFake((input, cmd) => {
+                mockRunInTerminal = sandbox.stub(SamUtilsModule, 'runInTerminal').callsFake((input, cmd) => {
                     if (cmd === 'deploy') {
                         throw new ToolkitError('The stack is up to date', {
                             code: 'NoUpdateExitCode',

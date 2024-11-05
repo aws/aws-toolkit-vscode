@@ -7,11 +7,12 @@ import * as vscode from 'vscode'
 import assert from 'assert'
 import sinon from 'sinon'
 import { getProjectRootUri, getProjectRoot, getSource, isDotnetRuntime } from '../../../shared/sam/utils'
-import { TemplateItem } from '../../../shared/sam/sync'
+
 import { RegionNode } from '../../../awsexplorer/regionNode'
 import { Region } from '../../../shared/regions/endpoints'
 import { RegionProvider } from '../../../shared'
 import { DeployedResource, DeployedResourceNode } from '../../../awsService/appBuilder/explorer/nodes/deployedNode'
+import { TemplateItem } from '../../../shared/ui/common/samTemplate'
 
 describe('SAM utils', async function () {
     it('returns the projectRoot', async function () {

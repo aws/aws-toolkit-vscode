@@ -4,8 +4,10 @@
  */
 
 import { CloudFormationTemplateRegistry } from '../../../shared/fs/templateRegistry'
-import { createTemplatePrompter, TemplateItem } from '../../../shared/sam/sync'
+import { syncMementoRootKey } from '../../../shared/sam/sync'
+
 import { createExitPrompter } from '../../../shared/ui/common/exitPrompter'
+import { createTemplatePrompter, TemplateItem } from '../../../shared/ui/common/samTemplate'
 import { Wizard } from '../../../shared/wizards/wizard'
 
 export interface OpenTemplateParams {
@@ -15,6 +17,6 @@ export interface OpenTemplateParams {
 export class OpenTemplateWizard extends Wizard<OpenTemplateParams> {
     public constructor(state: Partial<OpenTemplateParams>, registry: CloudFormationTemplateRegistry) {
         super({ initState: state, exitPrompterProvider: createExitPrompter })
-        this.form.template.bindPrompter(() => createTemplatePrompter(registry))
+        this.form.template.bindPrompter(() => createTemplatePrompter(registry, syncMementoRootKey))
     }
 }

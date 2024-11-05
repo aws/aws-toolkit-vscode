@@ -4,7 +4,8 @@
  */
 
 import * as vscode from 'vscode'
-import { TemplateItem, createTemplatePrompter, getSamCliPathAndVersion, runInTerminal } from './sync'
+import { runInTerminal } from './utils'
+import { TemplateItem, createTemplatePrompter } from '../ui/common/samTemplate'
 import { ChildProcess } from '../utilities/processUtils'
 import { addTelemetryEnvVar } from './cli/samCliInvokerUtils'
 import { Wizard } from '../wizards/wizard'
@@ -19,8 +20,9 @@ import globals from '../extensionGlobals'
 import { TreeNode } from '../treeview/resourceTreeDataProvider'
 import { telemetry } from '../telemetry/telemetry'
 import { getSpawnEnv } from '../env/resolveEnv'
-import { getProjectRoot, isDotnetRuntime } from './utils'
+import { getProjectRoot, getSamCliPathAndVersion, isDotnetRuntime } from './utils'
 import { getConfigFileUri, validateSamBuildConfig } from './config'
+import { syncMementoRootKey } from './sync'
 
 export interface BuildParams {
     readonly template: TemplateItem
@@ -127,7 +129,7 @@ export class BuildWizard extends Wizard<BuildParams> {
         this.arg = arg
         if (this.arg === undefined) {
             // "Build" command was invoked on the command palette.
-            this.form.template.bindPrompter(() => createTemplatePrompter(this.registry))
+            this.form.template.bindPrompter(() => createTemplatePrompter(this.registry, syncMementoRootKey))
             this.form.projectRoot.setDefault(({ template }) => getProjectRoot(template))
             this.form.paramsSource.bindPrompter(async ({ projectRoot }) => {
                 const existValidSamConfig: boolean | undefined = await validateSamBuildConfig(projectRoot)

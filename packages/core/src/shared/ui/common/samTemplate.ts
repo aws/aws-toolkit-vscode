@@ -1,0 +1,61 @@
+/*!
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import * as path from 'path'
+import * as vscode from 'vscode'
+import { getSamInitDocUrl } from '../..'
+import * as CloudFormation from '../../cloudformation/cloudformation'
+import { samSyncUrl } from '../../constants'
+import { CloudFormationTemplateRegistry } from '../../fs/templateRegistry'
+import { createCommonButtons } from '../buttons'
+import { createQuickPick } from '../pickerPrompter'
+import { openUrl } from '../../utilities/vsCodeUtils'
+import * as nls from 'vscode-nls'
+import { getRecentResponse } from '../../sam/utils'
+
+export const localize = nls.loadMessageBundle()
+
+export interface TemplateItem {
+    readonly uri: vscode.Uri
+    readonly data: CloudFormation.Template
+}
+
+export function createTemplatePrompter(
+    registry: CloudFormationTemplateRegistry,
+    mementoRootKey: string,
+    projectRoot?: vscode.Uri
+) {
+    const folders = new Set<string>()
+    const recentTemplatePath = getRecentResponse(mementoRootKey, 'global', 'templatePath')
+    const filterTemplates = projectRoot
+        ? registry.items.filter(({ path: filePath }) => !path.relative(projectRoot.fsPath, filePath).startsWith('..'))
+        : registry.items
+
+    const items = filterTemplates.map(({ item, path: filePath }) => {
+        const uri = vscode.Uri.file(filePath)
+        const workspaceFolder = vscode.workspace.getWorkspaceFolder(uri)
+        const label = workspaceFolder ? path.relative(workspaceFolder.uri.fsPath, uri.fsPath) : uri.fsPath
+        folders.add(workspaceFolder?.name ?? '')
+
+        return {
+            label,
+            data: { uri, data: item },
+            description: workspaceFolder?.name,
+            recentlyUsed: recentTemplatePath === uri.fsPath,
+        }
+    })
+
+    const trimmedItems = folders.size === 1 ? items.map((item) => ({ ...item, description: undefined })) : items
+    return createQuickPick(trimmedItems, {
+        title: 'Select a SAM/CloudFormation Template',
+        placeholder: 'Select a SAM/CloudFormation Template',
+        buttons: createCommonButtons(samSyncUrl),
+        noItemsFoundItem: {
+            label: localize('aws.sam.noWorkspace', 'No SAM template.yaml file(s) found. Select for help'),
+            data: undefined,
+            onClick: () => openUrl(getSamInitDocUrl()),
+        },
+    })
+}
