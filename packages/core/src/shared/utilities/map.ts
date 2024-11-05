@@ -43,7 +43,7 @@ export abstract class NestedMap<Key, Value = { [key: string]: any }> implements 
     delete(key: Key, reason?: string): void {
         delete this.data[this.hash(key)]
         if (reason) {
-            getLogger().debug(`${this.name}: cleared cache, key: ${JSON.stringify(key)}, reason: ${reason}`)
+            getLogger().debug(`${this.name}: cleared cache, key: %O, reason: ${reason}`, key)
         }
     }
 
