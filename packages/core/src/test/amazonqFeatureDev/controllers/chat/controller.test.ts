@@ -9,7 +9,7 @@ import * as path from 'path'
 import sinon from 'sinon'
 import { waitUntil } from '../../../../shared/utilities/timeoutUtils'
 import { ControllerSetup, createController, createSession, generateVirtualMemoryUri } from '../../utils'
-import { CurrentWsFolders, FollowUpTypes, NewFileInfo, DeletedFileInfo } from '../../../../amazonqFeatureDev/types'
+import { CurrentWsFolders, DeletedFileInfo, FollowUpTypes, NewFileInfo } from '../../../../amazonqFeatureDev/types'
 import { Session } from '../../../../amazonqFeatureDev/session/session'
 import { Prompter } from '../../../../shared/ui/prompter'
 import { assertTelemetry, toFile } from '../../../testUtil'
@@ -259,7 +259,7 @@ describe('Controller', () => {
             assertTelemetry('amazonq_endChat', { amazonqConversationId: conversationID, result: 'Succeeded' })
         })
 
-        it('disableFileList is called', async () => {
+        it('calls disableFileList', async () => {
             const disableFileListSpy = sinon.stub(session, 'disableFileList').resolves()
 
             await newTaskClicked()
@@ -408,6 +408,14 @@ describe('Controller', () => {
                 return Promise.resolve(getSessionStub.callCount > 0)
             }, {})
         }
+
+        it('calls disableFileList', async () => {
+            const disableFileListSpy = sinon.stub(session, 'disableFileList').resolves()
+
+            await fireChatMessage()
+
+            assert.ok(disableFileListSpy.calledOnce)
+        })
 
         describe('processErrorChatMessage', function () {
             // TODO: fix disablePreviousFileList error
@@ -573,7 +581,7 @@ describe('Controller', () => {
             assertTelemetry('amazonq_endChat', { amazonqConversationId: conversationID, result: 'Succeeded' })
         })
 
-        it('disableFileList is called', async () => {
+        it('calls disableFileList', async () => {
             const disableFileListSpy = sinon.stub(session, 'disableFileList').resolves()
 
             await closeSessionClicked()
