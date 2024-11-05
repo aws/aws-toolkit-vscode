@@ -327,12 +327,15 @@ export async function zipCode(
         ) {
             // note that zipManifest must be a ZipManifest since only other option is HilZipManifest which is not used for SQL conversions
             const metadataZip = new AdmZip(transformByQState.getMetadataPathSQL())
-            zipManifest.requestedConversions.sqlConversion = {
-                source: transformByQState.getSourceDB(),
-                target: transformByQState.getTargetDB(),
-                schema: transformByQState.getSchema(),
-                host: transformByQState.getSourceServerName(),
-                sctFileName: metadataZip.getEntries().filter((entry) => entry.entryName.endsWith('.sct'))[0].entryName,
+            zipManifest.requestedConversions = {
+                sqlConversion: {
+                    source: transformByQState.getSourceDB(),
+                    target: transformByQState.getTargetDB(),
+                    schema: transformByQState.getSchema(),
+                    host: transformByQState.getSourceServerName(),
+                    sctFileName: metadataZip.getEntries().filter((entry) => entry.entryName.endsWith('.sct'))[0]
+                        .entryName,
+                },
             }
             // TO-DO: later consider making this add to path.join(zipManifest.dependenciesRoot, 'qct-sct-metadata', entry.entryName) so that it's more organized
             metadataZip
