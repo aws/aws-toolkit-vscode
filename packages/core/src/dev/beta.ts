@@ -18,6 +18,9 @@ import { isUserCancelledError, ToolkitError } from '../shared/errors'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { cast } from '../shared/utilities/typeConstructors'
 import { CancellationError } from '../shared/utilities/timeoutUtils'
+import { isAmazonQ, isCloud9, productName } from '../shared/extensionUtilities'
+import * as config from './config'
+import { isReleaseVersion } from '../shared/vscode/env'
 
 const localize = nls.loadMessageBundle()
 
@@ -37,6 +40,16 @@ async function updateBetaToolkitData(vsixUrl: string, data: BetaToolkit) {
         ...globals.globalState.get<Record<string, BetaToolkit>>('dev.beta', {}),
         [vsixUrl]: data,
     })
+}
+
+/**
+ * Set up "beta" update monitoring.
+ */
+export async function activate(ctx: vscode.ExtensionContext) {
+    const betaUrl = isAmazonQ() ? config.betaUrl.amazonq : config.betaUrl.toolkit
+    if (!isCloud9() && !isReleaseVersion() && betaUrl) {
+        ctx.subscriptions.push(watchBetaVSIX(betaUrl))
+    }
 }
 
 /**
@@ -75,11 +88,12 @@ async function runAutoUpdate(vsixUrl: string) {
 async function checkBetaUrl(vsixUrl: string): Promise<void> {
     const resp = await got(vsixUrl).buffer()
     const latestBetaInfo = await getExtensionInfo(resp)
-    if (VSCODE_EXTENSION_ID.awstoolkit !== `${latestBetaInfo.publisher}.${latestBetaInfo.name}`) {
+    const extId = isAmazonQ() ? VSCODE_EXTENSION_ID.amazonq : VSCODE_EXTENSION_ID.awstoolkit
+    if (extId !== `${latestBetaInfo.publisher}.${latestBetaInfo.name}`) {
         throw new ToolkitError('URL does not point to an AWS Toolkit artifact', { code: 'InvalidExtensionName' })
     }
 
-    const currentVersion = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.awstoolkit)?.packageJSON.version
+    const currentVersion = vscode.extensions.getExtension(extId)?.packageJSON.version
     if (latestBetaInfo.version !== currentVersion) {
         const tmpFolder = await makeTemporaryToolkitFolder()
         const betaPath = vscode.Uri.joinPath(vscode.Uri.file(tmpFolder), path.basename(vsixUrl))
@@ -141,7 +155,7 @@ async function promptInstallToolkit(pluginPath: vscode.Uri, newVersion: string, 
     const response = await vscode.window.showInformationMessage(
         localize(
             'AWS.dev.beta.updatePrompt',
-            `New version of AWS Toolkit is available at the [beta URL]({0}). Install the new version "{1}" to continue using the beta.`,
+            `New version of ${productName()} is available at the [beta URL]({0}). Install the new version "{1}" to continue using the beta.`,
             vsixUrl,
             newVersion
         ),
