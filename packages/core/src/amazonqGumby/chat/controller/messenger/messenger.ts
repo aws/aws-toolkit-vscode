@@ -394,7 +394,7 @@ export class Messenger {
                 message = 'I will continue transforming your code without upgrading this dependency.'
                 break
             case 'choose-transformation-objective':
-                message = 'Choose your transformation objective.'
+                message = CodeWhispererConstants.chooseTransformationObjective
                 break
         }
 

@@ -224,7 +224,7 @@ export class GumbyController {
         this.sessionStorage.getSession().conversationState = ConversationState.WAITING_FOR_TRANSFORMATION_OBJECTIVE
         this.messenger.sendStaticTextResponse('choose-transformation-objective', message.tabID)
         this.messenger.sendChatInputEnabled(message.tabID, true)
-        this.messenger.sendUpdatePlaceholder(message.tabID, "Enter 'language upgrade' or 'SQL conversion'")
+        this.messenger.sendUpdatePlaceholder(message.tabID, CodeWhispererConstants.chooseTransformationObjective)
     }
 
     private async beginTransformation(message: any) {
