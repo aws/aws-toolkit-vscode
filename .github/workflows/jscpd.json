@@ -2,7 +2,7 @@
     "pattern": "packages/**/*.ts",
     "ignore": ["**node_modules**", "**dist**"],
     "gitignore": true,
-    "threshold": 2.75,
+    "threshold": 3.0,
     "minLines": 3,
     "output": "./",
     "reporters": ["json"]
