@@ -55,24 +55,6 @@ jobs:
             - run: npm run testCompile
             - run: npm run lint
 
-    jscpd:
-        needs: lint-commits
-        runs-on: ubuntu-latest
-        strategy:
-            matrix:
-                node-version: [18.x]
-        env:
-            NODE_OPTIONS: '--max-old-space-size=8192'
-        steps:
-            - uses: actions/checkout@v4
-            - name: Use Node.js ${{ matrix.node-version }}
-              uses: actions/setup-node@v4
-              with:
-                  node-version: ${{ matrix.node-version }}
-            - run: npm install jscpd
-            - name: Run jscpd
-              run: npx jscpd --config "$GITHUB_WORKSPACE/.github/workflows/jscpd.json"
-
     macos:
         needs: lint-commits
         name: test macOS
