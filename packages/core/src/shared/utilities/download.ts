@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import path from 'path'
 import { CodeWhispererStreaming, ExportResultArchiveCommandInput } from '@amzn/codewhisperer-streaming'
 import { ToolkitError } from '../errors'
 import fs from '../fs/fs'
@@ -12,9 +11,9 @@ import fs from '../fs/fs'
  * This class represents the structure of the archive returned by the ExportResultArchive endpoint
  */
 export class ExportResultArchiveStructure {
-    static readonly PathToSummary = path.join('summary', 'summary.md')
-    static readonly PathToDiffPatch = path.join('patch', 'diff.patch')
-    static readonly PathToMetrics = path.join('metrics', 'metrics.json')
+    static readonly PathToSummary = 'summary/summary.md'
+    static readonly PathToDiffPatch = 'patch/diff.patch'
+    static readonly PathToMetrics = 'metrics/metrics.json'
     static readonly PathToManifest = 'manifest.json'
 }
 

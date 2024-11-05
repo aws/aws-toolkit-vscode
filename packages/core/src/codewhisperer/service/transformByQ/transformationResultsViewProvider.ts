@@ -408,7 +408,6 @@ export class ProposedTransformationExplorer {
                 const metricsPath = path.join(pathContainingArchive, ExportResultArchiveStructure.PathToMetrics)
                 const metricsData = JSON.parse(fs.readFileSync(metricsPath, 'utf8'))
 
-                // TO-DO: add support for SQL conversions; right now these metrics are only available for Java upgrades
                 await codeWhisperer.codeWhispererClient.sendTelemetryEvent({
                     telemetryEvent: {
                         transformEvent: {
@@ -423,7 +422,7 @@ export class ProposedTransformationExplorer {
                             },
                             linesOfCodeChanged: metricsData.linesOfCodeChanged,
                             charsOfCodeChanged: metricsData.charactersOfCodeChanged,
-                            linesOfCodeSubmitted: transformByQState.getLinesOfCodeSubmitted(),
+                            linesOfCodeSubmitted: transformByQState.getLinesOfCodeSubmitted(), // currently unavailable for SQL conversions
                         },
                     },
                 })
