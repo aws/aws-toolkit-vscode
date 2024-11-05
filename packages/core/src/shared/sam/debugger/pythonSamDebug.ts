@@ -49,7 +49,7 @@ async function makePythonDebugManifest(params: {
     if (await fileExists(manfestPath)) {
         manifestText = await readFileAsString(manfestPath)
     }
-    getLogger().debug(`pythonCodeLensProvider.makePythonDebugManifest params: ${JSON.stringify(params, undefined, 2)}`)
+    getLogger().debug(`pythonCodeLensProvider.makePythonDebugManifest params: %O`, params)
     // TODO: If another module name includes the string "ikp3db", this will be skipped...
     // HACK: Cloud9-created Lambdas hardcode ikp3db 1.1.4, which only functions with Python 3.6 (which we don't support)
     //       Remove any ikp3db dependency if it exists and manually add a non-pinned ikp3db dependency.

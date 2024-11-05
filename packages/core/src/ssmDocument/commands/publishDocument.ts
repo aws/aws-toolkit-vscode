@@ -83,7 +83,7 @@ export async function createDocument(
         }
 
         const createResult = await client.createDocument(request)
-        logger.info(`Created Systems Manager Document: ${JSON.stringify(createResult.DocumentDescription)}`)
+        logger.info(`Created Systems Manager Document: %O`, createResult.DocumentDescription)
         void vscode.window.showInformationMessage(`Created Systems Manager Document: ${wizardResponse.name}`)
     } catch (err) {
         const error = err as Error
@@ -118,7 +118,7 @@ export async function updateDocument(
 
         const updateResult = await client.updateDocument(request)
 
-        logger.info(`Updated Systems Manager Document: ${JSON.stringify(updateResult.DocumentDescription)}`)
+        logger.info(`Updated Systems Manager Document: %O`, updateResult.DocumentDescription)
         void vscode.window.showInformationMessage(`Updated Systems Manager Document: ${wizardResponse.name}`)
 
         const isConfirmed = await showConfirmationMessage({

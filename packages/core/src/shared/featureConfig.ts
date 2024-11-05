@@ -110,7 +110,7 @@ export class FeatureConfigProvider {
                     })
                 })
             })
-            getLogger().info('AB Testing Cohort Assignments %s', JSON.stringify(response.featureEvaluations))
+            getLogger().info('AB Testing Cohort Assignments %O', response.featureEvaluations)
 
             const customizationArnOverride = this.featureConfigs.get(Features.customizationArnOverride)?.value
                 ?.stringValue
