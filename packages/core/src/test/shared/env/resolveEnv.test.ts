@@ -6,15 +6,12 @@
 import assert from 'assert'
 import { mergeResolvedShellPath } from '../../../shared/env/resolveEnv'
 import sinon from 'sinon'
-import { EnvironmentVariables } from '../../../shared/environmentVariables'
 
 describe('resolveEnv', async function () {
     let sandbox: sinon.SinonSandbox
     beforeEach(function () {
         sandbox = sinon.createSandbox()
-        sandbox.stub(process, 'env').value({
-            platform: 'win32',
-        } as EnvironmentVariables)
+        sandbox.stub(process, 'platform').value('win32')
     })
 
     afterEach(function () {
@@ -24,7 +21,8 @@ describe('resolveEnv', async function () {
     describe('resolveWindows', async function () {
         it('mergeResolvedShellPath should not change path on windows', async function () {
             const env = await mergeResolvedShellPath(process.env)
-            assert.strictEqual(env.path, process.env.path)
+            assert(env.PATH)
+            assert.strictEqual(env, process.env)
         })
     })
 })
