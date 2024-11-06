@@ -476,15 +476,13 @@ export class FileSystemState {
                 if (heartbeatData.lastHeartbeat !== now) {
                     throw new CrashMonitoringError('Heartbeat write validation failed', { code: className })
                 }
+
+                this.deps.devLogger?.debug(`crashMonitoring: HEARTBEAT sent for ${truncateUuid(this.ext.sessionId)}`)
             }
             const funcWithCtx = () => withFailCtx('sendHeartbeatState', func)
             const funcWithRetries = withRetries(funcWithCtx, { maxRetries: 6, delay: 100, backoff: 2 })
-            const funcWithTelemetryRun = await telemetry.ide_heartbeat.run((span) => {
-                span.record({ id: className, timestamp: now })
-                return funcWithRetries
-            })
 
-            return funcWithTelemetryRun
+            return funcWithRetries
         } catch (e) {
             await fileHandle?.close()
 
