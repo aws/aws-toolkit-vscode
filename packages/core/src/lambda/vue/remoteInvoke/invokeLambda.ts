@@ -128,7 +128,7 @@ export class RemoteInvokeWebview extends VueWebview {
                 selectedFile: this.getFileName(fileLocations[0].fsPath),
             }
         } catch (e) {
-            getLogger().error('readFileSync: Failed to read file at path %O', fileLocations[0].fsPath, e)
+            getLogger().error('readFileSync: Failed to read file at path %s %O', fileLocations[0].fsPath, e)
             throw ToolkitError.chain(e, 'Failed to read selected file')
         }
     }
@@ -151,7 +151,7 @@ export class RemoteInvokeWebview extends VueWebview {
                 selectedFile: this.getFileName(fileLocation.fsPath),
             }
         } catch (e) {
-            getLogger().error('readFileSync: Failed to read file at path %O', fileLocation.fsPath, e)
+            getLogger().error('readFileSync: Failed to read file at path %s %O', fileLocation.fsPath, e)
             throw ToolkitError.chain(e, 'Failed to read selected file')
         }
     }

@@ -153,7 +153,7 @@ export async function generateDeployedNode(
             }
             default:
                 newDeployedResource = new DeployedResourceNode(deployedResource)
-                getLogger().info('Details are missing or are incomplete for:', deployedResource)
+                getLogger().info('Details are missing or are incomplete for: %O', deployedResource)
                 return [
                     createPlaceholderItem(
                         localize('AWS.appBuilder.explorerNode.noApps', '[This resource is not yet supported.]')

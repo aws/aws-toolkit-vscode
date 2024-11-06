@@ -298,7 +298,7 @@ async function doResolveUnixShellEnv(timeout: Timeout): Promise<typeof process.e
                 getLogger().debug(`getUnixShellEnvironment#result:${env}`)
                 resolve(env)
             } catch (err) {
-                getLogger().error('getUnixShellEnvironment#errorCaught', err)
+                getLogger().error('getUnixShellEnvironment#errorCaught %O', err)
                 reject(err)
             }
         })
