@@ -517,7 +517,13 @@ export class FileSystemState {
 
     private async deleteHeartbeatFile(ext: ExtInstanceId | ExtInstance, ctx: string) {
         // IMPORTANT: Must use NodeFs here since this is used during shutdown
-        const func = () => nodeFs.rm(this.makeStateFilePath(ext), { force: true })
+        const func = async () => {
+            const filePath = this.makeStateFilePath(ext)
+            // Even when deleting a file, if there is an open file handle it may still exist. This empties the
+            // contents, so that any following reads will get no data.
+            await nodeFs.writeFile(filePath, '')
+            await nodeFs.rm(filePath, { force: true })
+        }
         const funcWithCtx = () => withFailCtx(ctx, func)
         const funcWithRetries = withRetries(funcWithCtx, { maxRetries: 6, delay: 100, backoff: 2 })
         await funcWithRetries
