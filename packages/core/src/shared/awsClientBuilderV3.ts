@@ -5,12 +5,16 @@
 
 import { CredentialsShim } from '../auth/deprecated/loginManager'
 import { AwsContext } from './awsContext'
-import { AwsCredentialIdentityProvider } from '@smithy/types'
+import { AwsCredentialIdentityProvider, Client } from '@smithy/types'
+import { getUserAgent } from './telemetry/util'
+import { DevSettings } from './settings'
+import { Provider, UserAgent } from '@aws-sdk/types'
 
-interface AwsClient {}
-interface AwsClientOptions {
-    credentials: AwsCredentialIdentityProvider
-    region: string
+export type AwsClient = Client<any, any, any>
+export interface AwsClientOptions {
+    credentials?: AwsCredentialIdentityProvider
+    region?: string | Provider<string>
+    customUserAgent?: UserAgent
 }
 
 export interface AWSClientBuilderV3 {
@@ -18,7 +22,8 @@ export interface AWSClientBuilderV3 {
         type: new (o: AwsClientOptions) => T,
         options?: AwsClientOptions,
         region?: string,
-        userAgent?: string
+        userAgent?: string,
+        settings?: DevSettings
     ): Promise<T>
 }
 
@@ -37,13 +42,18 @@ export class DefaultAWSClientBuilderV3 implements AWSClientBuilderV3 {
         type: new (o: Partial<AwsClientOptions>) => T,
         options?: AwsClientOptions,
         region?: string,
-        userAgent?: string
+        userAgent?: string,
+        settings?: DevSettings
     ): Promise<T> {
         const opt = { ...options }
         const shim = this.getShim()
 
         if (!opt.region && region) {
             opt.region = region
+        }
+
+        if (!opt.customUserAgent && userAgent) {
+            opt.customUserAgent = [[getUserAgent({ includePlatform: true, includeClientId: true })]]
         }
 
         opt.credentials = async () => {
