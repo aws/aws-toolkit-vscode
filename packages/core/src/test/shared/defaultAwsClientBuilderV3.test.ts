@@ -23,7 +23,7 @@ describe('DefaultAwsClientBuilderV3', function () {
 
     describe('createAndConfigureSdkClient', function () {
         it('includes Toolkit user-agent if no options are specified', async function () {
-            const service = await builder.createAwsService(Client)
+            const service = await builder.createAwsService(Client as any)
             const clientId = getClientId(new GlobalState(new FakeMemento()))
 
             assert.ok(service.config.customUserAgent)
@@ -34,14 +34,14 @@ describe('DefaultAwsClientBuilderV3', function () {
         })
 
         it('adds Client-Id to user agent', async function () {
-            const service = await builder.createAwsService(Client)
+            const service = await builder.createAwsService(Client as any)
             const clientId = getClientId(new GlobalState(new FakeMemento()))
             const regex = new RegExp(`ClientId/${clientId}`)
             assert.ok(service.config.customUserAgent![0][0].match(regex))
         })
 
         it('does not override custom user-agent if specified in options', async function () {
-            const service = await builder.createAwsService(Client, {
+            const service = await builder.createAwsService(Client as any, {
                 customUserAgent: [['CUSTOM USER AGENT']],
             })
 
@@ -53,7 +53,7 @@ describe('DefaultAwsClientBuilderV3', function () {
             await settings.update('aws.dev.endpoints', { foo: 'http://example.com' })
 
             const service = await builder.createAwsService(
-                Client,
+                Client as any,
                 {
                     customUserAgent: [['CUSTOM USER AGENT']],
                     apiConfig: { metadata: { serviceId: 'foo' } },
@@ -70,7 +70,7 @@ describe('DefaultAwsClientBuilderV3', function () {
             const settings = new TestSettings()
 
             const service = await builder.createAwsService(
-                Client,
+                Client as any,
                 {
                     customUserAgent: 'CUSTOM USER AGENT',
                     apiConfig: { metadata: { serviceId: 'foo' } },

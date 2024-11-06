@@ -9,10 +9,20 @@ import { AwsCredentialIdentityProvider } from '@smithy/types'
 import { Client as IClient } from '@smithy/types'
 import { getUserAgent } from './telemetry/util'
 import { DevSettings } from './settings'
-import { Provider, UserAgent } from '@aws-sdk/types'
-import { Client } from '@aws-sdk/smithy-client'
+import {
+    DeserializeHandler,
+    DeserializeHandlerOptions,
+    DeserializeMiddleware,
+    HandlerExecutionContext,
+    Provider,
+    UserAgent,
+} from '@aws-sdk/types'
+import { HttpResponse } from '@aws-sdk/protocol-http'
+import { telemetry } from './telemetry'
+import { getRequestId } from './errors'
+import { getLogger } from '.'
 
-export type AwsClient = IClient<any, any, any> | Client<any, any, any, any>
+export type AwsClient = IClient<any, any, any>
 interface AwsConfigOptions {
     credentials: AwsCredentialIdentityProvider
     region: string | Provider<string>
@@ -77,7 +87,72 @@ export class DefaultAWSClientBuilderV3 implements AWSClientBuilderV3 {
             }
             return creds
         }
+
         const service = new type(opt)
+        service.middlewareStack.add(telemetryMiddleware, { step: 'deserialize' } as DeserializeHandlerOptions)
         return service
     }
 }
+
+function getServiceId(context: { clientName?: string; commandName?: string }) {
+    return context.clientName?.toLowerCase().replace(/client$/, '')
+}
+
+function isExcludedError(e: Error, ignoredErrors: (string | typeof Error)[]) {
+    return (
+        ignoredErrors?.find((x) => e.name === x) ||
+        ('code' in e && ignoredErrors?.find((x) => e.code === x)) ||
+        ignoredErrors?.find((x) => typeof x !== 'string' && e instanceof x)
+    )
+}
+/**
+ * Record request IDs to the current context, potentially overriding the field if
+ * multiple API calls are made in the same context. We only do failures as successes
+ */
+function recordErrorTelemetry(err: Error, serviceName?: string) {
+    // TODO: update codegen so `record` enumerates all fields as a flat object instead of
+    // intersecting all of the definitions
+    interface RequestData {
+        requestId?: string
+        requestServiceType?: string
+    }
+
+    telemetry.record({
+        requestId: getRequestId(err),
+        requestServiceType: serviceName,
+    } satisfies RequestData as any)
+}
+
+function omitIfPresent<T extends Record<string, unknown>>(obj: T, keys: string[]): T {
+    const objCopy = { ...obj }
+    for (const key of keys) {
+        if (key in objCopy) {
+            ;(objCopy as any)[key] = '[omitted]'
+        }
+    }
+    return objCopy
+}
+
+const telemetryMiddleware: DeserializeMiddleware<any, any> =
+    (next: DeserializeHandler<any, any>, context: HandlerExecutionContext) => async (args: any) => {
+        if (!HttpResponse.isInstance(args.request)) {
+            return next(args)
+        }
+
+        const { hostname, path } = args.request
+        const result = await next(args).catch((e: any) => {
+            if (e instanceof Error && !isExcludedError(e, [])) {
+                recordErrorTelemetry(e, getServiceId(context as object))
+                const err = { ...e }
+                delete err['stack']
+                getLogger().error('API Response (%s %s): %O', hostname, path, err)
+            }
+            throw e
+        })
+        if (HttpResponse.isInstance(result.response)) {
+            const output = omitIfPresent(result.output, [])
+            getLogger().debug('API Response (%s %s): %O', hostname, path, output)
+        }
+
+        return result
+    }

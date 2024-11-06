@@ -71,6 +71,7 @@
     },
     "dependencies": {
         "@aws-sdk/client-ec2": "^3.683.0",
+        "@aws-sdk/protocol-http": "^3.370.0",
         "@aws-toolkits/telemetry": "^1.0.242",
         "@smithy/types": "^3.6.0",
         "@types/node": "^22.7.5",
