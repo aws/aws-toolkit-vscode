@@ -114,7 +114,7 @@ export async function getSpawnEnv(
 export async function mergeResolvedShellPath(env: IProcessEnvironment): Promise<typeof process.env> {
     const shellEnv = await getResolvedShellEnv(env)
     // resolve failed or doesn't need to resolve
-    if (!shellEnv) {
+    if (!shellEnv || Object.keys(shellEnv).length === 0) {
         return env
     }
     try {
@@ -139,7 +139,7 @@ export async function mergeResolvedShellPath(env: IProcessEnvironment): Promise<
  * - we hit a timeout of `MAX_SHELL_RESOLVE_TIME`
  * - any other error from spawning a shell to figure out the environment
  */
-export async function getResolvedShellEnv(env?: IProcessEnvironment): Promise<typeof process.env | undefined> {
+export async function getResolvedShellEnv(env?: IProcessEnvironment): Promise<typeof process.env> {
     if (!env) {
         env = process.env
     }

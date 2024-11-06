@@ -30,7 +30,6 @@ import { showMessageWithCancel } from '../utilities/messages'
 import { ToolkitError, UnknownError } from '../errors'
 import { SamCliError } from './cli/samCliInvokerUtils'
 import fs from '../fs/fs'
-import { asEnvironmentVariables } from '../../auth/credentials/utils'
 import { getSpawnEnv } from '../env/resolveEnv'
 
 const localize = nls.loadMessageBundle()
@@ -290,7 +289,6 @@ export async function runLambdaFunction(
 
     const envVars = await getSpawnEnv({
         ...process.env,
-        ...(config.awsCredentials ? asEnvironmentVariables(config.awsCredentials) : {}),
         ...(config.aws?.region ? { AWS_DEFAULT_REGION: config.aws.region } : {}),
     })
 
@@ -315,12 +313,13 @@ export async function runLambdaFunction(
 
     // SAM CLI and any API requests are executed in parallel
     // A failure from either is a failure for the whole invocation
-    const [processConst] = await Promise.all([invokeLambdaHandler(timer, envVars, config, settings), apiRequest]).catch(
-        (err) => {
-            timer.cancel()
-            throw err
-        }
-    )
+    const [processInvoker] = await Promise.all([
+        invokeLambdaHandler(timer, envVars, config, settings),
+        apiRequest,
+    ]).catch((err) => {
+        timer.cancel()
+        throw err
+    })
 
     if (config.noDebug) {
         return config
@@ -329,7 +328,7 @@ export async function runLambdaFunction(
     const terminationListener = vscode.debug.onDidTerminateDebugSession((session) => {
         const config = session.configuration as SamLaunchRequestArgs
         if (config.invokeTarget?.target === 'api') {
-            stopApi(processConst, config)
+            stopApi(processInvoker, config)
         }
     })
 
