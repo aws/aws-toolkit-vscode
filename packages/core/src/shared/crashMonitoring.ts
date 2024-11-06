@@ -458,18 +458,20 @@ export class FileSystemState {
     // ------------------ Heartbeat methods ------------------
     public async sendHeartbeat() {
         const extId = this.extId
+        const filePath = this.makeStateFilePath(extId)
+        const now = this.deps.now()
+
+        let fileHandle: nodeFs.FileHandle | undefined
         try {
-            const now = this.deps.now()
             const func = async () => {
-                const filePath = this.makeStateFilePath(extId)
+                fileHandle = await nodeFs.open(filePath, 'w')
+                await fileHandle.writeFile(JSON.stringify({ ...this.ext, lastHeartbeat: now }, undefined, 4))
+                // Noticing that some file reads are not immediately available after write. `fsync` is known to address this.
+                await fileHandle!.sync()
+                await fileHandle.close()
+                fileHandle = undefined
 
-                // We were seeing weird behavior where we possibly read an old file, even though we overwrote it.
-                // So this is a sanity check.
-                await fs.delete(filePath, { force: true })
-
-                await fs.writeFile(filePath, JSON.stringify({ ...this.ext, lastHeartbeat: now }, undefined, 4))
-
-                // Sanity check to verify the write is accessible immediately after
+                // Sanity check to verify the latest write is accessible immediately
                 const heartbeatData = JSON.parse(await fs.readFileText(filePath)) as ExtInstanceHeartbeat
                 if (heartbeatData.lastHeartbeat !== now) {
                     throw new CrashMonitoringError('Heartbeat write validation failed', { code: className })
@@ -484,6 +486,8 @@ export class FileSystemState {
 
             return funcWithTelemetryRun
         } catch (e) {
+            await fileHandle?.close()
+
             // delete this ext from the state to avoid an incorrectly reported crash since we could not send a new heartbeat
             await this.deleteHeartbeatFile(extId, 'sendHeartbeatFailureCleanup')
             throw e
