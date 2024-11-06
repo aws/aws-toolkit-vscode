@@ -4,6 +4,7 @@
  */
 
 import * as sinon from 'sinon'
+import * as FakeTimers from '@sinonjs/fake-timers'
 import * as vscode from 'vscode'
 
 import assert from 'assert'
@@ -18,6 +19,7 @@ import {
 } from '../../../../awsService/cloudWatchLogs/wizard/tailLogGroupWizard'
 import { getTestWindow } from '../../../shared/vscode/window'
 import { CloudWatchLogsSettings } from '../../../../awsService/cloudWatchLogs/cloudWatchLogsUtils'
+import { installFakeClock } from '../../../testUtil'
 
 describe('TailLogGroup', function () {
     const testLogGroup = 'test-log-group'
@@ -31,9 +33,20 @@ describe('TailLogGroup', function () {
     let cloudwatchSettingsSpy: sinon.SinonSpy
     let wizardSpy: sinon.SinonSpy
 
+    let clock: FakeTimers.InstalledClock
+
+    before(function () {
+        clock = installFakeClock()
+    })
+
     beforeEach(function () {
+        clock.reset()
         sandbox = sinon.createSandbox()
         registry = new LiveTailSessionRegistry()
+    })
+
+    after(function () {
+        clock.uninstall()
     })
 
     afterEach(function () {
@@ -112,15 +125,18 @@ describe('TailLogGroup', function () {
             .callsFake(async function () {
                 return
             })
+        // const fakeClock = installFakeClock()
+        const timer = setInterval(() => {}, 1000)
         const session = new LiveTailSession({
             logGroupName: testLogGroup,
             region: testRegion,
         })
         registry.set(session.uri, session)
 
-        closeSession(session.uri, registry)
+        closeSession(session.uri, registry, timer)
         assert.strictEqual(0, registry.size)
         assert.strictEqual(true, stopLiveTailSessionSpy.calledOnce)
+        assert.strictEqual(0, clock.countTimers())
     })
 
     it('clearDocument clears all text from document', async function () {
@@ -172,6 +188,9 @@ describe('TailLogGroup', function () {
         const updateFrames: StartLiveTailResponseStream[] = logEvents.map((event) => {
             return {
                 sessionUpdate: {
+                    sessionMetadata: {
+                        sampled: false,
+                    },
                     sessionResults: [event],
                 },
             }
