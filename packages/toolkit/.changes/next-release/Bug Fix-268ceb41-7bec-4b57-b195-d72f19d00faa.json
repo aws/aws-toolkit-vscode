@@ -1,4 +1,4 @@
 {
 	"type": "Bug Fix",
-	"description": "getSpawnEnv always return correct env on windows"
+	"description": "System Path parsing should ignore Windows and only parse Mac/Linux system, Sam Local Invoke should get correct system Path on windows"
 }

@@ -18,13 +18,15 @@ describe('resolveEnv', async function () {
         sandbox.restore()
     })
 
-    // a copy of resolveEnv.mergeResolvedShellPath for stubbing
+    // a copy of resolveEnv.mergeResolvedShellPath for stubbing getResolvedShellEnv
+    // mergeResolvedShellPath is calling getResolvedShellEnv within the same file
+    // thus we need a copy to stub getResolvedShellEnv correctly
     const testMergeResolveShellPath = async function mergeResolvedShellPath(
         env: resolveEnv.IProcessEnvironment
     ): Promise<typeof process.env> {
         const shellEnv = await resolveEnv.getResolvedShellEnv(env)
         // resolve failed or doesn't need to resolve
-        if (!shellEnv || Object.keys(shellEnv).length === 0) {
+        if (!shellEnv) {
             return env
         }
         try {
@@ -40,7 +42,7 @@ describe('resolveEnv', async function () {
         }
     }
 
-    describe('resolveWindows', async function () {
+    describe('windows', async function () {
         beforeEach(function () {
             sandbox.stub(process, 'platform').value('win32')
         })
@@ -52,11 +54,11 @@ describe('resolveEnv', async function () {
         })
     })
 
-    describe('resolveUnix', async function () {
+    describe('unix', async function () {
         const originalEnv = { ...process.env }
         // skip mac test on windows
         if (process.platform !== 'win32') {
-            it('mergeResolvedShellPath should get path on mac/unix', async function () {
+            it('mergeResolvedShellPath should get path on mac/linux', async function () {
                 sandbox.stub(process.env, 'PATH').value('')
                 // stub the resolve Env logic cause this is platform sensitive.
                 sandbox.stub(resolveEnv, 'getResolvedShellEnv').resolves(originalEnv)
