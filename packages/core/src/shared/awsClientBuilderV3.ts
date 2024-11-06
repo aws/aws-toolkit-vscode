@@ -28,7 +28,7 @@ export interface AWSClientBuilderV3 {
         type: new (o: AwsClientOptions) => C,
         options?: Partial<AwsClientOptions>,
         region?: string,
-        userAgent?: string,
+        userAgent?: boolean,
         settings?: DevSettings
     ): Promise<C>
 }
@@ -48,7 +48,7 @@ export class DefaultAWSClientBuilderV3 implements AWSClientBuilderV3 {
         type: new (o: AwsClientOptions) => C,
         options?: Partial<AwsClientOptions>,
         region?: string,
-        userAgent?: string,
+        userAgent: boolean = true,
         settings?: DevSettings
     ): Promise<C> {
         const shim = this.getShim()
@@ -62,6 +62,14 @@ export class DefaultAWSClientBuilderV3 implements AWSClientBuilderV3 {
             opt.customUserAgent = [[getUserAgent({ includePlatform: true, includeClientId: true })]]
         }
 
+        const apiConfig = (opt as { apiConfig?: { metadata?: Record<string, string> } } | undefined)?.apiConfig
+        const serviceName =
+            apiConfig?.metadata?.serviceId?.toLowerCase() ??
+            (type as unknown as { serviceIdentifier?: string }).serviceIdentifier
+
+        if (serviceName) {
+            opt.endpoint = settings?.get('endpoints', {})[serviceName] ?? opt.endpoint
+        }
         opt.credentials = async () => {
             const creds = await shim.get()
             if (creds.expiration && creds.expiration.getTime() < Date.now()) {

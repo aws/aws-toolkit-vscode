@@ -26,7 +26,7 @@ describe('DefaultAwsClientBuilderV3', function () {
             const service = await builder.createAwsService(Client)
             const clientId = getClientId(new GlobalState(new FakeMemento()))
 
-            assert.strictEqual(!!service.config.customUserAgent, true)
+            assert.ok(service.config.customUserAgent)
             assert.strictEqual(
                 service.config.customUserAgent![0][0].replace('---Insiders', ''),
                 `AWS-Toolkit-For-VSCode/testPluginVersion Visual-Studio-Code/${version} ClientId/${clientId}`
@@ -45,7 +45,7 @@ describe('DefaultAwsClientBuilderV3', function () {
                 customUserAgent: [['CUSTOM USER AGENT']],
             })
 
-            assert.strictEqual(service.config.customUserAgent, 'CUSTOM USER AGENT')
+            assert.strictEqual(service.config.customUserAgent[0][0], 'CUSTOM USER AGENT')
         })
 
         it('can use endpoint override', async function () {
@@ -55,7 +55,7 @@ describe('DefaultAwsClientBuilderV3', function () {
             const service = await builder.createAwsService(
                 Client,
                 {
-                    customUserAgent: 'CUSTOM USER AGENT',
+                    customUserAgent: [['CUSTOM USER AGENT']],
                     apiConfig: { metadata: { serviceId: 'foo' } },
                 } as any,
                 undefined,
