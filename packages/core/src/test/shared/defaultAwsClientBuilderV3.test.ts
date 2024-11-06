@@ -33,6 +33,13 @@ describe('DefaultAwsClientBuilderV3', function () {
             )
         })
 
+        it('adds region to client', async function () {
+            const service = await builder.createAwsService(Client as any, { region: 'us-west-2' })
+
+            assert.ok(service.config.region)
+            assert.strictEqual(service.config.region, 'us-west-2')
+        })
+
         it('adds Client-Id to user agent', async function () {
             const service = await builder.createAwsService(Client as any)
             const clientId = getClientId(new GlobalState(new FakeMemento()))

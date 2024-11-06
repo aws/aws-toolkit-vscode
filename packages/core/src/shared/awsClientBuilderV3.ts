@@ -107,11 +107,9 @@ function isExcludedError(e: Error, ignoredErrors: (string | typeof Error)[]) {
 }
 /**
  * Record request IDs to the current context, potentially overriding the field if
- * multiple API calls are made in the same context. We only do failures as successes
+ * multiple API calls are made in the same context. We only do failures as successes are generally uninteresting and noisy.
  */
 function recordErrorTelemetry(err: Error, serviceName?: string) {
-    // TODO: update codegen so `record` enumerates all fields as a flat object instead of
-    // intersecting all of the definitions
     interface RequestData {
         requestId?: string
         requestServiceType?: string
