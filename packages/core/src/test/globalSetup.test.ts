@@ -14,7 +14,7 @@ import globals from '../shared/extensionGlobals'
 import { CodelensRootRegistry } from '../shared/fs/codelensRootRegistry'
 import { CloudFormationTemplateRegistry } from '../shared/fs/templateRegistry'
 import { getLogger, LogLevel } from '../shared/logger'
-import { setLogger } from '../shared/logger/logger'
+import { setLogger, TopicLogger } from '../shared/logger/logger'
 import { FakeExtensionContext } from './fakeExtensionContext'
 import { TestLogger } from './testLogger'
 import * as testUtil from './testUtil'
@@ -136,7 +136,7 @@ export const mochaHooks = {
  * Verifies that the TestLogger instance is still the one set as the toolkit's logger.
  */
 export function getTestLogger(): TestLogger {
-    const logger = getLogger()
+    const logger = getLogger() instanceof TopicLogger ? (getLogger() as TopicLogger).logger : getLogger()
     assert.strictEqual(logger, testLogger, 'The expected test logger is not the current logger')
     assert.ok(testLogger, 'TestLogger was expected to exist')
 
