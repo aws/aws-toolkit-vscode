@@ -12,9 +12,6 @@ import { DevSettings } from './settings'
 import { Provider, UserAgent } from '@aws-sdk/types'
 import { Client } from '@aws-sdk/smithy-client'
 
-//type AwsClientConfig = SmithyResolvedConfiguration<any> & Partial<AwsClientOptions>
-
-// export type AwsClient<O extends AwsClientConfig> = Client<any, any, any, O> | IClient<any, any, O>
 export type AwsClient = IClient<any, any, any> | Client<any, any, any, any>
 interface AwsConfigOptions {
     credentials: AwsCredentialIdentityProvider
@@ -22,6 +19,7 @@ interface AwsConfigOptions {
     customUserAgent: UserAgent
     requestHandler: any
     apiVersion: string
+    endpoint: string
 }
 export type AwsClientOptions = AwsConfigOptions
 
