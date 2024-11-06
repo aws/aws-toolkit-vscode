@@ -53,7 +53,6 @@ export class Ec2Client {
     public constructor(public readonly regionCode: string) {}
 
     private async createSdkClient(): Promise<EC2Client> {
-        console.log('Creating EC2 client')
         return await globals.sdkClientBuilderV3.createAwsService(EC2Client, undefined, this.regionCode)
     }
 
