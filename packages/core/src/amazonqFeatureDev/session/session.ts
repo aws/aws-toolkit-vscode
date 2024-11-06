@@ -42,6 +42,7 @@ export class Session {
     private _telemetry: TelemetryHelper
     private _codeResultMessageId: string | undefined = undefined
     private _acceptCodeMessageId: string | undefined = undefined
+    private _acceptCodeTelemetrySent = false
 
     // Used to keep track of whether or not the current session is currently authenticating/needs authenticating
     public isAuthenticating: boolean
@@ -264,6 +265,10 @@ export class Session {
         this._acceptCodeMessageId = messageId
     }
 
+    public updateAcceptCodeTelemetrySent(sent: boolean) {
+        this._acceptCodeTelemetrySent = sent
+    }
+
     get state() {
         if (!this._state) {
             throw new Error("State should be initialized before it's read")
@@ -311,5 +316,9 @@ export class Session {
 
     get acceptCodeMessageId() {
         return this._acceptCodeMessageId
+    }
+
+    get acceptCodeTelemetrySent() {
+        return this._acceptCodeTelemetrySent
     }
 }

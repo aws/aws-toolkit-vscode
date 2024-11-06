@@ -467,6 +467,7 @@ export class FeatureDevController {
             if (session?.state.phase === DevPhase.CODEGEN) {
                 const messageId = randomUUID()
                 session.updateAcceptCodeMessageId(messageId)
+                session.updateAcceptCodeTelemetrySent(false)
                 // need to add the followUps with an extra update here, or it will double-render them
                 this.messenger.sendAnswer({
                     message: undefined,
@@ -571,16 +572,10 @@ export class FeatureDevController {
 
             const acceptedFiles = (paths?: { rejected: boolean }[]) => (paths || []).filter((i) => !i.rejected).length
 
-            const amazonqNumberOfFilesAccepted =
-                acceptedFiles(session.state.filePaths) + acceptedFiles(session.state.deletedFiles)
+            const filesAccepted = acceptedFiles(session.state.filePaths) + acceptedFiles(session.state.deletedFiles)
 
-            telemetry.amazonq_isAcceptedCodeChanges.emit({
-                credentialStartUrl: AuthUtil.instance.startUrl,
-                amazonqConversationId: session.conversationId,
-                amazonqNumberOfFilesAccepted,
-                enabled: true,
-                result: 'Succeeded',
-            })
+            this.sendAcceptCodeTelemetry(session, filesAccepted)
+
             await session.insertChanges()
             if (session.acceptCodeMessageId) {
                 this.sendUpdateCodeMessage(message.tabID)
@@ -748,6 +743,7 @@ export class FeatureDevController {
 
         if (filePathIndex !== -1 && session.state.filePaths) {
             if (action === 'accept-change') {
+                this.sendAcceptCodeTelemetry(session, 1)
                 await session.insertNewFiles([session.state.filePaths[filePathIndex]])
                 await session.insertCodeReferenceLogs(session.state.references ?? [])
                 await this.openFile(session.state.filePaths[filePathIndex])
@@ -757,6 +753,7 @@ export class FeatureDevController {
         }
         if (deletedFilePathIndex !== -1 && session.state.deletedFiles) {
             if (action === 'accept-change') {
+                this.sendAcceptCodeTelemetry(session, 1)
                 await session.applyDeleteFiles([session.state.deletedFiles[deletedFilePathIndex]])
                 await session.insertCodeReferenceLogs(session.state.references ?? [])
             } else {
@@ -954,5 +951,19 @@ export class FeatureDevController {
     private async clearAcceptCodeMessageId(tabID: string) {
         const session = await this.sessionStorage.getSession(tabID)
         session.updateAcceptCodeMessageId(undefined)
+    }
+
+    private sendAcceptCodeTelemetry(session: Session, amazonqNumberOfFilesAccepted: number) {
+        // accepted code telemetry is only to be sent once per iteration of code generation
+        if (amazonqNumberOfFilesAccepted > 0 && !session.acceptCodeTelemetrySent) {
+            session.updateAcceptCodeTelemetrySent(true)
+            telemetry.amazonq_isAcceptedCodeChanges.emit({
+                credentialStartUrl: AuthUtil.instance.startUrl,
+                amazonqConversationId: session.conversationId,
+                amazonqNumberOfFilesAccepted,
+                enabled: true,
+                result: 'Succeeded',
+            })
+        }
     }
 }
