@@ -20,7 +20,8 @@ import {
 import { HttpResponse } from '@aws-sdk/protocol-http'
 import { telemetry } from './telemetry'
 import { getRequestId } from './errors'
-import { extensionVersion, getLogger } from '.'
+import { extensionVersion } from '.'
+import { getLogger } from './logger'
 
 export type AwsClient = IClient<any, any, any>
 interface AwsConfigOptions {
@@ -87,22 +88,15 @@ export class DefaultAWSClientBuilderV3 implements AWSClientBuilderV3 {
     }
 }
 
-function getServiceId(context: { clientName?: string; commandName?: string }) {
-    return context.clientName?.toLowerCase().replace(/client$/, '')
+export function getServiceId(context: { clientName?: string; commandName?: string }): string {
+    return context.clientName?.toLowerCase().replace(/client$/, '') ?? 'unknown-service'
 }
 
-function isExcludedError(e: Error, ignoredErrors: (string | typeof Error)[]) {
-    return (
-        ignoredErrors?.find((x) => e.name === x) ||
-        ('code' in e && ignoredErrors?.find((x) => e.code === x)) ||
-        ignoredErrors?.find((x) => typeof x !== 'string' && e instanceof x)
-    )
-}
 /**
  * Record request IDs to the current context, potentially overriding the field if
  * multiple API calls are made in the same context. We only do failures as successes are generally uninteresting and noisy.
  */
-function recordErrorTelemetry(err: Error, serviceName?: string) {
+export function recordErrorTelemetry(err: Error, serviceName?: string) {
     interface RequestData {
         requestId?: string
         requestServiceType?: string
@@ -114,7 +108,7 @@ function recordErrorTelemetry(err: Error, serviceName?: string) {
     } satisfies RequestData as any)
 }
 
-function omitIfPresent<T extends Record<string, unknown>>(obj: T, keys: string[]): T {
+export function omitIfPresent<T extends Record<string, unknown>>(obj: T, keys: string[]): T {
     const objCopy = { ...obj }
     for (const key of keys) {
         if (key in objCopy) {
@@ -124,25 +118,32 @@ function omitIfPresent<T extends Record<string, unknown>>(obj: T, keys: string[]
     return objCopy
 }
 
+function logAndThrow(e: any, serviceId: string, errorMessageAppend: string): never {
+    if (e instanceof Error) {
+        recordErrorTelemetry(e, serviceId)
+        const err = { ...e }
+        delete err['stack']
+        getLogger().error('API Response %s: %O', errorMessageAppend, err)
+    }
+    throw e
+}
+/**
+ * Telemetry logic to be added to all created clients. Adds logging and emitting metric on errors.
+ */
+
 const telemetryMiddleware: DeserializeMiddleware<any, any> =
     (next: DeserializeHandler<any, any>, context: HandlerExecutionContext) => async (args: any) => {
         if (!HttpResponse.isInstance(args.request)) {
             return next(args)
         }
-
+        const serviceId = getServiceId(context as object)
         const { hostname, path } = args.request
-        const result = await next(args).catch((e: any) => {
-            if (e instanceof Error && !isExcludedError(e, [])) {
-                recordErrorTelemetry(e, getServiceId(context as object))
-                const err = { ...e }
-                delete err['stack']
-                getLogger().error('API Response (%s %s): %O', hostname, path, err)
-            }
-            throw e
-        })
+        const logTail = `(${hostname} ${path})`
+        const result = await next(args).catch((e: any) => logAndThrow(e, serviceId, logTail))
         if (HttpResponse.isInstance(result.response)) {
+            // TODO: omit credentials / sensitive info from the logs / telemetry.
             const output = omitIfPresent(result.output, [])
-            getLogger().debug('API Response (%s %s): %O', hostname, path, output)
+            getLogger().debug('API Response %s: %O', logTail, output)
         }
 
         return result

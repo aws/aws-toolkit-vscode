@@ -9,9 +9,17 @@ import { getClientId } from '../../shared/telemetry/util'
 import { FakeMemento } from '../fakeExtensionContext'
 import { FakeAwsContext } from '../utilities/fakeAwsContext'
 import { GlobalState } from '../../shared/globalState'
-import { AWSClientBuilderV3, DefaultAWSClientBuilderV3 } from '../../shared/awsClientBuilderV3'
+import {
+    AWSClientBuilderV3,
+    DefaultAWSClientBuilderV3,
+    getServiceId,
+    omitIfPresent,
+    recordErrorTelemetry,
+} from '../../shared/awsClientBuilderV3'
 import { Client } from '@aws-sdk/smithy-client'
 import { extensionVersion } from '../../shared'
+import { assertTelemetry } from '../testUtil'
+import { telemetry } from '../../shared/telemetry'
 
 describe('DefaultAwsClientBuilderV3', function () {
     let builder: AWSClientBuilderV3
@@ -54,5 +62,37 @@ describe('DefaultAwsClientBuilderV3', function () {
 
             assert.strictEqual(service.config.customUserAgent[0][0], 'CUSTOM USER AGENT')
         })
+    })
+})
+
+describe('getServiceId', function () {
+    it('returns the service ID', function () {
+        assert.strictEqual(getServiceId({ clientName: 'ec2' }), 'ec2')
+        assert.strictEqual(getServiceId({ clientName: 'ec2client' }), 'ec2')
+        assert.strictEqual(getServiceId({ clientName: 's3client' }), 's3')
+    })
+})
+
+describe('recordErrorTelemetry', function () {
+    it('includes requestServiceType in span', function () {
+        const e = new Error('test error')
+        telemetry.vscode_executeCommand.run((span) => {
+            recordErrorTelemetry(e, 'aws-service')
+        })
+        assertTelemetry('vscode_executeCommand', { requestServiceType: 'aws-service' })
+    })
+})
+
+describe('omitIfPresent', function () {
+    it('returns a new object with value replace by [omitted]', function () {
+        const obj = { a: 1, b: 2 }
+        const result = omitIfPresent(obj, ['a'])
+        assert.deepStrictEqual(result, { a: '[omitted]', b: 2 })
+    })
+
+    it('returns the original object if the key is not present', function () {
+        const obj = { a: 1, b: 2 }
+        const result = omitIfPresent(obj, ['c'])
+        assert.deepStrictEqual(result, obj)
     })
 })
