@@ -223,3 +223,47 @@ export async function addEofNewline(editor: vscode.TextEditor) {
         })
     }
 }
+
+class ReadonlyTextDocumentProvider implements vscode.TextDocumentContentProvider {
+    private content = ''
+
+    setContent(content: string) {
+        this.content = content
+    }
+
+    provideTextDocumentContent(uri: vscode.Uri): string {
+        return this.content
+    }
+}
+
+/**
+ * Shows a read only virtual txt file on a side column
+ * It's read-only so that the "save" option doesn't appear when user closes the pop up window
+ * Usage: ReadonlyDocument.show(content, filename)
+ * @param content The content to be displayed in the virtual document
+ * @param filename The title on top of the pop up window
+ */
+class ReadonlyDocument {
+    private readonly scheme = 'AWStoolkit-readonly'
+    private readonly provider = new ReadonlyTextDocumentProvider()
+
+    constructor() {
+        vscode.workspace.registerTextDocumentContentProvider(this.scheme, this.provider)
+    }
+
+    public async show(content: string, filename: string) {
+        this.provider.setContent(content)
+        const uri = vscode.Uri.parse(`${this.scheme}:/${filename}.txt`)
+        const options: vscode.TextDocumentShowOptions = {
+            viewColumn: vscode.ViewColumn.Beside,
+            preserveFocus: true,
+            preview: true,
+        }
+
+        // Open the document with the updated content
+        const document = await vscode.workspace.openTextDocument(uri)
+        await vscode.window.showTextDocument(document, options)
+    }
+}
+
+export const readonlyDocument = new ReadonlyDocument()
