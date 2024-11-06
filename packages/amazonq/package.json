@@ -2,7 +2,7 @@
     "name": "amazon-q-vscode",
     "displayName": "Amazon Q",
     "description": "Amazon Q is your generative AI-powered assistant across the software development lifecycle.",
-    "version": "1.32.0-SNAPSHOT",
+    "version": "1.34.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -196,13 +196,13 @@
                     "type": "webview",
                     "id": "aws.amazonq.AmazonCommonAuth",
                     "name": "%AWS.amazonq.login%",
-                    "when": "!aws.isSageMaker && !aws.isWebExtHost && aws.amazonq.showLoginView"
+                    "when": "!aws.isWebExtHost && aws.amazonq.showLoginView"
                 },
                 {
                     "type": "webview",
                     "id": "aws.AmazonQChatView",
                     "name": "%AWS.amazonq.chat%",
-                    "when": "!aws.isSageMaker && !aws.isWebExtHost && !aws.amazonq.showLoginView"
+                    "when": "!aws.isWebExtHost && !aws.amazonq.showLoginView"
                 },
                 {
                     "id": "aws.AmazonQNeverShowBadge",

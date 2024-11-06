@@ -55,6 +55,8 @@ export interface SamCliStartApiArguments {
     containerEnvFile?: string
     /** Debug session name */
     name?: string
+    /** AWS region */
+    region?: string
 }
 
 /**
@@ -81,6 +83,7 @@ export async function buildSamCliStartApiArguments(args: SamCliStartApiArguments
     pushIf(invokeArgs, !!args.debuggerPath, '--debugger-path', args.debuggerPath!)
     pushIf(invokeArgs, !!args.debugArgs, '--debug-args', ...(args.debugArgs ?? []))
     pushIf(invokeArgs, !!args.containerEnvFile, '--container-env-vars', args.containerEnvFile)
+    pushIf(invokeArgs, !!args.region, '--region', args.region)
     pushIf(
         invokeArgs,
         !!args.parameterOverrides && args.parameterOverrides.length > 0,

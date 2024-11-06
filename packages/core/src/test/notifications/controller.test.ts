@@ -7,16 +7,24 @@ import * as vscode from 'vscode'
 import * as FakeTimers from '@sinonjs/fake-timers'
 import assert from 'assert'
 import sinon from 'sinon'
-import { NotificationsController, NotificationsNode, RuleEngine } from '../../notifications'
 import globals from '../../shared/extensionGlobals'
-import { NotificationData, NotificationType, ToolkitNotification } from '../../notifications/types'
 import { randomUUID } from '../../shared'
 import { installFakeClock } from '../testUtil'
-import { NotificationFetcher, RemoteFetcher, ResourceResponse } from '../../notifications/controller'
+import {
+    NotificationFetcher,
+    NotificationsController,
+    RemoteFetcher,
+    ResourceResponse,
+} from '../../notifications/controller'
+import { NotificationData, NotificationType, ToolkitNotification } from '../../notifications/types'
 import { HttpResourceFetcher } from '../../shared/resourcefetcher/httpResourceFetcher'
+import { NotificationsNode } from '../../notifications/panelNode'
+import { RuleEngine } from '../../notifications/rules'
+
+// one test node to use across different tests
+export const panelNode: NotificationsNode = NotificationsNode.instance
 
 describe('Notifications Controller', function () {
-    const panelNode: NotificationsNode = new NotificationsNode()
     const ruleEngine: RuleEngine = new RuleEngine({
         ideVersion: '1.83.0',
         extensionVersion: '1.20.0',
@@ -116,6 +124,7 @@ describe('Notifications Controller', function () {
             },
             emergency: {},
             dismissed: [],
+            newlyReceived: ['id:startup2'],
         })
         assert.equal(panelNode.startUpNotifications.length, 1)
         assert.equal(panelNode.emergencyNotifications.length, 0)
@@ -146,6 +155,7 @@ describe('Notifications Controller', function () {
                 eTag,
             },
             dismissed: [content.notifications[0].id],
+            newlyReceived: ['id:emergency2'],
         })
         assert.equal(panelNode.startUpNotifications.length, 0)
         assert.equal(panelNode.emergencyNotifications.length, 1)
@@ -202,6 +212,7 @@ describe('Notifications Controller', function () {
                 eTag: eTag2,
             },
             dismissed: [emergencyContent.notifications[0].id],
+            newlyReceived: ['id:startup2', 'id:emergency2'],
         })
         assert.equal(panelNode.startUpNotifications.length, 1)
         assert.equal(panelNode.emergencyNotifications.length, 1)
@@ -234,6 +245,7 @@ describe('Notifications Controller', function () {
             },
             emergency: {},
             dismissed: [],
+            newlyReceived: [],
         })
 
         await dismissNotification(content.notifications[1])
@@ -246,6 +258,7 @@ describe('Notifications Controller', function () {
             },
             emergency: {},
             dismissed: [content.notifications[1].id],
+            newlyReceived: [],
         })
 
         assert.equal(panelNode.getChildren().length, 1)
@@ -284,6 +297,7 @@ describe('Notifications Controller', function () {
             },
             emergency: {},
             dismissed: [content.notifications[0].id],
+            newlyReceived: [],
         })
 
         assert.equal(panelNode.getChildren().length, 1)
@@ -335,6 +349,7 @@ describe('Notifications Controller', function () {
             },
             emergency: {},
             dismissed: [],
+            newlyReceived: ['id:startup2'],
         })
         assert.equal(panelNode.getChildren().length, 1)
 
@@ -351,6 +366,7 @@ describe('Notifications Controller', function () {
             },
             emergency: {},
             dismissed: [],
+            newlyReceived: ['id:startup2'],
         })
         assert.equal(panelNode.getChildren().length, 1)
     })
@@ -388,6 +404,7 @@ describe('Notifications Controller', function () {
                 eTag: '1',
             },
             dismissed: [emergencyContent.notifications[0].id, startUpContent.notifications[0].id],
+            newlyReceived: [],
         })
 
         const emptyContent = {
@@ -410,6 +427,7 @@ describe('Notifications Controller', function () {
                 eTag: '1',
             },
             dismissed: [emergencyContent.notifications[0].id],
+            newlyReceived: [],
         })
         assert.equal(panelNode.getChildren().length, 1)
 
@@ -429,6 +447,7 @@ describe('Notifications Controller', function () {
                 eTag: '1',
             },
             dismissed: [],
+            newlyReceived: [],
         })
 
         assert.equal(panelNode.getChildren().length, 0)
@@ -444,6 +463,27 @@ describe('Notifications Controller', function () {
         })()
         assert.doesNotThrow(() => new NotificationsController(panelNode, fetcher).pollForStartUp(ruleEngine))
         assert.ok(wasCalled)
+    })
+
+    it('calls onReceiveNotifications when a new valid notification is added', async function () {
+        const eTag = randomUUID()
+        const content = {
+            schemaVersion: '1.x',
+            notifications: [getValidTestNotification('id:newValidNotification')],
+        }
+        fetcher.setStartUpContent({
+            eTag,
+            content: JSON.stringify(content),
+        })
+
+        const onReceiveSpy = sinon.spy(panelNode, 'onReceiveNotifications')
+
+        await controller.pollForStartUp(ruleEngine)
+
+        assert.equal(onReceiveSpy.callCount, 1)
+        assert.deepStrictEqual(onReceiveSpy.args[0][0], [content.notifications[0]])
+
+        onReceiveSpy.restore()
     })
 })
 
@@ -501,6 +541,11 @@ function getValidTestNotification(id: string) {
                     title: 'test',
                     description: 'test',
                 },
+            },
+            onRecieve: 'toast',
+            onClick: {
+                type: 'openUrl',
+                url: 'https://aws.amazon.com/visualstudiocode/',
             },
         },
     }

@@ -17,7 +17,7 @@ import { getLogger } from './logger/logger'
 // https://code.visualstudio.com/api/references/icons-in-labels#animation
 
 type ContributedIcon = keyof typeof packageJson.contributes.icons
-type IconPath = { light: Uri; dark: Uri; toString: () => string } | Icon
+export type IconPath = { light: Uri; dark: Uri; toString: () => string } | Icon
 type IconId = `vscode-${string}` | ContributedIcon
 
 /**
