@@ -12,9 +12,9 @@ import { NotificationType, ToolkitNotification } from './types'
 import { ToolkitError } from '../shared/errors'
 import { isAmazonQ } from '../shared/extensionUtilities'
 import { getLogger } from '../shared/logger/logger'
-import { tempDirPath } from '../shared/filesystemUtilities'
-import path from 'path'
-import fs from '../shared/fs/fs'
+import { registerToolView } from '../awsexplorer/activationShared'
+import { readonlyDocument } from '../shared/utilities/textDocumentUtilities'
+import { openUrl } from '../shared/utilities/vsCodeUtils'
 
 /**
  * Controls the "Notifications" side panel/tree in each extension. It takes purely UX actions
@@ -42,9 +42,7 @@ export class NotificationsNode implements TreeNode {
 
     static #instance: NotificationsNode
 
-    constructor() {
-        NotificationsNode.#instance = this
-
+    private constructor() {
         this.openNotificationCmd = Commands.register(
             isAmazonQ() ? '_aws.amazonq.notifications.open' : '_aws.toolkit.notifications.open',
             async (n: ToolkitNotification) => this.openNotification(n)
@@ -144,46 +142,16 @@ export class NotificationsNode implements TreeNode {
                 }
                 // Show open url option
                 getLogger('notifications').verbose(`opening url for notification: ${notification.id} ...`)
-                await vscode.env.openExternal(vscode.Uri.parse(notification.uiRenderInstructions.onClick.url))
+                await openUrl(vscode.Uri.parse(notification.uiRenderInstructions.onClick.url))
                 break
             case 'openTextDocument':
                 // Display read-only txt document
                 getLogger('notifications').verbose(`showing txt document for notification: ${notification.id} ...`)
-                await this.showReadonlyTextDocument(notification.uiRenderInstructions.content['en-US'].description)
+                await readonlyDocument.show(
+                    notification.uiRenderInstructions.content['en-US'].description,
+                    `Notification: ${notification.id}`
+                )
                 break
-        }
-    }
-
-    /**
-     * Shows a read only txt file for the contect of notification on a side column
-     * It's read-only so that the "save" option doesn't appear when user closes the notification
-     */
-    private async showReadonlyTextDocument(content: string): Promise<void> {
-        try {
-            const tempFilePath = path.join(tempDirPath, 'AWSToolkitNotifications.txt')
-
-            if (await fs.existsFile(tempFilePath)) {
-                // If file exist, make sure it has write permission (0o644)
-                await fs.chmod(tempFilePath, 0o644)
-            }
-
-            await fs.writeFile(tempFilePath, content)
-
-            // Set the file permissions to read-only (0o444)
-            await fs.chmod(tempFilePath, 0o444)
-
-            // Now, open the document
-            const document = await vscode.workspace.openTextDocument(tempFilePath)
-
-            const options: vscode.TextDocumentShowOptions = {
-                viewColumn: vscode.ViewColumn.Beside,
-                preserveFocus: true,
-                preview: true,
-            }
-
-            await vscode.window.showTextDocument(document, options)
-        } catch (error) {
-            throw new ToolkitError(`Error showing text document: ${error}`)
         }
     }
 
@@ -218,8 +186,9 @@ export class NotificationsNode implements TreeNode {
             if (selectedButton) {
                 switch (selectedButton.type) {
                     case 'openTxt':
-                        await this.showReadonlyTextDocument(
-                            notification.uiRenderInstructions.content['en-US'].description
+                        await readonlyDocument.show(
+                            notification.uiRenderInstructions.content['en-US'].description,
+                            `Notification: ${notification.id}`
                         )
                         break
                     case 'updateAndReload':
@@ -227,7 +196,7 @@ export class NotificationsNode implements TreeNode {
                         break
                     case 'openUrl':
                         if (selectedButton.url) {
-                            await vscode.env.openExternal(vscode.Uri.parse(selectedButton.url))
+                            await openUrl(vscode.Uri.parse(selectedButton.url))
                         } else {
                             throw new ToolkitError('url not provided')
                         }
@@ -265,13 +234,25 @@ export class NotificationsNode implements TreeNode {
 
     static get instance() {
         if (this.#instance === undefined) {
-            throw new ToolkitError('NotificationsNode was accessed before it has been initialized.')
+            this.#instance = new NotificationsNode()
         }
 
         return this.#instance
     }
-}
 
-export function registerProvider(provider: ResourceTreeDataProvider) {
-    NotificationsNode.instance.provider = provider
+    registerProvider(provider: ResourceTreeDataProvider) {
+        this.provider = provider
+    }
+
+    registerView(context: vscode.ExtensionContext) {
+        const view = registerToolView(
+            {
+                nodes: [this],
+                view: isAmazonQ() ? 'aws.amazonq.notifications' : 'aws.toolkit.notifications',
+                refreshCommands: [(provider: ResourceTreeDataProvider) => this.registerProvider(provider)],
+            },
+            context
+        )
+        view.message = `New feature announcements and emergency notifications for ${isAmazonQ() ? 'Amazon Q' : 'AWS Toolkit'} will appear here.`
+    }
 }
