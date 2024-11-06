@@ -14,9 +14,6 @@ import { SharedFileTransport } from './sharedFileTransport'
 import { ConsoleLogTransport } from './consoleLogTransport'
 import { isWeb } from '../extensionGlobals'
 
-/* define log topics */
-export type LogTopic = 'unknown' | 'test' | 'crashReport' | 'notifications'
-
 class ErrorLog {
     constructor(
         public topic: string,
@@ -30,7 +27,6 @@ const logmapSize: number = 1000
 export class ToolkitLogger extends BaseLogger implements vscode.Disposable {
     private readonly logger: winston.Logger
     /* topic is used for header in log messages, default is 'Unknown' */
-    private topic: LogTopic = 'unknown'
     private disposed: boolean = false
     private idCounter: number = 0
     private logMap: { [logID: number]: { [filePath: string]: string } } = {}
@@ -115,16 +111,10 @@ export class ToolkitLogger extends BaseLogger implements vscode.Disposable {
               })
     }
 
-    public setTopic(topic: LogTopic = 'unknown') {
-        this.topic = topic
-    }
-
     /* Format the message with topic header */
     private addTopicToMessage(message: string | Error): string | ErrorLog {
         if (typeof message === 'string') {
-            /*We shouldn't print unknow before current logging calls are migrated
-             * TODO: remove this once migration of current calls is completed
-             */
+            // TODO: remove this after all calls are migrated and topic is a required param.
             if (this.topic === 'unknown') {
                 return message
             }
