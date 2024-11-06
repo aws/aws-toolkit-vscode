@@ -139,7 +139,7 @@ export async function mergeResolvedShellPath(env: IProcessEnvironment): Promise<
  * - we hit a timeout of `MAX_SHELL_RESOLVE_TIME`
  * - any other error from spawning a shell to figure out the environment
  */
-export async function getResolvedShellEnv(env?: IProcessEnvironment): Promise<typeof process.env> {
+export async function getResolvedShellEnv(env?: IProcessEnvironment): Promise<typeof process.env | undefined> {
     if (!env) {
         env = process.env
     }
