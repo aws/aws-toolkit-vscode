@@ -263,7 +263,9 @@ export const securityScanLanguageIds = [
     'java',
     'python',
     'javascript',
+    'javascriptreact',
     'typescript',
+    'typescriptreact',
     'csharp',
     'go',
     'ruby',
@@ -286,6 +288,11 @@ export const securityScanLanguageIds = [
     'java-properties',
     'go.mod',
     'go.sum',
+    'kotlin',
+    'scala',
+    'sh',
+    'shell',
+    'shellscript',
 ] as const
 
 export type SecurityScanLanguageId = (typeof securityScanLanguageIds)[number]
