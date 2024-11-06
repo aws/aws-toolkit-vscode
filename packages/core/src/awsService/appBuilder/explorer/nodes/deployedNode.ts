@@ -96,7 +96,7 @@ export async function generateDeployedNode(
                         .Configuration as Lambda.FunctionConfiguration
                     newDeployedResource = new LambdaFunctionNode(lambdaNode, regionCode, configuration)
                 } catch (error: any) {
-                    getLogger().error('Error getting Lambda configuration')
+                    getLogger().error('Error getting Lambda configuration %O', error)
                     throw ToolkitError.chain(error, 'Error getting Lambda configuration', {
                         code: 'lambdaClientError',
                     })
