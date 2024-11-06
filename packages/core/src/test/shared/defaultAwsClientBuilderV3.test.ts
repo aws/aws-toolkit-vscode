@@ -76,6 +76,7 @@ describe('getServiceId', function () {
 describe('recordErrorTelemetry', function () {
     it('includes requestServiceType in span', function () {
         const e = new Error('test error')
+        // Using vscode_executeCommand as general span to test functionality. This metric is unrelated to what is done here.
         telemetry.vscode_executeCommand.run((span) => {
             recordErrorTelemetry(e, 'aws-service')
         })
