@@ -216,6 +216,16 @@ To run tests against a specific folder in VSCode, do any one of:
         $Env:TEST_DIR = "../core/src/test/foo"; npm run test
         ```
 
+#### Run jscpd ("Copy-Paste Detection")
+
+If the "Copy-Paste Detection" CI job fails, you will find it useful to check things locally. To
+check a specific file:
+
+    npx jscpd --config .github/workflows/jscpd.json --pattern packages/…/src/foo.ts
+
+See the [jscpd cli documentation](https://github.com/kucherenko/jscpd/tree/master/apps/jscpd) for
+more options.
+
 ### Coverage report
 
 You can find the coverage report at `./coverage/amazonq/lcov-report/index.html` and `./coverage/toolkit/lcov-report/index.html` after running the tests. Tests ran from the workspace launch config won't generate a coverage report automatically because it can break file watching.
