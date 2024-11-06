@@ -10,10 +10,8 @@ import path from 'path'
 
 describe('resolveEnv', async function () {
     let sandbox: sinon.SinonSandbox
-    let originalPlatform = process.platform
     beforeEach(function () {
         sandbox = sinon.createSandbox()
-        sandbox.stub(process, 'platform').value('win32')
     })
 
     afterEach(function () {
@@ -57,7 +55,7 @@ describe('resolveEnv', async function () {
     describe('resolveUnix', async function () {
         const originalEnv = { ...process.env }
         // skip mac test on windows
-        if (originalPlatform !== 'win32') {
+        if (process.platform !== 'win32') {
             it('mergeResolvedShellPath should get path on mac/unix', async function () {
                 sandbox.stub(process.env, 'PATH').value('')
                 // stub the resolve Env logic cause this is platform sensitive.
