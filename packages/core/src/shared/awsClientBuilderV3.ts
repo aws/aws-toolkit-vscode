@@ -6,22 +6,24 @@
 import { CredentialsShim } from '../auth/deprecated/loginManager'
 import { AwsContext } from './awsContext'
 import { AwsCredentialIdentityProvider } from '@smithy/types'
-// import { SmithyResolvedConfiguration } from '@aws-sdk/smithy-client'
 import { Client as IClient } from '@smithy/types'
 import { getUserAgent } from './telemetry/util'
 import { DevSettings } from './settings'
 import { Provider, UserAgent } from '@aws-sdk/types'
+import { Client } from '@aws-sdk/smithy-client'
 
 //type AwsClientConfig = SmithyResolvedConfiguration<any> & Partial<AwsClientOptions>
 
 // export type AwsClient<O extends AwsClientConfig> = Client<any, any, any, O> | IClient<any, any, O>
-export type AwsClient = IClient<any, any, any>
-
-export interface AwsClientOptions {
+export type AwsClient = IClient<any, any, any> | Client<any, any, any, any>
+interface AwsConfigOptions {
     credentials: AwsCredentialIdentityProvider
     region: string | Provider<string>
     customUserAgent: UserAgent
+    requestHandler: any
+    apiVersion: string
 }
+export type AwsClientOptions = AwsConfigOptions
 
 export interface AWSClientBuilderV3 {
     createAwsService<C extends AwsClient>(
