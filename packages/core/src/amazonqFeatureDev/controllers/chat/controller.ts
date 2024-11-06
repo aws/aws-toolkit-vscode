@@ -476,7 +476,7 @@ export class FeatureDevController {
                     tabID: tabID,
                     messageId,
                 })
-                await session.updateChatAnswer(tabID, 'Accept all changes')
+                await session.updateChatAnswer(tabID, i18n('AWS.amazonq.featureDev.pillText.acceptAllChanges'))
             }
             this.messenger.sendUpdatePlaceholder(tabID, i18n('AWS.amazonq.featureDev.pillText.selectOption'))
         } finally {
@@ -762,12 +762,12 @@ export class FeatureDevController {
             }
         }
 
-        await session.updateFilesPaths(
-            tabId,
-            session.state.filePaths ?? [],
-            session.state.deletedFiles ?? [],
-            messageId
-        )
+        await session.updateFilesPaths({
+            tabID: tabId,
+            filePaths: session.state.filePaths ?? [],
+            deletedFiles: session.state.deletedFiles ?? [],
+            messageId,
+        })
 
         if (session.acceptCodeMessageId) {
             const allFilePathsAccepted = session.state.filePaths?.every(

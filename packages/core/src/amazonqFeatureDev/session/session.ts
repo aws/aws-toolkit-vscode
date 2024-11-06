@@ -13,6 +13,7 @@ import {
     type NewFileInfo,
     type SessionState,
     type SessionStateConfig,
+    UpdateFilesPathsParams,
 } from '../types'
 import { ConversationIdNotFoundError } from '../errors'
 import { referenceLogText } from '../constants'
@@ -153,18 +154,13 @@ export class Session {
         return resp.interaction
     }
 
-    public async updateFilesPaths(
-        tabID: string,
-        filePaths: NewFileInfo[],
-        deletedFiles: DeletedFileInfo[],
-        messageId: string,
-        disableFileActions: boolean = false
-    ) {
+    public async updateFilesPaths(params: UpdateFilesPathsParams) {
+        const { tabID, filePaths, deletedFiles, messageId, disableFileActions = false } = params
         this.messenger.updateFileComponent(tabID, filePaths, deletedFiles, messageId, disableFileActions)
         if ([...filePaths, ...deletedFiles].some((file) => file.rejected || file.changeApplied)) {
-            await this.updateChatAnswer(tabID, 'Accept remaining changes')
+            await this.updateChatAnswer(tabID, i18n('AWS.amazonq.featureDev.pillText.acceptRemainingChanges'))
         } else {
-            await this.updateChatAnswer(tabID, 'Accept all changes')
+            await this.updateChatAnswer(tabID, i18n('AWS.amazonq.featureDev.pillText.acceptAllChanges'))
         }
     }
 
@@ -196,21 +192,23 @@ export class Session {
     }
 
     public async insertChanges() {
-        const newFilePaths = this.state.filePaths?.filter((i) => !i.rejected && !i.changeApplied) ?? []
+        const newFilePaths =
+            this.state.filePaths?.filter((filePath) => !filePath.rejected && !filePath.changeApplied) ?? []
         await this.insertNewFiles(newFilePaths)
 
-        const deletedFiles = this.state.deletedFiles?.filter((i) => !i.rejected && !i.changeApplied) ?? []
+        const deletedFiles =
+            this.state.deletedFiles?.filter((deletedFile) => !deletedFile.rejected && !deletedFile.changeApplied) ?? []
         await this.applyDeleteFiles(deletedFiles)
 
         await this.insertCodeReferenceLogs(this.state.references ?? [])
 
         if (this._codeResultMessageId) {
-            await this.updateFilesPaths(
-                this.state.tabID,
-                this.state.filePaths ?? [],
-                this.state.deletedFiles ?? [],
-                this._codeResultMessageId
-            )
+            await this.updateFilesPaths({
+                tabID: this.state.tabID,
+                filePaths: this.state.filePaths ?? [],
+                deletedFiles: this.state.deletedFiles ?? [],
+                messageId: this._codeResultMessageId,
+            })
         }
     }
 
@@ -247,13 +245,13 @@ export class Session {
             return
         }
 
-        await this.updateFilesPaths(
-            this.state.tabID,
-            this.state.filePaths ?? [],
-            this.state.deletedFiles ?? [],
-            this._codeResultMessageId,
-            true
-        )
+        await this.updateFilesPaths({
+            tabID: this.state.tabID,
+            filePaths: this.state.filePaths ?? [],
+            deletedFiles: this.state.deletedFiles ?? [],
+            messageId: this._codeResultMessageId,
+            disableFileActions: true,
+        })
         this._codeResultMessageId = undefined
     }
 

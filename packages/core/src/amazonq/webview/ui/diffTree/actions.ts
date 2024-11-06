@@ -6,6 +6,7 @@
 import { MynahIcons } from '@aws/mynah-ui'
 import { FileNodeAction, TreeNodeDetails } from '@aws/mynah-ui/dist/static'
 import { DiffTreeFileInfo } from './types'
+import { uiComponentsTexts } from '../texts/constants'
 
 export function getDetails(filePaths: DiffTreeFileInfo[]): Record<string, TreeNodeDetails> {
     const details: Record<string, TreeNodeDetails> = {}
@@ -13,13 +14,13 @@ export function getDetails(filePaths: DiffTreeFileInfo[]): Record<string, TreeNo
         if (filePath.changeApplied) {
             details[filePath.relativePath] = {
                 status: 'success',
-                label: 'Change accepted',
+                label: uiComponentsTexts.changeAccepted,
                 icon: MynahIcons.OK,
             }
         } else if (filePath.rejected) {
             details[filePath.relativePath] = {
                 status: 'error',
-                label: 'Change rejected',
+                label: uiComponentsTexts.changeRejected,
                 icon: MynahIcons.CANCEL_CIRCLE,
             }
         }
@@ -39,7 +40,7 @@ export function getActions(filePaths: DiffTreeFileInfo[]): Record<string, FileNo
                     {
                         icon: MynahIcons.REVERT,
                         name: 'revert-rejection',
-                        description: 'Revert rejection',
+                        description: uiComponentsTexts.revertRejection,
                     },
                 ]
                 break
@@ -49,13 +50,13 @@ export function getActions(filePaths: DiffTreeFileInfo[]): Record<string, FileNo
                         icon: MynahIcons.OK,
                         status: 'success',
                         name: 'accept-change',
-                        description: 'Accept change',
+                        description: uiComponentsTexts.acceptChange,
                     },
                     {
                         icon: MynahIcons.CANCEL_CIRCLE,
                         status: 'error',
                         name: 'reject-change',
-                        description: 'Reject change',
+                        description: uiComponentsTexts.rejectChange,
                     },
                 ]
                 break
