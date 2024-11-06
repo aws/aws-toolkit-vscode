@@ -5,4 +5,5 @@
 
 export { activate } from './activation'
 export { telemetry, AuthStatus, Span } from './telemetry'
-export { ExtStartUpSources } from './util'
+export { ExtStartUpSources, getComputeEnvType } from './util'
+export * from './telemetry.gen'
