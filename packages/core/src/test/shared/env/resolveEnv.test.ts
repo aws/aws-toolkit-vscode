@@ -10,6 +10,7 @@ import path from 'path'
 
 describe('resolveEnv', async function () {
     let sandbox: sinon.SinonSandbox
+    let originalPlatform = process.platform
     beforeEach(function () {
         sandbox = sinon.createSandbox()
         sandbox.stub(process, 'platform').value('win32')
@@ -53,19 +54,18 @@ describe('resolveEnv', async function () {
         })
     })
 
-    describe('resolveMac', async function () {
+    describe('resolveUnix', async function () {
         const originalEnv = { ...process.env }
-        beforeEach(function () {
-            sandbox.stub(process, 'platform').value('darwin')
-        })
-
-        it('mergeResolvedShellPath should get path on mac', async function () {
-            sandbox.stub(process.env, 'PATH').value('')
-            // stub the resolve Env logic cause this is platform sensitive.
-            sandbox.stub(resolveEnv, 'getResolvedShellEnv').resolves(originalEnv)
-            const env = await testMergeResolveShellPath(process.env)
-            assert(env.PATH)
-            assert.notEqual(env, process.env)
-        })
+        // skip mac test on windows
+        if (originalPlatform !== 'win32') {
+            it('mergeResolvedShellPath should get path on mac/unix', async function () {
+                sandbox.stub(process.env, 'PATH').value('')
+                // stub the resolve Env logic cause this is platform sensitive.
+                sandbox.stub(resolveEnv, 'getResolvedShellEnv').resolves(originalEnv)
+                const env = await testMergeResolveShellPath(process.env)
+                assert(env.PATH)
+                assert.notEqual(env, process.env)
+            })
+        }
     })
 })
