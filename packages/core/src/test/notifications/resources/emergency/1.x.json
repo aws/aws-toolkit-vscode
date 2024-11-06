@@ -2,16 +2,36 @@
     "schemaVersion": "1.x",
     "notifications": [
         {
-            "id": "amazonq_emergency_local_1",
+            "id": "emergency1",
             "displayIf": {
                 "extensionId": "amazonwebservices.amazon-q-vscode"
             },
             "uiRenderInstructions": {
                 "content": {
                     "en-US": {
-                        "title": "[local] Emergency: url",
-                        "description": "Something crazy is happening! Please update your extension.",
-                        "toastPreview": "omg"
+                        "title": "Can't sign in to Amazon Q",
+                        "description": "There is currently a bug that is preventing users from signing into Amazon Q. If this impacts you, please try this workaround:\n\n 1. Reload your IDE\n 2. Run the command in the command palette:: `Amazon Q: Reset State`.\n 3. Set your default region to `us-east-3`.\n 4. Try to sign into Amazon Q with your desired region in the dropdown.\n\nWe are currently working on releasing a fix so that this workaround is not required.\nPlease reach out on our github issues with any questions.",
+                        "toastPreview": "Signing into Amazon Q is broken, please try this workaround while we work on releasing a fix."
+                    }
+                },
+                "onRecieve": "toast",
+                "onClick": {
+                    "type": "openTextDocument"
+                },
+                "actions": []
+            }
+        },
+        {
+            "id": "emergency2",
+            "displayIf": {
+                "extensionId": "amazonwebservices.amazon-q-vscode"
+            },
+            "uiRenderInstructions": {
+                "content": {
+                    "en-US": {
+                        "title": "Update Amazon Q to avoid breaking bugs",
+                        "description": "There is currently a bug that prevents Amazon Q from responding to chat requests. It is fixed in the latest version. Please update your Amazon Q now.",
+                        "toastPreview": "This version of Amazon Q is currently broken, please update to avoid issues."
                     }
                 },
                 "onRecieve": "toast",
@@ -23,66 +43,6 @@
                         "type": "updateAndReload",
                         "displayText": {
                             "en-US": "Update and Reload"
-                        }
-                    },
-                    {
-                        "type": "openUrl",
-                        "url": "https://aws.amazon.com/visualstudiocode/",
-                        "displayText": {
-                            "en-US": "Proceed to wiki"
-                        }
-                    }
-                ]
-            }
-        },
-        {
-            "id": "amazonq_emergency_local_2",
-            "displayIf": {
-                "extensionId": "amazonwebservices.amazon-q-vscode"
-            },
-            "uiRenderInstructions": {
-                "content": {
-                    "en-US": {
-                        "title": "[local] Emergency: txt",
-                        "description": "Something crazy is happening! Please update your extension.",
-                        "toastPreview": "omg"
-                    }
-                },
-                "onRecieve": "toast",
-                "onClick": {
-                    "type": "openTextDocument"
-                }
-            }
-        },
-        {
-            "id": "amazonq_emergency_local_3",
-            "displayIf": {
-                "extensionId": "amazonwebservices.amazon-q-vscode"
-            },
-            "uiRenderInstructions": {
-                "content": {
-                    "en-US": {
-                        "title": "[local] Emergency: modal",
-                        "description": "Something crazy is happening! Please update your extension.",
-                        "toastPreview": "new notification: something crazy is happening! Please update your entension and look on our wiki."
-                    }
-                },
-                "onRecieve": "toast",
-                "onClick": {
-                    "type": "openTextDocument"
-                },
-                "actions": [
-                    {
-                        "type": "updateAndReload",
-                        "displayText": {
-                            "en-US": "Update and Reload"
-                        }
-                    },
-                    {
-                        "type": "openUrl",
-                        "url": "https://aws.amazon.com/visualstudiocode/",
-                        "displayText": {
-                            "en-US": "Proceed to wiki"
                         }
                     }
                 ]

@@ -2,23 +2,51 @@
     "schemaVersion": "1.x",
     "notifications": [
         {
-            "id": "amazonq_startUp_local_1",
+            "id": "startup1",
             "displayIf": {
                 "extensionId": "amazonwebservices.amazon-q-vscode"
             },
             "uiRenderInstructions": {
                 "content": {
                     "en-US": {
-                        "title": "[local] What's New, url",
-                        "description": "Check out this new stuff!",
-                        "toastPreview": "omg"
+                        "title": "New Amazon Q Chat features",
+                        "description": "You can now use Amazon Q inline in your IDE, without ever touching the mouse or using copy and paste. \nPress ⌘+I (Ctrl+I on Windows) to trigger inline chat. \nDescribe a function or feature you'd like to develop and Amazon Q will generate and display a code diff that inserts new code at the cursor position. \nPress Enter to accept and apply the diff, or Escape to reject it. \nAlternatively you select a block of code (maybe even the entire file) then press ⌘+I (Ctrl+I on Windows) to provide instructions on how to refactor the selected code. \nYou will see a diff against the selected code and can press Enter to accept and apply the diff.",
+                        "toastPreview": "New Amazon Q features available: inline chat"
+                    }
+                },
+                "onRecieve": "toast",
+                "onClick": {
+                    "type": "openTextDocument"
+                },
+                "actions": [
+                    {
+                        "type": "openUrl",
+                        "url": "https://aws.amazon.com/developer/generative-ai/amazon-q/change-log/",
+                        "displayText": {
+                            "en-US": "Learn more"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "id": "startup2",
+            "displayIf": {
+                "extensionId": "amazonwebservices.amazon-q-vscode"
+            },
+            "uiRenderInstructions": {
+                "content": {
+                    "en-US": {
+                        "title": "What's New",
+                        "toastPreview": "New Amazon Q features are available!"
                     }
                 },
                 "onRecieve": "toast",
                 "onClick": {
                     "type": "openUrl",
-                    "url": "https://aws.amazon.com/visualstudiocode/"
-                }
+                    "url": "https://aws.amazon.com/developer/generative-ai/amazon-q/change-log/"
+                },
+                "actions": []
             }
         }
     ]
