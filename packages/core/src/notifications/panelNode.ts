@@ -15,6 +15,7 @@ import { getLogger } from '../shared/logger/logger'
 import { tempDirPath } from '../shared/filesystemUtilities'
 import path from 'path'
 import fs from '../shared/fs/fs'
+import { registerToolView } from '../awsexplorer/activationShared'
 
 /**
  * Controls the "Notifications" side panel/tree in each extension. It takes purely UX actions
@@ -42,9 +43,7 @@ export class NotificationsNode implements TreeNode {
 
     static #instance: NotificationsNode
 
-    constructor() {
-        NotificationsNode.#instance = this
-
+    private constructor() {
         this.openNotificationCmd = Commands.register(
             isAmazonQ() ? '_aws.amazonq.notifications.open' : '_aws.toolkit.notifications.open',
             async (n: ToolkitNotification) => this.openNotification(n)
@@ -265,13 +264,25 @@ export class NotificationsNode implements TreeNode {
 
     static get instance() {
         if (this.#instance === undefined) {
-            throw new ToolkitError('NotificationsNode was accessed before it has been initialized.')
+            this.#instance = new NotificationsNode()
         }
 
         return this.#instance
     }
-}
 
-export function registerProvider(provider: ResourceTreeDataProvider) {
-    NotificationsNode.instance.provider = provider
+    registerProvider(provider: ResourceTreeDataProvider) {
+        this.provider = provider
+    }
+
+    registerView(context: vscode.ExtensionContext) {
+        const view = registerToolView(
+            {
+                nodes: [this],
+                view: isAmazonQ() ? 'aws.amazonq.notifications' : 'aws.toolkit.notifications',
+                refreshCommands: [(provider: ResourceTreeDataProvider) => this.registerProvider(provider)],
+            },
+            context
+        )
+        view.message = `New feature announcements and emergency notifications for ${isAmazonQ() ? 'Amazon Q' : 'AWS Toolkit'} will appear here.`
+    }
 }
