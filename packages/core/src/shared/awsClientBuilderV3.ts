@@ -20,7 +20,7 @@ import {
 import { HttpResponse } from '@aws-sdk/protocol-http'
 import { telemetry } from './telemetry'
 import { getRequestId } from './errors'
-import { getLogger } from '.'
+import { extensionVersion, getLogger } from '.'
 
 export type AwsClient = IClient<any, any, any>
 interface AwsConfigOptions {
@@ -69,17 +69,9 @@ export class DefaultAWSClientBuilderV3 implements AWSClientBuilderV3 {
         }
 
         if (!opt.customUserAgent && userAgent) {
-            opt.customUserAgent = [[getUserAgent({ includePlatform: true, includeClientId: true })]]
+            opt.customUserAgent = [[getUserAgent({ includePlatform: true, includeClientId: true }), extensionVersion]]
         }
-
-        const apiConfig = (opt as { apiConfig?: { metadata?: Record<string, string> } } | undefined)?.apiConfig
-        const serviceName =
-            apiConfig?.metadata?.serviceId?.toLowerCase() ??
-            (type as unknown as { serviceIdentifier?: string }).serviceIdentifier
-
-        if (serviceName) {
-            opt.endpoint = settings?.get('endpoints', {})[serviceName] ?? opt.endpoint
-        }
+        // TODO: add tests for refresh logic.
         opt.credentials = async () => {
             const creds = await shim.get()
             if (creds.expiration && creds.expiration.getTime() < Date.now()) {
@@ -89,6 +81,7 @@ export class DefaultAWSClientBuilderV3 implements AWSClientBuilderV3 {
         }
 
         const service = new type(opt)
+        // TODO: add middleware for logging, telemetry, endpoints.
         service.middlewareStack.add(telemetryMiddleware, { step: 'deserialize' } as DeserializeHandlerOptions)
         return service
     }

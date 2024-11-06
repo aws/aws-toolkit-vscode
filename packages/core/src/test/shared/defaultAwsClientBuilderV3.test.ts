@@ -5,14 +5,13 @@
 
 import assert from 'assert'
 import { version } from 'vscode'
-import { DevSettings } from '../../shared/settings'
 import { getClientId } from '../../shared/telemetry/util'
 import { FakeMemento } from '../fakeExtensionContext'
 import { FakeAwsContext } from '../utilities/fakeAwsContext'
-import { TestSettings } from '../utilities/testSettingsConfiguration'
 import { GlobalState } from '../../shared/globalState'
 import { AWSClientBuilderV3, DefaultAWSClientBuilderV3 } from '../../shared/awsClientBuilderV3'
 import { Client } from '@aws-sdk/smithy-client'
+import { extensionVersion } from '../../shared'
 
 describe('DefaultAwsClientBuilderV3', function () {
     let builder: AWSClientBuilderV3
@@ -31,6 +30,7 @@ describe('DefaultAwsClientBuilderV3', function () {
                 service.config.customUserAgent![0][0].replace('---Insiders', ''),
                 `AWS-Toolkit-For-VSCode/testPluginVersion Visual-Studio-Code/${version} ClientId/${clientId}`
             )
+            assert.strictEqual(service.config.customUserAgent![0][1], extensionVersion)
         })
 
         it('adds region to client', async function () {
@@ -53,42 +53,6 @@ describe('DefaultAwsClientBuilderV3', function () {
             })
 
             assert.strictEqual(service.config.customUserAgent[0][0], 'CUSTOM USER AGENT')
-        })
-
-        it('can use endpoint override', async function () {
-            const settings = new TestSettings()
-            await settings.update('aws.dev.endpoints', { foo: 'http://example.com' })
-
-            const service = await builder.createAwsService(
-                Client as any,
-                {
-                    customUserAgent: [['CUSTOM USER AGENT']],
-                    apiConfig: { metadata: { serviceId: 'foo' } },
-                } as any,
-                undefined,
-                undefined,
-                new DevSettings(settings)
-            )
-
-            assert.strictEqual(service.config.endpoint, 'http://example.com')
-        })
-
-        it('does not clobber endpoint setting if no override is present', async function () {
-            const settings = new TestSettings()
-
-            const service = await builder.createAwsService(
-                Client as any,
-                {
-                    customUserAgent: 'CUSTOM USER AGENT',
-                    apiConfig: { metadata: { serviceId: 'foo' } },
-                    endpoint: 'http://example.com',
-                } as any,
-                undefined,
-                undefined,
-                new DevSettings(settings)
-            )
-
-            assert.strictEqual(service.config.endpoint, 'http://example.com')
         })
     })
 })
