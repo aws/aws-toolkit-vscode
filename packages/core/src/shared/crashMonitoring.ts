@@ -456,7 +456,7 @@ export class FileSystemState {
             })
         }
 
-        await withFailCtx('init', () => fs.mkdir(this.stateDirPath))
+        await withFailCtx('init', () => nodeFs.mkdir(this.stateDirPath, { recursive: true }))
     }
 
     // ------------------ Heartbeat methods ------------------
@@ -476,7 +476,7 @@ export class FileSystemState {
                 fileHandle = undefined
 
                 // Sanity check to verify the latest write is accessible immediately
-                const heartbeatData = JSON.parse(await fs.readFileText(filePath)) as ExtInstanceHeartbeat
+                const heartbeatData = JSON.parse(await nodeFs.readFile(filePath, 'utf-8')) as ExtInstanceHeartbeat
                 if (heartbeatData.lastHeartbeat !== now) {
                     throw new CrashMonitoringError('Heartbeat write validation failed', { code: className })
                 }
@@ -570,7 +570,7 @@ export class FileSystemState {
     public async clearState(): Promise<void> {
         this.deps.devLogger?.debug('crashMonitoring: CLEAR_STATE: Started')
         await withFailCtx('clearState', async () => {
-            await fs.delete(this.stateDirPath, { force: true, recursive: true })
+            await nodeFs.rm(this.stateDirPath, { force: true, recursive: true })
             this.deps.devLogger?.debug('crashMonitoring: CLEAR_STATE: Succeeded')
         })
     }
@@ -593,7 +593,7 @@ export class FileSystemState {
                 // we will assume that other instance handled its termination appropriately.
                 // NOTE: On Windows we were failing on EBUSY, so we retry on failure.
                 const loadExtFromDisk = async () => {
-                    const text = await fs.readFileText(this.makeStateFilePath(extId))
+                    const text = await nodeFs.readFile(this.makeStateFilePath(extId), 'utf-8')
 
                     if (!text) {
                         return undefined
