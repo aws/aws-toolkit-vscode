@@ -139,7 +139,7 @@ export async function mergeResolvedShellPath(env: IProcessEnvironment): Promise<
  * - we hit a timeout of `MAX_SHELL_RESOLVE_TIME`
  * - any other error from spawning a shell to figure out the environment
  */
-export async function getResolvedShellEnv(env?: IProcessEnvironment): Promise<typeof process.env> {
+export async function getResolvedShellEnv(env?: IProcessEnvironment): Promise<typeof process.env | undefined> {
     if (!env) {
         env = process.env
     }
@@ -147,21 +147,21 @@ export async function getResolvedShellEnv(env?: IProcessEnvironment): Promise<ty
     if (DevSettings.instance._isSet('forceResolveEnv') && !DevSettings.instance.get('forceResolveEnv', false)) {
         getLogger().debug('resolveShellEnv(): skipped (forceResolveEnv)')
 
-        return {}
+        return undefined
     }
 
     // Skip on windows
     else if (process.platform === 'win32') {
         getLogger().debug('resolveShellEnv(): skipped (Windows)')
 
-        return {}
+        return undefined
     }
 
     // Skip if running from CLI already and forceResolveEnv is not true
     else if (isLaunchedFromCli(env) && !DevSettings.instance.get('forceResolveEnv', false)) {
         getLogger().info('resolveShellEnv(): skipped (VSCODE_CLI is set)')
 
-        return {}
+        return undefined
     }
     // Otherwise resolve (macOS, Linux)
     else {
@@ -181,10 +181,15 @@ export async function getResolvedShellEnv(env?: IProcessEnvironment): Promise<ty
 
                 // Resolve shell env and handle errors
                 try {
-                    resolve(await doResolveUnixShellEnv(timeout))
+                    const shellEnv = await doResolveUnixShellEnv(timeout)
+                    if (shellEnv && Object.keys(shellEnv).length > 0) {
+                        resolve(shellEnv)
+                    } else {
+                        return undefined
+                    }
                 } catch {
                     // failed resolve should not affect other feature.
-                    resolve({})
+                    return undefined
                 }
             })
         }
