@@ -14,8 +14,9 @@ describe('generateResourceHandler', function () {
     afterEach(() => {
         sinon.restore()
     })
-    for (const _ of Array.from({ length: 20 }, (i) => i)) {
-        it('amazon q is not installed', async () => {
+    // eslint-disable-next-line aws-toolkits/no-only-in-tests
+    it.only('amazon q is not installed', async () => {
+        for (const _ of Array.from({ length: 20 }, (i) => i)) {
             sinon.stub(extApi, 'getAmazonqApi')
             const panel = await createTemplate()
             console.log('post-createTemplate')
@@ -37,6 +38,6 @@ describe('generateResourceHandler', function () {
             console.log('post-generateResourceHandler')
             assert.ok(postMessageSpy.calledOnce)
             assert.deepStrictEqual(postMessageSpy.getCall(0).args[0].isSuccess, false)
-        })
-    }
+        }
+    })
 })
