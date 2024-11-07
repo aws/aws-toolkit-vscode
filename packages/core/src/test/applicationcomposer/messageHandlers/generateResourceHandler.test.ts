@@ -39,6 +39,7 @@ describe.only('generateResourceHandler', function () {
             assert.ok(postMessageSpy.calledOnce)
             assert.deepStrictEqual(postMessageSpy.getCall(0).args[0].isSuccess, false)
             sinon.restore()
+            console.log('post-sinon.restore')
         })
     }
 })
