@@ -60,7 +60,7 @@ export async function deleteDocument(node: DocumentItemNodeWriteable) {
     } catch (err) {
         result = 'Failed'
         const error = err as Error
-        logger.error('Error on deleting document: %0', error)
+        logger.error('Error on deleting document: %O', error)
         void showViewLogsMessage(
             localize(
                 'AWS.message.error.ssmDocument.deleteDocument.could_not_delete',
