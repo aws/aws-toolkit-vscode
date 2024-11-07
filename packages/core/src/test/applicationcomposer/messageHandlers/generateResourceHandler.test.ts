@@ -8,29 +8,35 @@ import sinon from 'sinon'
 import { createTemplate, createWebviewContext } from '../utils'
 import { generateResourceHandler } from '../../../applicationcomposer/messageHandlers/generateResourceHandler'
 import { Command, MessageType } from '../../../applicationcomposer/types'
+import * as extApi from '../../../amazonq/extApi'
 
 describe('generateResourceHandler', function () {
     afterEach(() => {
         sinon.restore()
     })
-
-    it('amazon q is not installed', async () => {
-        const panel = await createTemplate()
-        const postMessageSpy = sinon.spy(panel.webview, 'postMessage')
-        const context = await createWebviewContext({
-            panel,
+    for (const _ of Array.from({ length: 20 }, (i) => i)) {
+        it('amazon q is not installed', async () => {
+            sinon.stub(extApi, 'getAmazonqApi')
+            const panel = await createTemplate()
+            console.log('post-createTemplate')
+            const postMessageSpy = sinon.spy(panel.webview, 'postMessage')
+            const context = await createWebviewContext({
+                panel,
+            })
+            console.log('post-createWebviewContext')
+            await generateResourceHandler(
+                {
+                    command: Command.GENERATE_RESOURCE,
+                    messageType: MessageType.REQUEST,
+                    cfnType: '',
+                    prompt: '',
+                    traceId: '0',
+                },
+                context
+            )
+            console.log('post-generateResourceHandler')
+            assert.ok(postMessageSpy.calledOnce)
+            assert.deepStrictEqual(postMessageSpy.getCall(0).args[0].isSuccess, false)
         })
-        await generateResourceHandler(
-            {
-                command: Command.GENERATE_RESOURCE,
-                messageType: MessageType.REQUEST,
-                cfnType: '',
-                prompt: '',
-                traceId: '0',
-            },
-            context
-        )
-        assert.ok(postMessageSpy.calledOnce)
-        assert.deepStrictEqual(postMessageSpy.getCall(0).args[0].isSuccess, false)
-    })
+    }
 })

@@ -18,14 +18,15 @@ import {
 } from '../types'
 import globals from '../../shared/extensionGlobals'
 import { getLogger } from '../../shared/logger/logger'
-import { AmazonqNotFoundError, getAmazonqApi } from '../../amazonq/extApi'
+import * as extApi from '../../amazonq/extApi'
 
 const TIMEOUT = 30_000
 
 export async function generateResourceHandler(request: GenerateResourceRequestMessage, context: WebviewContext) {
     try {
         const { chatResponse, references, metadata, isSuccess } = await generateResource(request.cfnType)
-
+        // eslint-disable-next-line aws-toolkits/no-console-log
+        console.log('post-generateResource')
         const responseMessage: GenerateResourceResponseMessage = {
             command: Command.GENERATE_RESOURCE,
             messageType: MessageType.RESPONSE,
@@ -58,9 +59,11 @@ async function generateResource(cfnType: string) {
     let startTime = globals.clock.Date.now()
 
     try {
-        const amazonqApi = await getAmazonqApi()
+        const amazonqApi = await extApi.getAmazonqApi()
+        // eslint-disable-next-line aws-toolkits/no-console-log
+        console.log('post-getAmazonQApi')
         if (!amazonqApi) {
-            throw new AmazonqNotFoundError()
+            throw new extApi.AmazonqNotFoundError()
         }
         const request: GenerateAssistantResponseRequest = {
             conversationState: {
@@ -81,6 +84,8 @@ async function generateResource(cfnType: string) {
         let references: Reference[] = []
 
         await amazonqApi.authApi.reauthIfNeeded()
+        // eslint-disable-next-line aws-toolkits/no-console-log
+        console.log('post-reauthIfNeeded')
 
         startTime = globals.clock.Date.now()
         // TODO-STARLING - Revisit to see if timeout still needed prior to launch
