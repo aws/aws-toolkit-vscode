@@ -9,6 +9,7 @@ import NoIncorrectOnceUsage from './lib/rules/no-incorrect-once-usage'
 import NoOnlyInTests from './lib/rules/no-only-in-tests'
 import NoStringExecForChildProcess from './lib/rules/no-string-exec-for-child-process'
 import NoConsoleLog from './lib/rules/no-console-log'
+import noJsonStringifyInLog from './lib/rules/no-json-stringify-in-log'
 
 const rules = {
     'no-await-on-vscode-msg': NoAwaitOnVscodeMsg,
@@ -17,6 +18,7 @@ const rules = {
     'no-only-in-tests': NoOnlyInTests,
     'no-string-exec-for-child-process': NoStringExecForChildProcess,
     'no-console-log': NoConsoleLog,
+    'no-json-stringify-in-log': noJsonStringifyInLog,
 }
 
 export { rules }

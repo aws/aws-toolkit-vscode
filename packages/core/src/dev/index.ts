@@ -4,3 +4,4 @@
  */
 
 export { DevOptions, updateDevMode } from './activation'
+export * as beta from './beta'

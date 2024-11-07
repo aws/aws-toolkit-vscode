@@ -1652,7 +1652,7 @@
                 },
                 {
                     "command": "aws.deleteLambda",
-                    "when": "view =~ /^(aws.explorer|aws.appBuilder|aws.appBuilderForFileExplorer)$/ && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable)$/ || viewItem == awsAppBuilderDeployedNode",
+                    "when": "view =~ /^(aws.explorer)$/ && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable)$/",
                     "group": "4@1"
                 },
                 {
@@ -1877,7 +1877,7 @@
                 },
                 {
                     "command": "aws.s3.deleteBucket",
-                    "when": "view =~ /^(aws.explorer|aws.appBuilder|aws.appBuilderForFileExplorer)$/ && viewItem == awsS3BucketNode",
+                    "when": "view =~ /^(aws.explorer)$/ && viewItem == awsS3BucketNode",
                     "group": "3@1"
                 },
                 {
