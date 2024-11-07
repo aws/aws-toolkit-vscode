@@ -188,7 +188,7 @@ async function activateCodeLensRegistry(context: ExtContext) {
                 getIdeProperties().codelenses
             )
         )
-        getLogger().error('Failed to activate codelens registry', e)
+        getLogger().error('Failed to activate codelens registry %O', e)
         // This prevents us from breaking for any reason later if it fails to load. Since
         // Noop watcher is always empty, we will get back empty arrays with no issues.
         globals.codelensRootRegistry = new NoopWatcher() as unknown as CodelensRootRegistry
