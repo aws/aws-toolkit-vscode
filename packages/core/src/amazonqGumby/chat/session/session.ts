@@ -10,7 +10,8 @@ export enum ConversationState {
     PROMPT_JAVA_HOME,
     COMPILING,
     JOB_SUBMITTED,
-    WAITING_FOR_INPUT,
+    WAITING_FOR_HIL_INPUT,
+    WAITING_FOR_TRANSFORMATION_OBJECTIVE,
 }
 
 export interface ProjectDetails {

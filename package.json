@@ -20,7 +20,7 @@
     },
     "scripts": {
         "prepare": "ts-node ./scripts/prepare.ts",
-        "preinstall": "cd src.gen/@amzn/codewhisperer-streaming && npm i",
+        "preinstall": "cd src.gen/@amzn/codewhisperer-streaming && npm i && cd ../amazon-q-developer-streaming-client && npm i",
         "postinstall": "npm run buildCustomLintPlugin && npm run postinstall -ws --if-present",
         "buildCustomLintPlugin": "npm run build -w plugins/eslint-plugin-aws-toolkits",
         "compile": "npm run compile -w packages/",
@@ -39,7 +39,7 @@
         "generateNonCodeFiles": "npm run generateNonCodeFiles -w packages/ --if-present"
     },
     "devDependencies": {
-        "@aws-toolkits/telemetry": "^1.0.273",
+        "@aws-toolkits/telemetry": "^1.0.274",
         "@playwright/browser-chromium": "^1.43.1",
         "@types/he": "^1.2.3",
         "@types/vscode": "^1.68.0",
@@ -66,11 +66,12 @@
         "typescript": "^5.0.4",
         "webpack": "^5.95.0",
         "webpack-cli": "^5.1.4",
-        "webpack-dev-server": "^4.15.1",
+        "webpack-dev-server": "^4.15.2",
         "webpack-merge": "^5.10.0"
     },
     "dependencies": {
-        "@types/node": "^18.19.55",
+        "@types/node": "^22.7.5",
+        "@aws-toolkits/telemetry": "^1.0.242",
         "vscode-nls": "^5.2.0",
         "vscode-nls-dev": "^4.0.4"
     }

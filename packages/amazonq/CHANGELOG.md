@@ -1,3 +1,15 @@
+## 1.33.0 2024-10-30
+
+- **Bug Fix** Amazon Q /dev: fix for stop button showing for Code Transformation
+
+## 1.32.0 2024-10-29
+
+- **Bug Fix** Remove warning when no input is provided to inline chat input box
+- **Bug Fix** Use Sagemaker environment IAM Credentials for Code Completion when they're available
+- **Bug Fix** Inline: Code completion not working for Sagemaker Pro Tier users.
+- **Bug Fix** Disable /transform and /dev commands for sagemaker users as they're not supported
+- **Feature** Enable Free Tier Chat for IAM users
+
 ## 1.31.0 2024-10-29
 
 - **Breaking Change** Change keybind for focusing chat to ctrl+win+i on Windows, ctrl+cmd+i on macOS and ctrl+meta+i on Linux
