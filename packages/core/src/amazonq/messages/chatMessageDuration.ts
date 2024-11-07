@@ -96,7 +96,12 @@ export class AmazonQChatMessageDuration {
                 })
             }
 
-            CWCTelemetryHelper.instance.emitAddMessage(tabID, totalDuration, metrics.events.chatMessageSent)
+            CWCTelemetryHelper.instance.emitAddMessage(
+                tabID,
+                totalDuration,
+                metrics.traceId,
+                metrics.events.chatMessageSent
+            )
 
             uiEventRecorder.delete(tabID)
         })
