@@ -215,5 +215,87 @@ describe('Amazon Q Feature Dev', function () {
             tab.clickButton(FollowUpTypes.InsertCode)
             await waitForButtons([FollowUpTypes.NewTask, FollowUpTypes.CloseSession])
         })
+
+        describe('file-level accepts', async () => {
+            beforeEach(async () => {
+                await retryIfRequired(async () => {
+                    await Promise.any([
+                        waitForButtons([FollowUpTypes.InsertCode, FollowUpTypes.ProvideFeedbackAndRegenerateCode]),
+                        waitForButtons([FollowUpTypes.Retry]),
+                    ])
+                })
+            })
+
+            describe('fileList', async () => {
+                it('has both accept-change and reject-change action buttons for file', async () => {
+                    const filePath = tab.getFilePaths()[0]
+                    assert.ok(tab.getActionsByFilePath(filePath).length === 2)
+                    assert.ok(tab.hasAction(filePath, 'accept-change'))
+                    assert.ok(tab.hasAction(filePath, 'reject-change'))
+                })
+
+                it('has only revert-rejection action buttons for rejected file', async () => {
+                    const filePath = tab.getFilePaths()[0]
+                    tab.clickFileActionButton(filePath, 'reject-change')
+                    await tab.waitForEvent(() => !tab.hasAction(filePath, 'reject-change'))
+
+                    assert.ok(tab.getActionsByFilePath(filePath).length === 1)
+                    assert.ok(tab.hasAction(filePath, 'revert-rejection'))
+                })
+
+                it('does not have any action buttons for accepted file', async () => {
+                    const filePath = tab.getFilePaths()[0]
+                    tab.clickFileActionButton(filePath, 'accept-change')
+                    await tab.waitForEvent(() => !tab.hasAction(filePath, 'accept-change'))
+
+                    assert.ok(tab.getActionsByFilePath(filePath).length === 0)
+                })
+            })
+
+            describe('accept changes button', async () => {
+                describe('button text', async () => {
+                    it('shows Accept all changes when all files are neither accepted nor rejected', async () => {
+                        const insertCodeButton = tab.getFollowUpButton(FollowUpTypes.InsertCode)
+                        assert.ok(insertCodeButton.pillText === 'Accept all changes')
+                    })
+
+                    it('shows Accept remaining changes when one or more file is rejected', async () => {
+                        const filePath = tab.getFilePaths()[0]
+                        tab.clickFileActionButton(filePath, 'reject-change')
+                        await tab.waitForEvent(() => !tab.hasAction(filePath, 'reject-change'))
+
+                        const insertCodeButton = tab.getFollowUpButton(FollowUpTypes.InsertCode)
+                        assert.ok(insertCodeButton.pillText === 'Accept remaining changes')
+                    })
+
+                    it('shows Accept remaining changes when one or more file is accepted', async () => {
+                        const filePath = tab.getFilePaths()[0]
+                        tab.clickFileActionButton(filePath, 'accept-change')
+                        await tab.waitForEvent(() => !tab.hasAction(filePath, 'accept-change'))
+
+                        const insertCodeButton = tab.getFollowUpButton(FollowUpTypes.InsertCode)
+                        assert.ok(insertCodeButton.pillText === 'Accept remaining changes')
+                    })
+
+                    it('shows Accept remaining changes when a file is rejected, then shows Accept all changes again when the rejection is reverted', async () => {
+                        let insertCodeButton = tab.getFollowUpButton(FollowUpTypes.InsertCode)
+                        assert.ok(insertCodeButton.pillText === 'Accept all changes')
+
+                        const filePath = tab.getFilePaths()[0]
+                        tab.clickFileActionButton(filePath, 'reject-change')
+                        await tab.waitForEvent(() => !tab.hasAction(filePath, 'reject-change'))
+
+                        insertCodeButton = tab.getFollowUpButton(FollowUpTypes.InsertCode)
+                        assert.ok(insertCodeButton.pillText === 'Accept remaining changes')
+
+                        tab.clickFileActionButton(filePath, 'revert-rejection')
+                        await tab.waitForEvent(() => !tab.hasAction(filePath, 'revert-rejection'))
+
+                        insertCodeButton = tab.getFollowUpButton(FollowUpTypes.InsertCode)
+                        assert.ok(insertCodeButton.pillText === 'Accept all changes')
+                    })
+                })
+            })
+        })
     })
 })
