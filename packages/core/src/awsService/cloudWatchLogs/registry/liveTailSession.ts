@@ -143,6 +143,6 @@ export class LiveTailSession {
         const elapsedTime = this.getLiveTailSessionDuration()
         const timeString = convertToTimeString(elapsedTime)
         const sampledString = this._isSampled ? 'Yes' : 'No'
-        this.statusBarItem.text = `Tailing Session: ${timeString}, ${this._eventRate} events/sec, Sampled: ${sampledString}`
+        this.statusBarItem.text = `Tailing: ${timeString}, ${this._eventRate} events/sec, Sampled: ${sampledString}`
     }
 }

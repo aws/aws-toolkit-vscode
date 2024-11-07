@@ -39,7 +39,9 @@ export async function tailLogGroup(
     registry.set(session.uri, session)
 
     const document = await prepareDocument(session)
-    const timer = startSessionTimer(session)
+    const timer = globals.clock.setInterval(() => {
+        session.updateStatusBarItemText()
+    }, 500)
     hideShowStatusBarItemsOnActiveEditor(session, document)
     registerTabChangeCallback(session, registry, document, timer)
 
@@ -94,7 +96,8 @@ async function handleSessionStream(
                     await updateTextDocumentWithNewLogEvents(formattedLogEvents, document, session.maxLines)
                     editorsToScroll.forEach(scrollTextEditorToBottom)
                 }
-                updateStatusBarItemsOnStreamEvent(session, event.sessionUpdate)
+                session.eventRate = eventRate(event.sessionUpdate)
+                session.isSampled = isSampled(event.sessionUpdate)
             }
         }
     } finally {
@@ -162,36 +165,20 @@ function trimOldestLines(
     edit.delete(document.uri, range)
 }
 
-function updateStatusBarItemsOnStreamEvent(session: LiveTailSession, event: LiveTailSessionUpdate) {
-    updateIsSampled(session, event)
-    updateEventRate(session, event)
+function isSampled(event: LiveTailSessionUpdate): boolean {
+    return event.sessionMetadata === undefined || event.sessionMetadata.sampled === undefined
+        ? false
+        : event.sessionMetadata.sampled
 }
 
-function updateIsSampled(session: LiveTailSession, event: LiveTailSessionUpdate) {
-    session.isSampled =
-        event.sessionMetadata === undefined || event.sessionMetadata.sampled === undefined
-            ? false
-            : event.sessionMetadata.sampled
-}
-
-function updateEventRate(session: LiveTailSession, event: LiveTailSessionUpdate) {
-    session.eventRate = event.sessionResults === undefined ? 0 : event.sessionResults.length
+function eventRate(event: LiveTailSessionUpdate): number {
+    return event.sessionResults === undefined ? 0 : event.sessionResults.length
 }
 
 function hideShowStatusBarItemsOnActiveEditor(session: LiveTailSession, document: vscode.TextDocument) {
     vscode.window.onDidChangeActiveTextEditor((editor) => {
-        if (editor?.document === document) {
-            session.showStatusBarItem(true)
-        } else {
-            session.showStatusBarItem(false)
-        }
+        session.showStatusBarItem(editor?.document === document)
     })
-}
-
-function startSessionTimer(session: LiveTailSession): NodeJS.Timer {
-    return globals.clock.setInterval(() => {
-        session.updateStatusBarItemText()
-    }, 500)
 }
 
 /**
