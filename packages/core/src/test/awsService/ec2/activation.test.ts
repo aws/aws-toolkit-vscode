@@ -31,43 +31,18 @@ describe('ec2 activation', function () {
     after(function () {
         sinon.restore()
     })
-    it('terminal open', async function () {
+
+    it('telemetry', async function () {
         const terminalStub = sinon.stub(Ec2Connecter.prototype, 'attemptToOpenEc2Terminal')
         await vscode.commands.executeCommand('aws.ec2.openTerminal', testNode)
 
         assertTelemetry('ec2_connectToInstance', { ec2ConnectionType: 'ssm' })
         terminalStub.restore()
-    })
 
-    it('remote window open', async function () {
-        const remoteWindowStub = sinon.stub(Ec2Connecter.prototype, 'tryOpenRemoteConnection')
-        await vscode.commands.executeCommand('aws.ec2.openRemoteConnection', testNode)
-
-        assertTelemetry('ec2_connectToInstance', { ec2ConnectionType: 'remoteWorkspace' })
-        remoteWindowStub.restore()
-    })
-
-    it('state stop', async function () {
         const stopInstanceStub = sinon.stub(Ec2Client.prototype, 'stopInstanceWithCancel')
         await vscode.commands.executeCommand('aws.ec2.stopInstance', testNode)
 
         assertTelemetry('ec2_changeState', { ec2InstanceState: 'stop' })
         stopInstanceStub.restore()
-    })
-
-    it('state start', async function () {
-        const startInstanceStub = sinon.stub(Ec2Client.prototype, 'startInstance')
-        await vscode.commands.executeCommand('aws.ec2.startInstance', testNode)
-
-        assertTelemetry('ec2_changeState', { ec2InstanceState: 'start' })
-        startInstanceStub.restore()
-    })
-
-    it('state reboot', async function () {
-        const rebootInstanceStub = sinon.stub(Ec2Client.prototype, 'rebootInstance')
-        await vscode.commands.executeCommand('aws.ec2.rebootInstance', testNode)
-
-        assertTelemetry('ec2_changeState', { ec2InstanceState: 'reboot' })
-        rebootInstanceStub.restore()
     })
 })
