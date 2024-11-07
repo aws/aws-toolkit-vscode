@@ -258,14 +258,6 @@ describe('Controller', () => {
 
             assertTelemetry('amazonq_endChat', { amazonqConversationId: conversationID, result: 'Succeeded' })
         })
-
-        it('calls disableFileList', async () => {
-            const disableFileListSpy = sinon.stub(session, 'disableFileList').resolves()
-
-            await newTaskClicked()
-
-            assert.ok(disableFileListSpy.calledOnce)
-        })
     })
 
     describe('fileClicked', () => {
@@ -409,14 +401,6 @@ describe('Controller', () => {
             }, {})
         }
 
-        it('calls disableFileList', async () => {
-            const disableFileListSpy = sinon.stub(session, 'disableFileList').resolves()
-
-            await fireChatMessage()
-
-            assert.ok(disableFileListSpy.calledOnce)
-        })
-
         describe('processErrorChatMessage', function () {
             // TODO: fix disablePreviousFileList error
             const runs = [
@@ -453,13 +437,11 @@ describe('Controller', () => {
                 const sendAnswerSpy = sinon.stub(controllerSetup.messenger, 'sendAnswer')
                 const sendErrorMessageSpy = sinon.stub(controllerSetup.messenger, 'sendErrorMessage')
                 const sendMonthlyLimitErrorSpy = sinon.stub(controllerSetup.messenger, 'sendMonthlyLimitError')
-                const disableFileListSpy = sinon.stub(session, 'disableFileList').resolves()
 
                 await fireChatMessage()
 
                 switch (error.constructor.name) {
                     case ContentLengthError.name:
-                        assert.ok(disableFileListSpy.calledOnce)
                         assert.ok(
                             sendAnswerSpy.calledWith({
                                 type: 'answer',
@@ -470,7 +452,6 @@ describe('Controller', () => {
                         )
                         break
                     case MonthlyConversationLimitError.name:
-                        assert.ok(disableFileListSpy.calledOnce)
                         assert.ok(sendMonthlyLimitErrorSpy.calledWith(tabID))
                         break
                     case FeatureDevServiceError.name:
@@ -478,7 +459,6 @@ describe('Controller', () => {
                     case UserMessageNotFoundError.name:
                     case TabIdNotFoundError.name:
                     case PrepareRepoFailedError.name:
-                        assert.ok(disableFileListSpy.calledOnce)
                         assert.ok(
                             sendErrorMessageSpy.calledWith(
                                 createTestErrorMessage(error.message),
@@ -490,7 +470,6 @@ describe('Controller', () => {
                         break
                     case PromptRefusalException.name:
                     case ZipFileError.name:
-                        assert.ok(disableFileListSpy.calledOnce)
                         assert.ok(
                             sendErrorMessageSpy.calledWith(
                                 createTestErrorMessage(error.message),
@@ -502,19 +481,8 @@ describe('Controller', () => {
                         )
                         break
                     case NoChangeRequiredException.name:
-                        assert.ok(disableFileListSpy.calledTwice)
-                        assert.ok(
-                            sendAnswerSpy.calledWith({
-                                type: 'answer',
-                                tabID,
-                                message: error.message,
-                                canBeVoted: true,
-                            })
-                        )
-                        break
                     case CodeIterationLimitError.name:
                     case UploadURLExpired.name:
-                        assert.ok(disableFileListSpy.calledOnce)
                         assert.ok(
                             sendAnswerSpy.calledWith({
                                 type: 'answer',
@@ -525,7 +493,6 @@ describe('Controller', () => {
                         )
                         break
                     default:
-                        assert.ok(disableFileListSpy.calledOnce)
                         assert.ok(
                             sendErrorMessageSpy.calledWith(
                                 i18n('AWS.amazonq.featureDev.error.codeGen.default'),
@@ -579,14 +546,6 @@ describe('Controller', () => {
             await closeSessionClicked()
 
             assertTelemetry('amazonq_endChat', { amazonqConversationId: conversationID, result: 'Succeeded' })
-        })
-
-        it('calls disableFileList', async () => {
-            const disableFileListSpy = sinon.stub(session, 'disableFileList').resolves()
-
-            await closeSessionClicked()
-
-            assert.ok(disableFileListSpy.calledOnce)
         })
     })
 })
