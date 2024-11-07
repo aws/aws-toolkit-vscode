@@ -78,7 +78,7 @@ describe('samProject', () => {
             // simulate error when no samconfig.toml file in directory
             const result = await getStackName(projectRoot)
             assert.deepStrictEqual(result, {})
-            assertLogsContain('No stack name or region information available in samconfig.toml', true, 'info')
+            assertLogsContain('No stack name or region information available in samconfig.toml: %O', true, 'info')
         })
 
         it('returns empty object give error parsing samconfig file', async () => {

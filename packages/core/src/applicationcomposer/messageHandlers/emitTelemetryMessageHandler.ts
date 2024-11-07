@@ -67,7 +67,7 @@ export function emitTelemetryMessageHandler(message: EmitTelemetryMessage) {
                 return
         }
     } catch (e) {
-        getLogger().error('Could not log telemetry for App Composer', e)
+        getLogger().error('Could not log telemetry for App Composer %O', e)
     }
 }
 
