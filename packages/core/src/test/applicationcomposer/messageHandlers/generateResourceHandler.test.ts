@@ -15,9 +15,8 @@ describe.only('generateResourceHandler', function () {
     afterEach(() => {
         sinon.restore()
     })
-    for (const _ of Array.from({ length: 20 }, (i) => i)) {
-        // eslint-disable-next-line aws-toolkits/no-only-in-tests
-        it.only('amazon q is not installed', async () => {
+    for (const _ of Array.from({ length: 100 }, (i) => i)) {
+        it('amazon q is not installed', async () => {
             sinon.stub(extApi, 'getAmazonqApi')
             const panel = await createTemplate()
             console.log('post-createTemplate')
