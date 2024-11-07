@@ -21,6 +21,7 @@ export const amazonqSettings = {
         "ssoCacheError": {}
     },
     "amazonQ.showInlineCodeSuggestionsWithCodeReferences": {},
+    "amazonQ.devCommandWorkspaceConfigurations": {},
     "amazonQ.importRecommendationForInlineCodeSuggestions": {},
     "amazonQ.shareContentWithAWS": {},
     "amazonQ.workspaceIndex": {},

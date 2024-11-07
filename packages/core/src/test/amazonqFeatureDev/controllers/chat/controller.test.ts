@@ -391,9 +391,14 @@ describe('Controller', () => {
                 message: 'test message',
             })
 
-            // Wait until the controller has time to process the event
+            /**
+             * Wait until the controller has time to process the event
+             * Sessions should be called twice:
+             * 1. When the session getWorkspaceRoot is called
+             * 2. When the controller processes preloader
+             */
             await waitUntil(() => {
-                return Promise.resolve(getSessionStub.callCount > 0)
+                return Promise.resolve(getSessionStub.callCount > 1)
             }, {})
         }
 
@@ -432,7 +437,6 @@ describe('Controller', () => {
                 const sendAnswerSpy = sinon.stub(controllerSetup.messenger, 'sendAnswer')
                 const sendErrorMessageSpy = sinon.stub(controllerSetup.messenger, 'sendErrorMessage')
                 const sendMonthlyLimitErrorSpy = sinon.stub(controllerSetup.messenger, 'sendMonthlyLimitError')
-
                 await fireChatMessage()
 
                 switch (error.constructor.name) {

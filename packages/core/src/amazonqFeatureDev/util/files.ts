@@ -19,8 +19,15 @@ import { TelemetryHelper } from './telemetryHelper'
 import { maxRepoSizeBytes } from '../constants'
 import { isCodeFile } from '../../shared/filetypes'
 import { fs } from '../../shared'
+import { CodeWhispererSettings } from '../../codewhisperer'
 
 const getSha256 = (file: Buffer) => createHash('sha256').update(file).digest('base64')
+
+export async function checkForDevFile(root: string) {
+    const devFilePath = root + '/devfile.yaml'
+    const hasDevFile = await fs.existsFile(devFilePath)
+    return hasDevFile
+}
 
 /**
  * given the root path of the repo it zips its files in memory and generates a checksum for it.
@@ -34,6 +41,8 @@ export async function prepareRepoData(
 ) {
     try {
         const files = await collectFiles(repoRootPaths, workspaceFolders, true, maxRepoSizeBytes)
+        const devCommandWorkspaceConfigurations = CodeWhispererSettings.instance.getDevCommandWorkspaceConfigurations()
+        const useAutoBuildFeature = devCommandWorkspaceConfigurations[repoRootPaths[0]] ?? false
 
         let totalBytes = 0
         const ignoredExtensionMap = new Map<string, number>()
@@ -41,8 +50,10 @@ export async function prepareRepoData(
         for (const file of files) {
             const fileSize = (await fs.stat(file.fileUri)).size
             const isCodeFile_ = isCodeFile(file.relativeFilePath)
+            // exclude user's devfile if `useAutoBuildFeature` is set to false
+            const excludeDevFile = useAutoBuildFeature ? false : file.relativeFilePath === 'devfile.yaml'
 
-            if (fileSize >= maxFileSizeBytes || !isCodeFile_) {
+            if (fileSize >= maxFileSizeBytes || !isCodeFile_ || excludeDevFile) {
                 if (!isCodeFile_) {
                     const re = /(?:\.([^.]+))?$/
                     const extensionArray = re.exec(file.relativeFilePath)
