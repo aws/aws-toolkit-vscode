@@ -38,6 +38,7 @@ describe('generateResourceHandler', function () {
             console.log('post-generateResourceHandler')
             assert.ok(postMessageSpy.calledOnce)
             assert.deepStrictEqual(postMessageSpy.getCall(0).args[0].isSuccess, false)
+            sinon.restore()
         }
     })
 })
