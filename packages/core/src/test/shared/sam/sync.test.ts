@@ -1231,8 +1231,8 @@ describe('SyncWizard', async () => {
 
             assert(parameters)
 
-            assert.strictEqual(parameters.template.uri.path, templateFile.path)
-            assert.strictEqual(parameters.projectRoot.path, projectRoot.path)
+            assert.strictEqual(parameters.template.uri.fsPath, templateFile.fsPath)
+            assert.strictEqual(parameters.projectRoot.fsPath, projectRoot.fsPath)
             assert.strictEqual(parameters.paramsSource, ParamsSource.Flags)
             assert.strictEqual(parameters.region, 'us-west-2')
             assert.strictEqual(parameters.stackName, 'stack2')
@@ -1281,8 +1281,8 @@ describe('SyncWizard', async () => {
 
             assert(parameters)
 
-            assert.strictEqual(parameters.template.uri.path, templateFile.path)
-            assert.strictEqual(parameters.projectRoot.path, projectRoot.path)
+            assert.strictEqual(parameters.template.uri.fsPath, templateFile.fsPath)
+            assert.strictEqual(parameters.projectRoot.fsPath, projectRoot.fsPath)
             assert.strictEqual(parameters.paramsSource, ParamsSource.SamConfig)
             assert.strictEqual(parameters.deployType, 'infra')
             assert.strictEqual(parameters.region, 'us-west-2')
@@ -1469,8 +1469,8 @@ describe('SyncWizard', async () => {
 
             assert(parameters)
 
-            assert.strictEqual(parameters.template.uri.path, templateFile.path)
-            assert.strictEqual(parameters.projectRoot.path, projectRoot.path)
+            assert.strictEqual(parameters.template.uri.fsPath, templateFile.fsPath)
+            assert.strictEqual(parameters.projectRoot.fsPath, projectRoot.fsPath)
             assert.strictEqual(parameters.paramsSource, ParamsSource.SpecifyAndSave)
             assert.strictEqual(parameters.region, 'us-west-2')
             assert.strictEqual(parameters.stackName, 'stack3')
@@ -1519,8 +1519,8 @@ describe('SyncWizard', async () => {
 
             assert(parameters)
 
-            assert.strictEqual(parameters.template.uri.path, templateFile.path)
-            assert.strictEqual(parameters.projectRoot.path, projectRoot.path)
+            assert.strictEqual(parameters.template.uri.fsPath, templateFile.fsPath)
+            assert.strictEqual(parameters.projectRoot.fsPath, projectRoot.fsPath)
             assert.strictEqual(parameters.paramsSource, ParamsSource.SamConfig)
             assert.strictEqual(parameters.deployType, 'infra')
             assert(!parameters.region)
