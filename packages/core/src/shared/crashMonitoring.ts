@@ -179,7 +179,7 @@ class Heartbeat {
 
     public async start() {
         // Send an initial heartbeat immediately
-        await withFailCtx('initialSendHeartbeat', () => this.state.sendHeartbeat())
+        await withFailCtx('sendHeartbeatInitial', () => this.state.sendHeartbeat())
 
         // Send a heartbeat every interval
         this.intervalRef = globals.clock.setInterval(async () => {
@@ -200,6 +200,10 @@ class Heartbeat {
                 this._onFailure.fire()
             }
         }, this.heartbeatInterval)
+
+        // We will know the first heartbeat, and can infer the next ones starting from this timestamp.
+        // In case of heartbeat failure we have a separate failure metric.
+        telemetry.ide_heartbeat.emit({ timestamp: globals.clock.Date.now(), id: className, result: 'Succeeded' })
     }
 
     /** Stops everything, signifying a graceful shutdown */
