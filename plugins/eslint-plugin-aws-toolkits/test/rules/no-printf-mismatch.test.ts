@@ -7,7 +7,7 @@ import { rules } from '../../index'
 import { formErrorMsg } from '../../lib/rules/no-printf-mismatch'
 import { getRuleTester } from '../testUtil'
 
-getRuleTester().run('no-string-sub-mismatch', rules['no-string-sub-mismatch'], {
+getRuleTester().run('no-string-sub-mismatch', rules['no-printf-mismatch'], {
     valid: [
         'getLogger().debug("this is a string %s and a number %d", "s", 2)',
         'getLogger().debug("this is a number %d", 2)',
