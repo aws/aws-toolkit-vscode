@@ -11,6 +11,7 @@ import { GitExtension } from '../extensions/git'
 import { Settings } from '../settings'
 import { getLogger } from '../logger/logger'
 import { mergeResolvedShellPath } from '../env/resolveEnv'
+import { Timeout } from './timeoutUtils'
 
 /** Full path to VSCode CLI. */
 let vscPath: string
@@ -32,9 +33,13 @@ export async function tryRun(
     p: string,
     args: string[],
     logging: 'yes' | 'no' | 'noresult' = 'yes',
+    timeout?: Timeout,
     expected?: string,
     opt?: ChildProcessOptions
 ): Promise<boolean> {
+    timeout?.onCompletion(() => {
+        throw new Error(`tryRun timed out: ${p} ${args.join(' ')}`)
+    })
     const proc = new ChildProcess(p, args, { logging: 'no' })
     const r = await proc.run({
         ...opt,
