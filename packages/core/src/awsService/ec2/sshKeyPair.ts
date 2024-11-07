@@ -80,6 +80,7 @@ export class SshKeyPair {
         }
         return !(await tryRun('ssh-keygen', ['-t', keyType, '-N', '', '-q', '-f', keyPath], 'yes', 'unknown key type', {
             onStdout: overrideKeys,
+            timeout: new Timeout(3000),
         }))
     }
 
