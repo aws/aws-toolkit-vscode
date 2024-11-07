@@ -129,10 +129,7 @@ export class Messenger {
     getActionsByFilePath(filePath: string) {
         const fileList = this.getFileList()
         const actions = fileList?.fileList?.actions
-        if (!actions) {
-            assert.fail('Could not find file list actions')
-        }
-        return actions[filePath]
+        return actions?.[filePath] ?? []
     }
 
     hasButton(type: FollowUpTypes) {
