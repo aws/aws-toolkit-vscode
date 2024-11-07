@@ -4,7 +4,7 @@
  */
 
 import { rules } from '../../index'
-import { formErrorMsg } from '../../lib/rules/no-string-sub-mismatch'
+import { formErrorMsg } from '../../lib/rules/no-printf-mismatch'
 import { getRuleTester } from '../testUtil'
 
 getRuleTester().run('no-string-sub-mismatch', rules['no-string-sub-mismatch'], {

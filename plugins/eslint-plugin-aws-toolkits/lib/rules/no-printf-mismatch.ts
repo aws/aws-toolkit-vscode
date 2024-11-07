@@ -18,7 +18,7 @@ function countSubTokens(literalNode: TSESTree.StringLiteral) {
  * Allows us to avoid copy pasting message into test file.
  */
 export function formErrorMsg(substitutionTokens: string | number, numArgs: string | number): string {
-    return `String substitution has ${substitutionTokens} format specifiers, but ${numArgs} arguments.`
+    return `printf-style (console.log) call has ${substitutionTokens} format specifiers, but ${numArgs} arguments.`
 }
 
 export default ESLintUtils.RuleCreator.withoutDocs({

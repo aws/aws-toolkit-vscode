@@ -163,7 +163,7 @@ module.exports = {
         'aws-toolkits/no-string-exec-for-child-process': 'error',
         'aws-toolkits/no-console-log': 'error',
         'aws-toolkits/no-json-stringify-in-log': 'error',
-        'aws-toolkits/no-string-sub-mismatch': 'error',
+        'aws-toolkits/no-printf-mismatch': 'error',
         'no-restricted-imports': [
             'error',
             {
