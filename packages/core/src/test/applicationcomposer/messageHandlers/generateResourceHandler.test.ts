@@ -10,13 +10,14 @@ import { generateResourceHandler } from '../../../applicationcomposer/messageHan
 import { Command, MessageType } from '../../../applicationcomposer/types'
 import * as extApi from '../../../amazonq/extApi'
 
-describe('generateResourceHandler', function () {
+// eslint-disable-next-line aws-toolkits/no-only-in-tests
+describe.only('generateResourceHandler', function () {
     afterEach(() => {
         sinon.restore()
     })
-    // eslint-disable-next-line aws-toolkits/no-only-in-tests
-    it.only('amazon q is not installed', async () => {
-        for (const _ of Array.from({ length: 20 }, (i) => i)) {
+    for (const _ of Array.from({ length: 20 }, (i) => i)) {
+        // eslint-disable-next-line aws-toolkits/no-only-in-tests
+        it.only('amazon q is not installed', async () => {
             sinon.stub(extApi, 'getAmazonqApi')
             const panel = await createTemplate()
             console.log('post-createTemplate')
@@ -39,6 +40,6 @@ describe('generateResourceHandler', function () {
             assert.ok(postMessageSpy.calledOnce)
             assert.deepStrictEqual(postMessageSpy.getCall(0).args[0].isSuccess, false)
             sinon.restore()
-        }
-    })
+        })
+    }
 })
