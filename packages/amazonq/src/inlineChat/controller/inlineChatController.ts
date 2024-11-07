@@ -286,6 +286,7 @@ export class InlineChatController {
                     }
                 }
                 if (chatEvent.error) {
+                    getLogger().error('generateAssistantResponse stream error: %s', chatEvent.error)
                     await this.rejectAllChanges(this.task, false)
                     void vscode.window.showErrorMessage(`Amazon Q: ${chatEvent.error.message}`)
                     await this.updateTaskAndLenses(this.task, TaskState.Complete)
