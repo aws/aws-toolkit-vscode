@@ -3,22 +3,22 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
-import { getApp, getStackName, SamAppLocation } from '../../../awsService/appBuilder/explorer/samProject'
+import { getApp, getStackName, SamAppLocation } from '../../../../awsService/appBuilder/explorer/samProject'
 import * as sinon from 'sinon'
 import assert from 'assert'
-import { ToolkitError } from '../../../shared'
-import * as CloudformationModule from '../../../shared/cloudformation/cloudformation'
+import { ToolkitError } from '../../../../shared'
+import * as CloudformationModule from '../../../../shared/cloudformation/cloudformation'
 import path from 'path'
-import { TestFolder } from '../../testUtil'
+import { TestFolder } from '../../../testUtil'
 
 import {
     generateSamconfigData,
     samconfigCompleteData,
     samconfigInvalidData,
     validTemplateData,
-} from '../../shared/sam/samTestUtils'
-import { assertLogsContain } from '../../globalSetup.test'
-import { getTestWindow } from '../../shared/vscode/window'
+} from '../../../shared/sam/samTestUtils'
+import { assertLogsContain } from '../../../globalSetup.test'
+import { getTestWindow } from '../../../shared/vscode/window'
 
 describe('samProject', () => {
     let sandbox: sinon.SinonSandbox

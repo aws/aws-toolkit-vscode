@@ -6,15 +6,15 @@
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'
 import assert from 'assert'
-import { getTestWindow } from '../../shared/vscode/window'
+import { getTestWindow } from '../../../shared/vscode/window'
 
-import fs from '../../../shared/fs/fs'
-import { ResourceNode } from '../../../awsService/appBuilder/explorer/nodes/resourceNode'
+import fs from '../../../../shared/fs/fs'
+import { ResourceNode } from '../../../../awsService/appBuilder/explorer/nodes/resourceNode'
 import path from 'path'
-import { SERVERLESS_FUNCTION_TYPE } from '../../../shared/cloudformation/cloudformation'
-import { runOpenHandler, runOpenTemplate } from '../../../awsService/appBuilder/utils'
-import { TreeNode } from '../../../shared/treeview/resourceTreeDataProvider'
-import { assertTextEditorContains } from '../../testUtil'
+import { SERVERLESS_FUNCTION_TYPE } from '../../../../shared/cloudformation/cloudformation'
+import { runOpenHandler, runOpenTemplate } from '../../../../awsService/appBuilder/utils'
+import { TreeNode } from '../../../../shared/treeview/resourceTreeDataProvider'
+import { assertTextEditorContains } from '../../../testUtil'
 
 interface TestScenario {
     runtime: string
