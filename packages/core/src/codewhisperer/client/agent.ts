@@ -82,6 +82,6 @@ export function initializeNetworkAgent(): void {
         }
     } catch (error) {
         // Log any errors in the patching logic
-        getLogger().error('Failed to patch http agent', error)
+        getLogger().error('Failed to patch http agent %O', error)
     }
 }

@@ -135,7 +135,7 @@ export class ZipStream {
         while (!finished) {
             finished = await new Promise((resolve) => {
                 setTimeout(() => {
-                    getLogger().verbose('success is', this._numberOfFilesSucceeded, '/', this._numberOfFilesToStream)
+                    getLogger().verbose(`success is ${this._numberOfFilesSucceeded}/${this._numberOfFilesToStream}`)
                     onProgress?.(Math.floor((100 * this._numberOfFilesSucceeded) / this._numberOfFilesToStream))
                     resolve(this._numberOfFilesToStream <= this._numberOfFilesSucceeded)
                 }, 1000)
