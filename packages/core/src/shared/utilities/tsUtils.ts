@@ -10,6 +10,16 @@ export function stringOrProp(obj: any, prop: string): string {
     return obj[prop] ?? ''
 }
 
+export function omitIfPresent<T extends Record<string, unknown>>(obj: T, keys: string[]): T {
+    const objCopy = { ...obj }
+    for (const key of keys) {
+        if (key in objCopy) {
+            ;(objCopy as any)[key] = '[omitted]'
+        }
+    }
+    return objCopy
+}
+
 export function getMissingProps<T>(obj: T, ...props: (keyof T)[]): typeof props {
     return props.filter((prop) => obj[prop] === undefined)
 }

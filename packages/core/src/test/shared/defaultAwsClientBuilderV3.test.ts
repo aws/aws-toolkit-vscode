@@ -13,7 +13,6 @@ import {
     AWSClientBuilderV3,
     DefaultAWSClientBuilderV3,
     getServiceId,
-    omitIfPresent,
     recordErrorTelemetry,
 } from '../../shared/awsClientBuilderV3'
 import { Client } from '@aws-sdk/smithy-client'
@@ -81,19 +80,5 @@ describe('recordErrorTelemetry', function () {
             recordErrorTelemetry(e, 'aws-service')
         })
         assertTelemetry('vscode_executeCommand', { requestServiceType: 'aws-service' })
-    })
-})
-
-describe('omitIfPresent', function () {
-    it('returns a new object with value replace by [omitted]', function () {
-        const obj = { a: 1, b: 2 }
-        const result = omitIfPresent(obj, ['a'])
-        assert.deepStrictEqual(result, { a: '[omitted]', b: 2 })
-    })
-
-    it('returns the original object if the key is not present', function () {
-        const obj = { a: 1, b: 2 }
-        const result = omitIfPresent(obj, ['c'])
-        assert.deepStrictEqual(result, obj)
     })
 })

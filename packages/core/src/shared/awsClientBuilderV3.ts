@@ -22,6 +22,7 @@ import { telemetry } from './telemetry'
 import { getRequestId } from './errors'
 import { extensionVersion } from '.'
 import { getLogger } from './logger'
+import { omitIfPresent } from './utilities/tsUtils'
 
 export type AwsClient = IClient<any, any, any>
 interface AwsConfigOptions {
@@ -106,16 +107,6 @@ export function recordErrorTelemetry(err: Error, serviceName?: string) {
         requestId: getRequestId(err),
         requestServiceType: serviceName,
     } satisfies RequestData as any)
-}
-
-export function omitIfPresent<T extends Record<string, unknown>>(obj: T, keys: string[]): T {
-    const objCopy = { ...obj }
-    for (const key of keys) {
-        if (key in objCopy) {
-            ;(objCopy as any)[key] = '[omitted]'
-        }
-    }
-    return objCopy
 }
 
 function logAndThrow(e: any, serviceId: string, errorMessageAppend: string): never {
