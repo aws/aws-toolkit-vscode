@@ -30,7 +30,7 @@ import { getEcsRootNode } from '../awsService/ecs/model'
 import { compareTreeItems, TreeShim } from '../shared/treeview/utils'
 import { Ec2ParentNode } from '../awsService/ec2/explorer/ec2ParentNode'
 import { DevSettings } from '../shared/settings'
-import { Ec2Client } from '../shared/clients/ec2Client'
+import { Ec2Wrapper } from '../shared/clients/ec2Wrapper'
 import { isCloud9 } from '../shared/extensionUtilities'
 
 interface ServiceNode {
@@ -67,7 +67,7 @@ const serviceCandidates: ServiceNode[] = [
         serviceId: 'ec2',
         when: () => DevSettings.instance.isDevMode(),
         createFn: (regionCode: string, partitionId: string) =>
-            new Ec2ParentNode(regionCode, partitionId, new Ec2Client(regionCode)),
+            new Ec2ParentNode(regionCode, partitionId, new Ec2Wrapper(regionCode)),
     },
     {
         serviceId: 'ecr',

@@ -5,7 +5,7 @@
 import assert from 'assert'
 import * as sinon from 'sinon'
 import { Ec2Prompter, getSelection, instanceFilter } from '../../../awsService/ec2/prompter'
-import { SafeEc2Instance } from '../../../shared/clients/ec2Client'
+import { SafeEc2Instance } from '../../../shared/clients/ec2Wrapper'
 import { RegionSubmenuResponse } from '../../../shared/ui/common/regionSubmenu'
 import { Ec2Selection } from '../../../awsService/ec2/prompter'
 import { AsyncCollection } from '../../../shared/utilities/asyncCollection'

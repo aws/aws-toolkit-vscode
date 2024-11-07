@@ -4,7 +4,7 @@
  */
 import * as vscode from 'vscode'
 import { Ec2Selection } from './prompter'
-import { Ec2Client } from '../../shared/clients/ec2Client'
+import { Ec2Wrapper } from '../../shared/clients/ec2Wrapper'
 import { ec2LogsScheme } from '../../shared/constants'
 import { UriSchema } from '../../shared/utilities/uriUtils'
 
@@ -16,7 +16,7 @@ export class Ec2LogDocumentProvider implements vscode.TextDocumentContentProvide
             throw new Error(`Invalid EC2 Logs URI: ${uri.toString()}`)
         }
         const ec2Selection = ec2LogSchema.parse(uri)
-        const ec2Client = new Ec2Client(ec2Selection.region)
+        const ec2Client = new Ec2Wrapper(ec2Selection.region)
         const consoleOutput = await ec2Client.getConsoleOutput(ec2Selection.instanceId, false)
         return consoleOutput.Output
     }

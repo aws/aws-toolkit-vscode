@@ -10,7 +10,7 @@ import {
     Ec2InstanceRunningContext,
     Ec2InstanceStoppedContext,
 } from '../../../../awsService/ec2/explorer/ec2InstanceNode'
-import { Ec2Client, SafeEc2Instance, getNameOfInstance } from '../../../../shared/clients/ec2Client'
+import { Ec2Wrapper, SafeEc2Instance, getNameOfInstance } from '../../../../shared/clients/ec2Wrapper'
 import { Ec2ParentNode } from '../../../../awsService/ec2/explorer/ec2ParentNode'
 import * as sinon from 'sinon'
 import { PollingSet } from '../../../../shared/utilities/pollingSet'
@@ -36,7 +36,7 @@ describe('ec2InstanceNode', function () {
         // Don't want to be polling here, that is tested in ../ec2ParentNode.test.ts
         // disabled here for convenience (avoiding race conditions with timeout)
         sinon.stub(PollingSet.prototype, 'start')
-        const testClient = new Ec2Client('')
+        const testClient = new Ec2Wrapper('')
         const testParentNode = new Ec2ParentNode(testRegion, testPartition, testClient)
         testNode = new Ec2InstanceNode(testParentNode, testClient, 'testRegion', 'testPartition', testInstance)
     })
@@ -75,7 +75,7 @@ describe('ec2InstanceNode', function () {
     })
 
     it('intializes the client', async function () {
-        assert.ok(testNode.client instanceof Ec2Client)
+        assert.ok(testNode.client instanceof Ec2Wrapper)
     })
 
     it('sets context value based on status', async function () {

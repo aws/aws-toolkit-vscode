@@ -7,9 +7,9 @@ import assert from 'assert'
 import { AsyncCollection } from '../../../shared/utilities/asyncCollection'
 import { toCollection } from '../../../shared/utilities/asyncCollection'
 import { intoCollection } from '../../../shared/utilities/collectionUtils'
-import { Ec2Client, instanceHasName } from '../../../shared/clients/ec2Client'
+import { Ec2Wrapper, instanceHasName } from '../../../shared/clients/ec2Wrapper'
 
-class MockEc2Client extends Ec2Client {
+class MockEc2Client extends Ec2Wrapper {
     public override async getInstanceStatus(instanceId: string): Promise<InstanceStateName> {
         return instanceId.split('-')[0] as InstanceStateName
     }
@@ -83,7 +83,7 @@ const incomepleteInstanceList: Instance[] = [
 ]
 
 describe('extractInstancesFromReservations', function () {
-    const client = new Ec2Client('')
+    const client = new Ec2Wrapper('')
 
     it('returns empty when given empty collection', async function () {
         const actualResult = await client
@@ -170,7 +170,7 @@ describe('updateInstancesDetail', async function () {
 })
 
 describe('getInstancesFilter', function () {
-    const client = new Ec2Client('')
+    const client = new Ec2Wrapper('')
 
     it('returns proper filter when given instanceId', function () {
         const testInstanceId1 = 'test'

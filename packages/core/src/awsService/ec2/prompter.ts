@@ -5,7 +5,7 @@
 
 import { RegionSubmenu, RegionSubmenuResponse } from '../../shared/ui/common/regionSubmenu'
 import { DataQuickPickItem } from '../../shared/ui/pickerPrompter'
-import { Ec2Client, SafeEc2Instance } from '../../shared/clients/ec2Client'
+import { Ec2Wrapper, SafeEc2Instance } from '../../shared/clients/ec2Wrapper'
 import { isValidResponse } from '../../shared/wizards/wizard'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { AsyncCollection } from '../../shared/utilities/asyncCollection'
@@ -54,7 +54,7 @@ export class Ec2Prompter {
     }
 
     protected async getInstancesFromRegion(regionCode: string): Promise<AsyncCollection<SafeEc2Instance>> {
-        const client = new Ec2Client(regionCode)
+        const client = new Ec2Wrapper(regionCode)
         return await client.getInstances()
     }
 

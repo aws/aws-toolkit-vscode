@@ -7,7 +7,7 @@ import assert from 'assert'
 import * as sinon from 'sinon'
 import { Ec2Connecter } from '../../../awsService/ec2/model'
 import { SsmClient } from '../../../shared/clients/ssmClient'
-import { Ec2Client } from '../../../shared/clients/ec2Client'
+import { Ec2Wrapper } from '../../../shared/clients/ec2Wrapper'
 import { Ec2Selection } from '../../../awsService/ec2/prompter'
 import { ToolkitError } from '../../../shared/errors'
 import { IAM } from 'aws-sdk'
@@ -27,7 +27,7 @@ describe('Ec2ConnectClient', function () {
     describe('getAttachedIamRole', async function () {
         it('only returns role if recieves ARN from instance profile', async function () {
             let role: IAM.Role | undefined
-            const getInstanceProfileStub = sinon.stub(Ec2Client.prototype, 'getAttachedIamInstanceProfile')
+            const getInstanceProfileStub = sinon.stub(Ec2Wrapper.prototype, 'getAttachedIamInstanceProfile')
 
             getInstanceProfileStub.resolves({ Arn: 'thisIsAnArn' })
             sinon
@@ -63,7 +63,7 @@ describe('Ec2ConnectClient', function () {
     describe('isInstanceRunning', async function () {
         it('only returns true with the instance is running', async function () {
             sinon
-                .stub(Ec2Client.prototype, 'getInstanceStatus')
+                .stub(Ec2Wrapper.prototype, 'getInstanceStatus')
                 .callsFake(async (input: string) => input.split(':')[0] as InstanceStateName)
 
             const actualFirstResult = await client.isInstanceRunning('running:instance')

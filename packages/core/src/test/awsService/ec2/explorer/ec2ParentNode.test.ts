@@ -6,7 +6,7 @@
 import assert from 'assert'
 import * as sinon from 'sinon'
 import { Ec2ParentNode } from '../../../../awsService/ec2/explorer/ec2ParentNode'
-import { Ec2Client, SafeEc2Instance } from '../../../../shared/clients/ec2Client'
+import { Ec2Wrapper, SafeEc2Instance } from '../../../../shared/clients/ec2Wrapper'
 import { intoCollection } from '../../../../shared/utilities/collectionUtils'
 import {
     assertNodeListOnlyHasErrorNode,
@@ -28,12 +28,12 @@ export const testInstance = {
     ],
     LastSeenStatus: 'running',
 } as SafeEc2Instance
-export const testClient = new Ec2Client('')
+export const testClient = new Ec2Wrapper('')
 export const testParentNode = new Ec2ParentNode('fake-region', 'testPartition', testClient)
 
 describe('ec2ParentNode', function () {
     let testNode: Ec2ParentNode
-    let client: Ec2Client
+    let client: Ec2Wrapper
     let getInstanceStub: sinon.SinonStub<[filters?: EC2.Filter[] | undefined], Promise<AsyncCollection<EC2.Instance>>>
     let clock: FakeTimers.InstalledClock
     let refreshStub: sinon.SinonStub<[], Promise<void>>
@@ -52,14 +52,14 @@ describe('ec2ParentNode', function () {
     }
 
     before(function () {
-        client = new Ec2Client(testRegion)
+        client = new Ec2Wrapper(testRegion)
         clock = installFakeClock()
         refreshStub = sinon.stub(Ec2InstanceNode.prototype, 'refreshNode')
-        statusUpdateStub = sinon.stub(Ec2Client.prototype, 'getInstanceStatus')
+        statusUpdateStub = sinon.stub(Ec2Wrapper.prototype, 'getInstanceStatus')
     })
 
     beforeEach(function () {
-        getInstanceStub = sinon.stub(Ec2Client.prototype, 'getInstances')
+        getInstanceStub = sinon.stub(Ec2Wrapper.prototype, 'getInstances')
         testNode = new Ec2ParentNode(testRegion, testPartition, client)
         refreshStub.resetHistory()
     })

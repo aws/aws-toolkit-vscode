@@ -10,7 +10,7 @@ import { getOrInstallCli } from '../../shared/utilities/cliUtils'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { ToolkitError } from '../../shared/errors'
 import { SsmClient } from '../../shared/clients/ssmClient'
-import { Ec2Client } from '../../shared/clients/ec2Client'
+import { Ec2Wrapper } from '../../shared/clients/ec2Wrapper'
 import {
     VscodeRemoteConnection,
     ensureDependencies,
@@ -40,7 +40,7 @@ export interface Ec2RemoteEnv extends VscodeRemoteConnection {
 
 export class Ec2Connecter implements vscode.Disposable {
     protected ssmClient: SsmClient
-    protected ec2Client: Ec2Client
+    protected ec2Client: Ec2Wrapper
     protected iamClient: DefaultIamClient
     protected sessionManager: Ec2SessionTracker
 
@@ -63,8 +63,8 @@ export class Ec2Connecter implements vscode.Disposable {
         return new SsmClient(this.regionCode)
     }
 
-    protected createEc2SdkClient(): Ec2Client {
-        return new Ec2Client(this.regionCode)
+    protected createEc2SdkClient(): Ec2Wrapper {
+        return new Ec2Wrapper(this.regionCode)
     }
 
     protected createIamSdkClient(): DefaultIamClient {

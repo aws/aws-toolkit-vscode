@@ -3,10 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
-import { Ec2Client, getNameOfInstance } from '../../../shared/clients/ec2Client'
+import { Ec2Wrapper, getNameOfInstance } from '../../../shared/clients/ec2Wrapper'
 import { AWSResourceNode } from '../../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
-import { SafeEc2Instance } from '../../../shared/clients/ec2Client'
+import { SafeEc2Instance } from '../../../shared/clients/ec2Wrapper'
 import globals from '../../../shared/extensionGlobals'
 import { getIconCode } from '../utils'
 import { Ec2Selection } from '../prompter'
@@ -23,7 +23,7 @@ type Ec2InstanceNodeContext = 'awsEc2RunningNode' | 'awsEc2StoppedNode' | 'awsEc
 export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode {
     public constructor(
         public readonly parent: Ec2ParentNode,
-        public readonly client: Ec2Client,
+        public readonly client: Ec2Wrapper,
         public override readonly regionCode: string,
         private readonly partitionId: string,
         // XXX: this variable is marked as readonly, but the 'status' attribute is updated when polling the nodes.

@@ -49,7 +49,7 @@ interface SafeEc2GetConsoleOutputResult extends GetConsoleOutputRequest {
     InstanceId: string
 }
 
-export class Ec2Client {
+export class Ec2Wrapper {
     public constructor(public readonly regionCode: string) {}
 
     private async createSdkClient(): Promise<EC2Client> {

@@ -7,7 +7,7 @@ import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { makeChildrenNodes } from '../../../shared/treeview/utils'
 import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
 import { Ec2InstanceNode } from './ec2InstanceNode'
-import { Ec2Client } from '../../../shared/clients/ec2Client'
+import { Ec2Wrapper } from '../../../shared/clients/ec2Wrapper'
 import { updateInPlace } from '../../../shared/utilities/collectionUtils'
 import { PollingSet } from '../../../shared/utilities/pollingSet'
 
@@ -23,7 +23,7 @@ export class Ec2ParentNode extends AWSTreeNodeBase {
     public constructor(
         public override readonly regionCode: string,
         public readonly partitionId: string,
-        protected readonly ec2Client: Ec2Client
+        protected readonly ec2Client: Ec2Wrapper
     ) {
         super('EC2', vscode.TreeItemCollapsibleState.Collapsed)
         this.ec2InstanceNodes = new Map<string, Ec2InstanceNode>()

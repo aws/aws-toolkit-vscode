@@ -5,7 +5,7 @@
 
 import assert from 'assert'
 import * as sinon from 'sinon'
-import { SafeEc2Instance } from '../../../shared/clients/ec2Client'
+import { SafeEc2Instance } from '../../../shared/clients/ec2Wrapper'
 import { getIconCode } from '../../../awsService/ec2/utils'
 import { DefaultAwsContext } from '../../../shared'
 
