@@ -471,7 +471,7 @@ export class FileSystemState {
                 fileHandle = await nodeFs.open(filePath, 'w')
                 await fileHandle.writeFile(JSON.stringify({ ...this.ext, lastHeartbeat: now }, undefined, 4))
                 // Noticing that some file reads are not immediately available after write. `fsync` is known to address this.
-                await fileHandle!.sync()
+                await fileHandle.sync()
                 await fileHandle.close()
                 fileHandle = undefined
 
@@ -523,9 +523,17 @@ export class FileSystemState {
         // IMPORTANT: Must use NodeFs here since this is used during shutdown
         const func = async () => {
             const filePath = this.makeStateFilePath(ext)
+
             // Even when deleting a file, if there is an open file handle it may still exist. This empties the
             // contents, so that any following reads will get no data.
-            await nodeFs.writeFile(filePath, '')
+            let fileHandle: nodeFs.FileHandle | undefined
+            try {
+                fileHandle = await nodeFs.open(filePath, 'w')
+                await fileHandle.sync()
+            } finally {
+                await fileHandle?.close()
+            }
+
             await nodeFs.rm(filePath, { force: true })
         }
         const funcWithCtx = () => withFailCtx(ctx, func)
