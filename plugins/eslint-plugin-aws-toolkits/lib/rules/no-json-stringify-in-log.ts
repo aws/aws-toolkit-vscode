@@ -34,7 +34,7 @@ function isTemplateWithStringifyCall(node: TSESTree.CallExpressionArgument): boo
  * Check if node is representing syntax of the form getLogger().f(msg) for some f and msg or
  * if it is doing so indirectly via a logger variable.
  */
-function isLoggerCall(node: TSESTree.CallExpression): boolean {
+export function isLoggerCall(node: TSESTree.CallExpression): boolean {
     return (
         node.callee.type === AST_NODE_TYPES.MemberExpression &&
         (isGetLoggerCall(node.callee.object) || isDisguisedGetLoggerCall(node.callee.object)) &&

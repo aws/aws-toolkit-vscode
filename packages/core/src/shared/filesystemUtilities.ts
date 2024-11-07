@@ -245,7 +245,7 @@ export async function setDefaultDownloadPath(downloadPath: string) {
             await globals.globalState.update('aws.downloadPath', path.dirname(downloadPath))
         }
     } catch (err) {
-        getLogger().error('Error while setting "aws.downloadPath"', err as Error)
+        getLogger().error('Error while setting "aws.downloadPath": %O', err as Error)
     }
 }
 

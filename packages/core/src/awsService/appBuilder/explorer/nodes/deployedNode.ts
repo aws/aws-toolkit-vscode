@@ -96,7 +96,7 @@ export async function generateDeployedNode(
                         .Configuration as Lambda.FunctionConfiguration
                     newDeployedResource = new LambdaFunctionNode(lambdaNode, regionCode, configuration)
                 } catch (error: any) {
-                    getLogger().error('Error getting Lambda configuration')
+                    getLogger().error('Error getting Lambda configuration %O', error)
                     throw ToolkitError.chain(error, 'Error getting Lambda configuration', {
                         code: 'lambdaClientError',
                     })
@@ -153,7 +153,7 @@ export async function generateDeployedNode(
             }
             default:
                 newDeployedResource = new DeployedResourceNode(deployedResource)
-                getLogger().info('Details are missing or are incomplete for:', deployedResource)
+                getLogger().info('Details are missing or are incomplete for: %O', deployedResource)
                 return [
                     createPlaceholderItem(
                         localize('AWS.appBuilder.explorerNode.noApps', '[This resource is not yet supported.]')
