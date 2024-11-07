@@ -650,11 +650,7 @@ export class ChatController {
 
         const request = triggerPayloadToChatRequest(triggerPayload)
         const session = this.sessionStorage.getSession(tabID)
-        getLogger().info(
-            `request from tab: ${tabID} conversationID: ${session.sessionIdentifier} request: ${JSON.stringify(
-                request
-            )}`
-        )
+        getLogger().info(`request from tab: ${tabID} conversationID: ${session.sessionIdentifier} request: %O`, request)
         let response: MessengerResponseType | undefined = undefined
         session.createNewTokenSource()
         try {
@@ -679,7 +675,8 @@ export class ChatController {
             getLogger().info(
                 `response to tab: ${tabID} conversationID: ${session.sessionIdentifier} requestID: ${
                     response.$metadata.requestId
-                } metadata: ${JSON.stringify(response.$metadata)}`
+                } metadata: %O`,
+                response.$metadata
             )
             await this.messenger.sendAIResponse(response, session, tabID, triggerID, triggerPayload)
         } catch (e: any) {

@@ -6,6 +6,7 @@
 import * as vscode from 'vscode'
 import { EnvType, OperatingSystem } from '../shared/telemetry/util'
 import { TypeConstructor } from '../shared/utilities/typeConstructors'
+import { AuthUserState } from '../shared/telemetry/telemetry.gen'
 
 /** Types of information that we can use to determine whether to show a notification or not. */
 export type Criteria =
@@ -134,3 +135,6 @@ export interface RuleContext {
     readonly installedExtensions: string[]
     readonly activeExtensions: string[]
 }
+
+/** Type expected by things that build (or help build) {@link RuleContext} */
+export type AuthState = Omit<AuthUserState, 'source'>

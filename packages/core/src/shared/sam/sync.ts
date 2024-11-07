@@ -484,7 +484,7 @@ export async function runSync(
 
         await confirmDevStack()
         const params = syncParam ?? (await (await getSyncWizard(deployType, arg, validate)).run())
-        getLogger().info(JSON.stringify(params))
+        getLogger().info('%O', params)
 
         if (params === undefined) {
             throw new CancellationError('user')

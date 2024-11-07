@@ -35,27 +35,31 @@ import { activate as activateEcs } from './awsService/ecs/activation'
 import { activate as activateAppRunner } from './awsService/apprunner/activation'
 import { activate as activateIot } from './awsService/iot/activation'
 import { activate as activateDev } from './dev/activation'
+import * as beta from './dev/beta'
 import { activate as activateApplicationComposer } from './applicationcomposer/activation'
 import { activate as activateRedshift } from './awsService/redshift/activation'
 import { activate as activateIamPolicyChecks } from './awsService/accessanalyzer/activation'
+import { activate as activateNotifications } from './notifications/activation'
 import { SchemaService } from './shared/schemas'
 import { AwsResourceManager } from './dynamicResources/awsResourceManager'
 import globals from './shared/extensionGlobals'
 import { Experiments, Settings, showSettingsFailedMsg } from './shared/settings'
 import { isReleaseVersion } from './shared/vscode/env'
-import { telemetry } from './shared/telemetry/telemetry'
+import { AuthStatus, AuthUserState, telemetry } from './shared/telemetry/telemetry'
 import { Auth, SessionSeparationPrompt } from './auth/auth'
+import { getTelemetryMetadataForConn } from './auth/connection'
 import { registerSubmitFeedback } from './feedback/vue/submitFeedback'
-import { activateCommon, deactivateCommon, emitUserState } from './extension'
+import { activateCommon, deactivateCommon } from './extension'
 import { learnMoreAmazonQCommand, qExtensionPageCommand, dismissQTree } from './amazonq/explorer/amazonQChildrenNodes'
 import { AuthUtil, codeWhispererCoreScopes, isPreviousQUser } from './codewhisperer/util/authUtil'
 import { installAmazonQExtension } from './codewhisperer/commands/basicCommands'
 import { isExtensionInstalled, VSCODE_EXTENSION_ID } from './shared/utilities'
-import { ExtensionUse, initializeCredentialsProviderManager } from './auth/utils'
+import { ExtensionUse, getAuthFormIdsFromConnection, initializeCredentialsProviderManager } from './auth/utils'
 import { ExtStartUpSources } from './shared/telemetry'
 import { activate as activateThreatComposerEditor } from './threatComposer/activation'
 import { isSsoConnection, hasScopes } from './auth/connection'
 import { CrashMonitoring, setContext } from './shared'
+import { AuthFormId } from './login/webview/vue/types'
 
 let localize: nls.LocalizeFunc
 
@@ -106,6 +110,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
         try {
             await activateDev(context)
+            await beta.activate(context)
         } catch (error) {
             getLogger().debug(`Developer Tools (internal): failed to activate: ${(error as Error).message}`)
         }
@@ -231,7 +236,17 @@ export async function activate(context: vscode.ExtensionContext) {
             globals.telemetry.assertPassiveTelemetry(globals.didReload)
         }
 
-        await emitUserState()
+        // TODO: Should probably emit for web as well.
+        // Will the web metric look the same?
+        const authState = await getAuthState()
+        telemetry.auth_userState.emit({
+            passive: true,
+            result: 'Succeeded',
+            source: ExtensionUse.instance.sourceForTelemetry(),
+            ...authState,
+        })
+
+        await activateNotifications(context, authState, getAuthState)
     } catch (error) {
         const stacktrace = (error as Error).stack?.split('\n')
         // truncate if the stacktrace is unusually long
@@ -320,5 +335,38 @@ function recordToolkitInitialization(activationStartedOn: number, settingsValid:
         }
     } catch (err) {
         logger?.error(err as Error)
+    }
+}
+
+async function getAuthState(): Promise<Omit<AuthUserState, 'source'>> {
+    let authStatus: AuthStatus = 'notConnected'
+    const enabledConnections: Set<AuthFormId> = new Set()
+    const enabledScopes: Set<string> = new Set()
+    if (Auth.instance.hasConnections) {
+        authStatus = 'expired'
+        ;(await Auth.instance.listConnections()).forEach((conn) => {
+            const state = Auth.instance.getConnectionState(conn)
+            if (state === 'valid') {
+                authStatus = 'connected'
+            }
+
+            getAuthFormIdsFromConnection(conn).forEach((id) => enabledConnections.add(id))
+            if (isSsoConnection(conn)) {
+                conn.scopes?.forEach((s) => enabledScopes.add(s))
+            }
+        })
+    }
+
+    // There may be other SSO connections in toolkit, but there is no use case for
+    // displaying registration info for non-active connections at this time.
+    const activeConn = Auth.instance.activeConnection
+    if (activeConn?.type === 'sso') {
+        telemetry.record(await getTelemetryMetadataForConn(activeConn))
+    }
+
+    return {
+        authStatus,
+        authEnabledConnections: [...enabledConnections].sort().join(','),
+        authScopes: [...enabledScopes].sort().join(','),
     }
 }

@@ -420,7 +420,7 @@ export class CWCTelemetryHelper {
         })
     }
 
-    public emitAddMessage(tabID: string, fullDisplayLatency: number, startTime?: number) {
+    public emitAddMessage(tabID: string, fullDisplayLatency: number, traceId: string, startTime?: number) {
         const payload = this.messageStorage.get(tabID)
         if (!payload) {
             return
@@ -464,6 +464,7 @@ export class CWCTelemetryHelper {
             credentialStartUrl: AuthUtil.instance.startUrl,
             codewhispererCustomizationArn: triggerPayload.customization.arn,
             cwsprChatHasProjectContext: hasProjectLevelContext,
+            traceId,
         }
 
         telemetry.amazonq_addMessage.emit(event)

@@ -212,10 +212,7 @@ async function invokeLambdaHandler(
         return config
             .samLocalInvokeCommand!.invoke({
                 options: {
-                    env: await getSpawnEnv({
-                        ...process.env,
-                        ...env,
-                    }),
+                    env: env,
                 },
                 command: samCommand,
                 args: samArgs,
@@ -236,7 +233,7 @@ async function invokeLambdaHandler(
             templatePath: config.templatePath,
             eventPath: config.eventPayloadFile,
             environmentVariablePath: config.envFile,
-            environmentVariables: await getSpawnEnv(env),
+            environmentVariables: env,
             invoker: config.samLocalInvokeCommand!,
             dockerNetwork: config.sam?.dockerNetwork,
             debugPort: debugPort,
@@ -290,15 +287,16 @@ export async function runLambdaFunction(
         getLogger().info(localize('AWS.output.sam.local.startRun', 'Preparing to run locally: {0}', config.handlerName))
     }
 
-    const envVars = {
+    const envVars = await getSpawnEnv({
+        ...process.env,
         ...(config.aws?.region ? { AWS_DEFAULT_REGION: config.aws.region } : {}),
-    }
+    })
 
     const settings = SamCliSettings.instance
     const timer = new Timeout(settings.getLocalInvokeTimeout())
 
     // TODO: refactor things to not mutate the config
-    config.templatePath = await buildLambdaHandler(timer, await getSpawnEnv(envVars), config, settings)
+    config.templatePath = await buildLambdaHandler(timer, envVars, config, settings)
 
     await onAfterBuild()
     timer.refresh()
@@ -315,12 +313,13 @@ export async function runLambdaFunction(
 
     // SAM CLI and any API requests are executed in parallel
     // A failure from either is a failure for the whole invocation
-    const [process] = await Promise.all([invokeLambdaHandler(timer, envVars, config, settings), apiRequest]).catch(
-        (err) => {
-            timer.cancel()
-            throw err
-        }
-    )
+    const [processInvoker] = await Promise.all([
+        invokeLambdaHandler(timer, envVars, config, settings),
+        apiRequest,
+    ]).catch((err) => {
+        timer.cancel()
+        throw err
+    })
 
     if (config.noDebug) {
         return config
@@ -329,7 +328,7 @@ export async function runLambdaFunction(
     const terminationListener = vscode.debug.onDidTerminateDebugSession((session) => {
         const config = session.configuration as SamLaunchRequestArgs
         if (config.invokeTarget?.target === 'api') {
-            stopApi(process, config)
+            stopApi(processInvoker, config)
         }
     })
 
@@ -453,16 +452,11 @@ export async function attachDebugger({
     },
     ...params
 }: AttachDebuggerContext): Promise<void> {
-    getLogger().debug(
-        `localLambdaRunner.attachDebugger: startDebugging with config: ${JSON.stringify(
-            {
-                name: params.debugConfig.name,
-                invokeTarget: params.debugConfig.invokeTarget,
-            },
-            undefined,
-            2
-        )}`
-    )
+    const obj = {
+        name: params.debugConfig.name,
+        invokeTarget: params.debugConfig.invokeTarget,
+    }
+    getLogger().debug(`localLambdaRunner.attachDebugger: startDebugging with config: %O`, obj)
 
     getLogger().info(localize('AWS.output.sam.local.attaching', 'Attaching debugger to SAM application...'))
 
