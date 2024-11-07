@@ -15,7 +15,7 @@ describe.only('generateResourceHandler', function () {
     afterEach(() => {
         sinon.restore()
     })
-    for (const _ of Array.from({ length: 100 }, (i) => i)) {
+    for (const _ of Array.from({ length: 1000 }, (i) => i)) {
         it('amazon q is not installed', async () => {
             sinon.stub(extApi, 'getAmazonqApi')
             const panel = await createTemplate()
