@@ -17,6 +17,7 @@ export interface ConnectorProps extends BaseConnectorProps {
         messageId: string | undefined,
         enableStopAction: boolean
     ) => void
+    onChatAnswerUpdated?: (tabID: string, message: ChatItem) => void
     sendFeedback?: (tabId: string, feedbackPayload: FeedbackPayload) => void | undefined
     onFileComponentUpdate: (
         tabID: string,
@@ -34,6 +35,7 @@ export interface ConnectorProps extends BaseConnectorProps {
 
 export class Connector extends BaseConnector {
     private readonly onFileComponentUpdate
+    private readonly onChatAnswerUpdated
     private readonly onAsyncEventProgress
     private readonly updatePlaceholder
     private readonly chatInputEnabled
@@ -52,6 +54,7 @@ export class Connector extends BaseConnector {
         this.chatInputEnabled = props.onChatInputEnabled
         this.onUpdateAuthentication = props.onUpdateAuthentication
         this.onNewTab = props.onNewTab
+        this.onChatAnswerUpdated = props.onChatAnswerUpdated
     }
 
     onOpenDiff = (tabID: string, filePath: string, deleted: boolean, messageId?: string): void => {
