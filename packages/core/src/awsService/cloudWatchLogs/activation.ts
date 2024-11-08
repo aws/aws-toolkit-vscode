@@ -19,13 +19,14 @@ import { searchLogGroup } from './commands/searchLogGroup'
 import { changeLogSearchParams } from './changeLogSearch'
 import { CloudWatchLogsNode } from './explorer/cloudWatchLogsNode'
 import { loadAndOpenInitialLogStreamFile, LogStreamCodeLensProvider } from './document/logStreamsCodeLensProvider'
-import { tailLogGroup } from './commands/tailLogGroup'
+import { clearDocument, closeSession, tailLogGroup } from './commands/tailLogGroup'
 import { LiveTailDocumentProvider } from './document/liveTailDocumentProvider'
 import { LiveTailSessionRegistry } from './registry/liveTailSessionRegistry'
 import { DeployedResourceNode } from '../appBuilder/explorer/nodes/deployedNode'
 import { isTreeNode } from '../../shared/treeview/resourceTreeDataProvider'
 import { getLogger } from '../../shared/logger/logger'
 import { ToolkitError } from '../../shared'
+import { LiveTailCodeLensProvider } from './document/liveTailCodeLensProvider'
 
 export async function activate(context: vscode.ExtensionContext, configuration: Settings): Promise<void> {
     const registry = LogDataRegistry.instance
@@ -46,6 +47,16 @@ export async function activate(context: vscode.ExtensionContext, configuration: 
 
     context.subscriptions.push(
         vscode.workspace.registerTextDocumentContentProvider(CLOUDWATCH_LOGS_SCHEME, documentProvider)
+    )
+
+    context.subscriptions.push(
+        vscode.languages.registerCodeLensProvider(
+            {
+                language: 'log',
+                scheme: cloudwatchLogsLiveTailScheme,
+            },
+            new LiveTailCodeLensProvider()
+        )
     )
 
     context.subscriptions.push(
@@ -110,6 +121,14 @@ export async function activate(context: vscode.ExtensionContext, configuration: 
                     ? { regionName: node.regionCode, groupName: node.logGroup.logGroupName! }
                     : undefined
             await tailLogGroup(liveTailRegistry, logGroupInfo)
+        }),
+
+        Commands.register('aws.cwl.stopTailingLogGroup', async (document: vscode.TextDocument) => {
+            closeSession(document.uri, liveTailRegistry)
+        }),
+
+        Commands.register('aws.cwl.clearDocument', async (document: vscode.TextDocument) => {
+            await clearDocument(document)
         }),
 
         Commands.register('aws.appBuilder.searchLogs', async (node: DeployedResourceNode) => {
