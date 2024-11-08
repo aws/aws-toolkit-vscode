@@ -6,7 +6,7 @@ import * as vscode from 'vscode'
 import { cloudwatchLogsLiveTailScheme } from '../../../shared/constants'
 import { LiveTailSession, LiveTailSessionConfiguration } from './liveTailSession'
 
-export class LiveTailSessionRegistry extends Map<vscode.Uri, LiveTailSession> {
+export class LiveTailSessionRegistry extends Map<string, LiveTailSession> {
     static #instance: LiveTailSessionRegistry
 
     public static get instance() {

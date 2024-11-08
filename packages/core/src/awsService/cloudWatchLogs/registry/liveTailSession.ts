@@ -10,7 +10,7 @@ import {
 } from '@aws-sdk/client-cloudwatch-logs'
 import { LogStreamFilterResponse } from '../wizard/liveTailLogStreamSubmenu'
 import { CloudWatchLogsSettings } from '../cloudWatchLogsUtils'
-import { convertToTimeString, Settings, ToolkitError } from '../../../shared'
+import { convertToTimeString, globals, Settings, ToolkitError } from '../../../shared'
 import { createLiveTailURIFromArgs } from './liveTailSessionRegistry'
 import { getUserAgent } from '../../../shared/telemetry/util'
 
@@ -38,6 +38,9 @@ export class LiveTailSession {
     private endTime: number | undefined
     private _eventRate: number
     private _isSampled: boolean
+
+    //While session is running, used to update the StatusBar each half second.
+    private statusBarUpdateTimer: NodeJS.Timer | undefined
 
     static settings = new CloudWatchLogsSettings(Settings.instance)
 
@@ -89,6 +92,10 @@ export class LiveTailSession {
             }
             this.startTime = Date.now()
             this.endTime = undefined
+            this.statusBarUpdateTimer = globals.clock.setInterval(() => {
+                this.updateStatusBarItemText()
+            }, 500)
+
             return commandOutput.responseStream
         } catch (e) {
             throw new ToolkitError('Encountered error while trying to start LiveTail session.')
@@ -98,6 +105,7 @@ export class LiveTailSession {
     public stopLiveTailSession() {
         this.endTime = Date.now()
         this.statusBarItem.dispose()
+        globals.clock.clearInterval(this.statusBarUpdateTimer)
         this.liveTailClient.abortController.abort()
         this.liveTailClient.cwlClient.destroy()
     }
@@ -144,5 +152,9 @@ export class LiveTailSession {
         const timeString = convertToTimeString(elapsedTime)
         const sampledString = this._isSampled ? 'Yes' : 'No'
         this.statusBarItem.text = `Tailing: ${timeString}, ${this._eventRate} events/sec, Sampled: ${sampledString}`
+    }
+
+    public get isAborted() {
+        return this.liveTailClient.abortController.signal.aborted
     }
 }

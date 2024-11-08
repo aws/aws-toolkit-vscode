@@ -125,15 +125,14 @@ describe('TailLogGroup', function () {
             .callsFake(async function () {
                 return
             })
-        // const fakeClock = installFakeClock()
-        const timer = setInterval(() => {}, 1000)
+
         const session = new LiveTailSession({
             logGroupName: testLogGroup,
             region: testRegion,
         })
-        registry.set(session.uri, session)
+        registry.set(session.uri.toString(), session)
 
-        closeSession(session.uri, registry, timer)
+        closeSession(session.uri, registry)
         assert.strictEqual(0, registry.size)
         assert.strictEqual(true, stopLiveTailSessionSpy.calledOnce)
         assert.strictEqual(0, clock.countTimers())
