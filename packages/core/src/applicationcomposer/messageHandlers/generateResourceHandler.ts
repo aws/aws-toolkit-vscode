@@ -25,8 +25,6 @@ const TIMEOUT = 30_000
 export async function generateResourceHandler(request: GenerateResourceRequestMessage, context: WebviewContext) {
     try {
         const { chatResponse, references, metadata, isSuccess } = await generateResource(request.cfnType)
-        // eslint-disable-next-line aws-toolkits/no-console-log
-        console.log('post-generateResource')
         const responseMessage: GenerateResourceResponseMessage = {
             command: Command.GENERATE_RESOURCE,
             messageType: MessageType.RESPONSE,
@@ -60,8 +58,6 @@ async function generateResource(cfnType: string) {
 
     try {
         const amazonqApi = await extApi.getAmazonqApi()
-        // eslint-disable-next-line aws-toolkits/no-console-log
-        console.log('post-getAmazonQApi')
         if (!amazonqApi) {
             throw new extApi.AmazonqNotFoundError()
         }
@@ -84,8 +80,6 @@ async function generateResource(cfnType: string) {
         let references: Reference[] = []
 
         await amazonqApi.authApi.reauthIfNeeded()
-        // eslint-disable-next-line aws-toolkits/no-console-log
-        console.log('post-reauthIfNeeded')
 
         startTime = globals.clock.Date.now()
         // TODO-STARLING - Revisit to see if timeout still needed prior to launch
