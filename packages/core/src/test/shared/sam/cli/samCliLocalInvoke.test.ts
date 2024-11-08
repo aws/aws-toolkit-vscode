@@ -35,7 +35,7 @@ describe('SamCliLocalInvokeInvocation', async function () {
     before(async function () {
         // File system search on windows can take a while.
         if (isWin()) {
-            this.timeout(45000)
+            this.retries(3)
         }
         // This will place the result in the cache allowing all tests to run under same conditions.
         await SamCliSettings.instance.getOrDetectSamCli()
