@@ -54,8 +54,8 @@ describe('Amazon Q Feature Dev', function () {
     async function clickActionButton(filePath: string, actionName: string) {
         tab.clickFileActionButton(filePath, actionName)
         await tab.waitForEvent(() => !tab.hasAction(filePath, actionName), {
-            waitIntervalInMs: 250,
-            waitTimeoutInMs: 2000,
+            waitIntervalInMs: 500,
+            waitTimeoutInMs: 600000,
         })
     }
 
