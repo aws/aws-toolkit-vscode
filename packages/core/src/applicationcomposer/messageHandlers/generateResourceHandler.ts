@@ -18,13 +18,14 @@ import {
 } from '../types'
 import globals from '../../shared/extensionGlobals'
 import { getLogger } from '../../shared/logger/logger'
-import * as extApi from '../../amazonq/extApi'
+import { AmazonqNotFoundError, getAmazonqApi } from '../../amazonq/extApi'
 
 const TIMEOUT = 30_000
 
 export async function generateResourceHandler(request: GenerateResourceRequestMessage, context: WebviewContext) {
     try {
         const { chatResponse, references, metadata, isSuccess } = await generateResource(request.cfnType)
+
         const responseMessage: GenerateResourceResponseMessage = {
             command: Command.GENERATE_RESOURCE,
             messageType: MessageType.RESPONSE,
@@ -57,9 +58,9 @@ async function generateResource(cfnType: string) {
     let startTime = globals.clock.Date.now()
 
     try {
-        const amazonqApi = await extApi.getAmazonqApi()
+        const amazonqApi = await getAmazonqApi()
         if (!amazonqApi) {
-            throw new extApi.AmazonqNotFoundError()
+            throw new AmazonqNotFoundError()
         }
         const request: GenerateAssistantResponseRequest = {
             conversationState: {
