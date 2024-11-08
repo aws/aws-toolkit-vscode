@@ -14,6 +14,7 @@ import {
     StartLiveTailResponseStream,
 } from '@aws-sdk/client-cloudwatch-logs'
 import { getLogger, ToolkitError } from '../../../shared'
+import { uriToKey } from '../cloudWatchLogsUtils'
 
 export async function tailLogGroup(
     registry: LiveTailSessionRegistry,
@@ -32,11 +33,11 @@ export async function tailLogGroup(
         region: wizardResponse.regionLogGroupSubmenuResponse.region,
     }
     const session = new LiveTailSession(liveTailSessionConfig)
-    if (registry.has(session.uri.toString())) {
+    if (registry.has(uriToKey(session.uri))) {
         await prepareDocument(session)
         return
     }
-    registry.set(session.uri.toString(), session)
+    registry.set(uriToKey(session.uri), session)
 
     const document = await prepareDocument(session)
 
@@ -49,12 +50,12 @@ export async function tailLogGroup(
 }
 
 export function closeSession(sessionUri: vscode.Uri, registry: LiveTailSessionRegistry) {
-    const session = registry.get(sessionUri.toString())
+    const session = registry.get(uriToKey(sessionUri))
     if (session === undefined) {
         throw new ToolkitError(`No LiveTail session found for URI: ${sessionUri.toString()}`)
     }
     session.stopLiveTailSession()
-    registry.delete(sessionUri.toString())
+    registry.delete(uriToKey(sessionUri))
 }
 
 export async function clearDocument(textDocument: vscode.TextDocument) {
@@ -102,7 +103,7 @@ async function handleSessionStream(
             //AbortSignal interrupts the LiveTail stream, causing error to be thrown here.
             //Can assume that stopLiveTailSession() has already been called - AbortSignal is only
             //exposed through that method.
-            getLogger().info(`Session stopped: ${session.uri.toString()}`)
+            getLogger().info(`Session stopped: ${uriToKey(session.uri)}`)
         } else {
             //Unexpected exception.
             session.stopLiveTailSession()

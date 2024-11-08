@@ -18,7 +18,7 @@ import {
     TailLogGroupWizardResponse,
 } from '../../../../awsService/cloudWatchLogs/wizard/tailLogGroupWizard'
 import { getTestWindow } from '../../../shared/vscode/window'
-import { CloudWatchLogsSettings } from '../../../../awsService/cloudWatchLogs/cloudWatchLogsUtils'
+import { CloudWatchLogsSettings, uriToKey } from '../../../../awsService/cloudWatchLogs/cloudWatchLogsUtils'
 import { installFakeClock } from '../../../testUtil'
 
 describe('TailLogGroup', function () {
@@ -130,7 +130,7 @@ describe('TailLogGroup', function () {
             logGroupName: testLogGroup,
             region: testRegion,
         })
-        registry.set(session.uri.toString(), session)
+        registry.set(uriToKey(session.uri), session)
 
         closeSession(session.uri, registry)
         assert.strictEqual(0, registry.size)
