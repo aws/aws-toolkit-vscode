@@ -408,6 +408,11 @@ export class ProposedTransformationExplorer {
                 const metricsPath = path.join(pathContainingArchive, ExportResultArchiveStructure.PathToMetrics)
                 const metricsData = JSON.parse(fs.readFileSync(metricsPath, 'utf8'))
 
+                console.log('metricsData.linesOfCodeChanged =', metricsData.linesOfCodeChanged)
+                console.log('metricsData.charactersOfCodeChanged =', metricsData.charactersOfCodeChanged)
+                console.log('linesOfCodeSubmitted =', transformByQState.getLinesOfCodeSubmitted())
+                console.log('transformByQState.getTransformationType() =', transformByQState.getTransformationType())
+
                 await codeWhisperer.codeWhispererClient.sendTelemetryEvent({
                     telemetryEvent: {
                         transformEvent: {
