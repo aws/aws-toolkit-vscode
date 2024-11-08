@@ -16,7 +16,6 @@ describe.only('generateResourceHandler', function () {
     })
     for (const _ of Array.from({ length: 1000 }, (i) => i)) {
         it('amazon q is not installed', async () => {
-            this.retries(3)
             const panel = await createTemplate()
             const postMessageSpy = sinon.spy(panel.webview, 'postMessage')
             const context = await createWebviewContext({
