@@ -6,7 +6,6 @@
 import * as proc from 'child_process'
 import { pushIf } from '../../utilities/collectionUtils'
 import * as nls from 'vscode-nls'
-import { fileExists } from '../../filesystemUtilities'
 import { getLogger, getDebugConsoleLogger, Logger } from '../../logger'
 import { ChildProcess } from '../../utilities/processUtils'
 import { Timeout } from '../../utilities/timeoutUtils'
@@ -15,6 +14,7 @@ import * as vscode from 'vscode'
 import globals from '../../extensionGlobals'
 import { SamCliSettings } from './samCliSettings'
 import { addTelemetryEnvVar, collectSamErrors, SamCliError } from './samCliInvokerUtils'
+import { fs } from '../..'
 
 const localize = nls.loadMessageBundle()
 
@@ -236,6 +236,8 @@ export class SamCliLocalInvokeInvocation {
         const sam = await this.config.getOrDetectSamCli()
         // eslint-disable-next-line aws-toolkits/no-console-log
         console.log('getOrDetect took %O seconds', (Date.now() - start) / 1000)
+        // eslint-disable-next-line aws-toolkits/no-console-log
+        console.log('autodetect is %O', sam.autoDetected)
         if (!sam.path) {
             getLogger().warn('SAM CLI not found and not configured')
         } else if (sam.autoDetected) {
@@ -290,11 +292,11 @@ export class SamCliLocalInvokeInvocation {
             throw new Error('template resource name is missing or empty')
         }
 
-        if (!(await fileExists(this.args.templatePath))) {
+        if (!(await fs.exists(this.args.templatePath))) {
             throw new Error(`template path does not exist: ${this.args.templatePath}`)
         }
 
-        if (this.args.eventPath !== undefined && !(await fileExists(this.args.eventPath))) {
+        if (this.args.eventPath !== undefined && !(await fs.exists(this.args.eventPath))) {
             throw new Error(`event path does not exist: ${this.args.eventPath}`)
         }
     }
