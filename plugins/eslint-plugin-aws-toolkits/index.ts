@@ -10,6 +10,7 @@ import NoOnlyInTests from './lib/rules/no-only-in-tests'
 import NoStringExecForChildProcess from './lib/rules/no-string-exec-for-child-process'
 import NoConsoleLog from './lib/rules/no-console-log'
 import noJsonStringifyInLog from './lib/rules/no-json-stringify-in-log'
+import noPrintfMismatch from './lib/rules/no-printf-mismatch'
 
 const rules = {
     'no-await-on-vscode-msg': NoAwaitOnVscodeMsg,
@@ -19,6 +20,7 @@ const rules = {
     'no-string-exec-for-child-process': NoStringExecForChildProcess,
     'no-console-log': NoConsoleLog,
     'no-json-stringify-in-log': noJsonStringifyInLog,
+    'no-printf-mismatch': noPrintfMismatch,
 }
 
 export { rules }

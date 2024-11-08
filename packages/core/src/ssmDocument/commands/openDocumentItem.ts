@@ -44,7 +44,7 @@ export async function openDocumentItem(node: DocumentItemNode, awsContext: AwsCo
     } catch (err) {
         result = 'Failed'
         const error = err as Error
-        logger.error('Error on opening document: %0', error)
+        logger.error('Error on opening document: %O', error)
         void showViewLogsMessage(
             localize(
                 'AWS.message.error.ssmDocument.openDocument.could_not_open',

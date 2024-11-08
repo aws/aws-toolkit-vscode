@@ -1,3 +1,10 @@
+## 1.34.0 2024-11-07
+
+- **Bug Fix** Align example help text with prompt message in chat
+- **Bug Fix** Improve `@workspace` index auto pause start strategy. 
+- **Feature** Allow users to View and Apply diff when they explictily send code to Amazon Q using - Fix, Refactor, Optimize and Send To Prompt.
+- **Feature** Security Scan: Auto-scan now supports JSX, TSX, Kotlin, Scala, and Shell files.
+
 ## 1.33.0 2024-10-30
 
 - **Bug Fix** Amazon Q /dev: fix for stop button showing for Code Transformation

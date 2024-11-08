@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "AWS Lambda: Removed action to delete a Lambda or S3 bucket in the AppBuilder section as resources created through IaC frameworks should not be directly modified since this creates drift"
-}
