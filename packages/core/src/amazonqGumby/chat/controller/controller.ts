@@ -358,6 +358,7 @@ export class GumbyController {
                 this.transformationFinished({
                     message: CodeWhispererConstants.jobCancelledChatMessage,
                     tabID: message.tabID,
+                    includeStartNewTransformationButton: true,
                 })
                 break
             case ButtonActions.CONFIRM_SKIP_TESTS_FORM:
@@ -563,6 +564,7 @@ export class GumbyController {
             this.transformationFinished({
                 message: CodeWhispererConstants.jobCancelledChatMessage,
                 tabID: message.tabID,
+                includeStartNewTransformationButton: true,
             })
             return
         }
