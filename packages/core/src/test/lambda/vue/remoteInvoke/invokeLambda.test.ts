@@ -198,7 +198,7 @@ describe('RemoteInvokeWebview', () => {
                     new Error('Failed to read selected file')
                 )
                 assert.strictEqual(loggerErrorStub.calledOnce, true)
-                assert.strictEqual(loggerErrorStub.firstCall.args[0], 'readFileSync: Failed to read file at path %O')
+                assert.strictEqual(loggerErrorStub.firstCall.args[0], 'readFileSync: Failed to read file at path %s %O')
                 assert.strictEqual(loggerErrorStub.firstCall.args[1], fileUri.fsPath)
                 assert(loggerErrorStub.firstCall.args[2] instanceof Error)
             } finally {

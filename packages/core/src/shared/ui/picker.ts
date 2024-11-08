@@ -310,7 +310,7 @@ export class IteratingQuickPickController<TResponse> {
                                 // give quickpick item an error message
                                 // we should not blow away the existing items, they should still be viable
                                 const err = e as Error
-                                getLogger().error('Error while loading items for IteratingQuickPickController:', err)
+                                getLogger().error('Error while loading items for IteratingQuickPickController: %O', err)
                                 resolve({
                                     value: [
                                         {

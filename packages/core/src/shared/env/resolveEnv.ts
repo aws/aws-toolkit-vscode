@@ -20,7 +20,7 @@ import { asEnvironmentVariables } from '../../auth/credentials/utils'
 import { getIAMConnection } from '../../auth/utils'
 import { ChildProcess } from '../utilities/processUtils'
 
-let unixShellEnvPromise: Promise<typeof process.env> | undefined = undefined
+let unixShellEnvPromise: Promise<typeof process.env | void> | undefined = undefined
 let envCacheExpireTime: number
 
 export interface IProcessEnvironment {
@@ -139,7 +139,7 @@ export async function mergeResolvedShellPath(env: IProcessEnvironment): Promise<
  * - we hit a timeout of `MAX_SHELL_RESOLVE_TIME`
  * - any other error from spawning a shell to figure out the environment
  */
-export async function getResolvedShellEnv(env?: IProcessEnvironment): Promise<typeof process.env | undefined> {
+export async function getResolvedShellEnv(env?: IProcessEnvironment): Promise<typeof process.env | void> {
     if (!env) {
         env = process.env
     }
@@ -176,7 +176,7 @@ export async function getResolvedShellEnv(env?: IProcessEnvironment): Promise<ty
         if (!unixShellEnvPromise || Date.now() > envCacheExpireTime) {
             // cache valid for 5 minutes
             envCacheExpireTime = Date.now() + 5 * 60 * 1000
-            unixShellEnvPromise = new Promise<NodeJS.ProcessEnv>(async (resolve, reject) => {
+            unixShellEnvPromise = new Promise<NodeJS.ProcessEnv | void>(async (resolve, reject) => {
                 const timeout = new Timeout(10000)
 
                 // Resolve shell env and handle errors
@@ -185,11 +185,11 @@ export async function getResolvedShellEnv(env?: IProcessEnvironment): Promise<ty
                     if (shellEnv && Object.keys(shellEnv).length > 0) {
                         resolve(shellEnv)
                     } else {
-                        return undefined
+                        resolve()
                     }
                 } catch {
                     // failed resolve should not affect other feature.
-                    return undefined
+                    resolve()
                 }
             })
         }
@@ -303,7 +303,7 @@ async function doResolveUnixShellEnv(timeout: Timeout): Promise<typeof process.e
                 getLogger().debug(`getUnixShellEnvironment#result:${env}`)
                 resolve(env)
             } catch (err) {
-                getLogger().error('getUnixShellEnvironment#errorCaught', err)
+                getLogger().error('getUnixShellEnvironment#errorCaught %O', err)
                 reject(err)
             }
         })

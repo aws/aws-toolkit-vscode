@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "SAM: Save SAM deploy parameters to correct samconfig.toml in project folder"
-}
