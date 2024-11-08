@@ -232,12 +232,7 @@ export class SamCliLocalInvokeInvocation {
 
     public async execute(timeout?: Timeout): Promise<ChildProcess> {
         await this.validate()
-        const start = Date.now()
         const sam = await this.config.getOrDetectSamCli()
-        // eslint-disable-next-line aws-toolkits/no-console-log
-        console.log('getOrDetect took %O seconds', (Date.now() - start) / 1000)
-        // eslint-disable-next-line aws-toolkits/no-console-log
-        console.log('autodetect is %O', sam.autoDetected)
         if (!sam.path) {
             getLogger().warn('SAM CLI not found and not configured')
         } else if (sam.autoDetected) {

@@ -83,10 +83,7 @@ export class SamCliSettings extends fromExtensionManifest('aws.samcli', descript
             SamCliSettings.logIfChanged(`SAM CLI location (from settings): ${fromConfig}`)
             return { path: fromConfig, autoDetected: false }
         }
-        const start = Date.now()
         const fromSearch = await this.locationProvider.getLocation(forceSearch)
-        // eslint-disable-next-line aws-toolkits/no-console-log
-        console.log('getOrDetect took %O seconds', (Date.now() - start) / 1000)
 
         SamCliSettings.logIfChanged(`SAM CLI location (version: ${fromSearch?.version}): ${fromSearch?.path}`)
         return { path: fromSearch?.path, autoDetected: true }

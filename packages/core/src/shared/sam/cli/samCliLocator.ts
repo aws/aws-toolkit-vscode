@@ -29,8 +29,6 @@ export class SamCliLocationProvider {
     public async getLocation(forceSearch?: boolean): Promise<{ path: string; version: string } | undefined> {
         const perflog = new PerfLog('samCliLocator: getLocation')
         const cachedLoc = forceSearch ? undefined : SamCliLocationProvider.cachedSamLocation
-        // eslint-disable-next-line aws-toolkits/no-console-log
-        console.log('cachedLoc is: %O', cachedLoc)
 
         // Avoid searching the system for `sam` (especially slow on Windows).
         if (cachedLoc && (await SamCliLocationProvider.isValidSamLocation(cachedLoc.path))) {
