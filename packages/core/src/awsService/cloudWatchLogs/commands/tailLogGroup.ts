@@ -108,7 +108,7 @@ async function handleSessionStream(
             session.stopLiveTailSession()
             throw ToolkitError.chain(
                 e,
-                `Unexpected on-stream execption while tailing session: ${session.uri.toString()}`
+                `Unexpected on-stream exception while tailing session: ${session.uri.toString()}`
             )
         }
     }
