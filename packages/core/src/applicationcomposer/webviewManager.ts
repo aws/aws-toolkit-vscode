@@ -23,13 +23,15 @@ export class ApplicationComposerManager {
     protected readonly name: string = 'ApplicationComposerManager'
 
     protected readonly managedVisualizations = new Map<string, ApplicationComposer>()
-    protected extensionContext: vscode.ExtensionContext
     protected webviewHtml?: string
     protected readonly logger = getLogger()
 
-    public constructor(extensionContext: vscode.ExtensionContext) {
-        this.extensionContext = extensionContext
-        void this.fetchWebviewHtml()
+    private constructor(protected extensionContext: vscode.ExtensionContext) {}
+
+    public static async create(extensionContext: vscode.ExtensionContext): Promise<ApplicationComposerManager> {
+        const obj = new ApplicationComposerManager(extensionContext)
+        await obj.fetchWebviewHtml()
+        return obj
     }
 
     private async fetchWebviewHtml() {
