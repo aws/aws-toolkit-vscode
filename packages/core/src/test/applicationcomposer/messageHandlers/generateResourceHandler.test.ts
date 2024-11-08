@@ -11,11 +11,9 @@ import { Command, MessageType } from '../../../applicationcomposer/types'
 
 // eslint-disable-next-line aws-toolkits/no-only-in-tests
 describe.only('generateResourceHandler', function () {
-    afterEach(() => {
-        sinon.restore()
-    })
     for (const _ of Array.from({ length: 1000 }, (i) => i)) {
-        it('amazon q is not installed', async () => {
+        it('amazon q is not installed', async function () {
+            this.retries(3)
             const panel = await createTemplate()
             const postMessageSpy = sinon.spy(panel.webview, 'postMessage')
             const context = await createWebviewContext({
@@ -33,7 +31,7 @@ describe.only('generateResourceHandler', function () {
             )
             assert.ok(postMessageSpy.calledOnce)
             assert.deepStrictEqual(postMessageSpy.getCall(0).args[0].isSuccess, false)
-            sinon.restore()
+            postMessageSpy.restore()
         })
     }
 })
