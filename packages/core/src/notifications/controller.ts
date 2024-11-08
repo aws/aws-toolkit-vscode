@@ -7,7 +7,13 @@ import * as vscode from 'vscode'
 import { ToolkitError } from '../shared/errors'
 import globals from '../shared/extensionGlobals'
 import { globalKey } from '../shared/globalState'
-import { NotificationsState, NotificationsStateConstructor, NotificationType, ToolkitNotification } from './types'
+import {
+    getNotificationTelemetryId,
+    NotificationsState,
+    NotificationsStateConstructor,
+    NotificationType,
+    ToolkitNotification,
+} from './types'
 import { HttpResourceFetcher } from '../shared/resourcefetcher/httpResourceFetcher'
 import { getLogger } from '../shared/logger/logger'
 import { NotificationsNode } from './panelNode'
@@ -17,6 +23,7 @@ import { TreeNode } from '../shared/treeview/resourceTreeDataProvider'
 import { withRetries } from '../shared/utilities/functionUtils'
 import { FileResourceFetcher } from '../shared/resourcefetcher/fileResourceFetcher'
 import { isAmazonQ } from '../shared/extensionUtilities'
+import { telemetry } from '../shared/telemetry/telemetry'
 
 /**
  * Handles fetching and maintaining the state of in-IDE notifications.
@@ -203,7 +210,10 @@ function registerDismissCommand() {
                 /** See {@link NotificationsNode} for more info. */
                 const notification = item.command?.arguments[0] as ToolkitNotification
 
-                await NotificationsController.instance.dismissNotification(notification.id)
+                await telemetry.ui_click.run(async (span) => {
+                    span.record({ elementId: `${getNotificationTelemetryId(notification)}:DISMISS` })
+                    await NotificationsController.instance.dismissNotification(notification.id)
+                })
             } else {
                 getLogger('notifications').error(`${name}: Cannot dismiss notification: item is not a vscode.TreeItem`)
             }
