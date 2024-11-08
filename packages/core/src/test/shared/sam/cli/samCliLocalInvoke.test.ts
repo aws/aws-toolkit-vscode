@@ -15,8 +15,6 @@ import { ChildProcess } from '../../../../shared/utilities/processUtils'
 import { assertArgIsPresent, assertArgNotPresent, assertArgsContainArgument } from './samCliTestUtils'
 import { fs } from '../../../../shared'
 import { isWin } from '../../../../shared/vscode/env'
-import Sinon from 'sinon'
-import { SamCliLocationProvider } from '../../../../shared/sam/cli/samCliLocator'
 // eslint-disable-next-line aws-toolkits/no-only-in-tests
 describe.only('SamCliLocalInvokeInvocation', async function () {
     class TestSamLocalInvokeCommand implements SamLocalInvokeCommand {
