@@ -102,7 +102,7 @@ async function handleSessionStream(
             //AbortSignal interrupts the LiveTail stream, causing error to be thrown here.
             //Can assume that stopLiveTailSession() has already been called - AbortSignal is only
             //exposed through that method.
-            getLogger().info(`Session ${session.uri.toString()} stopped.`)
+            getLogger().info(`Session stopped: ${session.uri.toString()}`)
         } else {
             //Unexpected exception.
             session.stopLiveTailSession()
