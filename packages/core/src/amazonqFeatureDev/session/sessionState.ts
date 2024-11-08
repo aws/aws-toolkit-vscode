@@ -450,7 +450,7 @@ export class MockCodeGenState implements SessionState {
                 type: 'system-prompt',
                 followUps: [
                     {
-                        pillText: i18n('AWS.amazonq.featureDev.pillText.insertCode'),
+                        pillText: i18n('AWS.amazonq.featureDev.pillText.acceptAllChanges'),
                         type: FollowUpTypes.InsertCode,
                         icon: 'ok' as MynahIcons,
                         status: 'success',
