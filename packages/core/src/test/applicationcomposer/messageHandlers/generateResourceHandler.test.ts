@@ -5,16 +5,20 @@
 
 import assert from 'assert'
 import sinon from 'sinon'
+import semver from 'semver'
 import { createTemplate, createWebviewContext } from '../utils'
 import { generateResourceHandler } from '../../../applicationcomposer/messageHandlers/generateResourceHandler'
 import { Command, MessageType } from '../../../applicationcomposer/types'
+import * as env from '../../../shared/vscode/env'
 
 // eslint-disable-next-line aws-toolkits/no-only-in-tests
 describe.only('generateResourceHandler', function () {
     for (const _ of Array.from({ length: 1000 }, (i) => i)) {
         it('amazon q is not installed', async function () {
-            this.retries(3)
-            this.timeout(1000)
+            const version = env.getMinVscodeVersion()
+            if (semver.lt(version, '1.88.0')) {
+                this.skip()
+            }
             const panel = await createTemplate()
             const postMessageSpy = sinon.spy(panel.webview, 'postMessage')
             const context = await createWebviewContext({
