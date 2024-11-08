@@ -8,8 +8,12 @@ import { TailLogGroupWizard } from '../wizard/tailLogGroupWizard'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { LiveTailSession, LiveTailSessionConfiguration } from '../registry/liveTailSession'
 import { LiveTailSessionRegistry } from '../registry/liveTailSessionRegistry'
-import { LiveTailSessionLogEvent, StartLiveTailResponseStream } from '@aws-sdk/client-cloudwatch-logs'
-import { ToolkitError } from '../../../shared'
+import {
+    LiveTailSessionLogEvent,
+    LiveTailSessionUpdate,
+    StartLiveTailResponseStream,
+} from '@aws-sdk/client-cloudwatch-logs'
+import { globals, ToolkitError } from '../../../shared'
 
 export async function tailLogGroup(
     registry: LiveTailSessionRegistry,
@@ -35,13 +39,19 @@ export async function tailLogGroup(
     registry.set(session.uri, session)
 
     const document = await prepareDocument(session)
-    registerTabChangeCallback(session, registry, document)
+    const timer = globals.clock.setInterval(() => {
+        session.updateStatusBarItemText()
+    }, 500)
+    hideShowStatusBarItemsOnActiveEditor(session, document)
+    registerTabChangeCallback(session, registry, document, timer)
+
     const stream = await session.startLiveTailSession()
 
-    await handleSessionStream(stream, document, session)
+    await handleSessionStream(stream, document, session, timer)
 }
 
-export function closeSession(sessionUri: vscode.Uri, registry: LiveTailSessionRegistry) {
+export function closeSession(sessionUri: vscode.Uri, registry: LiveTailSessionRegistry, timer: NodeJS.Timer) {
+    globals.clock.clearInterval(timer)
     const session = registry.get(sessionUri)
     if (session === undefined) {
         throw new ToolkitError(`No LiveTail session found for URI: ${sessionUri.toString()}`)
@@ -63,27 +73,35 @@ async function prepareDocument(session: LiveTailSession): Promise<vscode.TextDoc
     await clearDocument(textDocument)
     await vscode.window.showTextDocument(textDocument, { preview: false })
     await vscode.languages.setTextDocumentLanguage(textDocument, 'log')
+    session.showStatusBarItem(true)
     return textDocument
 }
 
 async function handleSessionStream(
     stream: AsyncIterable<StartLiveTailResponseStream>,
     document: vscode.TextDocument,
-    session: LiveTailSession
+    session: LiveTailSession,
+    timer: NodeJS.Timer
 ) {
-    for await (const event of stream) {
-        if (event.sessionUpdate !== undefined && event.sessionUpdate.sessionResults !== undefined) {
-            const formattedLogEvents = event.sessionUpdate.sessionResults.map<string>((logEvent) =>
-                formatLogEvent(logEvent)
-            )
-            if (formattedLogEvents.length !== 0) {
-                //Determine should scroll before adding new lines to doc because adding large
-                //amount of new lines can push bottom of file out of view before scrolling.
-                const editorsToScroll = getTextEditorsToScroll(document)
-                await updateTextDocumentWithNewLogEvents(formattedLogEvents, document, session.maxLines)
-                editorsToScroll.forEach(scrollTextEditorToBottom)
+    try {
+        for await (const event of stream) {
+            if (event.sessionUpdate !== undefined && event.sessionUpdate.sessionResults !== undefined) {
+                const formattedLogEvents = event.sessionUpdate.sessionResults.map<string>((logEvent) =>
+                    formatLogEvent(logEvent)
+                )
+                if (formattedLogEvents.length !== 0) {
+                    //Determine should scroll before adding new lines to doc because adding large
+                    //amount of new lines can push bottom of file out of view before scrolling.
+                    const editorsToScroll = getTextEditorsToScroll(document)
+                    await updateTextDocumentWithNewLogEvents(formattedLogEvents, document, session.maxLines)
+                    editorsToScroll.forEach(scrollTextEditorToBottom)
+                }
+                session.eventRate = eventRate(event.sessionUpdate)
+                session.isSampled = isSampled(event.sessionUpdate)
             }
         }
+    } finally {
+        globals.clock.clearInterval(timer)
     }
 }
 
@@ -147,6 +165,22 @@ function trimOldestLines(
     edit.delete(document.uri, range)
 }
 
+function isSampled(event: LiveTailSessionUpdate): boolean {
+    return event.sessionMetadata === undefined || event.sessionMetadata.sampled === undefined
+        ? false
+        : event.sessionMetadata.sampled
+}
+
+function eventRate(event: LiveTailSessionUpdate): number {
+    return event.sessionResults === undefined ? 0 : event.sessionResults.length
+}
+
+function hideShowStatusBarItemsOnActiveEditor(session: LiveTailSession, document: vscode.TextDocument) {
+    vscode.window.onDidChangeActiveTextEditor((editor) => {
+        session.showStatusBarItem(editor?.document === document)
+    })
+}
+
 /**
  * The LiveTail session should be automatically closed if the user does not have the session's
  * document in any Tab in their editor.
@@ -162,12 +196,13 @@ function trimOldestLines(
 function registerTabChangeCallback(
     session: LiveTailSession,
     registry: LiveTailSessionRegistry,
-    document: vscode.TextDocument
+    document: vscode.TextDocument,
+    timer: NodeJS.Timer
 ) {
     vscode.window.tabGroups.onDidChangeTabs((tabEvent) => {
         const isOpen = isLiveTailSessionOpenInAnyTab(session)
         if (!isOpen) {
-            closeSession(session.uri, registry)
+            closeSession(session.uri, registry, timer)
             void clearDocument(document)
         }
     })

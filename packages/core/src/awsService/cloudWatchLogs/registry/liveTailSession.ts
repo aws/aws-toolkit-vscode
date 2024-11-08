@@ -10,7 +10,7 @@ import {
 } from '@aws-sdk/client-cloudwatch-logs'
 import { LogStreamFilterResponse } from '../wizard/liveTailLogStreamSubmenu'
 import { CloudWatchLogsSettings } from '../cloudWatchLogsUtils'
-import { Settings, ToolkitError } from '../../../shared'
+import { convertToTimeString, Settings, ToolkitError } from '../../../shared'
 import { createLiveTailURIFromArgs } from './liveTailSessionRegistry'
 import { getUserAgent } from '../../../shared/telemetry/util'
 
@@ -33,6 +33,11 @@ export class LiveTailSession {
     private logEventFilterPattern?: string
     private _maxLines: number
     private _uri: vscode.Uri
+    private statusBarItem: vscode.StatusBarItem
+    private startTime: number | undefined
+    private endTime: number | undefined
+    private _eventRate: number
+    private _isSampled: boolean
 
     static settings = new CloudWatchLogsSettings(Settings.instance)
 
@@ -48,6 +53,9 @@ export class LiveTailSession {
         }
         this._maxLines = LiveTailSession.settings.get('limit', 10000)
         this._uri = createLiveTailURIFromArgs(configuration)
+        this.statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 0)
+        this._eventRate = 0
+        this._isSampled = false
     }
 
     public get maxLines() {
@@ -62,6 +70,14 @@ export class LiveTailSession {
         return this._logGroupName
     }
 
+    public set eventRate(rate: number) {
+        this._eventRate = rate
+    }
+
+    public set isSampled(isSampled: boolean) {
+        this._isSampled = isSampled
+    }
+
     public async startLiveTailSession(): Promise<AsyncIterable<StartLiveTailResponseStream>> {
         const command = this.buildStartLiveTailCommand()
         try {
@@ -71,6 +87,8 @@ export class LiveTailSession {
             if (!commandOutput.responseStream) {
                 throw new ToolkitError('LiveTail session response stream is undefined.')
             }
+            this.startTime = Date.now()
+            this.endTime = undefined
             return commandOutput.responseStream
         } catch (e) {
             throw new ToolkitError('Encountered error while trying to start LiveTail session.')
@@ -78,8 +96,22 @@ export class LiveTailSession {
     }
 
     public stopLiveTailSession() {
+        this.endTime = Date.now()
+        this.statusBarItem.dispose()
         this.liveTailClient.abortController.abort()
         this.liveTailClient.cwlClient.destroy()
+    }
+
+    public getLiveTailSessionDuration(): number {
+        //Never started
+        if (this.startTime === undefined) {
+            return 0
+        }
+        //Currently running
+        if (this.endTime === undefined) {
+            return Date.now() - this.startTime
+        }
+        return this.endTime - this.startTime
     }
 
     private buildStartLiveTailCommand(): StartLiveTailCommand {
@@ -101,5 +133,16 @@ export class LiveTailSession {
             logStreamNames: logStreamName ? [logStreamName] : undefined,
             logEventFilterPattern: this.logEventFilterPattern ? this.logEventFilterPattern : undefined,
         })
+    }
+
+    public showStatusBarItem(shouldShow: boolean) {
+        shouldShow ? this.statusBarItem.show() : this.statusBarItem.hide()
+    }
+
+    public updateStatusBarItemText() {
+        const elapsedTime = this.getLiveTailSessionDuration()
+        const timeString = convertToTimeString(elapsedTime)
+        const sampledString = this._isSampled ? 'Yes' : 'No'
+        this.statusBarItem.text = `Tailing: ${timeString}, ${this._eventRate} events/sec, Sampled: ${sampledString}`
     }
 }
