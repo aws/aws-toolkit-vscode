@@ -143,7 +143,7 @@ describe('DeployWizard', async function () {
             assert.strictEqual(parameters.region, 'us-west-2')
             assert.strictEqual(parameters.stackName, 'stack1')
             assert.strictEqual(parameters.bucketSource, 0)
-            prompterTester.assertAllHandlerCall(1)
+            prompterTester.assertCallAll(prompterTester.getHandlers(), 1)
         })
 
         it('happy path with valid samconfig.toml', async () => {
@@ -195,7 +195,7 @@ describe('DeployWizard', async function () {
             assert(!parameters.region)
             assert(!parameters.stackName)
             assert(!parameters.bucketSource)
-            prompterTester.assertAllHandlerCall(1)
+            prompterTester.assertCallAll(prompterTester.getHandlers(), 1)
         })
     })
 
@@ -333,7 +333,7 @@ describe('DeployWizard', async function () {
             assert.strictEqual(parameters.region, 'us-west-2')
             assert(!parameters.stackName)
             assert(!parameters.bucketSource)
-            prompterTester.assertAllHandlerCall(1)
+            prompterTester.assertCallAll(prompterTester.getHandlers(), 1)
         })
     })
 
@@ -415,7 +415,7 @@ describe('DeployWizard', async function () {
             assert.strictEqual(parameters.stackName, 'stack2')
             assert.strictEqual(parameters.bucketSource, 0)
             assert(!parameters.bucketName)
-            prompterTester.assertAllHandlerCall(1)
+            prompterTester.assertCallAll(prompterTester.getHandlers(), 1)
         })
 
         it('happy path with valid samconfig.toml', async () => {
@@ -467,7 +467,7 @@ describe('DeployWizard', async function () {
             assert(!parameters.region)
             assert(!parameters.stackName)
             assert(!parameters.bucketSource)
-            prompterTester.assertAllHandlerCall(1)
+            prompterTester.assertCallAll(prompterTester.getHandlers(), 1)
         })
     })
 
@@ -549,7 +549,7 @@ describe('DeployWizard', async function () {
             assert.strictEqual(parameters.stackName, 'stack3')
             assert.strictEqual(parameters.bucketSource, 1)
             assert.strictEqual(parameters.bucketName, 'stack-3-bucket')
-            prompterTester.assertAllHandlerCall(1)
+            prompterTester.assertCallAll(prompterTester.getHandlers(), 1)
         })
 
         it('happy path with samconfig.toml', async () => {
@@ -602,7 +602,7 @@ describe('DeployWizard', async function () {
             assert(!parameters.region)
             assert(!parameters.stackName)
             assert(!parameters.bucketSource)
-            prompterTester.assertAllHandlerCall(1)
+            prompterTester.assertCallAll(prompterTester.getHandlers(), 1)
         })
     })
 })

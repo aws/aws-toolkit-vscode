@@ -12,7 +12,7 @@ export class PrompterTester {
     private inputBoxHanlder: Map<string, (input: TestInputBox) => void> = new Map()
     private testWindow: TestWindow
     private callLog = Array<string>()
-    private handlerCallHistory = new Map<string, number>()
+    private callLogCount = new Map<string, number>()
 
     private constructor(testWindow?: TestWindow) {
         this.testWindow = testWindow || getTestWindow()
@@ -24,13 +24,13 @@ export class PrompterTester {
 
     handleQuickPick(titlePattern: string, handler: (input: TestQuickPick) => void): PrompterTester {
         this.quickPickHandlers.set(titlePattern, handler)
-        this.handlerCallHistory.set(titlePattern, 0)
+        this.callLogCount.set(titlePattern, 0)
         return this
     }
 
     handleInputBox(titlePattern: string, handler: (input: TestInputBox) => void): PrompterTester {
         this.inputBoxHanlder.set(titlePattern, handler)
-        this.handlerCallHistory.set(titlePattern, 0)
+        this.callLogCount.set(titlePattern, 0)
         return this
     }
 
@@ -46,22 +46,22 @@ export class PrompterTester {
 
     private record(title: string): void {
         this.callLog.push(title)
-        this.handlerCallHistory.set(title, (this.handlerCallHistory.get(title) ?? 0) + 1)
+        this.callLogCount.set(title, (this.callLogCount.get(title) ?? 0) + 1)
     }
 
     /**
-     * Asserts that a specific handler has been called the expected number of times.
+     * Asserts that a specific prompter handler has been called the expected number of times.
      *
-     * @param title - The title or identifier of the handler to check.
-     * @param expectedCall - The expected number of times the handler should have been called.
+     * @param title - The title prompter to check.
+     * @param expectedCall - The expected number of times the prompted handler should have been called.
      * @throws AssertionError if the actual number of calls doesn't match the expected number.
      */
-    assertHandlerCall(title: string, expectedCall: number) {
-        assert.strictEqual(this.handlerCallHistory.get(title), expectedCall, title)
+    assertCall(title: string, expectedCall: number) {
+        assert.strictEqual(this.callLogCount.get(title), expectedCall, title)
     }
 
     /**
-     * Asserts that a specific handler was called in the expected order.
+     * Asserts that a specific prompter handler was called in the expected order.
      *
      * @param title - The title or identifier of the handler to check.
      * @param expectedOrder - The expected position in the call order (one-based index).
@@ -72,14 +72,14 @@ export class PrompterTester {
     }
 
     /**
-     * Asserts that all handler was called in the expected number of times.
+     * Asserts that all specified prompter handlers were called in the expected number of times.
      *
      * @param expectedCall - The expected number of times the handler should have been called.
      * @throws AssertionError if the actual number of calls doesn't match the expected number.
      */
-    assertAllHandlerCall(expectedOrder: number) {
-        this.getAllRegisteredHandlers().every((handler) => {
-            this.assertHandlerCall(handler, expectedOrder)
+    assertCallAll(titles: string[], expectedOrder: number) {
+        titles.every((handler) => {
+            this.assertCall(handler, expectedOrder)
         })
     }
 
@@ -89,7 +89,7 @@ export class PrompterTester {
      * @returns An array of strings containing all handler titles, including both
      *          quick pick handlers and input box handlers.
      */
-    getAllRegisteredHandlers(): string[] {
+    getHandlers(): string[] {
         return [...this.quickPickHandlers.keys(), ...this.inputBoxHanlder.keys()]
     }
 
@@ -106,5 +106,6 @@ export class PrompterTester {
 
     private handleUnknownPrompter(input: any) {
         input.dispose()
+        throw assert.fail(`Unexpected prompter titled: "${input.title}"`)
     }
 }

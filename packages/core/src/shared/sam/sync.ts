@@ -41,7 +41,7 @@ import { IamConnection } from '../../auth/connection'
 import { CloudFormationTemplateRegistry } from '../fs/templateRegistry'
 import { TreeNode } from '../treeview/resourceTreeDataProvider'
 import { getSpawnEnv } from '../env/resolveEnv'
-import { getProjectRoot, getProjectRootUri, getSamCliPathAndVersion, getSource, getTemplateFile } from './utils'
+import { getProjectRoot, getProjectRootUri, getSamCliPathAndVersion, getSource } from './utils'
 import { runInTerminal } from './processTerminal'
 
 const localize = nls.loadMessageBundle()
@@ -598,7 +598,7 @@ export async function prepareSyncParams(
             const projectRoot = vscode.Uri.joinPath(config.location, '..')
             const templateUri = params.templatePath
                 ? vscode.Uri.file(path.resolve(projectRoot.fsPath, params.templatePath))
-                : await getTemplateFile(projectRoot)
+                : undefined
             const template = templateUri
                 ? {
                       uri: templateUri,

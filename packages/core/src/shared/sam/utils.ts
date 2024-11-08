@@ -10,7 +10,6 @@ import { TreeNode, isTreeNode } from '../treeview/resourceTreeDataProvider'
 import * as CloudFormation from '../cloudformation/cloudformation'
 import { TemplateItem } from './sync'
 import { RuntimeFamily, getFamily } from '../../lambda/models/samLambdaRuntime'
-import fs from '../fs/fs'
 import { telemetry } from '../telemetry'
 import { ToolkitError } from '../errors'
 import { SamCliSettings } from './cli/samCliSettings'
@@ -25,23 +24,6 @@ import { parse } from 'semver'
 export const getProjectRoot = (template: TemplateItem | undefined) =>
     template ? getProjectRootUri(template.uri) : undefined
 
-/**
- * @description look for template in project root
- * @param projectRoot  The URI of the root project folder
- * @returns The URI of the template
- * */
-export const getTemplateFile = async (projectRoot: vscode.Uri): Promise<vscode.Uri | undefined> => {
-    const templateNames = ['template.yaml', 'template.yml']
-
-    for (const templateName of templateNames) {
-        const templatePath = vscode.Uri.file(path.join(projectRoot.fsPath, templateName))
-        if (await fs.exists(templatePath.fsPath)) {
-            return templatePath
-        }
-    }
-
-    return undefined
-}
 /**
  * @description determines the root directory of the project given uri of the template file
  * @param template The template.yaml uri
