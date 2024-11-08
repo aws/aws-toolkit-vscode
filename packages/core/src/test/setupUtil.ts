@@ -29,6 +29,7 @@ export function setRunnableTimeout(test: Mocha.Runnable, maxTestDuration: number
     if (!hasKey(testFn, runnableTimeout)) {
         const fn = function (this: Mocha.Context, done: Mocha.Done) {
             const maxTestDuration = (fn as any)[runnableTimeout] as number
+
             return Promise.race([
                 testFn.call(this, done),
                 new Promise<void>((_, reject) => {
