@@ -93,7 +93,7 @@ describe('DeployWizard', async function () {
             // generate samconfig.toml in temporary test folder
             await testFolder.write('samconfig.toml', samconfigInvalidData)
 
-            PrompterTester.init()
+            const prompterTester = PrompterTester.init()
                 .handleInputBox('Specify SAM parameter value for SourceBucketName', (inputBox) => {
                     inputBox.acceptValue('my-source-bucket-name')
                 })
@@ -143,6 +143,7 @@ describe('DeployWizard', async function () {
             assert.strictEqual(parameters.region, 'us-west-2')
             assert.strictEqual(parameters.stackName, 'stack1')
             assert.strictEqual(parameters.bucketSource, 0)
+            prompterTester.assertAllHandlerCall(1)
         })
 
         it('happy path with valid samconfig.toml', async () => {
@@ -163,7 +164,7 @@ describe('DeployWizard', async function () {
             // generate samconfig.toml in temporary test folder
             await testFolder.write('samconfig.toml', samconfigCompleteData)
 
-            PrompterTester.init()
+            const prompterTester = PrompterTester.init()
                 .handleInputBox('Specify SAM parameter value for SourceBucketName', (inputBox) => {
                     inputBox.acceptValue('my-source-bucket-name')
                 })
@@ -194,6 +195,7 @@ describe('DeployWizard', async function () {
             assert(!parameters.region)
             assert(!parameters.stackName)
             assert(!parameters.bucketSource)
+            prompterTester.assertAllHandlerCall(1)
         })
     })
 
@@ -301,7 +303,7 @@ describe('DeployWizard', async function () {
 
             await testFolder.write('samconfig.toml', samconfigCompleteData)
 
-            PrompterTester.init()
+            const prompterTester = PrompterTester.init()
                 .handleQuickPick('Select a SAM/CloudFormation Template', async (quickPick) => {
                     // Need sometime to wait for the template to search for template file
                     await quickPick.untilReady()
@@ -331,6 +333,7 @@ describe('DeployWizard', async function () {
             assert.strictEqual(parameters.region, 'us-west-2')
             assert(!parameters.stackName)
             assert(!parameters.bucketSource)
+            prompterTester.assertAllHandlerCall(1)
         })
     })
 
@@ -362,7 +365,7 @@ describe('DeployWizard', async function () {
              *  - bucketName            : [Skip]     automatically set for bucketSource option 1
              */
 
-            PrompterTester.init()
+            const prompterTester = PrompterTester.init()
                 .handleInputBox('Specify SAM parameter value for SourceBucketName', (inputBox) => {
                     inputBox.acceptValue('my-source-bucket-name')
                 })
@@ -412,6 +415,7 @@ describe('DeployWizard', async function () {
             assert.strictEqual(parameters.stackName, 'stack2')
             assert.strictEqual(parameters.bucketSource, 0)
             assert(!parameters.bucketName)
+            prompterTester.assertAllHandlerCall(1)
         })
 
         it('happy path with valid samconfig.toml', async () => {
@@ -432,7 +436,7 @@ describe('DeployWizard', async function () {
             // generate samconfig.toml in temporary test folder
             await testFolder.write('samconfig.toml', samconfigCompleteData)
 
-            PrompterTester.init()
+            const prompterTester = PrompterTester.init()
                 .handleInputBox('Specify SAM parameter value for SourceBucketName', (inputBox) => {
                     inputBox.acceptValue('my-source-bucket-name')
                 })
@@ -463,6 +467,7 @@ describe('DeployWizard', async function () {
             assert(!parameters.region)
             assert(!parameters.stackName)
             assert(!parameters.bucketSource)
+            prompterTester.assertAllHandlerCall(1)
         })
     })
 
@@ -487,7 +492,7 @@ describe('DeployWizard', async function () {
             const templateFile2 = vscode.Uri.file(await testFolder2.write('template.yaml', validTemplateData))
             await (await globals.templateRegistry).addItem(templateFile2)
 
-            PrompterTester.init()
+            const prompterTester = PrompterTester.init()
                 .handleQuickPick('Select a SAM/CloudFormation Template', async (quickPick) => {
                     // Need sometime to wait for the template to search for template file
                     await quickPick.untilReady()
@@ -544,6 +549,7 @@ describe('DeployWizard', async function () {
             assert.strictEqual(parameters.stackName, 'stack3')
             assert.strictEqual(parameters.bucketSource, 1)
             assert.strictEqual(parameters.bucketName, 'stack-3-bucket')
+            prompterTester.assertAllHandlerCall(1)
         })
 
         it('happy path with samconfig.toml', async () => {
@@ -569,7 +575,7 @@ describe('DeployWizard', async function () {
             await testFolder.write('samconfig.toml', samconfigCompleteData)
             // Simulate return of deployed stacks
 
-            PrompterTester.init()
+            const prompterTester = PrompterTester.init()
                 .handleQuickPick('Select a SAM/CloudFormation Template', async (quickPick) => {
                     // Need sometime to wait for the template to search for template file
                     await quickPick.untilReady()
@@ -596,6 +602,7 @@ describe('DeployWizard', async function () {
             assert(!parameters.region)
             assert(!parameters.stackName)
             assert(!parameters.bucketSource)
+            prompterTester.assertAllHandlerCall(1)
         })
     })
 })

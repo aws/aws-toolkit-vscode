@@ -79,6 +79,7 @@ import {
 import { samSyncUrl } from '../../../shared/constants'
 import { PrompterTester } from '../wizards/prompterTester'
 import { createTestRegionProvider } from '../regions/testUtil'
+import { ToolkitPromptSettings } from '../../../shared/settings'
 
 describe('SyncWizard', async function () {
     const createTester = async (params?: Partial<SyncParams>) =>
@@ -898,6 +899,7 @@ describe('SyncWizard', async () => {
 
     let mockDefaultCFNClient: sinon.SinonStubbedInstance<DefaultCloudFormationClient>
     let mockDefaultS3Client: sinon.SinonStubbedInstance<DefaultS3Client>
+    let registry: CloudFormationTemplateRegistry
 
     beforeEach(async () => {
         testFolder = await TestFolder.create()
@@ -917,11 +919,13 @@ describe('SyncWizard', async () => {
 
         // generate template.yaml in temporary test folder and add to registery
         templateFile = vscode.Uri.file(await testFolder.write('template.yaml', validTemplateData))
-        await (await globals.templateRegistry).addItem(templateFile)
+        registry = await globals.templateRegistry
+        await registry.addItem(templateFile)
     })
 
     afterEach(() => {
         sandbox.restore()
+        registry.reset()
     })
 
     describe('entry: template file', () => {
@@ -940,7 +944,7 @@ describe('SyncWizard', async () => {
             // generate samconfig.toml in temporary test folder
             await testFolder.write('samconfig.toml', samconfigInvalidData)
 
-            PrompterTester.init()
+            const prompterTester = PrompterTester.init()
                 .handleQuickPick('Specify parameters for deploy', async (picker) => {
                     // Need time to check samconfig.toml file and generate options
                     await picker.untilReady()
@@ -995,6 +999,7 @@ describe('SyncWizard', async () => {
             assert.strictEqual(parameters.bucketName, 'stack-1-bucket')
             assert.strictEqual(parameters.skipDependencyLayer, true)
             assert.strictEqual(parameters.syncFlags, '["--dependency-layer","--use-container","--save-params"]')
+            prompterTester.assertAllHandlerCall(1)
         })
 
         it('happy path with valid samconfig.toml', async () => {
@@ -1012,7 +1017,7 @@ describe('SyncWizard', async () => {
             // generate samconfig.toml in temporary test folder
             await testFolder.write('samconfig.toml', samconfigCompleteData)
 
-            PrompterTester.init()
+            const prompterTester = PrompterTester.init()
                 .handleQuickPick('Specify parameters for deploy', async (quickPick) => {
                     // Need time to check samconfig.toml file and generate options
                     await quickPick.untilReady()
@@ -1037,6 +1042,7 @@ describe('SyncWizard', async () => {
             assert(!parameters.bucketName)
             assert.strictEqual(parameters.skipDependencyLayer, true)
             assert(!parameters.syncFlags)
+            prompterTester.assertAllHandlerCall(1)
         })
     })
 
@@ -1064,7 +1070,7 @@ describe('SyncWizard', async () => {
              *  - syncFlags             : [Select]   ["--save-params"]
              */
 
-            PrompterTester.init()
+            const prompterTester = PrompterTester.init()
                 .handleQuickPick('Specify parameters for deploy', async (picker) => {
                     // Need time to check samconfig.toml file and generate options
                     await picker.untilReady()
@@ -1116,6 +1122,7 @@ describe('SyncWizard', async () => {
             assert.strictEqual(parameters.deployType, 'infra')
             assert.strictEqual(parameters.skipDependencyLayer, true)
             assert.strictEqual(parameters.syncFlags, '["--save-params"]')
+            prompterTester.assertAllHandlerCall(1)
         })
 
         it('happy path with valid samconfig.toml', async () => {
@@ -1133,7 +1140,7 @@ describe('SyncWizard', async () => {
             // generate samconfig.toml in temporary test folder
             await testFolder.write('samconfig.toml', samconfigCompleteData)
 
-            PrompterTester.init()
+            const prompterTester = PrompterTester.init()
                 .handleQuickPick('Specify parameters for deploy', async (picker) => {
                     // Need time to check samconfig.toml file and generate options
                     await picker.untilReady()
@@ -1158,6 +1165,7 @@ describe('SyncWizard', async () => {
             assert(!parameters.stackName)
             assert(!parameters.bucketSource)
             assert.strictEqual(parameters.skipDependencyLayer, true)
+            prompterTester.assertAllHandlerCall(1)
         })
     })
 
@@ -1185,7 +1193,7 @@ describe('SyncWizard', async () => {
              *  - syncFlags             : [Select]   ["--dependency-layer","--use-container"]
              */
 
-            PrompterTester.init()
+            const prompterTester = PrompterTester.init()
                 .handleQuickPick('Select a SAM/CloudFormation Template', async (quickPick) => {
                     // Need sometime to wait for the template to search for template file
                     await quickPick.untilReady()
@@ -1240,6 +1248,7 @@ describe('SyncWizard', async () => {
             assert.strictEqual(parameters.deployType, 'infra')
             assert.strictEqual(parameters.skipDependencyLayer, true)
             assert.strictEqual(parameters.syncFlags, '["--dependency-layer","--use-container"]')
+            prompterTester.assertAllHandlerCall(1)
         })
 
         it('happy path with valid samconfig.toml', async () => {
@@ -1257,7 +1266,7 @@ describe('SyncWizard', async () => {
             // generate samconfig.toml in temporary test folder
             await testFolder.write('samconfig.toml', samconfigCompleteData)
 
-            PrompterTester.init()
+            const prompterTester = PrompterTester.init()
                 .handleQuickPick('Select a SAM/CloudFormation Template', async (quickPick) => {
                     // Need sometime to wait for the template to search for template file
                     await quickPick.untilReady()
@@ -1289,6 +1298,7 @@ describe('SyncWizard', async () => {
             assert(!parameters.stackName)
             assert(!parameters.bucketSource)
             assert.strictEqual(parameters.skipDependencyLayer, true)
+            prompterTester.assertAllHandlerCall(1)
         })
     })
 
@@ -1306,7 +1316,7 @@ describe('SyncWizard', async () => {
         it('happy path with valid samconfig.toml', async () => {
             // generate samconfig.toml in temporary test folder
             const samconfigFile = vscode.Uri.file(await testFolder.write('samconfig.toml', samconfigCompleteData))
-            PrompterTester.init()
+            const prompterTester = PrompterTester.init()
                 .handleQuickPick('Specify parameters for deploy', async (picker) => {
                     // Need time to check samconfig.toml file and generate options
                     await picker.untilReady()
@@ -1330,6 +1340,7 @@ describe('SyncWizard', async () => {
             assert.strictEqual(parameters.bucketName, 'aws-sam-cli-managed-default-samclisourcebucket-lftqponsaxsr')
             assert.strictEqual(parameters.skipDependencyLayer, true)
             assert(!parameters.syncFlags)
+            prompterTester.assertAllHandlerCall(1)
         })
 
         it('happy path with empty samconfig.toml', async () => {
@@ -1345,14 +1356,7 @@ describe('SyncWizard', async () => {
              *  - syncFlags             : [Select]   ["--dependency-layer","--use-container","--watch"]
              */
 
-            PrompterTester.init()
-                .handleQuickPick('Select a SAM/CloudFormation Template', async (quickPick) => {
-                    // Need sometime to wait for the template to search for template file
-                    await quickPick.untilReady()
-                    assert.strictEqual(quickPick.items.length, 1)
-                    assert.strictEqual(quickPick.items[0].label, templateFile.fsPath)
-                    quickPick.acceptItem(quickPick.items[0])
-                })
+            const prompterTester = PrompterTester.init()
                 .handleQuickPick('Specify parameters for deploy', async (picker) => {
                     // Need time to check samconfig.toml file and generate options
                     await picker.untilReady()
@@ -1403,6 +1407,7 @@ describe('SyncWizard', async () => {
             assert.strictEqual(parameters.deployType, 'infra')
             assert.strictEqual(parameters.skipDependencyLayer, true)
             assert.strictEqual(parameters.syncFlags, '["--dependency-layer","--use-container","--watch"]')
+            prompterTester.assertAllHandlerCall(1)
         })
     })
 
@@ -1419,7 +1424,7 @@ describe('SyncWizard', async () => {
              *  - syncFlags             : [Select]   all
              */
 
-            PrompterTester.init()
+            const prompterTester = PrompterTester.init()
                 .handleQuickPick('Select a SAM/CloudFormation Template', async (quickPick) => {
                     // Need sometime to wait for the template to search for template file
                     await quickPick.untilReady()
@@ -1478,6 +1483,7 @@ describe('SyncWizard', async () => {
             assert.strictEqual(parameters.deployType, 'infra')
             assert.strictEqual(parameters.skipDependencyLayer, true)
             assert.strictEqual(parameters.syncFlags, '["--dependency-layer","--use-container"]')
+            prompterTester.assertAllHandlerCall(1)
         })
 
         it('happy path with valid samconfig.toml', async () => {
@@ -1495,7 +1501,7 @@ describe('SyncWizard', async () => {
             // generate samconfig.toml in temporary test folder
             await testFolder.write('samconfig.toml', samconfigCompleteData)
 
-            PrompterTester.init()
+            const prompterTester = PrompterTester.init()
                 .handleQuickPick('Select a SAM/CloudFormation Template', async (quickPick) => {
                     // Need sometime to wait for the template to search for template file
                     await quickPick.untilReady()
@@ -1528,6 +1534,7 @@ describe('SyncWizard', async () => {
             assert(!parameters.bucketSource)
             assert(!parameters.syncFlags)
             assert.strictEqual(parameters.skipDependencyLayer, true)
+            prompterTester.assertAllHandlerCall(1)
         })
     })
 })
@@ -1549,6 +1556,7 @@ describe('SAM Sync', () => {
 
     let mockDefaultCFNClient: sinon.SinonStubbedInstance<DefaultCloudFormationClient>
     let mockDefaultS3Client: sinon.SinonStubbedInstance<DefaultS3Client>
+    let registry: CloudFormationTemplateRegistry
 
     // Dependency clients
     beforeEach(async function () {
@@ -1556,10 +1564,12 @@ describe('SAM Sync', () => {
         projectRoot = vscode.Uri.file(testFolder.path)
         workspaceFolder = getWorkspaceFolder(testFolder.path)
         sandbox = sinon.createSandbox()
+        registry = await globals.templateRegistry
 
         // Create template.yaml in temporary test folder and add to registery
         templateFile = vscode.Uri.file(await testFolder.write('template.yaml', validTemplateData))
-        await (await globals.templateRegistry).addItem(templateFile)
+
+        await registry.addItem(templateFile)
 
         // Simulate return of deployed stacks
         mockDefaultCFNClient = sandbox.createStubInstance(CloudFormationClientModule.DefaultCloudFormationClient)
@@ -1589,6 +1599,7 @@ describe('SAM Sync', () => {
 
     afterEach(() => {
         sandbox.restore()
+        registry.reset()
     })
 
     describe(':) path', () => {
@@ -1598,7 +1609,10 @@ describe('SAM Sync', () => {
                 .callsFake(sandbox.stub().resolves({ path: 'sam-cli-path' }))
 
             // Confirm confirmDevStack message
-            getTestWindow().onDidShowMessage((m) => m.items.find((i) => i.title === 'OK')?.select())
+            // getTestWindow().onDidShowMessage((m) => m.items.find((i) => i.title === 'OK')?.select())
+            getTestWindow().onDidShowMessage((message) => {
+                message.selectItem("OK, and don't show this again")
+            })
 
             // Mock  child process with required properties that get called in ProcessTerminal
             mockSamSyncChildProcess = Object.create(ProcessUtilsModule.ChildProcess.prototype, {
@@ -1620,7 +1634,7 @@ describe('SAM Sync', () => {
         })
 
         it('[entry: command palette] specify and save flag should instantiate correct process in terminal', async () => {
-            PrompterTester.init()
+            const prompterTester = PrompterTester.init()
                 .handleQuickPick('Select a SAM/CloudFormation Template', async (quickPick) => {
                     // Need sometime to wait for the template to search for template file
                     await quickPick.untilReady()
@@ -1700,10 +1714,11 @@ describe('SAM Sync', () => {
                 syncedResources: 'CodeOnly',
                 source: undefined,
             })
+            prompterTester.assertAllHandlerCall(1)
         })
 
         it('[entry: template file] specify flag should instantiate correct process in terminal', async () => {
-            PrompterTester.init()
+            const prompterTester = PrompterTester.init()
                 .handleQuickPick('Specify parameters for deploy', async (picker) => {
                     // Need time to check samconfig.toml file and generate options
                     await picker.untilReady()
@@ -1775,6 +1790,7 @@ describe('SAM Sync', () => {
                 syncedResources: 'AllResources',
                 source: 'template',
             })
+            prompterTester.assertAllHandlerCall(1)
         })
 
         it('[entry: appBuilder] use samconfig should instantiate correct process in terminal', async () => {
@@ -1786,7 +1802,7 @@ describe('SAM Sync', () => {
             const appNode = new AppNode(expectedSamAppLocation)
             const samconfigFile = vscode.Uri.file(await testFolder.write('samconfig.toml', samconfigCompleteData))
 
-            PrompterTester.init()
+            const prompterTester = PrompterTester.init()
                 .handleQuickPick('Specify parameters for deploy', async (picker) => {
                     // Need time to check samconfig.toml file and generate options
                     await picker.untilReady()
@@ -1830,6 +1846,7 @@ describe('SAM Sync', () => {
                 syncedResources: 'AllResources',
                 source: 'appBuilderDeploy',
             })
+            prompterTester.assertAllHandlerCall(1)
         })
     })
 
@@ -1853,8 +1870,12 @@ describe('SAM Sync', () => {
         })
 
         it('should abort when customer cancel sync dev stack agreement', async () => {
+            // Set the
+            await ToolkitPromptSettings.instance.update('samcliConfirmDevStack', false)
             // Confirm confirmDevStack message
-            getTestWindow().onDidShowMessage((m) => m.close())
+            getTestWindow().onDidShowMessage((message) => {
+                message.dispose()
+            })
 
             try {
                 await runSync('infra', appNode)
@@ -1883,7 +1904,7 @@ describe('SAM Sync', () => {
             // Confirm confirmDevStack message
             getTestWindow().onDidShowMessage((m) => m.items.find((i) => i.title === 'OK')?.select())
 
-            PrompterTester.init()
+            const prompterTester = PrompterTester.init()
                 .handleQuickPick('Specify parameters for deploy', async (picker) => {
                     // Need time to check samconfig.toml file and generate options
                     await picker.untilReady()
@@ -1913,6 +1934,7 @@ describe('SAM Sync', () => {
                 assert(error instanceof ToolkitError)
                 assert.strictEqual(error.message, 'Failed to sync SAM application')
             }
+            prompterTester.assertAllHandlerCall(1)
         })
     })
 })

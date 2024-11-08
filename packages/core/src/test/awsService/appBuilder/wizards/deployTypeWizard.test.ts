@@ -32,7 +32,7 @@ describe('DeployTypeWizard', function () {
 
     it('customer abort wizard should not call any command function', async function () {
         // Given
-        PrompterTester.init()
+        const prompterTester = PrompterTester.init()
             .handleQuickPick('Select deployment command', async (picker) => {
                 await picker.untilReady()
                 assert.strictEqual(picker.items[0].label, 'Sync')
@@ -45,6 +45,7 @@ describe('DeployTypeWizard', function () {
         const choices = await deployTypeWizard.run()
         // Then
         assert(!choices)
+        prompterTester.assertHandlerCall('Select deployment command', 1)
     })
 
     it('deploy is selected', async function () {
@@ -54,7 +55,7 @@ describe('DeployTypeWizard', function () {
          * More cases are test in Deploy.test.ts
          *
          */
-        PrompterTester.init()
+        const prompterTester = PrompterTester.init()
             .handleQuickPick('Select deployment command', async (picker) => {
                 await picker.untilReady()
                 assert.strictEqual(picker.items[0].label, 'Sync')
@@ -68,11 +69,6 @@ describe('DeployTypeWizard', function () {
             .handleInputBox('Specify SAM parameter value for DestinationBucketName', (inputBox) => {
                 inputBox.acceptValue('my-destination-bucket-name')
             })
-            .handleQuickPick('Select a SAM/CloudFormation Template', async (quickPick) => {
-                // Need sometime to wait for the template to search for template file
-                await quickPick.untilReady()
-                quickPick.acceptItem(quickPick.items[0])
-            })
             .handleQuickPick('Specify parameters for deploy', async (quickPick) => {
                 // Need time to check samconfig.toml file and generate options
                 await quickPick.untilReady()
@@ -84,6 +80,7 @@ describe('DeployTypeWizard', function () {
         const choices = await deployTypeWizard.run()
         // Then
         assert.strictEqual(choices?.choice, 'deploy')
+        prompterTester.assertAllHandlerCall(1)
     })
 
     it('sync is selected', async function () {
@@ -93,18 +90,13 @@ describe('DeployTypeWizard', function () {
          * More cases are test in Sync.test.ts
          *
          */
-        PrompterTester.init()
+        const prompterTester = PrompterTester.init()
             .handleQuickPick('Select deployment command', async (picker) => {
                 await picker.untilReady()
                 assert.strictEqual(picker.items[0].label, 'Sync')
                 assert.strictEqual(picker.items[1].label, 'Deploy')
                 assert.strictEqual(picker.items.length, 2)
                 picker.acceptItem(picker.items[0])
-            })
-            .handleQuickPick('Select a SAM/CloudFormation Template', async (quickPick) => {
-                // Need sometime to wait for the template to search for template file
-                await quickPick.untilReady()
-                quickPick.acceptItem(quickPick.items[0])
             })
             .handleQuickPick('Specify parameters for deploy', async (quickPick) => {
                 // Need time to check samconfig.toml file and generate options
@@ -117,5 +109,6 @@ describe('DeployTypeWizard', function () {
         const choices = await deployTypeWizard.run()
         // Then
         assert.strictEqual(choices?.choice, 'sync')
+        prompterTester.assertAllHandlerCall(1)
     })
 })
