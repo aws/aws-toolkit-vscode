@@ -63,6 +63,7 @@ import { getVersionData } from '../../../codewhisperer/service/transformByQ/tran
 import AdmZip from 'adm-zip'
 import { AuthError } from '../../../auth/sso/server'
 import { isSQLTransformReady } from '../../../dev/config'
+import { spawnSync } from 'child_process'
 
 // These events can be interactions within the chat,
 // or elsewhere in the IDE
@@ -189,10 +190,35 @@ export class GumbyController {
         this.messenger.sendCommandMessage(data)
     }
 
+    // silently check if user has open Java projects using embedded SQL
+    private async anyProjectContainsEmbeddedOracleSQL() {
+        try {
+            // gets just open Java projects
+            const projects = await getValidSQLConversionCandidateProjects()
+            for (const project of projects) {
+                // case-insensitive, recursive search, display only count of matching lines
+                const args = ['-i', '-r', '-c', 'oracle.jdbc.OracleDriver']
+                // TO-DO: handle Windows
+                const spawnResult = spawnSync('grep', args, {
+                    cwd: project.path,
+                    shell: true,
+                    encoding: 'utf-8',
+                })
+                if (spawnResult.status !== 0) {
+                    return false
+                }
+                // TO-DO: parse stdout for the count of matching lines
+            }
+        } catch (err) {
+            return false
+        }
+        return true
+    }
+
     private async transformInitiated(message: any) {
         // feature flag for SQL transformations
-        if (!isSQLTransformReady) {
-            // TODO: if (!projectContainsEmbeddedSQLUsingOracle)
+        const containsOracleSQL = await this.anyProjectContainsEmbeddedOracleSQL()
+        if (!isSQLTransformReady && !containsOracleSQL) {
             await this.handleLanguageUpgrade(message)
             return
         }
