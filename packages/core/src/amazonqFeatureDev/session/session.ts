@@ -157,16 +157,7 @@ export class Session {
     public async updateFilesPaths(params: UpdateFilesPathsParams) {
         const { tabID, filePaths, deletedFiles, messageId, disableFileActions = false } = params
         this.messenger.updateFileComponent(tabID, filePaths, deletedFiles, messageId, disableFileActions)
-        const allFiles = [...filePaths, ...deletedFiles]
-        if (allFiles.some((file) => file.rejected || file.changeApplied)) {
-            if (allFiles.every((file) => file.rejected || file.changeApplied)) {
-                await this.updateChatAnswer(tabID, i18n('AWS.amazonq.featureDev.pillText.continue'))
-            } else {
-                await this.updateChatAnswer(tabID, i18n('AWS.amazonq.featureDev.pillText.acceptRemainingChanges'))
-            }
-        } else {
-            await this.updateChatAnswer(tabID, i18n('AWS.amazonq.featureDev.pillText.acceptAllChanges'))
-        }
+        await this.updateChatAnswer(tabID, this.getInsertCodePillText([...filePaths, ...deletedFiles]))
     }
 
     public async updateChatAnswer(tabID: string, insertCodePillText: string) {
@@ -270,6 +261,16 @@ export class Session {
 
     public updateAcceptCodeTelemetrySent(sent: boolean) {
         this._acceptCodeTelemetrySent = sent
+    }
+
+    public getInsertCodePillText(files: Array<NewFileInfo | DeletedFileInfo>) {
+        if (files.every((file) => file.rejected || file.changeApplied)) {
+            return i18n('AWS.amazonq.featureDev.pillText.continue')
+        }
+        if (files.some((file) => file.rejected || file.changeApplied)) {
+            return i18n('AWS.amazonq.featureDev.pillText.acceptRemainingChanges')
+        }
+        return i18n('AWS.amazonq.featureDev.pillText.acceptAllChanges')
     }
 
     get state() {

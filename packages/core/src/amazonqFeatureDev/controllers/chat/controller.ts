@@ -289,7 +289,11 @@ export class FeatureDevController {
                     tabID: message.tabID,
                     followUps: [
                         {
-                            pillText: i18n('AWS.amazonq.featureDev.pillText.acceptAllChanges'),
+                            pillText:
+                                session?.getInsertCodePillText([
+                                    ...(session?.state.filePaths ?? []),
+                                    ...(session?.state.deletedFiles ?? []),
+                                ]) ?? i18n('AWS.amazonq.featureDev.pillText.acceptAllChanges'),
                             type: FollowUpTypes.InsertCode,
                             icon: 'ok' as MynahIcons,
                             status: 'success',
