@@ -12,4 +12,4 @@ export const betaUrl = {
 }
 
 // feature flag for SQL transformations
-export const isSQLTransformReady = false
+export const isSQLTransformReady = true

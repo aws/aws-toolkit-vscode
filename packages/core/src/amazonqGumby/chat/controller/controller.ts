@@ -192,6 +192,7 @@ export class GumbyController {
     private async transformInitiated(message: any) {
         // feature flag for SQL transformations
         if (!isSQLTransformReady) {
+            // TODO: if (!projectContainsEmbeddedSQLUsingOracle)
             await this.handleLanguageUpgrade(message)
             return
         }
