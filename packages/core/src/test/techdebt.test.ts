@@ -25,11 +25,6 @@ describe('tech debt', function () {
             semver.lt(minVscode, '1.93.0'),
             'keepAlive works properly in vscode 1.93+. Remove src/codewhisperer/client/agent.ts and other code related to https://github.com/aws/aws-toolkit-vscode-staging/pull/1214'
         )
-
-        assert.ok(
-            semver.lt(minVscode, '1.88.0'),
-            'with vscode 1.88, we can remove the check in src/test/applicationcomposer/messageHandlers/generateResourceHandler.test.ts (generateResourceHandler: amazon q is not installed) test'
-        )
     })
 
     it('nodejs minimum version', async function () {

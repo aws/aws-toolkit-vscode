@@ -5,7 +5,6 @@
 
 import assert from 'assert'
 import sinon from 'sinon'
-import semver from 'semver'
 import { createTemplate, createWebviewContext } from '../utils'
 import { generateResourceHandler } from '../../../applicationcomposer/messageHandlers/generateResourceHandler'
 import { Command, MessageType } from '../../../applicationcomposer/types'
@@ -13,7 +12,7 @@ import * as env from '../../../shared/vscode/env'
 
 describe('generateResourceHandler', function () {
     it('amazon q is not installed', async function () {
-        if (isMinVscode('1.89.0')) {
+        if (env.isMinVscode('1.89.0')) {
             this.skip()
         }
         const panel = await createTemplate()
