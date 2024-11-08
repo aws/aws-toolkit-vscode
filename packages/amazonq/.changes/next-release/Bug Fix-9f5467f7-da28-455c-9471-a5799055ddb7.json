@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Fix empty chunks being sent to service and get validationException"
+}
