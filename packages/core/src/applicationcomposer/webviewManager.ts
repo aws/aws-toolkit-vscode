@@ -43,7 +43,7 @@ export class ApplicationComposerManager {
         }
     }
 
-    private getWebviewContent = () => {
+    private getWebviewContent = async () => {
         if (!this.webviewHtml) {
             void this.fetchWebviewHtml()
             return ''
@@ -78,7 +78,11 @@ export class ApplicationComposerManager {
 
         // Existing visualization does not exist, construct new visualization
         try {
-            const newVisualization = new ApplicationComposer(document, this.extensionContext, this.getWebviewContent)
+            const newVisualization = await ApplicationComposer.create(
+                document,
+                this.extensionContext,
+                this.getWebviewContent
+            )
             this.handleNewVisualization(document.uri.fsPath, newVisualization)
 
             if (vscode.version === '1.91.0') {
@@ -101,7 +105,11 @@ export class ApplicationComposerManager {
             const document = await vscode.workspace.openTextDocument({
                 language: 'yaml',
             })
-            const newVisualization = new ApplicationComposer(document, this.extensionContext, this.getWebviewContent)
+            const newVisualization = await ApplicationComposer.create(
+                document,
+                this.extensionContext,
+                this.getWebviewContent
+            )
             this.handleNewVisualization(document.uri.fsPath, newVisualization)
 
             return newVisualization.getPanel()
