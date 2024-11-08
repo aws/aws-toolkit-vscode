@@ -24,10 +24,7 @@ export class LiveTailCodeLensProvider implements vscode.CodeLensProvider {
     }
 
     private buildClearDocumentCodeLens(document: vscode.TextDocument): vscode.CodeLens {
-        const range = new vscode.Range(
-            new vscode.Position(document.lineCount - 1, 0),
-            new vscode.Position(document.lineCount - 1, 0)
-        )
+        const range = this.getBottomOfDocumentRange(document)
         const command: vscode.Command = {
             title: 'Clear document',
             command: 'aws.cwl.clearDocument',
@@ -37,15 +34,19 @@ export class LiveTailCodeLensProvider implements vscode.CodeLensProvider {
     }
 
     private buildStopTailingCodeLens(document: vscode.TextDocument): vscode.CodeLens {
-        const range = new vscode.Range(
-            new vscode.Position(document.lineCount - 1, 0),
-            new vscode.Position(document.lineCount - 1, 0)
-        )
+        const range = this.getBottomOfDocumentRange(document)
         const command: vscode.Command = {
             title: 'Stop tailing',
             command: 'aws.cwl.stopTailingLogGroup',
             arguments: [document],
         }
         return new vscode.CodeLens(range, command)
+    }
+
+    private getBottomOfDocumentRange(document: vscode.TextDocument): vscode.Range {
+        return new vscode.Range(
+            new vscode.Position(document.lineCount - 1, 0),
+            new vscode.Position(document.lineCount - 1, 0)
+        )
     }
 }
