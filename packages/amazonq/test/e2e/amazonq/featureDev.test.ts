@@ -314,6 +314,16 @@ describe('Amazon Q Feature Dev', function () {
                     insertCodeButton = tab.getFollowUpButton(FollowUpTypes.InsertCode)
                     assert.ok(insertCodeButton.pillText === 'Accept remaining changes')
                 })
+
+                it('shows "Continue" when all files are either accepted or rejected, with at least one of them rejected', async () => {
+                    const filePaths = tab.getFilePaths()
+                    for (const filePath of filePaths) {
+                        await clickActionButton(filePath, 'reject-change')
+                    }
+
+                    const insertCodeButton = tab.getFollowUpButton(FollowUpTypes.InsertCode)
+                    assert.ok(insertCodeButton.pillText === 'Continue')
+                })
             })
 
             it('disappears and automatically moves on to the next step when all changes are accepted', async () => {

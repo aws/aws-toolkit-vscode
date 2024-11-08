@@ -312,6 +312,7 @@
     "AWS.amazonq.featureDev.pillText.generatingCode": "Generating code...",
     "AWS.amazonq.featureDev.pillText.requestingChanges": "Requesting changes ...",
     "AWS.amazonq.featureDev.pillText.insertCode": "Accept code",
+    "AWS.amazonq.featureDev.pillText.continue": "Continue",
     "AWS.amazonq.featureDev.pillText.acceptAllChanges": "Accept all changes",
     "AWS.amazonq.featureDev.pillText.acceptRemainingChanges": "Accept remaining changes",
     "AWS.amazonq.featureDev.pillText.stoppingCodeGeneration": "Stopping code generation...",

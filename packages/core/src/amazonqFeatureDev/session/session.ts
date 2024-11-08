@@ -157,8 +157,13 @@ export class Session {
     public async updateFilesPaths(params: UpdateFilesPathsParams) {
         const { tabID, filePaths, deletedFiles, messageId, disableFileActions = false } = params
         this.messenger.updateFileComponent(tabID, filePaths, deletedFiles, messageId, disableFileActions)
-        if ([...filePaths, ...deletedFiles].some((file) => file.rejected || file.changeApplied)) {
-            await this.updateChatAnswer(tabID, i18n('AWS.amazonq.featureDev.pillText.acceptRemainingChanges'))
+        const allFiles = [...filePaths, ...deletedFiles]
+        if (allFiles.some((file) => file.rejected || file.changeApplied)) {
+            if (allFiles.every((file) => file.rejected || file.changeApplied)) {
+                await this.updateChatAnswer(tabID, i18n('AWS.amazonq.featureDev.pillText.continue'))
+            } else {
+                await this.updateChatAnswer(tabID, i18n('AWS.amazonq.featureDev.pillText.acceptRemainingChanges'))
+            }
         } else {
             await this.updateChatAnswer(tabID, i18n('AWS.amazonq.featureDev.pillText.acceptAllChanges'))
         }
