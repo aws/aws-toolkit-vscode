@@ -5,11 +5,13 @@
 import * as vscode from 'vscode'
 import globals from '../../extensionGlobals'
 import { isValidResponse, StepEstimator } from '../../wizards/wizard'
-import { createQuickPick, ExtendedQuickPickOptions, ItemLoadTypes } from '../pickerPrompter'
+import { createQuickPick, DataQuickPickItem, ExtendedQuickPickOptions, ItemLoadTypes } from '../pickerPrompter'
 import { Prompter, PromptResult } from '../prompter'
 import { createRegionPrompter } from './region'
 import { QuickPickPrompter } from '../pickerPrompter'
 import { Region } from '../../regions/endpoints'
+import { createRefreshButton } from '../buttons'
+import { getLogger } from '../../logger'
 
 const switchRegion = Symbol('switchRegion')
 
@@ -22,6 +24,23 @@ export class RegionSubmenu<T> extends Prompter<RegionSubmenuResponse<T>> {
     private currentState: 'data' | 'region' = 'data'
     private steps?: [current: number, total: number]
     public activePrompter?: QuickPickPrompter<typeof switchRegion | T> | QuickPickPrompter<Region>
+    private readonly defaultItems: DataQuickPickItem<typeof switchRegion | T>[] = [
+        {
+            label: 'Actions',
+            kind: vscode.QuickPickItemKind.Separator,
+            data: undefined,
+        },
+        {
+            label: 'Switch Region',
+            data: switchRegion,
+            description: `current region: ${this.currentRegion}`,
+        },
+        {
+            label: this.separatorLabel,
+            kind: vscode.QuickPickItemKind.Separator,
+            data: undefined,
+        },
+    ]
 
     public constructor(
         private readonly itemsProvider: (region: string) => ItemLoadTypes<T>,
@@ -33,30 +52,32 @@ export class RegionSubmenu<T> extends Prompter<RegionSubmenuResponse<T>> {
         super()
     }
 
-    private createMenuPrompter() {
-        const prompter = createQuickPick<T | typeof switchRegion>(
-            this.itemsProvider(this.currentRegion),
-            this.dataOptions as ExtendedQuickPickOptions<T | typeof switchRegion>
-        )
+    public refresh(prompter: QuickPickPrompter<T | typeof switchRegion>): void {
+        // This method cannot be async due to onClick() specifications. Thus we are forced to use .then, .catch as workaround.
+        const activeBefore = prompter.quickPick.activeItems
+        prompter
+            .clearAndLoadItems(this.itemsProvider(this.currentRegion))
+            .then(() => {
+                prompter.quickPick.items = [...this.defaultItems, ...prompter.quickPick.items]
+                prompter.quickPick.activeItems = activeBefore
+            })
+            .catch((e) => {
+                getLogger().error('clearAndLoadItems failed: %s', (e as Error).message)
+            })
+    }
 
-        prompter.quickPick.items = [
-            {
-                label: 'Actions',
-                kind: vscode.QuickPickItemKind.Separator,
-                data: undefined,
-            },
-            {
-                label: 'Switch Region',
-                data: switchRegion,
-                description: `current region: ${this.currentRegion}`,
-            },
-            {
-                label: this.separatorLabel,
-                kind: vscode.QuickPickItemKind.Separator,
-                data: undefined,
-            },
-            ...prompter.quickPick.items,
-        ]
+    private createMenuPrompter() {
+        const refreshButton = createRefreshButton()
+        const items = this.itemsProvider(this.currentRegion)
+        const prompter = createQuickPick<T | typeof switchRegion>(items, {
+            ...this.dataOptions,
+            buttons: [...(this.dataOptions?.buttons ?? []), refreshButton],
+        } as ExtendedQuickPickOptions<T | typeof switchRegion>)
+
+        prompter.quickPick.items = [...this.defaultItems, ...prompter.quickPick.items]
+
+        refreshButton.onClick = () => this.refresh(prompter)
+
         return prompter
     }
 
