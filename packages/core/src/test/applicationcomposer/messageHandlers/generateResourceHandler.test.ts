@@ -13,8 +13,7 @@ import * as env from '../../../shared/vscode/env'
 
 describe('generateResourceHandler', function () {
     it('amazon q is not installed', async function () {
-        const version = env.getMinVscodeVersion()
-        if (semver.lt(version, '1.88.0')) {
+        if (isMinVscode('1.89.0')) {
             this.skip()
         }
         const panel = await createTemplate()
