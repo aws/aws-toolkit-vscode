@@ -14,9 +14,10 @@ import {
 import { ChildProcess } from '../../../../shared/utilities/processUtils'
 import { assertArgIsPresent, assertArgNotPresent, assertArgsContainArgument } from './samCliTestUtils'
 import { fs } from '../../../../shared'
+import { SamCliSettings } from '../../../../shared/sam/cli/samCliSettings'
 import { isWin } from '../../../../shared/vscode/env'
-// eslint-disable-next-line aws-toolkits/no-only-in-tests
-describe.only('SamCliLocalInvokeInvocation', async function () {
+
+describe('SamCliLocalInvokeInvocation', async function () {
     class TestSamLocalInvokeCommand implements SamLocalInvokeCommand {
         public constructor(private readonly onInvoke: ({ ...params }: SamLocalInvokeCommandArgs) => void) {}
 
@@ -31,6 +32,15 @@ describe.only('SamCliLocalInvokeInvocation', async function () {
     let placeholderEventFile: string
     const nonRelevantArg = 'arg is not of interest to this test'
 
+    before(async function () {
+        // File system search on windows can take a while.
+        if (isWin()) {
+            this.timeout(45000)
+        }
+        // This will place the result in the cache allowing all tests to run under same conditions.
+        await SamCliSettings.instance.getOrDetectSamCli()
+    })
+
     beforeEach(async function () {
         tempFolder = await makeTemporaryToolkitFolder()
         placeholderTemplateFile = path.join(tempFolder, 'template.yaml')
@@ -42,40 +52,34 @@ describe.only('SamCliLocalInvokeInvocation', async function () {
     afterEach(async function () {
         await fs.delete(tempFolder, { recursive: true })
     })
-    for (const _ of Array.from({ length: 1000 }, (i) => i)) {
-        // eslint-disable-next-line aws-toolkits/no-only-in-tests
-        it.only('invokes `sam local` with args', async function () {
-            if (isWin()) {
-                // TODO: insert 'C:\\Program Files\\Amazon\\AWSSAMCLI\\bin\\sam.cmd' into the cache.
-                this.timeout(45000)
+
+    it('invokes `sam local` with args', async function () {
+        const taskInvoker: SamLocalInvokeCommand = new TestSamLocalInvokeCommand(
+            (invokeArgs: SamLocalInvokeCommandArgs) => {
+                assert.ok(invokeArgs.args.length >= 2, 'Expected args to be present')
+                assert.strictEqual(invokeArgs.args[0], 'local')
+                assert.strictEqual(invokeArgs.args[1], 'invoke')
+                // --debug is present because tests run with "debug" log-level. #1403
+                assert.strictEqual(invokeArgs.args[2], '--debug')
+                assert.strictEqual(invokeArgs.args[4], '--template')
+                assert.strictEqual(invokeArgs.args[6], '--event')
+                assert.strictEqual(invokeArgs.args[8], '--env-vars')
+
+                // `extraArgs` are appended to the end.
+                assert.strictEqual(invokeArgs.args[10], '--build-dir')
+                assert.strictEqual(invokeArgs.args[11], 'my/build/dir/')
             }
-            const taskInvoker: SamLocalInvokeCommand = new TestSamLocalInvokeCommand(
-                (invokeArgs: SamLocalInvokeCommandArgs) => {
-                    assert.ok(invokeArgs.args.length >= 2, 'Expected args to be present')
-                    assert.strictEqual(invokeArgs.args[0], 'local')
-                    assert.strictEqual(invokeArgs.args[1], 'invoke')
-                    // --debug is present because tests run with "debug" log-level. #1403
-                    assert.strictEqual(invokeArgs.args[2], '--debug')
-                    assert.strictEqual(invokeArgs.args[4], '--template')
-                    assert.strictEqual(invokeArgs.args[6], '--event')
-                    assert.strictEqual(invokeArgs.args[8], '--env-vars')
+        )
 
-                    // `extraArgs` are appended to the end.
-                    assert.strictEqual(invokeArgs.args[10], '--build-dir')
-                    assert.strictEqual(invokeArgs.args[11], 'my/build/dir/')
-                }
-            )
-
-            await new SamCliLocalInvokeInvocation({
-                templateResourceName: nonRelevantArg,
-                templatePath: placeholderTemplateFile,
-                eventPath: placeholderEventFile,
-                environmentVariablePath: nonRelevantArg,
-                invoker: taskInvoker,
-                extraArgs: ['--build-dir', 'my/build/dir/'],
-            }).execute()
-        })
-    }
+        await new SamCliLocalInvokeInvocation({
+            templateResourceName: nonRelevantArg,
+            templatePath: placeholderTemplateFile,
+            eventPath: placeholderEventFile,
+            environmentVariablePath: nonRelevantArg,
+            invoker: taskInvoker,
+            extraArgs: ['--build-dir', 'my/build/dir/'],
+        }).execute()
+    })
 
     it('Passes template resource name to sam cli', async function () {
         const expectedResourceName = 'HelloWorldResource'

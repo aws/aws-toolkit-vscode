@@ -84,7 +84,6 @@ export class SamCliSettings extends fromExtensionManifest('aws.samcli', descript
             return { path: fromConfig, autoDetected: false }
         }
         const fromSearch = await this.locationProvider.getLocation(forceSearch)
-
         SamCliSettings.logIfChanged(`SAM CLI location (version: ${fromSearch?.version}): ${fromSearch?.path}`)
         return { path: fromSearch?.path, autoDetected: true }
     }

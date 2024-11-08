@@ -13,9 +13,14 @@ import { PerfLog } from '../../logger/perfLogger'
 import { tryRun } from '../../utilities/pathFind'
 import { mergeResolvedShellPath } from '../../env/resolveEnv'
 
+interface SamLocation {
+    path: string
+    version: string
+    verified?: boolean
+}
 export class SamCliLocationProvider {
     private static samCliLocator: BaseSamCliLocator | undefined
-    protected static cachedSamLocation: { path: string; version: string } | undefined
+    protected static cachedSamLocation: SamLocation | undefined
 
     /** Checks that the given `sam` actually works by invoking `sam --version`. */
     private static async isValidSamLocation(samPath: string) {
@@ -31,11 +36,11 @@ export class SamCliLocationProvider {
         const cachedLoc = forceSearch ? undefined : SamCliLocationProvider.cachedSamLocation
 
         // Avoid searching the system for `sam` (especially slow on Windows).
-        if (cachedLoc && (await SamCliLocationProvider.isValidSamLocation(cachedLoc.path))) {
+        if (cachedLoc && (cachedLoc.verified || (await SamCliLocationProvider.isValidSamLocation(cachedLoc.path)))) {
+            cachedLoc.verified = true
             perflog.done()
             return cachedLoc
         }
-
         SamCliLocationProvider.cachedSamLocation = await SamCliLocationProvider.getSamCliLocator().getLocation()
         perflog.done()
         return SamCliLocationProvider.cachedSamLocation
