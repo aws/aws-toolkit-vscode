@@ -17,6 +17,7 @@ import { selectFrom } from '../../shared/utilities/tsUtils'
 import { checkLeftContextKeywordsForJson } from './commonUtil'
 import { CodeWhispererSupplementalContext } from '../models/model'
 import { getOptOutPreference } from '../../shared/telemetry/util'
+import { indent } from '../../shared'
 
 let tabSize: number = getTabSizeSetting()
 
@@ -202,18 +203,26 @@ function logSupplementalContext(supplementalContext: CodeWhispererSupplementalCo
         return
     }
 
-    let logString = `CodeWhispererSupplementalContext:
-    isUtg: ${supplementalContext.isUtg},
-    isProcessTimeout: ${supplementalContext.isProcessTimeout},
-    contentsLength: ${supplementalContext.contentsLength},
-    latency: ${supplementalContext.latency},
-`
+    let logString = indent(
+        `CodeWhispererSupplementalContext:
+        isUtg: ${supplementalContext.isUtg},
+        isProcessTimeout: ${supplementalContext.isProcessTimeout},
+        contentsLength: ${supplementalContext.contentsLength},
+        latency: ${supplementalContext.latency}
+        strategy: ${supplementalContext.strategy}`,
+        4,
+        true
+    ).trimStart()
+
     supplementalContext.supplementalContextItems.forEach((context, index) => {
-        logString += `Chunk ${index}:
-        Path: ${context.filePath}
-        Content: ${index}:${context.content}
-        Score: ${context.score}
-        -----------------------------------------------`
+        logString += indent(`\nChunk ${index}:\n`, 4, true)
+        logString += indent(
+            `Path: ${context.filePath}
+            Length: ${context.content.length}
+            Score: ${context.score}`,
+            8,
+            true
+        )
     })
 
     getLogger().debug(logString)
