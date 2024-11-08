@@ -17,8 +17,8 @@ describe('Amazon Q Feature Dev', function () {
     let tab: Messenger
 
     const prompt = 'Add blank.txt file with empty content'
-    const codegenApproachPrompt = prompt + ' and add a readme that describes the changes'
-    const fileLevelAcceptPrompt = prompt + ' and add a license, and a contributing file'
+    const codegenApproachPrompt = `${prompt} and add a readme that describes the changes`
+    const fileLevelAcceptPrompt = `${prompt} and add a license, and a contributing file`
     const tooManyRequestsWaitTime = 100000
 
     function waitForButtons(buttons: FollowUpTypes[]) {
