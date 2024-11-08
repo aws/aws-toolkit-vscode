@@ -138,3 +138,7 @@ export interface RuleContext {
 
 /** Type expected by things that build (or help build) {@link RuleContext} */
 export type AuthState = Omit<AuthUserState, 'source'>
+
+export function getNotificationTelemetryId(n: ToolkitNotification): string {
+    return `TARGETED_NOTIFICATION:${n.id}`
+}
