@@ -33,6 +33,7 @@ export class ErrorMessage extends UiMessage {
 
 export class CodeResultMessage extends UiMessage {
     readonly message!: string
+    readonly codeGenerationId!: string
     readonly references!: {
         information: string
         recommendationContentSpan: {
@@ -48,7 +49,8 @@ export class CodeResultMessage extends UiMessage {
         readonly deletedFiles: DeletedFileInfo[],
         references: CodeReference[],
         tabID: string,
-        conversationID: string
+        conversationID: string,
+        codeGenerationId: string
     ) {
         super(tabID)
         this.references = references
@@ -64,6 +66,7 @@ export class CodeResultMessage extends UiMessage {
                     },
                 }
             })
+        this.codeGenerationId = codeGenerationId
         this.conversationID = conversationID
     }
 }

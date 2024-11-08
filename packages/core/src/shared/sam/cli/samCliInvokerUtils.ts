@@ -6,7 +6,7 @@
 import { SpawnOptions } from 'child_process'
 import { getLogger } from '../../logger'
 import { getUserAgent } from '../../telemetry/util'
-import { ChildProcessResult, ChildProcessOptions } from '../../utilities/childProcess'
+import { ChildProcessResult, ChildProcessOptions } from '../../utilities/processUtils'
 import { ErrorInformation, ToolkitError } from '../../errors'
 import globals from '../../extensionGlobals'
 import { isAutomation } from '../../vscode/env'

@@ -36,7 +36,7 @@ describe('HumanInTheLoopManager', async function () {
         )
         const outputPathResult = path.join(outputDirectoryPath, 'pom.xml')
         assertEqualPaths(newPomFilePath.fsPath, outputPathResult)
-        const newPomFileContents = await fs.readFileAsString(newPomFilePath.path)
+        const newPomFileContents = await fs.readFileText(newPomFilePath.path)
         assert.strictEqual(
             stripStringWhitespace(newPomFileContents),
             stripStringWhitespace(`<?xml version="1.0" encoding="UTF-8"?>

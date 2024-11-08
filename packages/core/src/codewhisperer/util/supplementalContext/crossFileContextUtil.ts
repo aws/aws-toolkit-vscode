@@ -4,18 +4,23 @@
  */
 
 import * as vscode from 'vscode'
-import { fs } from '../../../shared'
+import { FeatureConfigProvider, fs } from '../../../shared'
 import path = require('path')
 import { BM25Document, BM25Okapi } from './rankBm25'
 import { ToolkitError } from '../../../shared/errors'
-import { UserGroup, crossFileContextConfig, supplemetalContextFetchingTimeoutMsg } from '../../models/constants'
+import {
+    crossFileContextConfig,
+    supplementalContextTimeoutInMs,
+    supplemetalContextFetchingTimeoutMsg,
+} from '../../models/constants'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
-import { CodeWhispererUserGroupSettings } from '../userGroupUtil'
 import { isTestFile } from './codeParsingUtil'
 import { getFileDistance } from '../../../shared/filesystemUtilities'
 import { getOpenFilesInWindow } from '../../../shared/utilities/editorUtilities'
 import { getLogger } from '../../../shared/logger/logger'
 import { CodeWhispererSupplementalContext, CodeWhispererSupplementalContextItem } from '../../models/model'
+import { LspController } from '../../../amazonq/lsp/lspController'
+import { waitUntil } from '../../../shared/utilities/timeoutUtils'
 
 type CrossFileSupportedLanguage =
     | 'java'
@@ -48,24 +53,54 @@ interface Chunk {
     score?: number
 }
 
+type SupplementalContextConfig = 'none' | 'v1' | 'v2'
+
 export async function fetchSupplementalContextForSrc(
     editor: vscode.TextEditor,
     cancellationToken: vscode.CancellationToken
 ): Promise<Pick<CodeWhispererSupplementalContext, 'supplementalContextItems' | 'strategy'> | undefined> {
-    const shouldProceed = shouldFetchCrossFileContext(
-        editor.document.languageId,
-        CodeWhispererUserGroupSettings.instance.userGroup
-    )
+    const supplementalContextConfig = getSupplementalContextConfig(editor.document.languageId)
 
-    if (!shouldProceed) {
-        return shouldProceed === undefined
-            ? undefined
-            : {
-                  supplementalContextItems: [],
-                  strategy: 'Empty',
-              }
+    if (supplementalContextConfig === 'none') {
+        return undefined
     }
+    if (supplementalContextConfig === 'v1') {
+        return fetchSupplementalContextForSrcV1(editor, cancellationToken)
+    }
+    const promiseV1 = waitUntil(
+        async function () {
+            return await fetchSupplementalContextForSrcV1(editor, cancellationToken)
+        },
+        { timeout: supplementalContextTimeoutInMs, interval: 10, truthy: false }
+    )
+    const promiseV2 = waitUntil(
+        async function () {
+            return await fetchSupplementalContextForSrcV2(editor)
+        },
+        { timeout: supplementalContextTimeoutInMs, interval: 10, truthy: false }
+    )
+    const [resultV1, resultV2] = await Promise.all([promiseV1, promiseV2])
+    return resultV2 ?? resultV1
+}
 
+export async function fetchSupplementalContextForSrcV2(
+    editor: vscode.TextEditor
+): Promise<Pick<CodeWhispererSupplementalContext, 'supplementalContextItems' | 'strategy'> | undefined> {
+    const inputChunkContent = getInputChunk(editor)
+
+    const inlineProjectContext: { content: string; score: number; filePath: string }[] =
+        await LspController.instance.queryInlineProjectContext(inputChunkContent.content, editor.document.uri.fsPath)
+
+    return {
+        supplementalContextItems: [...inlineProjectContext],
+        strategy: 'LSP',
+    }
+}
+
+export async function fetchSupplementalContextForSrcV1(
+    editor: vscode.TextEditor,
+    cancellationToken: vscode.CancellationToken
+): Promise<Pick<CodeWhispererSupplementalContext, 'supplementalContextItems' | 'strategy'> | undefined> {
     const codeChunksCalculated = crossFileContextConfig.numberOfChunkToFetch
 
     // Step 1: Get relevant cross files to refer
@@ -91,14 +126,21 @@ export async function fetchSupplementalContextForSrc(
 
     // Step 3: Generate Input chunk (10 lines left of cursor position)
     // and Find Best K chunks w.r.t input chunk using BM25
-    const inputChunk: Chunk = getInputChunk(editor, crossFileContextConfig.numberOfLinesEachChunk)
+    const inputChunk: Chunk = getInputChunk(editor)
     const bestChunks: Chunk[] = findBestKChunkMatches(inputChunk, chunkList, crossFileContextConfig.topK)
     throwIfCancelled(cancellationToken)
 
     // Step 4: Transform best chunks to supplemental contexts
     const supplementalContexts: CodeWhispererSupplementalContextItem[] = []
+    let totalLength = 0
     for (const chunk of bestChunks) {
         throwIfCancelled(cancellationToken)
+
+        totalLength += chunk.nextContent.length
+
+        if (totalLength > crossFileContextConfig.maximumTotalLength) {
+            break
+        }
 
         supplementalContexts.push({
             filePath: chunk.fileName,
@@ -137,7 +179,8 @@ function findBestKChunkMatches(chunkInput: Chunk, chunkReferences: Chunk[], k: n
 /* This extract 10 lines to the left of the cursor from trigger file.
  * This will be the inputquery to bm25 matching against list of cross-file chunks
  */
-function getInputChunk(editor: vscode.TextEditor, chunkSize: number) {
+function getInputChunk(editor: vscode.TextEditor) {
+    const chunkSize = crossFileContextConfig.numberOfLinesEachChunk
     const cursorPosition = editor.selection.active
     const startLine = Math.max(cursorPosition.line - chunkSize, 0)
     const endLine = Math.max(cursorPosition.line - 1, 0)
@@ -151,19 +194,17 @@ function getInputChunk(editor: vscode.TextEditor, chunkSize: number) {
 /**
  * Util to decide if we need to fetch crossfile context since CodeWhisperer CrossFile Context feature is gated by userGroup and language level
  * @param languageId: VSCode language Identifier
- * @param userGroup: CodeWhisperer user group settings, refer to userGroupUtil.ts
  * @returns specifically returning undefined if the langueage is not supported,
  * otherwise true/false depending on if the language is fully supported or not belonging to the user group
  */
-function shouldFetchCrossFileContext(
-    languageId: vscode.TextDocument['languageId'],
-    userGroup: UserGroup
-): boolean | undefined {
+function getSupplementalContextConfig(languageId: vscode.TextDocument['languageId']): SupplementalContextConfig {
     if (!isCrossFileSupported(languageId)) {
-        return undefined
+        return 'none'
     }
-
-    return true
+    if (FeatureConfigProvider.instance.isNewProjectContextGroup()) {
+        return 'v2'
+    }
+    return 'v1'
 }
 
 /**
@@ -171,7 +212,7 @@ function shouldFetchCrossFileContext(
  * when a given chunk context passes the match in BM25.
  * Special handling is needed for last(its next points to its own) and first chunk
  */
-function linkChunks(chunks: Chunk[]) {
+export function linkChunks(chunks: Chunk[]) {
     const updatedChunks: Chunk[] = []
 
     // This additional chunk is needed to create a next pointer to chunk 0.
@@ -199,7 +240,7 @@ function linkChunks(chunks: Chunk[]) {
 export async function splitFileToChunks(filePath: string, chunkSize: number): Promise<Chunk[]> {
     const chunks: Chunk[] = []
 
-    const fileContent = (await fs.readFileAsString(filePath)).trimEnd()
+    const fileContent = (await fs.readFileText(filePath)).trimEnd()
     const lines = fileContent.split('\n')
 
     for (let i = 0; i < lines.length; i += chunkSize) {

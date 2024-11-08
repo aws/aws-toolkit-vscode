@@ -5,13 +5,11 @@
 import assert from 'assert'
 import * as sinon from 'sinon'
 import * as path from 'path'
-import * as vscode from 'vscode'
 import * as http from 'http'
 import { ToolkitError } from '../../shared/errors'
 import { Result } from '../../shared/utilities/result'
-import { ChildProcess, ChildProcessResult } from '../../shared/utilities/childProcess'
+import { ChildProcess, ChildProcessResult } from '../../shared/utilities/processUtils'
 import { SshConfig, ensureConnectScript, sshLogFileLocation } from '../../shared/sshConfig'
-import { FakeExtensionContext } from '../fakeExtensionContext'
 import { fileExists, makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import {
     DevEnvironmentId,
@@ -20,8 +18,9 @@ import {
     getCodeCatalystSsmEnv,
 } from '../../codecatalyst/model'
 import { StartDevEnvironmentSessionRequest } from 'aws-sdk/clients/codecatalyst'
-import { mkdir, readFile, writeFile } from 'fs/promises'
+import { mkdir, readFile } from 'fs/promises'
 import fs from '../../shared/fs/fs'
+import { globals } from '../../shared'
 
 class MockSshConfig extends SshConfig {
     // State variables to track logic flow.
@@ -181,22 +180,15 @@ describe('VscodeRemoteSshConfig', async function () {
 })
 
 describe('CodeCatalyst Connect Script', function () {
-    let context: FakeExtensionContext
-
     function isWithin(path1: string, path2: string): boolean {
         const rel = path.relative(path1, path2)
         return !path.isAbsolute(rel) && !rel.startsWith('..') && !!rel
     }
 
-    beforeEach(async function () {
-        context = await FakeExtensionContext.create()
-        context.globalStorageUri = vscode.Uri.file(await makeTemporaryToolkitFolder())
-    })
-
     it('can get a connect script path, adding a copy to global storage', async function () {
-        const script = (await ensureConnectScript(connectScriptPrefix, context)).unwrap().fsPath
+        const script = (await ensureConnectScript(connectScriptPrefix, globals.context)).unwrap().fsPath
         assert.ok(await fileExists(script))
-        assert.ok(isWithin(context.globalStorageUri.fsPath, script))
+        assert.ok(isWithin(globals.context.globalStorageUri.fsPath, script))
     })
 
     function createFakeServer(testDevEnv: DevEnvironmentId) {
@@ -247,8 +239,8 @@ describe('CodeCatalyst Connect Script', function () {
             server.listen({ host: 'localhost', port: 28142 }, () => resolve(`http://localhost:28142`))
         })
 
-        await writeFile(bearerTokenCacheLocation(testDevEnv.id), 'token')
-        const script = (await ensureConnectScript(connectScriptPrefix, context)).unwrap().fsPath
+        await fs.writeFile(bearerTokenCacheLocation(testDevEnv.id), 'token')
+        const script = (await ensureConnectScript(connectScriptPrefix, globals.context)).unwrap().fsPath
         const env = getCodeCatalystSsmEnv('us-weast-1', 'echo', testDevEnv)
         env.CODECATALYST_ENDPOINT = address
 
@@ -280,12 +272,12 @@ describe('CodeCatalyst Connect Script', function () {
         })
 
         it('works if the .ssh directory is missing', async function () {
-            ;(await ensureConnectScript(connectScriptPrefix, context)).unwrap()
+            ;(await ensureConnectScript(connectScriptPrefix, globals.context)).unwrap()
         })
 
         it('works if the .ssh directory exists but has different perms', async function () {
             await mkdir(path.join(tmpDir, '.ssh'), 0o777)
-            ;(await ensureConnectScript(connectScriptPrefix, context)).unwrap()
+            ;(await ensureConnectScript(connectScriptPrefix, globals.context)).unwrap()
         })
     })
 })

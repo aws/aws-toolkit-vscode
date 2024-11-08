@@ -19,6 +19,10 @@ export class SsmClient {
 
     public async terminateSession(session: SSM.Session): Promise<SSM.TerminateSessionResponse> {
         const sessionId = session.SessionId!
+        return await this.terminateSessionFromId(sessionId)
+    }
+
+    public async terminateSessionFromId(sessionId: SSM.SessionId): Promise<SSM.TerminateSessionResponse> {
         const client = await this.createSdkClient()
         const termination = await client
             .terminateSession({ SessionId: sessionId })
@@ -100,5 +104,14 @@ export class SsmClient {
     public async getInstanceAgentPingStatus(target: string): Promise<string> {
         const instanceInformation = await this.describeInstance(target)
         return instanceInformation ? instanceInformation.PingStatus! : 'Inactive'
+    }
+
+    public async describeSessions(state: SSM.SessionState) {
+        const client = await this.createSdkClient()
+        const requester = async (req: SSM.DescribeSessionsRequest) => client.describeSessions(req).promise()
+
+        const response = await pageableToCollection(requester, { State: state }, 'NextToken', 'Sessions').promise()
+
+        return response
     }
 }

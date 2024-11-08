@@ -11,10 +11,6 @@ export type IndexRequestPayload = {
     refresh: boolean
 }
 
-export type IndexRequest = string
-
-export const IndexRequestType: RequestType<IndexRequest, any, any> = new RequestType('lsp/index')
-
 export type ClearRequest = string
 
 export const ClearRequestType: RequestType<ClearRequest, any, any> = new RequestType('lsp/clear')
@@ -22,10 +18,6 @@ export const ClearRequestType: RequestType<ClearRequest, any, any> = new Request
 export type QueryRequest = string
 
 export const QueryRequestType: RequestType<QueryRequest, any, any> = new RequestType('lsp/query')
-
-export type UpdateIndexRequest = string
-
-export const UpdateIndexRequestType: RequestType<UpdateIndexRequest, any, any> = new RequestType('lsp/updateIndex')
 
 export type GetUsageRequest = string
 
@@ -35,3 +27,40 @@ export interface Usage {
     memoryUsage: number
     cpuUsage: number
 }
+
+export type BuildIndexRequestPayload = {
+    filePaths: string[]
+    projectRoot: string
+    config: string
+    language: string
+}
+
+export type BuildIndexRequest = string
+
+export const BuildIndexRequestType: RequestType<BuildIndexRequest, any, any> = new RequestType('lsp/buildIndex')
+
+export type UpdateIndexV2Request = string
+
+export type UpdateIndexV2RequestPayload = { filePaths: string[]; updateMode: string }
+
+export const UpdateIndexV2RequestType: RequestType<UpdateIndexV2Request, any, any> = new RequestType(
+    'lsp/updateIndexV2'
+)
+
+export type QueryInlineProjectContextRequest = string
+export type QueryInlineProjectContextRequestPayload = {
+    query: string
+    filePath: string
+}
+export const QueryInlineProjectContextRequestType: RequestType<QueryInlineProjectContextRequest, any, any> =
+    new RequestType('lsp/queryInlineProjectContext')
+
+export type QueryVectorIndexRequestPayload = { query: string }
+
+export type QueryVectorIndexRequest = string
+
+export const QueryVectorIndexRequestType: RequestType<QueryVectorIndexRequest, any, any> = new RequestType(
+    'lsp/queryVectorIndex'
+)
+
+export type IndexConfig = 'all' | 'default'

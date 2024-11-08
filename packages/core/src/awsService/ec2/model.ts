@@ -3,9 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
-import * as path from 'path'
 import { Session } from 'aws-sdk/clients/ssm'
-import { IAM, SSM } from 'aws-sdk'
+import { EC2, IAM, SSM } from 'aws-sdk'
 import { Ec2Selection } from './prompter'
 import { getOrInstallCli } from '../../shared/utilities/cliUtils'
 import { isCloud9 } from '../../shared/extensionUtilities'
@@ -17,28 +16,33 @@ import {
     ensureDependencies,
     getDeniedSsmActions,
     openRemoteTerminal,
+    promptToAddInlinePolicy,
 } from '../../shared/remoteSession'
 import { DefaultIamClient } from '../../shared/clients/iamClient'
 import { ErrorInformation } from '../../shared/errors'
 import { sshAgentSocketVariable, startSshAgent, startVscodeRemote } from '../../shared/extensions/ssh'
 import { createBoundProcess } from '../../codecatalyst/model'
 import { getLogger } from '../../shared/logger/logger'
-import { Timeout } from '../../shared/utilities/timeoutUtils'
+import { CancellationError, Timeout } from '../../shared/utilities/timeoutUtils'
 import { showMessageWithCancel } from '../../shared/utilities/messages'
-import { SshConfig, sshLogFileLocation } from '../../shared/sshConfig'
+import { SshConfig } from '../../shared/sshConfig'
 import { SshKeyPair } from './sshKeyPair'
-import globals from '../../shared/extensionGlobals'
+import { Ec2SessionTracker } from './remoteSessionManager'
+import { getEc2SsmEnv } from './utils'
 
 export type Ec2ConnectErrorCode = 'EC2SSMStatus' | 'EC2SSMPermission' | 'EC2SSMConnect' | 'EC2SSMAgentStatus'
 
-interface Ec2RemoteEnv extends VscodeRemoteConnection {
+export interface Ec2RemoteEnv extends VscodeRemoteConnection {
     selection: Ec2Selection
+    keyPair: SshKeyPair
+    ssmSession: SSM.StartSessionResponse
 }
 
-export class Ec2ConnectionManager {
+export class Ec2Connecter implements vscode.Disposable {
     protected ssmClient: SsmClient
     protected ec2Client: Ec2Client
     protected iamClient: DefaultIamClient
+    protected sessionManager: Ec2SessionTracker
 
     private policyDocumentationUri = vscode.Uri.parse(
         'https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-getting-started-instance-profile.html'
@@ -52,6 +56,7 @@ export class Ec2ConnectionManager {
         this.ssmClient = this.createSsmSdkClient()
         this.ec2Client = this.createEc2SdkClient()
         this.iamClient = this.createIamSdkClient()
+        this.sessionManager = new Ec2SessionTracker(regionCode, this.ssmClient)
     }
 
     protected createSsmSdkClient(): SsmClient {
@@ -64,6 +69,18 @@ export class Ec2ConnectionManager {
 
     protected createIamSdkClient(): DefaultIamClient {
         return new DefaultIamClient(this.regionCode)
+    }
+
+    public async addActiveSession(sessionId: SSM.SessionId, instanceId: EC2.InstanceId): Promise<void> {
+        await this.sessionManager.addSession(instanceId, sessionId)
+    }
+
+    public async dispose(): Promise<void> {
+        await this.sessionManager.dispose()
+    }
+
+    public isConnectedTo(instanceId: string): boolean {
+        return this.sessionManager.isConnectedTo(instanceId)
     }
 
     public async getAttachedIamRole(instanceId: string): Promise<IAM.Role | undefined> {
@@ -113,13 +130,11 @@ export class Ec2ConnectionManager {
         const hasPermission = await this.hasProperPermissions(IamRole!.Arn)
 
         if (!hasPermission) {
-            const message = `Ensure an IAM role with the required policies is attached to the instance. Found attached role: ${
-                IamRole!.Arn
-            }`
-            this.throwConnectionError(message, selection, {
-                code: 'EC2SSMPermission',
-                documentationUri: this.policyDocumentationUri,
-            })
+            const policiesAdded = await promptToAddInlinePolicy(this.iamClient, IamRole!.Arn!)
+
+            if (!policiesAdded) {
+                throw new CancellationError('user')
+            }
         }
     }
 
@@ -185,6 +200,7 @@ export class Ec2ConnectionManager {
             this.throwGeneralConnectionError(selection, err as Error)
         }
     }
+
     public async prepareEc2RemoteEnvWithProgress(selection: Ec2Selection, remoteUser: string): Promise<Ec2RemoteEnv> {
         const timeout = new Timeout(60000)
         await showMessageWithCancel('AWS: Opening remote connection...', timeout)
@@ -195,9 +211,9 @@ export class Ec2ConnectionManager {
     public async prepareEc2RemoteEnv(selection: Ec2Selection, remoteUser: string): Promise<Ec2RemoteEnv> {
         const logger = this.configureRemoteConnectionLogger(selection.instanceId)
         const { ssm, vsc, ssh } = (await ensureDependencies()).unwrap()
-        const keyPath = await this.configureSshKeys(selection, remoteUser)
+        const keyPair = await this.configureSshKeys(selection, remoteUser)
         const hostNamePrefix = 'aws-ec2-'
-        const sshConfig = new SshConfig(ssh, hostNamePrefix, 'ec2_connect', keyPath)
+        const sshConfig = new SshConfig(ssh, hostNamePrefix, 'ec2_connect', keyPair.getPrivateKeyPath())
 
         const config = await sshConfig.ensureValid()
         if (config.isErr()) {
@@ -206,8 +222,10 @@ export class Ec2ConnectionManager {
 
             throw err
         }
-        const session = await this.ssmClient.startSession(selection.instanceId, 'AWS-StartSSHSession')
-        const vars = getEc2SsmEnv(selection, ssm, session)
+        const ssmSession = await this.ssmClient.startSession(selection.instanceId, 'AWS-StartSSHSession')
+        await this.addActiveSession(selection.instanceId, ssmSession.SessionId!)
+
+        const vars = getEc2SsmEnv(selection, ssm, ssmSession)
         const envProvider = async () => {
             return { [sshAgentSocketVariable]: await startSshAgent(), ...vars }
         }
@@ -224,6 +242,8 @@ export class Ec2ConnectionManager {
             vscPath: vsc,
             SessionProcess,
             selection,
+            keyPair,
+            ssmSession,
         }
     }
 
@@ -233,11 +253,10 @@ export class Ec2ConnectionManager {
         return logger
     }
 
-    public async configureSshKeys(selection: Ec2Selection, remoteUser: string): Promise<string> {
-        const keyPath = path.join(globals.context.globalStorageUri.fsPath, `aws-ec2-key`)
-        const keyPair = await SshKeyPair.getSshKeyPair(keyPath)
+    public async configureSshKeys(selection: Ec2Selection, remoteUser: string): Promise<SshKeyPair> {
+        const keyPair = await SshKeyPair.getSshKeyPair(`aws-ec2-key`, 30000)
         await this.sendSshKeyToInstance(selection, keyPair, remoteUser)
-        return keyPath
+        return keyPair
     }
 
     public async sendSshKeyToInstance(
@@ -268,18 +287,4 @@ export class Ec2ConnectionManager {
 
         throw new ToolkitError(`Unrecognized OS name ${osName} on instance ${instanceId}`, { code: 'UnknownEc2OS' })
     }
-}
-
-function getEc2SsmEnv(selection: Ec2Selection, ssmPath: string, session: SSM.StartSessionResponse): NodeJS.ProcessEnv {
-    return Object.assign(
-        {
-            AWS_REGION: selection.region,
-            AWS_SSM_CLI: ssmPath,
-            LOG_FILE_LOCATION: sshLogFileLocation('ec2', selection.instanceId),
-            STREAM_URL: session.StreamUrl,
-            SESSION_ID: session.SessionId,
-            TOKEN: session.TokenValue,
-        },
-        process.env
-    )
 }

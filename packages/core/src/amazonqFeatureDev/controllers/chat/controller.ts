@@ -14,11 +14,13 @@ import {
     ContentLengthError,
     FeatureDevServiceError,
     MonthlyConversationLimitError,
+    NoChangeRequiredException,
     PrepareRepoFailedError,
     PromptRefusalException,
     SelectedFolderNotInWorkspaceFolderError,
     TabIdNotFoundError,
     UploadCodeError,
+    UploadURLExpired,
     UserMessageNotFoundError,
     WorkspaceFolderNotFoundError,
     ZipFileError,
@@ -45,6 +47,8 @@ import { openDeletedDiff, openDiff } from '../../../amazonq/commons/diff'
 import { i18n } from '../../../shared/i18n-helper'
 import globals from '../../../shared/extensionGlobals'
 
+export const TotalSteps = 3
+
 export interface ChatControllerEventEmitters {
     readonly processHumanChatMessage: EventEmitter<any>
     readonly followUpClicked: EventEmitter<any>
@@ -66,6 +70,7 @@ type OpenDiffMessage = {
     // currently the zip file path
     filePath: string
     deleted: boolean
+    codeGenerationId: string
 }
 
 type fileClickedMessage = {
@@ -131,6 +136,11 @@ export class FeatureDevController {
                     this.initialExamples(data)
                     break
                 case FollowUpTypes.NewTask:
+                    this.messenger.sendAnswer({
+                        type: 'answer',
+                        tabID: data?.tabID,
+                        message: i18n('AWS.amazonq.featureDev.answer.newTaskChanges'),
+                    })
                     return this.newTask(data)
                 case FollowUpTypes.CloseSession:
                     return this.closeSession(data)
@@ -206,14 +216,15 @@ export class FeatureDevController {
         )
 
         let defaultMessage
-        const isDenyListedError = denyListedErrors.some((err) => errorMessage.includes(err))
+        const isDenyListedError = denyListedErrors.some((denyListedError) => err.message.includes(denyListedError))
 
-        switch (err.code) {
-            case ContentLengthError.errorName:
+        switch (err.constructor.name) {
+            case ContentLengthError.name:
                 this.messenger.sendAnswer({
                     type: 'answer',
                     tabID: message.tabID,
                     message: err.message + messageWithConversationId(session?.conversationIdUnsafe),
+                    canBeVoted: true,
                 })
                 this.messenger.sendAnswer({
                     type: 'system-prompt',
@@ -227,14 +238,14 @@ export class FeatureDevController {
                     ],
                 })
                 break
-            case MonthlyConversationLimitError.errorName:
+            case MonthlyConversationLimitError.name:
                 this.messenger.sendMonthlyLimitError(message.tabID)
                 break
-            case FeatureDevServiceError.errorName:
-            case UploadCodeError.errorName:
-            case UserMessageNotFoundError.errorName:
-            case TabIdNotFoundError.errorName:
-            case PrepareRepoFailedError.errorName:
+            case FeatureDevServiceError.name:
+            case UploadCodeError.name:
+            case UserMessageNotFoundError.name:
+            case TabIdNotFoundError.name:
+            case PrepareRepoFailedError.name:
                 this.messenger.sendErrorMessage(
                     errorMessage,
                     message.tabID,
@@ -242,15 +253,25 @@ export class FeatureDevController {
                     session?.conversationIdUnsafe
                 )
                 break
-            case PromptRefusalException.errorName:
-            case ZipFileError.errorName:
+            case PromptRefusalException.name:
+            case ZipFileError.name:
                 this.messenger.sendErrorMessage(errorMessage, message.tabID, 0, session?.conversationIdUnsafe, true)
                 break
-            case CodeIterationLimitError.errorName:
+            case NoChangeRequiredException.name:
+                this.messenger.sendAnswer({
+                    type: 'answer',
+                    tabID: message.tabID,
+                    message: err.message,
+                    canBeVoted: true,
+                })
+                // Allow users to re-work the task description.
+                return this.newTask(message)
+            case CodeIterationLimitError.name:
                 this.messenger.sendAnswer({
                     type: 'answer',
                     tabID: message.tabID,
                     message: err.message + messageWithConversationId(session?.conversationIdUnsafe),
+                    canBeVoted: true,
                 })
                 this.messenger.sendAnswer({
                     type: 'system-prompt',
@@ -263,6 +284,14 @@ export class FeatureDevController {
                             status: 'success',
                         },
                     ],
+                })
+                break
+            case UploadURLExpired.name:
+                this.messenger.sendAnswer({
+                    type: 'answer',
+                    tabID: message.tabID,
+                    message: err.message,
+                    canBeVoted: true,
                 })
                 break
             default:
@@ -281,6 +310,25 @@ export class FeatureDevController {
                 )
 
                 break
+        }
+    }
+
+    /**
+     *
+     * This function dispose cancellation token to free resources and provide a new token.
+     * Since user can abort a call in the same session, when the processing ends, we need provide a new one
+     * to start with the new prompt and allow the ability to stop again.
+     *
+     * @param session
+     */
+
+    private disposeToken(session: Session | undefined) {
+        if (session?.state?.tokenSource?.token.isCancellationRequested) {
+            session?.state.tokenSource?.dispose()
+            if (session?.state?.tokenSource) {
+                session.state.tokenSource = new vscode.CancellationTokenSource()
+            }
+            getLogger().debug('Request cancelled, skipping further processing')
         }
     }
 
@@ -319,7 +367,8 @@ export class FeatureDevController {
                 await this.onCodeGeneration(session, message.message, message.tabID)
             }
         } catch (err: any) {
-            this.processErrorChatMessage(err, message, session)
+            this.disposeToken(session)
+            await this.processErrorChatMessage(err, message, session)
             // Lock the chat input until they explicitly click one of the follow ups
             this.messenger.sendChatInputEnabled(message.tabID, false)
         }
@@ -349,6 +398,11 @@ export class FeatureDevController {
             await session.send(message)
             const filePaths = session.state.filePaths ?? []
             const deletedFiles = session.state.deletedFiles ?? []
+            // Only add the follow up accept/deny buttons when the tab hasn't been closed/request hasn't been cancelled
+            if (session?.state?.tokenSource?.token.isCancellationRequested) {
+                return
+            }
+
             if (filePaths.length === 0 && deletedFiles.length === 0) {
                 this.messenger.sendAnswer({
                     message: i18n('AWS.amazonq.featureDev.pillText.unableGenerateChanges'),
@@ -375,17 +429,13 @@ export class FeatureDevController {
                 return
             }
 
-            // Only add the follow up accept/deny buttons when the tab hasn't been closed/request hasn't been cancelled
-            if (session?.state.tokenSource.token.isCancellationRequested) {
-                return
-            }
-
             this.messenger.sendCodeResult(
                 filePaths,
                 deletedFiles,
                 session.state.references ?? [],
                 tabID,
-                session.uploadId
+                session.uploadId,
+                session.state.codeGenerationId ?? ''
             )
 
             const remainingIterations = session.state.codeGenerationRemainingIterationCount
@@ -411,25 +461,82 @@ export class FeatureDevController {
             this.messenger.sendUpdatePlaceholder(tabID, i18n('AWS.amazonq.featureDev.pillText.selectOption'))
         } finally {
             // Finish processing the event
-            this.messenger.sendAsyncEventProgress(tabID, false, undefined)
 
-            // Lock the chat input until they explicitly click one of the follow ups
-            this.messenger.sendChatInputEnabled(tabID, false)
-
-            if (!this.isAmazonQVisible) {
-                const open = 'Open chat'
-                const resp = await vscode.window.showInformationMessage(
-                    i18n('AWS.amazonq.featureDev.answer.qGeneratedCode'),
-                    open
+            if (session?.state?.tokenSource?.token.isCancellationRequested) {
+                this.workOnNewTask(
+                    session,
+                    session.state.codeGenerationRemainingIterationCount ||
+                        TotalSteps - (session.state?.currentIteration || 0),
+                    session.state.codeGenerationTotalIterationCount || TotalSteps,
+                    session?.state?.tokenSource?.token.isCancellationRequested
                 )
-                if (resp === open) {
-                    await vscode.commands.executeCommand('aws.AmazonQChatView.focus')
-                    // TODO add focusing on the specific tab once that's implemented
+                this.disposeToken(session)
+            } else {
+                this.messenger.sendAsyncEventProgress(tabID, false, undefined)
+
+                // Lock the chat input until they explicitly click one of the follow ups
+                this.messenger.sendChatInputEnabled(tabID, false)
+
+                if (!this.isAmazonQVisible) {
+                    const open = 'Open chat'
+                    const resp = await vscode.window.showInformationMessage(
+                        i18n('AWS.amazonq.featureDev.answer.qGeneratedCode'),
+                        open
+                    )
+                    if (resp === open) {
+                        await vscode.commands.executeCommand('aws.AmazonQChatView.focus')
+                        // TODO add focusing on the specific tab once that's implemented
+                    }
                 }
             }
         }
     }
+    private workOnNewTask(
+        message: any,
+        remainingIterations: number = 0,
+        totalIterations?: number,
+        isStoppedGeneration: boolean = false
+    ) {
+        if (isStoppedGeneration) {
+            this.messenger.sendAnswer({
+                message:
+                    (remainingIterations ?? 0) <= 0
+                        ? "I stopped generating your code. You don't have more iterations left, however, you can start a new session."
+                        : `I stopped generating your code. If you want to continue working on this task, provide another description. You have ${remainingIterations} out of ${totalIterations} code generations left.`,
+                type: 'answer-part',
+                tabID: message.tabID,
+            })
+        }
 
+        if ((remainingIterations <= 0 && isStoppedGeneration) || !isStoppedGeneration) {
+            this.messenger.sendAnswer({
+                type: 'system-prompt',
+                tabID: message.tabID,
+                followUps: [
+                    {
+                        pillText: i18n('AWS.amazonq.featureDev.pillText.newTask'),
+                        type: FollowUpTypes.NewTask,
+                        status: 'info',
+                    },
+                    {
+                        pillText: i18n('AWS.amazonq.featureDev.pillText.closeSession'),
+                        type: FollowUpTypes.CloseSession,
+                        status: 'info',
+                    },
+                ],
+            })
+            this.messenger.sendChatInputEnabled(message.tabID, false)
+            this.messenger.sendUpdatePlaceholder(message.tabID, i18n('AWS.amazonq.featureDev.pillText.selectOption'))
+            return
+        }
+
+        // Ensure that chat input is enabled so that they can provide additional iterations if they choose
+        this.messenger.sendChatInputEnabled(message.tabID, true)
+        this.messenger.sendUpdatePlaceholder(
+            message.tabID,
+            i18n('AWS.amazonq.featureDev.placeholder.additionalImprovements')
+        )
+    }
     // TODO add type
     private async insertCode(message: any) {
         let session
@@ -449,7 +556,6 @@ export class FeatureDevController {
                 result: 'Succeeded',
             })
             await session.insertChanges()
-
             this.messenger.sendAnswer({
                 type: 'answer',
                 tabID: message.tabID,
@@ -457,26 +563,10 @@ export class FeatureDevController {
                 canBeVoted: true,
             })
 
-            this.messenger.sendAnswer({
-                type: 'system-prompt',
-                tabID: message.tabID,
-                followUps: [
-                    {
-                        pillText: i18n('AWS.amazonq.featureDev.pillText.newTask'),
-                        type: FollowUpTypes.NewTask,
-                        status: 'info',
-                    },
-                    {
-                        pillText: i18n('AWS.amazonq.featureDev.pillText.closeSession'),
-                        type: FollowUpTypes.CloseSession,
-                        status: 'info',
-                    },
-                ],
-            })
-
-            this.messenger.sendUpdatePlaceholder(
-                message.tabID,
-                i18n('AWS.amazonq.featureDev.placeholder.additionalImprovements')
+            this.workOnNewTask(
+                message,
+                session.state.codeGenerationRemainingIterationCount,
+                session.state.codeGenerationTotalIterationCount
             )
         } catch (err: any) {
             this.messenger.sendErrorMessage(
@@ -671,6 +761,7 @@ export class FeatureDevController {
 
     private async openDiff(message: OpenDiffMessage) {
         const tabId: string = message.tabID
+        const codeGenerationId: string = message.messageId
         const zipFilePath: string = message.filePath
         const session = await this.sessionStorage.getSession(tabId)
         telemetry.amazonq_isReviewedChanges.emit({
@@ -687,14 +778,32 @@ export class FeatureDevController {
             const name = path.basename(pathInfos.relativePath)
             await openDeletedDiff(pathInfos.absolutePath, name, tabId)
         } else {
-            const rightPath = path.join(session.uploadId, zipFilePath)
+            let uploadId = session.uploadId
+            if (session?.state?.uploadHistory && session.state.uploadHistory[codeGenerationId]) {
+                uploadId = session?.state?.uploadHistory[codeGenerationId].uploadId
+            }
+            const rightPath = path.join(uploadId, zipFilePath)
             await openDiff(pathInfos.absolutePath, rightPath, tabId)
         }
     }
 
     private async stopResponse(message: any) {
+        telemetry.ui_click.emit({ elementId: 'amazonq_stopCodeGeneration' })
+        this.messenger.sendAnswer({
+            message: i18n('AWS.amazonq.featureDev.pillText.stoppingCodeGeneration'),
+            type: 'answer-part',
+            tabID: message.tabID,
+        })
+        this.messenger.sendUpdatePlaceholder(
+            message.tabID,
+            i18n('AWS.amazonq.featureDev.pillText.stoppingCodeGeneration')
+        )
+        this.messenger.sendChatInputEnabled(message.tabID, false)
+
         const session = await this.sessionStorage.getSession(message.tabID)
-        session.state.tokenSource.cancel()
+        if (session.state?.tokenSource) {
+            session.state?.tokenSource?.cancel()
+        }
     }
 
     private async tabOpened(message: any) {
@@ -758,11 +867,7 @@ export class FeatureDevController {
         // Re-run the opening flow, where we check auth + create a session
         await this.tabOpened(message)
 
-        this.messenger.sendAnswer({
-            type: 'answer',
-            tabID: message.tabID,
-            message: i18n('AWS.amazonq.featureDev.answer.newTaskChanges'),
-        })
+        this.messenger.sendChatInputEnabled(message.tabID, true)
         this.messenger.sendUpdatePlaceholder(message.tabID, i18n('AWS.amazonq.featureDev.placeholder.describe'))
     }
 

@@ -17,6 +17,7 @@ import { References } from '../client/codewhisperer'
 import globals from '../../shared/extensionGlobals'
 import { ChatControllerEventEmitters } from '../../amazonqGumby/chat/controller/controller'
 import { TransformationSteps } from '../client/codewhispereruserclient'
+import { Messenger } from '../../amazonqGumby/chat/controller/messenger/messenger'
 
 // unavoidable global variables
 interface VsCodeState {
@@ -48,7 +49,7 @@ export type UtgStrategy = 'ByName' | 'ByContent'
 
 export type CrossFileStrategy = 'OpenTabs_BM25'
 
-export type SupplementalContextStrategy = CrossFileStrategy | UtgStrategy | 'Empty'
+export type SupplementalContextStrategy = CrossFileStrategy | UtgStrategy | 'Empty' | 'LSP'
 
 export interface CodeWhispererSupplementalContext {
     isUtg: boolean
@@ -283,6 +284,11 @@ export enum TransformByQStatus {
     PartiallySucceeded = 'Partially Succeeded',
 }
 
+export enum TransformationType {
+    LANGUAGE_UPGRADE = 'Language Upgrade',
+    SQL_CONVERSION = 'SQL Conversion',
+}
+
 export enum TransformByQReviewStatus {
     NotStarted = 'NotStarted',
     PreparingReview = 'PreparingReview',
@@ -303,6 +309,13 @@ export enum JDKVersion {
     UNSUPPORTED = 'UNSUPPORTED',
 }
 
+export enum DB {
+    ORACLE = 'ORACLE',
+    RDS_POSTGRESQL = 'RDS_POSTGRESQL',
+    AURORA_POSTGRESQL = 'AURORA_POSTGRESQL',
+    OTHER = 'OTHER',
+}
+
 export enum BuildSystem {
     Maven = 'Maven',
     Gradle = 'Gradle',
@@ -311,11 +324,21 @@ export enum BuildSystem {
 
 export class ZipManifest {
     sourcesRoot: string = 'sources/'
-    dependenciesRoot: string | undefined = 'dependencies/'
+    dependenciesRoot: string = 'dependencies/'
     buildLogs: string = 'build-logs.txt'
     version: string = '1.0'
     hilCapabilities: string[] = ['HIL_1pDependency_VersionUpgrade']
-    transformCapabilities: string[] = ['EXPLAINABILITY_V1']
+    transformCapabilities: string[] = ['EXPLAINABILITY_V1'] // TO-DO: for SQL conversions, maybe make this = []
+    customBuildCommand: string = 'clean test'
+    requestedConversions?: {
+        sqlConversion?: {
+            source?: string
+            target?: string
+            schema?: string
+            host?: string
+            sctFileName?: string
+        }
+    }
 }
 
 export interface IHilZipManifestParams {
@@ -363,6 +386,8 @@ export let sessionJobHistory: {
 export class TransformByQState {
     private transformByQState: TransformByQStatus = TransformByQStatus.NotStarted
 
+    private transformationType: TransformationType | undefined = undefined
+
     private projectName: string = ''
     private projectPath: string = ''
 
@@ -373,6 +398,20 @@ export class TransformByQState {
     private sourceJDKVersion: JDKVersion | undefined = undefined
 
     private targetJDKVersion: JDKVersion = JDKVersion.JDK17
+
+    private customBuildCommand: string = ''
+
+    private sourceDB: DB | undefined = undefined
+
+    private targetDB: DB | undefined = undefined
+
+    private schema: string = ''
+
+    private schemaOptions: Set<string> = new Set()
+
+    private sourceServerName: string = ''
+
+    private metadataPathSQL: string = ''
 
     private planFilePath: string = ''
     private summaryFilePath: string = ''
@@ -398,6 +437,7 @@ export class TransformByQState {
     private javaHome: string | undefined = undefined
 
     private chatControllers: ChatControllerEventEmitters | undefined = undefined
+    private chatMessenger: Messenger | undefined = undefined
 
     private dependencyFolderInfo: FolderInfo | undefined = undefined
 
@@ -429,12 +469,20 @@ export class TransformByQState {
         return this.transformByQState === TransformByQStatus.PartiallySucceeded
     }
 
+    public getTransformationType() {
+        return this.transformationType
+    }
+
     public getProjectName() {
         return this.projectName
     }
 
     public getProjectPath() {
         return this.projectPath
+    }
+
+    public getCustomBuildCommand() {
+        return this.customBuildCommand
     }
 
     public getPreBuildLogFilePath() {
@@ -455,6 +503,30 @@ export class TransformByQState {
 
     public getTargetJDKVersion() {
         return this.targetJDKVersion
+    }
+
+    public getSourceDB() {
+        return this.sourceDB
+    }
+
+    public getTargetDB() {
+        return this.targetDB
+    }
+
+    public getSchema() {
+        return this.schema
+    }
+
+    public getSchemaOptions() {
+        return this.schemaOptions
+    }
+
+    public getSourceServerName() {
+        return this.sourceServerName
+    }
+
+    public getMetadataPathSQL() {
+        return this.metadataPathSQL
     }
 
     public getStatus() {
@@ -513,6 +585,10 @@ export class TransformByQState {
         return this.chatControllers
     }
 
+    public getChatMessenger() {
+        return this.chatMessenger
+    }
+
     public getDependencyFolderInfo(): FolderInfo | undefined {
         return this.dependencyFolderInfo
     }
@@ -553,12 +629,20 @@ export class TransformByQState {
         this.transformByQState = TransformByQStatus.PartiallySucceeded
     }
 
+    public setTransformationType(type: TransformationType) {
+        this.transformationType = type
+    }
+
     public setProjectName(name: string) {
         this.projectName = name
     }
 
     public setProjectPath(path: string) {
         this.projectPath = path
+    }
+
+    public setCustomBuildCommand(command: string) {
+        this.customBuildCommand = command
     }
 
     public setStartTime(time: string) {
@@ -575,6 +659,30 @@ export class TransformByQState {
 
     public setTargetJDKVersion(version: JDKVersion) {
         this.targetJDKVersion = version
+    }
+
+    public setSourceDB(db: DB) {
+        this.sourceDB = db
+    }
+
+    public setTargetDB(db: DB) {
+        this.targetDB = db
+    }
+
+    public setSchema(schema: string) {
+        this.schema = schema
+    }
+
+    public setSchemaOptions(schemaOptions: Set<string>) {
+        this.schemaOptions = schemaOptions
+    }
+
+    public setSourceServerName(serverName: string) {
+        this.sourceServerName = serverName
+    }
+
+    public setMetadataPathSQL(path: string) {
+        this.metadataPathSQL = path
     }
 
     public setPlanFilePath(filePath: string) {
@@ -625,6 +733,10 @@ export class TransformByQState {
         this.chatControllers = controllers
     }
 
+    public setChatMessenger(messenger: Messenger) {
+        this.chatMessenger = messenger
+    }
+
     public setDependencyFolderInfo(folderInfo: FolderInfo) {
         this.dependencyFolderInfo = folderInfo
     }
@@ -655,7 +767,16 @@ export class TransformByQState {
         this.jobFailureErrorChatMessage = undefined
         this.jobFailureMetadata = ''
         this.payloadFilePath = ''
+        this.metadataPathSQL = ''
+        this.sourceJDKVersion = undefined
+        this.targetJDKVersion = JDKVersion.JDK17
+        this.sourceDB = undefined
+        this.targetDB = undefined
+        this.sourceServerName = ''
+        this.schemaOptions.clear()
+        this.schema = ''
         this.errorLog = ''
+        this.customBuildCommand = ''
         this.intervalId = undefined
     }
 }

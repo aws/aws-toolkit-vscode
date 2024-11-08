@@ -14,9 +14,10 @@ import {
     defaultQuickpickOptions,
     QuickPickPrompter,
     customUserInput,
+    createMultiPick,
 } from '../../../shared/ui/pickerPrompter'
 import { hasKey, isNonNullable } from '../../../shared/utilities/tsUtils'
-import { WIZARD_BACK } from '../../../shared/wizards/wizard'
+import { WIZARD_BACK, WIZARD_EXIT } from '../../../shared/wizards/wizard'
 import { getTestWindow } from '../../shared/vscode/window'
 import { TestQuickPick } from '../vscode/quickInput'
 
@@ -394,5 +395,130 @@ describe('FilterBoxQuickPickPrompter', function () {
         })
 
         assert.strictEqual(await loadAndPrompt(), testItems[0].data)
+    })
+})
+
+describe('MultiPick', function () {
+    const items: DataQuickPickItem<string>[] = [
+        { label: 'item1', data: 'yes', picked: true },
+        { label: 'item2', data: 'no' },
+    ]
+    const itemsNoPicked: DataQuickPickItem<string>[] = [
+        { label: 'item1', data: 'yes' },
+        { label: 'item2', data: 'no' },
+    ]
+    let picker: TestQuickPick<DataQuickPickItem<string>>
+    let testPrompter: QuickPickPrompter<string>
+
+    const prepareMultipick = async (itemsToLoad: DataQuickPickItem<string>[]) => {
+        picker = getTestWindow().createQuickPick() as typeof picker
+        picker.canSelectMany = true
+        testPrompter = new QuickPickPrompter(picker)
+        await testPrompter.loadItems(itemsToLoad)
+    }
+
+    it('can handle back button', async function () {
+        await prepareMultipick(items)
+        testPrompter.onDidShow(() => picker.pressButton(createBackButton()))
+        assert.strictEqual(await testPrompter.prompt(), WIZARD_BACK)
+    })
+
+    it('can handle exit button', async function () {
+        await prepareMultipick(items)
+        testPrompter.onDidShow(() => picker.dispose())
+        assert.strictEqual(await testPrompter.prompt(), WIZARD_EXIT)
+    })
+
+    it('applies picked options', async function () {
+        await prepareMultipick(items)
+        picker.onDidShow(async () => {
+            picker.acceptDefault()
+        })
+
+        picker.onDidChangeActive(async (items) => {
+            assert.strictEqual(items[0].picked, true)
+            assert.strictEqual(items[1].picked, false)
+            assert.strictEqual(items[0].data, 'yes')
+            assert.strictEqual(items[1].data, 'no')
+        })
+
+        const result = await testPrompter.prompt()
+        assert.deepStrictEqual(result, JSON.stringify(['yes']))
+    })
+
+    it('pick non should return empty array', async function () {
+        await prepareMultipick(itemsNoPicked)
+
+        picker.onDidShow(async () => {
+            picker.acceptDefault()
+        })
+
+        picker.onDidChangeActive(async (items) => {
+            assert.strictEqual(items[0].picked, false)
+            assert.strictEqual(items[1].picked, false)
+            assert.strictEqual(items[0].data, 'yes')
+            assert.strictEqual(items[1].data, 'no')
+        })
+
+        const result = await testPrompter.prompt()
+        assert.deepStrictEqual(result, JSON.stringify([]))
+    })
+
+    it('accept all should return array', async function () {
+        await prepareMultipick(itemsNoPicked)
+        picker.onDidShow(async () => {
+            await picker.untilReady()
+            picker.acceptItems(itemsNoPicked[0], itemsNoPicked[1])
+        })
+
+        const result = await testPrompter.prompt()
+        assert.deepStrictEqual(result, JSON.stringify(['yes', 'no']))
+    })
+
+    it('creates a new prompter with options', async function () {
+        const prompter = createMultiPick(items, { title: 'test' })
+        assert.strictEqual(prompter.quickPick.title, 'test')
+    })
+
+    it('creates a new prompter when given a promise for items', async function () {
+        let resolveItems!: (items: DataQuickPickItem<string>[]) => void
+        const itemsPromise = new Promise<DataQuickPickItem<string>[]>((resolve) => (resolveItems = resolve))
+        const prompter = createMultiPick(itemsPromise)
+        void prompter.prompt()
+        assert.strictEqual(prompter.quickPick.busy, true)
+
+        resolveItems(items)
+        await itemsPromise
+
+        assert.strictEqual(prompter.quickPick.busy, false)
+        assert.deepStrictEqual(prompter.quickPick.items, items)
+    })
+
+    it('creates a new prompter when given an AsyncIterable', async function () {
+        let r1!: (v?: any) => void
+        let r2!: (v?: any) => void
+        const p1 = new Promise((r) => (r1 = r))
+        const p2 = new Promise((r) => (r2 = r))
+
+        async function* generator() {
+            for (const item of items) {
+                if (item === items[0]) {
+                    await p1
+                } else {
+                    await p2
+                }
+                yield [item]
+            }
+        }
+
+        const prompter = createMultiPick(generator())
+        r1()
+        await new Promise((r) => setImmediate(r))
+        assert.deepStrictEqual(prompter.quickPick.items, [items[0]])
+        assert.strictEqual(prompter.quickPick.busy, true)
+        r2()
+        await new Promise((r) => setImmediate(r))
+        assert.deepStrictEqual(prompter.quickPick.items, items)
+        assert.strictEqual(prompter.quickPick.busy, false)
     })
 })

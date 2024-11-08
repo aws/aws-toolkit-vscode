@@ -37,6 +37,7 @@ export const toolkitSettings = {
         "samcliConfirmDevStack": {},
         "remoteConnected": {},
         "codeCatalystConnectionExpired": {},
+        "minIdeVersion": {},
         "ssoCacheError": {}
     },
     "aws.experiments": {

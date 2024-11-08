@@ -1,0 +1,22 @@
+{
+	"date": "2024-11-07",
+	"version": "1.34.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Align example help text with prompt message in chat"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Improve `@workspace` index auto pause start strategy. "
+		},
+		{
+			"type": "Feature",
+			"description": "Allow users to View and Apply diff when they explictily send code to Amazon Q using - Fix, Refactor, Optimize and Send To Prompt."
+		},
+		{
+			"type": "Feature",
+			"description": "Security Scan: Auto-scan now supports JSX, TSX, Kotlin, Scala, and Shell files."
+		}
+	]
+}

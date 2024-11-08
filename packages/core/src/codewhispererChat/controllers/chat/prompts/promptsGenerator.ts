@@ -14,6 +14,7 @@ export class PromptsGenerator {
         ['aws.amazonq.fixCode', 'Fix'],
         ['aws.amazonq.optimizeCode', 'Optimize'],
         ['aws.amazonq.sendToPrompt', 'Send to prompt'],
+        ['aws.amazonq.generateUnitTests', 'Generate unit tests for'],
     ])
 
     public generateForContextMenuCommand(command: EditorContextCommand): string {

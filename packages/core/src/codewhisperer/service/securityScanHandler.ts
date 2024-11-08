@@ -16,7 +16,7 @@ import {
 import { sleep } from '../../shared/utilities/timeoutUtils'
 import * as codewhispererClient from '../client/codewhisperer'
 import * as CodeWhispererConstants from '../models/constants'
-import { existsSync, statSync, readFileSync } from 'fs'
+import { existsSync, statSync, readFileSync } from 'fs' // eslint-disable-line no-restricted-imports
 import { RawCodeScanIssue } from '../models/model'
 import * as crypto from 'crypto'
 import path = require('path')
@@ -123,8 +123,11 @@ export function mapToAggregatedList(
             for (let lineNumber = issue.startLine; lineNumber <= issue.endLine; lineNumber++) {
                 const line = editor.document.lineAt(lineNumber - 1)?.text
                 const codeContent = issue.codeSnippet.find((codeIssue) => codeIssue.number === lineNumber)?.content
-                if (line !== codeContent) {
-                    return false
+                if (codeContent?.includes('***')) {
+                    // CodeSnippet contains redacted code so we can't do a direct comparison
+                    return line.length === codeContent.length
+                } else {
+                    return line === codeContent
                 }
             }
         }
@@ -307,7 +310,7 @@ export async function uploadArtifactToS3(
         )
         const errorMessage = getTelemetryReasonDesc(error)?.includes(`"PUT" request failed with code "403"`)
             ? `"PUT" request failed with code "403"`
-            : getTelemetryReasonDesc(error) ?? 'Security scan failed.'
+            : (getTelemetryReasonDesc(error) ?? 'Security scan failed.')
 
         throw new UploadArtifactToS3Error(errorMessage)
     }

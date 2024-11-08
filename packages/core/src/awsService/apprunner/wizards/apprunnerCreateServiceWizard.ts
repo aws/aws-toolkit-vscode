@@ -14,11 +14,11 @@ import { AppRunnerImageRepositoryWizard } from './imageRepositoryWizard'
 import { AppRunnerCodeRepositoryWizard } from './codeRepositoryWizard'
 import { GitExtension } from '../../../shared/extensions/git'
 import { makeDeploymentButton } from './deploymentButton'
-import { apprunnerCreateServiceDocsUrl } from '../../../shared/constants'
 import { createExitPrompter } from '../../../shared/ui/common/exitPrompter'
 import { DefaultIamClient } from '../../../shared/clients/iamClient'
 import { DefaultEcrClient } from '../../../shared/clients/ecrClient'
 import { DefaultAppRunnerClient } from '../../../shared/clients/apprunnerClient'
+import { getAppRunnerCreateServiceDocUrl } from '../../../shared/extensionUtilities'
 
 const localize = nls.loadMessageBundle()
 
@@ -68,7 +68,7 @@ function createInstanceStep(): Prompter<AppRunner.InstanceConfiguration> {
 
     return picker.createQuickPick(items, {
         title: localize('AWS.apprunner.createService.selectInstanceConfig.title', 'Select instance configuration'),
-        buttons: createCommonButtons(apprunnerCreateServiceDocsUrl),
+        buttons: createCommonButtons(getAppRunnerCreateServiceDocUrl()),
     })
 }
 
@@ -92,7 +92,7 @@ function createSourcePrompter(
 
     return picker.createQuickPick([ecrPath, repositoryPath], {
         title: localize('AWS.apprunner.createService.sourceType.title', 'Select a source code location type'),
-        buttons: [autoDeployButton, ...createCommonButtons(apprunnerCreateServiceDocsUrl)],
+        buttons: [autoDeployButton, ...createCommonButtons(getAppRunnerCreateServiceDocUrl())],
     })
 }
 
@@ -137,7 +137,7 @@ export class CreateAppRunnerServiceWizard extends Wizard<AppRunner.CreateService
             input.createInputBox({
                 title: localize('AWS.apprunner.createService.name.title', 'Name your service'),
                 validateInput: validateName, // TODO: we can check if names match any already made services
-                buttons: createCommonButtons(apprunnerCreateServiceDocsUrl),
+                buttons: createCommonButtons(getAppRunnerCreateServiceDocUrl()),
             })
         )
 

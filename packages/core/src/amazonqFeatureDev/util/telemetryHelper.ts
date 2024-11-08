@@ -5,7 +5,7 @@
 
 import { globals } from '../../shared'
 import { getLogger } from '../../shared/logger/logger'
-import { AmazonqApproachInvoke, AmazonqCodeGenerationInvoke, Metric } from '../../shared/telemetry/telemetry'
+import { AmazonqApproachInvoke, AmazonqCodeGenerationInvoke, Span } from '../../shared/telemetry/telemetry'
 import { LLMResponseType } from '../types'
 
 export class TelemetryHelper {
@@ -32,7 +32,7 @@ export class TelemetryHelper {
     }
 
     public recordUserApproachTelemetry(
-        span: Metric<AmazonqApproachInvoke>,
+        span: Span<AmazonqApproachInvoke>,
         amazonqConversationId: string,
         responseType: LLMResponseType
     ) {
@@ -48,7 +48,7 @@ export class TelemetryHelper {
         span.record(event)
     }
 
-    public recordUserCodeGenerationTelemetry(span: Metric<AmazonqCodeGenerationInvoke>, amazonqConversationId: string) {
+    public recordUserCodeGenerationTelemetry(span: Span<AmazonqCodeGenerationInvoke>, amazonqConversationId: string) {
         const event = {
             amazonqConversationId,
             amazonqGenerateCodeIteration: this.generateCodeIteration,

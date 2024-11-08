@@ -64,7 +64,7 @@ export class HumanInTheLoopManager {
     }
 
     public getDependencyListXmlOutput = async () =>
-        await fs.readFileAsString(path.join(this.tmpDependencyListDir, this.localPathToXmlDependencyList))
+        await fs.readFileText(path.join(this.tmpDependencyListDir, this.localPathToXmlDependencyList))
 
     public createPomFileCopy = async (outputDirectoryPath: string, pomFileVirtualFileReference: vscode.Uri) => {
         const newPomCopyRef = await createPomCopy(outputDirectoryPath, pomFileVirtualFileReference, 'pom.xml')

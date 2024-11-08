@@ -50,7 +50,7 @@ export abstract class IotCertificateNode extends AWSTreeNodeBase implements AWSR
             this.certificate.id,
             this.certificate.activeStatus,
             formatLocalized(this.certificate.creationDate),
-            things?.length ?? 0 > 0 ? `\nAttached to: ${things!.join(', ')}` : ''
+            (things?.length ?? 0 > 0) ? `\nAttached to: ${things!.join(', ')}` : ''
         )
         this.iconPath = getIcon('aws-iot-certificate')
         this.description = `\t[${this.certificate.activeStatus}]`

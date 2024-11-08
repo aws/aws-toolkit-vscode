@@ -15,6 +15,14 @@ import { extensionVersion, getCodeCatalystDevEnvId } from './vscode/env'
 import { DevSettings } from './settings'
 import globals from './extensionGlobals'
 import { once } from './utilities/functionUtils'
+import {
+    apprunnerCreateServiceDocUrl,
+    debugNewSamAppDocUrl,
+    documentationUrl,
+    launchConfigDocUrl,
+    samDeployDocUrl,
+    samInitDocUrl,
+} from './constants'
 
 const localize = nls.loadMessageBundle()
 
@@ -26,7 +34,7 @@ const notInitialized = 'notInitialized'
 
 function _isAmazonQ() {
     const id = globals.context.extension.id
-    const isToolkit = id === VSCODE_EXTENSION_ID.awstoolkit || id === VSCODE_EXTENSION_ID.awstoolkitcore
+    const isToolkit = id === VSCODE_EXTENSION_ID.awstoolkit
     const isQ = id === VSCODE_EXTENSION_ID.amazonq
     if (!isToolkit && !isQ) {
         throw Error(`unexpected extension id: ${id}`) // sanity check
@@ -41,41 +49,38 @@ export function productName() {
     return isAmazonQ() ? 'Amazon Q' : `${getIdeProperties().company} Toolkit`
 }
 
+export const getExtensionId = () => {
+    return isAmazonQ() ? VSCODE_EXTENSION_ID.amazonq : VSCODE_EXTENSION_ID.awstoolkit
+}
+
 /** Gets the "AWS" or "Amazon Q" prefix (in package.json: `commands.category`). */
 export function commandsPrefix(): string {
     return isAmazonQ() ? 'Amazon Q' : getIdeProperties().company
 }
 
-export enum IDE {
-    vscode,
-    cloud9,
-    sagemaker,
-    unknown,
-}
-
 let computeRegion: string | undefined = notInitialized
 
-export function getIdeType(): IDE {
+export function getIdeType(): 'vscode' | 'cloud9' | 'sagemaker' | 'unknown' {
     const settings = DevSettings.instance
     if (
         vscode.env.appName === cloud9Appname ||
         vscode.env.appName === cloud9CnAppname ||
         settings.get('forceCloud9', false)
     ) {
-        return IDE.cloud9
+        return 'cloud9'
     }
 
     if (vscode.env.appName === sageMakerAppname) {
-        return IDE.sagemaker
+        return 'sagemaker'
     }
 
     // Theia doesn't necessarily have all env properties
     // so we should be defensive and assume appName is nullable.
     if (vscode.env.appName?.startsWith(vscodeAppname)) {
-        return IDE.vscode
+        return 'vscode'
     }
 
-    return IDE.unknown
+    return 'unknown'
 }
 
 interface IdeProperties {
@@ -100,12 +105,12 @@ export function getIdeProperties(): IdeProperties {
     }
 
     switch (getIdeType()) {
-        case IDE.cloud9:
+        case 'cloud9':
             if (isCn()) {
                 return createCloud9Properties(localize('AWS.title.cn', 'Amazon'))
             }
             return createCloud9Properties(company)
-        case IDE.sagemaker:
+        case 'sagemaker':
             if (isCn()) {
                 // check for cn region
                 return createSageMakerProperties(localize('AWS.title.cn', 'Amazon'))
@@ -143,7 +148,7 @@ function createCloud9Properties(company: string): IdeProperties {
  * Decides if the current system is (the specified flavor of) Cloud9.
  */
 export function isCloud9(flavor: 'classic' | 'codecatalyst' | 'any' = 'any'): boolean {
-    const cloud9 = getIdeType() === IDE.cloud9
+    const cloud9 = getIdeType() === 'cloud9'
     if (!cloud9 || flavor === 'any') {
         return cloud9
     }
@@ -248,6 +253,28 @@ export function showWelcomeMessage(context: vscode.ExtensionContext): void {
         // swallow error and don't block extension load
         getLogger().error(err as Error)
     }
+}
+
+function _getDocumentationUrl(urls: { cloud9: vscode.Uri; toolkit: vscode.Uri }): vscode.Uri {
+    return isCloud9() ? urls.cloud9 : urls.toolkit
+}
+export function getDocUrl() {
+    return _getDocumentationUrl(documentationUrl)
+}
+export function getSamInitDocUrl() {
+    return _getDocumentationUrl(samInitDocUrl)
+}
+export function getLaunchConfigDocUrl() {
+    return _getDocumentationUrl(launchConfigDocUrl)
+}
+export function getSamDeployDocUrl() {
+    return _getDocumentationUrl(samDeployDocUrl)
+}
+export function getDebugNewSamAppDocUrl() {
+    return _getDocumentationUrl(debugNewSamAppDocUrl)
+}
+export function getAppRunnerCreateServiceDocUrl() {
+    return _getDocumentationUrl(apprunnerCreateServiceDocUrl)
 }
 
 /**

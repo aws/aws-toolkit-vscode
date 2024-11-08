@@ -2,7 +2,7 @@
     "name": "amazon-q-vscode",
     "displayName": "Amazon Q",
     "description": "Amazon Q is your generative AI-powered assistant across the software development lifecycle.",
-    "version": "1.26.0-SNAPSHOT",
+    "version": "1.35.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -46,19 +46,20 @@
     "browser": "./dist/src/extensionWeb",
     "scripts": {
         "vscode:prepublish": "npm run clean && npm run buildScripts && webpack --mode production",
-        "buildScripts": "npm run generateNonCodeFiles && npm run copyFiles && npm run generateIcons && npm run generateSettings && npm run syncPackageJson && tsc -p ./ --noEmit",
+        "buildScripts": "npm run generateNonCodeFiles && npm run copyFiles && npm run generateIcons && npm run generateSettings && tsc -p ./ --noEmit",
         "generateNonCodeFiles": "ts-node ../../scripts/generateNonCodeFiles.ts",
         "copyFiles": "ts-node ./scripts/build/copyFiles.ts",
-        "syncPackageJson": "ts-node ./scripts/build/syncPackageJson.ts",
         "clean": "ts-node ../../scripts/clean.ts dist/ LICENSE NOTICE",
-        "compile": "npm run clean && npm run buildScripts && webpack --mode development",
+        "compile": "npm run clean && npm run buildScripts && webpack",
+        "compileDev": "npm run testCompile && webpack --mode development",
         "compileOnly": "tsc -p ./",
         "package": "ts-node ../../scripts/package.ts",
         "lint": "true",
         "watch": "npm run clean && npm run buildScripts && tsc -watch -p ./",
         "testCompile": "npm run clean && npm run buildScripts && npm run compileOnly",
-        "test": "npm run testCompile && c8 --allowExternal ts-node ../core/scripts/test/test.ts dist/test/unit/index.js ../core/dist/src/testFixtures/workspaceFolder",
-        "testE2E": "npm run testCompile && c8 --allowExternal ts-node ../core/scripts/test/testE2E.ts dist/test/e2e/index.js ../core/dist/src/testFixtures/workspaceFolder",
+        "test": "npm run testCompile && c8 --allowExternal ts-node ../core/scripts/test/launchTest.ts unit dist/test/unit/index.js ../core/dist/src/testFixtures/workspaceFolder",
+        "testE2E": "npm run testCompile && c8 --allowExternal ts-node ../core/scripts/test/launchTest.ts e2e dist/test/e2e/index.js ../core/dist/src/testFixtures/workspaceFolder",
+        "testWeb": "npm run compileDev && c8 --allowExternal ts-node ../core/scripts/test/launchTest.ts web dist/test/web/testRunnerWebCore.js",
         "webRun": "npx @vscode/test-web --open-devtools --browserOption=--disable-web-security --waitForDebugger=9222 --extensionDevelopmentPath=. .",
         "webWatch": "npm run clean && npm run buildScripts && webpack --mode development --watch",
         "serve": "webpack serve --config-name mainServe --mode development",
@@ -70,7 +71,6 @@
     "dependencies": {
         "aws-core-vscode": "file:../core/"
     },
-    "devDependencies": {},
     "contributesComments": {
         "configuration": {
             "properties": "Any settings also defined in packages/core/package.json will override same-named settings in this file."
@@ -108,6 +108,10 @@
                             "default": false
                         },
                         "amazonQSessionConfigurationMessage": {
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "minIdeVersion": {
                             "type": "boolean",
                             "default": false
                         },
@@ -184,16 +188,21 @@
         "views": {
             "amazonq": [
                 {
+                    "id": "aws.amazonq.notifications",
+                    "name": "%AWS.notifications.title%",
+                    "when": "!isCloud9 && !aws.isSageMaker && aws.amazonq.notifications.show"
+                },
+                {
                     "type": "webview",
                     "id": "aws.amazonq.AmazonCommonAuth",
                     "name": "%AWS.amazonq.login%",
-                    "when": "!aws.isSageMaker && !aws.isWebExtHost && aws.amazonq.showLoginView"
+                    "when": "!aws.isWebExtHost && aws.amazonq.showLoginView"
                 },
                 {
                     "type": "webview",
                     "id": "aws.AmazonQChatView",
                     "name": "%AWS.amazonq.chat%",
-                    "when": "!aws.isSageMaker && !aws.isWebExtHost && !aws.amazonq.showLoginView"
+                    "when": "!aws.isWebExtHost && !aws.amazonq.showLoginView"
                 },
                 {
                     "id": "aws.AmazonQNeverShowBadge",
@@ -350,14 +359,30 @@
                     "group": "cw_chat@4"
                 },
                 {
+                    "command": "aws.amazonq.generateUnitTests",
+                    "group": "cw_chat@5",
+                    "when": "aws.codewhisperer.connected && aws.isInternalUser"
+                },
+                {
                     "command": "aws.amazonq.sendToPrompt",
-                    "group": "cw_chat@5"
+                    "group": "cw_chat@6"
+                },
+                {
+                    "command": "aws.amazonq.inline.invokeChat",
+                    "group": "cw_chat@7"
                 }
             ],
             "editor/context": [
                 {
                     "submenu": "amazonqEditorContextSubmenu",
                     "group": "cw_chat"
+                }
+            ],
+            "view/item/context": [
+                {
+                    "command": "_aws.amazonq.notifications.dismiss",
+                    "when": "viewItem == amazonqNotificationStartUp",
+                    "group": "inline@1"
                 }
             ],
             "aws.amazonq.submenu.feedback": [
@@ -387,6 +412,13 @@
             ]
         },
         "commands": [
+            {
+                "command": "_aws.amazonq.notifications.dismiss",
+                "title": "%AWS.generic.dismiss%",
+                "category": "%AWS.amazonq.title%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
+                "icon": "$(remove-close)"
+            },
             {
                 "command": "aws.amazonq.explainCode",
                 "title": "%AWS.command.amazonq.explainCode%",
@@ -422,6 +454,12 @@
                 "title": "%AWS.command.amazonq.sendToPrompt%",
                 "category": "%AWS.amazonq.title%",
                 "enablement": "aws.codewhisperer.connected"
+            },
+            {
+                "command": "aws.amazonq.generateUnitTests",
+                "title": "%AWS.command.amazonq.generateUnitTests%",
+                "category": "%AWS.amazonq.title%",
+                "enablement": "aws.codewhisperer.connected && aws.isInternalUser"
             },
             {
                 "command": "aws.amazonq.reconnect",
@@ -560,14 +598,20 @@
                 "title": "%AWS.amazonq.toggleCodeScan%",
                 "category": "%AWS.amazonq.title%",
                 "enablement": "aws.codewhisperer.connected"
+            },
+            {
+                "command": "aws.amazonq.inline.invokeChat",
+                "title": "%AWS.amazonq.inline.invokeChat%",
+                "category": "%AWS.amazonq.title%",
+                "enablement": "aws.codewhisperer.connected"
             }
         ],
         "keybindings": [
             {
                 "command": "_aws.amazonq.focusChat.keybinding",
-                "win": "win+i",
-                "mac": "cmd+i",
-                "linux": "meta+i"
+                "win": "win+alt+i",
+                "mac": "cmd+alt+i",
+                "linux": "meta+alt+i"
             },
             {
                 "command": "aws.amazonq.explainCode",
@@ -600,6 +644,13 @@
                 "linux": "meta+alt+q"
             },
             {
+                "command": "aws.amazonq.generateUnitTests",
+                "key": "win+alt+t",
+                "mac": "cmd+alt+t",
+                "linux": "meta+alt+t",
+                "when": "aws.codewhisperer.connected && aws.isInternalUser"
+            },
+            {
                 "command": "aws.amazonq.invokeInlineCompletion",
                 "key": "alt+c",
                 "mac": "alt+c",
@@ -626,6 +677,23 @@
                 "key": "left",
                 "command": "editor.action.inlineSuggest.showPrevious",
                 "when": "inlineSuggestionVisible && !editorReadonly && aws.codewhisperer.connected"
+            },
+            {
+                "command": "aws.amazonq.inline.invokeChat",
+                "win": "ctrl+i",
+                "mac": "cmd+i",
+                "linux": "ctrl+i",
+                "when": "editorTextFocus && aws.codewhisperer.connected"
+            },
+            {
+                "command": "aws.amazonq.inline.waitForUserDecisionAcceptAll",
+                "key": "enter",
+                "when": "editorTextFocus && aws.codewhisperer.connected && amazonq.inline.codelensShortcutEnabled"
+            },
+            {
+                "command": "aws.amazonq.inline.waitForUserDecisionRejectAll",
+                "key": "escape",
+                "when": "editorTextFocus && aws.codewhisperer.connected && amazonq.inline.codelensShortcutEnabled"
             }
         ],
         "icons": {
@@ -1027,6 +1095,6 @@
     },
     "engines": {
         "npm": "^10.1.0",
-        "vscode": "^1.68.0"
+        "vscode": "^1.83.0"
     }
 }

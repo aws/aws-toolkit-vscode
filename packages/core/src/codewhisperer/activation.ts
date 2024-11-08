@@ -200,7 +200,11 @@ export async function activate(context: ExtContext): Promise<void> {
                 await openSettings('amazonQ')
             }
         }),
-        Commands.register('aws.amazonq.refreshAnnotation', async (forceProceed: boolean = false) => {
+        Commands.register('aws.amazonq.refreshAnnotation', async (forceProceed: boolean) => {
+            telemetry.record({
+                traceId: TelemetryHelper.instance.traceId,
+            })
+
             const editor = vscode.window.activeTextEditor
             if (editor) {
                 if (forceProceed) {
@@ -614,6 +618,6 @@ export async function enableDefaultConfigCloud9() {
         await editorSettings.update('acceptSuggestionOnEnter', 'on', vscode.ConfigurationTarget.Global)
         await editorSettings.update('snippetSuggestions', 'top', vscode.ConfigurationTarget.Global)
     } catch (error) {
-        getLogger().error('amazonq: Failed to update user settings', error)
+        getLogger().error('amazonq: Failed to update user settings %O', error)
     }
 }

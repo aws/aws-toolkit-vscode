@@ -5,7 +5,7 @@
 import * as vscode from 'vscode'
 import assert from 'assert'
 import { EditorContentController } from '../../../amazonq/commons/controllers/contentController'
-import { openATextEditorWithText } from '../../testUtil'
+import { toTextEditor } from '../../testUtil'
 
 describe('contentController', () => {
     let controller: EditorContentController
@@ -16,7 +16,7 @@ describe('contentController', () => {
 
     describe('insertTextAtCursorPosition', () => {
         it('insert code when left hand size has no non empty character', async () => {
-            const editor = await openATextEditorWithText('def hello_world():\n    ', 'test.py')
+            const editor = await toTextEditor('def hello_world():\n    ', 'test.py')
             if (editor) {
                 const pos = new vscode.Position(1, 4)
                 editor.selection = new vscode.Selection(pos, pos)
@@ -32,7 +32,7 @@ describe('contentController', () => {
         })
 
         it('insert code when left hand size has non empty character', async () => {
-            const editor = await openATextEditorWithText('def hello_world():\n    ', 'test.py')
+            const editor = await toTextEditor('def hello_world():\n    ', 'test.py')
             if (editor) {
                 const pos = new vscode.Position(0, 4)
                 editor.selection = new vscode.Selection(pos, pos)

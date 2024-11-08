@@ -5,8 +5,7 @@
 
 import assert from 'assert'
 import { assertTelemetryCurried, resetCodeWhispererGlobalVariables } from 'aws-core-vscode/test'
-import { TelemetryHelper, CodeWhispererUserGroupSettings, Completion, session } from 'aws-core-vscode/codewhisperer'
-import * as CodeWhispererConstants from 'aws-core-vscode/codewhisperer'
+import { TelemetryHelper, Completion, session } from 'aws-core-vscode/codewhisperer'
 import {
     CodewhispererCompletionType,
     CodewhispererSuggestionState,
@@ -29,7 +28,6 @@ function aUserDecision(
         codewhispererSuggestionState: codewhispererSuggestionState,
         codewhispererTriggerType: 'OnDemand',
         credentialStartUrl: 'https://www.amazon.com',
-        codewhispererUserGroup: 'Control',
     }
 }
 
@@ -96,7 +94,6 @@ describe('telemetryHelper', function () {
         beforeEach(async function () {
             await resetCodeWhispererGlobalVariables()
             sut = new TelemetryHelper()
-            CodeWhispererUserGroupSettings.instance.userGroup = CodeWhispererConstants.UserGroup.Control
         })
 
         it('should return Line and Accept', function () {
@@ -126,7 +123,6 @@ describe('telemetryHelper', function () {
                 codewhispererSuggestionCount: 4,
                 codewhispererSuggestionImportCount: 0,
                 codewhispererSuggestionState: 'Accept',
-                codewhispererUserGroup: 'Control',
                 codewhispererCompletionType: 'Line',
                 codewhispererTypeaheadLength: 0,
                 codewhispererCharactersAccepted: aCompletion().content.length,
@@ -160,7 +156,6 @@ describe('telemetryHelper', function () {
                 codewhispererSuggestionCount: 4,
                 codewhispererSuggestionImportCount: 0,
                 codewhispererSuggestionState: 'Accept',
-                codewhispererUserGroup: 'Control',
                 codewhispererCompletionType: 'Line',
                 codewhispererTypeaheadLength: 0,
                 codewhispererCharactersAccepted: aCompletion().content.length,
@@ -194,7 +189,6 @@ describe('telemetryHelper', function () {
                 codewhispererSuggestionCount: 4,
                 codewhispererSuggestionImportCount: 0,
                 codewhispererSuggestionState: 'Reject',
-                codewhispererUserGroup: 'Control',
                 codewhispererCompletionType: 'Line',
                 codewhispererTypeaheadLength: 0,
                 codewhispererCharactersAccepted: 0,
@@ -252,13 +246,7 @@ describe('telemetryHelper', function () {
             await resetCodeWhispererGlobalVariables()
         })
 
-        afterEach(function () {
-            CodeWhispererUserGroupSettings.instance.reset()
-        })
-
         it('Should call telemetry record for each recommendations with proper arguments', async function () {
-            CodeWhispererUserGroupSettings.instance.userGroup = CodeWhispererConstants.UserGroup.Classifier
-
             const telemetryHelper = new TelemetryHelper()
             const response = [{ content: "print('Hello')" }]
             const requestIdList = ['test_x', 'test_x', 'test_y']
@@ -286,7 +274,6 @@ describe('telemetryHelper', function () {
                 codewhispererSuggestionReferenceCount: 0,
                 codewhispererCompletionType: 'Line',
                 codewhispererLanguage: 'python',
-                codewhispererUserGroup: 'Classifier',
             })
         })
     })

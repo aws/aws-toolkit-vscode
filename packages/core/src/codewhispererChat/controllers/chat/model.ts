@@ -39,24 +39,53 @@ export interface InsertCodeAtCursorPosition {
     command: string | undefined
     tabID: string
     messageId: string
+    userIntent: UserIntent | undefined
     code: string
     insertionTargetType: string | undefined
     codeReference: CodeReference[] | undefined
     eventId: string
     codeBlockIndex: number
     totalCodeBlocks: number
+    codeBlockLanguage: string
 }
 
 export interface CopyCodeToClipboard {
     command: string | undefined
     tabID: string
     messageId: string
+    userIntent: UserIntent | undefined
     code: string
     insertionTargetType: string | undefined
     codeReference: CodeReference[] | undefined
     eventId: string
     codeBlockIndex: number
     totalCodeBlocks: number
+    codeBlockLanguage: string
+}
+
+export interface AcceptDiff {
+    command: string | undefined
+    tabID: string // rename tabId
+    messageId: string
+    actionId: string
+    data: string
+    code: string
+    referenceTrackerInformation?: CodeReference[]
+    eventId: string
+    codeBlockIndex?: number
+    totalCodeBlocks?: number
+}
+export interface ViewDiff {
+    command: string | undefined
+    tabID: string // rename tabId
+    messageId: string
+    actionId: string
+    data: string
+    code: string
+    referenceTrackerInformation?: CodeReference[]
+    eventId: string
+    codeBlockIndex?: number
+    totalCodeBlocks?: number
 }
 
 export type ChatPromptCommandType =
@@ -127,6 +156,7 @@ export interface ChatItemFeedbackMessage {
 
 export enum ChatTriggerType {
     ChatMessage = 'ChatMessage',
+    InlineChatMessage = 'InlineChatMessage',
 }
 
 export interface TriggerPayload {
@@ -143,11 +173,13 @@ export interface TriggerPayload {
     readonly customization: Customization
     relevantTextDocuments?: RelevantTextDocument[]
     useRelevantDocuments?: boolean
+    traceId?: string
 }
 
 export interface InsertedCode {
     readonly conversationID: string
     readonly messageID: string
+    readonly userIntent: UserIntent | undefined
     readonly time: Date
     readonly fileUrl: vscode.Uri
     readonly startPosition: vscode.Position

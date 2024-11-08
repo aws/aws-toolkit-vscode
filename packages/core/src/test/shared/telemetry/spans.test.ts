@@ -14,7 +14,6 @@ import { sleep } from '../../../shared'
 import { withTelemetryContext } from '../../../shared/telemetry/util'
 import { SinonSandbox } from 'sinon'
 import sinon from 'sinon'
-import { stubPerformance } from '../../utilities/performance'
 import * as crypto from '../../../shared/crypto'
 
 describe('TelemetrySpan', function () {
@@ -76,23 +75,6 @@ describe('TelemetrySpan', function () {
             { result: 'Failed', reason: 'bar' },
             { result: 'Succeeded', duration: 100 },
         ])
-    })
-
-    it('records performance', function () {
-        const { expectedUserCpuUsage, expectedSystemCpuUsage, expectedHeapTotal } = stubPerformance(sandbox)
-        const span = new TelemetrySpan('function_call', {
-            emit: true,
-        })
-        span.start()
-        clock.tick(90)
-        span.stop()
-        assertTelemetry('function_call', {
-            userCpuUsage: expectedUserCpuUsage,
-            systemCpuUsage: expectedSystemCpuUsage,
-            heapTotal: expectedHeapTotal,
-            duration: 90,
-            result: 'Succeeded',
-        })
     })
 })
 
@@ -191,7 +173,7 @@ describe('TelemetryTracer', function () {
 
         it('does not change the active span when using a different span', function () {
             tracer.run(metricName, (span) => {
-                tracer.vscode_executeCommand.record({ command: 'foo', debounceCount: 1 })
+                tracer.vscode_executeCommand.emit({ command: 'foo', debounceCount: 1 })
                 assert.strictEqual(tracer.activeSpan, span)
             })
 
@@ -267,28 +249,6 @@ describe('TelemetryTracer', function () {
             assert.match(metric.awsRegion ?? '', /not-set|\w+-\w+-\d+/)
             assert.match(String(metric.duration) ?? '', /\d+/)
             assert.match(metric.requestId ?? '', /[a-z0-9-]+/)
-        })
-
-        it('records performance', function () {
-            clock = installFakeClock()
-            const { expectedUserCpuUsage, expectedSystemCpuUsage, expectedHeapTotal } = stubPerformance(sandbox)
-            tracer.run(
-                'function_call',
-                () => {
-                    clock?.tick(90)
-                },
-                {
-                    emit: true,
-                }
-            )
-
-            assertTelemetry('function_call', {
-                userCpuUsage: expectedUserCpuUsage,
-                systemCpuUsage: expectedSystemCpuUsage,
-                heapTotal: expectedHeapTotal,
-                duration: 90,
-                result: 'Succeeded',
-            })
         })
 
         describe('nested run()', function () {
@@ -628,6 +588,58 @@ describe('TelemetryTracer', function () {
                 inst.doesNotEmit()
                 assertTelemetry('function_call', [])
             })
+        })
+    })
+
+    describe('withTraceId()', function () {
+        const expectedId = 'foo-foo-foo-foo-foo'
+
+        beforeEach(() => {
+            sandbox.stub(crypto, 'randomUUID').returns(expectedId)
+        })
+
+        it('uses trace id', function () {
+            telemetry.withTraceId(() => {
+                telemetry.vscode_viewLogs.emit({
+                    result: 'Succeeded',
+                })
+            }, expectedId)
+
+            const viewLogsEvent = getMetrics('vscode_viewLogs')[0]
+            assert.deepStrictEqual(viewLogsEvent.traceId, expectedId)
+        })
+
+        it('does not use traceId when in a span', function () {
+            telemetry.vscode_executeCommand.run(() => {
+                telemetry.withTraceId(() => {
+                    telemetry.vscode_viewLogs.emit({
+                        result: 'Succeeded',
+                    })
+                }, 'testTraceId')
+            })
+
+            const executeCommandEvent = getMetrics('vscode_executeCommand')[0]
+            assert.deepStrictEqual(executeCommandEvent.traceId, expectedId)
+
+            const viewLogsEvent = getMetrics('vscode_viewLogs')[0]
+            assert.deepStrictEqual(viewLogsEvent.traceId, expectedId)
+        })
+
+        it('passes traceId through regular functions', function () {
+            telemetry.withTraceId(() => {
+                function foo() {
+                    function fi() {
+                        telemetry.vscode_viewLogs.emit({
+                            result: 'Succeeded',
+                        })
+                    }
+                    fi()
+                }
+                foo()
+            }, expectedId)
+
+            const viewLogsEvent = getMetrics('vscode_viewLogs')[0]
+            assert.deepStrictEqual(viewLogsEvent.traceId, expectedId)
         })
     })
 })

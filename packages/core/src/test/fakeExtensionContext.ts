@@ -17,7 +17,7 @@ import {
     SamCliVersionValidatorResult,
 } from '../shared/sam/cli/samCliValidator'
 import { DefaultTelemetryService } from '../shared/telemetry/telemetryService'
-import { ChildProcessResult } from '../shared/utilities/childProcess'
+import { ChildProcessResult } from '../shared/utilities/processUtils'
 import { UriHandler } from '../shared/vscode/uriHandler'
 import { FakeTelemetryPublisher } from './fake/fakeTelemetryService'
 import { MockOutputChannel } from './mockOutputChannel'
@@ -159,6 +159,12 @@ export class FakeMemento implements vscode.Memento {
         return this._storage[key] ?? defaultValue
     }
     public update(key: string, value: any): Thenable<void> {
+        /** From the docs of {@link vscode.Memento.update*()} if a value is updated to undefined, it should be deleted */
+        if (value === undefined) {
+            delete this._storage[key]
+            return Promise.resolve()
+        }
+
         this._storage[key] = value
 
         return Promise.resolve()

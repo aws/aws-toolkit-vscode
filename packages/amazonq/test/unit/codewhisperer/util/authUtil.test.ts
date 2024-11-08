@@ -13,12 +13,12 @@ import {
 } from 'aws-core-vscode/codewhisperer'
 import {
     assertTelemetry,
-    captureEventOnce,
     getTestWindow,
     SeverityLevel,
     createBuilderIdProfile,
     createSsoProfile,
     createTestAuth,
+    captureEventNTimes,
 } from 'aws-core-vscode/test'
 import { Auth, Connection, isAnySsoConnection, isBuilderIdConnection } from 'aws-core-vscode/auth'
 import { globals, vscodeComponent } from 'aws-core-vscode/shared'
@@ -231,15 +231,13 @@ describe('AuthUtil', async function () {
         assert.strictEqual(auth.activeConnection?.id, authUtil.conn?.id)
 
         // Switch to unsupported connection
-        const cwAuthUpdatedConnection = captureEventOnce(authUtil.secondaryAuth.onDidChangeActiveConnection)
+        const cwAuthUpdatedConnection = captureEventNTimes(authUtil.secondaryAuth.onDidChangeActiveConnection, 2)
         await auth.useConnection(unsupportedConn)
-        // This is triggered when the main Auth connection is switched
+        // - This is triggered when the main Auth connection is switched
+        // - This is triggered by registerAuthListener() when it saves the previous active connection as a fallback.
         await cwAuthUpdatedConnection
-        // This is triggered by registerAuthListener() when it saves the previous active connection as a fallback.
-        // TODO in a refactor see if we can simplify multiple multiple triggers on the same event.
-        await captureEventOnce(authUtil.secondaryAuth.onDidChangeActiveConnection)
 
-        // Is using the fallback connection
+        // TODO in a refactor see if we can simplify multiple multiple triggers on the same event.
         assert.ok(authUtil.isConnected())
         assert.ok(authUtil.isUsingSavedConnection)
         assert.notStrictEqual(auth.activeConnection?.id, authUtil.conn?.id)

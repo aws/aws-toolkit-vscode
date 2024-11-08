@@ -112,7 +112,7 @@ export function createDiskCache<V, K>(
             const target = mapKey(key)
 
             try {
-                const result = JSON.parse(await fs.readFileAsString(target))
+                const result = JSON.parse(await fs.readFileText(target))
                 log('loaded', key)
                 return result
             } catch (error) {

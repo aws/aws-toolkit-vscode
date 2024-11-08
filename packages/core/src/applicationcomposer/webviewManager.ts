@@ -116,7 +116,7 @@ export class ApplicationComposerManager {
         void vscode.window.showInformationMessage(
             localize(
                 'AWS.applicationComposer.visualisation.errors.rendering',
-                'There was an error rendering Application Composer, check logs for details.'
+                'There was an error rendering Infrastructure Composer, check logs for details.'
             )
         )
         this.logger.error(`${this.name}: Unable to show App Composer webview: ${err}`)

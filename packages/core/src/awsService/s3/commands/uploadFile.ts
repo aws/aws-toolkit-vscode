@@ -6,7 +6,7 @@
 import * as path from 'path'
 import * as mime from 'mime-types'
 import * as vscode from 'vscode'
-import { statSync } from 'fs'
+import { statSync } from 'fs' // eslint-disable-line no-restricted-imports
 import { S3 } from 'aws-sdk'
 import { getLogger } from '../../../shared/logger'
 import { S3Node } from '../explorer/s3Nodes'
@@ -415,7 +415,7 @@ export async function promptUserForBucket(
     try {
         allBuckets = await s3client.listAllBuckets()
     } catch (e) {
-        getLogger().error('Failed to list buckets from client', e)
+        getLogger().error('Failed to list buckets from client %O', e)
         void vscode.window.showErrorMessage(
             localize('AWS.message.error.promptUserForBucket.listBuckets', 'Failed to list buckets from client')
         )

@@ -4,13 +4,13 @@
  */
 
 import * as path from 'path'
-import * as fs from 'fs-extra'
 
 import { CloudFormationTemplateRegistry } from '../../shared/fs/templateRegistry'
 import { makeSampleSamTemplateYaml, strToYamlFile } from '../../test/shared/cloudformation/cloudformationTestUtils'
 import { getTestWorkspaceFolder } from '../integrationTestsUtilities'
 import { Timeout, sleep, waitUntil } from '../../shared/utilities/timeoutUtils'
 import assert from 'assert'
+import { fs } from '../../shared'
 
 /**
  * Note: these tests are pretty shallow right now. They do not test the following:
@@ -30,14 +30,14 @@ describe('CloudFormation Template Registry', async function () {
     beforeEach(async function () {
         testDir = path.join(workspaceDir, dir.toString())
         testDirNested = path.join(testDir, 'nested')
-        await fs.mkdirp(testDirNested)
+        await fs.mkdir(testDirNested)
         registry = new CloudFormationTemplateRegistry()
         dir++
     })
 
     afterEach(async function () {
         registry.dispose()
-        await fs.remove(testDir)
+        await fs.delete(testDir, { recursive: true })
     })
 
     it('adds initial template files with yaml and yml extensions at various nesting levels', async function () {
@@ -99,7 +99,7 @@ describe('CloudFormation Template Registry', async function () {
 
         await registryHasTargetNumberOfFiles(registry, 1)
 
-        await fs.remove(filepath)
+        await fs.delete(filepath, { recursive: true })
 
         await registryHasTargetNumberOfFiles(registry, 0)
     })

@@ -15,9 +15,8 @@ import { DefaultSamLocalInvokeCommand, waitForDebuggerMessages } from '../cli/sa
 import { runLambdaFunction } from '../localLambdaRunner'
 import { SamLaunchRequestArgs } from './awsSamDebugger'
 import { getLogger } from '../../logger'
-import * as fs from 'fs-extra'
-import fs2 from '../../fs/fs'
-import { ChildProcess } from '../../utilities/childProcess'
+import fs from '../../fs/fs'
+import { ChildProcess } from '../../utilities/processUtils'
 import { Timeout } from '../../utilities/timeoutUtils'
 import { execFileSync, SpawnOptions } from 'child_process'
 import * as nls from 'vscode-nls'
@@ -212,7 +211,7 @@ async function makeInstallScript(debuggerPath: string, isWindows: boolean): Prom
 
     delveVersion = delveVersion.replace('v', '-')
     const installScriptPath: string = path.join(debuggerPath, `install${delveVersion}.${scriptExt}`)
-    const alreadyInstalled = await fs2.exists(installScriptPath)
+    const alreadyInstalled = await fs.exists(installScriptPath)
 
     if (alreadyInstalled && delveVersion !== '') {
         return undefined
@@ -236,7 +235,7 @@ async function makeInstallScript(debuggerPath: string, isWindows: boolean): Prom
  * @returns False when installation fails
  */
 async function installDebugger(debuggerPath: string): Promise<boolean> {
-    await fs.ensureDir(debuggerPath)
+    await fs.mkdir(debuggerPath)
     const isWindows: boolean = os.platform() === 'win32'
     let installScript: InstallScript | undefined
 
@@ -254,7 +253,7 @@ async function installDebugger(debuggerPath: string): Promise<boolean> {
         })
 
         const code = install.exitCode
-        if (!fs.existsSync(path.join(debuggerPath, 'dlv'))) {
+        if (!(await fs.exists(path.join(debuggerPath, 'dlv')))) {
             throw new Error(`Install script did not generate the Delve binary: exit code ${code}`)
         } else if (code) {
             getLogger().warn(`Install script did not sucessfully run, using old Delve binary...`)
@@ -262,8 +261,8 @@ async function installDebugger(debuggerPath: string): Promise<boolean> {
             getLogger().info(`Installed Delve debugger in ${debuggerPath}`)
         }
     } catch (e) {
-        if (installScript && (await fs2.exists(installScript.path))) {
-            fs.unlinkSync(installScript.path) // Removes the install script since it failed
+        if (installScript && (await fs.exists(installScript.path))) {
+            await fs.delete(installScript.path) // Removes the install script since it failed
         }
         getLogger().error('Failed to cross-compile Delve debugger: %O', e as Error)
         return false

@@ -36,13 +36,13 @@ describe('runtimeLanguageContext', function () {
             ['json', true],
             ['yaml', true],
             ['tf', true],
-            ['dart', false],
-            ['lua', false],
-            ['powershell', false],
-            ['r', false],
-            ['swift', false],
-            ['systemVerilog', false],
-            ['vue', false],
+            ['dart', true],
+            ['lua', true],
+            ['powershell', true],
+            ['r', true],
+            ['swift', true],
+            ['systemVerilog', true],
+            ['vue', true],
             ['plaintext', false],
             ['html', false],
             ['vb', false],
@@ -182,7 +182,7 @@ describe('runtimeLanguageContext', function () {
     })
 
     describe('toRuntimeLanguage', function () {
-        const codewhispererLanguageIds: CodewhispererLanguage[][] = [
+        const codewhispererLanguageIds: [CodewhispererLanguage, string][] = [
             ['c', 'c'],
             ['cpp', 'cpp'],
             ['csharp', 'csharp'],
@@ -201,6 +201,13 @@ describe('runtimeLanguageContext', function () {
             ['sql', 'sql'],
             ['tsx', 'typescript'],
             ['typescript', 'typescript'],
+            ['dart', 'dart'],
+            ['lua', 'lua'],
+            ['powershell', 'powershell'],
+            ['r', 'r'],
+            ['swift', 'swift'],
+            ['systemVerilog', 'systemverilog'],
+            ['vue', 'vue'],
         ]
 
         for (const [inputCwsprLanguageId, expectedCwsprLanguageId] of codewhispererLanguageIds) {
@@ -258,7 +265,7 @@ describe('runtimeLanguageContext', function () {
             })
         }
 
-        const arbitraryStrs: (string | undefined)[] = ['foo', undefined, 'bar', 'R', 'r', 'unknown']
+        const arbitraryStrs: (string | undefined)[] = ['foo', undefined, 'bar', 'unknown']
         for (const inputStr of arbitraryStrs) {
             it(`should return undefined when input str is ${inputStr}`, function () {
                 const actual = languageContext.getLanguageExtensionForNotebook(inputStr)

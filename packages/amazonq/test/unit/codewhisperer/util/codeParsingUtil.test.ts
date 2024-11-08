@@ -3,8 +3,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { extractClasses, extractFunctions, isTestFile, utgLanguageConfigs } from 'aws-core-vscode/codewhisperer'
+import {
+    PlatformLanguageId,
+    extractClasses,
+    extractFunctions,
+    isTestFile,
+    utgLanguageConfigs,
+} from 'aws-core-vscode/codewhisperer'
 import assert from 'assert'
+import { createTestWorkspaceFolder, toTextDocument } from 'aws-core-vscode/test'
 
 describe('RegexValidationForPython', () => {
     it('should extract all function names from a python file content', () => {
@@ -57,6 +64,97 @@ describe('RegexValidationForJava', () => {
 })
 
 describe('isTestFile', () => {
+    let testWsFolder: string
+    beforeEach(async function () {
+        testWsFolder = (await createTestWorkspaceFolder()).uri.fsPath
+    })
+
+    it('validate by file path', async function () {
+        const langs = new Map<string, string>([
+            ['java', '.java'],
+            ['python', '.py'],
+            ['typescript', '.ts'],
+            ['javascript', '.js'],
+            ['typescriptreact', '.tsx'],
+            ['javascriptreact', '.jsx'],
+        ])
+        const testFilePathsWithoutExt = [
+            '/test/MyClass',
+            '/test/my_class',
+            '/tst/MyClass',
+            '/tst/my_class',
+            '/tests/MyClass',
+            '/tests/my_class',
+        ]
+
+        const srcFilePathsWithoutExt = [
+            '/src/MyClass',
+            'MyClass',
+            'foo/bar/MyClass',
+            'foo/my_class',
+            'my_class',
+            'anyFolderOtherThanTest/foo/myClass',
+        ]
+
+        for (const [languageId, ext] of langs) {
+            const testFilePaths = testFilePathsWithoutExt.map((it) => it + ext)
+            for (const testFilePath of testFilePaths) {
+                const actual = await isTestFile(testFilePath, { languageId: languageId })
+                assert.strictEqual(actual, true)
+            }
+
+            const srcFilePaths = srcFilePathsWithoutExt.map((it) => it + ext)
+            for (const srcFilePath of srcFilePaths) {
+                const actual = await isTestFile(srcFilePath, { languageId: languageId })
+                assert.strictEqual(actual, false)
+            }
+        }
+    })
+
+    async function assertIsTestFile(
+        fileNames: string[],
+        config: { languageId: PlatformLanguageId },
+        expected: boolean
+    ) {
+        for (const fileName of fileNames) {
+            const document = await toTextDocument('', fileName, testWsFolder)
+            const actual = await isTestFile(document.uri.fsPath, { languageId: config.languageId })
+            assert.strictEqual(actual, expected)
+        }
+    }
+
+    it('validate by file name', async function () {
+        const camelCaseSrc = ['Foo.java', 'Bar.java', 'Baz.java']
+        await assertIsTestFile(camelCaseSrc, { languageId: 'java' }, false)
+
+        const camelCaseTst = ['FooTest.java', 'BarTests.java']
+        await assertIsTestFile(camelCaseTst, { languageId: 'java' }, true)
+
+        const snakeCaseSrc = ['foo.py', 'bar.py']
+        await assertIsTestFile(snakeCaseSrc, { languageId: 'python' }, false)
+
+        const snakeCaseTst = ['test_foo.py', 'bar_test.py']
+        await assertIsTestFile(snakeCaseTst, { languageId: 'python' }, true)
+
+        const javascriptSrc = ['Foo.js', 'bar.js']
+        await assertIsTestFile(javascriptSrc, { languageId: 'javascript' }, false)
+
+        const javascriptTst = ['Foo.test.js', 'Bar.spec.js']
+        await assertIsTestFile(javascriptTst, { languageId: 'javascript' }, true)
+
+        const typescriptSrc = ['Foo.ts', 'bar.ts']
+        await assertIsTestFile(typescriptSrc, { languageId: 'typescript' }, false)
+
+        const typescriptTst = ['Foo.test.ts', 'Bar.spec.ts']
+        await assertIsTestFile(typescriptTst, { languageId: 'typescript' }, true)
+
+        const jsxSrc = ['Foo.jsx', 'Bar.jsx']
+        await assertIsTestFile(jsxSrc, { languageId: 'javascriptreact' }, false)
+
+        const jsxTst = ['Foo.test.jsx', 'Bar.spec.jsx']
+        await assertIsTestFile(jsxTst, { languageId: 'javascriptreact' }, true)
+    })
+
     it('should return true if the file name matches the test filename pattern - Java', async () => {
         const filePaths = ['/path/to/MyClassTest.java', '/path/to/TestMyClass.java', '/path/to/MyClassTests.java']
         const language = 'java'

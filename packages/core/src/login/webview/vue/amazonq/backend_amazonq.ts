@@ -45,7 +45,7 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
         }
         await activateExtension(VSCODE_EXTENSION_ID.awstoolkit)
         const toolkitExt = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.awstoolkit)
-        const importedApi = toolkitExt?.exports.getApi(VSCODE_EXTENSION_ID.amazonq)
+        const importedApi = toolkitExt?.exports?.getApi(VSCODE_EXTENSION_ID.amazonq)
         if (importedApi && 'listConnections' in importedApi) {
             return ((await importedApi?.listConnections()) as AwsConnection[]).filter(
                 // No need to display Builder ID as an existing connection,

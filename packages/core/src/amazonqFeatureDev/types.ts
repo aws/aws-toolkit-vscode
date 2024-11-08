@@ -9,7 +9,7 @@ import type { CancellationTokenSource } from 'vscode'
 import { Messenger } from './controllers/chat/messenger/messenger'
 import { FeatureDevClient } from './client/featureDev'
 import { TelemetryHelper } from './util/telemetryHelper'
-import { CodeReference } from '../amazonq/webview/ui/connector'
+import { CodeReference, UploadHistory } from '../amazonq/webview/ui/connector'
 import { DiffTreeFileInfo } from '../amazonq/webview/ui/diffTree/types'
 
 export type Interaction = {
@@ -21,6 +21,7 @@ export type Interaction = {
 export interface SessionStateInteraction {
     nextState: SessionState | Omit<SessionState, 'uploadId'> | undefined
     interaction: Interaction
+    currentCodeGenerationId?: string
 }
 
 export enum DevPhase {
@@ -60,12 +61,16 @@ export interface SessionState {
     readonly references?: CodeReference[]
     readonly phase?: SessionStatePhase
     readonly uploadId: string
-    readonly tokenSource: CancellationTokenSource
+    readonly currentIteration?: number
+    currentCodeGenerationId?: string
+    tokenSource?: CancellationTokenSource
+    readonly codeGenerationId?: string
     readonly tabID: string
     interact(action: SessionStateAction): Promise<SessionStateInteraction>
     updateWorkspaceRoot?: (workspaceRoot: string) => void
     codeGenerationRemainingIterationCount?: number
     codeGenerationTotalIterationCount?: number
+    uploadHistory?: UploadHistory
 }
 
 export interface SessionStateConfig {
@@ -74,6 +79,7 @@ export interface SessionStateConfig {
     conversationId: string
     proxyClient: FeatureDevClient
     uploadId: string
+    currentCodeGenerationId?: string
 }
 
 export interface SessionStateAction {
@@ -82,6 +88,8 @@ export interface SessionStateAction {
     messenger: Messenger
     fs: VirtualFileSystem
     telemetry: TelemetryHelper
+    uploadHistory?: UploadHistory
+    tokenSource?: CancellationTokenSource
 }
 
 export type NewFileZipContents = { zipFilePath: string; fileContent: string }

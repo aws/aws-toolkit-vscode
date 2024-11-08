@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import { isLogStreamUri, parseCloudWatchLogsUri } from '../cloudWatchLogsUtils'
+import { cwlUriSchema, isLogStreamUri } from '../cloudWatchLogsUtils'
 import { telemetry, CloudWatchResourceType, Result } from '../../../shared/telemetry/telemetry'
 import fs from '../../../shared/fs/fs'
 
@@ -28,7 +28,7 @@ export async function saveCurrentLogDataContent(): Promise<void> {
         const workspaceDir = vscode.workspace.workspaceFolders
             ? vscode.workspace.workspaceFolders[0].uri
             : vscode.Uri.file(fs.getUserHomeDir())
-        const uriComponents = parseCloudWatchLogsUri(uri)
+        const uriComponents = cwlUriSchema.parse(uri)
         const logGroupInfo = uriComponents.logGroupInfo
 
         const localizedLogFile = localize('AWS.command.saveCurrentLogDataContent.logfile', 'Log File')

@@ -8,7 +8,7 @@ import { toTitleCase } from '../utilities/textUtilities'
 import { getLogger, NullLogger } from '../logger/logger'
 import { FunctionKeys, Functions, getFunctions } from '../utilities/classUtils'
 import { TreeItemContent, TreeNode } from '../treeview/resourceTreeDataProvider'
-import { telemetry, MetricName, VscodeExecuteCommand, Metric } from '../telemetry/telemetry'
+import { telemetry, MetricName, VscodeExecuteCommand, Metric, Span } from '../telemetry/telemetry'
 import globals from '../extensionGlobals'
 import { ToolkitError } from '../errors'
 import crypto from 'crypto'
@@ -498,7 +498,7 @@ function getInstrumenter(
     return <T extends Callback>(fn: T, ...args: Parameters<T>) =>
         span.run(
             (span) => {
-                ;(span as Metric<VscodeExecuteCommand>).record({
+                ;(span as Span<VscodeExecuteCommand>).record({
                     command: id.id,
                     debounceCount,
                     ...fields,

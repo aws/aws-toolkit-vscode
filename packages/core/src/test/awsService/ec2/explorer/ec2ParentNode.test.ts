@@ -17,17 +17,27 @@ import { EC2 } from 'aws-sdk'
 import { AsyncCollection } from '../../../../shared/utilities/asyncCollection'
 import * as FakeTimers from '@sinonjs/fake-timers'
 import { installFakeClock } from '../../../testUtil'
-import { PollingSet } from '../../../../shared/utilities/pollingSet'
+
+export const testInstance = {
+    InstanceId: 'testId',
+    Tags: [
+        {
+            Key: 'Name',
+            Value: 'testName',
+        },
+    ],
+    LastSeenStatus: 'running',
+}
+export const testClient = new Ec2Client('')
+export const testParentNode = new Ec2ParentNode('fake-region', 'testPartition', testClient)
 
 describe('ec2ParentNode', function () {
     let testNode: Ec2ParentNode
-    let defaultInstances: SafeEc2Instance[]
     let client: Ec2Client
     let getInstanceStub: sinon.SinonStub<[filters?: EC2.Filter[] | undefined], Promise<AsyncCollection<EC2.Instance>>>
     let clock: FakeTimers.InstalledClock
     let refreshStub: sinon.SinonStub<[], Promise<void>>
-    let clearTimerStub: sinon.SinonStub<[], void>
-
+    let statusUpdateStub: sinon.SinonStub<[status: string], Promise<string>>
     const testRegion = 'testRegion'
     const testPartition = 'testPartition'
 
@@ -45,36 +55,19 @@ describe('ec2ParentNode', function () {
         client = new Ec2Client(testRegion)
         clock = installFakeClock()
         refreshStub = sinon.stub(Ec2InstanceNode.prototype, 'refreshNode')
-        clearTimerStub = sinon.stub(PollingSet.prototype, 'clearTimer')
-        defaultInstances = [
-            { Name: 'firstOne', InstanceId: '0', LastSeenStatus: 'running' },
-            { Name: 'secondOne', InstanceId: '1', LastSeenStatus: 'running' },
-        ]
+        statusUpdateStub = sinon.stub(Ec2Client.prototype, 'getInstanceStatus')
     })
 
     beforeEach(function () {
         getInstanceStub = sinon.stub(Ec2Client.prototype, 'getInstances')
-        defaultInstances = [
-            { Name: 'firstOne', InstanceId: '0', LastSeenStatus: 'running' },
-            { Name: 'secondOne', InstanceId: '1', LastSeenStatus: 'stopped' },
-        ]
-
-        getInstanceStub.callsFake(async () =>
-            intoCollection(
-                defaultInstances.map((instance) => ({
-                    InstanceId: instance.InstanceId,
-                    Tags: [{ Key: 'Name', Value: instance.Name }],
-                }))
-            )
-        )
-
         testNode = new Ec2ParentNode(testRegion, testPartition, client)
         refreshStub.resetHistory()
-        clearTimerStub.resetHistory()
     })
 
     afterEach(function () {
         getInstanceStub.restore()
+        testNode.pollingSet.clear()
+        testNode.pollingSet.clearTimer()
     })
 
     after(function () {
@@ -91,10 +84,14 @@ describe('ec2ParentNode', function () {
     })
 
     it('has instance child nodes', async function () {
-        getInstanceStub.resolves(mapToInstanceCollection(defaultInstances))
+        const instances = [
+            { Name: 'firstOne', InstanceId: '0', LastSeenStatus: 'running' },
+            { Name: 'secondOne', InstanceId: '1', LastSeenStatus: 'stopped' },
+        ]
+        getInstanceStub.resolves(mapToInstanceCollection(instances))
         const childNodes = await testNode.getChildren()
 
-        assert.strictEqual(childNodes.length, defaultInstances.length, 'Unexpected child count')
+        assert.strictEqual(childNodes.length, instances.length, 'Unexpected child count')
 
         childNodes.forEach((node) =>
             assert.ok(node instanceof Ec2InstanceNode, 'Expected child node to be Ec2InstanceNode')
@@ -151,14 +148,13 @@ describe('ec2ParentNode', function () {
         ]
 
         getInstanceStub.resolves(mapToInstanceCollection(instances))
-
         await testNode.updateChildren()
         assert.strictEqual(testNode.pollingSet.size, 1)
         getInstanceStub.restore()
     })
 
     it('does not refresh explorer when timer goes off if status unchanged', async function () {
-        const statusUpdateStub = sinon.stub(Ec2Client.prototype, 'getInstanceStatus').resolves('pending')
+        statusUpdateStub = statusUpdateStub.resolves('pending')
         const instances = [
             { Name: 'firstOne', InstanceId: '0', LastSeenStatus: 'pending' },
             { Name: 'secondOne', InstanceId: '1', LastSeenStatus: 'stopped' },
@@ -170,16 +166,56 @@ describe('ec2ParentNode', function () {
         await testNode.updateChildren()
         await clock.tickAsync(6000)
         sinon.assert.notCalled(refreshStub)
-        statusUpdateStub.restore()
         getInstanceStub.restore()
     })
 
     it('does refresh explorer when timer goes and status changed', async function () {
+        statusUpdateStub = statusUpdateStub.resolves('running')
+        const instances = [{ Name: 'firstOne', InstanceId: '0', LastSeenStatus: 'pending' }]
+
+        getInstanceStub.resolves(mapToInstanceCollection(instances))
+        await testNode.updateChildren()
+
         sinon.assert.notCalled(refreshStub)
-        const statusUpdateStub = sinon.stub(Ec2Client.prototype, 'getInstanceStatus').resolves('running')
-        testNode.pollingSet.add('0')
         await clock.tickAsync(6000)
         sinon.assert.called(refreshStub)
-        statusUpdateStub.restore()
+    })
+
+    it('returns the node when in the map', async function () {
+        const instances = [{ Name: 'firstOne', InstanceId: 'node1', LastSeenStatus: 'pending' }]
+
+        getInstanceStub.resolves(mapToInstanceCollection(instances))
+        await testNode.updateChildren()
+        const node = testNode.getInstanceNode('node1')
+        assert.strictEqual(node.InstanceId, instances[0].InstanceId)
+        getInstanceStub.restore()
+    })
+
+    it('throws error when node not in map', async function () {
+        const instances = [{ Name: 'firstOne', InstanceId: 'node1', LastSeenStatus: 'pending' }]
+
+        getInstanceStub.resolves(mapToInstanceCollection(instances))
+        await testNode.updateChildren()
+        assert.throws(() => testNode.getInstanceNode('node2'))
+        getInstanceStub.restore()
+    })
+
+    it('adds node to polling set when asked to track it', async function () {
+        const instances = [{ Name: 'firstOne', InstanceId: 'node1', LastSeenStatus: 'pending' }]
+
+        getInstanceStub.resolves(mapToInstanceCollection(instances))
+        await testNode.updateChildren()
+        testNode.trackPendingNode('node1')
+        assert.strictEqual(testNode.pollingSet.size, 1)
+        getInstanceStub.restore()
+    })
+
+    it('throws error when asked to track non-child node', async function () {
+        const instances = [{ Name: 'firstOne', InstanceId: 'node1', LastSeenStatus: 'pending' }]
+
+        getInstanceStub.resolves(mapToInstanceCollection(instances))
+        await testNode.updateChildren()
+        assert.throws(() => testNode.trackPendingNode('node2'))
+        getInstanceStub.restore()
     })
 })

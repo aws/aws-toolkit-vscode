@@ -28,6 +28,10 @@ export { listCodeWhispererCommandsWalkthrough } from '../codewhisperer/ui/status
 export { focusAmazonQPanel, focusAmazonQPanelKeybinding } from '../codewhispererChat/commands/registerCommands'
 export { TryChatCodeLensProvider, tryChatCodeLensCommand } from '../codewhispererChat/editor/codelens'
 export { createAmazonQUri, openDiff, openDeletedDiff, getOriginalFileUri, getFileDiffUris } from './commons/diff'
+export { CodeReference } from '../codewhispererChat/view/connector/connector'
+export { AuthMessageDataMap, AuthFollowUpType } from './auth/model'
+export { extractAuthFollowUp } from './util/authUtils'
+import { FeatureContext } from '../shared'
 
 /**
  * main from createMynahUI is a purely browser dependency. Due to this
@@ -35,10 +39,15 @@ export { createAmazonQUri, openDiff, openDeletedDiff, getOriginalFileUri, getFil
  * while only running on browser instances (like the e2e tests). If we
  * just export it regularly we will get "ReferenceError: self is not defined"
  */
-export function createMynahUI(ideApi: any, amazonQEnabled: boolean) {
+export function createMynahUI(
+    ideApi: any,
+    amazonQEnabled: boolean,
+    featureConfigsSerialized: [string, FeatureContext][],
+    disabledCommands?: string[]
+) {
     if (typeof window !== 'undefined') {
         const mynahUI = require('./webview/ui/main')
-        return mynahUI.createMynahUI(ideApi, amazonQEnabled)
+        return mynahUI.createMynahUI(ideApi, amazonQEnabled, featureConfigsSerialized, disabledCommands)
     }
     throw new Error('Not implemented for node')
 }

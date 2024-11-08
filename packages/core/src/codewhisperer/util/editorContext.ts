@@ -14,7 +14,7 @@ import { fetchSupplementalContext } from './supplementalContext/supplementalCont
 import { supplementalContextTimeoutInMs } from '../models/constants'
 import { getSelectedCustomization } from './customizationUtil'
 import { selectFrom } from '../../shared/utilities/tsUtils'
-import { checkLeftContextKeywordsForJsonAndYaml } from './commonUtil'
+import { checkLeftContextKeywordsForJson } from './commonUtil'
 import { CodeWhispererSupplementalContext } from '../models/model'
 import { getOptOutPreference } from '../../shared/telemetry/util'
 
@@ -39,7 +39,7 @@ export function extractContextForCodeWhisperer(editor: vscode.TextEditor): codew
         )
     )
     let languageName = 'plaintext'
-    if (!checkLeftContextKeywordsForJsonAndYaml(caretLeftFileContext, editor.document.languageId)) {
+    if (!checkLeftContextKeywordsForJson(document.fileName, caretLeftFileContext, editor.document.languageId)) {
         languageName =
             runtimeLanguageContext.normalizeLanguage(editor.document.languageId) ?? editor.document.languageId
     }

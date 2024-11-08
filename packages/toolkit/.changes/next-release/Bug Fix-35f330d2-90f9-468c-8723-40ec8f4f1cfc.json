@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "no longer gives option to copy instance id on ec2 parent node."
-}

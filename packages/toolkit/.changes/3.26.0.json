@@ -1,0 +1,22 @@
+{
+	"date": "2024-09-27",
+	"version": "3.26.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "EC2 connect: remote connection will no longer fail with 'too many authentication attempt'"
+		},
+		{
+			"type": "Feature",
+			"description": "EC2 connect: use ed25519 to generate ec2 ssh key pair"
+		},
+		{
+			"type": "Feature",
+			"description": "EC2 connect: default to ed25519, but fall back on rsa if unsupported"
+		},
+		{
+			"type": "Feature",
+			"description": "EC2: Launch ec2 instances from AWS Explorer"
+		}
+	]
+}

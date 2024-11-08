@@ -73,7 +73,7 @@ export function hasScopes(target: SsoConnection | SsoProfile | string[], scopes:
  * Not optimized, but the set of possible scopes is currently very small (< 8)
  */
 export function hasExactScopes(target: SsoConnection | SsoProfile | string[], scopes: string[]): boolean {
-    const targetScopes = Array.isArray(target) ? target : target.scopes ?? []
+    const targetScopes = Array.isArray(target) ? target : (target.scopes ?? [])
     return scopes.length === targetScopes.length && scopes.every((s) => targetScopes.includes(s))
 }
 

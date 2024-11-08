@@ -4,11 +4,11 @@
  */
 import assert from 'assert'
 import sinon from 'sinon'
-import fs from 'fs-extra'
 import os from 'os'
 import { DiffModel, AddedChangeNode, ModifiedChangeNode } from 'aws-core-vscode/codewhisperer/node'
 import path from 'path'
 import { getTestResourceFilePath } from './amazonQGumbyUtil'
+import { fs } from 'aws-core-vscode/shared'
 
 describe('DiffModel', function () {
     afterEach(() => {
@@ -20,7 +20,7 @@ describe('DiffModel', function () {
 
         const workspacePath = 'workspace'
 
-        sinon.replace(fs, 'existsSync', (path) => {
+        sinon.replace(fs, 'exists', async (path) => {
             const pathStr = path.toString()
             if (pathStr.includes(workspacePath)) {
                 return false
@@ -42,9 +42,9 @@ describe('DiffModel', function () {
 
         const workspacePath = os.tmpdir()
 
-        sinon.replace(fs, 'existsSync', (path) => true)
+        sinon.replace(fs, 'exists', async (path) => true)
 
-        fs.writeFileSync(
+        await fs.writeFile(
             path.join(workspacePath, 'README.md'),
             'This guide walks you through using Gradle to build a simple Java project.'
         )
@@ -56,6 +56,6 @@ describe('DiffModel', function () {
 
         assert.strictEqual(change instanceof ModifiedChangeNode, true)
 
-        fs.rmSync(path.join(workspacePath, 'README.md'))
+        await fs.delete(path.join(workspacePath, 'README.md'), { recursive: true })
     })
 })

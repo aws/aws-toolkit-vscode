@@ -3,7 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ChatItem, FeedbackPayload, Engagement, ChatItemAction } from '@aws/mynah-ui'
+import {
+    ChatItem,
+    FeedbackPayload,
+    Engagement,
+    ChatItemAction,
+    CodeSelectionType,
+    ReferenceTrackerInformation,
+} from '@aws/mynah-ui'
 import { Connector as CWChatConnector } from './apps/cwChatConnector'
 import { Connector as FeatureDevChatConnector } from './apps/featureDevChatConnector'
 import { Connector as AmazonQCommonsConnector } from './apps/amazonqCommonsConnector'
@@ -13,6 +20,7 @@ import { TabType, TabsStorage } from './storages/tabsStorage'
 import { WelcomeFollowupType } from './apps/amazonqCommonsConnector'
 import { AuthFollowUpType } from './followUps/generator'
 import { DiffTreeFileInfo } from './diffTree/types'
+import { UserIntent } from '@amzn/codewhisperer-streaming'
 
 export interface CodeReference {
     licenseName?: string
@@ -24,16 +32,33 @@ export interface CodeReference {
     }
 }
 
+export interface UploadHistory {
+    [key: string]: {
+        uploadId: string
+        timestamp: number
+        tabId: string
+        filePaths: DiffTreeFileInfo[]
+        deletedFiles: DiffTreeFileInfo[]
+    }
+}
+
 export interface ChatPayload {
     chatMessage: string
     chatCommand?: string
+}
+
+// Adding userIntent param by extending ChatItem to send userIntent as part of amazonq_interactWithMessage telemetry event
+export interface CWCChatItem extends ChatItem {
+    traceId?: string
+    userIntent?: UserIntent
+    codeBlockLanguage?: string
 }
 
 export interface ConnectorProps {
     sendMessageToExtension: (message: ExtensionMessage) => void
     onMessageReceived?: (tabID: string, messageData: any, needToShowAPIDocsTab: boolean) => void
     onChatAnswerUpdated?: (tabID: string, message: ChatItem) => void
-    onChatAnswerReceived?: (tabID: string, message: ChatItem) => void
+    onChatAnswerReceived?: (tabID: string, message: ChatItem, messageData: any) => void
     onWelcomeFollowUpClicked: (tabID: string, welcomeFollowUpType: WelcomeFollowupType) => void
     onAsyncEventProgress: (tabID: string, inProgress: boolean, message: string | undefined) => void
     onQuickHandlerCommand: (tabID: string, command?: string, eventId?: string) => void
@@ -115,18 +140,18 @@ export class Connector {
         }
     }
 
-    requestGenerativeAIAnswer = (tabID: string, payload: ChatPayload): Promise<any> =>
+    requestGenerativeAIAnswer = (tabID: string, messageId: string, payload: ChatPayload): Promise<any> =>
         new Promise((resolve, reject) => {
             if (this.isUIReady) {
                 switch (this.tabsStorage.getTab(tabID)?.type) {
                     case 'featuredev':
-                        return this.featureDevChatConnector.requestGenerativeAIAnswer(tabID, payload)
+                        return this.featureDevChatConnector.requestGenerativeAIAnswer(tabID, messageId, payload)
                     default:
-                        return this.cwChatConnector.requestGenerativeAIAnswer(tabID, payload)
+                        return this.cwChatConnector.requestGenerativeAIAnswer(tabID, messageId, payload)
                 }
             } else {
                 return setTimeout(() => {
-                    return this.requestGenerativeAIAnswer(tabID, payload)
+                    return this.requestGenerativeAIAnswer(tabID, messageId, payload)
                 }, 2000)
             }
         })
@@ -151,6 +176,17 @@ export class Connector {
         this.gumbyChatConnector.transform(tabID)
     }
 
+    onStopChatResponse = (tabID: string): void => {
+        switch (this.tabsStorage.getTab(tabID)?.type) {
+            case 'featuredev':
+                this.featureDevChatConnector.onStopChatResponse(tabID)
+                break
+            case 'cwc':
+                this.cwChatConnector.onStopChatResponse(tabID)
+                break
+        }
+    }
+
     handleMessageReceive = async (message: MessageEvent): Promise<void> => {
         if (message.data === undefined) {
             return
@@ -170,6 +206,9 @@ export class Connector {
         } else if (messageData.sender === 'gumbyChat') {
             await this.gumbyChatConnector.handleMessageReceive(messageData)
         }
+
+        // Reset lastCommand after message is rendered.
+        this.tabsStorage.updateTabLastCommand(messageData.tabID, '')
     }
 
     onTabAdd = (tabID: string): void => {
@@ -214,7 +253,9 @@ export class Connector {
         codeReference?: CodeReference[],
         eventId?: string,
         codeBlockIndex?: number,
-        totalCodeBlocks?: number
+        totalCodeBlocks?: number,
+        userIntent?: string,
+        codeBlockLanguage?: string
     ): void => {
         switch (this.tabsStorage.getTab(tabID)?.type) {
             case 'cwc':
@@ -226,13 +267,84 @@ export class Connector {
                     codeReference,
                     eventId,
                     codeBlockIndex,
-                    totalCodeBlocks
+                    totalCodeBlocks,
+                    userIntent,
+                    codeBlockLanguage
                 )
                 break
             case 'featuredev':
-                this.featureDevChatConnector.onCodeInsertToCursorPosition(tabID, code, type, codeReference)
+                this.featureDevChatConnector.onCodeInsertToCursorPosition(
+                    tabID,
+                    messageId,
+                    code,
+                    type,
+                    codeReference,
+                    eventId,
+                    codeBlockIndex,
+                    totalCodeBlocks,
+                    userIntent,
+                    codeBlockLanguage
+                )
                 break
         }
+    }
+
+    onAcceptDiff = (
+        tabId: string,
+        messageId: string,
+        actionId: string,
+        data?: string,
+        code?: string,
+        type?: CodeSelectionType,
+        referenceTrackerInformation?: ReferenceTrackerInformation[],
+        eventId?: string,
+        codeBlockIndex?: number,
+        totalCodeBlocks?: number
+    ) => {
+        const tabType = this.tabsStorage.getTab(tabId)?.type
+        this.sendMessageToExtension({
+            tabType,
+            tabID: tabId,
+            command: 'accept_diff',
+            messageId,
+            actionId,
+            data,
+            code,
+            type,
+            referenceTrackerInformation,
+            eventId,
+            codeBlockIndex,
+            totalCodeBlocks,
+        })
+    }
+
+    onViewDiff = (
+        tabId: string,
+        messageId: string,
+        actionId: string,
+        data?: string,
+        code?: string,
+        type?: CodeSelectionType,
+        referenceTrackerInformation?: ReferenceTrackerInformation[],
+        eventId?: string,
+        codeBlockIndex?: number,
+        totalCodeBlocks?: number
+    ) => {
+        const tabType = this.tabsStorage.getTab(tabId)?.type
+        this.sendMessageToExtension({
+            tabType,
+            tabID: tabId,
+            command: 'view_diff',
+            messageId,
+            actionId,
+            data,
+            code,
+            type,
+            referenceTrackerInformation,
+            eventId,
+            codeBlockIndex,
+            totalCodeBlocks,
+        })
     }
 
     onCopyCodeToClipboard = (
@@ -243,7 +355,9 @@ export class Connector {
         codeReference?: CodeReference[],
         eventId?: string,
         codeBlockIndex?: number,
-        totalCodeBlocks?: number
+        totalCodeBlocks?: number,
+        userIntent?: string,
+        codeBlockLanguage?: string
     ): void => {
         switch (this.tabsStorage.getTab(tabID)?.type) {
             case 'cwc':
@@ -255,11 +369,24 @@ export class Connector {
                     codeReference,
                     eventId,
                     codeBlockIndex,
-                    totalCodeBlocks
+                    totalCodeBlocks,
+                    userIntent,
+                    codeBlockLanguage
                 )
                 break
             case 'featuredev':
-                this.featureDevChatConnector.onCopyCodeToClipboard(tabID, code, type, codeReference)
+                this.featureDevChatConnector.onCopyCodeToClipboard(
+                    tabID,
+                    messageId,
+                    code,
+                    type,
+                    codeReference,
+                    eventId,
+                    codeBlockIndex,
+                    totalCodeBlocks,
+                    userIntent,
+                    codeBlockLanguage
+                )
                 break
         }
     }
@@ -339,7 +466,7 @@ export class Connector {
                 this.amazonqCommonsConnector.followUpClicked(tabID, followUp)
                 break
             case 'featuredev':
-                this.featureDevChatConnector.followUpClicked(tabID, followUp)
+                this.featureDevChatConnector.followUpClicked(tabID, messageId, followUp)
                 break
             default:
                 this.cwChatConnector.followUpClicked(tabID, messageId, followUp)
@@ -355,21 +482,10 @@ export class Connector {
         }
     }
 
-    onOpenDiff = (tabID: string, filePath: string, deleted: boolean): void => {
+    onOpenDiff = (tabID: string, filePath: string, deleted: boolean, messageId?: string): void => {
         switch (this.tabsStorage.getTab(tabID)?.type) {
             case 'featuredev':
-                this.featureDevChatConnector.onOpenDiff(tabID, filePath, deleted)
-                break
-        }
-    }
-
-    onStopChatResponse = (tabID: string): void => {
-        switch (this.tabsStorage.getTab(tabID)?.type) {
-            case 'featuredev':
-                this.featureDevChatConnector.onStopChatResponse(tabID)
-                break
-            case 'cwc':
-                this.cwChatConnector.onStopChatResponse(tabID)
+                this.featureDevChatConnector.onOpenDiff(tabID, filePath, deleted, messageId)
                 break
         }
     }

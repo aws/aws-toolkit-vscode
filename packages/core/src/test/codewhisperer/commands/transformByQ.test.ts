@@ -3,20 +3,23 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import assert from 'assert'
+import assert, { fail } from 'assert'
 import * as vscode from 'vscode'
-import * as fs from 'fs-extra'
 import * as sinon from 'sinon'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
-import { transformByQState, TransformByQStoppedError } from '../../../codewhisperer/models/model'
-import { parseBuildFile, stopTransformByQ } from '../../../codewhisperer/commands/startTransformByQ'
+import { DB, transformByQState, TransformByQStoppedError } from '../../../codewhisperer/models/model'
+import {
+    parseBuildFile,
+    stopTransformByQ,
+    validateSQLMetadataFile,
+} from '../../../codewhisperer/commands/startTransformByQ'
 import { HttpResponse } from 'aws-sdk'
 import * as codeWhisperer from '../../../codewhisperer/client/codewhisperer'
 import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
 import { convertToTimeString, convertDateToTimestamp } from '../../../shared/utilities/textUtilities'
 import path from 'path'
 import AdmZip from 'adm-zip'
-import { createTestWorkspaceFolder, toFile } from '../../testUtil'
+import { createTestWorkspaceFolder, TestFolder, toFile } from '../../testUtil'
 import {
     NoJavaProjectsFoundError,
     NoMavenJavaProjectsFoundError,
@@ -37,6 +40,7 @@ import {
 } from '../../../codewhisperer/service/transformByQ/transformProjectValidationHandler'
 import { TransformationCandidateProject, ZipManifest } from '../../../codewhisperer/models/model'
 import globals from '../../../shared/extensionGlobals'
+import { fs } from '../../../shared'
 
 describe('transformByQ', function () {
     let tempDir: string
@@ -48,7 +52,7 @@ describe('transformByQ', function () {
 
     afterEach(async function () {
         sinon.restore()
-        await fs.remove(tempDir)
+        await fs.delete(tempDir, { recursive: true })
     })
 
     it('WHEN converting short duration in milliseconds THEN converts correctly', async function () {
@@ -203,6 +207,32 @@ describe('transformByQ', function () {
         assert.deepStrictEqual(actual, expected)
     })
 
+    it(`WHEN zip created THEN manifest.json contains test-compile custom build command`, async function () {
+        const tempFileName = `testfile-${globals.clock.Date.now()}.zip`
+        transformByQState.setProjectPath(tempDir)
+        const transformManifest = new ZipManifest()
+        transformManifest.customBuildCommand = CodeWhispererConstants.skipUnitTestsBuildCommand
+        return zipCode({
+            dependenciesFolder: {
+                path: tempDir,
+                name: tempFileName,
+            },
+            humanInTheLoopFlag: false,
+            projectPath: tempDir,
+            zipManifest: transformManifest,
+        }).then((zipCodeResult) => {
+            const zip = new AdmZip(zipCodeResult.tempFilePath)
+            const manifestEntry = zip.getEntry('manifest.json')
+            if (!manifestEntry) {
+                fail('manifest.json not found in the zip')
+            }
+            const manifestBuffer = manifestEntry.getData()
+            const manifestText = manifestBuffer.toString('utf8')
+            const manifest = JSON.parse(manifestText)
+            assert.strictEqual(manifest.customBuildCommand, CodeWhispererConstants.skipUnitTestsBuildCommand)
+        })
+    })
+
     it(`WHEN zip created THEN dependencies contains no .sha1 or .repositories files`, async function () {
         const m2Folders = [
             'com/groupid1/artifactid1/version1',
@@ -228,13 +258,13 @@ describe('transformByQ', function () {
             'resolver-status.properties',
         ]
 
-        m2Folders.forEach((folder) => {
+        for (const folder of m2Folders) {
             const folderPath = path.join(tempDir, folder)
-            fs.mkdirSync(folderPath, { recursive: true })
-            filesToAdd.forEach((file) => {
-                fs.writeFileSync(path.join(folderPath, file), 'sample content for the test file')
-            })
-        })
+            await fs.mkdir(folderPath)
+            for (const file of filesToAdd) {
+                await fs.writeFile(path.join(folderPath, file), 'sample content for the test file')
+            }
+        }
 
         const tempFileName = `testfile-${globals.clock.Date.now()}.zip`
         transformByQState.setProjectPath(tempDir)
@@ -244,7 +274,7 @@ describe('transformByQ', function () {
                 name: tempFileName,
             },
             humanInTheLoopFlag: false,
-            modulePath: tempDir,
+            projectPath: tempDir,
             zipManifest: new ZipManifest(),
         }).then((zipCodeResult) => {
             const zip = new AdmZip(zipCodeResult.tempFilePath)
@@ -306,13 +336,161 @@ describe('transformByQ', function () {
     })
 
     it(`WHEN parseBuildFile on pom.xml with absolute path THEN absolute path detected`, async function () {
-        const dirPath = await createTestWorkspaceFolder()
-        transformByQState.setProjectPath(dirPath.uri.fsPath)
-        const pomPath = path.join(dirPath.uri.fsPath, 'pom.xml')
+        const dirPath = await TestFolder.create()
+        transformByQState.setProjectPath(dirPath.path)
+        const pomPath = path.join(dirPath.path, 'pom.xml')
         await toFile('<project><properties><path>system/name/here</path></properties></project>', pomPath)
         const expectedWarning =
             'I detected 1 potential absolute file path(s) in your pom.xml file: **system/**. Absolute file paths might cause issues when I build your code. Any errors will show up in the build log.'
         const warningMessage = await parseBuildFile()
         assert.strictEqual(expectedWarning, warningMessage)
+    })
+
+    it(`WHEN validateMetadataFile on fully valid .sct file THEN passes validation`, async function () {
+        const sampleFileContents = `<?xml version="1.0" encoding="UTF-8"?>
+        <tree>
+        <instances>
+            <ProjectModel>
+            <entities>
+                <sources>
+                <DbServer vendor="oracle" name="sample.rds.amazonaws.com">
+                </DbServer>
+                </sources>
+                <targets>
+                <DbServer vendor="aurora_postgresql" />
+                </targets>
+            </entities>
+            <relations>
+                <server-node-location>
+                <FullNameNodeInfoList>
+                    <nameParts>
+                    <FullNameNodeInfo typeNode="schema" nameNode="schema1"/>
+                    <FullNameNodeInfo typeNode="table" nameNode="table1"/>
+                    </nameParts>
+                </FullNameNodeInfoList>
+                </server-node-location>
+                <server-node-location>
+                <FullNameNodeInfoList>
+                    <nameParts>
+                    <FullNameNodeInfo typeNode="schema" nameNode="schema2"/>
+                    <FullNameNodeInfo typeNode="table" nameNode="table2"/>
+                    </nameParts>
+                </FullNameNodeInfoList>
+                </server-node-location>
+                <server-node-location>
+                <FullNameNodeInfoList>
+                    <nameParts>
+                    <FullNameNodeInfo typeNode="schema" nameNode="schema3"/>
+                    <FullNameNodeInfo typeNode="table" nameNode="table3"/>
+                    </nameParts>
+                </FullNameNodeInfoList>
+                </server-node-location>
+            </relations>
+            </ProjectModel>
+        </instances>
+        </tree>`
+        const isValidMetadata = await validateSQLMetadataFile(sampleFileContents, { tabID: 'abc123' })
+        assert.strictEqual(isValidMetadata, true)
+        assert.strictEqual(transformByQState.getSourceDB(), DB.ORACLE)
+        assert.strictEqual(transformByQState.getTargetDB(), DB.AURORA_POSTGRESQL)
+        assert.strictEqual(transformByQState.getSourceServerName(), 'sample.rds.amazonaws.com')
+        const expectedSchemaOptions = ['SCHEMA1', 'SCHEMA2', 'SCHEMA3']
+        expectedSchemaOptions.forEach((schema) => {
+            assert(transformByQState.getSchemaOptions().has(schema))
+        })
+    })
+
+    it(`WHEN validateMetadataFile on .sct file with unsupported source DB THEN fails validation`, async function () {
+        const sampleFileContents = `<?xml version="1.0" encoding="UTF-8"?>
+        <tree>
+        <instances>
+            <ProjectModel>
+            <entities>
+                <sources>
+                <DbServer vendor="not-oracle" name="sample.rds.amazonaws.com">
+                </DbServer>
+                </sources>
+                <targets>
+                <DbServer vendor="aurora_postgresql" />
+                </targets>
+            </entities>
+            <relations>
+                <server-node-location>
+                <FullNameNodeInfoList>
+                    <nameParts>
+                    <FullNameNodeInfo typeNode="schema" nameNode="schema1"/>
+                    <FullNameNodeInfo typeNode="table" nameNode="table1"/>
+                    </nameParts>
+                </FullNameNodeInfoList>
+                </server-node-location>
+                <server-node-location>
+                <FullNameNodeInfoList>
+                    <nameParts>
+                    <FullNameNodeInfo typeNode="schema" nameNode="schema2"/>
+                    <FullNameNodeInfo typeNode="table" nameNode="table2"/>
+                    </nameParts>
+                </FullNameNodeInfoList>
+                </server-node-location>
+                <server-node-location>
+                <FullNameNodeInfoList>
+                    <nameParts>
+                    <FullNameNodeInfo typeNode="schema" nameNode="schema3"/>
+                    <FullNameNodeInfo typeNode="table" nameNode="table3"/>
+                    </nameParts>
+                </FullNameNodeInfoList>
+                </server-node-location>
+            </relations>
+            </ProjectModel>
+        </instances>
+        </tree>`
+        const isValidMetadata = await validateSQLMetadataFile(sampleFileContents, { tabID: 'abc123' })
+        assert.strictEqual(isValidMetadata, false)
+    })
+
+    it(`WHEN validateMetadataFile on .sct file with unsupported target DB THEN fails validation`, async function () {
+        const sampleFileContents = `<?xml version="1.0" encoding="UTF-8"?>
+        <tree>
+        <instances>
+            <ProjectModel>
+            <entities>
+                <sources>
+                <DbServer vendor="oracle" name="sample.rds.amazonaws.com">
+                </DbServer>
+                </sources>
+                <targets>
+                <DbServer vendor="not-postgresql" />
+                </targets>
+            </entities>
+            <relations>
+                <server-node-location>
+                <FullNameNodeInfoList>
+                    <nameParts>
+                    <FullNameNodeInfo typeNode="schema" nameNode="schema1"/>
+                    <FullNameNodeInfo typeNode="table" nameNode="table1"/>
+                    </nameParts>
+                </FullNameNodeInfoList>
+                </server-node-location>
+                <server-node-location>
+                <FullNameNodeInfoList>
+                    <nameParts>
+                    <FullNameNodeInfo typeNode="schema" nameNode="schema2"/>
+                    <FullNameNodeInfo typeNode="table" nameNode="table2"/>
+                    </nameParts>
+                </FullNameNodeInfoList>
+                </server-node-location>
+                <server-node-location>
+                <FullNameNodeInfoList>
+                    <nameParts>
+                    <FullNameNodeInfo typeNode="schema" nameNode="schema3"/>
+                    <FullNameNodeInfo typeNode="table" nameNode="table3"/>
+                    </nameParts>
+                </FullNameNodeInfoList>
+                </server-node-location>
+            </relations>
+            </ProjectModel>
+        </instances>
+        </tree>`
+        const isValidMetadata = await validateSQLMetadataFile(sampleFileContents, { tabID: 'abc123' })
+        assert.strictEqual(isValidMetadata, false)
     })
 })

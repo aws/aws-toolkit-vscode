@@ -5,7 +5,7 @@
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { showInputBox } from '../../shared/ui/inputPrompter'
-import { createURIFromArgs, isLogStreamUri, recordTelemetryFilter } from './cloudWatchLogsUtils'
+import { cwlUriSchema, isLogStreamUri, recordTelemetryFilter } from './cloudWatchLogsUtils'
 import { prepareDocument } from './commands/searchLogGroup'
 import { getActiveDocumentUri } from './document/logDataDocumentProvider'
 import { CloudWatchLogsData, filterLogEventsFromUri, LogDataRegistry } from './registry/logDataRegistry'
@@ -98,7 +98,7 @@ export async function changeLogSearchParams(
             throw new CancellationError('user')
         }
 
-        const newUri = createURIFromArgs(newData.logGroupInfo, newData.parameters)
+        const newUri = cwlUriSchema.form({ logGroupInfo: newData.logGroupInfo, parameters: newData.parameters })
         await prepareDocument(newUri, newData, registry)
     })
 }

@@ -42,3 +42,15 @@ export function isUuid(uuid: string): boolean {
     const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
     return uuidPattern.test(uuid)
 }
+
+/**
+ * Eg: 'aaaabbbb-cccc-dddd-eeee-ffffhhhhiiii' -> 'aaaa...iiii'
+ */
+export function truncateUuid(uuid: string) {
+    if (uuid.length !== 36) {
+        throw new Error(`Cannot truncate uuid of value: "${uuid}"`)
+    }
+
+    const cleanedUUID = uuid.replace(/-/g, '')
+    return `${cleanedUUID.substring(0, 4)}...${cleanedUUID.substring(cleanedUUID.length - 4)}`
+}

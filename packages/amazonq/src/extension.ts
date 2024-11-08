@@ -3,28 +3,19 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {
-    AuthUtils,
-    CredentialsStore,
-    LoginManager,
-    getTelemetryMetadataForConn,
-    initializeAuth,
-    isAnySsoConnection,
-} from 'aws-core-vscode/auth'
-import {
-    AuthState,
-    AuthUtil,
-    activate as activateCodeWhisperer,
-    shutdown as shutdownCodeWhisperer,
-} from 'aws-core-vscode/codewhisperer'
+import { AuthUtils, CredentialsStore, LoginManager, initializeAuth } from 'aws-core-vscode/auth'
+import { activate as activateCodeWhisperer, shutdown as shutdownCodeWhisperer } from 'aws-core-vscode/codewhisperer'
 import { makeEndpointsProvider, registerGenericCommands } from 'aws-core-vscode'
 import { CommonAuthWebview } from 'aws-core-vscode/login'
 import {
+    amazonQDiffScheme,
     DefaultAWSClientBuilder,
     DefaultAwsContext,
     ExtContext,
     RegionProvider,
     Settings,
+    VirtualFileSystem,
+    VirtualMemoryFile,
     activateLogger,
     activateTelemetry,
     env,
@@ -35,13 +26,13 @@ import {
     globals,
     initialize,
     initializeComputeRegion,
-    isNetworkError,
     messages,
     placeholder,
     setContext,
     setupUninstallHandler,
+    maybeShowMinVscodeWarning,
 } from 'aws-core-vscode/shared'
-import { ExtStartUpSources, telemetry } from 'aws-core-vscode/telemetry'
+import { ExtStartUpSources } from 'aws-core-vscode/telemetry'
 import { VSCODE_EXTENSION_ID } from 'aws-core-vscode/utils'
 import { join } from 'path'
 import * as semver from 'semver'
@@ -98,6 +89,8 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
         }
     }
 
+    void maybeShowMinVscodeWarning('1.83.0')
+
     globals.machineId = await getMachineId()
     globals.awsContext = new DefaultAwsContext()
     globals.sdkClientBuilder = new DefaultAWSClientBuilder(globals.awsContext)
@@ -131,7 +124,15 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
     registerCommands(context)
 
     // Handle Amazon Q Extension un-installation.
-    setupUninstallHandler(VSCODE_EXTENSION_ID.amazonq, context)
+    setupUninstallHandler(VSCODE_EXTENSION_ID.amazonq, context.extension.packageJSON.version, context)
+
+    const vfs = new VirtualFileSystem()
+
+    // Register an empty file that's used when a to open a diff
+    vfs.registerProvider(
+        vscode.Uri.from({ scheme: amazonQDiffScheme, path: 'empty' }),
+        new VirtualMemoryFile(new Uint8Array())
+    )
 
     // Hide the Amazon Q tree in toolkit explorer
     await setContext('aws.toolkit.amazonq.dismissed', true)
@@ -146,53 +147,6 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
             void focusAmazonQPanel.execute(placeholder, 'firstStartUp')
         }, 1000)
     }
-
-    await telemetry.auth_userState
-        .run(async () => {
-            telemetry.record({ passive: true })
-
-            const firstUse = AuthUtils.ExtensionUse.instance.isFirstUse()
-            const wasUpdated = AuthUtils.ExtensionUse.instance.wasUpdated()
-
-            if (firstUse) {
-                telemetry.record({ source: ExtStartUpSources.firstStartUp })
-            } else if (wasUpdated) {
-                telemetry.record({ source: ExtStartUpSources.update })
-            } else {
-                telemetry.record({ source: ExtStartUpSources.reload })
-            }
-
-            let authState: AuthState = 'disconnected'
-            try {
-                // May call connection validate functions that try to refresh the token.
-                // This could result in network errors.
-                authState = (await AuthUtil.instance.getChatAuthState(false)).codewhispererChat
-            } catch (err) {
-                if (
-                    isNetworkError(err) &&
-                    AuthUtil.instance.conn &&
-                    AuthUtil.instance.auth.getConnectionState(AuthUtil.instance.conn) === 'valid'
-                ) {
-                    authState = 'connectedWithNetworkError'
-                } else {
-                    throw err
-                }
-            }
-            const currConn = AuthUtil.instance.conn
-            if (currConn !== undefined && !isAnySsoConnection(currConn)) {
-                getLogger().error(`Current Amazon Q connection is not SSO, type is: %s`, currConn?.type)
-            }
-
-            telemetry.record({
-                authStatus:
-                    authState === 'connected' || authState === 'expired' || authState === 'connectedWithNetworkError'
-                        ? authState
-                        : 'notConnected',
-                authEnabledConnections: AuthUtils.getAuthFormIdsFromConnection(currConn).join(','),
-                ...(await getTelemetryMetadataForConn(currConn)),
-            })
-        })
-        .catch((err) => getLogger().error('Error collecting telemetry for auth_userState: %s', err))
 }
 
 export async function deactivateCommon() {

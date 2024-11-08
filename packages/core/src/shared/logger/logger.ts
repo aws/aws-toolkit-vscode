@@ -4,7 +4,8 @@
  */
 
 import * as vscode from 'vscode'
-import { LogTopic, type ToolkitLogger } from './toolkitLogger'
+
+export type LogTopic = 'crashReport' | 'notifications' | 'test' | 'unknown'
 
 const toolkitLoggers: {
     main: Logger | undefined
@@ -12,6 +13,11 @@ const toolkitLoggers: {
 } = { main: undefined, debugConsole: undefined }
 
 export interface Logger {
+    /**
+     * Developer-only: Optional log file, which gets all log messages (regardless of the configured
+     * log-level).
+     */
+    logFile?: vscode.Uri
     debug(message: string | Error, ...meta: any[]): number
     verbose(message: string | Error, ...meta: any[]): number
     info(message: string | Error, ...meta: any[]): number
@@ -27,20 +33,27 @@ export interface Logger {
 }
 
 export abstract class BaseLogger implements Logger {
+    logFile?: vscode.Uri
+    topic: LogTopic = 'unknown'
+
+    setTopic(topic: LogTopic = 'unknown') {
+        this.topic = topic
+    }
+
     debug(message: string | Error, ...meta: any[]): number {
-        return this.sendToLog('debug', message, meta)
+        return this.sendToLog('debug', message, ...meta)
     }
     verbose(message: string | Error, ...meta: any[]): number {
-        return this.sendToLog('verbose', message, meta)
+        return this.sendToLog('verbose', message, ...meta)
     }
     info(message: string | Error, ...meta: any[]): number {
-        return this.sendToLog('info', message, meta)
+        return this.sendToLog('info', message, ...meta)
     }
     warn(message: string | Error, ...meta: any[]): number {
-        return this.sendToLog('warn', message, meta)
+        return this.sendToLog('warn', message, ...meta)
     }
     error(message: string | Error, ...meta: any[]): number {
-        return this.sendToLog('error', message, meta)
+        return this.sendToLog('error', message, ...meta)
     }
     log(logLevel: LogLevel, message: string | Error, ...meta: any[]): number {
         return this.sendToLog(logLevel, message, ...meta)
@@ -118,23 +131,8 @@ export function getLogger(topic?: LogTopic): Logger {
     if (!logger) {
         return new ConsoleLogger()
     }
-    /**
-     * need this check so that setTopic can be recognized
-     * using instanceof would lead to dependency loop error
-     */
-    if (isToolkitLogger(logger)) {
-        logger.setTopic(topic)
-    }
+    ;(logger as BaseLogger).setTopic?.(topic)
     return logger
-}
-
-/**
- * check if the logger is of type `ToolkitLogger`. This avoids Circular Dependencies, but `instanceof ToolkitLogger` is preferred.
- * @param logger
- * @returns bool, true if is `ToolkitLogger`
- */
-function isToolkitLogger(logger: Logger): logger is ToolkitLogger {
-    return 'setTopic' in logger && typeof logger.setTopic === 'function'
 }
 
 export function getDebugConsoleLogger(topic?: LogTopic): Logger {
@@ -142,12 +140,11 @@ export function getDebugConsoleLogger(topic?: LogTopic): Logger {
     if (!logger) {
         return new ConsoleLogger()
     }
-    if (isToolkitLogger(logger)) {
-        logger.setTopic(topic)
-    }
+    ;(logger as BaseLogger).setTopic?.(topic)
     return logger
 }
 
+// jscpd:ignore-start
 export class NullLogger extends BaseLogger {
     public setLogLevel(logLevel: LogLevel) {}
     public logLevelEnabled(logLevel: LogLevel): boolean {
@@ -162,6 +159,9 @@ export class NullLogger extends BaseLogger {
         message: string | Error,
         ...meta: any[]
     ): number {
+        void logLevel
+        void message
+        void meta
         return 0
     }
 }
@@ -183,10 +183,7 @@ export class ConsoleLogger extends BaseLogger {
         message: string | Error,
         ...meta: any[]
     ): number {
-        /**
-         * This is here because we pipe verbose to debug currentlly
-         * TODO: remove in the next stage
-         */
+        // TODO: we alias "verbose" to "debug" currently. Will be revisited: IDE-14839
         if (logLevel === 'verbose') {
             // eslint-disable-next-line aws-toolkits/no-console-log
             console.debug(message, ...meta)
@@ -197,10 +194,12 @@ export class ConsoleLogger extends BaseLogger {
         return 0
     }
 }
+// jscpd:ignore-end
 
 export function getNullLogger(type?: 'debugConsole' | 'main'): Logger {
     return new NullLogger()
 }
+
 /**
  * Sets (or clears) the logger that is accessible to code.
  * The Extension is expected to call this only once per log type.

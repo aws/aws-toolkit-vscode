@@ -46,6 +46,7 @@ export class FollowUpInteractionHandler {
         if (followUp.prompt !== undefined) {
             this.mynahUI.updateStore(tabID, {
                 loadingChat: true,
+                cancelButtonWhenLoading: false,
                 promptInputDisabledState: true,
             })
             this.mynahUI.addChatItem(tabID, {
@@ -60,7 +61,7 @@ export class FollowUpInteractionHandler {
             this.tabsStorage.resetTabTimer(tabID)
 
             if (followUp.type !== undefined && followUp.type === 'init-prompt') {
-                void this.connector.requestGenerativeAIAnswer(tabID, {
+                void this.connector.requestGenerativeAIAnswer(tabID, messageId, {
                     chatMessage: followUp.prompt,
                 })
                 return

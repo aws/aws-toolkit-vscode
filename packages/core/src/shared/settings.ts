@@ -745,10 +745,12 @@ export class Experiments extends Settings.define(
 }
 
 const devSettings = {
+    crashCheckInterval: Number,
     logfile: String,
     forceCloud9: Boolean,
     forceDevMode: Boolean,
     forceInstallTools: Boolean,
+    forceResolveEnv: Boolean,
     telemetryEndpoint: String,
     telemetryUserPool: String,
     renderDebugDetails: Boolean,
@@ -759,6 +761,7 @@ const devSettings = {
     ssoCacheDirectory: String,
     autofillStartUrl: String,
     webAuth: Boolean,
+    notifications: Boolean,
 }
 type ResolvedDevSettings = FromDescriptor<typeof devSettings>
 type AwsDevSetting = keyof ResolvedDevSettings

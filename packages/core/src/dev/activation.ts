@@ -4,7 +4,6 @@
  */
 
 import * as vscode from 'vscode'
-import * as config from './config'
 import { createCommonButtons } from '../shared/ui/buttons'
 import { createQuickPick } from '../shared/ui/pickerPrompter'
 import { SkipPrompter } from '../shared/ui/common/skipPrompter'
@@ -14,9 +13,6 @@ import { Commands } from '../shared/vscode/commands2'
 import { createInputBox } from '../shared/ui/inputPrompter'
 import { Wizard } from '../shared/wizards/wizard'
 import { deleteDevEnvCommand, installVsixCommand, openTerminalCommand } from './codecatalyst'
-import { watchBetaVSIX } from './beta'
-import { isCloud9 } from '../shared/extensionUtilities'
-import { isReleaseVersion } from '../shared/vscode/env'
 import { isAnySsoConnection } from '../auth/connection'
 import { Auth } from '../auth/auth'
 import { getLogger } from '../shared/logger'
@@ -24,6 +20,7 @@ import { entries } from '../shared/utilities/tsUtils'
 import { getEnvironmentSpecificMemento } from '../shared/utilities/mementos'
 import { setContext } from '../shared'
 import { telemetry } from '../shared/telemetry'
+import { getSessionId } from '../shared/telemetry/util'
 
 interface MenuOption {
     readonly label: string
@@ -41,6 +38,7 @@ export type DevFunction =
     | 'deleteSsoConnections'
     | 'expireSsoConnections'
     | 'editAuthConnections'
+    | 'forceIdeCrash'
 
 export type DevOptions = {
     context: vscode.ExtensionContext
@@ -59,52 +57,59 @@ let targetAuth: Auth
  * on selection. There is no support for name-spacing. Just add the relevant
  * feature/module as a description so it can be moved around easier.
  */
-const menuOptions: Record<DevFunction, MenuOption> = {
-    installVsix: {
-        label: 'Install VSIX on Remote Environment',
-        description: 'CodeCatalyst',
-        detail: 'Automatically upload/install a VSIX to a remote host',
-        executor: installVsixCommand,
-    },
-    openTerminal: {
-        label: 'Open Remote Terminal',
-        description: 'CodeCatalyst',
-        detail: 'Opens a new terminal connected to the remote environment',
-        executor: openTerminalCommand,
-    },
-    deleteDevEnv: {
-        label: 'Delete Workspace',
-        description: 'CodeCatalyst',
-        detail: 'Deletes the selected Dev Environment',
-        executor: deleteDevEnvCommand,
-    },
-    editStorage: {
-        label: 'Show or Edit globalState',
-        description: 'VS Code',
-        detail: 'Shows all globalState values, or edit a globalState/secret item',
-        executor: openStorageFromInput,
-    },
-    showEnvVars: {
-        label: 'Show Environment Variables',
-        description: 'AWS Toolkit',
-        detail: 'Shows all environment variable values',
-        executor: () => showState('envvars'),
-    },
-    deleteSsoConnections: {
-        label: 'Auth: Delete SSO Connections',
-        detail: 'Deletes all SSO Connections the extension is using.',
-        executor: deleteSsoConnections,
-    },
-    expireSsoConnections: {
-        label: 'Auth: Expire SSO Connections',
-        detail: 'Force expires all SSO Connections, in to a "needs reauthentication" state.',
-        executor: expireSsoConnections,
-    },
-    editAuthConnections: {
-        label: 'Auth: Edit Connections',
-        detail: 'Opens editor to all Auth Connections the extension is using.',
-        executor: editSsoConnections,
-    },
+const menuOptions: () => Record<DevFunction, MenuOption> = () => {
+    return {
+        installVsix: {
+            label: 'Install VSIX on Remote Environment',
+            description: 'CodeCatalyst',
+            detail: 'Automatically upload/install a VSIX to a remote host',
+            executor: installVsixCommand,
+        },
+        openTerminal: {
+            label: 'Open Remote Terminal',
+            description: 'CodeCatalyst',
+            detail: 'Opens a new terminal connected to the remote environment',
+            executor: openTerminalCommand,
+        },
+        deleteDevEnv: {
+            label: 'Delete Workspace',
+            description: 'CodeCatalyst',
+            detail: 'Deletes the selected Dev Environment',
+            executor: deleteDevEnvCommand,
+        },
+        editStorage: {
+            label: 'Show or Edit globalState',
+            description: 'VS Code',
+            detail: 'Shows all globalState values, or edit a globalState/secret item',
+            executor: openStorageFromInput,
+        },
+        showEnvVars: {
+            label: 'Show Environment Variables',
+            description: 'AWS Toolkit',
+            detail: 'Shows all environment variable values',
+            executor: () => showState('envvars'),
+        },
+        deleteSsoConnections: {
+            label: 'Auth: Delete SSO Connections',
+            detail: 'Deletes all SSO Connections the extension is using.',
+            executor: deleteSsoConnections,
+        },
+        expireSsoConnections: {
+            label: 'Auth: Expire SSO Connections',
+            detail: 'Force expires all SSO Connections, in to a "needs reauthentication" state.',
+            executor: expireSsoConnections,
+        },
+        editAuthConnections: {
+            label: 'Auth: Edit Connections',
+            detail: 'Opens editor to all Auth Connections the extension is using.',
+            executor: editSsoConnections,
+        },
+        forceIdeCrash: {
+            label: 'Crash: Force IDE ExtHost Crash',
+            detail: `Will SIGKILL ExtHost, { pid: ${process.pid}, sessionId: '${getSessionId().slice(0, 8)}-...' }, but the IDE itself will not crash.`,
+            executor: forceQuitIde,
+        },
+    }
 }
 
 /**
@@ -160,7 +165,7 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
             globalState = targetContext.globalState
             targetAuth = opts.auth
             void openMenu(
-                entries(menuOptions)
+                entries(menuOptions())
                     .filter((e) => (opts.menuOptions ?? Object.keys(menuOptions)).includes(e[0]))
                     .map((e) => e[1])
             )
@@ -185,10 +190,6 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
 
     const editor = new ObjectEditor()
     ctx.subscriptions.push(openStorageCommand.register(editor))
-
-    if (!isCloud9() && !isReleaseVersion() && config.betaUrl) {
-        ctx.subscriptions.push(watchBetaVSIX(config.betaUrl))
-    }
 }
 
 async function openMenu(options: MenuOption[]): Promise<void> {
@@ -216,6 +217,7 @@ function isSecrets(obj: vscode.Memento | vscode.SecretStorage): obj is vscode.Se
 
 class VirtualObjectFile implements FileProvider {
     private mTime = 0
+    private size = 0
     private readonly onDidChangeEmitter = new vscode.EventEmitter<void>()
     public readonly onDidChange = this.onDidChangeEmitter.event
 
@@ -227,8 +229,8 @@ class VirtualObjectFile implements FileProvider {
     /** Emits an event indicating this file's content has changed */
     public refresh() {
         /**
-         * Per {@link vscode.FileSystemProvider.onDidChangeFile}, if the mTime does not change, new file content may
-         * not be retrieved. Without this, when we emit a change the text editor did not update.
+         * Per {@link vscode.FileSystemProvider.onDidChangeFile}, if the mTime and/or size does not change, new file content may
+         * not be retrieved due to optimizations. Without this, when we emit a change the text editor did not update.
          */
         this.mTime++
         this.onDidChangeEmitter.fire()
@@ -236,13 +238,15 @@ class VirtualObjectFile implements FileProvider {
 
     public stat(): { ctime: number; mtime: number; size: number } {
         // This would need to be filled out to track conflicts
-        return { ctime: 0, mtime: this.mTime, size: 0 }
+        return { ctime: 0, mtime: this.mTime, size: this.size }
     }
 
     public async read(): Promise<Uint8Array> {
         const encoder = new TextEncoder()
 
-        return encoder.encode(await this.readStore(this.key))
+        const data = encoder.encode(await this.readStore(this.key))
+        this.size = data.length
+        return data
     }
 
     public async write(content: Uint8Array): Promise<void> {
@@ -433,6 +437,15 @@ async function expireSsoConnections() {
         },
         { emit: false, functionId: { name: 'expireSsoConnectionsDev' } }
     )
+}
+
+export function forceQuitIde() {
+    // This current process is the ExtensionHost. Killing it will cause all the extensions to crash
+    // for the current ExtensionHost (unless using "extensions.experimental.affinity").
+    // The IDE instance itself will remaing running, but a new ExtHost will spawn within it.
+    // The PPID (parent process) is vscode itself, killing it crashes all vscode instances.
+    const vsCodePid = process.pid
+    process.kill(vsCodePid, 'SIGKILL') // SIGTERM would be the graceful shutdown
 }
 
 async function showState(path: string) {

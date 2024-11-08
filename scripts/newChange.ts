@@ -4,7 +4,7 @@
  */
 
 import * as child_process from 'child_process'
-import * as fs from 'fs-extra'
+import * as nodefs from 'fs' // eslint-disable-line no-restricted-imports
 import { join } from 'path'
 import * as readlineSync from 'readline-sync'
 import * as crypto from 'crypto'
@@ -40,7 +40,7 @@ function promptForChange(): string {
     }
 }
 
-fs.mkdirpSync(directory)
+nodefs.mkdirSync(directory, { recursive: true })
 
 const type = promptForType()
 const description = promptForChange()
@@ -50,7 +50,7 @@ const contents: NewChange = {
 }
 const fileName = `${type}-${crypto.randomUUID()}.json`
 const path = join(directory, fileName)
-fs.writeFileSync(path, JSON.stringify(contents, undefined, '\t') + '\n')
+nodefs.writeFileSync(path, JSON.stringify(contents, undefined, '\t') + '\n')
 
 console.log(`Change log written to ${path}`)
 child_process.execSync(`git add ${directory}`)

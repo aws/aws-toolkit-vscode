@@ -41,8 +41,9 @@ import { ToolkitError, getTelemetryReason, getTelemetryReasonDesc } from '../../
 import { isRemoteWorkspace } from '../../shared/vscode/env'
 import { isBuilderIdConnection } from '../../auth/connection'
 import globals from '../../shared/extensionGlobals'
-import { getVscodeCliPath, tryRun } from '../../shared/utilities/pathFind'
+import { getVscodeCliPath } from '../../shared/utilities/pathFind'
 import { setContext } from '../../shared/vscode/setContext'
+import { tryRun } from '../../shared/utilities/pathFind'
 
 const MessageTimeOut = 5_000
 
@@ -462,7 +463,7 @@ export const registerToolkitApiCallback = Commands.declare(
             } else if (isExtensionActive(VSCODE_EXTENSION_ID.awstoolkit)) {
                 // when this command is executed by Amazon Q activation
                 const toolkitExt = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.awstoolkit)
-                _toolkitApi = toolkitExt?.exports.getApi(VSCODE_EXTENSION_ID.amazonq)
+                _toolkitApi = toolkitExt?.exports?.getApi(VSCODE_EXTENSION_ID.amazonq)
             }
             if (_toolkitApi) {
                 registerToolkitApiCallbackOnce()

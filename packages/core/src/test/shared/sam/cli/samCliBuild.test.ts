@@ -5,13 +5,12 @@
 
 import assert from 'assert'
 import { SpawnOptions } from 'child_process'
-import { writeFile, remove } from 'fs-extra'
 import * as path from 'path'
 import { makeTemporaryToolkitFolder } from '../../../../shared/filesystemUtilities'
 import { makeUnexpectedExitCodeError } from '../../../../shared/sam/cli/samCliInvokerUtils'
 import { FileFunctions, SamCliBuildInvocation } from '../../../../shared/sam/cli/samCliBuild'
 import { SamCliProcessInvoker } from '../../../../shared/sam/cli/samCliInvokerUtils'
-import { ChildProcessResult } from '../../../../shared/utilities/childProcess'
+import { ChildProcessResult } from '../../../../shared/utilities/processUtils'
 import { getTestLogger } from '../../../globalSetup.test'
 import { assertArgNotPresent, assertArgsContainArgument } from './samCliTestUtils'
 import {
@@ -19,6 +18,7 @@ import {
     BadExitCodeSamCliProcessInvoker,
     TestSamCliProcessInvoker,
 } from './testSamCliProcessInvoker'
+import { fs } from '../../../../shared'
 
 describe('SamCliBuildInvocation', async function () {
     class FakeChildProcessResult implements ChildProcessResult {
@@ -50,11 +50,11 @@ describe('SamCliBuildInvocation', async function () {
     beforeEach(async function () {
         tempFolder = await makeTemporaryToolkitFolder()
         placeholderTemplateFile = path.join(tempFolder, 'template.yaml')
-        await writeFile(placeholderTemplateFile, '')
+        await fs.writeFile(placeholderTemplateFile, '')
     })
 
     afterEach(async function () {
-        await remove(tempFolder)
+        await fs.delete(tempFolder, { recursive: true })
     })
 
     it('invokes `sam build` with args', async function () {

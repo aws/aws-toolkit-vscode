@@ -4,7 +4,6 @@
  */
 
 import * as vscode from 'vscode'
-import * as fs from 'fs-extra'
 import * as path from 'path'
 import { getLogger } from '../../../shared/logger'
 import { localize } from '../../../shared/utilities/vsCodeUtils'
@@ -12,6 +11,7 @@ import { showViewLogsMessage } from '../../../shared/utilities/messages'
 import { IotCertsFolderNode } from '../explorer/iotCertFolderNode'
 import { fileExists } from '../../../shared/filesystemUtilities'
 import { Iot } from 'aws-sdk'
+import { fs } from '../../../shared'
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
 const MODE_RW_R_R = 0o644 //File permission 0644 rw-r--r-- for PEM files.
@@ -115,14 +115,14 @@ async function saveCredentials(
     const publicKeyExists = await fileExists(publicKeyPath)
 
     if (certExists) {
-        getLogger().error('Certificate path {0} already exists', certPath)
+        getLogger().error('Certificate path %s already exists', certPath)
         void vscode.window.showErrorMessage(
             localize('AWS.iot.createCert.error', 'Failed to create certificate. Path {0} already exists.', certPath)
         )
         return false
     }
     if (privateKeyExists) {
-        getLogger().error('Key path {0} already exists', privateKeyPath)
+        getLogger().error('Key path %s already exists', privateKeyPath)
         void vscode.window.showErrorMessage(
             localize(
                 'AWS.iot.createCert.error',
@@ -133,7 +133,7 @@ async function saveCredentials(
         return false
     }
     if (publicKeyExists) {
-        getLogger().error('Key path {0} already exists', publicKeyPath)
+        getLogger().error('Key path %s already exists', publicKeyPath)
         void vscode.window.showErrorMessage(
             localize(
                 'AWS.iot.createCert.error',

@@ -9,7 +9,7 @@ import { createConstantMap, ConstantMap } from '../../shared/utilities/tsUtils'
 import * as codewhispererClient from '../client/codewhisperer'
 import * as CodeWhispererConstants from '../models/constants'
 
-type RuntimeLanguage = Exclude<CodewhispererLanguage, 'jsx' | 'tsx'>
+type RuntimeLanguage = Exclude<CodewhispererLanguage, 'jsx' | 'tsx' | 'systemVerilog'> | 'systemverilog'
 
 const runtimeLanguageSet: ReadonlySet<RuntimeLanguage> = new Set([
     'c',
@@ -21,15 +21,22 @@ const runtimeLanguageSet: ReadonlySet<RuntimeLanguage> = new Set([
     'kotlin',
     'php',
     'python',
+    'powershell',
+    'r',
+    'dart',
     'ruby',
     'rust',
     'scala',
     'shell',
     'sql',
+    'swift',
+    'lua',
+    'vue',
     'typescript',
     'json',
     'yaml',
     'tf',
+    'systemverilog',
 ])
 
 export class RuntimeLanguageContext {
@@ -93,6 +100,8 @@ export class RuntimeLanguageContext {
             r: 'r',
             swift: 'swift',
             systemVerilog: 'systemVerilog',
+            systemverilog: 'systemVerilog',
+            verilog: 'systemVerilog',
             vue: 'vue',
         })
         this.supportedLanguageExtensionMap = createConstantMap<string, CodewhispererLanguage>({
@@ -120,6 +129,17 @@ export class RuntimeLanguageContext {
             ts: 'typescript',
             yaml: 'yaml',
             yml: 'yaml',
+            sv: 'systemVerilog',
+            svh: 'systemVerilog',
+            vh: 'systemVerilog',
+            dart: 'dart',
+            lua: 'lua',
+            wlua: 'lua',
+            swift: 'swift',
+            vue: 'vue',
+            ps1: 'powershell',
+            psm1: 'powershell',
+            r: 'r',
         })
     }
 
@@ -146,6 +166,9 @@ export class RuntimeLanguageContext {
 
             case 'tsx':
                 return 'typescript'
+
+            case 'systemVerilog':
+                return 'systemverilog'
 
             default:
                 if (!runtimeLanguageSet.has(language)) {
@@ -240,15 +263,6 @@ export class RuntimeLanguageContext {
                 return false
 
             case 'plaintext':
-                return false
-
-            case 'dart':
-            case 'lua':
-            case 'powershell':
-            case 'r':
-            case 'swift':
-            case 'vue':
-            case 'systemVerilog':
                 return false
 
             default:

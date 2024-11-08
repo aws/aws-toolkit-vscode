@@ -2,8 +2,17 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { Connector } from './connector'
-import { ChatItem, ChatItemType, MynahIcons, MynahUI, MynahUIDataModel, NotificationType } from '@aws/mynah-ui'
+import { Connector, CWCChatItem } from './connector'
+import {
+    ChatItem,
+    ChatItemType,
+    CodeSelectionType,
+    MynahIcons,
+    MynahUI,
+    MynahUIDataModel,
+    NotificationType,
+    ReferenceTrackerInformation,
+} from '@aws/mynah-ui'
 import { ChatPrompt } from '@aws/mynah-ui/dist/static'
 import { TabsStorage, TabType } from './storages/tabsStorage'
 import { WelcomeFollowupType } from './apps/amazonqCommonsConnector'
@@ -16,12 +25,21 @@ import { TextMessageHandler } from './messages/handler'
 import { MessageController } from './messages/controller'
 import { getActions, getDetails } from './diffTree/actions'
 import { DiffTreeFileInfo } from './diffTree/types'
+import { FeatureContext } from '../../../shared'
+import { tryNewMap } from '../../util/functionUtils'
 
-export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
+export const createMynahUI = (
+    ideApi: any,
+    amazonQEnabled: boolean,
+    featureConfigsSerialized: [string, FeatureContext][],
+    disabledCommands?: string[]
+) => {
     // eslint-disable-next-line prefer-const
     let mynahUI: MynahUI
     // eslint-disable-next-line prefer-const
     let connector: Connector
+    //Store the mapping between messageId and messageUserIntent for amazonq_interactWithMessage telemetry
+    const responseMetadata = new Map<string, string[]>()
 
     window.addEventListener('error', (e) => {
         const { error, message } = e
@@ -60,6 +78,7 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
     let tabDataGenerator = new TabDataGenerator({
         isFeatureDevEnabled,
         isGumbyEnabled,
+        disabledCommands,
     })
 
     // eslint-disable-next-line prefer-const
@@ -70,6 +89,23 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
     let textMessageHandler: TextMessageHandler
     // eslint-disable-next-line prefer-const
     let messageController: MessageController
+
+    // @ts-ignore
+    let featureConfigs: Map<string, FeatureContext> = tryNewMap(featureConfigsSerialized)
+
+    function shouldDisplayDiff(messageData: any) {
+        const tab = tabsStorage.getTab(messageData?.tabID || '')
+        const allowedCommands = [
+            'aws.amazonq.refactorCode',
+            'aws.amazonq.fixCode',
+            'aws.amazonq.optimizeCode',
+            'aws.amazonq.sendToPrompt',
+        ]
+        if (tab?.type === 'cwc' && allowedCommands.includes(tab.lastCommand || '')) {
+            return true
+        }
+        return false
+    }
 
     // eslint-disable-next-line prefer-const
     connector = new Connector({
@@ -84,12 +120,17 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
                 tabsStorage,
                 isFeatureDevEnabled,
                 isGumbyEnabled,
+                disabledCommands,
             })
 
             tabDataGenerator = new TabDataGenerator({
                 isFeatureDevEnabled,
                 isGumbyEnabled,
+                disabledCommands,
             })
+
+            featureConfigs = tryNewMap(featureConfigsSerialized)
+
             // Set the new defaults for the quick action commands in all tabs now that isFeatureDevEnabled was enabled/disabled
             for (const tab of tabsStorage.getTabs()) {
                 mynahUI.updateStore(tab.id, {
@@ -115,6 +156,7 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
         },
         onFileActionClick: (tabID: string, messageId: string, filePath: string, actionName: string): void => {},
         onQuickHandlerCommand: (tabID: string, command?: string, eventId?: string) => {
+            tabsStorage.updateTabLastCommand(tabID, command)
             if (command === 'aws.awsq.transform') {
                 quickActionHandler.handle({ command: '/transform' }, tabID, eventId)
             } else if (command === 'aws.awsq.clearchat') {
@@ -122,10 +164,23 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
             }
         },
         onCWCContextCommandMessage: (message: ChatItem, command?: string): string | undefined => {
+            const selectedTab = tabsStorage.getSelectedTab()
+            tabsStorage.updateTabLastCommand(selectedTab?.id || '', command || '')
+
             if (command === 'aws.amazonq.sendToPrompt') {
-                return messageController.sendSelectedCodeToTab(message)
+                return messageController.sendSelectedCodeToTab(message, command)
             } else {
-                return messageController.sendMessageToTab(message, 'cwc')
+                const tabID = messageController.sendMessageToTab(message, 'cwc', command)
+                if (tabID) {
+                    ideApi.postMessage({
+                        command: 'start-chat-message-telemetry',
+                        trigger: 'onContextCommand',
+                        tabID,
+                        tabType: 'cwc',
+                        startTime: Date.now(),
+                    })
+                }
+                return tabID
             }
         },
         onWelcomeFollowUpClicked: (tabID: string, welcomeFollowUpType: WelcomeFollowupType) => {
@@ -140,12 +195,14 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
             tabID: string,
             inProgress: boolean,
             message: string | undefined,
-            messageId: string | undefined = undefined
+            messageId: string | undefined = undefined,
+            enableStopAction: boolean = false
         ) => {
             if (inProgress) {
                 mynahUI.updateStore(tabID, {
                     loadingChat: true,
                     promptInputDisabledState: true,
+                    cancelButtonWhenLoading: enableStopAction,
                 })
 
                 if (message && messageId) {
@@ -189,7 +246,7 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
                 } as ChatItem)
             }
         },
-        onChatAnswerReceived: (tabID: string, item: ChatItem) => {
+        onChatAnswerReceived: (tabID: string, item: CWCChatItem, messageData: any) => {
             if (item.type === ChatItemType.ANSWER_PART || item.type === ChatItemType.CODE_RESULT) {
                 mynahUI.updateLastChatAnswer(tabID, {
                     ...(item.messageId !== undefined ? { messageId: item.messageId } : {}),
@@ -201,6 +258,19 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
                         ? { type: ChatItemType.CODE_RESULT, fileList: item.fileList }
                         : {}),
                 })
+                if (
+                    item.messageId !== undefined &&
+                    item.userIntent !== undefined &&
+                    item.codeBlockLanguage !== undefined
+                ) {
+                    responseMetadata.set(item.messageId, [item.userIntent, item.codeBlockLanguage])
+                }
+                ideApi.postMessage({
+                    command: 'update-chat-message-telemetry',
+                    tabID,
+                    tabType: tabsStorage.getTab(tabID)?.type,
+                    time: Date.now(),
+                })
                 return
             }
 
@@ -211,7 +281,29 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
                 item.formItems !== undefined ||
                 item.buttons !== undefined
             ) {
-                mynahUI.addChatItem(tabID, item)
+                mynahUI.addChatItem(tabID, {
+                    ...item,
+                    messageId: item.messageId,
+                    codeBlockActions: {
+                        ...(shouldDisplayDiff(messageData)
+                            ? {
+                                  'insert-to-cursor': undefined,
+                                  accept_diff: {
+                                      id: 'accept_diff',
+                                      label: 'Apply Diff',
+                                      icon: MynahIcons.OK_CIRCLED,
+                                      data: messageData,
+                                  },
+                                  view_diff: {
+                                      id: 'view_diff',
+                                      label: 'View Diff',
+                                      icon: MynahIcons.EYE,
+                                      data: messageData,
+                                  },
+                              }
+                            : {}),
+                    },
+                })
             }
 
             if (
@@ -221,6 +313,7 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
             ) {
                 mynahUI.updateStore(tabID, {
                     loadingChat: true,
+                    cancelButtonWhenLoading: false,
                     promptInputDisabledState: true,
                 })
 
@@ -234,6 +327,18 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
                     promptInputDisabledState: tabsStorage.isTabDead(tabID),
                 })
                 tabsStorage.updateTabStatus(tabID, 'free')
+
+                /**
+                 * We've received an answer for a tabID and this message has
+                 * completed its round trip. Send that information back to
+                 * VSCode so we can emit a round trip event
+                 **/
+                ideApi.postMessage({
+                    command: 'stop-chat-message-telemetry',
+                    tabID,
+                    tabType: tabsStorage.getTab(tabID)?.type,
+                    time: Date.now(),
+                })
             }
         },
         onMessageReceived: (tabID: string, messageData: MynahUIDataModel) => {
@@ -326,6 +431,7 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
             connector.onUpdateTabType(newTabID)
 
             mynahUI.updateStore(newTabID, tabDataGenerator.getTabData(tabType, true))
+            featureConfigs = tryNewMap(featureConfigsSerialized)
         },
         onOpenSettingsMessage(tabId: string) {
             mynahUI.addChatItem(tabId, {
@@ -362,6 +468,14 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
         },
         onTabRemove: connector.onTabRemove,
         onTabChange: connector.onTabChange,
+        // TODO: update mynah-ui this type doesn't seem correct https://github.com/aws/mynah-ui/blob/3777a39eb534a91fd6b99d6cf421ce78ee5c7526/src/main.ts#L372
+        onStopChatResponse: (tabID: string) => {
+            mynahUI.updateStore(tabID, {
+                loadingChat: false,
+                promptInputDisabledState: false,
+            })
+            connector.onStopChatResponse(tabID)
+        },
         onChatPrompt: (tabID: string, prompt: ChatPrompt, eventId: string | undefined) => {
             if ((prompt.prompt ?? '') === '' && (prompt.command ?? '') === '') {
                 return
@@ -383,7 +497,7 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
                 return
             }
 
-            textMessageHandler.handle(prompt, tabID)
+            textMessageHandler.handle(prompt, tabID, eventId as string)
         },
         onVote: connector.onChatItemVoted,
         onInBodyButtonClicked: (tabId, messageId, action, eventId) => {
@@ -400,7 +514,74 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
                 content: 'Thanks for your feedback.',
             })
         },
-        onCodeInsertToCursorPosition: connector.onCodeInsertToCursorPosition,
+        onCodeInsertToCursorPosition: (
+            tabId,
+            messageId,
+            code,
+            type,
+            referenceTrackerInfo,
+            eventId,
+            codeBlockIndex,
+            totalCodeBlocks
+        ) => {
+            connector.onCodeInsertToCursorPosition(
+                tabId,
+                messageId,
+                code,
+                type,
+                referenceTrackerInfo,
+                eventId,
+                codeBlockIndex,
+                totalCodeBlocks,
+                responseMetadata.get(messageId)?.[0] ?? undefined,
+                responseMetadata.get(messageId)?.[1] ?? undefined
+            )
+        },
+        onCodeBlockActionClicked: (
+            tabId: string,
+            messageId: string,
+            actionId: string,
+            data?: string,
+            code?: string,
+            type?: CodeSelectionType,
+            referenceTrackerInformation?: ReferenceTrackerInformation[],
+            eventId?: string,
+            codeBlockIndex?: number,
+            totalCodeBlocks?: number
+        ) => {
+            switch (actionId) {
+                case 'accept_diff':
+                    connector.onAcceptDiff(
+                        tabId,
+                        messageId,
+                        actionId,
+                        data,
+                        code,
+                        type,
+                        referenceTrackerInformation,
+                        eventId,
+                        codeBlockIndex,
+                        totalCodeBlocks
+                    )
+                    break
+                case 'view_diff':
+                    connector.onViewDiff(
+                        tabId,
+                        messageId,
+                        actionId,
+                        data,
+                        code,
+                        type,
+                        referenceTrackerInformation,
+                        eventId,
+                        codeBlockIndex,
+                        totalCodeBlocks
+                    )
+                    break
+                default:
+                    break
+            }
+        },
         onCopyCodeToClipboard: (
             tabId,
             messageId,
@@ -419,7 +600,9 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
                 referenceTrackerInfo,
                 eventId,
                 codeBlockIndex,
-                totalCodeBlocks
+                totalCodeBlocks,
+                responseMetadata.get(messageId)?.[0] ?? undefined,
+                responseMetadata.get(messageId)?.[1] ?? undefined
             )
             mynahUI.notify({
                 type: NotificationType.SUCCESS,

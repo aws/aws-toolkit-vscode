@@ -1,3 +1,59 @@
+## 3.32.0 2024-11-07
+
+- **Bug Fix** SAM: Save SAM deploy parameters to correct samconfig.toml in project folder
+- **Bug Fix** System Path parsing should ignore Windows and only parse Mac/Linux system, Sam Local Invoke should get correct system Path on windows #5933 #5918
+- **Bug Fix** SAM: Skip unnecessary prompters for sync operation when using flag from samconfig.toml file
+- **Bug Fix** AWS Lambda: Removed action to delete a Lambda or S3 bucket in the AppBuilder section as resources created through IaC frameworks should not be directly modified since this creates drift
+
+## 3.31.0 2024-10-30
+
+- **Feature** SAM: Added support for Java 21 Lambda runtime
+- **Feature** AWS Lambda: AWS Explorer command palette actions and hover buttons to build, local invoke, deploy, and remote invoke
+- **Feature** AWS Lambda: Improved local test and debug and remote invoke to streamline creating and sharing sample events
+- **Feature** AWS Lambda: 'Application Builder' is a new sidebar view for viewing application resources and links to create, build, debug, and test serverless applications
+- **Feature** SAM: Added support for Ruby 3.3 Lambda runtime
+- **Feature** SAM: Added support for Ruby 3.2 Lambda runtime
+- **Feature** AWS Lambda: Guided walkthrough contains links to set up local IDE environment, install required tools, several starter templates, and guidance on how to get started building serverless applications
+- **Feature** SAM: Added support for .NET 8.0 Lambda runtime
+
+## 3.30.0 2024-10-29
+
+- **Bug Fix** EC2 connect: improve management of SSM sessions to minimize chance they are left active.
+- **Bug Fix** fixed device code detection when running auth through tunneled vscode
+- **Feature** EC2: provide view of ec2 system logs
+
+## 3.29.0 2024-10-17
+
+- **Bug Fix** Fix userCredentialsUtils.test.ts so it won't remove the actual aws config
+
+## 3.28.0 2024-10-10
+
+- **Breaking Change** Bumping VS Code minimum version to 1.83.0
+- **Bug Fix** update animate graph for infraComposer in toolkit README
+- **Deprecation** The next release of this extension will require VS Code 1.83.0 or newer.
+- **Feature** Show a one-time warning if new VS Code is required
+- **Removal** Minimum required VSCode version is now 1.83
+
+## 3.27.0 2024-10-03
+
+- **Bug Fix** rename Application Composer to Infrastructure Composer
+
+## 3.26.0 2024-09-27
+
+- **Bug Fix** EC2 connect: remote connection will no longer fail with 'too many authentication attempt'
+- **Feature** EC2 connect: use ed25519 to generate ec2 ssh key pair
+- **Feature** EC2 connect: default to ed25519, but fall back on rsa if unsupported
+- **Feature** EC2: Launch ec2 instances from AWS Explorer
+
+## 3.25.0 2024-09-19
+
+- **Bug Fix** no longer gives option to copy instance id on ec2 parent node.
+- **Bug Fix** Login state not updating across multiple VS Code windows.
+- **Bug Fix** Redshift: updated the list clusters and workgroups for regions which do not have serverless APIs
+- **Bug Fix** when connecting to ec2 instance, check for IAM role permitted actions, rather than full policies
+- **Feature** EC2 nodes in explorer update status automatically
+- **Feature** ec2 instance status is reinforced with icons and text
+
 ## 3.24.0 2024-09-12
 
 - **Feature** Record telemetry event when AWS Toolkits extension is uninstalled.

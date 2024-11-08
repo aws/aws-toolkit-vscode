@@ -10,7 +10,7 @@ import {
     getServiceEnvVarConfig,
     isAmazonInternalOs as isAmazonInternalOS,
 } from '../../../shared/vscode/env'
-import { ChildProcess } from '../../../shared/utilities/childProcess'
+import { ChildProcess } from '../../../shared/utilities/processUtils'
 import * as sinon from 'sinon'
 import os from 'os'
 import vscode from 'vscode'

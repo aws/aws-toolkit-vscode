@@ -22,14 +22,6 @@
             "isBackground": true,
             "problemMatcher": "$ts-webpack-watch"
         },
-        {
-            "label": "testsBuildWatch",
-            "command": "npm run compileDev -- --watch",
-            "detail": "Build that is sufficient for Web mode tests",
-            "type": "shell",
-            "isBackground": true,
-            "problemMatcher": "$ts-webpack-watch"
-        },
         /**
         After we stop debugging our browser, we also want to stop the web server.
         When this task is ran it will stop the web server.

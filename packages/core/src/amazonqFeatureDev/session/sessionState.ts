@@ -13,7 +13,12 @@ import { telemetry } from '../../shared/telemetry/telemetry'
 import { VirtualFileSystem } from '../../shared/virtualFilesystem'
 import { VirtualMemoryFile } from '../../shared/virtualMemoryFile'
 import { featureDevScheme } from '../constants'
-import { FeatureDevServiceError, IllegalStateTransition, PromptRefusalException } from '../errors'
+import {
+    FeatureDevServiceError,
+    IllegalStateTransition,
+    NoChangeRequiredException,
+    PromptRefusalException,
+} from '../errors'
 import {
     CodeGenerationStatus,
     CurrentWsFolders,
@@ -31,13 +36,15 @@ import {
 import { prepareRepoData } from '../util/files'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { uploadCode } from '../util/upload'
-import { CodeReference } from '../../amazonq/webview/ui/connector'
+import { CodeReference, UploadHistory } from '../../amazonq/webview/ui/connector'
 import { isPresent } from '../../shared/utilities/collectionUtils'
 import { AuthUtil } from '../../codewhisperer/util/authUtil'
 import { randomUUID } from '../../shared/crypto'
 import { collectFiles, getWorkspaceFoldersByPrefixes } from '../../shared/utilities/workspaceUtils'
 import { i18n } from '../../shared/i18n-helper'
 import { Messenger } from '../controllers/chat/messenger/messenger'
+
+const EmptyCodeGenID = 'EMPTY_CURRENT_CODE_GENERATION_ID'
 
 export class ConversationNotStartedState implements Omit<SessionState, 'uploadId'> {
     public tokenSource: vscode.CancellationTokenSource
@@ -52,11 +59,12 @@ export class ConversationNotStartedState implements Omit<SessionState, 'uploadId
     }
 }
 
-function registerNewFiles(
+export function registerNewFiles(
     fs: VirtualFileSystem,
     newFileContents: NewFileZipContents[],
     uploadId: string,
-    workspaceFolders: CurrentWsFolders
+    workspaceFolders: CurrentWsFolders,
+    conversationId: string
 ): NewFileInfo[] {
     const result: NewFileInfo[] = []
     const workspaceFolderPrefixes = getWorkspaceFoldersByPrefixes(workspaceFolders)
@@ -68,8 +76,20 @@ function registerNewFiles(
         fs.registerProvider(uri, new VirtualMemoryFile(contents))
         const prefix =
             workspaceFolderPrefixes === undefined ? '' : zipFilePath.substring(0, zipFilePath.indexOf(path.sep))
-        const folder = workspaceFolderPrefixes === undefined ? workspaceFolders[0] : workspaceFolderPrefixes[prefix]
+        const folder =
+            workspaceFolderPrefixes === undefined
+                ? workspaceFolders[0]
+                : (workspaceFolderPrefixes[prefix] ??
+                  workspaceFolderPrefixes[
+                      Object.values(workspaceFolderPrefixes).find((val) => val.index === 0)?.name ?? ''
+                  ])
         if (folder === undefined) {
+            telemetry.toolkit_trackScenario.emit({
+                count: 1,
+                amazonqConversationId: conversationId,
+                credentialStartUrl: AuthUtil.instance.startUrl,
+                scenario: 'wsOrphanedDocuments',
+            })
             getLogger().error(`No workspace folder found for file: ${zipFilePath} and prefix: ${prefix}`)
             continue
         }
@@ -78,7 +98,9 @@ function registerNewFiles(
             fileContent,
             virtualMemoryUri: uri,
             workspaceFolder: folder,
-            relativePath: zipFilePath.substring(workspaceFolderPrefixes === undefined ? 0 : prefix.length + 1),
+            relativePath: zipFilePath.substring(
+                workspaceFolderPrefixes === undefined ? 0 : prefix.length > 0 ? prefix.length + 1 : 0
+            ),
             rejected: false,
         })
     }
@@ -111,12 +133,14 @@ function getDeletedFileInfos(deletedFiles: string[], workspaceFolders: CurrentWs
 }
 
 abstract class CodeGenBase {
-    private pollCount = 180
-    private requestDelay = 10000
-    readonly tokenSource: vscode.CancellationTokenSource
+    private pollCount = 360
+    private requestDelay = 5000
+    public tokenSource: vscode.CancellationTokenSource
     public phase: SessionStatePhase = DevPhase.CODEGEN
     public readonly conversationId: string
     public readonly uploadId: string
+    public currentCodeGenerationId?: string
+    public isCancellationRequested?: boolean
 
     constructor(
         protected config: SessionStateConfig,
@@ -125,6 +149,7 @@ abstract class CodeGenBase {
         this.tokenSource = new vscode.CancellationTokenSource()
         this.conversationId = config.conversationId
         this.uploadId = config.uploadId
+        this.currentCodeGenerationId = config.currentCodeGenerationId || EmptyCodeGenID
     }
 
     async generateCode({
@@ -148,7 +173,7 @@ abstract class CodeGenBase {
     }> {
         for (
             let pollingIteration = 0;
-            pollingIteration < this.pollCount && !this.tokenSource.token.isCancellationRequested;
+            pollingIteration < this.pollCount && !this.isCancellationRequested;
             ++pollingIteration
         ) {
             const codegenResult = await this.config.proxyClient.getCodeGeneration(this.conversationId, codeGenerationId)
@@ -161,7 +186,13 @@ abstract class CodeGenBase {
                 case CodeGenerationStatus.COMPLETE: {
                     const { newFileContents, deletedFiles, references } =
                         await this.config.proxyClient.exportResultArchive(this.conversationId)
-                    const newFileInfo = registerNewFiles(fs, newFileContents, this.uploadId, workspaceFolders)
+                    const newFileInfo = registerNewFiles(
+                        fs,
+                        newFileContents,
+                        this.uploadId,
+                        workspaceFolders,
+                        this.conversationId
+                    )
                     telemetry.setNumberOfFilesGenerated(newFileInfo.length)
 
                     return {
@@ -200,6 +231,9 @@ abstract class CodeGenBase {
                             throw new PromptRefusalException()
                         }
                         case codegenResult.codeGenerationStatusDetail?.includes('EmptyPatch'): {
+                            if (codegenResult.codeGenerationStatusDetail?.includes('NO_CHANGE_REQUIRED')) {
+                                throw new NoChangeRequiredException()
+                            }
                             throw new FeatureDevServiceError(
                                 i18n('AWS.amazonq.featureDev.error.codeGen.default'),
                                 'EmptyPatchException'
@@ -224,7 +258,7 @@ abstract class CodeGenBase {
                 }
             }
         }
-        if (!this.tokenSource.token.isCancellationRequested) {
+        if (!this.isCancellationRequested) {
             // still in progress
             const errorMessage = i18n('AWS.amazonq.featureDev.error.codeGen.timeout')
             throw new ToolkitError(errorMessage, { code: 'CodeGenTimeout' })
@@ -244,7 +278,8 @@ export class CodeGenState extends CodeGenBase implements SessionState {
         public deletedFiles: DeletedFileInfo[],
         public references: CodeReference[],
         tabID: string,
-        private currentIteration: number,
+        public currentIteration: number,
+        public uploadHistory: UploadHistory,
         public codeGenerationRemainingIterationCount?: number,
         public codeGenerationTotalIterationCount?: number
     ) {
@@ -254,6 +289,12 @@ export class CodeGenState extends CodeGenBase implements SessionState {
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
         return telemetry.amazonq_codeGenerationInvoke.run(async (span) => {
             try {
+                action.tokenSource?.token.onCancellationRequested(() => {
+                    this.isCancellationRequested = true
+                    if (action.tokenSource) {
+                        this.tokenSource = action.tokenSource
+                    }
+                })
                 span.record({
                     amazonqConversationId: this.config.conversationId,
                     credentialStartUrl: AuthUtil.instance.startUrl,
@@ -261,22 +302,26 @@ export class CodeGenState extends CodeGenBase implements SessionState {
 
                 action.telemetry.setGenerateCodeIteration(this.currentIteration)
                 action.telemetry.setGenerateCodeLastInvocationTime()
-
-                const { codeGenerationId } = await this.config.proxyClient.startCodeGeneration(
+                const codeGenerationId = randomUUID()
+                await this.config.proxyClient.startCodeGeneration(
                     this.config.conversationId,
                     this.config.uploadId,
-                    action.msg
+                    action.msg,
+                    codeGenerationId,
+                    this.currentCodeGenerationId
                 )
 
-                action.messenger.sendAnswer({
-                    message: i18n('AWS.amazonq.featureDev.pillText.generatingCode'),
-                    type: 'answer-part',
-                    tabID: this.tabID,
-                })
-                action.messenger.sendUpdatePlaceholder(
-                    this.tabID,
-                    i18n('AWS.amazonq.featureDev.pillText.generatingCode')
-                )
+                if (!this.isCancellationRequested) {
+                    action.messenger.sendAnswer({
+                        message: i18n('AWS.amazonq.featureDev.pillText.generatingCode'),
+                        type: 'answer-part',
+                        tabID: this.tabID,
+                    })
+                    action.messenger.sendUpdatePlaceholder(
+                        this.tabID,
+                        i18n('AWS.amazonq.featureDev.pillText.generatingCode')
+                    )
+                }
 
                 const codeGeneration = await this.generateCode({
                     messenger: action.messenger,
@@ -286,11 +331,26 @@ export class CodeGenState extends CodeGenBase implements SessionState {
                     workspaceFolders: this.config.workspaceFolders,
                 })
 
+                if (codeGeneration && !action.tokenSource?.token.isCancellationRequested) {
+                    this.config.currentCodeGenerationId = codeGenerationId
+                    this.currentCodeGenerationId = codeGenerationId
+                }
+
                 this.filePaths = codeGeneration.newFiles
                 this.deletedFiles = codeGeneration.deletedFiles
                 this.references = codeGeneration.references
                 this.codeGenerationRemainingIterationCount = codeGeneration.codeGenerationRemainingIterationCount
                 this.codeGenerationTotalIterationCount = codeGeneration.codeGenerationTotalIterationCount
+
+                if (action.uploadHistory && !action.uploadHistory[codeGenerationId] && codeGenerationId) {
+                    action.uploadHistory[codeGenerationId] = {
+                        timestamp: Date.now(),
+                        uploadId: this.config.uploadId,
+                        filePaths: codeGeneration.newFiles,
+                        deletedFiles: codeGeneration.deletedFiles,
+                        tabId: this.tabID,
+                    }
+                }
 
                 action.telemetry.setAmazonqNumberOfReferences(this.references.length)
                 action.telemetry.recordUserCodeGenerationTelemetry(span, this.conversationId)
@@ -302,7 +362,11 @@ export class CodeGenState extends CodeGenBase implements SessionState {
                     this.tabID,
                     this.currentIteration + 1,
                     this.codeGenerationRemainingIterationCount,
-                    this.codeGenerationTotalIterationCount
+                    this.codeGenerationTotalIterationCount,
+                    action.uploadHistory,
+                    this.tokenSource,
+                    this.currentCodeGenerationId,
+                    codeGenerationId
                 )
                 return {
                     nextState,
@@ -322,6 +386,7 @@ export class MockCodeGenState implements SessionState {
     public filePaths: NewFileInfo[]
     public deletedFiles: DeletedFileInfo[]
     public readonly conversationId: string
+    public readonly codeGenerationId?: string
     public readonly uploadId: string
 
     constructor(
@@ -348,7 +413,13 @@ export class MockCodeGenState implements SessionState {
                 zipFilePath: f.zipFilePath,
                 fileContent: f.fileContent,
             }))
-            this.filePaths = registerNewFiles(action.fs, newFileContents, this.uploadId, this.config.workspaceFolders)
+            this.filePaths = registerNewFiles(
+                action.fs,
+                newFileContents,
+                this.uploadId,
+                this.config.workspaceFolders,
+                this.conversationId
+            )
             this.deletedFiles = [
                 {
                     zipFilePath: 'src/this-file-should-be-deleted.ts',
@@ -368,7 +439,8 @@ export class MockCodeGenState implements SessionState {
                     },
                 ],
                 this.tabID,
-                this.uploadId
+                this.uploadId,
+                this.codeGenerationId ?? ''
             )
             action.messenger.sendAnswer({
                 message: undefined,
@@ -403,23 +475,30 @@ export class MockCodeGenState implements SessionState {
 }
 
 export class PrepareCodeGenState implements SessionState {
-    public tokenSource: vscode.CancellationTokenSource
     public readonly phase = DevPhase.CODEGEN
     public uploadId: string
     public conversationId: string
+    public tokenSource: vscode.CancellationTokenSource
     constructor(
         private config: SessionStateConfig,
         public filePaths: NewFileInfo[],
         public deletedFiles: DeletedFileInfo[],
         public references: CodeReference[],
         public tabID: string,
-        private currentIteration: number,
+        public currentIteration: number,
         public codeGenerationRemainingIterationCount?: number,
-        public codeGenerationTotalIterationCount?: number
+        public codeGenerationTotalIterationCount?: number,
+        public uploadHistory: UploadHistory = {},
+        public superTokenSource: vscode.CancellationTokenSource = new vscode.CancellationTokenSource(),
+        public currentCodeGenerationId?: string,
+        public codeGenerationId?: string
     ) {
-        this.tokenSource = new vscode.CancellationTokenSource()
+        this.tokenSource = superTokenSource || new vscode.CancellationTokenSource()
         this.uploadId = config.uploadId
+        this.currentCodeGenerationId = currentCodeGenerationId
         this.conversationId = config.conversationId
+        this.uploadHistory = uploadHistory
+        this.codeGenerationId = codeGenerationId
     }
 
     updateWorkspaceRoot(workspaceRoot: string) {
@@ -434,7 +513,6 @@ export class PrepareCodeGenState implements SessionState {
         })
 
         action.messenger.sendUpdatePlaceholder(this.tabID, i18n('AWS.amazonq.featureDev.pillText.uploadingCode'))
-
         const uploadId = await telemetry.amazonq_createUpload.run(async (span) => {
             span.record({
                 amazonqConversationId: this.config.conversationId,
@@ -446,35 +524,40 @@ export class PrepareCodeGenState implements SessionState {
                 action.telemetry,
                 span
             )
-
-            const { uploadUrl, uploadId, kmsKeyArn } = await this.config.proxyClient.createUploadUrl(
+            const uploadId = randomUUID()
+            const { uploadUrl, kmsKeyArn } = await this.config.proxyClient.createUploadUrl(
                 this.config.conversationId,
                 zipFileChecksum,
-                zipFileBuffer.length
+                zipFileBuffer.length,
+                uploadId
             )
 
             await uploadCode(uploadUrl, zipFileBuffer, zipFileChecksum, kmsKeyArn)
-            action.messenger.sendAnswer({
-                message: i18n('AWS.amazonq.featureDev.pillText.contextGatheringCompleted'),
-                type: 'answer-part',
-                tabID: this.tabID,
-            })
+            if (!action.tokenSource?.token.isCancellationRequested) {
+                action.messenger.sendAnswer({
+                    message: i18n('AWS.amazonq.featureDev.pillText.contextGatheringCompleted'),
+                    type: 'answer-part',
+                    tabID: this.tabID,
+                })
 
-            action.messenger.sendUpdatePlaceholder(
-                this.tabID,
-                i18n('AWS.amazonq.featureDev.pillText.contextGatheringCompleted')
-            )
+                action.messenger.sendUpdatePlaceholder(
+                    this.tabID,
+                    i18n('AWS.amazonq.featureDev.pillText.contextGatheringCompleted')
+                )
+            }
 
             return uploadId
         })
         this.uploadId = uploadId
+
         const nextState = new CodeGenState(
-            { ...this.config, uploadId },
+            { ...this.config, uploadId: this.uploadId, currentCodeGenerationId: this.currentCodeGenerationId },
             this.filePaths,
             this.deletedFiles,
             this.references,
             this.tabID,
-            this.currentIteration
+            this.currentIteration,
+            this.uploadHistory
         )
         return nextState.interact(action)
     }

@@ -12,7 +12,7 @@ import {
     SamCliProcessInvokeOptions,
     SamCliProcessInvoker,
 } from '../../../../shared/sam/cli/samCliInvokerUtils'
-import { ChildProcessResult } from '../../../../shared/utilities/childProcess'
+import { ChildProcessResult } from '../../../../shared/utilities/processUtils'
 import { TestLogger } from '../../../testLogger'
 
 export class TestSamCliProcessInvoker implements SamCliProcessInvoker {

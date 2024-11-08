@@ -85,6 +85,7 @@ export class Messenger {
                 type: 'answer',
                 tabID: tabID,
                 message: showDefaultMessage ? errorMessage : i18n('AWS.amazonq.featureDev.error.technicalDifficulties'),
+                canBeVoted: true,
             })
             this.sendFeedback(tabID)
             return
@@ -115,9 +116,12 @@ export class Messenger {
         deletedFiles: DeletedFileInfo[],
         references: CodeReference[],
         tabID: string,
-        uploadId: string
+        uploadId: string,
+        codeGenerationId: string
     ) {
-        this.dispatcher.sendCodeResult(new CodeResultMessage(filePaths, deletedFiles, references, tabID, uploadId))
+        this.dispatcher.sendCodeResult(
+            new CodeResultMessage(filePaths, deletedFiles, references, tabID, uploadId, codeGenerationId)
+        )
     }
 
     public sendAsyncEventProgress(tabID: string, inProgress: boolean, message: string | undefined) {

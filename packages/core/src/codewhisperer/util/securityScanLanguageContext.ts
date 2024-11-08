@@ -17,7 +17,9 @@ export class SecurityScanLanguageContext {
             java: 'java',
             python: 'python',
             javascript: 'javascript',
+            javascriptreact: 'javascript',
             typescript: 'typescript',
+            typescriptreact: 'typescript',
             csharp: 'csharp',
             go: 'go',
             golang: 'go',
@@ -40,6 +42,11 @@ export class SecurityScanLanguageContext {
             'java-properties': 'plaintext',
             'go.mod': 'plaintext',
             'go.sum': 'plaintext',
+            kotlin: 'kotlin',
+            scala: 'scala',
+            sh: 'shell',
+            shell: 'shell',
+            shellscript: 'shell',
         })
     }
 

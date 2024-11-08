@@ -1,0 +1,54 @@
+{
+	"date": "2024-10-10",
+	"version": "1.29.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q /dev: include telemetry for workspace usage when generating new files"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q extension may fail to start if AWS Toolkit extension fails to start"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Start language server by default"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q Feature Dev: Add error messages when the upload URL expires"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q (/dev): view diffs of previous /dev iterations"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Q dev handle no change required"
+		},
+		{
+			"type": "Deprecation",
+			"description": "The next release of this extension will require VS Code 1.83.0 or newer."
+		},
+		{
+			"type": "Feature",
+			"description": "Automatically pause and resume @workspace indexing when OS CPU load is high"
+		},
+		{
+			"type": "Feature",
+			"description": "Add buttons to code blocks to view and accept diffs."
+		},
+		{
+			"type": "Feature",
+			"description": "Inline completion for more json files, and all yaml files"
+		},
+		{
+			"type": "Feature",
+			"description": "Show a one-time warning if new VS Code is required"
+		},
+		{
+			"type": "Removal",
+			"description": "Minimum required VSCode version is now 1.83"
+		}
+	]
+}

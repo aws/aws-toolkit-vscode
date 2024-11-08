@@ -17,7 +17,6 @@ import { sanitizeFilename } from './textUtilities'
 import { GitIgnoreAcceptor } from '@gerhobbelt/gitignore-parser'
 import * as parser from '@gerhobbelt/gitignore-parser'
 import fs from '../fs/fs'
-import { telemetry } from '../telemetry'
 
 type GitIgnoreRelativeAcceptor = {
     folderPath: string
@@ -34,7 +33,7 @@ export class GitIgnoreFilter {
     public static async build(gitIgnoreFiles: vscode.Uri[]): Promise<GitIgnoreFilter> {
         const acceptors: GitIgnoreRelativeAcceptor[] = []
         for (const file of gitIgnoreFiles) {
-            const fileContent = await fs.readFileAsString(file)
+            const fileContent = await fs.readFileText(file)
 
             const folderPath = getWorkspaceParentDirectory(file.fsPath)
             if (folderPath === undefined) {
@@ -67,6 +66,11 @@ export class GitIgnoreFilter {
 }
 
 export type CurrentWsFolders = [vscode.WorkspaceFolder, ...vscode.WorkspaceFolder[]]
+
+export function hasWorkspace() {
+    const wsFolders = vscode.workspace.workspaceFolders
+    return wsFolders !== undefined && wsFolders.length > 0
+}
 
 /**
  * Resolves `relPath` against parent `workspaceFolder`, or returns `relPath` if
@@ -318,88 +322,75 @@ export async function collectFiles(
         zipFilePath: string
     }[]
 > {
-    return telemetry.function_call.run(
-        async (span) => {
-            const storage: Awaited<ReturnType<typeof collectFiles>> = []
+    const storage: Awaited<ReturnType<typeof collectFiles>> = []
 
-            const workspaceFoldersMapping = getWorkspaceFoldersByPrefixes(workspaceFolders)
-            const workspaceToPrefix = new Map<vscode.WorkspaceFolder, string>(
-                workspaceFoldersMapping === undefined
-                    ? [[workspaceFolders[0], '']]
-                    : Object.entries(workspaceFoldersMapping).map((value) => [value[1], value[0]])
-            )
-            const prefixWithFolderPrefix = (folder: vscode.WorkspaceFolder, path: string) => {
-                const prefix = workspaceToPrefix.get(folder)
-                /**
-                 * collects all files that are marked as source
-                 * @param sourcePaths the paths where collection starts
-                 * @param workspaceFolders the current workspace folders opened
-                 * @param respectGitIgnore whether to respect gitignore file
-                 * @returns all matched files
-                 */
-                if (prefix === undefined) {
-                    throw new ToolkitError(`Failed to find prefix for workspace folder ${folder.name}`)
-                }
-                return prefix === '' ? path : `${prefix}/${path}`
-            }
-
-            let totalSizeBytes = 0
-            let totalFiles = 0
-            for (const rootPath of sourcePaths) {
-                const allFiles = await vscode.workspace.findFiles(
-                    new vscode.RelativePattern(rootPath, '**'),
-                    getExcludePattern()
-                )
-
-                const files = respectGitIgnore ? await filterOutGitignoredFiles(rootPath, allFiles) : allFiles
-                totalFiles += files.length
-
-                for (const file of files) {
-                    const relativePath = getWorkspaceRelativePath(file.fsPath, { workspaceFolders })
-                    if (!relativePath) {
-                        continue
-                    }
-
-                    const fileStat = await fs.stat(file)
-                    if (totalSizeBytes + fileStat.size > maxSize) {
-                        throw new ToolkitError(
-                            'The project you have selected for source code is too large to use as context. Please select a different folder to use',
-                            { code: 'ContentLengthError' }
-                        )
-                    }
-
-                    const fileContent = await readFile(file)
-
-                    if (fileContent === undefined) {
-                        continue
-                    }
-
-                    // Now that we've read the file, increase our usage
-                    totalSizeBytes += fileStat.size
-                    storage.push({
-                        workspaceFolder: relativePath.workspaceFolder,
-                        relativeFilePath: relativePath.relativePath,
-                        fileUri: file,
-                        fileContent: fileContent,
-                        zipFilePath: prefixWithFolderPrefix(relativePath.workspaceFolder, relativePath.relativePath),
-                    })
-                }
-            }
-            span.record({ totalFiles, totalFileSizeInMB: totalSizeBytes / (1024 * 1024) })
-            return storage
-        },
-        {
-            emit: true,
-            functionId: {
-                name: 'collectFiles',
-            },
-        }
+    const workspaceFoldersMapping = getWorkspaceFoldersByPrefixes(workspaceFolders)
+    const workspaceToPrefix = new Map<vscode.WorkspaceFolder, string>(
+        workspaceFoldersMapping === undefined
+            ? [[workspaceFolders[0], '']]
+            : Object.entries(workspaceFoldersMapping).map((value) => [value[1], value[0]])
     )
+    const prefixWithFolderPrefix = (folder: vscode.WorkspaceFolder, path: string) => {
+        const prefix = workspaceToPrefix.get(folder)
+        /**
+         * collects all files that are marked as source
+         * @param sourcePaths the paths where collection starts
+         * @param workspaceFolders the current workspace folders opened
+         * @param respectGitIgnore whether to respect gitignore file
+         * @returns all matched files
+         */
+        if (prefix === undefined) {
+            throw new ToolkitError(`Failed to find prefix for workspace folder ${folder.name}`)
+        }
+        return prefix === '' ? path : `${prefix}/${path}`
+    }
+
+    let totalSizeBytes = 0
+    for (const rootPath of sourcePaths) {
+        const allFiles = await vscode.workspace.findFiles(
+            new vscode.RelativePattern(rootPath, '**'),
+            getExcludePattern()
+        )
+
+        const files = respectGitIgnore ? await filterOutGitignoredFiles(rootPath, allFiles) : allFiles
+
+        for (const file of files) {
+            const relativePath = getWorkspaceRelativePath(file.fsPath, { workspaceFolders })
+            if (!relativePath) {
+                continue
+            }
+
+            const fileStat = await fs.stat(file)
+            if (totalSizeBytes + fileStat.size > maxSize) {
+                throw new ToolkitError(
+                    'The project you have selected for source code is too large to use as context. Please select a different folder to use',
+                    { code: 'ContentLengthError' }
+                )
+            }
+
+            const fileContent = await readFile(file)
+
+            if (fileContent === undefined) {
+                continue
+            }
+
+            // Now that we've read the file, increase our usage
+            totalSizeBytes += fileStat.size
+            storage.push({
+                workspaceFolder: relativePath.workspaceFolder,
+                relativeFilePath: relativePath.relativePath,
+                fileUri: file,
+                fileContent: fileContent,
+                zipFilePath: prefixWithFolderPrefix(relativePath.workspaceFolder, relativePath.relativePath),
+            })
+        }
+    }
+    return storage
 }
 
 const readFile = async (file: vscode.Uri) => {
     try {
-        const fileContent = await fs.readFileAsString(file, new TextDecoder('utf8', { fatal: false }))
+        const fileContent = await fs.readFileText(file, new TextDecoder('utf8', { fatal: false }))
         return fileContent
     } catch (error) {
         getLogger().debug(
@@ -591,7 +582,7 @@ export async function collectFilesForIndex(
                 continue
             }
 
-            const fileStat = await vscode.workspace.fs.stat(file)
+            const fileStat = await fs.stat(file)
             // ignore single file over 10 MB
             if (fileStat.size > 10 * 1024 * 1024) {
                 continue
