@@ -427,6 +427,7 @@ export class ProposedTransformationExplorer {
                     },
                 })
             } catch (err: any) {
+                // log error, but continue to show user diff.patch with results
                 getLogger().error(`CodeTransformation: SendTelemetryEvent error = ${err.message}`)
             }
         })
