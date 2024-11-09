@@ -481,6 +481,8 @@ export const failedStepMessage = 'The step failed, fetching additional details..
 
 export const jobCompletedMessage = 'The transformation completed.'
 
+export const noChangesMadeMessage = "I didn't make any changes for this transformation."
+
 export const noOngoingJobMessage = 'No ongoing job.'
 
 export const nothingToShowMessage = 'Nothing to show'

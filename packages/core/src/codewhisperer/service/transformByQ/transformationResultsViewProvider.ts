@@ -148,7 +148,7 @@ export class DiffModel {
 
         if (!diffContents.trim()) {
             getLogger().error(`CodeTransformation: diff.patch file is empty`)
-            throw new Error('No changes were made as a part of this transformation.')
+            throw new Error(CodeWhispererConstants.noChangesMadeMessage)
         }
 
         const changedFiles = parsePatch(diffContents)
@@ -379,25 +379,6 @@ export class ProposedTransformationExplorer {
                 pathContainingArchive = path.dirname(pathToArchive)
                 const zip = new AdmZip(pathToArchive)
                 zip.extractAllTo(pathContainingArchive)
-
-                // TODO: below only needed if the backend cannot fix the "b/" diff.patch issue
-                const diffPatch = fs.readFileSync(
-                    path.join(pathContainingArchive, ExportResultArchiveStructure.PathToDiffPatch),
-                    'utf-8'
-                )
-                const lines = diffPatch.split('\n')
-                const newLines = lines.map((line) => {
-                    if (line.trim().startsWith('diff') || line.trim().startsWith('+++')) {
-                        return line.replace('b', 'b/')
-                    }
-                    return line
-                })
-                const newDiffPatch = newLines.join('\n')
-                fs.writeFileSync(
-                    path.join(pathContainingArchive, ExportResultArchiveStructure.PathToDiffPatch),
-                    newDiffPatch
-                )
-
                 diffModel.parseDiff(
                     path.join(pathContainingArchive, ExportResultArchiveStructure.PathToDiffPatch),
                     transformByQState.getProjectPath()
