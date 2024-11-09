@@ -67,7 +67,7 @@ export const lineBreak = '\n'
 
 export const lineBreakWin = '\r\n'
 
-export const supplementalContextTimeoutInMs = 50
+export const supplementalContextTimeoutInMs = 100
 
 /**
  * Ux of recommendations
