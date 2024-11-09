@@ -258,9 +258,7 @@ export class DefaultCodeWhispererClient {
         if (!AuthUtil.instance.isValidEnterpriseSsoInUse() && !globals.telemetry.telemetryEnabled) {
             return
         }
-        console.log('about to make API call')
         const response = await (await this.createUserSdkClient()).sendTelemetryEvent(requestWithCommonFields).promise()
-        console.log('API call response =', response)
         getLogger().debug(`codewhisperer: sendTelemetryEvent requestID: ${response.$response.requestId}`)
     }
 
