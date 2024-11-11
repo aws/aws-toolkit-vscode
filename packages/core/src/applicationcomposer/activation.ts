@@ -10,7 +10,7 @@ import { openTemplateInComposerCommand } from './commands/openTemplateInComposer
 import { openInComposerDialogCommand } from './commands/openInComposerDialog'
 
 export async function activate(extensionContext: vscode.ExtensionContext): Promise<void> {
-    const visualizationManager = new ApplicationComposerManager(extensionContext)
+    const visualizationManager = await ApplicationComposerManager.create(extensionContext)
 
     extensionContext.subscriptions.push(
         openTemplateInComposerCommand.register(visualizationManager),
