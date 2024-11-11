@@ -80,7 +80,7 @@ describe('DeployTypeWizard', function () {
         const choices = await deployTypeWizard.run()
         // Then
         assert.strictEqual(choices?.choice, 'deploy')
-        prompterTester.assertCallAll(prompterTester.getHandlers(), 1)
+        prompterTester.assertCallAll()
     })
 
     it('sync is selected', async function () {
@@ -109,6 +109,6 @@ describe('DeployTypeWizard', function () {
         const choices = await deployTypeWizard.run()
         // Then
         assert.strictEqual(choices?.choice, 'sync')
-        prompterTester.assertCallAll(prompterTester.getHandlers(), 1)
+        prompterTester.assertCallAll()
     })
 })

@@ -74,10 +74,13 @@ export class PrompterTester {
     /**
      * Asserts that all specified prompter handlers were called in the expected number of times.
      *
-     * @param expectedCall - The expected number of times the handler should have been called.
+     * @param titles - The array of propmter handler titles to check.
+     *                 If not provided, all registered handler titles are used
+     * @param expectedCall - The expected number of times all specified handlers should have been called.
+     *                       If not provided, it defaults to 1.
      * @throws AssertionError if the actual number of calls doesn't match the expected number.
      */
-    assertCallAll(titles: string[], expectedOrder: number) {
+    assertCallAll(titles: string[] = this.getHandlers(), expectedOrder: number = 1) {
         titles.every((handler) => {
             this.assertCall(handler, expectedOrder)
         })

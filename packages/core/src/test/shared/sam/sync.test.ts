@@ -999,7 +999,7 @@ describe('SyncWizard', async () => {
             assert.strictEqual(parameters.bucketName, 'stack-1-bucket')
             assert.strictEqual(parameters.skipDependencyLayer, true)
             assert.strictEqual(parameters.syncFlags, '["--dependency-layer","--use-container","--save-params"]')
-            prompterTester.assertCallAll(prompterTester.getHandlers(), 1)
+            prompterTester.assertCallAll()
         })
 
         it('happy path with valid samconfig.toml', async () => {
@@ -1042,7 +1042,7 @@ describe('SyncWizard', async () => {
             assert(!parameters.bucketName)
             assert.strictEqual(parameters.skipDependencyLayer, true)
             assert(!parameters.syncFlags)
-            prompterTester.assertCallAll(prompterTester.getHandlers(), 1)
+            prompterTester.assertCallAll()
         })
     })
 
@@ -1122,7 +1122,7 @@ describe('SyncWizard', async () => {
             assert.strictEqual(parameters.deployType, 'infra')
             assert.strictEqual(parameters.skipDependencyLayer, true)
             assert.strictEqual(parameters.syncFlags, '["--save-params"]')
-            prompterTester.assertCallAll(prompterTester.getHandlers(), 1)
+            prompterTester.assertCallAll()
         })
 
         it('happy path with valid samconfig.toml', async () => {
@@ -1165,7 +1165,7 @@ describe('SyncWizard', async () => {
             assert(!parameters.stackName)
             assert(!parameters.bucketSource)
             assert.strictEqual(parameters.skipDependencyLayer, true)
-            prompterTester.assertCallAll(prompterTester.getHandlers(), 1)
+            prompterTester.assertCallAll()
         })
     })
 
@@ -1248,7 +1248,7 @@ describe('SyncWizard', async () => {
             assert.strictEqual(parameters.deployType, 'infra')
             assert.strictEqual(parameters.skipDependencyLayer, true)
             assert.strictEqual(parameters.syncFlags, '["--dependency-layer","--use-container"]')
-            prompterTester.assertCallAll(prompterTester.getHandlers(), 1)
+            prompterTester.assertCallAll()
         })
 
         it('happy path with valid samconfig.toml', async () => {
@@ -1298,7 +1298,7 @@ describe('SyncWizard', async () => {
             assert(!parameters.stackName)
             assert(!parameters.bucketSource)
             assert.strictEqual(parameters.skipDependencyLayer, true)
-            prompterTester.assertCallAll(prompterTester.getHandlers(), 1)
+            prompterTester.assertCallAll()
         })
     })
 
@@ -1347,7 +1347,7 @@ describe('SyncWizard', async () => {
             assert.strictEqual(parameters.bucketName, 'aws-sam-cli-managed-default-samclisourcebucket-lftqponsaxsr')
             assert.strictEqual(parameters.skipDependencyLayer, true)
             assert(!parameters.syncFlags)
-            prompterTester.assertCallAll(prompterTester.getHandlers(), 1)
+            prompterTester.assertCallAll()
         })
 
         it('happy path with empty samconfig.toml', async () => {
@@ -1421,7 +1421,7 @@ describe('SyncWizard', async () => {
             assert.strictEqual(parameters.deployType, 'infra')
             assert.strictEqual(parameters.skipDependencyLayer, true)
             assert.strictEqual(parameters.syncFlags, '["--dependency-layer","--use-container","--watch"]')
-            prompterTester.assertCallAll(prompterTester.getHandlers(), 1)
+            prompterTester.assertCallAll()
         })
     })
 
@@ -1497,7 +1497,7 @@ describe('SyncWizard', async () => {
             assert.strictEqual(parameters.deployType, 'infra')
             assert.strictEqual(parameters.skipDependencyLayer, true)
             assert.strictEqual(parameters.syncFlags, '["--dependency-layer","--use-container"]')
-            prompterTester.assertCallAll(prompterTester.getHandlers(), 1)
+            prompterTester.assertCallAll()
         })
 
         it('happy path with valid samconfig.toml', async () => {
@@ -1548,7 +1548,7 @@ describe('SyncWizard', async () => {
             assert(!parameters.bucketSource)
             assert(!parameters.syncFlags)
             assert.strictEqual(parameters.skipDependencyLayer, true)
-            prompterTester.assertCallAll(prompterTester.getHandlers(), 1)
+            prompterTester.assertCallAll()
         })
     })
 })
@@ -1728,7 +1728,7 @@ describe('SAM Sync', () => {
                 syncedResources: 'CodeOnly',
                 source: undefined,
             })
-            prompterTester.assertCallAll(prompterTester.getHandlers(), 1)
+            prompterTester.assertCallAll()
         })
 
         it('[entry: template file] specify flag should instantiate correct process in terminal', async () => {
@@ -1804,7 +1804,7 @@ describe('SAM Sync', () => {
                 syncedResources: 'AllResources',
                 source: 'template',
             })
-            prompterTester.assertCallAll(prompterTester.getHandlers(), 1)
+            prompterTester.assertCallAll()
         })
 
         it('[entry: appBuilder] use samconfig should instantiate correct process in terminal', async () => {
@@ -1860,7 +1860,7 @@ describe('SAM Sync', () => {
                 syncedResources: 'AllResources',
                 source: 'appBuilderDeploy',
             })
-            prompterTester.assertCallAll(prompterTester.getHandlers(), 1)
+            prompterTester.assertCallAll()
         })
     })
 
@@ -1948,7 +1948,7 @@ describe('SAM Sync', () => {
                 assert(error instanceof ToolkitError)
                 assert.strictEqual(error.message, 'Failed to sync SAM application')
             }
-            prompterTester.assertCallAll(prompterTester.getHandlers(), 1)
+            prompterTester.assertCallAll()
         })
     })
 })
