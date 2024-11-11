@@ -16,15 +16,17 @@ import { mergeResolvedShellPath } from '../../env/resolveEnv'
 interface SamLocation {
     path: string
     version: string
-    verified?: boolean
 }
 export class SamCliLocationProvider {
     private static samCliLocator: BaseSamCliLocator | undefined
     protected static cachedSamLocation: SamLocation | undefined
+    private static samLocationValid: boolean = false
 
     /** Checks that the given `sam` actually works by invoking `sam --version`. */
     private static async isValidSamLocation(samPath: string) {
-        return await tryRun(samPath, ['--version'], 'no', 'SAM CLI')
+        const isValid = await tryRun(samPath, ['--version'], 'no', 'SAM CLI')
+        this.samLocationValid = isValid
+        return isValid
     }
 
     /**
@@ -36,8 +38,11 @@ export class SamCliLocationProvider {
         const cachedLoc = forceSearch ? undefined : SamCliLocationProvider.cachedSamLocation
 
         // Avoid searching the system for `sam` (especially slow on Windows).
-        if (cachedLoc && (cachedLoc.verified || (await SamCliLocationProvider.isValidSamLocation(cachedLoc.path)))) {
-            cachedLoc.verified = true
+        if (
+            cachedLoc &&
+            (SamCliLocationProvider.samLocationValid ||
+                (await SamCliLocationProvider.isValidSamLocation(cachedLoc.path)))
+        ) {
             perflog.done()
             return cachedLoc
         }
