@@ -1,3 +1,7 @@
+## 3.33.0 2024-11-11
+
+- **Feature** UI: region-related quickpicks now have a refresh button
+
 ## 3.32.0 2024-11-07
 
 - **Bug Fix** SAM: Save SAM deploy parameters to correct samconfig.toml in project folder
