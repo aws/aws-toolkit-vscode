@@ -168,9 +168,10 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
             // eslint-disable-next-line aws-toolkits/no-banned-usages
             globalState = targetContext.globalState
             targetAuth = opts.auth
+            const options = menuOptions()
             void openMenu(
-                entries(menuOptions())
-                    .filter((e) => (opts.menuOptions ?? Object.keys(menuOptions)).includes(e[0]))
+                entries(options)
+                    .filter((e) => (opts.menuOptions ?? Object.keys(options)).includes(e[0]))
                     .map((e) => e[1])
             )
         }),
