@@ -10,13 +10,7 @@ import globals from '../extensionGlobals'
 
 import * as vscode from 'vscode'
 import { createNewSamApplication, resumeCreateNewSamApp } from '../../lambda/commands/createNewSamApp'
-import { deploySamApplication } from '../../lambda/commands/deploySamApplication'
 import { SamParameterCompletionItemProvider } from '../../lambda/config/samParameterCompletionItemProvider'
-import {
-    DefaultSamDeployWizardContext,
-    SamDeployWizard,
-    SamDeployWizardResponse,
-} from '../../lambda/wizards/samDeployWizard'
 import * as codelensUtils from '../codelens/codeLensUtils'
 import * as csLensProvider from '../codelens/csharpCodeLensProvider'
 import * as javaLensProvider from '../codelens/javaCodeLensProvider'
@@ -39,8 +33,10 @@ import { ToolkitPromptSettings } from '../settings'
 import { shared } from '../utilities/functionUtils'
 import { SamCliSettings } from './cli/samCliSettings'
 import { Commands } from '../vscode/commands2'
-import { registerSync } from './sync'
+import { runSync } from './sync'
 import { showExtensionPage } from '../utilities/vsCodeUtils'
+import { runDeploy } from './deploy'
+import { telemetry } from '../telemetry/telemetry'
 
 const sharedDetectSamCli = shared(detectSamCli)
 
@@ -110,13 +106,22 @@ export async function activate(ctx: ExtContext): Promise<void> {
         }
     })
 
+    const settings = SamCliSettings.instance
+    settings.onDidChange(({ key }) => {
+        if (key === 'legacyDeploy') {
+            telemetry.aws_modifySetting.run((span) => {
+                span.record({ settingId: 'sam_legacyDeploy' })
+                const state = settings.get('legacyDeploy')
+                span.record({ settingState: state ? 'Enabled' : 'Disabled' })
+            })
+        }
+    })
+
     ctx.extensionContext.subscriptions.push(config)
 
     if (globals.didReload) {
         await resumeCreateNewSamApp(ctx)
     }
-
-    registerSync()
 }
 
 async function registerCommands(ctx: ExtContext, settings: SamCliSettings): Promise<void> {
@@ -133,32 +138,27 @@ async function registerCommands(ctx: ExtContext, settings: SamCliSettings): Prom
             { id: 'aws.pickAddSamDebugConfiguration', autoconnect: false },
             codelensUtils.pickAddSamDebugConfiguration
         ),
-        Commands.register({ id: 'aws.deploySamApplication', autoconnect: true }, async (arg) => {
-            // `arg` is one of :
-            //  - undefined
-            //  - regionNode (selected from AWS Explorer)
-            //  -  Uri to template.yaml (selected from File Explorer)
-
-            const samDeployWizardContext = new DefaultSamDeployWizardContext(ctx)
-            const samDeployWizard = async (): Promise<SamDeployWizardResponse | undefined> => {
-                const wizard = new SamDeployWizard(samDeployWizardContext, arg)
-                return wizard.run()
-            }
-
-            await deploySamApplication(
-                {
-                    samDeployWizard: samDeployWizard,
-                },
-                {
-                    awsContext: ctx.awsContext,
-                    settings,
-                }
-            )
-        }),
+        Commands.register(
+            { id: 'aws.deploySamApplication', autoconnect: true },
+            async (arg) =>
+                // `arg` is one of :
+                //  - undefined
+                //  - regionNode (selected from AWS Explorer)
+                //  - Uri to template.yaml (selected from File Explorer)
+                //  - TreeNode (selected from AppBuilder)
+                await runDeploy(arg)
+        ),
         Commands.register({ id: 'aws.toggleSamCodeLenses', autoconnect: false }, async () => {
             const toggled = !settings.get('enableCodeLenses', false)
             await settings.update('enableCodeLenses', toggled)
-        })
+        }),
+        Commands.register(
+            {
+                id: 'aws.samcli.sync',
+                autoconnect: true,
+            },
+            async (arg?, validate?: boolean) => await runSync('infra', arg, validate)
+        )
     )
 }
 
@@ -188,7 +188,7 @@ async function activateCodeLensRegistry(context: ExtContext) {
                 getIdeProperties().codelenses
             )
         )
-        getLogger().error('Failed to activate codelens registry', e)
+        getLogger().error('Failed to activate codelens registry %O', e)
         // This prevents us from breaking for any reason later if it fails to load. Since
         // Noop watcher is always empty, we will get back empty arrays with no issues.
         globals.codelensRootRegistry = new NoopWatcher() as unknown as CodelensRootRegistry
@@ -251,7 +251,7 @@ function activateSamYamlOverlays(): vscode.Disposable {
  *
  * Used for:
  * 1. showing codelenses
- * 2. "Add SAM Debug Configuration" command (TODO: remove dependency on
+ * 2. "Add Local Invoke and Debug Configuration" command (TODO: remove dependency on
  *    codelense provider (which scans the whole workspace and creates
  *    filewatchers)).
  */

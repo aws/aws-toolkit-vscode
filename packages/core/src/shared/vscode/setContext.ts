@@ -10,12 +10,13 @@ import * as vscode from 'vscode'
  *
  * New keys must start with "aws." or "amazonq.".
  */
-type contextKey =
+export type contextKey =
     | 'aws.isDevMode'
     | 'aws.isSageMaker'
     | 'aws.isWebExtHost'
     | 'aws.isInternalUser'
     | 'aws.amazonq.showLoginView'
+    | 'aws.amazonq.notifications.show'
     | 'aws.codecatalyst.connected'
     | 'aws.codewhisperer.connected'
     | 'aws.codewhisperer.connectionExpired'
@@ -23,6 +24,7 @@ type contextKey =
     | 'aws.explorer.showAuthView'
     | 'aws.toolkit.amazonq.dismissed'
     | 'aws.toolkit.amazonqInstall.dismissed'
+    | 'aws.toolkit.notifications.show'
     // Deprecated/legacy names. New keys should start with "aws.".
     | 'codewhisperer.activeLine'
     | 'gumby.isPlanAvailable'
@@ -31,6 +33,8 @@ type contextKey =
     | 'gumby.reviewState'
     | 'gumby.transformationProposalReviewInProgress'
     | 'gumby.wasQCodeTransformationUsed'
+    | 'amazonq.inline.codelensShortcutEnabled'
+    | 'aws.toolkit.lambda.walkthroughSelected'
 
 /**
  * Calls the vscode "setContext" command.
@@ -43,6 +47,9 @@ type contextKey =
  * Use "setContext" only as a last resort, to set flags that are detectable in package.json
  * declarations. Do not use it as a general way to store global state (which should be avoided
  * anyway).
+ *
+ * Warning: vscode context keys/values are NOT isolated to individual extensions. Other extensions
+ * can read and modify them.
  */
 export async function setContext(key: contextKey, val: any): Promise<void> {
     // eslint-disable-next-line aws-toolkits/no-banned-usages

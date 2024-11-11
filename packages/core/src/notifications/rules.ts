@@ -3,9 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import * as semver from 'semver'
 import globals from '../shared/extensionGlobals'
-import { ConditionalClause, RuleContext, DisplayIf, CriteriaCondition, ToolkitNotification } from './types'
+import { ConditionalClause, RuleContext, DisplayIf, CriteriaCondition, ToolkitNotification, AuthState } from './types'
+import { getComputeEnvType, getOperatingSystem } from '../shared/telemetry/util'
 
 /**
  * Evaluates if a given version fits into the parameters specified by a notification, e.g:
@@ -66,7 +68,8 @@ export class RuleEngine {
     }
 
     private evaluate(condition: DisplayIf): boolean {
-        if (condition.extensionId !== globals.context.extension.id) {
+        const currentExt = globals.context.extension.id
+        if (condition.extensionId !== currentExt) {
             return false
         }
 
@@ -113,6 +116,7 @@ export class RuleEngine {
         // So... YAGNI
         switch (criteria.type) {
             case 'OS':
+                // todo: allow lowercase?
                 return isExpected(this.context.os)
             case 'ComputeEnv':
                 return isExpected(this.context.computeEnv)
@@ -131,5 +135,20 @@ export class RuleEngine {
             default:
                 throw new Error(`Unknown criteria type: ${criteria.type}`)
         }
+    }
+}
+
+export async function getRuleContext(context: vscode.ExtensionContext, authState: AuthState): Promise<RuleContext> {
+    return {
+        ideVersion: vscode.version,
+        extensionVersion: context.extension.packageJSON.version,
+        os: getOperatingSystem(),
+        computeEnv: await getComputeEnvType(),
+        authTypes: authState.authEnabledConnections.split(','),
+        authRegions: authState.awsRegion ? [authState.awsRegion] : [],
+        authStates: [authState.authStatus],
+        authScopes: authState.authScopes ? authState.authScopes?.split(',') : [],
+        installedExtensions: vscode.extensions.all.map((e) => e.id),
+        activeExtensions: vscode.extensions.all.filter((e) => e.isActive).map((e) => e.id),
     }
 }

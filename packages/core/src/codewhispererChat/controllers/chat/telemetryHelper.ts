@@ -358,6 +358,10 @@ export class CWCTelemetryHelper {
                 return 'UPVOTE'
             case 'downvote':
                 return 'DOWNVOTE'
+            case 'acceptDiff':
+                return 'ACCEPT_DIFF'
+            case 'viewDiff':
+                return 'VIEW_DIFF'
             default:
                 return 'UNKNOWN'
         }
@@ -416,7 +420,7 @@ export class CWCTelemetryHelper {
         })
     }
 
-    public emitAddMessage(tabID: string, fullDisplayLatency: number, startTime?: number) {
+    public emitAddMessage(tabID: string, fullDisplayLatency: number, traceId: string, startTime?: number) {
         const payload = this.messageStorage.get(tabID)
         if (!payload) {
             return
@@ -450,7 +454,7 @@ export class CWCTelemetryHelper {
             ),
             cwsprChatFullResponseLatency: this.responseStreamTotalTime.get(message.tabID) ?? 0,
             cwsprChatTimeToFirstDisplay: this.getFirstDisplayTime(tabID, startTime),
-            cwsprChatTimeFirstUsableChunk: this.getFirstUsableChunkTime(message.tabID) ?? 0,
+            cwsprChatTimeToFirstUsableChunk: this.getFirstUsableChunkTime(message.tabID) ?? 0,
             cwsprChatFullServerResponseLatency: this.conversationStreamTotalTime.get(message.tabID) ?? 0,
             cwsprChatTimeBetweenDisplays: JSON.stringify(this.getTimeBetweenChunks(tabID, this.displayTimeForChunks)),
             cwsprChatFullDisplayLatency: fullDisplayLatency,
@@ -460,6 +464,7 @@ export class CWCTelemetryHelper {
             credentialStartUrl: AuthUtil.instance.startUrl,
             codewhispererCustomizationArn: triggerPayload.customization.arn,
             cwsprChatHasProjectContext: hasProjectLevelContext,
+            traceId,
         }
 
         telemetry.amazonq_addMessage.emit(event)

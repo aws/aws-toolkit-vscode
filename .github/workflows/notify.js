@@ -6,9 +6,10 @@
 const { hasPath, dedupComment } = require('./utils')
 
 const testFilesMessage =
-    'This pull request modifies code in src/ but no tests were added/updated. Confirm whether tests should be added or ensure the PR description explains why tests are not required.'
+    '- This pull request modifies code in `src/*` but no tests were added/updated.\n    - Confirm whether tests should be added or ensure the PR description explains why tests are not required.\n'
 
-const changelogMessage = `This pull request implements a feature or fix, so it must include a changelog entry. See [CONTRIBUTING.md#changelog](https://github.com/aws/aws-toolkit-vscode/blob/master/CONTRIBUTING.md#changelog) for instructions.`
+const changelogMessage =
+    '- This pull request implements a `feat` or `fix`, so it must include a changelog entry (unless the fix is for an *unreleased* feature). Review the [changelog guidelines](https://github.com/aws/aws-toolkit-vscode/blob/master/CONTRIBUTING.md#changelog).\n    - Note: beta or "experiment" features that have active users *should* announce fixes in the changelog.\n    - If this is not a feature or fix, use an appropriate type from the [title guidelines](https://github.com/aws/aws-toolkit-vscode/blob/master/CONTRIBUTING.md#pull-request-title). For example, telemetry-only changes should use the `telemetry` type.\n'
 
 /**
  * Remind partner teams that tests are required. We don't need to remind them if:
@@ -44,12 +45,16 @@ module.exports = async ({ github, context }) => {
         issue_number: pullRequestId,
     })
 
+    let msg = ''
     if (shouldAddTestFileMessage) {
-        await dedupComment({ github, comments, owner, repo, pullRequestId, message: testFilesMessage })
+        msg += testFilesMessage
+    }
+    if (shouldAddChangelogMessage) {
+        msg += changelogMessage
     }
 
-    if (shouldAddChangelogMessage) {
-        await dedupComment({ github, comments, owner, repo, pullRequestId, message: changelogMessage })
+    if (shouldAddTestFileMessage || shouldAddChangelogMessage) {
+        await dedupComment({ github, comments, owner, repo, pullRequestId, message: msg })
     }
 }
 
@@ -69,7 +74,12 @@ function requiresChangelogMessage(filenames, title) {
  * Require the test files message if there are changes to source files but aren't any
  * changes to the test files
  */
-function requiresTestFilesMessage(filenames) {
+function requiresTestFilesMessage(filenames, title) {
+    if (/^\s*[mM]erge/.test(title)) {
+        console.log('"Merge" pull request')
+        return
+    }
+
     // Check if src directory changed
     if (!hasPath(filenames, 'src/')) {
         console.log('Did not find src files in the code changes')

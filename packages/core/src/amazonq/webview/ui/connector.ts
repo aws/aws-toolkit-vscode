@@ -145,7 +145,7 @@ export class Connector {
             if (this.isUIReady) {
                 switch (this.tabsStorage.getTab(tabID)?.type) {
                     case 'featuredev':
-                        return this.featureDevChatConnector.requestGenerativeAIAnswer(tabID, payload)
+                        return this.featureDevChatConnector.requestGenerativeAIAnswer(tabID, messageId, payload)
                     default:
                         return this.cwChatConnector.requestGenerativeAIAnswer(tabID, messageId, payload)
                 }
@@ -273,7 +273,18 @@ export class Connector {
                 )
                 break
             case 'featuredev':
-                this.featureDevChatConnector.onCodeInsertToCursorPosition(tabID, code, type, codeReference)
+                this.featureDevChatConnector.onCodeInsertToCursorPosition(
+                    tabID,
+                    messageId,
+                    code,
+                    type,
+                    codeReference,
+                    eventId,
+                    codeBlockIndex,
+                    totalCodeBlocks,
+                    userIntent,
+                    codeBlockLanguage
+                )
                 break
         }
     }
@@ -364,7 +375,18 @@ export class Connector {
                 )
                 break
             case 'featuredev':
-                this.featureDevChatConnector.onCopyCodeToClipboard(tabID, code, type, codeReference)
+                this.featureDevChatConnector.onCopyCodeToClipboard(
+                    tabID,
+                    messageId,
+                    code,
+                    type,
+                    codeReference,
+                    eventId,
+                    codeBlockIndex,
+                    totalCodeBlocks,
+                    userIntent,
+                    codeBlockLanguage
+                )
                 break
         }
     }
@@ -444,7 +466,7 @@ export class Connector {
                 this.amazonqCommonsConnector.followUpClicked(tabID, followUp)
                 break
             case 'featuredev':
-                this.featureDevChatConnector.followUpClicked(tabID, followUp)
+                this.featureDevChatConnector.followUpClicked(tabID, messageId, followUp)
                 break
             default:
                 this.cwChatConnector.followUpClicked(tabID, messageId, followUp)

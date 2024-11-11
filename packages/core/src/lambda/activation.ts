@@ -11,25 +11,36 @@ import { downloadLambdaCommand } from './commands/downloadLambda'
 import { tryRemoveFolder } from '../shared/filesystemUtilities'
 import { ExtContext } from '../shared/extensions'
 import { invokeRemoteLambda } from './vue/remoteInvoke/invokeLambda'
-import { registerSamInvokeVueCommand } from './vue/configEditor/samInvokeBackend'
+import { registerSamDebugInvokeVueCommand, registerSamInvokeVueCommand } from './vue/configEditor/samInvokeBackend'
 import { Commands } from '../shared/vscode/commands2'
 import { DefaultLambdaClient } from '../shared/clients/lambdaClient'
 import { copyLambdaUrl } from './commands/copyLambdaUrl'
+import { ResourceNode } from '../awsService/appBuilder/explorer/nodes/resourceNode'
+import { isTreeNode, TreeNode } from '../shared/treeview/resourceTreeDataProvider'
+import { getSourceNode } from '../shared/utilities/treeNodeUtils'
 
 /**
  * Activates Lambda components.
  */
 export async function activate(context: ExtContext): Promise<void> {
     context.extensionContext.subscriptions.push(
-        Commands.register('aws.deleteLambda', async (node: LambdaFunctionNode) => {
-            await deleteLambda(node.configuration, new DefaultLambdaClient(node.regionCode))
-            await vscode.commands.executeCommand('aws.refreshAwsExplorerNode', node.parent)
+        Commands.register('aws.deleteLambda', async (node: LambdaFunctionNode | TreeNode) => {
+            const sourceNode = getSourceNode<LambdaFunctionNode>(node)
+            await deleteLambda(sourceNode.configuration, new DefaultLambdaClient(sourceNode.regionCode))
+            await vscode.commands.executeCommand('aws.refreshAwsExplorerNode', sourceNode.parent)
         }),
-        Commands.register(
-            'aws.invokeLambda',
-            async (node: LambdaFunctionNode) =>
-                await invokeRemoteLambda(context, { outputChannel: context.outputChannel, functionNode: node })
-        ),
+        Commands.register('aws.invokeLambda', async (node: LambdaFunctionNode | TreeNode) => {
+            let source: string = 'AwsExplorerRemoteInvoke'
+            if (isTreeNode(node)) {
+                node = getSourceNode<LambdaFunctionNode>(node)
+                source = 'AppBuilderRemoteInvoke'
+            }
+            await invokeRemoteLambda(context, {
+                outputChannel: context.outputChannel,
+                functionNode: node,
+                source: source,
+            })
+        }),
         // Capture debug finished events, and delete the temporary directory if it exists
         vscode.debug.onDidTerminateDebugSession(async (session) => {
             if (
@@ -39,7 +50,10 @@ export async function activate(context: ExtContext): Promise<void> {
                 await tryRemoveFolder(session.configuration.baseBuildDir)
             }
         }),
-        Commands.register('aws.downloadLambda', async (node: LambdaFunctionNode) => await downloadLambdaCommand(node)),
+        Commands.register('aws.downloadLambda', async (node: LambdaFunctionNode | TreeNode) => {
+            const sourceNode = getSourceNode<LambdaFunctionNode>(node)
+            await downloadLambdaCommand(sourceNode)
+        }),
         Commands.register({ id: 'aws.uploadLambda', autoconnect: true }, async (arg?: unknown) => {
             if (arg instanceof LambdaFunctionNode) {
                 await uploadLambdaCommand({
@@ -53,10 +67,15 @@ export async function activate(context: ExtContext): Promise<void> {
                 await uploadLambdaCommand()
             }
         }),
-        Commands.register(
-            'aws.copyLambdaUrl',
-            async (node: LambdaFunctionNode) => await copyLambdaUrl(node, new DefaultLambdaClient(node.regionCode))
-        ),
-        registerSamInvokeVueCommand(context)
+        Commands.register('aws.copyLambdaUrl', async (node: LambdaFunctionNode | TreeNode) => {
+            const sourceNode = getSourceNode<LambdaFunctionNode>(node)
+            await copyLambdaUrl(sourceNode, new DefaultLambdaClient(sourceNode.regionCode))
+        }),
+
+        registerSamInvokeVueCommand(context),
+
+        Commands.register('aws.launchDebugConfigForm', async (node: ResourceNode) =>
+            registerSamDebugInvokeVueCommand(context, { resource: node })
+        )
     )
 }

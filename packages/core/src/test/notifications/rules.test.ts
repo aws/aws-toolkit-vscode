@@ -8,7 +8,6 @@ import { RuleEngine } from '../../notifications/rules'
 import { DisplayIf, ToolkitNotification, RuleContext } from '../../notifications/types'
 import { globals } from '../../shared'
 
-// TODO: remove auth page and tests
 describe('Notifications Rule Engine', function () {
     const context: RuleContext = {
         ideVersion: '1.83.0',
@@ -35,6 +34,11 @@ describe('Notifications Rule Engine', function () {
                         title: 'Something crazy is happening!',
                         description: 'Something crazy is happening! Please update your extension.',
                     },
+                },
+                onRecieve: 'toast',
+                onClick: {
+                    type: 'openUrl',
+                    url: 'https://aws.amazon.com/visualstudiocode/',
                 },
             },
         }

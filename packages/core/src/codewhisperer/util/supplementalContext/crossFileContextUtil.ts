@@ -132,8 +132,15 @@ export async function fetchSupplementalContextForSrcV1(
 
     // Step 4: Transform best chunks to supplemental contexts
     const supplementalContexts: CodeWhispererSupplementalContextItem[] = []
+    let totalLength = 0
     for (const chunk of bestChunks) {
         throwIfCancelled(cancellationToken)
+
+        totalLength += chunk.nextContent.length
+
+        if (totalLength > crossFileContextConfig.maximumTotalLength) {
+            break
+        }
 
         supplementalContexts.push({
             filePath: chunk.fileName,
@@ -145,7 +152,7 @@ export async function fetchSupplementalContextForSrcV1(
     // DO NOT send code chunk with empty content
     getLogger().debug(`CodeWhisperer finished fetching crossfile context out of ${relevantCrossFilePaths.length} files`)
     return {
-        supplementalContextItems: supplementalContexts.filter((item) => item.content.trim().length !== 0),
+        supplementalContextItems: supplementalContexts,
         strategy: 'OpenTabs_BM25',
     }
 }

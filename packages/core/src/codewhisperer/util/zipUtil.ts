@@ -9,7 +9,7 @@ import { tempDirPath } from '../../shared/filesystemUtilities'
 import { getLogger } from '../../shared/logger'
 import * as CodeWhispererConstants from '../models/constants'
 import { ToolkitError } from '../../shared/errors'
-import { fs } from '../../shared'
+import { fs } from '../../shared/fs/fs'
 import { getLoggerForScope } from '../service/securityScanHandler'
 import { runtimeLanguageContext } from './runtimeLanguageContext'
 import { CodewhispererLanguage } from '../../shared/telemetry/telemetry.gen'
@@ -259,7 +259,7 @@ export class ZipUtil {
                 language: this._language,
             }
         } catch (error) {
-            getLogger().error('Zip error caused by:', error)
+            getLogger().error('Zip error caused by: %O', error)
             throw error
         }
     }

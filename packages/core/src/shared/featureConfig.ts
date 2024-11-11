@@ -63,7 +63,7 @@ export class FeatureConfigProvider {
     public static get instance() {
         return (this.#instance ??= new this())
     }
-    
+
     isNewProjectContextGroup(): boolean {
         return this.featureConfigs.get(Features.projectContextFeature)?.variation === 'TREATMENT'
     }
@@ -105,7 +105,7 @@ export class FeatureConfigProvider {
                     })
                 })
             })
-            getLogger().info('AB Testing Cohort Assignments %s', JSON.stringify(response.featureEvaluations))
+            getLogger().info('AB Testing Cohort Assignments %O', response.featureEvaluations)
 
             const customizationArnOverride = this.featureConfigs.get(Features.customizationArnOverride)?.value
                 ?.stringValue

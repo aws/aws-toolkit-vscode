@@ -27,7 +27,8 @@
         "./utils": "./dist/src/shared/utilities/index.js",
         "./feedback": "./dist/src/feedback/index.js",
         "./telemetry": "./dist/src/shared/telemetry/index.js",
-        "./dev": "./dist/src/dev/index.js"
+        "./dev": "./dist/src/dev/index.js",
+        "./notifications": "./dist/src/notifications/index.js"
     },
     "contributes": {
         "icons": {
@@ -456,9 +457,11 @@
         "webfont": "^11.2.26"
     },
     "dependencies": {
+        "@amzn/amazon-q-developer-streaming-client": "file:../../src.gen/@amzn/amazon-q-developer-streaming-client",
         "@amzn/codewhisperer-streaming": "file:../../src.gen/@amzn/codewhisperer-streaming",
         "@aws-sdk/client-cognito-identity": "^3.637.0",
         "@aws-sdk/client-lambda": "^3.637.0",
+        "@aws-sdk/client-cloudformation": "^3.667.0",
         "@aws-sdk/client-sso": "^3.342.0",
         "@aws-sdk/client-sso-oidc": "^3.574.0",
         "@aws-sdk/credential-provider-ini": "3.46.0",

@@ -62,7 +62,7 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
         const childProcess = new ChildProcess(params.command, params.args, {
             spawnOptions: await addTelemetryEnvVar(options),
         })
-        getLogger().info('AWS.running.command', 'Command: {0}', `${childProcess}`)
+        getLogger().info('AWS.running.command: Command: %O', childProcess)
         // "sam local invoke", "sam local start-api", etc.
         const samCommandName = `sam ${params.args[0]} ${params.args[1]}`
 
@@ -216,6 +216,8 @@ export interface SamCliLocalInvokeInvocationArguments {
     extraArgs?: string[]
     /** Debug session name */
     name?: string
+    /** AWS region */
+    region?: string
 }
 
 /**
@@ -256,6 +258,7 @@ export class SamCliLocalInvokeInvocation {
         pushIf(invokeArgs, !!this.args.debuggerPath, '--debugger-path', this.args.debuggerPath!)
         pushIf(invokeArgs, !!this.args.debugArgs, '--debug-args', ...(this.args.debugArgs ?? []))
         pushIf(invokeArgs, !!this.args.containerEnvFile, '--container-env-vars', this.args.containerEnvFile)
+        pushIf(invokeArgs, !!this.args.region, '--region', this.args.region)
 
         pushIf(
             invokeArgs,
