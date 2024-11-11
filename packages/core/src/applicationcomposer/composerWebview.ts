@@ -5,37 +5,43 @@
 
 import { join } from 'path'
 import * as nls from 'vscode-nls'
-const localize = nls.loadMessageBundle()
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { handleMessage } from './handleMessage'
 import { FileWatchInfo } from './types'
 
+const localize = nls.loadMessageBundle()
+
 export class ApplicationComposer {
     public readonly documentUri: vscode.Uri
-    public webviewPanel: vscode.WebviewPanel
+    public webviewPanel: vscode.WebviewPanel = {} as vscode.WebviewPanel
     protected readonly disposables: vscode.Disposable[] = []
     protected isPanelDisposed = false
     private readonly onVisualizationDisposeEmitter = new vscode.EventEmitter<void>()
     public workSpacePath: string
     public defaultTemplatePath: string
     public defaultTemplateName: string
-    // fileWatches is used to monitor template file changes and achieve bi-direction sync
-    public fileWatches: Record<string, FileWatchInfo>
-    private getWebviewContent: () => string
 
-    public constructor(
+    private constructor(
         textDocument: vscode.TextDocument,
-        context: vscode.ExtensionContext,
-        getWebviewContent: () => string
+        private getWebviewContent: () => Promise<string>,
+        public fileWatches: Record<string, FileWatchInfo> = {} // fileWatches is used to monitor template file changes and achieve bi-direction sync
     ) {
         this.getWebviewContent = getWebviewContent
         this.documentUri = textDocument.uri
-        this.webviewPanel = this.setupWebviewPanel(textDocument, context)
         this.workSpacePath = path.dirname(textDocument.uri.fsPath)
         this.defaultTemplatePath = textDocument.uri.fsPath
         this.defaultTemplateName = path.basename(this.defaultTemplatePath)
-        this.fileWatches = {}
+    }
+
+    public static async create(
+        textDocument: vscode.TextDocument,
+        context: vscode.ExtensionContext,
+        getWebviewContent: () => Promise<string>
+    ) {
+        const obj = new ApplicationComposer(textDocument, getWebviewContent)
+        obj.webviewPanel = await obj.setupWebviewPanel(textDocument, context)
+        return obj
     }
 
     public get onVisualizationDisposeEvent(): vscode.Event<void> {
@@ -56,7 +62,7 @@ export class ApplicationComposer {
         if (!this.isPanelDisposed) {
             this.webviewPanel.dispose()
             const document = await vscode.workspace.openTextDocument(this.documentUri)
-            this.webviewPanel = this.setupWebviewPanel(document, context)
+            this.webviewPanel = await this.setupWebviewPanel(document, context)
         }
     }
 
@@ -64,17 +70,17 @@ export class ApplicationComposer {
         return textDocument.getText()
     }
 
-    private setupWebviewPanel(
+    private async setupWebviewPanel(
         textDocument: vscode.TextDocument,
         context: vscode.ExtensionContext
-    ): vscode.WebviewPanel {
+    ): Promise<vscode.WebviewPanel> {
         const documentUri = textDocument.uri
 
         // Create and show panel
         const panel = this.createVisualizationWebviewPanel(documentUri, context)
 
         // Set the initial html for the webpage
-        panel.webview.html = this.getWebviewContent()
+        panel.webview.html = await this.getWebviewContent()
 
         // Handle messages from the webview
         this.disposables.push(
