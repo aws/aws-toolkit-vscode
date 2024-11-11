@@ -490,20 +490,20 @@ export async function closeAllEditors(): Promise<void> {
         /amazonwebservices\.[a-z\-]+-vscode\./,
         /nullExtensionDescription./, // Sometimes exists instead of the prior line, see https://github.com/aws/aws-toolkit-vscode/issues/4658
     ]
-    const visibleEditors: vscode.TextEditor[] = []
+    const editorsToClose: vscode.TextEditor[] = []
 
     const noVisibleEditor: boolean | undefined = await waitUntil(
         async () => {
             // Race: documents could appear after the call to closeAllEditors(), so retry.
             await vscode.commands.executeCommand(closeAllCmd)
-            visibleEditors.length = 0
-            visibleEditors.push(
+            editorsToClose.length = 0
+            editorsToClose.push(
                 ...vscode.window.visibleTextEditors.filter(
                     (editor) => !ignorePatterns.some((p) => p.test(editor.document.fileName))
                 )
             )
 
-            return visibleEditors.length === 0
+            return editorsToClose.length === 0
         },
         {
             timeout: 1000, // Arbitrary values. Should succeed except when VS Code is lagging heavily.
@@ -512,8 +512,8 @@ export async function closeAllEditors(): Promise<void> {
         }
     )
 
-    if (!noVisibleEditor && visibleEditors.length > 0) {
-        const editorNames = visibleEditors.map((editor) => `\t${editor.document.fileName}`)
+    if (!noVisibleEditor && editorsToClose.length > 0) {
+        const editorNames = editorsToClose.map((editor) => `\t${editor.document.fileName}`)
         throw new Error(`Editors were still open after closeAllEditors():\n${editorNames.join('\n')}`)
     }
 }
