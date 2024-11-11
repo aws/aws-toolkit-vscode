@@ -152,7 +152,7 @@ export async function fetchSupplementalContextForSrcV1(
     // DO NOT send code chunk with empty content
     getLogger().debug(`CodeWhisperer finished fetching crossfile context out of ${relevantCrossFilePaths.length} files`)
     return {
-        supplementalContextItems: supplementalContexts.filter((item) => item.content.trim().length !== 0),
+        supplementalContextItems: supplementalContexts,
         strategy: 'OpenTabs_BM25',
     }
 }
