@@ -68,7 +68,7 @@ import { asStringifiedStack } from '../shared/telemetry/spans'
 import { withTelemetryContext } from '../shared/telemetry/util'
 import { DiskCacheError } from '../shared/utilities/cacheUtils'
 import { setContext } from '../shared/vscode/setContext'
-import { builderIdStartUrl } from './sso/constants'
+import { builderIdStartUrl, internalStartUrl } from './sso/constants'
 
 interface AuthService {
     /**
@@ -190,7 +190,7 @@ export class Auth implements AuthService, ConnectionManager {
     }
 
     public isInternalAmazonUser(): boolean {
-        return this.isConnected() && this.startUrl === 'https://amzn.awsapps.com/start'
+        return this.isConnected() && this.startUrl === internalStartUrl
     }
 
     /**

@@ -9,6 +9,7 @@
  */
 
 export const builderIdStartUrl = 'https://view.awsapps.com/start'
+export const internalStartUrl = 'https://amzn.awsapps.com/start'
 
 export const ssoUrlFormatRegex =
     /^(https?:\/\/(.+)\.awsapps\.com\/start|https?:\/\/identitycenter\.amazonaws\.com\/ssoins-[\da-zA-Z]{16})\/?$/
