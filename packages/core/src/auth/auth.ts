@@ -16,7 +16,7 @@ import { Timeout } from '../shared/utilities/timeoutUtils'
 import { errorCode, isAwsError, isNetworkError, ToolkitError, UnknownError } from '../shared/errors'
 import { getCache, getCacheFileWatcher } from './sso/cache'
 import { isNonNullable, Mutable } from '../shared/utilities/tsUtils'
-import { builderIdStartUrl, SsoToken, truncateStartUrl } from './sso/model'
+import { SsoToken, truncateStartUrl } from './sso/model'
 import { SsoClient } from './sso/clients'
 import { getLogger } from '../shared/logger'
 import { CredentialsProviderManager } from './providers/credentialsProviderManager'
@@ -68,6 +68,7 @@ import { asStringifiedStack } from '../shared/telemetry/spans'
 import { withTelemetryContext } from '../shared/telemetry/util'
 import { DiskCacheError } from '../shared/utilities/cacheUtils'
 import { setContext } from '../shared/vscode/setContext'
+import { builderIdStartUrl } from './sso/constants'
 
 interface AuthService {
     /**
