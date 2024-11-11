@@ -82,24 +82,18 @@ export class LiveTailSession {
     }
 
     public async startLiveTailSession(): Promise<AsyncIterable<StartLiveTailResponseStream>> {
-        const command = this.buildStartLiveTailCommand()
-        try {
-            const commandOutput = await this.liveTailClient.cwlClient.send(command, {
-                abortSignal: this.liveTailClient.abortController.signal,
-            })
-            if (!commandOutput.responseStream) {
-                throw new ToolkitError('LiveTail session response stream is undefined.')
-            }
-            this.startTime = Date.now()
-            this.endTime = undefined
-            this.statusBarUpdateTimer = globals.clock.setInterval(() => {
-                this.updateStatusBarItemText()
-            }, 500)
-
-            return commandOutput.responseStream
-        } catch (e) {
-            throw new ToolkitError('Encountered error while trying to start LiveTail session.')
+        const commandOutput = await this.liveTailClient.cwlClient.send(this.buildStartLiveTailCommand(), {
+            abortSignal: this.liveTailClient.abortController.signal,
+        })
+        if (!commandOutput.responseStream) {
+            throw new ToolkitError('LiveTail session response stream is undefined.')
         }
+        this.startTime = Date.now()
+        this.endTime = undefined
+        this.statusBarUpdateTimer = globals.clock.setInterval(() => {
+            this.updateStatusBarItemText()
+        }, 500)
+        return commandOutput.responseStream
     }
 
     public stopLiveTailSession() {
