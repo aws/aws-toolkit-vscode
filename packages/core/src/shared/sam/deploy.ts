@@ -23,15 +23,9 @@ import { CancellationError } from '../utilities/timeoutUtils'
 import { Wizard } from '../wizards/wizard'
 import { addTelemetryEnvVar } from './cli/samCliInvokerUtils'
 import { validateSamDeployConfig, SamConfig, writeSamconfigGlobal } from './config'
-import {
-    TemplateItem,
-    createStackPrompter,
-    createBucketPrompter,
-    createTemplatePrompter,
-    getSamCliPathAndVersion,
-    runInTerminal,
-} from './sync'
-import { getProjectRoot, getSource } from './utils'
+import { TemplateItem, createStackPrompter, createBucketPrompter, createTemplatePrompter } from './sync'
+import { getProjectRoot, getSamCliPathAndVersion, getSource } from './utils'
+import { runInTerminal } from './processTerminal'
 
 export interface DeployParams {
     readonly paramsSource: ParamsSource

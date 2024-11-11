@@ -17,25 +17,20 @@ import * as CloudFormation from '../cloudformation/cloudformation'
 import { DefaultEcrClient } from '../clients/ecrClient'
 import { createRegionPrompter } from '../ui/common/region'
 import { CancellationError } from '../utilities/timeoutUtils'
-import { ChildProcess, ChildProcessResult } from '../utilities/processUtils'
+import { ChildProcess } from '../utilities/processUtils'
 import { keys, selectFrom } from '../utilities/tsUtils'
 import { AWSTreeNodeBase } from '../treeview/nodes/awsTreeNodeBase'
-import { ToolkitError, UnknownError } from '../errors'
+import { ToolkitError } from '../errors'
 import { telemetry } from '../telemetry/telemetry'
 import { createCommonButtons } from '../ui/buttons'
 import { ToolkitPromptSettings } from '../settings'
 import { getLogger } from '../logger'
-import { getSamInitDocUrl, isCloud9 } from '../extensionUtilities'
-import { removeAnsi } from '../utilities/textUtilities'
+import { getSamInitDocUrl } from '../extensionUtilities'
 import { createExitPrompter } from '../ui/common/exitPrompter'
 import { StackSummary } from 'aws-sdk/clients/cloudformation'
-import { SamCliSettings } from './cli/samCliSettings'
 import { getConfigFileUri, SamConfig, validateSamSyncConfig, writeSamconfigGlobal } from './config'
 import { cast, Optional } from '../utilities/typeConstructors'
 import { pushIf, toRecord } from '../utilities/collectionUtils'
-import { SamCliInfoInvocation } from './cli/samCliInfo'
-import { parse } from 'semver'
-import { isAutomation } from '../vscode/env'
 import { getOverriddenParameters } from '../../lambda/config/parameterUtils'
 import { addTelemetryEnvVar } from './cli/samCliInvokerUtils'
 import { samSyncParamUrl, samSyncUrl, samUpgradeUrl } from '../constants'
@@ -46,7 +41,8 @@ import { IamConnection } from '../../auth/connection'
 import { CloudFormationTemplateRegistry } from '../fs/templateRegistry'
 import { TreeNode } from '../treeview/resourceTreeDataProvider'
 import { getSpawnEnv } from '../env/resolveEnv'
-import { getProjectRoot, getProjectRootUri, getSource } from './utils'
+import { getProjectRoot, getProjectRootUri, getSamCliPathAndVersion, getSource } from './utils'
+import { runInTerminal } from './processTerminal'
 
 const localize = nls.loadMessageBundle()
 
@@ -459,71 +455,6 @@ export async function saveAndBindArgs(args: SyncParams): Promise<{ readonly boun
     return { boundArgs }
 }
 
-export async function getSamCliPathAndVersion() {
-    const { path: samCliPath } = await SamCliSettings.instance.getOrDetectSamCli()
-    if (samCliPath === undefined) {
-        throw new ToolkitError('SAM CLI could not be found', { code: 'MissingExecutable' })
-    }
-
-    const info = await new SamCliInfoInvocation(samCliPath).execute()
-    const parsedVersion = parse(info.version)
-    telemetry.record({ version: info.version })
-
-    if (parsedVersion?.compare('1.53.0') === -1) {
-        throw new ToolkitError('SAM CLI version 1.53.0 or higher is required', { code: 'VersionTooLow' })
-    }
-
-    return { path: samCliPath, parsedVersion }
-}
-
-let oldTerminal: ProcessTerminal | undefined
-export async function runInTerminal(proc: ChildProcess, cmd: string) {
-    const handleResult = (result?: ChildProcessResult) => {
-        if (result && result.exitCode !== 0) {
-            const message = `sam ${cmd} exited with a non-zero exit code: ${result.exitCode}`
-            if (result.stderr.includes('is up to date')) {
-                throw ToolkitError.chain(result.error, message, {
-                    code: 'NoUpdateExitCode',
-                })
-            }
-            throw ToolkitError.chain(result.error, message, {
-                code: 'NonZeroExitCode',
-            })
-        }
-    }
-
-    // `createTerminal` doesn't work on C9 so we use the output channel instead
-    if (isCloud9()) {
-        globals.outputChannel.show()
-
-        const result = proc.run({
-            onStdout: (text) => globals.outputChannel.append(removeAnsi(text)),
-            onStderr: (text) => globals.outputChannel.append(removeAnsi(text)),
-        })
-        await proc.send('\n')
-
-        return handleResult(await result)
-    }
-
-    // The most recent terminal won't get garbage collected until the next run
-    if (oldTerminal?.stopped === true) {
-        oldTerminal.close()
-    }
-    const pty = (oldTerminal = new ProcessTerminal(proc))
-    const terminal = vscode.window.createTerminal({ pty, name: `SAM ${cmd}` })
-    terminal.sendText('\n')
-    terminal.show()
-
-    const result = await new Promise<ChildProcessResult>((resolve) => pty.onDidExit(resolve))
-    if (pty.cancelled) {
-        throw result.error !== undefined
-            ? ToolkitError.chain(result.error, 'SAM CLI was cancelled before exiting', { cancelled: true })
-            : new CancellationError('user')
-    } else {
-        return handleResult(result)
-    }
-}
-
 async function loadLegacyParameterOverrides(template: TemplateItem) {
     try {
         const params = await getOverriddenParameters(template.uri)
@@ -581,6 +512,7 @@ export async function runSamSync(args: SyncParams) {
             env: await getSpawnEnv(process.env, { promptForInvalidCredential: true }),
         }),
     })
+
     await runInTerminal(sam, 'sync')
     const { paramsSource, stackName, region, projectRoot } = args
     const shouldWriteSyncSamconfigGlobal = paramsSource !== ParamsSource.SamConfig && !!stackName && !!region
@@ -660,6 +592,7 @@ export async function prepareSyncParams(
     } else if (arg instanceof vscode.Uri) {
         if (arg.path.endsWith('samconfig.toml')) {
             // "Deploy" command was invoked on a samconfig.toml file.
+            // TODO: add step to verify samconfig content to skip param source prompter
             const config = await SamConfig.fromConfigFileUri(arg)
             const params = getSyncParamsFromConfig(config)
             const projectRoot = vscode.Uri.joinPath(config.location, '..')
@@ -675,7 +608,7 @@ export async function prepareSyncParams(
             // Always use the dependency layer if the user specified to do so
             const skipDependencyLayer = !config.getCommandParam('sync', 'dependency_layer')
 
-            return { ...baseParams, ...params, template, projectRoot, skipDependencyLayer }
+            return { ...baseParams, ...params, template, projectRoot, skipDependencyLayer } as SyncParams
         }
 
         // "Deploy" command was invoked on a template.yaml file.
@@ -774,90 +707,6 @@ Confirm that you are synchronizing a development stack.
 
     if (resp === okDontShow) {
         await ToolkitPromptSettings.instance.disablePrompt('samcliConfirmDevStack')
-    }
-}
-
-// This is a decent improvement over using the output channel but it isn't a tty/pty
-// SAM CLI uses `click` which has reduced functionality if `os.isatty` returns false
-// Historically, Windows lack of a pty-equivalent is why it's not available in libuv
-// Maybe it's doable now with the ConPTY API? https://github.com/libuv/libuv/issues/2640
-class ProcessTerminal implements vscode.Pseudoterminal {
-    private readonly onDidCloseEmitter = new vscode.EventEmitter<number | void>()
-    private readonly onDidWriteEmitter = new vscode.EventEmitter<string>()
-    private readonly onDidExitEmitter = new vscode.EventEmitter<ChildProcessResult>()
-    public readonly onDidWrite = this.onDidWriteEmitter.event
-    public readonly onDidClose = this.onDidCloseEmitter.event
-    public readonly onDidExit = this.onDidExitEmitter.event
-
-    public constructor(private readonly process: ChildProcess) {
-        // Used in integration tests
-        if (isAutomation()) {
-            // Disable because it is a test.
-            // eslint-disable-next-line aws-toolkits/no-console-log
-            this.onDidWrite((text) => console.log(text.trim()))
-        }
-    }
-
-    #cancelled = false
-    public get cancelled() {
-        return this.#cancelled
-    }
-
-    public get stopped() {
-        return this.process.stopped
-    }
-
-    public open(initialDimensions: vscode.TerminalDimensions | undefined): void {
-        this.process
-            .run({
-                onStdout: (text) => this.mapStdio(text),
-                onStderr: (text) => this.mapStdio(text),
-            })
-            .then((result) => this.onDidExitEmitter.fire(result))
-            .catch((err) =>
-                this.onDidExitEmitter.fire({ error: UnknownError.cast(err), exitCode: -1, stderr: '', stdout: '' })
-            )
-            .finally(() => this.onDidWriteEmitter.fire('\r\nPress any key to close this terminal'))
-    }
-
-    public close(): void {
-        this.process.stop()
-        this.onDidCloseEmitter.fire()
-    }
-
-    public handleInput(data: string) {
-        // ETX
-        if (data === '\u0003' || this.process.stopped) {
-            this.#cancelled ||= data === '\u0003'
-            return this.close()
-        }
-
-        // enter
-        if (data === '\u000D') {
-            this.process.send('\n').then(undefined, (e) => {
-                getLogger().error('ProcessTerminal: process.send() failed: %s', (e as Error).message)
-            })
-            this.onDidWriteEmitter.fire('\r\n')
-        } else {
-            this.process.send(data).then(undefined, (e) => {
-                getLogger().error('ProcessTerminal: process.send() failed: %s', (e as Error).message)
-            })
-            this.onDidWriteEmitter.fire(data)
-        }
-    }
-
-    private mapStdio(text: string): void {
-        const lines = text.split('\n')
-        const first = lines.shift()
-
-        if (first) {
-            this.onDidWriteEmitter.fire(first)
-        }
-
-        for (const line of lines) {
-            this.onDidWriteEmitter.fire('\r\n')
-            this.onDidWriteEmitter.fire(line)
-        }
     }
 }
 
