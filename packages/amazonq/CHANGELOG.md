@@ -1,3 +1,9 @@
+## 1.35.0 2024-11-11
+
+- **Breaking Change** Change focus chat keybind to win+alt+i on Windows, cmd+alt+i on macOS, and meta+alt+i on Linux
+- **Bug Fix** Fix suboptimal inline suggestions from Amazon Q caused by improperly formatted supplemental context
+- **Bug Fix** Fix empty chunks being sent to service and get validationException
+
 ## 1.34.0 2024-11-07
 
 - **Bug Fix** Align example help text with prompt message in chat
