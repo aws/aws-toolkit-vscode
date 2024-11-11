@@ -14,7 +14,7 @@ import * as vscode from 'vscode'
 import globals from '../../extensionGlobals'
 import { SamCliSettings } from './samCliSettings'
 import { addTelemetryEnvVar, collectSamErrors, SamCliError } from './samCliInvokerUtils'
-import { fs } from '../..'
+import { fs } from '../../fs/fs'
 
 const localize = nls.loadMessageBundle()
 
