@@ -169,18 +169,17 @@ async function writeLogsToFile(testName: string) {
 
 // TODO: merge this with `toolkitLogger.test.ts:checkFile`
 export function assertLogsContain(text: string, exactMatch: boolean, severity: LogLevel) {
+    const logs = getTestLogger().getLoggedEntries(severity)
     assert.ok(
-        getTestLogger()
-            .getLoggedEntries(severity)
-            .some((e) =>
-                e instanceof Error
-                    ? exactMatch
-                        ? e.message === text
-                        : e.message.includes(text)
-                    : exactMatch
-                      ? e === text
-                      : e.includes(text)
-            ),
+        logs.some((e) =>
+            e instanceof Error
+                ? exactMatch
+                    ? e.message === text
+                    : e.message.includes(text)
+                : exactMatch
+                  ? e === text
+                  : e.includes(text)
+        ),
         `Expected to find "${text}" in the logs as type "${severity}"`
     )
 }

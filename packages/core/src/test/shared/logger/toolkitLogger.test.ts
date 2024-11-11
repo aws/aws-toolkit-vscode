@@ -247,13 +247,13 @@ describe('ToolkitLogger', function () {
             logger.verbose('This is a test message')
             assertLogsContain('notifications: This is a test message', true, 'verbose')
 
-            // const msg2 = "topic: 'test'"
+            // TODO: prepending to an Error not working yet?
             // logger.verbose(new ToolkitError('root error', { code: 'something went wrong' }))
-            // assertLogsContain("topic: 'something went wrong'", true, 'verbose')
+            // assertLogsContain("notifications: 'something went wrong'", true, 'verbose')
 
             // 'unknown' is not prepended
-            const logger3 = getLogger('unknown')
-            logger3.verbose('This is a test message')
+            const logger2 = getLogger('unknown')
+            logger2.verbose('This is a test message')
             assertLogsContain('This is a test message', true, 'verbose')
         })
 

@@ -83,7 +83,7 @@ export async function activateCommon(
     })
 
     registerWebviewErrorHandler((error: unknown, webviewId: string, command: string) => {
-        logAndShowWebviewError(localize, error, webviewId, command)
+        return logAndShowWebviewError(localize, error, webviewId, command)
     })
 
     // Setup the logger
