@@ -636,8 +636,8 @@ export function copyEnv(): NodeJS.ProcessEnv {
     return { ...process.env }
 }
 
-export function disableIfVscodeBelow(context: Mocha.Context, version: string) {
+export function disableIfVscodeBelow(testContext: Mocha.Context, version: string) {
     if (isMinVscode(version)) {
-        context.skip()
+        testContext.skip()
     }
 }
