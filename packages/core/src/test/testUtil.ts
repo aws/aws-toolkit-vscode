@@ -506,7 +506,7 @@ export async function closeAllEditors(): Promise<void> {
             return visibleEditors.length === 0
         },
         {
-            timeout: 5000, // Arbitrary values. Should succeed except when VS Code is lagging heavily.
+            timeout: 1000, // Arbitrary values. Should succeed except when VS Code is lagging heavily.
             interval: 250,
             truthy: true,
         }
