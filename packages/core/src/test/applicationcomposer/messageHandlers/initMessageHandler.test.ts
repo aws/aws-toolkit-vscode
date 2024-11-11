@@ -7,11 +7,11 @@ import assert from 'assert'
 import sinon from 'sinon'
 import { initMessageHandler } from '../../../applicationcomposer/messageHandlers/initMessageHandler'
 import { createTemplate, createWebviewContext } from '../utils'
-import { disableIfVscodeBelow } from '../../testUtil'
+import { skipIfVscodeBelow } from '../../testUtil'
 
 describe('initMessageHandler', function () {
     it('not connected to codewhisperer', async function () {
-        disableIfVscodeBelow(this, '1.89.0')
+        skipIfVscodeBelow(this, '1.89.0')
         const panel = await createTemplate()
         const postMessageSpy = sinon.spy(panel.webview, 'postMessage')
         const context = await createWebviewContext({
