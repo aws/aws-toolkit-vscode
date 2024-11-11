@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import { ResourceTreeDataProvider, TreeNode } from '../shared/treeview/resourceTreeDataProvider'
 import { Command, Commands } from '../shared/vscode/commands2'
-import { getIcon } from '../shared/icons'
+import { Icon, getIcon } from '../shared/icons'
 import { contextKey, setContext } from '../shared/vscode/setContext'
 import { NotificationType, ToolkitNotification, getNotificationTelemetryId } from './types'
 import { ToolkitError } from '../shared/errors'
@@ -34,6 +34,7 @@ export class NotificationsNode implements TreeNode {
     private readonly showContextStr: contextKey
     private readonly startUpNodeContext: string
     private readonly emergencyNodeContext: string
+    private view: vscode.TreeView<TreeNode> | undefined
 
     static #instance: NotificationsNode
 
@@ -78,10 +79,19 @@ export class NotificationsNode implements TreeNode {
 
     public getChildren() {
         const buildNode = (n: ToolkitNotification, type: NotificationType) => {
+            let icon: Icon & { color?: vscode.ThemeColor }
+            if (type === 'startUp') {
+                icon = getIcon('vscode-question') as Icon
+            } else {
+                icon = getIcon('vscode-alert') as Icon
+                icon.color = new vscode.ThemeColor('errorForeground')
+            }
+
             return this.openNotificationCmd.build(n).asTreeNode({
                 label: n.uiRenderInstructions.content['en-US'].title,
-                iconPath: type === 'startUp' ? getIcon('vscode-question') : getIcon('vscode-alert'),
+                iconPath: icon,
                 contextValue: type === 'startUp' ? this.startUpNodeContext : this.emergencyNodeContext,
+                tooltip: 'Click to open',
             })
         }
 
@@ -238,6 +248,10 @@ export class NotificationsNode implements TreeNode {
      */
     getParent(): TreeNode<unknown> | undefined {
         return undefined
+    }
+
+    get visible() {
+        return this.view?.visible
     }
 
     static get instance() {

@@ -4,16 +4,17 @@
  */
 
 import * as vscode from 'vscode'
-import { DevSettings } from '../shared/settings'
 import { NotificationsController } from './controller'
 import { NotificationsNode } from './panelNode'
 import { RuleEngine, getRuleContext } from './rules'
 import globals from '../shared/extensionGlobals'
 import { AuthState } from './types'
+import { setContext } from '../shared/vscode/setContext'
+import { isAmazonQ } from '../shared/extensionUtilities'
 import { getLogger } from '../shared/logger/logger'
 
 /** Time in MS to poll for emergency notifications */
-const emergencyPollTime = 1000 * 10 * 60
+const emergencyPollTime = 1000 * 6
 
 /**
  * Activate the in-IDE notifications module and begin receiving notifications.
@@ -28,13 +29,14 @@ export async function activate(
     authStateFn: () => Promise<AuthState>
 ) {
     // TODO: Currently gated behind feature-flag.
-    if (!DevSettings.instance.get('notifications', false)) {
-        return
-    }
+    // if (!DevSettings.instance.get('notifications', false)) {
+    //     return
+    // }
 
     const panelNode = NotificationsNode.instance
     panelNode.registerView(context)
 
+    await setContext(isAmazonQ() ? 'aws.amazonq.notifications' : 'aws.toolkit.notifications', true)
     const controller = new NotificationsController(panelNode)
     const engine = new RuleEngine(await getRuleContext(context, initialState))
 

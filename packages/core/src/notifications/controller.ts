@@ -9,6 +9,7 @@ import globals from '../shared/extensionGlobals'
 import { globalKey } from '../shared/globalState'
 import {
     getNotificationTelemetryId,
+    Notifications,
     NotificationsState,
     NotificationsStateConstructor,
     NotificationType,
@@ -23,7 +24,9 @@ import { TreeNode } from '../shared/treeview/resourceTreeDataProvider'
 import { withRetries } from '../shared/utilities/functionUtils'
 import { FileResourceFetcher } from '../shared/resourcefetcher/fileResourceFetcher'
 import { isAmazonQ } from '../shared/extensionUtilities'
+import { randomUUID } from '../shared/crypto'
 import { telemetry } from '../shared/telemetry/telemetry'
+import { setContext } from '../shared/vscode/setContext'
 
 /**
  * Handles fetching and maintaining the state of in-IDE notifications.
@@ -64,6 +67,11 @@ export class NotificationsController {
             dismissed: [],
             newlyReceived: [],
         })
+
+        Commands.register(
+            isAmazonQ() ? 'aws.amazonq.notifications.reset' : 'aws.toolkit.notifications.reset',
+            async () => await globals.globalState.update(NotificationsController.instance.storageKey, {})
+        )
     }
 
     public pollForStartUp(ruleEngine: RuleEngine) {
@@ -239,9 +247,9 @@ export class RemoteFetcher implements NotificationFetcher {
     public static readonly retryIntervalMs = 30000
 
     private readonly startUpEndpoint: string =
-        'https://idetoolkits-hostedfiles.amazonaws.com/Notifications/VSCode/startup/1.x.json'
+        'https://idetoolkits-hostedfiles.amazonaws.com/Notifications/integ/VSCode/startup/1.x.json'
     private readonly emergencyEndpoint: string =
-        'https://idetoolkits-hostedfiles.amazonaws.com/Notifications/VSCode/emergency/1.x.json'
+        'https://idetoolkits-hostedfiles.amazonaws.com/Notifications/integ/VSCode/emergency/1.x.json'
 
     constructor(startUpPath?: string, emergencyPath?: string) {
         this.startUpEndpoint = startUpPath ?? this.startUpEndpoint
@@ -294,6 +302,250 @@ export class LocalFetcher implements NotificationFetcher {
         return {
             content: await new FileResourceFetcher(globals.context.asAbsolutePath(uri)).get(),
             eTag: 'LOCAL_PATH',
+        }
+    }
+}
+
+export class DevFetcher implements NotificationFetcher {
+    private startupNotifications: Notifications = { schemaVersion: '0', notifications: [] }
+    private emergencyNotifications: Notifications = { schemaVersion: '0', notifications: [] }
+
+    constructor() {
+        void setContext(isAmazonQ() ? 'aws.amazonq.notifications.debug' : 'aws.toolkit.notifications.debug', true)
+        Commands.register(
+            isAmazonQ() ? 'aws.amazonq.notifications.clear' : 'aws.toolkit.notifications.clearStartUp',
+            async () => {
+                this.startupNotifications.notifications = []
+                this.emergencyNotifications.notifications = []
+                await globals.globalState.update(NotificationsController.instance.storageKey, {})
+                await NotificationsController.instance.pollForStartUp(new RuleEngine())
+                await NotificationsController.instance.pollForEmergencies(new RuleEngine())
+            }
+        )
+        Commands.register(
+            isAmazonQ() ? 'aws.amazonq.notifications.startup1' : 'aws.toolkit.notifications.startup1',
+            async () => {
+                const id = `startup${randomUUID()}`
+                this.startupNotifications.notifications.push({
+                    id,
+                    displayIf: {
+                        extensionId: globals.context.extension.id,
+                    },
+                    uiRenderInstructions: {
+                        content: {
+                            'en-US': {
+                                title: 'New Amazon Q Chat features',
+                                description:
+                                    "You can now use Amazon Q inline in your IDE, without ever touching the mouse or using copy and paste. \nPress ⌘+I (Ctrl+I on Windows) to trigger inline chat. \nDescribe a function or feature you'd like to develop and Amazon Q will generate and display a code diff that inserts new code at the cursor position. \nPress Enter to accept and apply the diff, or Escape to reject it. \nAlternatively you select a block of code (maybe even the entire file) then press ⌘+I (Ctrl+I on Windows) to provide instructions on how to refactor the selected code. \nYou will see a diff against the selected code and can press Enter to accept and apply the diff.\n\nLearn more at https://aws.amazon.com/developer/generative-ai/amazon-q/change-log/",
+                                toastPreview: 'New Amazon Q features available: inline chat',
+                            },
+                        },
+                        onRecieve: 'toast',
+                        onClick: {
+                            type: 'openTextDocument',
+                        },
+                        actions: [
+                            {
+                                type: 'openTxt',
+                                displayText: {
+                                    'en-US': 'Learn more',
+                                },
+                            },
+                        ],
+                    },
+                })
+                // eslint-disable-next-line aws-toolkits/no-json-stringify-in-log
+                getLogger().info(
+                    JSON.stringify(
+                        this.startupNotifications.notifications[this.startupNotifications.notifications.length - 1],
+                        undefined,
+                        4
+                    )
+                )
+                await NotificationsController.instance.pollForStartUp(new RuleEngine())
+            }
+        )
+        Commands.register(
+            isAmazonQ() ? 'aws.amazonq.notifications.startup2' : 'aws.toolkit.notifications.startup2',
+            async () => {
+                const id = `startup${randomUUID()}`
+                this.startupNotifications.notifications.push({
+                    id,
+                    displayIf: {
+                        extensionId: globals.context.extension.id,
+                    },
+                    uiRenderInstructions: {
+                        content: {
+                            'en-US': {
+                                title: "What's New",
+                                description: 'New Amazon Q Chat features available!',
+                                toastPreview: 'New Amazon Q features are available!',
+                            },
+                        },
+                        onRecieve: 'toast',
+                        onClick: {
+                            type: 'openUrl',
+                            url: 'https://aws.amazon.com/developer/generative-ai/amazon-q/change-log/',
+                        },
+                        actions: [
+                            {
+                                type: 'openUrl',
+                                url: 'https://aws.amazon.com/developer/generative-ai/amazon-q/change-log/',
+                                displayText: {
+                                    'en-US': 'Learn more',
+                                },
+                            },
+                        ],
+                    },
+                })
+                // eslint-disable-next-line aws-toolkits/no-json-stringify-in-log
+                getLogger().info(
+                    JSON.stringify(
+                        this.startupNotifications.notifications[this.startupNotifications.notifications.length - 1],
+                        undefined,
+                        4
+                    )
+                )
+                await NotificationsController.instance.pollForStartUp(new RuleEngine())
+            }
+        )
+        Commands.register(
+            isAmazonQ() ? 'aws.amazonq.notifications.emergency1' : 'aws.toolkit.notifications.emergency1',
+            async () => {
+                const id = `emergency${randomUUID()}`
+                this.emergencyNotifications.notifications.push({
+                    id,
+                    displayIf: {
+                        extensionId: globals.context.extension.id,
+                    },
+                    uiRenderInstructions: {
+                        content: {
+                            'en-US': {
+                                title: "Can't sign in to Amazon Q",
+                                description:
+                                    'There is currently a bug that is preventing users from signing into Amazon Q. If this impacts you, please try this workaround:\n\n 1. Reload your IDE\n 2. Run the command in the command palette:: `Amazon Q: Reset State`.\n 3. Set your default region to `us-east-3`.\n 4. Try to sign into Amazon Q with your desired region in the dropdown.\n\nWe are currently working on releasing a fix so that this workaround is not required.\nPlease reach out on our github issues with any questions.',
+                                toastPreview:
+                                    'Signing into Amazon Q is broken, please try this workaround while we work on releasing a fix.',
+                            },
+                        },
+                        onRecieve: 'toast',
+                        onClick: {
+                            type: 'openTextDocument',
+                        },
+                        actions: [
+                            {
+                                type: 'openTxt',
+                                displayText: {
+                                    'en-US': 'Learn more',
+                                },
+                            },
+                        ],
+                    },
+                })
+                // eslint-disable-next-line aws-toolkits/no-json-stringify-in-log
+                getLogger().info(
+                    JSON.stringify(
+                        this.emergencyNotifications.notifications[this.emergencyNotifications.notifications.length - 1],
+                        undefined,
+                        4
+                    )
+                )
+                await NotificationsController.instance.pollForEmergencies(new RuleEngine())
+            }
+        )
+        Commands.register(
+            isAmazonQ() ? 'aws.amazonq.notifications.emergency2' : 'aws.toolkit.notifications.emergency2',
+            async () => {
+                const id = `emergency${randomUUID()}`
+                this.emergencyNotifications.notifications.push({
+                    id,
+                    displayIf: {
+                        extensionId: globals.context.extension.id,
+                    },
+                    uiRenderInstructions: {
+                        content: {
+                            'en-US': {
+                                title: 'Update Amazon Q to avoid breaking bugs',
+                                description:
+                                    'There is currently a bug that prevents Amazon Q from responding to chat requests. It is fixed in the latest version. Please update your Amazon Q now.',
+                                toastPreview:
+                                    'This version of Amazon Q is currently broken, please update to avoid issues.',
+                            },
+                        },
+                        onRecieve: 'toast',
+                        onClick: {
+                            type: 'modal',
+                        },
+                        actions: [
+                            {
+                                type: 'updateAndReload',
+                                displayText: {
+                                    'en-US': 'Update and Reload',
+                                },
+                            },
+                        ],
+                    },
+                })
+                // eslint-disable-next-line aws-toolkits/no-json-stringify-in-log
+                getLogger().info(
+                    JSON.stringify(
+                        this.emergencyNotifications.notifications[this.emergencyNotifications.notifications.length - 1],
+                        undefined,
+                        4
+                    )
+                )
+                await NotificationsController.instance.pollForEmergencies(new RuleEngine())
+            }
+        )
+        Commands.register(
+            isAmazonQ() ? 'aws.amazonq.notifications.emergency3' : 'aws.toolkit.notifications.emergency3',
+            async () => {
+                const id = `emergency${randomUUID()}`
+                this.emergencyNotifications.notifications.push({
+                    id,
+                    displayIf: {
+                        extensionId: 'amazonwebservices.amazon-q-vscode',
+                        additionalCriteria: [{ type: 'AuthState', values: ['connected'] }],
+                    },
+                    uiRenderInstructions: {
+                        content: {
+                            'en-US': {
+                                title: 'Amazon Q may delete user data',
+                                description:
+                                    'Amazon Q is erroneously deleting user data! Please sign out and sign back into Amazon Q immediately to avoid data loss, or update Amazon Q now.',
+                            },
+                        },
+                        onRecieve: 'modal',
+                        onClick: {
+                            type: 'modal',
+                        },
+                        actions: [
+                            {
+                                type: 'updateAndReload',
+                                displayText: {
+                                    'en-US': 'Update and Reload',
+                                },
+                            },
+                        ],
+                    },
+                })
+                // eslint-disable-next-line aws-toolkits/no-json-stringify-in-log
+                getLogger().info(
+                    JSON.stringify(
+                        this.emergencyNotifications.notifications[this.emergencyNotifications.notifications.length - 1],
+                        undefined,
+                        4
+                    )
+                )
+                await NotificationsController.instance.pollForEmergencies(new RuleEngine())
+            }
+        )
+    }
+
+    async fetch(category: NotificationType, versionTag?: string): Promise<ResourceResponse> {
+        return {
+            content: JSON.stringify(category === 'startUp' ? this.startupNotifications : this.emergencyNotifications),
+            eTag: 'DEVMODE',
         }
     }
 }

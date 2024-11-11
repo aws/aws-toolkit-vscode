@@ -426,6 +426,48 @@
                 "enablement": "aws.codewhisperer.connected"
             },
             {
+                "command": "aws.amazonq.notifications.clear",
+                "title": "DEBUG Notifications: Clear notifications",
+                "category": "%AWS.amazonq.title%",
+                "enablement": "aws.amazonq.notifications.debug"
+            },
+            {
+                "command": "aws.amazonq.notifications.reset",
+                "title": "DEBUG Notifications: Reset notifications",
+                "category": "%AWS.amazonq.title%",
+                "enablement": "aws.amazonq.notifications"
+            },
+            {
+                "command": "aws.amazonq.notifications.startup1",
+                "title": "DEBUG Notifications: Send text changelog startup",
+                "category": "%AWS.amazonq.title%",
+                "enablement": "aws.amazonq.notifications.debug"
+            },
+            {
+                "command": "aws.amazonq.notifications.startup2",
+                "title": "DEBUG Notifications: Send direct link startup",
+                "category": "%AWS.amazonq.title%",
+                "enablement": "aws.amazonq.notifications.debug"
+            },
+            {
+                "command": "aws.amazonq.notifications.emergency1",
+                "title": "DEBUG Notifications: Send workaround emergency",
+                "category": "%AWS.amazonq.title%",
+                "enablement": "aws.amazonq.notifications.debug"
+            },
+            {
+                "command": "aws.amazonq.notifications.emergency2",
+                "title": "DEBUG Notifications: Send update and reload emergency",
+                "category": "%AWS.amazonq.title%",
+                "enablement": "aws.amazonq.notifications.debug"
+            },
+            {
+                "command": "aws.amazonq.notifications.emergency3",
+                "title": "DEBUG Notifications: Send critical emergency",
+                "category": "%AWS.amazonq.title%",
+                "enablement": "aws.amazonq.notifications.debug"
+            },
+            {
                 "command": "aws.amazonq.security.scan",
                 "title": "%AWS.command.amazonq.security.scan%",
                 "category": "%AWS.amazonq.title%",

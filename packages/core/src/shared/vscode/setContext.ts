@@ -25,6 +25,10 @@ export type contextKey =
     | 'aws.toolkit.amazonq.dismissed'
     | 'aws.toolkit.amazonqInstall.dismissed'
     | 'aws.toolkit.notifications.show'
+    | 'aws.amazonq.notifications'
+    | 'aws.amazonq.notifications.debug'
+    | 'aws.toolkit.notifications'
+    | 'aws.toolkit.notifications.debug'
     // Deprecated/legacy names. New keys should start with "aws.".
     | 'codewhisperer.activeLine'
     | 'gumby.isPlanAvailable'

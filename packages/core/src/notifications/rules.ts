@@ -61,13 +61,17 @@ function isValidVersion(version: string, condition: ConditionalClause): boolean 
  *
  */
 export class RuleEngine {
-    constructor(private readonly context: RuleContext) {}
+    constructor(private readonly context?: RuleContext) {}
 
     public shouldDisplayNotification(payload: ToolkitNotification) {
         return this.evaluate(payload.displayIf)
     }
 
     private evaluate(condition: DisplayIf): boolean {
+        if (!this.context) {
+            return true
+        }
+
         const currentExt = globals.context.extension.id
         if (condition.extensionId !== currentExt) {
             return false
@@ -96,6 +100,10 @@ export class RuleEngine {
     }
 
     private evaluateRule(criteria: CriteriaCondition) {
+        if (!this.context) {
+            return true
+        }
+
         const expected = criteria.values
         const expectedSet = new Set(expected)
 

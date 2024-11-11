@@ -1,19 +1,24 @@
 {
-	"folders": [
-		{
-			"path": "."
-		},
-		{
-			"path": "packages/toolkit"
-		},
-		{
-			"path": "packages/core"
-		},
-		{
-			"path": "packages/amazonq"
-		}
-	],
-	"settings": {
-		"typescript.tsdk": "node_modules/typescript/lib"
-	}
+    "folders": [
+        {
+            "path": ".",
+        },
+        {
+            "path": "packages/toolkit",
+        },
+        {
+            "path": "packages/core",
+        },
+        {
+            "path": "packages/amazonq",
+        },
+    ],
+    "settings": {
+        "typescript.tsdk": "node_modules/typescript/lib",
+        "workbench.colorCustomizations": {
+            "activityBar.background": "#0E350E",
+            "titleBar.activeBackground": "#134A14",
+            "titleBar.activeForeground": "#F3FCF3",
+        },
+    },
 }

@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit",
     "description": "Including CodeCatalyst, Infrastructure Composer, and support for Lambda, S3, CloudWatch Logs, CloudFormation, and many other services.",
-    "version": "3.33.0-SNAPSHOT",
+    "version": "3.33.0-g3ca78ba",
     "extensionKind": [
         "workspace"
     ],
@@ -2313,6 +2313,42 @@
                         "category": "%AWS.title.cn%"
                     }
                 }
+            },
+            {
+                "command": "aws.toolkit.notifications.clear",
+                "title": "DEBUG Notifications: Clear notifications",
+                "category": "%AWS.title%",
+                "enablement": "aws.toolkit.notifications"
+            },
+            {
+                "command": "aws.toolkit.notifications.startup1",
+                "title": "DEBUG Notifications: Send text changelog startup",
+                "category": "%AWS.title%",
+                "enablement": "aws.toolkit.notifications"
+            },
+            {
+                "command": "aws.toolkit.notifications.startup2",
+                "title": "DEBUG Notifications: Send direct link startup",
+                "category": "%AWS.title%",
+                "enablement": "aws.toolkit.notifications"
+            },
+            {
+                "command": "aws.toolkit.notifications.emergency1",
+                "title": "DEBUG Notifications: Send workaround emergency",
+                "category": "%AWS.title%",
+                "enablement": "aws.toolkit.notifications"
+            },
+            {
+                "command": "aws.toolkit.notifications.emergency2",
+                "title": "DEBUG Notifications: Send update and reload emergency",
+                "category": "%AWS.title%",
+                "enablement": "aws.toolkit.notifications"
+            },
+            {
+                "command": "aws.toolkit.notifications.emergency3",
+                "title": "DEBUG Notifications: Send critical emergency",
+                "category": "%AWS.title%",
+                "enablement": "aws.toolkit.notifications"
             },
             {
                 "command": "aws.codecatalyst.openOrg",
