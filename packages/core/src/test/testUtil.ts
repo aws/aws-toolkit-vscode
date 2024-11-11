@@ -19,6 +19,7 @@ import { mkdirSync, existsSync } from 'fs' // eslint-disable-line no-restricted-
 import { randomBytes } from 'crypto'
 import request from '../shared/request'
 import { stub } from 'sinon'
+import { isMinVscode } from '../shared/vscode/env'
 
 const testTempDirs: string[] = []
 
@@ -633,4 +634,10 @@ export function getFetchStubWithResponse(response: Partial<Response>) {
 
 export function copyEnv(): NodeJS.ProcessEnv {
     return { ...process.env }
+}
+
+export function disableIfVscodeBelow(context: Mocha.Context, version: string) {
+    if (isMinVscode(version)) {
+        context.skip()
+    }
 }
