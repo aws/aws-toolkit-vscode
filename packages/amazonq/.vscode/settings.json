@@ -4,7 +4,10 @@
         "dist": true,
         "node_modules": true
     },
-    "files.watcherExclude": {},
+    "files.watcherExclude": {
+        "**/src/testFixtures": true,
+        "**/node_modules/**": true
+    },
     "typescript.preferences.importModuleSpecifier": "relative",
     "javascript.preferences.importModuleSpecifier": "relative",
     "typescript.tsdk": "../../node_modules/typescript/lib",

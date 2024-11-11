@@ -8,7 +8,8 @@
         ".vscode-test*": true
     },
     "files.watcherExclude": {
-        "**/src/testFixtures": true
+        "**/src/testFixtures": true,
+        "**/node_modules/**": true
     },
     "typescript.preferences.importModuleSpecifier": "relative",
     "javascript.preferences.importModuleSpecifier": "relative",
