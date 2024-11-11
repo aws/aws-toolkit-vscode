@@ -3,14 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
-import { TestFolder } from '../../testUtil'
-import { detectSamProjects, getFiles } from '../../../awsService/appBuilder/explorer/detectSamProjects'
+import { TestFolder } from '../../../testUtil'
+import { detectSamProjects, getFiles } from '../../../../awsService/appBuilder/explorer/detectSamProjects'
 import assert from 'assert'
 import * as sinon from 'sinon'
 
 import path from 'path'
-import { ToolkitError } from '../../../shared'
-import { assertLogsContain } from '../../globalSetup.test'
+import { ToolkitError } from '../../../../shared'
+import { assertLogsContain } from '../../../globalSetup.test'
 
 describe('detectSamProjects', () => {
     let sandbox: sinon.SinonSandbox

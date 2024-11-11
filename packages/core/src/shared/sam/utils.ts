@@ -4,12 +4,17 @@
  */
 
 import * as vscode from 'vscode'
-import path from 'path'
+import * as path from 'path'
 import { AWSTreeNodeBase } from '../treeview/nodes/awsTreeNodeBase'
 import { TreeNode, isTreeNode } from '../treeview/resourceTreeDataProvider'
 import * as CloudFormation from '../cloudformation/cloudformation'
 import { TemplateItem } from './sync'
 import { RuntimeFamily, getFamily } from '../../lambda/models/samLambdaRuntime'
+import { telemetry } from '../telemetry'
+import { ToolkitError } from '../errors'
+import { SamCliSettings } from './cli/samCliSettings'
+import { SamCliInfoInvocation } from './cli/samCliInfo'
+import { parse } from 'semver'
 
 /**
  * @description determines the root directory of the project given Template Item
@@ -60,4 +65,21 @@ export async function isDotnetRuntime(templateUri: vscode.Uri, contents?: string
     }
     const globalRuntime = samTemplate.template.Globals?.Function?.Runtime as string
     return globalRuntime ? getFamily(globalRuntime) === RuntimeFamily.DotNet : false
+}
+
+export async function getSamCliPathAndVersion() {
+    const { path: samCliPath } = await SamCliSettings.instance.getOrDetectSamCli()
+    if (samCliPath === undefined) {
+        throw new ToolkitError('SAM CLI could not be found', { code: 'MissingExecutable' })
+    }
+
+    const info = await new SamCliInfoInvocation(samCliPath).execute()
+    const parsedVersion = parse(info.version)
+    telemetry.record({ version: info.version })
+
+    if (parsedVersion?.compare('1.53.0') === -1) {
+        throw new ToolkitError('SAM CLI version 1.53.0 or higher is required', { code: 'VersionTooLow' })
+    }
+
+    return { path: samCliPath, parsedVersion }
 }
