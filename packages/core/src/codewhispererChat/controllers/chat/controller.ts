@@ -650,7 +650,10 @@ export class ChatController {
 
         const request = triggerPayloadToChatRequest(triggerPayload)
         const session = this.sessionStorage.getSession(tabID)
-        getLogger().info(`request from tab: ${tabID} conversationID: ${session.sessionIdentifier} request: %O`, request)
+        //eslint-disable-next-line aws-toolkits/no-json-stringify-in-log
+        getLogger().info(
+            `request from tab: ${tabID} conversationID: ${session.sessionIdentifier} request: ${JSON.stringify(request)}`
+        )
         let response: MessengerResponseType | undefined = undefined
         session.createNewTokenSource()
         try {
@@ -672,11 +675,11 @@ export class ChatController {
             this.telemetryHelper.recordEnterFocusConversation(triggerEvent.tabID)
             this.telemetryHelper.recordStartConversation(triggerEvent, triggerPayload)
 
+            //eslint-disable-next-line aws-toolkits/no-json-stringify-in-log
             getLogger().info(
                 `response to tab: ${tabID} conversationID: ${session.sessionIdentifier} requestID: ${
                     response.$metadata.requestId
-                } metadata: %O`,
-                response.$metadata
+                } metadata: ${JSON.stringify(response.$metadata)}`
             )
             await this.messenger.sendAIResponse(response, session, tabID, triggerID, triggerPayload)
         } catch (e: any) {
