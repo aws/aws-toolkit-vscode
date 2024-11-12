@@ -870,6 +870,8 @@ export class Auth implements AuthService, ConnectionManager {
     private readonly getToken = keyedDebounce(this._getToken.bind(this))
     @withTelemetryContext({ name: '_getToken', class: authClassName })
     private async _getToken(id: Connection['id'], provider: SsoAccessTokenProvider): Promise<SsoToken> {
+        //eslint-disable-next-line aws-toolkits/no-console-log
+        console.log('_getToken called')
         const token = await provider.getToken().catch((err) => {
             this.throwOnRecoverableError(err)
 
@@ -922,7 +924,8 @@ export class Auth implements AuthService, ConnectionManager {
     @withTelemetryContext({ name: 'handleInvalidCredentials', class: authClassName })
     private async handleInvalidCredentials<T>(id: Connection['id'], refresh: () => Promise<T>): Promise<T> {
         getLogger().info(`auth: Handling invalid credentials of connection: ${id}`)
-
+        //eslint-disable-next-line aws-toolkits/no-console-log
+        console.log('handleInvalidCredentials called')
         let profile: StoredProfile
         try {
             profile = this.store.getProfileOrThrow(id)
