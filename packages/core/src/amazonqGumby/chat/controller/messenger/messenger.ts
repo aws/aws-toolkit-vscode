@@ -116,6 +116,45 @@ export class Messenger {
         this.dispatcher.sendAuthenticationUpdate(new AuthenticationUpdateMessage(gumbyEnabled, authenticatingTabIDs))
     }
 
+    public async sendSelectiveTransformationPrompt(tabID: string) {
+        const formItems: ChatItemFormItem[] = []
+        formItems.push({
+            id: 'GumbyTransformSelectiveTransformationForm',
+            type: 'select',
+            title: CodeWhispererConstants.selectiveTransformationFormTitle,
+            mandatory: true,
+            options: [
+                {
+                    value: CodeWhispererConstants.oneDiffMessage,
+                    label: CodeWhispererConstants.oneDiffMessage,
+                },
+                {
+                    value: CodeWhispererConstants.multipleDiffsMessage,
+                    label: CodeWhispererConstants.multipleDiffsMessage,
+                },
+            ],
+        })
+
+        this.dispatcher.sendAsyncEventProgress(
+            new AsyncEventProgressMessage(tabID, {
+                inProgress: true,
+                message: CodeWhispererConstants.selectiveTransformationFormMessage,
+            })
+        )
+
+        this.dispatcher.sendChatPrompt(
+            new ChatPrompt(
+                {
+                    message: 'Proposed Changes Result',
+                    formItems: formItems,
+                },
+                'TransformSelectiveTransformationForm',
+                tabID,
+                false
+            )
+        )
+    }
+
     public async sendSkipTestsPrompt(tabID: string) {
         const formItems: ChatItemFormItem[] = []
         formItems.push({
@@ -330,6 +369,33 @@ export class Messenger {
         )
     }
 
+    public sendPatchDescriptionMessage(
+        tabID: string,
+        message: string = CodeWhispererConstants.userPatchDescriptionChatMessage
+        // messageID: string = GumbyNamedMessages.JOB_SUBMISSION_STATUS_MESSAGE
+    ) {
+        // const patchDescriptionChatMessage = new ChatMessage(
+        //     {
+        //         message,
+        //         messageType: 'ai-prompt',
+        //         messageId: messageID,
+        //     },
+        //     tabID
+        // )
+        this.dispatcher.sendAsyncEventProgress(
+            new AsyncEventProgressMessage(tabID, {
+                inProgress: true,
+                message,
+            })
+        )
+        this.dispatcher.sendAsyncEventProgress(
+            new AsyncEventProgressMessage(tabID, {
+                inProgress: false,
+                message: undefined,
+            })
+        )
+    }
+
     public sendJobSubmittedMessage(
         tabID: string,
         disableJobActions: boolean = false,
@@ -363,7 +429,6 @@ export class Messenger {
             },
             tabID
         )
-
         this.dispatcher.sendChatMessage(jobSubmittedMessage)
     }
 
@@ -560,6 +625,11 @@ export class Messenger {
         this.dispatcher.sendChatMessage(new ChatMessage({ message, messageType: 'ai-prompt' }, tabID))
     }
 
+    public sendSelectiveTransformationMessage(selectiveTransformationSelection: string, tabID: string) {
+        const message = `Okay, I will create ${selectiveTransformationSelection.toLowerCase()} when building your project.`
+        this.dispatcher.sendChatMessage(new ChatMessage({ message, messageType: 'ai-prompt' }, tabID))
+    }
+
     public sendHumanInTheLoopInitialMessage(tabID: string, codeSnippet: string) {
         let message = `I was not able to upgrade all dependencies. To resolve it, I will try to find an updated depedency in your local Maven repository. I will need additional information from you to continue.`
 
@@ -668,6 +738,13 @@ ${codeSnippet}
 
     public sendHILResumeMessage(tabID: string) {
         const message = `I will continue transforming your code. You can monitor progress in the Transformation Hub.`
+        this.sendAsyncEventProgress(
+            tabID,
+            true,
+            undefined,
+            GumbyNamedMessages.JOB_SUBMISSION_WITH_DEPENDENCY_STATUS_MESSAGE
+        )
+        this.sendPatchDescriptionMessage(tabID)
         this.sendAsyncEventProgress(
             tabID,
             true,

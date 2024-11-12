@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { DescriptionContent } from '..'
+
 /**
  * Automated and manual trigger
  */
@@ -21,6 +23,19 @@ export const specialCharactersList = ['{', '[', '(', ':', '\t', '\n']
 export const AWSTemplateKeyWords = ['AWSTemplateFormatVersion', 'Resources', 'AWS::', 'Description']
 
 export const AWSTemplateCaseInsensitiveKeyWords = ['cloudformation', 'cfn', 'template', 'description']
+
+const patchDescriptions: { [key: string]: string } = {
+    'Minimal Compatible Library Upgrade to Java 17':
+        'This diff patch covers the set of upgrades for Springboot, JUnit, and PowerMockito frameworks.',
+    'Popular Enterprise Specifications and Application Frameworks':
+        'This diff patch covers the set of upgrades for Jakarta EE 10, Hibernate 6.2, and Micronaut 3.',
+    'HTTP Client Utilities, Apache Commons Utilities, and Web Frameworks':
+        'This diff patch covers the set of upgrades for Apache HTTP Client 5, Apache Commons utilities (Collections, IO, Lang, Math), Struts 6.0.',
+    'Testing Tools and Frameworks':
+        'This diff patch covers the set of upgrades for ArchUnit, Mockito, TestContainers, Cucumber, and additionally, Jenkins plugins and the Maven Wrapper.',
+    'Miscellaneous Processing Documentation':
+        'This diff patch covers a diverse set of upgrades spanning ORMs, XML processing, API documentation, and more.',
+}
 
 export const JsonConfigFileNamingConvention = new Set([
     'app.json',
@@ -454,6 +469,20 @@ export const chooseTransformationObjective = `I can help you with the following 
 
 export const chooseTransformationObjectivePlaceholder = 'Enter "language upgrade" or "sql conversion"'
 
+export const userPatchDescriptionChatMessage = `
+I will be dividing my proposed changes into smaller sections. Here is a description of what each section entails:
+
+• Minimal Compatible Library Upgrade to Java 17: This upgrades dependencies to the minimum compatible versions in Java 17. It also includes updated versions of Springboot as well as JUnit and PowerMockito frameworks.
+
+• Popular Enterprise Specifications Application Frameworks: This group aims to migrate to the latest versions of popular enterprise specifications and application frameworks like Jakarta EE 10 (the new javax namespace), Hibernate 6.2 (a widely used ORM), and Micronaut 3 (a modern, lightweight full-stack framework).
+
+• HTTP Client Utilities Web Frameworks: This section targets upgrades for HTTP client libraries (Apache HTTP Client 5), Apache Commons utilities (Collections, IO, Lang, Math), and web frameworks (Struts 6.0). The goal is to modernize these commonly used libraries and frameworks to their latest versions, ensuring compatibility with Java 17.
+
+• Testing Tools Frameworks: This set upgrades targets testing tools and frameworks like ArchUnit, Mockito, TestContainers, and Cucumber. Additionally, it updates build tools like Jenkins plugins and the Maven Wrapper. The goal is to bring the testing ecosystem and build tooling up-to-date with the latest versions and best practices.
+
+• Miscellaneous Processing Documentation: This group covers a diverse set of upgrades spanning ORMs (JpaRepository), XML processing (JAXB namespace), application servers (WebSphere to Liberty migration), API documentation (Swagger to SpringDoc/OpenAPI), and utilities (Okio, OkHttp, LaunchDarkly).
+`
+
 export const uploadingCodeStepMessage = 'Upload your code'
 
 export const buildCodeStepMessage = 'Build uploaded code in secure build environment'
@@ -627,11 +656,23 @@ export const viewProposedChangesChatMessage =
 export const viewProposedChangesNotification =
     'Download complete. You can view a summary of the transformation and accept or reject the proposed changes in the Transformation Hub.'
 
-export const changesAppliedChatMessage = (currentPatchIndex: number, totalPatchFiles: number) =>
-    `I applied the changes in diff patch ${currentPatchIndex + 1} of ${totalPatchFiles} to your project.`
+export const changesAppliedChatMessage = (
+    currentPatchIndex: number,
+    totalPatchFiles: number,
+    description: string | undefined
+) =>
+    description
+        ? `I applied the changes in diff patch ${currentPatchIndex + 1} of ${totalPatchFiles} to your project. ${patchDescriptions[description]} You can make a commit if the diff shows success. If the diff shows partial success, apply and fix the errors, and start a new transformation.`
+        : 'I applied the changes to your project.'
 
-export const changesAppliedNotification = (currentPatchIndex: number, totalPatchFiles: number) =>
-    `Amazon Q applied the changes in diff patch ${currentPatchIndex + 1} of ${totalPatchFiles} to your project.`
+export const changesAppliedNotification = (
+    currentPatchIndex: number,
+    totalPatchFiles: number,
+    patchFilesDescriptions: DescriptionContent | undefined
+) =>
+    patchFilesDescriptions
+        ? `Amazon Q applied the changes in diff patch ${currentPatchIndex + 1} of ${totalPatchFiles} to your project.`
+        : 'Amazon Q applied the changes to your project.'
 
 export const noOpenProjectsFoundChatMessage = `I couldn\'t find a project that I can upgrade. Currently, I support Java 8, Java 11, and Java 17 projects built on Maven. Make sure your project is open in the IDE. For more information, see the [Amazon Q documentation](${codeTransformPrereqDoc}).`
 
@@ -686,14 +727,23 @@ export const chooseProjectSchemaFormMessage = 'To continue, choose the project a
 
 export const skipUnitTestsFormTitle = 'Choose to skip unit tests'
 
+export const selectiveTransformationFormTitle = 'Choose to receive multiple diffs'
+
 export const skipUnitTestsFormMessage =
     'I will build your project using `mvn clean test` by default. If you would like me to build your project without running unit tests, I will use `mvn clean test-compile`.'
 
+export const selectiveTransformationFormMessage =
+    'Would you like me to produce one diff with all of my proposed changes or divide my proposed changes into smaller sections?'
+
 export const runUnitTestsMessage = 'Run unit tests'
+
+export const oneDiffMessage = 'One diff'
 
 export const doNotSkipUnitTestsBuildCommand = 'clean test'
 
 export const skipUnitTestsMessage = 'Skip unit tests'
+
+export const multipleDiffsMessage = 'Multiple diffs'
 
 export const skipUnitTestsBuildCommand = 'clean test-compile'
 

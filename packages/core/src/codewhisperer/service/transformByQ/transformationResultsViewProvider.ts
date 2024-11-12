@@ -114,7 +114,9 @@ export class PatchFileNode {
 
     constructor(description: PatchInfo | undefined = undefined, patchFilePath: string) {
         this.patchFilePath = patchFilePath
-        this.label = description ? description.name : path.basename(patchFilePath)
+        this.label = description
+            ? `${description.name} (${description.isSuccessful ? 'Success' : 'Failure'})`
+            : path.basename(patchFilePath)
     }
 }
 
@@ -522,14 +524,21 @@ export class ProposedTransformationExplorer {
             diffModel.saveChanges()
             telemetry.ui_click.emit({ elementId: 'transformationHub_acceptChanges' })
             void vscode.window.showInformationMessage(
-                CodeWhispererConstants.changesAppliedNotification(diffModel.currentPatchIndex, patchFiles.length)
+                CodeWhispererConstants.changesAppliedNotification(
+                    diffModel.currentPatchIndex,
+                    patchFiles.length,
+                    patchFilesDescriptions
+                )
             )
             //We do this to ensure that the changesAppliedChatMessage is only sent to user when they accept the first diff.patch
             if (diffModel.currentPatchIndex === patchFiles.length - 1) {
                 transformByQState.getChatControllers()?.transformationFinished.fire({
                     message: CodeWhispererConstants.changesAppliedChatMessage(
                         diffModel.currentPatchIndex,
-                        patchFiles.length
+                        patchFiles.length,
+                        patchFilesDescriptions
+                            ? patchFilesDescriptions.content[diffModel.currentPatchIndex].name
+                            : undefined
                     ),
                     tabID: ChatSessionManager.Instance.getSession().tabID,
                     includeStartNewTransformationButton: true,
@@ -538,7 +547,10 @@ export class ProposedTransformationExplorer {
                 transformByQState.getChatControllers()?.transformationFinished.fire({
                     message: CodeWhispererConstants.changesAppliedChatMessage(
                         diffModel.currentPatchIndex,
-                        patchFiles.length
+                        patchFiles.length,
+                        patchFilesDescriptions
+                            ? patchFilesDescriptions.content[diffModel.currentPatchIndex].name
+                            : undefined
                     ),
                     tabID: ChatSessionManager.Instance.getSession().tabID,
                     includeStartNewTransformationButton: false,
