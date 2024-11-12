@@ -69,4 +69,4 @@ jobs:
                   path: ./jscpd-report.json
 
             - name: Check for duplicates
-              run: node "$GITHUB_WORKSPACE/.github/workflows/filterDuplicates.js" diff_output.txt jscpd-report.json
+              run: node "$GITHUB_WORKSPACE/.github/workflows/filterDuplicates.js" run diff_output.txt jscpd-report.json

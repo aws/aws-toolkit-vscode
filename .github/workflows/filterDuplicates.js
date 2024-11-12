@@ -1,4 +1,5 @@
 const fs = require('fs/promises')
+const path = require('path')
 
 function parseDiffFilePath(filePathLine) {
     return filePathLine.split(' ')[2].split('/').slice(1).join('/')
@@ -31,13 +32,17 @@ async function parseDiff(diffPath) {
         }
     }
 
+    fileChanges.set(currentFile, currentFileChanges)
+
     return fileChanges
 }
 
 function doesOverlap(range1, range2) {
     const [start1, end1] = range1
     const [start2, end2] = range2
-    return (start1 >= start2 && start1 <= end2) || (end1 >= start2 && end1 <= end2)
+    return (
+        (start1 >= start2 && start1 <= end2) || (end1 >= start2 && end1 <= end2) || (start2 >= start1 && end2 <= end1)
+    )
 }
 
 function isCloneInChanges(changes, cloneInstance) {
@@ -67,9 +72,9 @@ function filterDuplicates(report, changes) {
     return duplicates
 }
 
-async function main() {
-    const rawDiffPath = process.argv[2]
-    const jscpdReportPath = process.argv[3]
+async function run() {
+    const rawDiffPath = process.argv[3]
+    const jscpdReportPath = process.argv[4]
     const changes = await parseDiff(rawDiffPath)
     const jscpdReport = JSON.parse(await fs.readFile(jscpdReportPath, 'utf8'))
     const filteredDuplicates = filterDuplicates(jscpdReport, changes)
@@ -79,6 +84,184 @@ async function main() {
     console.log('%s duplicates found', filteredDuplicates.length)
     if (filteredDuplicates.length > 0) {
         process.exit(1)
+    }
+}
+
+/**
+ * Mini-test Suite
+ */
+let testCounter = 0
+function assertEqual(actual, expected) {
+    if (actual !== expected) {
+        throw new Error(`Expected ${expected} but got ${actual}`)
+    }
+    testCounter += 1
+}
+
+async function test() {
+    test_parseDiffFilePath()
+    test_parseDiffRange()
+    test_doesOverlap()
+    await test_parseDiff()
+    await test_isCloneInChanges()
+    await test_isInChanges()
+    await test_filterDuplicates()
+    console.log('All tests passed (%s)', testCounter)
+}
+
+function test_parseDiffFilePath() {
+    assertEqual(
+        parseDiffFilePath(
+            'diff --git a/.github/workflows/copyPasteDetection.yml b/.github/workflows/copyPasteDetection.yml'
+        ),
+        '.github/workflows/copyPasteDetection.yml'
+    )
+    assertEqual(
+        parseDiffFilePath('diff --git a/.github/workflows/filterDuplicates.js b/.github/workflows/filterDuplicates.js'),
+        '.github/workflows/filterDuplicates.js'
+    )
+}
+
+function test_parseDiffRange() {
+    assertEqual(parseDiffRange('@@ -1,4 +1,4 @@').join(','), '1,5')
+    assertEqual(parseDiffRange('@@ -10,4 +10,4 @@').join(','), '10,14')
+    assertEqual(parseDiffRange('@@ -10,4 +10,5 @@').join(','), '10,15')
+}
+
+function test_doesOverlap() {
+    assertEqual(doesOverlap([1, 5], [2, 4]), true)
+    assertEqual(doesOverlap([2, 3], [2, 4]), true)
+    assertEqual(doesOverlap([2, 3], [1, 4]), true)
+    assertEqual(doesOverlap([1, 5], [5, 6]), true)
+    assertEqual(doesOverlap([1, 5], [6, 7]), false)
+    assertEqual(doesOverlap([6, 7], [1, 5]), false)
+    assertEqual(doesOverlap([2, 5], [4, 5]), true)
+}
+
+async function test_parseDiff() {
+    const testDiff = '.github/workflows/test/test_diff.txt'
+    const changes = await parseDiff(path.resolve(testDiff))
+    assertEqual(changes.size, 2)
+    assertEqual(changes.get('.github/workflows/copyPasteDetection.yml').length, 1)
+    assertEqual(changes.get('.github/workflows/filterDuplicates.js').length, 1)
+    assertEqual(changes.get('.github/workflows/filterDuplicates.js')[0].join(','), '1,86')
+    assertEqual(changes.get('.github/workflows/copyPasteDetection.yml')[0].join(','), '26,73')
+}
+
+async function test_isCloneInChanges() {
+    const testDiff = '.github/workflows/test/test_diff.txt'
+    const changes = await parseDiff(path.resolve(testDiff))
+    assertEqual(
+        isCloneInChanges(changes, {
+            name: '.github/workflows/filterDuplicates.js',
+            start: 1,
+            end: 86,
+        }),
+        true
+    )
+    assertEqual(
+        isCloneInChanges(changes, {
+            name: '.github/workflows/filterDuplicates.js',
+            start: 80,
+            end: 95,
+        }),
+        true
+    )
+    assertEqual(
+        isCloneInChanges(changes, {
+            name: '.github/workflows/filterDuplicates.js',
+            start: 87,
+            end: 95,
+        }),
+        false
+    )
+    assertEqual(
+        isCloneInChanges(changes, {
+            name: 'some-fake-file',
+            start: 1,
+            end: 100,
+        }),
+        false
+    )
+}
+
+async function test_isInChanges() {
+    const testDiff = '.github/workflows/test/test_diff.txt'
+    const changes = await parseDiff(path.resolve(testDiff))
+    const dupe = {
+        firstFile: {
+            name: '.github/workflows/filterDuplicates.js',
+            start: 1,
+            end: 86,
+        },
+        secondFile: {
+            name: '.github/workflows/filterDuplicates.js',
+            start: 80,
+            end: 95,
+        },
+    }
+    assertEqual(isInChanges(changes, dupe), true)
+    dupe.secondFile.start = 87
+    assertEqual(isInChanges(changes, dupe), true)
+    dupe.firstFile.name = 'some-fake-file'
+    assertEqual(isInChanges(changes, dupe), false)
+}
+
+async function test_filterDuplicates() {
+    assertEqual(
+        filterDuplicates(
+            {
+                duplicates: [
+                    {
+                        firstFile: {
+                            name: '.github/workflows/filterDuplicates.js',
+                            start: 1,
+                            end: 86,
+                        },
+                        secondFile: {
+                            name: '.github/workflows/filterDuplicates.js',
+                            start: 80,
+                            end: 95,
+                        },
+                    },
+                ],
+            },
+            await parseDiff('.github/workflows/test/test_diff.txt')
+        ).length,
+        1
+    )
+    assertEqual(
+        filterDuplicates(
+            {
+                duplicates: [
+                    {
+                        firstFile: {
+                            name: 'some-other-file',
+                            start: 1,
+                            end: 86,
+                        },
+                        secondFile: {
+                            name: '.github/workflows/filterDuplicates.js',
+                            start: 90,
+                            end: 95,
+                        },
+                    },
+                ],
+            },
+            await parseDiff('.github/workflows/test/test_diff.txt')
+        ).length,
+        0
+    )
+}
+
+async function main() {
+    const mode = process.argv[2]
+    if (mode === 'run') {
+        await run()
+    } else if (mode === 'test') {
+        await test()
+    } else {
+        throw new Error('Invalid mode')
     }
 }
 
