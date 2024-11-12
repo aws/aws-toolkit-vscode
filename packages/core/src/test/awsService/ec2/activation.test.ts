@@ -7,9 +7,10 @@ import * as sinon from 'sinon'
 import { assertTelemetry } from '../../testUtil'
 import { Ec2InstanceNode } from '../../../awsService/ec2/explorer/ec2InstanceNode'
 import { Ec2ParentNode } from '../../../awsService/ec2/explorer/ec2ParentNode'
-import { Ec2Wrapper, SafeEc2Instance } from '../../../shared/clients/ec2Wrapper'
+import { Ec2Wrapper } from '../../../shared/clients/ec2Wrapper'
 import { Ec2Connecter } from '../../../awsService/ec2/model'
 import { PollingSet } from '../../../shared/utilities/pollingSet'
+import { InstanceStateName } from '@aws-sdk/client-ec2'
 
 describe('ec2 activation', function () {
     let testNode: Ec2InstanceNode
@@ -24,8 +25,8 @@ describe('ec2 activation', function () {
         const parentNode = new Ec2ParentNode(testRegion, testPartition, new Ec2Wrapper(testRegion))
         testNode = new Ec2InstanceNode(parentNode, testClient, testRegion, testPartition, {
             InstanceId: 'testId',
-            LastSeenStatus: 'status',
-        } as SafeEc2Instance)
+            LastSeenStatus: 'status' as InstanceStateName,
+        })
     })
 
     after(function () {
