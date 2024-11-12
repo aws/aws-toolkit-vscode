@@ -1,0 +1,18 @@
+{
+	"date": "2024-11-11",
+	"version": "1.35.0",
+	"entries": [
+		{
+			"type": "Breaking Change",
+			"description": "Change focus chat keybind to win+alt+i on Windows, cmd+alt+i on macOS, and meta+alt+i on Linux"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Fix suboptimal inline suggestions from Amazon Q caused by improperly formatted supplemental context"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Fix empty chunks being sent to service and get validationException"
+		}
+	]
+}
