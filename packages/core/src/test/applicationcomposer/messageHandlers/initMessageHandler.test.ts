@@ -10,6 +10,10 @@ import { createTemplate, createWebviewContext } from '../utils'
 import { skipIfVscodeBelow } from '../../testUtil'
 
 describe('initMessageHandler', function () {
+    afterEach(function () {
+        sinon.restore()
+    })
+
     it('not connected to codewhisperer', async function () {
         skipIfVscodeBelow(this, '1.89.0')
         const panel = await createTemplate()
@@ -20,6 +24,5 @@ describe('initMessageHandler', function () {
         await initMessageHandler(context)
         assert.ok(postMessageSpy.calledOnce)
         assert.deepStrictEqual(postMessageSpy.getCall(0).args[0].isConnectedToCodeWhisperer, false)
-        postMessageSpy.restore()
     })
 })
