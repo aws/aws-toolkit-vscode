@@ -870,7 +870,14 @@ export class Auth implements AuthService, ConnectionManager {
         //eslint-disable-next-line aws-toolkits/no-console-log
         console.log('getCachedCredentials called')
         const creds = await globals.loginManager.store.getCredentials(provider.getCredentialsId())
+        //eslint-disable-next-line aws-toolkits/no-console-log
+        console.log(
+            'provider hash is same as credentials has: %O',
+            creds?.credentialsHashCode === provider.getHashCode()
+        )
         if (creds !== undefined && creds.credentialsHashCode === provider.getHashCode()) {
+            //eslint-disable-next-line aws-toolkits/no-console-log
+            console.log('returning cached credentials')
             return creds.credentials
         }
     }
@@ -918,6 +925,8 @@ export class Auth implements AuthService, ConnectionManager {
         //eslint-disable-next-line aws-toolkits/no-console-log
         console.log('_getCredentials called')
         const credentials = await this.getCachedCredentials(provider)
+        //eslint-disable-next-line aws-toolkits/no-console-log
+        console.log('credentials is undefined: %O', credentials === undefined)
         if (credentials !== undefined) {
             //eslint-disable-next-line aws-toolkits/no-console-log
             console.log('returning cached credentials')
@@ -925,6 +934,8 @@ export class Auth implements AuthService, ConnectionManager {
         } else if ((await provider.canAutoConnect()) === true) {
             return this.createCachedCredentials(provider)
         } else {
+            //eslint-disable-next-line aws-toolkits/no-console-log
+            console.log('hit case with handleInvalidCredentials')
             return this.handleInvalidCredentials(id, () => this.createCachedCredentials(provider))
         }
     }
