@@ -305,7 +305,10 @@ export class FileSystem {
 
         await write(uri)
         if (isWin()) {
-            await waitUntil(async () => await fs.exists(uri), { timeout: 5000, truthy: true })
+            const success = await waitUntil(async () => await fs.exists(uri), { timeout: 5000, truthy: true })
+            if (!success) {
+                throw new ToolkitError(`Failed to write file ${uri.toString()}`)
+            }
         }
     }
 
@@ -467,7 +470,10 @@ export class FileSystem {
 
         // Windows race condition
         if (isWin()) {
-            await waitUntil(async () => !(await fs.exists(fileOrDir)), { timeout: 5000, truthy: true })
+            const success = await waitUntil(async () => !(await fs.exists(fileOrDir)), { timeout: 5000, truthy: true })
+            if (!success) {
+                throw new ToolkitError(`Failed to delete file ${uri.toString()}`)
+            }
         }
     }
 
