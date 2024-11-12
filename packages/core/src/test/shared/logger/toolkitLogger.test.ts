@@ -239,32 +239,26 @@ describe('ToolkitLogger', function () {
             assert.ok(!(await waitForMessage).includes(nonLoggedVerboseEntry), 'unexpected message in log')
         })
 
-        it('logs append topic header in message', async function () {
-            const testMessage = 'This is a test message'
+        it('prepends topic to message', async function () {
+            testLogger = new ToolkitLogger('info')
+            testLogger.logToOutputChannel(outputChannel, false)
+            testLogger.setTopic('test')
+            testLogger.setLogLevel('verbose')
+
             const testMessageWithHeader = 'test: This is a test message'
+            testLogger.verbose('This is a test message')
+            assert.ok(
+                (await waitForLoggedTextByContents(testMessageWithHeader)).includes(testMessageWithHeader),
+                'Expected header added'
+            )
 
-            testLogger = new ToolkitLogger('info')
-            testLogger.logToOutputChannel(outputChannel, false)
-            testLogger.setTopic('test')
-            testLogger.setLogLevel('verbose')
-            testLogger.verbose(testMessage)
+            const msg = "topic: 'test'"
+            testLogger.verbose(new ToolkitError('root error', { code: 'something went wrong' }))
+            assert.ok((await waitForLoggedTextByContents(msg)).includes(msg), 'Expected header added')
 
-            const waitForMessage = waitForLoggedTextByContents(testMessageWithHeader)
-            assert.ok((await waitForMessage).includes(testMessageWithHeader), 'Expected header added')
-        })
-
-        it('logs append topic header in errors', async function () {
-            const testError = new ToolkitError('root error', { code: 'something went wrong' })
-            const testErrorWithHeader = "topic: 'test'"
-
-            testLogger = new ToolkitLogger('info')
-            testLogger.logToOutputChannel(outputChannel, false)
-            testLogger.setTopic('test')
-            testLogger.setLogLevel('verbose')
-            testLogger.verbose(testError)
-
-            const waitForMessage = waitForLoggedTextByContents(testErrorWithHeader)
-            assert.ok((await waitForMessage).includes(testErrorWithHeader), 'Expected header added')
+            const msg2 = "topic: 'test'"
+            testLogger.verbose(new ToolkitError('root error', { code: 'something went wrong' }))
+            assert.ok((await waitForLoggedTextByContents(msg2)).includes(msg2), 'Expected header added')
         })
 
         it('unknown topic header ignored in message', async function () {
@@ -282,7 +276,7 @@ describe('ToolkitLogger', function () {
             assert.ok(!(await waitForMessage).includes(unknowntestMessage), 'unexpected header in log')
         })
 
-        it('switch topic within same logger', async function () {
+        it('switch topic on same logger', async function () {
             const testMessage = 'This is a test message'
             const testMessageWithHeader = 'test: This is a test message'
 

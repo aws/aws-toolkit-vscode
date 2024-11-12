@@ -83,20 +83,37 @@ export class AmazonQChatMessageDuration {
 
             // TODO: handle onContextCommand round trip time
             if (metrics.trigger !== 'onContextCommand') {
+                const editorReceivedMessage = durationFrom('chatMessageSent', 'editorReceivedMessage')
+                const featureReceivedMessage = durationFrom('editorReceivedMessage', 'featureReceivedMessage')
+                const messageDisplayed = durationFrom('featureReceivedMessage', 'messageDisplayed')
+                let reasonDesc = undefined
+
+                /**
+                 * Temporary include more information about outliers so that we can find out if the messages
+                 * aren't being sent or the user is actually doing a different chat flow
+                 */
+                if ([editorReceivedMessage, featureReceivedMessage].some((val) => val > 30000 || val < -30000)) {
+                    reasonDesc = JSON.stringify(metrics.events)
+                }
                 telemetry.amazonq_chatRoundTrip.emit({
                     amazonqChatMessageSentTime: metrics.events.chatMessageSent ?? -1,
-                    amazonqEditorReceivedMessageMs: durationFrom('chatMessageSent', 'editorReceivedMessage') ?? -1,
-                    amazonqFeatureReceivedMessageMs:
-                        durationFrom('editorReceivedMessage', 'featureReceivedMessage') ?? -1,
-                    amazonqMessageDisplayedMs: durationFrom('featureReceivedMessage', 'messageDisplayed') ?? -1,
+                    amazonqEditorReceivedMessageMs: editorReceivedMessage ?? -1,
+                    amazonqFeatureReceivedMessageMs: featureReceivedMessage ?? -1,
+                    amazonqMessageDisplayedMs: messageDisplayed ?? -1,
                     source: metrics.trigger,
                     duration: totalDuration,
                     result: 'Succeeded',
                     traceId: metrics.traceId,
+                    ...(reasonDesc !== undefined ? { reasonDesc } : {}),
                 })
             }
 
-            CWCTelemetryHelper.instance.emitAddMessage(tabID, totalDuration, metrics.events.chatMessageSent)
+            CWCTelemetryHelper.instance.emitAddMessage(
+                tabID,
+                totalDuration,
+                metrics.traceId,
+                metrics.events.chatMessageSent
+            )
 
             uiEventRecorder.delete(tabID)
         })

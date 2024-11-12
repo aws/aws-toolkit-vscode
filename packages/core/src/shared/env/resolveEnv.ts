@@ -20,7 +20,7 @@ import { asEnvironmentVariables } from '../../auth/credentials/utils'
 import { getIAMConnection } from '../../auth/utils'
 import { ChildProcess } from '../utilities/processUtils'
 
-let unixShellEnvPromise: Promise<typeof process.env> | undefined = undefined
+let unixShellEnvPromise: Promise<typeof process.env | void> | undefined = undefined
 let envCacheExpireTime: number
 
 export interface IProcessEnvironment {
@@ -139,7 +139,7 @@ export async function mergeResolvedShellPath(env: IProcessEnvironment): Promise<
  * - we hit a timeout of `MAX_SHELL_RESOLVE_TIME`
  * - any other error from spawning a shell to figure out the environment
  */
-export async function getResolvedShellEnv(env?: IProcessEnvironment): Promise<typeof process.env> {
+export async function getResolvedShellEnv(env?: IProcessEnvironment): Promise<typeof process.env | void> {
     if (!env) {
         env = process.env
     }
@@ -147,21 +147,21 @@ export async function getResolvedShellEnv(env?: IProcessEnvironment): Promise<ty
     if (DevSettings.instance._isSet('forceResolveEnv') && !DevSettings.instance.get('forceResolveEnv', false)) {
         getLogger().debug('resolveShellEnv(): skipped (forceResolveEnv)')
 
-        return {}
+        return undefined
     }
 
     // Skip on windows
     else if (process.platform === 'win32') {
         getLogger().debug('resolveShellEnv(): skipped (Windows)')
 
-        return {}
+        return undefined
     }
 
     // Skip if running from CLI already and forceResolveEnv is not true
     else if (isLaunchedFromCli(env) && !DevSettings.instance.get('forceResolveEnv', false)) {
         getLogger().info('resolveShellEnv(): skipped (VSCODE_CLI is set)')
 
-        return {}
+        return undefined
     }
     // Otherwise resolve (macOS, Linux)
     else {
@@ -176,15 +176,20 @@ export async function getResolvedShellEnv(env?: IProcessEnvironment): Promise<ty
         if (!unixShellEnvPromise || Date.now() > envCacheExpireTime) {
             // cache valid for 5 minutes
             envCacheExpireTime = Date.now() + 5 * 60 * 1000
-            unixShellEnvPromise = new Promise<NodeJS.ProcessEnv>(async (resolve, reject) => {
+            unixShellEnvPromise = new Promise<NodeJS.ProcessEnv | void>(async (resolve, reject) => {
                 const timeout = new Timeout(10000)
 
                 // Resolve shell env and handle errors
                 try {
-                    resolve(await doResolveUnixShellEnv(timeout))
+                    const shellEnv = await doResolveUnixShellEnv(timeout)
+                    if (shellEnv && Object.keys(shellEnv).length > 0) {
+                        resolve(shellEnv)
+                    } else {
+                        resolve()
+                    }
                 } catch {
                     // failed resolve should not affect other feature.
-                    resolve({})
+                    resolve()
                 }
             })
         }
@@ -298,7 +303,7 @@ async function doResolveUnixShellEnv(timeout: Timeout): Promise<typeof process.e
                 getLogger().debug(`getUnixShellEnvironment#result:${env}`)
                 resolve(env)
             } catch (err) {
-                getLogger().error('getUnixShellEnvironment#errorCaught', err)
+                getLogger().error('getUnixShellEnvironment#errorCaught %O', err)
                 reject(err)
             }
         })

@@ -7,17 +7,27 @@ import * as vscode from 'vscode'
 import * as FakeTimers from '@sinonjs/fake-timers'
 import assert from 'assert'
 import sinon from 'sinon'
-import { NotificationsController, NotificationsNode, RuleEngine } from '../../notifications'
 import globals from '../../shared/extensionGlobals'
-import { NotificationData, NotificationType, ToolkitNotification } from '../../notifications/types'
 import { randomUUID } from '../../shared'
-import { installFakeClock } from '../testUtil'
-import { NotificationFetcher, RemoteFetcher, ResourceResponse } from '../../notifications/controller'
+import { assertTelemetry, installFakeClock } from '../testUtil'
+import {
+    NotificationFetcher,
+    NotificationsController,
+    RemoteFetcher,
+    ResourceResponse,
+} from '../../notifications/controller'
+import {
+    NotificationData,
+    NotificationType,
+    ToolkitNotification,
+    getNotificationTelemetryId,
+} from '../../notifications/types'
 import { HttpResourceFetcher } from '../../shared/resourcefetcher/httpResourceFetcher'
+import { NotificationsNode } from '../../notifications/panelNode'
+import { RuleEngine } from '../../notifications/rules'
 
 // one test node to use across different tests
-// re-declaration would cause a command conflict
-export const panelNode: NotificationsNode = new NotificationsNode()
+export const panelNode: NotificationsNode = NotificationsNode.instance
 
 describe('Notifications Controller', function () {
     const ruleEngine: RuleEngine = new RuleEngine({
@@ -477,6 +487,7 @@ describe('Notifications Controller', function () {
 
         assert.equal(onReceiveSpy.callCount, 1)
         assert.deepStrictEqual(onReceiveSpy.args[0][0], [content.notifications[0]])
+        assertTelemetry('toolkit_showNotification', { id: getNotificationTelemetryId(content.notifications[0]) })
 
         onReceiveSpy.restore()
     })

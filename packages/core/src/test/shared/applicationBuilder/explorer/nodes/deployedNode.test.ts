@@ -223,8 +223,8 @@ describe('generateDeployedNode', () => {
                 lambdaDeployedNodeInput.resourceTreeEntity
             )
 
-            assert(loggerErrorStub.calledOnceWith('Error getting Lambda configuration'))
-            assert(loggerErrorStub.neverCalledWith('Error getting Lambda V3 configuration'))
+            assert(loggerErrorStub.calledOnceWith('Error getting Lambda configuration %O'))
+            assert(loggerErrorStub.neverCalledWith('Error getting Lambda V3 configuration %O'))
             assert(deployedResourceNodes.length === 1)
 
             // Check placeholder propertries
@@ -375,10 +375,10 @@ describe('generateDeployedNode', () => {
                 unsupportTypeInput.resourceTreeEntity
             )
 
-            assert(loggerInfoStub.calledOnceWith('Details are missing or are incomplete for:'))
+            assert(loggerInfoStub.calledOnceWith('Details are missing or are incomplete for: %O'))
 
             // Check deployedResourceNodes array propertries
-            assert(loggerErrorStub.neverCalledWith('Error getting Lambda V3 configuration'))
+            assert(loggerErrorStub.neverCalledWith('Error getting Lambda V3 configuration %O'))
 
             // Check deployedResourceNodes array propertries
             assert(deployedResourceNodes.length === 1)

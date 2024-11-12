@@ -23,13 +23,15 @@ export class ApplicationComposerManager {
     protected readonly name: string = 'ApplicationComposerManager'
 
     protected readonly managedVisualizations = new Map<string, ApplicationComposer>()
-    protected extensionContext: vscode.ExtensionContext
     protected webviewHtml?: string
     protected readonly logger = getLogger()
 
-    public constructor(extensionContext: vscode.ExtensionContext) {
-        this.extensionContext = extensionContext
-        void this.fetchWebviewHtml()
+    private constructor(protected extensionContext: vscode.ExtensionContext) {}
+
+    public static async create(extensionContext: vscode.ExtensionContext): Promise<ApplicationComposerManager> {
+        const obj = new ApplicationComposerManager(extensionContext)
+        await obj.fetchWebviewHtml()
+        return obj
     }
 
     private async fetchWebviewHtml() {
@@ -41,7 +43,7 @@ export class ApplicationComposerManager {
         }
     }
 
-    private getWebviewContent = () => {
+    private getWebviewContent = async () => {
         if (!this.webviewHtml) {
             void this.fetchWebviewHtml()
             return ''
@@ -76,7 +78,11 @@ export class ApplicationComposerManager {
 
         // Existing visualization does not exist, construct new visualization
         try {
-            const newVisualization = new ApplicationComposer(document, this.extensionContext, this.getWebviewContent)
+            const newVisualization = await ApplicationComposer.create(
+                document,
+                this.extensionContext,
+                this.getWebviewContent
+            )
             this.handleNewVisualization(document.uri.fsPath, newVisualization)
 
             if (vscode.version === '1.91.0') {
@@ -99,7 +105,11 @@ export class ApplicationComposerManager {
             const document = await vscode.workspace.openTextDocument({
                 language: 'yaml',
             })
-            const newVisualization = new ApplicationComposer(document, this.extensionContext, this.getWebviewContent)
+            const newVisualization = await ApplicationComposer.create(
+                document,
+                this.extensionContext,
+                this.getWebviewContent
+            )
             this.handleNewVisualization(document.uri.fsPath, newVisualization)
 
             return newVisualization.getPanel()

@@ -70,7 +70,7 @@ export async function updateDocumentVersion(node: DocumentItemNodeWriteable, aws
                 node.documentName
             )
         )
-        logger.error('Error on updating document version: %0', error)
+        logger.error('Error on updating document version: %O', error)
     } finally {
         telemetry.ssm_updateDocumentVersion.emit({ result: result })
     }

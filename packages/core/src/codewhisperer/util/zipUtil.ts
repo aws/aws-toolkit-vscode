@@ -259,7 +259,7 @@ export class ZipUtil {
                 language: this._language,
             }
         } catch (error) {
-            getLogger().error('Zip error caused by:', error)
+            getLogger().error('Zip error caused by: %O', error)
             throw error
         }
     }
