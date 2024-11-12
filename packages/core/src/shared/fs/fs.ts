@@ -304,6 +304,9 @@ export class FileSystem {
         }
 
         await write(uri)
+        if (isWin()) {
+            await waitUntil(async () => await fs.exists(uri), { timeout: 5000, truthy: true })
+        }
     }
 
     /**
@@ -428,7 +431,7 @@ export class FileSystem {
             })
         }
 
-        return vfs.delete(uri, opt).then(undefined, async (err) => {
+        vfs.delete(uri, opt).then(undefined, async (err) => {
             const notFound = isFileNotFoundError(err)
 
             if (notFound && opt.force) {
@@ -461,6 +464,11 @@ export class FileSystem {
 
             throw err
         })
+
+        // Windows race condition
+        if (isWin()) {
+            await waitUntil(async () => !(await fs.exists(fileOrDir)), { timeout: 5000, truthy: true })
+        }
     }
 
     async readdir(uri: vscode.Uri | string): Promise<[string, vscode.FileType][]> {
