@@ -8,11 +8,13 @@ import sinon from 'sinon'
 import { createTemplate, createWebviewContext } from '../utils'
 import { generateResourceHandler } from '../../../applicationcomposer/messageHandlers/generateResourceHandler'
 import { Command, MessageType } from '../../../applicationcomposer/types'
-import { skipIfVscodeBelow } from '../../testUtil'
+import { isMinVscode } from '../../../shared/vscode/env'
 
 describe('generateResourceHandler', function () {
     it('amazon q is not installed', async function () {
-        skipIfVscodeBelow(this, '1.89.0')
+        if (isMinVscode({ throwWhen: '1.89.0' })) {
+            this.skip()
+        }
         const panel = await createTemplate()
         const postMessageSpy = sinon.spy(panel.webview, 'postMessage')
         const context = await createWebviewContext({

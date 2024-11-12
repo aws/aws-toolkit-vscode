@@ -6,7 +6,6 @@
 import assert from 'assert'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import * as semver from 'semver'
 import * as FakeTimers from '@sinonjs/fake-timers'
 import * as pathutil from '../shared/utilities/pathUtils'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../shared/filesystemUtilities'
@@ -20,7 +19,6 @@ import { mkdirSync, existsSync } from 'fs' // eslint-disable-line no-restricted-
 import { randomBytes } from 'crypto'
 import request from '../shared/request'
 import { stub } from 'sinon'
-import { throwIfMinVscodeGte } from '../shared/vscode/env'
 
 const testTempDirs: string[] = []
 
@@ -635,11 +633,4 @@ export function getFetchStubWithResponse(response: Partial<Response>) {
 
 export function copyEnv(): NodeJS.ProcessEnv {
     return { ...process.env }
-}
-
-export function skipIfVscodeBelow(testContext: Mocha.Context, targetVersion: string) {
-    throwIfMinVscodeGte(targetVersion)
-    if (semver.lt(vscode.version, targetVersion)) {
-        testContext.skip()
-    }
 }
