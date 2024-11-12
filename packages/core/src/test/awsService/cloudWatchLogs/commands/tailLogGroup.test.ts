@@ -20,11 +20,13 @@ import {
 import { getTestWindow } from '../../../shared/vscode/window'
 import { CloudWatchLogsSettings, uriToKey } from '../../../../awsService/cloudWatchLogs/cloudWatchLogsUtils'
 import { installFakeClock } from '../../../testUtil'
+import { DefaultAwsContext } from '../../../../shared'
 
 describe('TailLogGroup', function () {
     const testLogGroup = 'test-log-group'
     const testRegion = 'test-region'
     const testMessage = 'test-message'
+    const testAwsAccountId = '1234'
 
     let sandbox: sinon.SinonSandbox
     let registry: LiveTailSessionRegistry
@@ -54,6 +56,7 @@ describe('TailLogGroup', function () {
     })
 
     it('starts LiveTailSession and writes to document. Closes tab and asserts session gets closed.', async function () {
+        sandbox.stub(DefaultAwsContext.prototype, 'getCredentialAccountId').returns(testAwsAccountId)
         wizardSpy = sandbox.stub(TailLogGroupWizard.prototype, 'run').callsFake(async function () {
             return getTestWizardResponse()
         })
@@ -127,7 +130,7 @@ describe('TailLogGroup', function () {
             })
 
         const session = new LiveTailSession({
-            logGroupName: testLogGroup,
+            logGroupArn: testLogGroup,
             region: testRegion,
         })
         registry.set(uriToKey(session.uri), session)
@@ -140,7 +143,7 @@ describe('TailLogGroup', function () {
 
     it('clearDocument clears all text from document', async function () {
         const session = new LiveTailSession({
-            logGroupName: testLogGroup,
+            logGroupArn: testLogGroup,
             region: testRegion,
         })
         const testData = 'blah blah blah'

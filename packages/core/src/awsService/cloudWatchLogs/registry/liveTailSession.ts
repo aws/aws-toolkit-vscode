@@ -9,13 +9,13 @@ import {
     StartLiveTailResponseStream,
 } from '@aws-sdk/client-cloudwatch-logs'
 import { LogStreamFilterResponse } from '../wizard/liveTailLogStreamSubmenu'
-import { CloudWatchLogsSettings } from '../cloudWatchLogsUtils'
-import { convertToTimeString, globals, Settings, ToolkitError } from '../../../shared'
+import { CloudWatchLogsSettings, uriToKey } from '../cloudWatchLogsUtils'
+import { convertToTimeString, getLogger, globals, Settings, ToolkitError } from '../../../shared'
 import { createLiveTailURIFromArgs } from './liveTailSessionRegistry'
 import { getUserAgent } from '../../../shared/telemetry/util'
 
 export type LiveTailSessionConfiguration = {
-    logGroupName: string
+    logGroupArn: string
     logStreamFilter?: LogStreamFilterResponse
     logEventFilterPattern?: string
     region: string
@@ -28,7 +28,7 @@ export type LiveTailSessionClient = {
 
 export class LiveTailSession {
     private liveTailClient: LiveTailSessionClient
-    private _logGroupName: string
+    private _logGroupArn: string
     private logStreamFilter?: LogStreamFilterResponse
     private logEventFilterPattern?: string
     private _maxLines: number
@@ -45,7 +45,7 @@ export class LiveTailSession {
     static settings = new CloudWatchLogsSettings(Settings.instance)
 
     public constructor(configuration: LiveTailSessionConfiguration) {
-        this._logGroupName = configuration.logGroupName
+        this._logGroupArn = configuration.logGroupArn
         this.logStreamFilter = configuration.logStreamFilter
         this.liveTailClient = {
             cwlClient: new CloudWatchLogsClient({
@@ -69,8 +69,8 @@ export class LiveTailSession {
         return this._uri
     }
 
-    public get logGroupName() {
-        return this._logGroupName
+    public get logGroupArn() {
+        return this._logGroupArn
     }
 
     public set eventRate(rate: number) {
@@ -93,6 +93,7 @@ export class LiveTailSession {
         this.statusBarUpdateTimer = globals.clock.setInterval(() => {
             this.updateStatusBarItemText()
         }, 500)
+        getLogger().info(`LiveTail session started: ${uriToKey(this.uri)}`)
         return commandOutput.responseStream
     }
 
@@ -130,7 +131,7 @@ export class LiveTailSession {
         }
 
         return new StartLiveTailCommand({
-            logGroupIdentifiers: [this.logGroupName],
+            logGroupIdentifiers: [this.logGroupArn],
             logStreamNamePrefixes: logStreamNamePrefix ? [logStreamNamePrefix] : undefined,
             logStreamNames: logStreamName ? [logStreamName] : undefined,
             logEventFilterPattern: this.logEventFilterPattern ? this.logEventFilterPattern : undefined,
