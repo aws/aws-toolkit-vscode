@@ -748,12 +748,16 @@ export async function getValidSQLConversionCandidateProjects() {
             const args = command === 'findstr' ? ['/i', '/s', str] : ['-i', '-r', str]
             const spawnResult = spawnSync(command, args, {
                 cwd: project.path,
-                shell: true, // TO-DO: better for this to be false? Test on project with a space in the name
+                shell: false,
                 encoding: 'utf-8',
             })
-            // in case our search unexpectedly fails, still allow user to transform that project
-            // also, anything in stdout here means search string was detected
-            if (spawnResult.status !== 0 || spawnResult.error || spawnResult.stdout.trim()) {
+            /*
+            in case the search unexpectedly fails, still allow user to transform that project.
+            error is set when command fails to spawn; stderr is set when command itself fails.
+            status of 0 plus anything in stdout means search string was detected.
+            status will be non-zero and stdout / stderr / error will be empty when search string is not detected. 
+            */
+            if (spawnResult.error || spawnResult.stderr || (spawnResult.status === 0 && spawnResult.stdout.trim())) {
                 embeddedSQLProjects.push(project)
                 break
             }
