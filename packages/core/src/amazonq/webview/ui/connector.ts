@@ -70,7 +70,8 @@ export interface ConnectorProps {
         tabID: string,
         filePaths: DiffTreeFileInfo[],
         deletedFiles: DiffTreeFileInfo[],
-        messageId: string
+        messageId: string,
+        disableFileActions: boolean
     ) => void
     onUpdatePlaceholder: (tabID: string, newPlaceholder: string) => void
     onChatInputEnabled: (tabID: string, enabled: boolean) => void

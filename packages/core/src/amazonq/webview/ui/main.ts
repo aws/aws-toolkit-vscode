@@ -238,12 +238,14 @@ export const createMynahUI = (
                 mynahUI.updateChatAnswerWithMessageId(tabID, item.messageId, {
                     ...(item.body !== undefined ? { body: item.body } : {}),
                     ...(item.buttons !== undefined ? { buttons: item.buttons } : {}),
+                    ...(item.followUp !== undefined ? { followUp: item.followUp } : {}),
                 })
             } else {
                 mynahUI.updateLastChatAnswer(tabID, {
                     ...(item.body !== undefined ? { body: item.body } : {}),
                     ...(item.buttons !== undefined ? { buttons: item.buttons } : {}),
-                } as ChatItem)
+                    ...(item.followUp !== undefined ? { followUp: item.followUp } : {}),
+                })
             }
         },
         onChatAnswerReceived: (tabID: string, item: CWCChatItem, messageData: any) => {
@@ -348,7 +350,8 @@ export const createMynahUI = (
             tabID: string,
             filePaths: DiffTreeFileInfo[],
             deletedFiles: DiffTreeFileInfo[],
-            messageId: string
+            messageId: string,
+            disableFileActions: boolean
         ) => {
             const updateWith: Partial<ChatItem> = {
                 type: ChatItemType.ANSWER,
@@ -356,8 +359,8 @@ export const createMynahUI = (
                     rootFolderTitle: 'Changes',
                     filePaths: filePaths.map((i) => i.zipFilePath),
                     deletedFiles: deletedFiles.map((i) => i.zipFilePath),
-                    details: getDetails(filePaths),
-                    actions: getActions([...filePaths, ...deletedFiles]),
+                    details: getDetails([...filePaths, ...deletedFiles]),
+                    actions: disableFileActions ? undefined : getActions([...filePaths, ...deletedFiles]),
                 },
             }
             mynahUI.updateChatAnswerWithMessageId(tabID, messageId, updateWith)

@@ -64,6 +64,9 @@ export class UIMessageListener {
             case 'file-click':
                 this.fileClicked(msg)
                 break
+            case 'store-code-result-message-id':
+                this.storeCodeResultMessageId(msg)
+                break
         }
     }
 
@@ -154,6 +157,13 @@ export class UIMessageListener {
             code: msg.code,
             insertionTargetType: msg.insertionTargetType,
             codeReference: msg.codeReference,
+        })
+    }
+
+    private storeCodeResultMessageId(msg: any) {
+        this.featureDevControllerEventsEmitters?.storeCodeResultMessageId.fire({
+            messageId: msg.messageId,
+            tabID: msg.tabID,
         })
     }
 }
