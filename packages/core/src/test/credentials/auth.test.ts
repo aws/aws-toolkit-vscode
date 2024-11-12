@@ -528,6 +528,7 @@ describe('Auth', function () {
                 const newCreds = { ...initialCreds, accessKey: 'y', secretKey: 'y' }
                 await UserCredentialsUtils.generateCredentialsFile(newCreds)
                 console.log('file exists after generating=%O', await fs.exists(getCredentialsFilename()))
+                console.log('file contents = %O', await fs.readFileText(getCredentialsFilename()))
                 assert.deepStrictEqual(await conn.getCredentials(), {
                     accessKeyId: newCreds.accessKey,
                     secretAccessKey: newCreds.secretKey,

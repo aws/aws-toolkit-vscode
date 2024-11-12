@@ -100,7 +100,8 @@ export class UserCredentialsUtils {
             console.log('hit case where dest exists')
             contents.unshift(header)
         }
-
+        //eslint-disable-next-line aws-toolkits/no-console-log
+        console.log('contents=%O', contents)
         await fs.writeFile(dest, contents.join('\n'))
     }
 }
