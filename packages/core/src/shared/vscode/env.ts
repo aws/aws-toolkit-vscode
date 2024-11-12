@@ -68,11 +68,17 @@ export { extensionVersion }
  * @param throwWhen Throw if minimum vscode is equal or later than this version.
  */
 export function isMinVscode(throwWhen?: string): boolean {
-    const minVscode = getMinVscodeVersion()
-    if (throwWhen && semver.gte(minVscode, throwWhen)) {
-        throw Error(`Min vscode ${minVscode} >= ${throwWhen}. Delete or update the code that called this.`)
+    if (throwWhen) {
+        throwIfMinVscodeGte(throwWhen)
     }
     return vscode.version.startsWith(getMinVscodeVersion())
+}
+
+export function throwIfMinVscodeGte(targetVersion: string): void | never {
+    const minVscode = getMinVscodeVersion()
+    if (semver.gte(minVscode, targetVersion)) {
+        throw Error(`Min vscode ${minVscode} >= ${targetVersion}. Delete or update the code that called this.`)
+    }
 }
 
 /**
