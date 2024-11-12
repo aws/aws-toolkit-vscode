@@ -27,7 +27,7 @@ export async function tailLogGroup(
     }
 
     const liveTailSessionConfig: LiveTailSessionConfiguration = {
-        logGroupName: wizardResponse.regionLogGroupSubmenuResponse.data,
+        logGroupArn: wizardResponse.regionLogGroupSubmenuResponse.data,
         logStreamFilter: wizardResponse.logStreamFilter,
         logEventFilterPattern: wizardResponse.filterPattern,
         region: wizardResponse.regionLogGroupSubmenuResponse.region,

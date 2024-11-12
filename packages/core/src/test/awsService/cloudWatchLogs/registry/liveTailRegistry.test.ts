@@ -15,7 +15,7 @@ describe('LiveTailSession URI', async function () {
 
     it('is correct with no logStream filter, no filter pattern', function () {
         const config: LiveTailSessionConfiguration = {
-            logGroupName: testLogGroupName,
+            logGroupArn: testLogGroupName,
             region: testRegion,
         }
         const expectedUri = vscode.Uri.parse(expectedUriBase)
@@ -25,7 +25,7 @@ describe('LiveTailSession URI', async function () {
 
     it('is correct with no logStream filter, with filter pattern', function () {
         const config: LiveTailSessionConfiguration = {
-            logGroupName: testLogGroupName,
+            logGroupArn: testLogGroupName,
             region: testRegion,
             logEventFilterPattern: 'test-filter',
         }
@@ -36,7 +36,7 @@ describe('LiveTailSession URI', async function () {
 
     it('is correct with ALL logStream filter', function () {
         const config: LiveTailSessionConfiguration = {
-            logGroupName: testLogGroupName,
+            logGroupArn: testLogGroupName,
             region: testRegion,
             logStreamFilter: {
                 type: 'all',
@@ -49,7 +49,7 @@ describe('LiveTailSession URI', async function () {
 
     it('is correct with prefix logStream filter', function () {
         const config: LiveTailSessionConfiguration = {
-            logGroupName: testLogGroupName,
+            logGroupArn: testLogGroupName,
             region: testRegion,
             logStreamFilter: {
                 type: 'prefix',
@@ -63,7 +63,7 @@ describe('LiveTailSession URI', async function () {
 
     it('is correct with specific logStream filter', function () {
         const config: LiveTailSessionConfiguration = {
-            logGroupName: testLogGroupName,
+            logGroupArn: testLogGroupName,
             region: testRegion,
             logStreamFilter: {
                 type: 'specific',
@@ -77,7 +77,7 @@ describe('LiveTailSession URI', async function () {
 
     it('is correct with specific logStream filter and filter pattern', function () {
         const config: LiveTailSessionConfiguration = {
-            logGroupName: testLogGroupName,
+            logGroupArn: testLogGroupName,
             region: testRegion,
             logStreamFilter: {
                 type: 'specific',

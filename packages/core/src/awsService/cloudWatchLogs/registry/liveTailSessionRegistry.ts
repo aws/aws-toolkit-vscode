@@ -19,7 +19,7 @@ export class LiveTailSessionRegistry extends Map<string, LiveTailSession> {
 }
 
 export function createLiveTailURIFromArgs(sessionData: LiveTailSessionConfiguration): vscode.Uri {
-    let uriStr = `${cloudwatchLogsLiveTailScheme}:${sessionData.region}:${sessionData.logGroupName}`
+    let uriStr = `${cloudwatchLogsLiveTailScheme}:${sessionData.region}:${sessionData.logGroupArn}`
 
     if (sessionData.logStreamFilter) {
         if (sessionData.logStreamFilter.type !== 'all') {

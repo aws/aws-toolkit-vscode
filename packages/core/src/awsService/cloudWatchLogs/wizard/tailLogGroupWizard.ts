@@ -4,7 +4,7 @@
  */
 
 import * as nls from 'vscode-nls'
-import { ToolkitError } from '../../../shared'
+import { globals, ToolkitError } from '../../../shared'
 import { DefaultCloudWatchLogsClient } from '../../../shared/clients/cloudWatchLogsClient'
 import { cwlFilterPatternHelpUrl } from '../../../shared/constants'
 import { createBackButton, createExitButton, createHelpButton } from '../../../shared/ui/buttons'
@@ -29,7 +29,7 @@ export class TailLogGroupWizard extends Wizard<TailLogGroupWizardResponse> {
             initState: {
                 regionLogGroupSubmenuResponse: logGroupInfo
                     ? {
-                          data: logGroupInfo.groupName,
+                          data: buildLogGroupArn(logGroupInfo.groupName, logGroupInfo.regionName),
                           region: logGroupInfo.regionName,
                       }
                     : undefined,
@@ -79,6 +79,19 @@ async function getLogGroupQuickPickOptions(regionCode: string): Promise<DataQuic
     }
 
     return logGroupsOptions
+}
+
+export function buildLogGroupArn(logGroupName: string, region: string): string {
+    if (logGroupName.startsWith('arn:')) {
+        return logGroupName
+    }
+    const awsAccountId = globals.awsContext.getCredentialAccountId()
+    if (awsAccountId === undefined) {
+        throw new ToolkitError(
+            `Failed to construct Arn for LogGroup because awsAccountId is undefined. LogGroup: ${logGroupName}`
+        )
+    }
+    return `arn:aws:logs:${region}:${awsAccountId}:log-group:${logGroupName}`
 }
 
 function formatLogGroupArn(logGroupArn: string): string {
