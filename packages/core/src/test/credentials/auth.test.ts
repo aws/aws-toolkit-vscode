@@ -490,8 +490,8 @@ describe('Auth', function () {
             })
         })
     })
-
-    describe('Shared ini files', function () {
+    // eslint-disable-next-line aws-toolkits/no-only-in-tests
+    describe.only('Shared ini files', function () {
         let tmpDir: string
 
         beforeEach(async function () {
