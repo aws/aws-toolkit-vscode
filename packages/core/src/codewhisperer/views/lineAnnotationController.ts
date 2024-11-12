@@ -38,6 +38,8 @@ function fromId(id: string | undefined): AnnotationState | undefined {
             return new TryMoreExState()
         case EndState.id:
             return new EndState()
+        case InlineChatState.id:
+            return new InlineChatState()
         default:
             return undefined
     }
@@ -201,16 +203,15 @@ export class EndState implements AnnotationState {
 }
 
 export class InlineChatState implements AnnotationState {
-    static static = 'amazonq_annotation_inline_chat'
-    id = InlineChatState.static
+    static id = 'amazonq_annotation_inline_chat'
+    id = InlineChatState.id
     suppressWhileRunning = false
 
     text = () => {
         if (os.platform() === 'darwin') {
             return 'Amazon Q: Edit \u2318I'
-        } else {
-            return 'Amazon Q: Edit (Ctrl+I)'
         }
+        return 'Amazon Q: Edit (Ctrl+I)'
     }
     updateState(_changeSource: AnnotationChangeSource, _force: boolean): AnnotationState {
         return this
@@ -327,6 +328,10 @@ export class LineAnnotationController implements vscode.Disposable {
 
     isTutorialDone(): boolean {
         return this._currentState.id === new EndState().id
+    }
+
+    isInlineChatHint(): boolean {
+        return this._currentState.id === new InlineChatState().id
     }
 
     async dismissTutorial() {
@@ -467,7 +472,9 @@ export class LineAnnotationController implements vscode.Disposable {
         decorationOptions.range = range
 
         await globals.globalState.update(inlinehintKey, this._currentState.id)
-        await setContext('aws.codewhisperer.tutorial.workInProgress', true)
+        if (!this.isInlineChatHint()) {
+            await setContext('aws.codewhisperer.tutorial.workInProgress', true)
+        }
         editor.setDecorations(this.cwLineHintDecoration, [decorationOptions])
     }
 
