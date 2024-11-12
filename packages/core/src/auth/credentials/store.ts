@@ -31,8 +31,6 @@ export class CredentialsStore {
      */
     public isValid(key: string): boolean {
         if (this.credentialsCache[key]) {
-            //eslint-disable-next-line aws-toolkits/no-console-log
-            console.log('credentialsCache=%O', this.credentialsCache[key])
             const expiration = this.credentialsCache[key].credentials.expiration
             return expiration !== undefined ? expiration >= new globals.clock.Date() : true
         }

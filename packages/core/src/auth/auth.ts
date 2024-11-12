@@ -857,6 +857,8 @@ export class Auth implements AuthService, ConnectionManager {
     }
 
     private async getCachedCredentials(provider: CredentialsProvider) {
+        //eslint-disable-next-line aws-toolkits/no-console-log
+        console.log('getCachedCredentials called')
         const creds = await globals.loginManager.store.getCredentials(provider.getCredentialsId())
         if (creds !== undefined && creds.credentialsHashCode === provider.getHashCode()) {
             return creds.credentials
@@ -901,6 +903,8 @@ export class Auth implements AuthService, ConnectionManager {
 
     private readonly getCredentials = keyedDebounce(this._getCredentials.bind(this))
     private async _getCredentials(id: Connection['id'], provider: CredentialsProvider): Promise<Credentials> {
+        //eslint-disable-next-line aws-toolkits/no-console-log
+        console.log('_getCredentials called')
         const credentials = await this.getCachedCredentials(provider)
         if (credentials !== undefined) {
             //eslint-disable-next-line aws-toolkits/no-console-log

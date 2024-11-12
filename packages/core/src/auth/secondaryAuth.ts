@@ -148,8 +148,6 @@ export class SecondaryAuth<T extends Connection = Connection> {
         })
 
         const refreshConn = (event: string) => {
-            //eslint-disable-next-line aws-toolkits/no-console-log
-            console.log('refreshing connection with event=%s', event)
             getLogger().debug(`secondaryAuth: detected ${event} event in sso cache, refreshing auth.`)
             globals.clock.setTimeout(
                 telemetry.function_call.run(
@@ -160,12 +158,8 @@ export class SecondaryAuth<T extends Connection = Connection> {
                             getLogger().debug(
                                 `secondaryAuth: cache event did not update global state, no refresh is needed.`
                             )
-                            //eslint-disable-next-line aws-toolkits/no-console-log
-                            console.log('secondaryAuth: cache event did not update global state, no refresh is needed.')
                             return
                         }
-                        //eslint-disable-next-line aws-toolkits/no-console-log
-                        console.log('secondaryAuth: restorePreviousSession/restoreConnecton')
                         await this.auth.restorePreviousSession()
                         await this.restoreConnection(true)
                     },
