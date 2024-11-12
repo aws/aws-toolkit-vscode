@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Fix suboptimal inline suggestions from Amazon Q caused by improperly formatted supplemental context"
-}
