@@ -18,7 +18,7 @@ phases:
     install:
         run-as: root
         runtime-versions:
-            nodejs: 18
+            nodejs: 18.20.4
         commands:
             - bash buildspec/shared/linux-install.sh
 
