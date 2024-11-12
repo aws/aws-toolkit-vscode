@@ -9,6 +9,8 @@ import { fileExists } from '../filesystemUtilities'
 import { isNonNullable } from '../utilities/tsUtils'
 import { getConfigFilename, getCredentialsFilename } from '../../auth/credentials/sharedCredentialsFile'
 import { fs } from '../../shared/fs/fs'
+import { waitUntil } from '../utilities/timeoutUtils'
+import { isWin } from '../vscode/env'
 
 const header = `
 # AWS credentials file used by AWS CLI, SDKs, and tools.
@@ -98,5 +100,9 @@ export class UserCredentialsUtils {
         }
 
         await fs.writeFile(dest, contents.join('\n'))
+        // Windows Race condition with writing files.
+        if (isWin()) {
+            await waitUntil(() => fs.exists(dest), { timeout: 5000, interval: 100 })
+        }
     }
 }
