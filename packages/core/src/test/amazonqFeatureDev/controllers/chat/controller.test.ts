@@ -9,7 +9,7 @@ import * as path from 'path'
 import sinon from 'sinon'
 import { waitUntil } from '../../../../shared/utilities/timeoutUtils'
 import { ControllerSetup, createController, createSession, generateVirtualMemoryUri } from '../../utils'
-import { CurrentWsFolders, FollowUpTypes, NewFileInfo, DeletedFileInfo } from '../../../../amazonqFeatureDev/types'
+import { CurrentWsFolders, DeletedFileInfo, FollowUpTypes, NewFileInfo } from '../../../../amazonqFeatureDev/types'
 import { Session } from '../../../../amazonqFeatureDev/session/session'
 import { Prompter } from '../../../../shared/ui/prompter'
 import { assertTelemetry, toFile } from '../../../testUtil'
@@ -53,6 +53,7 @@ describe('Controller', () => {
             rejected: false,
             virtualMemoryUri: generateVirtualMemoryUri(uploadID, 'myfile1.js'),
             workspaceFolder: controllerSetup.workspaceFolder,
+            changeApplied: false,
         },
         {
             zipFilePath: 'myfile2.js',
@@ -61,6 +62,7 @@ describe('Controller', () => {
             rejected: true,
             virtualMemoryUri: generateVirtualMemoryUri(uploadID, 'myfile2.js'),
             workspaceFolder: controllerSetup.workspaceFolder,
+            changeApplied: false,
         },
     ]
 
@@ -70,12 +72,14 @@ describe('Controller', () => {
             relativePath: 'myfile3.js',
             rejected: false,
             workspaceFolder: controllerSetup.workspaceFolder,
+            changeApplied: false,
         },
         {
             zipFilePath: 'myfile4.js',
             relativePath: 'myfile4.js',
             rejected: true,
             workspaceFolder: controllerSetup.workspaceFolder,
+            changeApplied: false,
         },
     ]
 
@@ -398,6 +402,7 @@ describe('Controller', () => {
         }
 
         describe('processErrorChatMessage', function () {
+            // TODO: fix disablePreviousFileList error
             const runs = [
                 { name: 'ContentLengthError', error: new ContentLengthError() },
                 {
@@ -517,6 +522,30 @@ describe('Controller', () => {
                 return Promise.resolve(getSessionStub.callCount > 0)
             }, {})
             assertTelemetry('ui_click', { elementId: 'amazonq_stopCodeGeneration' })
+        })
+    })
+
+    describe('closeSession', async () => {
+        async function closeSessionClicked() {
+            const getSessionStub = sinon.stub(controllerSetup.sessionStorage, 'getSession').resolves(session)
+
+            controllerSetup.emitters.followUpClicked.fire({
+                tabID,
+                followUp: {
+                    type: FollowUpTypes.CloseSession,
+                },
+            })
+
+            // Wait until the controller has time to process the event
+            await waitUntil(() => {
+                return Promise.resolve(getSessionStub.callCount > 0)
+            }, {})
+        }
+
+        it('end chat telemetry is sent', async () => {
+            await closeSessionClicked()
+
+            assertTelemetry('amazonq_endChat', { amazonqConversationId: conversationID, result: 'Succeeded' })
         })
     })
 })

@@ -8,11 +8,11 @@ import sinon from 'sinon'
 import { createTemplate, createWebviewContext } from '../utils'
 import { generateResourceHandler } from '../../../applicationcomposer/messageHandlers/generateResourceHandler'
 import { Command, MessageType } from '../../../applicationcomposer/types'
-import * as env from '../../../shared/vscode/env'
+import { isMinVscode } from '../../../shared/vscode/env'
 
 describe('generateResourceHandler', function () {
     it('amazon q is not installed', async function () {
-        if (env.isMinVscode('1.89.0')) {
+        if (isMinVscode({ throwWhen: '1.89.0' })) {
             this.skip()
         }
         const panel = await createTemplate()
