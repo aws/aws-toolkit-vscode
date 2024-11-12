@@ -9,7 +9,8 @@ import { CancellationError } from '../../../../shared/utilities/timeoutUtils'
 import { TelemetryMetadata } from '../../../../auth/connection'
 
 // TODO: remove auth page and tests
-describe('Amazon Q Login', function () {
+//eslint-disable-next-line aws-toolkits/no-only-in-tests
+describe.only('Amazon Q Login', function () {
     const region = 'fakeRegion'
     const startUrl = 'fakeUrl'
 
@@ -45,26 +46,27 @@ describe('Amazon Q Login', function () {
             ...metadata,
         })
     })
+    for (const _ of Array.from({ length: 1000 }, (i) => i)) {
+        it('runs setup and emits failed and recorded metrics', async function () {
+            const metadata: TelemetryMetadata = {
+                credentialSourceId: 'iamIdentityCenter',
+                credentialStartUrl: startUrl,
+                awsRegion: region,
+            }
+            const setupFunc = async () => {
+                backend.storeMetricMetadata(metadata)
+                throw new Error('error')
+            }
 
-    it('runs setup and emits failed and recorded metrics', async function () {
-        const metadata: TelemetryMetadata = {
-            credentialSourceId: 'iamIdentityCenter',
-            credentialStartUrl: startUrl,
-            awsRegion: region,
-        }
-        const setupFunc = async () => {
-            backend.storeMetricMetadata(metadata)
-            throw new Error('error')
-        }
+            // method under test
+            await backend.ssoSetup('test', setupFunc, true)
 
-        // method under test
-        await backend.ssoSetup('test', setupFunc, true)
-
-        assertTelemetry('auth_addConnection', {
-            result: 'Failed',
-            ...metadata,
+            assertTelemetry('auth_addConnection', {
+                result: 'Failed',
+                ...metadata,
+            })
         })
-    })
+    }
 
     it('runs setup and emits cancelled and recorded metrics', async function () {
         const metadata: TelemetryMetadata = {
