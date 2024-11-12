@@ -505,7 +505,7 @@ describe('Auth', function () {
             sinon.restore()
             await fs.delete(tmpDir, { recursive: true })
         })
-        for (const _ of Array.from({ length: 50 }, (i) => i)) {
+        for (const _ of Array.from({ length: 1000 }, (i) => i)) {
             it('does not cache if the credentials file changes', async function () {
                 const initialCreds = {
                     profileName: 'default',
