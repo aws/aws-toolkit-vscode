@@ -34,6 +34,7 @@ export function init(appContext: AmazonQAppInitContext) {
         processResponseBodyLinkClick: new vscode.EventEmitter<any>(),
         insertCodeAtPositionClicked: new vscode.EventEmitter<any>(),
         fileClicked: new vscode.EventEmitter<any>(),
+        storeCodeResultMessageId: new vscode.EventEmitter<any>(),
     }
 
     const messenger = new Messenger(new AppToWebViewMessageDispatcher(appContext.getAppsToWebViewMessagePublisher()))
