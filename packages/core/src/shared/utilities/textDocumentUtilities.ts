@@ -5,7 +5,7 @@
 
 import * as _path from 'path'
 import * as vscode from 'vscode'
-import { getTabSizeSetting } from './editorUtilities'
+import { disposeOnEditorClose, getTabSizeSetting } from './editorUtilities'
 import { tempDirPath } from '../filesystemUtilities'
 import { getLogger } from '../logger'
 import fs from '../fs/fs'
@@ -247,11 +247,8 @@ class ReadonlyDocument {
     private readonly scheme = 'AWStoolkit-readonly'
     private readonly provider = new ReadonlyTextDocumentProvider()
 
-    constructor() {
-        vscode.workspace.registerTextDocumentContentProvider(this.scheme, this.provider)
-    }
-
     public async show(content: string, filename: string) {
+        const disposableProvider = vscode.workspace.registerTextDocumentContentProvider(this.scheme, this.provider)
         this.provider.setContent(content)
         const uri = vscode.Uri.parse(`${this.scheme}:/${filename}.txt`)
         const options: vscode.TextDocumentShowOptions = {
@@ -263,6 +260,8 @@ class ReadonlyDocument {
         // Open the document with the updated content
         const document = await vscode.workspace.openTextDocument(uri)
         await vscode.window.showTextDocument(document, options)
+
+        disposeOnEditorClose(uri, disposableProvider)
     }
 }
 
