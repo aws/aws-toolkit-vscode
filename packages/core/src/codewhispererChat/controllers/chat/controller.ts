@@ -53,6 +53,7 @@ import { uiEventRecorder } from '../../../amazonq/util/eventRecorder'
 import { globals } from '../../../shared'
 import { telemetry } from '../../../shared/telemetry'
 import { isSsoConnection } from '../../../auth/connection'
+import * as util from 'util'
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
@@ -650,9 +651,8 @@ export class ChatController {
 
         const request = triggerPayloadToChatRequest(triggerPayload)
         const session = this.sessionStorage.getSession(tabID)
-        //eslint-disable-next-line aws-toolkits/no-json-stringify-in-log
         getLogger().info(
-            `request from tab: ${tabID} conversationID: ${session.sessionIdentifier} request: ${JSON.stringify(request)}`
+            `request from tab: ${tabID} conversationID: ${session.sessionIdentifier} request: ${util.inspect(request, { depth: 12 })}`
         )
         let response: MessengerResponseType | undefined = undefined
         session.createNewTokenSource()
@@ -675,11 +675,10 @@ export class ChatController {
             this.telemetryHelper.recordEnterFocusConversation(triggerEvent.tabID)
             this.telemetryHelper.recordStartConversation(triggerEvent, triggerPayload)
 
-            //eslint-disable-next-line aws-toolkits/no-json-stringify-in-log
             getLogger().info(
                 `response to tab: ${tabID} conversationID: ${session.sessionIdentifier} requestID: ${
                     response.$metadata.requestId
-                } metadata: ${JSON.stringify(response.$metadata)}`
+                } metadata: ${util.inspect(response.$metadata, { depth: 12 })}`
             )
             await this.messenger.sendAIResponse(response, session, tabID, triggerID, triggerPayload)
         } catch (e: any) {
