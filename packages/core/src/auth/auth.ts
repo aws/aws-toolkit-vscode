@@ -218,6 +218,8 @@ export class Auth implements AuthService, ConnectionManager {
     public async reauthenticate({ id }: Pick<IamConnection, 'id'>, invalidate?: boolean): Promise<IamConnection>
     @withTelemetryContext({ name: 'reauthenticate', class: authClassName })
     public async reauthenticate({ id }: Pick<Connection, 'id'>, invalidate?: boolean): Promise<Connection> {
+        //eslint-disable-next-line aws-toolkits/no-console-log
+        console.log('reauthenticate is called')
         const shouldInvalidate = invalidate ?? true
         const profile = this.store.getProfileOrThrow(id)
         if (profile.type === 'sso') {
@@ -452,6 +454,8 @@ export class Auth implements AuthService, ConnectionManager {
      */
     @withTelemetryContext({ name: 'refreshConnectionState', class: authClassName })
     public async refreshConnectionState(connection?: Pick<Connection, 'id'>): Promise<undefined> {
+        //eslint-disable-next-line aws-toolkits/no-console-log
+        console.log('refreshConnectionState called')
         if (connection === undefined) {
             return
         }
@@ -646,7 +650,11 @@ export class Auth implements AuthService, ConnectionManager {
      */
     @withTelemetryContext({ name: 'validateConnection', class: authClassName })
     private async validateConnection<T extends Profile>(id: Connection['id'], profile: StoredProfile<T>) {
+        //eslint-disable-next-line aws-toolkits/no-console-log
+        console.log('validateConnection is called')
         const runCheck = async () => {
+            //eslint-disable-next-line aws-toolkits/no-console-log
+            console.log('runCheck is called')
             if (profile.type === 'sso') {
                 const provider = this.getSsoTokenProvider(id, profile)
                 if ((await provider.getToken()) === undefined) {
