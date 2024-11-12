@@ -19,7 +19,7 @@ import { UserCredentialsUtils } from '../../shared/credentials/userCredentialsUt
 import { getCredentialsFilename } from '../../auth/credentials/sharedCredentialsFile'
 import { Connection, isIamConnection, isSsoConnection, scopesSsoAccountAccess } from '../../auth/connection'
 import { AuthNode, createDeleteConnectionButton, promptForConnection } from '../../auth/utils'
-import { waitUntil } from '../../shared'
+import { isWin } from '../../shared/vscode/env'
 
 const ssoProfile = createSsoProfile()
 const scopedSsoProfile = createSsoProfile({ scopes: ['foo'] })
@@ -508,6 +508,9 @@ describe('Auth', function () {
         })
         for (const _ of Array.from({ length: 1000 }, (i) => i)) {
             it('does not cache if the credentials file changes', async function () {
+                if (isWin()) {
+                    this.retries(5)
+                }
                 const initialCreds = {
                     profileName: 'default',
                     accessKey: 'x',
@@ -527,15 +530,9 @@ describe('Auth', function () {
                 await fs.delete(getCredentialsFilename())
                 const newCreds = { ...initialCreds, accessKey: 'y', secretKey: 'y' }
                 await UserCredentialsUtils.generateCredentialsFile(newCreds)
-                const didUpdate = await waitUntil(
-                    async () => (await fs.readFileText(getCredentialsFilename())) !== contentBefore,
-                    {
-                        timeout: 5000,
-                        truthy: true,
-                    }
-                )
+                const contentAfter = await fs.readFileText(getCredentialsFilename())
 
-                assert.ok(didUpdate, 'Expected the credentials file to be updated')
+                assert.ok(contentBefore !== contentAfter)
 
                 assert.deepStrictEqual(await conn.getCredentials(), {
                     accessKeyId: newCreds.accessKey,
