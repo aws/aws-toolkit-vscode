@@ -505,34 +505,35 @@ describe('Auth', function () {
             sinon.restore()
             await fs.delete(tmpDir, { recursive: true })
         })
+        for (const _ of Array.from({ length: 1000 }, (i) => i)) {
+            it('does not cache if the credentials file changes', async function () {
+                const initialCreds = {
+                    profileName: 'default',
+                    accessKey: 'x',
+                    secretKey: 'x',
+                }
 
-        it('does not cache if the credentials file changes', async function () {
-            const initialCreds = {
-                profileName: 'default',
-                accessKey: 'x',
-                secretKey: 'x',
-            }
+                await UserCredentialsUtils.generateCredentialsFile(initialCreds)
 
-            await UserCredentialsUtils.generateCredentialsFile(initialCreds)
+                const conn = await auth.getConnection({ id: 'profile:default' })
+                assert.ok(conn?.type === 'iam', 'Expected an IAM connection')
+                assert.deepStrictEqual(await conn.getCredentials(), {
+                    accessKeyId: initialCreds.accessKey,
+                    secretAccessKey: initialCreds.secretKey,
+                    sessionToken: undefined,
+                })
 
-            const conn = await auth.getConnection({ id: 'profile:default' })
-            assert.ok(conn?.type === 'iam', 'Expected an IAM connection')
-            assert.deepStrictEqual(await conn.getCredentials(), {
-                accessKeyId: initialCreds.accessKey,
-                secretAccessKey: initialCreds.secretKey,
-                sessionToken: undefined,
+                await fs.delete(getCredentialsFilename())
+
+                const newCreds = { ...initialCreds, accessKey: 'y', secretKey: 'y' }
+                await UserCredentialsUtils.generateCredentialsFile(newCreds)
+                assert.deepStrictEqual(await conn.getCredentials(), {
+                    accessKeyId: newCreds.accessKey,
+                    secretAccessKey: newCreds.secretKey,
+                    sessionToken: undefined,
+                })
             })
-
-            await fs.delete(getCredentialsFilename())
-
-            const newCreds = { ...initialCreds, accessKey: 'y', secretKey: 'y' }
-            await UserCredentialsUtils.generateCredentialsFile(newCreds)
-            assert.deepStrictEqual(await conn.getCredentials(), {
-                accessKeyId: newCreds.accessKey,
-                secretAccessKey: newCreds.secretKey,
-                sessionToken: undefined,
-            })
-        })
+        }
     })
 
     describe('AuthNode', function () {
