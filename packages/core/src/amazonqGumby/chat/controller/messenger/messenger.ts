@@ -451,23 +451,7 @@ export class Messenger {
                 break
         }
 
-        const buttons: ChatItemButton[] = []
-        buttons.push({
-            keepCardAfterClick: false,
-            text: CodeWhispererConstants.startTransformationButtonText,
-            id: ButtonActions.CONFIRM_START_TRANSFORMATION_FLOW,
-        })
-
-        this.dispatcher.sendChatMessage(
-            new ChatMessage(
-                {
-                    message,
-                    messageType: 'ai-prompt',
-                    buttons,
-                },
-                tabID
-            )
-        )
+        this.sendJobFinishedMessage(tabID, message)
     }
 
     /**
