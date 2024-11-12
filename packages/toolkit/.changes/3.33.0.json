@@ -1,0 +1,10 @@
+{
+	"date": "2024-11-11",
+	"version": "3.33.0",
+	"entries": [
+		{
+			"type": "Feature",
+			"description": "UI: region-related quickpicks now have a refresh button"
+		}
+	]
+}
