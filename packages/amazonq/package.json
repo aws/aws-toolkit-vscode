@@ -127,6 +127,11 @@
                     "markdownDescription": "%AWS.configuration.description.amazonq%",
                     "default": true
                 },
+                "amazonQ.devCommandWorkspaceConfigurations": {
+                    "markdownDescription": "%AWS.configuration.description.devCommandWorkspaceConfigurations%",
+                    "type": "object",
+                    "default": {}
+                },
                 "amazonQ.importRecommendationForInlineCodeSuggestions": {
                     "type": "boolean",
                     "description": "%AWS.configuration.description.amazonq.importRecommendation%",
