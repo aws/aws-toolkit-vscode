@@ -121,7 +121,7 @@ export class InlineChatController {
         await this.reset()
     }
 
-    public async updateTaskAndLenses(task: InlineTask, taskState?: TaskState) {
+    public async updateTaskAndLenses(task?: InlineTask, taskState?: TaskState) {
         if (!task) {
             return
         }
