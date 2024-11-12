@@ -992,7 +992,7 @@ async function populateS3QuickPick(
                 })
             }
         } catch (e) {
-            getLogger().error('Recent bucket JSON not parseable.', e)
+            getLogger().error('Recent bucket JSON not parseable: %O', e)
         }
 
         if (isCloud9() && recent !== cloud9Bucket) {

@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { TemplateItem, createTemplatePrompter, getSamCliPathAndVersion, runInTerminal } from './sync'
+import { TemplateItem, createTemplatePrompter } from './sync'
 import { ChildProcess } from '../utilities/processUtils'
 import { addTelemetryEnvVar } from './cli/samCliInvokerUtils'
 import { Wizard } from '../wizards/wizard'
@@ -19,8 +19,9 @@ import globals from '../extensionGlobals'
 import { TreeNode } from '../treeview/resourceTreeDataProvider'
 import { telemetry } from '../telemetry/telemetry'
 import { getSpawnEnv } from '../env/resolveEnv'
-import { getProjectRoot, isDotnetRuntime } from './utils'
+import { getProjectRoot, getSamCliPathAndVersion, isDotnetRuntime } from './utils'
 import { getConfigFileUri, validateSamBuildConfig } from './config'
+import { runInTerminal } from './processTerminal'
 
 export interface BuildParams {
     readonly template: TemplateItem

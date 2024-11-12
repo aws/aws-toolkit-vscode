@@ -14,6 +14,8 @@ import {
 import { ChildProcess } from '../../../../shared/utilities/processUtils'
 import { assertArgIsPresent, assertArgNotPresent, assertArgsContainArgument } from './samCliTestUtils'
 import { fs } from '../../../../shared'
+import { SamCliSettings } from '../../../../shared/sam/cli/samCliSettings'
+import { isWin } from '../../../../shared/vscode/env'
 
 describe('SamCliLocalInvokeInvocation', async function () {
     class TestSamLocalInvokeCommand implements SamLocalInvokeCommand {
@@ -29,6 +31,15 @@ describe('SamCliLocalInvokeInvocation', async function () {
     let placeholderTemplateFile: string
     let placeholderEventFile: string
     const nonRelevantArg = 'arg is not of interest to this test'
+
+    before(async function () {
+        // File system search on windows can take a while.
+        if (isWin()) {
+            this.retries(3)
+        }
+        // This will place the result in the cache allowing all tests to run under same conditions.
+        await SamCliSettings.instance.getOrDetectSamCli()
+    })
 
     beforeEach(async function () {
         tempFolder = await makeTemporaryToolkitFolder()

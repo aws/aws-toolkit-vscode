@@ -179,7 +179,7 @@ class Heartbeat {
 
     public async start() {
         // Send an initial heartbeat immediately
-        await withFailCtx('initialSendHeartbeat', () => this.state.sendHeartbeat())
+        await withFailCtx('sendHeartbeatInitial', () => this.state.sendHeartbeat())
 
         // Send a heartbeat every interval
         this.intervalRef = globals.clock.setInterval(async () => {
@@ -200,6 +200,10 @@ class Heartbeat {
                 this._onFailure.fire()
             }
         }, this.heartbeatInterval)
+
+        // We will know the first heartbeat, and can infer the next ones starting from this timestamp.
+        // In case of heartbeat failure we have a separate failure metric.
+        telemetry.ide_heartbeat.emit({ timestamp: globals.clock.Date.now(), id: className, result: 'Succeeded' })
     }
 
     /** Stops everything, signifying a graceful shutdown */
@@ -455,38 +459,40 @@ export class FileSystemState {
             })
         }
 
-        await withFailCtx('init', () => fs.mkdir(this.stateDirPath))
+        await withFailCtx('init', () => nodeFs.mkdir(this.stateDirPath, { recursive: true }))
     }
 
     // ------------------ Heartbeat methods ------------------
     public async sendHeartbeat() {
         const extId = this.extId
+        const filePath = this.makeStateFilePath(extId)
+        const now = this.deps.now()
+
+        let fileHandle: nodeFs.FileHandle | undefined
         try {
-            const now = this.deps.now()
             const func = async () => {
-                const filePath = this.makeStateFilePath(extId)
+                fileHandle = await nodeFs.open(filePath, 'w')
+                await fileHandle.writeFile(JSON.stringify({ ...this.ext, lastHeartbeat: now }, undefined, 4))
+                // Noticing that some file reads are not immediately available after write. `fsync` is known to address this.
+                await fileHandle.sync()
+                await fileHandle.close()
+                fileHandle = undefined
 
-                // We were seeing weird behavior where we possibly read an old file, even though we overwrote it.
-                // So this is a sanity check.
-                await fs.delete(filePath, { force: true })
-
-                await fs.writeFile(filePath, JSON.stringify({ ...this.ext, lastHeartbeat: now }, undefined, 4))
-
-                // Sanity check to verify the write is accessible immediately after
-                const heartbeatData = JSON.parse(await fs.readFileText(filePath)) as ExtInstanceHeartbeat
+                // Sanity check to verify the latest write is accessible immediately
+                const heartbeatData = JSON.parse(await nodeFs.readFile(filePath, 'utf-8')) as ExtInstanceHeartbeat
                 if (heartbeatData.lastHeartbeat !== now) {
                     throw new CrashMonitoringError('Heartbeat write validation failed', { code: className })
                 }
+
+                this.deps.devLogger?.debug(`crashMonitoring: HEARTBEAT sent for ${truncateUuid(this.ext.sessionId)}`)
             }
             const funcWithCtx = () => withFailCtx('sendHeartbeatState', func)
             const funcWithRetries = withRetries(funcWithCtx, { maxRetries: 6, delay: 100, backoff: 2 })
-            const funcWithTelemetryRun = await telemetry.ide_heartbeat.run((span) => {
-                span.record({ id: className, timestamp: now })
-                return funcWithRetries
-            })
 
-            return funcWithTelemetryRun
+            return funcWithRetries
         } catch (e) {
+            await fileHandle?.close()
+
             // delete this ext from the state to avoid an incorrectly reported crash since we could not send a new heartbeat
             await this.deleteHeartbeatFile(extId, 'sendHeartbeatFailureCleanup')
             throw e
@@ -518,7 +524,21 @@ export class FileSystemState {
 
     private async deleteHeartbeatFile(ext: ExtInstanceId | ExtInstance, ctx: string) {
         // IMPORTANT: Must use NodeFs here since this is used during shutdown
-        const func = () => nodeFs.rm(this.makeStateFilePath(ext), { force: true })
+        const func = async () => {
+            const filePath = this.makeStateFilePath(ext)
+
+            // Even when deleting a file, if there is an open file handle it may still exist. This empties the
+            // contents, so that any following reads will get no data.
+            let fileHandle: nodeFs.FileHandle | undefined
+            try {
+                fileHandle = await nodeFs.open(filePath, 'w')
+                await fileHandle.sync()
+            } finally {
+                await fileHandle?.close()
+            }
+
+            await nodeFs.rm(filePath, { force: true })
+        }
         const funcWithCtx = () => withFailCtx(ctx, func)
         const funcWithRetries = withRetries(funcWithCtx, { maxRetries: 6, delay: 100, backoff: 2 })
         await funcWithRetries
@@ -553,7 +573,7 @@ export class FileSystemState {
     public async clearState(): Promise<void> {
         this.deps.devLogger?.debug('crashMonitoring: CLEAR_STATE: Started')
         await withFailCtx('clearState', async () => {
-            await fs.delete(this.stateDirPath, { force: true, recursive: true })
+            await nodeFs.rm(this.stateDirPath, { force: true, recursive: true })
             this.deps.devLogger?.debug('crashMonitoring: CLEAR_STATE: Succeeded')
         })
     }
@@ -576,7 +596,7 @@ export class FileSystemState {
                 // we will assume that other instance handled its termination appropriately.
                 // NOTE: On Windows we were failing on EBUSY, so we retry on failure.
                 const loadExtFromDisk = async () => {
-                    const text = await fs.readFileText(this.makeStateFilePath(extId))
+                    const text = await nodeFs.readFile(this.makeStateFilePath(extId), 'utf-8')
 
                     if (!text) {
                         return undefined
