@@ -7,7 +7,7 @@ import * as sinon from 'sinon'
 import assert from 'assert'
 import { buildLogGroupArn, TailLogGroupWizard } from '../../../../awsService/cloudWatchLogs/wizard/tailLogGroupWizard'
 import { createWizardTester } from '../../../shared/wizards/wizardTestUtils'
-import { DefaultAwsContext, globals } from '../../../../shared'
+import { DefaultAwsContext } from '../../../../shared'
 
 describe('TailLogGroupWizard', async function () {
     let sandbox: sinon.SinonSandbox
