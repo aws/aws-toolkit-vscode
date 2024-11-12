@@ -130,9 +130,11 @@ export async function buildGenerateRecommendationRequest(editor: vscode.TextEdit
     const fileContext = extractContextForCodeWhisperer(editor)
 
     const tokenSource = new vscode.CancellationTokenSource()
+    // the supplement context fetch mechanisms each has a timeout of supplementalContextTimeoutInMs
+    // adding 10 ms for overall timeout as buffer
     setTimeout(() => {
         tokenSource.cancel()
-    }, supplementalContextTimeoutInMs)
+    }, supplementalContextTimeoutInMs + 10)
     const supplementalContexts = await fetchSupplementalContext(editor, tokenSource.token)
 
     logSupplementalContext(supplementalContexts)
