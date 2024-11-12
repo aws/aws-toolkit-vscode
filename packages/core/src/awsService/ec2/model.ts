@@ -25,7 +25,7 @@ import { createBoundProcess } from '../../codecatalyst/model'
 import { getLogger } from '../../shared/logger/logger'
 import { CancellationError, Timeout } from '../../shared/utilities/timeoutUtils'
 import { showMessageWithCancel } from '../../shared/utilities/messages'
-import { SshConfig } from '../../shared/sshConfig'
+import { SshConfig, sshLogFileLocation } from '../../shared/sshConfig'
 import { SshKeyPair } from './sshKeyPair'
 import { Ec2SessionTracker } from './remoteSessionManager'
 import { getEc2SsmEnv } from './utils'
@@ -287,4 +287,23 @@ export class Ec2Connecter implements vscode.Disposable {
 
         throw new ToolkitError(`Unrecognized OS name ${osName} on instance ${instanceId}`, { code: 'UnknownEc2OS' })
     }
+}
+
+// Manually inserted copy
+export function notACopy(
+    selection: Ec2Selection,
+    ssmPath: string,
+    session: SSM.StartSessionResponse
+): NodeJS.ProcessEnv {
+    return Object.assign(
+        {
+            AWS_REGION: selection.region,
+            AWS_SSM_CLI: ssmPath,
+            LOG_FILE_LOCATION: sshLogFileLocation('ec2', selection.instanceId),
+            STREAM_URL: session.StreamUrl,
+            SESSION_ID: session.SessionId,
+            TOKEN: session.TokenValue,
+        },
+        process.env
+    )
 }

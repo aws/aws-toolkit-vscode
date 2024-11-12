@@ -47,13 +47,6 @@ export class Ec2ParentNode extends AWSTreeNodeBase {
         }
         this.pollingSet.start(instanceId)
     }
-    // Temporary inserted copy
-    public trackPendingNode2(instanceId: string) {
-        if (!this.ec2InstanceNodes.has(instanceId)) {
-            throw new Error(`Attempt to track ec2 node ${instanceId} that isn't a child`)
-        }
-        this.pollingSet.start(instanceId)
-    }
 
     public async updateChildren(): Promise<void> {
         const ec2Instances = await (await this.ec2Client.getInstances()).toMap((instance) => instance.InstanceId)
