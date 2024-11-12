@@ -92,16 +92,10 @@ export class UserCredentialsUtils {
         const contents = credentialsContext ? ['', createNewCredentialsFile(credentialsContext)] : []
 
         if (await fs.exists(dest)) {
-            //eslint-disable-next-line aws-toolkits/no-console-log
-            console.log('hit case where dest exists')
             contents.unshift(await fs.readFileText(dest))
         } else {
-            //eslint-disable-next-line aws-toolkits/no-console-log
-            console.log('hit case where dest exists')
             contents.unshift(header)
         }
-        //eslint-disable-next-line aws-toolkits/no-console-log
-        console.log('contents=%O', contents)
         await fs.writeFile(dest, contents.join('\n'))
     }
 }

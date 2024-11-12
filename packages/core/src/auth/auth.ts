@@ -903,6 +903,8 @@ export class Auth implements AuthService, ConnectionManager {
     private async _getCredentials(id: Connection['id'], provider: CredentialsProvider): Promise<Credentials> {
         const credentials = await this.getCachedCredentials(provider)
         if (credentials !== undefined) {
+            //eslint-disable-next-line aws-toolkits/no-console-log
+            console.log('returning cached credentials')
             return credentials
         } else if ((await provider.canAutoConnect()) === true) {
             return this.createCachedCredentials(provider)
