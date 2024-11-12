@@ -251,9 +251,10 @@ class ReadonlyDocument {
         const disposableProvider = vscode.workspace.registerTextDocumentContentProvider(this.scheme, this.provider)
         this.provider.setContent(content)
         const uri = vscode.Uri.parse(`${this.scheme}:/${filename}.txt`)
+        // txt document on side column, in focus and preview
         const options: vscode.TextDocumentShowOptions = {
             viewColumn: vscode.ViewColumn.Beside,
-            preserveFocus: true,
+            preserveFocus: false,
             preview: true,
         }
 

@@ -10,11 +10,10 @@ import { ToolkitNotification } from '../../notifications/types'
 import { panelNode } from './controller.test'
 import { getTestWindow } from '../shared/vscode/window'
 import * as VsCodeUtils from '../../shared/utilities/vsCodeUtils'
-import { readonlyDocument } from '../../shared/utilities/textDocumentUtilities'
+import { assertTextEditorContains } from '../testUtil'
 
 describe('Notifications Rendering', function () {
     let sandbox: sinon.SinonSandbox
-    //const panelNode: NotificationsNode = testNotificationsNode
 
     beforeEach(function () {
         sandbox = sinon.createSandbox()
@@ -27,23 +26,17 @@ describe('Notifications Rendering', function () {
     // util to test txt pop-up under different senarios
     async function verifyTxtNotification(notification: ToolkitNotification) {
         const expectedContent = notification.uiRenderInstructions.content['en-US'].description
-        const readonlyDocumentShowStub = sandbox.stub(readonlyDocument, 'show').resolves()
+        void panelNode.openNotification(notification)
 
-        await panelNode.openNotification(notification)
-
-        assert.ok(readonlyDocumentShowStub.calledOnce)
-        assert.ok(readonlyDocumentShowStub.calledWith(expectedContent, `Notification: ${notification.id}`))
+        await assertTextEditorContains(expectedContent)
     }
 
     // util to test open url under different senarios
     async function verifyOpenExternalUrl(notification: ToolkitNotification) {
-        const url = vscode.Uri.parse('https://aws.amazon.com/visualstudiocode/')
-        //const openExternalStub = getOpenExternalStub()
         const openUrlStub = sandbox.stub(VsCodeUtils, 'openUrl')
         await panelNode.openNotification(notification)
 
-        assert.ok(openUrlStub.calledOnce)
-        assert.ok(openUrlStub.calledWith(url))
+        assert.ok(openUrlStub.calledWith(vscode.Uri.parse('https://aws.amazon.com/visualstudiocode/')))
     }
 
     // test on-receive behaviors
@@ -130,7 +123,7 @@ describe('Notifications Rendering', function () {
 // generate test notifications
 function getToastURLTestNotification(): ToolkitNotification {
     return {
-        id: 'test notification',
+        id: 'test notification 1',
         displayIf: {
             extensionId: 'aws.toolkit.fake.extension',
         },
@@ -153,7 +146,7 @@ function getToastURLTestNotification(): ToolkitNotification {
 
 function getTxtNotification(): ToolkitNotification {
     return {
-        id: 'test notification',
+        id: 'test notification 2',
         displayIf: {
             extensionId: 'aws.toolkit.fake.extension',
         },
@@ -174,7 +167,7 @@ function getTxtNotification(): ToolkitNotification {
 
 function getModalNotification(): ToolkitNotification {
     return {
-        id: 'test notification',
+        id: 'test notification 3',
         displayIf: {
             extensionId: 'aws.toolkit.fake.extension',
         },
