@@ -83,6 +83,7 @@ describe('session', () => {
                         rejected: false,
                         virtualMemoryUri: uri,
                         workspaceFolder: controllerSetup.workspaceFolder,
+                        changeApplied: false,
                     },
                     {
                         zipFilePath: 'rejectedFile.js',
@@ -91,6 +92,7 @@ describe('session', () => {
                         rejected: true,
                         virtualMemoryUri: generateVirtualMemoryUri(uploadID, 'rejectedFile.js'),
                         workspaceFolder: controllerSetup.workspaceFolder,
+                        changeApplied: false,
                     },
                 ],
                 [],
