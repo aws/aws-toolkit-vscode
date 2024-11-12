@@ -20,6 +20,7 @@ import {
     TransformByQStatus,
     DB,
     TransformationType,
+    TransformationCandidateProject,
 } from '../models/model'
 import {
     createZipManifest,
@@ -80,6 +81,7 @@ import { setContext } from '../../shared/vscode/setContext'
 import { makeTemporaryToolkitFolder } from '../../shared'
 import globals from '../../shared/extensionGlobals'
 import { convertDateToTimestamp } from '../../shared/datetime'
+import { spawnSync } from 'child_process'
 
 function getFeedbackCommentData() {
     const jobId = transformByQState.getJobId()
@@ -736,7 +738,28 @@ export async function getValidLanguageUpgradeCandidateProjects() {
 export async function getValidSQLConversionCandidateProjects() {
     const openProjects = await getOpenProjects()
     const javaProjects = await getJavaProjects(openProjects)
-    return javaProjects
+    const embeddedSQLProjects: TransformationCandidateProject[] = []
+    for (const project of javaProjects) {
+        // as long as at least one of these strings is found, project contains embedded SQL statements
+        const searchStrings = ['oracle.jdbc.OracleDriver', 'jdbc:oracle:thin:@//', 'jdbc:oracle:oci:@//']
+        for (const str of searchStrings) {
+            const command = process.platform === 'win32' ? 'findstr' : 'grep'
+            // case-insensitive, recursive search
+            const args = command === 'findstr' ? ['/i', '/s', str] : ['-i', '-r', str]
+            const spawnResult = spawnSync(command, args, {
+                cwd: project.path,
+                shell: true, // TO-DO: better for this to be false? Test on project with a space in the name
+                encoding: 'utf-8',
+            })
+            // in case our search unexpectedly fails, still allow user to transform that project
+            // also, anything in stdout here means search string was detected
+            if (spawnResult.status !== 0 || spawnResult.error || spawnResult.stdout.trim()) {
+                embeddedSQLProjects.push(project)
+                break
+            }
+        }
+    }
+    return embeddedSQLProjects
 }
 
 export async function setTransformationToRunningState() {

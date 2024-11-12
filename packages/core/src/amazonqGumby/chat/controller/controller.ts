@@ -33,7 +33,7 @@ import {
     getValidSQLConversionCandidateProjects,
     validateSQLMetadataFile,
 } from '../../../codewhisperer/commands/startTransformByQ'
-import { JDKVersion, transformByQState } from '../../../codewhisperer/models/model'
+import { JDKVersion, TransformationCandidateProject, transformByQState } from '../../../codewhisperer/models/model'
 import {
     AbsolutePathDetectedError,
     AlternateDependencyVersionsNotFoundError,
@@ -62,8 +62,6 @@ import { getStringHash } from '../../../shared/utilities/textUtilities'
 import { getVersionData } from '../../../codewhisperer/service/transformByQ/transformMavenHandler'
 import AdmZip from 'adm-zip'
 import { AuthError } from '../../../auth/sso/server'
-import { isSQLTransformReady } from '../../../dev/config'
-import { spawnSync } from 'child_process'
 
 // These events can be interactions within the chat,
 // or elsewhere in the IDE
@@ -190,35 +188,16 @@ export class GumbyController {
         this.messenger.sendCommandMessage(data)
     }
 
-    // silently check if user has open Java projects using embedded SQL
-    private async anyProjectContainsEmbeddedOracleSQL() {
-        try {
-            // gets just open Java projects
-            const projects = await getValidSQLConversionCandidateProjects()
-            for (const project of projects) {
-                // case-insensitive, recursive search, display only count of matching lines
-                const args = ['-i', '-r', '-c', 'oracle.jdbc.OracleDriver']
-                // TO-DO: handle Windows
-                const spawnResult = spawnSync('grep', args, {
-                    cwd: project.path,
-                    shell: true,
-                    encoding: 'utf-8',
-                })
-                if (spawnResult.status !== 0) {
-                    return false
-                }
-                // TO-DO: parse stdout for the count of matching lines
-            }
-        } catch (err) {
-            return false
-        }
-        return true
-    }
-
     private async transformInitiated(message: any) {
-        // feature flag for SQL transformations
-        const containsOracleSQL = await this.anyProjectContainsEmbeddedOracleSQL()
-        if (!isSQLTransformReady && !containsOracleSQL) {
+        // silently check for projects eligible for SQL conversion
+        let embeddedSQLProjects: TransformationCandidateProject[] = []
+        try {
+            embeddedSQLProjects = await getValidSQLConversionCandidateProjects()
+        } catch (err) {
+            getLogger().error(`Error validating SQL conversion projects: ${err}`)
+        }
+
+        if (embeddedSQLProjects.length === 0) {
             await this.handleLanguageUpgrade(message)
             return
         }
