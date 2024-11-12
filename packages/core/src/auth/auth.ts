@@ -848,6 +848,8 @@ export class Auth implements AuthService, ConnectionManager {
     }
 
     private async createCachedCredentials(provider: CredentialsProvider) {
+        //eslint-disable-next-line aws-toolkits/no-console-log
+        console.log('createCachedCredentials called')
         const providerId = provider.getCredentialsId()
         globals.loginManager.store.invalidateCredentials(providerId)
         const { credentials } = await globals.loginManager.store.upsertCredentials(providerId, provider)

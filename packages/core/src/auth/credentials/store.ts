@@ -60,6 +60,8 @@ export class CredentialsStore {
         credentialsId: CredentialsId,
         credentialsProvider: CredentialsProvider
     ): Promise<CachedCredentials> {
+        //eslint-disable-next-line aws-toolkits/no-console-log
+        console.log('upsertCredentials called')
         let credentials = await this.getCredentials(credentialsId)
 
         if (!credentials) {
@@ -109,6 +111,8 @@ export async function getCredentialsFromStore(
     credentialsId: CredentialsId,
     credentialsStore: CredentialsStore
 ): Promise<AWS.Credentials | undefined> {
+    //eslint-disable-next-line aws-toolkits/no-console-log
+    console.log('getCredentialsFromStore called')
     const provider = await CredentialsProviderManager.getInstance().getCredentialsProvider(credentialsId)
     if (!provider) {
         credentialsStore.invalidateCredentials(credentialsId)
