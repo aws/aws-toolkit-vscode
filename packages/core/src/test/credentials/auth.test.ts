@@ -19,6 +19,7 @@ import { UserCredentialsUtils } from '../../shared/credentials/userCredentialsUt
 import { getCredentialsFilename } from '../../auth/credentials/sharedCredentialsFile'
 import { Connection, isIamConnection, isSsoConnection, scopesSsoAccountAccess } from '../../auth/connection'
 import { AuthNode, createDeleteConnectionButton, promptForConnection } from '../../auth/utils'
+import { waitUntil } from '../../shared'
 
 const ssoProfile = createSsoProfile()
 const scopedSsoProfile = createSsoProfile({ scopes: ['foo'] })
@@ -522,12 +523,19 @@ describe('Auth', function () {
                     secretAccessKey: initialCreds.secretKey,
                     sessionToken: undefined,
                 })
-
+                const contentBefore = await fs.readFileText(getCredentialsFilename())
                 await fs.delete(getCredentialsFilename())
-                console.log('file exists after delete=%O', await fs.exists(getCredentialsFilename()))
                 const newCreds = { ...initialCreds, accessKey: 'y', secretKey: 'y' }
                 await UserCredentialsUtils.generateCredentialsFile(newCreds)
-                console.log('file exists after generating=%O', await fs.exists(getCredentialsFilename()))
+                const didUpdate = await waitUntil(
+                    async () => (await fs.readFileText(getCredentialsFilename())) !== contentBefore,
+                    {
+                        timeout: 5000,
+                        truthy: true,
+                    }
+                )
+
+                assert.ok(didUpdate, 'Expected the credentials file to be updated')
 
                 assert.deepStrictEqual(await conn.getCredentials(), {
                     accessKeyId: newCreds.accessKey,
