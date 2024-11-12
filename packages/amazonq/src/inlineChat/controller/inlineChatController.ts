@@ -121,7 +121,10 @@ export class InlineChatController {
         await this.reset()
     }
 
-    public async updateTaskAndLenses(task: InlineTask, taskState?: TaskState) {
+    public async updateTaskAndLenses(task?: InlineTask, taskState?: TaskState) {
+        if (!task) {
+            return
+        }
         if (taskState) {
             task.state = taskState
         } else if (!task.diff || task.diff.length === 0) {
@@ -200,7 +203,7 @@ export class InlineChatController {
                 this.task = await this.createTask(query, editor.document, editor.selection)
                 await this.inlineLineAnnotationController.disable(editor)
                 await this.computeDiffAndRenderOnEditor(query, editor.document).catch(async (err) => {
-                    getLogger().error(err)
+                    getLogger().error('computeDiffAndRenderOnEditor error: %s', (err as Error)?.message)
                     if (err instanceof Error) {
                         void vscode.window.showErrorMessage(`Amazon Q: ${err.message}`)
                     } else {
