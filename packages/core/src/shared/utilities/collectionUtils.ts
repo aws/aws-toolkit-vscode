@@ -4,7 +4,7 @@
  */
 
 import { isWeb } from '../extensionGlobals'
-import { inspect as nodeInspect, InspectOptions } from 'util'
+import { inspect as nodeInspect } from 'util'
 import { AsyncCollection, toCollection } from './asyncCollection'
 import { SharedProp, AccumulableKeys, Coalesce, isNonNullable } from './tsUtils'
 
