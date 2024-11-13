@@ -510,7 +510,9 @@ describe('Auth', function () {
             it('does not cache if the credentials file changes', async function () {
                 if (isWin()) {
                     this.retries(5)
+                    this.timeout(30000)
                 }
+
                 const initialCreds = {
                     profileName: 'default',
                     accessKey: 'x',

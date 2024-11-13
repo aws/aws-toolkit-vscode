@@ -867,14 +867,14 @@ export class Auth implements AuthService, ConnectionManager {
     }
 
     private async getCachedCredentials(provider: CredentialsProvider) {
-        //eslint-disable-next-line aws-toolkits/no-console-log
-        console.log('getCachedCredentials called')
         const creds = await globals.loginManager.store.getCredentials(provider.getCredentialsId())
         //eslint-disable-next-line aws-toolkits/no-console-log
         console.log(
             'provider hash is same as credentials has: %O',
             creds?.credentialsHashCode === provider.getHashCode()
         )
+        //eslint-disable-next-line aws-toolkits/no-console-log
+        console.log('creds is undefined: %O', creds === undefined)
         if (creds !== undefined && creds.credentialsHashCode === provider.getHashCode()) {
             //eslint-disable-next-line aws-toolkits/no-console-log
             console.log('returning cached credentials')
@@ -885,8 +885,6 @@ export class Auth implements AuthService, ConnectionManager {
     private readonly getToken = keyedDebounce(this._getToken.bind(this))
     @withTelemetryContext({ name: '_getToken', class: authClassName })
     private async _getToken(id: Connection['id'], provider: SsoAccessTokenProvider): Promise<SsoToken> {
-        //eslint-disable-next-line aws-toolkits/no-console-log
-        console.log('_getToken called')
         const token = await provider.getToken().catch((err) => {
             this.throwOnRecoverableError(err)
 
@@ -922,20 +920,18 @@ export class Auth implements AuthService, ConnectionManager {
 
     private readonly getCredentials = keyedDebounce(this._getCredentials.bind(this))
     private async _getCredentials(id: Connection['id'], provider: CredentialsProvider): Promise<Credentials> {
-        //eslint-disable-next-line aws-toolkits/no-console-log
-        console.log('_getCredentials called')
         const credentials = await this.getCachedCredentials(provider)
         //eslint-disable-next-line aws-toolkits/no-console-log
         console.log('credentials is undefined: %O', credentials === undefined)
         if (credentials !== undefined) {
             //eslint-disable-next-line aws-toolkits/no-console-log
-            console.log('returning cached credentials')
+            console.log('hit sad path (cache passed)')
             return credentials
         } else if ((await provider.canAutoConnect()) === true) {
             return this.createCachedCredentials(provider)
         } else {
             //eslint-disable-next-line aws-toolkits/no-console-log
-            console.log('hit case with handleInvalidCredentials')
+            console.log('hit happy path (cache failed)')
             return this.handleInvalidCredentials(id, () => this.createCachedCredentials(provider))
         }
     }

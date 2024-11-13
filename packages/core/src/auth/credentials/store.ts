@@ -42,8 +42,6 @@ export class CredentialsStore {
      * Returns undefined if the specified credentials are expired or not found.
      */
     public async getCredentials(credentials: CredentialsId): Promise<CachedCredentials | undefined> {
-        //eslint-disable-next-line aws-toolkits/no-console-log
-        console.log('credentials.isValid=%O', this.isValid(asString(credentials)))
         if (this.isValid(asString(credentials))) {
             return this.credentialsCache[asString(credentials)]
         } else {
