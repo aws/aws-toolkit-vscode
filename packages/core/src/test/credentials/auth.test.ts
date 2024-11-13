@@ -19,6 +19,7 @@ import { UserCredentialsUtils } from '../../shared/credentials/userCredentialsUt
 import { getCredentialsFilename } from '../../auth/credentials/sharedCredentialsFile'
 import { Connection, isIamConnection, isSsoConnection, scopesSsoAccountAccess } from '../../auth/connection'
 import { AuthNode, createDeleteConnectionButton, promptForConnection } from '../../auth/utils'
+import { waitUntil } from '../../shared'
 
 const ssoProfile = createSsoProfile()
 const scopedSsoProfile = createSsoProfile({ scopes: ['foo'] })
@@ -507,11 +508,6 @@ describe('Auth', function () {
         })
         for (const _ of Array.from({ length: 1000 }, (i) => i)) {
             it('does not cache if the credentials file changes', async function () {
-                // if (isWin()) {
-                //     this.retries(5)
-                //     this.timeout(30000)
-                // }
-
                 const initialCreds = {
                     profileName: 'default',
                     accessKey: 'x',
@@ -536,7 +532,9 @@ describe('Auth', function () {
                 const statAfter = await fs.stat(getCredentialsFilename())
 
                 assert.ok(contentBefore !== contentAfter)
-                assert.notDeepStrictEqual(statAfter, statBefore)
+
+                await waitUntil(async () => statBefore !== (await fs.stat(getCredentialsFilename())), { timeout: 5000 })
+                assert.notDeepStrictEqual(statBefore, statAfter, 'Credentials file update failed')
 
                 assert.deepStrictEqual(await conn.getCredentials(), {
                     accessKeyId: newCreds.accessKey,
