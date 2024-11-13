@@ -11,7 +11,7 @@ import globals from '../../shared/extensionGlobals'
 import { ToolkitPromptSettings } from '../../shared/settings'
 import { ChildProcess } from '../../shared/utilities/processUtils'
 import { showMessageWithCancel, showOutputMessage } from '../../shared/utilities/messages'
-import { formatDateTimestamp, removeAnsi } from '../../shared/utilities/textUtilities'
+import { removeAnsi } from '../../shared/utilities/textUtilities'
 import { CancellationError, Timeout } from '../../shared/utilities/timeoutUtils'
 import { Commands } from '../../shared/vscode/commands2'
 import { EcsSettings } from './util'
@@ -22,6 +22,7 @@ import { Container, Service } from './model'
 import { Instance } from '../../shared/utilities/typeConstructors'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { openRemoteTerminal } from '../../shared/remoteSession'
+import { formatDateTimestamp } from '../../shared/datetime'
 
 async function runCommandWizard(
     param?: unknown,

@@ -14,11 +14,11 @@ import {
     QuickPickPrompter,
 } from '../../shared/ui/pickerPrompter'
 import { AsyncCollection } from '../../shared/utilities/asyncCollection'
-import { getRelativeDate } from '../../shared/utilities/textUtilities'
 import { isValidResponse } from '../../shared/wizards/wizard'
 import { associateDevEnv, docs } from '../model'
 import { getHelpUrl, isDevenvVscode } from '../utils'
 import { getLogger } from '../../shared/logger/logger'
+import { getRelativeDate } from '../../shared/datetime'
 
 export function createRepoLabel(r: codecatalyst.CodeCatalystRepo): string {
     return `${r.org.name} / ${r.project.name} / ${r.name}`

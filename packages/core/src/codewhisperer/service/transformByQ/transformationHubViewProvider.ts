@@ -13,7 +13,6 @@ import {
     sessionJobHistory,
     transformByQState,
 } from '../../models/model'
-import { convertToTimeString } from '../../../shared/utilities/textUtilities'
 import { getLogger } from '../../../shared/logger'
 import { getTransformationSteps } from './transformApiHandler'
 import {
@@ -23,6 +22,7 @@ import {
 } from '../../../codewhisperer/client/codewhispereruserclient'
 import { startInterval } from '../../commands/startTransformByQ'
 import { CodeTransformTelemetryState } from '../../../amazonqGumby/telemetry/codeTransformTelemetryState'
+import { convertToTimeString } from '../../../shared/datetime'
 
 export class TransformationHubViewProvider implements vscode.WebviewViewProvider {
     public static readonly viewType = 'aws.amazonq.transformationHub'
