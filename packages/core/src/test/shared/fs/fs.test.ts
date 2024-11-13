@@ -459,7 +459,7 @@ describe.only('FileSystem', function () {
             }
         })
 
-        for (const _ of Array.of({ length: 5000 }, (i: any) => i)) {
+        for (const _ of Array.of({ length: 10000 }, (i: any) => i)) {
             it('source file does not exist at first, but eventually appears', async function () {
                 const oldPath = testFolder.pathFrom('oldFile.txt')
                 const newPath = testFolder.pathFrom('newFile.txt')
