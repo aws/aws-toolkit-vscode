@@ -310,8 +310,11 @@ export class LspController {
 
     async queryInlineProjectContext(query: string, path: string, target: 'bm25' | 'codemap' | 'default') {
         try {
-            return await LspClient.instance.queryInlineProjectContext(query, path)
+            return await LspClient.instance.queryInlineProjectContext(query, path, target)
         } catch (e) {
+            if (e instanceof Error) {
+                getLogger().error(`unexpected error while querying inline project context, e=${e.message}`)
+            }
             return []
         }
     }

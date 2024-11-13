@@ -103,39 +103,15 @@ export class LspClient {
         }
     }
 
-    async queryInlineProjectContext(query: string, path: string) {
+    async queryInlineProjectContext(query: string, path: string, target: 'default' | 'codemap' | 'bm25') {
         try {
-            getLogger().info('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
             const request = JSON.stringify({
                 query: query,
                 filePath: path,
-                target: 'default',
+                target,
             })
-
-            const repomapRequest = await this.encrypt(
-                JSON.stringify({
-                    query: query,
-                    filePath: path,
-                    target: 'codemap',
-                })
-            )
-
-            const bm25Request = await this.encrypt(
-                JSON.stringify({
-                    query: query,
-                    filePath: path,
-                    target: 'bm25',
-                })
-            )
-
-            const repomapResponse = await this.client?.sendRequest(QueryInlineProjectContextRequestType, repomapRequest)
-            getLogger().info(`repomap: ${JSON.stringify(repomapResponse)}`)
-            const bm25Response = await this.client?.sendRequest(QueryInlineProjectContextRequestType, bm25Request)
-            getLogger().info(`bm25: ${JSON.stringify(bm25Response)}`)
-
             const encrypted = await this.encrypt(request)
             const resp: any = await this.client?.sendRequest(QueryInlineProjectContextRequestType, encrypted)
-            getLogger().info(`ALL: ${JSON.stringify(resp)}`)
             return resp
         } catch (e) {
             getLogger().error(`LspClient: queryInlineProjectContext error: ${e}`)
