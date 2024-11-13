@@ -256,6 +256,7 @@ export abstract class SsoAccessTokenProvider {
                 awsRegion: this.profile.region,
                 ssoRegistrationExpiresAt: args?.registrationExpiresAt,
                 ssoRegistrationClientId: args?.registrationClientId,
+                sessionDuration: getSessionDuration(this.tokenCacheKey),
             })
 
             // Reset source in case there is a case where browser login was called but we forgot to set the source.
