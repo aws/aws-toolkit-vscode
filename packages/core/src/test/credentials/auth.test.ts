@@ -528,12 +528,15 @@ describe('Auth', function () {
                     sessionToken: undefined,
                 })
                 const contentBefore = await fs.readFileText(getCredentialsFilename())
+                const statBefore = await fs.stat(getCredentialsFilename())
                 await fs.delete(getCredentialsFilename())
                 const newCreds = { ...initialCreds, accessKey: 'y', secretKey: 'y' }
                 await UserCredentialsUtils.generateCredentialsFile(newCreds)
                 const contentAfter = await fs.readFileText(getCredentialsFilename())
+                const statAfter = await fs.stat(getCredentialsFilename())
 
                 assert.ok(contentBefore !== contentAfter)
+                assert.notDeepStrictEqual(statAfter, statBefore)
 
                 assert.deepStrictEqual(await conn.getCredentials(), {
                     accessKeyId: newCreds.accessKey,

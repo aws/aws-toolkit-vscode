@@ -38,19 +38,19 @@ export class SharedCredentialsProviderFactory extends BaseCredentialsProviderFac
         super.resetProviders()
     }
 
-    private async needsRefresh(): Promise<boolean> {
+    public async needsRefresh(): Promise<boolean> {
         const credentialsLastModMillis = await this.getLastModifiedMillis(getCredentialsFilename())
         const configLastModMillis = await this.getLastModifiedMillis(getConfigFilename())
-        // eslint-disable-next-line aws-toolkits/no-console-log
-        console.log('in needs refresh')
-        // eslint-disable-next-line aws-toolkits/no-console-log
-        console.log('\tcredentialsLastModMillis: %O', credentialsLastModMillis)
-        // eslint-disable-next-line aws-toolkits/no-console-log
-        console.log('\tconfigLastModMillis: %O', configLastModMillis)
-        // eslint-disable-next-line aws-toolkits/no-console-log
-        console.log('\tthis.loadedCredentialsModificationMillis: %O', this.loadedCredentialsModificationMillis)
-        // eslint-disable-next-line aws-toolkits/no-console-log
-        console.log('\tthis.loadedConfigModificationMillis: %O', this.loadedConfigModificationMillis)
+        // // eslint-disable-next-line aws-toolkits/no-console-log
+        // console.log('in needs refresh')
+        // // eslint-disable-next-line aws-toolkits/no-console-log
+        // console.log('\tcredentialsLastModMillis: %O', credentialsLastModMillis)
+        // // eslint-disable-next-line aws-toolkits/no-console-log
+        // console.log('\tconfigLastModMillis: %O', configLastModMillis)
+        // // eslint-disable-next-line aws-toolkits/no-console-log
+        // console.log('\tthis.loadedCredentialsModificationMillis: %O', this.loadedCredentialsModificationMillis)
+        // // eslint-disable-next-line aws-toolkits/no-console-log
+        // console.log('\tthis.loadedConfigModificationMillis: %O', this.loadedConfigModificationMillis)
         return (
             this.loadedCredentialsModificationMillis !== credentialsLastModMillis ||
             this.loadedConfigModificationMillis !== configLastModMillis

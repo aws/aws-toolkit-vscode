@@ -96,6 +96,7 @@ export class UserCredentialsUtils {
         } else {
             contents.unshift(header)
         }
+
         await fs.writeFile(dest, contents.join('\n'))
     }
 }
