@@ -209,8 +209,6 @@ export class GumbyController {
             getLogger().error(`CodeTransformation: error validating Java upgrade projects: ${err}`)
         }
 
-        // TO-DO: in this case, should we say "I can't do a language upgrade, but I found embedded SQL I can convert..."
-        // and vice-versa for the case above with handleLanguageUpgrade
         if (javaUpgradeProjects.length === 0) {
             await this.handleSQLConversion(message)
             return

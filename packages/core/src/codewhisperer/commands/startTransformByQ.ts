@@ -770,7 +770,7 @@ export async function getValidSQLConversionCandidateProjects() {
                 status will be non-zero and stdout / stderr / error will be empty when search string is not detected.
                 */
                 getLogger().info(
-                    `CodeTransformation: searching for ${str} in ${project.path}, result = ${JSON.stringify(spawnResult)}`
+                    `CodeTransformation: searching for ${str} in ${project.path}, status = ${spawnResult.status} and output = ${spawnResult.output}`
                 )
                 if (spawnResult.status === 0) {
                     embeddedSQLProjects.push(project)

@@ -256,7 +256,7 @@ export class Messenger {
         formItems.push({
             id: 'GumbyTransformSQLConversionProjectForm',
             type: 'select',
-            title: 'Choose a project to transform',
+            title: CodeWhispererConstants.chooseProjectFormTitle,
             mandatory: true,
             options: projectFormOptions,
         })
@@ -264,7 +264,7 @@ export class Messenger {
         formItems.push({
             id: 'GumbyTransformSQLSchemaForm',
             type: 'select',
-            title: 'Choose the schema of the database',
+            title: CodeWhispererConstants.chooseSchemaFormTitle,
             mandatory: true,
             options: Array.from(transformByQState.getSchemaOptions()).map((schema) => ({
                 value: schema,
@@ -275,7 +275,7 @@ export class Messenger {
         this.dispatcher.sendAsyncEventProgress(
             new AsyncEventProgressMessage(tabID, {
                 inProgress: true,
-                message: 'I can convert your embedded SQL, but I need some more info from you first.',
+                message: CodeWhispererConstants.chooseProjectSchemaFormMessage,
             })
         )
 
@@ -711,13 +711,6 @@ ${codeSnippet}
     }
 
     public async sendSelectSQLMetadataFileMessage(tabID: string) {
-        this.dispatcher.sendAsyncEventProgress(
-            new AsyncEventProgressMessage(tabID, {
-                inProgress: true,
-                message: 'I can convert the embedded Oracle SQL in your project to PostgreSQL.',
-            })
-        )
-
         const message = CodeWhispererConstants.selectSQLMetadataFileHelpMessage
         const buttons: ChatItemButton[] = []
 

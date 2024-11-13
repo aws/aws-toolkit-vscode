@@ -514,7 +514,7 @@ export const absolutePathDetectedMessage = (numPaths: number, buildFile: string,
 export const unsupportedJavaVersionChatMessage = `I can only upgrade Java 8, Java 11, or Java 17 projects. For more information, see the [Amazon Q documentation](${codeTransformPrereqDoc}).`
 
 export const selectSQLMetadataFileHelpMessage =
-    'Next, I need the zipped metadata file from your schema conversion. You can download the metadata by going to your migration project in the AWS DMS console. Open the schema conversion and choose **Convert the embedded SQL in your application**. You can downloaded the metadata from Amazon S3 in the {schema-conversion-project}/ directory.'
+    'Okay, I can convert the embedded SQL code for your Oracle to PostgreSQL transformation. To get started, upload the zipped metadata file from your schema conversion in AWS Data Migration Service (DMS). To retrieve the metadata file:\n1. Open your database migration project in the AWS DMS console.\n2. Open the schema conversion and choose **Convert the embedded SQL in your application**.\n3. Choose the link to Amazon S3 console.\n\nYou can download the metadata file from the {schema-conversion-project}/ directory. For more info, refer to the [documentation](https://docs.aws.amazon.com/dms/latest/userguide/schema-conversion-save-apply.html#schema-conversion-save).'
 
 export const invalidMetadataFileUnsupportedSourceDB =
     'I can only convert SQL for migrations from an Oracle source database. The provided .sct file indicates another source database for this migration.'
@@ -679,6 +679,10 @@ export const chooseProjectFormTitle = 'Choose a project to transform'
 export const chooseSourceVersionFormTitle = 'Choose the source code version'
 
 export const chooseTargetVersionFormTitle = 'Choose the target code version'
+
+export const chooseSchemaFormTitle = 'Choose the schema of the database'
+
+export const chooseProjectSchemaFormMessage = 'To continue, choose the project and schema for this transformation.'
 
 export const skipUnitTestsFormTitle = 'Choose to skip unit tests'
 
