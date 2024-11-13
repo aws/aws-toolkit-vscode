@@ -573,6 +573,7 @@ export async function getTransformationPlan(jobId: string) {
         const linesOfCode = Number(
             jobStatistics.find((stat: { name: string; value: string }) => stat.name === 'linesOfCode').value
         )
+        transformByQState.setLinesOfCodeSubmitted(linesOfCode)
         if (authType === 'iamIdentityCenter' && linesOfCode > CodeWhispererConstants.codeTransformLocThreshold) {
             plan += CodeWhispererConstants.codeTransformBillingText(linesOfCode)
         }
