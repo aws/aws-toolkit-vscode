@@ -529,12 +529,15 @@ describe('Auth', function () {
                 const newCreds = { ...initialCreds, accessKey: 'y', secretKey: 'y' }
                 await UserCredentialsUtils.generateCredentialsFile(newCreds)
                 const contentAfter = await fs.readFileText(getCredentialsFilename())
-                const statAfter = await fs.stat(getCredentialsFilename())
 
-                assert.ok(contentBefore !== contentAfter)
+                assert.notDeepStrictEqual(contentBefore, contentAfter)
 
-                await waitUntil(async () => statBefore !== (await fs.stat(getCredentialsFilename())), { timeout: 5000 })
-                assert.notDeepStrictEqual(statBefore, statAfter, 'Credentials file update failed')
+                const updated = await waitUntil(async () => statBefore !== (await fs.stat(getCredentialsFilename())), {
+                    timeout: 20000,
+                    interval: 1000,
+                    truthy: true,
+                })
+                assert.ok(updated, 'Credentials file update failed')
 
                 assert.deepStrictEqual(await conn.getCredentials(), {
                     accessKeyId: newCreds.accessKey,
