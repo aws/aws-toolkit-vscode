@@ -24,8 +24,8 @@ import {
 import { prepareDocument, searchLogGroup } from './searchLogGroup'
 import { telemetry, Result } from '../../../shared/telemetry/telemetry'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
-import { formatLocalized } from '../../../shared/utilities/textUtilities'
 import { cwlUriSchema } from '../cloudWatchLogsUtils'
+import { formatLocalized } from '../../../shared/datetime'
 
 export async function viewLogStream(node: LogGroupNode, registry: LogDataRegistry): Promise<void> {
     await telemetry.cloudwatchlogs_open.run(async (span) => {

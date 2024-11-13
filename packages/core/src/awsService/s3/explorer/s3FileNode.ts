@@ -12,9 +12,9 @@ import { inspect } from 'util'
 import { S3BucketNode } from './s3BucketNode'
 import { S3FolderNode } from './s3FolderNode'
 import globals from '../../../shared/extensionGlobals'
-import { formatLocalized, getRelativeDate } from '../../../shared/utilities/textUtilities'
 import { isCloud9 } from '../../../shared/extensionUtilities'
 import { getIcon } from '../../../shared/icons'
+import { formatLocalized, getRelativeDate } from '../../../shared/datetime'
 
 /**
  * Represents an object in an S3 bucket.
