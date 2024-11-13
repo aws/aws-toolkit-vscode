@@ -40,7 +40,7 @@ describe('crossFileContextUtil', function () {
         })
 
         it('opentabs context should fetch 3 chunks and each chunk should contains 50 lines', async function () {
-            sinon.stub(FeatureConfigProvider.instance, 'isNewProjectContextGroup').alwaysReturned(false)
+            sinon.stub(FeatureConfigProvider.instance, 'getProjectContextGroup').alwaysReturned('control')
             await toTextEditor(aStringWithLineCount(200), 'CrossFile.java', tempFolder, { preview: false })
             const myCurrentEditor = await toTextEditor('', 'TargetFile.java', tempFolder, {
                 preview: false,
@@ -212,7 +212,7 @@ describe('crossFileContextUtil', function () {
 
         fileExtLists.forEach((fileExt) => {
             it('should be non empty', async function () {
-                sinon.stub(FeatureConfigProvider.instance, 'isNewProjectContextGroup').alwaysReturned(false)
+                sinon.stub(FeatureConfigProvider.instance, 'getProjectContextGroup').alwaysReturned('control')
                 const editor = await toTextEditor('content-1', `file-1.${fileExt}`, tempFolder)
                 await toTextEditor('content-2', `file-2.${fileExt}`, tempFolder, { preview: false })
                 await toTextEditor('content-3', `file-3.${fileExt}`, tempFolder, { preview: false })
