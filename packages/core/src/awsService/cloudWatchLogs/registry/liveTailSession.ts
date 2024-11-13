@@ -11,9 +11,10 @@ import {
 } from '@aws-sdk/client-cloudwatch-logs'
 import { LogStreamFilterResponse } from '../wizard/liveTailLogStreamSubmenu'
 import { CloudWatchLogsSettings, uriToKey } from '../cloudWatchLogsUtils'
-import { convertToTimeString, getLogger, globals, Settings, ToolkitError } from '../../../shared'
+import { getLogger, globals, Settings, ToolkitError } from '../../../shared'
 import { createLiveTailURIFromArgs } from './liveTailSessionRegistry'
 import { getUserAgent } from '../../../shared/telemetry/util'
+import { convertToTimeString } from '../../../shared/datetime'
 
 export type LiveTailSessionConfiguration = {
     logGroupArn: string
@@ -49,6 +50,7 @@ export class LiveTailSession {
     public constructor(configuration: LiveTailSessionConfiguration) {
         this._logGroupArn = configuration.logGroupArn
         this.logStreamFilter = configuration.logStreamFilter
+        this.logEventFilterPattern = configuration.logEventFilterPattern
         this.liveTailClient = {
             cwlClient: new CloudWatchLogsClient({
                 credentials: configuration.awsCredentials,
@@ -120,7 +122,7 @@ export class LiveTailSession {
         return this.endTime - this.startTime
     }
 
-    private buildStartLiveTailCommand(): StartLiveTailCommand {
+    public buildStartLiveTailCommand(): StartLiveTailCommand {
         let logStreamNamePrefix = undefined
         let logStreamName = undefined
         if (this.logStreamFilter) {
