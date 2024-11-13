@@ -18,11 +18,7 @@ export class SharedCredentialsProviderFactory extends BaseCredentialsProviderFac
     private loadedConfigModificationMillis?: number
 
     public async refresh(): Promise<void> {
-        // eslint-disable-next-line aws-toolkits/no-console-log
-        console.log('refresh called')
         if (await this.needsRefresh()) {
-            // eslint-disable-next-line aws-toolkits/no-console-log
-            console.log('needs refresh passed')
             await this.loadSharedCredentialsProviders()
         }
     }
@@ -38,19 +34,10 @@ export class SharedCredentialsProviderFactory extends BaseCredentialsProviderFac
         super.resetProviders()
     }
 
-    public async needsRefresh(): Promise<boolean> {
+    private async needsRefresh(): Promise<boolean> {
         const credentialsLastModMillis = await this.getLastModifiedMillis(getCredentialsFilename())
         const configLastModMillis = await this.getLastModifiedMillis(getConfigFilename())
-        // // eslint-disable-next-line aws-toolkits/no-console-log
-        // console.log('in needs refresh')
-        // // eslint-disable-next-line aws-toolkits/no-console-log
-        // console.log('\tcredentialsLastModMillis: %O', credentialsLastModMillis)
-        // // eslint-disable-next-line aws-toolkits/no-console-log
-        // console.log('\tconfigLastModMillis: %O', configLastModMillis)
-        // // eslint-disable-next-line aws-toolkits/no-console-log
-        // console.log('\tthis.loadedCredentialsModificationMillis: %O', this.loadedCredentialsModificationMillis)
-        // // eslint-disable-next-line aws-toolkits/no-console-log
-        // console.log('\tthis.loadedConfigModificationMillis: %O', this.loadedConfigModificationMillis)
+
         return (
             this.loadedCredentialsModificationMillis !== credentialsLastModMillis ||
             this.loadedConfigModificationMillis !== configLastModMillis
@@ -58,8 +45,6 @@ export class SharedCredentialsProviderFactory extends BaseCredentialsProviderFac
     }
 
     private async loadSharedCredentialsProviders(): Promise<void> {
-        //eslint-disable-next-line aws-toolkits/no-console-log
-        console.log('loadSharedCredentialsProviders called')
         this.resetProviders()
 
         const result = await loadSharedCredentialsSections()

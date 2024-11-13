@@ -67,10 +67,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
     public constructor(
         private readonly profileName: string,
         private readonly sections: Section[]
-    ) {
-        //eslint-disable-next-line aws-toolkits/no-console-log
-        console.log('init new SharedCredentialsProvider')
-    }
+    ) {}
 
     public getCredentialsId(): CredentialsId {
         return {
@@ -101,8 +98,6 @@ export class SharedCredentialsProvider implements CredentialsProvider {
     }
 
     public getHashCode(): string {
-        //eslint-disable-next-line aws-toolkits/no-console-log
-        console.log('returning hash: %O', getStringHash(JSON.stringify(this.profile)))
         return getStringHash(JSON.stringify(this.profile))
     }
 

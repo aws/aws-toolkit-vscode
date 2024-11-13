@@ -218,8 +218,6 @@ export class Auth implements AuthService, ConnectionManager {
     public async reauthenticate({ id }: Pick<IamConnection, 'id'>, invalidate?: boolean): Promise<IamConnection>
     @withTelemetryContext({ name: 'reauthenticate', class: authClassName })
     public async reauthenticate({ id }: Pick<Connection, 'id'>, invalidate?: boolean): Promise<Connection> {
-        //eslint-disable-next-line aws-toolkits/no-console-log
-        console.log('reauthenticate is called')
         const shouldInvalidate = invalidate ?? true
         const profile = this.store.getProfileOrThrow(id)
         if (profile.type === 'sso') {
@@ -454,8 +452,6 @@ export class Auth implements AuthService, ConnectionManager {
      */
     @withTelemetryContext({ name: 'refreshConnectionState', class: authClassName })
     public async refreshConnectionState(connection?: Pick<Connection, 'id'>): Promise<undefined> {
-        //eslint-disable-next-line aws-toolkits/no-console-log
-        console.log('refreshConnectionState called')
         if (connection === undefined) {
             return
         }
@@ -650,11 +646,7 @@ export class Auth implements AuthService, ConnectionManager {
      */
     @withTelemetryContext({ name: 'validateConnection', class: authClassName })
     private async validateConnection<T extends Profile>(id: Connection['id'], profile: StoredProfile<T>) {
-        //eslint-disable-next-line aws-toolkits/no-console-log
-        console.log('validateConnection is called')
         const runCheck = async () => {
-            //eslint-disable-next-line aws-toolkits/no-console-log
-            console.log('runCheck is called')
             if (profile.type === 'sso') {
                 const provider = this.getSsoTokenProvider(id, profile)
                 if ((await provider.getToken()) === undefined) {
@@ -856,8 +848,6 @@ export class Auth implements AuthService, ConnectionManager {
     }
 
     private async createCachedCredentials(provider: CredentialsProvider) {
-        //eslint-disable-next-line aws-toolkits/no-console-log
-        console.log('createCachedCredentials called')
         const providerId = provider.getCredentialsId()
         globals.loginManager.store.invalidateCredentials(providerId)
         const { credentials } = await globals.loginManager.store.upsertCredentials(providerId, provider)
@@ -868,16 +858,7 @@ export class Auth implements AuthService, ConnectionManager {
 
     private async getCachedCredentials(provider: CredentialsProvider) {
         const creds = await globals.loginManager.store.getCredentials(provider.getCredentialsId())
-        //eslint-disable-next-line aws-toolkits/no-console-log
-        console.log(
-            'provider hash is same as credentials has: %O',
-            creds?.credentialsHashCode === provider.getHashCode()
-        )
-        //eslint-disable-next-line aws-toolkits/no-console-log
-        console.log('creds is undefined: %O', creds === undefined)
         if (creds !== undefined && creds.credentialsHashCode === provider.getHashCode()) {
-            //eslint-disable-next-line aws-toolkits/no-console-log
-            console.log('returning cached credentials')
             return creds.credentials
         }
     }
@@ -921,17 +902,11 @@ export class Auth implements AuthService, ConnectionManager {
     private readonly getCredentials = keyedDebounce(this._getCredentials.bind(this))
     private async _getCredentials(id: Connection['id'], provider: CredentialsProvider): Promise<Credentials> {
         const credentials = await this.getCachedCredentials(provider)
-        //eslint-disable-next-line aws-toolkits/no-console-log
-        console.log('credentials is undefined: %O', credentials === undefined)
         if (credentials !== undefined) {
-            //eslint-disable-next-line aws-toolkits/no-console-log
-            console.log('hit sad path (cache passed)')
             return credentials
         } else if ((await provider.canAutoConnect()) === true) {
             return this.createCachedCredentials(provider)
         } else {
-            //eslint-disable-next-line aws-toolkits/no-console-log
-            console.log('hit happy path (cache failed)')
             return this.handleInvalidCredentials(id, () => this.createCachedCredentials(provider))
         }
     }
@@ -939,8 +914,7 @@ export class Auth implements AuthService, ConnectionManager {
     @withTelemetryContext({ name: 'handleInvalidCredentials', class: authClassName })
     private async handleInvalidCredentials<T>(id: Connection['id'], refresh: () => Promise<T>): Promise<T> {
         getLogger().info(`auth: Handling invalid credentials of connection: ${id}`)
-        //eslint-disable-next-line aws-toolkits/no-console-log
-        console.log('handleInvalidCredentials called')
+
         let profile: StoredProfile
         try {
             profile = this.store.getProfileOrThrow(id)
