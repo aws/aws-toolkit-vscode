@@ -4,7 +4,7 @@
  */
 
 import { isWeb } from '../extensionGlobals'
-import { inspect as nodeInspect } from 'util'
+import { InspectOptions as nodeInspectOptions, inspect as nodeInspect } from 'util'
 import { AsyncCollection, toCollection } from './asyncCollection'
 import { SharedProp, AccumulableKeys, Coalesce, isNonNullable } from './tsUtils'
 
@@ -330,31 +330,29 @@ export function partialClone(obj: any, depth: number = 3, omitKeys: string[] = [
     return clonedObj
 }
 
-type inspectOptions = Partial<{
-    depth: number
-    omitKeys: string[]
-    replacement: any
-    showHidden: boolean
-    color: boolean
-}>
+type inspectOptions = Partial<
+    nodeInspectOptions & {
+        omitKeys: string[]
+        replacement: any
+    }
+>
 
 /**
  * Wrapper around nodes inspect function that works on web. Defaults to JSON.stringify on web.
  * @param obj object to show
  * @param opt options for showing (ex. depth, omitting keys)
  */
-export function formatObj(obj: any, opt?: inspectOptions): string {
+export function inspect(obj: any, opt?: inspectOptions): string {
     const options = {
         depth: opt?.depth ?? 3,
         omitKeys: opt?.omitKeys ?? [],
         replacement: opt?.replacement,
         showHidden: opt?.showHidden ?? false,
-        color: opt?.color ?? false,
+        color: opt?.colors ?? false,
     }
-    const objToShow = partialClone(obj, options.depth, options.omitKeys, options.replacement)
     return isWeb()
-        ? JSON.stringify(objToShow)
-        : nodeInspect(objToShow, options.showHidden, options.depth, options.color)
+        ? JSON.stringify(partialClone(obj, options.depth, options.omitKeys, options.replacement), undefined, 2)
+        : nodeInspect(obj, options)
 }
 
 /** Recursively delete undefined key/value pairs */
@@ -393,7 +391,7 @@ export function pageableToCollection<
     TResponse,
     TTokenProp extends SharedProp<TRequest, TResponse>,
     TTokenType extends TRequest[TTokenProp] & TResponse[TTokenProp],
-    TResult extends AccumulableKeys<TResponse> = never,
+    TResult extends AccumulableKeys<TResponse> = never
 >(
     requester: (request: TRequest) => Promise<TResponse>,
     request: TRequest,

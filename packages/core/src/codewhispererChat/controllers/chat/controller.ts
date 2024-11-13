@@ -53,7 +53,7 @@ import { uiEventRecorder } from '../../../amazonq/util/eventRecorder'
 import { globals } from '../../../shared'
 import { telemetry } from '../../../shared/telemetry'
 import { isSsoConnection } from '../../../auth/connection'
-import { formatObj } from '../../../shared/utilities/collectionUtils'
+import { inspect } from '../../../shared/utilities/collectionUtils'
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
@@ -625,7 +625,9 @@ export class ChatController {
                     triggerPayload.relevantTextDocuments = await LspController.instance.query(triggerPayload.message)
                     triggerPayload.relevantTextDocuments.forEach((doc) => {
                         getLogger().info(
-                            `amazonq: Using workspace files ${doc.relativeFilePath}, content(partial): ${doc.text?.substring(0, 200)}`
+                            `amazonq: Using workspace files ${
+                                doc.relativeFilePath
+                            }, content(partial): ${doc.text?.substring(0, 200)}`
                         )
                     })
                     triggerPayload.projectContextQueryLatencyMs = performance.now() - start
@@ -652,7 +654,9 @@ export class ChatController {
         const request = triggerPayloadToChatRequest(triggerPayload)
         const session = this.sessionStorage.getSession(tabID)
         getLogger().info(
-            `request from tab: ${tabID} conversationID: ${session.sessionIdentifier} request: ${formatObj(request, { depth: 12 })}`
+            `request from tab: ${tabID} conversationID: ${session.sessionIdentifier} request: ${inspect(request, {
+                depth: 12,
+            })}`
         )
         let response: MessengerResponseType | undefined = undefined
         session.createNewTokenSource()
@@ -678,7 +682,7 @@ export class ChatController {
             getLogger().info(
                 `response to tab: ${tabID} conversationID: ${session.sessionIdentifier} requestID: ${
                     response.$metadata.requestId
-                } metadata: ${formatObj(response.$metadata, { depth: 12 })}`
+                } metadata: ${inspect(response.$metadata, { depth: 12 })}`
             )
             await this.messenger.sendAIResponse(response, session, tabID, triggerID, triggerPayload)
         } catch (e: any) {
