@@ -21,7 +21,6 @@ import { createCodeWhispererChatStreamingClient } from '../../../shared/clients/
 import { ChatSessionManager } from '../../../amazonqGumby/chat/storages/chatSession'
 import { setContext } from '../../../shared/vscode/setContext'
 import * as codeWhisperer from '../../client/codewhisperer'
-import { getOperatingSystem } from '../../../shared/telemetry/util'
 
 export abstract class ProposedChangeNode {
     abstract readonly resourcePath: string
@@ -425,11 +424,6 @@ export class ProposedTransformationExplorer {
                             charsOfCodeChanged: metricsData.charactersOfCodeChanged,
                             linesOfCodeSubmitted: transformByQState.getLinesOfCodeSubmitted(), // currently unavailable for SQL conversions
                         },
-                    },
-                    userContext: {
-                        ideCategory: 'VSCODE',
-                        operatingSystem: getOperatingSystem(),
-                        product: 'CodeWhisperer',
                     },
                 })
             } catch (err: any) {
