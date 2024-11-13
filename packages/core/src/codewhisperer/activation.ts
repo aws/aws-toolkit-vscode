@@ -71,6 +71,7 @@ import { logAndShowError, logAndShowWebviewError } from '../shared/utilities/log
 import { openSettings } from '../shared/settings'
 import { telemetry } from '../shared/telemetry'
 import { FeatureConfigProvider } from '../shared/featureConfig'
+import { QCodeGenTracker } from './tracker/qCodeGenTracker'
 
 let localize: nls.LocalizeFunc
 
@@ -491,7 +492,7 @@ export async function activate(context: ExtContext): Promise<void> {
                 SecurityIssueCodeActionProvider.instance.handleDocumentChange(e)
 
                 CodeWhispererCodeCoverageTracker.getTracker(e.document.languageId)?.countTotalTokens(e)
-
+                QCodeGenTracker.instance.onTextDocumentChange(e)
                 /**
                  * Handle this keystroke event only when
                  * 1. It is not a backspace
