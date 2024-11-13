@@ -11,12 +11,14 @@ import { cloudwatchLogsLiveTailScheme } from '../../../../shared/constants'
 describe('LiveTailSession URI', async function () {
     const testLogGroupName = 'test-log-group'
     const testRegion = 'test-region'
+    const testAwsCredentials = {} as any as AWS.Credentials
     const expectedUriBase = `${cloudwatchLogsLiveTailScheme}:${testRegion}:${testLogGroupName}`
 
     it('is correct with no logStream filter, no filter pattern', function () {
         const config: LiveTailSessionConfiguration = {
             logGroupArn: testLogGroupName,
             region: testRegion,
+            awsCredentials: testAwsCredentials,
         }
         const expectedUri = vscode.Uri.parse(expectedUriBase)
         const uri = createLiveTailURIFromArgs(config)
@@ -28,6 +30,7 @@ describe('LiveTailSession URI', async function () {
             logGroupArn: testLogGroupName,
             region: testRegion,
             logEventFilterPattern: 'test-filter',
+            awsCredentials: testAwsCredentials,
         }
         const expectedUri = vscode.Uri.parse(`${expectedUriBase}:test-filter`)
         const uri = createLiveTailURIFromArgs(config)
@@ -41,6 +44,7 @@ describe('LiveTailSession URI', async function () {
             logStreamFilter: {
                 type: 'all',
             },
+            awsCredentials: testAwsCredentials,
         }
         const expectedUri = vscode.Uri.parse(`${expectedUriBase}:all`)
         const uri = createLiveTailURIFromArgs(config)
@@ -55,6 +59,7 @@ describe('LiveTailSession URI', async function () {
                 type: 'prefix',
                 filter: 'test-prefix',
             },
+            awsCredentials: testAwsCredentials,
         }
         const expectedUri = vscode.Uri.parse(`${expectedUriBase}:prefix:test-prefix`)
         const uri = createLiveTailURIFromArgs(config)
@@ -69,6 +74,7 @@ describe('LiveTailSession URI', async function () {
                 type: 'specific',
                 filter: 'test-stream',
             },
+            awsCredentials: testAwsCredentials,
         }
         const expectedUri = vscode.Uri.parse(`${expectedUriBase}:specific:test-stream`)
         const uri = createLiveTailURIFromArgs(config)
@@ -84,6 +90,7 @@ describe('LiveTailSession URI', async function () {
                 filter: 'test-stream',
             },
             logEventFilterPattern: 'test-filter',
+            awsCredentials: testAwsCredentials,
         }
         const expectedUri = vscode.Uri.parse(`${expectedUriBase}:specific:test-stream:test-filter`)
         const uri = createLiveTailURIFromArgs(config)
