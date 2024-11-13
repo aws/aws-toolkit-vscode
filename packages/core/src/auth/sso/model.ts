@@ -16,6 +16,7 @@ import { ssoAuthHelpUrl } from '../../shared/constants'
 import { openUrl } from '../../shared/utilities/vsCodeUtils'
 import { ToolkitError } from '../../shared/errors'
 import { isCloud9 } from '../../shared/extensionUtilities'
+import { builderIdStartUrl } from './constants'
 
 export interface SsoToken {
     /**
@@ -88,7 +89,6 @@ export interface SsoProfile {
     readonly identifier?: string
 }
 
-export const builderIdStartUrl = 'https://view.awsapps.com/start'
 export const trustedDomainCancellation = 'TrustedDomainCancellation'
 
 const tryOpenHelpUrl = (url: vscode.Uri) =>

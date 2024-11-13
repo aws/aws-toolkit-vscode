@@ -21,7 +21,6 @@ import {
     DB,
     TransformationType,
 } from '../models/model'
-import { convertDateToTimestamp } from '../../shared/utilities/textUtilities'
 import {
     createZipManifest,
     downloadAndExtractResultArchive,
@@ -80,6 +79,7 @@ import { HumanInTheLoopManager } from '../service/transformByQ/humanInTheLoopMan
 import { setContext } from '../../shared/vscode/setContext'
 import { makeTemporaryToolkitFolder } from '../../shared'
 import globals from '../../shared/extensionGlobals'
+import { convertDateToTimestamp } from '../../shared/datetime'
 
 function getFeedbackCommentData() {
     const jobId = transformByQState.getJobId()
@@ -142,7 +142,7 @@ export async function validateSQLMetadataFile(fileContents: string, message: any
             `CodeTransformation: Parsed .sct file with source DB: ${sourceDB}, target DB: ${targetDB}, source host name: ${sourceServerName}, and schema names: ${Array.from(schemaNames)}`
         )
     } catch (err: any) {
-        getLogger().error('CodeTransformation: Error parsing .sct file.', err)
+        getLogger().error('CodeTransformation: Error parsing .sct file. %O', err)
         transformByQState.getChatMessenger()?.sendUnrecoverableErrorResponse('error-parsing-sct-file', message.tabID)
         return false
     }

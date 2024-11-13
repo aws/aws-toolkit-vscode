@@ -43,7 +43,6 @@ import {
     getRecentResponse,
     getSamCliPathAndVersion,
     getSource,
-    runInTerminal,
     updateRecentResponse,
 } from './utils'
 import { TemplateItem, createTemplatePrompter } from '../ui/common/samTemplate'
@@ -51,6 +50,7 @@ import { createStackPrompter } from '../ui/common/stack'
 import { ParamsSource, createSyncParamsSourcePrompter } from '../ui/common/paramsSource'
 import { createEcrPrompter } from '../ui/common/ecr'
 import { BucketSource, createBucketPrompter } from '../ui/common/bucket'
+import { runInTerminal } from './processTerminal'
 
 export interface SyncParams {
     readonly paramsSource: ParamsSource
@@ -350,6 +350,7 @@ export async function runSamSync(args: SyncParams) {
             env: await getSpawnEnv(process.env, { promptForInvalidCredential: true }),
         }),
     })
+
     await runInTerminal(sam, 'sync')
     const { paramsSource, stackName, region, projectRoot } = args
     const shouldWriteSyncSamconfigGlobal = paramsSource !== ParamsSource.SamConfig && !!stackName && !!region
@@ -428,6 +429,7 @@ export async function prepareSyncParams(
     } else if (arg instanceof vscode.Uri) {
         if (arg.path.endsWith('samconfig.toml')) {
             // "Deploy" command was invoked on a samconfig.toml file.
+            // TODO: add step to verify samconfig content to skip param source prompter
             const config = await SamConfig.fromConfigFileUri(arg)
             const params = getSyncParamsFromConfig(config)
             const projectRoot = vscode.Uri.joinPath(config.location, '..')
@@ -443,7 +445,7 @@ export async function prepareSyncParams(
             // Always use the dependency layer if the user specified to do so
             const skipDependencyLayer = !config.getCommandParam('sync', 'dependency_layer')
 
-            return { ...baseParams, ...params, template, projectRoot, skipDependencyLayer }
+            return { ...baseParams, ...params, template, projectRoot, skipDependencyLayer } as SyncParams
         }
 
         // "Deploy" command was invoked on a template.yaml file.

@@ -4,7 +4,6 @@
  */
 
 import * as vscode from 'vscode'
-import { runInTerminal } from './utils'
 import { TemplateItem, createTemplatePrompter } from '../ui/common/samTemplate'
 import { ChildProcess } from '../utilities/processUtils'
 import { addTelemetryEnvVar } from './cli/samCliInvokerUtils'
@@ -23,6 +22,7 @@ import { getSpawnEnv } from '../env/resolveEnv'
 import { getProjectRoot, getSamCliPathAndVersion, isDotnetRuntime } from './utils'
 import { getConfigFileUri, validateSamBuildConfig } from './config'
 import { syncMementoRootKey } from './sync'
+import { runInTerminal } from './processTerminal'
 
 export interface BuildParams {
     readonly template: TemplateItem

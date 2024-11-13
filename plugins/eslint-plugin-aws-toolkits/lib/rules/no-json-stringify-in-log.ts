@@ -7,7 +7,7 @@ import { AST_NODE_TYPES, ESLintUtils, TSESTree } from '@typescript-eslint/utils'
 import { Rule } from 'eslint'
 
 export const errMsg =
-    'Avoid using JSON.stringify within logging and error messages, prefer %O. Note: %O has a depth limit of 2'
+    'Avoid using JSON.stringify within logging and error messages, prefer %O in general or inspect from collectionUtils for custom depth formatting'
 
 /**
  * Check if a given expression is a JSON.stringify call.
@@ -34,7 +34,7 @@ function isTemplateWithStringifyCall(node: TSESTree.CallExpressionArgument): boo
  * Check if node is representing syntax of the form getLogger().f(msg) for some f and msg or
  * if it is doing so indirectly via a logger variable.
  */
-function isLoggerCall(node: TSESTree.CallExpression): boolean {
+export function isLoggerCall(node: TSESTree.CallExpression): boolean {
     return (
         node.callee.type === AST_NODE_TYPES.MemberExpression &&
         (isGetLoggerCall(node.callee.object) || isDisguisedGetLoggerCall(node.callee.object)) &&

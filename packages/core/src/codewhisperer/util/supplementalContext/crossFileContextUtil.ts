@@ -71,13 +71,13 @@ export async function fetchSupplementalContextForSrc(
         async function () {
             return await fetchSupplementalContextForSrcV1(editor, cancellationToken)
         },
-        { timeout: supplementalContextTimeoutInMs, interval: 10, truthy: false }
+        { timeout: supplementalContextTimeoutInMs, interval: 5, truthy: false }
     )
     const promiseV2 = waitUntil(
         async function () {
             return await fetchSupplementalContextForSrcV2(editor)
         },
-        { timeout: supplementalContextTimeoutInMs, interval: 10, truthy: false }
+        { timeout: supplementalContextTimeoutInMs, interval: 5, truthy: false }
     )
     const [resultV1, resultV2] = await Promise.all([promiseV1, promiseV2])
     return resultV2 ?? resultV1
@@ -152,7 +152,7 @@ export async function fetchSupplementalContextForSrcV1(
     // DO NOT send code chunk with empty content
     getLogger().debug(`CodeWhisperer finished fetching crossfile context out of ${relevantCrossFilePaths.length} files`)
     return {
-        supplementalContextItems: supplementalContexts.filter((item) => item.content.trim().length !== 0),
+        supplementalContextItems: supplementalContexts,
         strategy: 'OpenTabs_BM25',
     }
 }

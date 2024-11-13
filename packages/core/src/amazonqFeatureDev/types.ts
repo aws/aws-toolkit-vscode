@@ -114,3 +114,11 @@ export interface SessionStorage {
 }
 
 export type LLMResponseType = 'EMPTY' | 'INVALID_STATE' | 'VALID'
+
+export interface UpdateFilesPathsParams {
+    tabID: string
+    filePaths: NewFileInfo[]
+    deletedFiles: DeletedFileInfo[]
+    messageId: string
+    disableFileActions?: boolean
+}

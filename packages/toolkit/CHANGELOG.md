@@ -1,3 +1,14 @@
+## 3.33.0 2024-11-11
+
+- **Feature** UI: region-related quickpicks now have a refresh button
+
+## 3.32.0 2024-11-07
+
+- **Bug Fix** SAM: Save SAM deploy parameters to correct samconfig.toml in project folder
+- **Bug Fix** System Path parsing should ignore Windows and only parse Mac/Linux system, Sam Local Invoke should get correct system Path on windows #5933 #5918
+- **Bug Fix** SAM: Skip unnecessary prompters for sync operation when using flag from samconfig.toml file
+- **Bug Fix** AWS Lambda: Removed action to delete a Lambda or S3 bucket in the AppBuilder section as resources created through IaC frameworks should not be directly modified since this creates drift
+
 ## 3.31.0 2024-10-30
 
 - **Feature** SAM: Added support for Java 21 Lambda runtime

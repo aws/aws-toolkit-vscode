@@ -10,6 +10,7 @@ import { NotificationsNode } from './panelNode'
 import { RuleEngine, getRuleContext } from './rules'
 import globals from '../shared/extensionGlobals'
 import { AuthState } from './types'
+import { getLogger } from '../shared/logger/logger'
 
 /** Time in MS to poll for emergency notifications */
 const emergencyPollTime = 1000 * 10 * 60
@@ -44,4 +45,6 @@ export async function activate(
         const ruleContext = await getRuleContext(context, await authStateFn())
         await controller.pollForEmergencies(new RuleEngine(ruleContext))
     }, emergencyPollTime)
+
+    getLogger('notifications').debug('Activated in-IDE notifications polling module')
 }

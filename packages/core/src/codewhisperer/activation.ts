@@ -478,7 +478,7 @@ export async function activate(context: ExtContext): Promise<void> {
                 if (e.document !== editor.document) {
                     return
                 }
-                if (!runtimeLanguageContext.isLanguageSupported(e.document.languageId)) {
+                if (!runtimeLanguageContext.isLanguageSupported(e.document)) {
                     return
                 }
 
@@ -549,7 +549,7 @@ export async function activate(context: ExtContext): Promise<void> {
                 if (e.document !== editor.document) {
                     return
                 }
-                if (!runtimeLanguageContext.isLanguageSupported(e.document.languageId)) {
+                if (!runtimeLanguageContext.isLanguageSupported(e.document)) {
                     return
                 }
                 /**
@@ -618,6 +618,6 @@ export async function enableDefaultConfigCloud9() {
         await editorSettings.update('acceptSuggestionOnEnter', 'on', vscode.ConfigurationTarget.Global)
         await editorSettings.update('snippetSuggestions', 'top', vscode.ConfigurationTarget.Global)
     } catch (error) {
-        getLogger().error('amazonq: Failed to update user settings', error)
+        getLogger().error('amazonq: Failed to update user settings %O', error)
     }
 }

@@ -22,8 +22,8 @@ import { DefaultS3Client } from '../../../shared/clients/s3Client'
 import * as CloudFormationClientModule from '../../../shared/clients/cloudFormationClient'
 import * as S3ClientModule from '../../../shared/clients/s3Client'
 import * as ProcessUtilsModule from '../../../shared/utilities/processUtils'
+import * as ProcessTerminalModule from '../../../shared/sam/processTerminal'
 import * as ResolveEnvModule from '../../../shared/env/resolveEnv'
-
 import * as SamConfiModule from '../../../shared/sam/config'
 import { RequiredProps } from '../../../shared/utilities/tsUtils'
 import { UserAgent as __UserAgent } from '@smithy/types'
@@ -88,7 +88,7 @@ describe('DeployWizard', async function () {
             // generate samconfig.toml in temporary test folder
             await testFolder.write('samconfig.toml', samconfigInvalidData)
 
-            PrompterTester.init()
+            const prompterTester = PrompterTester.init()
                 .handleInputBox('Specify SAM parameter value for SourceBucketName', (inputBox) => {
                     inputBox.acceptValue('my-source-bucket-name')
                 })
@@ -138,6 +138,7 @@ describe('DeployWizard', async function () {
             assert.strictEqual(parameters.region, 'us-west-2')
             assert.strictEqual(parameters.stackName, 'stack1')
             assert.strictEqual(parameters.bucketSource, 0)
+            prompterTester.assertCallAll()
         })
 
         it('happy path with valid samconfig.toml', async () => {
@@ -158,7 +159,7 @@ describe('DeployWizard', async function () {
             // generate samconfig.toml in temporary test folder
             await testFolder.write('samconfig.toml', samconfigCompleteData)
 
-            PrompterTester.init()
+            const prompterTester = PrompterTester.init()
                 .handleInputBox('Specify SAM parameter value for SourceBucketName', (inputBox) => {
                     inputBox.acceptValue('my-source-bucket-name')
                 })
@@ -189,6 +190,7 @@ describe('DeployWizard', async function () {
             assert(!parameters.region)
             assert(!parameters.stackName)
             assert(!parameters.bucketSource)
+            prompterTester.assertCallAll()
         })
     })
 
@@ -296,7 +298,7 @@ describe('DeployWizard', async function () {
 
             await testFolder.write('samconfig.toml', samconfigCompleteData)
 
-            PrompterTester.init()
+            const prompterTester = PrompterTester.init()
                 .handleQuickPick('Select a SAM/CloudFormation Template', async (quickPick) => {
                     // Need sometime to wait for the template to search for template file
                     await quickPick.untilReady()
@@ -326,6 +328,7 @@ describe('DeployWizard', async function () {
             assert.strictEqual(parameters.region, 'us-west-2')
             assert(!parameters.stackName)
             assert(!parameters.bucketSource)
+            prompterTester.assertCallAll()
         })
     })
 
@@ -357,7 +360,7 @@ describe('DeployWizard', async function () {
              *  - bucketName            : [Skip]     automatically set for bucketSource option 1
              */
 
-            PrompterTester.init()
+            const prompterTester = PrompterTester.init()
                 .handleInputBox('Specify SAM parameter value for SourceBucketName', (inputBox) => {
                     inputBox.acceptValue('my-source-bucket-name')
                 })
@@ -407,6 +410,7 @@ describe('DeployWizard', async function () {
             assert.strictEqual(parameters.stackName, 'stack2')
             assert.strictEqual(parameters.bucketSource, 0)
             assert(!parameters.bucketName)
+            prompterTester.assertCallAll()
         })
 
         it('happy path with valid samconfig.toml', async () => {
@@ -427,7 +431,7 @@ describe('DeployWizard', async function () {
             // generate samconfig.toml in temporary test folder
             await testFolder.write('samconfig.toml', samconfigCompleteData)
 
-            PrompterTester.init()
+            const prompterTester = PrompterTester.init()
                 .handleInputBox('Specify SAM parameter value for SourceBucketName', (inputBox) => {
                     inputBox.acceptValue('my-source-bucket-name')
                 })
@@ -458,6 +462,7 @@ describe('DeployWizard', async function () {
             assert(!parameters.region)
             assert(!parameters.stackName)
             assert(!parameters.bucketSource)
+            prompterTester.assertCallAll()
         })
     })
 
@@ -482,7 +487,7 @@ describe('DeployWizard', async function () {
             const templateFile2 = vscode.Uri.file(await testFolder2.write('template.yaml', validTemplateData))
             await (await globals.templateRegistry).addItem(templateFile2)
 
-            PrompterTester.init()
+            const prompterTester = PrompterTester.init()
                 .handleQuickPick('Select a SAM/CloudFormation Template', async (quickPick) => {
                     // Need sometime to wait for the template to search for template file
                     await quickPick.untilReady()
@@ -539,6 +544,7 @@ describe('DeployWizard', async function () {
             assert.strictEqual(parameters.stackName, 'stack3')
             assert.strictEqual(parameters.bucketSource, 1)
             assert.strictEqual(parameters.bucketName, 'stack-3-bucket')
+            prompterTester.assertCallAll()
         })
 
         it('happy path with samconfig.toml', async () => {
@@ -564,7 +570,7 @@ describe('DeployWizard', async function () {
             await testFolder.write('samconfig.toml', samconfigCompleteData)
             // Simulate return of deployed stacks
 
-            PrompterTester.init()
+            const prompterTester = PrompterTester.init()
                 .handleQuickPick('Select a SAM/CloudFormation Template', async (quickPick) => {
                     // Need sometime to wait for the template to search for template file
                     await quickPick.untilReady()
@@ -591,6 +597,7 @@ describe('DeployWizard', async function () {
             assert(!parameters.region)
             assert(!parameters.stackName)
             assert(!parameters.bucketSource)
+            prompterTester.assertCallAll()
         })
     })
 })
@@ -649,7 +656,7 @@ describe('SAM Deploy', () => {
             sandbox.stub(ProcessUtilsModule, 'ChildProcess').callsFake(mockChildProcess)
 
             mockRunInTerminal = sandbox.stub().resolves(Promise.resolve())
-            sandbox.stub(SamUtilsModule, 'runInTerminal').callsFake(mockRunInTerminal)
+            sandbox.stub(ProcessTerminalModule, 'runInTerminal').callsFake(mockRunInTerminal)
         })
 
         it('[ParamsSource.SamConfig] should instantiate the correct ChildProcess', async () => {
@@ -932,7 +939,7 @@ describe('SAM Deploy', () => {
                 mockChildProcess = sandbox.stub().resolves({})
                 sandbox.stub(ProcessUtilsModule, 'ChildProcess').callsFake(mockChildProcess)
                 mockRunInTerminal = sandbox.stub().resolves(Promise.resolve())
-                sandbox.stub(SamUtilsModule, 'runInTerminal').callsFake(mockRunInTerminal)
+                sandbox.stub(ProcessTerminalModule, 'runInTerminal').callsFake(mockRunInTerminal)
 
                 await runDeploy(appNode)
                 assert.fail('Should have thrown an Error')
@@ -957,7 +964,7 @@ describe('SAM Deploy', () => {
 
                 // Breaking point
                 mockRunInTerminal = sandbox
-                    .stub(SamUtilsModule, 'runInTerminal')
+                    .stub(ProcessTerminalModule, 'runInTerminal')
                     .rejects(new ToolkitError('SAM CLI was cancelled before exiting', { cancelled: true }))
 
                 await runDeploy(appNode)
@@ -982,7 +989,7 @@ describe('SAM Deploy', () => {
                 sandbox.stub(ProcessUtilsModule, 'ChildProcess').callsFake(mockChildProcess)
 
                 // Breaking point
-                mockRunInTerminal = sandbox.stub(SamUtilsModule, 'runInTerminal').callsFake((input, cmd) => {
+                mockRunInTerminal = sandbox.stub(ProcessTerminalModule, 'runInTerminal').callsFake((input, cmd) => {
                     if (cmd === 'deploy') {
                         throw new ToolkitError('The stack is up to date', {
                             code: 'NoUpdateExitCode',

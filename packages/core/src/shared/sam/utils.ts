@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import path from 'path'
+import * as path from 'path'
 import { AWSTreeNodeBase } from '../treeview/nodes/awsTreeNodeBase'
 import { TreeNode, isTreeNode } from '../treeview/resourceTreeDataProvider'
 import * as CloudFormation from '../cloudformation/cloudformation'
@@ -15,14 +15,8 @@ import { ToolkitError } from '../errors'
 import { SamCliInfoInvocation } from './cli/samCliInfo'
 import { parse } from 'semver'
 import { telemetry } from '../telemetry/telemetry'
-import { isCloud9 } from '../extensionUtilities'
-import { removeAnsi } from '../utilities/textUtilities'
-import { ChildProcess, ChildProcessResult } from '../utilities/processUtils'
-import { CancellationError } from '../utilities/timeoutUtils'
-
 import globals from '../extensionGlobals'
-import { getLogger } from '..'
-import { ProcessTerminal } from './process'
+import { getLogger } from '../logger/logger'
 
 /**
  * @description determines the root directory of the project given Template Item
@@ -90,54 +84,6 @@ export async function getSamCliPathAndVersion() {
     }
 
     return { path: samCliPath, parsedVersion }
-}
-
-let oldTerminal: ProcessTerminal | undefined
-export async function runInTerminal(proc: ChildProcess, cmd: string) {
-    const handleResult = (result?: ChildProcessResult) => {
-        if (result && result.exitCode !== 0) {
-            const message = `sam ${cmd} exited with a non-zero exit code: ${result.exitCode}`
-            if (result.stderr.includes('is up to date')) {
-                throw ToolkitError.chain(result.error, message, {
-                    code: 'NoUpdateExitCode',
-                })
-            }
-            throw ToolkitError.chain(result.error, message, {
-                code: 'NonZeroExitCode',
-            })
-        }
-    }
-
-    // `createTerminal` doesn't work on C9 so we use the output channel instead
-    if (isCloud9()) {
-        globals.outputChannel.show()
-
-        const result = proc.run({
-            onStdout: (text) => globals.outputChannel.append(removeAnsi(text)),
-            onStderr: (text) => globals.outputChannel.append(removeAnsi(text)),
-        })
-        await proc.send('\n')
-
-        return handleResult(await result)
-    }
-
-    // The most recent terminal won't get garbage collected until the next run
-    if (oldTerminal?.stopped === true) {
-        oldTerminal.close()
-    }
-    const pty = (oldTerminal = new ProcessTerminal(proc))
-    const terminal = vscode.window.createTerminal({ pty, name: `SAM ${cmd}` })
-    terminal.sendText('\n')
-    terminal.show()
-
-    const result = await new Promise<ChildProcessResult>((resolve) => pty.onDidExit(resolve))
-    if (pty.cancelled) {
-        throw result.error !== undefined
-            ? ToolkitError.chain(result.error, 'SAM CLI was cancelled before exiting', { cancelled: true })
-            : new CancellationError('user')
-    } else {
-        return handleResult(result)
-    }
 }
 
 export function getRecentResponse(mementoRootKey: string, identifier: string, key: string): string | undefined {

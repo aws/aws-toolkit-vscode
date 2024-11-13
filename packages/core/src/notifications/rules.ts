@@ -8,6 +8,8 @@ import * as semver from 'semver'
 import globals from '../shared/extensionGlobals'
 import { ConditionalClause, RuleContext, DisplayIf, CriteriaCondition, ToolkitNotification, AuthState } from './types'
 import { getComputeEnvType, getOperatingSystem } from '../shared/telemetry/util'
+import { AuthFormId } from '../login/webview/vue/types'
+import { getLogger } from '../shared/logger/logger'
 
 /**
  * Evaluates if a given version fits into the parameters specified by a notification, e.g:
@@ -26,8 +28,14 @@ import { getComputeEnvType, getOperatingSystem } from '../shared/telemetry/util'
 function isValidVersion(version: string, condition: ConditionalClause): boolean {
     switch (condition.type) {
         case 'range': {
-            const lowerConstraint = !condition.lowerInclusive || semver.gte(version, condition.lowerInclusive)
-            const upperConstraint = !condition.upperExclusive || semver.lt(version, condition.upperExclusive)
+            const lowerConstraint =
+                !condition.lowerInclusive ||
+                condition.lowerInclusive === '-inf' ||
+                semver.gte(version, condition.lowerInclusive)
+            const upperConstraint =
+                !condition.upperExclusive ||
+                condition.upperExclusive === '+inf' ||
+                semver.lt(version, condition.upperExclusive)
             return lowerConstraint && upperConstraint
         }
         case 'exactMatch':
@@ -99,7 +107,6 @@ export class RuleEngine {
         const expected = criteria.values
         const expectedSet = new Set(expected)
 
-        const isExpected = (i: string) => expectedSet.has(i)
         const hasAnyOfExpected = (i: string[]) => i.some((v) => expectedSet.has(v))
         const isSuperSetOfExpected = (i: string[]) => {
             const s = new Set(i)
@@ -116,10 +123,9 @@ export class RuleEngine {
         // So... YAGNI
         switch (criteria.type) {
             case 'OS':
-                // todo: allow lowercase?
-                return isExpected(this.context.os)
+                return hasAnyOfExpected([this.context.os])
             case 'ComputeEnv':
-                return isExpected(this.context.computeEnv)
+                return hasAnyOfExpected([this.context.computeEnv])
             case 'AuthType':
                 return hasAnyOfExpected(this.context.authTypes)
             case 'AuthRegion':
@@ -139,16 +145,40 @@ export class RuleEngine {
 }
 
 export async function getRuleContext(context: vscode.ExtensionContext, authState: AuthState): Promise<RuleContext> {
-    return {
+    const authTypes =
+        authState.authEnabledConnections === ''
+            ? []
+            : // TODO: There is a large disconnect in the codebase with how auth "types" are stored, displayed, sent to telemetry, etc.
+              // For now we have this "hack" (more of an inefficiency) until auth code can be properly refactored.
+              (authState.authEnabledConnections.split(',') as AuthFormId[]).map(
+                  (id): RuleContext['authTypes'][number] => {
+                      if (id.includes('builderId')) {
+                          return 'builderId'
+                      } else if (id.includes('identityCenter')) {
+                          return 'identityCenter'
+                      } else if (id.includes('credentials')) {
+                          return 'credentials'
+                      }
+                      return 'unknown'
+                  }
+              )
+    const ruleContext = {
         ideVersion: vscode.version,
         extensionVersion: context.extension.packageJSON.version,
         os: getOperatingSystem(),
         computeEnv: await getComputeEnvType(),
-        authTypes: authState.authEnabledConnections.split(','),
-        authRegions: authState.awsRegion ? [authState.awsRegion] : [],
-        authStates: [authState.authStatus],
+        authTypes: [...new Set(authTypes)],
         authScopes: authState.authScopes ? authState.authScopes?.split(',') : [],
         installedExtensions: vscode.extensions.all.map((e) => e.id),
         activeExtensions: vscode.extensions.all.filter((e) => e.isActive).map((e) => e.id),
+
+        // Toolkit (and eventually Q?) may have multiple connections with different regions and states.
+        // However, this granularity does not seem useful at this time- only the active connection is considered.
+        authRegions: authState.awsRegion ? [authState.awsRegion] : [],
+        authStates: [authState.authStatus],
     }
+    const { activeExtensions, installedExtensions, ...loggableRuleContext } = ruleContext
+    getLogger('notifications').debug('getRuleContext() determined rule context: %O', loggableRuleContext)
+
+    return ruleContext
 }

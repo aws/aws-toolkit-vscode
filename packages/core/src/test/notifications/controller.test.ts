@@ -9,14 +9,19 @@ import assert from 'assert'
 import sinon from 'sinon'
 import globals from '../../shared/extensionGlobals'
 import { randomUUID } from '../../shared'
-import { installFakeClock } from '../testUtil'
+import { assertTelemetry, installFakeClock } from '../testUtil'
 import {
     NotificationFetcher,
     NotificationsController,
     RemoteFetcher,
     ResourceResponse,
 } from '../../notifications/controller'
-import { NotificationData, NotificationType, ToolkitNotification } from '../../notifications/types'
+import {
+    NotificationData,
+    NotificationType,
+    ToolkitNotification,
+    getNotificationTelemetryId,
+} from '../../notifications/types'
 import { HttpResourceFetcher } from '../../shared/resourcefetcher/httpResourceFetcher'
 import { NotificationsNode } from '../../notifications/panelNode'
 import { RuleEngine } from '../../notifications/rules'
@@ -482,6 +487,7 @@ describe('Notifications Controller', function () {
 
         assert.equal(onReceiveSpy.callCount, 1)
         assert.deepStrictEqual(onReceiveSpy.args[0][0], [content.notifications[0]])
+        assertTelemetry('toolkit_showNotification', { id: getNotificationTelemetryId(content.notifications[0]) })
 
         onReceiveSpy.restore()
     })

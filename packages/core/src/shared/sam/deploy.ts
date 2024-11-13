@@ -25,15 +25,9 @@ import { validateSamDeployConfig, SamConfig, writeSamconfigGlobal } from './conf
 import { BucketSource, createBucketSourcePrompter, createBucketPrompter } from '../ui/common/bucket'
 import { createStackPrompter } from '../ui/common/stack'
 import { TemplateItem, createTemplatePrompter } from '../ui/common/samTemplate'
-import {
-    getProjectRoot,
-    getRecentResponse,
-    getSamCliPathAndVersion,
-    getSource,
-    runInTerminal,
-    updateRecentResponse,
-} from './utils'
+import { getProjectRoot, getRecentResponse, getSamCliPathAndVersion, getSource, updateRecentResponse } from './utils'
 import { createDeployParamsSourcePrompter, ParamsSource } from '../ui/common/paramsSource'
+import { runInTerminal } from './processTerminal'
 
 export interface DeployParams {
     readonly paramsSource: ParamsSource
