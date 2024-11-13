@@ -20,6 +20,7 @@ import { getCredentialsFilename } from '../../auth/credentials/sharedCredentials
 import { Connection, isIamConnection, isSsoConnection, scopesSsoAccountAccess } from '../../auth/connection'
 import { AuthNode, createDeleteConnectionButton, promptForConnection } from '../../auth/utils'
 import { waitUntil } from '../../shared'
+import { Credentials } from '@aws-sdk/types'
 
 const ssoProfile = createSsoProfile()
 const scopedSsoProfile = createSsoProfile({ scopes: ['foo'] })
@@ -524,7 +525,6 @@ describe('Auth', function () {
                     sessionToken: undefined,
                 })
                 const contentBefore = await fs.readFileText(getCredentialsFilename())
-                const statBefore = await fs.stat(getCredentialsFilename())
                 await fs.delete(getCredentialsFilename())
                 const newCreds = { ...initialCreds, accessKey: 'y', secretKey: 'y' }
                 await UserCredentialsUtils.generateCredentialsFile(newCreds)
@@ -532,18 +532,16 @@ describe('Auth', function () {
 
                 assert.notDeepStrictEqual(contentBefore, contentAfter)
 
-                const updated = await waitUntil(async () => statBefore !== (await fs.stat(getCredentialsFilename())), {
+                const areCredsEqual = (creds: Credentials) => {
+                    return creds.accessKeyId === newCreds.accessKey && creds.secretAccessKey === newCreds.secretKey
+                }
+
+                const credsUpdated = await waitUntil(async () => areCredsEqual(await conn.getCredentials()), {
                     timeout: 20000,
                     interval: 1000,
                     truthy: true,
                 })
-                assert.ok(updated, 'Credentials file update failed')
-
-                assert.deepStrictEqual(await conn.getCredentials(), {
-                    accessKeyId: newCreds.accessKey,
-                    secretAccessKey: newCreds.secretKey,
-                    sessionToken: undefined,
-                })
+                assert.ok(credsUpdated, 'Credentials file update failed')
             })
         }
     })
