@@ -2914,6 +2914,7 @@ describe('SamDebugConfigurationProvider', async function () {
             const tempDir = path.dirname(actual.codeRoot)
 
             const expected: SamLaunchRequestArgs = {
+                // the credential in debug config will override default toolkit credential
                 awsCredentials: configCredentials,
                 ...awsSection,
                 type: AWS_SAM_DEBUG_TYPE,
@@ -2949,7 +2950,8 @@ describe('SamDebugConfigurationProvider', async function () {
                 templatePath: pathutil.normalize(path.join(actual.baseBuildDir!, 'app___vsctk___template.yaml')),
                 parameterOverrides: undefined,
                 architecture: 'x86_64',
-                region: 'us-west-2',
+                // the region in debug config should override default toolkit region
+                region: 'us-weast-9',
 
                 //
                 // Node-related fields

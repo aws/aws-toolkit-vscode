@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "region in debug config should override default toolkit region"
+}
