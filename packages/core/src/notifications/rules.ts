@@ -134,8 +134,6 @@ export class RuleEngine {
                 return hasAnyOfExpected(this.context.authStates)
             case 'AuthScopes':
                 return isEqualSetToExpected(this.context.authScopes)
-            case 'InstalledExtensions':
-                return isSuperSetOfExpected(this.context.installedExtensions)
             case 'ActiveExtensions':
                 return isSuperSetOfExpected(this.context.activeExtensions)
             default:
@@ -169,7 +167,6 @@ export async function getRuleContext(context: vscode.ExtensionContext, authState
         computeEnv: await getComputeEnvType(),
         authTypes: [...new Set(authTypes)],
         authScopes: authState.authScopes ? authState.authScopes?.split(',') : [],
-        installedExtensions: vscode.extensions.all.map((e) => e.id),
         activeExtensions: vscode.extensions.all.filter((e) => e.isActive).map((e) => e.id),
 
         // Toolkit (and eventually Q?) may have multiple connections with different regions and states.
@@ -177,7 +174,8 @@ export async function getRuleContext(context: vscode.ExtensionContext, authState
         authRegions: authState.awsRegion ? [authState.awsRegion] : [],
         authStates: [authState.authStatus],
     }
-    const { activeExtensions, installedExtensions, ...loggableRuleContext } = ruleContext
+
+    const { activeExtensions, ...loggableRuleContext } = ruleContext
     getLogger('notifications').debug('getRuleContext() determined rule context: %O', loggableRuleContext)
 
     return ruleContext

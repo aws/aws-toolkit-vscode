@@ -9,15 +9,7 @@ import { TypeConstructor } from '../shared/utilities/typeConstructors'
 import { AuthUserState, AuthStatus } from '../shared/telemetry/telemetry.gen'
 
 /** Types of information that we can use to determine whether to show a notification or not. */
-export type Criteria =
-    | 'OS'
-    | 'ComputeEnv'
-    | 'AuthType'
-    | 'AuthRegion'
-    | 'AuthState'
-    | 'AuthScopes'
-    | 'InstalledExtensions'
-    | 'ActiveExtensions'
+export type Criteria = 'OS' | 'ComputeEnv' | 'AuthType' | 'AuthRegion' | 'AuthState' | 'AuthScopes' | 'ActiveExtensions'
 
 /** Generic condition where the type determines how the values are evaluated. */
 export interface CriteriaCondition {
@@ -132,7 +124,6 @@ export interface RuleContext {
     readonly authRegions: string[]
     readonly authStates: AuthStatus[]
     readonly authScopes: string[]
-    readonly installedExtensions: string[]
     readonly activeExtensions: string[]
 }
 

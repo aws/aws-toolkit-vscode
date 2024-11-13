@@ -39,7 +39,6 @@ describe('Notifications Controller', function () {
         authRegions: ['us-east-1'],
         authStates: ['connected'],
         authScopes: ['codewhisperer:completions', 'codewhisperer:analysis'],
-        installedExtensions: ['ext1', 'ext2', 'ext3'],
         activeExtensions: ['ext1', 'ext2'],
     })
 
