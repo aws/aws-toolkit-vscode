@@ -625,9 +625,7 @@ export class ChatController {
                     triggerPayload.relevantTextDocuments = await LspController.instance.query(triggerPayload.message)
                     triggerPayload.relevantTextDocuments.forEach((doc) => {
                         getLogger().info(
-                            `amazonq: Using workspace files ${
-                                doc.relativeFilePath
-                            }, content(partial): ${doc.text?.substring(0, 200)}`
+                            `amazonq: Using workspace files ${doc.relativeFilePath}, content(partial): ${doc.text?.substring(0, 200)}`
                         )
                     })
                     triggerPayload.projectContextQueryLatencyMs = performance.now() - start
