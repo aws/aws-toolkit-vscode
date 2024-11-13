@@ -6,6 +6,7 @@
 import * as vscode from 'vscode'
 import { featureDevScheme } from '../../amazonqFeatureDev/constants'
 import { fs } from '../../shared'
+import { diffLines } from 'diff'
 
 export async function openDiff(leftPath: string, rightPath: string, tabId: string) {
     const { left, right } = await getFileDiffUris(leftPath, rightPath, tabId)
@@ -27,6 +28,26 @@ export async function getFileDiffUris(leftPath: string, rightPath: string, tabId
     const right = createAmazonQUri(rightPath, tabId)
 
     return { left, right }
+}
+
+export async function computeDiff(leftPath: string, rightPath: string, tabId: string) {
+    const { left, right } = await getFileDiffUris(leftPath, rightPath, tabId)
+    const leftFile = await vscode.workspace.openTextDocument(left)
+    const rightFile = await vscode.workspace.openTextDocument(right)
+
+    const changes = diffLines(leftFile.getText(), rightFile.getText())
+
+    let added = 0
+    let removed = 0
+    changes.forEach((change) => {
+        const count = change.count ?? change.value.split('\n').length - 1 // ignoring end-of-file empty line
+        if (change.added) {
+            added += count
+        } else if (change.removed) {
+            removed += count
+        }
+    })
+    return { changes, added, removed }
 }
 
 export function createAmazonQUri(path: string, tabId: string) {
