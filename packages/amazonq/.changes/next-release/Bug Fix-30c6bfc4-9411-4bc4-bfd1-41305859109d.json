@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Fix broken inline suggestion auto-trigger on Systemverfilog files if users dont have systemverilog extension installed and enabled"
+}
