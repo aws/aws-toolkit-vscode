@@ -108,7 +108,28 @@ export class LspClient {
             const request = JSON.stringify({
                 query: query,
                 filePath: path,
+                target: 'default',
             })
+
+            const repomapRequest = await this.encrypt(
+                JSON.stringify({
+                    query: query,
+                    filePath: path,
+                    target: 'codemap',
+                })
+            )
+
+            const bm25Request = await this.encrypt(
+                JSON.stringify({
+                    query: query,
+                    filePath: path,
+                    target: 'bm25',
+                })
+            )
+
+            const repomapResponse = await this.client?.sendRequest(QueryInlineProjectContextRequestType, repomapRequest)
+            const bm25Response = await this.client?.sendRequest(QueryInlineProjectContextRequestType, bm25Request)
+
             const encrypted = await this.encrypt(request)
             const resp: any = await this.client?.sendRequest(QueryInlineProjectContextRequestType, encrypted)
             return resp

@@ -65,6 +65,7 @@ export class FeatureConfigProvider {
     }
 
     isNewProjectContextGroup(): boolean {
+        return true
         return this.featureConfigs.get(Features.projectContextFeature)?.variation === 'TREATMENT'
     }
 
