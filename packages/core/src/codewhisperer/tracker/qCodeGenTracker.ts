@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import { getLogger } from '../../shared/logger/logger'
 import * as CodeWhispererConstants from '../models/constants'
-import { vsCodeState } from '../models/model'
+import { OnRecommendationAcceptanceEntry, vsCodeState } from '../models/model'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { AuthUtil } from '../util/authUtil'
@@ -45,6 +45,8 @@ export class QCodeGenTracker {
         return TelemetryHelper.instance.isTelemetryEnabled() && AuthUtil.instance.isConnected()
     }
 
+    // this should be invoked whenever there is a successful Q feature invocation
+    // for all Q features
     public onQFeatureInvoked() {
         this._serviceInvocationCount += 1
     }
@@ -128,6 +130,10 @@ export class QCodeGenTracker {
         }
     }
 
+    private countNewLines(str: string) {
+        return str.split('\n').length - 1
+    }
+
     public onTextDocumentChange(e: vscode.TextDocumentChangeEvent) {
         if (
             !runtimeLanguageContext.isLanguageSupported(e.document.languageId) ||
@@ -143,8 +149,42 @@ export class QCodeGenTracker {
             return
         }
         this._totalNewCodeCharacterCount += contentChange.text.length
-        this._totalNewCodeLineCount += contentChange.text.split('\n').length - 1
+        this._totalNewCodeLineCount += this.countNewLines(contentChange.text)
         // start 5 min data reporting once valid user input is detected
         this.tryStartTimer()
     }
+
+    // add Q inline completion contributed code to total code written
+    public onInlineCompletionAcceptance(acceptanceEntry: OnRecommendationAcceptanceEntry) {
+        let typeaheadLength = 0
+        if (acceptanceEntry.editor) {
+            typeaheadLength = acceptanceEntry.editor.document.getText(acceptanceEntry.range).length
+        }
+        const documentChangeLength = acceptanceEntry.recommendation.length - typeaheadLength
+        // if the inline completion is less than 50 characters, it will be auto captured by onTextDocumentChange
+        // notice that the document change event of such acceptance do not include typeahead
+        if (documentChangeLength <= QCodeGenTracker.copySnippetThreshold) {
+            return
+        }
+        this._totalNewCodeCharacterCount += acceptanceEntry.recommendation.length
+        this._totalNewCodeLineCount += this.countNewLines(acceptanceEntry.recommendation)
+    }
+
+    // add Q chat insert to cursor code to total code written
+    public onQChatInsertion() {}
+
+    // add Q inline chat acceptance to total code written
+    public onInlineChat() {}
+
+    // add Q inline chat acceptance to total code written
+    public onTransformAcceptance() {}
+
+    // add Q feature dev acceptance to total code written
+    public onFeatureDevAcceptance() {}
+
+    // add Q UTG acceptance to total code written
+    public onUtgAcceptance() {}
+
+    // add Q UTG acceptance to total code written
+    public onDocAcceptance() {}
 }
