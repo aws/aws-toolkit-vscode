@@ -31,7 +31,7 @@ import {
     joinAll,
     isPresent,
     partialClone,
-    inspect,
+    formatObj,
 } from '../../../shared/utilities/collectionUtils'
 
 import { asyncGenerator } from '../../../shared/utilities/collectionUtils'
@@ -699,18 +699,18 @@ describe('CollectionUtils', async function () {
         })
 
         it('defaults to a depth of 3', function () {
-            assert.strictEqual(inspect(testData), '{ root: { A: { B: {} } } }')
+            assert.strictEqual(formatObj(testData), '{ root: { A: { B: {} } } }')
         })
 
         it('allows depth to be set manually', function () {
             assert.strictEqual(
-                inspect(testData, { depth: 6 }),
+                formatObj(testData, { depth: 6 }),
                 "{\n  root: {\n    A: {\n      B: { C: { D: { E: 'data' } } }\n    }\n  }\n}"
             )
         })
 
         it('omits keys specified', function () {
-            assert.strictEqual(inspect(testData, { omitKeys: ['D', 'C'] }), '{ root: { A: { B: {} } } }')
+            assert.strictEqual(formatObj(testData, { omitKeys: ['D', 'C'] }), '{ root: { A: { B: {} } } }')
         })
     })
 

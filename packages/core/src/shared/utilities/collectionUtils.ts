@@ -343,7 +343,7 @@ type inspectOptions = Partial<{
  * @param obj object to show
  * @param opt options for showing (ex. depth, omitting keys)
  */
-export function inspect(obj: any, opt?: inspectOptions): string {
+export function formatObj(obj: any, opt?: inspectOptions): string {
     const options = {
         depth: opt?.depth ?? 3,
         omitKeys: opt?.omitKeys ?? [],

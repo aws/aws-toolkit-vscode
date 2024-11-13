@@ -53,7 +53,7 @@ import { uiEventRecorder } from '../../../amazonq/util/eventRecorder'
 import { globals } from '../../../shared'
 import { telemetry } from '../../../shared/telemetry'
 import { isSsoConnection } from '../../../auth/connection'
-import * as util from 'util'
+import { formatObj } from '../../../shared/utilities/collectionUtils'
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
@@ -652,7 +652,7 @@ export class ChatController {
         const request = triggerPayloadToChatRequest(triggerPayload)
         const session = this.sessionStorage.getSession(tabID)
         getLogger().info(
-            `request from tab: ${tabID} conversationID: ${session.sessionIdentifier} request: ${util.inspect(request, { depth: 12 })}`
+            `request from tab: ${tabID} conversationID: ${session.sessionIdentifier} request: ${formatObj(request, { depth: 12 })}`
         )
         let response: MessengerResponseType | undefined = undefined
         session.createNewTokenSource()
@@ -678,7 +678,7 @@ export class ChatController {
             getLogger().info(
                 `response to tab: ${tabID} conversationID: ${session.sessionIdentifier} requestID: ${
                     response.$metadata.requestId
-                } metadata: ${util.inspect(response.$metadata, { depth: 12 })}`
+                } metadata: ${formatObj(response.$metadata, { depth: 12 })}`
             )
             await this.messenger.sendAIResponse(response, session, tabID, triggerID, triggerPayload)
         } catch (e: any) {
