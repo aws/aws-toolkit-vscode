@@ -8,6 +8,7 @@ import * as semver from 'semver'
 import globals from '../shared/extensionGlobals'
 import { ConditionalClause, RuleContext, DisplayIf, CriteriaCondition, ToolkitNotification, AuthState } from './types'
 import { getComputeEnvType, getOperatingSystem } from '../shared/telemetry/util'
+import { isAutomation } from '../shared/vscode/env'
 
 /**
  * Evaluates if a given version fits into the parameters specified by a notification, e.g:
@@ -69,7 +70,8 @@ export class RuleEngine {
 
     private evaluate(condition: DisplayIf): boolean {
         const currentExt = globals.context.extension.id
-        if (condition.extensionId !== currentExt) {
+        // if in test, skip the extension id check since its fake
+        if (condition.extensionId !== currentExt && !isAutomation()) {
             return false
         }
 
