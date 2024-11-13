@@ -20,13 +20,14 @@ import {
 import { getTestWindow } from '../../../shared/vscode/window'
 import { CloudWatchLogsSettings, uriToKey } from '../../../../awsService/cloudWatchLogs/cloudWatchLogsUtils'
 import { installFakeClock } from '../../../testUtil'
-import { DefaultAwsContext } from '../../../../shared'
+import { DefaultAwsContext, ToolkitError } from '../../../../shared'
 
 describe('TailLogGroup', function () {
     const testLogGroup = 'test-log-group'
     const testRegion = 'test-region'
     const testMessage = 'test-message'
     const testAwsAccountId = '1234'
+    const testAwsCredentials = {} as any as AWS.Credentials
 
     let sandbox: sinon.SinonSandbox
     let registry: LiveTailSessionRegistry
@@ -57,6 +58,8 @@ describe('TailLogGroup', function () {
 
     it('starts LiveTailSession and writes to document. Closes tab and asserts session gets closed.', async function () {
         sandbox.stub(DefaultAwsContext.prototype, 'getCredentialAccountId').returns(testAwsAccountId)
+        sandbox.stub(DefaultAwsContext.prototype, 'getCredentials').returns(Promise.resolve(testAwsCredentials))
+
         wizardSpy = sandbox.stub(TailLogGroupWizard.prototype, 'run').callsFake(async function () {
             return getTestWizardResponse()
         })
@@ -122,6 +125,19 @@ describe('TailLogGroup', function () {
         assert.strictEqual(stopLiveTailSessionSpy.calledOnce, true)
     })
 
+    it('throws if crendentials are undefined', async function () {
+        sandbox.stub(DefaultAwsContext.prototype, 'getCredentials').returns(Promise.resolve(undefined))
+        wizardSpy = sandbox.stub(TailLogGroupWizard.prototype, 'run').callsFake(async function () {
+            return getTestWizardResponse()
+        })
+        await assert.rejects(async () => {
+            await tailLogGroup(registry, {
+                groupName: testLogGroup,
+                regionName: testRegion,
+            })
+        }, ToolkitError)
+    })
+
     it('closeSession removes session from registry and calls underlying stopLiveTailSession function.', function () {
         stopLiveTailSessionSpy = sandbox
             .stub(LiveTailSession.prototype, 'stopLiveTailSession')
@@ -132,6 +148,7 @@ describe('TailLogGroup', function () {
         const session = new LiveTailSession({
             logGroupArn: testLogGroup,
             region: testRegion,
+            awsCredentials: testAwsCredentials,
         })
         registry.set(uriToKey(session.uri), session)
 
@@ -145,6 +162,7 @@ describe('TailLogGroup', function () {
         const session = new LiveTailSession({
             logGroupArn: testLogGroup,
             region: testRegion,
+            awsCredentials: testAwsCredentials,
         })
         const testData = 'blah blah blah'
         const document = await vscode.workspace.openTextDocument(session.uri)

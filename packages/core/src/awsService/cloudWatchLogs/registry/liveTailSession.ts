@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
+import * as AWS from '@aws-sdk/types'
 import {
     CloudWatchLogsClient,
     StartLiveTailCommand,
@@ -19,6 +20,7 @@ export type LiveTailSessionConfiguration = {
     logStreamFilter?: LogStreamFilterResponse
     logEventFilterPattern?: string
     region: string
+    awsCredentials: AWS.Credentials
 }
 
 export type LiveTailSessionClient = {
@@ -49,6 +51,7 @@ export class LiveTailSession {
         this.logStreamFilter = configuration.logStreamFilter
         this.liveTailClient = {
             cwlClient: new CloudWatchLogsClient({
+                credentials: configuration.awsCredentials,
                 region: configuration.region,
                 customUserAgent: getUserAgent(),
             }),

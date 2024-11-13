@@ -13,7 +13,7 @@ import {
     LiveTailSessionUpdate,
     StartLiveTailResponseStream,
 } from '@aws-sdk/client-cloudwatch-logs'
-import { getLogger, ToolkitError } from '../../../shared'
+import { getLogger, globals, ToolkitError } from '../../../shared'
 import { uriToKey } from '../cloudWatchLogsUtils'
 
 export async function tailLogGroup(
@@ -25,12 +25,16 @@ export async function tailLogGroup(
     if (!wizardResponse) {
         throw new CancellationError('user')
     }
-
+    const awsCredentials = await globals.awsContext.getCredentials()
+    if (awsCredentials === undefined) {
+        throw new ToolkitError('Failed to start LiveTail session: credentials are undefined.')
+    }
     const liveTailSessionConfig: LiveTailSessionConfiguration = {
         logGroupArn: wizardResponse.regionLogGroupSubmenuResponse.data,
         logStreamFilter: wizardResponse.logStreamFilter,
         logEventFilterPattern: wizardResponse.filterPattern,
         region: wizardResponse.regionLogGroupSubmenuResponse.region,
+        awsCredentials: awsCredentials,
     }
     const session = new LiveTailSession(liveTailSessionConfig)
     if (registry.has(uriToKey(session.uri))) {
