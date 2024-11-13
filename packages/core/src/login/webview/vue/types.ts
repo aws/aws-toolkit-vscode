@@ -81,5 +81,4 @@ export type AuthFormId =
     | 'identityCenterCodeWhisperer'
     | 'identityCenterCodeCatalyst'
     | 'identityCenterExplorer'
-    | 'aggregateExplorer'
     | 'unknown'
