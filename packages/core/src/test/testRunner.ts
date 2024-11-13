@@ -79,6 +79,7 @@ export async function runTests(
                 mochaFile: outputFile,
             },
         },
+        retries: 3, // runs a max of 4 times (3 retries + original)
         timeout: 0,
     })
 
