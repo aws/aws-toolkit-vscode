@@ -391,7 +391,7 @@ export function pageableToCollection<
     TResponse,
     TTokenProp extends SharedProp<TRequest, TResponse>,
     TTokenType extends TRequest[TTokenProp] & TResponse[TTokenProp],
-    TResult extends AccumulableKeys<TResponse> = never
+    TResult extends AccumulableKeys<TResponse> = never,
 >(
     requester: (request: TRequest) => Promise<TResponse>,
     request: TRequest,
