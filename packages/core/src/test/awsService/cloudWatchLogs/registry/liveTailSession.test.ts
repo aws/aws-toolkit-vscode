@@ -15,53 +15,53 @@ describe('LiveTailSession', async function () {
 
     it('builds StartLiveTailCommand: no stream Filter, no event filter.', function () {
         const session = buildLiveTailSession({ type: 'all' }, undefined)
-        validateStartLiveTailCommand(
-            session.buildStartLiveTailCommand(),
+        assert.deepStrictEqual(
+            session.buildStartLiveTailCommand().input,
             new StartLiveTailCommand({
                 logGroupIdentifiers: [testLogGroupArn],
                 logEventFilterPattern: undefined,
                 logStreamNamePrefixes: undefined,
                 logStreamNames: undefined,
-            })
+            }).input
         )
     })
 
     it('builds StartLiveTailCommand: with prefix stream Filter', function () {
         const session = buildLiveTailSession({ type: 'prefix', filter: testFilter }, undefined)
-        validateStartLiveTailCommand(
-            session.buildStartLiveTailCommand(),
+        assert.deepStrictEqual(
+            session.buildStartLiveTailCommand().input,
             new StartLiveTailCommand({
                 logGroupIdentifiers: [testLogGroupArn],
                 logEventFilterPattern: undefined,
                 logStreamNamePrefixes: [testFilter],
                 logStreamNames: undefined,
-            })
+            }).input
         )
     })
 
     it('builds StartLiveTailCommand: with specific stream Filter', function () {
         const session = buildLiveTailSession({ type: 'specific', filter: testFilter }, undefined)
-        validateStartLiveTailCommand(
-            session.buildStartLiveTailCommand(),
+        assert.deepStrictEqual(
+            session.buildStartLiveTailCommand().input,
             new StartLiveTailCommand({
                 logGroupIdentifiers: [testLogGroupArn],
                 logEventFilterPattern: undefined,
                 logStreamNamePrefixes: undefined,
                 logStreamNames: [testFilter],
-            })
+            }).input
         )
     })
 
     it('builds StartLiveTailCommand: with log event Filter', function () {
         const session = buildLiveTailSession({ type: 'all' }, testFilter)
-        validateStartLiveTailCommand(
-            session.buildStartLiveTailCommand(),
+        assert.deepStrictEqual(
+            session.buildStartLiveTailCommand().input,
             new StartLiveTailCommand({
                 logGroupIdentifiers: [testLogGroupArn],
                 logEventFilterPattern: testFilter,
                 logStreamNamePrefixes: undefined,
                 logStreamNames: undefined,
-            })
+            }).input
         )
     })
 
@@ -76,9 +76,5 @@ describe('LiveTailSession', async function () {
             region: testRegion,
             awsCredentials: testAwsCredentials,
         })
-    }
-
-    function validateStartLiveTailCommand(actual: StartLiveTailCommand, expected: StartLiveTailCommand) {
-        assert.strictEqual(JSON.stringify(actual), JSON.stringify(expected))
     }
 })
