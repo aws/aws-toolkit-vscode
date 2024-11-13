@@ -404,8 +404,8 @@ describe('FileSystem', function () {
         })
     })
 
-    describe('rename()', async function () {
-        it('renames a file', async () => {
+    describe('rename()', function () {
+        it('renames a file', async function () {
             const oldPath = await testFolder.write('oldFile.txt', 'hello world')
             const newPath = path.join(path.dirname(oldPath), 'newFile.txt')
 
@@ -416,7 +416,7 @@ describe('FileSystem', function () {
             assert.deepStrictEqual(testutil.getMetrics('ide_fileSystem').length, 0)
         })
 
-        it('renames a folder', async () => {
+        it('renames a folder', async function () {
             const oldPath = await testFolder.mkdir('test')
             await fs.writeFile(path.join(oldPath, 'file.txt'), 'test text')
             const newPath = path.join(path.dirname(oldPath), 'newName')
@@ -428,7 +428,7 @@ describe('FileSystem', function () {
             assert(!existsSync(oldPath))
         })
 
-        it('overwrites if destination exists', async () => {
+        it('overwrites if destination exists', async function () {
             const oldPath = await testFolder.write('oldFile.txt', 'hello world')
             const newPath = await testFolder.write('newFile.txt', 'some content')
 
@@ -438,7 +438,7 @@ describe('FileSystem', function () {
             assert(!existsSync(oldPath))
         })
 
-        it('throws if source does not exist', async () => {
+        it('throws if source does not exist', async function () {
             const clock = testutil.installFakeClock()
             try {
                 const oldPath = testFolder.pathFrom('oldFile.txt')
