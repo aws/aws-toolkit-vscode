@@ -23,7 +23,7 @@ import { driveLetterRegex } from '../../../shared/utilities/pathUtils'
 import { IdeFileSystem } from '../../../shared/telemetry/telemetry.gen'
 import { TestFolder } from '../../testUtil'
 
-describe('FileSystem', function () {
+describe.only('FileSystem', function () {
     let sandbox: Sinon.SinonSandbox
     let testFolder: TestFolder
 
@@ -404,7 +404,7 @@ describe('FileSystem', function () {
         })
     })
 
-    describe('rename()', async () => {
+    describe.only('rename()', async () => {
         it('renames a file', async () => {
             const oldPath = await testFolder.write('oldFile.txt', 'hello world')
             const newPath = path.join(path.dirname(oldPath), 'newFile.txt')
@@ -459,21 +459,23 @@ describe('FileSystem', function () {
             }
         })
 
-        it('source file does not exist at first, but eventually appears', async () => {
-            const oldPath = testFolder.pathFrom('oldFile.txt')
-            const newPath = testFolder.pathFrom('newFile.txt')
+        for (const _ of Array.of({ length: 1000 }, (i: any) => i)) {
+            it('source file does not exist at first, but eventually appears', async function () {
+                const oldPath = testFolder.pathFrom('oldFile.txt')
+                const newPath = testFolder.pathFrom('newFile.txt')
 
-            const result = fs.rename(oldPath, newPath)
-            // this file is created after the first "exists" check fails, the following check should pass
-            void testutil.toFile('hello world', oldPath)
-            await result
+                const result = fs.rename(oldPath, newPath)
+                // this file is created after the first "exists" check fails, the following check should pass
+                void testutil.toFile('hello world', oldPath)
+                await result
 
-            testutil.assertTelemetry('ide_fileSystem', {
-                action: 'rename',
-                result: 'Succeeded',
-                reason: 'RenameRaceCondition',
+                testutil.assertTelemetry('ide_fileSystem', {
+                    action: 'rename',
+                    result: 'Succeeded',
+                    reason: 'RenameRaceCondition',
+                })
             })
-        })
+        }
     })
 
     describe('getUserHomeDir()', function () {
