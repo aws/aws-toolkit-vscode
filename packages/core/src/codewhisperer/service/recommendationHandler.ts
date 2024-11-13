@@ -44,6 +44,7 @@ import { openUrl } from '../../shared/utilities/vsCodeUtils'
 import { indent } from '../../shared/utilities/textUtilities'
 import path from 'path'
 import { isIamConnection } from '../../auth/connection'
+import { QCodeGenTracker } from '../tracker/qCodeGenTracker'
 
 /**
  * This class is for getRecommendation/listRecommendation API calls and its states
@@ -316,6 +317,7 @@ export class RecommendationHandler {
             getLogger().debug(msg)
             if (invocationResult === 'Succeeded') {
                 CodeWhispererCodeCoverageTracker.getTracker(session.language)?.incrementServiceInvocationCount()
+                QCodeGenTracker.instance.onQFeatureInvoked()
             } else {
                 if (
                     (errorMessage?.includes(invalidCustomizationMessage) && errorCode === 'AccessDeniedException') ||

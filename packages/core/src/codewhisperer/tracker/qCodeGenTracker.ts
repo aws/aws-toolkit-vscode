@@ -6,9 +6,7 @@
 import * as vscode from 'vscode'
 import { getLogger } from '../../shared/logger/logger'
 import * as CodeWhispererConstants from '../models/constants'
-import globals from '../../shared/extensionGlobals'
 import { vsCodeState } from '../models/model'
-import { CodewhispererLanguage, telemetry } from '../../shared/telemetry/telemetry'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { AuthUtil } from '../util/authUtil'
@@ -27,6 +25,7 @@ export class QCodeGenTracker {
     private _serviceInvocationCount: number
 
     static #instance: QCodeGenTracker
+    static copySnippetThreshold = 50
 
     private constructor() {
         this._totalNewCodeLineCount = 0
@@ -50,39 +49,21 @@ export class QCodeGenTracker {
         this._serviceInvocationCount += 1
     }
 
-    public flush() {
-        if (!this.isActive()) {
-            this._totalNewCodeLineCount = 0
-            this._totalNewCodeCharacterCount = 0
-            this.closeTimer()
-            return
-        }
-        try {
-            this.emitCodeContribution()
-        } catch (error) {
-            getLogger().error(`Encountered ${error} when emitting code contribution metric`)
-        }
-    }
-
     public emitCodeContribution() {
         const selectedCustomization = getSelectedCustomization()
-        if (this._serviceInvocationCount <= 0) {
-            getLogger().debug(`Skip emiting code contribution metric. There is no Amazon Q active usage. `)
-            return
-        }
         client
             .sendTelemetryEvent({
                 telemetryEvent: {
                     codeCoverageEvent: {
                         customizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
                         programmingLanguage: {
-                            languageName: runtimeLanguageContext.toRuntimeLanguage(this._language),
+                            languageName: 'plaintext',
                         },
                         acceptedCharacterCount: 0,
                         totalCharacterCount: 0,
                         timestamp: new Date(Date.now()),
-                        totalNewCodeCharacterCount: 0,
-                        totalNewCodeLineCount: 0,
+                        totalNewCodeCharacterCount: this._totalNewCodeCharacterCount,
+                        totalNewCodeLineCount: this._totalNewCodeLineCount,
                     },
                 },
             })
@@ -92,11 +73,8 @@ export class QCodeGenTracker {
                 if (isAwsError(error)) {
                     requestId = error.requestId
                 }
-
                 getLogger().debug(
-                    `Failed to sendTelemetryEvent to CodeWhisperer, requestId: ${requestId ?? ''}, message: ${
-                        error.message
-                    }`
+                    `Failed to sendTelemetryEvent, requestId: ${requestId ?? ''}, message: ${error.message}`
                 )
             })
     }
@@ -105,24 +83,31 @@ export class QCodeGenTracker {
         if (this._timer !== undefined) {
             return
         }
-        const currentDate = new globals.clock.Date()
+        if (!this.isActive()) {
+            getLogger().debug(`Skip emiting code contribution metric. Telemetry disabled or not logged in. `)
+            this.resetTracker()
+            this.closeTimer()
+            return
+        }
         const startTime = performance.now()
         this._timer = setTimeout(() => {
             try {
-                const currentTime = new globals.clock.Date().getTime()
+                const currentTime = performance.now()
                 const delay: number = CodeWhispererConstants.defaultCheckPeriodMillis
                 const diffTime: number = startTime + delay
                 if (diffTime <= currentTime) {
-                    if (this._totalNewCodeCharacterCount > 0) {
-                        this.flush()
-                    } else {
-                        getLogger().debug(
-                            `CodeWhispererCodeCoverageTracker: skipped telemetry due to empty tokens array`
-                        )
+                    if (this._serviceInvocationCount <= 0) {
+                        getLogger().debug(`Skip emiting code contribution metric. There is no active Amazon Q usage. `)
+                        return
                     }
+                    if (this._totalNewCodeCharacterCount === 0) {
+                        getLogger().debug(`Skip emiting code contribution metric. There is no new code added. `)
+                        return
+                    }
+                    this.emitCodeContribution()
                 }
             } catch (e) {
-                getLogger().verbose(`Exception Thrown from CodeWhispererCodeCoverageTracker: ${e}`)
+                getLogger().verbose(`Exception Thrown from QCodeGenTracker: ${e}`)
             } finally {
                 this.resetTracker()
                 this.closeTimer()
@@ -131,9 +116,8 @@ export class QCodeGenTracker {
     }
 
     private resetTracker() {
-        this._totalTokens = {}
-        this._acceptedTokens = {}
-        this._startTime = 0
+        this._totalNewCodeLineCount = 0
+        this._totalNewCodeCharacterCount = 0
         this._serviceInvocationCount = 0
     }
 
@@ -153,10 +137,13 @@ export class QCodeGenTracker {
             return
         }
         const contentChange = e.contentChanges[0]
-        if (contentChange.text.length > 50) {
+        // if user copies code into the editor for more than 50 characters
+        // do not count this as total new code, this will skew the data.
+        if (contentChange.text.length > QCodeGenTracker.copySnippetThreshold) {
             return
         }
         this._totalNewCodeCharacterCount += contentChange.text.length
+        this._totalNewCodeLineCount += contentChange.text.split('\n').length - 1
         // start 5 min data reporting once valid user input is detected
         this.tryStartTimer()
     }
