@@ -12,7 +12,7 @@ import { CodewhispererLanguage } from 'aws-core-vscode/shared'
 describe('runtimeLanguageContext', function () {
     const languageContext = new RuntimeLanguageContext()
 
-    describe('test isLanguageSupported with languageId as the argument', function () {
+    describe('test isLanguageSupported', function () {
         const cases: [string, boolean][] = [
             ['java', true],
             ['javascript', true],
