@@ -18,6 +18,7 @@ import globals from './extensionGlobals'
 import { getClientId, getOperatingSystem } from './telemetry/util'
 import { extensionVersion } from './vscode/env'
 import { telemetry } from './telemetry'
+import { Auth } from '../auth'
 
 export class FeatureContext {
     constructor(
@@ -51,8 +52,6 @@ export class FeatureConfigProvider {
 
     static #instance: FeatureConfigProvider
 
-    private _isDataCollectionGroup = false
-
     constructor() {
         this.fetchFeatureConfigs().catch((e) => {
             getLogger().error('fetchFeatureConfigs failed: %s', (e as Error).message)
@@ -63,10 +62,6 @@ export class FeatureConfigProvider {
 
     public static get instance() {
         return (this.#instance ??= new this())
-    }
-
-    isAmznDataCollectionGroup(): boolean {
-        return this._isDataCollectionGroup
     }
 
     isNewProjectContextGroup(): boolean {
@@ -145,11 +140,8 @@ export class FeatureConfigProvider {
                     }
                 }
             }
-
-            const dataCollectionValue = this.featureConfigs.get(Features.dataCollectionFeature)?.value.stringValue
-            if (dataCollectionValue === 'data-collection') {
-                this._isDataCollectionGroup = true
-                // Enable local workspace index by default, for Amzn users.
+            if (Auth.instance.isInternalAmazonUser()) {
+                // Enable local workspace index by default only once, for Amzn users.
                 const isSet = globals.globalState.get<boolean>('aws.amazonq.workspaceIndexToggleOn') || false
                 if (!isSet) {
                     await CodeWhispererSettings.instance.enableLocalIndex()

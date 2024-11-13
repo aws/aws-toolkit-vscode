@@ -71,13 +71,13 @@ export async function fetchSupplementalContextForSrc(
         async function () {
             return await fetchSupplementalContextForSrcV1(editor, cancellationToken)
         },
-        { timeout: supplementalContextTimeoutInMs, interval: 10, truthy: false }
+        { timeout: supplementalContextTimeoutInMs, interval: 5, truthy: false }
     )
     const promiseV2 = waitUntil(
         async function () {
             return await fetchSupplementalContextForSrcV2(editor)
         },
-        { timeout: supplementalContextTimeoutInMs, interval: 10, truthy: false }
+        { timeout: supplementalContextTimeoutInMs, interval: 5, truthy: false }
     )
     const [resultV1, resultV2] = await Promise.all([promiseV1, promiseV2])
     return resultV2 ?? resultV1
