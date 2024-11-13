@@ -47,11 +47,11 @@ import { randomUUID } from '../../../shared/crypto'
 import { LspController } from '../../../amazonq/lsp/lspController'
 import { CodeWhispererSettings } from '../../../codewhisperer/util/codewhispererSettings'
 import { getSelectedCustomization } from '../../../codewhisperer/util/customizationUtil'
-import { FeatureConfigProvider } from '../../../shared/featureConfig'
 import { getHttpStatusCode, AwsClientResponseError } from '../../../shared/errors'
 import { uiEventRecorder } from '../../../amazonq/util/eventRecorder'
-import { globals } from '../../../shared'
+import { globals, waitUntil } from '../../../shared'
 import { telemetry } from '../../../shared/telemetry'
+import { Auth } from '../../../auth'
 import { isSsoConnection } from '../../../auth/connection'
 
 export interface ChatControllerMessagePublishers {
@@ -633,17 +633,23 @@ export class ChatController {
                     return
                 }
             }
-            // if user does not have @workspace in the prompt, but user is in the data collection group
-            // If the user is in the data collection group but turned off local index to opt-out, do not collect data.
-            // TODO: Remove this entire block of code in one month as requested
+            // if user does not have @workspace in the prompt, but user is Amazon internal
+            // add project context by default
             else if (
-                FeatureConfigProvider.instance.isAmznDataCollectionGroup() &&
+                Auth.instance.isInternalAmazonUser() &&
                 !LspController.instance.isIndexingInProgress() &&
                 CodeWhispererSettings.instance.isLocalIndexEnabled()
             ) {
-                getLogger().info(`amazonq: User is in data collection group`)
                 const start = performance.now()
-                triggerPayload.relevantTextDocuments = await LspController.instance.query(triggerPayload.message)
+                triggerPayload.relevantTextDocuments = await waitUntil(
+                    async function () {
+                        if (triggerPayload.message) {
+                            return await LspController.instance.query(triggerPayload.message)
+                        }
+                        return []
+                    },
+                    { timeout: 500, interval: 200, truthy: false }
+                )
                 triggerPayload.projectContextQueryLatencyMs = performance.now() - start
             }
         }
