@@ -426,6 +426,7 @@ export class Messenger {
                 message = CodeWhispererConstants.noJavaProjectsFoundChatMessage
                 break
             case 'no-maven-java-project-found':
+                // shown when user has no pom.xml, but at this point also means they have no eligible SQL conversion projects
                 message = CodeWhispererConstants.noPomXmlFoundChatMessage
                 break
             case 'could-not-compile-project':
@@ -710,6 +711,13 @@ ${codeSnippet}
     }
 
     public async sendSelectSQLMetadataFileMessage(tabID: string) {
+        this.dispatcher.sendAsyncEventProgress(
+            new AsyncEventProgressMessage(tabID, {
+                inProgress: true,
+                message: 'I can convert the embedded Oracle SQL in your project to PostgreSQL.',
+            })
+        )
+
         const message = CodeWhispererConstants.selectSQLMetadataFileHelpMessage
         const buttons: ChatItemButton[] = []
 

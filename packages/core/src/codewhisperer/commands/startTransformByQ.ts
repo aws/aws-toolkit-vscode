@@ -732,37 +732,59 @@ export async function finalizeTransformationJob(status: string) {
 export async function getValidLanguageUpgradeCandidateProjects() {
     const openProjects = await getOpenProjects()
     const javaMavenProjects = await validateOpenProjects(openProjects)
+    getLogger().info(`CodeTransformation: found ${javaMavenProjects.length} projects eligible for language upgrade`)
     return javaMavenProjects
 }
 
 export async function getValidSQLConversionCandidateProjects() {
-    const openProjects = await getOpenProjects()
-    const javaProjects = await getJavaProjects(openProjects)
     const embeddedSQLProjects: TransformationCandidateProject[] = []
-    for (const project of javaProjects) {
-        // as long as at least one of these strings is found, project contains embedded SQL statements
-        const searchStrings = ['oracle.jdbc.OracleDriver', 'jdbc:oracle:thin:@//', 'jdbc:oracle:oci:@//']
-        for (const str of searchStrings) {
-            const command = process.platform === 'win32' ? 'findstr' : 'grep'
-            // case-insensitive, recursive search
-            const args = command === 'findstr' ? ['/i', '/s', str] : ['-i', '-r', str]
-            const spawnResult = spawnSync(command, args, {
-                cwd: project.path,
-                shell: false,
-                encoding: 'utf-8',
-            })
-            /*
-            in case the search unexpectedly fails, still allow user to transform that project.
-            error is set when command fails to spawn; stderr is set when command itself fails.
-            status of 0 plus anything in stdout means search string was detected.
-            status will be non-zero and stdout / stderr / error will be empty when search string is not detected. 
-            */
-            if (spawnResult.error || spawnResult.stderr || (spawnResult.status === 0 && spawnResult.stdout.trim())) {
-                embeddedSQLProjects.push(project)
-                break
+    await telemetry.codeTransform_validateProject.run(async () => {
+        telemetry.record({
+            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
+        })
+        const openProjects = await getOpenProjects()
+        const javaProjects = await getJavaProjects(openProjects)
+        let errorLog = ''
+        for (const project of javaProjects) {
+            // as long as at least one of these strings is found, project contains embedded SQL statements
+            const searchStrings = ['oracle.jdbc.OracleDriver', 'jdbc:oracle:thin:@//', 'jdbc:oracle:oci:@//']
+            for (const str of searchStrings) {
+                const command = process.platform === 'win32' ? 'findstr' : 'grep'
+                // case-insensitive, recursive search
+                const args = command === 'findstr' ? ['/i', '/s', str] : ['-i', '-r', str]
+                const spawnResult = spawnSync(command, args, {
+                    cwd: project.path,
+                    shell: false,
+                    encoding: 'utf-8',
+                })
+                // just for telemetry purposes
+                if (spawnResult.error || spawnResult.stderr) {
+                    errorLog += `${JSON.stringify(spawnResult)}---`
+                } else {
+                    errorLog += `${command} succeeded: ${spawnResult.status}`
+                }
+                /*
+                note:
+                error is set when command fails to spawn; stderr is set when command itself fails.
+                status of 0 means search string was detected (will be printed to stdout).
+                status will be non-zero and stdout / stderr / error will be empty when search string is not detected.
+                */
+                getLogger().info(
+                    `CodeTransformation: searching for ${str} in ${project.path}, result = ${JSON.stringify(spawnResult)}`
+                )
+                if (spawnResult.status === 0) {
+                    embeddedSQLProjects.push(project)
+                    break
+                }
             }
         }
-    }
+        getLogger().info(
+            `CodeTransformation: found ${embeddedSQLProjects.length} projects with embedded SQL statements`
+        )
+        telemetry.record({
+            codeTransformMetadata: errorLog,
+        })
+    })
     return embeddedSQLProjects
 }
 

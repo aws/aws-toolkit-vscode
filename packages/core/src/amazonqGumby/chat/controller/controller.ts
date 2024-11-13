@@ -194,11 +194,25 @@ export class GumbyController {
         try {
             embeddedSQLProjects = await getValidSQLConversionCandidateProjects()
         } catch (err) {
-            getLogger().error(`Error validating SQL conversion projects: ${err}`)
+            getLogger().error(`CodeTransformation: error validating SQL conversion projects: ${err}`)
         }
 
         if (embeddedSQLProjects.length === 0) {
             await this.handleLanguageUpgrade(message)
+            return
+        }
+
+        let javaUpgradeProjects: TransformationCandidateProject[] = []
+        try {
+            javaUpgradeProjects = await getValidLanguageUpgradeCandidateProjects()
+        } catch (err) {
+            getLogger().error(`CodeTransformation: error validating Java upgrade projects: ${err}`)
+        }
+
+        // TO-DO: in this case, should we say "I can't do a language upgrade, but I found embedded SQL I can convert..."
+        // and vice-versa for the case above with handleLanguageUpgrade
+        if (javaUpgradeProjects.length === 0) {
+            await this.handleSQLConversion(message)
             return
         }
 
@@ -230,7 +244,10 @@ export class GumbyController {
         this.sessionStorage.getSession().conversationState = ConversationState.WAITING_FOR_TRANSFORMATION_OBJECTIVE
         this.messenger.sendStaticTextResponse('choose-transformation-objective', message.tabID)
         this.messenger.sendChatInputEnabled(message.tabID, true)
-        this.messenger.sendUpdatePlaceholder(message.tabID, CodeWhispererConstants.chooseTransformationObjective)
+        this.messenger.sendUpdatePlaceholder(
+            message.tabID,
+            CodeWhispererConstants.chooseTransformationObjectivePlaceholder
+        )
     }
 
     private async beginTransformation(message: any) {
@@ -316,13 +333,7 @@ export class GumbyController {
 
     private async validateSQLConversionProjects(message: any) {
         try {
-            const validProjects = await telemetry.codeTransform_validateProject.run(async () => {
-                telemetry.record({
-                    codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-                })
-                const validProjects = await getValidSQLConversionCandidateProjects()
-                return validProjects
-            })
+            const validProjects = await getValidSQLConversionCandidateProjects()
             return validProjects
         } catch (e: any) {
             if (e instanceof NoJavaProjectsFoundError) {
