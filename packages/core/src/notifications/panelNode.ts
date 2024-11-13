@@ -128,7 +128,7 @@ export class NotificationsNode implements TreeNode {
      * Fired when a notification is clicked on in the panel. It will run any rendering
      * instructions included in the notification. See {@link ToolkitNotification.uiRenderInstructions}.
      */
-    private async openNotification(notification: ToolkitNotification) {
+    public async openNotification(notification: ToolkitNotification) {
         switch (notification.uiRenderInstructions.onClick.type) {
             case 'modal':
                 // Render blocking modal
