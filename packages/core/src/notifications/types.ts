@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import { EnvType, OperatingSystem } from '../shared/telemetry/util'
 import { TypeConstructor } from '../shared/utilities/typeConstructors'
-import { AuthUserState } from '../shared/telemetry/telemetry.gen'
+import { AuthUserState, AuthStatus } from '../shared/telemetry/telemetry.gen'
 
 /** Types of information that we can use to determine whether to show a notification or not. */
 export type Criteria =
@@ -128,9 +128,9 @@ export interface RuleContext {
     readonly extensionVersion: string
     readonly os: OperatingSystem
     readonly computeEnv: EnvType
-    readonly authTypes: string[]
+    readonly authTypes: ('credentials' | 'builderId' | 'identityCenter' | 'unknown')[]
     readonly authRegions: string[]
-    readonly authStates: string[]
+    readonly authStates: AuthStatus[]
     readonly authScopes: string[]
     readonly installedExtensions: string[]
     readonly activeExtensions: string[]
