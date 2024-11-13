@@ -404,7 +404,7 @@ describe.only('FileSystem', function () {
         })
     })
 
-    describe.only('rename()', async () => {
+    describe.only('rename()', async function () {
         it('renames a file', async () => {
             const oldPath = await testFolder.write('oldFile.txt', 'hello world')
             const newPath = path.join(path.dirname(oldPath), 'newFile.txt')
@@ -459,7 +459,7 @@ describe.only('FileSystem', function () {
             }
         })
 
-        for (const _ of Array.of({ length: 1000 }, (i: any) => i)) {
+        for (const _ of Array.of({ length: 5000 }, (i: any) => i)) {
             it('source file does not exist at first, but eventually appears', async function () {
                 const oldPath = testFolder.pathFrom('oldFile.txt')
                 const newPath = testFolder.pathFrom('newFile.txt')
