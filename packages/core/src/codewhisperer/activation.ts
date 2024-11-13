@@ -114,7 +114,7 @@ export async function activate(context: ExtContext): Promise<void> {
 
     // TODO: this is already done in packages/core/src/extensionCommon.ts, why doesn't amazonq use that?
     registerWebviewErrorHandler((error: unknown, webviewId: string, command: string) => {
-        logAndShowWebviewError(localize, error, webviewId, command)
+        return logAndShowWebviewError(localize, error, webviewId, command)
     })
 
     /**
