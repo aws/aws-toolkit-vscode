@@ -108,7 +108,10 @@ export class RuntimeLanguageContext {
         })
         this.supportedLanguageExtensionMap = createConstantMap<string, CodewhispererLanguage>({
             c: 'c',
+            h: 'c',
             cpp: 'cpp',
+            cc: 'cpp',
+            'c++': 'cpp',
             cs: 'csharp',
             go: 'go',
             hcl: 'tf',
