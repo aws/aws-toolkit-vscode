@@ -3,11 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import { getLogger } from '../../shared/logger/logger'
 import { CodewhispererLanguage } from '../../shared/telemetry/telemetry.gen'
 import { createConstantMap, ConstantMap } from '../../shared/utilities/tsUtils'
 import * as codewhispererClient from '../client/codewhisperer'
 import * as CodeWhispererConstants from '../models/constants'
+import * as path from 'path'
 
 type RuntimeLanguage = Exclude<CodewhispererLanguage, 'jsx' | 'tsx' | 'systemVerilog'> | 'systemverilog'
 
@@ -106,7 +108,10 @@ export class RuntimeLanguageContext {
         })
         this.supportedLanguageExtensionMap = createConstantMap<string, CodewhispererLanguage>({
             c: 'c',
+            h: 'c',
             cpp: 'cpp',
+            cc: 'cpp',
+            'c++': 'cpp',
             cs: 'csharp',
             go: 'go',
             hcl: 'tf',
@@ -251,24 +256,24 @@ export class RuntimeLanguageContext {
         }
     }
 
-    /**
-     *
-     * @param languageId: either vscodeLanguageId or CodewhispererLanguage
-     * @returns true if the language is supported by CodeWhisperer otherwise false
-     */
-    public isLanguageSupported(languageId: string): boolean {
-        const lang = this.normalizeLanguage(languageId)
-        switch (lang) {
-            case undefined:
-                return false
+    public isLanguageSupported(languageId: string): boolean
+    public isLanguageSupported(doc: vscode.TextDocument): boolean
+    public isLanguageSupported(arg: string | vscode.TextDocument): boolean {
+        if (typeof arg === 'string') {
+            const normalizedLanguageId = this.normalizeLanguage(arg)
+            const byLanguageId = !normalizedLanguageId || normalizedLanguageId === 'plaintext' ? false : true
 
-            case 'plaintext':
-                return false
+            return byLanguageId
+        } else {
+            const normalizedLanguageId = this.normalizeLanguage(arg.languageId)
+            const byLanguageId = !normalizedLanguageId || normalizedLanguageId === 'plaintext' ? false : true
+            const extension = path.extname(arg.uri.fsPath)
+            const byFileExtension = this.isFileFormatSupported(extension.substring(1))
 
-            default:
-                return true
+            return byLanguageId || byFileExtension
         }
     }
+
     /**
      *
      * @param fileFormat : vscode editor filecontext filename extension
