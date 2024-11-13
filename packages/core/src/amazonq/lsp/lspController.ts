@@ -64,7 +64,7 @@ export interface Manifest {
         targets: Target[]
     }[]
 }
-const manifestUrl = 'https://ducvaeoffl85c.cloudfront.net/manifest-0.1.28.json'
+const manifestUrl = 'https://aws-toolkit-language-servers.amazonaws.com/q-context/manifest.json'
 // this LSP client in Q extension is only going to work with these LSP server versions
 const supportedLspServerVersions = ['0.1.28']
 
@@ -308,7 +308,7 @@ export class LspController {
         return resp
     }
 
-    async queryInlineProjectContext(query: string, path: string) {
+    async queryInlineProjectContext(query: string, path: string, target: 'bm25' | 'codemap' | 'default') {
         try {
             return await LspClient.instance.queryInlineProjectContext(query, path)
         } catch (e) {
