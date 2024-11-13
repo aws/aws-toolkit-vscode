@@ -5,22 +5,33 @@
 
 import * as vscode from 'vscode'
 import * as sinon from 'sinon'
+import * as FakeTimers from '@sinonjs/fake-timers'
 import assert from 'assert'
 import { ToolkitNotification } from '../../notifications/types'
 import { panelNode } from './controller.test'
 import { getTestWindow } from '../shared/vscode/window'
 import * as VsCodeUtils from '../../shared/utilities/vsCodeUtils'
-import { assertTextEditorContains } from '../testUtil'
+import { assertTextEditorContains, installFakeClock } from '../testUtil'
 
 describe('Notifications Rendering', function () {
     let sandbox: sinon.SinonSandbox
+    let clock: FakeTimers.InstalledClock
+
+    before(function () {
+        clock = installFakeClock()
+    })
 
     beforeEach(function () {
         sandbox = sinon.createSandbox()
     })
 
     afterEach(function () {
+        clock.reset()
         sandbox.restore()
+    })
+
+    after(function () {
+        clock.uninstall()
     })
 
     // util to test txt pop-up under different senarios
@@ -94,6 +105,9 @@ describe('Notifications Rendering', function () {
         const excuteCommandStub = sandbox.stub(vscode.commands, 'executeCommand').resolves()
         const notification = getModalNotification()
         await panelNode.openNotification(notification)
+
+        // Update and Reload is put on a timer so that other methods (e.g. telemetry) can finish.
+        await clock.tickAsync(2000)
 
         assert.ok(excuteCommandStub.calledWith('workbench.extensions.installExtension', 'aws.toolkit.fake.extension'))
         assert.ok(excuteCommandStub.calledWith('workbench.action.reloadWindow'))

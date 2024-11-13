@@ -11,6 +11,7 @@ import { getComputeEnvType, getOperatingSystem } from '../shared/telemetry/util'
 import { AuthFormId } from '../login/webview/vue/types'
 import { getLogger } from '../shared/logger/logger'
 
+const logger = getLogger('notifications')
 /**
  * Evaluates if a given version fits into the parameters specified by a notification, e.g:
  *
@@ -72,22 +73,40 @@ export class RuleEngine {
     constructor(private readonly context: RuleContext) {}
 
     public shouldDisplayNotification(payload: ToolkitNotification) {
-        return this.evaluate(payload.displayIf)
+        return this.evaluate(payload.id, payload.displayIf)
     }
 
-    private evaluate(condition: DisplayIf): boolean {
+    private evaluate(id: string, condition: DisplayIf): boolean {
         const currentExt = globals.context.extension.id
         if (condition.extensionId !== currentExt) {
+            logger.verbose(
+                'notification id: (%s) did NOT pass extension id check, actual ext id: (%s), expected ext id: (%s)',
+                id,
+                currentExt,
+                condition.extensionId
+            )
             return false
         }
 
         if (condition.ideVersion) {
             if (!isValidVersion(this.context.ideVersion, condition.ideVersion)) {
+                logger.verbose(
+                    'notification id: (%s) did NOT pass IDE version check, actual version: (%s), expected version: (%s)',
+                    id,
+                    this.context.ideVersion,
+                    condition.ideVersion
+                )
                 return false
             }
         }
         if (condition.extensionVersion) {
             if (!isValidVersion(this.context.extensionVersion, condition.extensionVersion)) {
+                logger.verbose(
+                    'notification id: (%s) did NOT pass extension version check, actual ext version: (%s), expected ext version: (%s)',
+                    id,
+                    this.context.extensionVersion,
+                    condition.extensionVersion
+                )
                 return false
             }
         }
@@ -95,8 +114,10 @@ export class RuleEngine {
         if (condition.additionalCriteria) {
             for (const criteria of condition.additionalCriteria) {
                 if (!this.evaluateRule(criteria)) {
+                    logger.verbose('notification id: (%s) did NOT pass criteria check: %O', id, criteria)
                     return false
                 }
+                logger.debug('notification id: (%s) passed criteria check: %O', id, criteria)
             }
         }
 
@@ -176,7 +197,7 @@ export async function getRuleContext(context: vscode.ExtensionContext, authState
     }
 
     const { activeExtensions, ...loggableRuleContext } = ruleContext
-    getLogger('notifications').debug('getRuleContext() determined rule context: %O', loggableRuleContext)
+    logger.debug('getRuleContext() determined rule context: %O', loggableRuleContext)
 
     return ruleContext
 }

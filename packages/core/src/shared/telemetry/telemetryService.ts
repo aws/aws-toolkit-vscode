@@ -195,9 +195,11 @@ export class DefaultTelemetryService {
     }
 
     /**
-     * Publish metrics to the Telemetry Service.
+     * Publish metrics to the Telemetry Service. Usually it will automatically flush recent events
+     * on a regular interval. This should not be used unless you are interrupting this interval,
+     * e.g. via a forced window reload.
      */
-    private async flushRecords(): Promise<void> {
+    public async flushRecords(): Promise<void> {
         if (this.telemetryEnabled) {
             await this._flushRecords()
         }

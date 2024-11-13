@@ -16,6 +16,9 @@ import { registerToolView } from '../awsexplorer/activationShared'
 import { readonlyDocument } from '../shared/utilities/textDocumentUtilities'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
 import { telemetry } from '../shared/telemetry/telemetry'
+import { globals } from '../shared'
+
+const logger = getLogger('notifications')
 
 /**
  * Controls the "Notifications" side panel/tree in each extension. It takes purely UX actions
@@ -132,7 +135,7 @@ export class NotificationsNode implements TreeNode {
         switch (notification.uiRenderInstructions.onClick.type) {
             case 'modal':
                 // Render blocking modal
-                getLogger('notifications').verbose(`rendering modal for notificaiton: ${notification.id} ...`)
+                logger.verbose(`rendering modal for notificaiton: ${notification.id} ...`)
                 await this.showInformationWindow(notification, 'modal', false)
                 break
             case 'openUrl':
@@ -140,7 +143,7 @@ export class NotificationsNode implements TreeNode {
                 if (!notification.uiRenderInstructions.onClick.url) {
                     throw new ToolkitError('No url provided for onclick open url')
                 }
-                getLogger('notifications').verbose(`opening url for notification: ${notification.id} ...`)
+                logger.verbose(`opening url for notification: ${notification.id} ...`)
                 await openUrl(
                     vscode.Uri.parse(notification.uiRenderInstructions.onClick.url),
                     getNotificationTelemetryId(notification)
@@ -148,7 +151,7 @@ export class NotificationsNode implements TreeNode {
                 break
             case 'openTextDocument':
                 // Display read-only txt document
-                getLogger('notifications').verbose(`showing txt document for notification: ${notification.id} ...`)
+                logger.verbose(`showing txt document for notification: ${notification.id} ...`)
                 await telemetry.toolkit_invokeAction.run(async () => {
                     telemetry.record({ source: getNotificationTelemetryId(notification), action: 'openTxt' })
                     await readonlyDocument.show(
@@ -207,7 +210,10 @@ export class NotificationsNode implements TreeNode {
                                     )
                                     break
                                 case 'updateAndReload':
-                                    await this.updateAndReload(notification.displayIf.extensionId)
+                                    // Give things time to finish executing.
+                                    globals.clock.setTimeout(() => {
+                                        void this.updateAndReload(notification.displayIf.extensionId)
+                                    }, 1000)
                                     break
                                 case 'openUrl':
                                     if (selectedButton.url) {
@@ -232,7 +238,11 @@ export class NotificationsNode implements TreeNode {
     }
 
     private async updateAndReload(id: string) {
-        getLogger('notifications').verbose('Updating and reloading the extension...')
+        logger.verbose('Updating and reloading the extension...')
+
+        // Publish pending telemetry before it is lost to the window reload.
+        await globals.telemetry.flushRecords()
+
         await vscode.commands.executeCommand('workbench.extensions.installExtension', id)
         await vscode.commands.executeCommand('workbench.action.reloadWindow')
     }
