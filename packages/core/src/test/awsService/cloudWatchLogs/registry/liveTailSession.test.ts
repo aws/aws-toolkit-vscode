@@ -10,7 +10,7 @@ describe('LiveTailSession', async function () {
     const testRegion = 'test-region'
     const testFilter = 'test-filter'
     const testAwsCredentials = {} as any as AWS.Credentials
-    it('correctly builds StartLiveTailCommand: no stream Filter, no event filter.', function () {
+    it('builds StartLiveTailCommand: no stream Filter, no event filter.', function () {
         const session = new LiveTailSession({
             logGroupArn: testLogGroupArn,
             region: testRegion,
@@ -28,7 +28,7 @@ describe('LiveTailSession', async function () {
             )
         )
     })
-    it('correctly builds StartLiveTailCommand: with prefix stream Filter', function () {
+    it('builds StartLiveTailCommand: with prefix stream Filter', function () {
         const session = new LiveTailSession({
             logGroupArn: testLogGroupArn,
             logStreamFilter: {
@@ -50,7 +50,7 @@ describe('LiveTailSession', async function () {
             )
         )
     })
-    it('correctly builds StartLiveTailCommand: with specific stream Filter', function () {
+    it('builds StartLiveTailCommand: with specific stream Filter', function () {
         const session = new LiveTailSession({
             logGroupArn: testLogGroupArn,
             logStreamFilter: {
@@ -72,7 +72,7 @@ describe('LiveTailSession', async function () {
             )
         )
     })
-    it('correctly builds StartLiveTailCommand: with log event Filter', function () {
+    it('builds StartLiveTailCommand: with log event Filter', function () {
         const session = new LiveTailSession({
             logGroupArn: testLogGroupArn,
             logStreamFilter: {
