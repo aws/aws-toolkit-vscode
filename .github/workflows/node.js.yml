@@ -41,7 +41,7 @@ jobs:
         runs-on: ubuntu-latest
         strategy:
             matrix:
-                node-version: [18.x]
+                node-version: [16.x]
                 vscode-version: [stable]
         env:
             NODE_OPTIONS: '--max-old-space-size=8192'
@@ -62,7 +62,7 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                node-version: [18.x]
+                node-version: [16.x]
                 vscode-version: [minimum, stable, insiders]
         env:
             VSCODE_TEST_VERSION: ${{ matrix.vscode-version }}
@@ -110,7 +110,7 @@ jobs:
         strategy:
             fail-fast: true
             matrix:
-                node-version: [18.x]
+                node-version: [16.x]
                 vscode-version: [stable, insiders]
         env:
             VSCODE_TEST_VERSION: ${{ matrix.vscode-version }}
@@ -136,7 +136,7 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                node-version: [18.x]
+                node-version: [16.x]
                 vscode-version: [stable, insiders]
         env:
             VSCODE_TEST_VERSION: ${{ matrix.vscode-version }}
