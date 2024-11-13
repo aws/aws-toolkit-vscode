@@ -534,7 +534,7 @@ describe('RemoteFetcher', function () {
     })
 })
 
-function getValidTestNotification(id: string) {
+function getValidTestNotification(id: string): ToolkitNotification {
     return {
         id,
         displayIf: {
@@ -556,7 +556,7 @@ function getValidTestNotification(id: string) {
     }
 }
 
-function getInvalidTestNotification(id: string) {
+function getInvalidTestNotification(id: string): ToolkitNotification {
     return {
         id,
         displayIf: {
@@ -570,6 +570,8 @@ function getInvalidTestNotification(id: string) {
                     description: 'test',
                 },
             },
+            onRecieve: 'toast',
+            onClick: { type: 'modal' },
         },
     }
 }

@@ -8,7 +8,7 @@ import { ResourceTreeDataProvider, TreeNode } from '../shared/treeview/resourceT
 import { Command, Commands } from '../shared/vscode/commands2'
 import { Icon, IconPath, getIcon } from '../shared/icons'
 import { contextKey, setContext } from '../shared/vscode/setContext'
-import { NotificationType, ToolkitNotification, getNotificationTelemetryId } from './types'
+import { NotificationType, OnReceiveType, ToolkitNotification, getNotificationTelemetryId } from './types'
 import { ToolkitError } from '../shared/errors'
 import { isAmazonQ } from '../shared/extensionUtilities'
 import { getLogger } from '../shared/logger/logger'
@@ -165,7 +165,11 @@ export class NotificationsNode implements TreeNode {
      * Can be either a blocking modal or a bottom-right corner toast
      * Handles the button click actions based on the button type.
      */
-    private showInformationWindow(notification: ToolkitNotification, type: string = 'toast', passive: boolean = false) {
+    private showInformationWindow(
+        notification: ToolkitNotification,
+        type: OnReceiveType = 'toast',
+        passive: boolean = false
+    ) {
         const isModal = type === 'modal'
 
         // modal has to have defined actions (buttons)

@@ -38,6 +38,10 @@ export interface ExactMatch {
 
 export type ConditionalClause = Range | ExactMatch | OR
 
+export type OnReceiveType = 'toast' | 'modal'
+export type OnClickType = 'modal' | 'openTextDocument' | 'openUrl'
+export type ActionType = 'openUrl' | 'updateAndReload' | 'openTxt'
+
 /** How to display the notification. */
 export interface UIRenderInstructions {
     content: {
@@ -47,13 +51,13 @@ export interface UIRenderInstructions {
             toastPreview?: string // optional property for toast
         }
     }
-    onRecieve: string
+    onRecieve: OnReceiveType // TODO: typo
     onClick: {
-        type: string
+        type: OnClickType
         url?: string // optional property for 'openUrl'
     }
     actions?: Array<{
-        type: string
+        type: ActionType
         displayText: {
             [`en-US`]: string
         }
