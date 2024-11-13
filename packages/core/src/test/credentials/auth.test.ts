@@ -19,7 +19,6 @@ import { UserCredentialsUtils } from '../../shared/credentials/userCredentialsUt
 import { getCredentialsFilename } from '../../auth/credentials/sharedCredentialsFile'
 import { Connection, isIamConnection, isSsoConnection, scopesSsoAccountAccess } from '../../auth/connection'
 import { AuthNode, createDeleteConnectionButton, promptForConnection } from '../../auth/utils'
-import { isWin } from '../../shared/vscode/env'
 
 const ssoProfile = createSsoProfile()
 const scopedSsoProfile = createSsoProfile({ scopes: ['foo'] })
@@ -508,10 +507,10 @@ describe('Auth', function () {
         })
         for (const _ of Array.from({ length: 1000 }, (i) => i)) {
             it('does not cache if the credentials file changes', async function () {
-                if (isWin()) {
-                    this.retries(5)
-                    this.timeout(30000)
-                }
+                // if (isWin()) {
+                //     this.retries(5)
+                //     this.timeout(30000)
+                // }
 
                 const initialCreds = {
                     profileName: 'default',
