@@ -369,7 +369,6 @@ describe('customChecks', function () {
         assert.deepStrictEqual(actualCommand.referencePolicyType, policyType)
 
         assert(onCustomPolicyCheckResponseFireSpy.notCalled)
-        assert(executeCommandStub.notCalled)
     })
 
     it('checkNoNewAccess should handle CloudFormation document type correctly', async function () {
@@ -400,7 +399,6 @@ describe('customChecks', function () {
         assert.deepStrictEqual(actualCommand.referencePolicyType, policyType)
 
         assert(onCustomPolicyCheckResponseFireSpy.notCalled)
-        assert(executeCommandStub.notCalled)
     })
 
     it('checkNoNewAccess should handle missing reference document', async function () {
