@@ -6,15 +6,7 @@
 import * as vscode from 'vscode'
 import globals from '../../shared/extensionGlobals'
 import { AuthorizationPendingException, SSOOIDCServiceException, SlowDownException } from '@aws-sdk/client-sso-oidc'
-import {
-    SsoToken,
-    ClientRegistration,
-    isExpired,
-    SsoProfile,
-    builderIdStartUrl,
-    openSsoPortalLink,
-    isDeprecatedAuth,
-} from './model'
+import { SsoToken, ClientRegistration, isExpired, SsoProfile, openSsoPortalLink, isDeprecatedAuth } from './model'
 import { getCache } from './cache'
 import { hasProps, hasStringProps, RequiredProps, selectFrom } from '../../shared/utilities/tsUtils'
 import { OidcClient } from './clients'
@@ -46,6 +38,7 @@ import { NestedMap } from '../../shared/utilities/map'
 import { asStringifiedStack } from '../../shared/telemetry/spans'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
 import _ from 'lodash'
+import { builderIdStartUrl } from './constants'
 
 export const authenticationPath = 'sso/authenticated'
 
