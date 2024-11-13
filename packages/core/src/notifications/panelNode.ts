@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import { ResourceTreeDataProvider, TreeNode } from '../shared/treeview/resourceTreeDataProvider'
 import { Command, Commands } from '../shared/vscode/commands2'
-import { getIcon } from '../shared/icons'
+import { Icon, IconPath, getIcon } from '../shared/icons'
 import { contextKey, setContext } from '../shared/vscode/setContext'
 import { NotificationType, ToolkitNotification, getNotificationTelemetryId } from './types'
 import { ToolkitError } from '../shared/errors'
@@ -78,10 +78,15 @@ export class NotificationsNode implements TreeNode {
 
     public getChildren() {
         const buildNode = (n: ToolkitNotification, type: NotificationType) => {
+            const icon: Icon | IconPath =
+                type === 'startUp'
+                    ? getIcon('vscode-question')
+                    : { ...getIcon('vscode-alert'), color: new vscode.ThemeColor('errorForeground') }
             return this.openNotificationCmd.build(n).asTreeNode({
                 label: n.uiRenderInstructions.content['en-US'].title,
-                iconPath: type === 'startUp' ? getIcon('vscode-question') : getIcon('vscode-alert'),
+                iconPath: icon,
                 contextValue: type === 'startUp' ? this.startUpNodeContext : this.emergencyNodeContext,
+                tooltip: 'Click to open',
             })
         }
 
