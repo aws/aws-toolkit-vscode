@@ -335,7 +335,7 @@ export function partialClone(obj: any, depth: number = 3, omitKeys: string[] = [
  * @param obj object to show
  * @param opt options for showing (ex. depth, omitting keys)
  */
-export function inspect(obj: any, opt?: InspectOptions): string {
+export function inspect(obj: any, opt?: { depth: number }): string {
     const options = {
         depth: opt?.depth ?? 3,
     }
