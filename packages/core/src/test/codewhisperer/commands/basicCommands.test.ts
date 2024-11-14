@@ -28,7 +28,6 @@ import { stub } from '../../utilities/stubber'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { getTestWindow } from '../../shared/vscode/window'
 import { ExtContext } from '../../../shared/extensions'
-import { getLogger } from '../../../shared/logger/logger'
 import {
     createAutoScans,
     createAutoSuggestions,
@@ -57,6 +56,7 @@ import * as diagnosticsProvider from '../../../codewhisperer/service/diagnostics
 import { SecurityIssueHoverProvider } from '../../../codewhisperer/service/securityIssueHoverProvider'
 import { SecurityIssueCodeActionProvider } from '../../../codewhisperer/service/securityIssueCodeActionProvider'
 import { randomUUID } from '../../../shared/crypto'
+import { assertLogsContain } from '../../globalSetup.test'
 
 describe('CodeWhisperer-basicCommands', function () {
     let targetCommand: Command<any> & vscode.Disposable
@@ -636,7 +636,6 @@ describe('CodeWhisperer-basicCommands', function () {
             openTextDocumentMock.resolves(textDocumentMock)
 
             sandbox.stub(vscode.workspace, 'openTextDocument').value(openTextDocumentMock)
-            const loggerStub = sinon.stub(getLogger(), 'error')
 
             sinon.stub(vscode.WorkspaceEdit.prototype, 'replace').value(replaceMock)
             applyEditMock.resolves(false)
@@ -652,9 +651,7 @@ describe('CodeWhisperer-basicCommands', function () {
             await targetCommand.execute(codeScanIssue, fileName, 'quickfix')
 
             assert.ok(replaceMock.calledOnce)
-            assert.ok(loggerStub.calledOnce)
-            const actual = loggerStub.getCall(0).args[0]
-            assert.strictEqual(actual, 'Apply fix command failed. Error: Failed to apply edit to the workspace.')
+            assertLogsContain('Apply fix command failed. Error: Failed to apply edit to the workspace.', true, 'error')
             assertTelemetry('codewhisperer_codeScanIssueApplyFix', {
                 detectorId: codeScanIssue.detectorId,
                 findingId: codeScanIssue.findingId,

@@ -22,12 +22,12 @@ import path from 'path'
 import { addCodiconToString, fs, makeTemporaryToolkitFolder } from '../../../shared'
 import { LaunchConfiguration } from '../../../shared/debug/launchConfiguration'
 import { getTestWindow } from '../..'
-import { getLogger } from '../../../shared/logger'
 import * as extensionUtilities from '../../../shared/extensionUtilities'
 import * as samInvokeBackend from '../../../lambda/vue/configEditor/samInvokeBackend'
 import { SamDebugConfigProvider } from '../../../shared/sam/debugger/awsSamDebugger'
 import sinon from 'sinon'
 import * as nls from 'vscode-nls'
+import { assertLogsContain } from '../../../test/globalSetup.test'
 
 const localize = nls.loadMessageBundle()
 
@@ -438,19 +438,13 @@ describe('SamInvokeWebview', () => {
 
             getTestWindow().onDidShowDialog((window) => window.selectItem(fileUri))
 
-            const loggerErrorStub = sinon.stub(getLogger(), 'error')
-
             try {
                 await assert.rejects(
                     async () => await samInvokeWebview.promptFile(),
                     new Error('Failed to read selected file')
                 )
-                assert.strictEqual(loggerErrorStub.calledOnce, true)
-                assert.strictEqual(loggerErrorStub.firstCall.args[0], 'readFileSync: Failed to read file at path %s %O')
-                assert.strictEqual(loggerErrorStub.firstCall.args[1], fileUri.fsPath)
-                assert(loggerErrorStub.firstCall.args[2] instanceof Error)
+                assertLogsContain('readFileSync: Failed to read file at path %s %O', true, 'error')
             } finally {
-                loggerErrorStub.restore()
                 await fs.delete(tempFolder, { recursive: true })
             }
         })

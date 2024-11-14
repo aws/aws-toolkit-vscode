@@ -12,8 +12,8 @@ import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
 import { CodeCatalystClient } from '../../shared/clients/codecatalystClient'
 import { SeverityLevel } from '../shared/vscode/message'
 import { getTestWindow } from '../shared/vscode/window'
-import { builderIdStartUrl } from '../../auth/sso/model'
 import { defaultSsoRegion } from '../../auth/connection'
+import { builderIdStartUrl } from '../../auth/sso/constants'
 
 type Stub<T extends (...args: any[]) => any> = sinon.SinonStub<Parameters<T>, ReturnType<T>>
 

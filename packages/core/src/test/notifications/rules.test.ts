@@ -11,8 +11,8 @@ import globals from '../../shared/extensionGlobals'
 import { Connection, scopesCodeCatalyst } from '../../auth/connection'
 import { getOperatingSystem } from '../../shared/telemetry/util'
 import { getAuthFormIdsFromConnection } from '../../auth/utils'
-import { builderIdStartUrl } from '../../auth/sso/model'
 import { amazonQScopes } from '../../codewhisperer'
+import { builderIdStartUrl } from '../../auth/sso/constants'
 
 describe('Notifications Rule Engine', function () {
     const context: RuleContext = {

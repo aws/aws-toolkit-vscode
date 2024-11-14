@@ -16,7 +16,6 @@ import {
 import { HttpResponse } from 'aws-sdk'
 import * as codeWhisperer from '../../../codewhisperer/client/codewhisperer'
 import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
-import { convertToTimeString, convertDateToTimestamp } from '../../../shared/utilities/textUtilities'
 import path from 'path'
 import AdmZip from 'adm-zip'
 import { createTestWorkspaceFolder, TestFolder, toFile } from '../../testUtil'
@@ -41,6 +40,7 @@ import {
 import { TransformationCandidateProject, ZipManifest } from '../../../codewhisperer/models/model'
 import globals from '../../../shared/extensionGlobals'
 import { fs } from '../../../shared'
+import { convertDateToTimestamp, convertToTimeString } from '../../../shared/datetime'
 
 describe('transformByQ', function () {
     let tempDir: string

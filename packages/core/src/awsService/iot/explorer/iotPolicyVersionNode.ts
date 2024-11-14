@@ -10,7 +10,7 @@ import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { inspect } from 'util'
 import { IotPolicyWithVersionsNode } from './iotPolicyNode'
 import { localize } from '../../../shared/utilities/vsCodeUtils'
-import { formatLocalized } from '../../../shared/utilities/textUtilities'
+import { formatLocalized } from '../../../shared/datetime'
 
 /**
  * Represents an IoT Policy that may have either a Certificate Node or the
