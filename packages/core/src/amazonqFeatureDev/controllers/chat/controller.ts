@@ -366,6 +366,9 @@ export class FeatureDevController {
             getLogger().debug(`${featureName}: Processing message: ${message.message}`)
 
             session = await this.sessionStorage.getSession(message.tabID)
+            // set latestMessage in session as retry would lose context if function returns early
+            session.latestMessage = message.message
+
             const authState = await AuthUtil.instance.getChatAuthState()
             if (authState.amazonQ !== 'connected') {
                 await this.messenger.sendAuthNeededExceptionMessage(authState, message.tabID)
@@ -383,7 +386,7 @@ export class FeatureDevController {
                 return
             }
 
-            await session.preloader(message.message)
+            await session.preloader()
 
             if (session.state.phase === DevPhase.CODEGEN) {
                 await this.onCodeGeneration(session, message.message, message.tabID)

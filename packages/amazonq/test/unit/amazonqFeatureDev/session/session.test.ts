@@ -37,8 +37,9 @@ describe('session', () => {
     describe('preloader', () => {
         it('emits start chat telemetry', async () => {
             const session = await createSession({ messenger, conversationID })
+            session.latestMessage = 'implement twosum in typescript'
 
-            await session.preloader('implement twosum in typescript')
+            await session.preloader()
 
             assertTelemetry('amazonq_startConversationInvoke', {
                 amazonqConversationId: conversationID,
