@@ -52,6 +52,8 @@ export async function logAndShowError(
  * @param err The error that was thrown in the backend
  * @param webviewId Arbitrary value that identifies which webview had the error
  * @param command The high level command/function that was run which triggered the error
+ *
+ * @returns user-facing error
  */
 export function logAndShowWebviewError(localize: nls.LocalizeFunc, err: unknown, webviewId: string, command: string) {
     // HACK: The following implementation is a hack, influenced by the implementation of handleError().
@@ -62,4 +64,6 @@ export function logAndShowWebviewError(localize: nls.LocalizeFunc, err: unknown,
     logAndShowError(localize, userFacingError, `webviewId="${webviewId}"`, 'Webview error').catch((e) => {
         getLogger().error('logAndShowError failed: %s', (e as Error).message)
     })
+
+    return userFacingError
 }

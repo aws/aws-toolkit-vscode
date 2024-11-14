@@ -19,23 +19,19 @@ import { LambdaFunctionNode } from '../../../../../lambda/explorer/lambdaFunctio
 import { RestApiNode } from '../../../../../awsService/apigateway/explorer/apiNodes'
 import { S3BucketNode } from '../../../../../awsService/s3/explorer/s3BucketNode'
 import * as LambdaNodeModule from '../../../../../lambda/explorer/lambdaNodes'
-import { getLogger } from '../../../../../shared/logger/logger'
 import { getIcon } from '../../../../../shared/icons'
 import _ from 'lodash'
 import { isTreeNode } from '../../../../../shared/treeview/resourceTreeDataProvider'
 import { Any } from '../../../../../shared/utilities/typeConstructors'
 import { IamConnection, ProfileMetadata } from '../../../../../auth/connection'
 import * as AuthUtils from '../../../../../auth/utils'
+import { assertLogsContain } from '../../../../../test/globalSetup.test'
 
 describe('DeployedResourceNode', () => {
     const expectedStackName = 'myStack'
     const expectedRegionCode = 'us-west-2'
-    let loggerWarnStub: sinon.SinonStub<[message: string | Error, ...meta: any[]], number>
 
-    beforeEach(() => {
-        // Create a stub for the entire logger module
-        loggerWarnStub = sinon.stub(getLogger(), 'warn')
-    })
+    beforeEach(() => {})
 
     afterEach(() => {
         // Restore the original function after each test
@@ -87,8 +83,7 @@ describe('DeployedResourceNode', () => {
                 assert.strictEqual(deployedLambdaNode.id, '')
                 assert.strictEqual(deployedLambdaNode.contextValue, '')
                 assert.deepStrictEqual(deployedLambdaNode.resource, emptyArnDeployedResource)
-                assert(loggerWarnStub.calledOnce)
-                assert(loggerWarnStub.calledWith('Cannot create DeployedResourceNode, the ARN does not exist.'))
+                assertLogsContain('Cannot create DeployedResourceNode, the ARN does not exist.', false, 'warn')
             })
         })
     })
@@ -121,8 +116,6 @@ describe('DeployedResourceNode', () => {
 describe('generateDeployedNode', () => {
     const expectedStackName = 'myStack'
     const expectedRegionCode = 'us-west-2'
-    let loggerErrorStub: sinon.SinonStub<[message: string | Error, ...meta: any[]], number>
-    let loggerInfoStub: sinon.SinonStub<[message: string | Error, ...meta: any[]], number>
 
     let sandbox: sinon.SinonSandbox
 
@@ -130,8 +123,6 @@ describe('generateDeployedNode', () => {
         // Initiate stub sanbox
         sandbox = sinon.createSandbox()
         // Create a stub for the entire logger module
-        loggerErrorStub = sandbox.stub(getLogger(), 'error')
-        loggerInfoStub = sandbox.stub(getLogger(), 'info')
     })
     afterEach(async () => {
         sandbox.restore()
@@ -223,8 +214,7 @@ describe('generateDeployedNode', () => {
                 lambdaDeployedNodeInput.resourceTreeEntity
             )
 
-            assert(loggerErrorStub.calledOnceWith('Error getting Lambda configuration %O'))
-            assert(loggerErrorStub.neverCalledWith('Error getting Lambda V3 configuration %O'))
+            assertLogsContain('Error getting Lambda configuration %O', true, 'error')
             assert(deployedResourceNodes.length === 1)
 
             // Check placeholder propertries
@@ -375,10 +365,7 @@ describe('generateDeployedNode', () => {
                 unsupportTypeInput.resourceTreeEntity
             )
 
-            assert(loggerInfoStub.calledOnceWith('Details are missing or are incomplete for: %O'))
-
-            // Check deployedResourceNodes array propertries
-            assert(loggerErrorStub.neverCalledWith('Error getting Lambda V3 configuration %O'))
+            assertLogsContain('Details are missing or are incomplete for:', false, 'info')
 
             // Check deployedResourceNodes array propertries
             assert(deployedResourceNodes.length === 1)

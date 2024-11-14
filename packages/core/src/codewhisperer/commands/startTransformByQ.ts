@@ -21,7 +21,6 @@ import {
     DB,
     TransformationType,
 } from '../models/model'
-import { convertDateToTimestamp } from '../../shared/utilities/textUtilities'
 import {
     createZipManifest,
     downloadAndExtractResultArchive,
@@ -80,6 +79,7 @@ import { HumanInTheLoopManager } from '../service/transformByQ/humanInTheLoopMan
 import { setContext } from '../../shared/vscode/setContext'
 import { makeTemporaryToolkitFolder } from '../../shared'
 import globals from '../../shared/extensionGlobals'
+import { convertDateToTimestamp } from '../../shared/datetime'
 
 function getFeedbackCommentData() {
     const jobId = transformByQState.getJobId()

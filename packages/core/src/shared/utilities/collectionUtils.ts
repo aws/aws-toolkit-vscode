@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { isWeb } from '../extensionGlobals'
+import { inspect as nodeInspect } from 'util'
 import { AsyncCollection, toCollection } from './asyncCollection'
 import { SharedProp, AccumulableKeys, Coalesce, isNonNullable } from './tsUtils'
 
@@ -297,7 +299,6 @@ export function assign<T extends Record<any, any>, U extends Partial<T>>(data: T
  * - depth=2 returns `obj` with its children and their children.
  * - and so on...
  *
- * TODO: node's `util.inspect()` function is better, but doesn't work in web browser?
  *
  * @param obj Object to clone.
  * @param depth
@@ -327,6 +328,18 @@ export function partialClone(obj: any, depth: number = 3, omitKeys: string[] = [
     }
 
     return clonedObj
+}
+
+/**
+ * Wrapper around nodes inspect function that works on web. Defaults to JSON.stringify on web.
+ * @param obj object to show
+ * @param opt options for showing (ex. depth, omitting keys)
+ */
+export function inspect(obj: any, opt?: { depth: number }): string {
+    const options = {
+        depth: opt?.depth ?? 3,
+    }
+    return isWeb() ? JSON.stringify(partialClone(obj, options.depth), undefined, 2) : nodeInspect(obj, options)
 }
 
 /** Recursively delete undefined key/value pairs */

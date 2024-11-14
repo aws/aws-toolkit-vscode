@@ -155,32 +155,32 @@ describe('AppBuilder Walkthrough', function () {
     })
 
     describe('Create project', function () {
-        let sandbox: sinon.SinonSandbox
+        const workspaceUri = vscode.workspace.workspaceFolders?.[0]?.uri
+        const prevInfo = 'random text'
+        assert.ok(workspaceUri)
 
-        beforeEach(function () {
-            sandbox = sinon.createSandbox()
+        before(async function () {
+            await fs.delete(vscode.Uri.joinPath(workspaceUri, 'template.yaml'), { force: true })
         })
 
-        afterEach(function () {
-            sandbox.restore()
+        beforeEach(async function () {
+            await fs.writeFile(vscode.Uri.joinPath(workspaceUri, 'template.yaml'), prevInfo)
+        })
+
+        afterEach(async function () {
+            await fs.delete(vscode.Uri.joinPath(workspaceUri, 'template.yaml'), { force: true })
         })
 
         it('open existing template', async function () {
-            // Given
-            const workspaceUri = vscode.workspace.workspaceFolders?.[0]?.uri
-            assert.ok(workspaceUri)
+            // Given no template exist
+            await fs.delete(vscode.Uri.joinPath(workspaceUri, 'template.yaml'), { force: true })
             // When
             await genWalkthroughProject('CustomTemplate', workspaceUri, undefined)
-            // Then
+            // Then nothing should be created
             assert.equal(await fs.exists(vscode.Uri.joinPath(workspaceUri, 'template.yaml')), false)
         })
 
         it('build an app with appcomposer overwrite', async function () {
-            // Given
-            const workspaceUri = vscode.workspace.workspaceFolders?.[0]?.uri
-            assert.ok(workspaceUri)
-            await fs.writeFile(vscode.Uri.joinPath(workspaceUri, 'template.yaml'), 'random text')
-            const prevInfo = await fs.readFileText(vscode.Uri.joinPath(workspaceUri, 'template.yaml'))
             getTestWindow().onDidShowMessage((message) => {
                 message.selectItem('Yes')
             })
@@ -192,10 +192,6 @@ describe('AppBuilder Walkthrough', function () {
 
         it('build an app with appcomposer no overwrite', async function () {
             // Given
-            const workspaceUri = vscode.workspace.workspaceFolders?.[0]?.uri
-            assert.ok(workspaceUri)
-            await fs.writeFile(vscode.Uri.joinPath(workspaceUri, 'template.yaml'), 'random text')
-            const prevInfo = await fs.readFileText(vscode.Uri.joinPath(workspaceUri, 'template.yaml'))
             getTestWindow().onDidShowMessage((message) => {
                 message.selectItem('No')
             })
@@ -213,11 +209,6 @@ describe('AppBuilder Walkthrough', function () {
 
         it('download serverlessland proj', async function () {
             // Given
-            const workspaceUri = vscode.workspace.workspaceFolders?.[0]?.uri
-            assert.ok(workspaceUri)
-            // makesure template exist
-            await fs.writeFile(vscode.Uri.joinPath(workspaceUri, 'template.yaml'), '')
-            const prevInfo = await fs.readFileText(vscode.Uri.joinPath(workspaceUri, 'template.yaml'))
             // select overwrite
             getTestWindow().onDidShowMessage((message) => {
                 message.selectItem('Yes')
@@ -231,11 +222,6 @@ describe('AppBuilder Walkthrough', function () {
 
         it('download serverlessland proj no overwrite', async function () {
             // Given existing template.yaml
-            const workspaceUri = vscode.workspace.workspaceFolders?.[0]?.uri
-            assert.ok(workspaceUri)
-            // makesure template exist
-            await fs.writeFile(vscode.Uri.joinPath(workspaceUri, 'template.yaml'), '')
-            const prevInfo = await fs.readFileText(vscode.Uri.joinPath(workspaceUri, 'template.yaml'))
             // select do not overwrite
             getTestWindow().onDidShowMessage((message) => {
                 message.selectItem('No')

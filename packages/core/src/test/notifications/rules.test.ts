@@ -3,10 +3,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import assert from 'assert'
-import { RuleEngine } from '../../notifications/rules'
+import { RuleEngine, getRuleContext } from '../../notifications/rules'
 import { DisplayIf, ToolkitNotification, RuleContext } from '../../notifications/types'
-import { globals } from '../../shared'
+import globals from '../../shared/extensionGlobals'
+import { Connection, scopesCodeCatalyst } from '../../auth/connection'
+import { getOperatingSystem } from '../../shared/telemetry/util'
+import { getAuthFormIdsFromConnection } from '../../auth/utils'
+import { amazonQScopes } from '../../codewhisperer'
+import { builderIdStartUrl } from '../../auth/sso/constants'
 
 describe('Notifications Rule Engine', function () {
     const context: RuleContext = {
@@ -126,6 +132,18 @@ describe('Notifications Rule Engine', function () {
             ),
             true
         )
+        assert.equal(
+            ruleEngine.shouldDisplayNotification(
+                buildNotification({
+                    extensionVersion: {
+                        type: 'range',
+                        lowerInclusive: '-inf',
+                        upperExclusive: '1.23.0',
+                    },
+                })
+            ),
+            true
+        )
 
         assert.equal(
             ruleEngine.shouldDisplayNotification(
@@ -133,6 +151,31 @@ describe('Notifications Rule Engine', function () {
                     extensionVersion: {
                         type: 'range',
                         lowerInclusive: '1.0.0',
+                    },
+                })
+            ),
+            true
+        )
+        assert.equal(
+            ruleEngine.shouldDisplayNotification(
+                buildNotification({
+                    extensionVersion: {
+                        type: 'range',
+                        lowerInclusive: '1.0.0',
+                        upperExclusive: '+inf',
+                    },
+                })
+            ),
+            true
+        )
+
+        assert.equal(
+            ruleEngine.shouldDisplayNotification(
+                buildNotification({
+                    extensionVersion: {
+                        type: 'range',
+                        lowerInclusive: '-inf',
+                        upperExclusive: '+inf',
                     },
                 })
             ),
@@ -147,6 +190,18 @@ describe('Notifications Rule Engine', function () {
                     extensionVersion: {
                         type: 'range',
                         lowerInclusive: '1.18.0',
+                        upperExclusive: '1.20.0',
+                    },
+                })
+            ),
+            false
+        )
+        assert.equal(
+            ruleEngine.shouldDisplayNotification(
+                buildNotification({
+                    extensionVersion: {
+                        type: 'range',
+                        lowerInclusive: '-inf',
                         upperExclusive: '1.20.0',
                     },
                 })
@@ -365,7 +420,7 @@ describe('Notifications Rule Engine', function () {
         assert.equal(
             ruleEngine.shouldDisplayNotification(
                 buildNotification({
-                    additionalCriteria: [{ type: 'InstalledExtensions', values: ['ext1', 'ext2', 'unkownExtension'] }],
+                    additionalCriteria: [{ type: 'InstalledExtensions', values: ['ext1', 'ext2', 'unknownExtension'] }],
                 })
             ),
             false
@@ -471,5 +526,58 @@ describe('Notifications Rule Engine', function () {
             ),
             false
         )
+    })
+})
+
+describe('Notifications getRuleContext()', function () {
+    it('should return the correct rule context', async function () {
+        const context = globals.context
+        context.extension.packageJSON.version = '0.0.1'
+        const authEnabledConnections = (
+            [
+                {
+                    type: 'iam',
+                },
+                {
+                    type: 'sso',
+                    scopes: amazonQScopes,
+                    startUrl: builderIdStartUrl,
+                },
+                {
+                    type: 'sso',
+                    scopes: scopesCodeCatalyst,
+                    startUrl: builderIdStartUrl,
+                },
+                {
+                    type: 'sso',
+                    scopes: amazonQScopes,
+                    startUrl: 'something',
+                },
+                {
+                    type: 'unknown',
+                },
+            ] as Connection[]
+        )
+            .map((c) => getAuthFormIdsFromConnection(c))
+            .join(',')
+
+        const ruleContext = await getRuleContext(context, {
+            authEnabledConnections,
+            authScopes: amazonQScopes.join(','),
+            authStatus: 'connected',
+            awsRegion: 'us-east-1',
+        })
+        assert.deepStrictEqual(ruleContext, {
+            ideVersion: vscode.version,
+            extensionVersion: '0.0.1',
+            os: getOperatingSystem(),
+            computeEnv: 'test',
+            authTypes: ['credentials', 'builderId', 'identityCenter', 'unknown'],
+            authRegions: ['us-east-1'],
+            authStates: ['connected'],
+            authScopes: amazonQScopes,
+            installedExtensions: vscode.extensions.all.map((e) => e.id),
+            activeExtensions: vscode.extensions.all.filter((e) => e.isActive).map((e) => e.id),
+        })
     })
 })

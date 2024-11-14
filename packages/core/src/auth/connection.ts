@@ -5,7 +5,7 @@
 import * as vscode from 'vscode'
 import { Credentials } from '@aws-sdk/types'
 import { Mutable } from '../shared/utilities/tsUtils'
-import { builderIdStartUrl, ClientRegistration, SsoToken, truncateStartUrl } from './sso/model'
+import { ClientRegistration, SsoToken, truncateStartUrl } from './sso/model'
 import { SsoClient } from './sso/clients'
 import { CredentialsProviderManager } from './providers/credentialsProviderManager'
 import { fromString } from './providers/credentials'
@@ -17,6 +17,7 @@ import { withTelemetryContext } from '../shared/telemetry/util'
 import { AuthModifyConnection, telemetry } from '../shared/telemetry/telemetry'
 import { asStringifiedStack } from '../shared/telemetry/spans'
 import { getTelemetryReason, getTelemetryReasonDesc } from '../shared/errors'
+import { builderIdStartUrl } from './sso/constants'
 
 /** Shows a warning message unless it is the same as the last one shown. */
 const warnOnce = onceChanged((s: string, url: string) => {
