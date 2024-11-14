@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "SAM local debugging: `aws.region` and `aws.credentials` specified in launch config should override default Toolkit region and credentials"
+}
