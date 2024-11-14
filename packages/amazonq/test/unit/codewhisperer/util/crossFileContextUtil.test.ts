@@ -41,8 +41,12 @@ describe('crossFileContextUtil', function () {
             tempFolder = (await createTestWorkspaceFolder()).uri.fsPath
         })
 
+        afterEach(async function () {
+            sinon.restore()
+        })
+
         it('for control group, should return opentabs context where there will be 3 chunks and each chunk should contains 50 lines', async function () {
-            sinon.stub(FeatureConfigProvider.instance, 'getProjectContextGroup').alwaysReturned('control')
+            sinon.stub(FeatureConfigProvider.instance, 'getProjectContextGroup').returns('control')
             await toTextEditor(aStringWithLineCount(200), 'CrossFile.java', tempFolder, { preview: false })
             const myCurrentEditor = await toTextEditor('', 'TargetFile.java', tempFolder, {
                 preview: false,
