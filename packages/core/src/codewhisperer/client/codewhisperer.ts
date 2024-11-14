@@ -32,7 +32,7 @@ export interface CodeWhispererConfig {
 
 export const defaultServiceConfig: CodeWhispererConfig = {
     region: 'us-east-1',
-    endpoint: 'https://codewhisperer.us-east-1.amazonaws.com/',
+    endpoint: 'https://rts.alpha-us-west-2.codewhisperer.ai.aws.dev/',
 }
 
 export function getCodewhispererConfig(): CodeWhispererConfig {

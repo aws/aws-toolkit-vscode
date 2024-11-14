@@ -163,6 +163,7 @@ export class DiffModel {
         diffDescription: PatchInfo | undefined,
         totalDiffPatches: number
     ): PatchFileNode {
+        console.log('parsing ', pathToDiff)
         this.patchFileNodes = []
         const diffContents = fs.readFileSync(pathToDiff, 'utf8')
 
@@ -172,31 +173,37 @@ export class DiffModel {
         }
 
         const changedFiles = parsePatch(diffContents)
+        console.log('changed files: ', changedFiles)
         // path to the directory containing copy of the changed files in the transformed project
         const pathToTmpSrcDir = this.copyProject(pathToWorkspace, changedFiles)
         transformByQState.setProjectCopyFilePath(pathToTmpSrcDir)
+        console.log('path to tmp src dir: ', pathToTmpSrcDir)
 
         applyPatches(changedFiles, {
             loadFile: function (fileObj, callback) {
                 // load original contents of file
                 const filePath = path.join(pathToWorkspace, fileObj.oldFileName!.substring(2))
+                console.log(`loading filePath ${filePath}, exists = ${fs.existsSync(filePath)}`)
                 if (!fs.existsSync(filePath)) {
                     // must be a new file (ex. summary.md), so pass empty string as original contents and do not pass error
                     callback(undefined, '')
                 } else {
                     // must be a modified file (most common), so pass original contents
                     const fileContents = fs.readFileSync(filePath, 'utf-8')
+                    console.log('original contents = ', fileContents)
                     callback(undefined, fileContents)
                 }
             },
             // by now, 'content' contains the changes from the patch
             patched: function (fileObj, content, callback) {
                 const filePath = path.join(pathToTmpSrcDir, fileObj.newFileName!.substring(2))
+                console.log(`about to write ${content} to ${filePath}`)
                 // write changed contents to the copy of the original file (or create a new file)
                 fs.writeFileSync(filePath, content)
                 callback(undefined)
             },
             complete: function (err) {
+                console.log(`error = ${err}`)
                 if (err) {
                     getLogger().error(`CodeTransformation: ${err} when applying patch`)
                 } else {
@@ -430,7 +437,7 @@ export class ProposedTransformationExplorer {
                 pathContainingArchive = path.dirname(pathToArchive)
                 const zip = new AdmZip(pathToArchive)
                 zip.extractAllTo(pathContainingArchive)
-
+                console.log('pathContainingArchive = ', pathContainingArchive)
                 const files = fs.readdirSync(path.join(pathContainingArchive, ExportResultArchiveStructure.PathToPatch))
                 files.forEach((file) => {
                     const filePath = path.join(pathContainingArchive, ExportResultArchiveStructure.PathToPatch, file)
@@ -454,7 +461,6 @@ export class ProposedTransformationExplorer {
                 } else {
                     patchFiles.push(singlePatchFile)
                 }
-
                 //Because multiple patches are returned once the ZIP is downloaded, we want to show the first one to start
                 diffModel.parseDiff(
                     patchFiles[0],
@@ -481,6 +487,7 @@ export class ProposedTransformationExplorer {
                 await vscode.commands.executeCommand('aws.amazonq.transformationHub.summary.reveal')
             } catch (e: any) {
                 deserializeErrorMessage = (e as Error).message
+                console.log('error parsing diff ', deserializeErrorMessage)
                 getLogger().error(`CodeTransformation: ParseDiff error = ${deserializeErrorMessage}`)
                 transformByQState.getChatControllers()?.transformationFinished.fire({
                     message: `${CodeWhispererConstants.errorDeserializingDiffChatMessage} ${deserializeErrorMessage}`,
@@ -523,37 +530,50 @@ export class ProposedTransformationExplorer {
         vscode.commands.registerCommand('aws.amazonq.transformationHub.reviewChanges.acceptChanges', async () => {
             diffModel.saveChanges()
             telemetry.ui_click.emit({ elementId: 'transformationHub_acceptChanges' })
-            void vscode.window.showInformationMessage(
-                CodeWhispererConstants.changesAppliedNotification(
-                    diffModel.currentPatchIndex,
-                    patchFiles.length,
-                    patchFilesDescriptions
-                )
-            )
-            //We do this to ensure that the changesAppliedChatMessage is only sent to user when they accept the first diff.patch
-            if (diffModel.currentPatchIndex === patchFiles.length - 1) {
-                transformByQState.getChatControllers()?.transformationFinished.fire({
-                    message: CodeWhispererConstants.changesAppliedChatMessage(
+            if (transformByQState.getMultipleDiffs()) {
+                void vscode.window.showInformationMessage(
+                    CodeWhispererConstants.changesAppliedNotificationMultipleDiffs(
                         diffModel.currentPatchIndex,
                         patchFiles.length,
                         patchFilesDescriptions
-                            ? patchFilesDescriptions.content[diffModel.currentPatchIndex].name
-                            : undefined
-                    ),
-                    tabID: ChatSessionManager.Instance.getSession().tabID,
-                    includeStartNewTransformationButton: true,
-                })
+                    )
+                )
+            } else {
+                void vscode.window.showInformationMessage(CodeWhispererConstants.changesAppliedNotificationOneDiff)
+            }
+
+            //We do this to ensure that the changesAppliedChatMessage is only sent to user when they accept the first diff.patch
+            if (transformByQState.getMultipleDiffs()) {
+                if (diffModel.currentPatchIndex === patchFiles.length - 1) {
+                    transformByQState.getChatControllers()?.transformationFinished.fire({
+                        message: CodeWhispererConstants.changesAppliedChatMessageMultipleDiffs(
+                            diffModel.currentPatchIndex,
+                            patchFiles.length,
+                            patchFilesDescriptions
+                                ? patchFilesDescriptions.content[diffModel.currentPatchIndex].name
+                                : undefined
+                        ),
+                        tabID: ChatSessionManager.Instance.getSession().tabID,
+                        includeStartNewTransformationButton: true,
+                    })
+                } else {
+                    transformByQState.getChatControllers()?.transformationFinished.fire({
+                        message: CodeWhispererConstants.changesAppliedChatMessageMultipleDiffs(
+                            diffModel.currentPatchIndex,
+                            patchFiles.length,
+                            patchFilesDescriptions
+                                ? patchFilesDescriptions.content[diffModel.currentPatchIndex].name
+                                : undefined
+                        ),
+                        tabID: ChatSessionManager.Instance.getSession().tabID,
+                        includeStartNewTransformationButton: false,
+                    })
+                }
             } else {
                 transformByQState.getChatControllers()?.transformationFinished.fire({
-                    message: CodeWhispererConstants.changesAppliedChatMessage(
-                        diffModel.currentPatchIndex,
-                        patchFiles.length,
-                        patchFilesDescriptions
-                            ? patchFilesDescriptions.content[diffModel.currentPatchIndex].name
-                            : undefined
-                    ),
+                    message: CodeWhispererConstants.changesAppliedChatMessageOneDiff,
                     tabID: ChatSessionManager.Instance.getSession().tabID,
-                    includeStartNewTransformationButton: false,
+                    includeStartNewTransformationButton: true,
                 })
             }
 
@@ -591,6 +611,11 @@ export class ProposedTransformationExplorer {
             diffModel.rejectChanges()
             await reset()
             telemetry.ui_click.emit({ elementId: 'transformationHub_rejectChanges' })
+
+            transformByQState.getChatControllers()?.transformationFinished.fire({
+                tabID: ChatSessionManager.Instance.getSession().tabID,
+                includeStartNewTransformationButton: true,
+            })
 
             telemetry.codeTransform_viewArtifact.emit({
                 codeTransformArtifactType: 'ClientInstructions',

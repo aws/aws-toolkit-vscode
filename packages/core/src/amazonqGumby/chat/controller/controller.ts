@@ -223,13 +223,6 @@ export class GumbyController {
                     undefined,
                     GumbyNamedMessages.JOB_SUBMISSION_STATUS_MESSAGE
                 )
-                this.messenger.sendPatchDescriptionMessage(message.tabID)
-                this.messenger.sendAsyncEventProgress(
-                    message.tabID,
-                    true,
-                    undefined,
-                    GumbyNamedMessages.JOB_SUBMISSION_STATUS_MESSAGE
-                )
                 this.messenger.sendJobSubmittedMessage(message.tabID)
                 return
             case ConversationState.COMPILING:
@@ -374,12 +367,12 @@ export class GumbyController {
             case ButtonActions.CANCEL_SKIP_TESTS_FORM:
                 this.messenger.sendJobFinishedMessage(message.tabID, CodeWhispererConstants.jobCancelledChatMessage)
                 break
-            // case ButtonActions.CONFIRM_SELECTIVE_TRANSFORMATION_FORM:
-            //     await this.handleSelectiveTransformationSelection(message)
-            //     break
-            // case ButtonActions.CANCEL_SELECTIVE_TRANSFORMATION_FORM:
-            //     this.messenger.sendJobFinishedMessage(message.tabID, CodeWhispererConstants.jobCancelledChatMessage)
-            //     break
+            case ButtonActions.CONFIRM_SELECTIVE_TRANSFORMATION_FORM:
+                await this.handleOneOrMultipleDiffs(message)
+                break
+            case ButtonActions.CANCEL_SELECTIVE_TRANSFORMATION_FORM:
+                this.messenger.sendJobFinishedMessage(message.tabID, CodeWhispererConstants.jobCancelledChatMessage)
+                break
             case ButtonActions.CONFIRM_SQL_CONVERSION_TRANSFORMATION_FORM:
                 await this.handleUserSQLConversionProjectSelection(message)
                 break
@@ -388,13 +381,6 @@ export class GumbyController {
                 break
             case ButtonActions.VIEW_TRANSFORMATION_HUB:
                 await vscode.commands.executeCommand(GumbyCommands.FOCUS_TRANSFORMATION_HUB, CancelActionPositions.Chat)
-                this.messenger.sendPatchDescriptionMessage(message.tabID)
-                this.messenger.sendAsyncEventProgress(
-                    message.tabID,
-                    true,
-                    undefined,
-                    GumbyNamedMessages.JOB_SUBMISSION_STATUS_MESSAGE
-                )
                 this.messenger.sendJobSubmittedMessage(message.tabID)
                 break
             case ButtonActions.STOP_TRANSFORMATION_JOB:
@@ -437,19 +423,18 @@ export class GumbyController {
             result: MetadataResult.Pass,
         })
         this.messenger.sendSkipTestsSelectionMessage(skipTestsSelection, message.tabID)
+        await this.messenger.sendOneOrMultipleDiffsPrompt(message.tabID)
+    }
+
+    private async handleOneOrMultipleDiffs(message: any) {
+        const oneOrMultipleDiffsSelection = message.formSelectedValues['GumbyTransformOneOrMultipleDiffsForm']
+        if (oneOrMultipleDiffsSelection === CodeWhispererConstants.multipleDiffsMessage) {
+            transformByQState.setMultipleDiffs(true)
+        }
+        this.messenger.sendOneOrMultipleDiffsMessage(oneOrMultipleDiffsSelection, message.tabID)
         // perform local build
         await this.validateBuildWithPromptOnError(message)
     }
-
-    // private async handleSelectiveTransformationSelection(message: any) {
-    //     const selectiveTransformationSelection = message.formSelectedValues['GumbyTransformSelectiveTransformationForm']
-    //     if (selectiveTransformationSelection === CodeWhispererConstants.multipleDiffsMessage) {
-    //         //Dynamically add to zipmanifest
-    //     }
-    //     this.messenger.sendSelectiveTransformationMessage(selectiveTransformationSelection, message.tabID)
-    //     // perform local build
-    //     // await this.validateBuildWithPromptOnError(message)
-    // }
 
     private async handleUserLanguageUpgradeProjectChoice(message: any) {
         await telemetry.codeTransform_submitSelection.run(async () => {
@@ -485,7 +470,6 @@ export class GumbyController {
             }
             await processLanguageUpgradeTransformFormInput(pathToProject, fromJDKVersion, toJDKVersion)
             await this.messenger.sendSkipTestsPrompt(message.tabID)
-            // await this.messenger.sendSelectiveTransformationPrompt(message.tabID)
         })
     }
 
@@ -506,13 +490,6 @@ export class GumbyController {
 
             await processSQLConversionTransformFormInput(pathToProject, schema)
 
-            this.messenger.sendAsyncEventProgress(
-                message.tabID,
-                true,
-                undefined,
-                GumbyNamedMessages.JOB_SUBMISSION_STATUS_MESSAGE
-            )
-            this.messenger.sendPatchDescriptionMessage(message.tabID)
             this.messenger.sendAsyncEventProgress(
                 message.tabID,
                 true,
@@ -558,13 +535,6 @@ export class GumbyController {
         // give user a non-blocking warning if build file appears to contain absolute paths
         await parseBuildFile()
 
-        this.messenger.sendAsyncEventProgress(
-            message.tabID,
-            true,
-            undefined,
-            GumbyNamedMessages.JOB_SUBMISSION_STATUS_MESSAGE
-        )
-        this.messenger.sendPatchDescriptionMessage(message.tabID)
         this.messenger.sendAsyncEventProgress(
             message.tabID,
             true,
@@ -664,13 +634,6 @@ export class GumbyController {
 
     private async HILDependencySelectionUploaded(data: { tabID: string }) {
         this.sessionStorage.getSession().conversationState = ConversationState.JOB_SUBMITTED
-        this.messenger.sendPatchDescriptionMessage(data.tabID)
-        this.messenger.sendAsyncEventProgress(
-            data.tabID,
-            true,
-            undefined,
-            GumbyNamedMessages.JOB_SUBMISSION_STATUS_MESSAGE
-        )
         this.messenger.sendHILResumeMessage(data.tabID)
     }
 
@@ -736,13 +699,6 @@ export class GumbyController {
         } else if (message.error instanceof JobStartError) {
             this.resetTransformationChatFlow()
         } else if (message.error instanceof TransformationPreBuildError) {
-            this.messenger.sendPatchDescriptionMessage(message.tabID)
-            this.messenger.sendAsyncEventProgress(
-                message.tabID,
-                true,
-                undefined,
-                GumbyNamedMessages.JOB_FAILED_IN_PRE_BUILD
-            )
             this.messenger.sendJobSubmittedMessage(message.tabID, true)
             this.messenger.sendAsyncEventProgress(
                 message.tabID,

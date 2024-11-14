@@ -322,6 +322,10 @@ export async function zipCode(
             getLogger().info(`CodeTransformation: source code files size = ${sourceFilesSize}`)
         }
 
+        if (transformByQState.getMultipleDiffs() && zipManifest instanceof ZipManifest) {
+            zipManifest.transformCapabilities.push('SELECTIVE_TRANSFORMATION_V1')
+        }
+
         if (
             transformByQState.getTransformationType() === TransformationType.SQL_CONVERSION &&
             zipManifest instanceof ZipManifest

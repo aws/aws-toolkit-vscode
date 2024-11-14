@@ -409,6 +409,8 @@ export class TransformByQState {
 
     private targetJDKVersion: JDKVersion = JDKVersion.JDK17
 
+    private produceMultipleDiffs: boolean = false
+
     private customBuildCommand: string = ''
 
     private sourceDB: DB | undefined = undefined
@@ -499,6 +501,10 @@ export class TransformByQState {
 
     public getLinesOfCodeSubmitted() {
         return this.linesOfCodeSubmitted
+    }
+
+    public getMultipleDiffs() {
+        return this.produceMultipleDiffs
     }
 
     public getPreBuildLogFilePath() {
@@ -663,6 +669,10 @@ export class TransformByQState {
 
     public setLinesOfCodeSubmitted(lines: number) {
         this.linesOfCodeSubmitted = lines
+    }
+
+    public setMultipleDiffs(produceMultipleDiffs: boolean) {
+        this.produceMultipleDiffs = produceMultipleDiffs
     }
 
     public setStartTime(time: string) {
