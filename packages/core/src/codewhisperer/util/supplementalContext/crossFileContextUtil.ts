@@ -68,22 +68,99 @@ export async function fetchSupplementalContextForSrc(
 ): Promise<Pick<CodeWhispererSupplementalContext, 'supplementalContextItems' | 'strategy'> | undefined> {
     const supplementalContextConfig = getSupplementalContextConfig(editor.document.languageId)
 
-    switch (supplementalContextConfig) {
-        // not supported case
-        case 'none':
-            return undefined
+    // not supported case
+    if (supplementalContextConfig === 'none') {
+        return undefined
+    }
 
-        case 'opentabs':
-            return await new OpenTabsBm25().fetchProjectContext(editor, cancellationToken)
+    // opentabs context will use bm25 and users' open tabs to fetch supplemental context
+    if (supplementalContextConfig === 'opentabs') {
+        return {
+            supplementalContextItems: (await fetchOpentabsContext(editor, cancellationToken)) ?? [],
+            strategy: 'OpenTabs_BM25',
+        }
+    }
 
-        case 'codemap':
-            return await new OpenTabsBm25Codemap().fetchProjectContext(editor, cancellationToken)
+    // codemap will use opentabs context plus repomap if it's present
+    if (supplementalContextConfig === 'codemap') {
+        const opentabsContextAndCodemap = await waitUntil(
+            async function () {
+                const result: CodeWhispererSupplementalContextItem[] = []
+                const opentabsContext = await fetchOpentabsContext(editor, cancellationToken)
+                const codemap = await fetchProjectContext(editor, 'codemap')
 
-        case 'bm25':
-            return await new GlobalBm25().fetchProjectContext(editor, cancellationToken)
+                if (codemap && codemap.length > 0) {
+                    result.push(...codemap)
+                }
 
-        case 'default':
-            return await new GlobalBm25Codemap().fetchProjectContext(editor, cancellationToken)
+                if (opentabsContext && opentabsContext.length > 0) {
+                    result.push(...opentabsContext)
+                }
+
+                return result
+            },
+            { timeout: supplementalContextTimeoutInMs, interval: 5, truthy: false }
+        )
+
+        return {
+            supplementalContextItems: opentabsContextAndCodemap ?? [],
+            strategy: 'Codemap',
+        }
+    }
+
+    // fallback to opentabs if projectContext timeout for 'default' | 'bm25'
+    const opentabsContextPromise = waitUntil(
+        async function () {
+            return await fetchOpentabsContext(editor, cancellationToken)
+        },
+        { timeout: supplementalContextTimeoutInMs, interval: 5, truthy: false }
+    )
+
+    // global bm25 without repomap
+    if (supplementalContextConfig === 'bm25') {
+        const projectBM25Promise = waitUntil(
+            async function () {
+                return await fetchProjectContext(editor, 'bm25')
+            },
+            { timeout: supplementalContextTimeoutInMs, interval: 5, truthy: false }
+        )
+
+        const [projectContext, opentabsContext] = await Promise.all([projectBM25Promise, opentabsContextPromise])
+        if (projectContext && projectContext.length > 0) {
+            return {
+                supplementalContextItems: projectContext,
+                strategy: 'Project_BM25',
+            }
+        }
+
+        return {
+            supplementalContextItems: opentabsContext ?? [],
+            strategy: 'OpenTabs_BM25',
+        }
+    }
+
+    // global bm25 with repomap
+    const projectContextAndCodemapPromise = waitUntil(
+        async function () {
+            return await fetchProjectContext(editor, 'default')
+        },
+        { timeout: supplementalContextTimeoutInMs, interval: 5, truthy: false }
+    )
+
+    const [projectContext, opentabsContext] = await Promise.all([
+        projectContextAndCodemapPromise,
+        opentabsContextPromise,
+    ])
+    if (projectContext && projectContext.length > 0) {
+        return {
+            supplementalContextItems: projectContext,
+            strategy: 'Project',
+        }
+    }
+
+    return {
+        supplementalContextItems: opentabsContext ?? [],
+        strategy: 'OpenTabs_BM25',
     }
 }
 
@@ -106,7 +183,7 @@ export async function fetchProjectContext(
 export async function fetchOpentabsContext(
     editor: vscode.TextEditor,
     cancellationToken: vscode.CancellationToken
-): Promise<CodeWhispererSupplementalContextItem[]> {
+): Promise<CodeWhispererSupplementalContextItem[] | undefined> {
     const codeChunksCalculated = crossFileContextConfig.numberOfChunkToFetch
 
     // Step 1: Get relevant cross files to refer
@@ -304,119 +381,5 @@ export async function getCrossFileCandidates(editor: vscode.TextEditor): Promise
 function throwIfCancelled(token: vscode.CancellationToken): void | never {
     if (token.isCancellationRequested) {
         throw new ToolkitError(supplemetalContextFetchingTimeoutMsg, { cause: new CancellationError('timeout') })
-    }
-}
-
-const timeoutConfig = { timeout: supplementalContextTimeoutInMs, interval: 5, truthy: false }
-
-interface ProjectContextVariation {
-    fetchProjectContext(
-        editor: vscode.TextEditor,
-        cancellationToken: vscode.CancellationToken
-    ): Promise<Pick<CodeWhispererSupplementalContext, 'supplementalContextItems' | 'strategy'>>
-}
-
-export class OpenTabsBm25 implements ProjectContextVariation {
-    async fetchProjectContext(
-        editor: vscode.TextEditor,
-        cancellationToken: vscode.CancellationToken
-    ): Promise<Pick<CodeWhispererSupplementalContext, 'supplementalContextItems' | 'strategy'>> {
-        const contextItems =
-            (await waitUntil(async function () {
-                return await fetchOpentabsContext(editor, cancellationToken)
-            }, timeoutConfig)) ?? []
-        return {
-            supplementalContextItems: contextItems,
-            strategy: 'opentabs',
-        }
-    }
-}
-
-export class OpenTabsBm25Codemap implements ProjectContextVariation {
-    async fetchProjectContext(
-        editor: vscode.TextEditor,
-        cancellationToken: vscode.CancellationToken
-    ): Promise<Pick<CodeWhispererSupplementalContext, 'supplementalContextItems' | 'strategy'>> {
-        const contextItems =
-            (await waitUntil(async function () {
-                const result: CodeWhispererSupplementalContextItem[] = []
-                const opentabsContext = await fetchOpentabsContext(editor, cancellationToken)
-                const codemap = await fetchProjectContext(editor, 'codemap')
-
-                if (codemap && codemap.length > 0) {
-                    result.push(...codemap)
-                }
-
-                if (opentabsContext && opentabsContext.length > 0) {
-                    result.push(...opentabsContext)
-                }
-
-                return result
-            }, timeoutConfig)) ?? []
-        return {
-            supplementalContextItems: contextItems,
-            strategy: 'codemap',
-        }
-    }
-}
-
-export class GlobalBm25 implements ProjectContextVariation {
-    async fetchProjectContext(
-        editor: vscode.TextEditor,
-        cancellationToken: vscode.CancellationToken
-    ): Promise<Pick<CodeWhispererSupplementalContext, 'supplementalContextItems' | 'strategy'>> {
-        // fallback to opentabs if projectContext timeout
-        const opentabsContextPromise = waitUntil(async function () {
-            return await fetchOpentabsContext(editor, cancellationToken)
-        }, timeoutConfig)
-
-        const projectBM25Promise = waitUntil(async function () {
-            return await fetchProjectContext(editor, 'bm25')
-        }, timeoutConfig)
-
-        const [projectContext, opentabsContext] = await Promise.all([projectBM25Promise, opentabsContextPromise])
-        if (projectContext && projectContext.length > 0) {
-            return {
-                supplementalContextItems: projectContext,
-                strategy: 'bm25',
-            }
-        }
-
-        return {
-            supplementalContextItems: opentabsContext ?? [],
-            strategy: 'opentabs',
-        }
-    }
-}
-
-export class GlobalBm25Codemap implements ProjectContextVariation {
-    async fetchProjectContext(
-        editor: vscode.TextEditor,
-        cancellationToken: vscode.CancellationToken
-    ): Promise<Pick<CodeWhispererSupplementalContext, 'supplementalContextItems' | 'strategy'>> {
-        // fallback to opentabs if projectContext timeout
-        const opentabsContextPromise = waitUntil(async function () {
-            return await fetchOpentabsContext(editor, cancellationToken)
-        }, timeoutConfig)
-
-        const projectContextAndCodemapPromise = waitUntil(async function () {
-            return await fetchProjectContext(editor, 'default')
-        }, timeoutConfig)
-
-        const [projectContext, opentabsContext] = await Promise.all([
-            projectContextAndCodemapPromise,
-            opentabsContextPromise,
-        ])
-        if (projectContext && projectContext.length > 0) {
-            return {
-                supplementalContextItems: projectContext,
-                strategy: 'default',
-            }
-        }
-
-        return {
-            supplementalContextItems: opentabsContext ?? [],
-            strategy: 'opentabs',
-        }
     }
 }

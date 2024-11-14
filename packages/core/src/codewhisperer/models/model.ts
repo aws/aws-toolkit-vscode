@@ -47,7 +47,7 @@ export const vsCodeState: VsCodeState = {
 
 export type UtgStrategy = 'ByName' | 'ByContent'
 
-export type CrossFileStrategy = 'opentabs' | 'codemap' | 'bm25' | 'default'
+export type CrossFileStrategy = 'OpenTabs_BM25' | 'Codemap' | 'Project_BM25' | 'Project'
 
 export type SupplementalContextStrategy = CrossFileStrategy | UtgStrategy | 'Empty'
 
