@@ -160,9 +160,9 @@ export async function getSshVersion(sshPath: string): Promise<string | undefined
     return parseSshVersion(result.stdout)
 }
 
-export async function assertSshVersionAbove(sshPath: string, minVersion: string): Promise<void | never> {
+export async function assertSshVersionGte(sshPath: string, minVersion: string): Promise<void | never> {
     const sshVersion = await getSshVersion(sshPath)
-    if (sshVersion && semver.lt(sshVersion, '7.6')) {
+    if (sshVersion && semver.lt(sshVersion, minVersion)) {
         const msg = `SSH version ${sshVersion} is not supported, please upgrade to 7.6 or higher`
         getLogger().error(msg)
         throw new Error(msg)
