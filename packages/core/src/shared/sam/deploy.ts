@@ -22,7 +22,7 @@ import { CancellationError } from '../utilities/timeoutUtils'
 import { Wizard } from '../wizards/wizard'
 import { addTelemetryEnvVar } from './cli/samCliInvokerUtils'
 import { validateSamDeployConfig, SamConfig, writeSamconfigGlobal } from './config'
-import { BucketSource, createBucketSourcePrompter, createBucketPrompter } from '../ui/sam/bucketPrompter'
+import { BucketSource, createBucketSourcePrompter, createBucketNamePrompter } from '../ui/sam/bucketPrompter'
 import { createStackPrompter } from '../ui/sam/stackPrompter'
 import { TemplateItem, createTemplatePrompter } from '../ui/sam/templatePrompter'
 import { getProjectRoot, getRecentResponse, getSamCliPathAndVersion, getSource, updateRecentResponse } from './utils'
@@ -109,7 +109,7 @@ export class DeployWizard extends Wizard<DeployParams> {
                     paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
             })
             this.form.bucketName.bindPrompter(
-                ({ region }) => createBucketPrompter(new DefaultS3Client(region!), deployMementoRootKey),
+                ({ region }) => createBucketNamePrompter(new DefaultS3Client(region!), deployMementoRootKey),
                 {
                     showWhen: ({ bucketSource }) => bucketSource === BucketSource.UserProvided,
                 }
@@ -135,7 +135,7 @@ export class DeployWizard extends Wizard<DeployParams> {
                     paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
             })
             this.form.bucketName.bindPrompter(
-                ({ region }) => createBucketPrompter(new DefaultS3Client(region!), deployMementoRootKey),
+                ({ region }) => createBucketNamePrompter(new DefaultS3Client(region!), deployMementoRootKey),
                 {
                     showWhen: ({ bucketSource }) => bucketSource === BucketSource.UserProvided,
                 }
@@ -168,7 +168,7 @@ export class DeployWizard extends Wizard<DeployParams> {
                     paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
             })
             this.form.bucketName.bindPrompter(
-                ({ region }) => createBucketPrompter(new DefaultS3Client(region!), deployMementoRootKey),
+                ({ region }) => createBucketNamePrompter(new DefaultS3Client(region!), deployMementoRootKey),
                 {
                     showWhen: ({ bucketSource }) => bucketSource === BucketSource.UserProvided,
                 }
@@ -198,7 +198,7 @@ export class DeployWizard extends Wizard<DeployParams> {
                     paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
             })
             this.form.bucketName.bindPrompter(
-                ({ region }) => createBucketPrompter(new DefaultS3Client(region!), deployMementoRootKey),
+                ({ region }) => createBucketNamePrompter(new DefaultS3Client(region!), deployMementoRootKey),
                 {
                     showWhen: ({ bucketSource }) => bucketSource === BucketSource.UserProvided,
                 }

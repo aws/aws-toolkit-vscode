@@ -8,11 +8,11 @@ import { S3 } from 'aws-sdk'
 import sinon from 'sinon'
 import { DefaultS3Client } from '../../../../shared/clients/s3Client'
 import * as SamUtilsModule from '../../../../shared/sam/utils'
-import { createBucketPrompter } from '../../../../shared/ui/sam/bucketPrompter'
+import { createBucketNamePrompter } from '../../../../shared/ui/sam/bucketPrompter'
 import { AsyncCollection } from '../../../../shared/utilities/asyncCollection'
 import { RequiredProps } from '../../../../shared/utilities/tsUtils'
 
-describe('createBucketPrompter', () => {
+describe('createBucketNamePrompter', () => {
     let sandbox: sinon.SinonSandbox
     const s3Client = new DefaultS3Client('us-east-1', 'aws')
     const mementoRootKey = 'samcli.deploy.params'
@@ -39,7 +39,7 @@ describe('createBucketPrompter', () => {
         sandbox.stub(SamUtilsModule, 'getRecentResponse').returns(undefined) // Mock recent bucket
 
         // Act
-        const prompter = createBucketPrompter(s3Client, mementoRootKey)
+        const prompter = createBucketNamePrompter(s3Client, mementoRootKey)
 
         // Assert
         assert.ok(stub.calledOnce)
@@ -63,7 +63,7 @@ describe('createBucketPrompter', () => {
         sandbox.stub(SamUtilsModule, 'getRecentResponse').returns(undefined) // Mock recent bucket
 
         // Act
-        const prompter = createBucketPrompter(s3Client, mementoRootKey)
+        const prompter = createBucketNamePrompter(s3Client, mementoRootKey)
 
         // Assert
         assert.ok(stub.calledOnce)

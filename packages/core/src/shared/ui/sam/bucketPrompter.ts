@@ -37,7 +37,7 @@ export function createBucketSourcePrompter() {
     })
 }
 
-export function createBucketPrompter(client: DefaultS3Client, mementoRootKey: string) {
+export function createBucketNamePrompter(client: DefaultS3Client, mementoRootKey: string) {
     const recentBucket = getRecentResponse(mementoRootKey, client.regionCode, 'bucketName')
     const items = client.listBucketsIterable().map((b) => [
         {
