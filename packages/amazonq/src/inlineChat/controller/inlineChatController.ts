@@ -13,6 +13,7 @@ import { computeDecorations } from '../decorations/computeDecorations'
 import { CodelensProvider } from '../codeLenses/codeLenseProvider'
 import { PromptMessage, ReferenceLogController } from 'aws-core-vscode/codewhispererChat'
 import { CodeWhispererSettings } from 'aws-core-vscode/codewhisperer'
+import { QCodeGenTracker } from 'aws-core-vscode/codewhisperer'
 import {
     codicon,
     getIcon,
@@ -68,6 +69,7 @@ export class InlineChatController {
                 },
                 this.task
             )
+            QCodeGenTracker.instance.onInlineChatAcceptance()
         }
         const deletions = task.diff.filter((diff) => diff.type === 'deletion')
         await editor.edit(

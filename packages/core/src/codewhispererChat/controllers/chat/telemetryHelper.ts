@@ -38,6 +38,7 @@ import { supportedLanguagesList } from '../chat/chatRequest/converter'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { getSelectedCustomization } from '../../../codewhisperer/util/customizationUtil'
 import { undefinedIfEmpty } from '../../../shared'
+import { QCodeGenTracker } from '../../../codewhisperer/tracker/qCodeGenTracker'
 
 export function logSendTelemetryEventFailure(error: any) {
     let requestId: string | undefined
@@ -321,7 +322,10 @@ export class CWCTelemetryHelper {
             return
         }
         telemetry.amazonq_interactWithMessage.emit(event)
-
+        QCodeGenTracker.instance.onQChatInsertion(
+            event.cwsprChatAcceptedCharactersLength,
+            event.cwsprChatAcceptedNumberOfLines
+        )
         codeWhispererClient
             .sendTelemetryEvent({
                 telemetryEvent: {

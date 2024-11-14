@@ -22,7 +22,7 @@ export class QCodeGenTracker {
     private _totalNewCodeCharacterCount: number
     private _totalNewCodeLineCount: number
     private _timer?: NodeJS.Timer
-    private _serviceInvocationCount: number
+    private _qUsageCount: number
 
     static #instance: QCodeGenTracker
     static copySnippetThreshold = 50
@@ -30,15 +30,11 @@ export class QCodeGenTracker {
     private constructor() {
         this._totalNewCodeLineCount = 0
         this._totalNewCodeCharacterCount = 0
-        this._serviceInvocationCount = 0
+        this._qUsageCount = 0
     }
 
     public static get instance() {
         return (this.#instance ??= new this())
-    }
-
-    public get serviceInvocationCount(): number {
-        return this._serviceInvocationCount
     }
 
     public isActive(): boolean {
@@ -48,7 +44,7 @@ export class QCodeGenTracker {
     // this should be invoked whenever there is a successful Q feature invocation
     // for all Q features
     public onQFeatureInvoked() {
-        this._serviceInvocationCount += 1
+        this._qUsageCount += 1
     }
 
     public emitCodeContribution() {
@@ -98,7 +94,7 @@ export class QCodeGenTracker {
                 const delay: number = CodeWhispererConstants.defaultCheckPeriodMillis
                 const diffTime: number = startTime + delay
                 if (diffTime <= currentTime) {
-                    if (this._serviceInvocationCount <= 0) {
+                    if (this._qUsageCount <= 0) {
                         getLogger().debug(`Skip emiting code contribution metric. There is no active Amazon Q usage. `)
                         return
                     }
@@ -120,7 +116,7 @@ export class QCodeGenTracker {
     private resetTracker() {
         this._totalNewCodeLineCount = 0
         this._totalNewCodeCharacterCount = 0
-        this._serviceInvocationCount = 0
+        this._qUsageCount = 0
     }
 
     private closeTimer() {
@@ -171,20 +167,29 @@ export class QCodeGenTracker {
     }
 
     // add Q chat insert to cursor code to total code written
-    public onQChatInsertion() {}
+    public onQChatInsertion(acceptedCharacterCount?: number, acceptedLineCount?: number) {
+        if (acceptedCharacterCount && acceptedLineCount) {
+            // if the chat inserted code is less than 50 characters, it will be auto captured by onTextDocumentChange
+            if (acceptedCharacterCount <= QCodeGenTracker.copySnippetThreshold) {
+                return
+            }
+            this._totalNewCodeCharacterCount += acceptedCharacterCount
+            this._totalNewCodeLineCount += acceptedLineCount
+        }
+    }
 
     // add Q inline chat acceptance to total code written
-    public onInlineChat() {}
+    public onInlineChatAcceptance() {}
 
-    // add Q inline chat acceptance to total code written
+    // TODO: add Q inline chat acceptance to total code written
     public onTransformAcceptance() {}
 
-    // add Q feature dev acceptance to total code written
+    // TODO: add Q feature dev acceptance to total code written
     public onFeatureDevAcceptance() {}
 
-    // add Q UTG acceptance to total code written
+    // TODO: add Q UTG acceptance to total code written
     public onUtgAcceptance() {}
 
-    // add Q UTG acceptance to total code written
+    // TODO: add Q UTG acceptance to total code written
     public onDocAcceptance() {}
 }
