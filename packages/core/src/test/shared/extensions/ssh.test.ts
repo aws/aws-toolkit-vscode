@@ -62,8 +62,8 @@ describe('SSH Versioning', function () {
     it('asserts version is above threshold', async function () {
         const sshPath = path.join(tempDir.uri.fsPath, `ssh3${isWin() ? '.cmd' : ''}`)
         await createExecutableFile(sshPath, `echo "'OpenSSH_9.7p1, LibreSSL 3.3.6'"`)
-        await assert.rejects(async () => await ensureSshVersionGte('', '9.10'))
-        await assert.doesNotReject(async () => await ensureSshVersionGte('', '9.7.0'))
-        await assert.doesNotReject(async () => await ensureSshVersionGte('', '9.2.0'))
+        await assert.rejects(async () => await ensureSshVersionGte(sshPath, '9.10'))
+        await assert.doesNotReject(async () => await ensureSshVersionGte(sshPath, '9.7.0'))
+        await assert.doesNotReject(async () => await ensureSshVersionGte(sshPath, '9.2.0'))
     })
 })
