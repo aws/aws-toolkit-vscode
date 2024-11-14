@@ -66,7 +66,7 @@ export interface Manifest {
 }
 const manifestUrl = 'https://aws-toolkit-language-servers.amazonaws.com/q-context/manifest.json'
 // this LSP client in Q extension is only going to work with these LSP server versions
-const supportedLspServerVersions = ['0.1.27']
+const supportedLspServerVersions = ['0.1.28']
 
 const nodeBinName = process.platform === 'win32' ? 'node.exe' : 'node'
 
@@ -308,10 +308,13 @@ export class LspController {
         return resp
     }
 
-    async queryInlineProjectContext(query: string, path: string) {
+    async queryInlineProjectContext(query: string, path: string, target: 'bm25' | 'codemap' | 'default') {
         try {
-            return await LspClient.instance.queryInlineProjectContext(query, path)
+            return await LspClient.instance.queryInlineProjectContext(query, path, target)
         } catch (e) {
+            if (e instanceof Error) {
+                getLogger().error(`unexpected error while querying inline project context, e=${e.message}`)
+            }
             return []
         }
     }

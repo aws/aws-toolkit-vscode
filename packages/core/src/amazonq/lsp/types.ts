@@ -51,6 +51,7 @@ export type QueryInlineProjectContextRequest = string
 export type QueryInlineProjectContextRequestPayload = {
     query: string
     filePath: string
+    target: string
 }
 export const QueryInlineProjectContextRequestType: RequestType<QueryInlineProjectContextRequest, any, any> =
     new RequestType('lsp/queryInlineProjectContext')
