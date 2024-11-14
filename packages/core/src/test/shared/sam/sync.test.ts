@@ -55,8 +55,8 @@ import { AppNode } from '../../../awsService/appBuilder/explorer/nodes/appNode'
 import * as Cfn from '../../../shared/cloudformation/cloudformation'
 //import { beforeEach } from 'mocha'
 import { getWorkspaceFolder, TestFolder } from '../../testUtil'
-import { TemplateItem } from '../../../shared/ui/common/samTemplate'
-import { ParamsSource } from '../../../shared/ui/common/paramsSource'
+import { TemplateItem } from '../../../shared/ui/sam/samTemplate'
+import { ParamsSource } from '../../../shared/ui/sam/paramsSource'
 import { CloudFormationTemplateRegistry } from '../../../shared/fs/templateRegistry'
 
 import { samconfigCompleteData, samconfigInvalidData, validTemplateData } from '../../shared/sam/samTestUtils'
@@ -559,7 +559,7 @@ describe('SyncWizard', async () => {
             await testFolder.write('samconfig.toml', samconfigInvalidData)
 
             const prompterTester = PrompterTester.init()
-                .handleQuickPick('Specify parameters for deploy', async (picker) => {
+                .handleQuickPick('Specify parameter source for sync', async (picker) => {
                     // Need time to check samconfig.toml file and generate options
                     await picker.untilReady()
 
@@ -632,7 +632,7 @@ describe('SyncWizard', async () => {
             await testFolder.write('samconfig.toml', samconfigCompleteData)
 
             const prompterTester = PrompterTester.init()
-                .handleQuickPick('Specify parameters for deploy', async (quickPick) => {
+                .handleQuickPick('Specify parameter source for sync', async (quickPick) => {
                     // Need time to check samconfig.toml file and generate options
                     await quickPick.untilReady()
                     assert.strictEqual(quickPick.items.length, 3)
@@ -685,7 +685,7 @@ describe('SyncWizard', async () => {
              */
 
             const prompterTester = PrompterTester.init()
-                .handleQuickPick('Specify parameters for deploy', async (picker) => {
+                .handleQuickPick('Specify parameter source for sync', async (picker) => {
                     // Need time to check samconfig.toml file and generate options
                     await picker.untilReady()
 
@@ -755,7 +755,7 @@ describe('SyncWizard', async () => {
             await testFolder.write('samconfig.toml', samconfigCompleteData)
 
             const prompterTester = PrompterTester.init()
-                .handleQuickPick('Specify parameters for deploy', async (picker) => {
+                .handleQuickPick('Specify parameter source for sync', async (picker) => {
                     // Need time to check samconfig.toml file and generate options
                     await picker.untilReady()
 
@@ -815,7 +815,7 @@ describe('SyncWizard', async () => {
                     assert.strictEqual(quickPick.items[0].label, templateFile.fsPath)
                     quickPick.acceptItem(quickPick.items[0])
                 })
-                .handleQuickPick('Specify parameters for deploy', async (picker) => {
+                .handleQuickPick('Specify parameter source for sync', async (picker) => {
                     // Need time to check samconfig.toml file and generate options
                     await picker.untilReady()
 
@@ -888,7 +888,7 @@ describe('SyncWizard', async () => {
                     assert.strictEqual(quickPick.items[0].label, templateFile.fsPath)
                     quickPick.acceptItem(quickPick.items[0])
                 })
-                .handleQuickPick('Specify parameters for deploy', async (picker) => {
+                .handleQuickPick('Specify parameter source for sync', async (picker) => {
                     // Need time to check samconfig.toml file and generate options
                     await picker.untilReady()
 
@@ -938,7 +938,7 @@ describe('SyncWizard', async () => {
                     assert.strictEqual(quickPick.items[0].label, templateFile.fsPath)
                     quickPick.acceptItem(quickPick.items[0])
                 })
-                .handleQuickPick('Specify parameters for deploy', async (picker) => {
+                .handleQuickPick('Specify parameter source for sync', async (picker) => {
                     // Need time to check samconfig.toml file and generate options
                     await picker.untilReady()
 
@@ -985,7 +985,7 @@ describe('SyncWizard', async () => {
                     assert.strictEqual(quickPick.items[0].label, templateFile.fsPath)
                     quickPick.acceptItem(quickPick.items[0])
                 })
-                .handleQuickPick('Specify parameters for deploy', async (picker) => {
+                .handleQuickPick('Specify parameter source for sync', async (picker) => {
                     // Need time to check samconfig.toml file and generate options
                     await picker.untilReady()
 
@@ -1060,7 +1060,7 @@ describe('SyncWizard', async () => {
                     assert.strictEqual(quickPick.items[0].label, templateFile.fsPath)
                     quickPick.acceptItem(quickPick.items[0])
                 })
-                .handleQuickPick('Specify parameters for deploy', async (picker) => {
+                .handleQuickPick('Specify parameter source for sync', async (picker) => {
                     // Need time to check samconfig.toml file and generate options
                     await picker.untilReady()
 
@@ -1137,7 +1137,7 @@ describe('SyncWizard', async () => {
                     assert.strictEqual(quickPick.items[0].label, templateFile.fsPath)
                     quickPick.acceptItem(quickPick.items[0])
                 })
-                .handleQuickPick('Specify parameters for deploy', async (picker) => {
+                .handleQuickPick('Specify parameter source for sync', async (picker) => {
                     // Need time to check samconfig.toml file and generate options
                     await picker.untilReady()
 
@@ -1269,7 +1269,7 @@ describe('SAM Sync', () => {
                     assert.strictEqual(quickPick.items[0].label, templateFile.fsPath)
                     quickPick.acceptItem(quickPick.items[0])
                 })
-                .handleQuickPick('Specify parameters for deploy', async (picker) => {
+                .handleQuickPick('Specify parameter source for sync', async (picker) => {
                     // Need time to check samconfig.toml file and generate options
                     await picker.untilReady()
                     assert.strictEqual(picker.items[0].label, 'Specify required parameters and save as defaults')
@@ -1347,7 +1347,7 @@ describe('SAM Sync', () => {
 
         it('[entry: template file] specify flag should instantiate correct process in terminal', async () => {
             const prompterTester = PrompterTester.init()
-                .handleQuickPick('Specify parameters for deploy', async (picker) => {
+                .handleQuickPick('Specify parameter source for sync', async (picker) => {
                     // Need time to check samconfig.toml file and generate options
                     await picker.untilReady()
                     assert.strictEqual(picker.items[1].label, 'Specify required parameters')
@@ -1431,7 +1431,7 @@ describe('SAM Sync', () => {
             const samconfigFile = vscode.Uri.file(await testFolder.write('samconfig.toml', samconfigCompleteData))
 
             const prompterTester = PrompterTester.init()
-                .handleQuickPick('Specify parameters for deploy', async (picker) => {
+                .handleQuickPick('Specify parameter source for sync', async (picker) => {
                     // Need time to check samconfig.toml file and generate options
                     await picker.untilReady()
                     assert.strictEqual(picker.items[2].label, 'Use default values from samconfig')
@@ -1533,7 +1533,7 @@ describe('SAM Sync', () => {
             getTestWindow().onDidShowMessage((m) => m.items.find((i) => i.title === 'OK')?.select())
 
             const prompterTester = PrompterTester.init()
-                .handleQuickPick('Specify parameters for deploy', async (picker) => {
+                .handleQuickPick('Specify parameter source for sync', async (picker) => {
                     // Need time to check samconfig.toml file and generate options
                     await picker.untilReady()
                     assert.strictEqual(picker.items[2].label, 'Use default values from samconfig')

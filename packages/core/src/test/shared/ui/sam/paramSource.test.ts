@@ -8,7 +8,7 @@ import {
     createDeployParamsSourcePrompter,
     createSyncParamsSourcePrompter,
     ParamsSource,
-} from '../../../../shared/ui/common/paramsSource'
+} from '../../../../shared/ui/sam/paramsSource'
 import { DataQuickPickItem } from '../../../../shared/ui/pickerPrompter'
 
 describe('createSyncParamsSourcePrompter', () => {
@@ -25,7 +25,7 @@ describe('createSyncParamsSourcePrompter', () => {
         ]
         const prompter = createSyncParamsSourcePrompter(false)
         const quickPick = prompter.quickPick
-        assert.strictEqual(quickPick.title, 'Specify parameters for sync')
+        assert.strictEqual(quickPick.title, 'Specify parameter source for sync')
         assert.strictEqual(quickPick.placeholder, 'Press enter to proceed with highlighted option')
         assert.strictEqual(quickPick.items.length, 2)
         assert.deepStrictEqual(quickPick.items, expectedItems)
@@ -48,7 +48,7 @@ describe('createSyncParamsSourcePrompter', () => {
         ]
         const prompter = createSyncParamsSourcePrompter(true)
         const quickPick = prompter.quickPick
-        assert.strictEqual(quickPick.title, 'Specify parameters for sync')
+        assert.strictEqual(quickPick.title, 'Specify parameter source for sync')
         assert.strictEqual(quickPick.placeholder, 'Press enter to proceed with highlighted option')
         assert.strictEqual(quickPick.items.length, 3)
         assert.deepStrictEqual(quickPick.items, expectedItems)
@@ -69,7 +69,7 @@ describe('createDeployParamsSourcePrompter', () => {
         ]
         const prompter = createDeployParamsSourcePrompter(false)
         const quickPick = prompter.quickPick
-        assert.strictEqual(quickPick.title, 'Specify parameters for deploy')
+        assert.strictEqual(quickPick.title, 'Specify parameter source for deploy')
         assert.strictEqual(quickPick.placeholder, 'Press enter to proceed with highlighted option')
         assert.strictEqual(quickPick.items.length, 2)
         assert.deepStrictEqual(quickPick.items, expectedItems)
@@ -92,7 +92,7 @@ describe('createDeployParamsSourcePrompter', () => {
         ]
         const prompter = createDeployParamsSourcePrompter(true)
         const quickPick = prompter.quickPick
-        assert.strictEqual(quickPick.title, 'Specify parameters for deploy')
+        assert.strictEqual(quickPick.title, 'Specify parameter source for deploy')
         assert.strictEqual(quickPick.placeholder, 'Press enter to proceed with highlighted option')
         assert.strictEqual(quickPick.items.length, 3)
         assert.deepStrictEqual(quickPick.items, expectedItems)

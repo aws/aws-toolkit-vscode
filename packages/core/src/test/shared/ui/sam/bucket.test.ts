@@ -8,7 +8,7 @@ import { S3 } from 'aws-sdk'
 import sinon from 'sinon'
 import { DefaultS3Client } from '../../../../shared/clients/s3Client'
 import * as SamUtilsModule from '../../../../shared/sam/utils'
-import { createBucketPrompter } from '../../../../shared/ui/common/bucket'
+import { createBucketPrompter } from '../../../../shared/ui/sam/bucket'
 import { AsyncCollection } from '../../../../shared/utilities/asyncCollection'
 import { RequiredProps } from '../../../../shared/utilities/tsUtils'
 

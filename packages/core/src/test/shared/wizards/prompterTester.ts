@@ -7,19 +7,26 @@ import assert from 'assert'
 import { TestInputBox, TestQuickPick } from '../vscode/quickInput'
 import { getTestWindow, TestWindow } from '../vscode/window'
 
+interface PrompterTesterConfig {
+    testWindow?: TestWindow
+    handlerTimeout?: number
+}
+
 export class PrompterTester {
     private quickPickHandlers: Map<string, (input: TestQuickPick) => void> = new Map()
     private inputBoxHanlder: Map<string, (input: TestInputBox) => void> = new Map()
     private testWindow: TestWindow
     private callLog = Array<string>()
+    private handlerTimout: number = 3000 // Default timeout to 3 seconds
     private callLogCount = new Map<string, number>()
 
-    private constructor(testWindow?: TestWindow) {
-        this.testWindow = testWindow || getTestWindow()
+    private constructor(config?: PrompterTesterConfig) {
+        this.testWindow = config?.testWindow || getTestWindow()
+        this.handlerTimout = config?.handlerTimeout || this.handlerTimout
     }
 
-    static init(testWindow?: TestWindow): PrompterTester {
-        return new PrompterTester(testWindow)
+    static init(config?: PrompterTesterConfig): PrompterTester {
+        return new PrompterTester(config)
     }
 
     handleQuickPick(titlePattern: string, handler: (input: TestQuickPick) => void): PrompterTester {
@@ -96,15 +103,27 @@ export class PrompterTester {
         return [...this.quickPickHandlers.keys(), ...this.inputBoxHanlder.keys()]
     }
 
-    private handle(input: any, handlers: any) {
-        for (const [pattern, handler] of handlers) {
-            if (input.title?.includes(pattern)) {
-                handler(input)
-                this.record(pattern)
-                return
-            }
+    private async handle(input: any, handlers: any) {
+        const handler = handlers.get(input.title)
+
+        if (handler === undefined) {
+            return this.handleUnknownPrompter(input)
         }
-        this.handleUnknownPrompter(input)
+
+        try {
+            const timeoutPromise = new Promise<never>((_, reject) => {
+                setTimeout(() => {
+                    reject(new Error(`Handler for "${input.title}" exceeded ${this.handlerTimout}ms timeout`))
+                }, this.handlerTimout)
+            })
+
+            await Promise.race([handler(input), timeoutPromise])
+        } catch (e) {
+            // clean up UI on callback function early exit (e.g assertion failure)
+            await input.dispose()
+            throw e
+        }
+        this.record(input.title)
     }
 
     private handleUnknownPrompter(input: any) {

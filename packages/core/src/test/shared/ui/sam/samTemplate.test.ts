@@ -11,7 +11,7 @@ import * as Cfn from '../../../../shared/cloudformation/cloudformation'
 import { CloudFormationTemplateRegistry } from '../../../../shared/fs/templateRegistry'
 import { WatchedItem } from '../../../../shared/fs/watchedFiles'
 import * as SamUtilsModule from '../../../../shared/sam/utils'
-import { createTemplatePrompter } from '../../../../shared/ui/common/samTemplate'
+import { createTemplatePrompter } from '../../../../shared/ui/sam/samTemplate'
 import { assertEqualPaths } from '../../../testUtil'
 
 describe('createTemplatePrompter', () => {

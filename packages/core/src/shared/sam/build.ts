@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { TemplateItem, createTemplatePrompter } from '../ui/common/samTemplate'
+import { TemplateItem, createTemplatePrompter } from '../ui/sam/samTemplate'
 import { ChildProcess } from '../utilities/processUtils'
 import { addTelemetryEnvVar } from './cli/samCliInvokerUtils'
 import { Wizard } from '../wizards/wizard'
@@ -59,7 +59,7 @@ export function createParamsSourcePrompter(existValidSamconfig: boolean) {
     )
 
     return createQuickPick(items, {
-        title: 'Specify parameters for build',
+        title: 'Specify parameter source for build',
         placeholder: 'Select configuration options for sam build',
         buttons: createCommonButtons(samBuildUrl),
     })

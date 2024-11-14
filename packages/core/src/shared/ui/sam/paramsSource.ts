@@ -38,7 +38,7 @@ export function createDeployParamsSourcePrompter(existValidSamconfig: boolean | 
     const items = loadParamsSourcePrompterItems(existValidSamconfig)
 
     return createQuickPick(items, {
-        title: 'Specify parameters for deploy',
+        title: 'Specify parameter source for deploy',
         placeholder: 'Press enter to proceed with highlighted option',
         buttons: createCommonButtons(samDeployUrl),
     })
@@ -48,7 +48,7 @@ export function createSyncParamsSourcePrompter(existValidSamconfig: boolean | un
     const items = loadParamsSourcePrompterItems(existValidSamconfig)
 
     return createQuickPick(items, {
-        title: 'Specify parameters for sync',
+        title: 'Specify parameter source for sync',
         placeholder: 'Press enter to proceed with highlighted option',
         buttons: createCommonButtons(samSyncUrl),
     })

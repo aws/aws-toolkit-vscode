@@ -45,11 +45,11 @@ import {
     getSource,
     updateRecentResponse,
 } from './utils'
-import { TemplateItem, createTemplatePrompter } from '../ui/common/samTemplate'
-import { createStackPrompter } from '../ui/common/stack'
-import { ParamsSource, createSyncParamsSourcePrompter } from '../ui/common/paramsSource'
-import { createEcrPrompter } from '../ui/common/ecr'
-import { BucketSource, createBucketPrompter } from '../ui/common/bucket'
+import { TemplateItem, createTemplatePrompter } from '../ui/sam/samTemplate'
+import { createStackPrompter } from '../ui/sam/stack'
+import { ParamsSource, createSyncParamsSourcePrompter } from '../ui/sam/paramsSource'
+import { createEcrPrompter } from '../ui/sam/ecr'
+import { BucketSource, createBucketPrompter } from '../ui/sam/bucket'
 import { runInTerminal } from './processTerminal'
 
 export interface SyncParams {
@@ -67,8 +67,6 @@ export interface SyncParams {
     readonly syncFlags?: string
 }
 
-export const prefixNewBucketName = (name: string) => `newbucket:${name}`
-export const prefixNewRepoName = (name: string) => `newrepo:${name}`
 export const syncMementoRootKey = 'samcli.sync.params'
 
 // TODO: hook this up so it prompts the user when more than 1 environment is present in `samconfig.toml`

@@ -6,11 +6,12 @@ import { DefaultS3Client } from '../../clients/s3Client'
 import { samDeployUrl, samSyncUrl } from '../../constants'
 import { createCommonButtons } from '../buttons'
 import { createQuickPick, DataQuickPickItem } from '../pickerPrompter'
-import { SyncParams, prefixNewBucketName } from '../../sam/sync'
+import type { SyncParams } from '../../sam/sync'
 import * as nls from 'vscode-nls'
 import { getRecentResponse } from '../../sam/utils'
 
 const localize = nls.loadMessageBundle()
+export const prefixNewBucketName = (name: string) => `newbucket:${name}`
 
 export enum BucketSource {
     SamCliManaged,

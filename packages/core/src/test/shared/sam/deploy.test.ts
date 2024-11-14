@@ -30,9 +30,9 @@ import { UserAgent as __UserAgent } from '@smithy/types'
 
 import { SamAppLocation } from '../../../awsService/appBuilder/explorer/samProject'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
-import { TemplateItem } from '../../../shared/ui/common/samTemplate'
-import { ParamsSource } from '../../../shared/ui/common/paramsSource'
-import { BucketSource } from '../../../shared/ui/common/bucket'
+import { TemplateItem } from '../../../shared/ui/sam/samTemplate'
+import { ParamsSource } from '../../../shared/ui/sam/paramsSource'
+import { BucketSource } from '../../../shared/ui/sam/bucket'
 
 describe('DeployWizard', async function () {
     let sandbox: sinon.SinonSandbox
@@ -95,7 +95,7 @@ describe('DeployWizard', async function () {
                 .handleInputBox('Specify SAM parameter value for DestinationBucketName', (inputBox) => {
                     inputBox.acceptValue('my-destination-bucket-name')
                 })
-                .handleQuickPick('Specify parameters for deploy', async (quickPick) => {
+                .handleQuickPick('Specify parameter source for deploy', async (quickPick) => {
                     // Need time to check samconfig.toml file and generate options
                     await quickPick.untilReady()
 
@@ -166,7 +166,7 @@ describe('DeployWizard', async function () {
                 .handleInputBox('Specify SAM parameter value for DestinationBucketName', (inputBox) => {
                     inputBox.acceptValue('my-destination-bucket-name')
                 })
-                .handleQuickPick('Specify parameters for deploy', async (quickPick) => {
+                .handleQuickPick('Specify parameter source for deploy', async (quickPick) => {
                     // Need time to check samconfig.toml file and generate options
                     await quickPick.untilReady()
 
@@ -224,7 +224,7 @@ describe('DeployWizard', async function () {
             // provide testWindow so that we can call other api
             const testWindow = getTestWindow()
 
-            PrompterTester.init(testWindow)
+            PrompterTester.init({ testWindow })
                 .handleQuickPick('Select a SAM/CloudFormation Template', async (quickPick) => {
                     // Need sometime to wait for the template to search for template file
                     await quickPick.untilReady()
@@ -232,7 +232,7 @@ describe('DeployWizard', async function () {
                     assert.strictEqual(quickPick.items[0].label, templateFile.fsPath)
                     quickPick.acceptItem(quickPick.items[0])
                 })
-                .handleQuickPick('Specify parameters for deploy', async (quickPick) => {
+                .handleQuickPick('Specify parameter source for deploy', async (quickPick) => {
                     // Need time to check samconfig.toml file and generate options
                     await quickPick.untilReady()
 
@@ -306,7 +306,7 @@ describe('DeployWizard', async function () {
                     assert.strictEqual(quickPick.items[0].label, templateFile.fsPath)
                     quickPick.acceptItem(quickPick.items[0])
                 })
-                .handleQuickPick('Specify parameters for deploy', async (quickPick) => {
+                .handleQuickPick('Specify parameter source for deploy', async (quickPick) => {
                     // Need time to check samconfig.toml file and generate options
                     await quickPick.untilReady()
 
@@ -367,7 +367,7 @@ describe('DeployWizard', async function () {
                 .handleInputBox('Specify SAM parameter value for DestinationBucketName', (inputBox) => {
                     inputBox.acceptValue('my-destination-bucket-name')
                 })
-                .handleQuickPick('Specify parameters for deploy', async (quickPick) => {
+                .handleQuickPick('Specify parameter source for deploy', async (quickPick) => {
                     // Need time to check samconfig.toml file and generate options
                     await quickPick.untilReady()
 
@@ -438,7 +438,7 @@ describe('DeployWizard', async function () {
                 .handleInputBox('Specify SAM parameter value for DestinationBucketName', (inputBox) => {
                     inputBox.acceptValue('my-destination-bucket-name')
                 })
-                .handleQuickPick('Specify parameters for deploy', async (quickPick) => {
+                .handleQuickPick('Specify parameter source for deploy', async (quickPick) => {
                     // Need time to check samconfig.toml file and generate options
                     await quickPick.untilReady()
 
@@ -495,7 +495,7 @@ describe('DeployWizard', async function () {
                     assert.strictEqual(quickPick.items[0].label, templateFile.fsPath)
                     quickPick.acceptItem(quickPick.items[0])
                 })
-                .handleQuickPick('Specify parameters for deploy', async (quickPick) => {
+                .handleQuickPick('Specify parameter source for deploy', async (quickPick) => {
                     // Need time to check samconfig.toml file and generate options
                     await quickPick.untilReady()
                     assert.strictEqual(quickPick.items.length, 2)
@@ -579,7 +579,7 @@ describe('DeployWizard', async function () {
                     assert.strictEqual(quickPick.items[0].label, templateFile.fsPath)
                     quickPick.acceptItem(quickPick.items[0])
                 })
-                .handleQuickPick('Specify parameters for deploy', async (quickPick) => {
+                .handleQuickPick('Specify parameter source for deploy', async (quickPick) => {
                     // Need time to check samconfig.toml file and generate options
                     await quickPick.untilReady()
                     assert.strictEqual(quickPick.items.length, 3)

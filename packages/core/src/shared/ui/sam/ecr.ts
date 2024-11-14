@@ -7,11 +7,12 @@ import { DefaultEcrClient } from '../../clients/ecrClient'
 import { samSyncUrl } from '../../constants'
 import { createCommonButtons } from '../buttons'
 import { createQuickPick } from '../pickerPrompter'
-import { prefixNewRepoName } from '../../sam/sync'
+
 import * as nls from 'vscode-nls'
 import { getRecentResponse } from '../../sam/utils'
 
 export const localize = nls.loadMessageBundle()
+export const prefixNewRepoName = (name: string) => `newrepo:${name}`
 
 export function createEcrPrompter(client: DefaultEcrClient, mementoRootKey: string) {
     const recentEcrRepo = getRecentResponse(mementoRootKey, client.regionCode, 'ecrRepoUri')

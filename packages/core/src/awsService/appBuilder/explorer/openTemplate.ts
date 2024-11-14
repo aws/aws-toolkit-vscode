@@ -7,7 +7,7 @@ import { CloudFormationTemplateRegistry } from '../../../shared/fs/templateRegis
 import { syncMementoRootKey } from '../../../shared/sam/sync'
 
 import { createExitPrompter } from '../../../shared/ui/common/exitPrompter'
-import { createTemplatePrompter, TemplateItem } from '../../../shared/ui/common/samTemplate'
+import { createTemplatePrompter, TemplateItem } from '../../../shared/ui/sam/samTemplate'
 import { Wizard } from '../../../shared/wizards/wizard'
 
 export interface OpenTemplateParams {
