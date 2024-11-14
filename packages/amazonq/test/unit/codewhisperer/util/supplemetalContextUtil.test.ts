@@ -31,6 +31,8 @@ describe('supplementalContextUtil', function () {
     describe('fetchSupplementalContext', function () {
         describe('openTabsContext', function () {
             it('opentabContext should include chunks if non empty', async function () {
+                sinon.stub(FeatureConfigProvider.instance, 'getProjectContextGroup').alwaysReturned('control')
+
                 await toTextEditor('class Foo', 'Foo.java', testFolder.path, { preview: false })
                 await toTextEditor('class Bar', 'Bar.java', testFolder.path, { preview: false })
                 await toTextEditor('class Baz', 'Baz.java', testFolder.path, { preview: false })
@@ -44,6 +46,8 @@ describe('supplementalContextUtil', function () {
             })
 
             it('opentabsContext should filter out empty chunks', async function () {
+                sinon.stub(FeatureConfigProvider.instance, 'getProjectContextGroup').alwaysReturned('control')
+
                 // open 3 files as supplemental context candidate files but none of them have contents
                 await toTextEditor('', 'Foo.java', testFolder.path, { preview: false })
                 await toTextEditor('', 'Bar.java', testFolder.path, { preview: false })
