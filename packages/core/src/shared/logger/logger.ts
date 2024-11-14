@@ -248,7 +248,7 @@ export class TopicLogger extends BaseLogger implements vscode.Disposable {
         if (typeof message === 'string') {
             message = prependTopic(this.topic, message) as string
         }
-        return this.logger.sendToLog(level, message, meta)
+        return this.logger.sendToLog(level, message, ...meta)
     }
 
     public async dispose(): Promise<void> {}
