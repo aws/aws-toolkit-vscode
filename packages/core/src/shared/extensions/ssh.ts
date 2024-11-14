@@ -157,7 +157,7 @@ export async function startVscodeRemote(
 export async function getSshVersion(sshPath: string): Promise<string | undefined> {
     const result = await new ChildProcess(sshPath, ['-V'], { collect: true }).run()
 
-    return parseSshVersion(result.stdout == '' ? result.stderr : result.stdout)
+    return parseSshVersion(result.stdout === '' ? result.stderr : result.stdout)
 }
 
 export async function ensureSshVersionGte(sshPath: string, minVersion: string): Promise<void | never> {
