@@ -51,7 +51,7 @@ export class TestLogger implements Logger {
             .map((loggedEntry) => loggedEntry.entry)
     }
 
-    public sendToLog(logLevel: LogLevel, msg: string, entries: Loggable[]): number {
+    public sendToLog(logLevel: LogLevel, msg: string, ...entries: Loggable[]): number {
         return this.addLoggedEntries(logLevel, [msg, ...entries])
     }
 
