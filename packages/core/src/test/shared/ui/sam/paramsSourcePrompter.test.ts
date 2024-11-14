@@ -8,7 +8,7 @@ import {
     createDeployParamsSourcePrompter,
     createSyncParamsSourcePrompter,
     ParamsSource,
-} from '../../../../shared/ui/sam/paramsSource'
+} from '../../../../shared/ui/sam/paramsSourcePrompter'
 import { DataQuickPickItem } from '../../../../shared/ui/pickerPrompter'
 
 describe('createSyncParamsSourcePrompter', () => {

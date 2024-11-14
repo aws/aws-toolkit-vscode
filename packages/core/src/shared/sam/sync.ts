@@ -45,11 +45,11 @@ import {
     getSource,
     updateRecentResponse,
 } from './utils'
-import { TemplateItem, createTemplatePrompter } from '../ui/sam/samTemplate'
-import { createStackPrompter } from '../ui/sam/stack'
-import { ParamsSource, createSyncParamsSourcePrompter } from '../ui/sam/paramsSource'
-import { createEcrPrompter } from '../ui/sam/ecr'
-import { BucketSource, createBucketPrompter } from '../ui/sam/bucket'
+import { TemplateItem, createTemplatePrompter } from '../ui/sam/templatePrompter'
+import { createStackPrompter } from '../ui/sam/stackPrompter'
+import { ParamsSource, createSyncParamsSourcePrompter } from '../ui/sam/paramsSourcePrompter'
+import { createEcrPrompter } from '../ui/sam/ecrPrompter'
+import { BucketSource, createBucketPrompter } from '../ui/sam/bucketPrompter'
 import { runInTerminal } from './processTerminal'
 
 export interface SyncParams {

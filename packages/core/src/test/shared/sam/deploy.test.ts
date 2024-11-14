@@ -30,9 +30,9 @@ import { UserAgent as __UserAgent } from '@smithy/types'
 
 import { SamAppLocation } from '../../../awsService/appBuilder/explorer/samProject'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
-import { TemplateItem } from '../../../shared/ui/sam/samTemplate'
-import { ParamsSource } from '../../../shared/ui/sam/paramsSource'
-import { BucketSource } from '../../../shared/ui/sam/bucket'
+import { TemplateItem } from '../../../shared/ui/sam/templatePrompter'
+import { ParamsSource } from '../../../shared/ui/sam/paramsSourcePrompter'
+import { BucketSource } from '../../../shared/ui/sam/bucketPrompter'
 
 describe('DeployWizard', async function () {
     let sandbox: sinon.SinonSandbox

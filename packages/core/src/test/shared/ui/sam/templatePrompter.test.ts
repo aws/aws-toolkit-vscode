@@ -11,7 +11,7 @@ import * as Cfn from '../../../../shared/cloudformation/cloudformation'
 import { CloudFormationTemplateRegistry } from '../../../../shared/fs/templateRegistry'
 import { WatchedItem } from '../../../../shared/fs/watchedFiles'
 import * as SamUtilsModule from '../../../../shared/sam/utils'
-import { createTemplatePrompter } from '../../../../shared/ui/sam/samTemplate'
+import { createTemplatePrompter } from '../../../../shared/ui/sam/templatePrompter'
 import { assertEqualPaths } from '../../../testUtil'
 
 describe('createTemplatePrompter', () => {
@@ -43,10 +43,8 @@ describe('createTemplatePrompter', () => {
 
         const prompter = createTemplatePrompter(registry, mementoRootKey)
 
-        // Assert
         assert.strictEqual(prompter.quickPick.items.length, 2)
         assertEqualPaths(prompter.quickPick.items[0].label, '/path/to/template1.yaml')
-        //assert.strictEqual(prompter.quickPick.items[0].label, '/path/to/template1.yaml')
         assertEqualPaths(prompter.quickPick.items[1].label, '/path/to/template2.yaml')
         assert.strictEqual(prompter.quickPick.title, 'Select a SAM/CloudFormation Template')
         assert.strictEqual(prompter.quickPick.placeholder, 'Select a SAM/CloudFormation Template')
