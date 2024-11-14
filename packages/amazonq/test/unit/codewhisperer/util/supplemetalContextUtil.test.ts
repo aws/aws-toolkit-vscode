@@ -21,7 +21,7 @@ describe('supplementalContextUtil', function () {
 
     beforeEach(async function () {
         testFolder = await TestFolder.create()
-        sinon.stub(FeatureConfigProvider.instance, 'isNewProjectContextGroup').alwaysReturned(false)
+        sinon.stub(FeatureConfigProvider.instance, 'getProjectContextGroup').returns('control')
     })
 
     afterEach(function () {

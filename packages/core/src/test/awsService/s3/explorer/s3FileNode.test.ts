@@ -8,7 +8,7 @@ import { stringOrProp } from '../../../../shared/utilities/tsUtils'
 import { S3BucketNode } from '../../../../awsService/s3/explorer/s3BucketNode'
 import { S3FileNode } from '../../../../awsService/s3/explorer/s3FileNode'
 import { S3Client } from '../../../../shared/clients/s3Client'
-import { formatLocalized } from '../../../../shared/utilities/textUtilities'
+import { formatLocalized } from '../../../../shared/datetime'
 
 describe('S3FileNode', function () {
     const arn = 'arn'

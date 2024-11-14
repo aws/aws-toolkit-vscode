@@ -27,7 +27,7 @@ import {
 } from '../utils.test'
 import { CloudWatchLogs } from 'aws-sdk'
 import { FilteredLogEvents } from 'aws-sdk/clients/cloudwatchlogs'
-import { formatDateTimestamp } from '../../../../shared/utilities/textUtilities'
+import { formatDateTimestamp } from '../../../../shared/datetime'
 
 describe('LogDataRegistry', async function () {
     let registry: GetSetLogDataRegistry

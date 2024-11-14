@@ -53,6 +53,7 @@ import { globals, waitUntil } from '../../../shared'
 import { telemetry } from '../../../shared/telemetry'
 import { Auth } from '../../../auth'
 import { isSsoConnection } from '../../../auth/connection'
+import { inspect } from '../../../shared/utilities/collectionUtils'
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
@@ -656,7 +657,11 @@ export class ChatController {
 
         const request = triggerPayloadToChatRequest(triggerPayload)
         const session = this.sessionStorage.getSession(tabID)
-        getLogger().info(`request from tab: ${tabID} conversationID: ${session.sessionIdentifier} request: %O`, request)
+        getLogger().info(
+            `request from tab: ${tabID} conversationID: ${session.sessionIdentifier} request: ${inspect(request, {
+                depth: 12,
+            })}`
+        )
         let response: MessengerResponseType | undefined = undefined
         session.createNewTokenSource()
         try {
@@ -681,8 +686,7 @@ export class ChatController {
             getLogger().info(
                 `response to tab: ${tabID} conversationID: ${session.sessionIdentifier} requestID: ${
                     response.$metadata.requestId
-                } metadata: %O`,
-                response.$metadata
+                } metadata: ${inspect(response.$metadata, { depth: 12 })}`
             )
             await this.messenger.sendAIResponse(response, session, tabID, triggerID, triggerPayload)
         } catch (e: any) {

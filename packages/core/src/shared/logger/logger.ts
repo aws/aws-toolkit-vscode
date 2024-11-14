@@ -7,6 +7,13 @@ import * as vscode from 'vscode'
 
 export type LogTopic = 'crashReport' | 'notifications' | 'test' | 'unknown'
 
+class ErrorLog {
+    constructor(
+        public topic: string,
+        public error: Error
+    ) {}
+}
+
 const toolkitLoggers: {
     main: Logger | undefined
     debugConsole: Logger | undefined
@@ -30,15 +37,16 @@ export interface Logger {
     getLogById(logID: number, file: vscode.Uri): string | undefined
     /** HACK: Enables logging to vscode Debug Console. */
     enableDebugConsole(): void
+    sendToLog(
+        logLevel: 'debug' | 'verbose' | 'info' | 'warn' | 'error',
+        message: string | Error,
+        ...meta: any[]
+    ): number
 }
 
 export abstract class BaseLogger implements Logger {
     logFile?: vscode.Uri
     topic: LogTopic = 'unknown'
-
-    setTopic(topic: LogTopic = 'unknown') {
-        this.topic = topic
-    }
 
     debug(message: string | Error, ...meta: any[]): number {
         return this.sendToLog('debug', message, ...meta)
@@ -58,17 +66,16 @@ export abstract class BaseLogger implements Logger {
     log(logLevel: LogLevel, message: string | Error, ...meta: any[]): number {
         return this.sendToLog(logLevel, message, ...meta)
     }
-    abstract setLogLevel(logLevel: LogLevel): void
-    abstract logLevelEnabled(logLevel: LogLevel): boolean
-    abstract getLogById(logID: number, file: vscode.Uri): string | undefined
-    /** HACK: Enables logging to vscode Debug Console. */
-    abstract enableDebugConsole(): void
-
     abstract sendToLog(
         logLevel: 'debug' | 'verbose' | 'info' | 'warn' | 'error',
         message: string | Error,
         ...meta: any[]
     ): number
+    abstract setLogLevel(logLevel: LogLevel): void
+    abstract logLevelEnabled(logLevel: LogLevel): boolean
+    abstract getLogById(logID: number, file: vscode.Uri): string | undefined
+    /** HACK: Enables logging to vscode Debug Console. */
+    abstract enableDebugConsole(): void
 }
 
 /**
@@ -121,6 +128,20 @@ export function compareLogLevel(l1: LogLevel, l2: LogLevel): number {
     return logLevels.get(l1)! - logLevels.get(l2)!
 }
 
+/* Format the message with topic header */
+function prependTopic(topic: string, message: string | Error): string | ErrorLog {
+    if (typeof message === 'string') {
+        // TODO: remove this after all calls are migrated and topic is a required param.
+        if (topic === 'unknown') {
+            return message
+        }
+        return `${topic}: ` + message
+    } else if (message instanceof Error) {
+        return new ErrorLog(topic, message)
+    }
+    return message
+}
+
 /**
  * Gets the logger if it has been initialized
  * the logger is of `'main'` or `undefined`: Main logger; default impl: logs to log file and log output channel
@@ -131,8 +152,7 @@ export function getLogger(topic?: LogTopic): Logger {
     if (!logger) {
         return new ConsoleLogger()
     }
-    ;(logger as BaseLogger).setTopic?.(topic)
-    return logger
+    return new TopicLogger(topic ?? 'unknown', logger)
 }
 
 export function getDebugConsoleLogger(topic?: LogTopic): Logger {
@@ -140,8 +160,7 @@ export function getDebugConsoleLogger(topic?: LogTopic): Logger {
     if (!logger) {
         return new ConsoleLogger()
     }
-    ;(logger as BaseLogger).setTopic?.(topic)
-    return logger
+    return new TopicLogger(topic ?? 'unknown', logger)
 }
 
 // jscpd:ignore-start
@@ -193,6 +212,46 @@ export class ConsoleLogger extends BaseLogger {
         }
         return 0
     }
+}
+
+/**
+ * Wraps a `ToolkitLogger` and defers to it for everything except `topic`.
+ */
+export class TopicLogger extends BaseLogger implements vscode.Disposable {
+    /**
+     * Wraps a `ToolkitLogger` and defers to it for everything except `topic`.
+     */
+    public constructor(
+        public override topic: LogTopic,
+        public readonly logger: Logger
+    ) {
+        super()
+    }
+
+    override setLogLevel(logLevel: LogLevel): void {
+        this.logger.setLogLevel(logLevel)
+    }
+
+    override logLevelEnabled(logLevel: LogLevel): boolean {
+        return this.logger.logLevelEnabled(logLevel)
+    }
+
+    override getLogById(logID: number, file: vscode.Uri): string | undefined {
+        return this.logger.getLogById(logID, file)
+    }
+
+    override enableDebugConsole(): void {
+        this.logger.enableDebugConsole()
+    }
+
+    override sendToLog(level: LogLevel, message: string | Error, ...meta: any[]): number {
+        if (typeof message === 'string') {
+            message = prependTopic(this.topic, message) as string
+        }
+        return this.logger.sendToLog(level, message, ...meta)
+    }
+
+    public async dispose(): Promise<void> {}
 }
 // jscpd:ignore-end
 
