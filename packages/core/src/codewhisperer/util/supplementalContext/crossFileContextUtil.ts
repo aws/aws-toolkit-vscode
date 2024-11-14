@@ -77,7 +77,7 @@ export async function fetchSupplementalContextForSrc(
     if (supplementalContextConfig === 'opentabs') {
         return {
             supplementalContextItems: (await fetchOpentabsContext(editor, cancellationToken)) ?? [],
-            strategy: 'OpenTabs_BM25',
+            strategy: 'opentabs',
         }
     }
 
@@ -104,7 +104,7 @@ export async function fetchSupplementalContextForSrc(
 
         return {
             supplementalContextItems: opentabsContextAndCodemap ?? [],
-            strategy: 'Codemap',
+            strategy: 'codemap',
         }
     }
 
@@ -129,13 +129,13 @@ export async function fetchSupplementalContextForSrc(
         if (projectContext && projectContext.length > 0) {
             return {
                 supplementalContextItems: projectContext,
-                strategy: 'Project_BM25',
+                strategy: 'bm25',
             }
         }
 
         return {
             supplementalContextItems: opentabsContext ?? [],
-            strategy: 'OpenTabs_BM25',
+            strategy: 'opentabs',
         }
     }
 
@@ -154,13 +154,13 @@ export async function fetchSupplementalContextForSrc(
     if (projectContext && projectContext.length > 0) {
         return {
             supplementalContextItems: projectContext,
-            strategy: 'Project',
+            strategy: 'default',
         }
     }
 
     return {
         supplementalContextItems: opentabsContext ?? [],
-        strategy: 'OpenTabs_BM25',
+        strategy: 'opentabs',
     }
 }
 

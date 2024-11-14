@@ -19,6 +19,7 @@ import {
 } from 'aws-core-vscode/test'
 import { areEqual, normalize } from 'aws-core-vscode/shared'
 import * as path from 'path'
+import { LspController } from 'aws-core-vscode/amazonq'
 
 let tempFolder: string
 
@@ -39,7 +40,7 @@ describe('crossFileContextUtil', function () {
             tempFolder = (await createTestWorkspaceFolder()).uri.fsPath
         })
 
-        it('opentabs context should fetch 3 chunks and each chunk should contains 50 lines', async function () {
+        it('for control group, should return opentabs context where there will be 3 chunks and each chunk should contains 50 lines', async function () {
             sinon.stub(FeatureConfigProvider.instance, 'getProjectContextGroup').alwaysReturned('control')
             await toTextEditor(aStringWithLineCount(200), 'CrossFile.java', tempFolder, { preview: false })
             const myCurrentEditor = await toTextEditor('', 'TargetFile.java', tempFolder, {
@@ -52,6 +53,110 @@ describe('crossFileContextUtil', function () {
             assert.strictEqual(actual.supplementalContextItems[0].content.split('\n').length, 50)
             assert.strictEqual(actual.supplementalContextItems[1].content.split('\n').length, 50)
             assert.strictEqual(actual.supplementalContextItems[2].content.split('\n').length, 50)
+        })
+
+        it('for t1 group, should return repomap + opentabs context', async function () {
+            await toTextEditor(aStringWithLineCount(200), 'CrossFile.java', tempFolder, { preview: false })
+            const myCurrentEditor = await toTextEditor('', 'TargetFile.java', tempFolder, {
+                preview: false,
+            })
+            sinon.stub(FeatureConfigProvider.instance, 'getProjectContextGroup').returns('t1')
+            sinon
+                .stub(LspController.instance, 'queryInlineProjectContext')
+                .withArgs(sinon.match.any, sinon.match.any, 'codemap')
+                .resolves([
+                    {
+                        content: 'foo',
+                        score: 0,
+                        filePath: 'q-inline',
+                    },
+                ])
+
+            const actual = await crossFile.fetchSupplementalContextForSrc(myCurrentEditor, fakeCancellationToken)
+            assert.ok(actual)
+            assert.ok(actual.supplementalContextItems.length === 4)
+            assert.strictEqual(actual?.strategy, 'codemap')
+            assert.deepEqual(actual?.supplementalContextItems[0], {
+                content: 'foo',
+                score: 0,
+                filePath: 'q-inline',
+            })
+
+            assert.strictEqual(actual.supplementalContextItems[1].content.split('\n').length, 50)
+            assert.strictEqual(actual.supplementalContextItems[2].content.split('\n').length, 50)
+            assert.strictEqual(actual.supplementalContextItems[3].content.split('\n').length, 50)
+        })
+
+        it('for t2 group, should return global bm25 context and no repomap', async function () {
+            await toTextEditor(aStringWithLineCount(200), 'CrossFile.java', tempFolder, { preview: false })
+            const myCurrentEditor = await toTextEditor('', 'TargetFile.java', tempFolder, {
+                preview: false,
+            })
+            sinon.stub(FeatureConfigProvider.instance, 'getProjectContextGroup').returns('t2')
+            sinon
+                .stub(LspController.instance, 'queryInlineProjectContext')
+                .withArgs(sinon.match.any, sinon.match.any, 'bm25')
+                .resolves([
+                    {
+                        content: 'foo',
+                        score: 5,
+                        filePath: 'foo.java',
+                    },
+                    {
+                        content: 'bar',
+                        score: 4,
+                        filePath: 'bar.java',
+                    },
+                    {
+                        content: 'baz',
+                        score: 3,
+                        filePath: 'baz.java',
+                    },
+                    {
+                        content: 'qux',
+                        score: 2,
+                        filePath: 'qux.java',
+                    },
+                    {
+                        content: 'quux',
+                        score: 1,
+                        filePath: 'quux.java',
+                    },
+                ])
+
+            const actual = await crossFile.fetchSupplementalContextForSrc(myCurrentEditor, fakeCancellationToken)
+            assert.ok(actual)
+            assert.ok(actual.supplementalContextItems.length === 5)
+            assert.strictEqual(actual?.strategy, 'bm25')
+
+            assert.deepEqual(actual?.supplementalContextItems[0], {
+                content: 'foo',
+                score: 5,
+                filePath: 'foo.java',
+            })
+
+            assert.deepEqual(actual?.supplementalContextItems[1], {
+                content: 'bar',
+                score: 4,
+                filePath: 'bar.java',
+            })
+            assert.deepEqual(actual?.supplementalContextItems[2], {
+                content: 'baz',
+                score: 3,
+                filePath: 'baz.java',
+            })
+
+            assert.deepEqual(actual?.supplementalContextItems[3], {
+                content: 'qux',
+                score: 2,
+                filePath: 'qux.java',
+            })
+
+            assert.deepEqual(actual?.supplementalContextItems[4], {
+                content: 'quux',
+                score: 1,
+                filePath: 'quux.java',
+            })
         })
     })
 
