@@ -6,6 +6,7 @@
 import * as vscode from 'vscode'
 import * as path from 'path'
 import * as nls from 'vscode-nls'
+import * as semver from 'semver'
 import fs from '../fs/fs'
 import { getLogger } from '../logger'
 import { ChildProcess } from '../utilities/processUtils'
@@ -157,6 +158,15 @@ export async function getSshVersion(sshPath: string): Promise<string | undefined
     const result = await new ChildProcess(sshPath, ['-V']).run()
 
     return parseSshVersion(result.stdout)
+}
+
+export async function assertSshVersionAbove(sshPath: string, minVersion: string): Promise<void | never> {
+    const sshVersion = await getSshVersion(sshPath)
+    if (sshVersion && semver.lt(sshVersion, '7.6')) {
+        const msg = `SSH version ${sshVersion} is not supported, please upgrade to 7.6 or higher`
+        getLogger().error(msg)
+        throw new Error(msg)
+    }
 }
 
 function parseSshVersion(output: string): string | undefined {

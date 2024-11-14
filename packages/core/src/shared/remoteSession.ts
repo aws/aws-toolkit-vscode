@@ -5,7 +5,6 @@
 
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import * as semver from 'semver'
 const localize = nls.loadMessageBundle()
 
 import { Settings } from '../shared/settings'
@@ -23,7 +22,7 @@ import { findSshPath, getVscodeCliPath } from './utilities/pathFind'
 import { IamClient } from './clients/iamClient'
 import { IAM } from 'aws-sdk'
 import { getIdeProperties } from './extensionUtilities'
-import { getSshVersion } from './extensions/ssh'
+import { assertSshVersionAbove } from './extensions/ssh'
 
 const policyAttachDelay = 5000
 
@@ -103,10 +102,7 @@ export async function ensureDependencies(): Promise<Result<DependencyPaths, Canc
 
     if (tools.isOk()) {
         const sshPath = tools.unwrap().ssh
-        const sshVersion = await getSshVersion(sshPath)
-        if (sshVersion && semver.lt(sshVersion, '7.6')) {
-            return Result.err(new Error(`SSH version ${sshVersion} is not supported, please upgrade to 7.6 or higher`))
-        }
+        assertSshVersionAbove(sshPath, '7.6')
     }
 
     return tools
