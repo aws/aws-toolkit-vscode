@@ -25,6 +25,7 @@ import { createCodeWhispererChatStreamingClient } from '../../shared/clients/cod
 import { getClientId, getOptOutPreference, getOperatingSystem } from '../../shared/telemetry/util'
 import { extensionVersion } from '../../shared/vscode/env'
 import apiConfig = require('./codewhispererruntime-2022-11-11.json')
+import { TelemetryEvent, ConversationId, PrimitiveInteger, ProgrammingLanguage } from './featuredevproxyclient'
 
 // Re-enable once BE is able to handle retries.
 const writeAPIRetryOptions = {
@@ -289,4 +290,99 @@ export class FeatureDevClient {
             )
         }
     }
+
+    public async sendFeatureDevCodeGenerationEvent(
+        conversationId: string,
+        linesOfCodeGenerated: number,
+        charactersOfCodeGenerated: number,
+        programmingLanguage?: ProgrammingLanguage
+    ) {
+        try {
+            const client = await this.getClient()
+            const params: FeatureDevProxyClient.SendTelemetryEventRequest = {
+                // FIXME: typing
+                telemetryEvent: {
+                    featureDevCodeGenerationEvent: {
+                        conversationId,
+                        linesOfCodeGenerated,
+                        charactersOfCodeGenerated,
+                        programmingLanguage,
+                    } satisfies FeatureDevCodeGenerationEvent,
+                } as unknown as TelemetryEvent,
+                optOutPreference: getOptOutPreference(),
+                userContext: {
+                    ideCategory: 'VSCODE',
+                    operatingSystem: getOperatingSystem(),
+                    product: 'FeatureDev', // Should be the same as in JetBrains
+                    clientId: getClientId(globals.globalState),
+                    ideVersion: extensionVersion,
+                },
+            }
+            const response = await client.sendTelemetryEvent(params).promise()
+            getLogger().debug(
+                `${featureName}: successfully sent featureDevCodeGenerationEvent: ConversationId: ${conversationId} LinesOfCodeGenerated: ${linesOfCodeGenerated} CharactersOfCodeGenerated: ${charactersOfCodeGenerated} ${programmingLanguage ? 'ProgrammingLanguage: ' + programmingLanguage.languageName : ''} RequestId: ${response.$response.requestId}`
+            )
+        } catch (e) {
+            getLogger().error(
+                `${featureName}: failed to send featureDevCodeGenerationEvent telemetry: ${(e as Error).name}: ${
+                    (e as Error).message
+                } RequestId: ${(e as any).requestId}`
+            )
+        }
+    }
+
+    public async sendFeatureDevCodeAcceptanceEvent(
+        conversationId: string,
+        linesOfCodeAccepted: number,
+        charactersOfCodeAccepted: number,
+        programmingLanguage?: ProgrammingLanguage
+    ) {
+        try {
+            const client = await this.getClient()
+            const params: FeatureDevProxyClient.SendTelemetryEventRequest = {
+                // FIXME: typing
+                telemetryEvent: {
+                    featureDevCodeGenerationEvent: {
+                        conversationId,
+                        linesOfCodeAccepted,
+                        charactersOfCodeAccepted,
+                        programmingLanguage,
+                    } satisfies FeatureDevCodeAcceptanceEvent,
+                } as unknown as TelemetryEvent,
+                optOutPreference: getOptOutPreference(),
+                userContext: {
+                    ideCategory: 'VSCODE',
+                    operatingSystem: getOperatingSystem(),
+                    product: 'FeatureDev', // Should be the same as in JetBrains
+                    clientId: getClientId(globals.globalState),
+                    ideVersion: extensionVersion,
+                },
+            }
+            const response = await client.sendTelemetryEvent(params).promise()
+            getLogger().debug(
+                `${featureName}: successfully sent featureDevCodeGenerationEvent: ConversationId: ${conversationId} LinesOfCodeAccepted: ${linesOfCodeAccepted} CharactersOfCodeAccepted: ${charactersOfCodeAccepted} ${programmingLanguage ? 'ProgrammingLanguage: ' + programmingLanguage.languageName : ''} RequestId: ${response.$response.requestId}`
+            )
+        } catch (e) {
+            getLogger().error(
+                `${featureName}: failed to send featureDevCodeGenerationEvent telemetry: ${(e as Error).name}: ${
+                    (e as Error).message
+                } RequestId: ${(e as any).requestId}`
+            )
+        }
+    }
+}
+
+// TODO: remove these once the featuredevproxyclient generation is done
+interface FeatureDevCodeGenerationEvent {
+    conversationId: ConversationId
+    linesOfCodeGenerated: PrimitiveInteger
+    charactersOfCodeGenerated: PrimitiveInteger
+    programmingLanguage?: ProgrammingLanguage
+}
+
+interface FeatureDevCodeAcceptanceEvent {
+    conversationId: ConversationId
+    linesOfCodeAccepted: PrimitiveInteger
+    charactersOfCodeAccepted: PrimitiveInteger
+    programmingLanguage?: ProgrammingLanguage
 }
