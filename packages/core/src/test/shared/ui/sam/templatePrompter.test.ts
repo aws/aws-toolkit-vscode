@@ -36,7 +36,7 @@ describe('createTemplatePrompter', () => {
 
     it('should create quick pick items from registry items', () => {
         // Arrange
-        const recentTemplatePathStub = sinon.stub().returns(undefined)
+        const recentTemplatePathStub = sandbox.stub().returns(undefined)
         sandbox.replace(SamUtilsModule, 'getRecentResponse', recentTemplatePathStub)
         const workspaceFolder = vscode.workspace.workspaceFolders?.[0]
         assert.ok(workspaceFolder)

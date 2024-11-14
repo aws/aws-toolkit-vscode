@@ -253,7 +253,7 @@ describe('SAM utils', async function () {
             assert.strictEqual(result, value1)
         })
 
-        it('4. updateRecentResponse should return the update only specified key', async () => {
+        it('4. updateRecentResponse should only update the specified key', async () => {
             await updateRecentResponse(mementoRootKey, identifier, key2, value2)
             const result1 = getRecentResponse(mementoRootKey, identifier, key1)
             const result2 = getRecentResponse(mementoRootKey, identifier, key2)
@@ -261,7 +261,7 @@ describe('SAM utils', async function () {
             assert.strictEqual(result2, value2)
         })
 
-        it('5. updateRecentResponse should log when failure to update value', async () => {
+        it('5. updateRecentResponse should log when failed to update value', async () => {
             sinon.stub(globals.context.workspaceState, 'update').rejects(new Error('Error updating value'))
             try {
                 await updateRecentResponse(mementoRootKey, identifier, key2, value2)
