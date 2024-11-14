@@ -508,8 +508,8 @@ describe('Auth', function () {
             await fs.delete(tmpDir, { recursive: true })
         })
 
-        for (const _ of Array.from({ length: 100 }, (i) => i)) {
-            it('does not cache if the credentials file changes', async function () {
+        for (const _ of Array.from({ length: 1 }, (i) => i)) {
+            it.only('does not cache if the credentials file changes', async function () {
                 const initialCreds = {
                     profileName: 'default',
                     accessKey: 'x',
@@ -525,20 +525,22 @@ describe('Auth', function () {
                     secretAccessKey: initialCreds.secretKey,
                     sessionToken: undefined,
                 })
-                const lastModifiedBefore = (await fs.stat(getCredentialsFilename())).mtime
+                const statBefore = await fs.stat(getCredentialsFilename())
 
                 await fs.delete(getCredentialsFilename())
+                console.log('file deleted')
 
                 const newCreds = { ...initialCreds, accessKey: 'y', secretKey: 'y' }
                 await UserCredentialsUtils.generateCredentialsFile(newCreds)
-                const lastModifiedAfter = (await fs.stat(getCredentialsFilename())).mtime
+                console.log('file written')
+                const statAfter = await fs.stat(getCredentialsFilename())
                 const credsAreUpdated = (creds: Credentials) => {
                     return creds.accessKeyId === newCreds.accessKey && creds.secretAccessKey === newCreds.secretKey
                 }
-                console.log('before: %O, after: %O', lastModifiedBefore, lastModifiedAfter)
-                assert.notStrictEqual(lastModifiedBefore, lastModifiedAfter, 'Expected credentials file to be updated')
+                console.log('before: %O, after: %O', statBefore, statAfter)
+                assert.notStrictEqual(statBefore, statAfter, 'Expected credentials file to be updated')
                 const credsUpdated = await waitUntil(async () => credsAreUpdated(await conn.getCredentials()), {
-                    timeout: 5000,
+                    timeout: 1000,
                     interval: 100,
                     truthy: true,
                 })

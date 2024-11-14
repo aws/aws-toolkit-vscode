@@ -35,6 +35,7 @@ export class SharedCredentialsProviderFactory extends BaseCredentialsProviderFac
     }
 
     private async needsRefresh(): Promise<boolean> {
+        console.log('needs refreshCalled')
         const credentialsLastModMillis = await this.getLastModifiedMillis(getCredentialsFilename())
         const configLastModMillis = await this.getLastModifiedMillis(getConfigFilename())
 
