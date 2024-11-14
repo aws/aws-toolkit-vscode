@@ -26,7 +26,7 @@ export async function getAppNodes(): Promise<TreeNode[]> {
     if (appsFound.length === 0) {
         return [
             createPlaceholderItem(
-                localize('AWS.appBuilder.explorerNode.noApps', '[No IaC templates found in Workspaces]')
+                localize('AWS.appBuilder.explorerNode.noApps', '[No SAM templates found in Workspaces]')
             ),
         ]
     }
