@@ -17,7 +17,6 @@ import { getSamCliContext } from '../../../../shared/sam/cli/samCliContext'
 import { SamCliListResourcesParameters } from '../../../../shared/sam/cli/samCliListResources'
 import { getDeployedResources, StackResource } from '../../../../lambda/commands/listSamResources'
 import * as path from 'path'
-import fs from '../../../../shared/fs/fs'
 import { generateStackNode } from './deployedStack'
 
 export class AppNode implements TreeNode {
@@ -61,19 +60,9 @@ export class AppNode implements TreeNode {
 
             // indicate that App exists, but it is empty
             if (resources.length === 0) {
-                if (await fs.exists(this.location.samTemplateUri)) {
-                    return [
-                        createPlaceholderItem(
-                            localize(
-                                'AWS.appBuilder.explorerNode.app.noResource',
-                                '[No resource found in IaC template]'
-                            )
-                        ),
-                    ]
-                }
                 return [
                     createPlaceholderItem(
-                        localize('AWS.appBuilder.explorerNode.app.noTemplate', '[No IaC templates found in Workspaces]')
+                        localize('AWS.appBuilder.explorerNode.app.noResource', '[No resource found in SAM template]')
                     ),
                 ]
             }
@@ -84,7 +73,7 @@ export class AppNode implements TreeNode {
                 createPlaceholderItem(
                     localize(
                         'AWS.appBuilder.explorerNode.app.noResourceTree',
-                        '[Unable to load Resource tree for this App. Update IaC template]'
+                        '[Unable to load Resource tree for this App. Update SAM template]'
                     )
                 ),
             ]
