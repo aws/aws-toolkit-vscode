@@ -2914,7 +2914,7 @@ describe('SamDebugConfigurationProvider', async function () {
             const tempDir = path.dirname(actual.codeRoot)
 
             const expected: SamLaunchRequestArgs = {
-                // the credential in debug config will override default toolkit credential
+                // The `aws.credentials` field in debug config, overrides default toolkit credentials.
                 awsCredentials: configCredentials,
                 ...awsSection,
                 type: AWS_SAM_DEBUG_TYPE,
