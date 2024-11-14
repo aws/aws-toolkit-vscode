@@ -544,6 +544,8 @@ describe('Auth', function () {
                     interval: 100,
                     truthy: true,
                 })
+                const statLater = await fs.stat(getCredentialsFilename())
+                console.log('before: %O, after: %O, later: %O', statBefore, statAfter, statLater)
                 assert.ok(credsUpdated, 'Expected credentials to be updated')
             })
         }
