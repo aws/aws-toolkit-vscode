@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "ec2 remote connect: warn user when OpenSSH client is outdated"
+}
