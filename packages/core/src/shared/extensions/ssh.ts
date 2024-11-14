@@ -155,15 +155,15 @@ export async function startVscodeRemote(
  * @returns
  */
 export async function getSshVersion(sshPath: string): Promise<string | undefined> {
-    const result = await new ChildProcess(sshPath, ['-V']).run()
+    const result = await new ChildProcess(sshPath, ['-V'], { collect: true }).run()
 
-    return parseSshVersion(result.stdout)
+    return parseSshVersion(result.stdout == '' ? result.stderr : result.stdout)
 }
 
-export async function assertSshVersionGte(sshPath: string, minVersion: string): Promise<void | never> {
+export async function ensureSshVersionGte(sshPath: string, minVersion: string): Promise<void | never> {
     const sshVersion = await getSshVersion(sshPath)
     if (sshVersion && semver.lt(sshVersion, minVersion)) {
-        const msg = `SSH version ${sshVersion} is not supported, please upgrade to 7.6 or higher`
+        const msg = `SSH version ${sshVersion} is not supported, please upgrade OpenSSH to ${minVersion} or higher`
         getLogger().error(msg)
         throw new Error(msg)
     }
@@ -179,5 +179,5 @@ function parseSshVersion(output: string): string | undefined {
     const major = parseInt(match[1], 10)
     const minor = parseInt(match[2], 10)
 
-    return `${major}.${minor}`
+    return `${major}.${minor}.0`
 }

@@ -4,7 +4,7 @@
  */
 import * as assert from 'assert'
 import { ChildProcess } from '../../../shared/utilities/processUtils'
-import { assertSshVersionGte, getSshVersion, startSshAgent } from '../../../shared/extensions/ssh'
+import { ensureSshVersionGte, getSshVersion, startSshAgent } from '../../../shared/extensions/ssh'
 import { createExecutableFile, createTestWorkspaceFolder } from '../../testUtil'
 import { isWin } from '../../../shared/vscode/env'
 import path from 'path'
@@ -62,8 +62,8 @@ describe('SSH Versioning', function () {
     it('asserts version is above threshold', async function () {
         const sshPath = path.join(tempDir.uri.fsPath, `ssh3${isWin() ? '.cmd' : ''}`)
         await createExecutableFile(sshPath, `echo "'OpenSSH_9.7p1, LibreSSL 3.3.6'"`)
-        assert.rejects(async () => await assertSshVersionGte('', '9.10'))
-        assert.doesNotReject(async () => await assertSshVersionGte('', '9.7'))
-        assert.doesNotReject(async () => await assertSshVersionGte('', '9.2'))
+        assert.rejects(async () => await ensureSshVersionGte('', '9.10'))
+        assert.doesNotReject(async () => await ensureSshVersionGte('', '9.7'))
+        assert.doesNotReject(async () => await ensureSshVersionGte('', '9.2'))
     })
 })

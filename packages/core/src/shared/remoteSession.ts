@@ -22,7 +22,7 @@ import { findSshPath, getVscodeCliPath } from './utilities/pathFind'
 import { IamClient } from './clients/iamClient'
 import { IAM } from 'aws-sdk'
 import { getIdeProperties } from './extensionUtilities'
-import { assertSshVersionGte } from './extensions/ssh'
+import { ensureSshVersionGte } from './extensions/ssh'
 
 const policyAttachDelay = 5000
 
@@ -103,7 +103,11 @@ export async function ensureDependencies(): Promise<Result<DependencyPaths, Canc
     if (tools.isOk()) {
         const sshPath = tools.unwrap().ssh
         // Pre 7.6 does not support accept-new as StrictHostKeyChecking
-        assertSshVersionGte(sshPath, '7.6')
+        try {
+            await ensureSshVersionGte(sshPath, '7.6.0')
+        } catch (e) {
+            return Result.err(e as Error)
+        }
     }
 
     return tools
