@@ -397,7 +397,7 @@ async function pollForTokenWithProgress<T extends { requestId?: string }>(
  */
 function getSessionDuration(id: string) {
     const creationDate = globals.globalState.getSsoSessionCreationDate(id)
-    return creationDate !== undefined ? Date.now() - creationDate : undefined
+    return creationDate !== undefined ? globals.clock.Date.now() - creationDate : undefined
 }
 
 /**
