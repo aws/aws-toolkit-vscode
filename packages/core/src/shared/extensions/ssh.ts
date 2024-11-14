@@ -148,22 +148,26 @@ export async function startVscodeRemote(
 
     await new ProcessClass(vscPath, ['--folder-uri', workspaceUri]).run()
 }
-
-export async function getSshVersion(sshPath: string) {
+/**
+ * Uses provided sshPath to get version of OpenSSH. If sshPath is not OpenSSH, returns undefined.
+ * @param sshPath
+ * @returns
+ */
+export async function getSshVersion(sshPath: string): Promise<string | undefined> {
     const result = await new ChildProcess(sshPath, ['-V']).run()
 
     return parseSshVersion(result.stdout)
 }
 
-function parseSshVersion(output: string) {
-    // Only supports OpenSSH version numbers, not putty or other.
+function parseSshVersion(output: string): string | undefined {
     const match = output.match(/OpenSSH_(\d+)\.(\d+)/)
     if (!match) {
+        getLogger().warn(`ssh: failed to parse SSH version: ${output}`)
         return undefined
     }
 
     const major = parseInt(match[1], 10)
     const minor = parseInt(match[2], 10)
 
-    return { major, minor }
+    return `${major}.${minor}`
 }
