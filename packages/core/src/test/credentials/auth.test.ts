@@ -508,8 +508,8 @@ describe('Auth', function () {
             await fs.delete(tmpDir, { recursive: true })
         })
 
-        for (const _ of Array.from({ length: 1 }, (i) => i)) {
-            it.only('does not cache if the credentials file changes', async function () {
+        for (const _ of Array.from({ length: 100 }, (i) => i)) {
+            it('does not cache if the credentials file changes', async function () {
                 const initialCreds = {
                     profileName: 'default',
                     accessKey: 'x',
