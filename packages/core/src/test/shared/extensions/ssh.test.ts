@@ -54,16 +54,16 @@ describe('SSH Versioning', function () {
             assert.strictEqual(version, expectedVersion)
         }
 
-        await testSshVersion('ssh', 'OpenSSH_9.7p1, LibreSSL 3.3.6', '9.7')
-        await testSshVersion('ssh2', 'OpenSSH_6.6.1p1, OpenSSL 1.0.1e-fips 11 Feb 2013', '6.6')
-        await testSshVersion('ssh3', 'OpenSSH_7.4p1, OpenSSL 1.0.1e-fips 11 Feb 2013', '7.4')
+        await testSshVersion('ssh', 'OpenSSH_9.7p1, LibreSSL 3.3.6', '9.7.0')
+        await testSshVersion('ssh2', 'OpenSSH_6.6.1p1, OpenSSL 1.0.1e-fips 11 Feb 2013', '6.6.0')
+        await testSshVersion('ssh3', 'OpenSSH_7.4p1, OpenSSL 1.0.1e-fips 11 Feb 2013', '7.4.0')
     })
 
     it('asserts version is above threshold', async function () {
         const sshPath = path.join(tempDir.uri.fsPath, `ssh3${isWin() ? '.cmd' : ''}`)
         await createExecutableFile(sshPath, `echo "'OpenSSH_9.7p1, LibreSSL 3.3.6'"`)
         assert.rejects(async () => await ensureSshVersionGte('', '9.10'))
-        assert.doesNotReject(async () => await ensureSshVersionGte('', '9.7'))
-        assert.doesNotReject(async () => await ensureSshVersionGte('', '9.2'))
+        assert.doesNotReject(async () => await ensureSshVersionGte('', '9.7.0'))
+        assert.doesNotReject(async () => await ensureSshVersionGte('', '9.2.0'))
     })
 })
