@@ -535,7 +535,7 @@ describe('Auth', function () {
                 const credsAreUpdated = (creds: Credentials) => {
                     return creds.accessKeyId === newCreds.accessKey && creds.secretAccessKey === newCreds.secretKey
                 }
-                console.log(lastModifiedBefore, lastModifiedAfter)
+                console.log('before: %O, after: %O', lastModifiedBefore, lastModifiedAfter)
                 assert.notStrictEqual(lastModifiedBefore, lastModifiedAfter, 'Expected credentials file to be updated')
                 const credsUpdated = await waitUntil(async () => credsAreUpdated(await conn.getCredentials()), {
                     timeout: 5000,
