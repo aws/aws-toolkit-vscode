@@ -32,7 +32,7 @@ import { CodeReference } from '../../amazonq/webview/ui/connector'
 import { UpdateAnswerMessage } from '../views/connector/connector'
 import { MynahIcons } from '@aws/mynah-ui'
 import { i18n } from '../../shared/i18n-helper'
-import { computeDiff } from '../../amazonq'
+import { computeDiff } from '../../amazonq/commons/diff'
 export class Session {
     private _state?: SessionState | Omit<SessionState, 'uploadId'>
     private task: string = ''
