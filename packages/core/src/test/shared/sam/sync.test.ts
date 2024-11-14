@@ -16,6 +16,7 @@ import assert, { fail } from 'assert'
 import {
     createEnvironmentPrompter,
     ensureBucket,
+    ensureRepo,
     getSyncParamsFromConfig,
     getSyncWizard,
     prepareSyncParams,
@@ -65,6 +66,7 @@ import { assertTelemetry, assertTelemetryCurried } from '../../testUtil'
 import { PrompterTester } from '../wizards/prompterTester'
 import { createTestRegionProvider } from '../regions/testUtil'
 import { ToolkitPromptSettings } from '../../../shared/settings'
+import { DefaultEcrClient } from '../../../shared/clients/ecrClient'
 
 describe('SyncWizard', async function () {
     const createTester = async (params?: Partial<SyncParams>) =>
@@ -1685,6 +1687,99 @@ describe('ensureBucket', () => {
         await assert.rejects(ensureBucket(resp)).catch((err) => {
             assert.ok(err instanceof ToolkitError)
             assert.ok(err.message, 'Failed to create S3 bucket')
+        })
+    })
+})
+
+describe('ensureRepo', () => {
+    let createRepositoryStub: sinon.SinonStub
+    let sandbox: sinon.SinonSandbox
+
+    beforeEach(() => {
+        sandbox = sinon.createSandbox()
+        createRepositoryStub = sandbox.stub()
+        sandbox.stub(DefaultEcrClient.prototype, 'createRepository').callsFake(createRepositoryStub)
+    })
+
+    afterEach(() => {
+        sandbox.restore()
+    })
+
+    const createInput = (ecrRepoUri: string | undefined) => ({
+        region: 'us-west-2',
+        ecrRepoUri,
+    })
+
+    const createNewRepoInput = (repoName: string) => createInput(`newrepo:${repoName}`)
+
+    describe('when not creating new repository', () => {
+        it('should return original ecrRepoUri when not matching newrepo pattern', async () => {
+            const input = createInput('existing-repo:latest')
+            const result = await ensureRepo(input)
+
+            assert(createRepositoryStub.notCalled)
+            assert.strictEqual(result, input.ecrRepoUri)
+        })
+
+        it('should return original ecrRepoUri when ecrRepoUri is undefined', async () => {
+            const input = createInput(undefined)
+            const result = await ensureRepo(input)
+
+            assert(!result)
+            assert(createRepositoryStub.notCalled)
+        })
+    })
+
+    describe('when creating new repository', () => {
+        const repoName = 'test-repo'
+        const input = createNewRepoInput(repoName)
+
+        it('should create new repository successfully', async () => {
+            const expectedUri = 'aws.ecr.test/test-repo'
+            createRepositoryStub.resolves({
+                repository: {
+                    repositoryUri: expectedUri,
+                },
+            })
+
+            const result = await ensureRepo(input)
+
+            assert.strictEqual(result, expectedUri)
+            assert(createRepositoryStub.calledOnceWith(repoName))
+        })
+
+        it('should handle repository creation failure', async () => {
+            createRepositoryStub.rejects(new Error('Repository creation failed'))
+
+            try {
+                await ensureRepo(input)
+                assert.fail('Should have thrown an error')
+            } catch (err) {
+                assert(err instanceof ToolkitError)
+                assert.strictEqual(err.message, `Failed to create new ECR repository "${repoName}"`)
+            }
+        })
+
+        const testCases = [
+            {
+                name: 'undefined repositoryUri',
+                response: { repository: { repositoryUri: undefined } },
+            },
+            {
+                name: 'empty repository response',
+                response: {},
+            },
+        ]
+
+        testCases.forEach(({ name, response }) => {
+            it(`should handle ${name}`, async () => {
+                createRepositoryStub.resolves(response)
+
+                const result = await ensureRepo(input)
+
+                assert(!result)
+                assert(createRepositoryStub.calledOnceWith(repoName))
+            })
         })
     })
 })
