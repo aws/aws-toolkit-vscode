@@ -34,6 +34,12 @@ function loadParamsSourcePrompterItems(existValidSamconfig: boolean | undefined)
     return items
 }
 
+/**
+ * Creates a quick pick prompter for SAM deploy parameter source selection
+ *
+ * @param existValidSamconfig Whether a valid samconfig.toml file exist and contain necessary flag for SAM sync operation
+ * @returns A quick pick prompter
+ */
 export function createDeployParamsSourcePrompter(existValidSamconfig: boolean | undefined) {
     const items = loadParamsSourcePrompterItems(existValidSamconfig)
 
@@ -43,6 +49,13 @@ export function createDeployParamsSourcePrompter(existValidSamconfig: boolean | 
         buttons: createCommonButtons(samDeployUrl),
     })
 }
+
+/**
+ * Creates a quick pick prompter for SAM sync parameter source selection
+ *
+ * @param existValidSamconfig Whether a valid samconfig.toml file exist and contain necessary flag for SAM sync operation
+ * @returns A quick pick prompter
+ */
 
 export function createSyncParamsSourcePrompter(existValidSamconfig: boolean | undefined) {
     const items = loadParamsSourcePrompterItems(existValidSamconfig)

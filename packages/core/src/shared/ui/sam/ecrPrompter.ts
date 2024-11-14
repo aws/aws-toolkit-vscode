@@ -14,6 +14,14 @@ import { getRecentResponse } from '../../sam/utils'
 export const localize = nls.loadMessageBundle()
 export const prefixNewRepoName = (name: string) => `newrepo:${name}`
 
+/**
+ * Creates a quick pick prompter for ECR repositories
+ * The prompter supports choosing from existing option and new repositories by entering a name
+ *
+ * @param client ECR client used to list repositories
+ * @param mementoRootKey Key used to store/retrieve recently used repository (e.g 'samcli.deploy.params')
+ * @returns A quick pick prompter configured for ECR repository
+ */
 export function createEcrPrompter(client: DefaultEcrClient, mementoRootKey: string) {
     const recentEcrRepo = getRecentResponse(mementoRootKey, client.regionCode, 'ecrRepoUri')
     const consoleUrl = getAwsConsoleUrl('ecr', client.regionCode)

@@ -18,6 +18,13 @@ export enum BucketSource {
     UserProvided,
 }
 
+/**
+ * Creates a quick pick prompter for configuring S3 bucket used for sync or deploy application artifact
+ * Provides two options:
+ * 1. Create a SAM CLI managed bucket
+ * 2. Specify an existing bucket
+ * @returns A QuickPick prompter configured with bucket source options
+ */
 export function createBucketSourcePrompter() {
     const items: DataQuickPickItem<BucketSource>[] = [
         {
@@ -37,6 +44,13 @@ export function createBucketSourcePrompter() {
     })
 }
 
+/**
+ * Creates a quick pick prompter for configuring S3 bucket name used for sync or deploy application artifact
+ * The prompter supports choosing from existing s3 bucket name or creating a new one
+ * @param client S3 client
+ * @param mementoRootKey Memento key to store recent bucket name (e.g 'samcli.deploy.params')
+ * @returns A quick pick prompter configured with bucket name options
+ */
 export function createBucketNamePrompter(client: DefaultS3Client, mementoRootKey: string) {
     const recentBucket = getRecentResponse(mementoRootKey, client.regionCode, 'bucketName')
     const items = client.listBucketsIterable().map((b) => [

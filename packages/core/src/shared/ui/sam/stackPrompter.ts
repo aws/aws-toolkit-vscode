@@ -17,6 +17,15 @@ const canPickStack = (s: StackSummary) => s.StackStatus.endsWith('_COMPLETE')
 const canShowStack = (s: StackSummary) =>
     (s.StackStatus.endsWith('_COMPLETE') || s.StackStatus.endsWith('_IN_PROGRESS')) && !s.StackStatus.includes('DELETE')
 
+/**
+ * Creates a quick pick prompter for choosing a CloudFormation stack
+ * The promper supports selecting from existing options or creating a new stack by entering a name
+ *
+ * @param client - CloudFormation client to use for listing stacks
+ * @param mementoRootKey - Key used to store/retrieve recently used stack (e.g 'samcli.deploy.params')
+ * @returns A quick pick prompter configured for stack selection
+ *
+ */
 export function createStackPrompter(client: DefaultCloudFormationClient, mementoRootKey: string) {
     const recentStack = getRecentResponse(mementoRootKey, client.regionCode, 'stackName')
     const consoleUrl = getAwsConsoleUrl('cloudformation', client.regionCode)

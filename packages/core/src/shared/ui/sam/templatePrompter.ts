@@ -22,6 +22,18 @@ export interface TemplateItem {
     readonly data: CloudFormation.Template
 }
 
+/**
+ * Creates a quick pick prompter for choosing SAM/CloudFormation templates
+ *
+ * @param registry - Registry containing CloudFormation templates
+ * @param mementoRootKey - Root key for storing recent template selections (e.g 'samcli.deploy.params')
+ * @param projectRoot - Optional URI of the project root to filter templates
+ * @returns A QuickPick prompter configured for template selection
+ *
+ * The prompter displays a list of SAM/CloudFormation templates found in the workspace.
+ * Templates are shown with relative paths when possible, and workspace folder names when multiple folders exist.
+ * Recently used templates are marked. If no templates are found, provides a help link.
+ */
 export function createTemplatePrompter(
     registry: CloudFormationTemplateRegistry,
     mementoRootKey: string,
