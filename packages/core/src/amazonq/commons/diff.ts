@@ -13,8 +13,9 @@ export async function openDiff(leftPath: string, rightPath: string, tabId: strin
 }
 
 export async function openDeletedDiff(filePath: string, name: string, tabId: string) {
-    const fileUri = await getOriginalFileUri(filePath, tabId)
-    await vscode.commands.executeCommand('vscode.open', fileUri, {}, `${name} (Deleted)`)
+    const left = await getOriginalFileUri(filePath, tabId)
+    const right = createAmazonQUri('empty', tabId)
+    await vscode.commands.executeCommand('vscode.diff', left, right, `${name} (Deleted)`)
 }
 
 export async function getOriginalFileUri(fullPath: string, tabId: string) {
@@ -31,4 +32,12 @@ export async function getFileDiffUris(leftPath: string, rightPath: string, tabId
 export function createAmazonQUri(path: string, tabId: string) {
     // TODO change the featureDevScheme to a more general amazon q scheme
     return vscode.Uri.from({ scheme: featureDevScheme, path, query: `tabID=${tabId}` })
+}
+
+export async function openFile(path: string) {
+    if (!(await fs.exists(path))) {
+        return
+    }
+    const fileUri = vscode.Uri.file(path)
+    await vscode.commands.executeCommand('vscode.diff', fileUri, fileUri)
 }

@@ -1,4 +1,0 @@
-{
-	"type": "Breaking Change",
-	"description": "Change focus chat keybind to win+alt+i on Windows, cmd+alt+i on macOS, and meta+alt+i on Linux"
-}

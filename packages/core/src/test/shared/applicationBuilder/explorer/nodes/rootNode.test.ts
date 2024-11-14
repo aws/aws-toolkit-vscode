@@ -34,7 +34,7 @@ describe('getAppNodes', async () => {
         const appNodes = await getAppNodes()
         assert.strictEqual(appNodes.length, 1)
         assert.strictEqual(appNodes[0].id, 'placeholder')
-        assert.strictEqual(appNodes[0].resource, '[No IaC templates found in Workspaces]')
+        assert.strictEqual(appNodes[0].resource, '[No SAM templates found in Workspaces]')
     })
 
     it('should return all SAM projects as AppNode', async () => {

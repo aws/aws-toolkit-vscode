@@ -47,7 +47,8 @@ import { downloadExportResultArchive } from '../../../shared/utilities/download'
 import { ExportIntent, TransformationDownloadArtifactType } from '@amzn/codewhisperer-streaming'
 import fs from '../../../shared/fs/fs'
 import { ChatSessionManager } from '../../../amazonqGumby/chat/storages/chatSession'
-import { convertToTimeString, encodeHTML } from '../../../shared/utilities/textUtilities'
+import { encodeHTML } from '../../../shared/utilities/textUtilities'
+import { convertToTimeString } from '../../../shared/datetime'
 
 export function getSha256(buffer: Buffer) {
     const hasher = crypto.createHash('sha256')
@@ -573,6 +574,7 @@ export async function getTransformationPlan(jobId: string) {
         const linesOfCode = Number(
             jobStatistics.find((stat: { name: string; value: string }) => stat.name === 'linesOfCode').value
         )
+        transformByQState.setLinesOfCodeSubmitted(linesOfCode)
         if (authType === 'iamIdentityCenter' && linesOfCode > CodeWhispererConstants.codeTransformLocThreshold) {
             plan += CodeWhispererConstants.codeTransformBillingText(linesOfCode)
         }

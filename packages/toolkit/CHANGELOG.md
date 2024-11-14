@@ -1,3 +1,12 @@
+## 3.34.0 2024-11-14
+
+- **Bug Fix** SAM debugging: misleading 'IaC' message/placeholder
+- **Bug Fix** SAM local debugging: `aws.region` and `aws.credentials` specified in launch config should override default Toolkit region and credentials
+
+## 3.33.0 2024-11-11
+
+- **Feature** UI: region-related quickpicks now have a refresh button
+
 ## 3.32.0 2024-11-07
 
 - **Bug Fix** SAM: Save SAM deploy parameters to correct samconfig.toml in project folder

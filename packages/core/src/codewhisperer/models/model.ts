@@ -47,9 +47,9 @@ export const vsCodeState: VsCodeState = {
 
 export type UtgStrategy = 'ByName' | 'ByContent'
 
-export type CrossFileStrategy = 'OpenTabs_BM25'
+export type CrossFileStrategy = 'opentabs' | 'codemap' | 'bm25' | 'default'
 
-export type SupplementalContextStrategy = CrossFileStrategy | UtgStrategy | 'Empty' | 'LSP'
+export type SupplementalContextStrategy = CrossFileStrategy | UtgStrategy | 'Empty'
 
 export interface CodeWhispererSupplementalContext {
     isUtg: boolean
@@ -413,6 +413,8 @@ export class TransformByQState {
 
     private metadataPathSQL: string = ''
 
+    private linesOfCodeSubmitted: number | undefined = undefined
+
     private planFilePath: string = ''
     private summaryFilePath: string = ''
     private preBuildLogFilePath: string = ''
@@ -483,6 +485,10 @@ export class TransformByQState {
 
     public getCustomBuildCommand() {
         return this.customBuildCommand
+    }
+
+    public getLinesOfCodeSubmitted() {
+        return this.linesOfCodeSubmitted
     }
 
     public getPreBuildLogFilePath() {
@@ -643,6 +649,10 @@ export class TransformByQState {
 
     public setCustomBuildCommand(command: string) {
         this.customBuildCommand = command
+    }
+
+    public setLinesOfCodeSubmitted(lines: number) {
+        this.linesOfCodeSubmitted = lines
     }
 
     public setStartTime(time: string) {

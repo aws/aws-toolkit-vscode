@@ -10,7 +10,7 @@ import { parsePatch, applyPatches, ParsedDiff } from 'diff'
 import path from 'path'
 import vscode from 'vscode'
 import { ExportIntent } from '@amzn/codewhisperer-streaming'
-import { TransformByQReviewStatus, transformByQState } from '../../models/model'
+import { TransformationType, TransformByQReviewStatus, transformByQState } from '../../models/model'
 import { ExportResultArchiveStructure, downloadExportResultArchive } from '../../../shared/utilities/download'
 import { getLogger } from '../../../shared/logger'
 import { telemetry } from '../../../shared/telemetry/telemetry'
@@ -20,6 +20,7 @@ import * as CodeWhispererConstants from '../../models/constants'
 import { createCodeWhispererChatStreamingClient } from '../../../shared/clients/codewhispererChatClient'
 import { ChatSessionManager } from '../../../amazonqGumby/chat/storages/chatSession'
 import { setContext } from '../../../shared/vscode/setContext'
+import * as codeWhisperer from '../../client/codewhisperer'
 
 export abstract class ProposedChangeNode {
     abstract readonly resourcePath: string
@@ -401,6 +402,33 @@ export class ProposedTransformationExplorer {
                 void vscode.window.showErrorMessage(
                     `${CodeWhispererConstants.errorDeserializingDiffNotification} ${deserializeErrorMessage}`
                 )
+            }
+
+            try {
+                const metricsPath = path.join(pathContainingArchive, ExportResultArchiveStructure.PathToMetrics)
+                const metricsData = JSON.parse(fs.readFileSync(metricsPath, 'utf8'))
+
+                await codeWhisperer.codeWhispererClient.sendTelemetryEvent({
+                    telemetryEvent: {
+                        transformEvent: {
+                            jobId: transformByQState.getJobId(),
+                            timestamp: new Date(),
+                            ideCategory: 'VSCODE',
+                            programmingLanguage: {
+                                languageName:
+                                    transformByQState.getTransformationType() === TransformationType.LANGUAGE_UPGRADE
+                                        ? 'JAVA'
+                                        : 'SQL',
+                            },
+                            linesOfCodeChanged: metricsData.linesOfCodeChanged,
+                            charsOfCodeChanged: metricsData.charactersOfCodeChanged,
+                            linesOfCodeSubmitted: transformByQState.getLinesOfCodeSubmitted(), // currently unavailable for SQL conversions
+                        },
+                    },
+                })
+            } catch (err: any) {
+                // log error, but continue to show user diff.patch with results
+                getLogger().error(`CodeTransformation: SendTelemetryEvent error = ${err.message}`)
             }
         })
 
