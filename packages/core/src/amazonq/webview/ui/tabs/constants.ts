@@ -4,11 +4,23 @@
  */
 import { isSQLTransformReady } from '../../../../dev/config'
 import { TabType } from '../storages/tabsStorage'
+import { QuickActionCommandGroup } from '@aws/mynah-ui'
 
 export type TabTypeData = {
     title: string
     placeholder: string
     welcome: string
+    contextCommands?: QuickActionCommandGroup[]
+}
+
+const workspaceCommand: QuickActionCommandGroup = {
+    groupName: 'Mention code',
+    commands: [
+        {
+            command: '@workspace',
+            description: '(BETA) Reference all code in workspace.',
+        },
+    ],
 }
 
 const commonTabData: TabTypeData = {
@@ -17,6 +29,7 @@ const commonTabData: TabTypeData = {
     welcome: `Hi, I'm Amazon Q. I can answer your software development questions.
   Ask me to explain, debug, or optimize your code.
   You can enter \`/\` to see a list of quick actions. Add @workspace to beginning of your message to include your entire workspace as context.`,
+    contextCommands: [workspaceCommand],
 }
 
 export const TabTypeDataMap: Record<TabType, TabTypeData> = {
