@@ -2950,7 +2950,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 templatePath: pathutil.normalize(path.join(actual.baseBuildDir!, 'app___vsctk___template.yaml')),
                 parameterOverrides: undefined,
                 architecture: 'x86_64',
-                // the region in debug config should override default toolkit region
+                // The `aws.region` field in debug config, overrides default toolkit region.
                 region: 'us-weast-9',
 
                 //
