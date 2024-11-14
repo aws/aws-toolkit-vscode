@@ -5,14 +5,11 @@
 
 import * as vscode from 'vscode'
 import { DefaultCodeWhispererClient } from '../client/codewhisperer'
-import * as CodeWhispererConstants from '../models/constants'
 import { ConfigurationEntry } from '../models/model'
 import { getLogger } from '../../shared/logger'
 import { isCloud9 } from '../../shared/extensionUtilities'
-import { RecommendationHandler } from './recommendationHandler'
 import { CodewhispererAutomatedTriggerType } from '../../shared/telemetry/telemetry'
 import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
-import { isInlineCompletionEnabled } from '../util/commonUtil'
 import { ClassifierTrigger } from './classifierTrigger'
 import { extractContextForCodeWhisperer } from '../util/editorContext'
 import { RecommendationService } from './recommendationService'
@@ -25,12 +22,6 @@ export class KeyStrokeHandler {
      * Special character which automated triggers codewhisperer
      */
     public specialChar: string
-    /**
-     * Key stroke count for automated trigger
-     */
-
-    private idleTriggerTimer?: NodeJS.Timer
-
     public lastInvocationTime?: number
 
     constructor() {
@@ -41,48 +32,6 @@ export class KeyStrokeHandler {
 
     public static get instance() {
         return (this.#instance ??= new this())
-    }
-
-    public startIdleTimeTriggerTimer(
-        event: vscode.TextDocumentChangeEvent,
-        editor: vscode.TextEditor,
-        client: DefaultCodeWhispererClient,
-        config: ConfigurationEntry
-    ) {
-        if (this.idleTriggerTimer) {
-            clearInterval(this.idleTriggerTimer)
-            this.idleTriggerTimer = undefined
-        }
-        if (!this.shouldTriggerIdleTime()) {
-            return
-        }
-        this.idleTriggerTimer = setInterval(() => {
-            const duration = (performance.now() - RecommendationHandler.instance.lastInvocationTime) / 1000
-            if (duration < CodeWhispererConstants.invocationTimeIntervalThreshold) {
-                return
-            }
-
-            this.invokeAutomatedTrigger('IdleTime', editor, client, config, event)
-                .catch((e) => {
-                    getLogger().error('invokeAutomatedTrigger failed: %s', (e as Error).message)
-                })
-                .finally(() => {
-                    if (this.idleTriggerTimer) {
-                        clearInterval(this.idleTriggerTimer)
-                        this.idleTriggerTimer = undefined
-                    }
-                })
-        }, CodeWhispererConstants.idleTimerPollPeriod)
-    }
-
-    public shouldTriggerIdleTime(): boolean {
-        if (isCloud9() && RecommendationService.instance.isRunning) {
-            return false
-        }
-        if (isInlineCompletionEnabled() && RecommendationService.instance.isRunning) {
-            return false
-        }
-        return true
     }
 
     async processKeyStroke(

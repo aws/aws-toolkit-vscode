@@ -34,6 +34,7 @@ export const Features = {
     customizationArnOverride: 'customizationArnOverride',
     dataCollectionFeature: 'IDEProjectContextDataCollection',
     projectContextFeature: 'ProjectContextV2',
+    newAutoTriggerUX: 'NewAutoTriggerUX',
     test: 'testFeature',
 } as const
 
@@ -45,6 +46,7 @@ export const featureDefinitions = new Map<FeatureName, FeatureContext>([
         Features.customizationArnOverride,
         new FeatureContext(Features.customizationArnOverride, 'customizationARN', { stringValue: '' }),
     ],
+    [Features.newAutoTriggerUX, new FeatureContext(Features.newAutoTriggerUX, 'CONTROL', { stringValue: 'CONTROL' })],
 ])
 
 export class FeatureConfigProvider {
@@ -162,6 +164,14 @@ export class FeatureConfigProvider {
                     globals.globalState.tryUpdate('aws.amazonq.workspaceIndexToggleOn', true)
                 }
             }
+
+            const newAutoTriggerUXValue = this.featureConfigs.get(Features.newAutoTriggerUX)?.value.stringValue
+            if (newAutoTriggerUXValue === 'TREATMENT') {
+                // AB experiment only to builderId users
+                if (isIdcSsoConnection(AuthUtil.instance.conn)) {
+                    this.featureConfigs.delete(Features.customizationArnOverride)
+                }
+            }
         } catch (e) {
             getLogger().error(`CodeWhisperer: Error when fetching feature configs ${e}`, e)
         }
@@ -193,6 +203,10 @@ export class FeatureConfigProvider {
 
     getCustomizationArnOverride(): string | undefined {
         return this.getFeatureValueForKey(Features.customizationArnOverride).stringValue
+    }
+
+    getNewAutoTriggerUX(): boolean {
+        return this.getFeatureValueForKey(Features.newAutoTriggerUX).stringValue === 'TREATMENT'
     }
 
     // Get the feature value for the given key.
