@@ -308,6 +308,7 @@ describe('crossFileContextUtil', function () {
         })
 
         beforeEach(async function () {
+            sinon.restore()
             tempFolder = (await createTestWorkspaceFolder()).uri.fsPath
         })
 
