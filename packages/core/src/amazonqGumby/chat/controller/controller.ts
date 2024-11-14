@@ -639,6 +639,13 @@ export class GumbyController {
 
             case ConversationState.WAITING_FOR_TRANSFORMATION_OBJECTIVE: {
                 const objective = data.message.trim().toLowerCase()
+                // since we're prompting the user, their project(s) must be eligible for both types of transformations, so track how often this happens here
+                if (objective === 'language upgrade' || objective === 'sql conversion') {
+                    telemetry.codeTransform_submitSelection.emit({
+                        codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
+                        userChoice: objective,
+                    })
+                }
                 if (objective === 'language upgrade') {
                     await this.handleLanguageUpgrade(data)
                 } else if (objective === 'sql conversion') {

@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { getTransformationActionString } from '../../amazonqGumby/models/constants'
-
 /**
  * Automated and manual trigger
  */
@@ -585,13 +583,13 @@ export const jobCancelledChatMessage =
 
 export const jobCancelledNotification = 'You cancelled the transformation.'
 
-export const jobCompletedChatMessage = `I ${getTransformationActionString()} your code. You can review the diff to see my proposed changes and accept or reject them. The transformation summary has details about the files I updated.`
+export const jobCompletedChatMessage = `I transformed your code. You can review the diff to see my proposed changes and accept or reject them. The transformation summary has details about the files I updated.`
 
-export const jobCompletedNotification = `Amazon Q ${getTransformationActionString()} your code. You can review the diff to see my proposed changes and accept or reject them. The transformation summary has details about the files I updated.`
+export const jobCompletedNotification = `Amazon Q transformed your code. You can review the diff to see my proposed changes and accept or reject them. The transformation summary has details about the files I updated.`
 
-export const jobPartiallyCompletedChatMessage = `I ${getTransformationActionString()} part of your code. You can review the diff to see my proposed changes and accept or reject them. The transformation summary has details about the files I updated and the errors that prevented a complete transformation.`
+export const jobPartiallyCompletedChatMessage = `I transformed part of your code. You can review the diff to see my proposed changes and accept or reject them. The transformation summary has details about the files I updated and the errors that prevented a complete transformation.`
 
-export const jobPartiallyCompletedNotification = `Amazon Q ${getTransformationActionString()} part of your code. You can review the diff to see my proposed changes and accept or reject them. The transformation summary has details about the files I updated and the errors that prevented a complete transformation.`
+export const jobPartiallyCompletedNotification = `Amazon Q transformed part of your code. You can review the diff to see my proposed changes and accept or reject them. The transformation summary has details about the files I updated and the errors that prevented a complete transformation.`
 
 export const noPomXmlFoundChatMessage = `I couldn\'t find a project that I can upgrade. I couldn\'t find a pom.xml file in any of your open projects, nor could I find any embedded SQL statements. Currently, I can upgrade Java 8 or Java 11 projects built on Maven, or Oracle SQL to PostgreSQL statements in Java projects. For more information, see the [Amazon Q documentation](${codeTransformPrereqDoc}).`
 

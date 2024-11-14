@@ -81,7 +81,8 @@ import { setContext } from '../../shared/vscode/setContext'
 import { makeTemporaryToolkitFolder } from '../../shared'
 import globals from '../../shared/extensionGlobals'
 import { convertDateToTimestamp } from '../../shared/datetime'
-import { spawnSync } from 'child_process'
+import { isWin } from '../../shared/vscode/env'
+import { ChildProcess } from '../../shared/utilities/processUtils'
 
 function getFeedbackCommentData() {
     const jobId = transformByQState.getJobId()
@@ -152,7 +153,7 @@ export async function validateSQLMetadataFile(fileContents: string, message: any
 }
 
 export async function setMaven() {
-    let mavenWrapperExecutableName = os.platform() === 'win32' ? 'mvnw.cmd' : 'mvnw'
+    let mavenWrapperExecutableName = isWin() ? 'mvnw.cmd' : 'mvnw'
     const mavenWrapperExecutablePath = path.join(transformByQState.getProjectPath(), mavenWrapperExecutableName)
     if (fs.existsSync(mavenWrapperExecutablePath)) {
         if (mavenWrapperExecutableName === 'mvnw') {
@@ -745,23 +746,22 @@ export async function getValidSQLConversionCandidateProjects() {
         const openProjects = await getOpenProjects()
         const javaProjects = await getJavaProjects(openProjects)
         let errorLog = ''
+        const isWindows = isWin()
+        const command = isWindows ? 'findstr' : 'grep'
         for (const project of javaProjects) {
             // as long as at least one of these strings is found, project contains embedded SQL statements
             const searchStrings = ['oracle.jdbc.OracleDriver', 'jdbc:oracle:thin:@//', 'jdbc:oracle:oci:@//']
             for (const str of searchStrings) {
-                const command = process.platform === 'win32' ? 'findstr' : 'grep'
                 // case-insensitive, recursive search
-                const args = command === 'findstr' ? ['/i', '/s', str] : ['-i', '-r', str]
-                const spawnResult = spawnSync(command, args, {
-                    cwd: project.path,
-                    shell: false,
-                    encoding: 'utf-8',
+                const args = isWindows ? ['/i', '/s', str] : ['-i', '-r', str]
+                const spawnResult = await new ChildProcess(command, args).run({
+                    spawnOptions: { cwd: project.path, shell: false },
                 })
                 // just for telemetry purposes
                 if (spawnResult.error || spawnResult.stderr) {
                     errorLog += `${JSON.stringify(spawnResult)}---`
                 } else {
-                    errorLog += `${command} succeeded: ${spawnResult.status}`
+                    errorLog += `${command} succeeded: ${spawnResult.exitCode}`
                 }
                 /*
                 note:
@@ -769,10 +769,8 @@ export async function getValidSQLConversionCandidateProjects() {
                 status of 0 means search string was detected (will be printed to stdout).
                 status will be non-zero and stdout / stderr / error will be empty when search string is not detected.
                 */
-                getLogger().info(
-                    `CodeTransformation: searching for ${str} in ${project.path}, status = ${spawnResult.status} and output = ${spawnResult.output}`
-                )
-                if (spawnResult.status === 0) {
+                getLogger().info(`CodeTransformation: searching for ${str} in ${project.path}, result = ${errorLog}`)
+                if (spawnResult.exitCode === 0) {
                     embeddedSQLProjects.push(project)
                     break
                 }
