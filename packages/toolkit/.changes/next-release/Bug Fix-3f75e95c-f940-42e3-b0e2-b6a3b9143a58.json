@@ -1,4 +1,4 @@
 {
 	"type": "Bug Fix",
-	"description": "Update incorrect messgae in placeholder"
+	"description": "SAM debugging: misleading 'IaC' message/placeholder"
 }
