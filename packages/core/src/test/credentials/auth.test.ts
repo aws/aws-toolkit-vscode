@@ -19,8 +19,8 @@ import { UserCredentialsUtils } from '../../shared/credentials/userCredentialsUt
 import { getCredentialsFilename } from '../../auth/credentials/sharedCredentialsFile'
 import { Connection, isIamConnection, isSsoConnection, scopesSsoAccountAccess } from '../../auth/connection'
 import { AuthNode, createDeleteConnectionButton, promptForConnection } from '../../auth/utils'
-import { waitUntil } from '../../shared'
 import { Credentials } from '@aws-sdk/types'
+import { waitUntil } from '../../shared'
 
 const ssoProfile = createSsoProfile()
 const scopedSsoProfile = createSsoProfile({ scopes: ['foo'] })
@@ -492,8 +492,8 @@ describe('Auth', function () {
             })
         })
     })
-    // eslint-disable-next-line aws-toolkits/no-only-in-tests
-    describe.only('Shared ini files', function () {
+
+    describe('Shared ini files', function () {
         let tmpDir: string
 
         beforeEach(async function () {
@@ -507,43 +507,39 @@ describe('Auth', function () {
             sinon.restore()
             await fs.delete(tmpDir, { recursive: true })
         })
-        for (const _ of Array.from({ length: 1000 }, (i) => i)) {
-            it('does not cache if the credentials file changes', async function () {
-                const initialCreds = {
-                    profileName: 'default',
-                    accessKey: 'x',
-                    secretKey: 'x',
-                }
 
-                await UserCredentialsUtils.generateCredentialsFile(initialCreds)
+        it('does not cache if the credentials file changes', async function () {
+            const initialCreds = {
+                profileName: 'default',
+                accessKey: 'x',
+                secretKey: 'x',
+            }
 
-                const conn = await auth.getConnection({ id: 'profile:default' })
-                assert.ok(conn?.type === 'iam', 'Expected an IAM connection')
-                assert.deepStrictEqual(await conn.getCredentials(), {
-                    accessKeyId: initialCreds.accessKey,
-                    secretAccessKey: initialCreds.secretKey,
-                    sessionToken: undefined,
-                })
-                const contentBefore = await fs.readFileText(getCredentialsFilename())
-                await fs.delete(getCredentialsFilename())
-                const newCreds = { ...initialCreds, accessKey: 'y', secretKey: 'y' }
-                await UserCredentialsUtils.generateCredentialsFile(newCreds)
-                const contentAfter = await fs.readFileText(getCredentialsFilename())
+            await UserCredentialsUtils.generateCredentialsFile(initialCreds)
 
-                assert.notDeepStrictEqual(contentBefore, contentAfter)
-
-                const areCredsEqual = (creds: Credentials) => {
-                    return creds.accessKeyId === newCreds.accessKey && creds.secretAccessKey === newCreds.secretKey
-                }
-
-                const credsUpdated = await waitUntil(async () => areCredsEqual(await conn.getCredentials()), {
-                    timeout: 20000,
-                    interval: 1000,
-                    truthy: true,
-                })
-                assert.ok(credsUpdated, 'Credentials file update failed')
+            const conn = await auth.getConnection({ id: 'profile:default' })
+            assert.ok(conn?.type === 'iam', 'Expected an IAM connection')
+            assert.deepStrictEqual(await conn.getCredentials(), {
+                accessKeyId: initialCreds.accessKey,
+                secretAccessKey: initialCreds.secretKey,
+                sessionToken: undefined,
             })
-        }
+
+            await fs.delete(getCredentialsFilename())
+
+            const newCreds = { ...initialCreds, accessKey: 'y', secretKey: 'y' }
+            await UserCredentialsUtils.generateCredentialsFile(newCreds)
+
+            const credsAreUpdated = (creds: Credentials) => {
+                return creds.accessKeyId === newCreds.accessKey && creds.secretAccessKey === newCreds.secretKey
+            }
+
+            const credsUpdated = await waitUntil(async () => credsAreUpdated(await conn.getCredentials()), {
+                timeout: 5000,
+                truthy: true,
+            })
+            assert.ok(credsUpdated, 'Expected credentials to be updated')
+        })
     })
 
     describe('AuthNode', function () {
