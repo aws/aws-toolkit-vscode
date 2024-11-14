@@ -5,7 +5,7 @@
 import vscode, { Position } from 'vscode'
 import { getPrefixSuffixOverlap } from '../util/commonUtil'
 import { Recommendation } from '../client/codewhisperer'
-import { session } from '../util/codeWhispererSession'
+import { CodeWhispererSessionState } from '../util/codeWhispererSession'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { ReferenceInlineProvider } from './referenceInlineProvider'
@@ -21,6 +21,7 @@ export class CWInlineCompletionItemProvider implements vscode.InlineCompletionIt
     private requestId: string
     private startPos: Position
     private nextToken: string
+    private session = CodeWhispererSessionState.instance.getSession()
 
     private _onDidShow: vscode.EventEmitter<void> = new vscode.EventEmitter<void>()
     public readonly onDidShow: vscode.Event<void> = this._onDidShow.event
@@ -100,8 +101,8 @@ export class CWInlineCompletionItemProvider implements vscode.InlineCompletionIt
         const effectiveStart = document.positionAt(document.offsetAt(start) + prefix.length)
         const truncatedSuggestion = this.truncateOverlapWithRightContext(document, r.content, end)
         if (truncatedSuggestion.length === 0) {
-            if (session.getSuggestionState(index) !== 'Showed') {
-                session.setSuggestionState(index, 'Discard')
+            if (this.session.getSuggestionState(index) !== 'Showed') {
+                this.session.setSuggestionState(index, 'Discard')
             }
             return undefined
         }
@@ -118,9 +119,9 @@ export class CWInlineCompletionItemProvider implements vscode.InlineCompletionIt
                     index,
                     truncatedSuggestion,
                     this.requestId,
-                    session.sessionId,
-                    session.triggerType,
-                    session.getCompletionType(index),
+                    this.session.sessionId,
+                    this.session.triggerType,
+                    this.session.getCompletionType(index),
                     runtimeLanguageContext.getLanguageContext(document.languageId, path.extname(document.fileName))
                         .language,
                     r.references,
@@ -152,25 +153,28 @@ export class CWInlineCompletionItemProvider implements vscode.InlineCompletionIt
         // valid one. Otherwise, inline completion which utilizes this position will function
         // improperly.
         const start = document.validatePosition(this.startPos)
+        console.log('start pos', start)
         const end = position
         const iteratingIndexes = this.getIteratingIndexes()
         const prefix = document.getText(new vscode.Range(start, end)).replace(/\r\n/g, '\n')
-        const matchedCount = session.recommendations.filter(
-            (r) => r.content.length > 0 && r.content.startsWith(prefix) && r.content !== prefix
+        const matchedCount = this.session.recommendations.filter(
+            (r: any) => r.content.length > 0 && r.content.startsWith(prefix) && r.content !== prefix
         ).length
         for (const i of iteratingIndexes) {
-            const r = session.recommendations[i]
+            const r = this.recommendations[i]
+            console.log('in show', r)
             const item = this.getInlineCompletionItem(document, r, start, end, i, prefix)
             if (item === undefined) {
                 continue
             }
+            console.log('item', item)
             this.activeItemIndex = i
-            session.setSuggestionState(i, 'Showed')
+            this.session.setSuggestionState(i, 'Showed')
             ReferenceInlineProvider.instance.setInlineReference(this.startPos.line, r.content, r.references)
             ImportAdderProvider.instance.onShowRecommendation(document, this.startPos.line, r)
             this.nextMove = 0
             TelemetryHelper.instance.setFirstSuggestionShowTime()
-            session.setPerceivedLatency()
+            this.session.setPerceivedLatency()
             UserWrittenCodeTracker.instance.onQStartsMakingEdits()
             this._onDidShow.fire()
             if (matchedCount >= 2 || this.nextToken !== '') {

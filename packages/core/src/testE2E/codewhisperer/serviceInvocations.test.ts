@@ -19,9 +19,10 @@ import { KeyStrokeHandler } from '../../codewhisperer/service/keyStrokeHandler'
 import { sleep } from '../../shared/utilities/timeoutUtils'
 import { invokeRecommendation } from '../../codewhisperer/commands/invokeRecommendation'
 import { getTestWorkspaceFolder } from '../../testInteg/integrationTestsUtilities'
-import { session } from '../../codewhisperer/util/codeWhispererSession'
+import { CodeWhispererSessionState } from '../../codewhisperer/util/codeWhispererSession'
 
 describe('CodeWhisperer service invocation', async function () {
+    const session = CodeWhispererSessionState.instance.getSession()
     let validConnection: boolean
     const client = new codewhispererClient.DefaultCodeWhispererClient()
     const config: ConfigurationEntry = {
@@ -43,7 +44,7 @@ describe('CodeWhisperer service invocation', async function () {
     })
 
     it('manual trigger returns valid recommendation response', async function () {
-        // check that handler is empty before invocation
+        //check that handler is empty before invocation
         const requestIdBefore = RecommendationHandler.instance.requestId
         const sessionIdBefore = session.sessionId
         const validRecsBefore = RecommendationHandler.instance.isValidResponse()
@@ -65,7 +66,7 @@ describe('CodeWhisperer service invocation', async function () {
     })
 
     it('auto trigger returns valid recommendation response', async function () {
-        // check that handler is empty before invocation
+        //check that handler is empty before invocation
         const requestIdBefore = RecommendationHandler.instance.requestId
         const sessionIdBefore = session.sessionId
         const validRecsBefore = RecommendationHandler.instance.isValidResponse()
@@ -102,6 +103,7 @@ describe('CodeWhisperer service invocation', async function () {
 
         // check that handler is empty before invocation
         const requestIdBefore = RecommendationHandler.instance.requestId
+        const session = CodeWhispererSessionState.instance.getSession()
         const sessionIdBefore = session.sessionId
         const validRecsBefore = RecommendationHandler.instance.isValidResponse()
 

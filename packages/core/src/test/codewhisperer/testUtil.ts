@@ -16,7 +16,7 @@ import { MockDocument } from '../fake/fakeDocument'
 import { getLogger } from '../../shared/logger'
 import { CodeWhispererCodeCoverageTracker } from '../../codewhisperer/tracker/codewhispererCodeCoverageTracker'
 import globals from '../../shared/extensionGlobals'
-import { session } from '../../codewhisperer/util/codeWhispererSession'
+import { CodeWhispererSessionState } from '../../codewhisperer/util/codeWhispererSession'
 import { DefaultAWSClientBuilder, ServiceOptions } from '../../shared/awsClientBuilder'
 import { FakeAwsContext } from '../utilities/fakeAwsContext'
 import { HttpResponse, Service } from 'aws-sdk'
@@ -33,7 +33,10 @@ export async function resetCodeWhispererGlobalVariables() {
     vsCodeState.isCodeWhispererEditing = false
     CodeWhispererCodeCoverageTracker.instances.clear()
     globals.telemetry.logger.clear()
+    const session = CodeWhispererSessionState.instance.getSession()
     session.reset()
+    const nextSession = CodeWhispererSessionState.instance.nextSession
+    nextSession.reset()
     await globals.globalState.clear()
     await CodeSuggestionsState.instance.setSuggestionsEnabled(true)
     await RecommendationHandler.instance.clearInlineCompletionStates()

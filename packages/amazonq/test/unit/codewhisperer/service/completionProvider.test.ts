@@ -12,11 +12,12 @@ import {
     getLabel,
     Recommendation,
     RecommendationHandler,
-    session,
+    CodeWhispererSessionState,
 } from 'aws-core-vscode/codewhisperer'
 import { createMockDocument, resetCodeWhispererGlobalVariables } from 'aws-core-vscode/test'
 
 describe('completionProviderService', function () {
+    const session = CodeWhispererSessionState.instance.getSession()
     beforeEach(async function () {
         await resetCodeWhispererGlobalVariables()
     })

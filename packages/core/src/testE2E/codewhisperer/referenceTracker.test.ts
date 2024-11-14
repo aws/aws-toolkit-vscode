@@ -10,7 +10,7 @@ import { setValidConnection, skipTestIfNoValidConn } from '../util/connection'
 import { RecommendationHandler } from '../../codewhisperer/service/recommendationHandler'
 import { createMockTextEditor, resetCodeWhispererGlobalVariables } from '../../test/codewhisperer/testUtil'
 import { invokeRecommendation } from '../../codewhisperer/commands/invokeRecommendation'
-import { session } from '../../codewhisperer/util/codeWhispererSession'
+import { CodeWhispererSessionState } from '../../codewhisperer/util/codeWhispererSession'
 
 /*
 New model deployment may impact references returned. 
@@ -62,7 +62,8 @@ describe('CodeWhisperer service invocation', async function () {
     })
 
     it('trigger known to return recs with references returns rec with reference', async function () {
-        // check that handler is empty before invocation
+        //check that handler is empty before invocation
+        const session = CodeWhispererSessionState.instance.getSession()
         const requestIdBefore = RecommendationHandler.instance.requestId
         const sessionIdBefore = session.sessionId
         const validRecsBefore = RecommendationHandler.instance.isValidResponse()
@@ -97,6 +98,7 @@ describe('CodeWhisperer service invocation', async function () {
     it('trigger known to return rec with references does not return rec with references when reference tracker setting is off', async function () {
         // check that handler is empty before invocation
         const requestIdBefore = RecommendationHandler.instance.requestId
+        const session = CodeWhispererSessionState.instance.getSession()
         const sessionIdBefore = session.sessionId
         const validRecsBefore = RecommendationHandler.instance.isValidResponse()
 

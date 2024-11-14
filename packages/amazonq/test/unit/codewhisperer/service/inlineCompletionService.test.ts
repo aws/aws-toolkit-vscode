@@ -14,7 +14,7 @@ import {
     CodeSuggestionsState,
     ConfigurationEntry,
     CWInlineCompletionItemProvider,
-    session,
+    CodeWhispererSessionState,
     AuthUtil,
     listCodeWhispererCommandsId,
     DefaultCodeWhispererClient,
@@ -22,6 +22,7 @@ import {
 import { createMockTextEditor, resetCodeWhispererGlobalVariables, createMockDocument } from 'aws-core-vscode/test'
 
 describe('inlineCompletionService', function () {
+    const session = CodeWhispererSessionState.instance.getSession()
     beforeEach(async function () {
         await resetCodeWhispererGlobalVariables()
     })

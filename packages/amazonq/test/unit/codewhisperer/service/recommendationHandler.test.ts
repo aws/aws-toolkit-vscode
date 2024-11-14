@@ -8,7 +8,7 @@ import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import {
     ReferenceInlineProvider,
-    session,
+    CodeWhispererSessionState,
     AuthUtil,
     DefaultCodeWhispererClient,
     RecommendationsList,
@@ -26,6 +26,7 @@ import {
 // import * as supplementalContextUtil from 'aws-core-vscode/codewhisperer'
 
 describe('recommendationHandler', function () {
+    const session = CodeWhispererSessionState.instance.getSession()
     const config: ConfigurationEntry = {
         isShowMethodsEnabled: true,
         isManualTriggerEnabled: true,
