@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode'
+import * as nls from 'vscode-nls'
 import { ResourceTreeDataProvider, TreeNode } from '../shared/treeview/resourceTreeDataProvider'
 import { Command, Commands } from '../shared/vscode/commands2'
 import { Icon, getIcon } from '../shared/icons'
@@ -18,6 +19,7 @@ import { openUrl } from '../shared/utilities/vsCodeUtils'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { globals } from '../shared'
 
+const localize = nls.loadMessageBundle()
 const logger = getLogger('notifications')
 
 /**
@@ -25,6 +27,8 @@ const logger = getLogger('notifications')
  * and does not determine what notifications to dispaly or how to fetch and store them.
  */
 export class NotificationsNode implements TreeNode {
+    public static readonly title = localize('AWS.notifications.title', 'Notifications')
+
     public readonly id = 'notifications'
     public readonly resource = this
     public provider?: ResourceTreeDataProvider
@@ -37,6 +41,7 @@ export class NotificationsNode implements TreeNode {
     private readonly showContextStr: contextKey
     private readonly startUpNodeContext: string
     private readonly emergencyNodeContext: string
+    private view: vscode.TreeView<TreeNode> | undefined
 
     static #instance: NotificationsNode
 
@@ -65,7 +70,7 @@ export class NotificationsNode implements TreeNode {
     }
 
     public getTreeItem() {
-        const item = new vscode.TreeItem('Notifications')
+        const item = new vscode.TreeItem(NotificationsNode.title)
         item.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed
         item.contextValue = 'notifications'
 
@@ -73,8 +78,23 @@ export class NotificationsNode implements TreeNode {
     }
 
     public refresh(): void {
-        const hasNotifications = this.startUpNotifications.length > 0 || this.emergencyNotifications.length > 0
-        void setContext(this.showContextStr, hasNotifications)
+        if (!this.view) {
+            throw new ToolkitError('NotificationsNode: TreeView accessed without being registered.')
+        }
+
+        const totalNotifications = this.notificationCount()
+        if (totalNotifications > 0) {
+            this.view.badge = {
+                tooltip: `${totalNotifications} notification${totalNotifications > 1 ? 's' : ''}`,
+                value: totalNotifications,
+            }
+            this.view.title = `${NotificationsNode.title} (${totalNotifications})`
+            void setContext(this.showContextStr, true)
+        } else {
+            this.view.badge = undefined
+            this.view.title = NotificationsNode.title
+            void setContext(this.showContextStr, false)
+        }
 
         this.provider?.refresh()
     }
@@ -88,11 +108,12 @@ export class NotificationsNode implements TreeNode {
                       })
                     : (getIcon('vscode-question') as Icon)
 
+            const title = n.uiRenderInstructions.content['en-US'].title
             return this.openNotificationCmd.build(n).asTreeNode({
-                label: n.uiRenderInstructions.content['en-US'].title,
+                label: title,
+                tooltip: title,
                 iconPath: icon,
                 contextValue: type === 'startUp' ? this.startUpNodeContext : this.emergencyNodeContext,
-                tooltip: 'Click to open',
             })
         }
 
@@ -128,6 +149,10 @@ export class NotificationsNode implements TreeNode {
      */
     public focusPanel() {
         return vscode.commands.executeCommand(this.focusCmdStr)
+    }
+
+    private notificationCount() {
+        return this.startUpNotifications.length + this.emergencyNotifications.length
     }
 
     /**
@@ -275,7 +300,7 @@ export class NotificationsNode implements TreeNode {
     }
 
     registerView(context: vscode.ExtensionContext) {
-        const view = registerToolView(
+        this.view = registerToolView(
             {
                 nodes: [this],
                 view: isAmazonQ() ? 'aws.amazonq.notifications' : 'aws.toolkit.notifications',
@@ -283,6 +308,5 @@ export class NotificationsNode implements TreeNode {
             },
             context
         )
-        view.message = `New feature announcements and emergency notifications for ${isAmazonQ() ? 'Amazon Q' : 'AWS Toolkit'} will appear here.`
     }
 }
