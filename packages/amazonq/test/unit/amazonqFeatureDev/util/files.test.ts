@@ -10,55 +10,84 @@ import {
     ContentLengthError,
     maxRepoSizeBytes,
 } from 'aws-core-vscode/amazonqFeatureDev'
-import { assertTelemetry, createTestWorkspace } from 'aws-core-vscode/test'
+import { assertTelemetry, getWorkspaceFolder, TestFolder } from 'aws-core-vscode/test'
 import { fs, AmazonqCreateUpload } from 'aws-core-vscode/shared'
-import { Span } from 'aws-core-vscode/telemetry'
+import { MetricName, Span } from 'aws-core-vscode/telemetry'
 import sinon from 'sinon'
+import { CodeWhispererSettings } from 'aws-core-vscode/codewhisperer'
+
+const testDevfilePrepareRepo = async (expectedRepoSize: number, devfileEnabled: boolean) => {
+    const folder = await TestFolder.create()
+    await folder.write('devfile.yaml', 'test')
+    await folder.write('file.md', 'test content')
+    const workspace = getWorkspaceFolder(folder.path)
+    sinon
+        .stub(CodeWhispererSettings.instance, 'getDevCommandWorkspaceConfigurations')
+        .returns(devfileEnabled ? { [workspace.uri.fsPath]: true } : {})
+
+    await testPrepareRepoData(workspace, expectedRepoSize)
+}
+
+const testPrepareRepoData = async (
+    workspace: vscode.WorkspaceFolder,
+    expectedRepoSize: number,
+    expectedTelemetryMetrics?: Array<{ metricName: MetricName; value: any }>
+) => {
+    const telemetry = new TelemetryHelper()
+    const result = await prepareRepoData([workspace.uri.fsPath], [workspace], telemetry, {
+        record: () => {},
+    } as unknown as Span<AmazonqCreateUpload>)
+
+    assert.strictEqual(Buffer.isBuffer(result.zipFileBuffer), true)
+    // checksum is not the same across different test executions because some unique random folder names are generated
+    assert.strictEqual(result.zipFileChecksum.length, 44)
+    assert.strictEqual(telemetry.repositorySize, expectedRepoSize)
+
+    if (expectedTelemetryMetrics) {
+        expectedTelemetryMetrics.forEach((metric) => {
+            assertTelemetry(metric.metricName, metric.value)
+        })
+    }
+}
 
 describe('file utils', () => {
     describe('prepareRepoData', function () {
+        afterEach(() => {
+            sinon.restore()
+        })
+
         it('returns files in the workspace as a zip', async function () {
-            // these variables are a manual selection of settings for the test in order to test the collectFiles function
-            const fileAmount = 2
-            const fileNamePrefix = 'file'
-            const fileNameSuffix = '.md'
-            const fileContent = 'test content'
+            const folder = await TestFolder.create()
+            await folder.write('file1.md', 'test content')
+            await folder.write('file2.md', 'test content')
+            const workspace = getWorkspaceFolder(folder.path)
 
-            const workspace = await createTestWorkspace(fileAmount, { fileNamePrefix, fileContent, fileNameSuffix })
-
-            const telemetry = new TelemetryHelper()
-            const result = await prepareRepoData([workspace.uri.fsPath], [workspace], telemetry, {
-                record: () => {},
-            } as unknown as Span<AmazonqCreateUpload>)
-            assert.strictEqual(Buffer.isBuffer(result.zipFileBuffer), true)
-            // checksum is not the same across different test executions because some unique random folder names are generated
-            assert.strictEqual(result.zipFileChecksum.length, 44)
-            assert.strictEqual(telemetry.repositorySize, 24)
+            await testPrepareRepoData(workspace, 24)
         })
 
         it('prepareRepoData ignores denied file extensions', async function () {
-            // these variables are a manual selection of settings for the test in order to test the collectFiles function
-            const fileAmount = 1
-            const fileNamePrefix = 'file'
-            const fileNameSuffix = '.mp4'
-            const fileContent = 'test content'
+            const folder = await TestFolder.create()
+            await folder.write('file.mp4', 'test content')
+            const workspace = getWorkspaceFolder(folder.path)
 
-            const workspace = await createTestWorkspace(fileAmount, { fileNamePrefix, fileContent, fileNameSuffix })
-            const telemetry = new TelemetryHelper()
-            const result = await prepareRepoData([workspace.uri.fsPath], [workspace], telemetry, {
-                record: () => {},
-            } as unknown as Span<AmazonqCreateUpload>)
+            await testPrepareRepoData(workspace, 0, [
+                { metricName: 'amazonq_bundleExtensionIgnored', value: { filenameExt: 'mp4', count: 1 } },
+            ])
+        })
 
-            assert.strictEqual(Buffer.isBuffer(result.zipFileBuffer), true)
-            // checksum is not the same across different test executions because some unique random folder names are generated
-            assert.strictEqual(result.zipFileChecksum.length, 44)
-            assert.strictEqual(telemetry.repositorySize, 0)
-            assertTelemetry('amazonq_bundleExtensionIgnored', { filenameExt: 'mp4', count: 1 })
+        it('should ignore devfile.yaml when setting is disabled', async function () {
+            await testDevfilePrepareRepo(12, false)
+        })
+
+        it('should include devfile.yaml when setting is enabled', async function () {
+            await testDevfilePrepareRepo(16, true)
         })
 
         // Test the logic that allows the customer to modify root source folder
         it('prepareRepoData throws a ContentLengthError code when repo is too big', async function () {
-            const workspace = await createTestWorkspace(1, {})
+            const folder = await TestFolder.create()
+            await folder.write('file.md', 'test content')
+            const workspace = getWorkspaceFolder(folder.path)
             const telemetry = new TelemetryHelper()
 
             sinon.stub(fs, 'stat').resolves({ size: 2 * maxRepoSizeBytes } as vscode.FileStat)
