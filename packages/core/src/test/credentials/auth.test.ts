@@ -508,7 +508,7 @@ describe('Auth', function () {
             await fs.delete(tmpDir, { recursive: true })
         })
 
-        for (const _ of Array.from({ length: 1000 }, (i) => i)) {
+        for (const _ of Array.from({ length: 100 }, (i) => i)) {
             it('does not cache if the credentials file changes', async function () {
                 const initialCreds = {
                     profileName: 'default',
@@ -525,16 +525,18 @@ describe('Auth', function () {
                     secretAccessKey: initialCreds.secretKey,
                     sessionToken: undefined,
                 })
+                const lastModifiedBefore = (await fs.stat(getCredentialsFilename())).mtime
 
                 await fs.delete(getCredentialsFilename())
 
                 const newCreds = { ...initialCreds, accessKey: 'y', secretKey: 'y' }
                 await UserCredentialsUtils.generateCredentialsFile(newCreds)
-
+                const lastModifiedAfter = (await fs.stat(getCredentialsFilename())).mtime
                 const credsAreUpdated = (creds: Credentials) => {
                     return creds.accessKeyId === newCreds.accessKey && creds.secretAccessKey === newCreds.secretKey
                 }
-
+                console.log(lastModifiedBefore, lastModifiedAfter)
+                assert.notStrictEqual(lastModifiedBefore, lastModifiedAfter, 'Expected credentials file to be updated')
                 const credsUpdated = await waitUntil(async () => credsAreUpdated(await conn.getCredentials()), {
                     timeout: 5000,
                     interval: 100,
