@@ -53,7 +53,14 @@ interface Chunk {
     score?: number
 }
 
-type SupplementalContextConfig = 'none' | 'openbtabs' | 'codemap' | 'bm25' | 'default'
+/**
+ * `none`: supplementalContext is not supported
+ * `opentabs`: opentabs_BM25
+ * `codemap`: repomap + opentabs BM25
+ * `bm25`: global_BM25
+ * `default`: repomap + global_BM25
+ */
+type SupplementalContextConfig = 'none' | 'opentabs' | 'codemap' | 'bm25' | 'default'
 
 export async function fetchSupplementalContextForSrc(
     editor: vscode.TextEditor,
@@ -61,17 +68,20 @@ export async function fetchSupplementalContextForSrc(
 ): Promise<Pick<CodeWhispererSupplementalContext, 'supplementalContextItems' | 'strategy'> | undefined> {
     const supplementalContextConfig = getSupplementalContextConfig(editor.document.languageId)
 
+    // not supported case
     if (supplementalContextConfig === 'none') {
         return undefined
     }
 
-    if (supplementalContextConfig === 'openbtabs') {
+    // opentabs context will use bm25 and users' open tabs to fetch supplemental context
+    if (supplementalContextConfig === 'opentabs') {
         return {
             supplementalContextItems: (await fetchOpentabsContext(editor, cancellationToken)) ?? [],
             strategy: 'OpenTabs_BM25',
         }
     }
 
+    // codemap will use opentabs context plus repomap if it's present
     if (supplementalContextConfig === 'codemap') {
         const opentabsContextAndCodemap = await waitUntil(
             async function () {
@@ -106,6 +116,7 @@ export async function fetchSupplementalContextForSrc(
         { timeout: supplementalContextTimeoutInMs, interval: 5, truthy: false }
     )
 
+    // global bm25 without repomap
     if (supplementalContextConfig === 'bm25') {
         const projectBM25Promise = waitUntil(
             async function () {
@@ -128,6 +139,7 @@ export async function fetchSupplementalContextForSrc(
         }
     }
 
+    // global bm25 with repomap
     const projectContextAndCodemapPromise = waitUntil(
         async function () {
             return await fetchProjectContext(editor, 'default')
@@ -273,7 +285,7 @@ function getSupplementalContextConfig(languageId: vscode.TextDocument['languageI
     const group = FeatureConfigProvider.instance.getProjectContextGroup()
     switch (group) {
         case 'control':
-            return 'openbtabs'
+            return 'opentabs'
 
         case 't1':
             return 'codemap'
