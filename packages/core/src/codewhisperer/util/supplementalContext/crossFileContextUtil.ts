@@ -90,7 +90,7 @@ export async function fetchSupplementalContextForSrc(
 export async function fetchProjectContext(
     editor: vscode.TextEditor,
     target: 'default' | 'codemap' | 'bm25'
-): Promise<CodeWhispererSupplementalContextItem[] | undefined> {
+): Promise<CodeWhispererSupplementalContextItem[]> {
     const inputChunkContent = getInputChunk(editor)
 
     const inlineProjectContext: { content: string; score: number; filePath: string }[] =
