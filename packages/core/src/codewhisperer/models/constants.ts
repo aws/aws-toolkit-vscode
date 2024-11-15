@@ -36,6 +36,7 @@ const patchDescriptions: { [key: string]: string } = {
     'Miscellaneous Processing Documentation upgrade':
         'This diff patch covers a diverse set of upgrades spanning ORMs, XML processing, API documentation, and more.',
     'Upgrade Deprecated API': '',
+    'Updated dependencies to latest version': '',
 }
 
 export const JsonConfigFileNamingConvention = new Set([

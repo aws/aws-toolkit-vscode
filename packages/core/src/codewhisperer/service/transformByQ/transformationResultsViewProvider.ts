@@ -10,7 +10,13 @@ import { parsePatch, applyPatches, ParsedDiff } from 'diff'
 import path from 'path'
 import vscode from 'vscode'
 import { ExportIntent } from '@amzn/codewhisperer-streaming'
-import { TransformByQReviewStatus, transformByQState, PatchInfo, DescriptionContent } from '../../models/model'
+import {
+    TransformByQReviewStatus,
+    transformByQState,
+    PatchInfo,
+    DescriptionContent,
+    TransformationType,
+} from '../../models/model'
 import { ExportResultArchiveStructure, downloadExportResultArchive } from '../../../shared/utilities/download'
 import { getLogger } from '../../../shared/logger'
 import { telemetry } from '../../../shared/telemetry/telemetry'
@@ -543,37 +549,29 @@ export class ProposedTransformationExplorer {
             }
 
             //We do this to ensure that the changesAppliedChatMessage is only sent to user when they accept the first diff.patch
-            if (transformByQState.getMultipleDiffs()) {
-                if (diffModel.currentPatchIndex === patchFiles.length - 1) {
-                    transformByQState.getChatControllers()?.transformationFinished.fire({
-                        message: CodeWhispererConstants.changesAppliedChatMessageMultipleDiffs(
-                            diffModel.currentPatchIndex,
-                            patchFiles.length,
-                            patchFilesDescriptions
-                                ? patchFilesDescriptions.content[diffModel.currentPatchIndex].name
-                                : undefined
-                        ),
-                        tabID: ChatSessionManager.Instance.getSession().tabID,
-                        includeStartNewTransformationButton: true,
-                    })
-                } else {
-                    transformByQState.getChatControllers()?.transformationFinished.fire({
-                        message: CodeWhispererConstants.changesAppliedChatMessageMultipleDiffs(
-                            diffModel.currentPatchIndex,
-                            patchFiles.length,
-                            patchFilesDescriptions
-                                ? patchFilesDescriptions.content[diffModel.currentPatchIndex].name
-                                : undefined
-                        ),
-                        tabID: ChatSessionManager.Instance.getSession().tabID,
-                        includeStartNewTransformationButton: false,
-                    })
-                }
-            } else {
+            if (diffModel.currentPatchIndex === patchFiles.length - 1) {
                 transformByQState.getChatControllers()?.transformationFinished.fire({
-                    message: CodeWhispererConstants.changesAppliedChatMessageOneDiff,
+                    message: CodeWhispererConstants.changesAppliedChatMessageMultipleDiffs(
+                        diffModel.currentPatchIndex,
+                        patchFiles.length,
+                        patchFilesDescriptions
+                            ? patchFilesDescriptions.content[diffModel.currentPatchIndex].name
+                            : undefined
+                    ),
                     tabID: ChatSessionManager.Instance.getSession().tabID,
                     includeStartNewTransformationButton: true,
+                })
+            } else {
+                transformByQState.getChatControllers()?.transformationFinished.fire({
+                    message: CodeWhispererConstants.changesAppliedChatMessageMultipleDiffs(
+                        diffModel.currentPatchIndex,
+                        patchFiles.length,
+                        patchFilesDescriptions
+                            ? patchFilesDescriptions.content[diffModel.currentPatchIndex].name
+                            : undefined
+                    ),
+                    tabID: ChatSessionManager.Instance.getSession().tabID,
+                    includeStartNewTransformationButton: false,
                 })
             }
 
