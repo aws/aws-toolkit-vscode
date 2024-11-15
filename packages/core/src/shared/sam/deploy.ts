@@ -98,7 +98,8 @@ export class DeployWizard extends Wizard<DeployParams> {
                     paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
             })
             this.form.stackName.bindPrompter(
-                ({ region }) => createStackPrompter(new DefaultCloudFormationClient(region!), deployMementoRootKey),
+                ({ region }) =>
+                    createStackPrompter(new DefaultCloudFormationClient(region!), deployMementoRootKey, samDeployUrl),
                 {
                     showWhen: ({ paramsSource }) =>
                         paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
@@ -124,7 +125,8 @@ export class DeployWizard extends Wizard<DeployParams> {
             })
             this.form.region.setDefault(() => this.arg.regionCode)
             this.form.stackName.bindPrompter(
-                ({ region }) => createStackPrompter(new DefaultCloudFormationClient(region!), deployMementoRootKey),
+                ({ region }) =>
+                    createStackPrompter(new DefaultCloudFormationClient(region!), deployMementoRootKey, samDeployUrl),
                 {
                     showWhen: ({ paramsSource }) =>
                         paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
@@ -157,7 +159,8 @@ export class DeployWizard extends Wizard<DeployParams> {
                     paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
             })
             this.form.stackName.bindPrompter(
-                ({ region }) => createStackPrompter(new DefaultCloudFormationClient(region!), deployMementoRootKey),
+                ({ region }) =>
+                    createStackPrompter(new DefaultCloudFormationClient(region!), deployMementoRootKey, samDeployUrl),
                 {
                     showWhen: ({ paramsSource }) =>
                         paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
@@ -187,7 +190,8 @@ export class DeployWizard extends Wizard<DeployParams> {
                     paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
             })
             this.form.stackName.bindPrompter(
-                ({ region }) => createStackPrompter(new DefaultCloudFormationClient(region!), deployMementoRootKey),
+                ({ region }) =>
+                    createStackPrompter(new DefaultCloudFormationClient(region!), deployMementoRootKey, samDeployUrl),
                 {
                     showWhen: ({ paramsSource }) =>
                         paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,

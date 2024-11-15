@@ -5,7 +5,7 @@
 import { StackSummary } from 'aws-sdk/clients/cloudformation'
 import { getAwsConsoleUrl } from '../../awsConsole'
 import { DefaultCloudFormationClient } from '../../clients/cloudFormationClient'
-import { samSyncUrl } from '../../constants'
+import * as vscode from 'vscode'
 import { createCommonButtons } from '../buttons'
 import { createQuickPick } from '../pickerPrompter'
 import * as nls from 'vscode-nls'
@@ -23,10 +23,15 @@ const canShowStack = (s: StackSummary) =>
  *
  * @param client - CloudFormation client to use for listing stacks
  * @param mementoRootKey - Key used to store/retrieve recently used stack (e.g 'samcli.deploy.params')
+ * @param samCommandUrl  - URI for sam command wizard webpage
  * @returns A quick pick prompter configured for stack selection
  *
  */
-export function createStackPrompter(client: DefaultCloudFormationClient, mementoRootKey: string) {
+export function createStackPrompter(
+    client: DefaultCloudFormationClient,
+    mementoRootKey: string,
+    samCommandUrl: vscode.Uri
+) {
     const recentStack = getRecentResponse(mementoRootKey, client.regionCode, 'stackName')
     const consoleUrl = getAwsConsoleUrl('cloudformation', client.regionCode)
     const items = client.listAllStacks().map((stacks) =>
@@ -46,7 +51,7 @@ export function createStackPrompter(client: DefaultCloudFormationClient, memento
             label: 'Create a New Stack',
             transform: (v) => v,
         },
-        buttons: createCommonButtons(samSyncUrl, consoleUrl),
+        buttons: createCommonButtons(samCommandUrl, consoleUrl),
         noItemsFoundItem: {
             label: localize(
                 'aws.cfn.noStacks',

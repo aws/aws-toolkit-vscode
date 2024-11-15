@@ -167,7 +167,8 @@ export class SyncWizard extends Wizard<SyncParams> {
                 paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
         })
         this.form.stackName.bindPrompter(
-            ({ region }) => createStackPrompter(new DefaultCloudFormationClient(region!), syncMementoRootKey),
+            ({ region }) =>
+                createStackPrompter(new DefaultCloudFormationClient(region!), syncMementoRootKey, samSyncUrl),
             {
                 showWhen: ({ paramsSource }) =>
                     paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
