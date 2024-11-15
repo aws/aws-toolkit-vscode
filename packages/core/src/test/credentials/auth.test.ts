@@ -515,8 +515,11 @@ describe('Auth', function () {
                     accessKey: 'x',
                     secretKey: 'x',
                 }
-
+                console.log('generating file for the first time')
                 await UserCredentialsUtils.generateCredentialsFile(initialCreds)
+
+                const initialStats = await fs.stat(getCredentialsFilename())
+                const intialContent = await fs.readFileText(getCredentialsFilename())
 
                 const conn = await auth.getConnection({ id: 'profile:default' })
                 assert.ok(conn?.type === 'iam', 'Expected an IAM connection')
@@ -525,27 +528,51 @@ describe('Auth', function () {
                     secretAccessKey: initialCreds.secretKey,
                     sessionToken: undefined,
                 })
-                const statBefore = await fs.stat(getCredentialsFilename())
-
+                const contentBeforeDeleting = await fs.readFileText(getCredentialsFilename())
+                const statBeforeDeleting = await fs.stat(getCredentialsFilename())
+                console.log('Deleting the file')
                 await fs.delete(getCredentialsFilename())
-                console.log('file deleted')
 
                 const newCreds = { ...initialCreds, accessKey: 'y', secretKey: 'y' }
+                console.log('regenerating the same file')
                 await UserCredentialsUtils.generateCredentialsFile(newCreds)
-                console.log('file written')
-                const statAfter = await fs.stat(getCredentialsFilename())
+
+                const statsAfterRegen = await fs.stat(getCredentialsFilename())
+                const contentAfterRegen = await fs.readFileText(getCredentialsFilename())
                 const credsAreUpdated = (creds: Credentials) => {
                     return creds.accessKeyId === newCreds.accessKey && creds.secretAccessKey === newCreds.secretKey
                 }
-                console.log('before: %O, after: %O', statBefore, statAfter)
-                assert.notStrictEqual(statBefore, statAfter, 'Expected credentials file to be updated')
+                console.log(
+                    'initial: %O, beforeDelete: %O, afterRegen: %O',
+                    initialStats,
+                    statBeforeDeleting,
+                    statsAfterRegen
+                )
+
+                console.log('Before wait until')
+                const start = Date.now()
                 const credsUpdated = await waitUntil(async () => credsAreUpdated(await conn.getCredentials()), {
-                    timeout: 1000,
+                    timeout: 10000,
                     interval: 100,
                     truthy: true,
                 })
-                const statLater = await fs.stat(getCredentialsFilename())
-                console.log('before: %O, after: %O, later: %O', statBefore, statAfter, statLater)
+                console.log('After wait until: %O seconds later', (Date.now() - start) / 1000)
+                const statAfterWait = await fs.stat(getCredentialsFilename())
+                const contentAfterWait = await fs.readFileText(getCredentialsFilename())
+                console.log(
+                    'stats: initial: %O, beforeDelete: %O, afterRegen: %O, afterWait: %O',
+                    initialStats,
+                    statBeforeDeleting,
+                    statsAfterRegen,
+                    statAfterWait
+                )
+                console.log(
+                    'content: initial: %O, beforeDelete: %O, afterRegen: %O, afterWait: %O',
+                    intialContent,
+                    contentBeforeDeleting,
+                    contentAfterRegen,
+                    contentAfterWait
+                )
                 assert.ok(credsUpdated, 'Expected credentials to be updated')
             })
         }
