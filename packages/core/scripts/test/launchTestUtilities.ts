@@ -111,7 +111,7 @@ async function getVSCodeCliArgs(params: {
         extensionTestsPath: resolve(projectRootDir, params.relativeTestEntryPoint),
         // For verbose VSCode logs, add "--verbose --log debug". c2165cf48e62c
         launchArgs: [
-            '--log critical',
+            '"--log error"',
             ...disableExtensionsArgs,
             workspacePath,
             ...disableWorkspaceTrustArg,
@@ -122,6 +122,7 @@ async function getVSCodeCliArgs(params: {
             ['DEVELOPMENT_PATH']: projectRootDir,
             ['AWS_TOOLKIT_AUTOMATION']: params.suite,
             ['TEST_DIR']: process.env.TEST_DIR,
+            ['ELECTRON_ENABLE_LOGGING']: 'false',
             ...params.env,
         },
     }
