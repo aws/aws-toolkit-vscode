@@ -19,9 +19,6 @@ import { UserCredentialsUtils } from '../../shared/credentials/userCredentialsUt
 import { getCredentialsFilename } from '../../auth/credentials/sharedCredentialsFile'
 import { Connection, isIamConnection, isSsoConnection, scopesSsoAccountAccess } from '../../auth/connection'
 import { AuthNode, createDeleteConnectionButton, promptForConnection } from '../../auth/utils'
-import { Credentials } from '@aws-sdk/types'
-import { sleep, waitUntil } from '../../shared'
-import { isWin } from '../../shared/vscode/env'
 
 const ssoProfile = createSsoProfile()
 const scopedSsoProfile = createSsoProfile({ scopes: ['foo'] })
@@ -509,82 +506,33 @@ describe('Auth', function () {
             await fs.delete(tmpDir, { recursive: true })
         })
 
-        for (const _ of Array.from({ length: 1000 }, (i) => i)) {
-            it('does not cache if the credentials file changes', async function () {
-                const initialCreds = {
-                    profileName: 'default',
-                    accessKey: 'x',
-                    secretKey: 'x',
-                }
-                console.log('Generating credentials file for the first time')
-                await UserCredentialsUtils.generateCredentialsFile(initialCreds)
+        it('does not cache if the credentials file changes', async function () {
+            const initialCreds = {
+                profileName: 'default',
+                accessKey: 'x',
+                secretKey: 'x',
+            }
 
-                const initialStats = await fs.stat(getCredentialsFilename())
-                const intialContent = await fs.readFileText(getCredentialsFilename())
+            await UserCredentialsUtils.generateCredentialsFile(initialCreds)
 
-                const conn = await auth.getConnection({ id: 'profile:default' })
-                assert.ok(conn?.type === 'iam', 'Expected an IAM connection')
-                assert.deepStrictEqual(await conn.getCredentials(), {
-                    accessKeyId: initialCreds.accessKey,
-                    secretAccessKey: initialCreds.secretKey,
-                    sessionToken: undefined,
-                })
-                const contentBeforeDeleting = await fs.readFileText(getCredentialsFilename())
-                const statBeforeDeleting = await fs.stat(getCredentialsFilename())
-                console.log('Deleting the credentials file')
-                await fs.delete(getCredentialsFilename())
-
-                console.log('sleeping first time for a second')
-                if (isWin()) {
-                    await sleep(1000)
-                }
-
-                const newCreds = { ...initialCreds, accessKey: 'y', secretKey: 'y' }
-                console.log('Regenerating credentials file')
-                await UserCredentialsUtils.generateCredentialsFile(newCreds)
-
-                console.log('sleeping second time for a second')
-                if (isWin()) {
-                    await sleep(1000)
-                }
-
-                const statsAfterRegen = await fs.stat(getCredentialsFilename())
-                const contentAfterRegen = await fs.readFileText(getCredentialsFilename())
-                const credsAreUpdated = (creds: Credentials) => {
-                    return creds.accessKeyId === newCreds.accessKey && creds.secretAccessKey === newCreds.secretKey
-                }
-
-                console.log('Before waitUntil block')
-                const start = Date.now()
-                const credsUpdated = await waitUntil(async () => credsAreUpdated(await conn.getCredentials()), {
-                    timeout: 10000,
-                    interval: 100,
-                    truthy: true,
-                })
-                console.log('After wait until: %O seconds later', (Date.now() - start) / 1000)
-                const statAfterWait = await fs.stat(getCredentialsFilename())
-                const contentAfterWait = await fs.readFileText(getCredentialsFilename())
-                console.log(
-                    'stats:\n --initial: %O \n, --beforeDelete: %O \n, --afterRegen: %O \n, --afterWait: %O \n',
-                    initialStats,
-                    statBeforeDeleting,
-                    statsAfterRegen,
-                    statAfterWait
-                )
-                console.log(
-                    'content:\n --initial: %O \n, --beforeDelete: %O \n, --afterRegen: %O \n, --afterWait: %O \n',
-                    intialContent,
-                    contentBeforeDeleting,
-                    contentAfterRegen,
-                    contentAfterWait
-                )
-                if (!credsUpdated) {
-                    console.log('creds failed to update!')
-                    console.log('creds: %O', await conn.getCredentials())
-                }
-                assert.ok(credsUpdated, 'Expected credentials to be updated')
+            const conn = await auth.getConnection({ id: 'profile:default' })
+            assert.ok(conn?.type === 'iam', 'Expected an IAM connection')
+            assert.deepStrictEqual(await conn.getCredentials(), {
+                accessKeyId: initialCreds.accessKey,
+                secretAccessKey: initialCreds.secretKey,
+                sessionToken: undefined,
             })
-        }
+
+            await fs.delete(getCredentialsFilename())
+
+            const newCreds = { ...initialCreds, accessKey: 'y', secretKey: 'y' }
+            await UserCredentialsUtils.generateCredentialsFile(newCreds)
+            assert.deepStrictEqual(await conn.getCredentials(), {
+                accessKeyId: newCreds.accessKey,
+                secretAccessKey: newCreds.secretKey,
+                sessionToken: undefined,
+            })
+        })
     })
 
     describe('AuthNode', function () {
