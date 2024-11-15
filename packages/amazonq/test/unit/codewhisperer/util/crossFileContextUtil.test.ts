@@ -38,7 +38,6 @@ describe('crossFileContextUtil', function () {
     describe('fetchSupplementalContextForSrc', function () {
         beforeEach(async function () {
             tempFolder = (await createTestWorkspaceFolder()).uri.fsPath
-            sinon.restore()
         })
 
         afterEach(async function () {
