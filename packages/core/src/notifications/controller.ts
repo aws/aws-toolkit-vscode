@@ -92,7 +92,7 @@ export class NotificationsController {
             ruleEngine.shouldDisplayNotification(n)
         )
 
-        NotificationsNode.instance.setNotifications(startUp, emergency)
+        await NotificationsNode.instance.setNotifications(startUp, emergency)
 
         // Emergency notifications can't be dismissed, but if the user minimizes the panel then
         // we don't want to focus it each time we set the notification nodes.
@@ -126,7 +126,7 @@ export class NotificationsController {
         this.state.dismissed.push(notificationId)
         await this.writeState()
 
-        NotificationsNode.instance.dismissStartUpNotification(notificationId)
+        await NotificationsNode.instance.dismissStartUpNotification(notificationId)
     }
 
     /**

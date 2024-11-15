@@ -9,7 +9,7 @@ import assert from 'assert'
 import sinon from 'sinon'
 import globals from '../../shared/extensionGlobals'
 import { randomUUID } from '../../shared/crypto'
-import * as setContext from '../../shared/vscode/setContext'
+import { getContext } from '../../shared/vscode/setContext'
 import { assertTelemetry, installFakeClock } from '../testUtil'
 import {
     NotificationFetcher,
@@ -88,7 +88,7 @@ describe('Notifications Controller', function () {
     }
 
     beforeEach(async function () {
-        panelNode.setNotifications([], [])
+        await panelNode.setNotifications([], [])
         fetcher = new TestFetcher()
         controller = new NotificationsController(panelNode, fetcher, '_aws.test.notification' as any)
 
@@ -108,10 +108,6 @@ describe('Notifications Controller', function () {
     })
 
     it('can fetch and store startup notifications', async function () {
-        // There seems to be a race condition with having a global spy object that is reset after each
-        // test. Doesn't seem to affect the other ones, for some reason.
-        const setContextSpy = sinon.spy(setContext, 'setContext')
-
         const eTag = randomUUID()
         const content = {
             schemaVersion: '1.x',
@@ -140,14 +136,10 @@ describe('Notifications Controller', function () {
         assert.deepStrictEqual(panelNode.startUpNotifications, [content.notifications[0]])
         assert.equal(panelNode.getChildren().length, 1)
         assert.equal(focusPanelSpy.callCount, 0)
-        assert.ok(setContextSpy.calledWithExactly('aws.toolkit.notifications.show', true))
-
-        setContextSpy.restore()
+        assert.equal(getContext('aws.toolkit.notifications.show'), true)
     })
 
     it('can fetch and store emergency notifications', async function () {
-        const setContextSpy = sinon.spy(setContext, 'setContext')
-
         const eTag = randomUUID()
         const content = {
             schemaVersion: '1.x',
@@ -176,14 +168,10 @@ describe('Notifications Controller', function () {
         assert.deepStrictEqual(panelNode.emergencyNotifications, [content.notifications[0]])
         assert.equal(panelNode.getChildren().length, 1)
         assert.equal(focusPanelSpy.callCount, 1)
-        assert.ok(setContextSpy.calledWithExactly('aws.toolkit.notifications.show', true))
-
-        setContextSpy.restore()
+        assert.equal(getContext('aws.toolkit.notifications.show'), true)
     })
 
     it('can fetch and store both startup and emergency notifications', async function () {
-        const setContextSpy = sinon.spy(setContext, 'setContext')
-
         const eTag1 = randomUUID()
         const eTag2 = randomUUID()
         const startUpContent = {
@@ -239,14 +227,10 @@ describe('Notifications Controller', function () {
         assert.deepStrictEqual(panelNode.emergencyNotifications, [emergencyContent.notifications[0]])
         assert.equal(panelNode.getChildren().length, 2)
         assert.equal(focusPanelSpy.callCount, 1)
-        assert.ok(setContextSpy.calledWithExactly('aws.toolkit.notifications.show', true))
-
-        setContextSpy.restore()
+        assert.equal(getContext('aws.toolkit.notifications.show'), true)
     })
 
     it('dismisses a startup notification', async function () {
-        const setContextSpy = sinon.spy(setContext, 'setContext')
-
         const eTag = randomUUID()
         const content = {
             schemaVersion: '1.x',
@@ -261,7 +245,7 @@ describe('Notifications Controller', function () {
 
         assert.equal(panelNode.getChildren().length, 2)
         assert.equal(panelNode.startUpNotifications.length, 2)
-        assert.ok(setContextSpy.calledWithExactly('aws.toolkit.notifications.show', true))
+        assert.equal(getContext('aws.toolkit.notifications.show'), true)
 
         assert.deepStrictEqual(await globals.globalState.get(controller.storageKey), {
             startUp: {
@@ -288,13 +272,9 @@ describe('Notifications Controller', function () {
 
         assert.equal(panelNode.getChildren().length, 1)
         assert.equal(panelNode.startUpNotifications.length, 1)
-
-        setContextSpy.restore()
     })
 
     it('does not redisplay dismissed notifications', async function () {
-        const setContextSpy = sinon.spy(setContext, 'setContext')
-
         const content = {
             schemaVersion: '1.x',
             notifications: [getValidTestNotification('id:startup1')],
@@ -306,11 +286,11 @@ describe('Notifications Controller', function () {
 
         await controller.pollForStartUp(ruleEngine)
         assert.equal(panelNode.getChildren().length, 1)
-        assert.deepStrictEqual(setContextSpy.lastCall.args, ['aws.toolkit.notifications.show', true])
+        assert.equal(getContext('aws.toolkit.notifications.show'), true)
 
         await dismissNotification(content.notifications[0])
         assert.equal(panelNode.getChildren().length, 0)
-        assert.deepStrictEqual(setContextSpy.lastCall.args, ['aws.toolkit.notifications.show', false])
+        assert.equal(getContext('aws.toolkit.notifications.show'), false)
 
         content.notifications.push(getValidTestNotification('id:startup2'))
         fetcher.setStartUpContent({
@@ -332,9 +312,7 @@ describe('Notifications Controller', function () {
         })
 
         assert.equal(panelNode.getChildren().length, 1)
-        assert.deepStrictEqual(setContextSpy.lastCall.args, ['aws.toolkit.notifications.show', true])
-
-        setContextSpy.restore()
+        assert.equal(getContext('aws.toolkit.notifications.show'), true)
     })
 
     it('does not refocus emergency notifications', async function () {
@@ -406,8 +384,6 @@ describe('Notifications Controller', function () {
     })
 
     it('cleans out dismissed state', async function () {
-        const setContextSpy = sinon.spy(setContext, 'setContext')
-
         const startUpContent = {
             schemaVersion: '1.x',
             notifications: [getValidTestNotification('id:startup1')],
@@ -466,7 +442,7 @@ describe('Notifications Controller', function () {
             newlyReceived: [],
         })
         assert.equal(panelNode.getChildren().length, 1)
-        assert.deepStrictEqual(setContextSpy.lastCall.args, ['aws.toolkit.notifications.show', true])
+        assert.equal(getContext('aws.toolkit.notifications.show'), true)
 
         fetcher.setEmergencyContent({
             eTag: '1',
@@ -488,9 +464,7 @@ describe('Notifications Controller', function () {
         })
 
         assert.equal(panelNode.getChildren().length, 0)
-        assert.deepStrictEqual(setContextSpy.lastCall.args, ['aws.toolkit.notifications.show', false])
-
-        setContextSpy.restore()
+        assert.equal(getContext('aws.toolkit.notifications.show'), false)
     })
 
     it('does not rethrow errors when fetching', async function () {

@@ -77,7 +77,7 @@ export class NotificationsNode implements TreeNode {
         return item
     }
 
-    public refresh(): void {
+    public refresh() {
         const totalNotifications = this.notificationCount()
         if (this.view) {
             if (totalNotifications > 0) {
@@ -94,8 +94,8 @@ export class NotificationsNode implements TreeNode {
             logger.warn('NotificationsNode was refreshed but the view was not initialized!')
         }
 
-        void setContext(this.showContextStr, totalNotifications > 0)
         this.provider?.refresh()
+        return setContext(this.showContextStr, totalNotifications > 0)
     }
 
     public getChildren() {
@@ -126,10 +126,10 @@ export class NotificationsNode implements TreeNode {
      * Sets the current list of notifications. Nodes are generated for each notification.
      * No other processing is done, see NotificationController.
      */
-    public setNotifications(startUp: ToolkitNotification[], emergency: ToolkitNotification[]) {
+    public async setNotifications(startUp: ToolkitNotification[], emergency: ToolkitNotification[]) {
         this.startUpNotifications = startUp
         this.emergencyNotifications = emergency
-        this.refresh()
+        await this.refresh()
     }
 
     /**
@@ -138,9 +138,9 @@ export class NotificationsNode implements TreeNode {
      *
      * Only dismisses startup notifications.
      */
-    public dismissStartUpNotification(id: string) {
+    public async dismissStartUpNotification(id: string) {
         this.startUpNotifications = this.startUpNotifications.filter((n) => n.id !== id)
-        this.refresh()
+        await this.refresh()
     }
 
     /**
