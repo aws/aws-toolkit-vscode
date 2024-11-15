@@ -26,7 +26,7 @@ import { getRelativeDate } from '../shared/datetime'
 const localize = nls.loadMessageBundle()
 const logger = getLogger('dev/beta')
 
-const downloadIntervalMs = 1000 * 60 * 60 * 24 // A day in milliseconds
+const downloadIntervalMs = 1000 * 60 * 60 * 3 // 3 hours (8 times/day).
 
 interface BetaToolkit {
     readonly needUpdate: boolean
