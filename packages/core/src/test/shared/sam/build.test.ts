@@ -499,10 +499,10 @@ describe('SAM Build', () => {
         })
 
         it('should abort when customer cancel build wizard', async () => {
-            getTestWindow().onDidShowQuickPick((picker) => {
+            getTestWindow().onDidShowQuickPick(async (picker) => {
                 await picker.untilReady()
-                picker.dispose())
-            }
+                picker.dispose()
+            })
 
             try {
                 await runBuild(appNode)

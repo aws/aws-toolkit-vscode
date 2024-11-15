@@ -21,9 +21,9 @@ import { telemetry } from '../telemetry/telemetry'
 import { getSpawnEnv } from '../env/resolveEnv'
 import { getProjectRoot, getSamCliPathAndVersion, isDotnetRuntime } from './utils'
 import { getConfigFileUri, validateSamBuildConfig } from './config'
-import { syncMementoRootKey } from './sync'
 import { runInTerminal } from './processTerminal'
 
+const buildMementoRootKey = 'samcli.build.params'
 export interface BuildParams {
     readonly template: TemplateItem
     readonly projectRoot: vscode.Uri
@@ -129,7 +129,7 @@ export class BuildWizard extends Wizard<BuildParams> {
         this.arg = arg
         if (this.arg === undefined) {
             // "Build" command was invoked on the command palette.
-            this.form.template.bindPrompter(() => createTemplatePrompter(this.registry, syncMementoRootKey))
+            this.form.template.bindPrompter(() => createTemplatePrompter(this.registry, buildMementoRootKey))
             this.form.projectRoot.setDefault(({ template }) => getProjectRoot(template))
             this.form.paramsSource.bindPrompter(async ({ projectRoot }) => {
                 const existValidSamConfig: boolean | undefined = await validateSamBuildConfig(projectRoot)
