@@ -198,9 +198,8 @@ export class Ec2Connecter implements vscode.Disposable {
 
         const remoteUser = await this.getRemoteUser(selection.instanceId)
         const remoteEnv = await this.prepareEc2RemoteEnvWithProgress(selection, remoteUser)
-
+        const testSession = await this.ssmClient.startSession(selection.instanceId, 'AWS-StartSSHSession')
         try {
-            const testSession = await this.startSSMSession(selection.instanceId)
             await testSshConnection(
                 remoteEnv.SessionProcess,
                 remoteEnv.hostname,
@@ -211,6 +210,8 @@ export class Ec2Connecter implements vscode.Disposable {
             await startVscodeRemote(remoteEnv.SessionProcess, remoteEnv.hostname, '/', remoteEnv.vscPath, remoteUser)
         } catch (err) {
             this.throwGeneralConnectionError(selection, err as Error)
+        } finally {
+            await this.ssmClient.terminateSession(testSession)
         }
     }
 
