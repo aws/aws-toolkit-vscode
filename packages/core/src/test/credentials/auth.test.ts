@@ -20,7 +20,8 @@ import { getCredentialsFilename } from '../../auth/credentials/sharedCredentials
 import { Connection, isIamConnection, isSsoConnection, scopesSsoAccountAccess } from '../../auth/connection'
 import { AuthNode, createDeleteConnectionButton, promptForConnection } from '../../auth/utils'
 import { Credentials } from '@aws-sdk/types'
-import { waitUntil } from '../../shared'
+import { sleep, waitUntil } from '../../shared'
+import { isWin } from '../../shared/vscode/env'
 
 const ssoProfile = createSsoProfile()
 const scopedSsoProfile = createSsoProfile({ scopes: ['foo'] })
@@ -533,9 +534,19 @@ describe('Auth', function () {
                 console.log('Deleting the credentials file')
                 await fs.delete(getCredentialsFilename())
 
+                console.log('sleeping first time for a second')
+                if (isWin()) {
+                    await sleep(1000)
+                }
+
                 const newCreds = { ...initialCreds, accessKey: 'y', secretKey: 'y' }
                 console.log('Regenerating credentials file')
                 await UserCredentialsUtils.generateCredentialsFile(newCreds)
+
+                console.log('sleeping second time for a second')
+                if (isWin()) {
+                    await sleep(1000)
+                }
 
                 const statsAfterRegen = await fs.stat(getCredentialsFilename())
                 const contentAfterRegen = await fs.readFileText(getCredentialsFilename())
