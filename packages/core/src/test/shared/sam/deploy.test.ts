@@ -34,7 +34,7 @@ import { TemplateItem } from '../../../shared/ui/sam/templatePrompter'
 import { ParamsSource } from '../../../shared/ui/sam/paramsSourcePrompter'
 import { BucketSource } from '../../../shared/ui/sam/bucketPrompter'
 
-describe('DeployWizard', async function () {
+describe('SAM DeployWizard', async function () {
     let sandbox: sinon.SinonSandbox
     let testFolder: TestFolder
     let projectRoot: vscode.Uri

@@ -12,7 +12,7 @@ import * as ResolveEnvModule from '../../../shared/env/resolveEnv'
 import * as ProcessUtilsModule from '../../../shared/utilities/processUtils'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import * as CloudFormationClientModule from '../../../shared/clients/cloudFormationClient'
-import assert, { fail } from 'assert'
+
 import {
     createEnvironmentPrompter,
     ensureBucket,
@@ -65,8 +65,9 @@ import { PrompterTester } from '../wizards/prompterTester'
 import { createTestRegionProvider } from '../regions/testUtil'
 import { ToolkitPromptSettings } from '../../../shared/settings'
 import { DefaultEcrClient } from '../../../shared/clients/ecrClient'
+import * as assert from 'assert'
 
-describe('SyncWizard', async function () {
+describe('SAM SyncWizard', async function () {
     const createTester = async (params?: Partial<SyncParams>) =>
         createWizardTester(new SyncWizard({ deployType: 'code', ...params }, await globals.templateRegistry))
 
@@ -142,369 +143,7 @@ describe('SyncWizard', async function () {
     })
 })
 
-describe('prepareSyncParams', function () {
-    let tempDir: vscode.Uri
-
-    beforeEach(async function () {
-        tempDir = vscode.Uri.file(await makeTemporaryToolkitFolder())
-    })
-
-    afterEach(async function () {
-        await fs.delete(tempDir, { recursive: true })
-    })
-
-    it('uses region if given a tree node', async function () {
-        const params = await prepareSyncParams(
-            new (class extends AWSTreeNodeBase {
-                public override readonly regionCode = 'foo'
-            })('')
-        )
-
-        assert.strictEqual(params.region, 'foo')
-    })
-
-    async function makeTemplateItem(dir: vscode.Uri) {
-        const uri = vscode.Uri.joinPath(dir, 'template.yaml')
-        const data = makeSampleSamTemplateYaml(true)
-        await fs.writeFile(uri, JSON.stringify(data))
-
-        return { uri, data }
-    }
-
-    it('loads template if given a URI', async function () {
-        const template = await makeTemplateItem(tempDir)
-
-        const params = await prepareSyncParams(template.uri)
-        assert.strictEqual(params.template?.uri.fsPath, template.uri.fsPath)
-        assert.deepStrictEqual(params.template?.data, template.data)
-    })
-
-    it('skips dependency layers by default', async function () {
-        const template = await makeTemplateItem(tempDir)
-
-        const params = await prepareSyncParams(template.uri)
-        assert.strictEqual(params.skipDependencyLayer, true)
-    })
-
-    describe('samconfig.toml', function () {
-        async function makeDefaultConfig(dir: vscode.Uri, body: string) {
-            const uri = vscode.Uri.joinPath(dir, 'samconfig.toml')
-            const data = `
-            [default.sync.parameters]
-            ${body}
-`
-            await fs.writeFile(uri, data)
-
-            return uri
-        }
-
-        async function getParams(body: string, dir = tempDir) {
-            const config = await makeDefaultConfig(dir, body)
-
-            return prepareSyncParams(config)
-        }
-
-        it('throws on non-string values', async function () {
-            await assert.rejects(() => getParams(`region = 0`), ToolkitError)
-        })
-
-        it('does not fail on missing values', async function () {
-            const params = await getParams(`region = "bar"`)
-            assert.strictEqual(params.region, 'bar')
-        })
-
-        it('sets the project root as the parent directory', async function () {
-            const params = await getParams(`region = "bar"`, tempDir)
-            assert.strictEqual(params.projectRoot?.fsPath, tempDir.fsPath)
-        })
-
-        it('uses the depdency layer option if provided', async function () {
-            const params = await getParams(`dependency_layer = true`, tempDir)
-            assert.strictEqual(params.skipDependencyLayer, false)
-        })
-
-        it('can load a relative template param', async function () {
-            const template = await makeTemplateItem(tempDir)
-            const params = await getParams(`template = "./template.yaml"`)
-            assert.deepStrictEqual(params.template?.data, template.data)
-        })
-
-        it('can load an absolute template param', async function () {
-            const template = await makeTemplateItem(tempDir)
-            const params = await getParams(`template = '${template.uri.fsPath}'`)
-            assert.deepStrictEqual(params.template?.data, template.data)
-        })
-
-        it('can load a relative template param without a path seperator', async function () {
-            const template = await makeTemplateItem(tempDir)
-            const params = await getParams(`template = "template.yaml"`)
-            assert.deepStrictEqual(params.template?.data, template.data)
-        })
-
-        it('can load a template param using an alternate key', async function () {
-            const template = await makeTemplateItem(tempDir)
-            const params = await getParams(`template_file = "template.yaml"`)
-            assert.deepStrictEqual(params.template?.data, template.data)
-        })
-
-        it('can use global params', async function () {
-            const params = await getParams(`
-            region = "bar"
-            [default.global.parameters]
-            stack_name = "my-app"
-            `)
-            assert.strictEqual(params.stackName, 'my-app')
-        })
-
-        it('prefers using the sync section over globals', async function () {
-            const params = await getParams(`
-            stack_name = "my-sync-app"
-            [default.global.parameters]
-            stack_name = "my-app"
-            `)
-            assert.strictEqual(params.stackName, 'my-sync-app')
-        })
-
-        it('loads all values if found', async function () {
-            const params = await getParams(`
-            region = "bar"
-            stack_name = "my-app"
-            s3_bucket = "my-bucket"
-            image_repository = "12345679010.dkr.ecr.bar.amazonaws.com/repo"
-            `)
-            assert.strictEqual(params.region, 'bar')
-            assert.strictEqual(params.stackName, 'my-app')
-            assert.strictEqual(params.bucketName, 'my-bucket')
-            assert.strictEqual(params.ecrRepoUri, '12345679010.dkr.ecr.bar.amazonaws.com/repo')
-        })
-    })
-})
-
-describe('syncFlagsPrompter', () => {
-    let sandbox: sinon.SinonSandbox
-    let acceptedItems: DataQuickPickItem<string>[]
-
-    beforeEach(() => {
-        sandbox = sinon.createSandbox()
-    })
-
-    afterEach(() => {
-        sandbox.restore() // Restore all stubs after each test
-    })
-
-    it('should return selected flags from buildFlagsPrompter', async () => {
-        getTestWindow().onDidShowQuickPick(async (picker) => {
-            await picker.untilReady()
-            assert.strictEqual(picker.items.length, 9)
-            assert.strictEqual(picker.title, 'Specify parameters for sync')
-            assert.deepStrictEqual(picker.items, syncFlagItems)
-            const buildInSource = picker.items[0]
-            const code = picker.items[1]
-            const dependencyLayer = picker.items[2]
-            assert.strictEqual(buildInSource.data, '--build-in-source')
-            assert.strictEqual(code.data, '--code')
-            assert.strictEqual(dependencyLayer.data, '--dependency-layer')
-            acceptedItems = [buildInSource, code, dependencyLayer]
-            picker.acceptItems(...acceptedItems)
-        })
-
-        const flags = await createMultiPick(syncFlagItems, {
-            title: 'Specify parameters for sync',
-            placeholder: 'Press enter to proceed with highlighted option',
-        }).prompt()
-
-        assert.deepStrictEqual(flags, JSON.stringify(acceptedItems.map((i) => i.data)))
-    })
-})
-
-describe('createEnvironmentPrompter', () => {
-    let sandbox: sinon.SinonSandbox
-    let config: SamConfig
-    let listEnvironmentsStub: sinon.SinonStub
-
-    beforeEach(() => {
-        sandbox = sinon.createSandbox()
-        // Create a stub for the SamConfig instance
-        config = new SamConfig(vscode.Uri.parse('dummy://uri'))
-        listEnvironmentsStub = sandbox.stub(config, 'listEnvironments')
-    })
-
-    afterEach(() => {
-        sandbox.restore()
-    })
-
-    it('should create a prompter with existing samconfig env', () => {
-        // Arrange
-        const defaultEnv: Environment = {
-            name: 'default',
-            commands: {},
-        }
-        const stagingEnv: Environment = {
-            name: 'staging',
-            commands: {},
-        }
-        const prodEnv: Environment = {
-            name: 'prod',
-            commands: {},
-        }
-        const envs: Environment[] = [defaultEnv, stagingEnv, prodEnv]
-
-        listEnvironmentsStub.returns(envs)
-        sandbox.stub(SamUtilsModule, 'getRecentResponse').returns(undefined)
-
-        // Act
-        const prompter = createEnvironmentPrompter(config)
-
-        // Assert
-        assert.ok(listEnvironmentsStub.calledOnce)
-        assert.strictEqual(prompter.quickPick.title, 'Select an Environment to Use')
-        assert.strictEqual(prompter.quickPick.placeholder, 'Select an environment')
-        assert.strictEqual(prompter.quickPick.items.length, 3)
-        assert.deepStrictEqual(prompter.quickPick.items, [
-            {
-                label: 'default',
-                data: defaultEnv,
-                recentlyUsed: false,
-            },
-            {
-                label: 'staging',
-                data: stagingEnv,
-                recentlyUsed: false,
-            },
-            {
-                label: 'prod',
-                data: prodEnv,
-                recentlyUsed: false,
-            },
-        ])
-    })
-})
-
-describe('prepareSyncParams', () => {
-    let sandbox: sinon.SinonSandbox
-    beforeEach(() => {
-        sandbox = sinon.createSandbox()
-    })
-    afterEach(() => {
-        sandbox.restore()
-    })
-
-    it('should return correct params from region node', async () => {
-        const regionNode = new RegionNode({ name: 'us-east-1', id: 'IAD' } as Region, {} as RegionProvider)
-        const result = await prepareSyncParams(regionNode)
-        assert.deepStrictEqual(result, { skipDependencyLayer: true, region: 'IAD' })
-    })
-
-    it('should return correct params from appBuilder', async () => {
-        // setup appNode
-        const workspaceFolder = vscode.workspace.workspaceFolders?.[0]
-        assert.ok(workspaceFolder)
-        const templateUri = vscode.Uri.file('file://mock/path/project/file')
-        const projectRootUri = getProjectRootUri(templateUri)
-        const samAppLocation = {
-            samTemplateUri: templateUri,
-            workspaceFolder: workspaceFolder,
-            projectRoot: projectRootUri,
-        }
-        const appNode = new AppNode(samAppLocation)
-        const tryLoadStub = sandbox.stub(Cfn, 'load')
-
-        tryLoadStub.resolves({} as Cfn.Template)
-
-        const templateItem = {
-            uri: templateUri,
-            data: {},
-        }
-
-        // Act
-        const result = await prepareSyncParams(appNode)
-
-        // Assert
-        assert.deepStrictEqual(result, {
-            skipDependencyLayer: true,
-            template: templateItem,
-            projectRoot: projectRootUri,
-        })
-    })
-
-    it('should return correct params for undefined input', async () => {
-        const result = await prepareSyncParams(undefined)
-        assert.deepStrictEqual(result, { skipDependencyLayer: true })
-    })
-})
-
-describe('getSyncParamsFromConfig', () => {
-    let sandbox: sinon.SinonSandbox
-    beforeEach(() => {
-        sandbox = sinon.createSandbox()
-    })
-
-    afterEach(() => {
-        sandbox.restore()
-    })
-
-    it('should return correct params from config', async () => {
-        const configUri = vscode.Uri.file('file://mock/path/project/file')
-        const contents = `
-        [default]
-        [default.global.parameters]
-        stack_name = "TestApp"
-        [default.build.parameters]
-        cached = true
-        parallel = true
-        [default.deploy.parameters]
-        capabilities = "CAPABILITY_IAM"
-        confirm_changeset = true
-        resolve_s3 = true
-        [default.sync.parameters]
-        watch = true
-        template_file = "/Users/mbfreder/TestApp/JavaSamApp/serverless-patterns/s3-lambda-resizing-python/template.yaml"
-        s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-1o6ke33w96qag"
-        stack_name = "s3-lambda-resizing-java-4"
-        dependency_layer = false`
-
-        const config = await parseConfig(contents)
-        const samconfig = new SamConfig(configUri, config)
-
-        const result = getSyncParamsFromConfig(samconfig)
-        assert.strictEqual(
-            result['templatePath'],
-            '/Users/mbfreder/TestApp/JavaSamApp/serverless-patterns/s3-lambda-resizing-python/template.yaml'
-        )
-        assert.strictEqual(result['bucketName'], 'aws-sam-cli-managed-default-samclisourcebucket-1o6ke33w96qag')
-        assert.strictEqual(result['stackName'], 's3-lambda-resizing-java-4')
-    })
-
-    it('should return correct params from config with no template file', async () => {
-        const configUri = vscode.Uri.file('file://mock/path/project/file')
-        const contents = `
-        [default]
-        [default.global.parameters]
-        stack_name = "TestApp"
-        [default.build.parameters]
-        cached = true
-        parallel = true
-        [default.deploy.parameters]
-        capabilities = "CAPABILITY_IAM"
-        confirm_changeset = true
-        resolve_s3 = true
-        [default.sync.parameters]
-        watch = true
-        s3_bucket = "bucket-from-samconfig"
-        stack_name = "s3-lambda-resizing-java-4"
-        dependency_layer = false`
-
-        const config = await parseConfig(contents)
-        const samconfig = new SamConfig(configUri, config)
-
-        const result = getSyncParamsFromConfig(samconfig)
-        assert.strictEqual(result['templatePath'], undefined)
-        assert.strictEqual(result['bucketName'], 'bucket-from-samconfig')
-        assert.strictEqual(result['stackName'], 's3-lambda-resizing-java-4')
-    })
-})
-
-describe('SyncWizard', async () => {
+describe('SAM SyncWizard', async () => {
     let sandbox: sinon.SinonSandbox
     let testFolder: TestFolder
     let projectRoot: vscode.Uri
@@ -1167,7 +806,7 @@ describe('SyncWizard', async () => {
     })
 })
 
-describe('SAM Sync', () => {
+describe('SAM runSync', () => {
     let sandbox: sinon.SinonSandbox
     let testFolder: TestFolder
     let projectRoot: vscode.Uri
@@ -1507,7 +1146,7 @@ describe('SAM Sync', () => {
 
             try {
                 await runSync('infra', appNode)
-                fail('should have thrown CancellationError')
+                assert.fail('should have thrown CancellationError')
             } catch (error: any) {
                 assert(error instanceof CancellationError)
                 assert.strictEqual(error.agent, 'user')
@@ -1521,7 +1160,7 @@ describe('SAM Sync', () => {
 
             try {
                 await runSync('infra', appNode)
-                fail('should have thrown CancellationError')
+                assert.fail('should have thrown CancellationError')
             } catch (error: any) {
                 assert(error instanceof CancellationError)
                 assert.strictEqual(error.agent, 'user')
@@ -1557,7 +1196,7 @@ describe('SAM Sync', () => {
 
             try {
                 await runSync('infra', appNode)
-                fail('should have thrown ToolkitError')
+                assert.fail('should have thrown ToolkitError')
             } catch (error: any) {
                 assert(error instanceof ToolkitError)
                 assert.strictEqual(error.message, 'Failed to sync SAM application')
@@ -1567,216 +1206,580 @@ describe('SAM Sync', () => {
     })
 })
 
-describe('saveAndBindArgs', () => {
-    let sandbox: sinon.SinonSandbox
-    let getConfigFileUriStub: sinon.SinonStub
+describe('SAM sync helper functions', () => {
+    describe('prepareSyncParams', function () {
+        let tempDir: vscode.Uri
 
-    beforeEach(() => {
-        sandbox = sinon.createSandbox()
-        getConfigFileUriStub = sandbox.stub()
-
-        // Replace the real implementations with stubs
-        sandbox.stub(SamUtilsModule, 'updateRecentResponse').resolves()
-    })
-
-    afterEach(() => {
-        sandbox.restore()
-    })
-
-    it('should bind arguments correctly for code deployment', async () => {
-        const testFolder = await TestFolder.create()
-        const templateFile = vscode.Uri.file(await testFolder.write('template.yaml', validTemplateData))
-
-        const args = {
-            deployType: 'code',
-            template: {
-                uri: templateFile,
-                data: {},
-            } as TemplateItem,
-            bucketName: 'myBucket',
-            ecrRepoUri: 'myEcrRepo',
-            stackName: 'myStack',
-            region: 'us-east-1',
-            skipDependencyLayer: false,
-            paramsSource: ParamsSource.SpecifyAndSave,
-        } as SyncParams
-
-        const result = await saveAndBindArgs(args)
-
-        assert.ok(result.boundArgs.includes('--template'))
-        assert.ok(result.boundArgs.includes('--s3-bucket'))
-        assert.ok(result.boundArgs.includes('--image-repository'))
-        assert.ok(result.boundArgs.includes('--stack-name'))
-        assert.ok(result.boundArgs.includes('--region'))
-        assert.ok(result.boundArgs.includes('--code'))
-        assert.ok(result.boundArgs.includes('--save-params'))
-        assert.ok(result.boundArgs.includes(templateFile.fsPath))
-        assert.ok(result.boundArgs.includes('myBucket'))
-        assert.ok(result.boundArgs.includes('myEcrRepo'))
-        assert.ok(result.boundArgs.includes('myStack'))
-        assert.ok(result.boundArgs.includes('us-east-1'))
-    })
-
-    it('should handle SamConfig paramsSource', async () => {
-        const testFolder = await TestFolder.create()
-        const projectRoot = vscode.Uri.file(testFolder.path)
-        const templateFile = vscode.Uri.file(await testFolder.write('template.yaml', validTemplateData))
-        const samConfigFile = vscode.Uri.file(await testFolder.write('samconfig.toml', '[default]'))
-
-        const args = {
-            deployType: 'code',
-            template: { uri: templateFile, data: {} } as TemplateItem,
-            bucketName: 'myBucket',
-            ecrRepoUri: 'myEcrRepo',
-            stackName: 'myStack',
-            region: 'us-east-1',
-            skipDependencyLayer: false,
-            paramsSource: ParamsSource.SamConfig,
-            projectRoot: projectRoot,
-        } as SyncParams
-
-        getConfigFileUriStub.resolves(samConfigFile)
-
-        const result = await saveAndBindArgs(args)
-
-        assert.ok(result.boundArgs.includes('--config-file'))
-        assert.ok(result.boundArgs.includes(samConfigFile.fsPath))
-    })
-})
-
-describe('ensureBucket', () => {
-    let sandbox: sinon.SinonSandbox
-    let createBucketStub
-
-    beforeEach(() => {
-        sandbox = sinon.createSandbox()
-    })
-
-    afterEach(() => {
-        sandbox.restore() // Restore original behavior after each test
-    })
-
-    it('should return the bucket name when it does not match newbucket:', async () => {
-        const resp = { region: 'us-east-1', bucketName: 'existing-bucket' }
-        const result = await ensureBucket(resp)
-        assert.strictEqual(result, 'existing-bucket')
-    })
-
-    it('should create a new bucket and return its name when bucketName matches newbucket:', async () => {
-        const resp = { region: 'us-east-1', bucketName: 'newbucket:my-new-bucket' }
-
-        // Stub the S3 client's createBucket method
-        createBucketStub = sandbox.stub(DefaultS3Client.prototype, 'createBucket').resolves()
-
-        const result = await ensureBucket(resp)
-        assert.ok(createBucketStub.calledOnce)
-        assert.strictEqual(createBucketStub.firstCall.args[0].bucketName, 'my-new-bucket')
-        assert.strictEqual(result, 'my-new-bucket')
-    })
-
-    it('should throw a ToolkitError when bucket creation fails', async () => {
-        const resp = { region: 'us-east-1', bucketName: 'newbucket:my-failing-bucket' }
-
-        // Stub the S3 client's createBucket method to throw an error
-        createBucketStub = sandbox
-            .stub(DefaultS3Client.prototype, 'createBucket')
-            .rejects(new Error('Failed to create S3 bucket'))
-
-        await assert.rejects(ensureBucket(resp)).catch((err) => {
-            assert.ok(err instanceof ToolkitError)
-            assert.ok(err.message, 'Failed to create S3 bucket')
-        })
-    })
-})
-
-describe('ensureRepo', () => {
-    let createRepositoryStub: sinon.SinonStub
-    let sandbox: sinon.SinonSandbox
-
-    beforeEach(() => {
-        sandbox = sinon.createSandbox()
-        createRepositoryStub = sandbox.stub()
-        sandbox.stub(DefaultEcrClient.prototype, 'createRepository').callsFake(createRepositoryStub)
-    })
-
-    afterEach(() => {
-        sandbox.restore()
-    })
-
-    const createInput = (ecrRepoUri: string | undefined) => ({
-        region: 'us-west-2',
-        ecrRepoUri,
-    })
-
-    const createNewRepoInput = (repoName: string) => createInput(`newrepo:${repoName}`)
-
-    describe('when not creating new repository', () => {
-        it('should return original ecrRepoUri when not matching newrepo pattern', async () => {
-            const input = createInput('existing-repo:latest')
-            const result = await ensureRepo(input)
-
-            assert(createRepositoryStub.notCalled)
-            assert.strictEqual(result, input.ecrRepoUri)
+        beforeEach(async function () {
+            tempDir = vscode.Uri.file(await makeTemporaryToolkitFolder())
         })
 
-        it('should return original ecrRepoUri when ecrRepoUri is undefined', async () => {
-            const input = createInput(undefined)
-            const result = await ensureRepo(input)
-
-            assert(!result)
-            assert(createRepositoryStub.notCalled)
+        afterEach(async function () {
+            await fs.delete(tempDir, { recursive: true })
         })
-    })
 
-    describe('when creating new repository', () => {
-        const repoName = 'test-repo'
-        const input = createNewRepoInput(repoName)
+        it('uses region if given a tree node', async function () {
+            const params = await prepareSyncParams(
+                new (class extends AWSTreeNodeBase {
+                    public override readonly regionCode = 'foo'
+                })('')
+            )
 
-        it('should create new repository successfully', async () => {
-            const expectedUri = 'aws.ecr.test/test-repo'
-            createRepositoryStub.resolves({
-                repository: {
-                    repositoryUri: expectedUri,
-                },
+            assert.strictEqual(params.region, 'foo')
+        })
+
+        async function makeTemplateItem(dir: vscode.Uri) {
+            const uri = vscode.Uri.joinPath(dir, 'template.yaml')
+            const data = makeSampleSamTemplateYaml(true)
+            await fs.writeFile(uri, JSON.stringify(data))
+
+            return { uri, data }
+        }
+
+        it('loads template if given a URI', async function () {
+            const template = await makeTemplateItem(tempDir)
+
+            const params = await prepareSyncParams(template.uri)
+            assert.strictEqual(params.template?.uri.fsPath, template.uri.fsPath)
+            assert.deepStrictEqual(params.template?.data, template.data)
+        })
+
+        it('skips dependency layers by default', async function () {
+            const template = await makeTemplateItem(tempDir)
+
+            const params = await prepareSyncParams(template.uri)
+            assert.strictEqual(params.skipDependencyLayer, true)
+        })
+
+        describe('samconfig.toml', function () {
+            async function makeDefaultConfig(dir: vscode.Uri, body: string) {
+                const uri = vscode.Uri.joinPath(dir, 'samconfig.toml')
+                const data = `
+            [default.sync.parameters]
+            ${body}
+`
+                await fs.writeFile(uri, data)
+
+                return uri
+            }
+
+            async function getParams(body: string, dir = tempDir) {
+                const config = await makeDefaultConfig(dir, body)
+
+                return prepareSyncParams(config)
+            }
+
+            it('throws on non-string values', async function () {
+                await assert.rejects(() => getParams(`region = 0`), ToolkitError)
             })
 
-            const result = await ensureRepo(input)
+            it('does not fail on missing values', async function () {
+                const params = await getParams(`region = "bar"`)
+                assert.strictEqual(params.region, 'bar')
+            })
 
-            assert.strictEqual(result, expectedUri)
-            assert(createRepositoryStub.calledOnceWith(repoName))
+            it('sets the project root as the parent directory', async function () {
+                const params = await getParams(`region = "bar"`, tempDir)
+                assert.strictEqual(params.projectRoot?.fsPath, tempDir.fsPath)
+            })
+
+            it('uses the depdency layer option if provided', async function () {
+                const params = await getParams(`dependency_layer = true`, tempDir)
+                assert.strictEqual(params.skipDependencyLayer, false)
+            })
+
+            it('can load a relative template param', async function () {
+                const template = await makeTemplateItem(tempDir)
+                const params = await getParams(`template = "./template.yaml"`)
+                assert.deepStrictEqual(params.template?.data, template.data)
+            })
+
+            it('can load an absolute template param', async function () {
+                const template = await makeTemplateItem(tempDir)
+                const params = await getParams(`template = '${template.uri.fsPath}'`)
+                assert.deepStrictEqual(params.template?.data, template.data)
+            })
+
+            it('can load a relative template param without a path seperator', async function () {
+                const template = await makeTemplateItem(tempDir)
+                const params = await getParams(`template = "template.yaml"`)
+                assert.deepStrictEqual(params.template?.data, template.data)
+            })
+
+            it('can load a template param using an alternate key', async function () {
+                const template = await makeTemplateItem(tempDir)
+                const params = await getParams(`template_file = "template.yaml"`)
+                assert.deepStrictEqual(params.template?.data, template.data)
+            })
+
+            it('can use global params', async function () {
+                const params = await getParams(`
+            region = "bar"
+            [default.global.parameters]
+            stack_name = "my-app"
+            `)
+                assert.strictEqual(params.stackName, 'my-app')
+            })
+
+            it('prefers using the sync section over globals', async function () {
+                const params = await getParams(`
+            stack_name = "my-sync-app"
+            [default.global.parameters]
+            stack_name = "my-app"
+            `)
+                assert.strictEqual(params.stackName, 'my-sync-app')
+            })
+
+            it('loads all values if found', async function () {
+                const params = await getParams(`
+            region = "bar"
+            stack_name = "my-app"
+            s3_bucket = "my-bucket"
+            image_repository = "12345679010.dkr.ecr.bar.amazonaws.com/repo"
+            `)
+                assert.strictEqual(params.region, 'bar')
+                assert.strictEqual(params.stackName, 'my-app')
+                assert.strictEqual(params.bucketName, 'my-bucket')
+                assert.strictEqual(params.ecrRepoUri, '12345679010.dkr.ecr.bar.amazonaws.com/repo')
+            })
+        })
+    })
+
+    describe('syncFlagsPrompter', () => {
+        let sandbox: sinon.SinonSandbox
+        let acceptedItems: DataQuickPickItem<string>[]
+
+        beforeEach(() => {
+            sandbox = sinon.createSandbox()
         })
 
-        it('should handle repository creation failure', async () => {
-            createRepositoryStub.rejects(new Error('Repository creation failed'))
+        afterEach(() => {
+            sandbox.restore() // Restore all stubs after each test
+        })
 
-            try {
-                await ensureRepo(input)
-                assert.fail('Should have thrown an error')
-            } catch (err) {
-                assert(err instanceof ToolkitError)
-                assert.strictEqual(err.message, `Failed to create new ECR repository "${repoName}"`)
+        it('should return selected flags from buildFlagsPrompter', async () => {
+            getTestWindow().onDidShowQuickPick(async (picker) => {
+                await picker.untilReady()
+                assert.strictEqual(picker.items.length, 9)
+                assert.strictEqual(picker.title, 'Specify parameters for sync')
+                assert.deepStrictEqual(picker.items, syncFlagItems)
+                const buildInSource = picker.items[0]
+                const code = picker.items[1]
+                const dependencyLayer = picker.items[2]
+                assert.strictEqual(buildInSource.data, '--build-in-source')
+                assert.strictEqual(code.data, '--code')
+                assert.strictEqual(dependencyLayer.data, '--dependency-layer')
+                acceptedItems = [buildInSource, code, dependencyLayer]
+                picker.acceptItems(...acceptedItems)
+            })
+
+            const flags = await createMultiPick(syncFlagItems, {
+                title: 'Specify parameters for sync',
+                placeholder: 'Press enter to proceed with highlighted option',
+            }).prompt()
+
+            assert.deepStrictEqual(flags, JSON.stringify(acceptedItems.map((i) => i.data)))
+        })
+    })
+
+    describe('createEnvironmentPrompter', () => {
+        let sandbox: sinon.SinonSandbox
+        let config: SamConfig
+        let listEnvironmentsStub: sinon.SinonStub
+
+        beforeEach(() => {
+            sandbox = sinon.createSandbox()
+            // Create a stub for the SamConfig instance
+            config = new SamConfig(vscode.Uri.parse('dummy://uri'))
+            listEnvironmentsStub = sandbox.stub(config, 'listEnvironments')
+        })
+
+        afterEach(() => {
+            sandbox.restore()
+        })
+
+        it('should create a prompter with existing samconfig env', () => {
+            // Arrange
+            const defaultEnv: Environment = {
+                name: 'default',
+                commands: {},
             }
+            const stagingEnv: Environment = {
+                name: 'staging',
+                commands: {},
+            }
+            const prodEnv: Environment = {
+                name: 'prod',
+                commands: {},
+            }
+            const envs: Environment[] = [defaultEnv, stagingEnv, prodEnv]
+
+            listEnvironmentsStub.returns(envs)
+            sandbox.stub(SamUtilsModule, 'getRecentResponse').returns(undefined)
+
+            // Act
+            const prompter = createEnvironmentPrompter(config)
+
+            // Assert
+            assert.ok(listEnvironmentsStub.calledOnce)
+            assert.strictEqual(prompter.quickPick.title, 'Select an Environment to Use')
+            assert.strictEqual(prompter.quickPick.placeholder, 'Select an environment')
+            assert.strictEqual(prompter.quickPick.items.length, 3)
+            assert.deepStrictEqual(prompter.quickPick.items, [
+                {
+                    label: 'default',
+                    data: defaultEnv,
+                    recentlyUsed: false,
+                },
+                {
+                    label: 'staging',
+                    data: stagingEnv,
+                    recentlyUsed: false,
+                },
+                {
+                    label: 'prod',
+                    data: prodEnv,
+                    recentlyUsed: false,
+                },
+            ])
+        })
+    })
+
+    describe('prepareSyncParams', () => {
+        let sandbox: sinon.SinonSandbox
+        beforeEach(() => {
+            sandbox = sinon.createSandbox()
+        })
+        afterEach(() => {
+            sandbox.restore()
         })
 
-        const testCases = [
-            {
-                name: 'undefined repositoryUri',
-                response: { repository: { repositoryUri: undefined } },
-            },
-            {
-                name: 'empty repository response',
-                response: {},
-            },
-        ]
+        it('should return correct params from region node', async () => {
+            const regionNode = new RegionNode({ name: 'us-east-1', id: 'IAD' } as Region, {} as RegionProvider)
+            const result = await prepareSyncParams(regionNode)
+            assert.deepStrictEqual(result, { skipDependencyLayer: true, region: 'IAD' })
+        })
 
-        testCases.forEach(({ name, response }) => {
-            it(`should handle ${name}`, async () => {
-                createRepositoryStub.resolves(response)
+        it('should return correct params from appBuilder', async () => {
+            // setup appNode
+            const workspaceFolder = vscode.workspace.workspaceFolders?.[0]
+            assert.ok(workspaceFolder)
+            const templateUri = vscode.Uri.file('file://mock/path/project/file')
+            const projectRootUri = getProjectRootUri(templateUri)
+            const samAppLocation = {
+                samTemplateUri: templateUri,
+                workspaceFolder: workspaceFolder,
+                projectRoot: projectRootUri,
+            }
+            const appNode = new AppNode(samAppLocation)
+            const tryLoadStub = sandbox.stub(Cfn, 'load')
 
+            tryLoadStub.resolves({} as Cfn.Template)
+
+            const templateItem = {
+                uri: templateUri,
+                data: {},
+            }
+
+            // Act
+            const result = await prepareSyncParams(appNode)
+
+            // Assert
+            assert.deepStrictEqual(result, {
+                skipDependencyLayer: true,
+                template: templateItem,
+                projectRoot: projectRootUri,
+            })
+        })
+
+        it('should return correct params for undefined input', async () => {
+            const result = await prepareSyncParams(undefined)
+            assert.deepStrictEqual(result, { skipDependencyLayer: true })
+        })
+    })
+
+    describe('getSyncParamsFromConfig', () => {
+        let sandbox: sinon.SinonSandbox
+        beforeEach(() => {
+            sandbox = sinon.createSandbox()
+        })
+
+        afterEach(() => {
+            sandbox.restore()
+        })
+
+        it('should return correct params from config', async () => {
+            const configUri = vscode.Uri.file('file://mock/path/project/file')
+            const contents = `
+        [default]
+        [default.global.parameters]
+        stack_name = "TestApp"
+        [default.build.parameters]
+        cached = true
+        parallel = true
+        [default.deploy.parameters]
+        capabilities = "CAPABILITY_IAM"
+        confirm_changeset = true
+        resolve_s3 = true
+        [default.sync.parameters]
+        watch = true
+        template_file = "/Users/mbfreder/TestApp/JavaSamApp/serverless-patterns/s3-lambda-resizing-python/template.yaml"
+        s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-1o6ke33w96qag"
+        stack_name = "s3-lambda-resizing-java-4"
+        dependency_layer = false`
+
+            const config = await parseConfig(contents)
+            const samconfig = new SamConfig(configUri, config)
+
+            const result = getSyncParamsFromConfig(samconfig)
+            assert.strictEqual(
+                result['templatePath'],
+                '/Users/mbfreder/TestApp/JavaSamApp/serverless-patterns/s3-lambda-resizing-python/template.yaml'
+            )
+            assert.strictEqual(result['bucketName'], 'aws-sam-cli-managed-default-samclisourcebucket-1o6ke33w96qag')
+            assert.strictEqual(result['stackName'], 's3-lambda-resizing-java-4')
+        })
+
+        it('should return correct params from config with no template file', async () => {
+            const configUri = vscode.Uri.file('file://mock/path/project/file')
+            const contents = `
+        [default]
+        [default.global.parameters]
+        stack_name = "TestApp"
+        [default.build.parameters]
+        cached = true
+        parallel = true
+        [default.deploy.parameters]
+        capabilities = "CAPABILITY_IAM"
+        confirm_changeset = true
+        resolve_s3 = true
+        [default.sync.parameters]
+        watch = true
+        s3_bucket = "bucket-from-samconfig"
+        stack_name = "s3-lambda-resizing-java-4"
+        dependency_layer = false`
+
+            const config = await parseConfig(contents)
+            const samconfig = new SamConfig(configUri, config)
+
+            const result = getSyncParamsFromConfig(samconfig)
+            assert.strictEqual(result['templatePath'], undefined)
+            assert.strictEqual(result['bucketName'], 'bucket-from-samconfig')
+            assert.strictEqual(result['stackName'], 's3-lambda-resizing-java-4')
+        })
+    })
+
+    describe('saveAndBindArgs', () => {
+        let sandbox: sinon.SinonSandbox
+        let getConfigFileUriStub: sinon.SinonStub
+
+        beforeEach(() => {
+            sandbox = sinon.createSandbox()
+            getConfigFileUriStub = sandbox.stub()
+
+            // Replace the real implementations with stubs
+            sandbox.stub(SamUtilsModule, 'updateRecentResponse').resolves()
+        })
+
+        afterEach(() => {
+            sandbox.restore()
+        })
+
+        it('should bind arguments correctly for code deployment', async () => {
+            const testFolder = await TestFolder.create()
+            const templateFile = vscode.Uri.file(await testFolder.write('template.yaml', validTemplateData))
+
+            const args = {
+                deployType: 'code',
+                template: {
+                    uri: templateFile,
+                    data: {},
+                } as TemplateItem,
+                bucketName: 'myBucket',
+                ecrRepoUri: 'myEcrRepo',
+                stackName: 'myStack',
+                region: 'us-east-1',
+                skipDependencyLayer: false,
+                paramsSource: ParamsSource.SpecifyAndSave,
+            } as SyncParams
+
+            const result = await saveAndBindArgs(args)
+
+            assert.ok(result.boundArgs.includes('--template'))
+            assert.ok(result.boundArgs.includes('--s3-bucket'))
+            assert.ok(result.boundArgs.includes('--image-repository'))
+            assert.ok(result.boundArgs.includes('--stack-name'))
+            assert.ok(result.boundArgs.includes('--region'))
+            assert.ok(result.boundArgs.includes('--code'))
+            assert.ok(result.boundArgs.includes('--save-params'))
+            assert.ok(result.boundArgs.includes(templateFile.fsPath))
+            assert.ok(result.boundArgs.includes('myBucket'))
+            assert.ok(result.boundArgs.includes('myEcrRepo'))
+            assert.ok(result.boundArgs.includes('myStack'))
+            assert.ok(result.boundArgs.includes('us-east-1'))
+        })
+
+        it('should handle SamConfig paramsSource', async () => {
+            const testFolder = await TestFolder.create()
+            const projectRoot = vscode.Uri.file(testFolder.path)
+            const templateFile = vscode.Uri.file(await testFolder.write('template.yaml', validTemplateData))
+            const samConfigFile = vscode.Uri.file(await testFolder.write('samconfig.toml', '[default]'))
+
+            const args = {
+                deployType: 'code',
+                template: { uri: templateFile, data: {} } as TemplateItem,
+                bucketName: 'myBucket',
+                ecrRepoUri: 'myEcrRepo',
+                stackName: 'myStack',
+                region: 'us-east-1',
+                skipDependencyLayer: false,
+                paramsSource: ParamsSource.SamConfig,
+                projectRoot: projectRoot,
+            } as SyncParams
+
+            getConfigFileUriStub.resolves(samConfigFile)
+
+            const result = await saveAndBindArgs(args)
+
+            assert.ok(result.boundArgs.includes('--config-file'))
+            assert.ok(result.boundArgs.includes(samConfigFile.fsPath))
+        })
+    })
+
+    describe('ensureBucket', () => {
+        let sandbox: sinon.SinonSandbox
+        let createBucketStub
+
+        beforeEach(() => {
+            sandbox = sinon.createSandbox()
+        })
+
+        afterEach(() => {
+            sandbox.restore() // Restore original behavior after each test
+        })
+
+        it('should return the bucket name when it does not match newbucket:', async () => {
+            const resp = { region: 'us-east-1', bucketName: 'existing-bucket' }
+            const result = await ensureBucket(resp)
+            assert.strictEqual(result, 'existing-bucket')
+        })
+
+        it('should create a new bucket and return its name when bucketName matches newbucket:', async () => {
+            const resp = { region: 'us-east-1', bucketName: 'newbucket:my-new-bucket' }
+
+            // Stub the S3 client's createBucket method
+            createBucketStub = sandbox.stub(DefaultS3Client.prototype, 'createBucket').resolves()
+
+            const result = await ensureBucket(resp)
+            assert.ok(createBucketStub.calledOnce)
+            assert.strictEqual(createBucketStub.firstCall.args[0].bucketName, 'my-new-bucket')
+            assert.strictEqual(result, 'my-new-bucket')
+        })
+
+        it('should throw a ToolkitError when bucket creation fails', async () => {
+            const resp = { region: 'us-east-1', bucketName: 'newbucket:my-failing-bucket' }
+
+            // Stub the S3 client's createBucket method to throw an error
+            createBucketStub = sandbox
+                .stub(DefaultS3Client.prototype, 'createBucket')
+                .rejects(new Error('Failed to create S3 bucket'))
+
+            await assert.rejects(ensureBucket(resp)).catch((err) => {
+                assert.ok(err instanceof ToolkitError)
+                assert.ok(err.message, 'Failed to create S3 bucket')
+            })
+        })
+    })
+
+    describe('ensureRepo', () => {
+        let createRepositoryStub: sinon.SinonStub
+        let sandbox: sinon.SinonSandbox
+
+        beforeEach(() => {
+            sandbox = sinon.createSandbox()
+            createRepositoryStub = sandbox.stub()
+            sandbox.stub(DefaultEcrClient.prototype, 'createRepository').callsFake(createRepositoryStub)
+        })
+
+        afterEach(() => {
+            sandbox.restore()
+        })
+
+        const createInput = (ecrRepoUri: string | undefined) => ({
+            region: 'us-west-2',
+            ecrRepoUri,
+        })
+
+        const createNewRepoInput = (repoName: string) => createInput(`newrepo:${repoName}`)
+
+        describe('when not creating new repository', () => {
+            it('should return original ecrRepoUri when not matching newrepo pattern', async () => {
+                const input = createInput('existing-repo:latest')
+                const result = await ensureRepo(input)
+
+                assert(createRepositoryStub.notCalled)
+                assert.strictEqual(result, input.ecrRepoUri)
+            })
+
+            it('should return original ecrRepoUri when ecrRepoUri is undefined', async () => {
+                const input = createInput(undefined)
                 const result = await ensureRepo(input)
 
                 assert(!result)
+                assert(createRepositoryStub.notCalled)
+            })
+        })
+
+        describe('when creating new repository', () => {
+            const repoName = 'test-repo'
+            const input = createNewRepoInput(repoName)
+
+            it('should create new repository successfully', async () => {
+                const expectedUri = 'aws.ecr.test/test-repo'
+                createRepositoryStub.resolves({
+                    repository: {
+                        repositoryUri: expectedUri,
+                    },
+                })
+
+                const result = await ensureRepo(input)
+
+                assert.strictEqual(result, expectedUri)
                 assert(createRepositoryStub.calledOnceWith(repoName))
+            })
+
+            it('should handle repository creation failure', async () => {
+                createRepositoryStub.rejects(new Error('Repository creation failed'))
+
+                try {
+                    await ensureRepo(input)
+                    assert.fail('Should have thrown an error')
+                } catch (err) {
+                    assert(err instanceof ToolkitError)
+                    assert.strictEqual(err.message, `Failed to create new ECR repository "${repoName}"`)
+                }
+            })
+
+            const testCases = [
+                {
+                    name: 'undefined repositoryUri',
+                    response: { repository: { repositoryUri: undefined } },
+                },
+                {
+                    name: 'empty repository response',
+                    response: {},
+                },
+            ]
+
+            testCases.forEach(({ name, response }) => {
+                it(`should handle ${name}`, async () => {
+                    createRepositoryStub.resolves(response)
+
+                    const result = await ensureRepo(input)
+
+                    assert(!result)
+                    assert(createRepositoryStub.calledOnceWith(repoName))
+                })
             })
         })
     })
