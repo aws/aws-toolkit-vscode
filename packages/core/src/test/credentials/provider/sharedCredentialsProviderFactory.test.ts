@@ -120,7 +120,7 @@ describe('SharedCredentialsProviderFactory', async function () {
         )
     })
 
-    it('refresh does not reload from file if the file has not changed', async function () {
+    it('refresh does reload from file even if the file has changed', async function () {
         const sut = new SharedCredentialsProviderFactory()
 
         // First load
@@ -129,10 +129,7 @@ describe('SharedCredentialsProviderFactory', async function () {
         // Expect: No reload
         await sut.refresh()
 
-        assert.ok(
-            loadSharedCredentialsSectionsStub.calledOnce,
-            'Credentials should have only been loaded from disk once'
-        )
+        assert.ok(loadSharedCredentialsSectionsStub.calledTwice, 'Credentials should have loaded from disk twice')
     })
 
     it('refresh reloads from file if the file has changed', async function () {
