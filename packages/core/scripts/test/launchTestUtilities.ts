@@ -111,7 +111,7 @@ async function getVSCodeCliArgs(params: {
         extensionTestsPath: resolve(projectRootDir, params.relativeTestEntryPoint),
         // For verbose VSCode logs, add "--verbose --log debug". c2165cf48e62c
         launchArgs: [
-            '--disable-gpu',
+            '--log critical',
             ...disableExtensionsArgs,
             workspacePath,
             ...disableWorkspaceTrustArg,
