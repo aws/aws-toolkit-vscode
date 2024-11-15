@@ -82,7 +82,7 @@ import { makeTemporaryToolkitFolder } from '../../shared'
 import globals from '../../shared/extensionGlobals'
 import { convertDateToTimestamp } from '../../shared/datetime'
 import { isWin } from '../../shared/vscode/env'
-import { ChildProcess } from '../../shared/utilities/processUtils'
+import { findStringInDirectory } from '../../shared/utilities/workspaceUtils'
 
 function getFeedbackCommentData() {
     const jobId = transformByQState.getJobId()
@@ -745,31 +745,19 @@ export async function getValidSQLConversionCandidateProjects() {
         })
         const openProjects = await getOpenProjects()
         const javaProjects = await getJavaProjects(openProjects)
-        let errorLog = ''
-        const isWindows = isWin()
-        const command = isWindows ? 'findstr' : 'grep'
+        let resultLog = ''
         for (const project of javaProjects) {
             // as long as at least one of these strings is found, project contains embedded SQL statements
             const searchStrings = ['oracle.jdbc.OracleDriver', 'jdbc:oracle:thin:@//', 'jdbc:oracle:oci:@//']
             for (const str of searchStrings) {
-                // case-insensitive, recursive search
-                const args = isWindows ? ['/i', '/s', str, '*.*'] : ['-i', '-r', str]
-                const spawnResult = await new ChildProcess(command, args).run({
-                    spawnOptions: { cwd: project.path, shell: false },
-                })
+                const spawnResult = await findStringInDirectory(str, project.path)
                 // just for telemetry purposes
                 if (spawnResult.error || spawnResult.stderr) {
-                    errorLog += `${JSON.stringify(spawnResult)}---`
+                    resultLog += `search failed: ${JSON.stringify(spawnResult)}`
                 } else {
-                    errorLog += `${command} succeeded: ${spawnResult.exitCode}`
+                    resultLog += `search succeeded: ${spawnResult.exitCode}`
                 }
-                /*
-                note:
-                error is set when command fails to spawn; stderr is set when command itself fails.
-                status of 0 means search string was detected (will be printed to stdout).
-                status will be non-zero and stdout / stderr / error will be empty when search string is not detected.
-                */
-                getLogger().info(`CodeTransformation: searching for ${str} in ${project.path}, result = ${errorLog}`)
+                getLogger().info(`CodeTransformation: searching for ${str} in ${project.path}, result = ${resultLog}`)
                 if (spawnResult.exitCode === 0) {
                     embeddedSQLProjects.push(project)
                     break
@@ -780,7 +768,7 @@ export async function getValidSQLConversionCandidateProjects() {
             `CodeTransformation: found ${embeddedSQLProjects.length} projects with embedded SQL statements`
         )
         telemetry.record({
-            codeTransformMetadata: errorLog,
+            codeTransformMetadata: resultLog,
         })
     })
     return embeddedSQLProjects
