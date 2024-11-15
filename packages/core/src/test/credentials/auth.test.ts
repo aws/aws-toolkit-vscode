@@ -508,14 +508,14 @@ describe('Auth', function () {
             await fs.delete(tmpDir, { recursive: true })
         })
 
-        for (const _ of Array.from({ length: 100 }, (i) => i)) {
+        for (const _ of Array.from({ length: 1000 }, (i) => i)) {
             it('does not cache if the credentials file changes', async function () {
                 const initialCreds = {
                     profileName: 'default',
                     accessKey: 'x',
                     secretKey: 'x',
                 }
-                console.log('generating file for the first time')
+                console.log('Generating credentials file for the first time')
                 await UserCredentialsUtils.generateCredentialsFile(initialCreds)
 
                 const initialStats = await fs.stat(getCredentialsFilename())
@@ -530,11 +530,11 @@ describe('Auth', function () {
                 })
                 const contentBeforeDeleting = await fs.readFileText(getCredentialsFilename())
                 const statBeforeDeleting = await fs.stat(getCredentialsFilename())
-                console.log('Deleting the file')
+                console.log('Deleting the credentials file')
                 await fs.delete(getCredentialsFilename())
 
                 const newCreds = { ...initialCreds, accessKey: 'y', secretKey: 'y' }
-                console.log('regenerating the same file')
+                console.log('Regenerating credentials file')
                 await UserCredentialsUtils.generateCredentialsFile(newCreds)
 
                 const statsAfterRegen = await fs.stat(getCredentialsFilename())
@@ -542,14 +542,8 @@ describe('Auth', function () {
                 const credsAreUpdated = (creds: Credentials) => {
                     return creds.accessKeyId === newCreds.accessKey && creds.secretAccessKey === newCreds.secretKey
                 }
-                console.log(
-                    'initial: %O, beforeDelete: %O, afterRegen: %O',
-                    initialStats,
-                    statBeforeDeleting,
-                    statsAfterRegen
-                )
 
-                console.log('Before wait until')
+                console.log('Before waitUntil block')
                 const start = Date.now()
                 const credsUpdated = await waitUntil(async () => credsAreUpdated(await conn.getCredentials()), {
                     timeout: 10000,
@@ -560,19 +554,23 @@ describe('Auth', function () {
                 const statAfterWait = await fs.stat(getCredentialsFilename())
                 const contentAfterWait = await fs.readFileText(getCredentialsFilename())
                 console.log(
-                    'stats: initial: %O, beforeDelete: %O, afterRegen: %O, afterWait: %O',
+                    'stats:\n --initial: %O \n, --beforeDelete: %O \n, --afterRegen: %O \n, --afterWait: %O \n',
                     initialStats,
                     statBeforeDeleting,
                     statsAfterRegen,
                     statAfterWait
                 )
                 console.log(
-                    'content: initial: %O, beforeDelete: %O, afterRegen: %O, afterWait: %O',
+                    'content:\n --initial: %O \n, --beforeDelete: %O \n, --afterRegen: %O \n, --afterWait: %O \n',
                     intialContent,
                     contentBeforeDeleting,
                     contentAfterRegen,
                     contentAfterWait
                 )
+                if (!credsUpdated) {
+                    console.log('creds failed to update!')
+                    console.log('creds: %O', await conn.getCredentials())
+                }
                 assert.ok(credsUpdated, 'Expected credentials to be updated')
             })
         }
