@@ -9,15 +9,7 @@ import { TypeConstructor } from '../shared/utilities/typeConstructors'
 import { AuthUserState, AuthStatus } from '../shared/telemetry/telemetry.gen'
 
 /** Types of information that we can use to determine whether to show a notification or not. */
-export type Criteria =
-    | 'OS'
-    | 'ComputeEnv'
-    | 'AuthType'
-    | 'AuthRegion'
-    | 'AuthState'
-    | 'AuthScopes'
-    | 'InstalledExtensions'
-    | 'ActiveExtensions'
+export type Criteria = 'OS' | 'ComputeEnv' | 'AuthType' | 'AuthRegion' | 'AuthState' | 'AuthScopes' | 'ActiveExtensions'
 
 /** Generic condition where the type determines how the values are evaluated. */
 export interface CriteriaCondition {
@@ -46,6 +38,10 @@ export interface ExactMatch {
 
 export type ConditionalClause = Range | ExactMatch | OR
 
+export type OnReceiveType = 'toast' | 'modal'
+export type OnClickType = 'modal' | 'openTextDocument' | 'openUrl'
+export type ActionType = 'openUrl' | 'updateAndReload' | 'openTxt'
+
 /** How to display the notification. */
 export interface UIRenderInstructions {
     content: {
@@ -55,13 +51,13 @@ export interface UIRenderInstructions {
             toastPreview?: string // optional property for toast
         }
     }
-    onRecieve: string
+    onRecieve: OnReceiveType // TODO: typo
     onClick: {
-        type: string
+        type: OnClickType
         url?: string // optional property for 'openUrl'
     }
     actions?: Array<{
-        type: string
+        type: ActionType
         displayText: {
             [`en-US`]: string
         }
@@ -132,7 +128,6 @@ export interface RuleContext {
     readonly authRegions: string[]
     readonly authStates: AuthStatus[]
     readonly authScopes: string[]
-    readonly installedExtensions: string[]
     readonly activeExtensions: string[]
 }
 

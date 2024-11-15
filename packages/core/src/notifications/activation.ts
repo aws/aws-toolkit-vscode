@@ -38,8 +38,8 @@ export async function activate(
     const controller = new NotificationsController(panelNode)
     const engine = new RuleEngine(await getRuleContext(context, initialState))
 
-    void controller.pollForStartUp(engine)
-    void controller.pollForEmergencies(engine)
+    await controller.pollForStartUp(engine)
+    await controller.pollForEmergencies(engine)
 
     globals.clock.setInterval(async () => {
         const ruleContext = await getRuleContext(context, await authStateFn())
