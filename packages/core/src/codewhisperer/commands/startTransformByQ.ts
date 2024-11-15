@@ -174,6 +174,8 @@ async function validateJavaHome(): Promise<boolean> {
             javaVersionUsedByMaven = JDKVersion.JDK8
         } else if (javaVersionUsedByMaven === '11.') {
             javaVersionUsedByMaven = JDKVersion.JDK11
+        } else if (javaVersionUsedByMaven === '17.') {
+            javaVersionUsedByMaven = JDKVersion.JDK17
         }
     }
     if (javaVersionUsedByMaven !== transformByQState.getSourceJDKVersion()) {
