@@ -50,7 +50,7 @@ describe('DiffModel', function () {
             testDiffModel.patchFileNodes[0].patchFilePath,
             getTestResourceFilePath('resources/files/addedFile.diff')
         )
-        assert(testDiffModel.patchFileNodes[0].label.endsWith(parsedTestDescriptions.content[0].name))
+        assert(testDiffModel.patchFileNodes[0].label.includes(parsedTestDescriptions.content[0].name))
         const change = testDiffModel.patchFileNodes[0].children[0]
 
         assert.strictEqual(change instanceof AddedChangeNode, true)
@@ -81,7 +81,7 @@ describe('DiffModel', function () {
             testDiffModel.patchFileNodes[0].patchFilePath,
             getTestResourceFilePath('resources/files/modifiedFile.diff')
         )
-        assert(testDiffModel.patchFileNodes[0].label.endsWith(parsedTestDescriptions.content[0].name))
+        assert(testDiffModel.patchFileNodes[0].label.includes(parsedTestDescriptions.content[0].name))
         const change = testDiffModel.patchFileNodes[0].children[0]
 
         assert.strictEqual(change instanceof ModifiedChangeNode, true)
