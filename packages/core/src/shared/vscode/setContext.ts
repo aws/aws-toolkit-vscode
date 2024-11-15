@@ -60,7 +60,7 @@ export async function setContext(key: contextKey, val: any): Promise<void> {
 /**
  * Returns the value of a context key set via {@link setContext} wrapper for this session.
  *
- * Warning: this does not gaurantee the state of the context key in vscode because it may have
+ * Warning: this does not guarantee the state of the context key in vscode because it may have
  * been set via `vscode.commands.executeCommand('setContext')`. It has no connection the
  * context keys stored in vscode itself because an API for this is not exposed.
  */
