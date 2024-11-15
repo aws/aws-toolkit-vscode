@@ -267,10 +267,16 @@ export class FeatureDevClient {
     }
 
     public async sendFeatureDevCodeGenerationEvent(event: FeatureDevCodeGenerationEvent) {
+        getLogger().debug(
+            `featureDevCodeGenerationEvent: conversationId: ${event.conversationId} charactersOfCodeGenerated: ${event.charactersOfCodeGenerated} linesOfCodeGenerated: ${event.linesOfCodeGenerated}`
+        )
         await this.sendFeatureDevEvent('featureDevCodeGenerationEvent', event)
     }
 
     public async sendFeatureDevCodeAcceptanceEvent(event: FeatureDevCodeAcceptanceEvent) {
+        getLogger().debug(
+            `featureDevCodeAcceptanceEvent: conversationId: ${event.conversationId} charactersOfCodeAccepted: ${event.charactersOfCodeAccepted} linesOfCodeAccepted: ${event.linesOfCodeAccepted}`
+        )
         await this.sendFeatureDevEvent('featureDevCodeAcceptanceEvent', event)
     }
 
