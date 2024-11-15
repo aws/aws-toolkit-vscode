@@ -80,7 +80,7 @@ describe('createStackPrompter', () => {
             .returns(vscode.Uri.parse(`https://us-east-1.console.aws.amazon.com/cloudformation/home?region=us-east-1`))
 
         // Act
-        const prompter = createStackPrompter(cfnClient, mementoRootKey)
+        const prompter = createStackPrompter(cfnClient, mementoRootKey, samSyncUrl)
         await new Promise((f) => setTimeout(f, 50))
 
         // Assert
@@ -107,7 +107,7 @@ describe('createStackPrompter', () => {
             .returns(vscode.Uri.parse(`https://us-east-1.console.aws.amazon.com/cloudformation/home?region=us-east-1`))
 
         // Act
-        const prompter = createStackPrompter(cfnClient, mementoRootKey)
+        const prompter = createStackPrompter(cfnClient, mementoRootKey, samSyncUrl)
         await new Promise((f) => setTimeout(f, 50))
 
         // Assert

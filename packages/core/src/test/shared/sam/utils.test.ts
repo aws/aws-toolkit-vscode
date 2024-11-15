@@ -236,6 +236,10 @@ describe('SAM utils', async function () {
         const value1 = 'myStackName'
         const value2 = 'myBucketName'
 
+        after(async () => {
+            await globals.context.workspaceState.update(mementoRootKey, {})
+        })
+
         it('1. getRecentResponse should return undefined when mementoRootKey does not exist', async () => {
             assert(!getRecentResponse(nonExistingMementoRootKey, identifier, key1))
         })
@@ -244,7 +248,7 @@ describe('SAM utils', async function () {
             try {
                 await updateRecentResponse(mementoRootKey, identifier, key1, value1)
             } catch (err) {
-                assert.fail('Should have succeed')
+                assert.fail('The execution should have succeeded yet encounter unexpected exception')
             }
         })
 
@@ -261,12 +265,12 @@ describe('SAM utils', async function () {
             assert.strictEqual(result2, value2)
         })
 
-        it('5. updateRecentResponse should log when failed to update value', async () => {
+        it('5. updateRecentResponse should log and swallow exception when fails to update value', async () => {
             sinon.stub(globals.context.workspaceState, 'update').rejects(new Error('Error updating value'))
             try {
                 await updateRecentResponse(mementoRootKey, identifier, key2, value2)
             } catch (err) {
-                assert.fail('Should have swallowed exception')
+                assert.fail('The target function should have handled exception internally')
             }
             assertLogsContain(`sam: unable to save response at key`, false, 'warn')
             sinon.restore()
