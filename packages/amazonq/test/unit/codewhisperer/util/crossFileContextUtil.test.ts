@@ -50,10 +50,12 @@ describe('crossFileContextUtil', function () {
             const myCurrentEditor = await toTextEditor('', 'TargetFile.java', tempFolder, {
                 preview: false,
             })
+
+            await assertTabCount(2)
+
             const actual = await crossFile.fetchSupplementalContextForSrc(myCurrentEditor, fakeCancellationToken)
             assert.ok(actual)
-            assert.ok(actual.supplementalContextItems.length === 3)
-
+            assert.strictEqual(actual.supplementalContextItems.length, 3)
             assert.strictEqual(actual.supplementalContextItems[0].content.split('\n').length, 50)
             assert.strictEqual(actual.supplementalContextItems[1].content.split('\n').length, 50)
             assert.strictEqual(actual.supplementalContextItems[2].content.split('\n').length, 50)
@@ -64,6 +66,9 @@ describe('crossFileContextUtil', function () {
             const myCurrentEditor = await toTextEditor('', 'TargetFile.java', tempFolder, {
                 preview: false,
             })
+
+            await assertTabCount(2)
+
             sinon.stub(FeatureConfigProvider.instance, 'getProjectContextGroup').returns('t1')
             sinon
                 .stub(LspController.instance, 'queryInlineProjectContext')
@@ -78,7 +83,7 @@ describe('crossFileContextUtil', function () {
 
             const actual = await crossFile.fetchSupplementalContextForSrc(myCurrentEditor, fakeCancellationToken)
             assert.ok(actual)
-            assert.ok(actual.supplementalContextItems.length === 4)
+            assert.strictEqual(actual.supplementalContextItems.length, 4)
             assert.strictEqual(actual?.strategy, 'codemap')
             assert.deepEqual(actual?.supplementalContextItems[0], {
                 content: 'foo',
@@ -96,6 +101,9 @@ describe('crossFileContextUtil', function () {
             const myCurrentEditor = await toTextEditor('', 'TargetFile.java', tempFolder, {
                 preview: false,
             })
+
+            await assertTabCount(2)
+
             sinon.stub(FeatureConfigProvider.instance, 'getProjectContextGroup').returns('t2')
             sinon
                 .stub(LspController.instance, 'queryInlineProjectContext')
@@ -130,7 +138,7 @@ describe('crossFileContextUtil', function () {
 
             const actual = await crossFile.fetchSupplementalContextForSrc(myCurrentEditor, fakeCancellationToken)
             assert.ok(actual)
-            assert.ok(actual.supplementalContextItems.length === 5)
+            assert.strictEqual(actual.supplementalContextItems.length, 5)
             assert.strictEqual(actual?.strategy, 'bm25')
 
             assert.deepEqual(actual?.supplementalContextItems[0], {
