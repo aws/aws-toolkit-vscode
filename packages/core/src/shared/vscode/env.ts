@@ -11,6 +11,7 @@ import { getLogger } from '../logger'
 import { onceChanged } from '../utilities/functionUtils'
 import { ChildProcess } from '../utilities/processUtils'
 import globals, { isWeb } from '../extensionGlobals'
+import * as devConfig from '../../dev/config'
 
 /**
  * Returns true if the current build is running on CI (build server).
@@ -31,10 +32,29 @@ try {
 
 /**
  * Returns true if the current build is a production build (as opposed to a
- * prerelease/test/nightly build)
+ * prerelease/test/nightly build).
+ *
+ * Note: `isBeta()` is treated separately.
  */
 export function isReleaseVersion(prereleaseOk: boolean = false): boolean {
     return (prereleaseOk || !semver.prerelease(extensionVersion)) && extensionVersion !== testVersion
+}
+
+/**
+ * Returns true if the current build is a "beta" build.
+ */
+export function isBeta(): boolean {
+    const testing = extensionVersion === testVersion
+    for (const url of Object.values(devConfig.betaUrl)) {
+        if (url && url.length > 0) {
+            if (!testing && semver.lt(extensionVersion, '99.0.0')) {
+                throw Error('beta build must set version=99.0.0 in package.json')
+            }
+
+            return true
+        }
+    }
+    return false
 }
 
 /**
