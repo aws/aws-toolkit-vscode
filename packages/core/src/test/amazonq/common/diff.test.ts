@@ -12,8 +12,16 @@ import assert from 'assert'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import sinon from 'sinon'
-import { createAmazonQUri, getFileDiffUris, getOriginalFileUri, openDeletedDiff, openDiff } from '../../../amazonq'
+import {
+    createAmazonQUri,
+    getFileDiffUris,
+    getOriginalFileUri,
+    openDeletedDiff,
+    openDiff,
+    computeDiff,
+} from '../../../amazonq'
 import { FileSystem } from '../../../shared/fs/fs'
+import { TextDocument } from 'vscode'
 
 describe('diff', () => {
     const filePath = path.join('/', 'foo', 'fi')
@@ -110,6 +118,85 @@ describe('diff', () => {
 
             const rightExpected = createAmazonQUri(rightPath, tabId)
             assert.deepStrictEqual(right, rightExpected)
+        })
+    })
+
+    describe('computeDiff', () => {
+        const mockLeftDocument = {
+            getText: () => 'line1\nline2',
+            uri: vscode.Uri.file('test.txt'),
+            fileName: 'test.txt',
+        }
+
+        const mockRightDocument = {
+            getText: () => 'line1\nline3\nline4\nline5',
+            uri: vscode.Uri.file('test.txt'),
+            fileName: 'test.txt',
+        }
+
+        it('returns 0 added or removed chars and lines for the same file', async () => {
+            sandbox.stub(FileSystem.prototype, 'exists').resolves(true)
+            sandbox.stub(vscode.workspace, 'openTextDocument').resolves(mockLeftDocument as unknown as TextDocument)
+
+            const { changes, charsAdded, linesAdded, charsRemoved, linesRemoved } = await computeDiff(
+                filePath,
+                filePath,
+                tabId
+            )
+
+            const expectedChanges = [
+                {
+                    count: 2,
+                    value: 'line1\nline2',
+                },
+            ]
+
+            assert.deepEqual(changes, expectedChanges)
+            assert.equal(charsAdded, 0)
+            assert.equal(linesAdded, 0)
+            assert.equal(charsRemoved, 0)
+            assert.equal(linesRemoved, 0)
+        })
+
+        it('returns expected added or removed chars and lines for different files', async () => {
+            sandbox.stub(FileSystem.prototype, 'exists').resolves(true)
+            sandbox
+                .stub(vscode.workspace, 'openTextDocument')
+                .onFirstCall()
+                .resolves(mockLeftDocument as unknown as TextDocument)
+                .onSecondCall()
+                .resolves(mockRightDocument as unknown as TextDocument)
+
+            const { changes, charsAdded, linesAdded, charsRemoved, linesRemoved } = await computeDiff(
+                filePath,
+                rightPath,
+                tabId
+            )
+
+            const expectedChanges = [
+                {
+                    count: 1,
+                    value: 'line1\n',
+                },
+                {
+                    count: 1,
+                    added: undefined,
+                    removed: true,
+                    value: 'line2',
+                },
+                {
+                    count: 3,
+                    added: true,
+                    removed: undefined,
+                    value: 'line3\nline4\nline5',
+                },
+            ]
+
+            assert.deepEqual(changes, expectedChanges)
+            assert.equal(charsAdded, 15)
+            assert.equal(linesAdded, 3)
+            assert.equal(charsRemoved, 5)
+            assert.equal(linesRemoved, 1)
         })
     })
 })
