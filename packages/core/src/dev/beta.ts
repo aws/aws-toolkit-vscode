@@ -19,7 +19,7 @@ import { telemetry } from '../shared/telemetry/telemetry'
 import { cast } from '../shared/utilities/typeConstructors'
 import { CancellationError } from '../shared/utilities/timeoutUtils'
 import { isAmazonQ, isCloud9, productName } from '../shared/extensionUtilities'
-import * as config from './config'
+import * as devConfig from './config'
 import { isReleaseVersion } from '../shared/vscode/env'
 import { getRelativeDate } from '../shared/datetime'
 
@@ -48,7 +48,7 @@ async function updateBetaToolkitData(vsixUrl: string, data: BetaToolkit) {
  * Set up "beta" update monitoring.
  */
 export async function activate(ctx: vscode.ExtensionContext) {
-    const betaUrl = isAmazonQ() ? config.betaUrl.amazonq : config.betaUrl.toolkit
+    const betaUrl = isAmazonQ() ? devConfig.betaUrl.amazonq : devConfig.betaUrl.toolkit
     if (!isCloud9() && !isReleaseVersion() && betaUrl) {
         ctx.subscriptions.push(watchBetaVSIX(betaUrl))
     }
