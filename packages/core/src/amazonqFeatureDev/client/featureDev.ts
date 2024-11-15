@@ -280,7 +280,7 @@ export class FeatureDevClient {
         await this.sendFeatureDevEvent('featureDevCodeAcceptanceEvent', event)
     }
 
-    private async sendFeatureDevEvent<T extends keyof TelemetryEvent>(
+    public async sendFeatureDevEvent<T extends keyof TelemetryEvent>(
         eventName: T,
         event: NonNullable<TelemetryEvent[T]>
     ) {
