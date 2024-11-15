@@ -19,14 +19,14 @@ import { telemetry } from '../shared/telemetry/telemetry'
 import { cast } from '../shared/utilities/typeConstructors'
 import { CancellationError } from '../shared/utilities/timeoutUtils'
 import { isAmazonQ, isCloud9, productName } from '../shared/extensionUtilities'
-import * as config from './config'
+import * as devConfig from './config'
 import { isReleaseVersion } from '../shared/vscode/env'
 import { getRelativeDate } from '../shared/datetime'
 
 const localize = nls.loadMessageBundle()
 const logger = getLogger('dev/beta')
 
-const downloadIntervalMs = 1000 * 60 * 60 * 24 // A day in milliseconds
+const downloadIntervalMs = 1000 * 60 * 60 * 3 // 3 hours (8 times/day).
 
 interface BetaToolkit {
     readonly needUpdate: boolean
@@ -48,7 +48,7 @@ async function updateBetaToolkitData(vsixUrl: string, data: BetaToolkit) {
  * Set up "beta" update monitoring.
  */
 export async function activate(ctx: vscode.ExtensionContext) {
-    const betaUrl = isAmazonQ() ? config.betaUrl.amazonq : config.betaUrl.toolkit
+    const betaUrl = isAmazonQ() ? devConfig.betaUrl.amazonq : devConfig.betaUrl.toolkit
     if (!isCloud9() && !isReleaseVersion() && betaUrl) {
         ctx.subscriptions.push(watchBetaVSIX(betaUrl))
     }
