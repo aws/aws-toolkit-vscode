@@ -200,7 +200,14 @@ export class Ec2Connecter implements vscode.Disposable {
         const remoteEnv = await this.prepareEc2RemoteEnvWithProgress(selection, remoteUser)
 
         try {
-            await testSshConnection(remoteEnv.SessionProcess, remoteEnv.hostname, remoteEnv.sshPath, remoteUser)
+            const testSession = await this.startSSMSession(selection.instanceId)
+            await testSshConnection(
+                remoteEnv.SessionProcess,
+                remoteEnv.hostname,
+                remoteEnv.sshPath,
+                remoteUser,
+                testSession
+            )
             await startVscodeRemote(remoteEnv.SessionProcess, remoteEnv.hostname, '/', remoteEnv.vscPath, remoteUser)
         } catch (err) {
             this.throwGeneralConnectionError(selection, err as Error)
@@ -214,7 +221,7 @@ export class Ec2Connecter implements vscode.Disposable {
         return remoteEnv
     }
 
-    private async startRemoteSession(instanceId: string): Promise<SSM.StartSessionResponse> {
+    private async startSSMSession(instanceId: string): Promise<SSM.StartSessionResponse> {
         const ssmSession = await this.ssmClient.startSession(instanceId, 'AWS-StartSSHSession')
         await this.addActiveSession(instanceId, ssmSession.SessionId!)
         return ssmSession
@@ -236,7 +243,7 @@ export class Ec2Connecter implements vscode.Disposable {
             throw err
         }
 
-        const ssmSession = await this.startRemoteSession(selection.instanceId)
+        const ssmSession = await this.startSSMSession(selection.instanceId)
 
         const vars = getEc2SsmEnv(selection, ssm, ssmSession)
         const envProvider = async () => {

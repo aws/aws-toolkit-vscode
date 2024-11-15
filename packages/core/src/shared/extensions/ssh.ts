@@ -12,6 +12,7 @@ import { ChildProcess } from '../utilities/processUtils'
 import { ArrayConstructor, NonNullObject } from '../utilities/typeConstructors'
 import { Settings } from '../settings'
 import { VSCODE_EXTENSION_ID } from '../extensions'
+import { SSM } from 'aws-sdk'
 
 const localize = nls.loadMessageBundle()
 
@@ -123,10 +124,15 @@ export async function testSshConnection(
     ProcessClass: typeof ChildProcess,
     hostname: string,
     sshPath: string,
-    user: string
+    user: string,
+    session: SSM.StartSessionResponse
 ): Promise<void> {
     try {
-        await new ProcessClass(sshPath, ['-T', `${user}@${hostname}`, 'echo connected && exit']).run()
+        await new ProcessClass(sshPath, ['-T', `${user}@${hostname}`, 'echo connected && exit']).run({
+            spawnOptions: {
+                env: { SESSION_ID: session.SessionId, STREAM_URL: session.StreamUrl, TOKEN: session.TokenValue },
+            },
+        })
     } catch (error) {
         getLogger().error('SSH connection test failed: %O', error)
         throw error
