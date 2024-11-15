@@ -40,8 +40,6 @@ import { telemetry } from '../shared/telemetry/telemetry'
 export class NotificationsController {
     public static readonly suggestedPollIntervalMs = 1000 * 60 * 10 // 10 minutes
 
-    public readonly storageKey: globalKey
-
     /** Internal memory state that is written to global state upon modification. */
     private readonly state: NotificationsState
 
@@ -49,7 +47,8 @@ export class NotificationsController {
 
     constructor(
         private readonly notificationsNode: NotificationsNode,
-        private readonly fetcher: NotificationFetcher = new RemoteFetcher()
+        private readonly fetcher: NotificationFetcher = new RemoteFetcher(),
+        public readonly storageKey: globalKey = 'aws.notifications'
     ) {
         if (!NotificationsController.#instance) {
             // Register on first creation only.
@@ -57,7 +56,6 @@ export class NotificationsController {
         }
         NotificationsController.#instance = this
 
-        this.storageKey = 'aws.notifications'
         this.state = globals.globalState.tryGet<NotificationsState>(this.storageKey, NotificationsStateConstructor, {
             startUp: {},
             emergency: {},

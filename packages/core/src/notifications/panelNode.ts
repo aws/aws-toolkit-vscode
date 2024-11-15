@@ -78,24 +78,23 @@ export class NotificationsNode implements TreeNode {
     }
 
     public refresh(): void {
-        if (!this.view) {
-            throw new ToolkitError('NotificationsNode: TreeView accessed without being registered.')
-        }
-
         const totalNotifications = this.notificationCount()
-        if (totalNotifications > 0) {
-            this.view.badge = {
-                tooltip: `${totalNotifications} notification${totalNotifications > 1 ? 's' : ''}`,
-                value: totalNotifications,
+        if (this.view) {
+            if (totalNotifications > 0) {
+                this.view.badge = {
+                    tooltip: `${totalNotifications} notification${totalNotifications > 1 ? 's' : ''}`,
+                    value: totalNotifications,
+                }
+                this.view.title = `${NotificationsNode.title} (${totalNotifications})`
+            } else {
+                this.view.badge = undefined
+                this.view.title = NotificationsNode.title
             }
-            this.view.title = `${NotificationsNode.title} (${totalNotifications})`
-            void setContext(this.showContextStr, true)
         } else {
-            this.view.badge = undefined
-            this.view.title = NotificationsNode.title
-            void setContext(this.showContextStr, false)
+            logger.warn('NotificationsNode was refreshed but the view was not initialized!')
         }
 
+        void setContext(this.showContextStr, totalNotifications > 0)
         this.provider?.refresh()
     }
 
@@ -240,7 +239,7 @@ export class NotificationsNode implements TreeNode {
                                 case 'updateAndReload':
                                     // Give things time to finish executing.
                                     globals.clock.setTimeout(() => {
-                                        void this.updateAndReload(notification.displayIf.extensionId)
+                                        return this.updateAndReload(notification.displayIf.extensionId)
                                     }, 1000)
                                     break
                                 case 'openUrl':

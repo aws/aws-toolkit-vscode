@@ -12,26 +12,18 @@ import { panelNode } from './controller.test'
 import { getTestWindow } from '../shared/vscode/window'
 import * as VsCodeUtils from '../../shared/utilities/vsCodeUtils'
 import { assertTextEditorContains, installFakeClock } from '../testUtil'
+import { waitUntil } from '../../shared/utilities/timeoutUtils'
+import globals from '../../shared/extensionGlobals'
 
 describe('Notifications Rendering', function () {
     let sandbox: sinon.SinonSandbox
-    let clock: FakeTimers.InstalledClock
-
-    before(function () {
-        clock = installFakeClock()
-    })
 
     beforeEach(function () {
         sandbox = sinon.createSandbox()
     })
 
     afterEach(function () {
-        clock.reset()
         sandbox.restore()
-    })
-
-    after(function () {
-        clock.uninstall()
     })
 
     // util to test txt pop-up under different senarios
@@ -103,14 +95,21 @@ describe('Notifications Rendering', function () {
             message.selectItem('Update and Reload')
         })
         const excuteCommandStub = sandbox.stub(vscode.commands, 'executeCommand').resolves()
+        const telemetrySpy = sandbox.spy(globals.telemetry, 'flushRecords')
         const notification = getModalNotification()
-        await panelNode.openNotification(notification)
 
         // Update and Reload is put on a timer so that other methods (e.g. telemetry) can finish.
-        await clock.tickAsync(2000)
+        const clock: FakeTimers.InstalledClock = installFakeClock()
+        await panelNode.openNotification(notification)
+
+        await clock.tickAsync(1000)
+        clock.uninstall()
+
+        await waitUntil(async () => excuteCommandStub.called, { interval: 5, timeout: 5000 })
 
         assert.ok(excuteCommandStub.calledWith('workbench.extensions.installExtension', 'aws.toolkit.fake.extension'))
         assert.ok(excuteCommandStub.calledWith('workbench.action.reloadWindow'))
+        assert.ok(telemetrySpy.calledOnce)
     })
 
     it('executes openURL type button', async function () {
