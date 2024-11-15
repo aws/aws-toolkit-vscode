@@ -23,6 +23,7 @@ import { DefaultIamClient } from '../../shared/clients/iamClient'
 import { ErrorInformation } from '../../shared/errors'
 import {
     sshAgentSocketVariable,
+    SSHError,
     startSshAgent,
     startVscodeRemote,
     testSshConnection,
@@ -154,13 +155,6 @@ export class Ec2Connecter implements vscode.Disposable {
         }
     }
 
-    public throwGeneralConnectionError(selection: Ec2Selection, error: Error) {
-        this.throwConnectionError('Unable to connect to target instance. ', selection, {
-            code: 'EC2SSMConnect',
-            cause: error,
-        })
-    }
-
     public async checkForStartSessionError(selection: Ec2Selection): Promise<void> {
         await this.checkForInstanceStatusError(selection)
 
@@ -189,7 +183,7 @@ export class Ec2Connecter implements vscode.Disposable {
             const response = await this.ssmClient.startSession(selection.instanceId)
             await this.openSessionInTerminal(response, selection)
         } catch (err: unknown) {
-            this.throwGeneralConnectionError(selection, err as Error)
+            this.throwConnectionError('', selection, err as Error)
         }
     }
 
@@ -209,7 +203,8 @@ export class Ec2Connecter implements vscode.Disposable {
             )
             await startVscodeRemote(remoteEnv.SessionProcess, remoteEnv.hostname, '/', remoteEnv.vscPath, remoteUser)
         } catch (err) {
-            this.throwGeneralConnectionError(selection, err as Error)
+            const message = err instanceof SSHError ? 'Testing SSH connection to instance failed' : ''
+            this.throwConnectionError(message, selection, err as Error)
         } finally {
             await this.ssmClient.terminateSession(testSession)
         }
