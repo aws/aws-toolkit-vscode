@@ -7,7 +7,7 @@ import assert from 'assert'
 import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import * as crossFile from 'aws-core-vscode/codewhisperer'
-import { TestFolder } from 'aws-core-vscode/test'
+import { TestFolder, assertTabCount } from 'aws-core-vscode/test'
 import { FeatureConfigProvider } from 'aws-core-vscode/codewhisperer'
 import { toTextEditor } from 'aws-core-vscode/test'
 
@@ -39,6 +39,8 @@ describe('supplementalContextUtil', function () {
                     preview: false,
                 })
 
+                await assertTabCount(4)
+
                 const actual = await crossFile.fetchSupplementalContext(editor, fakeCancellationToken)
                 assert.ok(actual?.supplementalContextItems.length === 3)
             })
@@ -52,6 +54,8 @@ describe('supplementalContextUtil', function () {
                 const editor = await toTextEditor('public class Foo {}', 'Query.java', testFolder.path, {
                     preview: false,
                 })
+
+                await assertTabCount(4)
 
                 const actual = await crossFile.fetchSupplementalContext(editor, fakeCancellationToken)
                 assert.ok(actual?.supplementalContextItems.length === 0)
