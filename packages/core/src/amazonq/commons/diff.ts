@@ -37,17 +37,23 @@ export async function computeDiff(leftPath: string, rightPath: string, tabId: st
 
     const changes = diffLines(leftFile.getText(), rightFile.getText())
 
-    let added = 0
-    let removed = 0
+    let charsAdded = 0
+    let charsRemoved = 0
+    let linesAdded = 0
+    let linesRemoved = 0
     changes.forEach((change) => {
-        const count = change.count ?? change.value.split('\n').length - 1 // ignoring end-of-file empty line
+        const lines = change.value.split('\n')
+        const charCount = lines.reduce((sum, line) => sum + line.length, 0)
+        const lineCount = change.count ?? lines.length - 1 // ignoring end-of-file empty line
         if (change.added) {
-            added += count
+            charsAdded += charCount
+            linesAdded += lineCount
         } else if (change.removed) {
-            removed += count
+            charsRemoved += charCount
+            linesRemoved += lineCount
         }
     })
-    return { changes, added, removed }
+    return { changes, charsAdded, linesAdded, charsRemoved, linesRemoved }
 }
 
 export function createAmazonQUri(path: string, tabId: string) {

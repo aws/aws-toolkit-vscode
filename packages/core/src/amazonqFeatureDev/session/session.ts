@@ -280,37 +280,43 @@ export class Session {
     public async computeFilePathDiff(filePath: NewFileInfo) {
         const leftPath = `${filePath.workspaceFolder.uri.fsPath}/${filePath.relativePath}`
         const rightPath = filePath.virtualMemoryUri.path
-        const { changes, added, removed } = await computeDiff(leftPath, rightPath, this.tabID)
-        return { leftPath, rightPath, changes, added, removed }
+        const diff = await computeDiff(leftPath, rightPath, this.tabID)
+        return { leftPath, rightPath, ...diff }
     }
 
     public async sendLinesOfCodeGeneratedTelemetry() {
+        let charactersOfCodeGenerated = 0
         let linesOfCodeGenerated = 0
         // deleteFiles are currently not counted because the number of lines added is always 0
         const filePaths = this.state.filePaths ?? []
         for (const filePath of filePaths) {
-            const { leftPath, changes, added } = await this.computeFilePathDiff(filePath)
+            const { leftPath, changes, charsAdded, linesAdded } = await this.computeFilePathDiff(filePath)
             const codeChangeKey = `${leftPath}#@${JSON.stringify(changes)}`
             if (this._reportedCodeChanges.has(codeChangeKey)) {
                 continue
             }
-            linesOfCodeGenerated += added
+            charactersOfCodeGenerated += charsAdded
+            linesOfCodeGenerated += linesAdded
             this._reportedCodeChanges.add(codeChangeKey)
         }
-        telemetry.amazonq_linesOfCodeGenerated.emit({
-            amazonqConversationId: this.conversationId,
+        await this.proxyClient.sendFeatureDevCodeGenerationEvent({
+            conversationId: this.conversationId,
+            charactersOfCodeGenerated,
             linesOfCodeGenerated,
         })
     }
 
     public async sendLinesOfCodeAcceptedTelemetry(filePaths: NewFileInfo[]) {
+        let charactersOfCodeAccepted = 0
         let linesOfCodeAccepted = 0
         for (const filePath of filePaths) {
-            const { added } = await this.computeFilePathDiff(filePath)
-            linesOfCodeAccepted += added
+            const { charsAdded, linesAdded } = await this.computeFilePathDiff(filePath)
+            charactersOfCodeAccepted += charsAdded
+            linesOfCodeAccepted += linesAdded
         }
-        telemetry.amazonq_linesOfCodeAccepted.emit({
-            amazonqConversationId: this.conversationId,
+        await this.proxyClient.sendFeatureDevCodeAcceptanceEvent({
+            conversationId: this.conversationId,
+            charactersOfCodeAccepted,
             linesOfCodeAccepted,
         })
     }
