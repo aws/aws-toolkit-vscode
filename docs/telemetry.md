@@ -229,8 +229,6 @@ thisThrows()
 
 ### Important Notes
 
--   You can avoid redundancy when repeating fields like `class` in `@withTelemetryContext` by using `withTelemetryContextFactory()`. It builds a new decorator with pre-defined values that you choose.
-
 -   If a nested function does not use a `run()` then it will not be part of the call stack.
 
     ```typescript

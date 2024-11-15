@@ -452,11 +452,3 @@ export function withTelemetryContext(opts: TelemetryContextArgs) {
         })
     }
 }
-
-/**
- * Returns a custom {@link withTelemetryContext} decorator, but with some values predefined
- * to deduplicate boilerplate for a class that will use this decorator multiple times.
- */
-export function withTelemetryContextFactory(predefinedOpts: Omit<TelemetryContextArgs, 'name'>) {
-    return (opts: TelemetryContextArgs) => withTelemetryContext({ ...predefinedOpts, ...opts })
-}
