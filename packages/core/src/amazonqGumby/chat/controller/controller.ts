@@ -644,6 +644,7 @@ export class GumbyController {
                     telemetry.codeTransform_submitSelection.emit({
                         codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
                         userChoice: objective,
+                        result: 'Succeeded',
                     })
                 }
                 if (objective === 'language upgrade') {

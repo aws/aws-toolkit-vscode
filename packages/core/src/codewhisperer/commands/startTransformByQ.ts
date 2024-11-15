@@ -753,7 +753,7 @@ export async function getValidSQLConversionCandidateProjects() {
             const searchStrings = ['oracle.jdbc.OracleDriver', 'jdbc:oracle:thin:@//', 'jdbc:oracle:oci:@//']
             for (const str of searchStrings) {
                 // case-insensitive, recursive search
-                const args = isWindows ? ['/i', '/s', str] : ['-i', '-r', str]
+                const args = isWindows ? ['/i', '/s', str, '*.*'] : ['-i', '-r', str]
                 const spawnResult = await new ChildProcess(command, args).run({
                     spawnOptions: { cwd: project.path, shell: false },
                 })
