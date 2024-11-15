@@ -8,7 +8,7 @@ import * as path from 'path'
 import * as nls from 'vscode-nls'
 import fs from '../fs/fs'
 import { getLogger } from '../logger'
-import { ChildProcess, ChildProcessOptions } from '../utilities/processUtils'
+import { ChildProcess } from '../utilities/processUtils'
 import { ArrayConstructor, NonNullObject } from '../utilities/typeConstructors'
 import { Settings } from '../settings'
 import { VSCODE_EXTENSION_ID } from '../extensions'
@@ -120,13 +120,17 @@ export class RemoteSshSettings extends Settings.define('remote.SSH', remoteSshTy
 }
 
 export async function testSshConnection(
-    sshPath: string,
+    ProcessClass: typeof ChildProcess,
     hostname: string,
-    options: ChildProcessOptions = {}
+    sshPath: string,
+    user: string
 ): Promise<void> {
-    const process = new ChildProcess(sshPath, ['-T', hostname], options)
-    const result = await process.run()
-    console.log(result)
+    try {
+        await new ProcessClass(sshPath, ['-T', `${user}@${hostname}`, 'echo connected && exit']).run()
+    } catch (error) {
+        getLogger().error('SSH connection test failed: %O', error)
+        throw error
+    }
 }
 
 export async function startVscodeRemote(

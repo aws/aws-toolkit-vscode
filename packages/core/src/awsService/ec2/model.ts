@@ -13,6 +13,7 @@ import { SsmClient } from '../../shared/clients/ssmClient'
 import { Ec2Client } from '../../shared/clients/ec2Client'
 import {
     VscodeRemoteConnection,
+    createBoundProcess,
     ensureDependencies,
     getDeniedSsmActions,
     openRemoteTerminal,
@@ -26,7 +27,6 @@ import {
     startVscodeRemote,
     testSshConnection,
 } from '../../shared/extensions/ssh'
-import { createBoundProcess } from '../../codecatalyst/model'
 import { getLogger } from '../../shared/logger/logger'
 import { CancellationError, Timeout } from '../../shared/utilities/timeoutUtils'
 import { showMessageWithCancel } from '../../shared/utilities/messages'
@@ -200,7 +200,7 @@ export class Ec2Connecter implements vscode.Disposable {
         const remoteEnv = await this.prepareEc2RemoteEnvWithProgress(selection, remoteUser)
 
         try {
-            await testSshConnection(remoteEnv.sshPath, remoteEnv.hostname)
+            await testSshConnection(remoteEnv.SessionProcess, remoteEnv.hostname, remoteEnv.sshPath, remoteUser)
             await startVscodeRemote(remoteEnv.SessionProcess, remoteEnv.hostname, '/', remoteEnv.vscPath, remoteUser)
         } catch (err) {
             this.throwGeneralConnectionError(selection, err as Error)
@@ -212,6 +212,12 @@ export class Ec2Connecter implements vscode.Disposable {
         await showMessageWithCancel('AWS: Opening remote connection...', timeout)
         const remoteEnv = await this.prepareEc2RemoteEnv(selection, remoteUser).finally(() => timeout.cancel())
         return remoteEnv
+    }
+
+    private async startRemoteSession(instanceId: string): Promise<SSM.StartSessionResponse> {
+        const ssmSession = await this.ssmClient.startSession(instanceId, 'AWS-StartSSHSession')
+        await this.addActiveSession(instanceId, ssmSession.SessionId!)
+        return ssmSession
     }
 
     public async prepareEc2RemoteEnv(selection: Ec2Selection, remoteUser: string): Promise<Ec2RemoteEnv> {
@@ -230,8 +236,7 @@ export class Ec2Connecter implements vscode.Disposable {
             throw err
         }
 
-        const ssmSession = await this.ssmClient.startSession(selection.instanceId, 'AWS-StartSSHSession')
-        await this.addActiveSession(selection.instanceId, ssmSession.SessionId!)
+        const ssmSession = await this.startRemoteSession(selection.instanceId)
 
         const vars = getEc2SsmEnv(selection, ssm, ssmSession)
         const envProvider = async () => {
