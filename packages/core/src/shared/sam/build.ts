@@ -19,7 +19,7 @@ import globals from '../extensionGlobals'
 import { TreeNode } from '../treeview/resourceTreeDataProvider'
 import { telemetry } from '../telemetry/telemetry'
 import { getSpawnEnv } from '../env/resolveEnv'
-import { getProjectRoot, getSamCliPathAndVersion, isDotnetRuntime } from './utils'
+import { getProjectRoot, getSamCliPathAndVersion, isDotnetRuntime, updateRecentResponse } from './utils'
 import { getConfigFileUri, validateSamBuildConfig } from './config'
 import { runInTerminal } from './processTerminal'
 
@@ -216,6 +216,8 @@ export async function runBuild(arg?: TreeNode): Promise<SamBuildResult> {
 
     const templatePath = params.template.uri.fsPath
     buildFlags.push('--template', `${templatePath}`)
+
+    await updateRecentResponse(buildMementoRootKey, 'global', 'templatePath', templatePath)
 
     try {
         const { path: samCliPath } = await getSamCliPathAndVersion()

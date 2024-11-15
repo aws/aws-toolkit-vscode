@@ -306,6 +306,8 @@ export async function runDeploy(arg: any, wizardParams?: DeployParams): Promise<
             paramsToSet.length > 0 && deployFlags.push('--parameter-overrides', paramsToSet.join(' '))
         }
 
+        await updateRecentResponse(deployMementoRootKey, 'global', 'templatePath', params.template.uri.fsPath)
+
         try {
             const { path: samCliPath } = await getSamCliPathAndVersion()
 
