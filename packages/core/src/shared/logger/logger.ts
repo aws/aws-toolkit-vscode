@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 
-export type LogTopic = 'crashReport' | 'notifications' | 'test' | 'unknown'
+export type LogTopic = 'crashReport' | 'dev/beta' | 'notifications' | 'test' | 'unknown'
 
 class ErrorLog {
     constructor(
@@ -143,24 +143,18 @@ function prependTopic(topic: string, message: string | Error): string | ErrorLog
 }
 
 /**
- * Gets the logger if it has been initialized
- * the logger is of `'main'` or `undefined`: Main logger; default impl: logs to log file and log output channel
+ * Gets the global default logger.
+ *
  * @param topic: topic to be appended in front of the message.
  */
 export function getLogger(topic?: LogTopic): Logger {
-    const logger = toolkitLoggers['main']
-    if (!logger) {
-        return new ConsoleLogger()
-    }
-    return new TopicLogger(topic ?? 'unknown', logger)
+    // `TopicLogger` will lazy-load the "main" logger when it becomes available.
+    return new TopicLogger(topic ?? 'unknown', 'main')
 }
 
 export function getDebugConsoleLogger(topic?: LogTopic): Logger {
-    const logger = toolkitLoggers['debugConsole']
-    if (!logger) {
-        return new ConsoleLogger()
-    }
-    return new TopicLogger(topic ?? 'unknown', logger)
+    // `TopicLogger` will lazy-load the "debugConsole" logger when it becomes available.
+    return new TopicLogger(topic ?? 'unknown', 'debugConsole')
 }
 
 // jscpd:ignore-start
@@ -215,15 +209,25 @@ export class ConsoleLogger extends BaseLogger {
 }
 
 /**
- * Wraps a `ToolkitLogger` and defers to it for everything except `topic`.
+ * Wraps the specified `ToolkitLogger` and defers to it for everything except `topic`.
+ *
+ * Falls back to `ConsoleLogger` when the logger isn't available yet (during startup).
  */
 export class TopicLogger extends BaseLogger implements vscode.Disposable {
+    // HACK: crude form of "lazy initialization", to support module-scope assignment of
+    // `getLogger()` without being sensitive to module-load ordering. So even if logging isn't ready
+    // at the time of the `getLogger` call, it will recover later. (This is a bit hacky, because it
+    // arguably doesn't belong in `TopicLogger`.)
+    public get logger() {
+        return toolkitLoggers[this.loggerKey] ?? new ConsoleLogger()
+    }
+
     /**
      * Wraps a `ToolkitLogger` and defers to it for everything except `topic`.
      */
     public constructor(
         public override topic: LogTopic,
-        public readonly logger: Logger
+        public readonly loggerKey: keyof typeof toolkitLoggers
     ) {
         super()
     }
