@@ -120,7 +120,7 @@ describe('SharedCredentialsProviderFactory', async function () {
         )
     })
 
-    it('refresh does reload from file even if the file has changed', async function () {
+    it('refresh always reloads from file', async function () {
         const sut = new SharedCredentialsProviderFactory()
 
         // First load
