@@ -47,7 +47,7 @@ export function isBeta(): boolean {
     const testing = extensionVersion === testVersion
     for (const url of Object.values(devConfig.betaUrl)) {
         if (url && url.length > 0) {
-            if (!testing && semver.lt(extensionVersion, '99.0.0')) {
+            if (!testing && semver.lt(extensionVersion, '99.0.0-dev')) {
                 throw Error('beta build must set version=99.0.0 in package.json')
             }
 
