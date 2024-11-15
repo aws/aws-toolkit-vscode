@@ -65,7 +65,7 @@ import { PrompterTester } from '../wizards/prompterTester'
 import { createTestRegionProvider } from '../regions/testUtil'
 import { ToolkitPromptSettings } from '../../../shared/settings'
 import { DefaultEcrClient } from '../../../shared/clients/ecrClient'
-import * as assert from 'assert'
+import assert from 'assert'
 
 describe('SAM SyncWizard', async function () {
     const createTester = async (params?: Partial<SyncParams>) =>
