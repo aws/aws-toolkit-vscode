@@ -42,8 +42,6 @@ I can help you with the following tasks:
 - Convert embedded SQL from Oracle databases to PostgreSQL
 
 What would you like to do? You can enter 'language upgrade' or 'SQL conversion'.`
-            : `Welcome to code transformation!
-
-I can help you upgrade your Java 8 and 11 codebases to Java 17.`,
+            : `Welcome to code transformation!`,
     },
 }
