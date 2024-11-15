@@ -20,7 +20,12 @@ import {
 } from '../../shared/remoteSession'
 import { DefaultIamClient } from '../../shared/clients/iamClient'
 import { ErrorInformation } from '../../shared/errors'
-import { sshAgentSocketVariable, startSshAgent, startVscodeRemote } from '../../shared/extensions/ssh'
+import {
+    sshAgentSocketVariable,
+    startSshAgent,
+    startVscodeRemote,
+    testSshConnection,
+} from '../../shared/extensions/ssh'
 import { createBoundProcess } from '../../codecatalyst/model'
 import { getLogger } from '../../shared/logger/logger'
 import { CancellationError, Timeout } from '../../shared/utilities/timeoutUtils'
@@ -195,6 +200,7 @@ export class Ec2Connecter implements vscode.Disposable {
         const remoteEnv = await this.prepareEc2RemoteEnvWithProgress(selection, remoteUser)
 
         try {
+            await testSshConnection(remoteEnv.sshPath, remoteEnv.hostname)
             await startVscodeRemote(remoteEnv.SessionProcess, remoteEnv.hostname, '/', remoteEnv.vscPath, remoteUser)
         } catch (err) {
             this.throwGeneralConnectionError(selection, err as Error)
@@ -212,8 +218,9 @@ export class Ec2Connecter implements vscode.Disposable {
         const logger = this.configureRemoteConnectionLogger(selection.instanceId)
         const { ssm, vsc, ssh } = (await ensureDependencies()).unwrap()
         const keyPair = await this.configureSshKeys(selection, remoteUser)
-        const hostNamePrefix = 'aws-ec2-'
-        const sshConfig = new SshConfig(ssh, hostNamePrefix, 'ec2_connect', keyPair.getPrivateKeyPath())
+        const hostnamePrefix = 'aws-ec2-'
+        const hostname = `${hostnamePrefix}${selection.instanceId}`
+        const sshConfig = new SshConfig(ssh, hostnamePrefix, 'ec2_connect', keyPair.getPrivateKeyPath())
 
         const config = await sshConfig.ensureValid()
         if (config.isErr()) {
@@ -222,6 +229,7 @@ export class Ec2Connecter implements vscode.Disposable {
 
             throw err
         }
+
         const ssmSession = await this.ssmClient.startSession(selection.instanceId, 'AWS-StartSSHSession')
         await this.addActiveSession(selection.instanceId, ssmSession.SessionId!)
 
@@ -236,7 +244,7 @@ export class Ec2Connecter implements vscode.Disposable {
         })
 
         return {
-            hostname: `${hostNamePrefix}${selection.instanceId}`,
+            hostname,
             envProvider,
             sshPath: ssh,
             vscPath: vsc,
