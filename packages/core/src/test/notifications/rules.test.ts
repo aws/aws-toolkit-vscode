@@ -24,7 +24,6 @@ describe('Notifications Rule Engine', function () {
         authRegions: ['us-east-1'],
         authStates: ['connected'],
         authScopes: ['codewhisperer:completions', 'codewhisperer:analysis'],
-        installedExtensions: ['ext1', 'ext2', 'ext3'],
         activeExtensions: ['ext1', 'ext2'],
     }
 
@@ -405,28 +404,6 @@ describe('Notifications Rule Engine', function () {
         )
     })
 
-    it('should display notification for InstalledExtensions criteria', function () {
-        assert.equal(
-            ruleEngine.shouldDisplayNotification(
-                buildNotification({
-                    additionalCriteria: [{ type: 'InstalledExtensions', values: ['ext1', 'ext2'] }],
-                })
-            ),
-            true
-        )
-    })
-
-    it('should NOT display notification for invalid InstalledExtensions criteria', function () {
-        assert.equal(
-            ruleEngine.shouldDisplayNotification(
-                buildNotification({
-                    additionalCriteria: [{ type: 'InstalledExtensions', values: ['ext1', 'ext2', 'unknownExtension'] }],
-                })
-            ),
-            false
-        )
-    })
-
     it('should display notification for ActiveExtensions criteria', function () {
         assert.equal(
             ruleEngine.shouldDisplayNotification(
@@ -479,7 +456,6 @@ describe('Notifications Rule Engine', function () {
                         { type: 'AuthRegion', values: ['us-east-1', 'us-west-2'] },
                         { type: 'AuthState', values: ['connected'] },
                         { type: 'AuthScopes', values: ['codewhisperer:completions', 'codewhisperer:analysis'] },
-                        { type: 'InstalledExtensions', values: ['ext1', 'ext2'] },
                         { type: 'ActiveExtensions', values: ['ext1', 'ext2'] },
                     ],
                 })
@@ -517,7 +493,6 @@ describe('Notifications Rule Engine', function () {
                         { type: 'AuthRegion', values: ['us-east-1', 'us-west-2'] },
                         { type: 'AuthState', values: ['connected'] },
                         { type: 'AuthScopes', values: ['codewhisperer:completions', 'codewhisperer:analysis'] },
-                        { type: 'InstalledExtensions', values: ['ex1', 'ext2'] },
                         { type: 'ActiveExtensions', values: ['ext1', 'ext2'] },
 
                         { type: 'ComputeEnv', values: ['ec2'] }, // no 'local'
@@ -576,7 +551,6 @@ describe('Notifications getRuleContext()', function () {
             authRegions: ['us-east-1'],
             authStates: ['connected'],
             authScopes: amazonQScopes,
-            installedExtensions: vscode.extensions.all.map((e) => e.id),
             activeExtensions: vscode.extensions.all.filter((e) => e.isActive).map((e) => e.id),
         })
     })
