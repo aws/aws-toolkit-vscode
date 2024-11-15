@@ -128,9 +128,10 @@ export async function testSshConnection(
     session: SSM.StartSessionResponse
 ): Promise<void> {
     try {
+        const env = { SESSION_ID: session.SessionId, STREAM_URL: session.StreamUrl, TOKEN: session.TokenValue }
         await new ProcessClass(sshPath, ['-T', `${user}@${hostname}`, 'echo connected && exit']).run({
             spawnOptions: {
-                env: { SESSION_ID: session.SessionId, STREAM_URL: session.StreamUrl, TOKEN: session.TokenValue },
+                env,
             },
         })
     } catch (error) {
