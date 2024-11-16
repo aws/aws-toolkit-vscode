@@ -158,7 +158,8 @@ async function promptInstallToolkit(pluginPath: vscode.Uri, newVersion: string, 
     const response = await vscode.window.showInformationMessage(
         localize(
             'AWS.dev.beta.updatePrompt',
-            `New version of ${productName()} is available at the [beta URL]({0}). Install the new version "{1}" to continue using the beta.`,
+            'New version of {0} is available at the [beta URL]({1}). Install the new version "{2}" to continue using the beta.',
+            productName(),
             vsixUrl,
             newVersion
         ),
@@ -174,7 +175,9 @@ async function promptInstallToolkit(pluginPath: vscode.Uri, newVersion: string, 
                     lastCheck: Date.now(),
                     needUpdate: false,
                 })
-                reloadWindowPrompt(localize('AWS.dev.beta.reloadPrompt', 'Reload now to use the new beta AWS Toolkit.'))
+                reloadWindowPrompt(
+                    localize('AWS.dev.beta.reloadPrompt', 'Reload now to use the new beta {0}.', productName())
+                )
             } catch (e) {
                 throw ToolkitError.chain(e, `Failed to install ${vsixName}`, { code: 'FailedExtensionInstall' })
             }
