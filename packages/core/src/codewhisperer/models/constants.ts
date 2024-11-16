@@ -472,7 +472,7 @@ export const chooseTransformationObjective = `I can help you with the following 
 export const chooseTransformationObjectivePlaceholder = 'Enter "language upgrade" or "sql conversion"'
 
 export const userPatchDescriptionChatMessage = `
-I can now divide the transformation results into diff patches if you would like to review and accept each diff with fewer changes:
+I can now divide the transformation results into diff patches (if applicable to the app) if you would like to review and accept each diff with fewer changes:
 
 • Minimal Compatible Library Upgrade to Java 17: Dependencies to the minimum compatible versions in Java 17, including Springboot, JUnit, and PowerMockito.
 
