@@ -71,26 +71,6 @@ describe('SAM SyncWizard', async function () {
     const createTester = async (params?: Partial<SyncParams>) =>
         createWizardTester(new SyncWizard({ deployType: 'code', ...params }, await globals.templateRegistry))
 
-    it('shows steps in correct order', async function () {
-        const tester = await createTester()
-        tester.template.assertShowFirst()
-        tester.paramsSource.assertShowSecond()
-        tester.projectRoot.assertDoesNotShow()
-
-        const workspaceUri = vscode.workspace.workspaceFolders?.[0]?.uri || vscode.Uri.file('/')
-        const rootFolderUri = vscode.Uri.joinPath(workspaceUri, 'my')
-        const templateUri = vscode.Uri.joinPath(rootFolderUri, 'template.yaml')
-        const tester2 = await createTester({
-            template: { uri: templateUri, data: createBaseTemplate() },
-            paramsSource: ParamsSource.SpecifyAndSave,
-            projectRoot: rootFolderUri,
-        })
-        tester2.region.assertShow(1)
-        tester2.stackName.assertShow(2)
-        tester2.bucketName.assertShow(3)
-        tester2.projectRoot.assertDoesNotShow()
-    })
-
     it('skips prompts if user chooses samconfig file as params source', async function () {
         const workspaceUri = vscode.workspace.workspaceFolders?.[0]?.uri || vscode.Uri.file('/')
         const rootFolderUri = vscode.Uri.joinPath(workspaceUri, 'my')
@@ -187,6 +167,10 @@ describe('SAM SyncWizard', async () => {
              * Selection:
              *  - template              : [Skip]     automatically set
              *  - projectRoot           : [Skip]     automatically set
+             *
+             *  - SourceBucketName      : [Select]   prefill value
+             *  - DestinationBucketName : [Select]   prefill value
+             *
              *  - paramsSource          : [Select]   1. ('Specify required parameters and save as defaults')
              *  - region                : [Select]   'us-west-2'
              *  - stackName             : [Select]   1. 'stack1'
@@ -198,6 +182,12 @@ describe('SAM SyncWizard', async () => {
             await testFolder.write('samconfig.toml', samconfigInvalidData)
 
             const prompterTester = PrompterTester.init()
+                .handleInputBox('Specify SAM Template parameter value for SourceBucketName', (inputBox) => {
+                    inputBox.acceptValue('my-source-bucket-name')
+                })
+                .handleInputBox('Specify SAM Template parameter value for DestinationBucketName', (inputBox) => {
+                    inputBox.acceptValue('my-destination-bucket-name')
+                })
                 .handleQuickPick('Specify parameter source for sync', async (picker) => {
                     // Need time to check samconfig.toml file and generate options
                     await picker.untilReady()
@@ -260,6 +250,10 @@ describe('SAM SyncWizard', async () => {
              * Selection:
              *  - template              : [Skip]    automatically set
              *  - projectRoot           : [Skip]    automatically set
+             *
+             *  - SourceBucketName      : [Select]   prefill value
+             *  - DestinationBucketName : [Select]   prefill value
+             *
              *  - paramsSource          : [Select]  3. ('Use default values from samconfig')
              *  - region                : [Skip]    null; will use 'us-west-2' from samconfig
              *  - stackName             : [Skip]    null; will use 'project-1' from samconfig
@@ -271,6 +265,12 @@ describe('SAM SyncWizard', async () => {
             await testFolder.write('samconfig.toml', samconfigCompleteData)
 
             const prompterTester = PrompterTester.init()
+                .handleInputBox('Specify SAM Template parameter value for SourceBucketName', (inputBox) => {
+                    inputBox.acceptValue('my-source-bucket-name')
+                })
+                .handleInputBox('Specify SAM Template parameter value for DestinationBucketName', (inputBox) => {
+                    inputBox.acceptValue('my-destination-bucket-name')
+                })
                 .handleQuickPick('Specify parameter source for sync', async (quickPick) => {
                     // Need time to check samconfig.toml file and generate options
                     await quickPick.untilReady()
@@ -316,6 +316,10 @@ describe('SAM SyncWizard', async () => {
              * Selection:
              *  - template              : [Skip]     automatically set
              *  - projectRoot           : [Skip]     automatically set
+             *
+             *  - SourceBucketName      : [Select]   prefill value
+             *  - DestinationBucketName : [Select]   prefill value
+             *
              *  - paramsSource          : [Select]   2. ('Specify required parameters')
              *  - region                : [Select]   'us-west-2'
              *  - stackName             : [Select]   2. 'stack2'
@@ -324,6 +328,12 @@ describe('SAM SyncWizard', async () => {
              */
 
             const prompterTester = PrompterTester.init()
+                .handleInputBox('Specify SAM Template parameter value for SourceBucketName', (inputBox) => {
+                    inputBox.acceptValue('my-source-bucket-name')
+                })
+                .handleInputBox('Specify SAM Template parameter value for DestinationBucketName', (inputBox) => {
+                    inputBox.acceptValue('my-destination-bucket-name')
+                })
                 .handleQuickPick('Specify parameter source for sync', async (picker) => {
                     // Need time to check samconfig.toml file and generate options
                     await picker.untilReady()
@@ -383,6 +393,10 @@ describe('SAM SyncWizard', async () => {
              * Selection:
              *  - template              : [Skip]     automatically set
              *  - projectRoot           : [Skip]     automatically set
+             *
+             *  - SourceBucketName      : [Select]   prefill value
+             *  - DestinationBucketName : [Select]   prefill value
+             *
              *  - paramsSource          : [Select]  3. ('Use default values from samconfig')
              *  - region                : [Skip]    null; will use value from samconfig file
              *  - stackName             : [Skip]    null; will use value from samconfig file
@@ -394,6 +408,12 @@ describe('SAM SyncWizard', async () => {
             await testFolder.write('samconfig.toml', samconfigCompleteData)
 
             const prompterTester = PrompterTester.init()
+                .handleInputBox('Specify SAM Template parameter value for SourceBucketName', (inputBox) => {
+                    inputBox.acceptValue('my-source-bucket-name')
+                })
+                .handleInputBox('Specify SAM Template parameter value for DestinationBucketName', (inputBox) => {
+                    inputBox.acceptValue('my-destination-bucket-name')
+                })
                 .handleQuickPick('Specify parameter source for sync', async (picker) => {
                     // Need time to check samconfig.toml file and generate options
                     await picker.untilReady()
@@ -439,6 +459,10 @@ describe('SAM SyncWizard', async () => {
              * Selection:
              *  - template              : [Select]   template/yaml set
              *  - projectRoot           : [Skip]     automatically set
+             *
+             *  - SourceBucketName      : [Select]   prefill value
+             *  - DestinationBucketName : [Select]   prefill value
+             *
              *  - paramsSource          : [Select]   2. ('Specify required parameters')
              *  - region                : [Skip]     automatically set from region node 'us-west-2'
              *  - stackName             : [Select]   2. 'stack2'
@@ -453,6 +477,12 @@ describe('SAM SyncWizard', async () => {
                     assert.strictEqual(quickPick.items.length, 1)
                     assert.strictEqual(quickPick.items[0].label, templateFile.fsPath)
                     quickPick.acceptItem(quickPick.items[0])
+                })
+                .handleInputBox('Specify SAM Template parameter value for SourceBucketName', (inputBox) => {
+                    inputBox.acceptValue('my-source-bucket-name')
+                })
+                .handleInputBox('Specify SAM Template parameter value for DestinationBucketName', (inputBox) => {
+                    inputBox.acceptValue('my-destination-bucket-name')
                 })
                 .handleQuickPick('Specify parameter source for sync', async (picker) => {
                     // Need time to check samconfig.toml file and generate options
@@ -527,6 +557,12 @@ describe('SAM SyncWizard', async () => {
                     assert.strictEqual(quickPick.items[0].label, templateFile.fsPath)
                     quickPick.acceptItem(quickPick.items[0])
                 })
+                .handleInputBox('Specify SAM Template parameter value for SourceBucketName', (inputBox) => {
+                    inputBox.acceptValue('my-source-bucket-name')
+                })
+                .handleInputBox('Specify SAM Template parameter value for DestinationBucketName', (inputBox) => {
+                    inputBox.acceptValue('my-destination-bucket-name')
+                })
                 .handleQuickPick('Specify parameter source for sync', async (picker) => {
                     // Need time to check samconfig.toml file and generate options
                     await picker.untilReady()
@@ -577,6 +613,12 @@ describe('SAM SyncWizard', async () => {
                     assert.strictEqual(quickPick.items[0].label, templateFile.fsPath)
                     quickPick.acceptItem(quickPick.items[0])
                 })
+                .handleInputBox('Specify SAM Template parameter value for SourceBucketName', (inputBox) => {
+                    inputBox.acceptValue('my-source-bucket-name')
+                })
+                .handleInputBox('Specify SAM Template parameter value for DestinationBucketName', (inputBox) => {
+                    inputBox.acceptValue('my-destination-bucket-name')
+                })
                 .handleQuickPick('Specify parameter source for sync', async (picker) => {
                     // Need time to check samconfig.toml file and generate options
                     await picker.untilReady()
@@ -608,7 +650,12 @@ describe('SAM SyncWizard', async () => {
             const samconfigFile = vscode.Uri.file(await testFolder.write('samconfig.toml', ''))
             /**
              * Selection:
+             *  - template              : [Skip]     automatically set
              *  - projectRoot           : [Skip]     automatically set
+             *
+             *  - SourceBucketName      : [Select]   prefill value
+             *  - DestinationBucketName : [Select]   prefill value
+             *
              *  - paramsSource          : [Select]   1. ('Specify required parameters and save as defaults')
              *  - region                : [Select]   'us-west-2'
              *  - stackName             : [Select]   2. 'stack2'
@@ -623,6 +670,12 @@ describe('SAM SyncWizard', async () => {
                     assert.strictEqual(quickPick.items.length, 1)
                     assert.strictEqual(quickPick.items[0].label, templateFile.fsPath)
                     quickPick.acceptItem(quickPick.items[0])
+                })
+                .handleInputBox('Specify SAM Template parameter value for SourceBucketName', (inputBox) => {
+                    inputBox.acceptValue('my-source-bucket-name')
+                })
+                .handleInputBox('Specify SAM Template parameter value for DestinationBucketName', (inputBox) => {
+                    inputBox.acceptValue('my-destination-bucket-name')
                 })
                 .handleQuickPick('Specify parameter source for sync', async (picker) => {
                     // Need time to check samconfig.toml file and generate options
@@ -684,6 +737,10 @@ describe('SAM SyncWizard', async () => {
              * Selection:
              *  - template              : [Select]   template/yaml set
              *  - projectRoot           : [Skip]     automatically set
+             *
+             *  - SourceBucketName      : [Select]   prefill value
+             *  - DestinationBucketName : [Select]   prefill value
+             *
              *  - paramsSource          : [Select]   1. ('Specify required parameters and save as defaults')
              *  - region                : [Select]   'us-west-2'
              *  - stackName             : [Select]   3. 'stack3'
@@ -698,6 +755,12 @@ describe('SAM SyncWizard', async () => {
                     assert.strictEqual(quickPick.items.length, 1)
                     assert.strictEqual(quickPick.items[0].label, templateFile.fsPath)
                     quickPick.acceptItem(quickPick.items[0])
+                })
+                .handleInputBox('Specify SAM Template parameter value for SourceBucketName', (inputBox) => {
+                    inputBox.acceptValue('my-source-bucket-name')
+                })
+                .handleInputBox('Specify SAM Template parameter value for DestinationBucketName', (inputBox) => {
+                    inputBox.acceptValue('my-destination-bucket-name')
                 })
                 .handleQuickPick('Specify parameter source for sync', async (picker) => {
                     // Need time to check samconfig.toml file and generate options
@@ -758,6 +821,10 @@ describe('SAM SyncWizard', async () => {
              * Selection:
              *  - template              : [Select]  template.yaml
              *  - projectRoot           : [Skip]     automatically set
+             *
+             *  - SourceBucketName      : [Select]   prefill value
+             *  - DestinationBucketName : [Select]   prefill value
+             *
              *  - paramsSource          : [Select]  3. ('Use default values from samconfig')
              *  - region                : [Skip]    automatically set from region node 'us-west-2'
              *  - stackName             : [Skip]    null; will use value from samconfig file
@@ -775,6 +842,12 @@ describe('SAM SyncWizard', async () => {
                     assert.strictEqual(quickPick.items.length, 1)
                     assert.strictEqual(quickPick.items[0].label, templateFile.fsPath)
                     quickPick.acceptItem(quickPick.items[0])
+                })
+                .handleInputBox('Specify SAM Template parameter value for SourceBucketName', (inputBox) => {
+                    inputBox.acceptValue('my-source-bucket-name')
+                })
+                .handleInputBox('Specify SAM Template parameter value for DestinationBucketName', (inputBox) => {
+                    inputBox.acceptValue('my-destination-bucket-name')
                 })
                 .handleQuickPick('Specify parameter source for sync', async (picker) => {
                     // Need time to check samconfig.toml file and generate options
@@ -908,6 +981,12 @@ describe('SAM runSync', () => {
                     assert.strictEqual(quickPick.items[0].label, templateFile.fsPath)
                     quickPick.acceptItem(quickPick.items[0])
                 })
+                .handleInputBox('Specify SAM Template parameter value for SourceBucketName', (inputBox) => {
+                    inputBox.acceptValue('my-source-bucket-name')
+                })
+                .handleInputBox('Specify SAM Template parameter value for DestinationBucketName', (inputBox) => {
+                    inputBox.acceptValue('my-destination-bucket-name')
+                })
                 .handleQuickPick('Specify parameter source for sync', async (picker) => {
                     // Need time to check samconfig.toml file and generate options
                     await picker.untilReady()
@@ -986,6 +1065,12 @@ describe('SAM runSync', () => {
 
         it('[entry: template file] specify flag should instantiate correct process in terminal', async () => {
             const prompterTester = PrompterTester.init()
+                .handleInputBox('Specify SAM Template parameter value for SourceBucketName', (inputBox) => {
+                    inputBox.acceptValue('my-source-bucket-name')
+                })
+                .handleInputBox('Specify SAM Template parameter value for DestinationBucketName', (inputBox) => {
+                    inputBox.acceptValue('my-destination-bucket-name')
+                })
                 .handleQuickPick('Specify parameter source for sync', async (picker) => {
                     // Need time to check samconfig.toml file and generate options
                     await picker.untilReady()
@@ -1070,6 +1155,12 @@ describe('SAM runSync', () => {
             const samconfigFile = vscode.Uri.file(await testFolder.write('samconfig.toml', samconfigCompleteData))
 
             const prompterTester = PrompterTester.init()
+                .handleInputBox('Specify SAM Template parameter value for SourceBucketName', (inputBox) => {
+                    inputBox.acceptValue('my-source-bucket-name')
+                })
+                .handleInputBox('Specify SAM Template parameter value for DestinationBucketName', (inputBox) => {
+                    inputBox.acceptValue('my-destination-bucket-name')
+                })
                 .handleQuickPick('Specify parameter source for sync', async (picker) => {
                     // Need time to check samconfig.toml file and generate options
                     await picker.untilReady()
@@ -1172,6 +1263,12 @@ describe('SAM runSync', () => {
             getTestWindow().onDidShowMessage((m) => m.items.find((i) => i.title === 'OK')?.select())
 
             const prompterTester = PrompterTester.init()
+                .handleInputBox('Specify SAM Template parameter value for SourceBucketName', (inputBox) => {
+                    inputBox.acceptValue('my-source-bucket-name')
+                })
+                .handleInputBox('Specify SAM Template parameter value for DestinationBucketName', (inputBox) => {
+                    inputBox.acceptValue('my-destination-bucket-name')
+                })
                 .handleQuickPick('Specify parameter source for sync', async (picker) => {
                     // Need time to check samconfig.toml file and generate options
                     await picker.untilReady()

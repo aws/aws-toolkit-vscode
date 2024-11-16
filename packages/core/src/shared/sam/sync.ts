@@ -52,6 +52,8 @@ import { ParamsSource, createSyncParamsSourcePrompter } from '../ui/sam/paramsSo
 import { createEcrPrompter } from '../ui/sam/ecrPrompter'
 import { BucketSource, createBucketNamePrompter } from '../ui/sam/bucketPrompter'
 import { runInTerminal } from './processTerminal'
+import { WizardPrompter } from '../ui/wizardPrompter'
+import { TemplateParametersWizard } from '../../awsService/appBuilder/wizards/templateParametersWizard'
 
 export interface SyncParams {
     readonly paramsSource: ParamsSource
@@ -59,6 +61,7 @@ export interface SyncParams {
     readonly deployType: 'infra' | 'code'
     readonly projectRoot: vscode.Uri
     readonly template: TemplateItem
+    readonly templateParameters: any
     readonly stackName: string
     readonly bucketSource: BucketSource
     readonly bucketName: string
@@ -157,6 +160,11 @@ export class SyncWizard extends Wizard<SyncParams> {
         super({ initState: state, exitPrompterProvider: shouldPromptExit ? createExitPrompter : undefined })
         this.registry = registry
         this.form.template.bindPrompter(() => createTemplatePrompter(this.registry, syncMementoRootKey))
+        this.form.templateParameters.bindPrompter(
+            ({ template }) =>
+                new WizardPrompter(new TemplateParametersWizard(template!.uri, samSyncUrl, syncMementoRootKey))
+        )
+
         this.form.projectRoot.setDefault(({ template }) => getProjectRoot(template))
 
         this.form.paramsSource.bindPrompter(async ({ projectRoot }) => {
