@@ -409,7 +409,6 @@ export async function zipCode(
         transformByQState.getChatControllers()?.transformationFinished.fire({
             message: CodeWhispererConstants.projectSizeTooLargeChatMessage,
             tabID: ChatSessionManager.Instance.getSession().tabID,
-            includeStartNewTransformationButton: true,
         })
         throw new ZipExceedsSizeLimitError()
     }

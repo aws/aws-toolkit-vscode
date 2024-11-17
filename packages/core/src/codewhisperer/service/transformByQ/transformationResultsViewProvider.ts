@@ -420,7 +420,6 @@ export class ProposedTransformationExplorer {
                 transformByQState.getChatControllers()?.transformationFinished.fire({
                     message: `${CodeWhispererConstants.errorDownloadingDiffChatMessage} The download failed due to: ${downloadErrorMessage}`,
                     tabID: ChatSessionManager.Instance.getSession().tabID,
-                    includeStartNewTransformationButton: true,
                 })
                 await setContext('gumby.reviewState', TransformByQReviewStatus.NotStarted)
                 getLogger().error(`CodeTransformation: ExportResultArchive error = ${downloadErrorMessage}`)
@@ -490,7 +489,6 @@ export class ProposedTransformationExplorer {
                 transformByQState.getChatControllers()?.transformationFinished.fire({
                     message: CodeWhispererConstants.viewProposedChangesChatMessage,
                     tabID: ChatSessionManager.Instance.getSession().tabID,
-                    includeStartNewTransformationButton: true,
                 })
                 await vscode.commands.executeCommand('aws.amazonq.transformationHub.summary.reveal')
             } catch (e: any) {
@@ -499,7 +497,6 @@ export class ProposedTransformationExplorer {
                 transformByQState.getChatControllers()?.transformationFinished.fire({
                     message: `${CodeWhispererConstants.errorDeserializingDiffChatMessage} ${deserializeErrorMessage}`,
                     tabID: ChatSessionManager.Instance.getSession().tabID,
-                    includeStartNewTransformationButton: true,
                 })
                 void vscode.window.showErrorMessage(
                     `${CodeWhispererConstants.errorDeserializingDiffNotification} ${deserializeErrorMessage}`
@@ -550,31 +547,17 @@ export class ProposedTransformationExplorer {
             }
 
             //We do this to ensure that the changesAppliedChatMessage is only sent to user when they accept the first diff.patch
-            if (diffModel.currentPatchIndex === patchFiles.length - 1) {
-                transformByQState.getChatControllers()?.transformationFinished.fire({
-                    message: CodeWhispererConstants.changesAppliedChatMessageMultipleDiffs(
-                        diffModel.currentPatchIndex,
-                        patchFiles.length,
-                        patchFilesDescriptions
-                            ? patchFilesDescriptions.content[diffModel.currentPatchIndex].name
-                            : undefined
-                    ),
-                    tabID: ChatSessionManager.Instance.getSession().tabID,
-                    includeStartNewTransformationButton: true,
-                })
-            } else {
-                transformByQState.getChatControllers()?.transformationFinished.fire({
-                    message: CodeWhispererConstants.changesAppliedChatMessageMultipleDiffs(
-                        diffModel.currentPatchIndex,
-                        patchFiles.length,
-                        patchFilesDescriptions
-                            ? patchFilesDescriptions.content[diffModel.currentPatchIndex].name
-                            : undefined
-                    ),
-                    tabID: ChatSessionManager.Instance.getSession().tabID,
-                    includeStartNewTransformationButton: false,
-                })
-            }
+            transformByQState.getChatControllers()?.transformationFinished.fire({
+                message: CodeWhispererConstants.changesAppliedChatMessageMultipleDiffs(
+                    diffModel.currentPatchIndex,
+                    patchFiles.length,
+                    patchFilesDescriptions
+                        ? patchFilesDescriptions.content[diffModel.currentPatchIndex].name
+                        : undefined
+                ),
+                tabID: ChatSessionManager.Instance.getSession().tabID,
+                includeStartNewTransformationButton: diffModel.currentPatchIndex === patchFiles.length - 1,
+            })
 
             // Load the next patch file
             diffModel.currentPatchIndex++
@@ -613,7 +596,6 @@ export class ProposedTransformationExplorer {
 
             transformByQState.getChatControllers()?.transformationFinished.fire({
                 tabID: ChatSessionManager.Instance.getSession().tabID,
-                includeStartNewTransformationButton: true,
             })
 
             telemetry.codeTransform_viewArtifact.emit({

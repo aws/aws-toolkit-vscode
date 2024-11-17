@@ -177,6 +177,8 @@ async function validateJavaHome(): Promise<boolean> {
             javaVersionUsedByMaven = JDKVersion.JDK8
         } else if (javaVersionUsedByMaven === '11.') {
             javaVersionUsedByMaven = JDKVersion.JDK11
+        } else if (javaVersionUsedByMaven === '17.') {
+            javaVersionUsedByMaven = JDKVersion.JDK17
         }
     }
     if (javaVersionUsedByMaven !== transformByQState.getSourceJDKVersion()) {
@@ -819,7 +821,6 @@ export async function postTransformationJob() {
     transformByQState.getChatControllers()?.transformationFinished.fire({
         message: chatMessage,
         tabID: ChatSessionManager.Instance.getSession().tabID,
-        includeStartNewTransformationButton: true,
     })
     const durationInMs = calculateTotalLatency(CodeTransformTelemetryState.instance.getStartTime())
     const resultStatusMessage = transformByQState.getStatus()

@@ -632,7 +632,7 @@ export class GumbyController {
         this.messenger.sendDependencyVersionsFoundMessage(data.dependencies, data.tabID)
     }
 
-    private async HILDependencySelectionUploaded(data: { tabID: string }) {
+    private HILDependencySelectionUploaded(data: { tabID: string }) {
         this.sessionStorage.getSession().conversationState = ConversationState.JOB_SUBMITTED
         this.messenger.sendHILResumeMessage(data.tabID)
     }
