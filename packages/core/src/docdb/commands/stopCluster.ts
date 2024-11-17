@@ -34,8 +34,6 @@ export function stopCluster(node?: DBClusterNode): Promise<void> {
             void vscode.window.showInformationMessage(
                 localize('AWS.docdb.stopCluster.success', 'Stopping cluster: {0}', node.name)
             )
-            await node.waitUntilStatusChanged()
-            node?.parent.refresh()
         }
     })
 }

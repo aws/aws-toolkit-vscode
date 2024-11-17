@@ -17,8 +17,6 @@ export function startCluster(node?: DBClusterNode): Promise<void> {
             void vscode.window.showInformationMessage(
                 localize('AWS.docdb.startCluster.success', 'Starting cluster: {0}', node.name)
             )
-            await node.waitUntilStatusChanged()
-            node?.parent.refresh()
         }
     })
 }

@@ -13,6 +13,7 @@ import { ModifyDBInstanceMessage } from '@aws-sdk/client-docdb'
 import { copyToClipboard } from '../../shared/utilities/messages'
 import { toTitleCase } from '../../shared'
 import { getAwsConsoleUrl } from '../../shared/awsConsole'
+import { getLogger } from '../../shared/logger'
 
 /**
  * An AWS Explorer node representing a DocumentDB instance.
@@ -26,10 +27,12 @@ export class DBInstanceNode extends DBResourceNode {
         readonly instance: DBInstance
     ) {
         super(parent.client, instance.DBInstanceIdentifier ?? '[Instance]', vscode.TreeItemCollapsibleState.None)
+        getLogger().info(`NEW DBInstanceNode: ${instance.DBInstanceArn}`)
         this.description = this.makeDescription()
         this.contextValue = this.getContext()
         this.iconPath = this.isAvailable || this.isStopped ? undefined : new vscode.ThemeIcon('loading~spin')
         this.tooltip = `${this.name}\nClass: ${this.instance.DBInstanceClass}\nStatus: ${this.status}`
+        this.trackChanges()
     }
 
     private makeDescription(): string {
@@ -67,6 +70,7 @@ export class DBInstanceNode extends DBResourceNode {
 
     override async getStatus() {
         const instance = await this.parent.client.getInstance(this.instance.DBInstanceIdentifier!)
+        this.instance.DBInstanceStatus = instance?.DBInstanceStatus
         return instance?.DBInstanceStatus
     }
 
@@ -78,6 +82,17 @@ export class DBInstanceNode extends DBResourceNode {
 
     override copyEndpoint() {
         return copyToClipboard(this.instance.Endpoint?.Address ?? '', this.name)
+    }
+
+    override refreshTree(): void {
+        this.clearTimer()
+        this.refresh()
+        this.parent.refresh()
+    }
+
+    override clearTimer(): void {
+        this.pollingSet.delete(this.arn)
+        this.pollingSet.clearTimer()
     }
 
     public [inspect.custom](): string {

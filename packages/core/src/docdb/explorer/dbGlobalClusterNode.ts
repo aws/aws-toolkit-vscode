@@ -58,6 +58,7 @@ export class DBGlobalClusterNode extends DBResourceNode {
                     const nodes = members.map((member) => {
                         const memberRole: DBClusterRole = member.IsWriter ? 'primary' : 'secondary'
                         const [cluster, client] = this.clusterMap.get(member.DBClusterArn!) ?? []
+
                         return new DBClusterNode(this, cluster!, client!, memberRole)
                     })
 
@@ -131,6 +132,16 @@ export class DBGlobalClusterNode extends DBResourceNode {
         return getAwsConsoleUrl('docdb', this.regionCode).with({
             fragment: `global-cluster-details/${this.name}`,
         })
+    }
+
+    override refreshTree(): void {
+        this.refresh()
+        this.parent.refresh()
+    }
+
+    override clearTimer(): void {
+        this.pollingSet.delete(this.arn)
+        this.pollingSet.clearTimer()
     }
 
     public [inspect.custom](): string {

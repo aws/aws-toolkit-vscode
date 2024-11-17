@@ -19,6 +19,7 @@ import { DBInstance, DocumentDBClient } from '../../shared/clients/docdbClient'
 import { DocDBContext } from './docdbContext'
 import { toTitleCase } from '../../shared'
 import { getAwsConsoleUrl } from '../../shared/awsConsole'
+import { getLogger } from '../../shared/logger'
 
 export type DBClusterRole = 'global' | 'regional' | 'primary' | 'secondary'
 
@@ -31,6 +32,7 @@ export class DBClusterNode extends DBResourceNode {
     override name = this.cluster.DBClusterIdentifier!
     override arn = this.cluster.DBClusterArn!
     public instances: DBInstance[] = []
+    private childNodes: DBInstanceNode[] = []
 
     constructor(
         public readonly parent: AWSTreeNodeBase,
@@ -39,6 +41,7 @@ export class DBClusterNode extends DBResourceNode {
         readonly clusterRole: DBClusterRole = 'regional'
     ) {
         super(client, cluster.DBClusterIdentifier ?? '[Cluster]', vscode.TreeItemCollapsibleState.Collapsed)
+        getLogger().info(`NEW DBClusterNode: ${cluster.DBClusterArn}`)
         this.arn = cluster.DBClusterArn ?? ''
         this.name = cluster.DBClusterIdentifier ?? ''
         this.contextValue = this.getContext()
@@ -47,10 +50,16 @@ export class DBClusterNode extends DBResourceNode {
         )
         this.description = this.getDescription()
         this.tooltip = `${this.name}${os.EOL}Engine: ${this.cluster.EngineVersion}${os.EOL}Status: ${this.cluster.Status}`
+        this.trackChanges()
     }
 
     public override async getChildren(): Promise<AWSTreeNodeBase[]> {
         return telemetry.docdb_listInstances.run(async () => {
+            this.childNodes.forEach((node) => {
+                getLogger().info(`(getChildren) Removing Polling from node: ${node.arn}`)
+                node.pollingSet.delete(node.arn)
+                node.pollingSet.clearTimer()
+            })
             return await makeChildrenNodes({
                 getChildNodes: async () => {
                     this.instances = (await this.client.listInstances([this.arn])).map((i) => {
@@ -60,6 +69,7 @@ export class DBClusterNode extends DBResourceNode {
                         return { ...i, ...member }
                     })
                     const nodes = this.instances.map((instance) => new DBInstanceNode(this, instance))
+                    this.childNodes = nodes
                     return nodes
                 },
                 getNoChildrenPlaceholderNode: async () => {
@@ -132,7 +142,9 @@ export class DBClusterNode extends DBResourceNode {
     }
 
     override async getStatus() {
-        const [cluster] = await this.client.listClusters(this.id)
+        const [cluster] = await this.client.listClusters(this.arn)
+        getLogger().info(`Updating Status: new status ${cluster?.Status} for cluster ${this.arn}`)
+        this.cluster.Status = cluster?.Status
         return cluster.Status
     }
 
@@ -147,6 +159,22 @@ export class DBClusterNode extends DBResourceNode {
             return copyToClipboard(this.cluster.Endpoint, this.name)
         }
         return Promise.reject()
+    }
+
+    override refreshTree(): void {
+        this.clearTimer()
+        this.refresh()
+        this.parent.refresh()
+    }
+
+    override clearTimer(): void {
+        this.pollingSet.delete(this.arn)
+        this.pollingSet.clearTimer()
+        this.childNodes.forEach((node) => {
+            getLogger().info(`(clearTimer) Removing Polling from node: ${node.arn}`)
+            node.pollingSet.delete(node.arn)
+            node.pollingSet.clearTimer()
+        })
     }
 
     public [inspect.custom](): string {

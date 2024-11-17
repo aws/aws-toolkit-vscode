@@ -15,6 +15,8 @@ import { DBElasticClusterNode } from './dbElasticClusterNode'
 import { telemetry } from '../../shared/telemetry'
 import { DBGlobalClusterNode } from './dbGlobalClusterNode'
 import { DBCluster } from '@aws-sdk/client-docdb'
+import { getLogger } from '../../shared/logger'
+import { DBResourceNode } from './dbResourceNode'
 
 /**
  * An AWS Explorer node representing DocumentDB.
@@ -23,6 +25,7 @@ import { DBCluster } from '@aws-sdk/client-docdb'
  */
 export class DocumentDBNode extends AWSTreeNodeBase {
     public override readonly regionCode: string
+    private allNodes: DBResourceNode[] = []
 
     public constructor(public readonly client: DocumentDBClient) {
         super('DocumentDB', vscode.TreeItemCollapsibleState.Collapsed)
@@ -33,7 +36,9 @@ export class DocumentDBNode extends AWSTreeNodeBase {
     public override async getChildren(): Promise<AWSTreeNodeBase[]> {
         return telemetry.docdb_listClusters.run(async () => {
             return await makeChildrenNodes({
-                getChildNodes: () => this.getClusterNodes(),
+                getChildNodes: () => {
+                    return this.getClusterNodes()
+                },
                 getNoChildrenPlaceholderNode: async () =>
                     new PlaceholderNode(this, localize('AWS.explorerNode.docdb.noClusters', '[No Clusters found]')),
                 sort: (item1, item2) => item1.name.localeCompare(item2.name),
@@ -62,18 +67,22 @@ export class DocumentDBNode extends AWSTreeNodeBase {
 
         // contains clusters that are not part of a global cluster
         const regionalClusters = clusters.filter((c) => !globalClusterMap.has(c.DBClusterArn!))
+        this.allNodes.forEach((node) => {
+            node.clearTimer()
+        })
 
-        const nodes = []
+        const nodes: DBResourceNode[] = []
         nodes.push(
             ...globalClusters.map((cluster) => new DBGlobalClusterNode(this, cluster, globalClusterMap, this.client))
         )
+        getLogger().info(`Repopulating child regional clusters...`)
         nodes.push(...regionalClusters.map((cluster) => new DBClusterNode(this, cluster, this.client)))
         nodes.push(
             ...elasticClusters.map(
                 (cluster) => new DBElasticClusterNode(this, cluster as DBElasticCluster, this.client)
             )
         )
-
+        this.allNodes = nodes
         return nodes
     }
 
