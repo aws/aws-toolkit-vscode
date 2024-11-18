@@ -38,7 +38,7 @@ describe('SSH Agent', function () {
 })
 
 function echoEnvVarsCmd(varNames: string[]) {
-    const toShell = (s: string) => (isWin() ? `%${s}%` : `$${s}`)
+    const toShell = (s: string) => `$${s}`
     return `echo "${varNames.map(toShell).join(' ')}"`
 }
 
@@ -48,7 +48,7 @@ describe('testSshConnection', function () {
 
     before(async function () {
         testWorkspace = await createTestWorkspaceFolder()
-        sshPath = path.join(testWorkspace.uri.fsPath, 'fakeSSH')
+        sshPath = path.join(testWorkspace.uri.fsPath, `fakeSSH${isWin() ? '.cmd' : ''}`)
     })
 
     after(async function () {
