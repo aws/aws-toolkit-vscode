@@ -13,6 +13,7 @@ import { resolvePath } from '../utilities/pathUtils'
 import fs from '../../shared/fs/fs'
 import { isWeb } from '../extensionGlobals'
 import { getUserAgent } from '../telemetry/util'
+import { isBeta } from '../vscode/env'
 
 /**
  * Activate Logger functionality for the extension.
@@ -80,7 +81,7 @@ export function makeLogger(opts: {
     outputChannels?: vscode.OutputChannel[]
     useConsoleLog?: boolean
 }): Logger {
-    const logger = new ToolkitLogger(opts.logLevel)
+    const logger = new ToolkitLogger(opts.logLevel, isBeta())
     if (opts.logFile) {
         logger.logToFile(opts.logFile)
         logger.logFile = opts.logFile
