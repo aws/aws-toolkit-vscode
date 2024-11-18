@@ -661,7 +661,10 @@ export async function runSync(
                 isSuccess: true,
             }
         } catch (err) {
-            throw ToolkitError.chain(err, 'Failed to sync SAM application', { details: { ...params } })
+            throw ToolkitError.chain(err, 'Failed to sync SAM application', {
+                details: { ...params },
+                code: err instanceof ToolkitError ? err.code : undefined,
+            })
         }
     })
 }

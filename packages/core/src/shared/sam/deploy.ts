@@ -392,7 +392,10 @@ export async function runDeploy(arg: any, wizardParams?: DeployParams): Promise<
                 throw error
             }
         } catch (error) {
-            throw ToolkitError.chain(error, 'Failed to deploy SAM template', { details: { ...deployFlags } })
+            throw ToolkitError.chain(error, 'Failed to deploy SAM template', {
+                details: { ...deployFlags },
+                code: error instanceof ToolkitError ? error.code : undefined,
+            })
         }
         return {
             isSuccess: true,

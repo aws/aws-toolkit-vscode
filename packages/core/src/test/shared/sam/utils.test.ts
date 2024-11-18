@@ -6,7 +6,13 @@
 import * as vscode from 'vscode'
 import assert from 'assert'
 import sinon from 'sinon'
-import { getProjectRootUri, getProjectRoot, getSource, isDotnetRuntime } from '../../../shared/sam/utils'
+import {
+    getProjectRootUri,
+    getProjectRoot,
+    getSource,
+    isDotnetRuntime,
+    getSamCliErrorMessage,
+} from '../../../shared/sam/utils'
 import { TemplateItem } from '../../../shared/sam/sync'
 import { RegionNode } from '../../../awsexplorer/regionNode'
 import { Region } from '../../../shared/regions/endpoints'
@@ -146,6 +152,18 @@ describe('SAM utils', async function () {
                 const response = await isDotnetRuntime(noUri, scenario.template)
                 assert.strictEqual(response, scenario.expected)
             })
+        })
+    })
+
+    describe('gets the SAM CLI error from stderr', async function () {
+        it('returns the error message', async function () {
+            const stderr =
+                'Starting Build use cache\nStarting Build inside a container\nCache is invalid, running build and copying resources for following functions (ResizerFunction)\nBuilding codeuri: /Users/mbfreder/TestApp/JavaSamApp/serverless-patterns/s3lambda-resizing-python/src runtime: python3.12 metadata: {} architecture: x86_64 functions: ResizerFunction\nError: Docker is unreachable. Docker needs to be running to build inside a container.'
+            const response = getSamCliErrorMessage(stderr)
+            assert.deepStrictEqual(
+                response,
+                'Error: Docker is unreachable. Docker needs to be running to build inside a container.'
+            )
         })
     })
 })

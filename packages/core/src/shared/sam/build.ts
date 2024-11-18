@@ -236,6 +236,7 @@ export async function runBuild(arg?: TreeNode): Promise<SamBuildResult> {
     } catch (error) {
         throw ToolkitError.chain(error, 'Failed to build SAM template', {
             details: { ...resolveBuildArgConflict(buildFlags) },
+            code: error instanceof ToolkitError ? error.code : undefined,
         })
     }
 }

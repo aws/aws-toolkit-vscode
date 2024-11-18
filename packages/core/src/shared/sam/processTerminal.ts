@@ -12,18 +12,29 @@ import { CancellationError } from '../utilities/timeoutUtils'
 import { getLogger } from '../logger'
 import { removeAnsi } from '../utilities/textUtilities'
 import { isAutomation } from '../vscode/env'
+import { getSamCliErrorMessage, SamCliErrorTypes } from './utils'
 
 let oldTerminal: ProcessTerminal | undefined
 export async function runInTerminal(proc: ChildProcess, cmd: string) {
     const handleResult = (result?: ChildProcessResult) => {
         if (result && result.exitCode !== 0) {
-            const message = `sam ${cmd} exited with a non-zero exit code: ${result.exitCode}`
+            const defaultMessage = `sam ${cmd} exited with a non-zero exit code: ${result.exitCode}`
             if (result.stderr.includes('is up to date')) {
-                throw ToolkitError.chain(result.error, message, {
+                throw ToolkitError.chain(result.error, defaultMessage, {
                     code: 'NoUpdateExitCode',
                 })
             }
-            throw ToolkitError.chain(result.error, message, {
+            for (const errorType in SamCliErrorTypes) {
+                const errorMessage = getSamCliErrorMessage(result.stderr)
+                if (errorMessage.includes(SamCliErrorTypes[errorType as keyof typeof SamCliErrorTypes])) {
+                    throw ToolkitError.chain(result.error, errorMessage, {
+                        code: errorType,
+                    })
+                }
+            }
+
+            // If no specific error matched, throw the default non-zero exit code error.
+            throw ToolkitError.chain(result.error, defaultMessage, {
                 code: 'NonZeroExitCode',
             })
         }

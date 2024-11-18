@@ -83,3 +83,22 @@ export async function getSamCliPathAndVersion() {
 
     return { path: samCliPath, parsedVersion }
 }
+
+export function getSamCliErrorMessage(stderr: string): string {
+    // Split the stderr string by newline, filter out empty lines, and get the last line
+    const lines = stderr
+        .trim()
+        .split('\n')
+        .filter((line) => line.trim() !== '')
+    return lines[lines.length - 1]
+}
+
+export enum SamCliErrorTypes {
+    DockerUnreachable = 'Docker is unreachable.',
+    ResolveS3AndS3Set = 'Cannot use both --resolve-s3 and --s3-bucket parameters in non-guided deployments.',
+    DeployStackStatusMissing = 'Was not able to find a stack with the name:',
+    DeployStackOutPutFailed = 'Failed to get outputs from stack',
+    DeployBucketRequired = 'Templates with a size greater than 51,200 bytes must be deployed via an S3 Bucket.',
+    NoUpdate = 'is up to date',
+    ChangeSetEmpty = 'No changes to deploy. Stack is up to date',
+}
