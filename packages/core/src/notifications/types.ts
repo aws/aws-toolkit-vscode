@@ -7,15 +7,54 @@ import * as vscode from 'vscode'
 import { EnvType, OperatingSystem } from '../shared/telemetry/util'
 import { TypeConstructor } from '../shared/utilities/typeConstructors'
 import { AuthUserState, AuthStatus } from '../shared/telemetry/telemetry.gen'
+import { AuthType } from '../auth/connection'
 
 /** Types of information that we can use to determine whether to show a notification or not. */
-export type Criteria = 'OS' | 'ComputeEnv' | 'AuthType' | 'AuthRegion' | 'AuthState' | 'AuthScopes' | 'ActiveExtensions'
+
+type OsCriteria = {
+    type: 'OS'
+    values: OperatingSystem[]
+}
+
+type ComputeEnvCriteria = {
+    type: 'ComputeEnv'
+    values: EnvType[]
+}
+
+type AuthTypeCriteria = {
+    type: 'AuthType'
+    values: AuthType[]
+}
+
+type AuthRegionCriteria = {
+    type: 'AuthRegion'
+    values: string[]
+}
+
+type AuthStateCriteria = {
+    type: 'AuthState'
+    values: AuthStatus[]
+}
+
+type AuthScopesCriteria = {
+    type: 'AuthScopes'
+    values: string[] // TODO: Scopes should be typed. Could import here, but don't want to import too much.
+}
+
+type ActiveExtensionsCriteria = {
+    type: 'ActiveExtensions'
+    values: string[]
+}
 
 /** Generic condition where the type determines how the values are evaluated. */
-export interface CriteriaCondition {
-    readonly type: Criteria
-    readonly values: string[]
-}
+export type CriteriaCondition =
+    | OsCriteria
+    | ComputeEnvCriteria
+    | AuthTypeCriteria
+    | AuthRegionCriteria
+    | AuthStateCriteria
+    | AuthScopesCriteria
+    | ActiveExtensionsCriteria
 
 /** One of the subconditions (clauses) must match to be valid. */
 export interface OR {
@@ -39,8 +78,8 @@ export interface ExactMatch {
 export type ConditionalClause = Range | ExactMatch | OR
 
 export type OnReceiveType = 'toast' | 'modal'
-export type OnClickType = 'modal' | 'openTextDocument' | 'openUrl'
-export type ActionType = 'openUrl' | 'updateAndReload' | 'openTxt'
+export type OnClickType = { type: 'modal' } | { type: 'openTextDocument' } | { type: 'openUrl'; url: string }
+export type ActionType = 'openUrl' | 'updateAndReload' | 'openTextDocument'
 
 /** How to display the notification. */
 export interface UIRenderInstructions {
@@ -51,11 +90,8 @@ export interface UIRenderInstructions {
             toastPreview?: string // optional property for toast
         }
     }
-    onRecieve: OnReceiveType // TODO: typo
-    onClick: {
-        type: OnClickType
-        url?: string // optional property for 'openUrl'
-    }
+    onReceive: OnReceiveType
+    onClick: OnClickType
     actions?: Array<{
         type: ActionType
         displayText: {
@@ -124,7 +160,7 @@ export interface RuleContext {
     readonly extensionVersion: string
     readonly os: OperatingSystem
     readonly computeEnv: EnvType
-    readonly authTypes: ('credentials' | 'builderId' | 'identityCenter' | 'unknown')[]
+    readonly authTypes: AuthType[]
     readonly authRegions: string[]
     readonly authStates: AuthStatus[]
     readonly authScopes: string[]

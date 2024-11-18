@@ -14,7 +14,7 @@
                         "toastPreview": "New Amazon Q features available: inline chat"
                     }
                 },
-                "onRecieve": "toast",
+                "onReceive": "toast",
                 "onClick": {
                     "type": "openTextDocument"
                 },
@@ -41,7 +41,7 @@
                         "toastPreview": "New Amazon Q features are available!"
                     }
                 },
-                "onRecieve": "toast",
+                "onReceive": "toast",
                 "onClick": {
                     "type": "openUrl",
                     "url": "https://aws.amazon.com/developer/generative-ai/amazon-q/change-log/"
