@@ -537,7 +537,8 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         }
 
         const runtimeFamily = getFamily(runtime)
-        const region = this.ctx.awsContext.getCredentialDefaultRegion()
+        // use region in debug config first, if not found, fall back to toolkit default region.
+        const region = config.aws?.region ?? this.ctx.awsContext.getCredentialDefaultRegion()
         const documentUri =
             vscode.window.activeTextEditor?.document.uri ??
             // XXX: don't know what URI to choose...

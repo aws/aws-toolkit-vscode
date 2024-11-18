@@ -47,9 +47,9 @@ export const vsCodeState: VsCodeState = {
 
 export type UtgStrategy = 'ByName' | 'ByContent'
 
-export type CrossFileStrategy = 'OpenTabs_BM25'
+export type CrossFileStrategy = 'opentabs' | 'codemap' | 'bm25' | 'default'
 
-export type SupplementalContextStrategy = CrossFileStrategy | UtgStrategy | 'Empty' | 'LSP'
+export type SupplementalContextStrategy = CrossFileStrategy | UtgStrategy | 'Empty'
 
 export interface CodeWhispererSupplementalContext {
     isUtg: boolean

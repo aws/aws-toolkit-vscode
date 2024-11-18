@@ -90,7 +90,7 @@ describe('AppNode', () => {
 
             const resourceNode = resources[0] as TreeNode
             assert.strictEqual(resourceNode.id, 'placeholder')
-            assert.strictEqual(resourceNode.resource, '[No IaC templates found in Workspaces]')
+            assert.strictEqual(resourceNode.resource, '[No resource found in SAM template]')
             assert(getAppStub.calledOnce)
             assert(getStackNameStub.calledOnce)
             assert(generateStackNodeStub.notCalled)
@@ -157,7 +157,7 @@ describe('AppNode', () => {
             assert.strictEqual(resourceNode.id, 'placeholder')
             assert.strictEqual(
                 resourceNode.resource,
-                '[Unable to load Resource tree for this App. Update IaC template]'
+                '[Unable to load Resource tree for this App. Update SAM template]'
             )
             assert(getAppStub.calledOnce)
             assert(getStackNameStub.notCalled)

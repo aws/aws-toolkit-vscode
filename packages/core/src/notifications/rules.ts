@@ -12,6 +12,7 @@ import { isAutomation } from '../shared/vscode/env'
 import { AuthFormId } from '../login/webview/vue/types'
 import { getLogger } from '../shared/logger/logger'
 
+const logger = getLogger('notifications')
 /**
  * Evaluates if a given version fits into the parameters specified by a notification, e.g:
  *
@@ -73,23 +74,41 @@ export class RuleEngine {
     constructor(private readonly context: RuleContext) {}
 
     public shouldDisplayNotification(payload: ToolkitNotification) {
-        return this.evaluate(payload.displayIf)
+        return this.evaluate(payload.id, payload.displayIf)
     }
 
-    private evaluate(condition: DisplayIf): boolean {
+    private evaluate(id: string, condition: DisplayIf): boolean {
         const currentExt = globals.context.extension.id
         // if in test, skip the extension id check since its fake
         if (condition.extensionId !== currentExt && !isAutomation()) {
+            logger.verbose(
+                'notification id: (%s) did NOT pass extension id check, actual ext id: (%s), expected ext id: (%s)',
+                id,
+                currentExt,
+                condition.extensionId
+            )
             return false
         }
 
         if (condition.ideVersion) {
             if (!isValidVersion(this.context.ideVersion, condition.ideVersion)) {
+                logger.verbose(
+                    'notification id: (%s) did NOT pass IDE version check, actual version: (%s), expected version: (%s)',
+                    id,
+                    this.context.ideVersion,
+                    condition.ideVersion
+                )
                 return false
             }
         }
         if (condition.extensionVersion) {
             if (!isValidVersion(this.context.extensionVersion, condition.extensionVersion)) {
+                logger.verbose(
+                    'notification id: (%s) did NOT pass extension version check, actual ext version: (%s), expected ext version: (%s)',
+                    id,
+                    this.context.extensionVersion,
+                    condition.extensionVersion
+                )
                 return false
             }
         }
@@ -97,8 +116,10 @@ export class RuleEngine {
         if (condition.additionalCriteria) {
             for (const criteria of condition.additionalCriteria) {
                 if (!this.evaluateRule(criteria)) {
+                    logger.verbose('notification id: (%s) did NOT pass criteria check: %O', id, criteria)
                     return false
                 }
+                logger.debug('notification id: (%s) passed criteria check: %O', id, criteria)
             }
         }
 
@@ -136,8 +157,6 @@ export class RuleEngine {
                 return hasAnyOfExpected(this.context.authStates)
             case 'AuthScopes':
                 return isEqualSetToExpected(this.context.authScopes)
-            case 'InstalledExtensions':
-                return isSuperSetOfExpected(this.context.installedExtensions)
             case 'ActiveExtensions':
                 return isSuperSetOfExpected(this.context.activeExtensions)
             default:
@@ -171,7 +190,6 @@ export async function getRuleContext(context: vscode.ExtensionContext, authState
         computeEnv: await getComputeEnvType(),
         authTypes: [...new Set(authTypes)],
         authScopes: authState.authScopes ? authState.authScopes?.split(',') : [],
-        installedExtensions: vscode.extensions.all.map((e) => e.id),
         activeExtensions: vscode.extensions.all.filter((e) => e.isActive).map((e) => e.id),
 
         // Toolkit (and eventually Q?) may have multiple connections with different regions and states.
@@ -179,8 +197,9 @@ export async function getRuleContext(context: vscode.ExtensionContext, authState
         authRegions: authState.awsRegion ? [authState.awsRegion] : [],
         authStates: [authState.authStatus],
     }
-    const { activeExtensions, installedExtensions, ...loggableRuleContext } = ruleContext
-    getLogger('notifications').debug('getRuleContext() determined rule context: %O', loggableRuleContext)
+
+    const { activeExtensions, ...loggableRuleContext } = ruleContext
+    logger.debug('getRuleContext() determined rule context: %O', loggableRuleContext)
 
     return ruleContext
 }

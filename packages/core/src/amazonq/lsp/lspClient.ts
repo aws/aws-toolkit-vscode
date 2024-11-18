@@ -103,11 +103,12 @@ export class LspClient {
         }
     }
 
-    async queryInlineProjectContext(query: string, path: string) {
+    async queryInlineProjectContext(query: string, path: string, target: 'default' | 'codemap' | 'bm25') {
         try {
             const request = JSON.stringify({
                 query: query,
                 filePath: path,
+                target,
             })
             const encrypted = await this.encrypt(request)
             const resp: any = await this.client?.sendRequest(QueryInlineProjectContextRequestType, encrypted)

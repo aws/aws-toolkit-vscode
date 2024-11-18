@@ -4,11 +4,12 @@
  */
 
 import * as vscode from 'vscode'
+import * as nls from 'vscode-nls'
 import { ResourceTreeDataProvider, TreeNode } from '../shared/treeview/resourceTreeDataProvider'
 import { Command, Commands } from '../shared/vscode/commands2'
-import { Icon, IconPath, getIcon } from '../shared/icons'
+import { Icon, getIcon } from '../shared/icons'
 import { contextKey, setContext } from '../shared/vscode/setContext'
-import { NotificationType, ToolkitNotification, getNotificationTelemetryId } from './types'
+import { NotificationType, OnReceiveType, ToolkitNotification, getNotificationTelemetryId } from './types'
 import { ToolkitError } from '../shared/errors'
 import { isAmazonQ } from '../shared/extensionUtilities'
 import { getLogger } from '../shared/logger/logger'
@@ -16,12 +17,18 @@ import { registerToolView } from '../awsexplorer/activationShared'
 import { readonlyDocument } from '../shared/utilities/textDocumentUtilities'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
 import { telemetry } from '../shared/telemetry/telemetry'
+import { globals } from '../shared'
+
+const localize = nls.loadMessageBundle()
+const logger = getLogger('notifications')
 
 /**
  * Controls the "Notifications" side panel/tree in each extension. It takes purely UX actions
  * and does not determine what notifications to dispaly or how to fetch and store them.
  */
 export class NotificationsNode implements TreeNode {
+    public static readonly title = localize('AWS.notifications.title', 'Notifications')
+
     public readonly id = 'notifications'
     public readonly resource = this
     public provider?: ResourceTreeDataProvider
@@ -34,6 +41,7 @@ export class NotificationsNode implements TreeNode {
     private readonly showContextStr: contextKey
     private readonly startUpNodeContext: string
     private readonly emergencyNodeContext: string
+    private view: vscode.TreeView<TreeNode> | undefined
 
     static #instance: NotificationsNode
 
@@ -62,31 +70,49 @@ export class NotificationsNode implements TreeNode {
     }
 
     public getTreeItem() {
-        const item = new vscode.TreeItem('Notifications')
+        const item = new vscode.TreeItem(NotificationsNode.title)
         item.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed
         item.contextValue = 'notifications'
 
         return item
     }
 
-    public refresh(): void {
-        const hasNotifications = this.startUpNotifications.length > 0 || this.emergencyNotifications.length > 0
-        void setContext(this.showContextStr, hasNotifications)
+    public refresh() {
+        const totalNotifications = this.notificationCount()
+        if (this.view) {
+            if (totalNotifications > 0) {
+                this.view.badge = {
+                    tooltip: `${totalNotifications} notification${totalNotifications > 1 ? 's' : ''}`,
+                    value: totalNotifications,
+                }
+                this.view.title = `${NotificationsNode.title} (${totalNotifications})`
+            } else {
+                this.view.badge = undefined
+                this.view.title = NotificationsNode.title
+            }
+        } else {
+            logger.warn('NotificationsNode was refreshed but the view was not initialized!')
+        }
 
         this.provider?.refresh()
+        return setContext(this.showContextStr, totalNotifications > 0)
     }
 
     public getChildren() {
         const buildNode = (n: ToolkitNotification, type: NotificationType) => {
-            const icon: Icon | IconPath =
-                type === 'startUp'
-                    ? getIcon('vscode-question')
-                    : { ...getIcon('vscode-alert'), color: new vscode.ThemeColor('errorForeground') }
+            const icon: Icon =
+                type === 'emergency'
+                    ? Object.assign(getIcon('vscode-alert') as Icon, {
+                          color: new vscode.ThemeColor('errorForeground'),
+                      })
+                    : (getIcon('vscode-question') as Icon)
+
+            const title = n.uiRenderInstructions.content['en-US'].title
             return this.openNotificationCmd.build(n).asTreeNode({
-                label: n.uiRenderInstructions.content['en-US'].title,
+                label: title,
+                tooltip: title,
                 iconPath: icon,
                 contextValue: type === 'startUp' ? this.startUpNodeContext : this.emergencyNodeContext,
-                tooltip: 'Click to open',
             })
         }
 
@@ -100,10 +126,10 @@ export class NotificationsNode implements TreeNode {
      * Sets the current list of notifications. Nodes are generated for each notification.
      * No other processing is done, see NotificationController.
      */
-    public setNotifications(startUp: ToolkitNotification[], emergency: ToolkitNotification[]) {
+    public async setNotifications(startUp: ToolkitNotification[], emergency: ToolkitNotification[]) {
         this.startUpNotifications = startUp
         this.emergencyNotifications = emergency
-        this.refresh()
+        await this.refresh()
     }
 
     /**
@@ -112,9 +138,9 @@ export class NotificationsNode implements TreeNode {
      *
      * Only dismisses startup notifications.
      */
-    public dismissStartUpNotification(id: string) {
+    public async dismissStartUpNotification(id: string) {
         this.startUpNotifications = this.startUpNotifications.filter((n) => n.id !== id)
-        this.refresh()
+        await this.refresh()
     }
 
     /**
@@ -124,15 +150,19 @@ export class NotificationsNode implements TreeNode {
         return vscode.commands.executeCommand(this.focusCmdStr)
     }
 
+    private notificationCount() {
+        return this.startUpNotifications.length + this.emergencyNotifications.length
+    }
+
     /**
      * Fired when a notification is clicked on in the panel. It will run any rendering
      * instructions included in the notification. See {@link ToolkitNotification.uiRenderInstructions}.
      */
-    private async openNotification(notification: ToolkitNotification) {
+    public async openNotification(notification: ToolkitNotification) {
         switch (notification.uiRenderInstructions.onClick.type) {
             case 'modal':
                 // Render blocking modal
-                getLogger('notifications').verbose(`rendering modal for notificaiton: ${notification.id} ...`)
+                logger.verbose(`rendering modal for notificaiton: ${notification.id} ...`)
                 await this.showInformationWindow(notification, 'modal', false)
                 break
             case 'openUrl':
@@ -140,7 +170,7 @@ export class NotificationsNode implements TreeNode {
                 if (!notification.uiRenderInstructions.onClick.url) {
                     throw new ToolkitError('No url provided for onclick open url')
                 }
-                getLogger('notifications').verbose(`opening url for notification: ${notification.id} ...`)
+                logger.verbose(`opening url for notification: ${notification.id} ...`)
                 await openUrl(
                     vscode.Uri.parse(notification.uiRenderInstructions.onClick.url),
                     getNotificationTelemetryId(notification)
@@ -148,7 +178,7 @@ export class NotificationsNode implements TreeNode {
                 break
             case 'openTextDocument':
                 // Display read-only txt document
-                getLogger('notifications').verbose(`showing txt document for notification: ${notification.id} ...`)
+                logger.verbose(`showing txt document for notification: ${notification.id} ...`)
                 await telemetry.toolkit_invokeAction.run(async () => {
                     telemetry.record({ source: getNotificationTelemetryId(notification), action: 'openTxt' })
                     await readonlyDocument.show(
@@ -165,7 +195,11 @@ export class NotificationsNode implements TreeNode {
      * Can be either a blocking modal or a bottom-right corner toast
      * Handles the button click actions based on the button type.
      */
-    private showInformationWindow(notification: ToolkitNotification, type: string = 'toast', passive: boolean = false) {
+    private showInformationWindow(
+        notification: ToolkitNotification,
+        type: OnReceiveType = 'toast',
+        passive: boolean = false
+    ) {
         const isModal = type === 'modal'
 
         // modal has to have defined actions (buttons)
@@ -203,7 +237,10 @@ export class NotificationsNode implements TreeNode {
                                     )
                                     break
                                 case 'updateAndReload':
-                                    await this.updateAndReload(notification.displayIf.extensionId)
+                                    // Give things time to finish executing.
+                                    globals.clock.setTimeout(() => {
+                                        return this.updateAndReload(notification.displayIf.extensionId)
+                                    }, 1000)
                                     break
                                 case 'openUrl':
                                     if (selectedButton.url) {
@@ -228,7 +265,11 @@ export class NotificationsNode implements TreeNode {
     }
 
     private async updateAndReload(id: string) {
-        getLogger('notifications').verbose('Updating and reloading the extension...')
+        logger.verbose('Updating and reloading the extension...')
+
+        // Publish pending telemetry before it is lost to the window reload.
+        await globals.telemetry.flushRecords()
+
         await vscode.commands.executeCommand('workbench.extensions.installExtension', id)
         await vscode.commands.executeCommand('workbench.action.reloadWindow')
     }
@@ -258,7 +299,7 @@ export class NotificationsNode implements TreeNode {
     }
 
     registerView(context: vscode.ExtensionContext) {
-        const view = registerToolView(
+        this.view = registerToolView(
             {
                 nodes: [this],
                 view: isAmazonQ() ? 'aws.amazonq.notifications' : 'aws.toolkit.notifications',
@@ -266,6 +307,5 @@ export class NotificationsNode implements TreeNode {
             },
             context
         )
-        view.message = `New feature announcements and emergency notifications for ${isAmazonQ() ? 'Amazon Q' : 'AWS Toolkit'} will appear here.`
     }
 }

@@ -4,15 +4,18 @@
  */
 
 import assert from 'assert'
+import path from 'path'
 import {
     isCloudDesktop,
     getEnvVars,
     getServiceEnvVarConfig,
     isAmazonInternalOs as isAmazonInternalOS,
+    isBeta,
 } from '../../../shared/vscode/env'
 import { ChildProcess } from '../../../shared/utilities/processUtils'
 import * as sinon from 'sinon'
 import os from 'os'
+import fs from '../../../shared/fs/fs'
 import vscode from 'vscode'
 import { getComputeEnvType } from '../../../shared/telemetry/util'
 
@@ -81,6 +84,22 @@ describe('env', function () {
     function stubOsVersion(verson: string) {
         return sandbox.stub(os, 'release').returns(verson)
     }
+
+    it('isBeta', async () => {
+        // HACK: read each package.json because env.ts thinks version is "testPluginVersion" during testing.
+        const toolkitPath = path.join(__dirname, '../../../../../../toolkit/package.json')
+        const amazonqPath = path.join(__dirname, '../../../../../../amazonq/package.json')
+        const toolkit = JSON.parse(await fs.readFileText(toolkitPath))
+        const amazonq = JSON.parse(await fs.readFileText(amazonqPath))
+        const toolkitVer = toolkit.version as string
+        const amazonqVer = amazonq.version as string
+        const toolkitBeta = toolkitVer.startsWith('99.')
+        const amazonqBeta = amazonqVer.startsWith('99.')
+
+        assert(toolkitBeta === amazonqBeta)
+        const expected = toolkitBeta
+        assert.strictEqual(isBeta(), expected)
+    })
 
     it('isAmazonInternalOS', function () {
         sandbox.stub(process, 'platform').value('linux')

@@ -94,4 +94,44 @@ describe('FeatureConfigProvider', () => {
     it('should test feature-does-not-exist as disabled', async () => {
         assert.strictEqual(FeatureConfigProvider.isEnabled('feature-does-not-exist' as FeatureName), false)
     })
+
+    describe('getProjectContextGroup', function () {
+        beforeEach(function () {
+            sinon.restore()
+        })
+
+        afterEach(function () {
+            sinon.restore()
+        })
+
+        const cases: { variationName: string; expected: string }[] = [
+            { variationName: 'CONTROL', expected: 'control' },
+            { variationName: 'TREATMENT_1', expected: 't1' },
+            { variationName: 'TREATMENT_2', expected: 't2' },
+        ]
+
+        for (const tuple of cases) {
+            it(`should return ${tuple.expected} when variation name is ${tuple.variationName}`, async function () {
+                const clientSpy = await createSpyClient()
+                sinon.stub(clientSpy, 'listFeatureEvaluations').returns({
+                    promise: () =>
+                        Promise.resolve({
+                            $response: {
+                                requestId: '',
+                            },
+                            featureEvaluations: [
+                                {
+                                    feature: 'ProjectContextV2',
+                                    variation: tuple.variationName,
+                                    value: { stringValue: 'foo' },
+                                },
+                            ],
+                        }),
+                } as Request<ListFeatureEvaluationsResponse, AWSError>)
+                await FeatureConfigProvider.instance.fetchFeatureConfigs()
+
+                assert.strictEqual(FeatureConfigProvider.instance.getProjectContextGroup(), tuple.expected)
+            })
+        }
+    })
 })

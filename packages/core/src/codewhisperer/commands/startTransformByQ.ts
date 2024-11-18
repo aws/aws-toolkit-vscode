@@ -21,7 +21,6 @@ import {
     DB,
     TransformationType,
 } from '../models/model'
-import { convertDateToTimestamp } from '../../shared/utilities/textUtilities'
 import {
     createZipManifest,
     downloadAndExtractResultArchive,
@@ -80,6 +79,7 @@ import { HumanInTheLoopManager } from '../service/transformByQ/humanInTheLoopMan
 import { setContext } from '../../shared/vscode/setContext'
 import { makeTemporaryToolkitFolder } from '../../shared'
 import globals from '../../shared/extensionGlobals'
+import { convertDateToTimestamp } from '../../shared/datetime'
 
 function getFeedbackCommentData() {
     const jobId = transformByQState.getJobId()
@@ -174,6 +174,8 @@ async function validateJavaHome(): Promise<boolean> {
             javaVersionUsedByMaven = JDKVersion.JDK8
         } else if (javaVersionUsedByMaven === '11.') {
             javaVersionUsedByMaven = JDKVersion.JDK11
+        } else if (javaVersionUsedByMaven === '17.') {
+            javaVersionUsedByMaven = JDKVersion.JDK17
         }
     }
     if (javaVersionUsedByMaven !== transformByQState.getSourceJDKVersion()) {
