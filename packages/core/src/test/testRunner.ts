@@ -22,7 +22,7 @@ export async function runTests(
     testFolder: string | string[],
     extensionId: string,
     initTests: string[] = [],
-    options?: { retries?: number; testFiles?: string[] }
+    options?: { testFiles?: string[] }
 ): Promise<void> {
     if (!process.env['AWS_TOOLKIT_AUTOMATION']) {
         throw new Error('Expected the "AWS_TOOLKIT_AUTOMATION" environment variable to be set for tests.')
@@ -79,7 +79,6 @@ export async function runTests(
                 mochaFile: outputFile,
             },
         },
-        retries: options?.retries ?? 0,
         timeout: 0,
     })
 
