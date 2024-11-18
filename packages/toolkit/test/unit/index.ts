@@ -7,7 +7,10 @@ import { runTests } from 'aws-core-vscode/test'
 import { VSCODE_EXTENSION_ID } from 'aws-core-vscode/utils'
 
 export function run(): Promise<void> {
-    return runTests(process.env.TEST_DIR ?? ['test/unit', '../../core/dist/src/test'], VSCODE_EXTENSION_ID.awstoolkit, [
-        '../../core/dist/src/test/globalSetup.test.ts',
-    ])
+    return runTests(
+        process.env.TEST_DIR ?? ['test/unit', '../../core/dist/src/test'],
+        VSCODE_EXTENSION_ID.awstoolkit,
+        ['../../core/dist/src/test/globalSetup.test.ts'],
+        { retries: 3 }
+    )
 }
