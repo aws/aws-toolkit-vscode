@@ -35,7 +35,9 @@ export async function computeDiff(leftPath: string, rightPath: string, tabId: st
     const leftFile = await vscode.workspace.openTextDocument(left)
     const rightFile = await vscode.workspace.openTextDocument(right)
 
-    const changes = diffLines(leftFile.getText(), rightFile.getText())
+    const changes = diffLines(leftFile.getText(), rightFile.getText(), {
+        ignoreWhitespace: true,
+    })
 
     let charsAdded = 0
     let charsRemoved = 0
