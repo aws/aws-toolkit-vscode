@@ -145,6 +145,12 @@ export class DiffModel {
      */
     public parseDiff(pathToDiff: string, pathToWorkspace: string): ProposedChangeNode[] {
         const diffContents = fs.readFileSync(pathToDiff, 'utf8')
+
+        if (!diffContents.trim()) {
+            getLogger().error(`CodeTransformation: diff.patch file is empty`)
+            throw new Error(CodeWhispererConstants.noChangesMadeMessage)
+        }
+
         const changedFiles = parsePatch(diffContents)
         // path to the directory containing copy of the changed files in the transformed project
         const pathToTmpSrcDir = this.copyProject(pathToWorkspace, changedFiles)
