@@ -24,6 +24,7 @@ const warnOnce = onceChanged((s: string, url: string) => {
     void showMessageWithUrl(s, url, undefined, 'warn')
 })
 
+// TODO: Refactor all scopes to a central file with minimal dependencies.
 export const scopesCodeCatalyst = ['codecatalyst:read_write']
 export const scopesSsoAccountAccess = ['sso:account:access']
 /** These are the non-chat scopes for CW. */
@@ -38,6 +39,11 @@ type SsoType =
     | 'any' // any type of sso
     | 'idc' // AWS Identity Center
     | 'builderId'
+
+// TODO: This type is not centralized and there are many routines in the codebase that use some
+// variation for these for validation, telemetry, UX, etc. A refactor is needed to align these
+// string types.
+export type AuthType = 'credentials' | 'builderId' | 'identityCenter' | 'unknown'
 
 export const isIamConnection = (conn?: Connection): conn is IamConnection => conn?.type === 'iam'
 export const isSsoConnection = (conn?: Connection, type: SsoType = 'any'): conn is SsoConnection => {

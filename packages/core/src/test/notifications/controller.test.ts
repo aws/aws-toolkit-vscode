@@ -557,7 +557,7 @@ function getValidTestNotification(id: string): ToolkitNotification {
                     description: 'test',
                 },
             },
-            onRecieve: 'toast',
+            onReceive: 'toast',
             onClick: {
                 type: 'openUrl',
                 url: 'https://aws.amazon.com/visualstudiocode/',
@@ -580,7 +580,7 @@ function getInvalidTestNotification(id: string): ToolkitNotification {
                     description: 'test',
                 },
             },
-            onRecieve: 'toast',
+            onReceive: 'toast',
             onClick: { type: 'modal' },
         },
     }
