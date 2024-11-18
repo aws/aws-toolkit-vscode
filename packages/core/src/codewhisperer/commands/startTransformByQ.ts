@@ -20,6 +20,7 @@ import {
     TransformByQStatus,
     DB,
     TransformationType,
+    TransformationCandidateProject,
 } from '../models/model'
 import {
     createZipManifest,
@@ -80,6 +81,8 @@ import { setContext } from '../../shared/vscode/setContext'
 import { makeTemporaryToolkitFolder } from '../../shared'
 import globals from '../../shared/extensionGlobals'
 import { convertDateToTimestamp } from '../../shared/datetime'
+import { isWin } from '../../shared/vscode/env'
+import { findStringInDirectory } from '../../shared/utilities/workspaceUtils'
 
 function getFeedbackCommentData() {
     const jobId = transformByQState.getJobId()
@@ -150,7 +153,7 @@ export async function validateSQLMetadataFile(fileContents: string, message: any
 }
 
 export async function setMaven() {
-    let mavenWrapperExecutableName = os.platform() === 'win32' ? 'mvnw.cmd' : 'mvnw'
+    let mavenWrapperExecutableName = isWin() ? 'mvnw.cmd' : 'mvnw'
     const mavenWrapperExecutablePath = path.join(transformByQState.getProjectPath(), mavenWrapperExecutableName)
     if (fs.existsSync(mavenWrapperExecutablePath)) {
         if (mavenWrapperExecutableName === 'mvnw') {
@@ -730,13 +733,45 @@ export async function finalizeTransformationJob(status: string) {
 export async function getValidLanguageUpgradeCandidateProjects() {
     const openProjects = await getOpenProjects()
     const javaMavenProjects = await validateOpenProjects(openProjects)
+    getLogger().info(`CodeTransformation: found ${javaMavenProjects.length} projects eligible for language upgrade`)
     return javaMavenProjects
 }
 
 export async function getValidSQLConversionCandidateProjects() {
-    const openProjects = await getOpenProjects()
-    const javaProjects = await getJavaProjects(openProjects)
-    return javaProjects
+    const embeddedSQLProjects: TransformationCandidateProject[] = []
+    await telemetry.codeTransform_validateProject.run(async () => {
+        telemetry.record({
+            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
+        })
+        const openProjects = await getOpenProjects()
+        const javaProjects = await getJavaProjects(openProjects)
+        let resultLog = ''
+        for (const project of javaProjects) {
+            // as long as at least one of these strings is found, project contains embedded SQL statements
+            const searchStrings = ['oracle.jdbc.OracleDriver', 'jdbc:oracle:thin:@', 'jdbc:oracle:oci:@', 'jdbc:odbc:']
+            for (const str of searchStrings) {
+                const spawnResult = await findStringInDirectory(str, project.path)
+                // just for telemetry purposes
+                if (spawnResult.error || spawnResult.stderr) {
+                    resultLog += `search failed: ${JSON.stringify(spawnResult)}`
+                } else {
+                    resultLog += `search succeeded: ${spawnResult.exitCode}`
+                }
+                getLogger().info(`CodeTransformation: searching for ${str} in ${project.path}, result = ${resultLog}`)
+                if (spawnResult.exitCode === 0) {
+                    embeddedSQLProjects.push(project)
+                    break
+                }
+            }
+        }
+        getLogger().info(
+            `CodeTransformation: found ${embeddedSQLProjects.length} projects with embedded SQL statements`
+        )
+        telemetry.record({
+            codeTransformMetadata: resultLog,
+        })
+    })
+    return embeddedSQLProjects
 }
 
 export async function setTransformationToRunningState() {
