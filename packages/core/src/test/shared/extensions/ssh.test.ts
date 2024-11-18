@@ -11,6 +11,7 @@ import { WorkspaceFolder } from 'vscode'
 import path from 'path'
 import { SSM } from 'aws-sdk'
 import { fs } from '../../../shared/fs/fs'
+import { isWin } from '../../../shared/vscode/env'
 
 describe('SSH Agent', function () {
     it('can start the agent on windows', async function () {
@@ -36,6 +37,11 @@ describe('SSH Agent', function () {
     })
 })
 
+function echoEnvVarsCmd(varNames: string[]) {
+    const toShell = (s: string) => (isWin() ? `%${s}%` : `$${s}`)
+    return `echo "${varNames.map(toShell).join(' ')}"`
+}
+
 describe('testSshConnection', function () {
     let testWorkspace: WorkspaceFolder
     let sshPath: string
@@ -59,10 +65,10 @@ describe('testSshConnection', function () {
             TokenValue: 'testToken',
         } as SSM.StartSessionResponse
 
-        await createExecutableFile(sshPath, 'echo "$MY_VAR"')
+        await createExecutableFile(sshPath, echoEnvVarsCmd(['MY_VAR']))
         const r = await testSshConnection(process, 'localhost', sshPath, 'test-user', session)
         assert.strictEqual(r.stdout, 'yes')
-        await createExecutableFile(sshPath, 'echo "$UNDEFINED"')
+        await createExecutableFile(sshPath, echoEnvVarsCmd(['UNDEFINED_VAR']))
         const r2 = await testSshConnection(process, 'localhost', sshPath, 'test-user', session)
         assert.strictEqual(r2.stdout, '')
     })
@@ -85,15 +91,16 @@ describe('testSshConnection', function () {
         })
         const process = createBoundProcess(envProvider)
 
-        await createExecutableFile(sshPath, 'echo "$SESSION_ID, $STREAM_URL, $TOKEN"')
+        await createExecutableFile(sshPath, echoEnvVarsCmd(['SESSION_ID', 'STREAM_URL', 'TOKEN']))
         const r = await testSshConnection(process, 'localhost', sshPath, 'test-user', newSession)
-        assert.strictEqual(r.stdout, `${newSession.SessionId}, ${newSession.StreamUrl}, ${newSession.TokenValue}`)
+        assert.strictEqual(r.stdout, `${newSession.SessionId} ${newSession.StreamUrl} ${newSession.TokenValue}`)
     })
 
     it('passes proper args to the ssh invoke', async function () {
+        const executableFileContent = isWin() ? `echo "$Args[0] $Args[1]"` : `echo "$1 $2"`
         const process = createBoundProcess(async () => ({}))
-        await createExecutableFile(sshPath, 'echo "$1,$2"')
+        await createExecutableFile(sshPath, executableFileContent)
         const r = await testSshConnection(process, 'localhost', sshPath, 'test-user', {} as SSM.StartSessionResponse)
-        assert.strictEqual(r.stdout, '-T,test-user@localhost')
+        assert.strictEqual(r.stdout, '-T test-user@localhost')
     })
 })
