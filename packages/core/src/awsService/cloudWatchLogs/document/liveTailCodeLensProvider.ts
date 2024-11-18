@@ -38,7 +38,7 @@ export class LiveTailCodeLensProvider implements vscode.CodeLensProvider {
         const command: vscode.Command = {
             title: 'Stop tailing',
             command: 'aws.cwl.stopTailingLogGroup',
-            arguments: [document],
+            arguments: [document, 'codeLens'],
         }
         return new vscode.CodeLens(range, command)
     }

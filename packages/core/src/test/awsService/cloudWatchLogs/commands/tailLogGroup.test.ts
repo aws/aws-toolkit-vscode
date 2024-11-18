@@ -27,6 +27,7 @@ describe('TailLogGroup', function () {
     const testRegion = 'test-region'
     const testMessage = 'test-message'
     const testAwsAccountId = '1234'
+    const testSource = 'test-source'
     const testAwsCredentials = {} as any as AWS.Credentials
 
     let sandbox: sinon.SinonSandbox
@@ -93,7 +94,7 @@ describe('TailLogGroup', function () {
         cloudwatchSettingsSpy = sandbox.stub(CloudWatchLogsSettings.prototype, 'get').callsFake(() => {
             return 1
         })
-        await tailLogGroup(registry, {
+        await tailLogGroup(registry, testSource, {
             groupName: testLogGroup,
             regionName: testRegion,
         })
@@ -131,7 +132,7 @@ describe('TailLogGroup', function () {
             return getTestWizardResponse()
         })
         await assert.rejects(async () => {
-            await tailLogGroup(registry, {
+            await tailLogGroup(registry, testSource, {
                 groupName: testLogGroup,
                 regionName: testRegion,
             })
@@ -152,7 +153,7 @@ describe('TailLogGroup', function () {
         })
         registry.set(uriToKey(session.uri), session)
 
-        closeSession(session.uri, registry)
+        closeSession(session.uri, registry, testSource)
         assert.strictEqual(0, registry.size)
         assert.strictEqual(true, stopLiveTailSessionSpy.calledOnce)
         assert.strictEqual(0, clock.countTimers())

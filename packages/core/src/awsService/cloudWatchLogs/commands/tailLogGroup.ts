@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode'
+import { telemetry } from '../../../shared/telemetry/telemetry'
 import { TailLogGroupWizard } from '../wizard/tailLogGroupWizard'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { LiveTailSession, LiveTailSessionConfiguration } from '../registry/liveTailSession'
@@ -18,48 +19,68 @@ import { uriToKey } from '../cloudWatchLogsUtils'
 
 export async function tailLogGroup(
     registry: LiveTailSessionRegistry,
+    source: string,
     logData?: { regionName: string; groupName: string }
 ): Promise<void> {
-    const wizard = new TailLogGroupWizard(logData)
-    const wizardResponse = await wizard.run()
-    if (!wizardResponse) {
-        throw new CancellationError('user')
-    }
-    const awsCredentials = await globals.awsContext.getCredentials()
-    if (awsCredentials === undefined) {
-        throw new ToolkitError('Failed to start LiveTail session: credentials are undefined.')
-    }
-    const liveTailSessionConfig: LiveTailSessionConfiguration = {
-        logGroupArn: wizardResponse.regionLogGroupSubmenuResponse.data,
-        logStreamFilter: wizardResponse.logStreamFilter,
-        logEventFilterPattern: wizardResponse.filterPattern,
-        region: wizardResponse.regionLogGroupSubmenuResponse.region,
-        awsCredentials: awsCredentials,
-    }
-    const session = new LiveTailSession(liveTailSessionConfig)
-    if (registry.has(uriToKey(session.uri))) {
-        await prepareDocument(session)
-        return
-    }
-    registry.set(uriToKey(session.uri), session)
+    await telemetry.cwlLiveTail_Start.run(async (span) => {
+        const wizard = new TailLogGroupWizard(logData)
+        const wizardResponse = await wizard.run()
+        if (!wizardResponse) {
+            throw new CancellationError('user')
+        }
+        const awsCredentials = await globals.awsContext.getCredentials()
+        if (awsCredentials === undefined) {
+            throw new ToolkitError('Failed to start LiveTail session: credentials are undefined.')
+        }
+        const liveTailSessionConfig: LiveTailSessionConfiguration = {
+            logGroupArn: wizardResponse.regionLogGroupSubmenuResponse.data,
+            logStreamFilter: wizardResponse.logStreamFilter,
+            logEventFilterPattern: wizardResponse.filterPattern,
+            region: wizardResponse.regionLogGroupSubmenuResponse.region,
+            awsCredentials: awsCredentials,
+        }
+        const session = new LiveTailSession(liveTailSessionConfig)
+        if (registry.has(uriToKey(session.uri))) {
+            await prepareDocument(session)
+            span.record({
+                livetailSessionAlreadyStarted: true,
+                source: source,
+            })
+            return
+        }
+        span.record({
+            source: source,
+            livetailSessionAlreadyStarted: false,
+            livetailHasLogEventFilterPattern: Boolean(wizardResponse.filterPattern),
+            livetailLogStreamFilterType: wizardResponse.logStreamFilter.type,
+        })
 
-    const document = await prepareDocument(session)
+        registry.set(uriToKey(session.uri), session)
 
-    hideShowStatusBarItemsOnActiveEditor(session, document)
-    registerTabChangeCallback(session, registry, document)
+        const document = await prepareDocument(session)
 
-    const stream = await session.startLiveTailSession()
+        hideShowStatusBarItemsOnActiveEditor(session, document)
+        registerTabChangeCallback(session, registry, document)
 
-    await handleSessionStream(stream, document, session)
+        const stream = await session.startLiveTailSession()
+
+        await handleSessionStream(stream, document, session)
+    })
 }
 
-export function closeSession(sessionUri: vscode.Uri, registry: LiveTailSessionRegistry) {
-    const session = registry.get(uriToKey(sessionUri))
-    if (session === undefined) {
-        throw new ToolkitError(`No LiveTail session found for URI: ${sessionUri.toString()}`)
-    }
-    session.stopLiveTailSession()
-    registry.delete(uriToKey(sessionUri))
+export function closeSession(sessionUri: vscode.Uri, registry: LiveTailSessionRegistry, source: string) {
+    telemetry.cwlLiveTail_Stop.run((span) => {
+        const session = registry.get(uriToKey(sessionUri))
+        if (session === undefined) {
+            throw new ToolkitError(`No LiveTail session found for URI: ${sessionUri.toString()}`)
+        }
+        session.stopLiveTailSession()
+        registry.delete(uriToKey(sessionUri))
+        span.record({
+            source: source,
+            duration: session.getLiveTailSessionDuration(),
+        })
+    })
 }
 
 export async function clearDocument(textDocument: vscode.TextDocument) {
@@ -215,7 +236,7 @@ function registerTabChangeCallback(
     vscode.window.tabGroups.onDidChangeTabs((tabEvent) => {
         const isOpen = isLiveTailSessionOpenInAnyTab(session)
         if (!isOpen) {
-            closeSession(session.uri, registry)
+            closeSession(session.uri, registry, 'ClosedEditors')
             void clearDocument(document)
         }
     })
