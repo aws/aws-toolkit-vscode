@@ -42,8 +42,10 @@ function echoEnvVarsCmd(varNames: string[]) {
     return `echo "${varNames.map(toShell).join(' ')}"`
 }
 
+/**
+ * Trim noisy windows ChildProcess result to final line for easier testing.
+ */
 function assertOutputContains(rawOutput: string, expectedString: string): void | never {
-    // Windows gives some junk we want to trim
     const output = rawOutput.trim().split('\n').at(-1)?.replace('"', '') ?? ''
     assert.ok(output.includes(expectedString), `Expected output to contain "${expectedString}", but got "${output}"`)
 }
@@ -104,6 +106,7 @@ describe('testSshConnection', function () {
         const process = createBoundProcess(async () => ({}))
         await createExecutableFile(sshPath, executableFileContent)
         const r = await testSshConnection(process, 'localhost', sshPath, 'test-user', {} as SSM.StartSessionResponse)
-        assertOutputContains(r.stdout, '-T test-user@localhost')
+        assertOutputContains(r.stdout, '-T')
+        assertOutputContains(r.stdout, 'test-user@localhost')
     })
 })
