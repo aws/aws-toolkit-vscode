@@ -43,8 +43,8 @@ function echoEnvVarsCmd(varNames: string[]) {
 }
 
 function parseOutput(output: string) {
-    // On Windows the final line is the result of the script.
-    return isWin() ? output.split('\n').at(-1) : output
+    // On Windows the final line is the result of the script, and it wraps result in `"`
+    return isWin() ? output.split('\n').at(-1)?.replace('"', '') : output
 }
 
 describe('testSshConnection', function () {
@@ -72,7 +72,7 @@ describe('testSshConnection', function () {
 
         await createExecutableFile(sshPath, echoEnvVarsCmd(['MY_VAR']))
         const r = await testSshConnection(process, 'localhost', sshPath, 'test-user', session)
-        assert.strictEqual(r.stdout, 'yes')
+        assert.strictEqual(parseOutput(r.stdout), 'yes')
         await createExecutableFile(sshPath, echoEnvVarsCmd(['UNDEFINED_VAR']))
         const r2 = await testSshConnection(process, 'localhost', sshPath, 'test-user', session)
 
