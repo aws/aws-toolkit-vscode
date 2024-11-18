@@ -33,7 +33,7 @@ import {
     getValidSQLConversionCandidateProjects,
     validateSQLMetadataFile,
 } from '../../../codewhisperer/commands/startTransformByQ'
-import { JDKVersion, transformByQState } from '../../../codewhisperer/models/model'
+import { JDKVersion, TransformationCandidateProject, transformByQState } from '../../../codewhisperer/models/model'
 import {
     AbsolutePathDetectedError,
     AlternateDependencyVersionsNotFoundError,
@@ -62,7 +62,6 @@ import { getStringHash } from '../../../shared/utilities/textUtilities'
 import { getVersionData } from '../../../codewhisperer/service/transformByQ/transformMavenHandler'
 import AdmZip from 'adm-zip'
 import { AuthError } from '../../../auth/sso/server'
-import { isSQLTransformReady } from '../../../dev/config'
 
 // These events can be interactions within the chat,
 // or elsewhere in the IDE
@@ -190,9 +189,28 @@ export class GumbyController {
     }
 
     private async transformInitiated(message: any) {
-        // feature flag for SQL transformations
-        if (!isSQLTransformReady) {
+        // silently check for projects eligible for SQL conversion
+        let embeddedSQLProjects: TransformationCandidateProject[] = []
+        try {
+            embeddedSQLProjects = await getValidSQLConversionCandidateProjects()
+        } catch (err) {
+            getLogger().error(`CodeTransformation: error validating SQL conversion projects: ${err}`)
+        }
+
+        if (embeddedSQLProjects.length === 0) {
             await this.handleLanguageUpgrade(message)
+            return
+        }
+
+        let javaUpgradeProjects: TransformationCandidateProject[] = []
+        try {
+            javaUpgradeProjects = await getValidLanguageUpgradeCandidateProjects()
+        } catch (err) {
+            getLogger().error(`CodeTransformation: error validating Java upgrade projects: ${err}`)
+        }
+
+        if (javaUpgradeProjects.length === 0) {
+            await this.handleSQLConversion(message)
             return
         }
 
@@ -224,7 +242,10 @@ export class GumbyController {
         this.sessionStorage.getSession().conversationState = ConversationState.WAITING_FOR_TRANSFORMATION_OBJECTIVE
         this.messenger.sendStaticTextResponse('choose-transformation-objective', message.tabID)
         this.messenger.sendChatInputEnabled(message.tabID, true)
-        this.messenger.sendUpdatePlaceholder(message.tabID, "Enter 'language upgrade' or 'SQL conversion'")
+        this.messenger.sendUpdatePlaceholder(
+            message.tabID,
+            CodeWhispererConstants.chooseTransformationObjectivePlaceholder
+        )
     }
 
     private async beginTransformation(message: any) {
@@ -310,13 +331,7 @@ export class GumbyController {
 
     private async validateSQLConversionProjects(message: any) {
         try {
-            const validProjects = await telemetry.codeTransform_validateProject.run(async () => {
-                telemetry.record({
-                    codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-                })
-                const validProjects = await getValidSQLConversionCandidateProjects()
-                return validProjects
-            })
+            const validProjects = await getValidSQLConversionCandidateProjects()
             return validProjects
         } catch (e: any) {
             if (e instanceof NoJavaProjectsFoundError) {
@@ -624,6 +639,14 @@ export class GumbyController {
 
             case ConversationState.WAITING_FOR_TRANSFORMATION_OBJECTIVE: {
                 const objective = data.message.trim().toLowerCase()
+                // since we're prompting the user, their project(s) must be eligible for both types of transformations, so track how often this happens here
+                if (objective === 'language upgrade' || objective === 'sql conversion') {
+                    telemetry.codeTransform_submitSelection.emit({
+                        codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
+                        userChoice: objective,
+                        result: 'Succeeded',
+                    })
+                }
                 if (objective === 'language upgrade') {
                     await this.handleLanguageUpgrade(data)
                 } else if (objective === 'sql conversion') {
