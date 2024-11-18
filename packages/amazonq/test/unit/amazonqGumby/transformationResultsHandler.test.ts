@@ -9,8 +9,7 @@ import { DescriptionContent } from 'aws-core-vscode/codewhisperer'
 import path from 'path'
 import { getTestResourceFilePath } from './amazonQGumbyUtil'
 import { fs } from 'aws-core-vscode/shared'
-// eslint-disable-next-line no-restricted-imports
-import { createTestWorkspace } from '../../../../core/dist/src/test/testUtil'
+import { createTestWorkspace } from 'aws-core-vscode/test'
 
 describe('DiffModel', function () {
     let parsedTestDescriptions: DescriptionContent
@@ -83,8 +82,6 @@ describe('DiffModel', function () {
         const change = testDiffModel.patchFileNodes[0].children[0]
 
         assert.strictEqual(change instanceof ModifiedChangeNode, true)
-
-        await fs.delete(path.join(workspaceFolder.uri.fsPath, 'README.md'), { recursive: true })
     })
 
     it('WHEN parsing a diff patch where diff.json is not present and a file was modified THEN returns an array representing the modified file', async function () {
@@ -115,7 +112,5 @@ describe('DiffModel', function () {
         const change = testDiffModel.patchFileNodes[0].children[0]
 
         assert.strictEqual(change instanceof ModifiedChangeNode, true)
-
-        await fs.delete(path.join(workspaceFolder.uri.fsPath, 'README.md'), { recursive: true })
     })
 })
