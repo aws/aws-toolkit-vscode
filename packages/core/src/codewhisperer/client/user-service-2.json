@@ -2,14 +2,11 @@
     "version": "2.0",
     "metadata": {
         "apiVersion": "2022-11-11",
-        "auth": ["smithy.api#httpBearerAuth"],
         "endpointPrefix": "amazoncodewhispererservice",
         "jsonVersion": "1.0",
         "protocol": "json",
-        "protocols": ["json"],
         "serviceFullName": "Amazon CodeWhisperer",
         "serviceId": "CodeWhispererRuntime",
-        "signatureVersion": "bearer",
         "signingName": "amazoncodewhispererservice",
         "targetPrefix": "AmazonCodeWhispererService",
         "uid": "codewhispererruntime-2022-11-11"
