@@ -8,6 +8,7 @@ import * as semver from 'semver'
 import globals from '../shared/extensionGlobals'
 import { ConditionalClause, RuleContext, DisplayIf, CriteriaCondition, ToolkitNotification, AuthState } from './types'
 import { getComputeEnvType, getOperatingSystem } from '../shared/telemetry/util'
+import { isAutomation } from '../shared/vscode/env'
 import { AuthFormId } from '../login/webview/vue/types'
 import { getLogger } from '../shared/logger/logger'
 import { ToolkitError } from '../shared/errors'
@@ -79,7 +80,8 @@ export class RuleEngine {
 
     private evaluate(id: string, condition: DisplayIf): boolean {
         const currentExt = globals.context.extension.id
-        if (condition.extensionId !== currentExt) {
+        // if in test, skip the extension id check since its fake
+        if (condition.extensionId !== currentExt && !isAutomation()) {
             logger.verbose(
                 'notification id: (%s) did NOT pass extension id check, actual ext id: (%s), expected ext id: (%s)',
                 id,
