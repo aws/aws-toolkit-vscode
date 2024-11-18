@@ -253,7 +253,7 @@ export async function getDeniedSsmActions(client: IamClient, roleArn: string): P
 }
 
 /**
- * Creates a new {@link ChildProcess} class bound to a specific dev environment. All instances of this
+ * Creates a new {@link ChildProcess} class bound to a specific remote environment. All instances of this
  * derived class will have SSM session information injected as environment variables as-needed.
  */
 export function createBoundProcess(envProvider: EnvProvider): typeof ChildProcess {
