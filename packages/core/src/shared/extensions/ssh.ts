@@ -8,7 +8,7 @@ import * as path from 'path'
 import * as nls from 'vscode-nls'
 import fs from '../fs/fs'
 import { getLogger } from '../logger'
-import { ChildProcess } from '../utilities/processUtils'
+import { ChildProcess, ChildProcessResult } from '../utilities/processUtils'
 import { ArrayConstructor, NonNullObject } from '../utilities/typeConstructors'
 import { Settings } from '../settings'
 import { VSCODE_EXTENSION_ID } from '../extensions'
@@ -129,16 +129,16 @@ export async function testSshConnection(
     sshPath: string,
     user: string,
     session: SSM.StartSessionResponse
-): Promise<void> {
+): Promise<ChildProcessResult | never> {
     try {
         const env = { SESSION_ID: session.SessionId, STREAM_URL: session.StreamUrl, TOKEN: session.TokenValue }
-        await new ProcessClass(sshPath, ['-T', `${user}@${hostname}`, 'echo connected && exit']).run({
+        const result = await new ProcessClass(sshPath, ['-T', `${user}@${hostname}`, 'echo connected && exit']).run({
             spawnOptions: {
                 env,
             },
         })
+        return result
     } catch (error) {
-        getLogger().error('SSH connection test failed: %O', error)
         throw new SSHError('SSH connection test failed', { cause: error as Error })
     }
 }
