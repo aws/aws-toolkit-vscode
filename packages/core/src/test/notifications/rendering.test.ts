@@ -112,7 +112,7 @@ describe('Notifications Rendering', function () {
         assert.ok(telemetrySpy.calledOnce)
     })
 
-    it('executes openURL type button', async function () {
+    it('executes openUrl type button', async function () {
         const testWindow = getTestWindow()
         testWindow.onDidShowMessage((message) => {
             // Simulate user clicking open URL type
@@ -122,7 +122,7 @@ describe('Notifications Rendering', function () {
         await verifyOpenExternalUrl(notification)
     })
 
-    it('executes openTxt type button', async function () {
+    it('executes openTextDocument type button', async function () {
         const testWindow = getTestWindow()
         testWindow.onDidShowMessage((message) => {
             // Simulate user clicking open txt type
@@ -148,7 +148,7 @@ function getToastURLTestNotification(): ToolkitNotification {
                     toastPreview: 'test toast preview',
                 },
             },
-            onRecieve: 'toast',
+            onReceive: 'toast',
             onClick: {
                 type: 'openUrl',
                 url: 'https://aws.amazon.com/visualstudiocode/',
@@ -170,7 +170,7 @@ function getTxtNotification(): ToolkitNotification {
                     description: 'This is a text document notification.',
                 },
             },
-            onRecieve: 'toast',
+            onReceive: 'toast',
             onClick: {
                 type: 'openTextDocument',
             },
@@ -191,7 +191,7 @@ function getModalNotification(): ToolkitNotification {
                     description: 'This is a modal notification.',
                 },
             },
-            onRecieve: 'modal',
+            onReceive: 'modal',
             onClick: {
                 type: 'modal',
             },
@@ -210,7 +210,7 @@ function getModalNotification(): ToolkitNotification {
                     },
                 },
                 {
-                    type: 'openTxt',
+                    type: 'openTextDocument',
                     displayText: {
                         'en-US': 'Read More',
                     },

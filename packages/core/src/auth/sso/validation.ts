@@ -4,7 +4,7 @@
  */
 import * as vscode from 'vscode'
 import { UnknownError } from '../../shared/errors'
-import { AuthType } from '../auth'
+import { Auth } from '../auth'
 import { SsoConnection, hasScopes, isAnySsoConnection } from '../connection'
 import { ssoUrlFormatMessage, ssoUrlFormatRegex } from './constants'
 
@@ -19,7 +19,7 @@ export function validateSsoUrlFormat(url: string) {
 }
 
 export async function validateIsNewSsoUrlAsync(
-    auth: AuthType,
+    auth: Auth,
     url: string,
     requiredScopes?: string[]
 ): Promise<string | undefined> {

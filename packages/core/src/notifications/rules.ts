@@ -10,6 +10,7 @@ import { ConditionalClause, RuleContext, DisplayIf, CriteriaCondition, ToolkitNo
 import { getComputeEnvType, getOperatingSystem } from '../shared/telemetry/util'
 import { AuthFormId } from '../login/webview/vue/types'
 import { getLogger } from '../shared/logger/logger'
+import { ToolkitError } from '../shared/errors'
 
 const logger = getLogger('notifications')
 /**
@@ -158,7 +159,8 @@ export class RuleEngine {
             case 'ActiveExtensions':
                 return isSuperSetOfExpected(this.context.activeExtensions)
             default:
-                throw new Error(`Unknown criteria type: ${criteria.type}`)
+                logger.error('Unknown criteria passed to RuleEngine: %O', criteria)
+                throw new ToolkitError(`Unknown criteria type: ${(criteria as any).type}`)
         }
     }
 }
