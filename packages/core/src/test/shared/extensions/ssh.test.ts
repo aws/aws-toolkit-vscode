@@ -42,9 +42,10 @@ function echoEnvVarsCmd(varNames: string[]) {
     return `echo "${varNames.map(toShell).join(' ')}"`
 }
 
-// Windows gives some junk in its output.
-function cleanOutput(output: string) {
-    return output.trim().split('\n').at(-1)?.replace('"', '') ?? ''
+function assertOutputContains(rawOutput: string, expectedString: string): void | never {
+    // Windows gives some junk we want to trim
+    const output = rawOutput.trim().split('\n').at(-1)?.replace('"', '') ?? ''
+    assert.ok(output.includes(expectedString), `Expected output to contain "${expectedString}", but got "${output}"`)
 }
 
 describe('testSshConnection', function () {
@@ -72,7 +73,7 @@ describe('testSshConnection', function () {
 
         await createExecutableFile(sshPath, echoEnvVarsCmd(['MY_VAR']))
         const r = await testSshConnection(process, 'localhost', sshPath, 'test-user', session)
-        assert.ok(cleanOutput(r.stdout).includes('yes'))
+        assertOutputContains(r.stdout, 'yes')
     })
 
     it('injects new session into env', async function () {
@@ -95,9 +96,7 @@ describe('testSshConnection', function () {
 
         await createExecutableFile(sshPath, echoEnvVarsCmd(['SESSION_ID', 'STREAM_URL', 'TOKEN']))
         const r = await testSshConnection(process, 'localhost', sshPath, 'test-user', newSession)
-        assert.ok(
-            cleanOutput(r.stdout).includes(`${newSession.SessionId} ${newSession.StreamUrl} ${newSession.TokenValue}`)
-        )
+        assertOutputContains(r.stdout, `${newSession.SessionId} ${newSession.StreamUrl} ${newSession.TokenValue}`)
     })
 
     it('passes proper args to the ssh invoke', async function () {
@@ -105,6 +104,6 @@ describe('testSshConnection', function () {
         const process = createBoundProcess(async () => ({}))
         await createExecutableFile(sshPath, executableFileContent)
         const r = await testSshConnection(process, 'localhost', sshPath, 'test-user', {} as SSM.StartSessionResponse)
-        assert.ok(cleanOutput(r.stdout).includes('-T test-user@localhost'))
+        assertOutputContains(r.stdout, '-T test-user@localhost')
     })
 })
