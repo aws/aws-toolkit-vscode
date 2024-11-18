@@ -42,6 +42,11 @@ function echoEnvVarsCmd(varNames: string[]) {
     return `echo "${varNames.map(toShell).join(' ')}"`
 }
 
+function parseOutput(output: string) {
+    // On Windows the final line is the result of the script.
+    return isWin() ? output.split('\n').at(-1) : output
+}
+
 describe('testSshConnection', function () {
     let testWorkspace: WorkspaceFolder
     let sshPath: string
@@ -70,7 +75,8 @@ describe('testSshConnection', function () {
         assert.strictEqual(r.stdout, 'yes')
         await createExecutableFile(sshPath, echoEnvVarsCmd(['UNDEFINED_VAR']))
         const r2 = await testSshConnection(process, 'localhost', sshPath, 'test-user', session)
-        assert.strictEqual(r2.stdout, '')
+
+        assert.strictEqual(parseOutput(r2.stdout), '')
     })
 
     it('injects new session into env', async function () {
@@ -93,14 +99,17 @@ describe('testSshConnection', function () {
 
         await createExecutableFile(sshPath, echoEnvVarsCmd(['SESSION_ID', 'STREAM_URL', 'TOKEN']))
         const r = await testSshConnection(process, 'localhost', sshPath, 'test-user', newSession)
-        assert.strictEqual(r.stdout, `${newSession.SessionId} ${newSession.StreamUrl} ${newSession.TokenValue}`)
+        assert.strictEqual(
+            parseOutput(r.stdout),
+            `${newSession.SessionId} ${newSession.StreamUrl} ${newSession.TokenValue}`
+        )
     })
 
     it('passes proper args to the ssh invoke', async function () {
-        const executableFileContent = isWin() ? `echo "$Args[0] $Args[1]"` : `echo "$1 $2"`
+        const executableFileContent = isWin() ? `echo "%1 %2"` : `echo "$1 $2"`
         const process = createBoundProcess(async () => ({}))
         await createExecutableFile(sshPath, executableFileContent)
         const r = await testSshConnection(process, 'localhost', sshPath, 'test-user', {} as SSM.StartSessionResponse)
-        assert.strictEqual(r.stdout, '-T test-user@localhost')
+        assert.strictEqual(parseOutput(r.stdout), '-T test-user@localhost')
     })
 })
