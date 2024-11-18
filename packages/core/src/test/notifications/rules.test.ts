@@ -40,7 +40,7 @@ describe('Notifications Rule Engine', function () {
                         description: 'Something crazy is happening! Please update your extension.',
                     },
                 },
-                onRecieve: 'toast',
+                onReceive: 'toast',
                 onClick: {
                     type: 'openUrl',
                     url: 'https://aws.amazon.com/visualstudiocode/',
@@ -305,7 +305,7 @@ describe('Notifications Rule Engine', function () {
         assert.equal(
             ruleEngine.shouldDisplayNotification(
                 buildNotification({
-                    additionalCriteria: [{ type: 'AuthType', values: ['builderId', 'iamIdentityCenter'] }],
+                    additionalCriteria: [{ type: 'AuthType', values: ['builderId', 'identityCenter'] }],
                 })
             ),
             true
@@ -316,7 +316,7 @@ describe('Notifications Rule Engine', function () {
         assert.equal(
             ruleEngine.shouldDisplayNotification(
                 buildNotification({
-                    additionalCriteria: [{ type: 'AuthType', values: ['iamIdentityCenter'] }],
+                    additionalCriteria: [{ type: 'AuthType', values: ['identityCenter'] }],
                 })
             ),
             false
@@ -452,7 +452,7 @@ describe('Notifications Rule Engine', function () {
                     additionalCriteria: [
                         { type: 'OS', values: ['LINUX', 'MAC'] },
                         { type: 'ComputeEnv', values: ['local', 'ec2'] },
-                        { type: 'AuthType', values: ['builderId', 'iamIdentityCenter'] },
+                        { type: 'AuthType', values: ['builderId', 'identityCenter'] },
                         { type: 'AuthRegion', values: ['us-east-1', 'us-west-2'] },
                         { type: 'AuthState', values: ['connected'] },
                         { type: 'AuthScopes', values: ['codewhisperer:completions', 'codewhisperer:analysis'] },
@@ -489,7 +489,7 @@ describe('Notifications Rule Engine', function () {
                     },
                     additionalCriteria: [
                         { type: 'OS', values: ['LINUX', 'MAC'] },
-                        { type: 'AuthType', values: ['builderId', 'iamIdentityCenter'] },
+                        { type: 'AuthType', values: ['builderId', 'identityCenter'] },
                         { type: 'AuthRegion', values: ['us-east-1', 'us-west-2'] },
                         { type: 'AuthState', values: ['connected'] },
                         { type: 'AuthScopes', values: ['codewhisperer:completions', 'codewhisperer:analysis'] },

@@ -9,6 +9,7 @@ import globals from '../shared/extensionGlobals'
 import { globalKey } from '../shared/globalState'
 import {
     getNotificationTelemetryId,
+    Notifications,
     NotificationsState,
     NotificationsStateConstructor,
     NotificationType,
@@ -56,12 +57,7 @@ export class NotificationsController {
         }
         NotificationsController.#instance = this
 
-        this.state = globals.globalState.tryGet<NotificationsState>(this.storageKey, NotificationsStateConstructor, {
-            startUp: {},
-            emergency: {},
-            dismissed: [],
-            newlyReceived: [],
-        })
+        this.state = this.getDefaultState()
     }
 
     public pollForStartUp(ruleEngine: RuleEngine) {
@@ -74,6 +70,9 @@ export class NotificationsController {
 
     private async poll(ruleEngine: RuleEngine, category: NotificationType) {
         try {
+            // Get latest state in case it was modified by other windows.
+            // It is a minimal read to avoid race conditions.
+            this.readState()
             await this.fetchNotifications(category)
         } catch (err: any) {
             getLogger('notifications').error(`Unable to fetch %s notifications: %s`, category, err)
@@ -139,7 +138,7 @@ export class NotificationsController {
             return
         }
         // Parse the notifications
-        const newPayload = JSON.parse(response.content)
+        const newPayload: Notifications = JSON.parse(response.content)
         const newNotifications = newPayload.notifications ?? []
 
         // Get the current notifications
@@ -186,6 +185,33 @@ export class NotificationsController {
         this.state.dismissed = this.state.dismissed.filter((id) => notifications.has(id))
 
         await globals.globalState.update(this.storageKey, this.state)
+    }
+
+    /**
+     * Read relevant values from the latest global state to memory. Useful to bring changes from other windows.
+     *
+     * Currently only brings dismissed, so users with multiple vscode instances open do not have issues with
+     * dismissing notifications multiple times. Otherwise, each instance has an independent session for
+     * displaying the notifications (e.g. multiple windows can be blocked in critical emergencies).
+     *
+     * Note: This sort of pattern (reading back and forth from global state in async functions) is prone to
+     * race conditions, which is why we limit the read to the fairly inconsequential `dismissed` property.
+     */
+    private readState() {
+        const state = this.getDefaultState()
+        this.state.dismissed = state.dismissed
+    }
+
+    /**
+     * Returns stored notification state, or a default state object if it is invalid or undefined.
+     */
+    private getDefaultState() {
+        return globals.globalState.tryGet<NotificationsState>(this.storageKey, NotificationsStateConstructor, {
+            startUp: {},
+            emergency: {},
+            dismissed: [],
+            newlyReceived: [],
+        })
     }
 
     static get instance() {

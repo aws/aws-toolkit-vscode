@@ -11,9 +11,10 @@ import { RuleEngine, getRuleContext } from './rules'
 import globals from '../shared/extensionGlobals'
 import { AuthState } from './types'
 import { getLogger } from '../shared/logger/logger'
+import { oneMinute } from '../shared/datetime'
 
 /** Time in MS to poll for emergency notifications */
-const emergencyPollTime = 1000 * 10 * 60
+const emergencyPollTime = oneMinute * 10
 
 /**
  * Activate the in-IDE notifications module and begin receiving notifications.
