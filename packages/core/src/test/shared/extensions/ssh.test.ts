@@ -38,7 +38,7 @@ describe('SSH Agent', function () {
 })
 
 function echoEnvVarsCmd(varNames: string[]) {
-    const toShell = (s: string) => `$${s}`
+    const toShell = (s: string) => (isWin() ? `%${s}%` : `$${s}`)
     return `echo "${varNames.map(toShell).join(' ')}"`
 }
 
