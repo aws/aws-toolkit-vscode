@@ -30,7 +30,6 @@ describe('Notifications Integration Test', function () {
             authRegions: ['us-east-2'],
             authStates: [authState],
             authScopes: ['codewhisperer:completions', 'codewhisperer:analysis'],
-            installedExtensions: Object.keys(VSCODE_EXTENSION_ID),
             activeExtensions: activeExtensions,
         }
 
