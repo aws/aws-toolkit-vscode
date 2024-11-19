@@ -6,6 +6,7 @@ import assert from 'assert'
 import sinon from 'sinon'
 import { DiffModel, AddedChangeNode, ModifiedChangeNode } from 'aws-core-vscode/codewhisperer/node'
 import { DescriptionContent } from 'aws-core-vscode/codewhisperer'
+import path from 'path'
 import { getTestResourceFilePath } from './amazonQGumbyUtil'
 import { fs } from 'aws-core-vscode/shared'
 import { createTestWorkspace } from 'aws-core-vscode/test'
@@ -56,6 +57,13 @@ describe('DiffModel', function () {
         const fileAmount = 1
         const workspaceFolder = await createTestWorkspace(fileAmount, { fileContent: '' })
 
+        sinon.replace(fs, 'exists', async (path) => true)
+
+        await fs.writeFile(
+            path.join(workspaceFolder.uri.fsPath, 'README.md'),
+            'This guide walks you through using Gradle to build a simple Java project.'
+        )
+
         testDiffModel.parseDiff(
             getTestResourceFilePath('resources/files/modifiedFile.diff'),
             workspaceFolder.uri.fsPath,
@@ -78,6 +86,13 @@ describe('DiffModel', function () {
 
         const fileAmount = 1
         const workspaceFolder = await createTestWorkspace(fileAmount, { fileContent: '' })
+
+        sinon.replace(fs, 'exists', async (path) => true)
+
+        await fs.writeFile(
+            path.join(workspaceFolder.uri.fsPath, 'README.md'),
+            'This guide walks you through using Gradle to build a simple Java project.'
+        )
 
         testDiffModel.parseDiff(
             getTestResourceFilePath('resources/files/modifiedFile.diff'),
