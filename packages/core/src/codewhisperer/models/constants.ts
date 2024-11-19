@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { DescriptionContent } from '..'
-
 /**
  * Automated and manual trigger
  */
@@ -35,8 +33,8 @@ const patchDescriptions: { [key: string]: string } = {
         'This diff patch covers the set of upgrades for ArchUnit, Mockito, TestContainers, Cucumber, and additionally, Jenkins plugins and the Maven Wrapper.',
     'Miscellaneous Processing Documentation upgrade':
         'This diff patch covers a diverse set of upgrades spanning ORMs, XML processing, API documentation, and more.',
-    'Upgrade Deprecated API': '',
-    'Updated dependencies to latest version': '',
+    'Deprecated API replacement and dependency upgrades':
+        'This diff patch replaces deprecated APIs and makes additional dependency version upgrades.',
 }
 
 export const JsonConfigFileNamingConvention = new Set([
@@ -483,6 +481,8 @@ I can now divide the transformation results into diff patches (if applicable to 
 • Testing Tools Frameworks: Testing tools like ArchUnit, Mockito, and TestContainers and build tools like Jenkins and Maven Wrapper. 
 
 • Miscellaneous Processing Documentation: Upgrades ORMs, XML processing, and Swagger to SpringDoc/OpenAPI.
+
+• Deprecated API replacement and dependency upgrades: Replaces deprecated APIs and makes additional dependency version upgrades.
 `
 
 export const uploadingCodeStepMessage = 'Upload your code'
@@ -621,19 +621,19 @@ export const diffMessage = (multipleDiffs: boolean) => {
 }
 
 export const jobCompletedChatMessage = (multipleDiffsString: string) => {
-    return `I upgraded your code. ${multipleDiffsString} The transformation summary has details about the files I updated.`
+    return `I transformed your code. ${multipleDiffsString} The transformation summary has details about the files I updated.`
 }
 
 export const jobCompletedNotification = (multipleDiffsString: string) => {
-    return `Amazon Q upgraded your code. ${multipleDiffsString} The transformation summary has details about the files I updated.`
+    return `Amazon Q transformed your code. ${multipleDiffsString} The transformation summary has details about the files I updated.`
 }
 
 export const jobPartiallyCompletedChatMessage = (multipleDiffsString: string) => {
-    return `I upgraded part of your code. ${multipleDiffsString} The transformation summary has details about the files I updated and the errors that prevented a complete transformation.`
+    return `I transformed part of your code. ${multipleDiffsString} The transformation summary has details about the files I updated and the errors that prevented a complete transformation.`
 }
 
 export const jobPartiallyCompletedNotification = (multipleDiffsString: string) => {
-    return `Amazon Q upgraded part of your code. ${multipleDiffsString} The transformation summary has details about the files I updated and the errors that prevented a complete transformation.`
+    return `Amazon Q transformed part of your code. ${multipleDiffsString} The transformation summary has details about the files I updated and the errors that prevented a complete transformation.`
 }
 
 export const noPomXmlFoundChatMessage = `I couldn\'t find a project that I can upgrade. I couldn\'t find a pom.xml file in any of your open projects, nor could I find any embedded SQL statements. Currently, I can upgrade Java 8 or Java 11 projects built on Maven, or Oracle SQL to PostgreSQL statements in Java projects. For more information, see the [Amazon Q documentation](${codeTransformPrereqDoc}).`
@@ -685,14 +685,13 @@ export const changesAppliedChatMessageMultipleDiffs = (
 
 export const changesAppliedNotificationOneDiff = 'Amazon Q applied the changes to your project'
 
-export const changesAppliedNotificationMultipleDiffs = (
-    currentPatchIndex: number,
-    totalPatchFiles: number,
-    patchFilesDescriptions: DescriptionContent | undefined
-) =>
-    patchFilesDescriptions
-        ? `Amazon Q applied the changes in diff patch ${currentPatchIndex + 1} of ${totalPatchFiles} to your project.`
-        : 'Amazon Q applied the changes to your project.'
+export const changesAppliedNotificationMultipleDiffs = (currentPatchIndex: number, totalPatchFiles: number) => {
+    if (totalPatchFiles === 1) {
+        return 'Amazon Q applied the changes to your project.'
+    } else {
+        return `Amazon Q applied the changes in diff patch ${currentPatchIndex + 1} of ${totalPatchFiles} to your project.`
+    }
+}
 
 export const noOpenProjectsFoundChatMessage = `I couldn\'t find a project that I can upgrade. Currently, I support Java 8, Java 11, and Java 17 projects built on Maven. Make sure your project is open in the IDE. For more information, see the [Amazon Q documentation](${codeTransformPrereqDoc}).`
 

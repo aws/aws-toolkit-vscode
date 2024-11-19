@@ -62,6 +62,7 @@ import { getStringHash } from '../../../shared/utilities/textUtilities'
 import { getVersionData } from '../../../codewhisperer/service/transformByQ/transformMavenHandler'
 import AdmZip from 'adm-zip'
 import { AuthError } from '../../../auth/sso/server'
+import { isSelectiveTransformationReady } from '../../../dev/config'
 
 // These events can be interactions within the chat,
 // or elsewhere in the IDE
@@ -423,7 +424,12 @@ export class GumbyController {
             result: MetadataResult.Pass,
         })
         this.messenger.sendSkipTestsSelectionMessage(skipTestsSelection, message.tabID)
-        await this.messenger.sendOneOrMultipleDiffsPrompt(message.tabID)
+        if (!isSelectiveTransformationReady) {
+            // perform local build
+            await this.validateBuildWithPromptOnError(message)
+        } else {
+            await this.messenger.sendOneOrMultipleDiffsPrompt(message.tabID)
+        }
     }
 
     private async handleOneOrMultipleDiffs(message: any) {
