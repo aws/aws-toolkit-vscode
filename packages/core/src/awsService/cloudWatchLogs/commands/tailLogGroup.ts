@@ -43,17 +43,12 @@ export async function tailLogGroup(
         if (registry.has(uriToKey(session.uri))) {
             await prepareDocument(session)
             span.record({
+                result: 'Succeeded',
                 sessionAlreadyStarted: true,
                 source: source,
             })
             return
         }
-        span.record({
-            source: source,
-            sessionAlreadyStarted: false,
-            hasLogEventFilterPattern: Boolean(wizardResponse.filterPattern),
-            logStreamFilterType: wizardResponse.logStreamFilter.type,
-        })
 
         registry.set(uriToKey(session.uri), session)
 
@@ -63,7 +58,13 @@ export async function tailLogGroup(
         registerTabChangeCallback(session, registry, document)
 
         const stream = await session.startLiveTailSession()
-
+        span.record({
+            source: source,
+            result: 'Succeeded',
+            sessionAlreadyStarted: false,
+            hasLogEventFilterPattern: Boolean(wizardResponse.filterPattern),
+            logStreamFilterType: wizardResponse.logStreamFilter.type,
+        })
         await handleSessionStream(stream, document, session)
     })
 }
@@ -77,6 +78,7 @@ export function closeSession(sessionUri: vscode.Uri, registry: LiveTailSessionRe
         session.stopLiveTailSession()
         registry.delete(uriToKey(sessionUri))
         span.record({
+            result: 'Succeeded',
             source: source,
             duration: session.getLiveTailSessionDuration(),
         })

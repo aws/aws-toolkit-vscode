@@ -350,21 +350,6 @@
             "name": "amazonqMessageDisplayedMs",
             "type": "int",
             "description": "Duration between the partner teams code receiving the message and when the message was finally displayed in ms"
-        },
-        {
-            "name": "sessionAlreadyStarted",
-            "type": "boolean",
-            "description": "Session already open"
-        },
-        {
-            "name": "hasLogEventFilterPattern",
-            "type": "boolean",
-            "description": "If LogEvent filter pattern is applied"
-        },
-        {
-            "name": "logStreamFilterType",
-            "type": "string",
-            "description": "Type of LogStream filter applied to session"
         }
     ],
     "metrics": [
@@ -1245,42 +1230,6 @@
                 }
             ],
             "passive": true
-        },
-        {
-            "name": "cwlLiveTail_Start",
-            "description": "When user starts a new LiveTail command",
-            "metadata": [
-                {
-                    "type": "source",
-                    "required": true
-                },
-                {
-                    "type": "sessionAlreadyStarted",
-                    "required": true
-                },
-                {
-                    "type": "hasLogEventFilterPattern",
-                    "required": false
-                },
-                {
-                    "type": "logStreamFilterType",
-                    "required": false
-                }
-            ]
-        },
-        {
-            "name": "cwlLiveTail_Stop",
-            "description": "When user stops a liveTailSession",
-            "metadata": [
-                {
-                    "type": "source",
-                    "required": true
-                },
-                {
-                    "type": "duration",
-                    "required": true
-                }
-            ]
         }
     ]
 }
