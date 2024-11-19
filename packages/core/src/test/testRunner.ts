@@ -22,7 +22,7 @@ export async function runTests(
     testFolder: string | string[],
     extensionId: string,
     initTests: string[] = [],
-    testFiles?: string[]
+    options?: { testFiles?: string[] }
 ): Promise<void> {
     if (!process.env['AWS_TOOLKIT_AUTOMATION']) {
         throw new Error('Expected the "AWS_TOOLKIT_AUTOMATION" environment variable to be set for tests.')
@@ -91,7 +91,7 @@ export async function runTests(
         testFilePath = testFile ? path.resolve(dist, testFile) : undefined
     }
 
-    if (testFile && testFiles) {
+    if (testFile && options?.testFiles) {
         throw new Error('Individual file and list of files given to run tests on. One must be chosen.')
     }
 
@@ -143,8 +143,8 @@ export async function runTests(
     }
 
     let files: string[] = []
-    if (testFiles) {
-        files = testFiles
+    if (options?.testFiles) {
+        files = options.testFiles
     } else {
         for (const f of Array.isArray(testFolder) ? testFolder : [testFolder]) {
             files = [...files, ...(await glob(testFilePath ?? `**/${f}/**/**.test.js`, { cwd: dist }))]

@@ -25,7 +25,7 @@ describe('Ec2ConnectClient', function () {
     })
 
     describe('getAttachedIamRole', async function () {
-        it('only returns role if recieves ARN from instance profile', async function () {
+        it('only returns role if receives ARN from instance profile', async function () {
             let role: IAM.Role | undefined
             const getInstanceProfileStub = sinon.stub(Ec2Wrapper.prototype, 'getAttachedIamInstanceProfile')
 

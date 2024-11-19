@@ -40,16 +40,22 @@ describe('crossFileContextUtil', function () {
             tempFolder = (await createTestWorkspaceFolder()).uri.fsPath
         })
 
+        afterEach(async function () {
+            sinon.restore()
+        })
+
         it('for control group, should return opentabs context where there will be 3 chunks and each chunk should contains 50 lines', async function () {
-            sinon.stub(FeatureConfigProvider.instance, 'getProjectContextGroup').alwaysReturned('control')
+            sinon.stub(FeatureConfigProvider.instance, 'getProjectContextGroup').returns('control')
             await toTextEditor(aStringWithLineCount(200), 'CrossFile.java', tempFolder, { preview: false })
             const myCurrentEditor = await toTextEditor('', 'TargetFile.java', tempFolder, {
                 preview: false,
             })
+
+            await assertTabCount(2)
+
             const actual = await crossFile.fetchSupplementalContextForSrc(myCurrentEditor, fakeCancellationToken)
             assert.ok(actual)
-            assert.ok(actual.supplementalContextItems.length === 3)
-
+            assert.strictEqual(actual.supplementalContextItems.length, 3)
             assert.strictEqual(actual.supplementalContextItems[0].content.split('\n').length, 50)
             assert.strictEqual(actual.supplementalContextItems[1].content.split('\n').length, 50)
             assert.strictEqual(actual.supplementalContextItems[2].content.split('\n').length, 50)
@@ -60,6 +66,9 @@ describe('crossFileContextUtil', function () {
             const myCurrentEditor = await toTextEditor('', 'TargetFile.java', tempFolder, {
                 preview: false,
             })
+
+            await assertTabCount(2)
+
             sinon.stub(FeatureConfigProvider.instance, 'getProjectContextGroup').returns('t1')
             sinon
                 .stub(LspController.instance, 'queryInlineProjectContext')
@@ -74,7 +83,7 @@ describe('crossFileContextUtil', function () {
 
             const actual = await crossFile.fetchSupplementalContextForSrc(myCurrentEditor, fakeCancellationToken)
             assert.ok(actual)
-            assert.ok(actual.supplementalContextItems.length === 4)
+            assert.strictEqual(actual.supplementalContextItems.length, 4)
             assert.strictEqual(actual?.strategy, 'codemap')
             assert.deepEqual(actual?.supplementalContextItems[0], {
                 content: 'foo',
@@ -92,6 +101,9 @@ describe('crossFileContextUtil', function () {
             const myCurrentEditor = await toTextEditor('', 'TargetFile.java', tempFolder, {
                 preview: false,
             })
+
+            await assertTabCount(2)
+
             sinon.stub(FeatureConfigProvider.instance, 'getProjectContextGroup').returns('t2')
             sinon
                 .stub(LspController.instance, 'queryInlineProjectContext')
@@ -126,7 +138,7 @@ describe('crossFileContextUtil', function () {
 
             const actual = await crossFile.fetchSupplementalContextForSrc(myCurrentEditor, fakeCancellationToken)
             assert.ok(actual)
-            assert.ok(actual.supplementalContextItems.length === 5)
+            assert.strictEqual(actual.supplementalContextItems.length, 5)
             assert.strictEqual(actual?.strategy, 'bm25')
 
             assert.deepEqual(actual?.supplementalContextItems[0], {
@@ -317,7 +329,7 @@ describe('crossFileContextUtil', function () {
 
         fileExtLists.forEach((fileExt) => {
             it('should be non empty', async function () {
-                sinon.stub(FeatureConfigProvider.instance, 'getProjectContextGroup').alwaysReturned('control')
+                sinon.stub(FeatureConfigProvider.instance, 'getProjectContextGroup').returns('control')
                 const editor = await toTextEditor('content-1', `file-1.${fileExt}`, tempFolder)
                 await toTextEditor('content-2', `file-2.${fileExt}`, tempFolder, { preview: false })
                 await toTextEditor('content-3', `file-3.${fileExt}`, tempFolder, { preview: false })

@@ -14,7 +14,7 @@
                         "toastPreview": "Signing into Amazon Q is broken, please try this workaround while we work on releasing a fix."
                     }
                 },
-                "onRecieve": "toast",
+                "onReceive": "toast",
                 "onClick": {
                     "type": "openTextDocument"
                 },
@@ -34,7 +34,7 @@
                         "toastPreview": "This version of Amazon Q is currently broken, please update to avoid issues."
                     }
                 },
-                "onRecieve": "toast",
+                "onReceive": "toast",
                 "onClick": {
                     "type": "modal"
                 },

@@ -44,9 +44,11 @@ export default class MessengerUtils {
         } else if (os.platform() === 'darwin') {
             const jdkVersion = transformByQState.getSourceJDKVersion()
             if (jdkVersion === JDKVersion.JDK8) {
-                javaHomePrompt += ` ${CodeWhispererConstants.macJava8HomeHelpChatMessage}`
+                javaHomePrompt += ` ${CodeWhispererConstants.macJavaVersionHomeHelpChatMessage(1.8)}`
             } else if (jdkVersion === JDKVersion.JDK11) {
-                javaHomePrompt += ` ${CodeWhispererConstants.macJava11HomeHelpChatMessage}`
+                javaHomePrompt += ` ${CodeWhispererConstants.macJavaVersionHomeHelpChatMessage(11)}`
+            } else if (jdkVersion === JDKVersion.JDK17) {
+                javaHomePrompt += ` ${CodeWhispererConstants.macJavaVersionHomeHelpChatMessage(17)}`
             }
         } else {
             javaHomePrompt += ` ${CodeWhispererConstants.linuxJavaHomeHelpChatMessage}`
