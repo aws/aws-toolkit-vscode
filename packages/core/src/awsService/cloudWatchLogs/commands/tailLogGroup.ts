@@ -43,16 +43,16 @@ export async function tailLogGroup(
         if (registry.has(uriToKey(session.uri))) {
             await prepareDocument(session)
             span.record({
-                livetailSessionAlreadyStarted: true,
+                sessionAlreadyStarted: true,
                 source: source,
             })
             return
         }
         span.record({
             source: source,
-            livetailSessionAlreadyStarted: false,
-            livetailHasLogEventFilterPattern: Boolean(wizardResponse.filterPattern),
-            livetailLogStreamFilterType: wizardResponse.logStreamFilter.type,
+            sessionAlreadyStarted: false,
+            hasLogEventFilterPattern: Boolean(wizardResponse.filterPattern),
+            logStreamFilterType: wizardResponse.logStreamFilter.type,
         })
 
         registry.set(uriToKey(session.uri), session)

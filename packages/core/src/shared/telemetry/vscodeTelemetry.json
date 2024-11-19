@@ -352,17 +352,17 @@
             "description": "Duration between the partner teams code receiving the message and when the message was finally displayed in ms"
         },
         {
-            "name": "livetailSessionAlreadyStarted",
+            "name": "sessionAlreadyStarted",
             "type": "boolean",
             "description": "Session already open"
         },
         {
-            "name": "livetailHasLogEventFilterPattern",
+            "name": "hasLogEventFilterPattern",
             "type": "boolean",
             "description": "If LogEvent filter pattern is applied"
         },
         {
-            "name": "livetailLogStreamFilterType",
+            "name": "logStreamFilterType",
             "type": "string",
             "description": "Type of LogStream filter applied to session"
         }
@@ -1255,15 +1255,15 @@
                     "required": true
                 },
                 {
-                    "type": "livetailSessionAlreadyStarted",
+                    "type": "sessionAlreadyStarted",
                     "required": true
                 },
                 {
-                    "type": "livetailHasLogEventFilterPattern",
+                    "type": "hasLogEventFilterPattern",
                     "required": false
                 },
                 {
-                    "type": "livetailLogStreamFilterType",
+                    "type": "logStreamFilterType",
                     "required": false
                 }
             ]
