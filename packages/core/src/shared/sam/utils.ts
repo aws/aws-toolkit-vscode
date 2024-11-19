@@ -115,6 +115,5 @@ export enum SamCliErrorTypes {
     DeployStackStatusMissing = 'Was not able to find a stack with the name:',
     DeployStackOutPutFailed = 'Failed to get outputs from stack',
     DeployBucketRequired = 'Templates with a size greater than 51,200 bytes must be deployed via an S3 Bucket.',
-    NoUpdateExitCode = 'is up to date',
-    ChangeSetEmpty = 'No changes to deploy. Stack is up to date',
+    ChangeSetEmpty = 'is up to date',
 }
