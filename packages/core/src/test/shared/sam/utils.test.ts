@@ -12,12 +12,14 @@ import {
     getSource,
     isDotnetRuntime,
     getSamCliErrorMessage,
+    throwIfErrorMatches,
 } from '../../../shared/sam/utils'
 import { TemplateItem } from '../../../shared/sam/sync'
 import { RegionNode } from '../../../awsexplorer/regionNode'
 import { Region } from '../../../shared/regions/endpoints'
-import { RegionProvider } from '../../../shared'
+import { RegionProvider, ToolkitError } from '../../../shared'
 import { DeployedResource, DeployedResourceNode } from '../../../awsService/appBuilder/explorer/nodes/deployedNode'
+import { ChildProcessResult } from '../../../shared/utilities/processUtils'
 
 describe('SAM utils', async function () {
     it('returns the projectRoot', async function () {
@@ -163,6 +165,26 @@ describe('SAM utils', async function () {
             assert.deepStrictEqual(
                 response,
                 'Error: Docker is unreachable. Docker needs to be running to build inside a container.'
+            )
+        })
+    })
+
+    describe('throwIfErrorMatches', async function () {
+        it('should throw a ToolkitError with the correct code when an error message matches', () => {
+            const mockError = new Error('Mock Error')
+            const mockResult: ChildProcessResult = {
+                exitCode: 1,
+                error: mockError,
+                stdout: '',
+                stderr: 'Docker is unreachable.',
+            }
+            assert.throws(
+                () => throwIfErrorMatches(mockResult),
+                (e: any) => {
+                    assert.strictEqual(e instanceof ToolkitError, true)
+                    assert.strictEqual(e.code, 'DockerUnreachable')
+                    return true
+                }
             )
         })
     })

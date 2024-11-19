@@ -24,7 +24,7 @@ import { Wizard } from '../wizards/wizard'
 import { addTelemetryEnvVar } from './cli/samCliInvokerUtils'
 import { validateSamDeployConfig, SamConfig, writeSamconfigGlobal } from './config'
 import { TemplateItem, createStackPrompter, createBucketPrompter, createTemplatePrompter } from './sync'
-import { getProjectRoot, getSamCliPathAndVersion, getSource } from './utils'
+import { getErrorCode, getProjectRoot, getSamCliPathAndVersion, getSource } from './utils'
 import { runInTerminal } from './processTerminal'
 
 export interface DeployParams {
@@ -394,7 +394,7 @@ export async function runDeploy(arg: any, wizardParams?: DeployParams): Promise<
         } catch (error) {
             throw ToolkitError.chain(error, 'Failed to deploy SAM template', {
                 details: { ...deployFlags },
-                code: error instanceof ToolkitError ? error.code : undefined,
+                code: getErrorCode(error),
             })
         }
         return {

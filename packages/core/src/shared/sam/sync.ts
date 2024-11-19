@@ -41,7 +41,7 @@ import { IamConnection } from '../../auth/connection'
 import { CloudFormationTemplateRegistry } from '../fs/templateRegistry'
 import { TreeNode } from '../treeview/resourceTreeDataProvider'
 import { getSpawnEnv } from '../env/resolveEnv'
-import { getProjectRoot, getProjectRootUri, getSamCliPathAndVersion, getSource } from './utils'
+import { getErrorCode, getProjectRoot, getProjectRootUri, getSamCliPathAndVersion, getSource } from './utils'
 import { runInTerminal } from './processTerminal'
 
 const localize = nls.loadMessageBundle()
@@ -663,7 +663,7 @@ export async function runSync(
         } catch (err) {
             throw ToolkitError.chain(err, 'Failed to sync SAM application', {
                 details: { ...params },
-                code: err instanceof ToolkitError ? err.code : undefined,
+                code: getErrorCode(err),
             })
         }
     })

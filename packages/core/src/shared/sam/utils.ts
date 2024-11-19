@@ -15,6 +15,7 @@ import { ToolkitError } from '../errors'
 import { SamCliSettings } from './cli/samCliSettings'
 import { SamCliInfoInvocation } from './cli/samCliInfo'
 import { parse } from 'semver'
+import { ChildProcessResult } from '../utilities/processUtils'
 
 /**
  * @description determines the root directory of the project given Template Item
@@ -93,12 +94,27 @@ export function getSamCliErrorMessage(stderr: string): string {
     return lines[lines.length - 1]
 }
 
+export function getErrorCode(error: unknown): string | undefined {
+    return error instanceof ToolkitError ? error.code : undefined
+}
+
+export function throwIfErrorMatches(result: ChildProcessResult) {
+    const errorMessage = getSamCliErrorMessage(result.stderr)
+    for (const errorType in SamCliErrorTypes) {
+        if (errorMessage.includes(SamCliErrorTypes[errorType as keyof typeof SamCliErrorTypes])) {
+            throw ToolkitError.chain(result.error, errorMessage, {
+                code: errorType,
+            })
+        }
+    }
+}
+
 export enum SamCliErrorTypes {
     DockerUnreachable = 'Docker is unreachable.',
     ResolveS3AndS3Set = 'Cannot use both --resolve-s3 and --s3-bucket parameters in non-guided deployments.',
     DeployStackStatusMissing = 'Was not able to find a stack with the name:',
     DeployStackOutPutFailed = 'Failed to get outputs from stack',
     DeployBucketRequired = 'Templates with a size greater than 51,200 bytes must be deployed via an S3 Bucket.',
-    NoUpdate = 'is up to date',
+    NoUpdateExitCode = 'is up to date',
     ChangeSetEmpty = 'No changes to deploy. Stack is up to date',
 }
