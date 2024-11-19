@@ -14,24 +14,20 @@ import { SharedFileTransport } from './sharedFileTransport'
 import { ConsoleLogTransport } from './consoleLogTransport'
 import { isWeb } from '../extensionGlobals'
 
-class ErrorLog {
-    constructor(
-        public topic: string,
-        public error: Error
-    ) {}
-}
-
 // Need to limit how many logs are actually tracked
 // LRU cache would work well, currently it just dumps the least recently added log
 const logmapSize: number = 1000
+
 export class ToolkitLogger extends BaseLogger implements vscode.Disposable {
     private readonly logger: winston.Logger
-    /* topic is used for header in log messages, default is 'Unknown' */
     private disposed: boolean = false
     private idCounter: number = 0
     private logMap: { [logID: number]: { [filePath: string]: string } } = {}
 
-    public constructor(logLevel: LogLevel) {
+    public constructor(
+        logLevel: LogLevel,
+        private readonly isBeta: boolean = false
+    ) {
         super()
         this.logger = winston.createLogger({
             format: winston.format.combine(
@@ -111,20 +107,6 @@ export class ToolkitLogger extends BaseLogger implements vscode.Disposable {
               })
     }
 
-    /* Format the message with topic header */
-    private addTopicToMessage(message: string | Error): string | ErrorLog {
-        if (typeof message === 'string') {
-            // TODO: remove this after all calls are migrated and topic is a required param.
-            if (this.topic === 'unknown') {
-                return message
-            }
-            return `${this.topic}: ` + message
-        } else if (message instanceof Error) {
-            return new ErrorLog(this.topic, message)
-        }
-        return message
-    }
-
     private mapError(level: LogLevel, err: Error): Error | string {
         // Use ToolkitError.trace even if we have source mapping (see below), because:
         // 1. it is what users will see, we want visibility into that when debugging
@@ -141,17 +123,19 @@ export class ToolkitLogger extends BaseLogger implements vscode.Disposable {
     }
 
     override sendToLog(level: LogLevel, message: string | Error, ...meta: any[]): number {
-        const messageWithTopic = this.addTopicToMessage(message)
+        // XXX: force debug/verbose logs for Beta users.
+        level = this.isBeta && compareLogLevel(level, 'info') > 0 ? 'info' : level
+
         if (this.disposed) {
             throw new Error('Cannot write to disposed logger')
         }
 
         meta = meta.map((o) => (o instanceof Error ? this.mapError(level, o) : o))
 
-        if (messageWithTopic instanceof ErrorLog) {
-            this.logger.log(level, '%O', messageWithTopic, ...meta, { logID: this.idCounter })
+        if (message instanceof Error) {
+            this.logger.log(level, '%O', message, ...meta, { logID: this.idCounter })
         } else {
-            this.logger.log(level, messageWithTopic, ...meta, { logID: this.idCounter })
+            this.logger.log(level, message, ...meta, { logID: this.idCounter })
         }
 
         this.logMap[this.idCounter % logmapSize] = {}

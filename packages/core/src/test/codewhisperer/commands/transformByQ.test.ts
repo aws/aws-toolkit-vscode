@@ -32,6 +32,7 @@ import {
     updateJobHistory,
     zipCode,
     getTableMapping,
+    getFilesRecursively,
 } from '../../../codewhisperer/service/transformByQ/transformApiHandler'
 import {
     validateOpenProjects,
@@ -286,6 +287,19 @@ describe('transformByQ', function () {
                 assert(expectedFilesAfterClean.includes(dependency.name))
             })
         })
+    })
+
+    it(`WHEN getFilesRecursively on source code THEN ignores excluded directories`, async function () {
+        const sourceFolder = path.join(tempDir, 'src')
+        await fs.mkdir(sourceFolder)
+        await fs.writeFile(path.join(sourceFolder, 'HelloWorld.java'), 'sample content for the test file')
+
+        const gitFolder = path.join(tempDir, '.git')
+        await fs.mkdir(gitFolder)
+        await fs.writeFile(path.join(gitFolder, 'config'), 'sample content for the test file')
+
+        const zippedFiles = getFilesRecursively(tempDir, false)
+        assert.strictEqual(zippedFiles.length, 1)
     })
 
     it(`WHEN getTableMapping on complete step 0 progressUpdates THEN map IDs to tables`, async function () {

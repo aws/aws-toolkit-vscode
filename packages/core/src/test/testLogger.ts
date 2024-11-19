@@ -17,6 +17,7 @@ export class TestLogger implements Logger {
     }[] = []
     private count: number = 0
     public constructor(private logLevel: LogLevel = 'debug') {}
+    logFile?: Uri | undefined
 
     public enableDebugConsole(): void {}
 
@@ -48,6 +49,10 @@ export class TestLogger implements Logger {
         return this.loggedEntries
             .filter((loggedEntry) => logLevels.length === 0 || logLevels.includes(loggedEntry.logLevel))
             .map((loggedEntry) => loggedEntry.entry)
+    }
+
+    public sendToLog(logLevel: LogLevel, msg: string, ...entries: Loggable[]): number {
+        return this.addLoggedEntries(logLevel, [msg, ...entries])
     }
 
     private addLoggedEntries(logLevel: LogLevel, entries: Loggable[]): number {

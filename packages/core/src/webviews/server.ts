@@ -7,6 +7,7 @@ import * as vscode from 'vscode'
 import { getLogger } from '../shared/logger'
 import { Message } from './client'
 import { AsyncResource } from 'async_hooks'
+import { ToolkitError } from '../shared/errors'
 
 interface Command<T extends any[] = any, R = any> {
     (...args: T): R | never
@@ -90,7 +91,12 @@ export function registerWebviewServer(
     return { dispose: () => (messageListener.dispose(), disposeListeners()) }
 }
 
-let errorHandler: (error: unknown, webviewId: string, command: string) => void
+/**
+ * Logs and handles an error.
+ *
+ * @returns final, chained, user-facing error
+ */
+let errorHandler: (error: unknown, webviewId: string, command: string) => ToolkitError
 /**
  * Registers the handler for errors thrown by the webview backend/server code.
  */
@@ -104,7 +110,7 @@ export function registerWebviewErrorHandler(handler: typeof errorHandler): void 
 /**
  * Invokes the registered webview error handler.
  */
-export function handleWebviewError(error: unknown, webviewId: string, command: string): void {
+export function handleWebviewError(error: unknown, webviewId: string, command: string): ToolkitError {
     if (errorHandler === undefined) {
         throw new Error('Webview error handler not registered')
     }

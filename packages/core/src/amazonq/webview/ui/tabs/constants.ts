@@ -2,13 +2,24 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { isSQLTransformReady } from '../../../../dev/config'
 import { TabType } from '../storages/tabsStorage'
+import { QuickActionCommandGroup } from '@aws/mynah-ui'
 
 export type TabTypeData = {
     title: string
     placeholder: string
     welcome: string
+    contextCommands?: QuickActionCommandGroup[]
+}
+
+const workspaceCommand: QuickActionCommandGroup = {
+    groupName: 'Mention code',
+    commands: [
+        {
+            command: '@workspace',
+            description: '(BETA) Reference all code in workspace.',
+        },
+    ],
 }
 
 const commonTabData: TabTypeData = {
@@ -17,6 +28,7 @@ const commonTabData: TabTypeData = {
     welcome: `Hi, I'm Amazon Q. I can answer your software development questions.
   Ask me to explain, debug, or optimize your code.
   You can enter \`/\` to see a list of quick actions. Add @workspace to beginning of your message to include your entire workspace as context.`,
+    contextCommands: [workspaceCommand],
 }
 
 export const TabTypeDataMap: Record<TabType, TabTypeData> = {
@@ -34,16 +46,6 @@ What would you like to work on?`,
     gumby: {
         title: 'Q - Code Transformation',
         placeholder: 'Open a new tab to chat with Q',
-        welcome: isSQLTransformReady
-            ? `Welcome to code transformation!
-
-I can help you with the following tasks:
-- Upgrade your Java 8 and Java 11 codebases to Java 17
-- Convert embedded SQL from Oracle databases to PostgreSQL
-
-What would you like to do? You can enter 'language upgrade' or 'SQL conversion'.`
-            : `Welcome to code transformation!
-
-I can help you upgrade your Java 8 and 11 codebases to Java 17.`,
+        welcome: 'Welcome to Code Transformation!',
     },
 }

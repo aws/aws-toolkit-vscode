@@ -16,11 +16,11 @@ import { getTestWindow } from '../../../shared/vscode/window'
 import { LambdaFunctionNode } from '../../../../lambda/explorer/lambdaFunctionNode'
 import * as utils from '../../../../lambda/utils'
 import { HttpResourceFetcher } from '../../../../shared/resourcefetcher/httpResourceFetcher'
-import { getLogger } from '../../../../shared/logger'
 import { ExtContext } from '../../../../shared/extensions'
 import { FakeExtensionContext } from '../../../fakeExtensionContext'
 import * as samCliRemoteTestEvent from '../../../../shared/sam/cli/samCliRemoteTestEvent'
 import { TestEventsOperation, SamCliRemoteTestEventsParameters } from '../../../../shared/sam/cli/samCliRemoteTestEvent'
+import { assertLogsContain } from '../../../globalSetup.test'
 
 describe('RemoteInvokeWebview', () => {
     let outputChannel: vscode.OutputChannel
@@ -190,20 +190,11 @@ describe('RemoteInvokeWebview', () => {
 
             getTestWindow().onDidShowDialog((d) => d.selectItem(fileUri))
 
-            const loggerErrorStub = sinon.stub(getLogger(), 'error')
-
-            try {
-                await assert.rejects(
-                    async () => await remoteInvokeWebview.promptFile(),
-                    new Error('Failed to read selected file')
-                )
-                assert.strictEqual(loggerErrorStub.calledOnce, true)
-                assert.strictEqual(loggerErrorStub.firstCall.args[0], 'readFileSync: Failed to read file at path %s %O')
-                assert.strictEqual(loggerErrorStub.firstCall.args[1], fileUri.fsPath)
-                assert(loggerErrorStub.firstCall.args[2] instanceof Error)
-            } finally {
-                loggerErrorStub.restore()
-            }
+            await assert.rejects(
+                async () => await remoteInvokeWebview.promptFile(),
+                new Error('Failed to read selected file')
+            )
+            assertLogsContain('readFileSync: Failed to read file at path %s %O', true, 'error')
         })
     })
 

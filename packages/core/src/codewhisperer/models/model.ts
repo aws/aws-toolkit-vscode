@@ -47,9 +47,9 @@ export const vsCodeState: VsCodeState = {
 
 export type UtgStrategy = 'ByName' | 'ByContent'
 
-export type CrossFileStrategy = 'OpenTabs_BM25'
+export type CrossFileStrategy = 'opentabs' | 'codemap' | 'bm25' | 'default'
 
-export type SupplementalContextStrategy = CrossFileStrategy | UtgStrategy | 'Empty' | 'LSP'
+export type SupplementalContextStrategy = CrossFileStrategy | UtgStrategy | 'Empty'
 
 export interface CodeWhispererSupplementalContext {
     isUtg: boolean
@@ -328,7 +328,7 @@ export class ZipManifest {
     buildLogs: string = 'build-logs.txt'
     version: string = '1.0'
     hilCapabilities: string[] = ['HIL_1pDependency_VersionUpgrade']
-    transformCapabilities: string[] = ['EXPLAINABILITY_V1'] // TO-DO: for SQL conversions, maybe make this = []
+    transformCapabilities: string[] = ['EXPLAINABILITY_V1']
     customBuildCommand: string = 'clean test'
     requestedConversions?: {
         sqlConversion?: {

@@ -64,8 +64,22 @@ export class FeatureConfigProvider {
         return (this.#instance ??= new this())
     }
 
-    isNewProjectContextGroup(): boolean {
-        return this.featureConfigs.get(Features.projectContextFeature)?.variation === 'TREATMENT'
+    getProjectContextGroup(): 'control' | 't1' | 't2' {
+        const variation = this.featureConfigs.get(Features.projectContextFeature)?.variation
+
+        switch (variation) {
+            case 'CONTROL':
+                return 'control'
+
+            case 'TREATMENT_1':
+                return 't1'
+
+            case 'TREATMENT_2':
+                return 't2'
+
+            default:
+                return 'control'
+        }
     }
 
     public async listFeatureEvaluations(): Promise<ListFeatureEvaluationsResponse> {
