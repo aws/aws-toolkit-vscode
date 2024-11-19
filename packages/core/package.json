@@ -486,7 +486,7 @@
         "aws-ssm-document-language-service": "^1.0.0",
         "bytes": "^3.1.2",
         "cross-fetch": "^4.0.0",
-        "cross-spawn": "^7.0.3",
+        "cross-spawn": "^7.0.6",
         "diff": "^5.1.0",
         "fast-json-patch": "^3.1.1",
         "glob": "^10.3.10",
