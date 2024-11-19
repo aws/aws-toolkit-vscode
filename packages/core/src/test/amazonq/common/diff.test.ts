@@ -12,14 +12,7 @@ import assert from 'assert'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import sinon from 'sinon'
-import {
-    createAmazonQUri,
-    getFileDiffUris,
-    getOriginalFileUri,
-    openDeletedDiff,
-    openDiff,
-    openFile,
-} from '../../../amazonq'
+import { createAmazonQUri, getFileDiffUris, getOriginalFileUri, openDeletedDiff, openDiff } from '../../../amazonq'
 import { FileSystem } from '../../../shared/fs/fs'
 
 describe('diff', () => {
@@ -117,23 +110,6 @@ describe('diff', () => {
 
             const rightExpected = createAmazonQUri(rightPath, tabId)
             assert.deepStrictEqual(right, rightExpected)
-        })
-    })
-
-    describe('openFile', () => {
-        it('file exists locally', async () => {
-            sandbox.stub(FileSystem.prototype, 'exists').resolves(true)
-            await openFile(filePath)
-
-            const expected = vscode.Uri.file(filePath)
-            assert.ok(executeCommandSpy.calledWith('vscode.diff', expected, expected))
-        })
-
-        it('file does not exists locally', async () => {
-            sandbox.stub(FileSystem.prototype, 'exists').resolves(false)
-            await openFile(filePath)
-
-            assert.ok(executeCommandSpy.notCalled)
         })
     })
 })
