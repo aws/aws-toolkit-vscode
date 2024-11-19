@@ -14,6 +14,7 @@ import { DefaultCloudFormationClient } from '../../../../shared/clients/cloudFor
 import { samSyncUrl } from '../../../../shared/constants'
 import { createStackPrompter } from '../../../../shared/ui/sam/stackPrompter'
 import { intoCollection } from '../../../../shared/utilities/collectionUtils'
+import { sleep } from '../../../../shared/utilities/timeoutUtils'
 
 describe('createStackPrompter', () => {
     let sandbox: sinon.SinonSandbox
@@ -81,7 +82,7 @@ describe('createStackPrompter', () => {
 
         // Act
         const prompter = createStackPrompter(cfnClient, mementoRootKey, samSyncUrl)
-        await new Promise((f) => setTimeout(f, 50))
+        await sleep(50)
 
         // Assert
         assert.ok(createCommonButtonsStub.calledOnce)
@@ -108,7 +109,7 @@ describe('createStackPrompter', () => {
 
         // Act
         const prompter = createStackPrompter(cfnClient, mementoRootKey, samSyncUrl)
-        await new Promise((f) => setTimeout(f, 50))
+        await sleep(50)
 
         // Assert
         assert.ok(createCommonButtonsStub.calledOnce)

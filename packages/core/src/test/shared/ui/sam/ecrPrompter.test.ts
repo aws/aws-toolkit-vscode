@@ -12,6 +12,7 @@ import * as SamUtilsModule from '../../../../shared/sam/utils'
 import * as ButtonsModule from '../../../../shared/ui/buttons'
 import { createEcrPrompter } from '../../../../shared/ui/sam/ecrPrompter'
 import { intoCollection } from '../../../../shared/utilities/collectionUtils'
+import { sleep } from '../../../../shared/utilities/timeoutUtils'
 
 describe('createEcrPrompter', () => {
     let sandbox: sinon.SinonSandbox
@@ -76,7 +77,7 @@ describe('createEcrPrompter', () => {
 
         // Act
         const prompter = createEcrPrompter(ecrClient, mementoRootKey)
-        await new Promise((f) => setTimeout(f, 50))
+        await sleep(50)
 
         // Assert
         assert.ok(createCommonButtonsStub.calledOnce)
@@ -103,7 +104,7 @@ describe('createEcrPrompter', () => {
 
         // Act
         const prompter = createEcrPrompter(ecrClient, mementoRootKey)
-        await new Promise((f) => setTimeout(f, 50))
+        await sleep(50)
 
         // Assert
         assert.ok(createCommonButtonsStub.calledOnce)

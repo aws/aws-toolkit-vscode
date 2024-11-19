@@ -6,6 +6,7 @@
 import assert from 'assert'
 import { TestInputBox, TestQuickPick } from '../vscode/quickInput'
 import { getTestWindow, TestWindow } from '../vscode/window'
+import { waitUntil } from '../../../shared/utilities/timeoutUtils'
 
 interface PrompterTesterConfig {
     testWindow?: TestWindow
@@ -106,18 +107,12 @@ export class PrompterTester {
     private async handle(input: any, handlers: any) {
         const handler = handlers.get(input.title)
 
-        if (handler === undefined) {
+        if (!handler) {
             return this.handleUnknownPrompter(input)
         }
 
         try {
-            const timeoutPromise = new Promise<never>((_, reject) => {
-                setTimeout(() => {
-                    reject(new Error(`Handler for "${input.title}" exceeded ${this.handlerTimout}ms timeout`))
-                }, this.handlerTimout)
-            })
-
-            await Promise.race([handler(input), timeoutPromise])
+            await waitUntil(handler(input), { timeout: this.handlerTimout, interval: 50 })
         } catch (e) {
             // clean up UI on callback function early exit (e.g assertion failure)
             await input.dispose()
