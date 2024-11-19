@@ -26,6 +26,12 @@ import { FileResourceFetcher } from '../shared/resourcefetcher/fileResourceFetch
 import { isAmazonQ } from '../shared/extensionUtilities'
 import { telemetry } from '../shared/telemetry/telemetry'
 
+export type ControllerOptions = {
+    node: NotificationsNode
+    storageKey: globalKey
+    fetcher: NotificationFetcher
+}
+
 /**
  * Handles fetching and maintaining the state of in-IDE notifications.
  * Notifications are constantly polled from a known endpoint and then stored in global state.
@@ -39,24 +45,25 @@ import { telemetry } from '../shared/telemetry/telemetry'
  * Emergency notifications - fetched at a regular interval.
  */
 export class NotificationsController {
-    public static readonly suggestedPollIntervalMs = 1000 * 60 * 10 // 10 minutes
+    public readonly storageKey: globalKey
 
     /** Internal memory state that is written to global state upon modification. */
     private readonly state: NotificationsState
+    private readonly notificationsNode: NotificationsNode
+    private readonly fetcher: NotificationFetcher
 
     static #instance: NotificationsController | undefined
 
-    constructor(
-        private readonly notificationsNode: NotificationsNode,
-        private readonly fetcher: NotificationFetcher = new RemoteFetcher(),
-        public readonly storageKey: globalKey = 'aws.notifications'
-    ) {
+    constructor(options: ControllerOptions) {
         if (!NotificationsController.#instance) {
             // Register on first creation only.
             registerDismissCommand()
         }
         NotificationsController.#instance = this
 
+        this.notificationsNode = options.node
+        this.storageKey = options.storageKey
+        this.fetcher = options.fetcher
         this.state = this.getDefaultState()
     }
 
