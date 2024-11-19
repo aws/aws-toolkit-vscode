@@ -26,6 +26,8 @@ import { FileResourceFetcher } from '../shared/resourcefetcher/fileResourceFetch
 import { isAmazonQ } from '../shared/extensionUtilities'
 import { telemetry } from '../shared/telemetry/telemetry'
 
+const logger = getLogger('notifications')
+
 /**
  * Handles fetching and maintaining the state of in-IDE notifications.
  * Notifications are constantly polled from a known endpoint and then stored in global state.
@@ -39,8 +41,6 @@ import { telemetry } from '../shared/telemetry/telemetry'
  * Emergency notifications - fetched at a regular interval.
  */
 export class NotificationsController {
-    public static readonly suggestedPollIntervalMs = 1000 * 60 * 10 // 10 minutes
-
     /** Internal memory state that is written to global state upon modification. */
     private readonly state: NotificationsState
 
@@ -75,7 +75,7 @@ export class NotificationsController {
             this.readState()
             await this.fetchNotifications(category)
         } catch (err: any) {
-            getLogger('notifications').error(`Unable to fetch %s notifications: %s`, category, err)
+            logger.error(`Unable to fetch %s notifications: %s`, category, err)
         }
 
         await this.displayNotifications(ruleEngine)
@@ -121,7 +121,9 @@ export class NotificationsController {
      * hide all notifications.
      */
     public async dismissNotification(notificationId: string) {
-        getLogger('notifications').debug('Dismissing notification: %s', notificationId)
+        logger.debug('Dismissing notification: %s', notificationId)
+
+        this.readState() // Don't overwrite dismissals from other windows
         this.state.dismissed.push(notificationId)
         await this.writeState()
 
@@ -134,7 +136,7 @@ export class NotificationsController {
     private async fetchNotifications(category: NotificationType) {
         const response = await this.fetcher.fetch(category, this.state[category].eTag)
         if (!response.content) {
-            getLogger('notifications').verbose('No new notifications for category: %s', category)
+            logger.verbose('No new notifications for category: %s', category)
             return
         }
         // Parse the notifications
@@ -149,7 +151,7 @@ export class NotificationsController {
         const addedNotifications = newNotifications.filter((n: any) => !currentNotificationIds.has(n.id))
 
         if (addedNotifications.length > 0) {
-            getLogger('notifications').verbose(
+            logger.verbose(
                 'New notifications received for category %s, ids: %s',
                 category,
                 addedNotifications.map((n: any) => n.id).join(', ')
@@ -161,7 +163,7 @@ export class NotificationsController {
         this.state[category].eTag = response.eTag
         await this.writeState()
 
-        getLogger('notifications').verbose(
+        logger.verbose(
             "Fetched notifications JSON for category '%s' with schema version: %s. There were %d notifications.",
             category,
             this.state[category].payload?.schemaVersion,
@@ -173,7 +175,7 @@ export class NotificationsController {
      * Write the latest memory state to global state.
      */
     private async writeState() {
-        getLogger('notifications').debug('NotificationsController: Updating notifications state at %s', this.storageKey)
+        logger.debug('NotificationsController: Updating notifications state at %s', this.storageKey)
 
         // Clean out anything in 'dismissed' that doesn't exist anymore.
         const notifications = new Set(
@@ -239,7 +241,7 @@ function registerDismissCommand() {
                     await NotificationsController.instance.dismissNotification(notification.id)
                 })
             } else {
-                getLogger('notifications').error(`${name}: Cannot dismiss notification: item is not a vscode.TreeItem`)
+                logger.error(`${name}: Cannot dismiss notification: item is not a vscode.TreeItem`)
             }
         })
     )
@@ -277,17 +279,23 @@ export class RemoteFetcher implements NotificationFetcher {
         const fetcher = new HttpResourceFetcher(endpoint, {
             showUrl: true,
         })
-        getLogger('notifications').verbose(
-            'Attempting to fetch notifications for category: %s at endpoint: %s',
-            category,
-            endpoint
-        )
+        logger.verbose('Attempting to fetch notifications for category: %s at endpoint: %s', category, endpoint)
 
-        return withRetries(async () => await fetcher.getNewETagContent(versionTag), {
-            maxRetries: RemoteFetcher.retryNumber,
-            delay: RemoteFetcher.retryIntervalMs,
-            // No exponential backoff - necessary?
-        })
+        return withRetries(
+            async () => {
+                try {
+                    return await fetcher.getNewETagContent(versionTag)
+                } catch (err) {
+                    logger.error('Failed to fetch at endpoint: %s, err: %s', endpoint, err)
+                    throw err
+                }
+            },
+            {
+                maxRetries: RemoteFetcher.retryNumber,
+                delay: RemoteFetcher.retryIntervalMs,
+                // No exponential backoff - necessary?
+            }
+        )
     }
 }
 
@@ -309,11 +317,7 @@ export class LocalFetcher implements NotificationFetcher {
 
     async fetch(category: NotificationType, versionTag?: string): Promise<ResourceResponse> {
         const uri = category === 'startUp' ? this.startUpLocalPath : this.emergencyLocalPath
-        getLogger('notifications').verbose(
-            'Attempting to fetch notifications locally for category: %s at path: %s',
-            category,
-            uri
-        )
+        logger.verbose('Attempting to fetch notifications locally for category: %s at path: %s', category, uri)
 
         return {
             content: await new FileResourceFetcher(globals.context.asAbsolutePath(uri)).get(),
