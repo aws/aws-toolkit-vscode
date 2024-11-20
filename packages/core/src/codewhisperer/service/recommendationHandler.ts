@@ -403,8 +403,7 @@ export class RecommendationHandler {
                     ).language,
                     session.requestContext.supplementalMetadata
                 )
-            }
-            if (!this.hasAtLeastOneValidSuggestion(typedPrefix)) {
+            } else if (!this.hasAtLeastOneValidSuggestion(typedPrefix)) {
                 this.reportUserDecisions(-1)
             }
         }

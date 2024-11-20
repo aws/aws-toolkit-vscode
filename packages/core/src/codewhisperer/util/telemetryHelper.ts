@@ -99,9 +99,11 @@ export class TelemetryHelper {
         language: CodewhispererLanguage,
         supplementalContextMetadata?: CodeWhispererSupplementalContext | undefined
     ) {
+        const selectedCustomization = getSelectedCustomization()
+
         telemetry.codewhisperer_userDecision.emit({
             codewhispererRequestId: requestIdList[0],
-            codewhispererSessionId: sessionId ? sessionId : undefined,
+            codewhispererSessionId: sessionId,
             codewhispererPaginationProgress: paginationIndex,
             codewhispererTriggerType: session.triggerType,
             codewhispererSuggestionIndex: -1,
@@ -116,6 +118,38 @@ export class TelemetryHelper {
             codewhispererSupplementalContextIsUtg: supplementalContextMetadata?.isUtg,
             codewhispererSupplementalContextLength: supplementalContextMetadata?.contentsLength,
             traceId: this.traceId,
+        })
+
+        telemetry.codewhisperer_userTriggerDecision.emit({
+            codewhispererSessionId: sessionId,
+            codewhispererFirstRequestId: requestIdList[0],
+            credentialStartUrl: AuthUtil.instance.startUrl,
+            codewhispererTriggerType: session.triggerType,
+            codewhispererCompletionType: 'Line',
+            codewhispererGettingStartedTask: session.taskType,
+            codewhispererLanguage: language,
+            codewhispererSuggestionCount: 0,
+            codewhispererCursorOffset: session.startCursorOffset,
+            codewhispererLineNumber: session.startPos.line,
+            codewhispererSuggestionImportCount: 0,
+            codewhispererSuggestionState: 'Empty',
+            codewhispererTypeaheadLength: this.typeAheadLength,
+            codewhispererSupplementalContextTimeout: supplementalContextMetadata?.isProcessTimeout,
+            codewhispererSupplementalContextIsUtg: supplementalContextMetadata?.isUtg,
+            codewhispererSupplementalContextLength: supplementalContextMetadata?.contentsLength,
+            codewhispererSupplementalContextStrategyId: supplementalContextMetadata?.strategy,
+            traceId: this.traceId,
+            codewhispererTimeSinceLastDocumentChange: this.timeSinceLastModification
+                ? this.timeSinceLastModification
+                : undefined,
+            codewhispererTimeSinceLastUserDecision: this.lastTriggerDecisionTime
+                ? performance.now() - this.lastTriggerDecisionTime
+                : undefined,
+            codewhispererTimeToFirstRecommendation: session.timeToFirstRecommendation,
+            codewhispererPreviousSuggestionState: this.prevTriggerDecision,
+            codewhispererClassifierResult: this.classifierResult,
+            codewhispererCustomizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
+            codewhispererFeatureEvaluations: FeatureConfigProvider.instance.getFeatureConfigsTelemetry(),
         })
     }
 
