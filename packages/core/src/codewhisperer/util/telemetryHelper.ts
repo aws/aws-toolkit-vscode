@@ -99,6 +99,8 @@ export class TelemetryHelper {
         language: CodewhispererLanguage,
         supplementalContextMetadata?: CodeWhispererSupplementalContext | undefined
     ) {
+        const selectedCustomization = getSelectedCustomization()
+
         telemetry.codewhisperer_userDecision.emit({
             codewhispererCompletionType: 'Line',
             codewhispererGettingStartedTask: session.taskType,
@@ -114,6 +116,41 @@ export class TelemetryHelper {
             codewhispererSupplementalContextLength: supplementalContextMetadata?.contentsLength,
             codewhispererSupplementalContextTimeout: supplementalContextMetadata?.isProcessTimeout,
             codewhispererTriggerType: session.triggerType,
+            credentialStartUrl: AuthUtil.instance.startUrl,
+            traceId: this.traceId,
+        })
+
+        telemetry.codewhisperer_userTriggerDecision.emit({
+            codewhispererAutomatedTriggerType: session.autoTriggerType,
+            codewhispererClassifierResult: this.classifierResult,
+            codewhispererClassifierThreshold: this.classifierThreshold,
+            codewhispererCompletionType: 'Line',
+            codewhispererCursorOffset: session.startCursorOffset,
+            codewhispererCustomizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
+            codewhispererFeatureEvaluations: FeatureConfigProvider.instance.getFeatureConfigsTelemetry(),
+            codewhispererFirstRequestId: requestIdList[0],
+            codewhispererGettingStartedTask: session.taskType,
+            codewhispererLanguage: language,
+            codewhispererLineNumber: session.startPos.line,
+            codewhispererPreviousSuggestionState: this.prevTriggerDecision,
+            codewhispererSessionId: sessionId,
+            codewhispererSuggestionCount: 0,
+            codewhispererSuggestionImportCount: 0,
+            codewhispererSuggestionState: 'Empty',
+            codewhispererSupplementalContextIsUtg: supplementalContextMetadata?.isUtg,
+            codewhispererSupplementalContextLength: supplementalContextMetadata?.contentsLength,
+            // eslint-disable-next-line id-length
+            codewhispererSupplementalContextStrategyId: supplementalContextMetadata?.strategy,
+            codewhispererSupplementalContextTimeout: supplementalContextMetadata?.isProcessTimeout,
+            codewhispererTimeSinceLastDocumentChange: this.timeSinceLastModification
+                ? this.timeSinceLastModification
+                : undefined,
+            codewhispererTimeSinceLastUserDecision: this.lastTriggerDecisionTime
+                ? performance.now() - this.lastTriggerDecisionTime
+                : undefined,
+            codewhispererTimeToFirstRecommendation: session.timeToFirstRecommendation,
+            codewhispererTriggerType: session.triggerType,
+            codewhispererTypeaheadLength: this.typeAheadLength,
             credentialStartUrl: AuthUtil.instance.startUrl,
             traceId: this.traceId,
         })
