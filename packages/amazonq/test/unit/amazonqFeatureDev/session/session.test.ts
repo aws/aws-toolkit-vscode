@@ -109,6 +109,7 @@ describe('session', () => {
         it('only insert non rejected files', async () => {
             const fsSpyWriteFile = sinon.spy(fs, 'writeFile')
             const session = await createCodeGenState()
+            sinon.stub(session, 'sendLinesOfCodeAcceptedTelemetry').resolves()
             await sessionWriteFile(session, uri, encodedContent)
             await session.insertChanges()
 

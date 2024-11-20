@@ -24,7 +24,10 @@ export class ToolkitLogger extends BaseLogger implements vscode.Disposable {
     private idCounter: number = 0
     private logMap: { [logID: number]: { [filePath: string]: string } } = {}
 
-    public constructor(logLevel: LogLevel) {
+    public constructor(
+        logLevel: LogLevel,
+        private readonly isBeta: boolean = false
+    ) {
         super()
         this.logger = winston.createLogger({
             format: winston.format.combine(
@@ -120,6 +123,9 @@ export class ToolkitLogger extends BaseLogger implements vscode.Disposable {
     }
 
     override sendToLog(level: LogLevel, message: string | Error, ...meta: any[]): number {
+        // XXX: force debug/verbose logs for Beta users.
+        level = this.isBeta && compareLogLevel(level, 'info') > 0 ? 'info' : level
+
         if (this.disposed) {
             throw new Error('Cannot write to disposed logger')
         }

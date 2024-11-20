@@ -232,6 +232,8 @@ export async function uploadPayload(payloadFileName: string, uploadContext?: Upl
  */
 const mavenExcludedExtensions = ['.repositories', '.sha1']
 
+const sourceExcludedExtensions = ['.DS_Store']
+
 /**
  * Determines if the specified file path corresponds to a Maven metadata file
  * by checking against known metadata file extensions. This is used to identify
@@ -244,24 +246,22 @@ function isExcludedDependencyFile(path: string): boolean {
     return mavenExcludedExtensions.some((extension) => path.endsWith(extension))
 }
 
-/**
- * Gets all files in dir. We use this method to get the source code, then we run a mvn command to
- * copy over dependencies into their own folder, then we use this method again to get those
- * dependencies. If isDependenciesFolder is true, then we are getting all the files
- * of the dependencies which were copied over by the previously-run mvn command, in which case
- * we DO want to include any dependencies that may happen to be named "target", hence the check
- * in the first part of the IF statement. The point of excluding folders named target is that
- * "target" is also the name of the folder where .class files, large JARs, etc. are stored after
- * building, and we do not want these included in the ZIP so we exclude these when calling
- * getFilesRecursively on the source code folder.
- */
-function getFilesRecursively(dir: string, isDependenciesFolder: boolean): string[] {
+// do not zip the .DS_Store file as it may appear in the diff.patch
+function isExcludedSourceFile(path: string): boolean {
+    return sourceExcludedExtensions.some((extension) => path.endsWith(extension))
+}
+
+// zip all dependency files and all source files excluding "target" (contains large JARs) plus ".git" and ".idea" (may appear in diff.patch)
+export function getFilesRecursively(dir: string, isDependenciesFolder: boolean): string[] {
     const entries = nodefs.readdirSync(dir, { withFileTypes: true })
     const files = entries.flatMap((entry) => {
         const res = path.resolve(dir, entry.name)
-        // exclude 'target' directory from ZIP (except if zipping dependencies) due to issues in backend
         if (entry.isDirectory()) {
-            if (isDependenciesFolder || entry.name !== 'target') {
+            if (isDependenciesFolder) {
+                // include all dependency files
+                return getFilesRecursively(res, isDependenciesFolder)
+            } else if (entry.name !== 'target' && entry.name !== '.git' && entry.name !== '.idea') {
+                // exclude the above directories when zipping source code
                 return getFilesRecursively(res, isDependenciesFolder)
             } else {
                 return []
@@ -310,8 +310,8 @@ export async function zipCode(
             const sourceFiles = getFilesRecursively(projectPath, false)
             let sourceFilesSize = 0
             for (const file of sourceFiles) {
-                if (nodefs.statSync(file).isDirectory()) {
-                    getLogger().info('CodeTransformation: Skipping directory, likely a symlink')
+                if (nodefs.statSync(file).isDirectory() || isExcludedSourceFile(file)) {
+                    getLogger().info('CodeTransformation: Skipping file')
                     continue
                 }
                 const relativePath = path.relative(projectPath, file)
@@ -320,6 +320,10 @@ export async function zipCode(
                 sourceFilesSize += (await nodefs.promises.stat(file)).size
             }
             getLogger().info(`CodeTransformation: source code files size = ${sourceFilesSize}`)
+        }
+
+        if (transformByQState.getMultipleDiffs() && zipManifest instanceof ZipManifest) {
+            zipManifest.transformCapabilities.push('SELECTIVE_TRANSFORMATION_V1')
         }
 
         if (
@@ -334,16 +338,13 @@ export async function zipCode(
                     target: transformByQState.getTargetDB(),
                     schema: transformByQState.getSchema(),
                     host: transformByQState.getSourceServerName(),
-                    sctFileName: metadataZip.getEntries().filter((entry) => entry.entryName.endsWith('.sct'))[0]
-                        .entryName,
+                    sctFileName: metadataZip.getEntries().filter((entry) => entry.name.endsWith('.sct'))[0].name,
                 },
             }
             // TO-DO: later consider making this add to path.join(zipManifest.dependenciesRoot, 'qct-sct-metadata', entry.entryName) so that it's more organized
             metadataZip
                 .getEntries()
-                .forEach((entry) =>
-                    zip.addFile(path.join(zipManifest.dependenciesRoot, entry.entryName), entry.getData())
-                )
+                .forEach((entry) => zip.addFile(path.join(zipManifest.dependenciesRoot, entry.name), entry.getData()))
             const sqlMetadataSize = (await nodefs.promises.stat(transformByQState.getMetadataPathSQL())).size
             getLogger().info(`CodeTransformation: SQL metadata file size = ${sqlMetadataSize}`)
         }

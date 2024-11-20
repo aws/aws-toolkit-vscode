@@ -22,6 +22,21 @@ export const AWSTemplateKeyWords = ['AWSTemplateFormatVersion', 'Resources', 'AW
 
 export const AWSTemplateCaseInsensitiveKeyWords = ['cloudformation', 'cfn', 'template', 'description']
 
+const patchDescriptions: { [key: string]: string } = {
+    'Prepare minimal upgrade to Java 17':
+        'This diff patch covers the set of upgrades for Springboot, JUnit, and PowerMockito frameworks.',
+    'Popular Enterprise Specifications and Application Frameworks upgrade':
+        'This diff patch covers the set of upgrades for Jakarta EE 10, Hibernate 6.2, and Micronaut 3.',
+    'HTTP Client Utilities, Apache Commons Utilities, and Web Frameworks':
+        'This diff patch covers the set of upgrades for Apache HTTP Client 5, Apache Commons utilities (Collections, IO, Lang, Math), Struts 6.0.',
+    'Testing Tools and Frameworks upgrade':
+        'This diff patch covers the set of upgrades for ArchUnit, Mockito, TestContainers, Cucumber, and additionally, Jenkins plugins and the Maven Wrapper.',
+    'Miscellaneous Processing Documentation upgrade':
+        'This diff patch covers a diverse set of upgrades spanning ORMs, XML processing, API documentation, and more.',
+    'Deprecated API replacement and dependency upgrades':
+        'This diff patch replaces deprecated APIs and makes additional dependency version upgrades.',
+}
+
 export const JsonConfigFileNamingConvention = new Set([
     'app.json',
     'appsettings.json',
@@ -450,6 +465,26 @@ export const codeTransformLocThreshold = 100000
 export const jobStartedChatMessage =
     'I am starting to transform your code. It can take 10 to 30 minutes to upgrade your code, depending on the size of your project. To monitor progress, go to the Transformation Hub. If I run into any issues, I might pause the transformation to get input from you on how to proceed.'
 
+export const chooseTransformationObjective = `I can help you with the following tasks:\n- Upgrade your Java 8 and Java 11 codebases to Java 17, or upgrade Java 17 code with up to date libraries and other dependencies.\n- Convert embedded SQL code for Oracle to PostgreSQL database migrations in AWS DMS.\n\nWhat would you like to do? You can enter "language upgrade" or "sql conversion".`
+
+export const chooseTransformationObjectivePlaceholder = 'Enter "language upgrade" or "sql conversion"'
+
+export const userPatchDescriptionChatMessage = `
+I can now divide the transformation results into diff patches (if applicable to the app) if you would like to review and accept each diff with fewer changes:
+
+• Minimal Compatible Library Upgrade to Java 17: Dependencies to the minimum compatible versions in Java 17, including Springboot, JUnit, and PowerMockito.
+
+• Popular Enterprise Specifications Application Frameworks: Popular enterprise and application frameworks like Jakarta EE, Hibernate, and Micronaut 3.
+
+• HTTP Client Utilities Web Frameworks: HTTP client libraries, Apache Commons utilities, and Struts frameworks.
+
+• Testing Tools Frameworks: Testing tools like ArchUnit, Mockito, and TestContainers and build tools like Jenkins and Maven Wrapper. 
+
+• Miscellaneous Processing Documentation: Upgrades ORMs, XML processing, and Swagger to SpringDoc/OpenAPI.
+
+• Deprecated API replacement and dependency upgrades: Replaces deprecated APIs and makes additional dependency version upgrades.
+`
+
 export const uploadingCodeStepMessage = 'Upload your code'
 
 export const buildCodeStepMessage = 'Build uploaded code in secure build environment'
@@ -477,6 +512,8 @@ export const failedStepMessage = 'The step failed, fetching additional details..
 
 export const jobCompletedMessage = 'The transformation completed.'
 
+export const noChangesMadeMessage = "I didn't make any changes for this transformation."
+
 export const noOngoingJobMessage = 'No ongoing job.'
 
 export const nothingToShowMessage = 'Nothing to show'
@@ -490,8 +527,7 @@ export const startTransformationButtonText = 'Start a new transformation'
 
 export const stopTransformationButtonText = 'Stop transformation'
 
-export const checkingForProjectsChatMessage =
-    'I am checking for open projects that are eligible for Code Transformation.'
+export const checkingForProjectsChatMessage = 'Checking for eligible projects...'
 
 export const buildStartedChatMessage =
     'I am building your project. This can take up to 10 minutes, depending on the size of your project.'
@@ -507,7 +543,7 @@ export const absolutePathDetectedMessage = (numPaths: number, buildFile: string,
 export const unsupportedJavaVersionChatMessage = `I can only upgrade Java 8, Java 11, or Java 17 projects. For more information, see the [Amazon Q documentation](${codeTransformPrereqDoc}).`
 
 export const selectSQLMetadataFileHelpMessage =
-    'Next, I need the zipped metadata file from your schema conversion. You can download the metadata by going to your migration project in the AWS DMS console. Open the schema conversion and choose **Convert the embedded SQL in your application**. You can downloaded the metadata from Amazon S3 in the {schema-conversion-project}/ directory.'
+    'Okay, I can convert the embedded SQL code for your Oracle to PostgreSQL transformation. To get started, upload the zipped metadata file from your schema conversion in AWS Data Migration Service (DMS). To retrieve the metadata file:\n1. Open your database migration project in the AWS DMS console.\n2. Open the schema conversion and choose **Convert the embedded SQL in your application**.\n3. Choose the link to Amazon S3 console.\n\nYou can download the metadata file from the {schema-conversion-project}/ directory. For more info, refer to the [documentation](https://docs.aws.amazon.com/dms/latest/userguide/schema-conversion-save-apply.html#schema-conversion-save).'
 
 export const invalidMetadataFileUnsupportedSourceDB =
     'I can only convert SQL for migrations from an Oracle source database. The provided .sct file indicates another source database for this migration.'
@@ -578,19 +614,29 @@ export const jobCancelledChatMessage =
 
 export const jobCancelledNotification = 'You cancelled the transformation.'
 
-export const jobCompletedChatMessage =
-    'I upgraded your code. You can review the diff to see my proposed changes and accept or reject them. The transformation summary has details about the files I updated.'
+export const diffMessage = (multipleDiffs: boolean) => {
+    return multipleDiffs
+        ? 'You can review the diff to see my proposed changes and accept or reject them. If you reject the diff, you will not be able to see the diffs later.'
+        : 'You can review the diff to see my proposed changes and accept or reject them.'
+}
 
-export const jobCompletedNotification =
-    'Amazon Q upgraded your code. You can review the diff to see my proposed changes and accept or reject them. The transformation summary has details about the files I updated.'
+export const jobCompletedChatMessage = (multipleDiffsString: string) => {
+    return `I transformed your code. ${multipleDiffsString} The transformation summary has details about the files I updated.`
+}
 
-export const jobPartiallyCompletedChatMessage =
-    'I upgraded part of your code. You can review the diff to see my proposed changes and accept or reject them. The transformation summary has details about the files I updated and the errors that prevented a complete transformation.'
+export const jobCompletedNotification = (multipleDiffsString: string) => {
+    return `Amazon Q transformed your code. ${multipleDiffsString} The transformation summary has details about the files I updated.`
+}
 
-export const jobPartiallyCompletedNotification =
-    'Amazon Q upgraded part of your code. You can review the diff to see my proposed changes and accept or reject them. The transformation summary has details about the files I updated and the errors that prevented a complete transformation.'
+export const jobPartiallyCompletedChatMessage = (multipleDiffsString: string) => {
+    return `I transformed part of your code. ${multipleDiffsString} The transformation summary has details about the files I updated and the errors that prevented a complete transformation.`
+}
 
-export const noPomXmlFoundChatMessage = `I couldn\'t find a project that I can upgrade. Your Java project must be built on Maven and contain a pom.xml file. For more information, see the [Amazon Q documentation](${codeTransformPrereqDoc}).`
+export const jobPartiallyCompletedNotification = (multipleDiffsString: string) => {
+    return `Amazon Q transformed part of your code. ${multipleDiffsString} The transformation summary has details about the files I updated and the errors that prevented a complete transformation.`
+}
+
+export const noPomXmlFoundChatMessage = `I couldn\'t find a project that I can upgrade. I couldn\'t find a pom.xml file in any of your open projects, nor could I find any embedded SQL statements. Currently, I can upgrade Java 8 or Java 11 projects built on Maven, or Oracle SQL to PostgreSQL statements in Java projects. For more information, see the [Amazon Q documentation](${codeTransformPrereqDoc}).`
 
 export const noPomXmlFoundNotification = `None of your open modules are supported for code transformation with Amazon Q. A pom.xml is required for transformation.`
 
@@ -626,9 +672,26 @@ export const viewProposedChangesChatMessage =
 export const viewProposedChangesNotification =
     'Download complete. You can view a summary of the transformation and accept or reject the proposed changes in the Transformation Hub.'
 
-export const changesAppliedChatMessage = 'I applied the changes to your project.'
+export const changesAppliedChatMessageOneDiff = 'I applied the changes to your project.'
 
-export const changesAppliedNotification = 'Amazon Q applied the changes to your project.'
+export const changesAppliedChatMessageMultipleDiffs = (
+    currentPatchIndex: number,
+    totalPatchFiles: number,
+    description: string | undefined
+) =>
+    description
+        ? `I applied the changes in diff patch ${currentPatchIndex + 1} of ${totalPatchFiles} to your project. ${patchDescriptions[description]}`
+        : 'I applied the changes to your project.'
+
+export const changesAppliedNotificationOneDiff = 'Amazon Q applied the changes to your project'
+
+export const changesAppliedNotificationMultipleDiffs = (currentPatchIndex: number, totalPatchFiles: number) => {
+    if (totalPatchFiles === 1) {
+        return 'Amazon Q applied the changes to your project.'
+    } else {
+        return `Amazon Q applied the changes in diff patch ${currentPatchIndex + 1} of ${totalPatchFiles} to your project.`
+    }
+}
 
 export const noOpenProjectsFoundChatMessage = `I couldn\'t find a project that I can upgrade. Currently, I support Java 8, Java 11, and Java 17 projects built on Maven. Make sure your project is open in the IDE. For more information, see the [Amazon Q documentation](${codeTransformPrereqDoc}).`
 
@@ -677,16 +740,26 @@ export const chooseSourceVersionFormTitle = 'Choose the source code version'
 
 export const chooseTargetVersionFormTitle = 'Choose the target code version'
 
+export const chooseSchemaFormTitle = 'Choose the schema of the database'
+
+export const chooseProjectSchemaFormMessage = 'To continue, choose the project and schema for this transformation.'
+
 export const skipUnitTestsFormTitle = 'Choose to skip unit tests'
+
+export const selectiveTransformationFormTitle = 'Choose how to receive proposed changes'
 
 export const skipUnitTestsFormMessage =
     'I will build your project using `mvn clean test` by default. If you would like me to build your project without running unit tests, I will use `mvn clean test-compile`.'
 
 export const runUnitTestsMessage = 'Run unit tests'
 
+export const oneDiffMessage = 'One diff'
+
 export const doNotSkipUnitTestsBuildCommand = 'clean test'
 
 export const skipUnitTestsMessage = 'Skip unit tests'
+
+export const multipleDiffsMessage = 'Multiple diffs'
 
 export const skipUnitTestsBuildCommand = 'clean test-compile'
 

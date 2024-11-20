@@ -33,7 +33,7 @@ export {
     openDeletedDiff,
     getOriginalFileUri,
     getFileDiffUris,
-    openFile,
+    computeDiff,
 } from './commons/diff'
 export { CodeReference } from '../codewhispererChat/view/connector/connector'
 export { AuthMessageDataMap, AuthFollowUpType } from './auth/model'

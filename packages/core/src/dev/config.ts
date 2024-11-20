@@ -11,5 +11,5 @@ export const betaUrl = {
     toolkit: '',
 }
 
-// feature flag for SQL transformations
-export const isSQLTransformReady = false
+//feature flag for Selective Transformation
+export const isSelectiveTransformationReady = false

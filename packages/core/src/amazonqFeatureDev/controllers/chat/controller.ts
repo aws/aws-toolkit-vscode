@@ -43,7 +43,7 @@ import { openUrl } from '../../../shared/utilities/vsCodeUtils'
 import { getPathsFromZipFilePath } from '../../util/files'
 import { examples, messageWithConversationId } from '../../userFacingText'
 import { getWorkspaceFoldersByPrefixes } from '../../../shared/utilities/workspaceUtils'
-import { openDeletedDiff, openDiff, openFile } from '../../../amazonq/commons/diff'
+import { openDeletedDiff, openDiff } from '../../../amazonq/commons/diff'
 import { i18n } from '../../../shared/i18n-helper'
 import globals from '../../../shared/extensionGlobals'
 import { randomUUID } from '../../../shared'
@@ -481,6 +481,7 @@ export class FeatureDevController {
                     messageId,
                 })
                 await session.updateChatAnswer(tabID, i18n('AWS.amazonq.featureDev.pillText.acceptAllChanges'))
+                await session.sendLinesOfCodeGeneratedTelemetry()
             }
             this.messenger.sendUpdatePlaceholder(tabID, i18n('AWS.amazonq.featureDev.pillText.selectOption'))
         } finally {
@@ -750,7 +751,7 @@ export class FeatureDevController {
                 this.sendAcceptCodeTelemetry(session, 1)
                 await session.insertNewFiles([session.state.filePaths[filePathIndex]])
                 await session.insertCodeReferenceLogs(session.state.references ?? [])
-                await this.openFile(session.state.filePaths[filePathIndex])
+                await this.openFile(session.state.filePaths[filePathIndex], tabId)
             } else {
                 session.state.filePaths[filePathIndex].rejected = !session.state.filePaths[filePathIndex].rejected
             }
@@ -828,9 +829,10 @@ export class FeatureDevController {
         }
     }
 
-    private async openFile(filePath: NewFileInfo) {
-        const absolutePath = path.join(filePath.workspaceFolder.uri.fsPath, filePath.relativePath)
-        await openFile(absolutePath)
+    private async openFile(filePath: NewFileInfo, tabId: string) {
+        const leftPath = path.join(filePath.workspaceFolder.uri.fsPath, filePath.relativePath)
+        const rightPath = filePath.virtualMemoryUri.path
+        await openDiff(leftPath, rightPath, tabId)
     }
 
     private async stopResponse(message: any) {

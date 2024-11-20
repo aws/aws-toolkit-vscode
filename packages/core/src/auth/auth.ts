@@ -126,8 +126,6 @@ export interface ConnectionStateChangeEvent {
     readonly state: ProfileMetadata['connectionState']
 }
 
-export type AuthType = Auth
-
 export type DeletedConnection = { connId: Connection['id']; storedProfile?: StoredProfile }
 type DeclaredConnection = Pick<SsoProfile, 'ssoRegion' | 'startUrl'> & { source: string }
 

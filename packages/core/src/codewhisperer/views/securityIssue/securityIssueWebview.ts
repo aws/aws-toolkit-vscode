@@ -74,7 +74,8 @@ const Panel = VueWebview.compilePanel(SecurityIssueWebview)
 let activePanel: InstanceType<typeof Panel> | undefined
 
 export async function showSecurityIssueWebview(ctx: vscode.ExtensionContext, issue: CodeScanIssue, filePath: string) {
-    activePanel ??= new Panel(ctx)
+    // always create a new panel per finding
+    activePanel = new Panel(ctx)
     activePanel.server.setIssue(issue)
     activePanel.server.setFilePath(filePath)
 

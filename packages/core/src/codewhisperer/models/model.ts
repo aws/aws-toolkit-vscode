@@ -51,6 +51,16 @@ export type CrossFileStrategy = 'opentabs' | 'codemap' | 'bm25' | 'default'
 
 export type SupplementalContextStrategy = CrossFileStrategy | UtgStrategy | 'Empty'
 
+export type PatchInfo = {
+    name: string
+    filename: string
+    isSuccessful: boolean
+}
+
+export type DescriptionContent = {
+    content: PatchInfo[]
+}
+
 export interface CodeWhispererSupplementalContext {
     isUtg: boolean
     isProcessTimeout: boolean
@@ -328,7 +338,7 @@ export class ZipManifest {
     buildLogs: string = 'build-logs.txt'
     version: string = '1.0'
     hilCapabilities: string[] = ['HIL_1pDependency_VersionUpgrade']
-    transformCapabilities: string[] = ['EXPLAINABILITY_V1'] // TO-DO: for SQL conversions, maybe make this = []
+    transformCapabilities: string[] = ['EXPLAINABILITY_V1']
     customBuildCommand: string = 'clean test'
     requestedConversions?: {
         sqlConversion?: {
@@ -398,6 +408,8 @@ export class TransformByQState {
     private sourceJDKVersion: JDKVersion | undefined = undefined
 
     private targetJDKVersion: JDKVersion = JDKVersion.JDK17
+
+    private produceMultipleDiffs: boolean = false
 
     private customBuildCommand: string = ''
 
@@ -489,6 +501,10 @@ export class TransformByQState {
 
     public getLinesOfCodeSubmitted() {
         return this.linesOfCodeSubmitted
+    }
+
+    public getMultipleDiffs() {
+        return this.produceMultipleDiffs
     }
 
     public getPreBuildLogFilePath() {
@@ -653,6 +669,10 @@ export class TransformByQState {
 
     public setLinesOfCodeSubmitted(lines: number) {
         this.linesOfCodeSubmitted = lines
+    }
+
+    public setMultipleDiffs(produceMultipleDiffs: boolean) {
+        this.produceMultipleDiffs = produceMultipleDiffs
     }
 
     public setStartTime(time: string) {
