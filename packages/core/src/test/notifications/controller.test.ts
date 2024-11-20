@@ -26,9 +26,12 @@ import {
 import { HttpResourceFetcher } from '../../shared/resourcefetcher/httpResourceFetcher'
 import { NotificationsNode } from '../../notifications/panelNode'
 import { RuleEngine } from '../../notifications/rules'
+import { globalKey } from '../../shared/globalState'
 
 // one test node to use across different tests
 export const panelNode: NotificationsNode = NotificationsNode.instance
+
+const storageKey = 'aws.notifications.test' as globalKey
 
 describe('Notifications Controller', function () {
     const ruleEngine: RuleEngine = new RuleEngine({
@@ -90,7 +93,7 @@ describe('Notifications Controller', function () {
     beforeEach(async function () {
         await panelNode.setNotifications([], [])
         fetcher = new TestFetcher()
-        controller = new NotificationsController(panelNode, fetcher, '_aws.test.notification' as any)
+        controller = new NotificationsController({ node: panelNode, fetcher, storageKey })
 
         ruleEngineSpy = sinon.spy(ruleEngine, 'shouldDisplayNotification')
         focusPanelSpy = sinon.spy(panelNode, 'focusPanel')
@@ -475,7 +478,9 @@ describe('Notifications Controller', function () {
                 throw new Error('test error')
             }
         })()
-        assert.doesNotThrow(() => new NotificationsController(panelNode, fetcher).pollForStartUp(ruleEngine))
+        assert.doesNotThrow(() =>
+            new NotificationsController({ node: panelNode, fetcher, storageKey }).pollForStartUp(ruleEngine)
+        )
         assert.ok(wasCalled)
     })
 

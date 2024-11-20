@@ -12,7 +12,11 @@ import globals from '../../shared/extensionGlobals'
 import assert from 'assert'
 import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
 import sinon from 'sinon'
+import { globalKey } from '../../shared/globalState'
 
+/**
+ * Simple integ test to verify we can fetch and display from hosted files.
+ */
 describe('Notifications Integration Test', function () {
     let fetcher: RemoteFetcher
     let panelNode: NotificationsNode
@@ -43,7 +47,11 @@ describe('Notifications Integration Test', function () {
             'https://idetoolkits-hostedfiles.amazonaws.com/Notifications/integ/VSCode/startup/1.x.json',
             'https://idetoolkits-hostedfiles.amazonaws.com/Notifications/integ/VSCode/emergency/1.x.json'
         )
-        controller = new NotificationsController(panelNode, fetcher)
+        controller = new NotificationsController({
+            node: panelNode,
+            fetcher,
+            storageKey: 'aws.notifications.test' as globalKey,
+        })
     })
 
     // Clear all global states after each test

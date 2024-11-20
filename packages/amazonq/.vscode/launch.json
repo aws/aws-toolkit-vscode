@@ -119,6 +119,51 @@
             }
         },
         {
+            "name": "Integration Tests",
+            "type": "extensionHost",
+            "request": "launch",
+            "runtimeExecutable": "${execPath}",
+            "args": [
+                "--disable-extension=amazonwebservices.aws-toolkit-vscode",
+                "${workspaceFolder}/../core/dist/src/testFixtures/workspaceFolder",
+                "--extensionDevelopmentPath=${workspaceFolder}",
+                "--extensionTestsPath=${workspaceFolder}/dist/test/integ/index.js"
+            ],
+            "env": {
+                "DEVELOPMENT_PATH": "${workspaceFolder}",
+                "AWS_TOOLKIT_AUTOMATION": "local"
+            },
+            "outFiles": ["${workspaceFolder}/dist/**/*.js", "${workspaceFolder}/../core/dist/**/*.js"],
+            "preLaunchTask": "watch",
+            "presentation": {
+                "group": "6_IntegrationTests",
+                "order": 1
+            }
+        },
+        {
+            "name": "Integration Tests (current file)",
+            "type": "extensionHost",
+            "request": "launch",
+            "runtimeExecutable": "${execPath}",
+            "args": [
+                "--disable-extension=amazonwebservices.aws-toolkit-vscode",
+                "${workspaceFolder}/../core/dist/src/testFixtures/workspaceFolder",
+                "--extensionDevelopmentPath=${workspaceFolder}",
+                "--extensionTestsPath=${workspaceFolder}/dist/test/integ/index.js"
+            ],
+            "env": {
+                "TEST_FILE": "${relativeFile}",
+                "DEVELOPMENT_PATH": "${workspaceFolder}",
+                "AWS_TOOLKIT_AUTOMATION": "local"
+            },
+            "outFiles": ["${workspaceFolder}/dist/**/*.js", "${workspaceFolder}/../core/dist/**/*.js"],
+            "preLaunchTask": "watch",
+            "presentation": {
+                "group": "5_IntegrationTestsCurrentFile",
+                "order": 1
+            }
+        },
+        {
             "name": "E2E Test (current file)",
             "type": "extensionHost",
             "request": "launch",

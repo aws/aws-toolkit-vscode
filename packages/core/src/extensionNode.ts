@@ -39,7 +39,7 @@ import * as beta from './dev/beta'
 import { activate as activateApplicationComposer } from './applicationcomposer/activation'
 import { activate as activateRedshift } from './awsService/redshift/activation'
 import { activate as activateIamPolicyChecks } from './awsService/accessanalyzer/activation'
-import { activate as activateNotifications } from './notifications/activation'
+import { activate as activateNotifications, deactivate as deactivateNotifications } from './notifications/activation'
 import { SchemaService } from './shared/schemas'
 import { AwsResourceManager } from './dynamicResources/awsResourceManager'
 import globals from './shared/extensionGlobals'
@@ -270,6 +270,7 @@ export async function deactivate() {
     // Run concurrently to speed up execution. stop() does not throw so it is safe
     await Promise.all([await (await CrashMonitoring.instance())?.shutdown(), deactivateCommon(), deactivateEc2()])
     await globals.resourceManager.dispose()
+    deactivateNotifications()
 }
 
 async function handleAmazonQInstall() {
@@ -338,7 +339,7 @@ function recordToolkitInitialization(activationStartedOn: number, settingsValid:
     }
 }
 
-async function getAuthState(): Promise<Omit<AuthUserState, 'source'>> {
+export async function getAuthState(): Promise<Omit<AuthUserState, 'source'>> {
     let authStatus: AuthStatus = 'notConnected'
     const enabledConnections: Set<AuthFormId> = new Set()
     const enabledScopes: Set<string> = new Set()

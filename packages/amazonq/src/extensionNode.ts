@@ -18,7 +18,7 @@ import { Auth, AuthUtils, getTelemetryMetadataForConn, isAnySsoConnection } from
 import api from './api'
 import { activate as activateCWChat } from './app/chat/activation'
 import { beta } from 'aws-core-vscode/dev'
-import { activate as activateNotifications } from 'aws-core-vscode/notifications'
+import { activate as activateNotifications, deactivate as deactivateNotifications } from 'aws-core-vscode/notifications'
 import { AuthState, AuthUtil } from 'aws-core-vscode/codewhisperer'
 import { telemetry, AuthUserState } from 'aws-core-vscode/telemetry'
 
@@ -78,7 +78,7 @@ async function activateAmazonQNode(context: vscode.ExtensionContext) {
     await activateNotifications(context, authState, getAuthState)
 }
 
-async function getAuthState(): Promise<Omit<AuthUserState, 'source'>> {
+export async function getAuthState(): Promise<Omit<AuthUserState, 'source'>> {
     let authState: AuthState = 'disconnected'
     try {
         // May call connection validate functions that try to refresh the token.
@@ -147,4 +147,5 @@ async function setupDevMode(context: vscode.ExtensionContext) {
 export async function deactivate() {
     // Run concurrently to speed up execution. stop() does not throw so it is safe
     await Promise.all([(await CrashMonitoring.instance())?.shutdown(), deactivateCommon()])
+    deactivateNotifications()
 }
