@@ -512,19 +512,19 @@ export class TelemetryHelper {
             return
         }
         telemetry.codewhisperer_clientComponentLatency.emit({
+            codewhispererAllCompletionsLatency: this.allPaginationEndTime - session.sdkApiCallStartTime,
+            codewhispererCompletionType: 'Line',
+            codewhispererCredentialFetchingLatency: session.sdkApiCallStartTime - session.fetchCredentialStartTime,
+            codewhispererCustomizationArn: getSelectedCustomization().arn,
+            codewhispererEndToEndLatency: session.firstSuggestionShowTime - session.invokeSuggestionStartTime,
+            codewhispererFirstCompletionLatency: this.sdkApiCallEndTime - session.sdkApiCallStartTime,
+            codewhispererLanguage: session.language,
+            codewhispererPostprocessingLatency: session.firstSuggestionShowTime - this.sdkApiCallEndTime,
+            codewhispererPreprocessingLatency: session.fetchCredentialStartTime - session.invokeSuggestionStartTime,
             codewhispererRequestId: this.firstResponseRequestId,
             codewhispererSessionId: session.sessionId,
-            codewhispererFirstCompletionLatency: this.sdkApiCallEndTime - session.sdkApiCallStartTime,
-            codewhispererEndToEndLatency: session.firstSuggestionShowTime - session.invokeSuggestionStartTime,
-            codewhispererAllCompletionsLatency: this.allPaginationEndTime - session.sdkApiCallStartTime,
-            codewhispererPostprocessingLatency: session.firstSuggestionShowTime - this.sdkApiCallEndTime,
-            codewhispererCredentialFetchingLatency: session.sdkApiCallStartTime - session.fetchCredentialStartTime,
-            codewhispererPreprocessingLatency: session.fetchCredentialStartTime - session.invokeSuggestionStartTime,
-            codewhispererCompletionType: 'Line',
             codewhispererTriggerType: session.triggerType,
-            codewhispererLanguage: session.language,
             credentialStartUrl: AuthUtil.instance.startUrl,
-            codewhispererCustomizationArn: getSelectedCustomization().arn,
         })
     }
     public sendCodeScanEvent(languageId: string, jobId: string) {
