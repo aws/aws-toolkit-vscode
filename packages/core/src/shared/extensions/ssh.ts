@@ -132,7 +132,11 @@ export async function testSshConnection(
 ): Promise<ChildProcessResult | never> {
     try {
         const env = { SESSION_ID: session.SessionId, STREAM_URL: session.StreamUrl, TOKEN: session.TokenValue }
-        const result = await new ProcessClass(sshPath, ['-T', `${user}@${hostname}`, 'echo connected && exit']).run({
+        const result = await new ProcessClass(sshPath, [
+            '-T',
+            `${user}@${hostname}`,
+            'echo "test connection succeeded" && exit',
+        ]).run({
             spawnOptions: {
                 env,
             },
