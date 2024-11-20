@@ -718,8 +718,12 @@ export async function finalizeTransformationJob(status: string) {
     if (!(status === 'COMPLETED' || status === 'PARTIALLY_COMPLETED')) {
         getLogger().error(`CodeTransformation: ${CodeWhispererConstants.failedToCompleteJobNotification}`)
         jobPlanProgress['transformCode'] = StepProgress.Failed
-        transformByQState.setJobFailureErrorNotification(CodeWhispererConstants.failedToCompleteJobNotification)
-        transformByQState.setJobFailureErrorChatMessage(CodeWhispererConstants.failedToCompleteJobChatMessage)
+        if (!transformByQState.getJobFailureErrorNotification()) {
+            transformByQState.setJobFailureErrorNotification(CodeWhispererConstants.failedToCompleteJobNotification)
+        }
+        if (!transformByQState.getJobFailureErrorChatMessage()) {
+            transformByQState.setJobFailureErrorChatMessage(CodeWhispererConstants.failedToCompleteJobChatMessage)
+        }
         throw new Error('Job was not successful nor partially successful')
     }
     transformByQState.setToSucceeded()

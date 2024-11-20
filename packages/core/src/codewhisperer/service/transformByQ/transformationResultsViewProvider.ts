@@ -423,8 +423,8 @@ export class ProposedTransformationExplorer {
                             programmingLanguage: {
                                 languageName:
                                     transformByQState.getTransformationType() === TransformationType.LANGUAGE_UPGRADE
-                                        ? 'JAVA'
-                                        : 'SQL',
+                                        ? 'java'
+                                        : 'sql',
                             },
                             linesOfCodeChanged: metricsData.linesOfCodeChanged,
                             charsOfCodeChanged: metricsData.charactersOfCodeChanged,
