@@ -7,7 +7,7 @@ import assert from 'assert'
 import * as sinon from 'sinon'
 import { RegionSubmenu } from '../../../../shared/ui/common/regionSubmenu'
 import { DataQuickPickItem, QuickPickPrompter } from '../../../../shared/ui/pickerPrompter'
-import { createQuickPickPrompterTester } from '../../../shared/ui/testUtils'
+import { createQuickPickPrompterTester } from '../testUtils'
 
 describe('regionSubmenu', function () {
     let submenuPrompter: RegionSubmenu<string>
