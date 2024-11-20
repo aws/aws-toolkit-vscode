@@ -100,21 +100,21 @@ export class TelemetryHelper {
         supplementalContextMetadata?: CodeWhispererSupplementalContext | undefined
     ) {
         telemetry.codewhisperer_userDecision.emit({
+            codewhispererCompletionType: 'Line',
+            codewhispererGettingStartedTask: session.taskType,
+            codewhispererLanguage: language,
+            codewhispererPaginationProgress: paginationIndex,
             codewhispererRequestId: requestIdList[0],
             codewhispererSessionId: sessionId ? sessionId : undefined,
-            codewhispererPaginationProgress: paginationIndex,
-            codewhispererTriggerType: session.triggerType,
             codewhispererSuggestionIndex: -1,
             codewhispererSuggestionState: 'Empty',
-            codewhispererSuggestionReferences: undefined,
             codewhispererSuggestionReferenceCount: 0,
-            codewhispererCompletionType: 'Line',
-            codewhispererLanguage: language,
-            codewhispererGettingStartedTask: session.taskType,
-            credentialStartUrl: AuthUtil.instance.startUrl,
-            codewhispererSupplementalContextTimeout: supplementalContextMetadata?.isProcessTimeout,
+            codewhispererSuggestionReferences: undefined,
             codewhispererSupplementalContextIsUtg: supplementalContextMetadata?.isUtg,
             codewhispererSupplementalContextLength: supplementalContextMetadata?.contentsLength,
+            codewhispererSupplementalContextTimeout: supplementalContextMetadata?.isProcessTimeout,
+            codewhispererTriggerType: session.triggerType,
+            credentialStartUrl: AuthUtil.instance.startUrl,
             traceId: this.traceId,
         })
     }
