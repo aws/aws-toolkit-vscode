@@ -25,8 +25,15 @@ import { validateSamDeployConfig, SamConfig, writeSamconfigGlobal } from './conf
 import { BucketSource, createBucketSourcePrompter, createBucketNamePrompter } from '../ui/sam/bucketPrompter'
 import { createStackPrompter } from '../ui/sam/stackPrompter'
 import { TemplateItem, createTemplatePrompter } from '../ui/sam/templatePrompter'
-import { getProjectRoot, getRecentResponse, getSamCliPathAndVersion, getSource, updateRecentResponse } from './utils'
 import { createDeployParamsSourcePrompter, ParamsSource } from '../ui/sam/paramsSourcePrompter'
+import {
+    getErrorCode,
+    getProjectRoot,
+    getSamCliPathAndVersion,
+    getSource,
+    getRecentResponse,
+    updateRecentResponse,
+} from './utils'
 import { runInTerminal } from './processTerminal'
 
 export interface DeployParams {
@@ -347,7 +354,10 @@ export async function runDeploy(arg: any, wizardParams?: DeployParams): Promise<
                 throw error
             }
         } catch (error) {
-            throw ToolkitError.chain(error, 'Failed to deploy SAM template', { details: { ...deployFlags } })
+            throw ToolkitError.chain(error, 'Failed to deploy SAM template', {
+                details: { ...deployFlags },
+                code: getErrorCode(error),
+            })
         }
         return {
             isSuccess: true,

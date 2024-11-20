@@ -13,6 +13,7 @@ import fs from '../fs/fs'
 export class ExportResultArchiveStructure {
     static readonly PathToSummary = 'summary/summary.md'
     static readonly PathToDiffPatch = 'patch/diff.patch'
+    static readonly PathToPatch = 'patch'
     static readonly PathToMetrics = 'metrics/metrics.json'
     static readonly PathToManifest = 'manifest.json'
 }

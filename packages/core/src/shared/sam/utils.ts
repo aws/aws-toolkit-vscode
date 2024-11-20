@@ -17,6 +17,7 @@ import { parse } from 'semver'
 import { telemetry } from '../telemetry/telemetry'
 import globals from '../extensionGlobals'
 import { getLogger } from '../logger/logger'
+import { ChildProcessResult } from '../utilities/processUtils'
 
 /**
  * @description determines the root directory of the project given Template Item
@@ -106,4 +107,36 @@ export async function updateRecentResponse(
     } catch (err) {
         getLogger().warn(`sam: unable to save response at key "${key}": %s`, err)
     }
+}
+export function getSamCliErrorMessage(stderr: string): string {
+    // Split the stderr string by newline, filter out empty lines, and get the last line
+    const lines = stderr
+        .trim()
+        .split('\n')
+        .filter((line) => line.trim() !== '')
+    return lines[lines.length - 1]
+}
+
+export function getErrorCode(error: unknown): string | undefined {
+    return error instanceof ToolkitError ? error.code : undefined
+}
+
+export function throwIfErrorMatches(result: ChildProcessResult) {
+    const errorMessage = getSamCliErrorMessage(result.stderr)
+    for (const errorType in SamCliErrorTypes) {
+        if (errorMessage.includes(SamCliErrorTypes[errorType as keyof typeof SamCliErrorTypes])) {
+            throw ToolkitError.chain(result.error, errorMessage, {
+                code: errorType,
+            })
+        }
+    }
+}
+
+export enum SamCliErrorTypes {
+    DockerUnreachable = 'Docker is unreachable.',
+    ResolveS3AndS3Set = 'Cannot use both --resolve-s3 and --s3-bucket parameters in non-guided deployments.',
+    DeployStackStatusMissing = 'Was not able to find a stack with the name:',
+    DeployStackOutPutFailed = 'Failed to get outputs from stack',
+    DeployBucketRequired = 'Templates with a size greater than 51,200 bytes must be deployed via an S3 Bucket.',
+    ChangeSetEmpty = 'is up to date',
 }

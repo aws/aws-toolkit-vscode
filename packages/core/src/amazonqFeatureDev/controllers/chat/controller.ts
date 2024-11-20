@@ -481,6 +481,7 @@ export class FeatureDevController {
                     messageId,
                 })
                 await session.updateChatAnswer(tabID, i18n('AWS.amazonq.featureDev.pillText.acceptAllChanges'))
+                await session.sendLinesOfCodeGeneratedTelemetry()
             }
             this.messenger.sendUpdatePlaceholder(tabID, i18n('AWS.amazonq.featureDev.pillText.selectOption'))
         } finally {

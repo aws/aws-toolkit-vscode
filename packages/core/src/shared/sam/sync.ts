@@ -43,6 +43,7 @@ import {
     getRecentResponse,
     getSamCliPathAndVersion,
     getSource,
+    getErrorCode,
     updateRecentResponse,
 } from './utils'
 import { TemplateItem, createTemplatePrompter } from '../ui/sam/templatePrompter'
@@ -497,7 +498,10 @@ export async function runSync(
                 isSuccess: true,
             }
         } catch (err) {
-            throw ToolkitError.chain(err, 'Failed to sync SAM application', { details: { ...params } })
+            throw ToolkitError.chain(err, 'Failed to sync SAM application', {
+                details: { ...params },
+                code: getErrorCode(err),
+            })
         }
     })
 }
