@@ -152,22 +152,22 @@ export class TelemetryHelper {
             }
             const event: CodewhispererUserDecision = {
                 // TODO: maintain a list of RecommendationContexts with both recommendation and requestId in it, instead of two separate list items.
+                codewhispererCompletionType: this.getCompletionType(i, completionTypes),
+                codewhispererGettingStartedTask: session.taskType,
+                codewhispererLanguage: session.language,
+                codewhispererPaginationProgress: paginationIndex,
                 codewhispererRequestId: requestIdList[i],
                 codewhispererSessionId: sessionId ? sessionId : undefined,
-                codewhispererPaginationProgress: paginationIndex,
-                codewhispererTriggerType: session.triggerType,
+                codewhispererSuggestionImportCount: getImportCount(_elem),
                 codewhispererSuggestionIndex: i,
                 codewhispererSuggestionState: this.getSuggestionState(i, acceptIndex, recommendationSuggestionState),
-                codewhispererSuggestionReferences: uniqueSuggestionReferences,
                 codewhispererSuggestionReferenceCount: _elem.references ? _elem.references.length : 0,
-                codewhispererSuggestionImportCount: getImportCount(_elem),
-                codewhispererCompletionType: this.getCompletionType(i, completionTypes),
-                codewhispererLanguage: session.language,
-                codewhispererGettingStartedTask: session.taskType,
-                credentialStartUrl: AuthUtil.instance.startUrl,
-                codewhispererSupplementalContextTimeout: supplementalContextMetadata?.isProcessTimeout,
+                codewhispererSuggestionReferences: uniqueSuggestionReferences,
                 codewhispererSupplementalContextIsUtg: supplementalContextMetadata?.isUtg,
                 codewhispererSupplementalContextLength: supplementalContextMetadata?.contentsLength,
+                codewhispererSupplementalContextTimeout: supplementalContextMetadata?.isProcessTimeout,
+                codewhispererTriggerType: session.triggerType,
+                credentialStartUrl: AuthUtil.instance.startUrl,
                 traceId: this.traceId,
             }
             telemetry.codewhisperer_userDecision.emit(event)
