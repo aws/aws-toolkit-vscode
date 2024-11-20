@@ -4,7 +4,6 @@
  */
 
 import * as vscode from 'vscode'
-import { DevSettings } from '../shared/settings'
 import { NotificationsController } from './controller'
 import { NotificationsNode } from './panelNode'
 import { RuleEngine, getRuleContext } from './rules'
@@ -30,11 +29,6 @@ export async function activate(
     initialState: AuthState,
     authStateFn: () => Promise<AuthState>
 ) {
-    // TODO: Currently gated behind feature-flag.
-    if (!DevSettings.instance.get('notifications', false)) {
-        return
-    }
-
     try {
         const panelNode = NotificationsNode.instance
         panelNode.registerView(context)
