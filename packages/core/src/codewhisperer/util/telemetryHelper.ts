@@ -121,24 +121,24 @@ export class TelemetryHelper {
         })
 
         telemetry.codewhisperer_userTriggerDecision.emit({
-            codewhispererSessionId: sessionId,
-            codewhispererFirstRequestId: requestIdList[0],
-            credentialStartUrl: AuthUtil.instance.startUrl,
-            codewhispererTriggerType: session.triggerType,
+            codewhispererClassifierResult: this.classifierResult,
             codewhispererCompletionType: 'Line',
+            codewhispererCursorOffset: session.startCursorOffset,
+            codewhispererCustomizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
+            codewhispererFeatureEvaluations: FeatureConfigProvider.instance.getFeatureConfigsTelemetry(),
+            codewhispererFirstRequestId: requestIdList[0],
             codewhispererGettingStartedTask: session.taskType,
             codewhispererLanguage: language,
-            codewhispererSuggestionCount: 0,
-            codewhispererCursorOffset: session.startCursorOffset,
             codewhispererLineNumber: session.startPos.line,
+            codewhispererPreviousSuggestionState: this.prevTriggerDecision,
+            codewhispererSessionId: sessionId,
+            codewhispererSuggestionCount: 0,
             codewhispererSuggestionImportCount: 0,
             codewhispererSuggestionState: 'Empty',
-            codewhispererTypeaheadLength: this.typeAheadLength,
-            codewhispererSupplementalContextTimeout: supplementalContextMetadata?.isProcessTimeout,
             codewhispererSupplementalContextIsUtg: supplementalContextMetadata?.isUtg,
             codewhispererSupplementalContextLength: supplementalContextMetadata?.contentsLength,
             codewhispererSupplementalContextStrategyId: supplementalContextMetadata?.strategy,
-            traceId: this.traceId,
+            codewhispererSupplementalContextTimeout: supplementalContextMetadata?.isProcessTimeout,
             codewhispererTimeSinceLastDocumentChange: this.timeSinceLastModification
                 ? this.timeSinceLastModification
                 : undefined,
@@ -146,10 +146,10 @@ export class TelemetryHelper {
                 ? performance.now() - this.lastTriggerDecisionTime
                 : undefined,
             codewhispererTimeToFirstRecommendation: session.timeToFirstRecommendation,
-            codewhispererPreviousSuggestionState: this.prevTriggerDecision,
-            codewhispererClassifierResult: this.classifierResult,
-            codewhispererCustomizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
-            codewhispererFeatureEvaluations: FeatureConfigProvider.instance.getFeatureConfigsTelemetry(),
+            codewhispererTriggerType: session.triggerType,
+            codewhispererTypeaheadLength: this.typeAheadLength,
+            credentialStartUrl: AuthUtil.instance.startUrl,
+            traceId: this.traceId,
         })
     }
 
