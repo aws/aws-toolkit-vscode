@@ -160,7 +160,7 @@ describe('Notifications Controller', function () {
                 payload: content,
                 eTag,
             },
-            dismissed: [content.notifications[0].id],
+            dismissed: [],
             newlyReceived: ['id:emergency2'],
         })
         assert.equal(panelNode.startUpNotifications.length, 0)
@@ -218,7 +218,7 @@ describe('Notifications Controller', function () {
                 payload: emergencyContent,
                 eTag: eTag2,
             },
-            dismissed: [emergencyContent.notifications[0].id],
+            dismissed: [],
             newlyReceived: ['id:startup2', 'id:emergency2'],
         })
         assert.equal(panelNode.startUpNotifications.length, 1)
@@ -415,7 +415,7 @@ describe('Notifications Controller', function () {
                 payload: emergencyContent,
                 eTag: '1',
             },
-            dismissed: [emergencyContent.notifications[0].id, startUpContent.notifications[0].id],
+            dismissed: [startUpContent.notifications[0].id],
             newlyReceived: [],
         })
 
@@ -438,7 +438,7 @@ describe('Notifications Controller', function () {
                 payload: emergencyContent,
                 eTag: '1',
             },
-            dismissed: [emergencyContent.notifications[0].id],
+            dismissed: [],
             newlyReceived: [],
         })
         assert.equal(panelNode.getChildren().length, 1)

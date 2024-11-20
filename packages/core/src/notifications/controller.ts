@@ -93,25 +93,20 @@ export class NotificationsController {
 
         await NotificationsNode.instance.setNotifications(startUp, emergency)
 
-        // Emergency notifications can't be dismissed, but if the user minimizes the panel then
-        // we don't want to focus it each time we set the notification nodes.
-        // So we store it in dismissed once a focus has been fired for it.
-        const newEmergencies = emergency.map((n) => n.id).filter((id) => !dismissed.has(id))
-        if (newEmergencies.length > 0) {
-            this.state.dismissed = [...this.state.dismissed, ...newEmergencies]
-            await this.writeState()
-            void this.notificationsNode.focusPanel()
-        }
-
         // Process on-receive behavior for newly received notifications that passes rule engine
-        const newlyReceivedToDisplay = [...startUp, ...emergency].filter((n) => this.state.newlyReceived.includes(n.id))
-        if (newlyReceivedToDisplay.length > 0) {
-            await this.notificationsNode.onReceiveNotifications(newlyReceivedToDisplay)
+        const wasNewlyReceived = (n: ToolkitNotification) => this.state.newlyReceived.includes(n.id)
+        const newStartUp = startUp.filter(wasNewlyReceived)
+        const newEmergency = emergency.filter(wasNewlyReceived)
+        const newlyReceived = [...newStartUp, ...newEmergency]
+
+        if (newlyReceived.length > 0) {
+            await this.notificationsNode.onReceiveNotifications(newlyReceived)
             // remove displayed notifications from newlyReceived
-            this.state.newlyReceived = this.state.newlyReceived.filter(
-                (id) => !newlyReceivedToDisplay.some((n) => n.id === id)
-            )
+            this.state.newlyReceived = this.state.newlyReceived.filter((id) => !newlyReceived.some((n) => n.id === id))
             await this.writeState()
+            if (newEmergency.length > 0) {
+                void this.notificationsNode.focusPanel()
+            }
         }
     }
 
@@ -201,7 +196,7 @@ export class NotificationsController {
      */
     private readState() {
         const state = this.getDefaultState()
-        this.state.dismissed = state.dismissed
+        this.state.dismissed = [...new Set([...this.state.dismissed, ...state.dismissed])]
     }
 
     /**
