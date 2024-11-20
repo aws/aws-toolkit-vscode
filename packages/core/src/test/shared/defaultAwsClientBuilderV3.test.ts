@@ -110,6 +110,19 @@ describe('DefaultAwsClientBuilderV3', function () {
             mockCredsShim.expire()
             assert.strictEqual(await service.config.credentials(), newCreds)
         })
+
+        it('does not cache stale credentials', async function () {
+            const service = await builder.createAwsService(Client as any)
+            assert.strictEqual(await service.config.credentials(), oldCreds)
+            const newerCreds = {
+                accessKeyId: 'old2',
+                secretAccessKey: 'old2',
+                sessionToken: 'old2',
+                expiration: new Date(Date.now() + 1000 * 60 * 60 * 24),
+            }
+            oldCreds = newerCreds
+            assert.strictEqual(await service.config.credentials(), newerCreds)
+        })
     })
 })
 
