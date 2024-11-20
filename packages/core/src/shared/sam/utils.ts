@@ -8,13 +8,15 @@ import * as path from 'path'
 import { AWSTreeNodeBase } from '../treeview/nodes/awsTreeNodeBase'
 import { TreeNode, isTreeNode } from '../treeview/resourceTreeDataProvider'
 import * as CloudFormation from '../cloudformation/cloudformation'
-import { TemplateItem } from './sync'
+import { TemplateItem } from '../ui/sam/templatePrompter'
 import { RuntimeFamily, getFamily } from '../../lambda/models/samLambdaRuntime'
-import { telemetry } from '../telemetry'
-import { ToolkitError } from '../errors'
 import { SamCliSettings } from './cli/samCliSettings'
+import { ToolkitError } from '../errors'
 import { SamCliInfoInvocation } from './cli/samCliInfo'
 import { parse } from 'semver'
+import { telemetry } from '../telemetry/telemetry'
+import globals from '../extensionGlobals'
+import { getLogger } from '../logger/logger'
 import { ChildProcessResult } from '../utilities/processUtils'
 
 /**
@@ -85,6 +87,27 @@ export async function getSamCliPathAndVersion() {
     return { path: samCliPath, parsedVersion }
 }
 
+export function getRecentResponse(mementoRootKey: string, identifier: string, key: string): string | undefined {
+    const root = globals.context.workspaceState.get(mementoRootKey, {} as Record<string, Record<string, string>>)
+    return root[identifier]?.[key]
+}
+
+export async function updateRecentResponse(
+    mementoRootKey: string,
+    identifier: string,
+    key: string,
+    value: string | undefined
+) {
+    try {
+        const root = globals.context.workspaceState.get(mementoRootKey, {} as Record<string, Record<string, string>>)
+        await globals.context.workspaceState.update(mementoRootKey, {
+            ...root,
+            [identifier]: { ...root[identifier], [key]: value },
+        })
+    } catch (err) {
+        getLogger().warn(`sam: unable to save response at key "${key}": %s`, err)
+    }
+}
 export function getSamCliErrorMessage(stderr: string): string {
     // Split the stderr string by newline, filter out empty lines, and get the last line
     const lines = stderr

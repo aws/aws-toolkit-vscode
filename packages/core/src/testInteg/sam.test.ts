@@ -706,7 +706,7 @@ describe('SAM Integration Tests', async function () {
             const appNode = new AppNode(samAppLocation)
 
             getTestWindow().onDidShowQuickPick((input) => {
-                if (input.title?.includes('Specify parameters for build')) {
+                if (input.title?.includes('Specify parameter source for build')) {
                     input.acceptItem(input.items[0])
                     const item = input.items[0] as DataQuickPickItem<ParamsSource>
                     assert.deepStrictEqual(item.data as ParamsSource, ParamsSource.Specify)

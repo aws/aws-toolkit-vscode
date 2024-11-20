@@ -6,19 +6,11 @@ import * as vscode from 'vscode'
 import { CloudFormation, S3 } from 'aws-sdk'
 import { AppNode } from '../../../awsService/appBuilder/explorer/nodes/appNode'
 import { assertTelemetry, getWorkspaceFolder, TestFolder } from '../../testUtil'
-import {
-    BucketSource,
-    DeployParams,
-    DeployWizard,
-    ParamsSource,
-    getDeployWizard,
-    runDeploy,
-} from '../../../shared/sam/deploy'
-import * as UtilsModule from '../../../shared/sam/utils'
+import { DeployParams, DeployWizard, getDeployWizard, runDeploy } from '../../../shared/sam/deploy'
 import { globals, ToolkitError } from '../../../shared'
 import sinon from 'sinon'
 import { samconfigCompleteData, samconfigInvalidData, validTemplateData } from './samTestUtils'
-
+import * as SamUtilsModule from '../../../shared/sam/utils'
 import assert from 'assert'
 import { getTestWindow } from '../vscode/window'
 import { DefaultCloudFormationClient } from '../../../shared/clients/cloudFormationClient'
@@ -35,11 +27,14 @@ import * as ResolveEnvModule from '../../../shared/env/resolveEnv'
 import * as SamConfiModule from '../../../shared/sam/config'
 import { RequiredProps } from '../../../shared/utilities/tsUtils'
 import { UserAgent as __UserAgent } from '@smithy/types'
-import { TemplateItem } from '../../../shared/sam/sync'
+
 import { SamAppLocation } from '../../../awsService/appBuilder/explorer/samProject'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
+import { TemplateItem } from '../../../shared/ui/sam/templatePrompter'
+import { ParamsSource } from '../../../shared/ui/sam/paramsSourcePrompter'
+import { BucketSource } from '../../../shared/ui/sam/bucketPrompter'
 
-describe('DeployWizard', async function () {
+describe('SAM DeployWizard', async function () {
     let sandbox: sinon.SinonSandbox
     let testFolder: TestFolder
     let projectRoot: vscode.Uri
@@ -100,7 +95,7 @@ describe('DeployWizard', async function () {
                 .handleInputBox('Specify SAM parameter value for DestinationBucketName', (inputBox) => {
                     inputBox.acceptValue('my-destination-bucket-name')
                 })
-                .handleQuickPick('Specify parameters for deploy', async (quickPick) => {
+                .handleQuickPick('Specify parameter source for deploy', async (quickPick) => {
                     // Need time to check samconfig.toml file and generate options
                     await quickPick.untilReady()
 
@@ -171,7 +166,7 @@ describe('DeployWizard', async function () {
                 .handleInputBox('Specify SAM parameter value for DestinationBucketName', (inputBox) => {
                     inputBox.acceptValue('my-destination-bucket-name')
                 })
-                .handleQuickPick('Specify parameters for deploy', async (quickPick) => {
+                .handleQuickPick('Specify parameter source for deploy', async (quickPick) => {
                     // Need time to check samconfig.toml file and generate options
                     await quickPick.untilReady()
 
@@ -229,7 +224,7 @@ describe('DeployWizard', async function () {
             // provide testWindow so that we can call other api
             const testWindow = getTestWindow()
 
-            PrompterTester.init(testWindow)
+            PrompterTester.init({ testWindow })
                 .handleQuickPick('Select a SAM/CloudFormation Template', async (quickPick) => {
                     // Need sometime to wait for the template to search for template file
                     await quickPick.untilReady()
@@ -237,7 +232,7 @@ describe('DeployWizard', async function () {
                     assert.strictEqual(quickPick.items[0].label, templateFile.fsPath)
                     quickPick.acceptItem(quickPick.items[0])
                 })
-                .handleQuickPick('Specify parameters for deploy', async (quickPick) => {
+                .handleQuickPick('Specify parameter source for deploy', async (quickPick) => {
                     // Need time to check samconfig.toml file and generate options
                     await quickPick.untilReady()
 
@@ -311,7 +306,7 @@ describe('DeployWizard', async function () {
                     assert.strictEqual(quickPick.items[0].label, templateFile.fsPath)
                     quickPick.acceptItem(quickPick.items[0])
                 })
-                .handleQuickPick('Specify parameters for deploy', async (quickPick) => {
+                .handleQuickPick('Specify parameter source for deploy', async (quickPick) => {
                     // Need time to check samconfig.toml file and generate options
                     await quickPick.untilReady()
 
@@ -372,7 +367,7 @@ describe('DeployWizard', async function () {
                 .handleInputBox('Specify SAM parameter value for DestinationBucketName', (inputBox) => {
                     inputBox.acceptValue('my-destination-bucket-name')
                 })
-                .handleQuickPick('Specify parameters for deploy', async (quickPick) => {
+                .handleQuickPick('Specify parameter source for deploy', async (quickPick) => {
                     // Need time to check samconfig.toml file and generate options
                     await quickPick.untilReady()
 
@@ -443,7 +438,7 @@ describe('DeployWizard', async function () {
                 .handleInputBox('Specify SAM parameter value for DestinationBucketName', (inputBox) => {
                     inputBox.acceptValue('my-destination-bucket-name')
                 })
-                .handleQuickPick('Specify parameters for deploy', async (quickPick) => {
+                .handleQuickPick('Specify parameter source for deploy', async (quickPick) => {
                     // Need time to check samconfig.toml file and generate options
                     await quickPick.untilReady()
 
@@ -500,7 +495,7 @@ describe('DeployWizard', async function () {
                     assert.strictEqual(quickPick.items[0].label, templateFile.fsPath)
                     quickPick.acceptItem(quickPick.items[0])
                 })
-                .handleQuickPick('Specify parameters for deploy', async (quickPick) => {
+                .handleQuickPick('Specify parameter source for deploy', async (quickPick) => {
                     // Need time to check samconfig.toml file and generate options
                     await quickPick.untilReady()
                     assert.strictEqual(quickPick.items.length, 2)
@@ -584,7 +579,7 @@ describe('DeployWizard', async function () {
                     assert.strictEqual(quickPick.items[0].label, templateFile.fsPath)
                     quickPick.acceptItem(quickPick.items[0])
                 })
-                .handleQuickPick('Specify parameters for deploy', async (quickPick) => {
+                .handleQuickPick('Specify parameter source for deploy', async (quickPick) => {
                     // Need time to check samconfig.toml file and generate options
                     await quickPick.untilReady()
                     assert.strictEqual(quickPick.items.length, 3)
@@ -655,7 +650,7 @@ describe('SAM Deploy', () => {
     describe(':) path', () => {
         beforeEach(() => {
             mockGetSamCliPath = sandbox.stub().resolves({ path: 'sam-cli-path' })
-            sandbox.stub(UtilsModule, 'getSamCliPathAndVersion').callsFake(mockGetSamCliPath)
+            sandbox.stub(SamUtilsModule, 'getSamCliPathAndVersion').callsFake(mockGetSamCliPath)
 
             mockChildProcess = sandbox.stub().resolves({})
             sandbox.stub(ProcessUtilsModule, 'ChildProcess').callsFake(mockChildProcess)
@@ -935,7 +930,7 @@ describe('SAM Deploy', () => {
 
                 // Break point
                 mockGetSamCliPath = sandbox
-                    .stub(UtilsModule, 'getSamCliPathAndVersion')
+                    .stub(SamUtilsModule, 'getSamCliPathAndVersion')
                     .rejects(
                         new ToolkitError('SAM CLI version 1.53.0 or higher is required', { code: 'VersionTooLow' })
                     )
@@ -963,7 +958,7 @@ describe('SAM Deploy', () => {
                 // Happy Stub
                 sandbox.stub(DeployWizard.prototype, 'run').resolves(mockDeployParams)
                 mockGetSamCliPath = sandbox.stub().resolves({ path: 'sam-cli-path' })
-                sandbox.stub(UtilsModule, 'getSamCliPathAndVersion').callsFake(mockGetSamCliPath)
+                sandbox.stub(SamUtilsModule, 'getSamCliPathAndVersion').callsFake(mockGetSamCliPath)
                 mockChildProcess = sandbox.stub().resolves({})
                 sandbox.stub(ProcessUtilsModule, 'ChildProcess').callsFake(mockChildProcess)
 
@@ -989,7 +984,7 @@ describe('SAM Deploy', () => {
                 // Happy Stub
                 sandbox.stub(DeployWizard.prototype, 'run').resolves(mockDeployParams)
                 mockGetSamCliPath = sandbox.stub().resolves({ path: 'sam-cli-path' })
-                sandbox.stub(UtilsModule, 'getSamCliPathAndVersion').callsFake(mockGetSamCliPath)
+                sandbox.stub(SamUtilsModule, 'getSamCliPathAndVersion').callsFake(mockGetSamCliPath)
                 mockChildProcess = sandbox.stub().resolves({})
                 sandbox.stub(ProcessUtilsModule, 'ChildProcess').callsFake(mockChildProcess)
 
