@@ -295,21 +295,30 @@ export class TelemetryHelper {
             .reduce((a, b) => a + b, 0)
 
         const aggregated: CodewhispererUserTriggerDecision = {
-            codewhispererSessionId: this.sessionDecisions[0].codewhispererSessionId,
-            codewhispererFirstRequestId: this.sessionDecisions[0].codewhispererFirstRequestId,
-            credentialStartUrl: this.sessionDecisions[0].credentialStartUrl,
-            codewhispererCompletionType: aggregatedCompletionType,
-            codewhispererLanguage: language,
-            codewhispererGettingStartedTask: session.taskType,
-            codewhispererTriggerType: this.sessionDecisions[0].codewhispererTriggerType,
-            codewhispererSuggestionCount: suggestionCount,
             codewhispererAutomatedTriggerType: autoTriggerType,
-            codewhispererLineNumber: this.sessionDecisions[0].codewhispererLineNumber,
+            codewhispererCharactersAccepted: acceptedRecommendationContent.length,
+            codewhispererClassifierResult: this.classifierResult,
+            codewhispererClassifierThreshold: this.classifierThreshold,
+            codewhispererCompletionType: aggregatedCompletionType,
             codewhispererCursorOffset: this.sessionDecisions[0].codewhispererCursorOffset,
+            codewhispererCustomizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
+            codewhispererFeatureEvaluations: FeatureConfigProvider.instance.getFeatureConfigsTelemetry(),
+            codewhispererFirstRequestId: this.sessionDecisions[0].codewhispererFirstRequestId,
+            codewhispererGettingStartedTask: session.taskType,
+            codewhispererLanguage: language,
+            codewhispererLineNumber: this.sessionDecisions[0].codewhispererLineNumber,
+            codewhispererPreviousSuggestionState: this.prevTriggerDecision,
+            codewhispererSessionId: this.sessionDecisions[0].codewhispererSessionId,
+            codewhispererSuggestionCount: suggestionCount,
             codewhispererSuggestionImportCount: this.sessionDecisions
                 .map((e) => e.codewhispererSuggestionImportCount || 0)
                 .reduce((a, b) => a + b, 0),
-            codewhispererTypeaheadLength: this.typeAheadLength,
+            codewhispererSuggestionState: aggregatedSuggestionState,
+            codewhispererSupplementalContextIsUtg: supplementalContextMetadata?.isUtg,
+            codewhispererSupplementalContextLength: supplementalContextMetadata?.contentsLength,
+            // eslint-disable-next-line id-length
+            codewhispererSupplementalContextStrategyId: supplementalContextMetadata?.strategy,
+            codewhispererSupplementalContextTimeout: supplementalContextMetadata?.isProcessTimeout,
             codewhispererTimeSinceLastDocumentChange: this.timeSinceLastModification
                 ? this.timeSinceLastModification
                 : undefined,
@@ -318,18 +327,9 @@ export class TelemetryHelper {
                 : undefined,
             codewhispererTimeToFirstRecommendation: session.timeToFirstRecommendation,
             codewhispererTriggerCharacter: autoTriggerType === 'SpecialCharacters' ? this.triggerChar : undefined,
-            codewhispererSuggestionState: aggregatedSuggestionState,
-            codewhispererPreviousSuggestionState: this.prevTriggerDecision,
-            codewhispererClassifierResult: this.classifierResult,
-            codewhispererClassifierThreshold: this.classifierThreshold,
-            codewhispererSupplementalContextTimeout: supplementalContextMetadata?.isProcessTimeout,
-            codewhispererSupplementalContextIsUtg: supplementalContextMetadata?.isUtg,
-            codewhispererSupplementalContextLength: supplementalContextMetadata?.contentsLength,
-            codewhispererCustomizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
-            // eslint-disable-next-line id-length
-            codewhispererSupplementalContextStrategyId: supplementalContextMetadata?.strategy,
-            codewhispererCharactersAccepted: acceptedRecommendationContent.length,
-            codewhispererFeatureEvaluations: FeatureConfigProvider.instance.getFeatureConfigsTelemetry(),
+            codewhispererTriggerType: this.sessionDecisions[0].codewhispererTriggerType,
+            codewhispererTypeaheadLength: this.typeAheadLength,
+            credentialStartUrl: this.sessionDecisions[0].credentialStartUrl,
             traceId: this.traceId,
         }
         telemetry.codewhisperer_userTriggerDecision.emit(aggregated)
