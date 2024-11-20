@@ -62,6 +62,7 @@ import { getStringHash } from '../../../shared/utilities/textUtilities'
 import { getVersionData } from '../../../codewhisperer/service/transformByQ/transformMavenHandler'
 import AdmZip from 'adm-zip'
 import { AuthError } from '../../../auth/sso/server'
+import { isSelectiveTransformationReady } from '../../../dev/config'
 
 // These events can be interactions within the chat,
 // or elsewhere in the IDE
@@ -358,12 +359,19 @@ export class GumbyController {
                 this.transformationFinished({
                     message: CodeWhispererConstants.jobCancelledChatMessage,
                     tabID: message.tabID,
+                    includeStartNewTransformationButton: true,
                 })
                 break
             case ButtonActions.CONFIRM_SKIP_TESTS_FORM:
                 await this.handleSkipTestsSelection(message)
                 break
             case ButtonActions.CANCEL_SKIP_TESTS_FORM:
+                this.messenger.sendJobFinishedMessage(message.tabID, CodeWhispererConstants.jobCancelledChatMessage)
+                break
+            case ButtonActions.CONFIRM_SELECTIVE_TRANSFORMATION_FORM:
+                await this.handleOneOrMultipleDiffs(message)
+                break
+            case ButtonActions.CANCEL_SELECTIVE_TRANSFORMATION_FORM:
                 this.messenger.sendJobFinishedMessage(message.tabID, CodeWhispererConstants.jobCancelledChatMessage)
                 break
             case ButtonActions.CONFIRM_SQL_CONVERSION_TRANSFORMATION_FORM:
@@ -416,6 +424,20 @@ export class GumbyController {
             result: MetadataResult.Pass,
         })
         this.messenger.sendSkipTestsSelectionMessage(skipTestsSelection, message.tabID)
+        if (!isSelectiveTransformationReady) {
+            // perform local build
+            await this.validateBuildWithPromptOnError(message)
+        } else {
+            await this.messenger.sendOneOrMultipleDiffsPrompt(message.tabID)
+        }
+    }
+
+    private async handleOneOrMultipleDiffs(message: any) {
+        const oneOrMultipleDiffsSelection = message.formSelectedValues['GumbyTransformOneOrMultipleDiffsForm']
+        if (oneOrMultipleDiffsSelection === CodeWhispererConstants.multipleDiffsMessage) {
+            transformByQState.setMultipleDiffs(true)
+        }
+        this.messenger.sendOneOrMultipleDiffsMessage(oneOrMultipleDiffsSelection, message.tabID)
         // perform local build
         await this.validateBuildWithPromptOnError(message)
     }
@@ -452,7 +474,6 @@ export class GumbyController {
                 this.messenger.sendUnrecoverableErrorResponse('unsupported-source-jdk-version', message.tabID)
                 return
             }
-
             await processLanguageUpgradeTransformFormInput(pathToProject, fromJDKVersion, toJDKVersion)
             await this.messenger.sendSkipTestsPrompt(message.tabID)
         })
@@ -563,6 +584,7 @@ export class GumbyController {
             this.transformationFinished({
                 message: CodeWhispererConstants.jobCancelledChatMessage,
                 tabID: message.tabID,
+                includeStartNewTransformationButton: true,
             })
             return
         }
@@ -591,11 +613,15 @@ export class GumbyController {
         )
     }
 
-    private transformationFinished(data: { message: string | undefined; tabID: string }) {
+    private transformationFinished(data: {
+        message: string | undefined
+        tabID: string
+        includeStartNewTransformationButton: boolean
+    }) {
         this.resetTransformationChatFlow()
         // at this point job is either completed, partially_completed, cancelled, or failed
         if (data.message) {
-            this.messenger.sendJobFinishedMessage(data.tabID, data.message)
+            this.messenger.sendJobFinishedMessage(data.tabID, data.message, data.includeStartNewTransformationButton)
         }
     }
 
@@ -701,7 +727,11 @@ export class GumbyController {
         try {
             await finishHumanInTheLoop()
         } catch (err: any) {
-            this.transformationFinished({ tabID: message.tabID, message: (err as Error).message })
+            this.transformationFinished({
+                tabID: message.tabID,
+                message: (err as Error).message,
+                includeStartNewTransformationButton: true,
+            })
         }
 
         this.messenger.sendStaticTextResponse('end-HIL-early', message.tabID)
