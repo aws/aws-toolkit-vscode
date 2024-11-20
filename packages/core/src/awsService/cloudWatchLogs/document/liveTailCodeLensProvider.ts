@@ -19,7 +19,7 @@ export class LiveTailCodeLensProvider implements vscode.CodeLensProvider {
         token: vscode.CancellationToken
     ): vscode.ProviderResult<vscode.CodeLens[]> {
         const uri = document.uri
-        //if registry does not contain session, it is assumed to have already been stopped -> hide lenses.
+        //if registry does not contain session, it is assumed to have been stopped, thus, hide lenses.
         if (uri.scheme !== cloudwatchLogsLiveTailScheme || !this.registry.has(uriToKey(uri))) {
             return []
         }
