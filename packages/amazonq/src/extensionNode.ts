@@ -75,7 +75,7 @@ async function activateAmazonQNode(context: vscode.ExtensionContext) {
         ...authState,
     })
 
-    await activateNotifications(context, authState, getAuthState)
+    void activateNotifications(context, authState, getAuthState)
 }
 
 async function getAuthState(): Promise<Omit<AuthUserState, 'source'>> {
