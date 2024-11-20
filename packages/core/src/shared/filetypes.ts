@@ -161,6 +161,7 @@ export const codefileExtensions = new Set([
     '.bash',
     '.bat',
     '.boo',
+    '.bms',
     '.c',
     '.cbl',
     '.cc',
