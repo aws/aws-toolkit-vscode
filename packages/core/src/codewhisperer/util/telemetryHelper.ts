@@ -121,7 +121,9 @@ export class TelemetryHelper {
         })
 
         telemetry.codewhisperer_userTriggerDecision.emit({
+            codewhispererAutomatedTriggerType: session.autoTriggerType,
             codewhispererClassifierResult: this.classifierResult,
+            codewhispererClassifierThreshold: this.classifierThreshold,
             codewhispererCompletionType: 'Line',
             codewhispererCursorOffset: session.startCursorOffset,
             codewhispererCustomizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
