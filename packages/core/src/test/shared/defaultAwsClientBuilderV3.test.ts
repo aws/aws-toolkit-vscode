@@ -34,6 +34,11 @@ class MockCredentialsShim implements CredentialsShim {
             expiration: new Date(Date.now() - 1000 * 60 * 60 * 24),
         }
     }
+
+    public update(newCreds: Credentials): void {
+        this.credentials = newCreds
+    }
+
     public async get(): Promise<Credentials> {
         return this.credentials
     }
@@ -120,7 +125,7 @@ describe('DefaultAwsClientBuilderV3', function () {
                 sessionToken: 'old2',
                 expiration: new Date(Date.now() + 1000 * 60 * 60 * 24),
             }
-            oldCreds = newerCreds
+            mockCredsShim.update(newerCreds)
             assert.strictEqual(await service.config.credentials(), newerCreds)
         })
     })
