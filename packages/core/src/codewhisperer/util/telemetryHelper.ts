@@ -139,6 +139,7 @@ export class TelemetryHelper {
             codewhispererSuggestionState: 'Empty',
             codewhispererSupplementalContextIsUtg: supplementalContextMetadata?.isUtg,
             codewhispererSupplementalContextLength: supplementalContextMetadata?.contentsLength,
+            // eslint-disable-next-line id-length
             codewhispererSupplementalContextStrategyId: supplementalContextMetadata?.strategy,
             codewhispererSupplementalContextTimeout: supplementalContextMetadata?.isProcessTimeout,
             codewhispererTimeSinceLastDocumentChange: this.timeSinceLastModification
