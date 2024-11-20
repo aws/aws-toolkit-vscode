@@ -16,10 +16,12 @@ import {
 } from '@aws-sdk/client-cloudwatch-logs'
 import { getLogger, globals, ToolkitError } from '../../../shared'
 import { uriToKey } from '../cloudWatchLogsUtils'
+import { LiveTailCodeLensProvider } from '../document/liveTailCodeLensProvider'
 
 export async function tailLogGroup(
     registry: LiveTailSessionRegistry,
     source: string,
+    codeLensProvider: LiveTailCodeLensProvider,
     logData?: { regionName: string; groupName: string }
 ): Promise<void> {
     await telemetry.cwlLiveTail_Start.run(async (span) => {
@@ -55,9 +57,11 @@ export async function tailLogGroup(
         const document = await prepareDocument(session)
 
         hideShowStatusBarItemsOnActiveEditor(session, document)
-        registerTabChangeCallback(session, registry, document)
+        registerTabChangeCallback(session, registry, document, codeLensProvider)
 
         const stream = await session.startLiveTailSession()
+        getLogger().info(`LiveTail session started: ${uriToKey(session.uri)}`)
+
         span.record({
             source: source,
             result: 'Succeeded',
@@ -69,14 +73,21 @@ export async function tailLogGroup(
     })
 }
 
-export function closeSession(sessionUri: vscode.Uri, registry: LiveTailSessionRegistry, source: string) {
+export function closeSession(
+    sessionUri: vscode.Uri,
+    registry: LiveTailSessionRegistry,
+    source: string,
+    codeLensProvider: LiveTailCodeLensProvider
+) {
     telemetry.cwlLiveTail_Stop.run((span) => {
         const session = registry.get(uriToKey(sessionUri))
         if (session === undefined) {
-            throw new ToolkitError(`No LiveTail session found for URI: ${sessionUri.toString()}`)
+            throw new ToolkitError(`No LiveTail session found for URI: ${uriToKey(sessionUri)}`)
         }
         session.stopLiveTailSession()
         registry.delete(uriToKey(sessionUri))
+        void vscode.window.showInformationMessage(`Stopped LiveTail session: ${uriToKey(sessionUri)}`)
+        codeLensProvider.refresh()
         span.record({
             result: 'Succeeded',
             source: source,
@@ -130,7 +141,7 @@ async function handleSessionStream(
             //AbortSignal interrupts the LiveTail stream, causing error to be thrown here.
             //Can assume that stopLiveTailSession() has already been called - AbortSignal is only
             //exposed through that method.
-            getLogger().info(`Session stopped: ${uriToKey(session.uri)}`)
+            getLogger().info(`LiveTail session stopped: ${uriToKey(session.uri)}`)
         } else {
             //Unexpected exception.
             session.stopLiveTailSession()
@@ -233,12 +244,13 @@ function hideShowStatusBarItemsOnActiveEditor(session: LiveTailSession, document
 function registerTabChangeCallback(
     session: LiveTailSession,
     registry: LiveTailSessionRegistry,
-    document: vscode.TextDocument
+    document: vscode.TextDocument,
+    codeLensProvider: LiveTailCodeLensProvider
 ) {
     vscode.window.tabGroups.onDidChangeTabs((tabEvent) => {
         const isOpen = isLiveTailSessionOpenInAnyTab(session)
         if (!isOpen) {
-            closeSession(session.uri, registry, 'ClosedEditors')
+            closeSession(session.uri, registry, 'ClosedEditors', codeLensProvider)
             void clearDocument(document)
         }
     })

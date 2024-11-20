@@ -34,7 +34,7 @@ export async function activate(context: vscode.ExtensionContext, configuration: 
 
     const documentProvider = new LogDataDocumentProvider(registry)
     const liveTailDocumentProvider = new LiveTailDocumentProvider()
-
+    const liveTailCodeLensProvider = new LiveTailCodeLensProvider(liveTailRegistry)
     context.subscriptions.push(
         vscode.languages.registerCodeLensProvider(
             {
@@ -55,7 +55,7 @@ export async function activate(context: vscode.ExtensionContext, configuration: 
                 language: 'log',
                 scheme: cloudwatchLogsLiveTailScheme,
             },
-            new LiveTailCodeLensProvider()
+            liveTailCodeLensProvider
         )
     )
 
@@ -121,11 +121,11 @@ export async function activate(context: vscode.ExtensionContext, configuration: 
                     ? { regionName: node.regionCode, groupName: node.logGroup.logGroupName! }
                     : undefined
             const source = node ? (logGroupInfo ? 'ExplorerLogGroupNode' : 'ExplorerServiceNode') : 'Command'
-            await tailLogGroup(liveTailRegistry, source, logGroupInfo)
+            await tailLogGroup(liveTailRegistry, source, liveTailCodeLensProvider, logGroupInfo)
         }),
 
         Commands.register('aws.cwl.stopTailingLogGroup', async (document: vscode.TextDocument, source: string) => {
-            closeSession(document.uri, liveTailRegistry, source)
+            closeSession(document.uri, liveTailRegistry, source, liveTailCodeLensProvider)
         }),
 
         Commands.register('aws.cwl.clearDocument', async (document: vscode.TextDocument) => {

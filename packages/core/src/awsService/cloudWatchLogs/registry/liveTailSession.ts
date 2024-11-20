@@ -10,8 +10,8 @@ import {
     StartLiveTailResponseStream,
 } from '@aws-sdk/client-cloudwatch-logs'
 import { LogStreamFilterResponse } from '../wizard/liveTailLogStreamSubmenu'
-import { CloudWatchLogsSettings, uriToKey } from '../cloudWatchLogsUtils'
-import { getLogger, globals, Settings, ToolkitError } from '../../../shared'
+import { CloudWatchLogsSettings } from '../cloudWatchLogsUtils'
+import { globals, Settings, ToolkitError } from '../../../shared'
 import { createLiveTailURIFromArgs } from './liveTailSessionRegistry'
 import { getUserAgent } from '../../../shared/telemetry/util'
 import { convertToTimeString } from '../../../shared/datetime'
@@ -98,7 +98,6 @@ export class LiveTailSession {
         this.statusBarUpdateTimer = globals.clock.setInterval(() => {
             this.updateStatusBarItemText()
         }, 500)
-        getLogger().info(`LiveTail session started: ${uriToKey(this.uri)}`)
         return commandOutput.responseStream
     }
 
