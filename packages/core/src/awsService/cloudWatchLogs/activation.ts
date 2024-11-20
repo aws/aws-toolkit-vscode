@@ -120,11 +120,12 @@ export async function activate(context: vscode.ExtensionContext, configuration: 
                 node instanceof LogGroupNode
                     ? { regionName: node.regionCode, groupName: node.logGroup.logGroupName! }
                     : undefined
-            await tailLogGroup(liveTailRegistry, logGroupInfo)
+            const source = node ? (logGroupInfo ? 'ExplorerLogGroupNode' : 'ExplorerServiceNode') : 'Command'
+            await tailLogGroup(liveTailRegistry, source, logGroupInfo)
         }),
 
-        Commands.register('aws.cwl.stopTailingLogGroup', async (document: vscode.TextDocument) => {
-            closeSession(document.uri, liveTailRegistry)
+        Commands.register('aws.cwl.stopTailingLogGroup', async (document: vscode.TextDocument, source: string) => {
+            closeSession(document.uri, liveTailRegistry, source)
         }),
 
         Commands.register('aws.cwl.clearDocument', async (document: vscode.TextDocument) => {
