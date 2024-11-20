@@ -12,18 +12,17 @@ import { CancellationError } from '../utilities/timeoutUtils'
 import { getLogger } from '../logger'
 import { removeAnsi } from '../utilities/textUtilities'
 import { isAutomation } from '../vscode/env'
+import { throwIfErrorMatches } from './utils'
 
 let oldTerminal: ProcessTerminal | undefined
 export async function runInTerminal(proc: ChildProcess, cmd: string) {
     const handleResult = (result?: ChildProcessResult) => {
         if (result && result.exitCode !== 0) {
-            const message = `sam ${cmd} exited with a non-zero exit code: ${result.exitCode}`
-            if (result.stderr.includes('is up to date')) {
-                throw ToolkitError.chain(result.error, message, {
-                    code: 'NoUpdateExitCode',
-                })
-            }
-            throw ToolkitError.chain(result.error, message, {
+            throwIfErrorMatches(result)
+
+            // If no specific error matched, throw the default non-zero exit code error.
+            const defaultMessage = `sam ${cmd} exited with a non-zero exit code: ${result.exitCode}`
+            throw ToolkitError.chain(result.error, defaultMessage, {
                 code: 'NonZeroExitCode',
             })
         }
