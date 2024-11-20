@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "amazon q inline: skip indexing when no workspace folders are found"
+}
