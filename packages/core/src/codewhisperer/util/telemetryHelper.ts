@@ -274,7 +274,6 @@ export class TelemetryHelper {
             codewhispererLanguage: language,
             codewhispererLineNumber: this.sessionDecisions[0].codewhispererLineNumber,
             codewhispererPreviousSuggestionState: this.prevTriggerDecision,
-
             codewhispererSessionId: this.sessionDecisions[0].codewhispererSessionId,
             codewhispererSuggestionCount: suggestionCount,
             codewhispererSuggestionImportCount: this.sessionDecisions
