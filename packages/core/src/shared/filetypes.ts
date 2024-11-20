@@ -266,7 +266,7 @@ export const codefileExtensions = new Set([
     '.pike',
     '.pir',
     '.pl',
-    '.pl1',
+    '.pli',
     '.pm',
     '.pmod',
     '.pp',
