@@ -212,25 +212,25 @@ export class TelemetryHelper {
             return
         }
         const aggregated: CodewhispererUserTriggerDecision = {
-            codewhispererSessionId: sessionId,
-            codewhispererFirstRequestId: requestId,
-            credentialStartUrl: events[0].credentialStartUrl,
-            codewhispererLanguage: events[0].codewhispererLanguage,
-            codewhispererGettingStartedTask: session.taskType,
-            codewhispererTriggerType: events[0].codewhispererTriggerType,
-            codewhispererCompletionType: events[0].codewhispererCompletionType,
-            codewhispererSuggestionCount: events.length,
             codewhispererAutomatedTriggerType: session.autoTriggerType,
-            codewhispererLineNumber: session.startPos.line,
+            codewhispererCompletionType: events[0].codewhispererCompletionType,
             codewhispererCursorOffset: session.startCursorOffset,
-            codewhispererSuggestionState: this.getAggregatedSuggestionState(events),
+            codewhispererFirstRequestId: requestId,
+            codewhispererGettingStartedTask: session.taskType,
+            codewhispererLanguage: events[0].codewhispererLanguage,
+            codewhispererLineNumber: session.startPos.line,
+            codewhispererSessionId: sessionId,
+            codewhispererSuggestionCount: events.length,
             codewhispererSuggestionImportCount: events
                 .map((e) => e.codewhispererSuggestionImportCount || 0)
                 .reduce((a, b) => a + b, 0),
-            codewhispererTypeaheadLength: 0,
-            codewhispererSupplementalContextTimeout: supplementalContextMetadata?.isProcessTimeout,
+            codewhispererSuggestionState: this.getAggregatedSuggestionState(events),
             codewhispererSupplementalContextIsUtg: supplementalContextMetadata?.isUtg,
             codewhispererSupplementalContextLength: supplementalContextMetadata?.contentsLength,
+            codewhispererSupplementalContextTimeout: supplementalContextMetadata?.isProcessTimeout,
+            codewhispererTriggerType: events[0].codewhispererTriggerType,
+            codewhispererTypeaheadLength: 0,
+            credentialStartUrl: events[0].credentialStartUrl,
             traceId: this.traceId,
         }
         return aggregated
