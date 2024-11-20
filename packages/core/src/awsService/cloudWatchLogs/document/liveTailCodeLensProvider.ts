@@ -5,22 +5,32 @@
 
 import * as vscode from 'vscode'
 import { cloudwatchLogsLiveTailScheme } from '../../../shared/constants'
+import { LiveTailSessionRegistry } from '../registry/liveTailSessionRegistry'
+import { uriToKey } from '../cloudWatchLogsUtils'
 
 export class LiveTailCodeLensProvider implements vscode.CodeLensProvider {
-    onDidChangeCodeLenses?: vscode.Event<void> | undefined
+    private _onDidChangeCodeLenses: vscode.EventEmitter<void> = new vscode.EventEmitter<void>()
+    public readonly onDidChangeCodeLenses: vscode.Event<void> = this._onDidChangeCodeLenses.event
 
-    provideCodeLenses(
+    public constructor(private readonly registry: LiveTailSessionRegistry) {}
+
+    public provideCodeLenses(
         document: vscode.TextDocument,
         token: vscode.CancellationToken
     ): vscode.ProviderResult<vscode.CodeLens[]> {
         const uri = document.uri
-        if (uri.scheme !== cloudwatchLogsLiveTailScheme) {
+        //if registry does not contain session, it is assumed to have already been stopped -> hide lenses.
+        if (uri.scheme !== cloudwatchLogsLiveTailScheme || !this.registry.has(uriToKey(uri))) {
             return []
         }
         const codeLenses: vscode.CodeLens[] = []
         codeLenses.push(this.buildClearDocumentCodeLens(document))
         codeLenses.push(this.buildStopTailingCodeLens(document))
         return codeLenses
+    }
+
+    public refresh() {
+        this._onDidChangeCodeLenses.fire()
     }
 
     private buildClearDocumentCodeLens(document: vscode.TextDocument): vscode.CodeLens {

@@ -21,6 +21,7 @@ import { getTestWindow } from '../../../shared/vscode/window'
 import { CloudWatchLogsSettings, uriToKey } from '../../../../awsService/cloudWatchLogs/cloudWatchLogsUtils'
 import { installFakeClock } from '../../../testUtil'
 import { DefaultAwsContext, ToolkitError } from '../../../../shared'
+import { LiveTailCodeLensProvider } from '../../../../awsService/cloudWatchLogs/document/liveTailCodeLensProvider'
 
 describe('TailLogGroup', function () {
     const testLogGroup = 'test-log-group'
@@ -32,6 +33,7 @@ describe('TailLogGroup', function () {
 
     let sandbox: sinon.SinonSandbox
     let registry: LiveTailSessionRegistry
+    let codeLensProvider: LiveTailCodeLensProvider
     let startLiveTailSessionSpy: sinon.SinonSpy
     let stopLiveTailSessionSpy: sinon.SinonSpy
     let cloudwatchSettingsSpy: sinon.SinonSpy
@@ -47,6 +49,7 @@ describe('TailLogGroup', function () {
         clock.reset()
         sandbox = sinon.createSandbox()
         registry = new LiveTailSessionRegistry()
+        codeLensProvider = new LiveTailCodeLensProvider(registry)
     })
 
     after(function () {
@@ -94,7 +97,7 @@ describe('TailLogGroup', function () {
         cloudwatchSettingsSpy = sandbox.stub(CloudWatchLogsSettings.prototype, 'get').callsFake(() => {
             return 1
         })
-        await tailLogGroup(registry, testSource, {
+        await tailLogGroup(registry, testSource, codeLensProvider, {
             groupName: testLogGroup,
             regionName: testRegion,
         })
@@ -132,7 +135,7 @@ describe('TailLogGroup', function () {
             return getTestWizardResponse()
         })
         await assert.rejects(async () => {
-            await tailLogGroup(registry, testSource, {
+            await tailLogGroup(registry, testSource, codeLensProvider, {
                 groupName: testLogGroup,
                 regionName: testRegion,
             })
@@ -153,7 +156,7 @@ describe('TailLogGroup', function () {
         })
         registry.set(uriToKey(session.uri), session)
 
-        closeSession(session.uri, registry, testSource)
+        closeSession(session.uri, registry, testSource, codeLensProvider)
         assert.strictEqual(0, registry.size)
         assert.strictEqual(true, stopLiveTailSessionSpy.calledOnce)
         assert.strictEqual(0, clock.countTimers())
