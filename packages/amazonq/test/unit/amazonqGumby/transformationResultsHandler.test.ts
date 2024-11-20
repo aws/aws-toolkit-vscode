@@ -57,8 +57,6 @@ describe('DiffModel', function () {
         const fileAmount = 1
         const workspaceFolder = await createTestWorkspace(fileAmount, { fileContent: '' })
 
-        sinon.replace(fs, 'exists', async (path) => true)
-
         await fs.writeFile(
             path.join(workspaceFolder.uri.fsPath, 'README.md'),
             'This guide walks you through using Gradle to build a simple Java project.'
@@ -82,12 +80,10 @@ describe('DiffModel', function () {
     })
 
     it('WHEN parsing a diff patch where diff.json is not present and a file was modified THEN returns an array representing the modified file', async function () {
-        const testDiffModel = new DiffModel() //try to see if you can reuse that test model from above
+        const testDiffModel = new DiffModel()
 
         const fileAmount = 1
         const workspaceFolder = await createTestWorkspace(fileAmount, { fileContent: '' })
-
-        sinon.replace(fs, 'exists', async (path) => true)
 
         await fs.writeFile(
             path.join(workspaceFolder.uri.fsPath, 'README.md'),
