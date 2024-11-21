@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "Support starting CloudWatch Logs Live Tail sessions for a specific Lambda function's log group, without having to find which log group manually, but just starting from the function directly."
+}
