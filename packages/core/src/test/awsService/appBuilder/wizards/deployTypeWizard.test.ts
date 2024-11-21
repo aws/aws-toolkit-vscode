@@ -69,7 +69,7 @@ describe('DeployTypeWizard', function () {
             .handleInputBox('Specify SAM parameter value for DestinationBucketName', (inputBox) => {
                 inputBox.acceptValue('my-destination-bucket-name')
             })
-            .handleQuickPick('Specify parameters for deploy', async (quickPick) => {
+            .handleQuickPick('Specify parameter source for deploy', async (quickPick) => {
                 // Need time to check samconfig.toml file and generate options
                 await quickPick.untilReady()
                 assert.strictEqual(quickPick.items[2].label, 'Use default values from samconfig')
@@ -98,7 +98,7 @@ describe('DeployTypeWizard', function () {
                 assert.strictEqual(picker.items.length, 2)
                 picker.acceptItem(picker.items[0])
             })
-            .handleQuickPick('Specify parameters for deploy', async (quickPick) => {
+            .handleQuickPick('Specify parameter source for sync', async (quickPick) => {
                 // Need time to check samconfig.toml file and generate options
                 await quickPick.untilReady()
                 assert.strictEqual(quickPick.items[2].label, 'Use default values from samconfig')

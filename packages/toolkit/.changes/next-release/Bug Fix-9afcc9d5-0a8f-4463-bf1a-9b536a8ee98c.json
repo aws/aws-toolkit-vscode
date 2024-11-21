@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "SAM: Add artifact bucket source prompter for SAM sync command"
+}
