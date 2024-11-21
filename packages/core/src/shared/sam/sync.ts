@@ -156,7 +156,7 @@ export class SyncWizard extends Wizard<SyncParams> {
     ) {
         super({ initState: state, exitPrompterProvider: shouldPromptExit ? createExitPrompter : undefined })
         this.registry = registry
-        this.form.template.bindPrompter(() => createTemplatePrompter(this.registry, syncMementoRootKey))
+        this.form.template.bindPrompter(() => createTemplatePrompter(this.registry, syncMementoRootKey, samSyncUrl))
         this.form.projectRoot.setDefault(({ template }) => getProjectRoot(template))
 
         this.form.paramsSource.bindPrompter(async ({ projectRoot }) => {
@@ -175,13 +175,13 @@ export class SyncWizard extends Wizard<SyncParams> {
                     paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
             }
         )
-        this.form.bucketSource.bindPrompter(() => createBucketSourcePrompter(), {
+        this.form.bucketSource.bindPrompter(() => createBucketSourcePrompter(samSyncUrl), {
             showWhen: ({ paramsSource }) =>
                 paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
         })
 
         this.form.bucketName.bindPrompter(
-            ({ region }) => createBucketNamePrompter(new DefaultS3Client(region!), syncMementoRootKey),
+            ({ region }) => createBucketNamePrompter(new DefaultS3Client(region!), syncMementoRootKey, samSyncUrl),
             {
                 showWhen: ({ bucketSource }) => bucketSource === BucketSource.UserProvided,
             }
