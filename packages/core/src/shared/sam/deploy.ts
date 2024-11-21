@@ -112,19 +112,22 @@ export class DeployWizard extends Wizard<DeployParams> {
                         paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
                 }
             )
-            this.form.bucketSource.bindPrompter(() => createBucketSourcePrompter(), {
+            this.form.bucketSource.bindPrompter(() => createBucketSourcePrompter(samDeployUrl), {
                 showWhen: ({ paramsSource }) =>
                     paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
             })
             this.form.bucketName.bindPrompter(
-                ({ region }) => createBucketNamePrompter(new DefaultS3Client(region!), deployMementoRootKey),
+                ({ region }) =>
+                    createBucketNamePrompter(new DefaultS3Client(region!), deployMementoRootKey, samDeployUrl),
                 {
                     showWhen: ({ bucketSource }) => bucketSource === BucketSource.UserProvided,
                 }
             )
         } else if (this.arg && this.arg.regionCode) {
             // "Deploy" command was invoked on a regionNode.
-            this.form.template.bindPrompter(() => createTemplatePrompter(this.registry, deployMementoRootKey))
+            this.form.template.bindPrompter(() =>
+                createTemplatePrompter(this.registry, deployMementoRootKey, samDeployUrl)
+            )
             this.form.projectRoot.setDefault(({ template }) => getProjectRoot(template))
             this.form.paramsSource.bindPrompter(async ({ projectRoot }) => {
                 const existValidSamConfig: boolean | undefined = await validateSamDeployConfig(projectRoot)
@@ -139,12 +142,13 @@ export class DeployWizard extends Wizard<DeployParams> {
                         paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
                 }
             )
-            this.form.bucketSource.bindPrompter(() => createBucketSourcePrompter(), {
+            this.form.bucketSource.bindPrompter(() => createBucketSourcePrompter(samDeployUrl), {
                 showWhen: ({ paramsSource }) =>
                     paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
             })
             this.form.bucketName.bindPrompter(
-                ({ region }) => createBucketNamePrompter(new DefaultS3Client(region!), deployMementoRootKey),
+                ({ region }) =>
+                    createBucketNamePrompter(new DefaultS3Client(region!), deployMementoRootKey, samDeployUrl),
                 {
                     showWhen: ({ bucketSource }) => bucketSource === BucketSource.UserProvided,
                 }
@@ -173,12 +177,13 @@ export class DeployWizard extends Wizard<DeployParams> {
                         paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
                 }
             )
-            this.form.bucketSource.bindPrompter(() => createBucketSourcePrompter(), {
+            this.form.bucketSource.bindPrompter(() => createBucketSourcePrompter(samDeployUrl), {
                 showWhen: ({ paramsSource }) =>
                     paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
             })
             this.form.bucketName.bindPrompter(
-                ({ region }) => createBucketNamePrompter(new DefaultS3Client(region!), deployMementoRootKey),
+                ({ region }) =>
+                    createBucketNamePrompter(new DefaultS3Client(region!), deployMementoRootKey, samDeployUrl),
                 {
                     showWhen: ({ bucketSource }) => bucketSource === BucketSource.UserProvided,
                 }
@@ -186,7 +191,9 @@ export class DeployWizard extends Wizard<DeployParams> {
             this.form.projectRoot.setDefault(() => getProjectRoot(templateItem))
         } else {
             // "Deploy" command was invoked on the command palette.
-            this.form.template.bindPrompter(() => createTemplatePrompter(this.registry, deployMementoRootKey))
+            this.form.template.bindPrompter(() =>
+                createTemplatePrompter(this.registry, deployMementoRootKey, samDeployUrl)
+            )
             this.form.projectRoot.setDefault(({ template }) => getProjectRoot(template))
             this.form.paramsSource.bindPrompter(async ({ projectRoot }) => {
                 const existValidSamConfig: boolean | undefined = await validateSamDeployConfig(projectRoot)
@@ -204,12 +211,13 @@ export class DeployWizard extends Wizard<DeployParams> {
                         paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
                 }
             )
-            this.form.bucketSource.bindPrompter(() => createBucketSourcePrompter(), {
+            this.form.bucketSource.bindPrompter(() => createBucketSourcePrompter(samDeployUrl), {
                 showWhen: ({ paramsSource }) =>
                     paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
             })
             this.form.bucketName.bindPrompter(
-                ({ region }) => createBucketNamePrompter(new DefaultS3Client(region!), deployMementoRootKey),
+                ({ region }) =>
+                    createBucketNamePrompter(new DefaultS3Client(region!), deployMementoRootKey, samDeployUrl),
                 {
                     showWhen: ({ bucketSource }) => bucketSource === BucketSource.UserProvided,
                 }

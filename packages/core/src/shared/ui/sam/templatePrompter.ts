@@ -7,7 +7,6 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import { getSamInitDocUrl } from '../..'
 import * as CloudFormation from '../../cloudformation/cloudformation'
-import { samSyncUrl } from '../../constants'
 import { CloudFormationTemplateRegistry } from '../../fs/templateRegistry'
 import { createCommonButtons } from '../buttons'
 import { createQuickPick } from '../pickerPrompter'
@@ -27,6 +26,7 @@ export interface TemplateItem {
  *
  * @param registry - Registry containing CloudFormation templates
  * @param mementoRootKey - Root key for storing recent template selections (e.g 'samcli.deploy.params')
+ * @param samCommandUrl URL to the SAM CLI command documentation
  * @param projectRoot - Optional URI of the project root to filter templates
  * @returns A QuickPick prompter configured for template selection
  *
@@ -37,6 +37,7 @@ export interface TemplateItem {
 export function createTemplatePrompter(
     registry: CloudFormationTemplateRegistry,
     mementoRootKey: string,
+    samCommandUrl: vscode.Uri,
     projectRoot?: vscode.Uri
 ) {
     const folders = new Set<string>()
@@ -63,7 +64,7 @@ export function createTemplatePrompter(
     return createQuickPick(trimmedItems, {
         title: 'Select a SAM/CloudFormation Template',
         placeholder: 'Select a SAM/CloudFormation Template',
-        buttons: createCommonButtons(samSyncUrl),
+        buttons: createCommonButtons(samCommandUrl),
         noItemsFoundItem: {
             label: localize('aws.sam.noWorkspace', 'No SAM template.yaml file(s) found. Select for help'),
             data: undefined,
