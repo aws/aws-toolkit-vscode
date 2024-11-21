@@ -41,7 +41,7 @@ export class LogStreamFilterSubmenu extends Prompter<LogStreamFilterResponse> {
     public createMenuPrompter() {
         const helpUri = startLiveTailHelpUrl
         const prompter = createQuickPick(this.menuOptions, {
-            title: 'Select LogStream filter type',
+            title: 'Include log events from...',
             buttons: createCommonButtons(helpUri),
         })
         return prompter
@@ -50,18 +50,15 @@ export class LogStreamFilterSubmenu extends Prompter<LogStreamFilterResponse> {
     private get menuOptions(): DataQuickPickItem<LogStreamFilterType>[] {
         const options: DataQuickPickItem<LogStreamFilterType>[] = []
         options.push({
-            label: 'All',
-            detail: 'Include log events from all LogStreams in the selected LogGroup',
+            label: 'All Log Streams',
             data: 'all',
         })
         options.push({
-            label: 'Specific',
-            detail: 'Include log events from only a specific LogStream',
+            label: 'Specific Log Stream',
             data: 'specific',
         })
         options.push({
-            label: 'Prefix',
-            detail: 'Include log events from LogStreams that begin with a provided prefix',
+            label: 'Log Streams matching prefix',
             data: 'prefix',
         })
         return options
@@ -70,9 +67,9 @@ export class LogStreamFilterSubmenu extends Prompter<LogStreamFilterResponse> {
     public createLogStreamPrefixBox(): InputBoxPrompter {
         const helpUri = startLiveTailLogStreamPrefixHelpUrl
         return createInputBox({
-            title: 'Enter LogStream prefix',
-            placeholder: 'logStream prefix (case sensitive; empty matches all)',
-            prompt: 'Only log events in the LogStreams that have names that start with the prefix that you specify here are included in the Live Tail session',
+            title: 'Enter Log Stream prefix',
+            placeholder: 'log stream prefix (case sensitive; empty matches all)',
+            prompt: 'Only log events in Log Streams whose name starts with the supplied prefix will be included.',
             validateInput: (input) => this.validateLogStreamPrefix(input),
             buttons: createCommonButtons(helpUri),
         })
@@ -80,11 +77,11 @@ export class LogStreamFilterSubmenu extends Prompter<LogStreamFilterResponse> {
 
     public validateLogStreamPrefix(prefix: string) {
         if (prefix.length > 512) {
-            return 'LogStream prefix cannot be longer than 512 characters'
+            return 'Log Stream prefix cannot be longer than 512 characters'
         }
 
         if (!this.logStreamPrefixRegEx.test(prefix)) {
-            return 'LogStream prefix must match pattern: [^:*]*'
+            return 'Log Stream prefix must match pattern: [^:*]*'
         }
     }
 
@@ -104,7 +101,7 @@ export class LogStreamFilterSubmenu extends Prompter<LogStreamFilterResponse> {
             .map((streams) => streams!.map((stream) => ({ data: stream.logStreamName!, label: stream.logStreamName! })))
 
         return createQuickPick(items, {
-            title: 'Select LogStream',
+            title: 'Select Log Stream',
             buttons: createCommonButtons(helpUri),
         })
     }

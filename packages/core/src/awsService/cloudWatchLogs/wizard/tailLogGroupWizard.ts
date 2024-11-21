@@ -38,7 +38,7 @@ export class TailLogGroupWizard extends Wizard<TailLogGroupWizardResponse> {
         this.form.regionLogGroupSubmenuResponse.bindPrompter(createRegionLogGroupSubmenu)
         this.form.logStreamFilter.bindPrompter((state) => {
             if (!state.regionLogGroupSubmenuResponse?.data) {
-                throw new ToolkitError('LogGroupName is null')
+                throw new ToolkitError('Log Group name is null')
             }
             return new LogStreamFilterSubmenu(
                 state.regionLogGroupSubmenuResponse.data,
@@ -57,7 +57,7 @@ export function createRegionLogGroupSubmenu(): RegionSubmenu<string> {
             buttons: [createExitButton()],
         },
         { title: localize('AWS.cwl.tailLogGroup.regionPromptTitle', 'Select Region for Log Group') },
-        'LogGroups'
+        'Log Groups'
     )
 }
 
@@ -69,7 +69,7 @@ async function getLogGroupQuickPickOptions(regionCode: string): Promise<DataQuic
 
     for await (const logGroupObject of logGroups) {
         if (!logGroupObject.arn || !logGroupObject.logGroupName) {
-            throw new ToolkitError('LogGroupObject name or arn undefined')
+            throw new ToolkitError('Log Group name or arn is undefined')
         }
 
         logGroupsOptions.push({
@@ -88,7 +88,7 @@ export function buildLogGroupArn(logGroupName: string, region: string): string {
     const awsAccountId = globals.awsContext.getCredentialAccountId()
     if (awsAccountId === undefined) {
         throw new ToolkitError(
-            `Failed to construct Arn for LogGroup because awsAccountId is undefined. LogGroup: ${logGroupName}`
+            `Failed to construct Arn for Log Group because awsAccountId is undefined. Log Group: ${logGroupName}`
         )
     }
     return `arn:aws:logs:${region}:${awsAccountId}:log-group:${logGroupName}`
@@ -103,7 +103,7 @@ export function createFilterPatternPrompter() {
     return createInputBox({
         title: 'Provide log event filter pattern',
         placeholder: 'filter pattern (case sensitive; empty matches all)',
-        prompt: 'Optional pattern to use to filter the results to include only log events that match the pattern.',
+        prompt: 'Optional filter to include only log events that match the supplied pattern.',
         buttons: [createHelpButton(helpUri), createBackButton(), createExitButton()],
     })
 }
