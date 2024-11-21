@@ -35,7 +35,7 @@ import { openUrl } from '../utilities/vsCodeUtils'
 import { showOnce } from '../utilities/messages'
 import { IamConnection } from '../../auth/connection'
 import { CloudFormationTemplateRegistry } from '../fs/templateRegistry'
-import { TreeNode } from '../treeview/resourceTreeDataProvider'
+import { isTreeNode, TreeNode } from '../treeview/resourceTreeDataProvider'
 import { getSpawnEnv } from '../env/resolveEnv'
 import {
     getProjectRoot,
@@ -151,6 +151,29 @@ export const syncFlagItems: DataQuickPickItem<string>[] = [
     },
 ]
 
+export enum SamSyncEntryPoints {
+    SamTemplateFile,
+    SamConfigFile,
+    RegionNodeContextMenu,
+    AppBuilderNodeButton,
+    CommandPalette,
+}
+
+function getSyncEntryPoint(arg: vscode.Uri | AWSTreeNodeBase | TreeNode | undefined) {
+    if (arg instanceof vscode.Uri) {
+        if (arg.path.endsWith('samconfig.toml')) {
+            return SamSyncEntryPoints.SamConfigFile
+        }
+        return SamSyncEntryPoints.SamTemplateFile
+    } else if (arg instanceof AWSTreeNodeBase) {
+        return SamSyncEntryPoints.RegionNodeContextMenu
+    } else if (isTreeNode(arg)) {
+        return SamSyncEntryPoints.AppBuilderNodeButton
+    } else {
+        return SamSyncEntryPoints.CommandPalette
+    }
+}
+
 export class SyncWizard extends Wizard<SyncParams> {
     registry: CloudFormationTemplateRegistry
     public constructor(
@@ -175,6 +198,7 @@ export class SyncWizard extends Wizard<SyncParams> {
             const existValidSamConfig: boolean | undefined = await validateSamSyncConfig(projectRoot)
             return createSyncParamsSourcePrompter(existValidSamConfig)
         })
+
         this.form.region.bindPrompter(() => createRegionPrompter().transform((r) => r.id), {
             showWhen: ({ paramsSource }) =>
                 paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
@@ -434,21 +458,30 @@ export async function prepareSyncParams(
 ): Promise<Partial<SyncParams>> {
     // Skip creating dependency layers by default for backwards compat
     const baseParams: Partial<SyncParams> = { skipDependencyLayer: true }
+    const entryPoint = getSyncEntryPoint(arg)
 
-    if (arg instanceof AWSTreeNodeBase) {
-        // "Deploy" command was invoked on a regionNode.
-        return { ...baseParams, region: arg.regionCode }
-    } else if (arg instanceof vscode.Uri) {
-        if (arg.path.endsWith('samconfig.toml')) {
-            // "Deploy" command was invoked on a samconfig.toml file.
-            // TODO: add step to verify samconfig content to skip param source prompter
-            const config = await SamConfig.fromConfigFileUri(arg)
+    switch (entryPoint) {
+        case SamSyncEntryPoints.SamTemplateFile: {
+            const entryPointArg = arg as vscode.Uri
+            const template = {
+                uri: entryPointArg,
+                data: await CloudFormation.load(entryPointArg.fsPath, validate),
+            }
+
+            return {
+                ...baseParams,
+                template: template,
+                projectRoot: getProjectRootUri(template.uri),
+            }
+        }
+        case SamSyncEntryPoints.SamConfigFile: {
+            const config = await SamConfig.fromConfigFileUri(arg as vscode.Uri)
             const params = getSyncParamsFromConfig(config)
             const projectRoot = vscode.Uri.joinPath(config.location, '..')
             const templateUri = params.templatePath
                 ? vscode.Uri.file(path.resolve(projectRoot.fsPath, params.templatePath))
                 : undefined
-            const template = templateUri
+            const samConfigFileTemplate = templateUri
                 ? {
                       uri: templateUri,
                       data: await CloudFormation.load(templateUri.fsPath),
@@ -457,29 +490,38 @@ export async function prepareSyncParams(
             // Always use the dependency layer if the user specified to do so
             const skipDependencyLayer = !config.getCommandParam('sync', 'dependency_layer')
 
-            return { ...baseParams, ...params, template, projectRoot, skipDependencyLayer } as SyncParams
+            return {
+                ...baseParams,
+                ...params,
+                template: samConfigFileTemplate,
+                projectRoot,
+                skipDependencyLayer,
+            } as SyncParams
         }
-
-        // "Deploy" command was invoked on a template.yaml file.
-        const template = {
-            uri: arg,
-            data: await CloudFormation.load(arg.fsPath, validate),
+        case SamSyncEntryPoints.RegionNodeContextMenu: {
+            const entryPointArg = arg as AWSTreeNodeBase
+            return { ...baseParams, region: entryPointArg.regionCode }
         }
-
-        return { ...baseParams, template, projectRoot: getProjectRootUri(template.uri) }
-    } else if (arg && arg.getTreeItem()) {
-        // "Deploy" command was invoked on a TreeNode on the AppBuilder.
-        const templateUri = (arg.getTreeItem() as vscode.TreeItem).resourceUri
-        if (templateUri) {
-            const template = {
-                uri: templateUri,
-                data: await CloudFormation.load(templateUri.fsPath, validate),
+        case SamSyncEntryPoints.AppBuilderNodeButton: {
+            const entryPointArg = arg as TreeNode
+            const templateUri = (entryPointArg.getTreeItem() as vscode.TreeItem).resourceUri
+            if (templateUri) {
+                const template = {
+                    uri: templateUri,
+                    data: await CloudFormation.load(templateUri.fsPath, validate),
+                }
+                return {
+                    ...baseParams,
+                    template,
+                    projectRoot: getProjectRootUri(templateUri),
+                }
             }
-            return { ...baseParams, template, projectRoot: getProjectRootUri(template.uri) }
+            return baseParams
         }
+        case SamSyncEntryPoints.CommandPalette:
+        default:
+            return baseParams
     }
-
-    return baseParams
 }
 
 export type SamSyncResult = {
