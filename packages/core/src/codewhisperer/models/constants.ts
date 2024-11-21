@@ -28,9 +28,9 @@ const patchDescriptions: { [key: string]: string } = {
     'Popular Enterprise Specifications and Application Frameworks upgrade':
         'This diff patch covers the set of upgrades for Jakarta EE 10, Hibernate 6.2, and Micronaut 3.',
     'HTTP Client Utilities, Apache Commons Utilities, and Web Frameworks':
-        'This diff patch covers the set of upgrades for Apache HTTP Client 5, Apache Commons utilities (Collections, IO, Lang, Math), Struts 6.0.',
+        'This diff patch covers the set of upgrades for Apache HTTP Client 5, Apache Commons utilities (Collections, IO, Lang, Math), and Struts 6.0.',
     'Testing Tools and Frameworks upgrade':
-        'This diff patch covers the set of upgrades for ArchUnit, Mockito, TestContainers, Cucumber, and additionally, Jenkins plugins and the Maven Wrapper.',
+        'This diff patch covers the set of upgrades for ArchUnit, Mockito, TestContainers, and Cucumber, in addition to the Jenkins plugins and the Maven Wrapper.',
     'Miscellaneous Processing Documentation upgrade':
         'This diff patch covers a diverse set of upgrades spanning ORMs, XML processing, API documentation, and more.',
     'Deprecated API replacement, dependency upgrades, and formatting':
@@ -470,7 +470,7 @@ export const chooseTransformationObjective = `I can help you with the following 
 export const chooseTransformationObjectivePlaceholder = 'Enter "language upgrade" or "sql conversion"'
 
 export const userPatchDescriptionChatMessage = `
-I can now divide the transformation results into diff patches (if applicable to the app) if you would like to review and accept each diff with fewer changes:
+If you'd like to update and test your code with fewer changes at a time, I can divide the transformation results into separate diff patches. If applicable to your application, I can split up the diffs up into the following groups of upgrades. Here are the upgrades included in each diff:
 
 • Minimal Compatible Library Upgrade to Java 17: Dependencies to the minimum compatible versions in Java 17, including Springboot, JUnit, and PowerMockito.
 
@@ -616,16 +616,16 @@ export const jobCancelledNotification = 'You cancelled the transformation.'
 
 export const diffMessage = (multipleDiffs: boolean) => {
     return multipleDiffs
-        ? 'You can review the diff to see my proposed changes and accept or reject them. If you reject the diff, you will not be able to see the diffs later.'
+        ? 'You can review the diffs to see my proposed changes and accept or reject them. You will be able to accept changes from one diff at a time. If you reject changes in one diff, you will not be able to view or accept changes in the other diffs.'
         : 'You can review the diff to see my proposed changes and accept or reject them.'
 }
 
 export const jobCompletedChatMessage = (multipleDiffsString: string) => {
-    return `I transformed your code. ${multipleDiffsString} The transformation summary has details about the files I updated.`
+    return `I completed your transformation. ${multipleDiffsString} The transformation summary has details about the changes I'm proposing.`
 }
 
 export const jobCompletedNotification = (multipleDiffsString: string) => {
-    return `Amazon Q transformed your code. ${multipleDiffsString} The transformation summary has details about the files I updated.`
+    return `Amazon Q transformed your code. ${multipleDiffsString} The transformation summary has details about the changes.`
 }
 
 export const jobPartiallyCompletedChatMessage = (multipleDiffsString: string) => {
