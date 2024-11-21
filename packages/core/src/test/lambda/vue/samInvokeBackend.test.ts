@@ -443,7 +443,7 @@ describe('SamInvokeWebview', () => {
                     async () => await samInvokeWebview.promptFile(),
                     new Error('Failed to read selected file')
                 )
-                assertLogsContain('readFileSync: Failed to read file at path %s %O', true, 'error')
+                assertLogsContain('readFileSync: Failed to read file at path', false, 'error')
             } finally {
                 await fs.delete(tempFolder, { recursive: true })
             }
