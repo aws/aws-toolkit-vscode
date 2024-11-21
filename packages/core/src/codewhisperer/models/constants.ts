@@ -33,8 +33,8 @@ const patchDescriptions: { [key: string]: string } = {
         'This diff patch covers the set of upgrades for ArchUnit, Mockito, TestContainers, Cucumber, and additionally, Jenkins plugins and the Maven Wrapper.',
     'Miscellaneous Processing Documentation upgrade':
         'This diff patch covers a diverse set of upgrades spanning ORMs, XML processing, API documentation, and more.',
-    'Deprecated API replacement and dependency upgrades':
-        'This diff patch replaces deprecated APIs and makes additional dependency version upgrades.',
+    'Deprecated API replacement, dependency upgrades, and formatting':
+        'This diff patch replaces deprecated APIs, makes additional dependency version upgrades, and formats code changes.',
 }
 
 export const JsonConfigFileNamingConvention = new Set([
@@ -482,7 +482,7 @@ I can now divide the transformation results into diff patches (if applicable to 
 
 • Miscellaneous Processing Documentation: Upgrades ORMs, XML processing, and Swagger to SpringDoc/OpenAPI.
 
-• Deprecated API replacement and dependency upgrades: Replaces deprecated APIs and makes additional dependency version upgrades.
+• Deprecated API replacement, dependency upgrades, and formatting: Replaces deprecated APIs, makes additional dependency version upgrades, and formats code changes.
 `
 
 export const uploadingCodeStepMessage = 'Upload your code'
