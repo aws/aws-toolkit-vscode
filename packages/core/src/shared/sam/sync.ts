@@ -28,7 +28,7 @@ import { createExitPrompter } from '../ui/common/exitPrompter'
 import { getConfigFileUri, SamConfig, validateSamSyncConfig, writeSamconfigGlobal } from './config'
 import { cast, Optional } from '../utilities/typeConstructors'
 import { pushIf, toRecord } from '../utilities/collectionUtils'
-import { getOverriddenParameters } from '../../lambda/config/parameterUtils'
+import { getOverriddenParameters, getParameters } from '../../lambda/config/parameterUtils'
 import { addTelemetryEnvVar } from './cli/samCliInvokerUtils'
 import { samSyncParamUrl, samSyncUrl, samUpgradeUrl } from '../constants'
 import { openUrl } from '../utilities/vsCodeUtils'
@@ -54,6 +54,7 @@ import { BucketSource, createBucketNamePrompter } from '../ui/sam/bucketPrompter
 import { runInTerminal } from './processTerminal'
 import { WizardPrompter } from '../ui/wizardPrompter'
 import { TemplateParametersWizard } from '../../awsService/appBuilder/wizards/templateParametersWizard'
+import { SkipPrompter } from '../ui/common/skipPrompter'
 
 export interface SyncParams {
     readonly paramsSource: ParamsSource
@@ -160,10 +161,13 @@ export class SyncWizard extends Wizard<SyncParams> {
         super({ initState: state, exitPrompterProvider: shouldPromptExit ? createExitPrompter : undefined })
         this.registry = registry
         this.form.template.bindPrompter(() => createTemplatePrompter(this.registry, syncMementoRootKey))
-        this.form.templateParameters.bindPrompter(
-            ({ template }) =>
-                new WizardPrompter(new TemplateParametersWizard(template!.uri, samSyncUrl, syncMementoRootKey))
-        )
+        this.form.templateParameters.bindPrompter(async ({ template }) => {
+            const samTemplateParameters = await getParameters(template!.uri)
+            if (!samTemplateParameters || samTemplateParameters.size === 0) {
+                return new SkipPrompter({} as Partial<any>)
+            }
+            return new WizardPrompter(new TemplateParametersWizard(template!.uri, samSyncParamUrl, syncMementoRootKey))
+        })
 
         this.form.projectRoot.setDefault(({ template }) => getProjectRoot(template))
 

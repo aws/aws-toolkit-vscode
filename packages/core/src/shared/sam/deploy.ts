@@ -28,6 +28,8 @@ import { getErrorCode, getProjectRoot, getSamCliPathAndVersion, getSource, updat
 import { runInTerminal } from './processTerminal'
 import { WizardPrompter } from '../ui/wizardPrompter'
 import { TemplateParametersWizard } from '../../awsService/appBuilder/wizards/templateParametersWizard'
+import { SkipPrompter } from '../ui/common/skipPrompter'
+import { getParameters } from '../../lambda/config/parameterUtils'
 
 export interface DeployParams {
     readonly paramsSource: ParamsSource
@@ -83,10 +85,13 @@ export class DeployWizard extends Wizard<DeployParams> {
 
         this.form.template.bindPrompter(() => createTemplatePrompter(this.registry, deployMementoRootKey))
 
-        this.form.templateParameters.bindPrompter(
-            ({ template }) =>
-                new WizardPrompter(new TemplateParametersWizard(template.uri, samDeployUrl, deployMementoRootKey))
-        )
+        this.form.templateParameters.bindPrompter(async ({ template }) => {
+            const samTemplateParameters = await getParameters(template.uri)
+            if (!samTemplateParameters || samTemplateParameters.size === 0) {
+                return new SkipPrompter({} as Partial<any>)
+            }
+            return new WizardPrompter(new TemplateParametersWizard(template.uri, samDeployUrl, deployMementoRootKey))
+        })
 
         this.form.projectRoot.setDefault(({ template }) => getProjectRoot(template))
 
