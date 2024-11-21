@@ -60,40 +60,41 @@ describe('crossFileContextUtil', function () {
             assert.strictEqual(actual.supplementalContextItems[1].content.split('\n').length, 50)
             assert.strictEqual(actual.supplementalContextItems[2].content.split('\n').length, 50)
         })
+        Array.from({ length: 5000 }).forEach((_) => {
+            it('for t1 group, should return repomap + opentabs context', async function () {
+                await toTextEditor(aStringWithLineCount(200), 'CrossFile.java', tempFolder, { preview: false })
+                const myCurrentEditor = await toTextEditor('', 'TargetFile.java', tempFolder, {
+                    preview: false,
+                })
 
-        it('for t1 group, should return repomap + opentabs context', async function () {
-            await toTextEditor(aStringWithLineCount(200), 'CrossFile.java', tempFolder, { preview: false })
-            const myCurrentEditor = await toTextEditor('', 'TargetFile.java', tempFolder, {
-                preview: false,
+                await assertTabCount(2)
+
+                sinon.stub(FeatureConfigProvider.instance, 'getProjectContextGroup').returns('t1')
+                sinon
+                    .stub(LspController.instance, 'queryInlineProjectContext')
+                    .withArgs(sinon.match.any, sinon.match.any, 'codemap')
+                    .resolves([
+                        {
+                            content: 'foo',
+                            score: 0,
+                            filePath: 'q-inline',
+                        },
+                    ])
+
+                const actual = await crossFile.fetchSupplementalContextForSrc(myCurrentEditor, fakeCancellationToken)
+                assert.ok(actual)
+                assert.strictEqual(actual.supplementalContextItems.length, 4)
+                assert.strictEqual(actual?.strategy, 'codemap')
+                assert.deepEqual(actual?.supplementalContextItems[0], {
+                    content: 'foo',
+                    score: 0,
+                    filePath: 'q-inline',
+                })
+
+                assert.strictEqual(actual.supplementalContextItems[1].content.split('\n').length, 50)
+                assert.strictEqual(actual.supplementalContextItems[2].content.split('\n').length, 50)
+                assert.strictEqual(actual.supplementalContextItems[3].content.split('\n').length, 50)
             })
-
-            await assertTabCount(2)
-
-            sinon.stub(FeatureConfigProvider.instance, 'getProjectContextGroup').returns('t1')
-            sinon
-                .stub(LspController.instance, 'queryInlineProjectContext')
-                .withArgs(sinon.match.any, sinon.match.any, 'codemap')
-                .resolves([
-                    {
-                        content: 'foo',
-                        score: 0,
-                        filePath: 'q-inline',
-                    },
-                ])
-
-            const actual = await crossFile.fetchSupplementalContextForSrc(myCurrentEditor, fakeCancellationToken)
-            assert.ok(actual)
-            assert.strictEqual(actual.supplementalContextItems.length, 4)
-            assert.strictEqual(actual?.strategy, 'codemap')
-            assert.deepEqual(actual?.supplementalContextItems[0], {
-                content: 'foo',
-                score: 0,
-                filePath: 'q-inline',
-            })
-
-            assert.strictEqual(actual.supplementalContextItems[1].content.split('\n').length, 50)
-            assert.strictEqual(actual.supplementalContextItems[2].content.split('\n').length, 50)
-            assert.strictEqual(actual.supplementalContextItems[3].content.split('\n').length, 50)
         })
 
         it('for t2 group, should return global bm25 context and no repomap', async function () {
