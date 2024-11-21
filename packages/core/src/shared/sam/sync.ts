@@ -50,7 +50,7 @@ import { TemplateItem, createTemplatePrompter } from '../ui/sam/templatePrompter
 import { createStackPrompter } from '../ui/sam/stackPrompter'
 import { ParamsSource, createSyncParamsSourcePrompter } from '../ui/sam/paramsSourcePrompter'
 import { createEcrPrompter } from '../ui/sam/ecrPrompter'
-import { BucketSource, createBucketNamePrompter } from '../ui/sam/bucketPrompter'
+import { BucketSource, createBucketNamePrompter, createBucketSourcePrompter } from '../ui/sam/bucketPrompter'
 import { runInTerminal } from './processTerminal'
 
 export interface SyncParams {
@@ -175,12 +175,15 @@ export class SyncWizard extends Wizard<SyncParams> {
                     paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
             }
         )
+        this.form.bucketSource.bindPrompter(() => createBucketSourcePrompter(), {
+            showWhen: ({ paramsSource }) =>
+                paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
+        })
 
         this.form.bucketName.bindPrompter(
             ({ region }) => createBucketNamePrompter(new DefaultS3Client(region!), syncMementoRootKey),
             {
-                showWhen: ({ paramsSource }) =>
-                    paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
+                showWhen: ({ bucketSource }) => bucketSource === BucketSource.UserProvided,
             }
         )
 
