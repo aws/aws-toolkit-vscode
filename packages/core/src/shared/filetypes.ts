@@ -206,6 +206,7 @@ export const codefileExtensions = new Set([
     '.gd',
     '.go',
     '.gql',
+    '.gradle',
     '.graphql',
     '.groovy',
     '.gs',
