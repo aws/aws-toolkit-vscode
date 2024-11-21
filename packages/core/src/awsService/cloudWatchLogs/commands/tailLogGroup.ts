@@ -44,9 +44,7 @@ export async function tailLogGroup(
         const session = new LiveTailSession(liveTailSessionConfig)
         if (registry.has(uriToKey(session.uri))) {
             await vscode.window.showTextDocument(session.uri, { preview: false })
-            void vscode.window.showInformationMessage(
-                `Switching editor to an existing session. Found running session that matches request.`
-            )
+            void vscode.window.showInformationMessage(`Switching editor to an existing session that matches request.`)
             span.record({
                 result: 'Succeeded',
                 sessionAlreadyStarted: true,
