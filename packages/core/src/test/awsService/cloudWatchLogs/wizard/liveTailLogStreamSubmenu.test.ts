@@ -21,8 +21,12 @@ describe('liveTailLogStreamSubmenu', async function () {
 
     describe('Menu prompter', async function () {
         it('gives option for each filter type', async function () {
-            logStreamMenuPrompter.assertContainsItems('All', 'Specific', 'Prefix')
-            logStreamMenuPrompter.acceptItem('All')
+            logStreamMenuPrompter.assertContainsItems(
+                'All Log Streams',
+                'Specific Log Stream',
+                'Log Streams matching prefix'
+            )
+            logStreamMenuPrompter.acceptItem('All Log Streams')
             await logStreamMenuPrompter.result()
         })
     })
@@ -42,7 +46,7 @@ describe('liveTailLogStreamSubmenu', async function () {
             const invalidInput = 'my-log-stream:'
             getTestWindow().onDidShowInputBox((input) => {
                 input.acceptValue(invalidInput)
-                assert.deepEqual(input.validationMessage, 'LogStream prefix must match pattern: [^:*]*')
+                assert.deepEqual(input.validationMessage, 'Log Stream prefix must match pattern: [^:*]*')
                 input.hide()
             })
             const inputBox = logStreamFilterSubmenu.createLogStreamPrefixBox()
@@ -53,7 +57,7 @@ describe('liveTailLogStreamSubmenu', async function () {
             const invalidInput = 'my-log-stream*'
             getTestWindow().onDidShowInputBox((input) => {
                 input.acceptValue(invalidInput)
-                assert.deepEqual(input.validationMessage, 'LogStream prefix must match pattern: [^:*]*')
+                assert.deepEqual(input.validationMessage, 'Log Stream prefix must match pattern: [^:*]*')
                 input.hide()
             })
             const inputBox = logStreamFilterSubmenu.createLogStreamPrefixBox()
@@ -64,7 +68,7 @@ describe('liveTailLogStreamSubmenu', async function () {
             const invalidInput = 'a'.repeat(520)
             getTestWindow().onDidShowInputBox((input) => {
                 input.acceptValue(invalidInput)
-                assert.deepEqual(input.validationMessage, 'LogStream prefix cannot be longer than 512 characters')
+                assert.deepEqual(input.validationMessage, 'Log Stream prefix cannot be longer than 512 characters')
                 input.hide()
             })
             const inputBox = logStreamFilterSubmenu.createLogStreamPrefixBox()
