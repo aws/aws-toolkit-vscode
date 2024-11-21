@@ -11,6 +11,8 @@ import { broadcastFileChange } from './handleMessage'
 import { FileWatchInfo, WebviewContext } from './types'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { handleMessage } from './handleMessage'
+import { isInvalidJsonFile } from '../utils'
+import { setContext } from '../../shared/vscode/setContext'
 
 /**
  * The main class for Workflow Studio Editor. This class handles the creation and management
@@ -139,11 +141,11 @@ export class WorkflowStudioEditor {
                     // The text document acts as our model, thus we send and event to the webview on file save to trigger update
                     contextObject.disposables.push(
                         vscode.workspace.onDidSaveTextDocument(async () => {
-                            await telemetry.stepfunctions_saveFile.run(async (span) => {
+                            await telemetry.stepfunctions_syncFile.run(async (span) => {
                                 span.record({
                                     id: contextObject.fileId,
-                                    saveType: 'MANUAL_SAVE',
-                                    source: 'VSCODE',
+                                    stepFunctionsSyncType: 'manualSaveVSCode',
+                                    isInvalidJson: isInvalidJsonFile(contextObject.textDocument),
                                 })
                                 await broadcastFileChange(contextObject, 'MANUAL_SAVE')
                             })
@@ -152,18 +154,31 @@ export class WorkflowStudioEditor {
 
                     // Handle messages from the webview
                     this.disposables.push(
-                        this.webviewPanel.webview.onDidReceiveMessage((message) =>
-                            handleMessage(message, contextObject)
-                        )
+                        this.webviewPanel.webview.onDidReceiveMessage(async (message) => {
+                            await handleMessage(message, contextObject)
+                        })
+                    )
+
+                    // Track webview focus to suppress VSCode's default undo, as WFS has its own
+                    await setContext('aws.stepFunctions.isWorkflowStudioFocused', true)
+                    this.disposables.push(
+                        this.webviewPanel.onDidChangeViewState(async (event) => {
+                            if (event.webviewPanel.active) {
+                                await setContext('aws.stepFunctions.isWorkflowStudioFocused', true)
+                            } else {
+                                await setContext('aws.stepFunctions.isWorkflowStudioFocused', false)
+                            }
+                        })
                     )
 
                     // When the panel is closed, dispose of any disposables/remove subscriptions
                     this.disposables.push(
-                        this.webviewPanel.onDidDispose(() => {
+                        this.webviewPanel.onDidDispose(async () => {
                             if (this.isPanelDisposed) {
                                 return
                             }
 
+                            await setContext('aws.stepFunctions.isWorkflowStudioFocused', false)
                             this.isPanelDisposed = true
                             resolve()
                             this.onVisualizationDisposeEmitter.fire()

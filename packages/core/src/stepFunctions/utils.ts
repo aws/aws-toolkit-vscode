@@ -223,6 +223,32 @@ export async function isDocumentValid(text: string, textDocument?: vscode.TextDo
     return isValid
 }
 
+/**
+ * Checks if the JSON content in a text document is invalid.
+ * Returns `true` for invalid JSON; `false` for valid JSON, empty content, or non-JSON files.
+ *
+ * @param textDocument - The text document to check.
+ * @returns `true` if invalid; `false` otherwise.
+ */
+export const isInvalidJsonFile = (textDocument: vscode.TextDocument): boolean => {
+    const fileExtension = textDocument.fileName.split('.').pop()?.toLowerCase()
+
+    if (fileExtension === 'json') {
+        const jsonFileContent = textDocument.getText().trim()
+        // An empty file or whitespace-only text is considered valid JSON for our use case
+        if (!jsonFileContent) {
+            return false
+        }
+        try {
+            JSON.parse(jsonFileContent)
+            return false
+        } catch {
+            return true
+        }
+    }
+    return false
+}
+
 const descriptor = {
     maxItemsComputed: (v: unknown) => Math.trunc(Math.max(0, Number(v))),
     ['format.enable']: Boolean,

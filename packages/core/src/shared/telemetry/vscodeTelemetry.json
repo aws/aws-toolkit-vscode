@@ -18,6 +18,17 @@
             "description": "SSM Publish Document operation type"
         },
         {
+            "name": "stepFunctionsSyncType",
+            "type": "string",
+            "allowedValues": ["manualSaveWFS", "manualSaveVSCode", "autoSyncWFS"],
+            "description": "The action type that triggered the save or sync event between SFN Workflow Studio and the local source file."
+        },
+        {
+            "name": "isInvalidJson",
+            "type": "boolean",
+            "description": "Indicates whether the message contains an invalid JSON definition."
+        },
+        {
             "name": "starterTemplate",
             "type": "string",
             "description": "Starter template chosen during create document"
@@ -527,20 +538,19 @@
             ]
         },
         {
-            "name": "stepfunctions_saveFile",
-            "description": "Called after the user saves local ASL file (inlcuding autosave) from VSCode editor or Workflow Studio",
+            "name": "stepfunctions_syncFile",
+            "description": "Triggered when Workflow Studio auto-syncs to the local file or when unsaved local changes are saved from Workflow Studio or VSCode.",
             "metadata": [
                 {
                     "type": "id",
                     "required": true
                 },
                 {
-                    "type": "saveType",
+                    "type": "stepFunctionsSyncType",
                     "required": true
                 },
                 {
-                    "type": "source",
-                    "required": true
+                    "type": "isInvalidJson"
                 }
             ]
         },
