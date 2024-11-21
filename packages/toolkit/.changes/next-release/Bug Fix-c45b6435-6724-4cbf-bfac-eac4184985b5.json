@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "SAM: Fix prompter button URLs for build, deploy and sync commands"
+}
