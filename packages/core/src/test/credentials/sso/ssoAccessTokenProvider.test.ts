@@ -13,7 +13,7 @@ import { getCache } from '../../../auth/sso/cache'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../../shared/filesystemUtilities'
 import { ClientRegistration, SsoProfile, SsoToken, proceedToBrowser } from '../../../auth/sso/model'
 import { OidcClient } from '../../../auth/sso/clients'
-import { CancellationError, sleep } from '../../../shared/utilities/timeoutUtils'
+import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import {
     AuthorizationPendingException,
     InternalServerException,
@@ -81,9 +81,8 @@ describe('SsoAccessTokenProvider', function () {
         clock = installFakeClock()
     })
 
-    after(async function () {
+    after(function () {
         clock.uninstall()
-        await sleep(3000)
     })
 
     beforeEach(async function () {
