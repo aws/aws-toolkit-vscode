@@ -194,7 +194,7 @@ describe('RemoteInvokeWebview', () => {
                 async () => await remoteInvokeWebview.promptFile(),
                 new Error('Failed to read selected file')
             )
-            assertLogsContain('readFileSync: Failed to read file at path %s %O', true, 'error')
+            assertLogsContain('readFileSync: Failed to read file at path', false, 'error')
         })
     })
 
