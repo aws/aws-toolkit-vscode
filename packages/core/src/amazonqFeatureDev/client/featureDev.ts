@@ -171,6 +171,7 @@ export class FeatureDevClient {
                 isAwsError(e) &&
                 ((e.code === 'ThrottlingException' &&
                     e.message.includes('limit for number of iterations on a code generation')) ||
+                    e.message.includes('StartTaskAssistCodeGeneration reached for this month.') ||
                     e.code === 'ServiceQuotaExceededException')
             ) {
                 throw new CodeIterationLimitError()
