@@ -56,7 +56,6 @@ describe('SchemaService', function () {
             schema: 'sam',
         })
         await service.processUpdates()
-        assert.ok(stub.firstCall.args[0])
         assert(stub.firstCall.calledWithExactly(fooUri, cfnSchema))
         assert(stub.secondCall.calledWithExactly(barUri, samSchema))
     })
