@@ -9,6 +9,7 @@ import {
     ListFeatureEvaluationsRequest,
     ListFeatureEvaluationsResponse,
 } from '../codewhisperer/client/codewhispereruserclient'
+import * as vscode from 'vscode'
 import { codeWhispererClient as client } from '../codewhisperer/client/codewhisperer'
 import { AuthUtil } from '../codewhisperer/util/authUtil'
 import { getLogger } from './logger'
@@ -152,6 +153,8 @@ export class FeatureConfigProvider {
                         )
                         this.featureConfigs.delete(Features.customizationArnOverride)
                     }
+
+                    await vscode.commands.executeCommand('aws.amazonq.refreshStatusBar')
                 }
             }
             if (Auth.instance.isInternalAmazonUser()) {
