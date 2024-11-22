@@ -1,3 +1,17 @@
+## 1.37.0 2024-11-22
+
+- **Bug Fix** Amazon Q Feature Dev: display limit reached error message
+- **Bug Fix** Amazon Q chat: `@workspace` command shown in all tab types
+- **Bug Fix** Chat container exceeds width of container
+- **Bug Fix** amazon q inline: skip indexing when no workspace folders are found
+- **Bug Fix** file details and name unneccessary cropping
+- **Bug Fix** Amazon Q /dev: update diff window behavior after a change is accepted
+- **Feature** Amazon Q /dev: support `.gradle` files
+- **Feature** Code Transform: Enable support for Java 17 projects.
+- **Feature** Notifications: Support for delivering critical alerts and product updates
+- **Feature** Retrieve and display a customization name when a customization is overridden in an AB test
+- **Feature** Feature(Amazon Q Code Transformation): support conversions of embedded SQL from Oracle to PostgreSQL
+
 ## 1.36.0 2024-11-14
 
 - **Bug Fix** Fix broken inline suggestion auto-trigger on Systemverfilog files if users dont have systemverilog extension installed and enabled
