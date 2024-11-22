@@ -320,19 +320,24 @@ describe('SsoAccessTokenProvider', function () {
             const resp = sut
                 .createToken()
                 .then(() => assert.fail('Should not resolve'))
-                .catch((e) => assert.ok(e instanceof ToolkitError))
+                .catch((e) => {
+                    assert.ok(
+                        e instanceof ToolkitError &&
+                            e.message === 'Timed-out waiting for browser login flow to complete'
+                    )
+                })
 
             const progress = await getTestWindow().waitForMessage(/login page opened/i)
             await clock.tickAsync(750)
             assert.ok(progress.visible)
             await clock.tickAsync(750)
             assert.ok(!progress.visible)
+            await resp
             assertTelemetry('aws_loginWithBrowser', {
                 result: 'Failed',
                 isReAuth: undefined,
                 credentialStartUrl: startUrl,
             })
-            await resp
         })
 
         /**
