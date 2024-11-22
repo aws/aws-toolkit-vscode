@@ -13,7 +13,7 @@ import { getCache } from '../../../auth/sso/cache'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../../shared/filesystemUtilities'
 import { ClientRegistration, SsoProfile, SsoToken, proceedToBrowser } from '../../../auth/sso/model'
 import { OidcClient } from '../../../auth/sso/clients'
-import { CancellationError } from '../../../shared/utilities/timeoutUtils'
+import { CancellationError, sleep } from '../../../shared/utilities/timeoutUtils'
 import {
     AuthorizationPendingException,
     InternalServerException,
@@ -81,8 +81,9 @@ describe('SsoAccessTokenProvider', function () {
         clock = installFakeClock()
     })
 
-    after(function () {
+    after(async function () {
         clock.uninstall()
+        await sleep(3000)
     })
 
     beforeEach(async function () {
@@ -317,7 +318,8 @@ describe('SsoAccessTokenProvider', function () {
             oidcClient.createToken.rejects(exception)
             oidcClient.startDeviceAuthorization.resolves(authorization)
 
-            sut.createToken()
+            const resp = sut
+                .createToken()
                 .then(() => assert.fail('Should not resolve'))
                 .catch((e) => assert.ok(e instanceof ToolkitError))
 
@@ -331,6 +333,7 @@ describe('SsoAccessTokenProvider', function () {
                 isReAuth: undefined,
                 credentialStartUrl: startUrl,
             })
+            await resp
         })
 
         /**
