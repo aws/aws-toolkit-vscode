@@ -18,6 +18,10 @@ export function getIconCode(instance: SafeEc2Instance) {
         return 'circle-slash'
     }
 
+    if (instance.LastSeenStatus === 'terminated') {
+        return 'stop'
+    }
+
     return 'loading~spin'
 }
 
