@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "EC2: terminated instances no longer show pending icon"
+}
