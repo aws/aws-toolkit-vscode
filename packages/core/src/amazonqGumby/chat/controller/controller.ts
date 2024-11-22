@@ -430,6 +430,8 @@ export class GumbyController {
         const oneOrMultipleDiffsSelection = message.formSelectedValues['GumbyTransformOneOrMultipleDiffsForm']
         if (oneOrMultipleDiffsSelection === CodeWhispererConstants.multipleDiffsMessage) {
             transformByQState.setMultipleDiffs(true)
+        } else {
+            transformByQState.setMultipleDiffs(false)
         }
         this.messenger.sendOneOrMultipleDiffsMessage(oneOrMultipleDiffsSelection, message.tabID)
         // perform local build
