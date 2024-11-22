@@ -99,7 +99,7 @@ export async function fetchSupplementalContextForSrc(
 
                 return result
             },
-            { timeout: supplementalContextTimeoutInMs, interval: 5, truthy: false }
+            { timeout: supplementalContextTimeoutInMs, interval: 5 }
         )
 
         return {
@@ -113,7 +113,7 @@ export async function fetchSupplementalContextForSrc(
         async function () {
             return await fetchOpentabsContext(editor, cancellationToken)
         },
-        { timeout: supplementalContextTimeoutInMs, interval: 5, truthy: false }
+        { timeout: supplementalContextTimeoutInMs, interval: 5 }
     )
 
     // global bm25 without repomap
@@ -122,7 +122,7 @@ export async function fetchSupplementalContextForSrc(
             async function () {
                 return await fetchProjectContext(editor, 'bm25')
             },
-            { timeout: supplementalContextTimeoutInMs, interval: 5, truthy: false }
+            { timeout: supplementalContextTimeoutInMs, interval: 5 }
         )
 
         const [projectContext, opentabsContext] = await Promise.all([projectBM25Promise, opentabsContextPromise])
@@ -144,7 +144,7 @@ export async function fetchSupplementalContextForSrc(
         async function () {
             return await fetchProjectContext(editor, 'default')
         },
-        { timeout: supplementalContextTimeoutInMs, interval: 5, truthy: false }
+        { timeout: supplementalContextTimeoutInMs, interval: 5 }
     )
 
     const [projectContext, opentabsContext] = await Promise.all([
