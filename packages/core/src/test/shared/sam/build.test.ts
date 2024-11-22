@@ -4,7 +4,11 @@
  */
 
 import * as vscode from 'vscode'
-import { globals } from '../../../shared'
+import { globals, ToolkitError } from '../../../shared'
+import * as SamUtilsModule from '../../../shared/sam/utils'
+import * as ProcessTerminalUtils from '../../../shared/sam/processTerminal'
+import * as ResolveEnvModule from '../../../shared/env/resolveEnv'
+import * as ProcessUtilsModule from '../../../shared/utilities/processUtils'
 import { AppNode } from '../../../awsService/appBuilder/explorer/nodes/appNode'
 import {
     BuildParams,
@@ -12,6 +16,7 @@ import {
     createParamsSourcePrompter,
     getBuildFlags,
     ParamsSource,
+    runBuild,
 } from '../../../shared/sam/build'
 import { TreeNode } from '../../../shared/treeview/resourceTreeDataProvider'
 import { createWizardTester } from '../wizards/wizardTestUtils'
@@ -21,9 +26,14 @@ import { getProjectRootUri } from '../../../shared/sam/utils'
 import sinon from 'sinon'
 import { createMultiPick, DataQuickPickItem } from '../../../shared/ui/pickerPrompter'
 import * as config from '../../../shared/sam/config'
+import { PrompterTester } from '../wizards/prompterTester'
+import { getWorkspaceFolder, TestFolder } from '../../testUtil'
+import { samconfigCompleteData, validTemplateData } from './samTestUtils'
+import { CloudFormationTemplateRegistry } from '../../../shared/fs/templateRegistry'
 import { getTestWindow } from '../vscode/window'
+import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 
-describe('BuildWizard', async function () {
+describe('SAM BuildWizard', async function () {
     const createTester = async (params?: Partial<BuildParams>, arg?: TreeNode | undefined) =>
         createWizardTester(new BuildWizard({ ...params }, await globals.templateRegistry, arg))
 
@@ -72,147 +82,470 @@ describe('BuildWizard', async function () {
     })
 })
 
-describe('getBuildFlags', () => {
-    let sandbox: sinon.SinonSandbox
-    let projectRoot: vscode.Uri
-    const defaultFlags: string[] = ['--cached', '--parallel', '--save-params', '--use-container']
-    let quickPickItems: DataQuickPickItem<string>[]
+describe('SAM build helper functions', () => {
+    describe('getBuildFlags', () => {
+        let sandbox: sinon.SinonSandbox
+        let projectRoot: vscode.Uri
+        const defaultFlags: string[] = ['--cached', '--parallel', '--save-params', '--use-container']
+        let quickPickItems: DataQuickPickItem<string>[]
 
-    beforeEach(() => {
-        sandbox = sinon.createSandbox()
-        projectRoot = vscode.Uri.parse('file:///path/to/project')
-        quickPickItems = [
-            {
-                label: 'Beta features',
-                data: '--beta-features',
-                description: 'Enable beta features',
-            },
-            {
-                label: 'Build in source',
-                data: '--build-in-source',
-                description: 'Opts in to build project in the source folder',
-            },
-            {
-                label: 'Cached',
-                data: '--cached',
-                description: 'Reuse build artifacts that have not changed from previous builds',
-            },
-            {
-                label: 'Debug',
-                data: '--debug',
-                description: 'Turn on debug logging to print debug messages and display timestamps',
-            },
-            {
-                label: 'Parallel',
-                data: '--parallel',
-                description: 'Enable parallel builds for AWS SAM template functions and layers',
-            },
-            {
-                label: 'Skip prepare infra',
-                data: '--skip-prepare-infra',
-                description: 'Skip preparation stage when there are no infrastructure changes',
-            },
-            {
-                label: 'Skip pull image',
-                data: '--skip-pull-image',
-                description: 'Skip pulling down the latest Docker image for Lambda runtime',
-            },
-            {
-                label: 'Use container',
-                data: '--use-container',
-                description: 'Build functions with an AWS Lambda-like container',
-            },
-            {
-                label: 'Save parameters',
-                data: '--save-params',
-                description: 'Save to samconfig.toml as default parameters',
-            },
-        ]
-    })
-
-    afterEach(() => {
-        sandbox.restore() // Restore all stubs after each test
-    })
-
-    it('should return flags from buildFlagsPrompter when paramsSource is Specify', async () => {
-        getTestWindow().onDidShowQuickPick(async (picker) => {
-            await picker.untilReady()
-            assert.strictEqual(picker.items.length, 9)
-            assert.strictEqual(picker.title, 'Select build flags')
-            assert.deepStrictEqual(picker.items, quickPickItems)
-            const betaFeatures = picker.items[0]
-            const buildInSource = picker.items[1]
-            const cached = picker.items[2]
-            assert.strictEqual(betaFeatures.data, '--beta-features')
-            assert.strictEqual(buildInSource.data, '--build-in-source')
-            assert.strictEqual(cached.data, '--cached')
-            const acceptedItems = [betaFeatures, buildInSource, cached]
-            picker.acceptItems(...acceptedItems)
+        beforeEach(() => {
+            sandbox = sinon.createSandbox()
+            projectRoot = vscode.Uri.parse('file:///path/to/project')
+            quickPickItems = [
+                {
+                    label: 'Beta features',
+                    data: '--beta-features',
+                    description: 'Enable beta features',
+                },
+                {
+                    label: 'Build in source',
+                    data: '--build-in-source',
+                    description: 'Opts in to build project in the source folder',
+                },
+                {
+                    label: 'Cached',
+                    data: '--cached',
+                    description: 'Reuse build artifacts that have not changed from previous builds',
+                },
+                {
+                    label: 'Debug',
+                    data: '--debug',
+                    description: 'Turn on debug logging to print debug messages and display timestamps',
+                },
+                {
+                    label: 'Parallel',
+                    data: '--parallel',
+                    description: 'Enable parallel builds for AWS SAM template functions and layers',
+                },
+                {
+                    label: 'Skip prepare infra',
+                    data: '--skip-prepare-infra',
+                    description: 'Skip preparation stage when there are no infrastructure changes',
+                },
+                {
+                    label: 'Skip pull image',
+                    data: '--skip-pull-image',
+                    description: 'Skip pulling down the latest Docker image for Lambda runtime',
+                },
+                {
+                    label: 'Use container',
+                    data: '--use-container',
+                    description: 'Build functions with an AWS Lambda-like container',
+                },
+                {
+                    label: 'Save parameters',
+                    data: '--save-params',
+                    description: 'Save to samconfig.toml as default parameters',
+                },
+            ]
         })
 
-        const flags = await createMultiPick(quickPickItems, {
-            title: 'Select build flags',
-            ignoreFocusOut: true,
-        }).prompt()
+        afterEach(() => {
+            sandbox.restore() // Restore all stubs after each test
+        })
 
-        assert.deepStrictEqual(flags, JSON.stringify(['--beta-features', '--build-in-source', '--cached']))
+        it('should return flags from buildFlagsPrompter when paramsSource is Specify', async () => {
+            PrompterTester.init()
+                .handleQuickPick('Select build flags', async (picker) => {
+                    await picker.untilReady()
+                    assert.strictEqual(picker.items.length, 9)
+                    assert.strictEqual(picker.title, 'Select build flags')
+                    assert.deepStrictEqual(picker.items, quickPickItems)
+                    const betaFeatures = picker.items[0]
+                    const buildInSource = picker.items[1]
+                    const cached = picker.items[2]
+                    assert.strictEqual(betaFeatures.data, '--beta-features')
+                    assert.strictEqual(buildInSource.data, '--build-in-source')
+                    assert.strictEqual(cached.data, '--cached')
+                    const acceptedItems = [betaFeatures, buildInSource, cached]
+                    picker.acceptItems(...acceptedItems)
+                })
+                .build()
+
+            const flags = await createMultiPick(quickPickItems, {
+                title: 'Select build flags',
+                ignoreFocusOut: true,
+            }).prompt()
+
+            assert.deepStrictEqual(flags, JSON.stringify(['--beta-features', '--build-in-source', '--cached']))
+        })
+
+        it('should return config file flag when paramsSource is SamConfig', async () => {
+            const mockConfigFileUri = vscode.Uri.parse('file:///path/to/samconfig.toml')
+            const getConfigFileUriStub = sandbox.stub().resolves(mockConfigFileUri)
+            sandbox.stub(config, 'getConfigFileUri').callsFake(getConfigFileUriStub)
+
+            const flags = await getBuildFlags(ParamsSource.SamConfig, projectRoot, defaultFlags)
+            assert.deepStrictEqual(flags, ['--config-file', mockConfigFileUri.fsPath])
+        })
+
+        it('should return default flags if getConfigFileUri throws an error', async () => {
+            const getConfigFileUriStub = sinon.stub().rejects(new Error('Config file not found'))
+            sandbox.stub(config, 'getConfigFileUri').callsFake(getConfigFileUriStub)
+
+            const flags = await getBuildFlags(ParamsSource.SamConfig, projectRoot, defaultFlags)
+            assert.deepStrictEqual(flags, defaultFlags)
+        })
     })
 
-    it('should return config file flag when paramsSource is SamConfig', async () => {
-        const mockConfigFileUri = vscode.Uri.parse('file:///path/to/samconfig.toml')
-        const getConfigFileUriStub = sandbox.stub().resolves(mockConfigFileUri)
-        sandbox.stub(config, 'getConfigFileUri').callsFake(getConfigFileUriStub)
+    describe('createParamsSourcePrompter', () => {
+        it('should return a prompter with the correct items with no valid samconfig', () => {
+            const expectedItems: DataQuickPickItem<ParamsSource>[] = [
+                {
+                    label: 'Specify build flags',
+                    data: ParamsSource.Specify,
+                },
+                {
+                    label: 'Use default values',
+                    data: ParamsSource.DefaultValues,
+                    description: 'cached = true, parallel = true, use_container = true',
+                },
+            ]
+            const prompter = createParamsSourcePrompter(false)
+            const quickPick = prompter.quickPick
+            assert.strictEqual(quickPick.title, 'Specify parameter source for build')
+            assert.strictEqual(quickPick.placeholder, 'Select configuration options for sam build')
+            assert.strictEqual(quickPick.items.length, 2)
+            assert.deepStrictEqual(quickPick.items, expectedItems)
+        })
 
-        const flags = await getBuildFlags(ParamsSource.SamConfig, projectRoot, defaultFlags)
-        assert.deepStrictEqual(flags, ['--config-file', mockConfigFileUri.fsPath])
-    })
-
-    it('should return default flags if getConfigFileUri throws an error', async () => {
-        const getConfigFileUriStub = sinon.stub().rejects(new Error('Config file not found'))
-        sandbox.stub(config, 'getConfigFileUri').callsFake(getConfigFileUriStub)
-
-        const flags = await getBuildFlags(ParamsSource.SamConfig, projectRoot, defaultFlags)
-        assert.deepStrictEqual(flags, defaultFlags)
+        it('should return a prompter with the correct items with valid samconfig', () => {
+            const expectedItems: DataQuickPickItem<ParamsSource>[] = [
+                {
+                    label: 'Specify build flags',
+                    data: ParamsSource.Specify,
+                },
+                {
+                    label: 'Use default values from samconfig',
+                    data: ParamsSource.SamConfig,
+                },
+            ]
+            const prompter = createParamsSourcePrompter(true)
+            const quickPick = prompter.quickPick
+            assert.strictEqual(quickPick.title, 'Specify parameter source for build')
+            assert.strictEqual(quickPick.placeholder, 'Select configuration options for sam build')
+            assert.strictEqual(quickPick.items.length, 2)
+            assert.deepStrictEqual(quickPick.items, expectedItems)
+        })
     })
 })
 
-describe('createParamsSourcePrompter', () => {
-    it('should return a prompter with the correct items with no valid samconfig', () => {
-        const expectedItems: DataQuickPickItem<ParamsSource>[] = [
-            {
-                label: 'Specify build flags',
-                data: ParamsSource.Specify,
-            },
-            {
-                label: 'Use default values',
-                data: ParamsSource.DefaultValues,
-                description: 'cached = true, parallel = true, use_container = true',
-            },
-        ]
-        const prompter = createParamsSourcePrompter(false)
-        const quickPick = prompter.quickPick
-        assert.strictEqual(quickPick.title, 'Specify parameters for build')
-        assert.strictEqual(quickPick.placeholder, 'Select configuration options for sam build')
-        assert.strictEqual(quickPick.items.length, 2)
-        assert.deepStrictEqual(quickPick.items, expectedItems)
+describe('SAM runBuild', () => {
+    let sandbox: sinon.SinonSandbox
+    let testFolder: TestFolder
+    let projectRoot: vscode.Uri
+    let workspaceFolder: vscode.WorkspaceFolder
+    let templateFile: vscode.Uri
+
+    let mockGetSpawnEnv: sinon.SinonStub
+    let mockGetSamCliPath: sinon.SinonStub
+    let mockChildProcessClass: sinon.SinonStub
+    let mockSamBuildChildProcess: sinon.SinonStub
+
+    let spyRunInterminal: sinon.SinonSpy
+
+    let registry: CloudFormationTemplateRegistry
+
+    // Dependency clients
+    beforeEach(async function () {
+        testFolder = await TestFolder.create()
+        projectRoot = vscode.Uri.file(testFolder.path)
+        workspaceFolder = getWorkspaceFolder(testFolder.path)
+        sandbox = sinon.createSandbox()
+        registry = await globals.templateRegistry
+
+        // Create template.yaml in temporary test folder and add to registery
+        templateFile = vscode.Uri.file(await testFolder.write('template.yaml', validTemplateData))
+        await registry.addItem(templateFile)
+
+        spyRunInterminal = sandbox.spy(ProcessTerminalUtils, 'runInTerminal')
+
+        mockGetSpawnEnv = sandbox.stub(ResolveEnvModule, 'getSpawnEnv').callsFake(
+            sandbox.stub().resolves({
+                AWS_TOOLING_USER_AGENT: 'AWS-Toolkit-For-VSCode/testPluginVersion',
+                SAM_CLI_TELEMETRY: '0',
+            })
+        )
     })
 
-    it('should return a prompter with the correct items with valid samconfig', () => {
-        const expectedItems: DataQuickPickItem<ParamsSource>[] = [
-            {
-                label: 'Specify build flags',
-                data: ParamsSource.Specify,
-            },
-            {
-                label: 'Use default values from samconfig',
-                data: ParamsSource.SamConfig,
-            },
-        ]
-        const prompter = createParamsSourcePrompter(true)
-        const quickPick = prompter.quickPick
-        assert.strictEqual(quickPick.title, 'Specify parameters for build')
-        assert.strictEqual(quickPick.placeholder, 'Select configuration options for sam build')
-        assert.strictEqual(quickPick.items.length, 2)
-        assert.deepStrictEqual(quickPick.items, expectedItems)
+    afterEach(() => {
+        sandbox.restore()
+        registry.reset()
+    })
+
+    describe(':) path', () => {
+        beforeEach(() => {
+            mockGetSamCliPath = sandbox
+                .stub(SamUtilsModule, 'getSamCliPathAndVersion')
+                .callsFake(sandbox.stub().resolves({ path: 'sam-cli-path' }))
+
+            // Mock  child process with required properties that get called in ProcessTerminal
+            mockSamBuildChildProcess = Object.create(ProcessUtilsModule.ChildProcess.prototype, {
+                stopped: { get: sandbox.stub().returns(false) },
+                stop: { value: sandbox.stub().resolves({}) },
+                run: {
+                    value: sandbox.stub().resolves({
+                        exitCode: 0,
+                        stdout: 'Mock successful build command execution ',
+                        stderr: '',
+                    }),
+                },
+            })
+            mockChildProcessClass = sandbox.stub(ProcessUtilsModule, 'ChildProcess').returns(mockSamBuildChildProcess)
+        })
+
+        afterEach(() => {
+            sandbox.restore()
+        })
+
+        const verifyCorrectDependencyCall = () => {
+            assert(mockGetSamCliPath.calledOnce)
+            assert(mockChildProcessClass.calledOnce)
+            assert(mockGetSpawnEnv.calledOnce)
+            assert(spyRunInterminal.calledOnce)
+            assert.deepEqual(spyRunInterminal.getCall(0).args, [mockSamBuildChildProcess, 'build'])
+        }
+
+        it('[entry: command palette] with specify flags should instantiate correct process in terminal', async () => {
+            const prompterTester = PrompterTester.init()
+                .handleQuickPick('Select a SAM/CloudFormation Template', async (quickPick) => {
+                    await quickPick.untilReady()
+                    assert.strictEqual(quickPick.items[0].label, templateFile.fsPath)
+                    quickPick.acceptItem(quickPick.items[0])
+                })
+                .handleQuickPick('Specify parameter source for build', async (quickPick) => {
+                    // Need sometime to wait for the template to search for template file
+                    await quickPick.untilReady()
+                    assert.strictEqual(quickPick.items.length, 2)
+                    const items = quickPick.items
+                    assert.deepStrictEqual(items[0], { data: ParamsSource.Specify, label: 'Specify build flags' })
+                    assert.deepStrictEqual(items[1], {
+                        label: 'Use default values',
+                        data: ParamsSource.DefaultValues,
+                        description: 'cached = true, parallel = true, use_container = true',
+                    })
+                    quickPick.acceptItem(quickPick.items[0])
+                })
+                .handleQuickPick('Select build flags', async (quickPick) => {
+                    await quickPick.untilReady()
+
+                    assert.strictEqual(quickPick.items.length, 9)
+                    const item1 = quickPick.items[2] as DataQuickPickItem<string>
+                    const item2 = quickPick.items[3] as DataQuickPickItem<string>
+                    const item3 = quickPick.items[7] as DataQuickPickItem<string>
+                    const item4 = quickPick.items[8] as DataQuickPickItem<string>
+
+                    assert.deepStrictEqual(item1, {
+                        label: 'Cached',
+                        data: '--cached',
+                        description: 'Reuse build artifacts that have not changed from previous builds',
+                    })
+                    assert.deepStrictEqual(item2, {
+                        label: 'Debug',
+                        data: '--debug',
+                        description: 'Turn on debug logging to print debug messages and display timestamps',
+                    })
+                    assert.deepStrictEqual(item3, {
+                        label: 'Use container',
+                        data: '--use-container',
+                        description: 'Build functions with an AWS Lambda-like container',
+                    })
+                    assert.deepStrictEqual(item4, {
+                        label: 'Save parameters',
+                        data: '--save-params',
+                        description: 'Save to samconfig.toml as default parameters',
+                    })
+                    quickPick.acceptItems(item1, item2, item3, item4)
+                })
+                .build()
+
+            // Invoke sync command from command palette
+            await runBuild()
+
+            assert.deepEqual(mockChildProcessClass.getCall(0).args, [
+                'sam-cli-path',
+                [
+                    'build',
+                    '--cached',
+                    '--debug',
+                    '--use-container',
+                    '--save-params',
+                    '--template',
+                    `${templateFile.fsPath}`,
+                ],
+                {
+                    spawnOptions: {
+                        cwd: projectRoot?.fsPath,
+                        env: {
+                            AWS_TOOLING_USER_AGENT: 'AWS-Toolkit-For-VSCode/testPluginVersion',
+                            SAM_CLI_TELEMETRY: '0',
+                        },
+                    },
+                },
+            ])
+            prompterTester.assertCallAll()
+            verifyCorrectDependencyCall()
+        })
+
+        it('[entry: appbuilder node] with default flags should instantiate correct process in terminal', async () => {
+            const prompterTester = PrompterTester.init()
+                .handleQuickPick('Specify parameter source for build', async (quickPick) => {
+                    // Need sometime to wait for the template to search for template file
+                    await quickPick.untilReady()
+
+                    assert.strictEqual(quickPick.items.length, 2)
+                    const items = quickPick.items
+                    assert.strictEqual(quickPick.items.length, 2)
+                    assert.deepStrictEqual(items[0], { data: ParamsSource.Specify, label: 'Specify build flags' })
+                    assert.deepStrictEqual(items[1].label, 'Use default values')
+                    quickPick.acceptItem(quickPick.items[1])
+                })
+                .build()
+
+            // Invoke sync command from command palette
+            const expectedSamAppLocation = {
+                workspaceFolder: workspaceFolder,
+                samTemplateUri: templateFile,
+                projectRoot: projectRoot,
+            }
+
+            await runBuild(new AppNode(expectedSamAppLocation))
+
+            assert.deepEqual(mockChildProcessClass.getCall(0).args, [
+                'sam-cli-path',
+                [
+                    'build',
+                    '--cached',
+                    '--parallel',
+                    '--save-params',
+                    '--use-container',
+                    '--template',
+                    `${templateFile.fsPath}`,
+                ],
+                {
+                    spawnOptions: {
+                        cwd: projectRoot?.fsPath,
+                        env: {
+                            AWS_TOOLING_USER_AGENT: 'AWS-Toolkit-For-VSCode/testPluginVersion',
+                            SAM_CLI_TELEMETRY: '0',
+                        },
+                    },
+                },
+            ])
+            verifyCorrectDependencyCall()
+            prompterTester.assertCallAll()
+        })
+
+        it('[entry: command palette] use samconfig should instantiate correct process in terminal', async () => {
+            const samconfigFile = vscode.Uri.file(await testFolder.write('samconfig.toml', samconfigCompleteData))
+
+            const prompterTester = PrompterTester.init()
+                .handleQuickPick('Select a SAM/CloudFormation Template', async (quickPick) => {
+                    await quickPick.untilReady()
+                    assert.strictEqual(quickPick.items[0].label, templateFile.fsPath)
+                    quickPick.acceptItem(quickPick.items[0])
+                })
+                .handleQuickPick('Specify parameter source for build', async (quickPick) => {
+                    // Need sometime to wait for the template to search for template file
+                    await quickPick.untilReady()
+
+                    assert.strictEqual(quickPick.items.length, 2)
+                    const items = quickPick.items
+
+                    assert.deepStrictEqual(items[1], {
+                        label: 'Use default values from samconfig',
+                        data: ParamsSource.SamConfig,
+                    })
+                    quickPick.acceptItem(quickPick.items[1])
+                })
+                .build()
+
+            await runBuild()
+
+            assert.deepEqual(mockChildProcessClass.getCall(0).args, [
+                'sam-cli-path',
+                ['build', '--config-file', `${samconfigFile.fsPath}`, '--template', `${templateFile.fsPath}`],
+                {
+                    spawnOptions: {
+                        cwd: projectRoot?.fsPath,
+                        env: {
+                            AWS_TOOLING_USER_AGENT: 'AWS-Toolkit-For-VSCode/testPluginVersion',
+                            SAM_CLI_TELEMETRY: '0',
+                        },
+                    },
+                },
+            ])
+            verifyCorrectDependencyCall()
+            prompterTester.assertCallAll()
+        })
+    })
+
+    describe(':( path', () => {
+        let appNode: AppNode
+        beforeEach(async () => {
+            mockGetSamCliPath = sandbox
+                .stub(SamUtilsModule, 'getSamCliPathAndVersion')
+                .callsFake(sandbox.stub().resolves({ path: 'sam-cli-path' }))
+
+            appNode = new AppNode({
+                workspaceFolder: workspaceFolder,
+                samTemplateUri: templateFile,
+                projectRoot: projectRoot,
+            })
+            await testFolder.write('samconfig.toml', samconfigCompleteData)
+        })
+
+        afterEach(() => {
+            sandbox.restore()
+        })
+
+        it('should abort when customer cancel build wizard', async () => {
+            getTestWindow().onDidShowQuickPick(async (picker) => {
+                await picker.untilReady()
+                picker.dispose()
+            })
+
+            try {
+                await runBuild(appNode)
+                assert.fail('should have thrown CancellationError')
+            } catch (error: any) {
+                assert(error instanceof CancellationError)
+                assert.strictEqual(error.agent, 'user')
+            }
+        })
+
+        it('should throw ToolkitError when sync command fail', async () => {
+            const prompterTester = PrompterTester.init()
+                .handleQuickPick('Specify parameter source for build', async (quickPick) => {
+                    await quickPick.untilReady()
+                    assert.deepStrictEqual(quickPick.items[1].label, 'Use default values from samconfig')
+                    quickPick.acceptItem(quickPick.items[1])
+                })
+                .build()
+
+            // Mock  child process with required properties that get called in ProcessTerminal
+            mockSamBuildChildProcess = Object.create(ProcessUtilsModule.ChildProcess.prototype, {
+                stopped: { get: sandbox.stub().returns(false) },
+                stop: { value: sandbox.stub().resolves({}) },
+                run: {
+                    value: sandbox.stub().resolves({
+                        exitCode: -1,
+                        stdout: 'Mock build command execution failure',
+                        stderr: '',
+                    }),
+                },
+            })
+            mockChildProcessClass = sandbox.stub(ProcessUtilsModule, 'ChildProcess').returns(mockSamBuildChildProcess)
+
+            try {
+                await runBuild(appNode)
+                assert.fail('should have thrown ToolkitError')
+            } catch (error: any) {
+                assert(error instanceof ToolkitError)
+                assert.strictEqual(error.message, 'Failed to build SAM template')
+            }
+            prompterTester.assertCallAll()
+        })
     })
 })

@@ -28,9 +28,14 @@ describe('utils', async function () {
                 InstanceId: 'XX',
                 LastSeenStatus: 'stopped',
             }
+            const terminatedInstance: SafeEc2Instance = {
+                InstanceId: 'XXX',
+                LastSeenStatus: 'terminated',
+            }
 
             assert.strictEqual(getIconCode(runningInstance), 'pass')
             assert.strictEqual(getIconCode(stoppedInstance), 'circle-slash')
+            assert.strictEqual(getIconCode(terminatedInstance), 'stop')
         })
 
         it('defaults to loading~spin', function () {

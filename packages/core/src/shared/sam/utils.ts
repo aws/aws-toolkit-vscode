@@ -8,13 +8,16 @@ import * as path from 'path'
 import { AWSTreeNodeBase } from '../treeview/nodes/awsTreeNodeBase'
 import { TreeNode, isTreeNode } from '../treeview/resourceTreeDataProvider'
 import * as CloudFormation from '../cloudformation/cloudformation'
-import { TemplateItem } from './sync'
+import { TemplateItem } from '../ui/sam/templatePrompter'
 import { RuntimeFamily, getFamily } from '../../lambda/models/samLambdaRuntime'
-import { telemetry } from '../telemetry'
-import { ToolkitError } from '../errors'
 import { SamCliSettings } from './cli/samCliSettings'
+import { ToolkitError } from '../errors'
 import { SamCliInfoInvocation } from './cli/samCliInfo'
 import { parse } from 'semver'
+import { telemetry } from '../telemetry/telemetry'
+import globals from '../extensionGlobals'
+import { getLogger } from '../logger/logger'
+import { ChildProcessResult } from '../utilities/processUtils'
 
 /**
  * @description determines the root directory of the project given Template Item
@@ -82,4 +85,58 @@ export async function getSamCliPathAndVersion() {
     }
 
     return { path: samCliPath, parsedVersion }
+}
+
+export function getRecentResponse(mementoRootKey: string, identifier: string, key: string): string | undefined {
+    const root = globals.context.workspaceState.get(mementoRootKey, {} as Record<string, Record<string, string>>)
+    return root[identifier]?.[key]
+}
+
+export async function updateRecentResponse(
+    mementoRootKey: string,
+    identifier: string,
+    key: string,
+    value: string | undefined
+) {
+    try {
+        const root = globals.context.workspaceState.get(mementoRootKey, {} as Record<string, Record<string, string>>)
+        await globals.context.workspaceState.update(mementoRootKey, {
+            ...root,
+            [identifier]: { ...root[identifier], [key]: value },
+        })
+    } catch (err) {
+        getLogger().warn(`sam: unable to save response at key "${key}": %s`, err)
+    }
+}
+export function getSamCliErrorMessage(stderr: string): string {
+    // Split the stderr string by newline, filter out empty lines, and get the last line
+    const lines = stderr
+        .trim()
+        .split('\n')
+        .filter((line) => line.trim() !== '')
+    return lines[lines.length - 1]
+}
+
+export function getErrorCode(error: unknown): string | undefined {
+    return error instanceof ToolkitError ? error.code : undefined
+}
+
+export function throwIfErrorMatches(result: ChildProcessResult) {
+    const errorMessage = getSamCliErrorMessage(result.stderr)
+    for (const errorType in SamCliErrorTypes) {
+        if (errorMessage.includes(SamCliErrorTypes[errorType as keyof typeof SamCliErrorTypes])) {
+            throw ToolkitError.chain(result.error, errorMessage, {
+                code: errorType,
+            })
+        }
+    }
+}
+
+export enum SamCliErrorTypes {
+    DockerUnreachable = 'Docker is unreachable.',
+    ResolveS3AndS3Set = 'Cannot use both --resolve-s3 and --s3-bucket parameters in non-guided deployments.',
+    DeployStackStatusMissing = 'Was not able to find a stack with the name:',
+    DeployStackOutPutFailed = 'Failed to get outputs from stack',
+    DeployBucketRequired = 'Templates with a size greater than 51,200 bytes must be deployed via an S3 Bucket.',
+    ChangeSetEmpty = 'is up to date',
 }

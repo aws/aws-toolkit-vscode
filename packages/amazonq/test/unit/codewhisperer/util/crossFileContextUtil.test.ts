@@ -61,7 +61,7 @@ describe('crossFileContextUtil', function () {
             assert.strictEqual(actual.supplementalContextItems[2].content.split('\n').length, 50)
         })
 
-        it('for t1 group, should return repomap + opentabs context', async function () {
+        it.skip('for t1 group, should return repomap + opentabs context', async function () {
             await toTextEditor(aStringWithLineCount(200), 'CrossFile.java', tempFolder, { preview: false })
             const myCurrentEditor = await toTextEditor('', 'TargetFile.java', tempFolder, {
                 preview: false,

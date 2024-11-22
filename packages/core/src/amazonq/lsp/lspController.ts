@@ -23,14 +23,6 @@ import { isWeb } from '../../shared/extensionGlobals'
 import { getUserAgent } from '../../shared/telemetry/util'
 import { isAmazonInternalOs } from '../../shared/vscode/env'
 
-function getProjectPaths() {
-    const workspaceFolders = vscode.workspace.workspaceFolders
-    if (!workspaceFolders || workspaceFolders.length === 0) {
-        throw new ToolkitError('No workspace folders found')
-    }
-    return workspaceFolders.map((folder) => folder.uri.fsPath)
-}
-
 export interface Chunk {
     readonly filePath: string
     readonly content: string
@@ -66,7 +58,7 @@ export interface Manifest {
 }
 const manifestUrl = 'https://aws-toolkit-language-servers.amazonaws.com/q-context/manifest.json'
 // this LSP client in Q extension is only going to work with these LSP server versions
-const supportedLspServerVersions = ['0.1.28']
+const supportedLspServerVersions = ['0.1.29']
 
 const nodeBinName = process.platform === 'win32' ? 'node.exe' : 'node'
 
@@ -322,12 +314,13 @@ export class LspController {
     async buildIndex(buildIndexConfig: BuildIndexConfig) {
         getLogger().info(`LspController: Starting to build index of project`)
         const start = performance.now()
-        const projPaths = getProjectPaths()
+        const projPaths = (vscode.workspace.workspaceFolders ?? []).map((folder) => folder.uri.fsPath)
+        if (projPaths.length === 0) {
+            getLogger().info(`LspController: Skipping building index. No projects found in workspace`)
+            return
+        }
         projPaths.sort()
         try {
-            if (projPaths.length === 0) {
-                throw Error('No project')
-            }
             this._isIndexingInProgress = true
             const projRoot = projPaths[0]
             const files = await collectFilesForIndex(
@@ -340,7 +333,7 @@ export class LspController {
                 (accumulator, currentFile) => accumulator + currentFile.fileSizeBytes,
                 0
             )
-            getLogger().info(`LspController: Found ${files.length} files in current project ${getProjectPaths()}`)
+            getLogger().info(`LspController: Found ${files.length} files in current project ${projPaths}`)
             const config = buildIndexConfig.isVectorIndexEnabled ? 'all' : 'default'
             const r = files.map((f) => f.fileUri.fsPath)
             const resp = await LspClient.instance.buildIndex(r, projRoot, config)

@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { ToolkitError, getLogger, globals } from '../../shared'
+import { ToolkitError, globals } from '../../shared'
 import * as CloudFormation from '../../shared/cloudformation/cloudformation'
 import { getParameters } from '../../lambda/config/parameterUtils'
 import { DefaultCloudFormationClient } from '../clients/cloudFormationClient'
@@ -17,14 +17,23 @@ import { createCommonButtons } from '../ui/buttons'
 import { createExitPrompter } from '../ui/common/exitPrompter'
 import { createRegionPrompter } from '../ui/common/region'
 import { createInputBox } from '../ui/inputPrompter'
-import { DataQuickPickItem, createQuickPick } from '../ui/pickerPrompter'
 import { ChildProcess } from '../utilities/processUtils'
 import { CancellationError } from '../utilities/timeoutUtils'
 import { Wizard } from '../wizards/wizard'
 import { addTelemetryEnvVar } from './cli/samCliInvokerUtils'
 import { validateSamDeployConfig, SamConfig, writeSamconfigGlobal } from './config'
-import { TemplateItem, createStackPrompter, createBucketPrompter, createTemplatePrompter } from './sync'
-import { getProjectRoot, getSamCliPathAndVersion, getSource } from './utils'
+import { BucketSource, createBucketSourcePrompter, createBucketNamePrompter } from '../ui/sam/bucketPrompter'
+import { createStackPrompter } from '../ui/sam/stackPrompter'
+import { TemplateItem, createTemplatePrompter } from '../ui/sam/templatePrompter'
+import { createDeployParamsSourcePrompter, ParamsSource } from '../ui/sam/paramsSourcePrompter'
+import {
+    getErrorCode,
+    getProjectRoot,
+    getSamCliPathAndVersion,
+    getSource,
+    getRecentResponse,
+    updateRecentResponse,
+} from './utils'
 import { runInTerminal } from './processTerminal'
 
 export interface DeployParams {
@@ -39,87 +48,22 @@ export interface DeployParams {
     [key: string]: any
 }
 
-const mementoRootKey = 'samcli.deploy.params'
-export function getRecentParams(identifier: string, key: string): string | undefined {
-    const root = globals.context.workspaceState.get(mementoRootKey, {} as Record<string, Record<string, string>>)
+const deployMementoRootKey = 'samcli.deploy.params'
 
-    return root[identifier]?.[key]
-}
-
-export async function updateRecentParams(identifier: string, key: string, value: string | undefined) {
-    try {
-        const root = globals.context.workspaceState.get(mementoRootKey, {} as Record<string, Record<string, string>>)
-        await globals.context.workspaceState.update(mementoRootKey, {
-            ...root,
-            [identifier]: { ...root[identifier], [key]: value },
-        })
-    } catch (err) {
-        getLogger().warn(`sam: unable to save response at key "${key}": %s`, err)
-    }
+function getRecentDeployParams(identifier: string, key: string): string | undefined {
+    return getRecentResponse(deployMementoRootKey, identifier, key)
 }
 
 function createParamPromptProvider(name: string, defaultValue: string | undefined, templateFsPath: string = 'default') {
     return createInputBox({
         title: `Specify SAM parameter value for ${name}`,
         buttons: createCommonButtons(samDeployUrl),
-        value: getRecentParams(templateFsPath, name) ?? defaultValue,
+        value: getRecentDeployParams(templateFsPath, name) ?? defaultValue,
     })
 }
-function bucketSourcePrompter() {
-    const items: DataQuickPickItem<BucketSource>[] = [
-        {
-            label: 'Create a SAM CLI managed S3 bucket',
-            data: BucketSource.SamCliManaged,
-        },
-        {
-            label: 'Specify an S3 bucket',
-            data: BucketSource.UserProvided,
-        },
-    ]
 
-    return createQuickPick(items, {
-        title: 'Specify S3 bucket for deployment artifacts',
-        placeholder: 'Press enter to proceed with highlighted option',
-        buttons: createCommonButtons(samDeployUrl),
-    })
-}
-function paramsSourcePrompter(existValidSamconfig: boolean | undefined) {
-    const items: DataQuickPickItem<ParamsSource>[] = [
-        {
-            label: 'Specify required parameters and save as defaults',
-            data: ParamsSource.SpecifyAndSave,
-        },
-        {
-            label: 'Specify required parameters',
-            data: ParamsSource.Specify,
-        },
-    ]
-
-    if (existValidSamconfig) {
-        items.push({
-            label: 'Use default values from samconfig',
-            data: ParamsSource.SamConfig,
-        })
-    }
-
-    return createQuickPick(items, {
-        title: 'Specify parameters for deploy',
-        placeholder: 'Press enter to proceed with highlighted option',
-        buttons: createCommonButtons(samDeployUrl),
-    })
-}
 type DeployResult = {
     isSuccess: boolean
-}
-
-export enum BucketSource {
-    SamCliManaged,
-    UserProvided,
-}
-export enum ParamsSource {
-    SpecifyAndSave,
-    Specify,
-    SamConfig,
 }
 
 export class DeployWizard extends Wizard<DeployParams> {
@@ -153,7 +97,7 @@ export class DeployWizard extends Wizard<DeployParams> {
             this.form.template.setDefault(templateItem)
             this.form.projectRoot.setDefault(() => projectRootFolder)
             this.form.paramsSource.bindPrompter(async () =>
-                paramsSourcePrompter(await validateSamDeployConfig(projectRootFolder))
+                createDeployParamsSourcePrompter(await validateSamDeployConfig(projectRootFolder))
             )
 
             this.form.region.bindPrompter(() => createRegionPrompter().transform((r) => r.id), {
@@ -161,42 +105,54 @@ export class DeployWizard extends Wizard<DeployParams> {
                     paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
             })
             this.form.stackName.bindPrompter(
-                ({ region }) => createStackPrompter(new DefaultCloudFormationClient(region!)),
+                ({ region }) =>
+                    createStackPrompter(new DefaultCloudFormationClient(region!), deployMementoRootKey, samDeployUrl),
                 {
                     showWhen: ({ paramsSource }) =>
                         paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
                 }
             )
-            this.form.bucketSource.bindPrompter(() => bucketSourcePrompter(), {
+            this.form.bucketSource.bindPrompter(() => createBucketSourcePrompter(samDeployUrl), {
                 showWhen: ({ paramsSource }) =>
                     paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
             })
-            this.form.bucketName.bindPrompter(({ region }) => createBucketPrompter(new DefaultS3Client(region!)), {
-                showWhen: ({ bucketSource }) => bucketSource === BucketSource.UserProvided,
-            })
+            this.form.bucketName.bindPrompter(
+                ({ region }) =>
+                    createBucketNamePrompter(new DefaultS3Client(region!), deployMementoRootKey, samDeployUrl),
+                {
+                    showWhen: ({ bucketSource }) => bucketSource === BucketSource.UserProvided,
+                }
+            )
         } else if (this.arg && this.arg.regionCode) {
             // "Deploy" command was invoked on a regionNode.
-            this.form.template.bindPrompter(() => createTemplatePrompter(this.registry))
+            this.form.template.bindPrompter(() =>
+                createTemplatePrompter(this.registry, deployMementoRootKey, samDeployUrl)
+            )
             this.form.projectRoot.setDefault(({ template }) => getProjectRoot(template))
             this.form.paramsSource.bindPrompter(async ({ projectRoot }) => {
                 const existValidSamConfig: boolean | undefined = await validateSamDeployConfig(projectRoot)
-                return paramsSourcePrompter(existValidSamConfig)
+                return createDeployParamsSourcePrompter(existValidSamConfig)
             })
             this.form.region.setDefault(() => this.arg.regionCode)
             this.form.stackName.bindPrompter(
-                ({ region }) => createStackPrompter(new DefaultCloudFormationClient(region!)),
+                ({ region }) =>
+                    createStackPrompter(new DefaultCloudFormationClient(region!), deployMementoRootKey, samDeployUrl),
                 {
                     showWhen: ({ paramsSource }) =>
                         paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
                 }
             )
-            this.form.bucketSource.bindPrompter(() => bucketSourcePrompter(), {
+            this.form.bucketSource.bindPrompter(() => createBucketSourcePrompter(samDeployUrl), {
                 showWhen: ({ paramsSource }) =>
                     paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
             })
-            this.form.bucketName.bindPrompter(({ region }) => createBucketPrompter(new DefaultS3Client(region!)), {
-                showWhen: ({ bucketSource }) => bucketSource === BucketSource.UserProvided,
-            })
+            this.form.bucketName.bindPrompter(
+                ({ region }) =>
+                    createBucketNamePrompter(new DefaultS3Client(region!), deployMementoRootKey, samDeployUrl),
+                {
+                    showWhen: ({ bucketSource }) => bucketSource === BucketSource.UserProvided,
+                }
+            )
         } else if (this.arg && this.arg.getTreeItem().resourceUri) {
             // "Deploy" command was invoked on a TreeNode on the AppBuilder.
             const templateUri = this.arg.getTreeItem().resourceUri as vscode.Uri
@@ -206,7 +162,7 @@ export class DeployWizard extends Wizard<DeployParams> {
             this.addParameterPromptersIfApplicable(templateUri)
             this.form.template.setDefault(templateItem)
             this.form.paramsSource.bindPrompter(async () =>
-                paramsSourcePrompter(await validateSamDeployConfig(projectRootFolder))
+                createDeployParamsSourcePrompter(await validateSamDeployConfig(projectRootFolder))
             )
 
             this.form.region.bindPrompter(() => createRegionPrompter().transform((r) => r.id), {
@@ -214,46 +170,58 @@ export class DeployWizard extends Wizard<DeployParams> {
                     paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
             })
             this.form.stackName.bindPrompter(
-                ({ region }) => createStackPrompter(new DefaultCloudFormationClient(region!)),
+                ({ region }) =>
+                    createStackPrompter(new DefaultCloudFormationClient(region!), deployMementoRootKey, samDeployUrl),
                 {
                     showWhen: ({ paramsSource }) =>
                         paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
                 }
             )
-            this.form.bucketSource.bindPrompter(() => bucketSourcePrompter(), {
+            this.form.bucketSource.bindPrompter(() => createBucketSourcePrompter(samDeployUrl), {
                 showWhen: ({ paramsSource }) =>
                     paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
             })
-            this.form.bucketName.bindPrompter(({ region }) => createBucketPrompter(new DefaultS3Client(region!)), {
-                showWhen: ({ bucketSource }) => bucketSource === BucketSource.UserProvided,
-            })
+            this.form.bucketName.bindPrompter(
+                ({ region }) =>
+                    createBucketNamePrompter(new DefaultS3Client(region!), deployMementoRootKey, samDeployUrl),
+                {
+                    showWhen: ({ bucketSource }) => bucketSource === BucketSource.UserProvided,
+                }
+            )
             this.form.projectRoot.setDefault(() => getProjectRoot(templateItem))
         } else {
             // "Deploy" command was invoked on the command palette.
-            this.form.template.bindPrompter(() => createTemplatePrompter(this.registry))
+            this.form.template.bindPrompter(() =>
+                createTemplatePrompter(this.registry, deployMementoRootKey, samDeployUrl)
+            )
             this.form.projectRoot.setDefault(({ template }) => getProjectRoot(template))
             this.form.paramsSource.bindPrompter(async ({ projectRoot }) => {
                 const existValidSamConfig: boolean | undefined = await validateSamDeployConfig(projectRoot)
-                return paramsSourcePrompter(existValidSamConfig)
+                return createDeployParamsSourcePrompter(existValidSamConfig)
             })
             this.form.region.bindPrompter(() => createRegionPrompter().transform((r) => r.id), {
                 showWhen: ({ paramsSource }) =>
                     paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
             })
             this.form.stackName.bindPrompter(
-                ({ region }) => createStackPrompter(new DefaultCloudFormationClient(region!)),
+                ({ region }) =>
+                    createStackPrompter(new DefaultCloudFormationClient(region!), deployMementoRootKey, samDeployUrl),
                 {
                     showWhen: ({ paramsSource }) =>
                         paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
                 }
             )
-            this.form.bucketSource.bindPrompter(() => bucketSourcePrompter(), {
+            this.form.bucketSource.bindPrompter(() => createBucketSourcePrompter(samDeployUrl), {
                 showWhen: ({ paramsSource }) =>
                     paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
             })
-            this.form.bucketName.bindPrompter(({ region }) => createBucketPrompter(new DefaultS3Client(region!)), {
-                showWhen: ({ bucketSource }) => bucketSource === BucketSource.UserProvided,
-            })
+            this.form.bucketName.bindPrompter(
+                ({ region }) =>
+                    createBucketNamePrompter(new DefaultS3Client(region!), deployMementoRootKey, samDeployUrl),
+                {
+                    showWhen: ({ bucketSource }) => bucketSource === BucketSource.UserProvided,
+                }
+            )
         }
 
         return this
@@ -346,12 +314,14 @@ export async function runDeploy(arg: any, wizardParams?: DeployParams): Promise<
             const paramsToSet: string[] = []
             for (const name of parameterNames) {
                 if (params[name]) {
-                    await updateRecentParams(params.template.uri.fsPath, name, params[name])
+                    await updateRecentResponse(deployMementoRootKey, params.template.uri.fsPath, name, params[name])
                     paramsToSet.push(`ParameterKey=${name},ParameterValue=${params[name]}`)
                 }
             }
             paramsToSet.length > 0 && deployFlags.push('--parameter-overrides', paramsToSet.join(' '))
         }
+
+        await updateRecentResponse(deployMementoRootKey, 'global', 'templatePath', params.template.uri.fsPath)
 
         try {
             const { path: samCliPath } = await getSamCliPathAndVersion()
@@ -392,7 +362,10 @@ export async function runDeploy(arg: any, wizardParams?: DeployParams): Promise<
                 throw error
             }
         } catch (error) {
-            throw ToolkitError.chain(error, 'Failed to deploy SAM template', { details: { ...deployFlags } })
+            throw ToolkitError.chain(error, 'Failed to deploy SAM template', {
+                details: { ...deployFlags },
+                code: getErrorCode(error),
+            })
         }
         return {
             isSuccess: true,

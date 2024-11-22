@@ -7,7 +7,6 @@ import globals from '../extensionGlobals'
 
 import * as vscode from 'vscode'
 import * as path from 'path'
-import * as nls from 'vscode-nls'
 import * as localizedText from '../localizedText'
 import { DefaultS3Client } from '../clients/s3Client'
 import { Wizard } from '../wizards/wizard'
@@ -25,26 +24,34 @@ import { telemetry } from '../telemetry/telemetry'
 import { createCommonButtons } from '../ui/buttons'
 import { ToolkitPromptSettings } from '../settings'
 import { getLogger } from '../logger'
-import { getSamInitDocUrl } from '../extensionUtilities'
 import { createExitPrompter } from '../ui/common/exitPrompter'
-import { StackSummary } from 'aws-sdk/clients/cloudformation'
 import { getConfigFileUri, SamConfig, validateSamSyncConfig, writeSamconfigGlobal } from './config'
 import { cast, Optional } from '../utilities/typeConstructors'
 import { pushIf, toRecord } from '../utilities/collectionUtils'
 import { getOverriddenParameters } from '../../lambda/config/parameterUtils'
 import { addTelemetryEnvVar } from './cli/samCliInvokerUtils'
 import { samSyncParamUrl, samSyncUrl, samUpgradeUrl } from '../constants'
-import { getAwsConsoleUrl } from '../awsConsole'
 import { openUrl } from '../utilities/vsCodeUtils'
 import { showOnce } from '../utilities/messages'
 import { IamConnection } from '../../auth/connection'
 import { CloudFormationTemplateRegistry } from '../fs/templateRegistry'
 import { TreeNode } from '../treeview/resourceTreeDataProvider'
 import { getSpawnEnv } from '../env/resolveEnv'
-import { getProjectRoot, getProjectRootUri, getSamCliPathAndVersion, getSource } from './utils'
+import {
+    getProjectRoot,
+    getProjectRootUri,
+    getRecentResponse,
+    getSamCliPathAndVersion,
+    getSource,
+    getErrorCode,
+    updateRecentResponse,
+} from './utils'
+import { TemplateItem, createTemplatePrompter } from '../ui/sam/templatePrompter'
+import { createStackPrompter } from '../ui/sam/stackPrompter'
+import { ParamsSource, createSyncParamsSourcePrompter } from '../ui/sam/paramsSourcePrompter'
+import { createEcrPrompter } from '../ui/sam/ecrPrompter'
+import { BucketSource, createBucketNamePrompter, createBucketSourcePrompter } from '../ui/sam/bucketPrompter'
 import { runInTerminal } from './processTerminal'
-
-const localize = nls.loadMessageBundle()
 
 export interface SyncParams {
     readonly paramsSource: ParamsSource
@@ -61,148 +68,11 @@ export interface SyncParams {
     readonly syncFlags?: string
 }
 
-export enum ParamsSource {
-    SpecifyAndSave,
-    SamConfig,
-    Flags,
-}
-enum BucketSource {
-    SamCliManaged,
-    UserProvided,
-}
-
-export function paramsSourcePrompter(existValidSamconfig: boolean | undefined) {
-    const items: DataQuickPickItem<ParamsSource>[] = [
-        {
-            label: 'Specify required parameters and save as defaults',
-            data: ParamsSource.SpecifyAndSave,
-        },
-        {
-            label: 'Specify required parameters',
-            data: ParamsSource.Flags,
-        },
-    ]
-
-    if (existValidSamconfig) {
-        items.push({
-            label: 'Use default values from samconfig',
-            data: ParamsSource.SamConfig,
-        })
-    }
-
-    return createQuickPick(items, {
-        title: 'Specify parameters for deploy',
-        placeholder: 'Press enter to proceed with highlighted option',
-        buttons: createCommonButtons(samSyncUrl),
-    })
-}
-
-export const prefixNewBucketName = (name: string) => `newbucket:${name}`
-export const prefixNewRepoName = (name: string) => `newrepo:${name}`
-
-export function createBucketPrompter(client: DefaultS3Client) {
-    const recentBucket = getRecentResponse(client.regionCode, 'bucketName')
-    const items = client.listBucketsIterable().map((b) => [
-        {
-            label: b.Name,
-            data: b.Name as SyncParams['bucketName'],
-            recentlyUsed: b.Name === recentBucket,
-        },
-    ])
-
-    return createQuickPick(items, {
-        title: 'Select an S3 Bucket',
-        placeholder: 'Select a bucket (or enter a name to create one)',
-        buttons: createCommonButtons(samSyncUrl),
-        filterBoxInputSettings: {
-            label: 'Create a New Bucket',
-            // This is basically a hack. I need to refactor `createQuickPick` a bit.
-            transform: (v) => prefixNewBucketName(v),
-        },
-        noItemsFoundItem: {
-            label: localize(
-                'aws.cfn.noStacks',
-                'No S3 buckets for region "{0}". Enter a name to create a new one.',
-                client.regionCode
-            ),
-            data: undefined,
-            onClick: undefined,
-        },
-    })
-}
-
-const canPickStack = (s: StackSummary) => s.StackStatus.endsWith('_COMPLETE')
-const canShowStack = (s: StackSummary) =>
-    (s.StackStatus.endsWith('_COMPLETE') || s.StackStatus.endsWith('_IN_PROGRESS')) && !s.StackStatus.includes('DELETE')
-
-export function createStackPrompter(client: DefaultCloudFormationClient) {
-    const recentStack = getRecentResponse(client.regionCode, 'stackName')
-    const consoleUrl = getAwsConsoleUrl('cloudformation', client.regionCode)
-    const items = client.listAllStacks().map((stacks) =>
-        stacks.filter(canShowStack).map((s) => ({
-            label: s.StackName,
-            data: s.StackName,
-            invalidSelection: !canPickStack(s),
-            recentlyUsed: s.StackName === recentStack,
-            description: !canPickStack(s) ? 'stack create/update already in progress' : undefined,
-        }))
-    )
-
-    return createQuickPick(items, {
-        title: 'Select a CloudFormation Stack',
-        placeholder: 'Select a stack (or enter a name to create one)',
-        filterBoxInputSettings: {
-            label: 'Create a New Stack',
-            transform: (v) => v,
-        },
-        buttons: createCommonButtons(samSyncUrl, consoleUrl),
-        noItemsFoundItem: {
-            label: localize(
-                'aws.cfn.noStacks',
-                'No stacks in region "{0}". Enter a name to create a new one.',
-                client.regionCode
-            ),
-            data: undefined,
-            onClick: undefined,
-        },
-    })
-}
-
-export function createEcrPrompter(client: DefaultEcrClient) {
-    const recentEcrRepo = getRecentResponse(client.regionCode, 'ecrRepoUri')
-    const consoleUrl = getAwsConsoleUrl('ecr', client.regionCode)
-    const items = client.listAllRepositories().map((list) =>
-        list.map((repo) => ({
-            label: repo.repositoryName,
-            data: repo.repositoryUri,
-            detail: repo.repositoryArn,
-            recentlyUsed: repo.repositoryUri === recentEcrRepo,
-        }))
-    )
-
-    return createQuickPick(items, {
-        title: 'Select an ECR Repository',
-        placeholder: 'Select a repository (or enter a name to create one)',
-        buttons: createCommonButtons(samSyncUrl, consoleUrl),
-        filterBoxInputSettings: {
-            label: 'Create a New Repository',
-            transform: (v) => prefixNewRepoName(v),
-        },
-        noItemsFoundItem: {
-            label: localize(
-                'aws.ecr.noRepos',
-                'No ECR repositories in region "{0}". Enter a name to create a new one.',
-                client.regionCode
-            ),
-            data: undefined,
-            onClick: undefined,
-        },
-    })
-}
+export const syncMementoRootKey = 'samcli.sync.params'
 
 // TODO: hook this up so it prompts the user when more than 1 environment is present in `samconfig.toml`
 export function createEnvironmentPrompter(config: SamConfig, environments = config.listEnvironments()) {
-    const recentEnvironmentName = getRecentResponse(config.location.fsPath, 'environmentName')
+    const recentEnvironmentName = getRecentResponse(syncMementoRootKey, config.location.fsPath, 'environmentName')
     const items = environments.map((env) => ({
         label: env.name,
         data: env,
@@ -213,45 +83,6 @@ export function createEnvironmentPrompter(config: SamConfig, environments = conf
         title: 'Select an Environment to Use',
         placeholder: 'Select an environment',
         buttons: createCommonButtons(samSyncUrl),
-    })
-}
-
-export interface TemplateItem {
-    readonly uri: vscode.Uri
-    readonly data: CloudFormation.Template
-}
-
-export function createTemplatePrompter(registry: CloudFormationTemplateRegistry, projectRoot?: vscode.Uri) {
-    const folders = new Set<string>()
-    const recentTemplatePath = getRecentResponse('global', 'templatePath')
-    const filterTemplates = projectRoot
-        ? registry.items.filter(({ path: filePath }) => !path.relative(projectRoot.fsPath, filePath).startsWith('..'))
-        : registry.items
-
-    const items = filterTemplates.map(({ item, path: filePath }) => {
-        const uri = vscode.Uri.file(filePath)
-        const workspaceFolder = vscode.workspace.getWorkspaceFolder(uri)
-        const label = workspaceFolder ? path.relative(workspaceFolder.uri.fsPath, uri.fsPath) : uri.fsPath
-        folders.add(workspaceFolder?.name ?? '')
-
-        return {
-            label,
-            data: { uri, data: item },
-            description: workspaceFolder?.name,
-            recentlyUsed: recentTemplatePath === uri.fsPath,
-        }
-    })
-
-    const trimmedItems = folders.size === 1 ? items.map((item) => ({ ...item, description: undefined })) : items
-    return createQuickPick(trimmedItems, {
-        title: 'Select a SAM/CloudFormation Template',
-        placeholder: 'Select a SAM/CloudFormation Template',
-        buttons: createCommonButtons(samSyncUrl),
-        noItemsFoundItem: {
-            label: localize('aws.sam.noWorkspace', 'No SAM template.yaml file(s) found. Select for help'),
-            data: undefined,
-            onClick: () => openUrl(getSamInitDocUrl()),
-        },
     })
 }
 
@@ -325,36 +156,46 @@ export class SyncWizard extends Wizard<SyncParams> {
     ) {
         super({ initState: state, exitPrompterProvider: shouldPromptExit ? createExitPrompter : undefined })
         this.registry = registry
-        this.form.template.bindPrompter(() => createTemplatePrompter(this.registry))
+        this.form.template.bindPrompter(() => createTemplatePrompter(this.registry, syncMementoRootKey, samSyncUrl))
         this.form.projectRoot.setDefault(({ template }) => getProjectRoot(template))
 
         this.form.paramsSource.bindPrompter(async ({ projectRoot }) => {
             const existValidSamConfig: boolean | undefined = await validateSamSyncConfig(projectRoot)
-            return paramsSourcePrompter(existValidSamConfig)
+            return createSyncParamsSourcePrompter(existValidSamConfig)
         })
         this.form.region.bindPrompter(() => createRegionPrompter().transform((r) => r.id), {
             showWhen: ({ paramsSource }) =>
-                paramsSource === ParamsSource.Flags || paramsSource === ParamsSource.SpecifyAndSave,
+                paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
         })
         this.form.stackName.bindPrompter(
-            ({ region }) => createStackPrompter(new DefaultCloudFormationClient(region!)),
+            ({ region }) =>
+                createStackPrompter(new DefaultCloudFormationClient(region!), syncMementoRootKey, samSyncUrl),
             {
                 showWhen: ({ paramsSource }) =>
-                    paramsSource === ParamsSource.Flags || paramsSource === ParamsSource.SpecifyAndSave,
+                    paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
+            }
+        )
+        this.form.bucketSource.bindPrompter(() => createBucketSourcePrompter(samSyncUrl), {
+            showWhen: ({ paramsSource }) =>
+                paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
+        })
+
+        this.form.bucketName.bindPrompter(
+            ({ region }) => createBucketNamePrompter(new DefaultS3Client(region!), syncMementoRootKey, samSyncUrl),
+            {
+                showWhen: ({ bucketSource }) => bucketSource === BucketSource.UserProvided,
             }
         )
 
-        this.form.bucketName.bindPrompter(({ region }) => createBucketPrompter(new DefaultS3Client(region!)), {
-            showWhen: ({ paramsSource }) =>
-                paramsSource === ParamsSource.Flags || paramsSource === ParamsSource.SpecifyAndSave,
-        })
-
-        this.form.ecrRepoUri.bindPrompter(({ region }) => createEcrPrompter(new DefaultEcrClient(region!)), {
-            showWhen: ({ template, paramsSource }) =>
-                !!template &&
-                hasImageBasedResources(template.data) &&
-                (paramsSource === ParamsSource.Flags || paramsSource === ParamsSource.SpecifyAndSave),
-        })
+        this.form.ecrRepoUri.bindPrompter(
+            ({ region }) => createEcrPrompter(new DefaultEcrClient(region!), syncMementoRootKey),
+            {
+                showWhen: ({ template, paramsSource }) =>
+                    !!template &&
+                    hasImageBasedResources(template.data) &&
+                    (paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave),
+            }
+        )
 
         // todo wrap with localize
         this.form.syncFlags.bindPrompter(
@@ -366,7 +207,7 @@ export class SyncWizard extends Wizard<SyncParams> {
                 }),
             {
                 showWhen: ({ paramsSource }) =>
-                    paramsSource === ParamsSource.Flags || paramsSource === ParamsSource.SpecifyAndSave,
+                    paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
             }
         )
     }
@@ -427,10 +268,10 @@ export async function saveAndBindArgs(args: SyncParams): Promise<{ readonly boun
     }
 
     await Promise.all([
-        updateRecentResponse(args.region, 'stackName', data.stackName),
-        updateRecentResponse(args.region, 'bucketName', data.bucketName),
-        updateRecentResponse(args.region, 'ecrRepoUri', data.ecrRepoUri),
-        updateRecentResponse('global', 'templatePath', data.templatePath),
+        updateSyncRecentResponse(args.region, 'stackName', data.stackName),
+        updateSyncRecentResponse(args.region, 'bucketName', data.bucketName),
+        updateSyncRecentResponse(args.region, 'ecrRepoUri', data.ecrRepoUri),
+        updateSyncRecentResponse('global', 'templatePath', data.templatePath),
     ])
 
     const boundArgs = bindDataToParams(data, {
@@ -534,7 +375,6 @@ export async function getSyncWizard(
     return wizard
 }
 
-export const getWorkspaceUri = (template: TemplateItem) => vscode.workspace.getWorkspaceFolder(template.uri)?.uri
 const getStringParam = (config: SamConfig, key: string) => {
     try {
         return cast(config.getCommandParam('sync', key), Optional(String))
@@ -661,28 +501,16 @@ export async function runSync(
                 isSuccess: true,
             }
         } catch (err) {
-            throw ToolkitError.chain(err, 'Failed to sync SAM application', { details: { ...params } })
+            throw ToolkitError.chain(err, 'Failed to sync SAM application', {
+                details: { ...params },
+                code: getErrorCode(err),
+            })
         }
     })
 }
 
-const mementoRootKey = 'samcli.sync.params'
-export function getRecentResponse(region: string, key: string): string | undefined {
-    const root = globals.context.workspaceState.get(mementoRootKey, {} as Record<string, Record<string, string>>)
-
-    return root[region]?.[key]
-}
-
-export async function updateRecentResponse(region: string, key: string, value: string | undefined) {
-    try {
-        const root = globals.context.workspaceState.get(mementoRootKey, {} as Record<string, Record<string, string>>)
-        await globals.context.workspaceState.update(mementoRootKey, {
-            ...root,
-            [region]: { ...root[region], [key]: value },
-        })
-    } catch (err) {
-        getLogger().warn(`sam: unable to save response at key "${key}": %s`, err)
-    }
+async function updateSyncRecentResponse(region: string, key: string, value: string | undefined) {
+    return await updateRecentResponse(syncMementoRootKey, region, key, value)
 }
 
 export async function confirmDevStack() {

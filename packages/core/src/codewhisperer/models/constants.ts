@@ -22,6 +22,21 @@ export const AWSTemplateKeyWords = ['AWSTemplateFormatVersion', 'Resources', 'AW
 
 export const AWSTemplateCaseInsensitiveKeyWords = ['cloudformation', 'cfn', 'template', 'description']
 
+const patchDescriptions: { [key: string]: string } = {
+    'Prepare minimal upgrade to Java 17':
+        'This diff patch covers the set of upgrades for Springboot, JUnit, and PowerMockito frameworks.',
+    'Popular Enterprise Specifications and Application Frameworks upgrade':
+        'This diff patch covers the set of upgrades for Jakarta EE 10, Hibernate 6.2, and Micronaut 3.',
+    'HTTP Client Utilities, Apache Commons Utilities, and Web Frameworks':
+        'This diff patch covers the set of upgrades for Apache HTTP Client 5, Apache Commons utilities (Collections, IO, Lang, Math), Struts 6.0.',
+    'Testing Tools and Frameworks upgrade':
+        'This diff patch covers the set of upgrades for ArchUnit, Mockito, TestContainers, Cucumber, and additionally, Jenkins plugins and the Maven Wrapper.',
+    'Miscellaneous Processing Documentation upgrade':
+        'This diff patch covers a diverse set of upgrades spanning ORMs, XML processing, API documentation, and more.',
+    'Deprecated API replacement, dependency upgrades, and formatting':
+        'This diff patch replaces deprecated APIs, makes additional dependency version upgrades, and formats code changes.',
+}
+
 export const JsonConfigFileNamingConvention = new Set([
     'app.json',
     'appsettings.json',
@@ -454,6 +469,22 @@ export const chooseTransformationObjective = `I can help you with the following 
 
 export const chooseTransformationObjectivePlaceholder = 'Enter "language upgrade" or "sql conversion"'
 
+export const userPatchDescriptionChatMessage = `
+I can now divide the transformation results into diff patches (if applicable to the app) if you would like to review and accept each diff with fewer changes:
+
+• Minimal Compatible Library Upgrade to Java 17: Dependencies to the minimum compatible versions in Java 17, including Springboot, JUnit, and PowerMockito.
+
+• Popular Enterprise Specifications Application Frameworks: Popular enterprise and application frameworks like Jakarta EE, Hibernate, and Micronaut 3.
+
+• HTTP Client Utilities Web Frameworks: HTTP client libraries, Apache Commons utilities, and Struts frameworks.
+
+• Testing Tools Frameworks: Testing tools like ArchUnit, Mockito, and TestContainers and build tools like Jenkins and Maven Wrapper. 
+
+• Miscellaneous Processing Documentation: Upgrades ORMs, XML processing, and Swagger to SpringDoc/OpenAPI.
+
+• Deprecated API replacement, dependency upgrades, and formatting: Replaces deprecated APIs, makes additional dependency version upgrades, and formats code changes.
+`
+
 export const uploadingCodeStepMessage = 'Upload your code'
 
 export const buildCodeStepMessage = 'Build uploaded code in secure build environment'
@@ -583,13 +614,27 @@ export const jobCancelledChatMessage =
 
 export const jobCancelledNotification = 'You cancelled the transformation.'
 
-export const jobCompletedChatMessage = `I transformed your code. You can review the diff to see my proposed changes and accept or reject them. The transformation summary has details about the files I updated.`
+export const diffMessage = (multipleDiffs: boolean) => {
+    return multipleDiffs
+        ? 'You can review the diff to see my proposed changes and accept or reject them. If you reject the diff, you will not be able to see the diffs later.'
+        : 'You can review the diff to see my proposed changes and accept or reject them.'
+}
 
-export const jobCompletedNotification = `Amazon Q transformed your code. You can review the diff to see my proposed changes and accept or reject them. The transformation summary has details about the files I updated.`
+export const jobCompletedChatMessage = (multipleDiffsString: string) => {
+    return `I transformed your code. ${multipleDiffsString} The transformation summary has details about the files I updated.`
+}
 
-export const jobPartiallyCompletedChatMessage = `I transformed part of your code. You can review the diff to see my proposed changes and accept or reject them. The transformation summary has details about the files I updated and the errors that prevented a complete transformation.`
+export const jobCompletedNotification = (multipleDiffsString: string) => {
+    return `Amazon Q transformed your code. ${multipleDiffsString} The transformation summary has details about the files I updated.`
+}
 
-export const jobPartiallyCompletedNotification = `Amazon Q transformed part of your code. You can review the diff to see my proposed changes and accept or reject them. The transformation summary has details about the files I updated and the errors that prevented a complete transformation.`
+export const jobPartiallyCompletedChatMessage = (multipleDiffsString: string) => {
+    return `I transformed part of your code. ${multipleDiffsString} The transformation summary has details about the files I updated and the errors that prevented a complete transformation.`
+}
+
+export const jobPartiallyCompletedNotification = (multipleDiffsString: string) => {
+    return `Amazon Q transformed part of your code. ${multipleDiffsString} The transformation summary has details about the files I updated and the errors that prevented a complete transformation.`
+}
 
 export const noPomXmlFoundChatMessage = `I couldn\'t find a project that I can upgrade. I couldn\'t find a pom.xml file in any of your open projects, nor could I find any embedded SQL statements. Currently, I can upgrade Java 8 or Java 11 projects built on Maven, or Oracle SQL to PostgreSQL statements in Java projects. For more information, see the [Amazon Q documentation](${codeTransformPrereqDoc}).`
 
@@ -627,9 +672,26 @@ export const viewProposedChangesChatMessage =
 export const viewProposedChangesNotification =
     'Download complete. You can view a summary of the transformation and accept or reject the proposed changes in the Transformation Hub.'
 
-export const changesAppliedChatMessage = 'I applied the changes to your project.'
+export const changesAppliedChatMessageOneDiff = 'I applied the changes to your project.'
 
-export const changesAppliedNotification = 'Amazon Q applied the changes to your project.'
+export const changesAppliedChatMessageMultipleDiffs = (
+    currentPatchIndex: number,
+    totalPatchFiles: number,
+    description: string | undefined
+) =>
+    description
+        ? `I applied the changes in diff patch ${currentPatchIndex + 1} of ${totalPatchFiles} to your project. ${patchDescriptions[description]}`
+        : 'I applied the changes to your project.'
+
+export const changesAppliedNotificationOneDiff = 'Amazon Q applied the changes to your project'
+
+export const changesAppliedNotificationMultipleDiffs = (currentPatchIndex: number, totalPatchFiles: number) => {
+    if (totalPatchFiles === 1) {
+        return 'Amazon Q applied the changes to your project.'
+    } else {
+        return `Amazon Q applied the changes in diff patch ${currentPatchIndex + 1} of ${totalPatchFiles} to your project.`
+    }
+}
 
 export const noOpenProjectsFoundChatMessage = `I couldn\'t find a project that I can upgrade. Currently, I support Java 8, Java 11, and Java 17 projects built on Maven. Make sure your project is open in the IDE. For more information, see the [Amazon Q documentation](${codeTransformPrereqDoc}).`
 
@@ -684,14 +746,20 @@ export const chooseProjectSchemaFormMessage = 'To continue, choose the project a
 
 export const skipUnitTestsFormTitle = 'Choose to skip unit tests'
 
+export const selectiveTransformationFormTitle = 'Choose how to receive proposed changes'
+
 export const skipUnitTestsFormMessage =
     'I will build your project using `mvn clean test` by default. If you would like me to build your project without running unit tests, I will use `mvn clean test-compile`.'
 
 export const runUnitTestsMessage = 'Run unit tests'
 
+export const oneDiffMessage = 'One diff'
+
 export const doNotSkipUnitTestsBuildCommand = 'clean test'
 
 export const skipUnitTestsMessage = 'Skip unit tests'
+
+export const multipleDiffsMessage = 'Multiple diffs'
 
 export const skipUnitTestsBuildCommand = 'clean test-compile'
 

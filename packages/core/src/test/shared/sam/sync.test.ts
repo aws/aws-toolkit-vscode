@@ -4,38 +4,29 @@
  */
 
 import * as vscode from 'vscode'
-import * as SyncModule from '../../../shared/sam/sync'
-import * as UtilsModule from '../../../shared/sam/utils'
+import * as SamUtilsModule from '../../../shared/sam/utils'
 import * as ProcessTerminalUtils from '../../../shared/sam/processTerminal'
-import * as awsConsole from '../../../shared/awsConsole'
 import * as S3ClientModule from '../../../shared/clients/s3Client'
 import * as SamConfigModule from '../../../shared/sam/config'
 import * as ResolveEnvModule from '../../../shared/env/resolveEnv'
 import * as ProcessUtilsModule from '../../../shared/utilities/processUtils'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import * as CloudFormationClientModule from '../../../shared/clients/cloudFormationClient'
-import * as buttons from '../../../shared/ui/buttons'
-import assert, { fail } from 'assert'
 
 import {
-    createBucketPrompter,
-    createEcrPrompter,
     createEnvironmentPrompter,
-    createStackPrompter,
-    createTemplatePrompter,
     ensureBucket,
+    ensureRepo,
     getSyncParamsFromConfig,
     getSyncWizard,
-    ParamsSource,
-    paramsSourcePrompter,
     prepareSyncParams,
     runSync,
     saveAndBindArgs,
     syncFlagItems,
     SyncParams,
     SyncWizard,
-    TemplateItem,
 } from '../../../shared/sam/sync'
+
 import {
     createBaseImageTemplate,
     createBaseTemplate,
@@ -51,13 +42,11 @@ import { createMultiPick, DataQuickPickItem } from '../../../shared/ui/pickerPro
 import sinon from 'sinon'
 import { getTestWindow } from '../vscode/window'
 import { DefaultS3Client } from '../../../shared/clients/s3Client'
-import { AsyncCollection } from '../../../shared/utilities/asyncCollection'
 import { RequiredProps } from '../../../shared/utilities/tsUtils'
 import S3 from 'aws-sdk/clients/s3'
 import { DefaultCloudFormationClient } from '../../../shared/clients/cloudFormationClient'
 import CloudFormation from 'aws-sdk/clients/cloudformation'
 import { intoCollection } from '../../../shared/utilities/collectionUtils'
-import { DefaultEcrClient, EcrRepository } from '../../../shared/clients/ecrClient'
 import { SamConfig, Environment, parseConfig } from '../../../shared/sam/config'
 import { RegionProvider } from '../../../shared/regions/regionProvider'
 import { Region } from '../../../shared/regions/endpoints'
@@ -65,45 +54,23 @@ import { RegionNode } from '../../../awsexplorer/regionNode'
 import { getProjectRootUri } from '../../../shared/sam/utils'
 import { AppNode } from '../../../awsService/appBuilder/explorer/nodes/appNode'
 import * as Cfn from '../../../shared/cloudformation/cloudformation'
+import { getWorkspaceFolder, TestFolder } from '../../testUtil'
+import { TemplateItem } from '../../../shared/ui/sam/templatePrompter'
+import { ParamsSource } from '../../../shared/ui/sam/paramsSourcePrompter'
 import { CloudFormationTemplateRegistry } from '../../../shared/fs/templateRegistry'
-import { WatchedItem } from '../../../shared/fs/watchedFiles'
+
 import { samconfigCompleteData, samconfigInvalidData, validTemplateData } from '../../shared/sam/samTestUtils'
-//import { beforeEach } from 'mocha'
-import {
-    assertEqualPaths,
-    assertTelemetry,
-    assertTelemetryCurried,
-    getWorkspaceFolder,
-    TestFolder,
-} from '../../testUtil'
-import { samSyncUrl } from '../../../shared/constants'
+import { assertTelemetry, assertTelemetryCurried } from '../../testUtil'
 import { PrompterTester } from '../wizards/prompterTester'
 import { createTestRegionProvider } from '../regions/testUtil'
 import { ToolkitPromptSettings } from '../../../shared/settings'
+import { DefaultEcrClient } from '../../../shared/clients/ecrClient'
+import assert from 'assert'
+import { BucketSource } from '../../../shared/ui/sam/bucketPrompter'
 
-describe('SyncWizard', async function () {
+describe('SAM SyncWizard', async function () {
     const createTester = async (params?: Partial<SyncParams>) =>
         createWizardTester(new SyncWizard({ deployType: 'code', ...params }, await globals.templateRegistry))
-
-    it('shows steps in correct order', async function () {
-        const tester = await createTester()
-        tester.template.assertShowFirst()
-        tester.paramsSource.assertShowSecond()
-        tester.projectRoot.assertDoesNotShow()
-
-        const workspaceUri = vscode.workspace.workspaceFolders?.[0]?.uri || vscode.Uri.file('/')
-        const rootFolderUri = vscode.Uri.joinPath(workspaceUri, 'my')
-        const templateUri = vscode.Uri.joinPath(rootFolderUri, 'template.yaml')
-        const tester2 = await createTester({
-            template: { uri: templateUri, data: createBaseTemplate() },
-            paramsSource: ParamsSource.SpecifyAndSave,
-            projectRoot: rootFolderUri,
-        })
-        tester2.region.assertShow(1)
-        tester2.stackName.assertShow(2)
-        tester2.bucketName.assertShow(3)
-        tester2.projectRoot.assertDoesNotShow()
-    })
 
     it('skips prompts if user chooses samconfig file as params source', async function () {
         const workspaceUri = vscode.workspace.workspaceFolders?.[0]?.uri || vscode.Uri.file('/')
@@ -127,7 +94,7 @@ describe('SyncWizard', async function () {
         const template = { uri: templateUri, data: createBaseImageTemplate() }
         const tester = await createTester({
             template,
-            paramsSource: ParamsSource.Flags,
+            paramsSource: ParamsSource.Specify,
         })
         tester.ecrRepoUri.assertShow()
     })
@@ -157,740 +124,7 @@ describe('SyncWizard', async function () {
     })
 })
 
-describe('prepareSyncParams', function () {
-    let tempDir: vscode.Uri
-
-    beforeEach(async function () {
-        tempDir = vscode.Uri.file(await makeTemporaryToolkitFolder())
-    })
-
-    afterEach(async function () {
-        await fs.delete(tempDir, { recursive: true })
-    })
-
-    it('uses region if given a tree node', async function () {
-        const params = await prepareSyncParams(
-            new (class extends AWSTreeNodeBase {
-                public override readonly regionCode = 'foo'
-            })('')
-        )
-
-        assert.strictEqual(params.region, 'foo')
-    })
-
-    async function makeTemplateItem(dir: vscode.Uri) {
-        const uri = vscode.Uri.joinPath(dir, 'template.yaml')
-        const data = makeSampleSamTemplateYaml(true)
-        await fs.writeFile(uri, JSON.stringify(data))
-
-        return { uri, data }
-    }
-
-    it('loads template if given a URI', async function () {
-        const template = await makeTemplateItem(tempDir)
-
-        const params = await prepareSyncParams(template.uri)
-        assert.strictEqual(params.template?.uri.fsPath, template.uri.fsPath)
-        assert.deepStrictEqual(params.template?.data, template.data)
-    })
-
-    it('skips dependency layers by default', async function () {
-        const template = await makeTemplateItem(tempDir)
-
-        const params = await prepareSyncParams(template.uri)
-        assert.strictEqual(params.skipDependencyLayer, true)
-    })
-
-    describe('samconfig.toml', function () {
-        async function makeDefaultConfig(dir: vscode.Uri, body: string) {
-            const uri = vscode.Uri.joinPath(dir, 'samconfig.toml')
-            const data = `
-            [default.sync.parameters]
-            ${body}
-`
-            await fs.writeFile(uri, data)
-
-            return uri
-        }
-
-        async function getParams(body: string, dir = tempDir) {
-            const config = await makeDefaultConfig(dir, body)
-
-            return prepareSyncParams(config)
-        }
-
-        it('throws on non-string values', async function () {
-            await assert.rejects(() => getParams(`region = 0`), ToolkitError)
-        })
-
-        it('does not fail on missing values', async function () {
-            const params = await getParams(`region = "bar"`)
-            assert.strictEqual(params.region, 'bar')
-        })
-
-        it('sets the project root as the parent directory', async function () {
-            const params = await getParams(`region = "bar"`, tempDir)
-            assert.strictEqual(params.projectRoot?.fsPath, tempDir.fsPath)
-        })
-
-        it('uses the depdency layer option if provided', async function () {
-            const params = await getParams(`dependency_layer = true`, tempDir)
-            assert.strictEqual(params.skipDependencyLayer, false)
-        })
-
-        it('can load a relative template param', async function () {
-            const template = await makeTemplateItem(tempDir)
-            const params = await getParams(`template = "./template.yaml"`)
-            assert.deepStrictEqual(params.template?.data, template.data)
-        })
-
-        it('can load an absolute template param', async function () {
-            const template = await makeTemplateItem(tempDir)
-            const params = await getParams(`template = '${template.uri.fsPath}'`)
-            assert.deepStrictEqual(params.template?.data, template.data)
-        })
-
-        it('can load a relative template param without a path seperator', async function () {
-            const template = await makeTemplateItem(tempDir)
-            const params = await getParams(`template = "template.yaml"`)
-            assert.deepStrictEqual(params.template?.data, template.data)
-        })
-
-        it('can load a template param using an alternate key', async function () {
-            const template = await makeTemplateItem(tempDir)
-            const params = await getParams(`template_file = "template.yaml"`)
-            assert.deepStrictEqual(params.template?.data, template.data)
-        })
-
-        it('can use global params', async function () {
-            const params = await getParams(`
-            region = "bar"
-            [default.global.parameters]
-            stack_name = "my-app"
-            `)
-            assert.strictEqual(params.stackName, 'my-app')
-        })
-
-        it('prefers using the sync section over globals', async function () {
-            const params = await getParams(`
-            stack_name = "my-sync-app"
-            [default.global.parameters]
-            stack_name = "my-app"
-            `)
-            assert.strictEqual(params.stackName, 'my-sync-app')
-        })
-
-        it('loads all values if found', async function () {
-            const params = await getParams(`
-            region = "bar"
-            stack_name = "my-app"
-            s3_bucket = "my-bucket"
-            image_repository = "12345679010.dkr.ecr.bar.amazonaws.com/repo"
-            `)
-            assert.strictEqual(params.region, 'bar')
-            assert.strictEqual(params.stackName, 'my-app')
-            assert.strictEqual(params.bucketName, 'my-bucket')
-            assert.strictEqual(params.ecrRepoUri, '12345679010.dkr.ecr.bar.amazonaws.com/repo')
-        })
-    })
-})
-
-describe('paramsSourcePrompter', () => {
-    it('should return a prompter with the correct items with no valid samconfig', () => {
-        const expectedItems: DataQuickPickItem<ParamsSource>[] = [
-            {
-                label: 'Specify required parameters and save as defaults',
-                data: ParamsSource.SpecifyAndSave,
-            },
-            {
-                label: 'Specify required parameters',
-                data: ParamsSource.Flags,
-            },
-        ]
-        const prompter = paramsSourcePrompter(false)
-        const quickPick = prompter.quickPick
-        assert.strictEqual(quickPick.title, 'Specify parameters for deploy')
-        assert.strictEqual(quickPick.placeholder, 'Press enter to proceed with highlighted option')
-        assert.strictEqual(quickPick.items.length, 2)
-        assert.deepStrictEqual(quickPick.items, expectedItems)
-    })
-
-    it('should return a prompter with the correct items with valid samconfig', () => {
-        const expectedItems: DataQuickPickItem<ParamsSource>[] = [
-            {
-                label: 'Specify required parameters and save as defaults',
-                data: ParamsSource.SpecifyAndSave,
-            },
-            {
-                label: 'Specify required parameters',
-                data: ParamsSource.Flags,
-            },
-            {
-                label: 'Use default values from samconfig',
-                data: ParamsSource.SamConfig,
-            },
-        ]
-        const prompter = paramsSourcePrompter(true)
-        const quickPick = prompter.quickPick
-        assert.strictEqual(quickPick.title, 'Specify parameters for deploy')
-        assert.strictEqual(quickPick.placeholder, 'Press enter to proceed with highlighted option')
-        assert.strictEqual(quickPick.items.length, 3)
-        assert.deepStrictEqual(quickPick.items, expectedItems)
-    })
-})
-
-describe('syncFlagsPrompter', () => {
-    let sandbox: sinon.SinonSandbox
-    let acceptedItems: DataQuickPickItem<string>[]
-
-    beforeEach(() => {
-        sandbox = sinon.createSandbox()
-    })
-
-    afterEach(() => {
-        sandbox.restore() // Restore all stubs after each test
-    })
-
-    it('should return selected flags from buildFlagsPrompter', async () => {
-        getTestWindow().onDidShowQuickPick(async (picker) => {
-            await picker.untilReady()
-            assert.strictEqual(picker.items.length, 9)
-            assert.strictEqual(picker.title, 'Specify parameters for sync')
-            assert.deepStrictEqual(picker.items, syncFlagItems)
-            const buildInSource = picker.items[0]
-            const code = picker.items[1]
-            const dependencyLayer = picker.items[2]
-            assert.strictEqual(buildInSource.data, '--build-in-source')
-            assert.strictEqual(code.data, '--code')
-            assert.strictEqual(dependencyLayer.data, '--dependency-layer')
-            acceptedItems = [buildInSource, code, dependencyLayer]
-            picker.acceptItems(...acceptedItems)
-        })
-
-        const flags = await createMultiPick(syncFlagItems, {
-            title: 'Specify parameters for sync',
-            placeholder: 'Press enter to proceed with highlighted option',
-        }).prompt()
-
-        assert.deepStrictEqual(flags, JSON.stringify(acceptedItems.map((i) => i.data)))
-    })
-})
-
-describe('createBucketPrompter', () => {
-    let sandbox: sinon.SinonSandbox
-    const s3Client = new DefaultS3Client('us-east-1', 'aws')
-
-    beforeEach(() => {
-        sandbox = sinon.createSandbox()
-    })
-
-    afterEach(() => {
-        sandbox.restore()
-    })
-
-    it('should create a prompter with existing buckets', () => {
-        // Arrange
-        const buckets = [
-            { Name: 'bucket1', region: 'us-east-1' },
-            { Name: 'bucket2', region: 'us-east-1' },
-            { Name: 'bucket3', region: 'us-east-1' },
-        ] as unknown as AsyncCollection<RequiredProps<S3.Bucket, 'Name'> & { readonly region: string }>
-
-        const stub = sandbox.stub(s3Client, 'listBucketsIterable').callsFake(() => {
-            return buckets
-        })
-        sandbox.stub(SyncModule, 'getRecentResponse').returns(undefined) // Mock recent bucket
-
-        // Act
-        const prompter = createBucketPrompter(s3Client)
-
-        // Assert
-        assert.ok(stub.calledOnce)
-        const expectedItems = buckets.map((b) => [
-            {
-                label: b.Name,
-                data: b.Name,
-                recentlyUsed: false,
-            },
-        ])
-        assert.strictEqual(prompter.quickPick.title, 'Select an S3 Bucket')
-        assert.strictEqual(prompter.quickPick.placeholder, 'Select a bucket (or enter a name to create one)')
-        assert.strictEqual(prompter.quickPick.items.length, 3)
-        assert.deepStrictEqual(prompter.quickPick.items, expectedItems)
-    })
-
-    it('should include no items found message if no stacks exist', () => {
-        const stub = sandbox.stub(s3Client, 'listBucketsIterable').callsFake(() => {
-            return [] as unknown as AsyncCollection<RequiredProps<S3.Bucket, 'Name'> & { readonly region: string }>
-        })
-        sandbox.stub(SyncModule, 'getRecentResponse').returns(undefined) // Mock recent bucket
-
-        // Act
-        const prompter = createBucketPrompter(s3Client)
-
-        // Assert
-        assert.ok(stub.calledOnce)
-        assert.strictEqual(prompter.quickPick.title, 'Select an S3 Bucket')
-        assert.strictEqual(prompter.quickPick.placeholder, 'Select a bucket (or enter a name to create one)')
-        assert.strictEqual(prompter.quickPick.items.length, 1)
-        assert.strictEqual(
-            prompter.quickPick.items[0].label,
-            'No S3 buckets for region "us-east-1". Enter a name to create a new one.'
-        )
-    })
-})
-
-describe('createStackPrompter', () => {
-    let sandbox: sinon.SinonSandbox
-    const cfnClient = new DefaultCloudFormationClient('us-east-1')
-
-    beforeEach(() => {
-        sandbox = sinon.createSandbox()
-    })
-
-    afterEach(() => {
-        sandbox.restore()
-    })
-
-    it('should create a prompter with existing stacks', async () => {
-        // Arrange
-        const stackSummaries: CloudFormation.StackSummary[][] = [
-            [
-                {
-                    StackName: 'stack1',
-                    StackStatus: 'CREATE_COMPLETE',
-                    CreationTime: new Date(),
-                } as CloudFormation.StackSummary,
-                {
-                    StackName: 'stack2',
-                    StackStatus: 'CREATE_COMPLETE',
-                    CreationTime: new Date(),
-                } as CloudFormation.StackSummary,
-                {
-                    StackName: 'stack3',
-                    StackStatus: 'CREATE_COMPLETE',
-                    CreationTime: new Date(),
-                } as CloudFormation.StackSummary,
-            ],
-        ]
-        const expectedItems = [
-            {
-                label: 'stack1',
-                data: 'stack1',
-                description: undefined,
-                invalidSelection: false,
-                recentlyUsed: false,
-            },
-            {
-                label: 'stack2',
-                data: 'stack2',
-                description: undefined,
-                invalidSelection: false,
-                recentlyUsed: false,
-            },
-            {
-                label: 'stack3',
-                data: 'stack3',
-                description: undefined,
-                invalidSelection: false,
-                recentlyUsed: false,
-            },
-        ]
-        const listAllStacksStub = sandbox.stub(cfnClient, 'listAllStacks').returns(intoCollection(stackSummaries))
-        sandbox.stub(SyncModule, 'getRecentResponse').returns(undefined)
-        const createCommonButtonsStub = sandbox.stub(buttons, 'createCommonButtons')
-        sandbox
-            .stub(awsConsole, 'getAwsConsoleUrl')
-            .returns(vscode.Uri.parse(`https://us-east-1.console.aws.amazon.com/cloudformation/home?region=us-east-1`))
-
-        // Act
-        const prompter = createStackPrompter(cfnClient)
-        await new Promise((f) => setTimeout(f, 50))
-
-        // Assert
-        assert.ok(createCommonButtonsStub.calledOnce)
-        assert.ok(
-            createCommonButtonsStub.calledWithExactly(
-                samSyncUrl,
-                vscode.Uri.parse(`https://us-east-1.console.aws.amazon.com/cloudformation/home?region=us-east-1`)
-            )
-        )
-        assert.ok(listAllStacksStub.calledOnce)
-        assert.strictEqual(prompter.quickPick.title, 'Select a CloudFormation Stack')
-        assert.strictEqual(prompter.quickPick.placeholder, 'Select a stack (or enter a name to create one)')
-        assert.strictEqual(prompter.quickPick.items.length, 3)
-        assert.deepStrictEqual(prompter.quickPick.items, expectedItems)
-    })
-
-    it('should include no items found message if no stacks exist', async () => {
-        const listAllStacksStub = sandbox.stub(cfnClient, 'listAllStacks').returns(intoCollection([]))
-        sandbox.stub(SyncModule, 'getRecentResponse').returns(undefined)
-        const createCommonButtonsStub = sandbox.stub(buttons, 'createCommonButtons')
-        sandbox
-            .stub(awsConsole, 'getAwsConsoleUrl')
-            .returns(vscode.Uri.parse(`https://us-east-1.console.aws.amazon.com/cloudformation/home?region=us-east-1`))
-
-        // Act
-        const prompter = createStackPrompter(cfnClient)
-        await new Promise((f) => setTimeout(f, 50))
-
-        // Assert
-        assert.ok(createCommonButtonsStub.calledOnce)
-        assert.ok(
-            createCommonButtonsStub.calledWithExactly(
-                samSyncUrl,
-                vscode.Uri.parse(`https://us-east-1.console.aws.amazon.com/cloudformation/home?region=us-east-1`)
-            )
-        )
-        assert.ok(listAllStacksStub.calledOnce)
-        assert.strictEqual(prompter.quickPick.title, 'Select a CloudFormation Stack')
-        assert.strictEqual(prompter.quickPick.placeholder, 'Select a stack (or enter a name to create one)')
-        assert.strictEqual(prompter.quickPick.items.length, 1)
-        assert.deepStrictEqual(
-            prompter.quickPick.items[0].label,
-            'No stacks in region "us-east-1". Enter a name to create a new one.'
-        )
-        assert.deepStrictEqual(prompter.quickPick.items[0].data, undefined)
-    })
-})
-
-describe('createEcrPrompter', () => {
-    let sandbox: sinon.SinonSandbox
-    const ecrClient = new DefaultEcrClient('us-east-1')
-
-    beforeEach(() => {
-        sandbox = sinon.createSandbox()
-    })
-
-    afterEach(() => {
-        sandbox.restore()
-    })
-
-    it('should create a prompter with existing repos', async () => {
-        // Arrange
-        const ecrRepos: EcrRepository[][] = [
-            [
-                {
-                    repositoryName: 'repo1',
-                    repositoryUri: 'repoUri1',
-                    repositoryArn: 'repoArn1',
-                } as EcrRepository,
-                {
-                    repositoryName: 'repo2',
-                    repositoryUri: 'repoUri2',
-                    repositoryArn: 'repoArn2',
-                } as EcrRepository,
-                {
-                    repositoryName: 'repo3',
-                    repositoryUri: 'repoUri3',
-                    repositoryArn: 'repoArn3',
-                } as EcrRepository,
-            ],
-        ]
-        const expectedItems = [
-            {
-                label: 'repo1',
-                data: 'repoUri1',
-                detail: 'repoArn1',
-                recentlyUsed: false,
-            },
-            {
-                label: 'repo2',
-                data: 'repoUri2',
-                detail: 'repoArn2',
-                recentlyUsed: false,
-            },
-            {
-                label: 'repo3',
-                data: 'repoUri3',
-                detail: 'repoArn3',
-                recentlyUsed: false,
-            },
-        ]
-        const listAllRepositoriesStub = sandbox.stub(ecrClient, 'listAllRepositories').returns(intoCollection(ecrRepos))
-        sandbox.stub(SyncModule, 'getRecentResponse').returns(undefined)
-        const createCommonButtonsStub = sandbox.stub(buttons, 'createCommonButtons')
-        sandbox
-            .stub(awsConsole, 'getAwsConsoleUrl')
-            .returns(vscode.Uri.parse(`https://us-east-1.console.aws.amazon.com/cloudformation/home?region=us-east-1`))
-
-        // Act
-        const prompter = createEcrPrompter(ecrClient)
-        await new Promise((f) => setTimeout(f, 50))
-
-        // Assert
-        assert.ok(createCommonButtonsStub.calledOnce)
-        assert.ok(
-            createCommonButtonsStub.calledWithExactly(
-                samSyncUrl,
-                vscode.Uri.parse(`https://us-east-1.console.aws.amazon.com/cloudformation/home?region=us-east-1`)
-            )
-        )
-        assert.ok(listAllRepositoriesStub.calledOnce)
-        assert.strictEqual(prompter.quickPick.title, 'Select an ECR Repository')
-        assert.strictEqual(prompter.quickPick.placeholder, 'Select a repository (or enter a name to create one)')
-        assert.strictEqual(prompter.quickPick.items.length, 3)
-        assert.deepStrictEqual(prompter.quickPick.items, expectedItems)
-    })
-
-    it('should include no items found message if no repos exist', async () => {
-        const listAllStacksStub = sandbox.stub(ecrClient, 'listAllRepositories').returns(intoCollection([]))
-        sandbox.stub(SyncModule, 'getRecentResponse').returns(undefined)
-        const createCommonButtonsStub = sandbox.stub(buttons, 'createCommonButtons')
-        sandbox
-            .stub(awsConsole, 'getAwsConsoleUrl')
-            .returns(vscode.Uri.parse(`https://us-east-1.console.aws.amazon.com/cloudformation/home?region=us-east-1`))
-
-        // Act
-        const prompter = createEcrPrompter(ecrClient)
-        await new Promise((f) => setTimeout(f, 50))
-
-        // Assert
-        assert.ok(createCommonButtonsStub.calledOnce)
-        assert.ok(
-            createCommonButtonsStub.calledWithExactly(
-                samSyncUrl,
-                vscode.Uri.parse(`https://us-east-1.console.aws.amazon.com/cloudformation/home?region=us-east-1`)
-            )
-        )
-        assert.ok(listAllStacksStub.calledOnce)
-        assert.strictEqual(prompter.quickPick.title, 'Select an ECR Repository')
-        assert.strictEqual(prompter.quickPick.placeholder, 'Select a repository (or enter a name to create one)')
-        assert.strictEqual(prompter.quickPick.items.length, 1)
-        assert.deepStrictEqual(
-            prompter.quickPick.items[0].label,
-            'No ECR repositories in region "us-east-1". Enter a name to create a new one.'
-        )
-        assert.deepStrictEqual(prompter.quickPick.items[0].data, undefined)
-    })
-})
-
-describe('createEnvironmentPrompter', () => {
-    let sandbox: sinon.SinonSandbox
-    let config: SamConfig
-    let listEnvironmentsStub: sinon.SinonStub
-
-    beforeEach(() => {
-        sandbox = sinon.createSandbox()
-        // Create a stub for the SamConfig instance
-        config = new SamConfig(vscode.Uri.parse('dummy://uri'))
-        listEnvironmentsStub = sandbox.stub(config, 'listEnvironments')
-    })
-
-    afterEach(() => {
-        sandbox.restore()
-    })
-
-    it('should create a prompter with existing samconfig env', () => {
-        // Arrange
-        const defaultEnv: Environment = {
-            name: 'default',
-            commands: {},
-        }
-        const stagingEnv: Environment = {
-            name: 'staging',
-            commands: {},
-        }
-        const prodEnv: Environment = {
-            name: 'prod',
-            commands: {},
-        }
-        const envs: Environment[] = [defaultEnv, stagingEnv, prodEnv]
-
-        listEnvironmentsStub.returns(envs)
-        sandbox.stub(SyncModule, 'getRecentResponse').returns(undefined)
-
-        // Act
-        const prompter = createEnvironmentPrompter(config)
-
-        // Assert
-        assert.ok(listEnvironmentsStub.calledOnce)
-        assert.strictEqual(prompter.quickPick.title, 'Select an Environment to Use')
-        assert.strictEqual(prompter.quickPick.placeholder, 'Select an environment')
-        assert.strictEqual(prompter.quickPick.items.length, 3)
-        assert.deepStrictEqual(prompter.quickPick.items, [
-            {
-                label: 'default',
-                data: defaultEnv,
-                recentlyUsed: false,
-            },
-            {
-                label: 'staging',
-                data: stagingEnv,
-                recentlyUsed: false,
-            },
-            {
-                label: 'prod',
-                data: prodEnv,
-                recentlyUsed: false,
-            },
-        ])
-    })
-})
-
-describe('createTemplatePrompter', () => {
-    let registry: CloudFormationTemplateRegistry
-    let sandbox: sinon.SinonSandbox
-
-    beforeEach(() => {
-        sandbox = sinon.createSandbox()
-        //Create a mock instance of CloudFormationTemplateRegistry
-        registry = {
-            items: [
-                { path: '/path/to/template1.yaml', item: {} } as WatchedItem<Cfn.Template>,
-                { path: '/path/to/template2.yaml', item: {} } as WatchedItem<Cfn.Template>,
-            ],
-        } as CloudFormationTemplateRegistry // Typecasting to match expected type
-    })
-
-    afterEach(() => {
-        sandbox.restore()
-    })
-
-    it('should create quick pick items from registry items', () => {
-        // Arrange
-        const recentTemplatePathStub = sinon.stub().returns(undefined)
-        sandbox.replace(SyncModule, 'getRecentResponse', recentTemplatePathStub)
-        const workspaceFolder = vscode.workspace.workspaceFolders?.[0]
-        assert.ok(workspaceFolder)
-
-        const prompter = createTemplatePrompter(registry)
-
-        // Assert
-        assert.strictEqual(prompter.quickPick.items.length, 2)
-        assertEqualPaths(prompter.quickPick.items[0].label, '/path/to/template1.yaml')
-        //assert.strictEqual(prompter.quickPick.items[0].label, '/path/to/template1.yaml')
-        assertEqualPaths(prompter.quickPick.items[1].label, '/path/to/template2.yaml')
-        assert.strictEqual(prompter.quickPick.title, 'Select a SAM/CloudFormation Template')
-        assert.strictEqual(prompter.quickPick.placeholder, 'Select a SAM/CloudFormation Template')
-    })
-})
-
-describe('prepareSyncParams', () => {
-    let sandbox: sinon.SinonSandbox
-    beforeEach(() => {
-        sandbox = sinon.createSandbox()
-    })
-    afterEach(() => {
-        sandbox.restore()
-    })
-
-    it('should return correct params from region node', async () => {
-        const regionNode = new RegionNode({ name: 'us-east-1', id: 'IAD' } as Region, {} as RegionProvider)
-        const result = await prepareSyncParams(regionNode)
-        assert.deepStrictEqual(result, { skipDependencyLayer: true, region: 'IAD' })
-    })
-
-    it('should return correct params from appBuilder', async () => {
-        // setup appNode
-        const workspaceFolder = vscode.workspace.workspaceFolders?.[0]
-        assert.ok(workspaceFolder)
-        const templateUri = vscode.Uri.file('file://mock/path/project/file')
-        const projectRootUri = getProjectRootUri(templateUri)
-        const samAppLocation = {
-            samTemplateUri: templateUri,
-            workspaceFolder: workspaceFolder,
-            projectRoot: projectRootUri,
-        }
-        const appNode = new AppNode(samAppLocation)
-        const tryLoadStub = sandbox.stub(Cfn, 'load')
-
-        tryLoadStub.resolves({} as Cfn.Template)
-
-        const templateItem = {
-            uri: templateUri,
-            data: {},
-        }
-
-        // Act
-        const result = await prepareSyncParams(appNode)
-
-        // Assert
-        assert.deepStrictEqual(result, {
-            skipDependencyLayer: true,
-            template: templateItem,
-            projectRoot: projectRootUri,
-        })
-    })
-
-    it('should return correct params for undefined input', async () => {
-        const result = await prepareSyncParams(undefined)
-        assert.deepStrictEqual(result, { skipDependencyLayer: true })
-    })
-})
-
-describe('getSyncParamsFromConfig', () => {
-    let sandbox: sinon.SinonSandbox
-    beforeEach(() => {
-        sandbox = sinon.createSandbox()
-    })
-
-    afterEach(() => {
-        sandbox.restore()
-    })
-
-    it('should return correct params from config', async () => {
-        const configUri = vscode.Uri.file('file://mock/path/project/file')
-        const contents = `
-        [default]
-        [default.global.parameters]
-        stack_name = "TestApp"
-        [default.build.parameters]
-        cached = true
-        parallel = true
-        [default.deploy.parameters]
-        capabilities = "CAPABILITY_IAM"
-        confirm_changeset = true
-        resolve_s3 = true
-        [default.sync.parameters]
-        watch = true
-        template_file = "/Users/mbfreder/TestApp/JavaSamApp/serverless-patterns/s3-lambda-resizing-python/template.yaml"
-        s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-1o6ke33w96qag"
-        stack_name = "s3-lambda-resizing-java-4"
-        dependency_layer = false`
-
-        const config = await parseConfig(contents)
-        const samconfig = new SamConfig(configUri, config)
-
-        const result = getSyncParamsFromConfig(samconfig)
-        assert.strictEqual(
-            result['templatePath'],
-            '/Users/mbfreder/TestApp/JavaSamApp/serverless-patterns/s3-lambda-resizing-python/template.yaml'
-        )
-        assert.strictEqual(result['bucketName'], 'aws-sam-cli-managed-default-samclisourcebucket-1o6ke33w96qag')
-        assert.strictEqual(result['stackName'], 's3-lambda-resizing-java-4')
-    })
-
-    it('should return correct params from config with no template file', async () => {
-        const configUri = vscode.Uri.file('file://mock/path/project/file')
-        const contents = `
-        [default]
-        [default.global.parameters]
-        stack_name = "TestApp"
-        [default.build.parameters]
-        cached = true
-        parallel = true
-        [default.deploy.parameters]
-        capabilities = "CAPABILITY_IAM"
-        confirm_changeset = true
-        resolve_s3 = true
-        [default.sync.parameters]
-        watch = true
-        s3_bucket = "bucket-from-samconfig"
-        stack_name = "s3-lambda-resizing-java-4"
-        dependency_layer = false`
-
-        const config = await parseConfig(contents)
-        const samconfig = new SamConfig(configUri, config)
-
-        const result = getSyncParamsFromConfig(samconfig)
-        assert.strictEqual(result['templatePath'], undefined)
-        assert.strictEqual(result['bucketName'], 'bucket-from-samconfig')
-        assert.strictEqual(result['stackName'], 's3-lambda-resizing-java-4')
-    })
-})
-
-describe('SyncWizard', async () => {
+describe('SAM SyncWizard', async () => {
     let sandbox: sinon.SinonSandbox
     let testFolder: TestFolder
     let projectRoot: vscode.Uri
@@ -937,7 +171,8 @@ describe('SyncWizard', async () => {
              *  - paramsSource          : [Select]   1. ('Specify required parameters and save as defaults')
              *  - region                : [Select]   'us-west-2'
              *  - stackName             : [Select]   1. 'stack1'
-             *  - bucketName            : [Select]   1. 'stack-1-bucket'
+             *  - bucketSource          : [Select]   1.  BucketSource.SamCliManaged
+             *  - bucketName            : [Skip]     undefined
              *  - syncFlags             : [Select]   ["--dependency-layer","--use-container","--save-params"]
              */
 
@@ -945,7 +180,7 @@ describe('SyncWizard', async () => {
             await testFolder.write('samconfig.toml', samconfigInvalidData)
 
             const prompterTester = PrompterTester.init()
-                .handleQuickPick('Specify parameters for deploy', async (picker) => {
+                .handleQuickPick('Specify parameter source for sync', async (picker) => {
                     // Need time to check samconfig.toml file and generate options
                     await picker.untilReady()
 
@@ -968,12 +203,17 @@ describe('SyncWizard', async () => {
                     assert.strictEqual(quickPick.items[2].label, 'stack3')
                     quickPick.acceptItem(quickPick.items[0])
                 })
-                .handleQuickPick('Select an S3 Bucket', async (picker) => {
+                .handleQuickPick('Specify S3 bucket for deployment artifacts', async (picker) => {
                     await picker.untilReady()
-                    assert.strictEqual(picker.items.length, 3)
-                    assert.strictEqual(picker.items[0].label, 'stack-1-bucket')
-                    assert.strictEqual(picker.items[1].label, 'stack-2-bucket')
-                    assert.strictEqual(picker.items[2].label, 'stack-3-bucket')
+                    assert.strictEqual(picker.items.length, 2)
+                    assert.deepEqual(picker.items[0], {
+                        label: 'Create a SAM CLI managed S3 bucket',
+                        data: BucketSource.SamCliManaged,
+                    })
+                    assert.deepEqual(picker.items[1], {
+                        label: 'Specify an S3 bucket',
+                        data: BucketSource.UserProvided,
+                    })
                     picker.acceptItem(picker.items[0])
                 })
                 .handleQuickPick('Specify parameters for sync', async (picker) => {
@@ -992,11 +232,12 @@ describe('SyncWizard', async () => {
 
             assert.strictEqual(parameters.template.uri.fsPath, templateFile.fsPath)
             assert.strictEqual(parameters.projectRoot.fsPath, projectRoot.fsPath)
-            assert.strictEqual(parameters.paramsSource, ParamsSource.Flags)
+            assert.strictEqual(parameters.paramsSource, ParamsSource.Specify)
             assert.strictEqual(parameters.region, 'us-west-2')
             assert.strictEqual(parameters.stackName, 'stack1')
+            assert.strictEqual(parameters.bucketSource, BucketSource.SamCliManaged)
+            assert(!parameters.bucketName)
             assert.strictEqual(parameters.deployType, 'infra')
-            assert.strictEqual(parameters.bucketName, 'stack-1-bucket')
             assert.strictEqual(parameters.skipDependencyLayer, true)
             assert.strictEqual(parameters.syncFlags, '["--dependency-layer","--use-container","--save-params"]')
             prompterTester.assertCallAll()
@@ -1010,6 +251,7 @@ describe('SyncWizard', async () => {
              *  - paramsSource          : [Select]  3. ('Use default values from samconfig')
              *  - region                : [Skip]    null; will use 'us-west-2' from samconfig
              *  - stackName             : [Skip]    null; will use 'project-1' from samconfig
+             *  - bucketSource          : [Skip]    null;
              *  - bucketName            : [Skip]    automatically set for bucketSource option 1
              *  - syncFlags             : [Skip]    null; will use flags from samconfig
              */
@@ -1018,7 +260,7 @@ describe('SyncWizard', async () => {
             await testFolder.write('samconfig.toml', samconfigCompleteData)
 
             const prompterTester = PrompterTester.init()
-                .handleQuickPick('Specify parameters for deploy', async (quickPick) => {
+                .handleQuickPick('Specify parameter source for sync', async (quickPick) => {
                     // Need time to check samconfig.toml file and generate options
                     await quickPick.untilReady()
                     assert.strictEqual(quickPick.items.length, 3)
@@ -1066,12 +308,13 @@ describe('SyncWizard', async () => {
              *  - paramsSource          : [Select]   2. ('Specify required parameters')
              *  - region                : [Select]   'us-west-2'
              *  - stackName             : [Select]   2. 'stack2'
+             *  - bucketSource          : [Select]   2.  BucketSource.UserProvided
              *  - bucketName            : [select]   3. stack-3-bucket
              *  - syncFlags             : [Select]   ["--save-params"]
              */
 
             const prompterTester = PrompterTester.init()
-                .handleQuickPick('Specify parameters for deploy', async (picker) => {
+                .handleQuickPick('Specify parameter source for sync', async (picker) => {
                     // Need time to check samconfig.toml file and generate options
                     await picker.untilReady()
 
@@ -1091,6 +334,19 @@ describe('SyncWizard', async () => {
                     assert.strictEqual(picker.items[0].label, 'stack1')
                     assert.strictEqual(picker.items[1].label, 'stack2')
                     assert.strictEqual(picker.items[2].label, 'stack3')
+                    picker.acceptItem(picker.items[1])
+                })
+                .handleQuickPick('Specify S3 bucket for deployment artifacts', async (picker) => {
+                    await picker.untilReady()
+                    assert.strictEqual(picker.items.length, 2)
+                    assert.deepStrictEqual(picker.items[0], {
+                        label: 'Create a SAM CLI managed S3 bucket',
+                        data: BucketSource.SamCliManaged,
+                    })
+                    assert.deepStrictEqual(picker.items[1], {
+                        label: 'Specify an S3 bucket',
+                        data: BucketSource.UserProvided,
+                    })
                     picker.acceptItem(picker.items[1])
                 })
                 .handleQuickPick('Select an S3 Bucket', async (picker) => {
@@ -1115,9 +371,10 @@ describe('SyncWizard', async () => {
 
             assert.strictEqual(parameters.template.uri.path, templateFile.path)
             assert.strictEqual(parameters.projectRoot.path, projectRoot.path)
-            assert.strictEqual(parameters.paramsSource, ParamsSource.Flags)
+            assert.strictEqual(parameters.paramsSource, ParamsSource.Specify)
             assert.strictEqual(parameters.region, 'us-west-2')
             assert.strictEqual(parameters.stackName, 'stack2')
+            assert.strictEqual(parameters.bucketSource, BucketSource.UserProvided)
             assert.strictEqual(parameters.bucketName, 'stack-3-bucket')
             assert.strictEqual(parameters.deployType, 'infra')
             assert.strictEqual(parameters.skipDependencyLayer, true)
@@ -1133,7 +390,8 @@ describe('SyncWizard', async () => {
              *  - paramsSource          : [Select]  3. ('Use default values from samconfig')
              *  - region                : [Skip]    null; will use value from samconfig file
              *  - stackName             : [Skip]    null; will use value from samconfig file
-             *  - bucketName            : [Skip]    automatically set for bucketSource option 1
+             *  - bucketSource          : [Skip]    null;
+             *  - bucketName            : [Skip]    null; automatically set for bucketSource option 1
              *  - syncFlags             : [Skip]    null; will use flags from samconfig
              */
 
@@ -1141,7 +399,7 @@ describe('SyncWizard', async () => {
             await testFolder.write('samconfig.toml', samconfigCompleteData)
 
             const prompterTester = PrompterTester.init()
-                .handleQuickPick('Specify parameters for deploy', async (picker) => {
+                .handleQuickPick('Specify parameter source for sync', async (picker) => {
                     // Need time to check samconfig.toml file and generate options
                     await picker.untilReady()
 
@@ -1164,6 +422,7 @@ describe('SyncWizard', async () => {
             assert(!parameters.region)
             assert(!parameters.stackName)
             assert(!parameters.bucketSource)
+            assert(!parameters.bucketName)
             assert.strictEqual(parameters.skipDependencyLayer, true)
             prompterTester.assertCallAll()
         })
@@ -1201,7 +460,7 @@ describe('SyncWizard', async () => {
                     assert.strictEqual(quickPick.items[0].label, templateFile.fsPath)
                     quickPick.acceptItem(quickPick.items[0])
                 })
-                .handleQuickPick('Specify parameters for deploy', async (picker) => {
+                .handleQuickPick('Specify parameter source for sync', async (picker) => {
                     // Need time to check samconfig.toml file and generate options
                     await picker.untilReady()
 
@@ -1216,6 +475,19 @@ describe('SyncWizard', async () => {
                     assert.strictEqual(picker.items[0].label, 'stack1')
                     assert.strictEqual(picker.items[1].label, 'stack2')
                     assert.strictEqual(picker.items[2].label, 'stack3')
+                    picker.acceptItem(picker.items[1])
+                })
+                .handleQuickPick('Specify S3 bucket for deployment artifacts', async (picker) => {
+                    await picker.untilReady()
+                    assert.strictEqual(picker.items.length, 2)
+                    assert.deepStrictEqual(picker.items[0], {
+                        label: 'Create a SAM CLI managed S3 bucket',
+                        data: BucketSource.SamCliManaged,
+                    })
+                    assert.deepStrictEqual(picker.items[1], {
+                        label: 'Specify an S3 bucket',
+                        data: BucketSource.UserProvided,
+                    })
                     picker.acceptItem(picker.items[1])
                 })
                 .handleQuickPick('Select an S3 Bucket', async (picker) => {
@@ -1241,9 +513,10 @@ describe('SyncWizard', async () => {
 
             assert.strictEqual(parameters.template.uri.fsPath, templateFile.fsPath)
             assert.strictEqual(parameters.projectRoot.fsPath, projectRoot.fsPath)
-            assert.strictEqual(parameters.paramsSource, ParamsSource.Flags)
+            assert.strictEqual(parameters.paramsSource, ParamsSource.Specify)
             assert.strictEqual(parameters.region, 'us-west-2')
             assert.strictEqual(parameters.stackName, 'stack2')
+            assert.strictEqual(parameters.bucketSource, BucketSource.UserProvided)
             assert.strictEqual(parameters.bucketName, 'stack-2-bucket')
             assert.strictEqual(parameters.deployType, 'infra')
             assert.strictEqual(parameters.skipDependencyLayer, true)
@@ -1274,7 +547,7 @@ describe('SyncWizard', async () => {
                     assert.strictEqual(quickPick.items[0].label, templateFile.fsPath)
                     quickPick.acceptItem(quickPick.items[0])
                 })
-                .handleQuickPick('Specify parameters for deploy', async (picker) => {
+                .handleQuickPick('Specify parameter source for sync', async (picker) => {
                     // Need time to check samconfig.toml file and generate options
                     await picker.untilReady()
 
@@ -1324,7 +597,7 @@ describe('SyncWizard', async () => {
                     assert.strictEqual(quickPick.items[0].label, templateFile.fsPath)
                     quickPick.acceptItem(quickPick.items[0])
                 })
-                .handleQuickPick('Specify parameters for deploy', async (picker) => {
+                .handleQuickPick('Specify parameter source for sync', async (picker) => {
                     // Need time to check samconfig.toml file and generate options
                     await picker.untilReady()
 
@@ -1371,7 +644,7 @@ describe('SyncWizard', async () => {
                     assert.strictEqual(quickPick.items[0].label, templateFile.fsPath)
                     quickPick.acceptItem(quickPick.items[0])
                 })
-                .handleQuickPick('Specify parameters for deploy', async (picker) => {
+                .handleQuickPick('Specify parameter source for sync', async (picker) => {
                     // Need time to check samconfig.toml file and generate options
                     await picker.untilReady()
 
@@ -1391,6 +664,19 @@ describe('SyncWizard', async () => {
                 .handleQuickPick('Select a region', (quickPick) => {
                     const select = quickPick.items.filter((i) => i.detail === 'us-west-2')[0]
                     quickPick.acceptItem(select || quickPick.items[0])
+                })
+                .handleQuickPick('Specify S3 bucket for deployment artifacts', async (picker) => {
+                    await picker.untilReady()
+                    assert.strictEqual(picker.items.length, 2)
+                    assert.deepStrictEqual(picker.items[0], {
+                        label: 'Create a SAM CLI managed S3 bucket',
+                        data: BucketSource.SamCliManaged,
+                    })
+                    assert.deepStrictEqual(picker.items[1], {
+                        label: 'Specify an S3 bucket',
+                        data: BucketSource.UserProvided,
+                    })
+                    picker.acceptItem(picker.items[1])
                 })
                 .handleQuickPick('Select an S3 Bucket', async (picker) => {
                     await picker.untilReady()
@@ -1414,9 +700,10 @@ describe('SyncWizard', async () => {
             assert(parameters)
             assert.strictEqual(parameters.template.uri.fsPath, templateFile.fsPath)
             assert.strictEqual(parameters.projectRoot.fsPath, projectRoot.fsPath)
-            assert.strictEqual(parameters.paramsSource, ParamsSource.Flags)
+            assert.strictEqual(parameters.paramsSource, ParamsSource.Specify)
             assert.strictEqual(parameters.region, 'us-west-2')
             assert.strictEqual(parameters.stackName, 'stack2')
+            assert.strictEqual(parameters.bucketSource, BucketSource.UserProvided)
             assert.strictEqual(parameters.bucketName, 'stack-2-bucket')
             assert.strictEqual(parameters.deployType, 'infra')
             assert.strictEqual(parameters.skipDependencyLayer, true)
@@ -1446,7 +733,7 @@ describe('SyncWizard', async () => {
                     assert.strictEqual(quickPick.items[0].label, templateFile.fsPath)
                     quickPick.acceptItem(quickPick.items[0])
                 })
-                .handleQuickPick('Specify parameters for deploy', async (picker) => {
+                .handleQuickPick('Specify parameter source for sync', async (picker) => {
                     // Need time to check samconfig.toml file and generate options
                     await picker.untilReady()
 
@@ -1467,13 +754,18 @@ describe('SyncWizard', async () => {
                     assert.strictEqual(picker.items[2].label, 'stack3')
                     picker.acceptItem(picker.items[2])
                 })
-                .handleQuickPick('Select an S3 Bucket', async (picker) => {
+                .handleQuickPick('Specify S3 bucket for deployment artifacts', async (picker) => {
                     await picker.untilReady()
-                    assert.strictEqual(picker.items.length, 3)
-                    assert.strictEqual(picker.items[0].label, 'stack-1-bucket')
-                    assert.strictEqual(picker.items[1].label, 'stack-2-bucket')
-                    assert.strictEqual(picker.items[2].label, 'stack-3-bucket')
-                    picker.acceptItem(picker.items[2])
+                    assert.strictEqual(picker.items.length, 2)
+                    assert.deepStrictEqual(picker.items[0], {
+                        label: 'Create a SAM CLI managed S3 bucket',
+                        data: BucketSource.SamCliManaged,
+                    })
+                    assert.deepStrictEqual(picker.items[1], {
+                        label: 'Specify an S3 bucket',
+                        data: BucketSource.UserProvided,
+                    })
+                    picker.acceptItem(picker.items[0])
                 })
                 .handleQuickPick('Specify parameters for sync', async (picker) => {
                     await picker.untilReady()
@@ -1493,7 +785,8 @@ describe('SyncWizard', async () => {
             assert.strictEqual(parameters.paramsSource, ParamsSource.SpecifyAndSave)
             assert.strictEqual(parameters.region, 'us-west-2')
             assert.strictEqual(parameters.stackName, 'stack3')
-            assert.strictEqual(parameters.bucketName, 'stack-3-bucket')
+            assert.strictEqual(parameters.bucketSource, BucketSource.SamCliManaged)
+            assert(!parameters.bucketName)
             assert.strictEqual(parameters.deployType, 'infra')
             assert.strictEqual(parameters.skipDependencyLayer, true)
             assert.strictEqual(parameters.syncFlags, '["--dependency-layer","--use-container"]')
@@ -1523,7 +816,7 @@ describe('SyncWizard', async () => {
                     assert.strictEqual(quickPick.items[0].label, templateFile.fsPath)
                     quickPick.acceptItem(quickPick.items[0])
                 })
-                .handleQuickPick('Specify parameters for deploy', async (picker) => {
+                .handleQuickPick('Specify parameter source for sync', async (picker) => {
                     // Need time to check samconfig.toml file and generate options
                     await picker.untilReady()
 
@@ -1553,7 +846,7 @@ describe('SyncWizard', async () => {
     })
 })
 
-describe('SAM Sync', () => {
+describe('SAM runSync', () => {
     let sandbox: sinon.SinonSandbox
     let testFolder: TestFolder
     let projectRoot: vscode.Uri
@@ -1619,7 +912,7 @@ describe('SAM Sync', () => {
     describe(':) path', () => {
         beforeEach(() => {
             mockGetSamCliPath = sandbox
-                .stub(UtilsModule, 'getSamCliPathAndVersion')
+                .stub(SamUtilsModule, 'getSamCliPathAndVersion')
                 .callsFake(sandbox.stub().resolves({ path: 'sam-cli-path' }))
 
             // Confirm confirmDevStack message
@@ -1655,7 +948,7 @@ describe('SAM Sync', () => {
                     assert.strictEqual(quickPick.items[0].label, templateFile.fsPath)
                     quickPick.acceptItem(quickPick.items[0])
                 })
-                .handleQuickPick('Specify parameters for deploy', async (picker) => {
+                .handleQuickPick('Specify parameter source for sync', async (picker) => {
                     // Need time to check samconfig.toml file and generate options
                     await picker.untilReady()
                     assert.strictEqual(picker.items[0].label, 'Specify required parameters and save as defaults')
@@ -1669,6 +962,12 @@ describe('SAM Sync', () => {
                     await picker.untilReady()
                     assert.strictEqual(picker.items[2].label, 'stack3')
                     picker.acceptItem(picker.items[2])
+                })
+                .handleQuickPick('Specify S3 bucket for deployment artifacts', async (picker) => {
+                    await picker.untilReady()
+                    assert.strictEqual(picker.items.length, 2)
+                    assert.strictEqual(picker.items[1].label, 'Specify an S3 bucket')
+                    picker.acceptItem(picker.items[1])
                 })
                 .handleQuickPick('Select an S3 Bucket', async (picker) => {
                     await picker.untilReady()
@@ -1733,7 +1032,7 @@ describe('SAM Sync', () => {
 
         it('[entry: template file] specify flag should instantiate correct process in terminal', async () => {
             const prompterTester = PrompterTester.init()
-                .handleQuickPick('Specify parameters for deploy', async (picker) => {
+                .handleQuickPick('Specify parameter source for sync', async (picker) => {
                     // Need time to check samconfig.toml file and generate options
                     await picker.untilReady()
                     assert.strictEqual(picker.items[1].label, 'Specify required parameters')
@@ -1748,6 +1047,12 @@ describe('SAM Sync', () => {
                     await quickPick.untilReady()
                     assert.strictEqual(quickPick.items[0].label, 'stack1')
                     quickPick.acceptItem(quickPick.items[0])
+                })
+                .handleQuickPick('Specify S3 bucket for deployment artifacts', async (picker) => {
+                    await picker.untilReady()
+                    assert.strictEqual(picker.items.length, 2)
+                    assert.strictEqual(picker.items[1].label, 'Specify an S3 bucket')
+                    picker.acceptItem(picker.items[1])
                 })
                 .handleQuickPick('Select an S3 Bucket', async (picker) => {
                     await picker.untilReady()
@@ -1817,7 +1122,7 @@ describe('SAM Sync', () => {
             const samconfigFile = vscode.Uri.file(await testFolder.write('samconfig.toml', samconfigCompleteData))
 
             const prompterTester = PrompterTester.init()
-                .handleQuickPick('Specify parameters for deploy', async (picker) => {
+                .handleQuickPick('Specify parameter source for sync', async (picker) => {
                     // Need time to check samconfig.toml file and generate options
                     await picker.untilReady()
                     assert.strictEqual(picker.items[2].label, 'Use default values from samconfig')
@@ -1868,7 +1173,7 @@ describe('SAM Sync', () => {
         let appNode: AppNode
         beforeEach(async () => {
             mockGetSamCliPath = sandbox
-                .stub(UtilsModule, 'getSamCliPathAndVersion')
+                .stub(SamUtilsModule, 'getSamCliPathAndVersion')
                 .callsFake(sandbox.stub().resolves({ path: 'sam-cli-path' }))
 
             appNode = new AppNode({
@@ -1893,7 +1198,7 @@ describe('SAM Sync', () => {
 
             try {
                 await runSync('infra', appNode)
-                fail('should have thrown CancellationError')
+                assert.fail('should have thrown CancellationError')
             } catch (error: any) {
                 assert(error instanceof CancellationError)
                 assert.strictEqual(error.agent, 'user')
@@ -1903,11 +1208,11 @@ describe('SAM Sync', () => {
         it('should abort when customer cancel sync wizard', async () => {
             // Confirm confirmDevStack message
             getTestWindow().onDidShowMessage((m) => m.items.find((i) => i.title === 'OK')?.select())
-            sandbox.stub(SyncModule.SyncWizard.prototype, 'run').resolves(undefined)
+            sandbox.stub(SyncWizard.prototype, 'run').resolves(undefined)
 
             try {
                 await runSync('infra', appNode)
-                fail('should have thrown CancellationError')
+                assert.fail('should have thrown CancellationError')
             } catch (error: any) {
                 assert(error instanceof CancellationError)
                 assert.strictEqual(error.agent, 'user')
@@ -1919,7 +1224,7 @@ describe('SAM Sync', () => {
             getTestWindow().onDidShowMessage((m) => m.items.find((i) => i.title === 'OK')?.select())
 
             const prompterTester = PrompterTester.init()
-                .handleQuickPick('Specify parameters for deploy', async (picker) => {
+                .handleQuickPick('Specify parameter source for sync', async (picker) => {
                     // Need time to check samconfig.toml file and generate options
                     await picker.untilReady()
                     assert.strictEqual(picker.items[2].label, 'Use default values from samconfig')
@@ -1943,7 +1248,7 @@ describe('SAM Sync', () => {
 
             try {
                 await runSync('infra', appNode)
-                fail('should have thrown ToolkitError')
+                assert.fail('should have thrown ToolkitError')
             } catch (error: any) {
                 assert(error instanceof ToolkitError)
                 assert.strictEqual(error.message, 'Failed to sync SAM application')
@@ -1953,124 +1258,581 @@ describe('SAM Sync', () => {
     })
 })
 
-describe('saveAndBindArgs', () => {
-    let sandbox: sinon.SinonSandbox
-    let getConfigFileUriStub: sinon.SinonStub
+describe('SAM sync helper functions', () => {
+    describe('prepareSyncParams', function () {
+        let tempDir: vscode.Uri
 
-    beforeEach(() => {
-        sandbox = sinon.createSandbox()
-        getConfigFileUriStub = sandbox.stub()
+        beforeEach(async function () {
+            tempDir = vscode.Uri.file(await makeTemporaryToolkitFolder())
+        })
 
-        // Replace the real implementations with stubs
-        sandbox.stub(SyncModule, 'updateRecentResponse').resolves()
+        afterEach(async function () {
+            await fs.delete(tempDir, { recursive: true })
+        })
+
+        it('uses region if given a tree node', async function () {
+            const params = await prepareSyncParams(
+                new (class extends AWSTreeNodeBase {
+                    public override readonly regionCode = 'foo'
+                })('')
+            )
+
+            assert.strictEqual(params.region, 'foo')
+        })
+
+        async function makeTemplateItem(dir: vscode.Uri) {
+            const uri = vscode.Uri.joinPath(dir, 'template.yaml')
+            const data = makeSampleSamTemplateYaml(true)
+            await fs.writeFile(uri, JSON.stringify(data))
+
+            return { uri, data }
+        }
+
+        it('loads template if given a URI', async function () {
+            const template = await makeTemplateItem(tempDir)
+
+            const params = await prepareSyncParams(template.uri)
+            assert.strictEqual(params.template?.uri.fsPath, template.uri.fsPath)
+            assert.deepStrictEqual(params.template?.data, template.data)
+        })
+
+        it('skips dependency layers by default', async function () {
+            const template = await makeTemplateItem(tempDir)
+
+            const params = await prepareSyncParams(template.uri)
+            assert.strictEqual(params.skipDependencyLayer, true)
+        })
+
+        describe('samconfig.toml', function () {
+            async function makeDefaultConfig(dir: vscode.Uri, body: string) {
+                const uri = vscode.Uri.joinPath(dir, 'samconfig.toml')
+                const data = `
+            [default.sync.parameters]
+            ${body}
+`
+                await fs.writeFile(uri, data)
+
+                return uri
+            }
+
+            async function getParams(body: string, dir = tempDir) {
+                const config = await makeDefaultConfig(dir, body)
+
+                return prepareSyncParams(config)
+            }
+
+            it('throws on non-string values', async function () {
+                await assert.rejects(() => getParams(`region = 0`), ToolkitError)
+            })
+
+            it('does not fail on missing values', async function () {
+                const params = await getParams(`region = "bar"`)
+                assert.strictEqual(params.region, 'bar')
+            })
+
+            it('sets the project root as the parent directory', async function () {
+                const params = await getParams(`region = "bar"`, tempDir)
+                assert.strictEqual(params.projectRoot?.fsPath, tempDir.fsPath)
+            })
+
+            it('uses the depdency layer option if provided', async function () {
+                const params = await getParams(`dependency_layer = true`, tempDir)
+                assert.strictEqual(params.skipDependencyLayer, false)
+            })
+
+            it('can load a relative template param', async function () {
+                const template = await makeTemplateItem(tempDir)
+                const params = await getParams(`template = "./template.yaml"`)
+                assert.deepStrictEqual(params.template?.data, template.data)
+            })
+
+            it('can load an absolute template param', async function () {
+                const template = await makeTemplateItem(tempDir)
+                const params = await getParams(`template = '${template.uri.fsPath}'`)
+                assert.deepStrictEqual(params.template?.data, template.data)
+            })
+
+            it('can load a relative template param without a path seperator', async function () {
+                const template = await makeTemplateItem(tempDir)
+                const params = await getParams(`template = "template.yaml"`)
+                assert.deepStrictEqual(params.template?.data, template.data)
+            })
+
+            it('can load a template param using an alternate key', async function () {
+                const template = await makeTemplateItem(tempDir)
+                const params = await getParams(`template_file = "template.yaml"`)
+                assert.deepStrictEqual(params.template?.data, template.data)
+            })
+
+            it('can use global params', async function () {
+                const params = await getParams(`
+            region = "bar"
+            [default.global.parameters]
+            stack_name = "my-app"
+            `)
+                assert.strictEqual(params.stackName, 'my-app')
+            })
+
+            it('prefers using the sync section over globals', async function () {
+                const params = await getParams(`
+            stack_name = "my-sync-app"
+            [default.global.parameters]
+            stack_name = "my-app"
+            `)
+                assert.strictEqual(params.stackName, 'my-sync-app')
+            })
+
+            it('loads all values if found', async function () {
+                const params = await getParams(`
+            region = "bar"
+            stack_name = "my-app"
+            s3_bucket = "my-bucket"
+            image_repository = "12345679010.dkr.ecr.bar.amazonaws.com/repo"
+            `)
+                assert.strictEqual(params.region, 'bar')
+                assert.strictEqual(params.stackName, 'my-app')
+                assert.strictEqual(params.bucketName, 'my-bucket')
+                assert.strictEqual(params.ecrRepoUri, '12345679010.dkr.ecr.bar.amazonaws.com/repo')
+            })
+        })
     })
 
-    afterEach(() => {
-        sandbox.restore()
+    describe('syncFlagsPrompter', () => {
+        let sandbox: sinon.SinonSandbox
+        let acceptedItems: DataQuickPickItem<string>[]
+
+        beforeEach(() => {
+            sandbox = sinon.createSandbox()
+        })
+
+        afterEach(() => {
+            sandbox.restore() // Restore all stubs after each test
+        })
+
+        it('should return selected flags from buildFlagsPrompter', async () => {
+            getTestWindow().onDidShowQuickPick(async (picker) => {
+                await picker.untilReady()
+                assert.strictEqual(picker.items.length, 9)
+                assert.strictEqual(picker.title, 'Specify parameters for sync')
+                assert.deepStrictEqual(picker.items, syncFlagItems)
+                const buildInSource = picker.items[0]
+                const code = picker.items[1]
+                const dependencyLayer = picker.items[2]
+                assert.strictEqual(buildInSource.data, '--build-in-source')
+                assert.strictEqual(code.data, '--code')
+                assert.strictEqual(dependencyLayer.data, '--dependency-layer')
+                acceptedItems = [buildInSource, code, dependencyLayer]
+                picker.acceptItems(...acceptedItems)
+            })
+
+            const flags = await createMultiPick(syncFlagItems, {
+                title: 'Specify parameters for sync',
+                placeholder: 'Press enter to proceed with highlighted option',
+            }).prompt()
+
+            assert.deepStrictEqual(flags, JSON.stringify(acceptedItems.map((i) => i.data)))
+        })
     })
 
-    it('should bind arguments correctly for code deployment', async () => {
-        const testFolder = await TestFolder.create()
-        const templateFile = vscode.Uri.file(await testFolder.write('template.yaml', validTemplateData))
+    describe('createEnvironmentPrompter', () => {
+        let sandbox: sinon.SinonSandbox
+        let config: SamConfig
+        let listEnvironmentsStub: sinon.SinonStub
 
-        const args = {
-            deployType: 'code',
-            template: {
-                uri: templateFile,
+        beforeEach(() => {
+            sandbox = sinon.createSandbox()
+            // Create a stub for the SamConfig instance
+            config = new SamConfig(vscode.Uri.parse('dummy://uri'))
+            listEnvironmentsStub = sandbox.stub(config, 'listEnvironments')
+        })
+
+        afterEach(() => {
+            sandbox.restore()
+        })
+
+        it('should create a prompter with existing samconfig env', () => {
+            // Arrange
+            const defaultEnv: Environment = {
+                name: 'default',
+                commands: {},
+            }
+            const stagingEnv: Environment = {
+                name: 'staging',
+                commands: {},
+            }
+            const prodEnv: Environment = {
+                name: 'prod',
+                commands: {},
+            }
+            const envs: Environment[] = [defaultEnv, stagingEnv, prodEnv]
+
+            listEnvironmentsStub.returns(envs)
+            sandbox.stub(SamUtilsModule, 'getRecentResponse').returns(undefined)
+
+            // Act
+            const prompter = createEnvironmentPrompter(config)
+
+            // Assert
+            assert.ok(listEnvironmentsStub.calledOnce)
+            assert.strictEqual(prompter.quickPick.title, 'Select an Environment to Use')
+            assert.strictEqual(prompter.quickPick.placeholder, 'Select an environment')
+            assert.strictEqual(prompter.quickPick.items.length, 3)
+            assert.deepStrictEqual(prompter.quickPick.items, [
+                {
+                    label: 'default',
+                    data: defaultEnv,
+                    recentlyUsed: false,
+                },
+                {
+                    label: 'staging',
+                    data: stagingEnv,
+                    recentlyUsed: false,
+                },
+                {
+                    label: 'prod',
+                    data: prodEnv,
+                    recentlyUsed: false,
+                },
+            ])
+        })
+    })
+
+    describe('prepareSyncParams', () => {
+        let sandbox: sinon.SinonSandbox
+        beforeEach(() => {
+            sandbox = sinon.createSandbox()
+        })
+        afterEach(() => {
+            sandbox.restore()
+        })
+
+        it('should return correct params from region node', async () => {
+            const regionNode = new RegionNode({ name: 'us-east-1', id: 'IAD' } as Region, {} as RegionProvider)
+            const result = await prepareSyncParams(regionNode)
+            assert.deepStrictEqual(result, { skipDependencyLayer: true, region: 'IAD' })
+        })
+
+        it('should return correct params from appBuilder', async () => {
+            // setup appNode
+            const workspaceFolder = vscode.workspace.workspaceFolders?.[0]
+            assert.ok(workspaceFolder)
+            const templateUri = vscode.Uri.file('file://mock/path/project/file')
+            const projectRootUri = getProjectRootUri(templateUri)
+            const samAppLocation = {
+                samTemplateUri: templateUri,
+                workspaceFolder: workspaceFolder,
+                projectRoot: projectRootUri,
+            }
+            const appNode = new AppNode(samAppLocation)
+            const tryLoadStub = sandbox.stub(Cfn, 'load')
+
+            tryLoadStub.resolves({} as Cfn.Template)
+
+            const templateItem = {
+                uri: templateUri,
                 data: {},
-            } as TemplateItem,
-            bucketName: 'myBucket',
-            ecrRepoUri: 'myEcrRepo',
-            stackName: 'myStack',
-            region: 'us-east-1',
-            skipDependencyLayer: false,
-            paramsSource: ParamsSource.SpecifyAndSave,
-        } as SyncParams
+            }
 
-        const result = await saveAndBindArgs(args)
+            // Act
+            const result = await prepareSyncParams(appNode)
 
-        assert.ok(result.boundArgs.includes('--template'))
-        assert.ok(result.boundArgs.includes('--s3-bucket'))
-        assert.ok(result.boundArgs.includes('--image-repository'))
-        assert.ok(result.boundArgs.includes('--stack-name'))
-        assert.ok(result.boundArgs.includes('--region'))
-        assert.ok(result.boundArgs.includes('--code'))
-        assert.ok(result.boundArgs.includes('--save-params'))
-        assert.ok(result.boundArgs.includes(templateFile.fsPath))
-        assert.ok(result.boundArgs.includes('myBucket'))
-        assert.ok(result.boundArgs.includes('myEcrRepo'))
-        assert.ok(result.boundArgs.includes('myStack'))
-        assert.ok(result.boundArgs.includes('us-east-1'))
+            // Assert
+            assert.deepStrictEqual(result, {
+                skipDependencyLayer: true,
+                template: templateItem,
+                projectRoot: projectRootUri,
+            })
+        })
+
+        it('should return correct params for undefined input', async () => {
+            const result = await prepareSyncParams(undefined)
+            assert.deepStrictEqual(result, { skipDependencyLayer: true })
+        })
     })
 
-    it('should handle SamConfig paramsSource', async () => {
-        const testFolder = await TestFolder.create()
-        const projectRoot = vscode.Uri.file(testFolder.path)
-        const templateFile = vscode.Uri.file(await testFolder.write('template.yaml', validTemplateData))
-        const samConfigFile = vscode.Uri.file(await testFolder.write('samconfig.toml', '[default]'))
+    describe('getSyncParamsFromConfig', () => {
+        let sandbox: sinon.SinonSandbox
+        beforeEach(() => {
+            sandbox = sinon.createSandbox()
+        })
 
-        const args = {
-            deployType: 'code',
-            template: { uri: templateFile, data: {} } as TemplateItem,
-            bucketName: 'myBucket',
-            ecrRepoUri: 'myEcrRepo',
-            stackName: 'myStack',
-            region: 'us-east-1',
-            skipDependencyLayer: false,
-            paramsSource: ParamsSource.SamConfig,
-            projectRoot: projectRoot,
-        } as SyncParams
+        afterEach(() => {
+            sandbox.restore()
+        })
 
-        getConfigFileUriStub.resolves(samConfigFile)
+        it('should return correct params from config', async () => {
+            const configUri = vscode.Uri.file('file://mock/path/project/file')
+            const contents = `
+        [default]
+        [default.global.parameters]
+        stack_name = "TestApp"
+        [default.build.parameters]
+        cached = true
+        parallel = true
+        [default.deploy.parameters]
+        capabilities = "CAPABILITY_IAM"
+        confirm_changeset = true
+        resolve_s3 = true
+        [default.sync.parameters]
+        watch = true
+        template_file = "/Users/mbfreder/TestApp/JavaSamApp/serverless-patterns/s3-lambda-resizing-python/template.yaml"
+        s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-1o6ke33w96qag"
+        stack_name = "s3-lambda-resizing-java-4"
+        dependency_layer = false`
 
-        const result = await saveAndBindArgs(args)
+            const config = await parseConfig(contents)
+            const samconfig = new SamConfig(configUri, config)
 
-        assert.ok(result.boundArgs.includes('--config-file'))
-        assert.ok(result.boundArgs.includes(samConfigFile.fsPath))
+            const result = getSyncParamsFromConfig(samconfig)
+            assert.strictEqual(
+                result['templatePath'],
+                '/Users/mbfreder/TestApp/JavaSamApp/serverless-patterns/s3-lambda-resizing-python/template.yaml'
+            )
+            assert.strictEqual(result['bucketName'], 'aws-sam-cli-managed-default-samclisourcebucket-1o6ke33w96qag')
+            assert.strictEqual(result['stackName'], 's3-lambda-resizing-java-4')
+        })
+
+        it('should return correct params from config with no template file', async () => {
+            const configUri = vscode.Uri.file('file://mock/path/project/file')
+            const contents = `
+        [default]
+        [default.global.parameters]
+        stack_name = "TestApp"
+        [default.build.parameters]
+        cached = true
+        parallel = true
+        [default.deploy.parameters]
+        capabilities = "CAPABILITY_IAM"
+        confirm_changeset = true
+        resolve_s3 = true
+        [default.sync.parameters]
+        watch = true
+        s3_bucket = "bucket-from-samconfig"
+        stack_name = "s3-lambda-resizing-java-4"
+        dependency_layer = false`
+
+            const config = await parseConfig(contents)
+            const samconfig = new SamConfig(configUri, config)
+
+            const result = getSyncParamsFromConfig(samconfig)
+            assert.strictEqual(result['templatePath'], undefined)
+            assert.strictEqual(result['bucketName'], 'bucket-from-samconfig')
+            assert.strictEqual(result['stackName'], 's3-lambda-resizing-java-4')
+        })
     })
-})
 
-describe('ensureBucket', () => {
-    let sandbox: sinon.SinonSandbox
-    let createBucketStub
+    describe('saveAndBindArgs', () => {
+        let sandbox: sinon.SinonSandbox
+        let getConfigFileUriStub: sinon.SinonStub
 
-    beforeEach(() => {
-        sandbox = sinon.createSandbox()
+        beforeEach(() => {
+            sandbox = sinon.createSandbox()
+            getConfigFileUriStub = sandbox.stub()
+
+            // Replace the real implementations with stubs
+            sandbox.stub(SamUtilsModule, 'updateRecentResponse').resolves()
+        })
+
+        afterEach(() => {
+            sandbox.restore()
+        })
+
+        it('should bind arguments correctly for code deployment', async () => {
+            const testFolder = await TestFolder.create()
+            const templateFile = vscode.Uri.file(await testFolder.write('template.yaml', validTemplateData))
+
+            const args = {
+                deployType: 'code',
+                template: {
+                    uri: templateFile,
+                    data: {},
+                } as TemplateItem,
+                bucketName: 'myBucket',
+                ecrRepoUri: 'myEcrRepo',
+                stackName: 'myStack',
+                region: 'us-east-1',
+                skipDependencyLayer: false,
+                paramsSource: ParamsSource.SpecifyAndSave,
+            } as SyncParams
+
+            const result = await saveAndBindArgs(args)
+
+            assert.ok(result.boundArgs.includes('--template'))
+            assert.ok(result.boundArgs.includes('--s3-bucket'))
+            assert.ok(result.boundArgs.includes('--image-repository'))
+            assert.ok(result.boundArgs.includes('--stack-name'))
+            assert.ok(result.boundArgs.includes('--region'))
+            assert.ok(result.boundArgs.includes('--code'))
+            assert.ok(result.boundArgs.includes('--save-params'))
+            assert.ok(result.boundArgs.includes(templateFile.fsPath))
+            assert.ok(result.boundArgs.includes('myBucket'))
+            assert.ok(result.boundArgs.includes('myEcrRepo'))
+            assert.ok(result.boundArgs.includes('myStack'))
+            assert.ok(result.boundArgs.includes('us-east-1'))
+        })
+
+        it('should handle SamConfig paramsSource', async () => {
+            const testFolder = await TestFolder.create()
+            const projectRoot = vscode.Uri.file(testFolder.path)
+            const templateFile = vscode.Uri.file(await testFolder.write('template.yaml', validTemplateData))
+            const samConfigFile = vscode.Uri.file(await testFolder.write('samconfig.toml', '[default]'))
+
+            const args = {
+                deployType: 'code',
+                template: { uri: templateFile, data: {} } as TemplateItem,
+                bucketName: 'myBucket',
+                ecrRepoUri: 'myEcrRepo',
+                stackName: 'myStack',
+                region: 'us-east-1',
+                skipDependencyLayer: false,
+                paramsSource: ParamsSource.SamConfig,
+                projectRoot: projectRoot,
+            } as SyncParams
+
+            getConfigFileUriStub.resolves(samConfigFile)
+
+            const result = await saveAndBindArgs(args)
+
+            assert.ok(result.boundArgs.includes('--config-file'))
+            assert.ok(result.boundArgs.includes(samConfigFile.fsPath))
+        })
     })
 
-    afterEach(() => {
-        sandbox.restore() // Restore original behavior after each test
+    describe('ensureBucket', () => {
+        let sandbox: sinon.SinonSandbox
+        let createBucketStub
+
+        beforeEach(() => {
+            sandbox = sinon.createSandbox()
+        })
+
+        afterEach(() => {
+            sandbox.restore() // Restore original behavior after each test
+        })
+
+        it('should return the bucket name when it does not match newbucket:', async () => {
+            const resp = { region: 'us-east-1', bucketName: 'existing-bucket' }
+            const result = await ensureBucket(resp)
+            assert.strictEqual(result, 'existing-bucket')
+        })
+
+        it('should create a new bucket and return its name when bucketName matches newbucket:', async () => {
+            const resp = { region: 'us-east-1', bucketName: 'newbucket:my-new-bucket' }
+
+            // Stub the S3 client's createBucket method
+            createBucketStub = sandbox.stub(DefaultS3Client.prototype, 'createBucket').resolves()
+
+            const result = await ensureBucket(resp)
+            assert.ok(createBucketStub.calledOnce)
+            assert.strictEqual(createBucketStub.firstCall.args[0].bucketName, 'my-new-bucket')
+            assert.strictEqual(result, 'my-new-bucket')
+        })
+
+        it('should throw a ToolkitError when bucket creation fails', async () => {
+            const resp = { region: 'us-east-1', bucketName: 'newbucket:my-failing-bucket' }
+
+            // Stub the S3 client's createBucket method to throw an error
+            createBucketStub = sandbox
+                .stub(DefaultS3Client.prototype, 'createBucket')
+                .rejects(new Error('Failed to create S3 bucket'))
+
+            await assert.rejects(ensureBucket(resp)).catch((err) => {
+                assert.ok(err instanceof ToolkitError)
+                assert.ok(err.message, 'Failed to create S3 bucket')
+            })
+        })
     })
 
-    it('should return the bucket name when it does not match newbucket:', async () => {
-        const resp = { region: 'us-east-1', bucketName: 'existing-bucket' }
-        const result = await ensureBucket(resp)
-        assert.strictEqual(result, 'existing-bucket')
-    })
+    describe('ensureRepo', () => {
+        let createRepositoryStub: sinon.SinonStub
+        let sandbox: sinon.SinonSandbox
 
-    it('should create a new bucket and return its name when bucketName matches newbucket:', async () => {
-        const resp = { region: 'us-east-1', bucketName: 'newbucket:my-new-bucket' }
+        beforeEach(() => {
+            sandbox = sinon.createSandbox()
+            createRepositoryStub = sandbox.stub()
+            sandbox.stub(DefaultEcrClient.prototype, 'createRepository').callsFake(createRepositoryStub)
+        })
 
-        // Stub the S3 client's createBucket method
-        createBucketStub = sandbox.stub(DefaultS3Client.prototype, 'createBucket').resolves()
+        afterEach(() => {
+            sandbox.restore()
+        })
 
-        const result = await ensureBucket(resp)
-        assert.ok(createBucketStub.calledOnce)
-        assert.strictEqual(createBucketStub.firstCall.args[0].bucketName, 'my-new-bucket')
-        assert.strictEqual(result, 'my-new-bucket')
-    })
+        const createInput = (ecrRepoUri: string | undefined) => ({
+            region: 'us-west-2',
+            ecrRepoUri,
+        })
 
-    it('should throw a ToolkitError when bucket creation fails', async () => {
-        const resp = { region: 'us-east-1', bucketName: 'newbucket:my-failing-bucket' }
+        const createNewRepoInput = (repoName: string) => createInput(`newrepo:${repoName}`)
 
-        // Stub the S3 client's createBucket method to throw an error
-        createBucketStub = sandbox
-            .stub(DefaultS3Client.prototype, 'createBucket')
-            .rejects(new Error('Failed to create S3 bucket'))
+        describe('when not creating new repository', () => {
+            it('should return original ecrRepoUri when not matching newrepo pattern', async () => {
+                const input = createInput('existing-repo:latest')
+                const result = await ensureRepo(input)
 
-        await assert.rejects(ensureBucket(resp)).catch((err) => {
-            assert.ok(err instanceof ToolkitError)
-            assert.ok(err.message, 'Failed to create S3 bucket')
+                assert(createRepositoryStub.notCalled)
+                assert.strictEqual(result, input.ecrRepoUri)
+            })
+
+            it('should return original ecrRepoUri when ecrRepoUri is undefined', async () => {
+                const input = createInput(undefined)
+                const result = await ensureRepo(input)
+
+                assert(!result)
+                assert(createRepositoryStub.notCalled)
+            })
+        })
+
+        describe('when creating new repository', () => {
+            const repoName = 'test-repo'
+            const input = createNewRepoInput(repoName)
+
+            it('should create new repository successfully', async () => {
+                const expectedUri = 'aws.ecr.test/test-repo'
+                createRepositoryStub.resolves({
+                    repository: {
+                        repositoryUri: expectedUri,
+                    },
+                })
+
+                const result = await ensureRepo(input)
+
+                assert.strictEqual(result, expectedUri)
+                assert(createRepositoryStub.calledOnceWith(repoName))
+            })
+
+            it('should handle repository creation failure', async () => {
+                createRepositoryStub.rejects(new Error('Repository creation failed'))
+
+                try {
+                    await ensureRepo(input)
+                    assert.fail('Should have thrown an error')
+                } catch (err) {
+                    assert(err instanceof ToolkitError)
+                    assert.strictEqual(err.message, `Failed to create new ECR repository "${repoName}"`)
+                }
+            })
+
+            const testCases = [
+                {
+                    name: 'undefined repositoryUri',
+                    response: { repository: { repositoryUri: undefined } },
+                },
+                {
+                    name: 'empty repository response',
+                    response: {},
+                },
+            ]
+
+            testCases.forEach(({ name, response }) => {
+                it(`should handle ${name}`, async () => {
+                    createRepositoryStub.resolves(response)
+
+                    const result = await ensureRepo(input)
+
+                    assert(!result)
+                    assert(createRepositoryStub.calledOnceWith(repoName))
+                })
+            })
         })
     })
 })

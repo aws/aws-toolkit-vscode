@@ -21,4 +21,9 @@ export const mockFeatureConfigsData: FeatureEvaluation[] = [
         variation: 'TREATMENT',
         value: { stringValue: 'testValue' },
     },
+    {
+        feature: 'customizationArnOverride',
+        variation: 'customizationName',
+        value: { stringValue: 'customizationARN' },
+    },
 ]
