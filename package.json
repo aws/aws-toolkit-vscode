@@ -39,8 +39,11 @@
         "generateNonCodeFiles": "npm run generateNonCodeFiles -w packages/ --if-present"
     },
     "devDependencies": {
+        "@aws-sdk/client-ec2": "^3.699.0",
+        "@aws-sdk/protocol-http": "^3.370.0",
         "@aws-toolkits/telemetry": "^1.0.282",
         "@playwright/browser-chromium": "^1.43.1",
+        "@smithy/types": "^3.7.1",
         "@types/he": "^1.2.3",
         "@types/vscode": "^1.68.0",
         "@types/vscode-webview": "^1.57.1",
@@ -70,9 +73,6 @@
         "webpack-merge": "^5.10.0"
     },
     "dependencies": {
-        "@aws-sdk/client-ec2": "^3.699.0",
-        "@aws-sdk/protocol-http": "^3.370.0",
-        "@smithy/types": "^3.7.1",
         "@types/node": "^22.7.5",
         "vscode-nls": "^5.2.0",
         "vscode-nls-dev": "^4.0.4"
