@@ -81,6 +81,15 @@ const scenarios: TestScenario[] = [
         vscodeMinimum: '1.50.0',
     },
     {
+        runtime: 'nodejs22.x',
+        displayName: 'nodejs22.x (ZIP)',
+        path: 'hello-world/app.mjs',
+        debugSessionType: 'pwa-node',
+        language: 'javascript',
+        dependencyManager: 'npm',
+        vscodeMinimum: '1.78.0',
+    },
+    {
         runtime: 'python3.10',
         displayName: 'python 3.10 (ZIP)',
         path: 'hello_world/app.py',
@@ -187,6 +196,16 @@ const scenarios: TestScenario[] = [
         language: 'javascript',
         dependencyManager: 'npm',
         vscodeMinimum: '1.50.0',
+    },
+    {
+        runtime: 'nodejs22.x',
+        displayName: 'nodejs22.x (Image)',
+        baseImage: 'amazon/nodejs22.x-base',
+        path: 'hello-world/app.mjs',
+        debugSessionType: 'pwa-node',
+        language: 'javascript',
+        dependencyManager: 'npm',
+        vscodeMinimum: '1.78.0',
     },
     {
         runtime: 'python3.10',
