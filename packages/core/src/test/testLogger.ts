@@ -36,6 +36,8 @@ export class TestLogger extends BaseLogger {
     }
 
     private formatString(message: string, ...meta: any[]): string {
+        // Want to avoid reimplementing nodes `format` so instead concat to end of string
+        // Node's format implementation: https://github.com/nodejs/node/blob/3178a762d6a2b1a37b74f02266eea0f3d86603be/lib/internal/util/inspect.js#L2191-L2315
         return isWeb() ? [message, meta.map((s) => inspect(s))].join(' ') : util.format(message, ...meta)
     }
 
