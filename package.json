@@ -43,6 +43,8 @@
         "@aws-sdk/protocol-http": "^3.370.0",
         "@aws-toolkits/telemetry": "^1.0.282",
         "@playwright/browser-chromium": "^1.43.1",
+        "@smithy/core": "^2.5.4",
+        "@smithy/smithy-client": "^3.4.5",
         "@smithy/types": "^3.7.1",
         "@types/he": "^1.2.3",
         "@types/vscode": "^1.68.0",
