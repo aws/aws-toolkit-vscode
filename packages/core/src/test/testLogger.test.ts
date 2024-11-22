@@ -37,7 +37,8 @@ describe('TestLogger', function () {
         }
 
         getLogger().debug('here is my testObj: %O', testObj)
-        assertLogsContain('some info', false, 'debug')
+        const entries = getTestLogger().getLoggedEntries()
+        assertLogsContain(`here is my testObj: { info: 'some info' }`, true, 'debug')
     })
 
     it('has one logging entry for each logging statement', function () {
