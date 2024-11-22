@@ -37,7 +37,6 @@ describe('TestLogger', function () {
         }
 
         getLogger().debug('here is my testObj: %O', testObj)
-        const entries = getTestLogger().getLoggedEntries()
         assertLogsContain(`here is my testObj: { info: 'some info' }`, true, 'debug')
     })
 
