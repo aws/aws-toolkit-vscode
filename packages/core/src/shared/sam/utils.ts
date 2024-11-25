@@ -132,6 +132,14 @@ export function throwIfErrorMatches(result: ChildProcessResult) {
     }
 }
 
+export function getTerminalFromError(error: any): vscode.Terminal {
+    if (error instanceof ToolkitError) {
+        error.details?.['terminal'] as unknown as vscode.Terminal
+    }
+
+    return vscode.window.activeTerminal as vscode.Terminal
+}
+
 export enum SamCliErrorTypes {
     DockerUnreachable = 'Docker is unreachable.',
     ResolveS3AndS3Set = 'Cannot use both --resolve-s3 and --s3-bucket parameters in non-guided deployments.',
