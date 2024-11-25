@@ -6,29 +6,37 @@
 import assert from 'assert'
 import { TestInputBox, TestQuickPick } from '../vscode/quickInput'
 import { getTestWindow, TestWindow } from '../vscode/window'
+import { waitUntil } from '../../../shared/utilities/timeoutUtils'
+
+interface PrompterTesterConfig {
+    testWindow?: TestWindow
+    handlerTimeout?: number
+}
 
 export class PrompterTester {
     private quickPickHandlers: Map<string, (input: TestQuickPick) => void> = new Map()
     private inputBoxHanlder: Map<string, (input: TestInputBox) => void> = new Map()
     private testWindow: TestWindow
     private callLog = Array<string>()
+    private handlerTimeout: number = 3000 // Default timeout to 3 seconds
     private callLogCount = new Map<string, number>()
 
-    private constructor(testWindow?: TestWindow) {
-        this.testWindow = testWindow || getTestWindow()
+    private constructor(config?: PrompterTesterConfig) {
+        this.testWindow = config?.testWindow || getTestWindow()
+        this.handlerTimeout = config?.handlerTimeout || this.handlerTimeout
     }
 
-    static init(testWindow?: TestWindow): PrompterTester {
-        return new PrompterTester(testWindow)
+    static init(config?: PrompterTesterConfig): PrompterTester {
+        return new PrompterTester(config)
     }
 
-    handleQuickPick(titlePattern: string, handler: (input: TestQuickPick) => void): PrompterTester {
+    handleQuickPick(titlePattern: string, handler: (input: TestQuickPick) => void | Promise<void>): PrompterTester {
         this.quickPickHandlers.set(titlePattern, handler)
         this.callLogCount.set(titlePattern, 0)
         return this
     }
 
-    handleInputBox(titlePattern: string, handler: (input: TestInputBox) => void): PrompterTester {
+    handleInputBox(titlePattern: string, handler: (input: TestInputBox) => void | Promise<void>): PrompterTester {
         this.inputBoxHanlder.set(titlePattern, handler)
         this.callLogCount.set(titlePattern, 0)
         return this
@@ -96,15 +104,27 @@ export class PrompterTester {
         return [...this.quickPickHandlers.keys(), ...this.inputBoxHanlder.keys()]
     }
 
-    private handle(input: any, handlers: any) {
-        for (const [pattern, handler] of handlers) {
-            if (input.title?.includes(pattern)) {
-                handler(input)
-                this.record(pattern)
-                return
-            }
+    private async handle(input: any, handlers: any) {
+        const handler = handlers.get(input.title)
+
+        if (!handler) {
+            return this.handleUnknownPrompter(input)
         }
-        this.handleUnknownPrompter(input)
+
+        try {
+            await waitUntil(
+                async () => {
+                    await handler(input)
+                    return true
+                },
+                { timeout: this.handlerTimeout, interval: 50, truthy: false }
+            )
+        } catch (e) {
+            // clean up UI on callback function early exit (e.g assertion failure)
+            await input.dispose()
+            throw e
+        }
+        this.record(input.title)
     }
 
     private handleUnknownPrompter(input: any) {

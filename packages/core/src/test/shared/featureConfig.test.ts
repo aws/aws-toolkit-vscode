@@ -48,7 +48,7 @@ describe('FeatureConfigProvider', () => {
     it('test getFeatureConfigsTelemetry will return expected string', async () => {
         assert.strictEqual(
             FeatureConfigProvider.instance.getFeatureConfigsTelemetry(),
-            `{testFeature: TREATMENT, featureA: CONTROL, featureB: TREATMENT}`
+            `{testFeature: TREATMENT, featureA: CONTROL, featureB: TREATMENT, customizationArnOverride: customizationName}`
         )
     })
 
@@ -77,6 +77,13 @@ describe('FeatureConfigProvider', () => {
                     },
                     variation: 'TREATMENT',
                 },
+                customizationArnOverride: {
+                    name: 'customizationArnOverride',
+                    value: {
+                        stringValue: 'customizationARN',
+                    },
+                    variation: 'customizationName',
+                },
             }
 
             assert.deepStrictEqual(Object.fromEntries(featureConfigs), expectedFeatureConfigs)
@@ -93,6 +100,17 @@ describe('FeatureConfigProvider', () => {
 
     it('should test feature-does-not-exist as disabled', async () => {
         assert.strictEqual(FeatureConfigProvider.isEnabled('feature-does-not-exist' as FeatureName), false)
+    })
+
+    it('should retrieve customization override values', async () => {
+        assert.strictEqual(
+            FeatureConfigProvider.getFeature(Features.customizationArnOverride)?.value.stringValue,
+            'customizationARN'
+        )
+        assert.strictEqual(
+            FeatureConfigProvider.getFeature(Features.customizationArnOverride)?.variation,
+            'customizationName'
+        )
     })
 
     describe('getProjectContextGroup', function () {

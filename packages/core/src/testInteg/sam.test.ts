@@ -81,6 +81,15 @@ const scenarios: TestScenario[] = [
         vscodeMinimum: '1.50.0',
     },
     {
+        runtime: 'nodejs22.x',
+        displayName: 'nodejs22.x (ZIP)',
+        path: 'hello-world/app.mjs',
+        debugSessionType: 'pwa-node',
+        language: 'javascript',
+        dependencyManager: 'npm',
+        vscodeMinimum: '1.78.0',
+    },
+    {
         runtime: 'python3.10',
         displayName: 'python 3.10 (ZIP)',
         path: 'hello_world/app.py',
@@ -103,6 +112,16 @@ const scenarios: TestScenario[] = [
     {
         runtime: 'python3.12',
         displayName: 'python 3.12 (ZIP)',
+        path: 'hello_world/app.py',
+        debugSessionType: 'python',
+        language: 'python',
+        dependencyManager: 'pip',
+        // https://github.com/microsoft/vscode-python/blob/main/package.json
+        vscodeMinimum: '1.78.0',
+    },
+    {
+        runtime: 'python3.13',
+        displayName: 'python 3.13 (ZIP)',
         path: 'hello_world/app.py',
         debugSessionType: 'python',
         language: 'python',
@@ -179,6 +198,16 @@ const scenarios: TestScenario[] = [
         vscodeMinimum: '1.50.0',
     },
     {
+        runtime: 'nodejs22.x',
+        displayName: 'nodejs22.x (Image)',
+        baseImage: 'amazon/nodejs22.x-base',
+        path: 'hello-world/app.mjs',
+        debugSessionType: 'pwa-node',
+        language: 'javascript',
+        dependencyManager: 'npm',
+        vscodeMinimum: '1.78.0',
+    },
+    {
         runtime: 'python3.10',
         displayName: 'python 3.10 (ZIP)',
         baseImage: 'amazon/python3.10-base',
@@ -204,6 +233,17 @@ const scenarios: TestScenario[] = [
         runtime: 'python3.12',
         displayName: 'python 3.12 (ZIP)',
         baseImage: 'amazon/python3.12-base',
+        path: 'hello_world/app.py',
+        debugSessionType: 'python',
+        language: 'python',
+        dependencyManager: 'pip',
+        // https://github.com/microsoft/vscode-python/blob/main/package.json
+        vscodeMinimum: '1.78.0',
+    },
+    {
+        runtime: 'python3.13',
+        displayName: 'python 3.13 (ZIP)',
+        baseImage: 'amazon/python3.13-base',
         path: 'hello_world/app.py',
         debugSessionType: 'python',
         language: 'python',
@@ -706,7 +746,7 @@ describe('SAM Integration Tests', async function () {
             const appNode = new AppNode(samAppLocation)
 
             getTestWindow().onDidShowQuickPick((input) => {
-                if (input.title?.includes('Specify parameters for build')) {
+                if (input.title?.includes('Specify parameter source for build')) {
                     input.acceptItem(input.items[0])
                     const item = input.items[0] as DataQuickPickItem<ParamsSource>
                     assert.deepStrictEqual(item.data as ParamsSource, ParamsSource.Specify)

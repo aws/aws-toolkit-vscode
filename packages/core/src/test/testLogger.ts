@@ -3,47 +3,27 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Loggable, Logger, LogLevel } from '../shared/logger'
-import { compareLogLevel } from '../shared/logger/logger'
+import { Loggable, LogLevel } from '../shared/logger'
+import { BaseLogger, compareLogLevel } from '../shared/logger/logger'
 import { Uri } from 'vscode'
+import util from 'util'
+import { isWeb } from '../shared'
+import { inspect } from '../shared/utilities/collectionUtils'
 
 /**
  * In-memory Logger implementation suitable for use by tests.
  */
-export class TestLogger implements Logger {
+export class TestLogger extends BaseLogger {
     private readonly loggedEntries: {
         logLevel: LogLevel
         entry: Loggable
     }[] = []
     private count: number = 0
-    public constructor(private logLevel: LogLevel = 'debug') {}
-    logFile?: Uri | undefined
+    public constructor(private logLevel: LogLevel = 'debug') {
+        super()
+    }
 
     public enableDebugConsole(): void {}
-
-    public log(logLevel: LogLevel, ...message: Loggable[]): number {
-        return this.addLoggedEntries(logLevel, message)
-    }
-
-    public debug(...message: Loggable[]): number {
-        return this.addLoggedEntries('debug', message)
-    }
-
-    public verbose(...message: Loggable[]): number {
-        return this.addLoggedEntries('verbose', message)
-    }
-
-    public info(...message: Loggable[]): number {
-        return this.addLoggedEntries('info', message)
-    }
-
-    public warn(...message: Loggable[]): number {
-        return this.addLoggedEntries('warn', message)
-    }
-
-    public error(...message: Loggable[]): number {
-        return this.addLoggedEntries('error', message)
-    }
 
     public getLoggedEntries(...logLevels: LogLevel[]): Loggable[] {
         return this.loggedEntries
@@ -51,16 +31,20 @@ export class TestLogger implements Logger {
             .map((loggedEntry) => loggedEntry.entry)
     }
 
-    public sendToLog(logLevel: LogLevel, msg: string, ...entries: Loggable[]): number {
-        return this.addLoggedEntries(logLevel, [msg, ...entries])
+    public sendToLog(logLevel: LogLevel, msg: string, ...meta: any[]): number {
+        return this.addLoggedEntries(logLevel, msg, ...meta)
     }
 
-    private addLoggedEntries(logLevel: LogLevel, entries: Loggable[]): number {
-        entries.forEach((entry) => {
-            this.loggedEntries.push({
-                logLevel,
-                entry,
-            })
+    private formatString(message: string, ...meta: any[]): string {
+        // Want to avoid reimplementing nodes `format` so instead concat to end of string
+        // Node's format implementation: https://github.com/nodejs/node/blob/3178a762d6a2b1a37b74f02266eea0f3d86603be/lib/internal/util/inspect.js#L2191-L2315
+        return isWeb() ? [message, meta.map((s) => inspect(s))].join(' ') : util.format(message, ...meta)
+    }
+
+    private addLoggedEntries(logLevel: LogLevel, message: Loggable, ...meta: any[]): number {
+        this.loggedEntries.push({
+            logLevel,
+            entry: typeof message === 'string' && meta.length > 0 ? this.formatString(message, ...meta) : message,
         })
 
         return this.count++

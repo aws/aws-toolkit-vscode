@@ -718,8 +718,12 @@ export async function finalizeTransformationJob(status: string) {
     if (!(status === 'COMPLETED' || status === 'PARTIALLY_COMPLETED')) {
         getLogger().error(`CodeTransformation: ${CodeWhispererConstants.failedToCompleteJobNotification}`)
         jobPlanProgress['transformCode'] = StepProgress.Failed
-        transformByQState.setJobFailureErrorNotification(CodeWhispererConstants.failedToCompleteJobNotification)
-        transformByQState.setJobFailureErrorChatMessage(CodeWhispererConstants.failedToCompleteJobChatMessage)
+        if (!transformByQState.getJobFailureErrorNotification()) {
+            transformByQState.setJobFailureErrorNotification(CodeWhispererConstants.failedToCompleteJobNotification)
+        }
+        if (!transformByQState.getJobFailureErrorChatMessage()) {
+            transformByQState.setJobFailureErrorChatMessage(CodeWhispererConstants.failedToCompleteJobChatMessage)
+        }
         throw new Error('Job was not successful nor partially successful')
     }
     transformByQState.setToSucceeded()
@@ -811,15 +815,17 @@ export async function postTransformationJob() {
     }
 
     let chatMessage = transformByQState.getJobFailureErrorChatMessage()
+    const diffMessage = CodeWhispererConstants.diffMessage(transformByQState.getMultipleDiffs())
     if (transformByQState.isSucceeded()) {
-        chatMessage = CodeWhispererConstants.jobCompletedChatMessage
+        chatMessage = CodeWhispererConstants.jobCompletedChatMessage(diffMessage)
     } else if (transformByQState.isPartiallySucceeded()) {
-        chatMessage = CodeWhispererConstants.jobPartiallyCompletedChatMessage
+        chatMessage = CodeWhispererConstants.jobPartiallyCompletedChatMessage(diffMessage)
     }
 
-    transformByQState
-        .getChatControllers()
-        ?.transformationFinished.fire({ message: chatMessage, tabID: ChatSessionManager.Instance.getSession().tabID })
+    transformByQState.getChatControllers()?.transformationFinished.fire({
+        message: chatMessage,
+        tabID: ChatSessionManager.Instance.getSession().tabID,
+    })
     const durationInMs = calculateTotalLatency(CodeTransformTelemetryState.instance.getStartTime())
     const resultStatusMessage = transformByQState.getStatus()
 
@@ -842,11 +848,11 @@ export async function postTransformationJob() {
     }
 
     if (transformByQState.isSucceeded()) {
-        void vscode.window.showInformationMessage(CodeWhispererConstants.jobCompletedNotification)
+        void vscode.window.showInformationMessage(CodeWhispererConstants.jobCompletedNotification(diffMessage))
     } else if (transformByQState.isPartiallySucceeded()) {
         void vscode.window
             .showInformationMessage(
-                CodeWhispererConstants.jobPartiallyCompletedNotification,
+                CodeWhispererConstants.jobPartiallyCompletedNotification(diffMessage),
                 CodeWhispererConstants.amazonQFeedbackText
             )
             .then((choice) => {

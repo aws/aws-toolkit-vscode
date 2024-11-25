@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { TemplateItem, createTemplatePrompter } from './sync'
+import { TemplateItem, createTemplatePrompter } from '../ui/sam/templatePrompter'
 import { ChildProcess } from '../utilities/processUtils'
 import { addTelemetryEnvVar } from './cli/samCliInvokerUtils'
 import { Wizard } from '../wizards/wizard'
@@ -19,10 +19,11 @@ import globals from '../extensionGlobals'
 import { TreeNode } from '../treeview/resourceTreeDataProvider'
 import { telemetry } from '../telemetry/telemetry'
 import { getSpawnEnv } from '../env/resolveEnv'
-import { getProjectRoot, getSamCliPathAndVersion, isDotnetRuntime } from './utils'
+import { getErrorCode, getProjectRoot, getSamCliPathAndVersion, isDotnetRuntime, updateRecentResponse } from './utils'
 import { getConfigFileUri, validateSamBuildConfig } from './config'
 import { runInTerminal } from './processTerminal'
 
+const buildMementoRootKey = 'samcli.build.params'
 export interface BuildParams {
     readonly template: TemplateItem
     readonly projectRoot: vscode.Uri
@@ -58,7 +59,7 @@ export function createParamsSourcePrompter(existValidSamconfig: boolean) {
     )
 
     return createQuickPick(items, {
-        title: 'Specify parameters for build',
+        title: 'Specify parameter source for build',
         placeholder: 'Select configuration options for sam build',
         buttons: createCommonButtons(samBuildUrl),
     })
@@ -128,7 +129,9 @@ export class BuildWizard extends Wizard<BuildParams> {
         this.arg = arg
         if (this.arg === undefined) {
             // "Build" command was invoked on the command palette.
-            this.form.template.bindPrompter(() => createTemplatePrompter(this.registry))
+            this.form.template.bindPrompter(() =>
+                createTemplatePrompter(this.registry, buildMementoRootKey, samBuildUrl)
+            )
             this.form.projectRoot.setDefault(({ template }) => getProjectRoot(template))
             this.form.paramsSource.bindPrompter(async ({ projectRoot }) => {
                 const existValidSamConfig: boolean | undefined = await validateSamBuildConfig(projectRoot)
@@ -216,6 +219,8 @@ export async function runBuild(arg?: TreeNode): Promise<SamBuildResult> {
     const templatePath = params.template.uri.fsPath
     buildFlags.push('--template', `${templatePath}`)
 
+    await updateRecentResponse(buildMementoRootKey, 'global', 'templatePath', templatePath)
+
     try {
         const { path: samCliPath } = await getSamCliPathAndVersion()
 
@@ -236,6 +241,7 @@ export async function runBuild(arg?: TreeNode): Promise<SamBuildResult> {
     } catch (error) {
         throw ToolkitError.chain(error, 'Failed to build SAM template', {
             details: { ...resolveBuildArgConflict(buildFlags) },
+            code: getErrorCode(error),
         })
     }
 }
