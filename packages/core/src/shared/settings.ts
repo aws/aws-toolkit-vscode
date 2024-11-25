@@ -761,7 +761,7 @@ const devSettings = {
     ssoCacheDirectory: String,
     autofillStartUrl: String,
     webAuth: Boolean,
-    notifications: Boolean,
+    notificationsPollInterval: Number,
 }
 type ResolvedDevSettings = FromDescriptor<typeof devSettings>
 type AwsDevSetting = keyof ResolvedDevSettings
