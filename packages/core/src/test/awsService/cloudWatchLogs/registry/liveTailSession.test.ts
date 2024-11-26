@@ -94,7 +94,7 @@ describe('LiveTailSession', async function () {
     })
 
     it('closes a started session', async function () {
-        sinon.stub(CloudWatchLogsClient.prototype, 'send').callsFake(function () {
+        const startLiveTailStub = sinon.stub(CloudWatchLogsClient.prototype, 'send').callsFake(function () {
             return {
                 responseStream: mockResponseStream(),
             }
@@ -103,6 +103,10 @@ describe('LiveTailSession', async function () {
         assert.strictEqual(session.getLiveTailSessionDuration(), 0)
 
         const returnedResponseStream = await session.startLiveTailSession()
+        assert.strictEqual(startLiveTailStub.calledOnce, true)
+        const requestArgs = startLiveTailStub.getCall(0).args
+        assert.deepEqual(requestArgs[0].input, session.buildStartLiveTailCommand().input)
+        assert.strictEqual(requestArgs[1].abortSignal !== undefined && !requestArgs[1].abortSignal.aborted, true)
         assert.strictEqual(session.isAborted, false)
         assert.strictEqual(clock.countTimers(), 1)
         assert.deepStrictEqual(returnedResponseStream, mockResponseStream())
