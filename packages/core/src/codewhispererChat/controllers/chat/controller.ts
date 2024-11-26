@@ -632,10 +632,7 @@ export class ChatController {
                     this.messenger.sendOpenSettingsMessage(triggerID, tabID)
                     return
                 }
-            }
-            // if user does not have @workspace in the prompt, but user is Amazon internal
-            // add project context by default
-            else if (
+            } else if (
                 !LspController.instance.isIndexingInProgress() &&
                 CodeWhispererSettings.instance.isLocalIndexEnabled()
             ) {
