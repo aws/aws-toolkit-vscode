@@ -2,16 +2,44 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
+import * as sinon from 'sinon'
+import * as FakeTimers from '@sinonjs/fake-timers'
 import assert from 'assert'
 import { LiveTailSession } from '../../../../awsService/cloudWatchLogs/registry/liveTailSession'
-import { StartLiveTailCommand } from '@aws-sdk/client-cloudwatch-logs'
+import {
+    CloudWatchLogsClient,
+    StartLiveTailCommand,
+    StartLiveTailCommandOutput,
+    StartLiveTailResponseStream,
+} from '@aws-sdk/client-cloudwatch-logs'
 import { LogStreamFilterResponse } from '../../../../awsService/cloudWatchLogs/wizard/liveTailLogStreamSubmenu'
+import { installFakeClock } from '../../../testUtil'
 
 describe('LiveTailSession', async function () {
     const testLogGroupArn = 'arn:aws:test-log-group'
     const testRegion = 'test-region'
     const testFilter = 'test-filter'
     const testAwsCredentials = {} as any as AWS.Credentials
+
+    let sandbox: sinon.SinonSandbox
+    let clock: FakeTimers.InstalledClock
+
+    before(function () {
+        clock = installFakeClock()
+    })
+
+    beforeEach(function () {
+        clock.reset()
+        sandbox = sinon.createSandbox()
+    })
+
+    after(function () {
+        clock.uninstall()
+    })
+
+    afterEach(function () {
+        sandbox.restore()
+    })
 
     it('builds StartLiveTailCommand: no stream Filter, no event filter.', function () {
         const session = buildLiveTailSession({ type: 'all' }, undefined)
@@ -65,6 +93,32 @@ describe('LiveTailSession', async function () {
         )
     })
 
+    it('closes a started session', async function () {
+        sinon.stub(CloudWatchLogsClient.prototype, 'send').callsFake(function () {
+            return {
+                responseStream: mockResponseStream(),
+            }
+        })
+        const session = buildLiveTailSession({ type: 'all' }, testFilter)
+        assert.strictEqual(session.getLiveTailSessionDuration(), 0)
+
+        const returnedResponseStream = await session.startLiveTailSession()
+        assert.strictEqual(session.isAborted, false)
+        assert.strictEqual(clock.countTimers(), 1)
+        assert.deepStrictEqual(returnedResponseStream, mockResponseStream())
+
+        clock.tick(1000)
+        assert.strictEqual(session.getLiveTailSessionDuration(), 1000)
+
+        session.stopLiveTailSession()
+        assert.strictEqual(session.isAborted, true)
+        assert.strictEqual(clock.countTimers(), 0)
+
+        //Session is stopped; ticking the clock forward should not change the session duration
+        clock.tick(1000)
+        assert.strictEqual(session.getLiveTailSessionDuration(), 1000)
+    })
+
     function buildLiveTailSession(
         logStreamFilter: LogStreamFilterResponse,
         logEventFilterPattern: string | undefined
@@ -76,5 +130,17 @@ describe('LiveTailSession', async function () {
             region: testRegion,
             awsCredentials: testAwsCredentials,
         })
+    }
+
+    async function* mockResponseStream(): AsyncIterable<StartLiveTailResponseStream> {
+        const frame: StartLiveTailResponseStream = {
+            sessionUpdate: {
+                sessionMetadata: {
+                    sampled: false,
+                },
+                sessionResults: [],
+            },
+        }
+        yield frame
     }
 })
