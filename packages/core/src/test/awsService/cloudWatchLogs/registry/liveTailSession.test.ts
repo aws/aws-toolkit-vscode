@@ -9,7 +9,6 @@ import { LiveTailSession } from '../../../../awsService/cloudWatchLogs/registry/
 import {
     CloudWatchLogsClient,
     StartLiveTailCommand,
-    StartLiveTailCommandOutput,
     StartLiveTailResponseStream,
 } from '@aws-sdk/client-cloudwatch-logs'
 import { LogStreamFilterResponse } from '../../../../awsService/cloudWatchLogs/wizard/liveTailLogStreamSubmenu'
