@@ -1038,7 +1038,7 @@ describe('SAM runSync', () => {
                     assert.strictEqual(quickPick.items[0].label, templateFile.fsPath)
                     quickPick.acceptItem(quickPick.items[0])
                 })
-                .handleQuickPick('Specify parameters for deploy', async (picker) => {
+                .handleQuickPick('Specify parameter source for sync', async (picker) => {
                     // Need time to check samconfig.toml file and generate options
                     await picker.untilReady()
                     assert.strictEqual(picker.items[0].label, 'Specify required parameters and save as defaults')
@@ -1053,11 +1053,11 @@ describe('SAM runSync', () => {
                     assert.strictEqual(picker.items[2].label, 'stack3')
                     picker.acceptItem(picker.items[2])
                 })
-                .handleQuickPick('Select an S3 Bucket', async (picker) => {
+                .handleQuickPick('Specify S3 bucket for deployment artifacts', async (picker) => {
                     await picker.untilReady()
-                    assert.strictEqual(picker.items.length, 3)
-                    assert.strictEqual(picker.items[2].label, 'stack-3-bucket')
-                    picker.acceptItem(picker.items[2])
+                    assert.strictEqual(picker.items.length, 2)
+                    assert.strictEqual(picker.items[0].label, 'Create a SAM CLI managed S3 bucket')
+                    picker.acceptItem(picker.items[0])
                 })
                 .handleQuickPick('Specify parameters for sync', async (picker) => {
                     await picker.untilReady()
@@ -1081,8 +1081,6 @@ describe('SAM runSync', () => {
                     '--code',
                     '--template',
                     `${templateFile.fsPath}`,
-                    '--s3-bucket',
-                    'stack-3-bucket',
                     '--stack-name',
                     'stack3',
                     '--region',
