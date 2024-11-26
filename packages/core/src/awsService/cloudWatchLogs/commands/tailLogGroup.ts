@@ -52,25 +52,28 @@ export async function tailLogGroup(
             })
             return
         }
-
-        registry.set(uriToKey(session.uri), session)
-
         const document = await prepareDocument(session)
 
-        hideShowStatusBarItemsOnActiveEditor(session, document)
-        registerTabChangeCallback(session, registry, document, codeLensProvider)
+        const disposables: vscode.Disposable[] = []
+        disposables.push(hideShowStatusBarItemsOnActiveEditor(session, document))
+        disposables.push(closeSessionWhenAllEditorsClosed(session, registry, document, codeLensProvider))
 
-        const stream = await session.startLiveTailSession()
-        getLogger().info(`LiveTail session started: ${uriToKey(session.uri)}`)
-
-        span.record({
-            source: source,
-            result: 'Succeeded',
-            sessionAlreadyStarted: false,
-            hasLogEventFilterPattern: Boolean(wizardResponse.filterPattern),
-            logStreamFilterType: wizardResponse.logStreamFilter.type,
-        })
-        await handleSessionStream(stream, document, session)
+        try {
+            const stream = await session.startLiveTailSession()
+            registry.set(uriToKey(session.uri), session)
+            codeLensProvider.refresh()
+            getLogger().info(`LiveTail session started: ${uriToKey(session.uri)}`)
+            span.record({
+                source: source,
+                result: 'Succeeded',
+                sessionAlreadyStarted: false,
+                hasLogEventFilterPattern: Boolean(wizardResponse.filterPattern),
+                logStreamFilterType: wizardResponse.logStreamFilter.type,
+            })
+            await handleSessionStream(stream, document, session)
+        } finally {
+            disposables.forEach((disposable) => disposable.dispose())
+        }
     })
 }
 
@@ -224,8 +227,11 @@ function eventRate(event: LiveTailSessionUpdate): number {
     return event.sessionResults === undefined ? 0 : event.sessionResults.length
 }
 
-function hideShowStatusBarItemsOnActiveEditor(session: LiveTailSession, document: vscode.TextDocument) {
-    vscode.window.onDidChangeActiveTextEditor((editor) => {
+function hideShowStatusBarItemsOnActiveEditor(
+    session: LiveTailSession,
+    document: vscode.TextDocument
+): vscode.Disposable {
+    return vscode.window.onDidChangeActiveTextEditor((editor) => {
         session.showStatusBarItem(editor?.document === document)
     })
 }
@@ -242,13 +248,13 @@ function hideShowStatusBarItemsOnActiveEditor(session: LiveTailSession, document
  * from view, will not be returned. Meaning a Tab that is created (shown in top bar), but not open, will not be returned. Even if
  * the tab isn't visible, we want to continue writing to the doc, and keep the session alive.
  */
-function registerTabChangeCallback(
+function closeSessionWhenAllEditorsClosed(
     session: LiveTailSession,
     registry: LiveTailSessionRegistry,
     document: vscode.TextDocument,
     codeLensProvider: LiveTailCodeLensProvider
-) {
-    vscode.window.tabGroups.onDidChangeTabs((tabEvent) => {
+): vscode.Disposable {
+    return vscode.window.tabGroups.onDidChangeTabs((tabEvent) => {
         const isOpen = isLiveTailSessionOpenInAnyTab(session)
         if (!isOpen) {
             closeSession(session.uri, registry, 'ClosedEditors', codeLensProvider)
