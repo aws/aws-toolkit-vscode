@@ -154,6 +154,39 @@ export class TelemetryHelper {
             credentialStartUrl: AuthUtil.instance.startUrl,
             traceId: this.traceId,
         })
+
+        client
+            .sendTelemetryEvent({
+                telemetryEvent: {
+                    userTriggerDecisionEvent: {
+                        sessionId: sessionId,
+                        requestId: requestIdList[0],
+                        customizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
+                        programmingLanguage: {
+                            languageName: runtimeLanguageContext.toRuntimeLanguage(language),
+                        },
+                        completionType: 'LINE',
+                        suggestionState: 'EMPTY',
+                        recommendationLatencyMilliseconds: 0,
+                        triggerToResponseLatencyMilliseconds: session.timeToFirstRecommendation,
+                        perceivedLatencyMilliseconds: session.perceivedLatency,
+                        timestamp: new Date(Date.now()),
+                        suggestionReferenceCount: 0,
+                        generatedLine: 0,
+                        numberOfRecommendations: 0,
+                        acceptedCharacterCount: 0,
+                    },
+                },
+            })
+            .then()
+            .catch((error) => {
+                let requestId: string | undefined
+                if (isAwsError(error)) {
+                    requestId = error.requestId
+                }
+
+                getLogger().error(`Failed to invoke sendTelemetryEvent, requestId: ${requestId ?? ''}`)
+            })
     }
 
     /**
