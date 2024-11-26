@@ -51,7 +51,6 @@ import { getHttpStatusCode, AwsClientResponseError } from '../../../shared/error
 import { uiEventRecorder } from '../../../amazonq/util/eventRecorder'
 import { globals, waitUntil } from '../../../shared'
 import { telemetry } from '../../../shared/telemetry'
-import { Auth } from '../../../auth'
 import { isSsoConnection } from '../../../auth/connection'
 import { inspect } from '../../../shared/utilities/collectionUtils'
 
@@ -633,11 +632,7 @@ export class ChatController {
                     this.messenger.sendOpenSettingsMessage(triggerID, tabID)
                     return
                 }
-            }
-            // if user does not have @workspace in the prompt, but user is Amazon internal
-            // add project context by default
-            else if (
-                Auth.instance.isInternalAmazonUser() &&
+            } else if (
                 !LspController.instance.isIndexingInProgress() &&
                 CodeWhispererSettings.instance.isLocalIndexEnabled()
             ) {
