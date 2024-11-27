@@ -33,7 +33,7 @@ export async function createPolicyCommand(node: IotPolicyFolderNode, getPolicyDo
     }
 
     try {
-        //Parse to ensure this is a valid JSON
+        // Parse to ensure this is a valid JSON
         const policyJSON = JSON.parse(data.toString())
         await node.iot.createPolicy({ policyName, policyDocument: JSON.stringify(policyJSON) })
         void vscode.window.showInformationMessage(
@@ -45,7 +45,7 @@ export async function createPolicyCommand(node: IotPolicyFolderNode, getPolicyDo
         return
     }
 
-    //Refresh the Policy Folder node
+    // Refresh the Policy Folder node
     await node.refreshNode()
 }
 

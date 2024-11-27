@@ -53,7 +53,7 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
     errors.init(fs.getUsername(), env.isAutomation())
     await initializeComputeRegion()
 
-    globals.contextPrefix = 'amazonq.' //todo: disconnect from above line
+    globals.contextPrefix = 'amazonq.' // todo: disconnect from above line
 
     // Avoid activation if older toolkit is installed
     // Amazon Q is only compatible with AWS Toolkit >= 3.0.0
