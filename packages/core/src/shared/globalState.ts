@@ -33,6 +33,7 @@ export type globalKey =
     | 'aws.amazonq.showTryChatCodeLens'
     | 'aws.amazonq.notifications'
     | 'aws.notifications'
+    | 'aws.notifications.dev' // keys to store notifications for testing
     | 'aws.downloadPath'
     | 'aws.lastTouchedS3Folder'
     | 'aws.lastUploadedToS3Folder'

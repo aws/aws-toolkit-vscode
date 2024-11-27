@@ -238,15 +238,14 @@ export async function activate(context: vscode.ExtensionContext) {
 
         // TODO: Should probably emit for web as well.
         // Will the web metric look the same?
-        const authState = await getAuthState()
         telemetry.auth_userState.emit({
             passive: true,
             result: 'Succeeded',
             source: ExtensionUse.instance.sourceForTelemetry(),
-            ...authState,
+            ...(await getAuthState()),
         })
 
-        void activateNotifications(context, authState, getAuthState)
+        void activateNotifications(context, getAuthState)
     } catch (error) {
         const stacktrace = (error as Error).stack?.split('\n')
         // truncate if the stacktrace is unusually long
