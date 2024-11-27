@@ -10,7 +10,7 @@
 import * as vscode from 'vscode'
 import * as path from 'path'
 import * as nls from 'vscode-nls'
-import { spawn } from 'child_process'
+import { spawn } from 'child_process' // eslint-disable-line no-restricted-imports
 import * as crypto from 'crypto'
 import * as jose from 'jose'
 

@@ -6,7 +6,8 @@ import { BuildSystem, JDKVersion, TransformationCandidateProject } from '../../m
 import { getLogger } from '../../../shared/logger'
 import * as CodeWhispererConstants from '../../models/constants'
 import * as vscode from 'vscode'
-import { spawnSync } from 'child_process' // Consider using ChildProcess once we finalize all spawnSync calls
+// Consider using ChildProcess once we finalize all spawnSync calls
+import { spawnSync } from 'child_process' // eslint-disable-line no-restricted-imports
 import {
     NoJavaProjectsFoundError,
     NoMavenJavaProjectsFoundError,

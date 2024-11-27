@@ -100,6 +100,13 @@ export class ChildProcess {
         // TODO: allow caller to use the various loggers instead of just the single one
         this.#log = baseOptions.logging !== 'no' ? logger.getLogger() : logger.getNullLogger()
     }
+    public static async exec(
+        command: string,
+        args: string[] = [],
+        options?: ChildProcessOptions
+    ): Promise<ChildProcessResult> {
+        return await new ChildProcess(command, args, options).run()
+    }
 
     // Inspired by 'got'
     /**
