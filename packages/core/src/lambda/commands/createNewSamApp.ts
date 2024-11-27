@@ -45,7 +45,6 @@ import {
     isCloud9,
     getLaunchConfigDocUrl,
 } from '../../shared/extensionUtilities'
-//import { execFileSync } from 'child_process'
 import { checklogs } from '../../shared/localizedText'
 import globals from '../../shared/extensionGlobals'
 import { telemetry } from '../../shared/telemetry/telemetry'
