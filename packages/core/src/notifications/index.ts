@@ -4,3 +4,4 @@
  */
 
 export { activate } from './activation'
+export * from './controller'
