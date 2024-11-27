@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "'View Logs...' action redirects to output channel instead of Terminal"
+}

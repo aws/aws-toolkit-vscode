@@ -121,15 +121,21 @@ export function getErrorCode(error: unknown): string | undefined {
     return error instanceof ToolkitError ? error.code : undefined
 }
 
-export function throwIfErrorMatches(result: ChildProcessResult) {
+export function throwIfErrorMatches(result: ChildProcessResult, terminal?: vscode.Terminal) {
     const errorMessage = getSamCliErrorMessage(result.stderr)
     for (const errorType in SamCliErrorTypes) {
         if (errorMessage.includes(SamCliErrorTypes[errorType as keyof typeof SamCliErrorTypes])) {
             throw ToolkitError.chain(result.error, errorMessage, {
                 code: errorType,
+                details: { terminal: terminal },
             })
         }
     }
+}
+
+export function getTerminalFromError(error: any): vscode.Terminal {
+    return error.details?.['terminal'] as unknown as vscode.Terminal
+    //return vscode.window.activeTerminal as vscode.Terminal
 }
 
 export enum SamCliErrorTypes {
