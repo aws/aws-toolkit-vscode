@@ -1,3 +1,8 @@
+## 3.36.0 2024-11-27
+
+- **Bug Fix** appBuilder refresh feature doesnt work during sync --watch
+- **Bug Fix** 'View Logs...' action redirects to output channel instead of Terminal
+
 ## 3.35.0 2024-11-22
 
 - **Bug Fix** SAM: Update Sync and Deploy prompter titles for parameter source
