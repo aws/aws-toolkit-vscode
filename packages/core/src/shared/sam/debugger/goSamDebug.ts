@@ -18,7 +18,7 @@ import { getLogger } from '../../logger'
 import fs from '../../fs/fs'
 import { ChildProcess } from '../../utilities/processUtils'
 import { Timeout } from '../../utilities/timeoutUtils'
-import { execFileSync, SpawnOptions } from 'child_process'
+import { SpawnOptions } from 'child_process' // eslint-disable-line no-restricted-imports
 import * as nls from 'vscode-nls'
 import { sleep } from '../../utilities/timeoutUtils'
 import globals from '../../extensionGlobals'
@@ -174,9 +174,11 @@ async function makeInstallScript(debuggerPath: string, isWindows: boolean): Prom
     // Go from trying to find the manifest file and uses GOPATH provided below.
     installOptions.env!['GO111MODULE'] = 'off'
 
-    function getDelveVersion(repo: string, silent: boolean): string {
+    async function getDelveVersion(repo: string, silent: boolean): Promise<string> {
         try {
-            return execFileSync('git', ['-C', repo, 'describe', '--tags', '--abbrev=0']).toString().trim()
+            return (
+                await ChildProcess.exec('git', ['-C', repo, 'describe', '--tags', '--abbrev=0'], { collect: true })
+            ).stdout.trim()
         } catch (e) {
             if (!silent) {
                 throw e
@@ -187,7 +189,9 @@ async function makeInstallScript(debuggerPath: string, isWindows: boolean): Prom
 
     // It's fine if we can't get the latest Delve version, the Toolkit will use the last built one instead
     try {
-        const goPath: string = JSON.parse(execFileSync('go', ['env', '-json']).toString()).GOPATH
+        const goPath: string = JSON.parse(
+            (await ChildProcess.exec('go', ['env', '-json'], { collect: true })).stdout
+        ).GOPATH
         let repoPath: string = path.join(goPath, 'src', delveRepo)
 
         if (!getDelveVersion(repoPath, true)) {
@@ -200,11 +204,11 @@ async function makeInstallScript(debuggerPath: string, isWindows: boolean): Prom
             installOptions.env!['GOPATH'] = debuggerPath
             repoPath = path.join(debuggerPath, 'src', delveRepo)
             const args = ['get', '-d', `${delveRepo}/cmd/dlv`]
-            const out = execFileSync('go', args, installOptions as any)
+            const out = await ChildProcess.exec('go', args, { ...(installOptions as any), collect: true })
             getLogger().debug('"go %O": %s', args, out)
         }
 
-        delveVersion = getDelveVersion(repoPath, false)
+        delveVersion = await getDelveVersion(repoPath, false)
     } catch (e) {
         getLogger().debug('Failed to get latest Delve version: %O', e as Error)
     }
