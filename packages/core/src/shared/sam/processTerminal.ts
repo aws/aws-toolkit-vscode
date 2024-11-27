@@ -16,14 +16,15 @@ import { throwIfErrorMatches } from './utils'
 
 let oldTerminal: ProcessTerminal | undefined
 export async function runInTerminal(proc: ChildProcess, cmd: string) {
-    const handleResult = (result?: ChildProcessResult) => {
+    const handleResult = (result?: ChildProcessResult, terminal?: vscode.Terminal) => {
         if (result && result.exitCode !== 0) {
-            throwIfErrorMatches(result)
+            throwIfErrorMatches(result, terminal)
 
             // If no specific error matched, throw the default non-zero exit code error.
             const defaultMessage = `sam ${cmd} exited with a non-zero exit code: ${result.exitCode}`
             throw ToolkitError.chain(result.error, defaultMessage, {
                 code: 'NonZeroExitCode',
+                details: { terminal: terminal },
             })
         }
     }
@@ -56,7 +57,7 @@ export async function runInTerminal(proc: ChildProcess, cmd: string) {
             ? ToolkitError.chain(result.error, 'SAM CLI was cancelled before exiting', { cancelled: true })
             : new CancellationError('user')
     } else {
-        return handleResult(result)
+        return handleResult(result, terminal)
     }
 }
 
