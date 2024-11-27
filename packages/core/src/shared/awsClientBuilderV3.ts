@@ -5,7 +5,7 @@
 
 import { CredentialsShim } from '../auth/deprecated/loginManager'
 import { AwsContext } from './awsContext'
-import { AwsCredentialIdentityProvider } from '@smithy/types'
+import { AwsCredentialIdentityProvider, RetryStrategyV2 } from '@smithy/types'
 import { Client as IClient } from '@smithy/types'
 import { getUserAgent } from './telemetry/util'
 import { DevSettings } from './settings'
@@ -15,9 +15,11 @@ import {
     DeserializeMiddleware,
     HandlerExecutionContext,
     Provider,
+    RetryStrategy,
     UserAgent,
 } from '@aws-sdk/types'
 import { HttpResponse } from '@aws-sdk/protocol-http'
+import { ConfiguredRetryStrategy } from '@smithy/util-retry'
 import { telemetry } from './telemetry'
 import { getRequestId, getTelemetryReason, getTelemetryReasonDesc, getTelemetryResult } from './errors'
 import { extensionVersion } from '.'
@@ -32,6 +34,7 @@ interface AwsConfigOptions {
     requestHandler: any
     apiVersion: string
     endpoint: string
+    retryStrategy: RetryStrategy | RetryStrategyV2
 }
 export type AwsClientOptions = AwsConfigOptions
 
@@ -72,6 +75,11 @@ export class DefaultAWSClientBuilderV3 implements AWSClientBuilderV3 {
 
         if (!opt.customUserAgent && userAgent) {
             opt.customUserAgent = [[getUserAgent({ includePlatform: true, includeClientId: true }), extensionVersion]]
+        }
+
+        if (!opt.retryStrategy) {
+            // Simple exponential backoff strategy as default.
+            opt.retryStrategy = new ConfiguredRetryStrategy(5, (attempt: number) => 1000 * 2 ** attempt)
         }
         // TODO: add tests for refresh logic.
         opt.credentials = async () => {
