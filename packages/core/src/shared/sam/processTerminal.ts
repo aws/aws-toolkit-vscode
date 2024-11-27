@@ -18,7 +18,7 @@ let oldTerminal: ProcessTerminal | undefined
 export async function runInTerminal(proc: ChildProcess, cmd: string) {
     const handleResult = (result?: ChildProcessResult, terminal?: vscode.Terminal) => {
         if (result && result.exitCode !== 0) {
-            throwIfErrorMatches(result)
+            throwIfErrorMatches(result, terminal)
 
             // If no specific error matched, throw the default non-zero exit code error.
             const defaultMessage = `sam ${cmd} exited with a non-zero exit code: ${result.exitCode}`

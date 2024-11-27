@@ -516,8 +516,6 @@ describe('SAM runBuild', () => {
         })
 
         it('should throw ToolkitError when build command fail', async () => {
-            getTestWindow().onDidShowMessage((m) => m.items.find((i) => i.title === 'View Logs In Terminal')?.select())
-
             const prompterTester = PrompterTester.init()
                 .handleQuickPick('Specify parameter source for build', async (quickPick) => {
                     await quickPick.untilReady()
@@ -534,7 +532,7 @@ describe('SAM runBuild', () => {
                     value: sandbox.stub().resolves({
                         exitCode: -1,
                         stdout: 'Mock build command execution failure',
-                        stderr: '',
+                        stderr: 'Docker is unreachable.',
                     }),
                 },
             })
