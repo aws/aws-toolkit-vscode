@@ -1,3 +1,9 @@
+## 1.38.0 2024-11-27
+
+- **Feature** Amazon Q /dev: support `Dockerfile` files
+- **Feature** Introduce @workspace command to enhance context fetching for Chat
+- **Feature** Feature(Amazon Q Code Transformation): allow users to view results in 5 smaller diffs
+
 ## 1.37.0 2024-11-22
 
 - **Bug Fix** Amazon Q Feature Dev: display limit reached error message
