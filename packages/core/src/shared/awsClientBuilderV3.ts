@@ -19,7 +19,7 @@ import {
 } from '@aws-sdk/types'
 import { HttpResponse } from '@aws-sdk/protocol-http'
 import { telemetry } from './telemetry'
-import { getRequestId } from './errors'
+import { getRequestId, getTelemetryReason, getTelemetryReasonDesc, getTelemetryResult } from './errors'
 import { extensionVersion } from '.'
 import { getLogger } from './logger'
 import { omitIfPresent } from './utilities/tsUtils'
@@ -98,15 +98,13 @@ export function getServiceId(context: { clientName?: string; commandName?: strin
  * multiple API calls are made in the same context. We only do failures as successes are generally uninteresting and noisy.
  */
 export function recordErrorTelemetry(err: Error, serviceName?: string) {
-    interface RequestData {
-        requestId?: string
-        requestServiceType?: string
-    }
-
     telemetry.record({
         requestId: getRequestId(err),
         requestServiceType: serviceName,
-    } satisfies RequestData as any)
+        reasonDesc: getTelemetryReasonDesc(err),
+        reason: getTelemetryReason(err),
+        result: getTelemetryResult(err),
+    })
 }
 
 function logAndThrow(e: any, serviceId: string, errorMessageAppend: string): never {
