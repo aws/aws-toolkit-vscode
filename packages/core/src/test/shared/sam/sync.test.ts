@@ -1030,6 +1030,91 @@ describe('SAM runSync', () => {
             prompterTester.assertCallAll()
         })
 
+        it('[entry: command palette] specify and save flag (with --watch) should save params before starting SAM process', async () => {
+            const prompterTester = PrompterTester.init()
+                .handleQuickPick('Select a SAM/CloudFormation Template', async (quickPick) => {
+                    // Need sometime to wait for the template to search for template file
+                    await quickPick.untilReady()
+                    assert.strictEqual(quickPick.items[0].label, templateFile.fsPath)
+                    quickPick.acceptItem(quickPick.items[0])
+                })
+                .handleQuickPick('Specify parameter source for sync', async (picker) => {
+                    // Need time to check samconfig.toml file and generate options
+                    await picker.untilReady()
+                    assert.strictEqual(picker.items[0].label, 'Specify required parameters and save as defaults')
+                    picker.acceptItem(picker.items[0])
+                })
+                .handleQuickPick('Select a region', (quickPick) => {
+                    const select = quickPick.items.filter((i) => i.detail === 'us-west-2')[0]
+                    quickPick.acceptItem(select || quickPick.items[0])
+                })
+                .handleQuickPick('Select a CloudFormation Stack', async (picker) => {
+                    await picker.untilReady()
+                    assert.strictEqual(picker.items[2].label, 'stack3')
+                    picker.acceptItem(picker.items[2])
+                })
+                .handleQuickPick('Specify S3 bucket for deployment artifacts', async (picker) => {
+                    await picker.untilReady()
+                    assert.strictEqual(picker.items.length, 2)
+                    assert.strictEqual(picker.items[0].label, 'Create a SAM CLI managed S3 bucket')
+                    picker.acceptItem(picker.items[0])
+                })
+                .handleQuickPick('Specify parameters for sync', async (picker) => {
+                    await picker.untilReady()
+                    assert.strictEqual(picker.items.length, 9)
+                    const dependencyLayer = picker.items.filter((item) => item.label === 'Dependency layer')[0]
+                    const useContainer = picker.items.filter((item) => item.label === 'Use container')[0]
+                    const watch = picker.items.filter((item) => item.label === 'Watch')[0]
+                    picker.acceptItems(dependencyLayer, useContainer, watch)
+                })
+                .build()
+
+            // Invoke sync command from command palette
+            await runSync('code', undefined)
+
+            assert(mockGetSamCliPath.calledOnce)
+            assert(mockChildProcessClass.calledOnce)
+            assert.deepEqual(mockChildProcessClass.getCall(0).args, [
+                'sam-cli-path',
+                [
+                    'sync',
+                    '--code',
+                    '--template',
+                    `${templateFile.fsPath}`,
+                    '--stack-name',
+                    'stack3',
+                    '--region',
+                    'us-west-2',
+                    '--no-dependency-layer',
+                    '--save-params',
+                    '--dependency-layer',
+                    '--use-container',
+                    '--watch',
+                ],
+                {
+                    spawnOptions: {
+                        cwd: projectRoot?.fsPath,
+                        env: {
+                            AWS_TOOLING_USER_AGENT: 'AWS-Toolkit-For-VSCode/testPluginVersion',
+                            SAM_CLI_TELEMETRY: '0',
+                        },
+                    },
+                },
+            ])
+            assert(mockGetSpawnEnv.calledOnce)
+            assert(spyRunInterminal.calledOnce)
+            assert.deepEqual(spyRunInterminal.getCall(0).args, [mockSamSyncChildProcess, 'sync'])
+            assert.strictEqual(spyWriteSamconfigGlobal.callCount, 2)
+            assert(spyWriteSamconfigGlobal.calledBefore(spyRunInterminal))
+            // Check telementry
+            assertTelemetry('sam_sync', { result: 'Succeeded', source: undefined })
+            assertTelemetryCurried('sam_sync')({
+                syncedResources: 'CodeOnly',
+                source: undefined,
+            })
+            prompterTester.assertCallAll()
+        })
+
         it('[entry: template file] specify flag should instantiate correct process in terminal', async () => {
             const prompterTester = PrompterTester.init()
                 .handleQuickPick('Specify parameter source for sync', async (picker) => {
