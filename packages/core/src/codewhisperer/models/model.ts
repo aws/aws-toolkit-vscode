@@ -808,6 +808,7 @@ export class TransformByQState {
         this.errorLog = ''
         this.customBuildCommand = ''
         this.intervalId = undefined
+        this.produceMultipleDiffs = false
     }
 }
 

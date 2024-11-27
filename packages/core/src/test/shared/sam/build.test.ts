@@ -515,7 +515,7 @@ describe('SAM runBuild', () => {
             }
         })
 
-        it('should throw ToolkitError when sync command fail', async () => {
+        it('should throw ToolkitError when build command fail', async () => {
             const prompterTester = PrompterTester.init()
                 .handleQuickPick('Specify parameter source for build', async (quickPick) => {
                     await quickPick.untilReady()
@@ -532,7 +532,7 @@ describe('SAM runBuild', () => {
                     value: sandbox.stub().resolves({
                         exitCode: -1,
                         stdout: 'Mock build command execution failure',
-                        stderr: '',
+                        stderr: 'Docker is unreachable.',
                     }),
                 },
             })
@@ -544,6 +544,8 @@ describe('SAM runBuild', () => {
             } catch (error: any) {
                 assert(error instanceof ToolkitError)
                 assert.strictEqual(error.message, 'Failed to build SAM template')
+                assert(error.details?.['terminal'] as unknown as vscode.Terminal)
+                assert.strictEqual((error.details?.['terminal'] as unknown as vscode.Terminal).name, 'SAM build')
             }
             prompterTester.assertCallAll()
         })

@@ -50,7 +50,7 @@ import { TemplateItem, createTemplatePrompter } from '../ui/sam/templatePrompter
 import { createStackPrompter } from '../ui/sam/stackPrompter'
 import { ParamsSource, createSyncParamsSourcePrompter } from '../ui/sam/paramsSourcePrompter'
 import { createEcrPrompter } from '../ui/sam/ecrPrompter'
-import { BucketSource, createBucketNamePrompter } from '../ui/sam/bucketPrompter'
+import { BucketSource, createBucketNamePrompter, createBucketSourcePrompter } from '../ui/sam/bucketPrompter'
 import { runInTerminal } from './processTerminal'
 import { WizardPrompter } from '../ui/wizardPrompter'
 import { TemplateParametersWizard } from '../../awsService/appBuilder/wizards/templateParametersWizard'
@@ -183,7 +183,7 @@ export class SyncWizard extends Wizard<SyncParams> {
     ) {
         super({ initState: state, exitPrompterProvider: shouldPromptExit ? createExitPrompter : undefined })
         this.registry = registry
-        this.form.template.bindPrompter(() => createTemplatePrompter(this.registry, syncMementoRootKey))
+        this.form.template.bindPrompter(() => createTemplatePrompter(this.registry, syncMementoRootKey, samSyncUrl))
         this.form.templateParameters.bindPrompter(async ({ template }) => {
             const samTemplateParameters = await getParameters(template!.uri)
             if (!samTemplateParameters || samTemplateParameters.size === 0) {
@@ -211,12 +211,15 @@ export class SyncWizard extends Wizard<SyncParams> {
                     paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
             }
         )
+        this.form.bucketSource.bindPrompter(() => createBucketSourcePrompter(samSyncUrl), {
+            showWhen: ({ paramsSource }) =>
+                paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
+        })
 
         this.form.bucketName.bindPrompter(
-            ({ region }) => createBucketNamePrompter(new DefaultS3Client(region!), syncMementoRootKey),
+            ({ region }) => createBucketNamePrompter(new DefaultS3Client(region!), syncMementoRootKey, samSyncUrl),
             {
-                showWhen: ({ paramsSource }) =>
-                    paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
+                showWhen: ({ bucketSource }) => bucketSource === BucketSource.UserProvided,
             }
         )
 
@@ -387,9 +390,15 @@ export async function runSamSync(args: SyncParams) {
         }),
     })
 
-    await runInTerminal(sam, 'sync')
+    // with '--watch' selected, the sync process will run in the background until the user manually kills it
+    // we need to save the stack and region to the samconfig file now, otherwise the user would not see latest deployed resoure during this sync process
     const { paramsSource, stackName, region, projectRoot } = args
     const shouldWriteSyncSamconfigGlobal = paramsSource !== ParamsSource.SamConfig && !!stackName && !!region
+    if (boundArgs.includes('--watch')) {
+        shouldWriteSyncSamconfigGlobal && (await writeSamconfigGlobal(projectRoot, stackName, region))
+    }
+
+    await runInTerminal(sam, 'sync')
     shouldWriteSyncSamconfigGlobal && (await writeSamconfigGlobal(projectRoot, stackName, region))
 }
 

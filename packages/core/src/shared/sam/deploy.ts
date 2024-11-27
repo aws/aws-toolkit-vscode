@@ -83,7 +83,7 @@ export class DeployWizard extends Wizard<DeployParams> {
         this.state = state
         this.arg = arg
 
-        this.form.template.bindPrompter(() => createTemplatePrompter(this.registry, deployMementoRootKey))
+        this.form.template.bindPrompter(() => createTemplatePrompter(this.registry, deployMementoRootKey, samDeployUrl))
 
         this.form.templateParameters.bindPrompter(async ({ template }) => {
             const samTemplateParameters = await getParameters(template.uri)
@@ -110,12 +110,12 @@ export class DeployWizard extends Wizard<DeployParams> {
                     paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
             }
         )
-        this.form.bucketSource.bindPrompter(() => createBucketSourcePrompter(), {
+        this.form.bucketSource.bindPrompter(() => createBucketSourcePrompter(samDeployUrl), {
             showWhen: ({ paramsSource }) =>
                 paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
         })
         this.form.bucketName.bindPrompter(
-            ({ region }) => createBucketNamePrompter(new DefaultS3Client(region!), deployMementoRootKey),
+            ({ region }) => createBucketNamePrompter(new DefaultS3Client(region!), deployMementoRootKey, samDeployUrl),
             {
                 showWhen: ({ bucketSource }) => bucketSource === BucketSource.UserProvided,
             }

@@ -66,6 +66,7 @@ import { createTestRegionProvider } from '../regions/testUtil'
 import { ToolkitPromptSettings } from '../../../shared/settings'
 import { DefaultEcrClient } from '../../../shared/clients/ecrClient'
 import assert from 'assert'
+import { BucketSource } from '../../../shared/ui/sam/bucketPrompter'
 
 describe('SAM SyncWizard', async function () {
     const createTester = async (params?: Partial<SyncParams>) =>
@@ -174,7 +175,8 @@ describe('SAM SyncWizard', async () => {
              *  - paramsSource          : [Select]   1. ('Specify required parameters and save as defaults')
              *  - region                : [Select]   'us-west-2'
              *  - stackName             : [Select]   1. 'stack1'
-             *  - bucketName            : [Select]   1. 'stack-1-bucket'
+             *  - bucketSource          : [Select]   1.  BucketSource.SamCliManaged
+             *  - bucketName            : [Skip]     undefined
              *  - syncFlags             : [Select]   ["--dependency-layer","--use-container","--save-params"]
              */
 
@@ -211,12 +213,17 @@ describe('SAM SyncWizard', async () => {
                     assert.strictEqual(quickPick.items[2].label, 'stack3')
                     quickPick.acceptItem(quickPick.items[0])
                 })
-                .handleQuickPick('Select an S3 Bucket', async (picker) => {
+                .handleQuickPick('Specify S3 bucket for deployment artifacts', async (picker) => {
                     await picker.untilReady()
-                    assert.strictEqual(picker.items.length, 3)
-                    assert.strictEqual(picker.items[0].label, 'stack-1-bucket')
-                    assert.strictEqual(picker.items[1].label, 'stack-2-bucket')
-                    assert.strictEqual(picker.items[2].label, 'stack-3-bucket')
+                    assert.strictEqual(picker.items.length, 2)
+                    assert.deepEqual(picker.items[0], {
+                        label: 'Create a SAM CLI managed S3 bucket',
+                        data: BucketSource.SamCliManaged,
+                    })
+                    assert.deepEqual(picker.items[1], {
+                        label: 'Specify an S3 bucket',
+                        data: BucketSource.UserProvided,
+                    })
                     picker.acceptItem(picker.items[0])
                 })
                 .handleQuickPick('Specify parameters for sync', async (picker) => {
@@ -238,8 +245,9 @@ describe('SAM SyncWizard', async () => {
             assert.strictEqual(parameters.paramsSource, ParamsSource.Specify)
             assert.strictEqual(parameters.region, 'us-west-2')
             assert.strictEqual(parameters.stackName, 'stack1')
+            assert.strictEqual(parameters.bucketSource, BucketSource.SamCliManaged)
+            assert(!parameters.bucketName)
             assert.strictEqual(parameters.deployType, 'infra')
-            assert.strictEqual(parameters.bucketName, 'stack-1-bucket')
             assert.strictEqual(parameters.skipDependencyLayer, true)
             assert.strictEqual(parameters.syncFlags, '["--dependency-layer","--use-container","--save-params"]')
             prompterTester.assertCallAll()
@@ -257,6 +265,7 @@ describe('SAM SyncWizard', async () => {
              *  - paramsSource          : [Select]  3. ('Use default values from samconfig')
              *  - region                : [Skip]    null; will use 'us-west-2' from samconfig
              *  - stackName             : [Skip]    null; will use 'project-1' from samconfig
+             *  - bucketSource          : [Skip]    null;
              *  - bucketName            : [Skip]    automatically set for bucketSource option 1
              *  - syncFlags             : [Skip]    null; will use flags from samconfig
              */
@@ -323,6 +332,7 @@ describe('SAM SyncWizard', async () => {
              *  - paramsSource          : [Select]   2. ('Specify required parameters')
              *  - region                : [Select]   'us-west-2'
              *  - stackName             : [Select]   2. 'stack2'
+             *  - bucketSource          : [Select]   2.  BucketSource.UserProvided
              *  - bucketName            : [select]   3. stack-3-bucket
              *  - syncFlags             : [Select]   ["--save-params"]
              */
@@ -356,6 +366,19 @@ describe('SAM SyncWizard', async () => {
                     assert.strictEqual(picker.items[2].label, 'stack3')
                     picker.acceptItem(picker.items[1])
                 })
+                .handleQuickPick('Specify S3 bucket for deployment artifacts', async (picker) => {
+                    await picker.untilReady()
+                    assert.strictEqual(picker.items.length, 2)
+                    assert.deepStrictEqual(picker.items[0], {
+                        label: 'Create a SAM CLI managed S3 bucket',
+                        data: BucketSource.SamCliManaged,
+                    })
+                    assert.deepStrictEqual(picker.items[1], {
+                        label: 'Specify an S3 bucket',
+                        data: BucketSource.UserProvided,
+                    })
+                    picker.acceptItem(picker.items[1])
+                })
                 .handleQuickPick('Select an S3 Bucket', async (picker) => {
                     await picker.untilReady()
                     assert.strictEqual(picker.items.length, 3)
@@ -381,6 +404,7 @@ describe('SAM SyncWizard', async () => {
             assert.strictEqual(parameters.paramsSource, ParamsSource.Specify)
             assert.strictEqual(parameters.region, 'us-west-2')
             assert.strictEqual(parameters.stackName, 'stack2')
+            assert.strictEqual(parameters.bucketSource, BucketSource.UserProvided)
             assert.strictEqual(parameters.bucketName, 'stack-3-bucket')
             assert.strictEqual(parameters.deployType, 'infra')
             assert.strictEqual(parameters.skipDependencyLayer, true)
@@ -400,7 +424,8 @@ describe('SAM SyncWizard', async () => {
              *  - paramsSource          : [Select]  3. ('Use default values from samconfig')
              *  - region                : [Skip]    null; will use value from samconfig file
              *  - stackName             : [Skip]    null; will use value from samconfig file
-             *  - bucketName            : [Skip]    automatically set for bucketSource option 1
+             *  - bucketSource          : [Skip]    null;
+             *  - bucketName            : [Skip]    null; automatically set for bucketSource option 1
              *  - syncFlags             : [Skip]    null; will use flags from samconfig
              */
 
@@ -437,6 +462,7 @@ describe('SAM SyncWizard', async () => {
             assert(!parameters.region)
             assert(!parameters.stackName)
             assert(!parameters.bucketSource)
+            assert(!parameters.bucketName)
             assert.strictEqual(parameters.skipDependencyLayer, true)
             prompterTester.assertCallAll()
         })
@@ -501,6 +527,19 @@ describe('SAM SyncWizard', async () => {
                     assert.strictEqual(picker.items[2].label, 'stack3')
                     picker.acceptItem(picker.items[1])
                 })
+                .handleQuickPick('Specify S3 bucket for deployment artifacts', async (picker) => {
+                    await picker.untilReady()
+                    assert.strictEqual(picker.items.length, 2)
+                    assert.deepStrictEqual(picker.items[0], {
+                        label: 'Create a SAM CLI managed S3 bucket',
+                        data: BucketSource.SamCliManaged,
+                    })
+                    assert.deepStrictEqual(picker.items[1], {
+                        label: 'Specify an S3 bucket',
+                        data: BucketSource.UserProvided,
+                    })
+                    picker.acceptItem(picker.items[1])
+                })
                 .handleQuickPick('Select an S3 Bucket', async (picker) => {
                     await picker.untilReady()
                     assert.strictEqual(picker.items.length, 3)
@@ -527,6 +566,7 @@ describe('SAM SyncWizard', async () => {
             assert.strictEqual(parameters.paramsSource, ParamsSource.Specify)
             assert.strictEqual(parameters.region, 'us-west-2')
             assert.strictEqual(parameters.stackName, 'stack2')
+            assert.strictEqual(parameters.bucketSource, BucketSource.UserProvided)
             assert.strictEqual(parameters.bucketName, 'stack-2-bucket')
             assert.strictEqual(parameters.deployType, 'infra')
             assert.strictEqual(parameters.skipDependencyLayer, true)
@@ -698,6 +738,19 @@ describe('SAM SyncWizard', async () => {
                     const select = quickPick.items.filter((i) => i.detail === 'us-west-2')[0]
                     quickPick.acceptItem(select || quickPick.items[0])
                 })
+                .handleQuickPick('Specify S3 bucket for deployment artifacts', async (picker) => {
+                    await picker.untilReady()
+                    assert.strictEqual(picker.items.length, 2)
+                    assert.deepStrictEqual(picker.items[0], {
+                        label: 'Create a SAM CLI managed S3 bucket',
+                        data: BucketSource.SamCliManaged,
+                    })
+                    assert.deepStrictEqual(picker.items[1], {
+                        label: 'Specify an S3 bucket',
+                        data: BucketSource.UserProvided,
+                    })
+                    picker.acceptItem(picker.items[1])
+                })
                 .handleQuickPick('Select an S3 Bucket', async (picker) => {
                     await picker.untilReady()
                     assert.strictEqual(picker.items.length, 3)
@@ -723,6 +776,7 @@ describe('SAM SyncWizard', async () => {
             assert.strictEqual(parameters.paramsSource, ParamsSource.Specify)
             assert.strictEqual(parameters.region, 'us-west-2')
             assert.strictEqual(parameters.stackName, 'stack2')
+            assert.strictEqual(parameters.bucketSource, BucketSource.UserProvided)
             assert.strictEqual(parameters.bucketName, 'stack-2-bucket')
             assert.strictEqual(parameters.deployType, 'infra')
             assert.strictEqual(parameters.skipDependencyLayer, true)
@@ -783,13 +837,18 @@ describe('SAM SyncWizard', async () => {
                     assert.strictEqual(picker.items[2].label, 'stack3')
                     picker.acceptItem(picker.items[2])
                 })
-                .handleQuickPick('Select an S3 Bucket', async (picker) => {
+                .handleQuickPick('Specify S3 bucket for deployment artifacts', async (picker) => {
                     await picker.untilReady()
-                    assert.strictEqual(picker.items.length, 3)
-                    assert.strictEqual(picker.items[0].label, 'stack-1-bucket')
-                    assert.strictEqual(picker.items[1].label, 'stack-2-bucket')
-                    assert.strictEqual(picker.items[2].label, 'stack-3-bucket')
-                    picker.acceptItem(picker.items[2])
+                    assert.strictEqual(picker.items.length, 2)
+                    assert.deepStrictEqual(picker.items[0], {
+                        label: 'Create a SAM CLI managed S3 bucket',
+                        data: BucketSource.SamCliManaged,
+                    })
+                    assert.deepStrictEqual(picker.items[1], {
+                        label: 'Specify an S3 bucket',
+                        data: BucketSource.UserProvided,
+                    })
+                    picker.acceptItem(picker.items[0])
                 })
                 .handleQuickPick('Specify parameters for sync', async (picker) => {
                     await picker.untilReady()
@@ -809,7 +868,8 @@ describe('SAM SyncWizard', async () => {
             assert.strictEqual(parameters.paramsSource, ParamsSource.SpecifyAndSave)
             assert.strictEqual(parameters.region, 'us-west-2')
             assert.strictEqual(parameters.stackName, 'stack3')
-            assert.strictEqual(parameters.bucketName, 'stack-3-bucket')
+            assert.strictEqual(parameters.bucketSource, BucketSource.SamCliManaged)
+            assert(!parameters.bucketName)
             assert.strictEqual(parameters.deployType, 'infra')
             assert.strictEqual(parameters.skipDependencyLayer, true)
             assert.strictEqual(parameters.syncFlags, '["--dependency-layer","--use-container"]')
@@ -1002,6 +1062,12 @@ describe('SAM runSync', () => {
                     assert.strictEqual(picker.items[2].label, 'stack3')
                     picker.acceptItem(picker.items[2])
                 })
+                .handleQuickPick('Specify S3 bucket for deployment artifacts', async (picker) => {
+                    await picker.untilReady()
+                    assert.strictEqual(picker.items.length, 2)
+                    assert.strictEqual(picker.items[1].label, 'Specify an S3 bucket')
+                    picker.acceptItem(picker.items[1])
+                })
                 .handleQuickPick('Select an S3 Bucket', async (picker) => {
                     await picker.untilReady()
                     assert.strictEqual(picker.items.length, 3)
@@ -1063,6 +1129,91 @@ describe('SAM runSync', () => {
             prompterTester.assertCallAll()
         })
 
+        it('[entry: command palette] specify and save flag (with --watch) should save params before starting SAM process', async () => {
+            const prompterTester = PrompterTester.init()
+                .handleQuickPick('Select a SAM/CloudFormation Template', async (quickPick) => {
+                    // Need sometime to wait for the template to search for template file
+                    await quickPick.untilReady()
+                    assert.strictEqual(quickPick.items[0].label, templateFile.fsPath)
+                    quickPick.acceptItem(quickPick.items[0])
+                })
+                .handleQuickPick('Specify parameter source for sync', async (picker) => {
+                    // Need time to check samconfig.toml file and generate options
+                    await picker.untilReady()
+                    assert.strictEqual(picker.items[0].label, 'Specify required parameters and save as defaults')
+                    picker.acceptItem(picker.items[0])
+                })
+                .handleQuickPick('Select a region', (quickPick) => {
+                    const select = quickPick.items.filter((i) => i.detail === 'us-west-2')[0]
+                    quickPick.acceptItem(select || quickPick.items[0])
+                })
+                .handleQuickPick('Select a CloudFormation Stack', async (picker) => {
+                    await picker.untilReady()
+                    assert.strictEqual(picker.items[2].label, 'stack3')
+                    picker.acceptItem(picker.items[2])
+                })
+                .handleQuickPick('Specify S3 bucket for deployment artifacts', async (picker) => {
+                    await picker.untilReady()
+                    assert.strictEqual(picker.items.length, 2)
+                    assert.strictEqual(picker.items[0].label, 'Create a SAM CLI managed S3 bucket')
+                    picker.acceptItem(picker.items[0])
+                })
+                .handleQuickPick('Specify parameters for sync', async (picker) => {
+                    await picker.untilReady()
+                    assert.strictEqual(picker.items.length, 9)
+                    const dependencyLayer = picker.items.filter((item) => item.label === 'Dependency layer')[0]
+                    const useContainer = picker.items.filter((item) => item.label === 'Use container')[0]
+                    const watch = picker.items.filter((item) => item.label === 'Watch')[0]
+                    picker.acceptItems(dependencyLayer, useContainer, watch)
+                })
+                .build()
+
+            // Invoke sync command from command palette
+            await runSync('code', undefined)
+
+            assert(mockGetSamCliPath.calledOnce)
+            assert(mockChildProcessClass.calledOnce)
+            assert.deepEqual(mockChildProcessClass.getCall(0).args, [
+                'sam-cli-path',
+                [
+                    'sync',
+                    '--code',
+                    '--template',
+                    `${templateFile.fsPath}`,
+                    '--stack-name',
+                    'stack3',
+                    '--region',
+                    'us-west-2',
+                    '--no-dependency-layer',
+                    '--save-params',
+                    '--dependency-layer',
+                    '--use-container',
+                    '--watch',
+                ],
+                {
+                    spawnOptions: {
+                        cwd: projectRoot?.fsPath,
+                        env: {
+                            AWS_TOOLING_USER_AGENT: 'AWS-Toolkit-For-VSCode/testPluginVersion',
+                            SAM_CLI_TELEMETRY: '0',
+                        },
+                    },
+                },
+            ])
+            assert(mockGetSpawnEnv.calledOnce)
+            assert(spyRunInterminal.calledOnce)
+            assert.deepEqual(spyRunInterminal.getCall(0).args, [mockSamSyncChildProcess, 'sync'])
+            assert.strictEqual(spyWriteSamconfigGlobal.callCount, 2)
+            assert(spyWriteSamconfigGlobal.calledBefore(spyRunInterminal))
+            // Check telementry
+            assertTelemetry('sam_sync', { result: 'Succeeded', source: undefined })
+            assertTelemetryCurried('sam_sync')({
+                syncedResources: 'CodeOnly',
+                source: undefined,
+            })
+            prompterTester.assertCallAll()
+        })
+
         it('[entry: template file] specify flag should instantiate correct process in terminal', async () => {
             const prompterTester = PrompterTester.init()
                 .handleInputBox('Specify SAM Template parameter value for SourceBucketName', (inputBox) => {
@@ -1086,6 +1237,12 @@ describe('SAM runSync', () => {
                     await quickPick.untilReady()
                     assert.strictEqual(quickPick.items[0].label, 'stack1')
                     quickPick.acceptItem(quickPick.items[0])
+                })
+                .handleQuickPick('Specify S3 bucket for deployment artifacts', async (picker) => {
+                    await picker.untilReady()
+                    assert.strictEqual(picker.items.length, 2)
+                    assert.strictEqual(picker.items[1].label, 'Specify an S3 bucket')
+                    picker.acceptItem(picker.items[1])
                 })
                 .handleQuickPick('Select an S3 Bucket', async (picker) => {
                     await picker.untilReady()

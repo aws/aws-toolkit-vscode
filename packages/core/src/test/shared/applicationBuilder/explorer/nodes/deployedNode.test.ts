@@ -214,7 +214,7 @@ describe('generateDeployedNode', () => {
                 lambdaDeployedNodeInput.resourceTreeEntity
             )
 
-            assertLogsContain('Error getting Lambda configuration %O', true, 'error')
+            assertLogsContain('Error getting Lambda configuration', false, 'error')
             assert(deployedResourceNodes.length === 1)
 
             // Check placeholder propertries

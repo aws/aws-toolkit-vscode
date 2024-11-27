@@ -19,7 +19,14 @@ import globals from '../extensionGlobals'
 import { TreeNode } from '../treeview/resourceTreeDataProvider'
 import { telemetry } from '../telemetry/telemetry'
 import { getSpawnEnv } from '../env/resolveEnv'
-import { getErrorCode, getProjectRoot, getSamCliPathAndVersion, isDotnetRuntime, updateRecentResponse } from './utils'
+import {
+    getErrorCode,
+    getProjectRoot,
+    getSamCliPathAndVersion,
+    getTerminalFromError,
+    isDotnetRuntime,
+    updateRecentResponse,
+} from './utils'
 import { getConfigFileUri, validateSamBuildConfig } from './config'
 import { runInTerminal } from './processTerminal'
 
@@ -129,7 +136,9 @@ export class BuildWizard extends Wizard<BuildParams> {
         this.arg = arg
         if (this.arg === undefined) {
             // "Build" command was invoked on the command palette.
-            this.form.template.bindPrompter(() => createTemplatePrompter(this.registry, buildMementoRootKey))
+            this.form.template.bindPrompter(() =>
+                createTemplatePrompter(this.registry, buildMementoRootKey, samBuildUrl)
+            )
             this.form.projectRoot.setDefault(({ template }) => getProjectRoot(template))
             this.form.paramsSource.bindPrompter(async ({ projectRoot }) => {
                 const existValidSamConfig: boolean | undefined = await validateSamBuildConfig(projectRoot)
@@ -238,7 +247,7 @@ export async function runBuild(arg?: TreeNode): Promise<SamBuildResult> {
         }
     } catch (error) {
         throw ToolkitError.chain(error, 'Failed to build SAM template', {
-            details: { ...resolveBuildArgConflict(buildFlags) },
+            details: { terminal: getTerminalFromError(error), ...resolveBuildArgConflict(buildFlags) },
             code: getErrorCode(error),
         })
     }
