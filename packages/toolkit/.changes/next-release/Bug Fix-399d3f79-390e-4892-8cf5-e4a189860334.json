@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "appBuilder refresh feature doesnt work during sync --watch"
+}
