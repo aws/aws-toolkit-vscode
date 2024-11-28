@@ -1,4 +1,4 @@
 {
 	"type": "Bug Fix",
-	"description": "Q feature dev: update file extension list"
+	"description": "Q feature dev: recognize .bms, .pli code files"
 }
