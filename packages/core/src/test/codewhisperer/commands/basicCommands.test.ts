@@ -495,6 +495,12 @@ describe('CodeWhisperer-basicCommands', function () {
             sandbox.restore()
         })
 
+        after(async function () {
+            // disable auto scan after testrun
+            await CodeScansState.instance.setScansEnabled(false)
+            assert.strictEqual(CodeScansState.instance.isScansEnabled(), false)
+        })
+
         it('should call applySecurityFix command successfully', async function () {
             const fileName = 'sample.py'
             const textDocumentMock = createMockDocument('first line\n second line\n fourth line', fileName)
