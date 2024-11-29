@@ -32,7 +32,25 @@ export class DBInstanceNode extends DBResourceNode {
         this.contextValue = this.getContext()
         this.iconPath = this.isAvailable || this.isStopped ? undefined : new vscode.ThemeIcon('loading~spin')
         this.tooltip = `${this.name}\nClass: ${this.instance.DBInstanceClass}\nStatus: ${this.status}`
-        this.trackChanges()
+        getLogger().info(`Parent of ${instance.DBInstanceArn} is ${parent.arn}`)
+        if (this.isStatusRequiringPolling()) {
+            getLogger().info(`${instance.DBInstanceArn} requires polling.`)
+            this.trackChanges()
+        } else {
+            getLogger().info(`${instance.DBInstanceArn} does NOT require polling.`)
+        }
+    }
+
+    public override isStatusRequiringPolling(): boolean {
+        const instanceRequiresPolling = super.isStatusRequiringPolling()
+        const parentRequiresPolling = this.parent.isStatusRequiringPolling()
+        const requiresPolling = instanceRequiresPolling || parentRequiresPolling
+
+        getLogger().info(
+            `isStatusRequiringPolling (DBInstanceNode): Instance ${this.arn} requires polling: ${instanceRequiresPolling}, Parent ${this.parent.arn} requires polling: ${parentRequiresPolling}, Combined result: ${requiresPolling}`
+        )
+
+        return requiresPolling
     }
 
     private makeDescription(): string {
@@ -85,7 +103,6 @@ export class DBInstanceNode extends DBResourceNode {
     }
 
     override refreshTree(): void {
-        this.clearTimer()
         this.refresh()
         this.parent.refresh()
     }

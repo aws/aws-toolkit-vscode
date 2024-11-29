@@ -50,16 +50,17 @@ export class DBClusterNode extends DBResourceNode {
         )
         this.description = this.getDescription()
         this.tooltip = `${this.name}${os.EOL}Engine: ${this.cluster.EngineVersion}${os.EOL}Status: ${this.cluster.Status}`
-        this.trackChanges()
+        if (this.isStatusRequiringPolling()) {
+            getLogger().info(`${this.arn} requires polling.`)
+            this.trackChanges()
+        } else {
+            getLogger().info(`${this.arn} does NOT require polling.`)
+        }
     }
 
     public override async getChildren(): Promise<AWSTreeNodeBase[]> {
+        getLogger().info(`DBClusterNode.getChildren() called`)
         return telemetry.docdb_listInstances.run(async () => {
-            this.childNodes.forEach((node) => {
-                getLogger().info(`(getChildren) Removing Polling from node: ${node.arn}`)
-                node.pollingSet.delete(node.arn)
-                node.pollingSet.clearTimer()
-            })
             return await makeChildrenNodes({
                 getChildNodes: async () => {
                     this.instances = (await this.client.listInstances([this.arn])).map((i) => {
@@ -143,7 +144,7 @@ export class DBClusterNode extends DBResourceNode {
 
     override async getStatus() {
         const [cluster] = await this.client.listClusters(this.arn)
-        getLogger().info(`Updating Status: new status ${cluster?.Status} for cluster ${this.arn}`)
+        getLogger().info(`Get Status: status ${cluster?.Status} for cluster ${this.arn}`)
         this.cluster.Status = cluster?.Status
         return cluster.Status
     }
@@ -162,7 +163,6 @@ export class DBClusterNode extends DBResourceNode {
     }
 
     override refreshTree(): void {
-        this.clearTimer()
         this.refresh()
         this.parent.refresh()
     }

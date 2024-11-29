@@ -17,6 +17,7 @@ import { DBResourceNode } from './dbResourceNode'
 import { DocDBContext } from './docdbContext'
 import { copyToClipboard } from '../../shared/utilities/messages'
 import { getAwsConsoleUrl } from '../../shared/awsConsole'
+import { getLogger } from '../../shared/logger'
 
 function getRegionFromArn(arn: string) {
     const match = arn.match(/:rds:([^:]+):.*:cluster:/)
@@ -46,6 +47,12 @@ export class DBGlobalClusterNode extends DBResourceNode {
         this.iconPath = new vscode.ThemeIcon('globe') //TODO: determine icon for global cluster
         this.description = 'Global cluster'
         this.tooltip = `${this.name}\nEngine: ${this.cluster.EngineVersion}\nStatus: ${this.cluster.Status} (read-only)`
+        if (this.isStatusRequiringPolling()) {
+            getLogger().info(`${this.arn} requires polling.`)
+            this.trackChanges()
+        } else {
+            getLogger().info(`${this.arn} does NOT require polling.`)
+        }
     }
 
     public override async getChildren(): Promise<AWSTreeNodeBase[]> {

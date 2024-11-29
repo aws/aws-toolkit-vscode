@@ -17,7 +17,16 @@ export abstract class DBResourceNode extends AWSTreeNodeBase implements AWSResou
     public override readonly regionCode: string
     public abstract readonly arn: string
     public abstract readonly name: string
-    public readonly pollingSet: PollingSet<string> = new PollingSet(10000, this.updateNodeStatus.bind(this))
+    public readonly pollingSet: PollingSet<string> = new PollingSet(30000, this.updateNodeStatus.bind(this))
+    private static readonly globalPollingArns: Set<string> = new Set<string>()
+    public processingStatuses = new Set<string>([
+        'creating',
+        'modifying',
+        'rebooting',
+        'starting',
+        'stopping',
+        'renaming',
+    ])
 
     protected constructor(
         public readonly client: DocumentDBClient,
@@ -27,6 +36,15 @@ export abstract class DBResourceNode extends AWSTreeNodeBase implements AWSResou
         super(label, collapsibleState)
         this.regionCode = client.regionCode
         getLogger().info(`NEW DBResourceNode`)
+    }
+
+    public isStatusRequiringPolling(): boolean {
+        const currentStatus = this.status?.toLowerCase()
+        const isProcessingStatus = currentStatus !== undefined && this.processingStatuses.has(currentStatus)
+        getLogger().info(
+            `isStatusRequiringPolling (DBResourceNode):: Checking if status "${currentStatus}" for ARN: ${this.arn} requires polling: ${isProcessingStatus}`
+        )
+        return isProcessingStatus
     }
 
     public [inspect.custom](): string {
@@ -49,30 +67,75 @@ export abstract class DBResourceNode extends AWSTreeNodeBase implements AWSResou
         return this.status === 'stopped'
     }
 
-    public async waitUntilStatusChanged(): Promise<boolean> {
-        const currentStatus = this.status
+    public get isPolling(): boolean {
+        const isPolling = DBResourceNode.globalPollingArns.has(this.arn)
+        getLogger().info(`isPolling: ARN ${this.arn} is ${isPolling ? '' : 'not '}being polled.`)
+        return isPolling
+    }
 
+    public set isPolling(value: boolean) {
+        if (value) {
+            if (!this.isPolling) {
+                DBResourceNode.globalPollingArns.add(this.arn)
+                getLogger().info(`Polling started for ARN: ${this.arn}`)
+            } else {
+                getLogger().info(`Polling already active for ARN: ${this.arn}`)
+            }
+        } else {
+            if (this.isPolling) {
+                DBResourceNode.globalPollingArns.delete(this.arn)
+                getLogger().info(`Polling stopped for ARN: ${this.arn}`)
+            } else {
+                getLogger().info(`Polling was not active for ARN: ${this.arn}`)
+            }
+        }
+    }
+
+    public async waitUntilStatusChanged(
+        checkProcessingStatuses: boolean = false,
+        timeout: number = 1200000,
+        interval: number = 5000
+    ): Promise<boolean> {
         await waitUntil(
             async () => {
                 const status = await this.getStatus()
-                getLogger().info('docdb: waitUntilStatusChanged (status): %O', status)
-                return status !== currentStatus
+                if (checkProcessingStatuses) {
+                    const isProcessingStatus = status !== undefined && this.processingStatuses.has(status.toLowerCase())
+                    getLogger().info('docdb: waitUntilStatusChangedToProcessingStatus: %O', isProcessingStatus)
+                    return isProcessingStatus
+                } else {
+                    const hasStatusChanged = status !== this.status
+                    getLogger().info('docdb: waitUntilStatusChanged (status): %O', hasStatusChanged)
+                    return hasStatusChanged
+                }
             },
-            { timeout: 1200000, interval: 5000, truthy: true }
+            { timeout, interval, truthy: true }
         )
-
+        this.refreshTree()
         return false
     }
 
-    public trackChanges() {
+    public async trackChangesWithWaitProcessingStatus() {
         getLogger().info(
-            `Preparing to track changes for ARN: ${this.arn}; pollingSet: ${this.pollingSet.has(this.arn)}; condition: ${this.pollingSet.has(this.arn) === false}`
+            `Preparing to track changes with waiting a processing status for ARN: ${this.arn}; condition: ${this.isPolling};`
         )
-        if (this.pollingSet.has(this.arn) === false) {
+        if (!this.isPolling) {
+            this.isPolling = true
+            await this.waitUntilStatusChanged(true, 60000, 1000)
+            getLogger().info(`Tracking changes for a processing status wait is over`)
             this.pollingSet.start(this.arn)
-            getLogger().info(
-                `Tracking changes for ARN: ${this.arn}; pollingSet: ${this.pollingSet.has(this.arn)}; condition: ${this.pollingSet.has(this.arn) === false}`
-            )
+            getLogger().info(`Tracking changes for ARN: ${this.arn}; condition: ${this.isPolling};`)
+        } else {
+            getLogger().info(`ARN: ${this.arn} already being tracked`)
+        }
+    }
+
+    public trackChanges() {
+        getLogger().info(`Preparing to track immdiately for ARN: ${this.arn}; condition: ${this.isPolling};`)
+        if (!this.isPolling) {
+            this.isPolling = true
+            this.pollingSet.start(this.arn)
+            getLogger().info(`Tracking changes for ARN: ${this.arn}; condition: ${this.isPolling};`)
         } else {
             getLogger().info(`ARN: ${this.arn} already being tracked`)
         }
@@ -98,8 +161,14 @@ export abstract class DBResourceNode extends AWSTreeNodeBase implements AWSResou
         )
         if (currentStatus !== newStatus) {
             getLogger().info(`docdb: ${this.arn} updateNodeStatus - refreshing UI`)
+            this.refreshTree()
+        }
+        if (!this.isStatusRequiringPolling()) {
+            getLogger().info(`docdb: ${this.arn} updateNodeStatus - refreshing UI`)
+            getLogger().info(`pollingSet delete ${this.arn} updateNodeStatus`)
             this.pollingSet.delete(this.arn)
             this.pollingSet.clearTimer()
+            this.isPolling = false
             this.refreshTree()
         }
     }

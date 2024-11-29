@@ -12,6 +12,7 @@ import { DocDBContext } from './docdbContext'
 import { copyToClipboard } from '../../shared/utilities/messages'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { getAwsConsoleUrl } from '../../shared/awsConsole'
+import { getLogger } from '../../shared/logger'
 
 /**
  * An AWS Explorer node representing DocumentDB elastic clusters.
@@ -32,6 +33,12 @@ export class DBElasticClusterNode extends DBResourceNode {
         )
         this.description = this.getDescription()
         this.tooltip = `${this.name}\nStatus: ${this.status}`
+        if (this.isStatusRequiringPolling()) {
+            getLogger().info(`${this.arn} requires polling.`)
+            this.trackChanges()
+        } else {
+            getLogger().info(`${this.arn} does NOT require polling.`)
+        }
     }
 
     private getContext() {
@@ -70,7 +77,9 @@ export class DBElasticClusterNode extends DBResourceNode {
 
     override async getStatus() {
         const cluster = await this.client.getElasticCluster(this.arn)
-        return cluster?.status
+        getLogger().info(`Get Status: status ${cluster?.status} for elastic-cluster ${this.arn}`)
+        this.cluster.status = cluster?.status
+        return cluster?.status?.toLowerCase()
     }
 
     override get isAvailable() {

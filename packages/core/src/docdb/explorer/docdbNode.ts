@@ -25,7 +25,6 @@ import { DBResourceNode } from './dbResourceNode'
  */
 export class DocumentDBNode extends AWSTreeNodeBase {
     public override readonly regionCode: string
-    private allNodes: DBResourceNode[] = []
 
     public constructor(public readonly client: DocumentDBClient) {
         super('DocumentDB', vscode.TreeItemCollapsibleState.Collapsed)
@@ -67,9 +66,6 @@ export class DocumentDBNode extends AWSTreeNodeBase {
 
         // contains clusters that are not part of a global cluster
         const regionalClusters = clusters.filter((c) => !globalClusterMap.has(c.DBClusterArn!))
-        this.allNodes.forEach((node) => {
-            node.clearTimer()
-        })
 
         const nodes: DBResourceNode[] = []
         nodes.push(
@@ -82,7 +78,7 @@ export class DocumentDBNode extends AWSTreeNodeBase {
                 (cluster) => new DBElasticClusterNode(this, cluster as DBElasticCluster, this.client)
             )
         )
-        this.allNodes = nodes
+
         return nodes
     }
 
