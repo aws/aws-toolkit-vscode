@@ -88,6 +88,12 @@ describe('CodeWhisperer-basicCommands', function () {
             codeSuggestionsState = new TestCodeSuggestionsState()
         })
 
+        after(async function () {
+            // disable auto scan after testrun
+            await CodeScansState.instance.setScansEnabled(false)
+            assert.strictEqual(CodeScansState.instance.isScansEnabled(), false)
+        })
+
         it('has suggestions enabled by default', async function () {
             targetCommand = testCommand(toggleCodeSuggestions, codeSuggestionsState)
             assert.strictEqual(codeSuggestionsState.isSuggestionsEnabled(), true)
@@ -493,12 +499,6 @@ describe('CodeWhisperer-basicCommands', function () {
 
         afterEach(function () {
             sandbox.restore()
-        })
-
-        after(async function () {
-            // disable auto scan after testrun
-            await CodeScansState.instance.setScansEnabled(false)
-            assert.strictEqual(CodeScansState.instance.isScansEnabled(), false)
         })
 
         it('should call applySecurityFix command successfully', async function () {
