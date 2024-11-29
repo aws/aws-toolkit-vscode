@@ -74,6 +74,12 @@ describe('CodeWhisperer-basicCommands', function () {
         sinon.restore()
     })
 
+    after(async function () {
+        // disable auto scan after testrun
+        await CodeScansState.instance.setScansEnabled(false)
+        assert.strictEqual(CodeScansState.instance.isScansEnabled(), false)
+    })
+
     describe('toggleCodeSuggestion', function () {
         class TestCodeSuggestionsState extends CodeSuggestionsState {
             public constructor(initialState?: boolean) {
@@ -86,12 +92,6 @@ describe('CodeWhisperer-basicCommands', function () {
         beforeEach(async function () {
             await resetCodeWhispererGlobalVariables()
             codeSuggestionsState = new TestCodeSuggestionsState()
-        })
-
-        after(async function () {
-            // disable auto scan after testrun
-            await CodeScansState.instance.setScansEnabled(false)
-            assert.strictEqual(CodeScansState.instance.isScansEnabled(), false)
         })
 
         it('has suggestions enabled by default', async function () {
