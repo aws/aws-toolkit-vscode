@@ -42,7 +42,7 @@ interface AwsConfigOptions {
 }
 export type AwsClientOptions = AwsConfigOptions
 
-export class DefaultAWSClientBuilderV3 {
+export class AWSClientBuilderV3 {
     public constructor(private readonly context: AwsContext) {}
 
     private getShim(): CredentialsShim {

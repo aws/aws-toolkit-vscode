@@ -9,17 +9,17 @@ import { getClientId } from '../../shared/telemetry/util'
 import { FakeMemento } from '../fakeExtensionContext'
 import { FakeAwsContext } from '../utilities/fakeAwsContext'
 import { GlobalState } from '../../shared/globalState'
-import { DefaultAWSClientBuilderV3, getServiceId, recordErrorTelemetry } from '../../shared/awsClientBuilderV3'
+import { AWSClientBuilderV3, getServiceId, recordErrorTelemetry } from '../../shared/awsClientBuilderV3'
 import { Client } from '@aws-sdk/smithy-client'
 import { extensionVersion } from '../../shared'
 import { assertTelemetry } from '../testUtil'
 import { telemetry } from '../../shared/telemetry'
 
-describe('DefaultAwsClientBuilderV3', function () {
-    let builder: DefaultAWSClientBuilderV3
+describe('AwsClientBuilderV3', function () {
+    let builder: AWSClientBuilderV3
 
     beforeEach(async function () {
-        builder = new DefaultAWSClientBuilderV3(new FakeAwsContext())
+        builder = new AWSClientBuilderV3(new FakeAwsContext())
     })
 
     describe('createAndConfigureSdkClient', function () {
