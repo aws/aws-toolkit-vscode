@@ -14,6 +14,8 @@ import {
     DeserializeHandlerOptions,
     DeserializeMiddleware,
     HandlerExecutionContext,
+    HttpHandlerOptions,
+    MetadataBearer,
     Provider,
     RetryStrategy,
     UserAgent,
@@ -25,8 +27,14 @@ import { getRequestId, getTelemetryReason, getTelemetryReasonDesc, getTelemetryR
 import { extensionVersion } from '.'
 import { getLogger } from './logger'
 import { omitIfPresent } from './utilities/tsUtils'
-
-export type AwsClient = IClient<any, any, any>
+import { Client, SmithyResolvedConfiguration } from '@aws-sdk/smithy-client'
+export type AwsClient = IClient<object, MetadataBearer, any>
+export type AwsClientClass = Client<
+    HttpHandlerOptions,
+    any,
+    MetadataBearer,
+    SmithyResolvedConfiguration<HttpHandlerOptions>
+>
 interface AwsConfigOptions {
     credentials: AwsCredentialIdentityProvider
     region: string | Provider<string>
@@ -39,7 +47,7 @@ interface AwsConfigOptions {
 export type AwsClientOptions = AwsConfigOptions
 
 export interface AWSClientBuilderV3 {
-    createAwsService<C extends AwsClient>(
+    createAwsService<C extends AwsClientClass>(
         type: new (o: AwsClientOptions) => C,
         options?: Partial<AwsClientOptions>,
         region?: string,
@@ -59,7 +67,7 @@ export class DefaultAWSClientBuilderV3 implements AWSClientBuilderV3 {
         return shim
     }
 
-    public async createAwsService<C extends AwsClient>(
+    public async createAwsService<C extends AwsClientClass>(
         type: new (o: AwsClientOptions) => C,
         options?: Partial<AwsClientOptions>,
         region?: string,

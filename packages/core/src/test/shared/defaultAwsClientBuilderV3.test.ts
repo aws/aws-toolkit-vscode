@@ -23,13 +23,13 @@ import { telemetry } from '../../shared/telemetry'
 describe('DefaultAwsClientBuilderV3', function () {
     let builder: AWSClientBuilderV3
 
-    beforeEach(function () {
+    beforeEach(async function () {
         builder = new DefaultAWSClientBuilderV3(new FakeAwsContext())
     })
 
     describe('createAndConfigureSdkClient', function () {
         it('includes Toolkit user-agent if no options are specified', async function () {
-            const service = await builder.createAwsService(Client as any)
+            const service = await builder.createAwsService(Client)
             const clientId = getClientId(new GlobalState(new FakeMemento()))
 
             assert.ok(service.config.customUserAgent)
@@ -41,21 +41,21 @@ describe('DefaultAwsClientBuilderV3', function () {
         })
 
         it('adds region to client', async function () {
-            const service = await builder.createAwsService(Client as any, { region: 'us-west-2' })
+            const service = await builder.createAwsService(Client, { region: 'us-west-2' })
 
             assert.ok(service.config.region)
             assert.strictEqual(service.config.region, 'us-west-2')
         })
 
         it('adds Client-Id to user agent', async function () {
-            const service = await builder.createAwsService(Client as any)
+            const service = await builder.createAwsService(Client)
             const clientId = getClientId(new GlobalState(new FakeMemento()))
             const regex = new RegExp(`ClientId/${clientId}`)
             assert.ok(service.config.customUserAgent![0][0].match(regex))
         })
 
         it('does not override custom user-agent if specified in options', async function () {
-            const service = await builder.createAwsService(Client as any, {
+            const service = await builder.createAwsService(Client, {
                 customUserAgent: [['CUSTOM USER AGENT']],
             })
 
