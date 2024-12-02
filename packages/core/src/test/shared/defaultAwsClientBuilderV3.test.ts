@@ -11,7 +11,6 @@ import { FakeAwsContext } from '../utilities/fakeAwsContext'
 import { GlobalState } from '../../shared/globalState'
 import {
     AWSClientBuilderV3,
-    DefaultAWSClientBuilderV3,
     emitOnRequest,
     getServiceId,
     logOnRequest,
@@ -26,15 +25,15 @@ import { HttpRequest, HttpResponse } from '@aws-sdk/protocol-http'
 import { assertLogsContain, assertLogsContainAllOf } from '../globalSetup.test'
 import { TestSettings } from '../utilities/testSettingsConfiguration'
 
-describe('DefaultAwsClientBuilderV3', function () {
+describe('AwsClientBuilderV3', function () {
     let builder: AWSClientBuilderV3
 
-    beforeEach(function () {
-        builder = new DefaultAWSClientBuilderV3(new FakeAwsContext())
+    beforeEach(async function () {
+        builder = new AWSClientBuilderV3(new FakeAwsContext())
     })
 
     it('includes Toolkit user-agent if no options are specified', async function () {
-        const service = await builder.createAwsService(Client as any)
+        const service = await builder.createAwsService(Client)
         const clientId = getClientId(new GlobalState(new FakeMemento()))
 
         assert.ok(service.config.customUserAgent)
@@ -46,25 +45,31 @@ describe('DefaultAwsClientBuilderV3', function () {
     })
 
     it('adds region to client', async function () {
-        const service = await builder.createAwsService(Client as any, { region: 'us-west-2' })
+        const service = await builder.createAwsService(Client, { region: 'us-west-2' })
 
         assert.ok(service.config.region)
         assert.strictEqual(service.config.region, 'us-west-2')
     })
 
     it('adds Client-Id to user agent', async function () {
-        const service = await builder.createAwsService(Client as any)
+        const service = await builder.createAwsService(Client)
         const clientId = getClientId(new GlobalState(new FakeMemento()))
         const regex = new RegExp(`ClientId/${clientId}`)
         assert.ok(service.config.customUserAgent![0][0].match(regex))
     })
 
     it('does not override custom user-agent if specified in options', async function () {
-        const service = await builder.createAwsService(Client as any, {
+        const service = await builder.createAwsService(Client, {
             customUserAgent: [['CUSTOM USER AGENT']],
         })
 
         assert.strictEqual(service.config.customUserAgent[0][0], 'CUSTOM USER AGENT')
+    })
+
+    it('adds region to client', async function () {
+        const service = await builder.createAwsService(Client, { region: 'us-west-2' })
+        assert.ok(service.config.region)
+        assert.strictEqual(service.config.region, 'us-west-2')
     })
 
     describe('middlewareStack', function () {

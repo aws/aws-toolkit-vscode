@@ -5,8 +5,7 @@
 
 import { CredentialsShim } from '../auth/deprecated/loginManager'
 import { AwsContext } from './awsContext'
-import { AwsCredentialIdentityProvider } from '@smithy/types'
-import { Client as IClient } from '@smithy/types'
+import { AwsCredentialIdentityProvider, RetryStrategyV2 } from '@smithy/types'
 import { getUserAgent } from './telemetry/util'
 import { DevSettings } from './settings'
 import {
@@ -18,16 +17,23 @@ import {
     FinalizeRequestMiddleware,
     HandlerExecutionContext,
     Provider,
+    RetryStrategy,
     UserAgent,
 } from '@aws-sdk/types'
-import { HttpRequest, HttpResponse } from '@aws-sdk/protocol-http'
+import { HttpResponse, HttpRequest } from '@aws-sdk/protocol-http'
+import { ConfiguredRetryStrategy } from '@smithy/util-retry'
 import { telemetry } from './telemetry'
-import { getRequestId } from './errors'
+import { getRequestId, getTelemetryReason, getTelemetryReasonDesc, getTelemetryResult } from './errors'
 import { extensionVersion } from '.'
 import { getLogger } from './logger'
 import { omitIfPresent, selectFrom } from './utilities/tsUtils'
 
-export type AwsClient = IClient<any, any, any>
+export type AwsClientConstructor<C> = new (o: AwsClientOptions) => C
+
+interface AwsClient {
+    middlewareStack: any // Ideally this would extends MiddlewareStack<Input, Output>, but this causes issues on client construction.
+}
+
 interface AwsConfigOptions {
     credentials: AwsCredentialIdentityProvider
     region: string | Provider<string>
@@ -35,20 +41,11 @@ interface AwsConfigOptions {
     requestHandler: any
     apiVersion: string
     endpoint: string
+    retryStrategy: RetryStrategy | RetryStrategyV2
 }
 export type AwsClientOptions = AwsConfigOptions
 
-export interface AWSClientBuilderV3 {
-    createAwsService<C extends AwsClient>(
-        type: new (o: AwsClientOptions) => C,
-        options?: Partial<AwsClientOptions>,
-        region?: string,
-        userAgent?: boolean,
-        settings?: DevSettings
-    ): Promise<C>
-}
-
-export class DefaultAWSClientBuilderV3 implements AWSClientBuilderV3 {
+export class AWSClientBuilderV3 {
     public constructor(private readonly context: AwsContext) {}
 
     private getShim(): CredentialsShim {
@@ -60,7 +57,7 @@ export class DefaultAWSClientBuilderV3 implements AWSClientBuilderV3 {
     }
 
     public async createAwsService<C extends AwsClient>(
-        type: new (o: AwsClientOptions) => C,
+        type: AwsClientConstructor<C>,
         options?: Partial<AwsClientOptions>,
         region?: string,
         userAgent: boolean = true,
@@ -75,6 +72,11 @@ export class DefaultAWSClientBuilderV3 implements AWSClientBuilderV3 {
 
         if (!opt.customUserAgent && userAgent) {
             opt.customUserAgent = [[getUserAgent({ includePlatform: true, includeClientId: true }), extensionVersion]]
+        }
+
+        if (!opt.retryStrategy) {
+            // Simple exponential backoff strategy as default.
+            opt.retryStrategy = new ConfiguredRetryStrategy(5, (attempt: number) => 1000 * 2 ** attempt)
         }
         // TODO: add tests for refresh logic.
         opt.credentials = async () => {
@@ -102,17 +104,13 @@ export function getServiceId(context: { clientName?: string; commandName?: strin
  * multiple API calls are made in the same context. We only do failures as successes are generally uninteresting and noisy.
  */
 export function recordErrorTelemetry(err: Error, serviceName?: string) {
-    interface RequestData {
-        requestId?: string
-        requestServiceType?: string
-    }
-
-    const requestId = getRequestId(err)
-
     telemetry.record({
-        requestId: requestId,
+        requestId: getRequestId(err),
         requestServiceType: serviceName,
-    } satisfies RequestData as any)
+        reasonDesc: getTelemetryReasonDesc(err),
+        reason: getTelemetryReason(err),
+        result: getTelemetryResult(err),
+    })
 }
 
 function logAndThrow(e: any, serviceId: string, errorMessageAppend: string): never {
