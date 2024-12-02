@@ -9,25 +9,20 @@ import { getClientId } from '../../shared/telemetry/util'
 import { FakeMemento } from '../fakeExtensionContext'
 import { FakeAwsContext } from '../utilities/fakeAwsContext'
 import { GlobalState } from '../../shared/globalState'
-import {
-    AwsClient,
-    AwsClientConstructor,
-    DefaultAWSClientBuilderV3,
-    getServiceId,
-    recordErrorTelemetry,
-} from '../../shared/awsClientBuilderV3'
+import { DefaultAWSClientBuilderV3, getServiceId, recordErrorTelemetry } from '../../shared/awsClientBuilderV3'
 import { Client } from '@aws-sdk/smithy-client'
 import { extensionVersion } from '../../shared'
 import { assertTelemetry } from '../testUtil'
 import { telemetry } from '../../shared/telemetry'
-import { CloudFormationClient } from '@aws-sdk/client-cloudformation'
+//import { ActivateOrganizationsAccessCommand, CloudFormationClient } from '@aws-sdk/client-cloudformation'
 
 describe('DefaultAwsClientBuilderV3', function () {
     let builder: DefaultAWSClientBuilderV3
 
     beforeEach(async function () {
         builder = new DefaultAWSClientBuilderV3(new FakeAwsContext())
-        const c = await builder.createAwsService(CloudFormationClient, undefined, 'us-east-1')
+        //const c = await builder.createAwsService(CloudFormationClient, undefined, 'us-east-1')
+        //await c.send(new ActivateOrganizationsAccessCommand({ dryRun: true }))
     })
 
     describe('createAndConfigureSdkClient', function () {
