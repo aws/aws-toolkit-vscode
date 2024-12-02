@@ -6,7 +6,6 @@
 import { CredentialsShim } from '../auth/deprecated/loginManager'
 import { AwsContext } from './awsContext'
 import { AwsCredentialIdentityProvider, RetryStrategyV2 } from '@smithy/types'
-import { Client as IClient } from '@smithy/types'
 import { getUserAgent } from './telemetry/util'
 import { DevSettings } from './settings'
 import {
@@ -16,6 +15,7 @@ import {
     HandlerExecutionContext,
     HttpHandlerOptions,
     MetadataBearer,
+    MiddlewareStack,
     Provider,
     RetryStrategy,
     UserAgent,
@@ -28,13 +28,15 @@ import { extensionVersion } from '.'
 import { getLogger } from './logger'
 import { omitIfPresent } from './utilities/tsUtils'
 import { Client, SmithyResolvedConfiguration } from '@aws-sdk/smithy-client'
-export type AwsClient = IClient<object, MetadataBearer, any>
-export type AwsClientClass = Client<
-    HttpHandlerOptions,
-    any,
-    MetadataBearer,
-    SmithyResolvedConfiguration<HttpHandlerOptions>
->
+
+export type AwsClient = Client<HttpHandlerOptions, any, MetadataBearer, SmithyResolvedConfiguration<HttpHandlerOptions>>
+export type AwsClientConstructor<C> = new (o: AwsClientOptions) => C
+
+interface AwsClient2 {
+    middlewareStack: AwsMiddlewareStack
+}
+
+type AwsMiddlewareStack = any
 interface AwsConfigOptions {
     credentials: AwsCredentialIdentityProvider
     region: string | Provider<string>
@@ -47,8 +49,8 @@ interface AwsConfigOptions {
 export type AwsClientOptions = AwsConfigOptions
 
 export interface AWSClientBuilderV3 {
-    createAwsService<C extends AwsClientClass>(
-        type: new (o: AwsClientOptions) => C,
+    createAwsService<C extends AwsClient2>(
+        type: AwsClientConstructor<C>,
         options?: Partial<AwsClientOptions>,
         region?: string,
         userAgent?: boolean,
@@ -67,8 +69,8 @@ export class DefaultAWSClientBuilderV3 implements AWSClientBuilderV3 {
         return shim
     }
 
-    public async createAwsService<C extends AwsClientClass>(
-        type: new (o: AwsClientOptions) => C,
+    public async createAwsService<C extends AwsClient2>(
+        type: AwsClientConstructor<C>,
         options?: Partial<AwsClientOptions>,
         region?: string,
         userAgent: boolean = true,

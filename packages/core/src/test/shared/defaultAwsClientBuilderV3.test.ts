@@ -10,7 +10,8 @@ import { FakeMemento } from '../fakeExtensionContext'
 import { FakeAwsContext } from '../utilities/fakeAwsContext'
 import { GlobalState } from '../../shared/globalState'
 import {
-    AWSClientBuilderV3,
+    AwsClient,
+    AwsClientConstructor,
     DefaultAWSClientBuilderV3,
     getServiceId,
     recordErrorTelemetry,
@@ -19,12 +20,14 @@ import { Client } from '@aws-sdk/smithy-client'
 import { extensionVersion } from '../../shared'
 import { assertTelemetry } from '../testUtil'
 import { telemetry } from '../../shared/telemetry'
+import { CloudFormationClient } from '@aws-sdk/client-cloudformation'
 
 describe('DefaultAwsClientBuilderV3', function () {
-    let builder: AWSClientBuilderV3
+    let builder: DefaultAWSClientBuilderV3
 
     beforeEach(async function () {
         builder = new DefaultAWSClientBuilderV3(new FakeAwsContext())
+        const c = await builder.createAwsService(CloudFormationClient, undefined, 'us-east-1')
     })
 
     describe('createAndConfigureSdkClient', function () {
