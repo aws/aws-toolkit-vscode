@@ -15,7 +15,6 @@ import {
     HandlerExecutionContext,
     HttpHandlerOptions,
     MetadataBearer,
-    //MiddlewareStack,
     Provider,
     RetryStrategy,
     UserAgent,
@@ -32,11 +31,10 @@ import { Client, SmithyResolvedConfiguration } from '@aws-sdk/smithy-client'
 export type AwsClient = Client<HttpHandlerOptions, any, MetadataBearer, SmithyResolvedConfiguration<HttpHandlerOptions>>
 export type AwsClientConstructor<C> = new (o: AwsClientOptions) => C
 
-interface AwsClient2<Input extends object, Output extends MetadataBearer> {
-    middlewareStack: AwsMiddlewareStack<Input, Output>
+interface AwsClient2 {
+    middlewareStack: any // Ideally this would extends MiddlewareStack<Input, Output>, but this causes issues on client construction.
 }
 
-type AwsMiddlewareStack<Input extends object, Output extends object> = any
 interface AwsConfigOptions {
     credentials: AwsCredentialIdentityProvider
     region: string | Provider<string>
@@ -47,16 +45,6 @@ interface AwsConfigOptions {
     retryStrategy: RetryStrategy | RetryStrategyV2
 }
 export type AwsClientOptions = AwsConfigOptions
-
-// export interface AWSClientBuilderV3 {
-//     createAwsService<Input extends object, Output extends MetadataBearer, C extends AwsClient2<Input, Output>>(
-//         type: AwsClientConstructor<C>,
-//         options?: Partial<AwsClientOptions>,
-//         region?: string,
-//         userAgent?: boolean,
-//         settings?: DevSettings
-//     ): Promise<C>
-// }
 
 export class DefaultAWSClientBuilderV3 {
     public constructor(private readonly context: AwsContext) {}
@@ -69,11 +57,7 @@ export class DefaultAWSClientBuilderV3 {
         return shim
     }
 
-    public async createAwsService<
-        Input extends object,
-        Output extends MetadataBearer,
-        C extends AwsClient2<Input, Output>,
-    >(
+    public async createAwsService<C extends AwsClient2>(
         type: AwsClientConstructor<C>,
         options?: Partial<AwsClientOptions>,
         region?: string,
@@ -106,7 +90,7 @@ export class DefaultAWSClientBuilderV3 {
 
         const service = new type(opt)
         // TODO: add middleware for logging, telemetry, endpoints.
-        service.middlewareStack.add!(telemetryMiddleware, { step: 'deserialize' } as DeserializeHandlerOptions)
+        service.middlewareStack.add(telemetryMiddleware, { step: 'deserialize' } as DeserializeHandlerOptions)
         return service
     }
 }
