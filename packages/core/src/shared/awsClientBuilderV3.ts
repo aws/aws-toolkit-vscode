@@ -13,8 +13,6 @@ import {
     DeserializeHandlerOptions,
     DeserializeMiddleware,
     HandlerExecutionContext,
-    HttpHandlerOptions,
-    MetadataBearer,
     Provider,
     RetryStrategy,
     UserAgent,
@@ -26,12 +24,10 @@ import { getRequestId, getTelemetryReason, getTelemetryReasonDesc, getTelemetryR
 import { extensionVersion } from '.'
 import { getLogger } from './logger'
 import { omitIfPresent } from './utilities/tsUtils'
-import { Client, SmithyResolvedConfiguration } from '@aws-sdk/smithy-client'
 
-export type AwsClient = Client<HttpHandlerOptions, any, MetadataBearer, SmithyResolvedConfiguration<HttpHandlerOptions>>
 export type AwsClientConstructor<C> = new (o: AwsClientOptions) => C
 
-interface AwsClient2 {
+interface AwsClient {
     middlewareStack: any // Ideally this would extends MiddlewareStack<Input, Output>, but this causes issues on client construction.
 }
 
@@ -57,7 +53,7 @@ export class DefaultAWSClientBuilderV3 {
         return shim
     }
 
-    public async createAwsService<C extends AwsClient2>(
+    public async createAwsService<C extends AwsClient>(
         type: AwsClientConstructor<C>,
         options?: Partial<AwsClientOptions>,
         region?: string,
