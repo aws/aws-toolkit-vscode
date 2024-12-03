@@ -32,6 +32,9 @@ jobs:
             - uses: actions/setup-node@v4
               with:
                   node-version: '20'
+            - name: Check Branch title
+              run: |
+                  node "$GITHUB_WORKSPACE/.github/workflows/lintbranch.js"
             - name: Check PR title
               run: |
                   node "$GITHUB_WORKSPACE/.github/workflows/lintcommit.js"
