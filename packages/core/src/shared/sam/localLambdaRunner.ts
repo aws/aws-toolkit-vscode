@@ -31,6 +31,7 @@ import { ToolkitError, UnknownError } from '../errors'
 import { SamCliError } from './cli/samCliInvokerUtils'
 import fs from '../fs/fs'
 import { getSpawnEnv } from '../env/resolveEnv'
+import { asEnvironmentVariables } from '../../auth/credentials/utils'
 
 const localize = nls.loadMessageBundle()
 
@@ -287,10 +288,17 @@ export async function runLambdaFunction(
         getLogger().info(localize('AWS.output.sam.local.startRun', 'Preparing to run locally: {0}', config.handlerName))
     }
 
-    const envVars = await getSpawnEnv({
-        ...process.env,
-        ...(config.aws?.region ? { AWS_DEFAULT_REGION: config.aws.region } : {}),
-    })
+    const envVars = await getSpawnEnv(
+        {
+            ...process.env,
+            ...(config.awsCredentials ? asEnvironmentVariables(config.awsCredentials) : {}),
+            ...(config.aws?.region ? { AWS_DEFAULT_REGION: config.aws.region } : {}),
+        },
+        {
+            // only inject toolkit credential if config credential is not set
+            injectCredential: config.awsCredentials ? false : true,
+        }
+    )
 
     const settings = SamCliSettings.instance
     const timer = new Timeout(settings.getLocalInvokeTimeout())

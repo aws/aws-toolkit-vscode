@@ -27,7 +27,8 @@ export const amazonqSettings = {
     "amazonQ.workspaceIndex": {},
     "amazonQ.workspaceIndexWorkerThreads": {},
     "amazonQ.workspaceIndexUseGPU": {},
-    "amazonQ.workspaceIndexMaxSize": {}
+    "amazonQ.workspaceIndexMaxSize": {},
+    "amazonQ.ignoredSecurityIssues": {}
 }
 
 export default amazonqSettings

@@ -390,6 +390,7 @@ export class RecommendationHandler {
 
         // send Empty userDecision event if user receives no recommendations in this session at all.
         if (invocationResult === 'Succeeded' && nextToken === '') {
+            // case 1: empty list of suggestion []
             if (session.recommendations.length === 0) {
                 session.requestIdList.push(requestId)
                 // Received an empty list of recommendations
@@ -404,7 +405,8 @@ export class RecommendationHandler {
                     session.requestContext.supplementalMetadata
                 )
             }
-            if (!this.hasAtLeastOneValidSuggestion(typedPrefix)) {
+            // case 2: non empty list of suggestion but with (a) empty content or (b) non-matching typeahead
+            else if (!this.hasAtLeastOneValidSuggestion(typedPrefix)) {
                 this.reportUserDecisions(-1)
             }
         }

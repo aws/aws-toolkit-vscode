@@ -48,7 +48,7 @@ describe('FeatureConfigProvider', () => {
     it('test getFeatureConfigsTelemetry will return expected string', async () => {
         assert.strictEqual(
             FeatureConfigProvider.instance.getFeatureConfigsTelemetry(),
-            `{testFeature: TREATMENT, featureA: CONTROL, featureB: TREATMENT}`
+            `{testFeature: TREATMENT, featureA: CONTROL, featureB: TREATMENT, customizationArnOverride: customizationName}`
         )
     })
 
@@ -77,6 +77,13 @@ describe('FeatureConfigProvider', () => {
                     },
                     variation: 'TREATMENT',
                 },
+                customizationArnOverride: {
+                    name: 'customizationArnOverride',
+                    value: {
+                        stringValue: 'customizationARN',
+                    },
+                    variation: 'customizationName',
+                },
             }
 
             assert.deepStrictEqual(Object.fromEntries(featureConfigs), expectedFeatureConfigs)
@@ -93,5 +100,56 @@ describe('FeatureConfigProvider', () => {
 
     it('should test feature-does-not-exist as disabled', async () => {
         assert.strictEqual(FeatureConfigProvider.isEnabled('feature-does-not-exist' as FeatureName), false)
+    })
+
+    it('should retrieve customization override values', async () => {
+        assert.strictEqual(
+            FeatureConfigProvider.getFeature(Features.customizationArnOverride)?.value.stringValue,
+            'customizationARN'
+        )
+        assert.strictEqual(
+            FeatureConfigProvider.getFeature(Features.customizationArnOverride)?.variation,
+            'customizationName'
+        )
+    })
+
+    describe('getProjectContextGroup', function () {
+        beforeEach(function () {
+            sinon.restore()
+        })
+
+        afterEach(function () {
+            sinon.restore()
+        })
+
+        const cases: { variationName: string; expected: string }[] = [
+            { variationName: 'CONTROL', expected: 'control' },
+            { variationName: 'TREATMENT_1', expected: 't1' },
+            { variationName: 'TREATMENT_2', expected: 't2' },
+        ]
+
+        for (const tuple of cases) {
+            it(`should return ${tuple.expected} when variation name is ${tuple.variationName}`, async function () {
+                const clientSpy = await createSpyClient()
+                sinon.stub(clientSpy, 'listFeatureEvaluations').returns({
+                    promise: () =>
+                        Promise.resolve({
+                            $response: {
+                                requestId: '',
+                            },
+                            featureEvaluations: [
+                                {
+                                    feature: 'ProjectContextV2',
+                                    variation: tuple.variationName,
+                                    value: { stringValue: 'foo' },
+                                },
+                            ],
+                        }),
+                } as Request<ListFeatureEvaluationsResponse, AWSError>)
+                await FeatureConfigProvider.instance.fetchFeatureConfigs()
+
+                assert.strictEqual(FeatureConfigProvider.instance.getProjectContextGroup(), tuple.expected)
+            })
+        }
     })
 })

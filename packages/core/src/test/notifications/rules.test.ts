@@ -3,10 +3,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import assert from 'assert'
-import { RuleEngine } from '../../notifications/rules'
+import { RuleEngine, getRuleContext } from '../../notifications/rules'
 import { DisplayIf, ToolkitNotification, RuleContext } from '../../notifications/types'
-import { globals } from '../../shared'
+import globals from '../../shared/extensionGlobals'
+import { Connection, scopesCodeCatalyst } from '../../auth/connection'
+import { getOperatingSystem } from '../../shared/telemetry/util'
+import { getAuthFormIdsFromConnection } from '../../auth/utils'
+import { amazonQScopes } from '../../codewhisperer'
+import { builderIdStartUrl } from '../../auth/sso/constants'
 
 describe('Notifications Rule Engine', function () {
     const context: RuleContext = {
@@ -18,7 +24,6 @@ describe('Notifications Rule Engine', function () {
         authRegions: ['us-east-1'],
         authStates: ['connected'],
         authScopes: ['codewhisperer:completions', 'codewhisperer:analysis'],
-        installedExtensions: ['ext1', 'ext2', 'ext3'],
         activeExtensions: ['ext1', 'ext2'],
     }
 
@@ -35,7 +40,7 @@ describe('Notifications Rule Engine', function () {
                         description: 'Something crazy is happening! Please update your extension.',
                     },
                 },
-                onRecieve: 'toast',
+                onReceive: 'toast',
                 onClick: {
                     type: 'openUrl',
                     url: 'https://aws.amazon.com/visualstudiocode/',
@@ -126,6 +131,18 @@ describe('Notifications Rule Engine', function () {
             ),
             true
         )
+        assert.equal(
+            ruleEngine.shouldDisplayNotification(
+                buildNotification({
+                    extensionVersion: {
+                        type: 'range',
+                        lowerInclusive: '-inf',
+                        upperExclusive: '1.23.0',
+                    },
+                })
+            ),
+            true
+        )
 
         assert.equal(
             ruleEngine.shouldDisplayNotification(
@@ -133,6 +150,31 @@ describe('Notifications Rule Engine', function () {
                     extensionVersion: {
                         type: 'range',
                         lowerInclusive: '1.0.0',
+                    },
+                })
+            ),
+            true
+        )
+        assert.equal(
+            ruleEngine.shouldDisplayNotification(
+                buildNotification({
+                    extensionVersion: {
+                        type: 'range',
+                        lowerInclusive: '1.0.0',
+                        upperExclusive: '+inf',
+                    },
+                })
+            ),
+            true
+        )
+
+        assert.equal(
+            ruleEngine.shouldDisplayNotification(
+                buildNotification({
+                    extensionVersion: {
+                        type: 'range',
+                        lowerInclusive: '-inf',
+                        upperExclusive: '+inf',
                     },
                 })
             ),
@@ -147,6 +189,18 @@ describe('Notifications Rule Engine', function () {
                     extensionVersion: {
                         type: 'range',
                         lowerInclusive: '1.18.0',
+                        upperExclusive: '1.20.0',
+                    },
+                })
+            ),
+            false
+        )
+        assert.equal(
+            ruleEngine.shouldDisplayNotification(
+                buildNotification({
+                    extensionVersion: {
+                        type: 'range',
+                        lowerInclusive: '-inf',
                         upperExclusive: '1.20.0',
                     },
                 })
@@ -251,7 +305,7 @@ describe('Notifications Rule Engine', function () {
         assert.equal(
             ruleEngine.shouldDisplayNotification(
                 buildNotification({
-                    additionalCriteria: [{ type: 'AuthType', values: ['builderId', 'iamIdentityCenter'] }],
+                    additionalCriteria: [{ type: 'AuthType', values: ['builderId', 'identityCenter'] }],
                 })
             ),
             true
@@ -262,7 +316,7 @@ describe('Notifications Rule Engine', function () {
         assert.equal(
             ruleEngine.shouldDisplayNotification(
                 buildNotification({
-                    additionalCriteria: [{ type: 'AuthType', values: ['iamIdentityCenter'] }],
+                    additionalCriteria: [{ type: 'AuthType', values: ['identityCenter'] }],
                 })
             ),
             false
@@ -350,28 +404,6 @@ describe('Notifications Rule Engine', function () {
         )
     })
 
-    it('should display notification for InstalledExtensions criteria', function () {
-        assert.equal(
-            ruleEngine.shouldDisplayNotification(
-                buildNotification({
-                    additionalCriteria: [{ type: 'InstalledExtensions', values: ['ext1', 'ext2'] }],
-                })
-            ),
-            true
-        )
-    })
-
-    it('should NOT display notification for invalid InstalledExtensions criteria', function () {
-        assert.equal(
-            ruleEngine.shouldDisplayNotification(
-                buildNotification({
-                    additionalCriteria: [{ type: 'InstalledExtensions', values: ['ext1', 'ext2', 'unkownExtension'] }],
-                })
-            ),
-            false
-        )
-    })
-
     it('should display notification for ActiveExtensions criteria', function () {
         assert.equal(
             ruleEngine.shouldDisplayNotification(
@@ -420,11 +452,10 @@ describe('Notifications Rule Engine', function () {
                     additionalCriteria: [
                         { type: 'OS', values: ['LINUX', 'MAC'] },
                         { type: 'ComputeEnv', values: ['local', 'ec2'] },
-                        { type: 'AuthType', values: ['builderId', 'iamIdentityCenter'] },
+                        { type: 'AuthType', values: ['builderId', 'identityCenter'] },
                         { type: 'AuthRegion', values: ['us-east-1', 'us-west-2'] },
                         { type: 'AuthState', values: ['connected'] },
                         { type: 'AuthScopes', values: ['codewhisperer:completions', 'codewhisperer:analysis'] },
-                        { type: 'InstalledExtensions', values: ['ext1', 'ext2'] },
                         { type: 'ActiveExtensions', values: ['ext1', 'ext2'] },
                     ],
                 })
@@ -458,11 +489,10 @@ describe('Notifications Rule Engine', function () {
                     },
                     additionalCriteria: [
                         { type: 'OS', values: ['LINUX', 'MAC'] },
-                        { type: 'AuthType', values: ['builderId', 'iamIdentityCenter'] },
+                        { type: 'AuthType', values: ['builderId', 'identityCenter'] },
                         { type: 'AuthRegion', values: ['us-east-1', 'us-west-2'] },
                         { type: 'AuthState', values: ['connected'] },
                         { type: 'AuthScopes', values: ['codewhisperer:completions', 'codewhisperer:analysis'] },
-                        { type: 'InstalledExtensions', values: ['ex1', 'ext2'] },
                         { type: 'ActiveExtensions', values: ['ext1', 'ext2'] },
 
                         { type: 'ComputeEnv', values: ['ec2'] }, // no 'local'
@@ -471,5 +501,57 @@ describe('Notifications Rule Engine', function () {
             ),
             false
         )
+    })
+})
+
+describe('Notifications getRuleContext()', function () {
+    it('should return the correct rule context', async function () {
+        const context = globals.context
+        context.extension.packageJSON.version = '0.0.1'
+        const authEnabledConnections = (
+            [
+                {
+                    type: 'iam',
+                },
+                {
+                    type: 'sso',
+                    scopes: amazonQScopes,
+                    startUrl: builderIdStartUrl,
+                },
+                {
+                    type: 'sso',
+                    scopes: scopesCodeCatalyst,
+                    startUrl: builderIdStartUrl,
+                },
+                {
+                    type: 'sso',
+                    scopes: amazonQScopes,
+                    startUrl: 'something',
+                },
+                {
+                    type: 'unknown',
+                },
+            ] as Connection[]
+        )
+            .map((c) => getAuthFormIdsFromConnection(c))
+            .join(',')
+
+        const ruleContext = await getRuleContext(context, {
+            authEnabledConnections,
+            authScopes: amazonQScopes.join(','),
+            authStatus: 'connected',
+            awsRegion: 'us-east-1',
+        })
+        assert.deepStrictEqual(ruleContext, {
+            ideVersion: vscode.version,
+            extensionVersion: '0.0.1',
+            os: getOperatingSystem(),
+            computeEnv: 'test',
+            authTypes: ['credentials', 'builderId', 'identityCenter', 'unknown'],
+            authRegions: ['us-east-1'],
+            authStates: ['connected'],
+            authScopes: amazonQScopes,
+            activeExtensions: vscode.extensions.all.filter((e) => e.isActive).map((e) => e.id),
+        })
     })
 })

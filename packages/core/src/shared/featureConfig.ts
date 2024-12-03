@@ -9,6 +9,7 @@ import {
     ListFeatureEvaluationsRequest,
     ListFeatureEvaluationsResponse,
 } from '../codewhisperer/client/codewhispereruserclient'
+import * as vscode from 'vscode'
 import { codeWhispererClient as client } from '../codewhisperer/client/codewhisperer'
 import { AuthUtil } from '../codewhisperer/util/authUtil'
 import { getLogger } from './logger'
@@ -18,6 +19,7 @@ import globals from './extensionGlobals'
 import { getClientId, getOperatingSystem } from './telemetry/util'
 import { extensionVersion } from './vscode/env'
 import { telemetry } from './telemetry'
+import { Auth } from '../auth'
 
 export class FeatureContext {
     constructor(
@@ -51,8 +53,6 @@ export class FeatureConfigProvider {
 
     static #instance: FeatureConfigProvider
 
-    private _isDataCollectionGroup = false
-
     constructor() {
         this.fetchFeatureConfigs().catch((e) => {
             getLogger().error('fetchFeatureConfigs failed: %s', (e as Error).message)
@@ -65,12 +65,22 @@ export class FeatureConfigProvider {
         return (this.#instance ??= new this())
     }
 
-    isAmznDataCollectionGroup(): boolean {
-        return this._isDataCollectionGroup
-    }
+    getProjectContextGroup(): 'control' | 't1' | 't2' {
+        const variation = this.featureConfigs.get(Features.projectContextFeature)?.variation
 
-    isNewProjectContextGroup(): boolean {
-        return this.featureConfigs.get(Features.projectContextFeature)?.variation === 'TREATMENT'
+        switch (variation) {
+            case 'CONTROL':
+                return 'control'
+
+            case 'TREATMENT_1':
+                return 't1'
+
+            case 'TREATMENT_2':
+                return 't2'
+
+            default:
+                return 'control'
+        }
     }
 
     public async listFeatureEvaluations(): Promise<ListFeatureEvaluationsResponse> {
@@ -143,13 +153,12 @@ export class FeatureConfigProvider {
                         )
                         this.featureConfigs.delete(Features.customizationArnOverride)
                     }
+
+                    await vscode.commands.executeCommand('aws.amazonq.refreshStatusBar')
                 }
             }
-
-            const dataCollectionValue = this.featureConfigs.get(Features.dataCollectionFeature)?.value.stringValue
-            if (dataCollectionValue === 'data-collection') {
-                this._isDataCollectionGroup = true
-                // Enable local workspace index by default, for Amzn users.
+            if (Auth.instance.isInternalAmazonUser()) {
+                // Enable local workspace index by default only once, for Amzn users.
                 const isSet = globals.globalState.get<boolean>('aws.amazonq.workspaceIndexToggleOn') || false
                 if (!isSet) {
                     await CodeWhispererSettings.instance.enableLocalIndex()

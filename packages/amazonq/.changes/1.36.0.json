@@ -1,0 +1,22 @@
+{
+	"date": "2024-11-14",
+	"version": "1.36.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Fix broken inline suggestion auto-trigger on Systemverfilog files if users dont have systemverilog extension installed and enabled"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "tutorial always showing on start"
+		},
+		{
+			"type": "Feature",
+			"description": "Enable default `@workspace` context of Amazon Q chat for certain users"
+		},
+		{
+			"type": "Feature",
+			"description": "Amazon Q /dev: Add an action to accept individual files"
+		}
+	]
+}

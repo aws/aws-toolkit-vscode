@@ -34,7 +34,7 @@ export async function showAmazonQWalkthroughOnce(showWalkthrough = () => openAma
  * Opens the Amazon Q Walkthrough.
  * We wrap the actual command so that we can get telemetry from it.
  */
-export const openAmazonQWalkthrough = Commands.declare(`_aws.amazonq.walkthrough.show`, () => async () => {
+export const openAmazonQWalkthrough = Commands.declare(`aws.amazonq.walkthrough.show`, () => async () => {
     await vscode.commands.executeCommand(
         'workbench.action.openWalkthrough',
         `${VSCODE_EXTENSION_ID.amazonq}#aws.amazonq.walkthrough`
@@ -69,7 +69,7 @@ fake_users = [
 export const walkthroughSecurityScanExample = Commands.declare(
     `_aws.amazonq.walkthrough.securityScanExample`,
     () => async () => {
-        const filterText = localize('AWS.command.amazonq.security.scan', 'Run Project Scan')
+        const filterText = localize('AWS.command.amazonq.security.scan', 'Run Project Review')
         void vscode.commands.executeCommand('workbench.action.quickOpen', `> ${filterText}`)
     }
 )

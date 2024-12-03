@@ -9,7 +9,7 @@ import * as path from 'path'
 import sinon from 'sinon'
 import { waitUntil } from '../../../../shared/utilities/timeoutUtils'
 import { ControllerSetup, createController, createSession, generateVirtualMemoryUri } from '../../utils'
-import { CurrentWsFolders, FollowUpTypes, NewFileInfo, DeletedFileInfo } from '../../../../amazonqFeatureDev/types'
+import { CurrentWsFolders, DeletedFileInfo, NewFileInfo } from '../../../../amazonqFeatureDev/types'
 import { Session } from '../../../../amazonqFeatureDev/session/session'
 import { Prompter } from '../../../../shared/ui/prompter'
 import { assertTelemetry, toFile } from '../../../testUtil'
@@ -33,8 +33,9 @@ import { CodeGenState, PrepareCodeGenState } from '../../../../amazonqFeatureDev
 import { FeatureDevClient } from '../../../../amazonqFeatureDev/client/featureDev'
 import { createAmazonQUri } from '../../../../amazonq/commons/diff'
 import { AuthUtil } from '../../../../codewhisperer'
-import { featureName, messageWithConversationId } from '../../../../amazonqFeatureDev'
+import { featureDevScheme, featureName, messageWithConversationId } from '../../../../amazonqFeatureDev'
 import { i18n } from '../../../../shared/i18n-helper'
+import { FollowUpTypes } from '../../../../amazonq/commons/types'
 
 let mockGetCodeGeneration: sinon.SinonStub
 describe('Controller', () => {
@@ -51,16 +52,18 @@ describe('Controller', () => {
             relativePath: 'myfile1.js',
             fileContent: '',
             rejected: false,
-            virtualMemoryUri: generateVirtualMemoryUri(uploadID, 'myfile1.js'),
+            virtualMemoryUri: generateVirtualMemoryUri(uploadID, 'myfile1.js', featureDevScheme),
             workspaceFolder: controllerSetup.workspaceFolder,
+            changeApplied: false,
         },
         {
             zipFilePath: 'myfile2.js',
             relativePath: 'myfile2.js',
             fileContent: '',
             rejected: true,
-            virtualMemoryUri: generateVirtualMemoryUri(uploadID, 'myfile2.js'),
+            virtualMemoryUri: generateVirtualMemoryUri(uploadID, 'myfile2.js', featureDevScheme),
             workspaceFolder: controllerSetup.workspaceFolder,
+            changeApplied: false,
         },
     ]
 
@@ -70,12 +73,14 @@ describe('Controller', () => {
             relativePath: 'myfile3.js',
             rejected: false,
             workspaceFolder: controllerSetup.workspaceFolder,
+            changeApplied: false,
         },
         {
             zipFilePath: 'myfile4.js',
             relativePath: 'myfile4.js',
             rejected: true,
             workspaceFolder: controllerSetup.workspaceFolder,
+            changeApplied: false,
         },
     ]
 
@@ -85,7 +90,13 @@ describe('Controller', () => {
 
     beforeEach(async () => {
         controllerSetup = await createController()
-        session = await createSession({ messenger: controllerSetup.messenger, conversationID, tabID, uploadID })
+        session = await createSession({
+            messenger: controllerSetup.messenger,
+            conversationID,
+            tabID,
+            uploadID,
+            scheme: featureDevScheme,
+        })
 
         sinon.stub(AuthUtil.instance, 'getChatAuthState').resolves({
             codewhispererCore: 'connected',
@@ -117,8 +128,8 @@ describe('Controller', () => {
             assert.strictEqual(
                 executedDiff.calledWith(
                     'vscode.diff',
-                    createAmazonQUri('empty', tabID),
-                    createAmazonQUri(path.join(uploadID, 'src', 'mynewfile.js'), tabID)
+                    createAmazonQUri('empty', tabID, featureDevScheme),
+                    createAmazonQUri(path.join(uploadID, 'src', 'mynewfile.js'), tabID, featureDevScheme)
                 ),
                 true
             )
@@ -135,7 +146,7 @@ describe('Controller', () => {
                 executedDiff.calledWith(
                     'vscode.diff',
                     vscode.Uri.file(newFileLocation),
-                    createAmazonQUri(path.join(uploadID, 'mynewfile.js'), tabID)
+                    createAmazonQUri(path.join(uploadID, 'mynewfile.js'), tabID, featureDevScheme)
                 ),
                 true
             )
@@ -152,7 +163,7 @@ describe('Controller', () => {
                 executedDiff.calledWith(
                     'vscode.diff',
                     vscode.Uri.file(newFileLocation),
-                    createAmazonQUri(path.join(uploadID, 'src', 'mynewfile.js'), tabID)
+                    createAmazonQUri(path.join(uploadID, 'src', 'mynewfile.js'), tabID, featureDevScheme)
                 ),
                 true
             )
@@ -171,7 +182,7 @@ describe('Controller', () => {
                 executedDiff.calledWith(
                     'vscode.diff',
                     vscode.Uri.file(newFileLocation),
-                    createAmazonQUri(path.join(uploadID, 'foo', 'fi', 'mynewfile.js'), tabID)
+                    createAmazonQUri(path.join(uploadID, 'foo', 'fi', 'mynewfile.js'), tabID, featureDevScheme)
                 ),
                 true
             )
@@ -283,6 +294,7 @@ describe('Controller', () => {
                 conversationID,
                 tabID,
                 uploadID,
+                scheme: featureDevScheme,
             })
             return newSession
         }
@@ -353,6 +365,7 @@ describe('Controller', () => {
                     conversationID,
                     tabID,
                     uploadID,
+                    scheme: featureDevScheme,
                 })
                 const getSessionStub = sinon.stub(controllerSetup.sessionStorage, 'getSession').resolves(newSession)
 
@@ -403,6 +416,7 @@ describe('Controller', () => {
         }
 
         describe('processErrorChatMessage', function () {
+            // TODO: fix disablePreviousFileList error
             const runs = [
                 { name: 'ContentLengthError', error: new ContentLengthError() },
                 {
@@ -521,6 +535,30 @@ describe('Controller', () => {
                 return Promise.resolve(getSessionStub.callCount > 0)
             }, {})
             assertTelemetry('ui_click', { elementId: 'amazonq_stopCodeGeneration' })
+        })
+    })
+
+    describe('closeSession', async () => {
+        async function closeSessionClicked() {
+            const getSessionStub = sinon.stub(controllerSetup.sessionStorage, 'getSession').resolves(session)
+
+            controllerSetup.emitters.followUpClicked.fire({
+                tabID,
+                followUp: {
+                    type: FollowUpTypes.CloseSession,
+                },
+            })
+
+            // Wait until the controller has time to process the event
+            await waitUntil(() => {
+                return Promise.resolve(getSessionStub.callCount > 0)
+            }, {})
+        }
+
+        it('end chat telemetry is sent', async () => {
+            await closeSessionClicked()
+
+            assertTelemetry('amazonq_endChat', { amazonqConversationId: conversationID, result: 'Succeeded' })
         })
     })
 })

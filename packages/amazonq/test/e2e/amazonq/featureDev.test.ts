@@ -9,7 +9,8 @@ import sinon from 'sinon'
 import { registerAuthHook, using } from 'aws-core-vscode/test'
 import { loginToIdC } from './utils/setup'
 import { Messenger } from './framework/messenger'
-import { FollowUpTypes, examples } from 'aws-core-vscode/amazonqFeatureDev'
+import { examples } from 'aws-core-vscode/amazonqFeatureDev'
+import { FollowUpTypes } from 'aws-core-vscode/amazonq'
 import { sleep } from 'aws-core-vscode/shared'
 
 describe('Amazon Q Feature Dev', function () {
@@ -17,7 +18,8 @@ describe('Amazon Q Feature Dev', function () {
     let tab: Messenger
 
     const prompt = 'Add blank.txt file with empty content'
-    const codegenApproachPrompt = prompt + ' and add a readme that describes the changes'
+    const codegenApproachPrompt = `${prompt} and add a readme that describes the changes`
+    const fileLevelAcceptPrompt = `${prompt} and add a license, and a contributing file`
     const tooManyRequestsWaitTime = 100000
 
     function waitForButtons(buttons: FollowUpTypes[]) {
@@ -48,6 +50,14 @@ describe('Amazon Q Feature Dev', function () {
             },
             () => {}
         )
+    }
+
+    async function clickActionButton(filePath: string, actionName: string) {
+        tab.clickFileActionButton(filePath, actionName)
+        await tab.waitForEvent(() => !tab.hasAction(filePath, actionName), {
+            waitIntervalInMs: 500,
+            waitTimeoutInMs: 600000,
+        })
     }
 
     /**
@@ -214,6 +224,122 @@ describe('Amazon Q Feature Dev', function () {
             await iterate(codegenApproachPrompt)
             tab.clickButton(FollowUpTypes.InsertCode)
             await waitForButtons([FollowUpTypes.NewTask, FollowUpTypes.CloseSession])
+        })
+    })
+
+    describe('file-level accepts', async () => {
+        beforeEach(async function () {
+            tab.addChatMessage({ command: '/dev', prompt: fileLevelAcceptPrompt })
+            await retryIfRequired(
+                async () => {
+                    await tab.waitForChatFinishesLoading()
+                },
+                () => {
+                    tab.addChatMessage({ prompt })
+                }
+            )
+            await retryIfRequired(async () => {
+                await Promise.any([
+                    waitForButtons([FollowUpTypes.InsertCode, FollowUpTypes.ProvideFeedbackAndRegenerateCode]),
+                    waitForButtons([FollowUpTypes.Retry]),
+                ])
+            })
+        })
+
+        describe('fileList', async () => {
+            it('has both accept-change and reject-change action buttons for file', async () => {
+                const filePath = tab.getFilePaths()[0]
+                assert.ok(tab.getActionsByFilePath(filePath).length === 2)
+                assert.ok(tab.hasAction(filePath, 'accept-change'))
+                assert.ok(tab.hasAction(filePath, 'reject-change'))
+            })
+
+            it('has only revert-rejection action button for rejected file', async () => {
+                const filePath = tab.getFilePaths()[0]
+                await clickActionButton(filePath, 'reject-change')
+
+                assert.ok(tab.getActionsByFilePath(filePath).length === 1)
+                assert.ok(tab.hasAction(filePath, 'revert-rejection'))
+            })
+
+            it('does not have any of the action buttons for accepted file', async () => {
+                const filePath = tab.getFilePaths()[0]
+                await clickActionButton(filePath, 'accept-change')
+
+                assert.ok(tab.getActionsByFilePath(filePath).length === 0)
+            })
+
+            it('disables all action buttons when new task is clicked', async () => {
+                tab.clickButton(FollowUpTypes.InsertCode)
+                await waitForButtons([FollowUpTypes.NewTask, FollowUpTypes.CloseSession])
+                tab.clickButton(FollowUpTypes.NewTask)
+                await waitForText('What new task would you like to work on?')
+
+                const filePaths = tab.getFilePaths()
+                for (const filePath of filePaths) {
+                    assert.ok(tab.getActionsByFilePath(filePath).length === 0)
+                }
+            })
+
+            it('disables all action buttons when close session is clicked', async () => {
+                tab.clickButton(FollowUpTypes.InsertCode)
+                await waitForButtons([FollowUpTypes.NewTask, FollowUpTypes.CloseSession])
+                tab.clickButton(FollowUpTypes.CloseSession)
+                await waitForText(
+                    "Okay, I've ended this chat session. You can open a new tab to chat or start another workflow."
+                )
+
+                const filePaths = tab.getFilePaths()
+                for (const filePath of filePaths) {
+                    assert.ok(tab.getActionsByFilePath(filePath).length === 0)
+                }
+            })
+        })
+
+        describe('accept button', async () => {
+            describe('button text', async () => {
+                it('shows "Accept all changes" when no files are accepted or rejected, and "Accept remaining changes" otherwise', async () => {
+                    let insertCodeButton = tab.getFollowUpButton(FollowUpTypes.InsertCode)
+                    assert.ok(insertCodeButton.pillText === 'Accept all changes')
+
+                    const filePath = tab.getFilePaths()[0]
+                    await clickActionButton(filePath, 'reject-change')
+
+                    insertCodeButton = tab.getFollowUpButton(FollowUpTypes.InsertCode)
+                    assert.ok(insertCodeButton.pillText === 'Accept remaining changes')
+
+                    await clickActionButton(filePath, 'revert-rejection')
+
+                    insertCodeButton = tab.getFollowUpButton(FollowUpTypes.InsertCode)
+                    assert.ok(insertCodeButton.pillText === 'Accept all changes')
+
+                    await clickActionButton(filePath, 'accept-change')
+
+                    insertCodeButton = tab.getFollowUpButton(FollowUpTypes.InsertCode)
+                    assert.ok(insertCodeButton.pillText === 'Accept remaining changes')
+                })
+
+                it('shows "Continue" when all files are either accepted or rejected, with at least one of them rejected', async () => {
+                    const filePaths = tab.getFilePaths()
+                    for (const filePath of filePaths) {
+                        await clickActionButton(filePath, 'reject-change')
+                    }
+
+                    const insertCodeButton = tab.getFollowUpButton(FollowUpTypes.InsertCode)
+                    assert.ok(insertCodeButton.pillText === 'Continue')
+                })
+            })
+
+            it('disappears and automatically moves on to the next step when all changes are accepted', async () => {
+                const filePaths = tab.getFilePaths()
+                for (const filePath of filePaths) {
+                    await clickActionButton(filePath, 'accept-change')
+                }
+                await waitForButtons([FollowUpTypes.NewTask, FollowUpTypes.CloseSession])
+
+                assert.ok(tab.hasButton(FollowUpTypes.InsertCode) === false)
+                assert.ok(tab.hasButton(FollowUpTypes.ProvideFeedbackAndRegenerateCode) === false)
+            })
         })
     })
 })

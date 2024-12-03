@@ -9,7 +9,7 @@ import { Iot } from 'aws-sdk'
 import { IotPolicyWithVersionsNode } from '../../../../awsService/iot/explorer/iotPolicyNode'
 import { IotPolicyVersionNode } from '../../../../awsService/iot/explorer/iotPolicyVersionNode'
 import { stringOrProp } from '../../../../shared/utilities/tsUtils'
-import { formatLocalized } from '../../../../shared/utilities/textUtilities'
+import { formatLocalized } from '../../../../shared/datetime'
 
 describe('IotPolicyVersionNode', function () {
     const policyName = 'policy'

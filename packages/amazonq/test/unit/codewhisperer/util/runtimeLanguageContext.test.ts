@@ -4,7 +4,7 @@
  */
 
 import assert from 'assert'
-import { resetCodeWhispererGlobalVariables } from 'aws-core-vscode/test'
+import { resetCodeWhispererGlobalVariables, toTextDocument } from 'aws-core-vscode/test'
 import { runtimeLanguageContext, RuntimeLanguageContext, PlatformLanguageId } from 'aws-core-vscode/codewhisperer'
 import * as codewhispererClient from 'aws-core-vscode/codewhisperer'
 import { CodewhispererLanguage } from 'aws-core-vscode/shared'
@@ -59,6 +59,61 @@ describe('runtimeLanguageContext', function () {
             it(`should ${expected ? '' : 'not'} support ${languageId}`, function () {
                 const actual = languageContext.isLanguageSupported(languageId)
                 assert.strictEqual(actual, expected)
+            })
+        })
+
+        describe('test isLanguageSupported with document as the argument', function () {
+            const cases: [string, boolean][] = [
+                ['helloJava.java', true],
+                ['helloPython.py', true],
+                ['helloJavascript.js', true],
+                ['helloJsx.jsx', true],
+                ['helloTypescript.ts', true],
+                ['helloTsx.tsx', true],
+                ['helloCsharp.cs', true],
+                ['helloC.c', true],
+                ['helloC.h', true],
+                ['helloCpp.cpp', true],
+                ['helloCpp.cc', true],
+                ['helloGo.go', true],
+                ['helloKotlin.kt', true],
+                ['helloPhp.php', true],
+                ['helloRuby.rb', true],
+                ['helloRust.rs', true],
+                ['helloScala.scala', true],
+                ['helloShellscript.sh', true],
+                ['helloSql.sql', true],
+                ['helloSystemVerilog.svh', true],
+                ['helloSystemVerilog.sv', true],
+                ['helloSystemVerilog.vh', true],
+                ['helloDart.dart', true],
+                ['helloLua.lua', true],
+                ['helloLua.wlua', true],
+                ['helloSwift.swift', true],
+                ['helloVue.vue', true],
+                ['helloPowerShell.ps1', true],
+                ['helloPowerShell.psm1', true],
+                ['helloR.r', true],
+                ['helloJson.json', true],
+                ['helloYaml.yaml', true],
+                ['helloYaml.yml', true],
+                ['helloTf.tf', true],
+                ['helloPlaintext.txt', false],
+                ['helloHtml.html', false],
+                ['helloCss.css', false],
+                ['helloUnknown', false],
+                ['helloFoo.foo', false],
+            ]
+
+            cases.forEach((tuple) => {
+                const fileName = tuple[0]
+                const expected = tuple[1]
+
+                it(`pass document ${fileName} as argument should first try determine by languageId then file extensions`, async function () {
+                    const doc = await toTextDocument('', fileName)
+                    const actual = languageContext.isLanguageSupported(doc)
+                    assert.strictEqual(actual, expected)
+                })
             })
         })
     })

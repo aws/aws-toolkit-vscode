@@ -21,6 +21,9 @@ import { getEnvironmentSpecificMemento } from '../shared/utilities/mementos'
 import { setContext } from '../shared'
 import { telemetry } from '../shared/telemetry'
 import { getSessionId } from '../shared/telemetry/util'
+import { NotificationsController } from '../notifications/controller'
+import { DevNotificationsState } from '../notifications/types'
+import { QuickPickItem } from 'vscode'
 
 interface MenuOption {
     readonly label: string
@@ -34,21 +37,25 @@ export type DevFunction =
     | 'openTerminal'
     | 'deleteDevEnv'
     | 'editStorage'
+    | 'resetState'
     | 'showEnvVars'
     | 'deleteSsoConnections'
     | 'expireSsoConnections'
     | 'editAuthConnections'
+    | 'notificationsSend'
     | 'forceIdeCrash'
 
 export type DevOptions = {
     context: vscode.ExtensionContext
-    auth: Auth
+    auth: () => Auth
+    notificationsController: () => NotificationsController
     menuOptions?: DevFunction[]
 }
 
 let targetContext: vscode.ExtensionContext
 let globalState: vscode.Memento
 let targetAuth: Auth
+let targetNotificationsController: NotificationsController
 
 /**
  * Defines AWS Toolkit developer tools.
@@ -83,6 +90,11 @@ const menuOptions: () => Record<DevFunction, MenuOption> = () => {
             detail: 'Shows all globalState values, or edit a globalState/secret item',
             executor: openStorageFromInput,
         },
+        resetState: {
+            label: 'Reset feature state',
+            detail: 'Quick reset the state of extension components or features',
+            executor: resetState,
+        },
         showEnvVars: {
             label: 'Show Environment Variables',
             description: 'AWS Toolkit',
@@ -103,6 +115,11 @@ const menuOptions: () => Record<DevFunction, MenuOption> = () => {
             label: 'Auth: Edit Connections',
             detail: 'Opens editor to all Auth Connections the extension is using.',
             executor: editSsoConnections,
+        },
+        notificationsSend: {
+            label: 'Notifications: Send Notifications',
+            detail: 'Send JSON notifications for testing.',
+            executor: editNotifications,
         },
         forceIdeCrash: {
             label: 'Crash: Force IDE ExtHost Crash',
@@ -156,14 +173,19 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
         vscode.workspace.registerTextDocumentContentProvider('aws-dev2', new DevDocumentProvider()),
         // "AWS (Developer): Open Developer Menu"
         vscode.commands.registerCommand('aws.dev.openMenu', async () => {
-            await vscode.commands.executeCommand('_aws.dev.invokeMenu', { context: ctx, auth: Auth.instance })
+            await vscode.commands.executeCommand('_aws.dev.invokeMenu', {
+                context: ctx,
+                auth: () => Auth.instance,
+                notificationsController: () => NotificationsController.instance,
+            })
         }),
         // Internal command to open dev menu for a specific context and options
         vscode.commands.registerCommand('_aws.dev.invokeMenu', (opts: DevOptions) => {
             targetContext = opts.context
             // eslint-disable-next-line aws-toolkits/no-banned-usages
             globalState = targetContext.globalState
-            targetAuth = opts.auth
+            targetAuth = opts.auth()
+            targetNotificationsController = opts.notificationsController()
             const options = menuOptions()
             void openMenu(
                 entries(options)
@@ -302,7 +324,7 @@ class ObjectEditor {
         vscode.workspace.registerFileSystemProvider(ObjectEditor.scheme, this.fs)
     }
 
-    public async openStorage(type: 'globalsView' | 'globals' | 'secrets' | 'auth', key: string): Promise<void> {
+    public async openStorage(type: 'globalsView' | 'globals' | 'secrets' | 'auth', key: string) {
         switch (type) {
             case 'globalsView':
                 return showState('globalstate')
@@ -316,17 +338,19 @@ class ObjectEditor {
         }
     }
 
-    private async openState(storage: vscode.Memento | vscode.SecretStorage, key: string): Promise<void> {
+    private async openState(storage: vscode.Memento | vscode.SecretStorage, key: string) {
         const uri = this.uriFromKey(key, storage)
         const tab = this.tabs.get(this.fs.uriToKey(uri))
 
         if (tab) {
             tab.virtualFile.refresh()
             await vscode.window.showTextDocument(tab.editor.document)
+            return tab.virtualFile
         } else {
             const newTab = await this.createTab(storage, key)
             const newKey = this.fs.uriToKey(newTab.editor.document.uri)
             this.tabs.set(newKey, newTab)
+            return newTab.virtualFile
         }
     }
 
@@ -417,6 +441,62 @@ async function openStorageFromInput() {
     }
 }
 
+type ResettableFeature = {
+    name: string
+    executor: () => Promise<void> | void
+} & QuickPickItem
+
+/**
+ * Extend this array with features that may need state resets often for
+ * testing purposes. It will appear as an entry in the "Reset feature state" menu.
+ */
+const resettableFeatures: readonly ResettableFeature[] = [
+    {
+        name: 'notifications',
+        label: 'Notifications',
+        detail: 'Resets memory/global state for the notifications panel (includes dismissed, onReceive).',
+        executor: resetNotificationsState,
+    },
+] as const
+
+// TODO this is *somewhat* similar to `openStorageFromInput`. If we need another
+// one of these prompters, can we make it generic?
+async function resetState() {
+    const wizard = new (class extends Wizard<{ target: string; key: string }> {
+        constructor() {
+            super()
+
+            this.form.target.bindPrompter(() =>
+                createQuickPick(
+                    resettableFeatures.map((f) => {
+                        return {
+                            data: f.name,
+                            label: f.label,
+                            detail: f.detail,
+                        }
+                    }),
+                    {
+                        title: 'Select a feature/component to reset',
+                    }
+                )
+            )
+
+            this.form.key.bindPrompter(({ target }) => {
+                if (target && resettableFeatures.some((f) => f.name === target)) {
+                    return new SkipPrompter('')
+                }
+                throw new Error('invalid feature target')
+            })
+        }
+    })()
+
+    const response = await wizard.run()
+
+    if (response) {
+        return resettableFeatures.find((f) => f.name === response.target)?.executor()
+    }
+}
+
 async function editSsoConnections() {
     void openStorageCommand.execute('auth', 'auth.profiles')
 }
@@ -459,4 +539,42 @@ export const openStorageCommand = Commands.from(ObjectEditor).declareOpenStorage
 
 export async function updateDevMode() {
     await setContext('aws.isDevMode', DevSettings.instance.isDevMode())
+}
+
+async function resetNotificationsState() {
+    await targetNotificationsController.reset()
+}
+
+async function editNotifications() {
+    const storageKey = 'aws.notifications.dev'
+    const current = globalState.get(storageKey) ?? {}
+    const isValid = (item: any) => {
+        if (typeof item !== 'object' || !Array.isArray(item.startUp) || !Array.isArray(item.emergency)) {
+            return false
+        }
+        return true
+    }
+    if (!isValid(current)) {
+        // Set a default state if the developer does not have it or it's malformed.
+        await globalState.update(storageKey, { startUp: [], emergency: [] } as DevNotificationsState)
+    }
+
+    // Monitor for when the global state is updated.
+    // A notification will be sent based on the contents.
+    const virtualFile = await openStorageCommand.execute('globals', storageKey)
+    virtualFile?.onDidChange(async () => {
+        const val = globalState.get(storageKey) as DevNotificationsState
+        if (!isValid(val)) {
+            void vscode.window.showErrorMessage(
+                'Dev mode: invalid notification object provided. State data must take the form: { "startUp": ToolkitNotification[], "emergency": ToolkitNotification[] }'
+            )
+            return
+        }
+
+        // This relies on the controller being built with DevFetcher, as opposed to
+        // the default RemoteFetcher. DevFetcher will check for notifications in the
+        // global state, which was just modified.
+        await targetNotificationsController.pollForStartUp()
+        await targetNotificationsController.pollForEmergencies()
+    })
 }

@@ -430,7 +430,7 @@ export class LineAnnotationController implements vscode.Disposable {
         }
 
         // Disable Tips when language is not supported by Amazon Q.
-        if (!runtimeLanguageContext.isLanguageSupported(editor.document.languageId)) {
+        if (!runtimeLanguageContext.isLanguageSupported(editor.document)) {
             return
         }
 

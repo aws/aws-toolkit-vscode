@@ -12,12 +12,18 @@ import { assertTelemetry, assertTelemetryCurried, tryRegister } from '../../test
 import {
     toggleCodeSuggestions,
     showSecurityScan,
+    showFileScan,
     applySecurityFix,
     showReferenceLog,
     selectCustomizationPrompt,
     reconnect,
     signoutCodeWhisperer,
     toggleCodeScans,
+    generateFix,
+    rejectFix,
+    ignoreIssue,
+    regenerateFix,
+    ignoreAllIssues,
 } from '../../../codewhisperer/commands/basicCommands'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
 import { testCommand } from '../../shared/vscode/testUtils'
@@ -28,7 +34,6 @@ import { stub } from '../../utilities/stubber'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { getTestWindow } from '../../shared/vscode/window'
 import { ExtContext } from '../../../shared/extensions'
-import { getLogger } from '../../../shared/logger/logger'
 import {
     createAutoScans,
     createAutoSuggestions,
@@ -54,9 +59,14 @@ import { cwQuickPickSource } from '../../../codewhisperer/commands/types'
 import { refreshStatusBar } from '../../../codewhisperer/service/inlineCompletionService'
 import { focusAmazonQPanel } from '../../../codewhispererChat/commands/registerCommands'
 import * as diagnosticsProvider from '../../../codewhisperer/service/diagnosticsProvider'
-import { SecurityIssueHoverProvider } from '../../../codewhisperer/service/securityIssueHoverProvider'
-import { SecurityIssueCodeActionProvider } from '../../../codewhisperer/service/securityIssueCodeActionProvider'
 import { randomUUID } from '../../../shared/crypto'
+import { assertLogsContain } from '../../globalSetup.test'
+import * as securityIssueWebview from '../../../codewhisperer/views/securityIssue/securityIssueWebview'
+import { IssueItem, SecurityIssueTreeViewProvider } from '../../../codewhisperer/service/securityIssueTreeViewProvider'
+import { SecurityIssueProvider } from '../../../codewhisperer/service/securityIssueProvider'
+import { CodeWhispererSettings } from '../../../codewhisperer/util/codewhispererSettings'
+import { confirm } from '../../../shared'
+import * as commentUtils from '../../../shared/utilities/commentUtils'
 
 describe('CodeWhisperer-basicCommands', function () {
     let targetCommand: Command<any> & vscode.Disposable
@@ -290,6 +300,43 @@ describe('CodeWhisperer-basicCommands', function () {
         })
     })
 
+    describe('showFileScan', function () {
+        let mockExtensionContext: vscode.ExtensionContext
+        let mockSecurityPanelViewProvider: SecurityPanelViewProvider
+        let mockClient: DefaultCodeWhispererClient
+        let mockExtContext: ExtContext
+
+        beforeEach(async function () {
+            await resetCodeWhispererGlobalVariables()
+            mockExtensionContext = await FakeExtensionContext.create()
+            mockSecurityPanelViewProvider = new SecurityPanelViewProvider(mockExtensionContext)
+            mockClient = stub(DefaultCodeWhispererClient)
+            mockExtContext = await FakeExtensionContext.getFakeExtContext()
+        })
+
+        afterEach(function () {
+            targetCommand?.dispose()
+            sinon.restore()
+            codeScanState.setToNotStarted()
+        })
+
+        it('prompts user to reauthenticate if connection is expired', async function () {
+            targetCommand = testCommand(showFileScan, mockExtContext, mockSecurityPanelViewProvider, mockClient)
+
+            sinon.stub(AuthUtil.instance, 'isConnectionExpired').returns(true)
+            const spy = sinon.stub(AuthUtil.instance, 'showReauthenticatePrompt')
+
+            await targetCommand.execute(placeholder, cwQuickPickSource)
+            assert.ok(spy.called)
+        })
+
+        it('includes the "source" in the command execution metric', async function () {
+            targetCommand = testCommand(showFileScan, mockExtContext, mockSecurityPanelViewProvider, mockClient)
+            await targetCommand.execute(placeholder, cwQuickPickSource)
+            assertTelemetry('vscode_executeCommand', { source: cwQuickPickSource, command: targetCommand.id })
+        })
+    })
+
     describe('showReferenceLog', function () {
         beforeEach(async function () {
             await resetCodeWhispererGlobalVariables()
@@ -407,7 +454,6 @@ describe('CodeWhisperer-basicCommands', function () {
                     createOpenReferenceLog(),
                     createGettingStarted(),
                     createAutoScans(false),
-                    createSecurityScan(),
                     switchToAmazonQNode(),
                     ...genericItems(),
                     createSettingsNode(),
@@ -431,7 +477,6 @@ describe('CodeWhisperer-basicCommands', function () {
                     createOpenReferenceLog(),
                     createGettingStarted(),
                     createAutoScans(false),
-                    createSecurityScan(),
                     createSelectCustomization(),
                     switchToAmazonQNode(),
                     ...genericItems(),
@@ -454,7 +499,7 @@ describe('CodeWhisperer-basicCommands', function () {
                     createAutoSuggestions(true),
                     createOpenReferenceLog(),
                     createGettingStarted(),
-                    createSeparator('Security Scans'),
+                    createSeparator('Code Reviews'),
                     createSecurityScan(),
                     createSeparator('Other Features'),
                     switchToAmazonQNode(),
@@ -478,6 +523,7 @@ describe('CodeWhisperer-basicCommands', function () {
         let removeDiagnosticMock: sinon.SinonStub
         let removeIssueMock: sinon.SinonStub
         let codeScanIssue: CodeScanIssue
+        let showTextDocumentMock: sinon.SinonStub
 
         beforeEach(function () {
             sandbox = sinon.createSandbox()
@@ -489,6 +535,7 @@ describe('CodeWhisperer-basicCommands', function () {
             codeScanIssue = createCodeScanIssue({
                 findingId: randomUUID(),
             })
+            showTextDocumentMock = sinon.stub()
         })
 
         afterEach(function () {
@@ -506,8 +553,8 @@ describe('CodeWhisperer-basicCommands', function () {
             applyEditMock.resolves(true)
             sandbox.stub(vscode.workspace, 'applyEdit').value(applyEditMock)
             sandbox.stub(diagnosticsProvider, 'removeDiagnostic').value(removeDiagnosticMock)
-            sandbox.stub(SecurityIssueHoverProvider.instance, 'removeIssue').value(removeIssueMock)
-            sandbox.stub(SecurityIssueCodeActionProvider.instance, 'removeIssue').value(removeIssueMock)
+            sandbox.stub(SecurityIssueProvider.instance, 'removeIssue').value(removeIssueMock)
+            sandbox.stub(vscode.window, 'showTextDocument').value(showTextDocumentMock)
 
             targetCommand = testCommand(applySecurityFix)
             codeScanIssue.suggestedFixes = [
@@ -526,49 +573,7 @@ describe('CodeWhisperer-basicCommands', function () {
             )
             assert.ok(applyEditMock.calledOnce)
             assert.ok(removeDiagnosticMock.calledOnceWith(textDocumentMock.uri, codeScanIssue))
-            assert.ok(removeIssueMock.calledTwice)
-
-            assertTelemetry('codewhisperer_codeScanIssueApplyFix', {
-                detectorId: codeScanIssue.detectorId,
-                findingId: codeScanIssue.findingId,
-                component: 'hover',
-                result: 'Succeeded',
-            })
-        })
-
-        it('should call applySecurityFix command successfully but not remove issues if auto-scans is disabled', async function () {
-            const fileName = 'sample.py'
-            const textDocumentMock = createMockDocument('first line\n second line\n fourth line', fileName)
-
-            openTextDocumentMock.resolves(textDocumentMock)
-            sandbox.stub(vscode.workspace, 'openTextDocument').value(openTextDocumentMock)
-
-            sandbox.stub(vscode.WorkspaceEdit.prototype, 'replace').value(replaceMock)
-            applyEditMock.resolves(true)
-            sandbox.stub(vscode.workspace, 'applyEdit').value(applyEditMock)
-            sandbox.stub(diagnosticsProvider, 'removeDiagnostic').value(removeDiagnosticMock)
-            sandbox.stub(SecurityIssueHoverProvider.instance, 'removeIssue').value(removeIssueMock)
-            sandbox.stub(SecurityIssueCodeActionProvider.instance, 'removeIssue').value(removeIssueMock)
-            await CodeScansState.instance.setScansEnabled(false)
-
-            targetCommand = testCommand(applySecurityFix)
-            codeScanIssue.suggestedFixes = [
-                {
-                    description: 'fix',
-                    code: '@@ -1,3 +1,3 @@\n first line\n- second line\n+ third line\n  fourth line',
-                },
-            ]
-            await targetCommand.execute(codeScanIssue, fileName, 'hover')
-            assert.ok(
-                replaceMock.calledOnceWith(
-                    textDocumentMock.uri,
-                    new vscode.Range(0, 0, 2, 12),
-                    'first line\n third line\n fourth line'
-                )
-            )
-            assert.ok(applyEditMock.calledOnce)
-            assert.ok(removeDiagnosticMock.notCalled)
-            assert.ok(removeIssueMock.notCalled)
+            assert.ok(removeIssueMock.calledOnce)
 
             assertTelemetry('codewhisperer_codeScanIssueApplyFix', {
                 detectorId: codeScanIssue.detectorId,
@@ -613,8 +618,8 @@ describe('CodeWhisperer-basicCommands', function () {
             applyEditMock.resolves(true)
             sandbox.stub(vscode.workspace, 'applyEdit').value(applyEditMock)
             sandbox.stub(diagnosticsProvider, 'removeDiagnostic').value(removeDiagnosticMock)
-            sandbox.stub(SecurityIssueHoverProvider.instance, 'removeIssue').value(removeIssueMock)
-            sandbox.stub(SecurityIssueCodeActionProvider.instance, 'removeIssue').value(removeIssueMock)
+            sandbox.stub(SecurityIssueProvider.instance, 'removeIssue').value(removeIssueMock)
+            sandbox.stub(vscode.window, 'showTextDocument').value(showTextDocumentMock)
 
             targetCommand = testCommand(applySecurityFix)
             codeScanIssue.suggestedFixes = [
@@ -636,7 +641,6 @@ describe('CodeWhisperer-basicCommands', function () {
             openTextDocumentMock.resolves(textDocumentMock)
 
             sandbox.stub(vscode.workspace, 'openTextDocument').value(openTextDocumentMock)
-            const loggerStub = sinon.stub(getLogger(), 'error')
 
             sinon.stub(vscode.WorkspaceEdit.prototype, 'replace').value(replaceMock)
             applyEditMock.resolves(false)
@@ -652,9 +656,7 @@ describe('CodeWhisperer-basicCommands', function () {
             await targetCommand.execute(codeScanIssue, fileName, 'quickfix')
 
             assert.ok(replaceMock.calledOnce)
-            assert.ok(loggerStub.calledOnce)
-            const actual = loggerStub.getCall(0).args[0]
-            assert.strictEqual(actual, 'Apply fix command failed. Error: Failed to apply edit to the workspace.')
+            assertLogsContain('Apply fix command failed. Error: Failed to apply edit to the workspace.', true, 'error')
             assertTelemetry('codewhisperer_codeScanIssueApplyFix', {
                 detectorId: codeScanIssue.detectorId,
                 findingId: codeScanIssue.findingId,
@@ -663,6 +665,397 @@ describe('CodeWhisperer-basicCommands', function () {
                 reason: 'Error',
                 reasonDesc: 'Failed to apply edit to the workspace.',
             })
+        })
+    })
+
+    // describe('generateFix', function () {
+    //     let sandbox: sinon.SinonSandbox
+    //     let mockClient: Stub<DefaultCodeWhispererClient>
+    //     let filePath: string
+    //     let codeScanIssue: CodeScanIssue
+    //     let issueItem: IssueItem
+    //     let updateSecurityIssueWebviewMock: sinon.SinonStub
+    //     let updateIssueMock: sinon.SinonStub
+    //     let refreshTreeViewMock: sinon.SinonStub
+    //     let mockDocument: vscode.TextDocument
+
+    //     beforeEach(function () {
+    //         sandbox = sinon.createSandbox()
+    //         mockClient = stub(DefaultCodeWhispererClient)
+    //         mockClient.generateCodeFix.resolves({
+    //             // TODO: Clean this up
+    //             $response: {} as PromiseResult<any, any>['$response'],
+    //             suggestedRemediationDiff: 'diff',
+    //             suggestedRemediationDescription: 'description',
+    //             references: [],
+    //         })
+    //         filePath = 'dummy/file.py'
+    //         codeScanIssue = createCodeScanIssue({
+    //             findingId: randomUUID(),
+    //             ruleId: 'dummy-rule-id',
+    //         })
+    //         issueItem = new IssueItem(filePath, codeScanIssue)
+    //         updateSecurityIssueWebviewMock = sinon.stub()
+    //         updateIssueMock = sinon.stub()
+    //         refreshTreeViewMock = sinon.stub()
+    //         mockDocument = createMockDocument('dummy input')
+    //     })
+
+    //     afterEach(function () {
+    //         sandbox.restore()
+    //     })
+
+    //     it('should call generateFix command successfully', async function () {
+    //         sinon.stub(securityIssueWebview, 'updateSecurityIssueWebview').value(updateSecurityIssueWebviewMock)
+    //         sinon.stub(SecurityIssueProvider.instance, 'updateIssue').value(updateIssueMock)
+    //         sinon.stub(SecurityIssueTreeViewProvider.instance, 'refresh').value(refreshTreeViewMock)
+    //         sinon.stub(vscode.workspace, 'openTextDocument').resolves(mockDocument)
+    //         targetCommand = testCommand(generateFix, mockClient)
+    //         await targetCommand.execute(codeScanIssue, filePath, 'webview')
+    //         assert.ok(updateSecurityIssueWebviewMock.calledWith({ isGenerateFixLoading: true }))
+    //         assert.ok(
+    //             mockClient.generateCodeFix.calledWith({
+    //                 sourceCode: 'dummy input',
+    //                 ruleId: codeScanIssue.ruleId,
+    //                 startLine: codeScanIssue.startLine,
+    //                 endLine: codeScanIssue.endLine,
+    //                 findingDescription: codeScanIssue.description.text,
+    //             })
+    //         )
+
+    //         const expectedUpdatedIssue = {
+    //             ...codeScanIssue,
+    //             suggestedFixes: [{ code: 'diff', description: 'description', references: [] }],
+    //         }
+    //         assert.ok(
+    //             updateSecurityIssueWebviewMock.calledWith({ issue: expectedUpdatedIssue, isGenerateFixLoading: false })
+    //         )
+    //         assert.ok(updateIssueMock.calledWith(expectedUpdatedIssue, filePath))
+    //         assert.ok(refreshTreeViewMock.calledOnce)
+
+    //         assertTelemetry('codewhisperer_codeScanIssueGenerateFix', {
+    //             detectorId: codeScanIssue.detectorId,
+    //             findingId: codeScanIssue.findingId,
+    //             ruleId: codeScanIssue.ruleId,
+    //             component: 'webview',
+    //             result: 'Succeeded',
+    //         })
+    //     })
+
+    //     it('should call generateFix from tree view item', async function () {
+    //         sinon.stub(securityIssueWebview, 'updateSecurityIssueWebview').value(updateSecurityIssueWebviewMock)
+    //         sinon.stub(SecurityIssueProvider.instance, 'updateIssue').value(updateIssueMock)
+    //         sinon.stub(SecurityIssueTreeViewProvider.instance, 'refresh').value(refreshTreeViewMock)
+    //         sinon.stub(vscode.workspace, 'openTextDocument').resolves(mockDocument)
+    //         const filePath = 'dummy/file.py'
+    //         targetCommand = testCommand(generateFix, mockClient)
+    //         await targetCommand.execute(issueItem, filePath, 'tree')
+    //         assert.ok(updateSecurityIssueWebviewMock.calledWith({ isGenerateFixLoading: true }))
+    //         assert.ok(
+    //             mockClient.generateCodeFix.calledWith({
+    //                 sourceCode: 'dummy input',
+    //                 ruleId: codeScanIssue.ruleId,
+    //                 startLine: codeScanIssue.startLine,
+    //                 endLine: codeScanIssue.endLine,
+    //                 findingDescription: codeScanIssue.description.text,
+    //             })
+    //         )
+
+    //         const expectedUpdatedIssue = {
+    //             ...codeScanIssue,
+    //             suggestedFixes: [{ code: 'diff', description: 'description', references: [] }],
+    //         }
+    //         assert.ok(
+    //             updateSecurityIssueWebviewMock.calledWith({ issue: expectedUpdatedIssue, isGenerateFixLoading: false })
+    //         )
+    //         assert.ok(updateIssueMock.calledWith(expectedUpdatedIssue, filePath))
+    //         assert.ok(refreshTreeViewMock.calledOnce)
+
+    //         assertTelemetry('codewhisperer_codeScanIssueGenerateFix', {
+    //             detectorId: codeScanIssue.detectorId,
+    //             findingId: codeScanIssue.findingId,
+    //             ruleId: codeScanIssue.ruleId,
+    //             component: 'tree',
+    //             result: 'Succeeded',
+    //         })
+    //     })
+
+    //     it('should call generateFix with refresh=true to indicate fix regenerated', async function () {
+    //         sinon.stub(securityIssueWebview, 'updateSecurityIssueWebview').value(updateSecurityIssueWebviewMock)
+    //         sinon.stub(SecurityIssueProvider.instance, 'updateIssue').value(updateIssueMock)
+    //         sinon.stub(SecurityIssueTreeViewProvider.instance, 'refresh').value(refreshTreeViewMock)
+    //         sinon.stub(vscode.workspace, 'openTextDocument').resolves(mockDocument)
+    //         targetCommand = testCommand(generateFix, mockClient)
+    //         await targetCommand.execute(codeScanIssue, filePath, 'webview', true)
+    //         assert.ok(updateSecurityIssueWebviewMock.calledWith({ isGenerateFixLoading: true }))
+    //         assert.ok(
+    //             mockClient.generateCodeFix.calledWith({
+    //                 sourceCode: 'dummy input',
+    //                 ruleId: codeScanIssue.ruleId,
+    //                 startLine: codeScanIssue.startLine,
+    //                 endLine: codeScanIssue.endLine,
+    //                 findingDescription: codeScanIssue.description.text,
+    //             })
+    //         )
+
+    //         const expectedUpdatedIssue = {
+    //             ...codeScanIssue,
+    //             suggestedFixes: [{ code: 'diff', description: 'description', references: [] }],
+    //         }
+    //         assert.ok(
+    //             updateSecurityIssueWebviewMock.calledWith({ issue: expectedUpdatedIssue, isGenerateFixLoading: false })
+    //         )
+    //         assert.ok(updateIssueMock.calledWith(expectedUpdatedIssue, filePath))
+    //         assert.ok(refreshTreeViewMock.calledOnce)
+
+    //         assertTelemetry('codewhisperer_codeScanIssueGenerateFix', {
+    //             detectorId: codeScanIssue.detectorId,
+    //             findingId: codeScanIssue.findingId,
+    //             ruleId: codeScanIssue.ruleId,
+    //             component: 'webview',
+    //             variant: 'refresh',
+    //             result: 'Succeeded',
+    //         })
+    //     })
+    // })
+
+    describe('rejectFix', function () {
+        let mockExtensionContext: vscode.ExtensionContext
+        let sandbox: sinon.SinonSandbox
+        let filePath: string
+        let codeScanIssue: CodeScanIssue
+        let issueItem: IssueItem
+        let updateSecurityIssueWebviewMock: sinon.SinonStub
+        let updateIssueMock: sinon.SinonStub
+        let refreshTreeViewMock: sinon.SinonStub
+
+        beforeEach(async function () {
+            sandbox = sinon.createSandbox()
+            filePath = 'dummy/file.py'
+            codeScanIssue = createCodeScanIssue({
+                findingId: randomUUID(),
+                suggestedFixes: [{ code: 'diff', description: 'description' }],
+            })
+            issueItem = new IssueItem(filePath, codeScanIssue)
+            updateSecurityIssueWebviewMock = sinon.stub()
+            updateIssueMock = sinon.stub()
+            refreshTreeViewMock = sinon.stub()
+            mockExtensionContext = await FakeExtensionContext.create()
+        })
+
+        afterEach(function () {
+            sandbox.restore()
+        })
+
+        it('should call rejectFix command successfully', async function () {
+            sinon.stub(securityIssueWebview, 'updateSecurityIssueWebview').value(updateSecurityIssueWebviewMock)
+            sinon.stub(SecurityIssueProvider.instance, 'updateIssue').value(updateIssueMock)
+            sinon.stub(SecurityIssueTreeViewProvider.instance, 'refresh').value(refreshTreeViewMock)
+            targetCommand = testCommand(rejectFix, mockExtensionContext)
+            await targetCommand.execute(codeScanIssue, filePath)
+
+            const expectedUpdatedIssue = { ...codeScanIssue, suggestedFixes: [] }
+            assert.ok(updateIssueMock.calledWith(expectedUpdatedIssue, filePath))
+            assert.ok(refreshTreeViewMock.calledOnce)
+        })
+
+        it('should call rejectFix from tree view item', async function () {
+            sinon.stub(securityIssueWebview, 'updateSecurityIssueWebview').value(updateSecurityIssueWebviewMock)
+            sinon.stub(SecurityIssueProvider.instance, 'updateIssue').value(updateIssueMock)
+            sinon.stub(SecurityIssueTreeViewProvider.instance, 'refresh').value(refreshTreeViewMock)
+            targetCommand = testCommand(rejectFix, mockExtensionContext)
+            await targetCommand.execute(issueItem, filePath)
+
+            const expectedUpdatedIssue = { ...codeScanIssue, suggestedFixes: [] }
+            assert.ok(updateIssueMock.calledWith(expectedUpdatedIssue, filePath))
+            assert.ok(refreshTreeViewMock.calledOnce)
+        })
+    })
+
+    describe('ignoreAllIssues', function () {
+        let sandbox: sinon.SinonSandbox
+        let codeScanIssue: CodeScanIssue
+        let issueItem: IssueItem
+        let addToIgnoredSecurityIssuesListMock: sinon.SinonStub
+        let closeSecurityIssueWebviewMock: sinon.SinonStub
+
+        beforeEach(function () {
+            sandbox = sinon.createSandbox()
+            codeScanIssue = createCodeScanIssue()
+            issueItem = new IssueItem('dummy/file.py', codeScanIssue)
+            addToIgnoredSecurityIssuesListMock = sinon.stub()
+            closeSecurityIssueWebviewMock = sinon.stub()
+        })
+
+        afterEach(function () {
+            sandbox.restore()
+        })
+
+        it('should call ignoreAllIssues command successfully', async function () {
+            sinon
+                .stub(CodeWhispererSettings.instance, 'addToIgnoredSecurityIssuesList')
+                .value(addToIgnoredSecurityIssuesListMock)
+            sinon.stub(securityIssueWebview, 'closeSecurityIssueWebview').value(closeSecurityIssueWebviewMock)
+            targetCommand = testCommand(ignoreAllIssues)
+            getTestWindow().onDidShowMessage((m) => {
+                if (m.message === CodeWhispererConstants.ignoreAllIssuesMessage(codeScanIssue.title)) {
+                    m.selectItem(confirm)
+                }
+            })
+            await targetCommand.execute(codeScanIssue, 'webview')
+
+            assert.ok(addToIgnoredSecurityIssuesListMock.calledWith(codeScanIssue.title))
+            assert.ok(closeSecurityIssueWebviewMock.calledOnce)
+
+            assertTelemetry('codewhisperer_codeScanIssueIgnore', {
+                component: 'webview',
+                detectorId: codeScanIssue.detectorId,
+                findingId: codeScanIssue.findingId,
+                ruleId: codeScanIssue.ruleId,
+                variant: 'all',
+                result: 'Succeeded',
+            })
+        })
+
+        it('should call ignoreAllIssues from tree view item', async function () {
+            sinon
+                .stub(CodeWhispererSettings.instance, 'addToIgnoredSecurityIssuesList')
+                .value(addToIgnoredSecurityIssuesListMock)
+            targetCommand = testCommand(ignoreAllIssues)
+            getTestWindow().onDidShowMessage((m) => {
+                if (m.message === CodeWhispererConstants.ignoreAllIssuesMessage(codeScanIssue.title)) {
+                    m.selectItem(confirm)
+                }
+            })
+            await targetCommand.execute(issueItem)
+
+            assert.ok(addToIgnoredSecurityIssuesListMock.calledWith(codeScanIssue.title))
+
+            assertTelemetry('codewhisperer_codeScanIssueIgnore', {
+                component: 'tree',
+                detectorId: codeScanIssue.detectorId,
+                findingId: codeScanIssue.findingId,
+                ruleId: codeScanIssue.ruleId,
+                variant: 'all',
+                result: 'Succeeded',
+            })
+        })
+    })
+
+    describe('ignoreIssue', function () {
+        let sandbox: sinon.SinonSandbox
+        let codeScanIssue: CodeScanIssue
+        let issueItem: IssueItem
+        let mockDocument: vscode.TextDocument
+        let insertCommentMock: sinon.SinonStub
+        let showTextDocumentMock: sinon.SinonStub
+
+        beforeEach(function () {
+            sandbox = sinon.createSandbox()
+            codeScanIssue = createCodeScanIssue()
+            issueItem = new IssueItem('dummy/file.py', codeScanIssue)
+            mockDocument = createMockDocument()
+            insertCommentMock = sinon.stub()
+            showTextDocumentMock = sinon.stub()
+        })
+
+        afterEach(function () {
+            sandbox.restore()
+        })
+
+        it('should call ignoreIssue command successfully', async function () {
+            sinon.stub(vscode.workspace, 'openTextDocument').resolves(mockDocument)
+            sinon.stub(commentUtils, 'insertCommentAboveLine').value(insertCommentMock)
+            sinon.stub(vscode.window, 'showTextDocument').value(showTextDocumentMock)
+            targetCommand = testCommand(ignoreIssue)
+            await targetCommand.execute(codeScanIssue, 'filepath', 'webview')
+
+            assert.ok(
+                insertCommentMock.calledOnceWith(
+                    mockDocument,
+                    codeScanIssue.startLine,
+                    CodeWhispererConstants.amazonqIgnoreNextLine
+                )
+            )
+
+            assertTelemetry('codewhisperer_codeScanIssueIgnore', {
+                component: 'webview',
+                detectorId: codeScanIssue.detectorId,
+                findingId: codeScanIssue.findingId,
+                ruleId: codeScanIssue.ruleId,
+                result: 'Succeeded',
+            })
+        })
+
+        it('should call ignoreIssue from tree view item', async function () {
+            sinon.stub(vscode.workspace, 'openTextDocument').resolves(mockDocument)
+            sinon.stub(commentUtils, 'insertCommentAboveLine').value(insertCommentMock)
+            sinon.stub(vscode.window, 'showTextDocument').value(showTextDocumentMock)
+            targetCommand = testCommand(ignoreIssue)
+            await targetCommand.execute(issueItem)
+
+            assert.ok(
+                insertCommentMock.calledOnceWith(
+                    mockDocument,
+                    codeScanIssue.startLine,
+                    CodeWhispererConstants.amazonqIgnoreNextLine
+                )
+            )
+
+            assertTelemetry('codewhisperer_codeScanIssueIgnore', {
+                component: 'tree',
+                detectorId: codeScanIssue.detectorId,
+                findingId: codeScanIssue.findingId,
+                ruleId: codeScanIssue.ruleId,
+                result: 'Succeeded',
+            })
+        })
+    })
+
+    describe('regenerateFix', function () {
+        let sandbox: sinon.SinonSandbox
+        let filePath: string
+        let codeScanIssue: CodeScanIssue
+        let issueItem: IssueItem
+        let rejectFixMock: sinon.SinonStub
+        let generateFixMock: sinon.SinonStub
+
+        beforeEach(function () {
+            sandbox = sinon.createSandbox()
+            filePath = 'dummy/file.py'
+            codeScanIssue = createCodeScanIssue({
+                findingId: randomUUID(),
+                suggestedFixes: [{ code: 'diff', description: 'description' }],
+            })
+            issueItem = new IssueItem(filePath, codeScanIssue)
+            rejectFixMock = sinon.stub()
+            generateFixMock = sinon.stub()
+        })
+
+        afterEach(function () {
+            sandbox.restore()
+        })
+
+        it('should call regenerateFix command successfully', async function () {
+            const updatedIssue = createCodeScanIssue({ findingId: 'updatedIssue' })
+            sinon.stub(rejectFix, 'execute').value(rejectFixMock.resolves(updatedIssue))
+            sinon.stub(generateFix, 'execute').value(generateFixMock)
+            targetCommand = testCommand(regenerateFix)
+            await targetCommand.execute(codeScanIssue, filePath)
+
+            assert.ok(rejectFixMock.calledWith(codeScanIssue, filePath))
+            assert.ok(generateFixMock.calledWith(updatedIssue, filePath))
+        })
+
+        it('should call regenerateFix from tree view item', async function () {
+            const updatedIssue = createCodeScanIssue({ findingId: 'updatedIssue' })
+            sinon.stub(rejectFix, 'execute').value(rejectFixMock.resolves(updatedIssue))
+            sinon.stub(generateFix, 'execute').value(generateFixMock)
+            targetCommand = testCommand(regenerateFix)
+            await targetCommand.execute(issueItem, filePath)
+
+            assert.ok(rejectFixMock.calledWith(codeScanIssue, filePath))
+            assert.ok(generateFixMock.calledWith(updatedIssue, filePath))
         })
     })
 })

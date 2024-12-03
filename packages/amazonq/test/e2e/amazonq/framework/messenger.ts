@@ -6,7 +6,7 @@
 import assert from 'assert'
 import { MynahUI, MynahUIProps, MynahUIDataModel } from '@aws/mynah-ui'
 import { waitUntil } from 'aws-core-vscode/shared'
-import { FollowUpTypes } from 'aws-core-vscode/amazonqFeatureDev'
+import { FollowUpTypes } from 'aws-core-vscode/amazonq'
 
 export interface MessengerOptions {
     waitIntervalInMs?: number
@@ -59,6 +59,14 @@ export class Messenger {
         this.mynahUIProps.onFollowUpClicked(this.tabID, lastChatItem?.messageId ?? '', option[0])
     }
 
+    clickFileActionButton(filePath: string, actionName: string) {
+        if (!this.mynahUIProps.onFileActionClick) {
+            assert.fail('onFileActionClick must be defined to use it in the tests')
+        }
+
+        this.mynahUIProps.onFileActionClick(this.tabID, this.getFileListMessageId(), filePath, actionName)
+    }
+
     findCommand(command: string) {
         return this.getCommands()
             .map((groups) => groups.commands)
@@ -78,6 +86,52 @@ export class Messenger {
         return this.getStore().promptInputPlaceholder
     }
 
+    getFollowUpButton(type: FollowUpTypes) {
+        const followUpButton = this.getChatItems()
+            .pop()
+            ?.followUp?.options?.find((action) => action.type === type)
+        if (!followUpButton) {
+            assert.fail(`Could not find follow up button with type ${type}`)
+        }
+        return followUpButton
+    }
+
+    getFileList() {
+        const chatItems = this.getChatItems()
+        const fileList = chatItems.find((item) => 'fileList' in item)
+        if (!fileList) {
+            assert.fail('Could not find file list')
+        }
+        return fileList
+    }
+
+    getFileListMessageId() {
+        const fileList = this.getFileList()
+        const messageId = fileList?.messageId
+        if (!messageId) {
+            assert.fail('Could not find file list message id')
+        }
+        return messageId
+    }
+
+    getFilePaths() {
+        const fileList = this.getFileList()
+        const filePaths = fileList?.fileList?.filePaths
+        if (!filePaths) {
+            assert.fail('Could not find file paths')
+        }
+        if (filePaths.length === 0) {
+            assert.fail('File paths list is empty')
+        }
+        return filePaths
+    }
+
+    getActionsByFilePath(filePath: string) {
+        const fileList = this.getFileList()
+        const actions = fileList?.fileList?.actions
+        return actions?.[filePath] ?? []
+    }
+
     hasButton(type: FollowUpTypes) {
         return (
             this.getChatItems()
@@ -85,6 +139,10 @@ export class Messenger {
                 ?.followUp?.options?.map((opt) => opt.type)
                 .includes(type) ?? false
         )
+    }
+
+    hasAction(filePath: string, actionName: string) {
+        return this.getActionsByFilePath(filePath).some((action) => action.name === actionName)
     }
 
     async waitForChatFinishesLoading() {
