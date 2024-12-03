@@ -15,6 +15,9 @@ export interface MessageControllerProps {
     tabsStorage: TabsStorage
     isFeatureDevEnabled: boolean
     isGumbyEnabled: boolean
+    isScanEnabled: boolean
+    isTestEnabled: boolean
+    isDocEnabled: boolean
     disabledCommands?: string[]
 }
 
@@ -31,13 +34,20 @@ export class MessageController {
         this.tabDataGenerator = new TabDataGenerator({
             isFeatureDevEnabled: props.isFeatureDevEnabled,
             isGumbyEnabled: props.isGumbyEnabled,
+            isScanEnabled: props.isScanEnabled,
+            isTestEnabled: props.isTestEnabled,
+            isDocEnabled: props.isDocEnabled,
             disabledCommands: props.disabledCommands,
         })
     }
 
     public sendSelectedCodeToTab(message: ChatItem, command: string = ''): string | undefined {
         const selectedTab = { ...this.tabsStorage.getSelectedTab() }
-        if (selectedTab?.id === undefined || selectedTab?.type === 'featuredev') {
+        if (
+            selectedTab?.id === undefined ||
+            selectedTab?.type === undefined ||
+            ['featuredev', 'gumby', 'review', 'testgen', 'doc'].includes(selectedTab.type)
+        ) {
             // Create a new tab if there's none
             const newTabID: string | undefined = this.mynahUI.updateStore(
                 '',

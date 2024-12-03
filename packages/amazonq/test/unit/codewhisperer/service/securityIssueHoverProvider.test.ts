@@ -4,16 +4,18 @@
  */
 
 import * as vscode from 'vscode'
-import { SecurityIssueHoverProvider } from 'aws-core-vscode/codewhisperer'
+import { SecurityIssueHoverProvider, SecurityIssueProvider } from 'aws-core-vscode/codewhisperer'
 import { createCodeScanIssue, createMockDocument, assertTelemetry } from 'aws-core-vscode/test'
 import assert from 'assert'
 
 describe('securityIssueHoverProvider', () => {
+    let securityIssueProvider: SecurityIssueProvider
     let securityIssueHoverProvider: SecurityIssueHoverProvider
     let mockDocument: vscode.TextDocument
     let token: vscode.CancellationTokenSource
 
     beforeEach(() => {
+        securityIssueProvider = SecurityIssueProvider.instance
         securityIssueHoverProvider = new SecurityIssueHoverProvider()
         mockDocument = createMockDocument('def two_sum(nums, target):\nfor', 'test.py', 'python')
         token = new vscode.CancellationTokenSource()
@@ -30,7 +32,7 @@ describe('securityIssueHoverProvider', () => {
             }),
         ]
 
-        securityIssueHoverProvider.issues = [
+        securityIssueProvider.issues = [
             {
                 filePath: mockDocument.fileName,
                 issues,
@@ -46,10 +48,16 @@ describe('securityIssueHoverProvider', () => {
                 'fix\n\n' +
                 `[$(eye) View Details](command:aws.amazonq.openSecurityIssuePanel?${encodeURIComponent(
                     JSON.stringify([issues[0], mockDocument.fileName])
-                )} 'Open "Amazon Q Security Issue"')\n` +
+                )} 'Open "Code Issue Details"')\n` +
                 ` | [$(comment) Explain](command:aws.amazonq.explainIssue?${encodeURIComponent(
                     JSON.stringify([issues[0]])
                 )} 'Explain with Amazon Q')\n` +
+                ` | [$(error) Ignore](command:aws.amazonq.security.ignore?${encodeURIComponent(
+                    JSON.stringify([issues[0], mockDocument.fileName, 'hover'])
+                )} 'Ignore Issue')\n` +
+                ` | [$(error) Ignore All](command:aws.amazonq.security.ignoreAll?${encodeURIComponent(
+                    JSON.stringify([issues[0], 'hover'])
+                )} 'Ignore Similar Issues')\n` +
                 ` | [$(wrench) Fix](command:aws.amazonq.applySecurityFix?${encodeURIComponent(
                     JSON.stringify([issues[0], mockDocument.fileName, 'hover'])
                 )} 'Fix with Amazon Q')\n` +
@@ -90,10 +98,16 @@ describe('securityIssueHoverProvider', () => {
                 'recommendationText\n\n' +
                 `[$(eye) View Details](command:aws.amazonq.openSecurityIssuePanel?${encodeURIComponent(
                     JSON.stringify([issues[1], mockDocument.fileName])
-                )} 'Open "Amazon Q Security Issue"')\n` +
+                )} 'Open "Code Issue Details"')\n` +
                 ` | [$(comment) Explain](command:aws.amazonq.explainIssue?${encodeURIComponent(
                     JSON.stringify([issues[1]])
-                )} 'Explain with Amazon Q')\n`
+                )} 'Explain with Amazon Q')\n` +
+                ` | [$(error) Ignore](command:aws.amazonq.security.ignore?${encodeURIComponent(
+                    JSON.stringify([issues[1], mockDocument.fileName, 'hover'])
+                )} 'Ignore Issue')\n` +
+                ` | [$(error) Ignore All](command:aws.amazonq.security.ignoreAll?${encodeURIComponent(
+                    JSON.stringify([issues[1], 'hover'])
+                )} 'Ignore Similar Issues')\n`
         )
         assertTelemetry('codewhisperer_codeScanIssueHover', [
             { findingId: 'finding-1', detectorId: 'language/detector-1', ruleId: 'Rule-123', includesFix: true },
@@ -102,7 +116,7 @@ describe('securityIssueHoverProvider', () => {
     })
 
     it('should return empty contents if there is no issue on the current position', () => {
-        securityIssueHoverProvider.issues = [
+        securityIssueProvider.issues = [
             {
                 filePath: mockDocument.fileName,
                 issues: [createCodeScanIssue()],
@@ -114,7 +128,7 @@ describe('securityIssueHoverProvider', () => {
     })
 
     it('should skip issues not in the current file', () => {
-        securityIssueHoverProvider.issues = [
+        securityIssueProvider.issues = [
             {
                 filePath: 'some/path',
                 issues: [createCodeScanIssue()],
@@ -130,7 +144,7 @@ describe('securityIssueHoverProvider', () => {
 
     it('should not show severity badge if undefined', () => {
         const issues = [createCodeScanIssue({ severity: undefined, suggestedFixes: [] })]
-        securityIssueHoverProvider.issues = [
+        securityIssueProvider.issues = [
             {
                 filePath: mockDocument.fileName,
                 issues,
@@ -144,10 +158,16 @@ describe('securityIssueHoverProvider', () => {
                 'recommendationText\n\n' +
                 `[$(eye) View Details](command:aws.amazonq.openSecurityIssuePanel?${encodeURIComponent(
                     JSON.stringify([issues[0], mockDocument.fileName])
-                )} 'Open "Amazon Q Security Issue"')\n` +
+                )} 'Open "Code Issue Details"')\n` +
                 ` | [$(comment) Explain](command:aws.amazonq.explainIssue?${encodeURIComponent(
                     JSON.stringify([issues[0]])
-                )} 'Explain with Amazon Q')\n`
+                )} 'Explain with Amazon Q')\n` +
+                ` | [$(error) Ignore](command:aws.amazonq.security.ignore?${encodeURIComponent(
+                    JSON.stringify([issues[0], mockDocument.fileName, 'hover'])
+                )} 'Ignore Issue')\n` +
+                ` | [$(error) Ignore All](command:aws.amazonq.security.ignoreAll?${encodeURIComponent(
+                    JSON.stringify([issues[0], 'hover'])
+                )} 'Ignore Similar Issues')\n`
         )
     })
 
@@ -162,7 +182,7 @@ describe('securityIssueHoverProvider', () => {
                 ],
             }),
         ]
-        securityIssueHoverProvider.issues = [
+        securityIssueProvider.issues = [
             {
                 filePath: mockDocument.fileName,
                 issues,
@@ -176,10 +196,16 @@ describe('securityIssueHoverProvider', () => {
                 'fix\n\n' +
                 `[$(eye) View Details](command:aws.amazonq.openSecurityIssuePanel?${encodeURIComponent(
                     JSON.stringify([issues[0], mockDocument.fileName])
-                )} 'Open "Amazon Q Security Issue"')\n` +
+                )} 'Open "Code Issue Details"')\n` +
                 ` | [$(comment) Explain](command:aws.amazonq.explainIssue?${encodeURIComponent(
                     JSON.stringify([issues[0]])
                 )} 'Explain with Amazon Q')\n` +
+                ` | [$(error) Ignore](command:aws.amazonq.security.ignore?${encodeURIComponent(
+                    JSON.stringify([issues[0], mockDocument.fileName, 'hover'])
+                )} 'Ignore Issue')\n` +
+                ` | [$(error) Ignore All](command:aws.amazonq.security.ignoreAll?${encodeURIComponent(
+                    JSON.stringify([issues[0], 'hover'])
+                )} 'Ignore Similar Issues')\n` +
                 ` | [$(wrench) Fix](command:aws.amazonq.applySecurityFix?${encodeURIComponent(
                     JSON.stringify([issues[0], mockDocument.fileName, 'hover'])
                 )} 'Fix with Amazon Q')\n` +
@@ -215,5 +241,17 @@ describe('securityIssueHoverProvider', () => {
                 '```\n\n' +
                 '</span>\n\n'
         )
+    })
+
+    it('should not show issues that are not visible', () => {
+        const issues = [createCodeScanIssue({ visible: false })]
+        securityIssueProvider.issues = [
+            {
+                filePath: mockDocument.fileName,
+                issues,
+            },
+        ]
+        const actual = securityIssueHoverProvider.provideHover(mockDocument, new vscode.Position(0, 0), token.token)
+        assert.strictEqual(actual.contents.length, 0)
     })
 })

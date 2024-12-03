@@ -5,14 +5,16 @@
 import * as vscode from 'vscode'
 import { CodeScanIssue } from '../models/model'
 import globals from '../../shared/extensionGlobals'
-import { SecurityIssueProvider } from './securityIssueProvider'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import path from 'path'
 import { AuthUtil } from '../util/authUtil'
 import { TelemetryHelper } from '../util/telemetryHelper'
+import { SecurityIssueProvider } from './securityIssueProvider'
+import { amazonqCodeIssueDetailsTabTitle } from '../models/constants'
 
-export class SecurityIssueHoverProvider extends SecurityIssueProvider implements vscode.HoverProvider {
+export class SecurityIssueHoverProvider implements vscode.HoverProvider {
     static #instance: SecurityIssueHoverProvider
+    private issueProvider: SecurityIssueProvider = SecurityIssueProvider.instance
 
     public static get instance() {
         return (this.#instance ??= new this())
@@ -25,12 +27,15 @@ export class SecurityIssueHoverProvider extends SecurityIssueProvider implements
     ): vscode.Hover {
         const contents: vscode.MarkdownString[] = []
 
-        for (const group of this.issues) {
+        for (const group of this.issueProvider.issues) {
             if (document.fileName !== group.filePath) {
                 continue
             }
 
             for (const issue of group.issues) {
+                if (!issue.visible) {
+                    continue
+                }
                 const range = new vscode.Range(issue.startLine, 0, issue.endLine, 0)
                 if (range.contains(position)) {
                     contents.push(this._getContent(group.filePath, issue))
@@ -69,14 +74,16 @@ export class SecurityIssueHoverProvider extends SecurityIssueProvider implements
         const [suggestedFix] = issue.suggestedFixes
 
         markdownString.appendMarkdown(`## ${issue.title} ${this._makeSeverityBadge(issue.severity)}\n`)
-        markdownString.appendMarkdown(`${suggestedFix ? suggestedFix.description : issue.recommendation.text}\n\n`)
+        markdownString.appendMarkdown(
+            `${suggestedFix?.code && suggestedFix.description !== '' ? suggestedFix.description : issue.recommendation.text}\n\n`
+        )
 
         const viewDetailsCommand = this._getCommandMarkdown(
             'aws.amazonq.openSecurityIssuePanel',
             [issue, filePath],
             'eye',
             'View Details',
-            'Open "Amazon Q Security Issue"'
+            `Open "${amazonqCodeIssueDetailsTabTitle}"`
         )
         markdownString.appendMarkdown(viewDetailsCommand)
 
@@ -89,7 +96,25 @@ export class SecurityIssueHoverProvider extends SecurityIssueProvider implements
         )
         markdownString.appendMarkdown(' | ' + explainWithQCommand)
 
-        if (suggestedFix) {
+        const ignoreIssueCommand = this._getCommandMarkdown(
+            'aws.amazonq.security.ignore',
+            [issue, filePath, 'hover'],
+            'error',
+            'Ignore',
+            'Ignore Issue'
+        )
+        markdownString.appendMarkdown(' | ' + ignoreIssueCommand)
+
+        const ignoreSimilarIssuesCommand = this._getCommandMarkdown(
+            'aws.amazonq.security.ignoreAll',
+            [issue, 'hover'],
+            'error',
+            'Ignore All',
+            'Ignore Similar Issues'
+        )
+        markdownString.appendMarkdown(' | ' + ignoreSimilarIssuesCommand)
+
+        if (suggestedFix && suggestedFix.code) {
             const applyFixCommand = this._getCommandMarkdown(
                 'aws.amazonq.applySecurityFix',
                 [issue, filePath, 'hover'],
