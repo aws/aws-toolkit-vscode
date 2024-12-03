@@ -10,7 +10,7 @@ import assert from 'assert'
 import { LspClient, LspController } from '../../amazonq'
 import { LanguageClient, ServerOptions } from 'vscode-languageclient'
 import { createTestWorkspace } from '../../test/testUtil'
-import { BuildIndexRequestType, GetUsageRequestType } from '../../amazonq/lsp/types'
+import { BuildIndexRequestType, GetRepomapIndexJSONRequestType, GetUsageRequestType } from '../../amazonq/lsp/types'
 import { fs, getRandomString } from '../../shared'
 import { FileSystem } from '../../shared/fs/fs'
 import { getFsCallsUpperBound } from './utilities'
@@ -22,9 +22,11 @@ interface SetupResult {
 }
 
 async function verifyResult(setup: SetupResult) {
-    assert.ok(setup.clientReqStub.calledTwice)
-    assert.ok(setup.clientReqStub.firstCall.calledWith(BuildIndexRequestType))
-    assert.ok(setup.clientReqStub.secondCall.calledWith(GetUsageRequestType))
+    // A correct run makes 3 requests, but don't want to make it exact to avoid over-sensitivity to implementation. If we make 10+ something is likely wrong.
+    assert.ok(setup.clientReqStub.callCount >= 3 && setup.clientReqStub.callCount <= 10)
+    assert.ok(setup.clientReqStub.calledWith(BuildIndexRequestType))
+    assert.ok(setup.clientReqStub.calledWith(GetUsageRequestType))
+    assert.ok(setup.clientReqStub.calledWith(GetRepomapIndexJSONRequestType))
 
     assert.strictEqual(getFsCallsUpperBound(setup.fsSpy), 0, 'should not make any fs calls')
     assert.ok(setup.findFilesSpy.callCount <= 2, 'findFiles should not be called more than twice')

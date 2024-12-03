@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "`/review` in Q chat to scan your code for vulnerabilities and quality issues, and generate fixes"
+}

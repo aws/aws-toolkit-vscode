@@ -65,3 +65,14 @@ export const QueryVectorIndexRequestType: RequestType<QueryVectorIndexRequest, a
 )
 
 export type IndexConfig = 'all' | 'default'
+
+//RepoMapData
+export type QueryRepomapIndexRequestPayload = { filePaths: string[] }
+export type QueryRepomapIndexRequest = string
+export const QueryRepomapIndexRequestType: RequestType<QueryRepomapIndexRequest, any, any> = new RequestType(
+    'lsp/queryRepomapIndex'
+)
+export type GetRepomapIndexJSONRequest = string
+export const GetRepomapIndexJSONRequestType: RequestType<GetRepomapIndexJSONRequest, any, any> = new RequestType(
+    'lsp/getRepomapIndexJSON'
+)

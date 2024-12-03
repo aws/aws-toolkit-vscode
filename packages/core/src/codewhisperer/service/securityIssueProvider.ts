@@ -4,9 +4,15 @@
  */
 
 import * as vscode from 'vscode'
-import { AggregatedCodeScanIssue, CodeScanIssue, CodeScansState, SuggestedFix } from '../models/model'
-export abstract class SecurityIssueProvider {
+import { AggregatedCodeScanIssue, CodeScanIssue, SuggestedFix } from '../models/model'
+export class SecurityIssueProvider {
+    static #instance: SecurityIssueProvider
+    public static get instance() {
+        return (this.#instance ??= new this())
+    }
+
     private _issues: AggregatedCodeScanIssue[] = []
+    private _disableEventHandler: boolean = false
     public get issues() {
         return this._issues
     }
@@ -15,20 +21,26 @@ export abstract class SecurityIssueProvider {
         this._issues = issues
     }
 
+    public disableEventHandler() {
+        this._disableEventHandler = true
+    }
+
     public handleDocumentChange(event: vscode.TextDocumentChangeEvent) {
         // handleDocumentChange function may be triggered while testing by our own code generation.
         if (!event.contentChanges || event.contentChanges.length === 0) {
             return
         }
-        const { changedRange, changedText, lineOffset } = event.contentChanges.reduce(
+        if (this._disableEventHandler) {
+            this._disableEventHandler = false
+            return
+        }
+        const { changedRange, lineOffset } = event.contentChanges.reduce(
             (acc, change) => ({
                 changedRange: acc.changedRange.union(change.range),
-                changedText: acc.changedText + change.text,
                 lineOffset: acc.lineOffset + this._getLineOffset(change.range, change.text),
             }),
             {
                 changedRange: event.contentChanges[0].range,
-                changedText: '',
                 lineOffset: 0,
             }
         )
@@ -40,20 +52,18 @@ export abstract class SecurityIssueProvider {
             return {
                 ...group,
                 issues: group.issues
-                    .filter((issue) => {
-                        const range = new vscode.Range(
-                            issue.startLine,
-                            event.document.lineAt(issue.startLine)?.range.start.character ?? 0,
-                            issue.endLine,
-                            event.document.lineAt(issue.endLine - 1)?.range.end.character ?? 0
-                        )
-                        const intersection = changedRange.intersection(range)
-                        return !(
-                            intersection &&
-                            (/\S/.test(changedText) || changedText === '') &&
-                            !CodeScansState.instance.isScansEnabled()
-                        )
-                    })
+                    .filter(
+                        (issue) =>
+                            // Filter out any modified issues
+                            !changedRange.intersection(
+                                new vscode.Range(
+                                    issue.startLine,
+                                    event.document.lineAt(issue.startLine)?.range.start.character ?? 0,
+                                    issue.endLine,
+                                    event.document.lineAt(issue.endLine)?.range.end.character ?? 0
+                                )
+                            )
+                    )
                     .map((issue) => {
                         if (issue.startLine < changedRange.end.line) {
                             return issue
@@ -80,7 +90,7 @@ export abstract class SecurityIssueProvider {
     private _offsetSuggestedFix(suggestedFix: SuggestedFix, lines: number): SuggestedFix {
         return {
             ...suggestedFix,
-            code: suggestedFix.code.replace(
+            code: suggestedFix.code?.replace(
                 /^(@@ -)(\d+)(,\d+ \+)(\d+)(,\d+ @@)/,
                 function (_fullMatch, ...groups: string[]) {
                     return (
@@ -92,6 +102,15 @@ export abstract class SecurityIssueProvider {
                     )
                 }
             ),
+            references:
+                suggestedFix.references?.map((ref) => ({
+                    ...ref,
+                    recommendationContentSpan: {
+                        ...ref.recommendationContentSpan,
+                        start: Number(ref.recommendationContentSpan?.start) + lines,
+                        end: Number(ref.recommendationContentSpan?.end) + lines,
+                    },
+                })) ?? [],
         }
     }
 
@@ -103,6 +122,18 @@ export abstract class SecurityIssueProvider {
             return {
                 ...group,
                 issues: group.issues.filter((i) => i.findingId !== issue.findingId),
+            }
+        })
+    }
+
+    public updateIssue(issue: CodeScanIssue, filePath?: string) {
+        this._issues = this._issues.map((group) => {
+            if (filePath && group.filePath !== filePath) {
+                return group
+            }
+            return {
+                ...group,
+                issues: group.issues.map((i) => (i.findingId === issue.findingId ? issue : i)),
             }
         })
     }
