@@ -517,7 +517,7 @@
         "@vscode/debugprotocol": "^1.57.0",
         "@zip.js/zip.js": "^2.7.41",
         "adm-zip": "^0.5.10",
-        "amazon-states-language-service": "^1.11.0",
+        "amazon-states-language-service": "^1.13.0",
         "async-lock": "^1.4.0",
         "aws-sdk": "^2.1384.0",
         "aws-ssm-document-language-service": "^1.0.0",
