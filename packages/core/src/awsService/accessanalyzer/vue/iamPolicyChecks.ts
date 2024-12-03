@@ -179,7 +179,9 @@ export class IamPolicyChecksWebview extends VueWebview {
                             documentType,
                             inputPolicyType: policyType ? policyType : 'None',
                         })
-                        this.client.config.credentials = new SharedIniFileCredentials() // We need to detect changes in the user's credentials
+                        this.client.config.credentials = new SharedIniFileCredentials({
+                            profile: `${getProfileName()}`,
+                        }) // We need to detect changes in the user's credentials
                         this.client.validatePolicy(
                             {
                                 policyDocument: IamPolicyChecksWebview.editedDocument,
@@ -276,6 +278,8 @@ export class IamPolicyChecksWebview extends VueWebview {
                         `${this.region}`,
                         '--config',
                         `${globals.context.asAbsolutePath(defaultTerraformConfigPath)}`,
+                        '--profile',
+                        `${getProfileName()}`,
                     ]
                     this.executeValidatePolicyCommand({
                         command,
@@ -296,7 +300,15 @@ export class IamPolicyChecksWebview extends VueWebview {
             case 'CloudFormation': {
                 if (isCloudFormationTemplate(document)) {
                     const command = 'cfn-policy-validator'
-                    const args = ['validate', '--template-path', `${document}`, '--region', `${this.region}`]
+                    const args = [
+                        'validate',
+                        '--template-path',
+                        `${document}`,
+                        '--region',
+                        `${this.region}`,
+                        '--profile',
+                        `${getProfileName()}`,
+                    ]
                     if (cfnParameterPath !== '') {
                         args.push('--template-configuration-file', `${cfnParameterPath}`)
                     }
@@ -356,6 +368,8 @@ export class IamPolicyChecksWebview extends VueWebview {
                         `${tempFilePath}`,
                         '--reference-policy-type',
                         `${policyType}`,
+                        '--profile',
+                        `${getProfileName()}`,
                     ]
                     this.executeCustomPolicyChecksCommand({
                         command,
@@ -387,6 +401,8 @@ export class IamPolicyChecksWebview extends VueWebview {
                         `${tempFilePath}`,
                         '--reference-policy-type',
                         `${policyType}`,
+                        '--profile',
+                        `${getProfileName()}`,
                     ]
                     if (cfnParameterPath !== '') {
                         args.push('--template-configuration-file', `${cfnParameterPath}`)
@@ -447,6 +463,8 @@ export class IamPolicyChecksWebview extends VueWebview {
                         `${this.region}`,
                         '--config',
                         `${globals.context.asAbsolutePath(defaultTerraformConfigPath)}`,
+                        '--profile',
+                        `${getProfileName()}`,
                     ]
                     if (actions !== '') {
                         args.push('--actions', `${actions}`)
@@ -479,6 +497,8 @@ export class IamPolicyChecksWebview extends VueWebview {
                         `${document}`,
                         '--region',
                         `${this.region}`,
+                        '--profile',
+                        `${getProfileName()}`,
                     ]
                     if (actions !== '') {
                         args.push('--actions', `${actions}`)
@@ -524,6 +544,8 @@ export class IamPolicyChecksWebview extends VueWebview {
                         `${this.region}`,
                         '--config',
                         `${globals.context.asAbsolutePath(defaultTerraformConfigPath)}`,
+                        '--profile',
+                        `${getProfileName()}`,
                     ]
                     this.executeCustomPolicyChecksCommand({
                         command,
@@ -550,6 +572,8 @@ export class IamPolicyChecksWebview extends VueWebview {
                         `${document}`,
                         '--region',
                         `${this.region}`,
+                        '--profile',
+                        `${getProfileName()}`,
                     ]
                     if (cfnParameterPath !== '') {
                         args.push('--template-configuration-file', `${cfnParameterPath}`)
@@ -917,6 +941,11 @@ export function isTerraformPlan(document: string) {
 export function isJsonPolicyLanguage(document: string) {
     const policyLanguageFileTypes = ['.json']
     return policyLanguageFileTypes.some((t) => document.endsWith(t))
+}
+
+export function getProfileName(): string | undefined {
+    // We neeed to split the name on 'profile:' to extract the correct profile name
+    return globals.awsContext.getCredentialProfileName()?.split('profile:')[1]
 }
 
 export class PolicyChecksError extends ToolkitError {
