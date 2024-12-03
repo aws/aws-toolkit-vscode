@@ -507,24 +507,6 @@ export const chooseTransformationObjective = `I can help you with the following 
 
 export const chooseTransformationObjectivePlaceholder = 'Enter "language upgrade" or "sql conversion"'
 
-// export const userPatchDescriptionChatMessage = (java17Source: boolean) => {
-//     return `
-//             If you'd like to update and test your code with fewer changes at a time, I can divide the transformation results into separate diff patches. If applicable to your application, I can split up the diffs up into the following groups of upgrades. Here are the upgrades included in each diff:
-
-//             • Minimal Compatible Library Upgrade to Java 17: Dependencies to the minimum compatible versions in Java 17, including Springboot, JUnit, and PowerMockito.
-
-//             • Popular Enterprise Specifications Application Frameworks: Popular enterprise and application frameworks like Jakarta EE, Hibernate, and Micronaut 3.
-
-//             • HTTP Client Utilities Web Frameworks: HTTP client libraries, Apache Commons utilities, and Struts frameworks.
-
-//             • Testing Tools Frameworks: Testing tools like ArchUnit, Mockito, and TestContainers and build tools like Jenkins and Maven Wrapper.
-
-//             • Miscellaneous Processing Documentation: Upgrades ORMs, XML processing, and Swagger to SpringDoc/OpenAPI.
-
-//             • Deprecated API replacement, dependency upgrades, and formatting: Replaces deprecated APIs, makes additional dependency version upgrades, and formats code changes.
-//         `
-// }
-
 export const userPatchDescriptionChatMessage = (java17Source: boolean) => {
     const patches = [
         '• Popular Enterprise Specifications Application Frameworks: Popular enterprise and application frameworks like Jakarta EE, Hibernate, and Micronaut 3.',
