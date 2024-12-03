@@ -8,7 +8,6 @@ import * as path from 'path'
 import { ConversationNotStartedState, PrepareCodeGenState } from './sessionState'
 import {
     type DeletedFileInfo,
-    FollowUpTypes,
     type Interaction,
     type NewFileInfo,
     type SessionState,
@@ -16,12 +15,10 @@ import {
     UpdateFilesPathsParams,
 } from '../types'
 import { ConversationIdNotFoundError } from '../errors'
-import { referenceLogText } from '../constants'
+import { featureDevChat, referenceLogText, featureDevScheme } from '../constants'
 import fs from '../../shared/fs/fs'
-import { Messenger } from '../controllers/chat/messenger/messenger'
 import { FeatureDevClient } from '../client/featureDev'
 import { codeGenRetryLimit } from '../limits'
-import { SessionConfig } from './sessionConfigFactory'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { ReferenceLogViewProvider } from '../../codewhisperer/service/referenceLogViewProvider'
@@ -29,9 +26,13 @@ import { AuthUtil } from '../../codewhisperer/util/authUtil'
 import { getLogger } from '../../shared'
 import { logWithConversationId } from '../userFacingText'
 import { CodeReference } from '../../amazonq/webview/ui/connector'
-import { UpdateAnswerMessage } from '../views/connector/connector'
 import { MynahIcons } from '@aws/mynah-ui'
 import { i18n } from '../../shared/i18n-helper'
+import { computeDiff } from '../../amazonq/commons/diff'
+import { UpdateAnswerMessage } from '../../amazonq/commons/connector/connectorMessages'
+import { FollowUpTypes } from '../../amazonq/commons/types'
+import { SessionConfig } from '../../amazonq/commons/session/sessionConfigFactory'
+import { Messenger } from '../../amazonq/commons/connector/baseMessenger'
 export class Session {
     private _state?: SessionState | Omit<SessionState, 'uploadId'>
     private task: string = ''
@@ -44,6 +45,7 @@ export class Session {
     private _codeResultMessageId: string | undefined = undefined
     private _acceptCodeMessageId: string | undefined = undefined
     private _acceptCodeTelemetrySent = false
+    private _reportedCodeChanges: Set<string>
 
     // Used to keep track of whether or not the current session is currently authenticating/needs authenticating
     public isAuthenticating: boolean
@@ -62,6 +64,7 @@ export class Session {
 
         this._telemetry = new TelemetryHelper()
         this.isAuthenticating = false
+        this._reportedCodeChanges = new Set()
     }
 
     /**
@@ -181,7 +184,8 @@ export class Session {
                         },
                     ],
                 },
-                tabID
+                tabID,
+                featureDevChat
             )
             this.messenger.updateChatAnswer(answer)
         }
@@ -209,6 +213,7 @@ export class Session {
     }
 
     public async insertNewFiles(newFilePaths: NewFileInfo[]) {
+        await this.sendLinesOfCodeAcceptedTelemetry(newFilePaths)
         for (const filePath of newFilePaths) {
             const absolutePath = path.join(filePath.workspaceFolder.uri.fsPath, filePath.relativePath)
 
@@ -271,6 +276,50 @@ export class Session {
             return i18n('AWS.amazonq.featureDev.pillText.acceptRemainingChanges')
         }
         return i18n('AWS.amazonq.featureDev.pillText.acceptAllChanges')
+    }
+
+    public async computeFilePathDiff(filePath: NewFileInfo) {
+        const leftPath = `${filePath.workspaceFolder.uri.fsPath}/${filePath.relativePath}`
+        const rightPath = filePath.virtualMemoryUri.path
+        const diff = await computeDiff(leftPath, rightPath, this.tabID, featureDevScheme)
+        return { leftPath, rightPath, ...diff }
+    }
+
+    public async sendLinesOfCodeGeneratedTelemetry() {
+        let charactersOfCodeGenerated = 0
+        let linesOfCodeGenerated = 0
+        // deleteFiles are currently not counted because the number of lines added is always 0
+        const filePaths = this.state.filePaths ?? []
+        for (const filePath of filePaths) {
+            const { leftPath, changes, charsAdded, linesAdded } = await this.computeFilePathDiff(filePath)
+            const codeChangeKey = `${leftPath}#@${JSON.stringify(changes)}`
+            if (this._reportedCodeChanges.has(codeChangeKey)) {
+                continue
+            }
+            charactersOfCodeGenerated += charsAdded
+            linesOfCodeGenerated += linesAdded
+            this._reportedCodeChanges.add(codeChangeKey)
+        }
+        await this.proxyClient.sendFeatureDevCodeGenerationEvent({
+            conversationId: this.conversationId,
+            charactersOfCodeGenerated,
+            linesOfCodeGenerated,
+        })
+    }
+
+    public async sendLinesOfCodeAcceptedTelemetry(filePaths: NewFileInfo[]) {
+        let charactersOfCodeAccepted = 0
+        let linesOfCodeAccepted = 0
+        for (const filePath of filePaths) {
+            const { charsAdded, linesAdded } = await this.computeFilePathDiff(filePath)
+            charactersOfCodeAccepted += charsAdded
+            linesOfCodeAccepted += linesAdded
+        }
+        await this.proxyClient.sendFeatureDevCodeAcceptanceEvent({
+            conversationId: this.conversationId,
+            charactersOfCodeAccepted,
+            linesOfCodeAccepted,
+        })
     }
 
     get state() {

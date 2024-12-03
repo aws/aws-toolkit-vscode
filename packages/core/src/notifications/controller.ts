@@ -8,10 +8,14 @@ import { ToolkitError } from '../shared/errors'
 import globals from '../shared/extensionGlobals'
 import { globalKey } from '../shared/globalState'
 import {
+    defaultNotificationsState,
+    DevNotificationsState,
     getNotificationTelemetryId,
+    Notifications,
     NotificationsState,
     NotificationsStateConstructor,
     NotificationType,
+    RuleContext,
     ToolkitNotification,
 } from './types'
 import { HttpResourceFetcher } from '../shared/resourcefetcher/httpResourceFetcher'
@@ -24,6 +28,9 @@ import { withRetries } from '../shared/utilities/functionUtils'
 import { FileResourceFetcher } from '../shared/resourcefetcher/fileResourceFetcher'
 import { isAmazonQ } from '../shared/extensionUtilities'
 import { telemetry } from '../shared/telemetry/telemetry'
+import { randomUUID } from '../shared/crypto'
+
+const logger = getLogger('notifications')
 
 /**
  * Handles fetching and maintaining the state of in-IDE notifications.
@@ -38,15 +45,14 @@ import { telemetry } from '../shared/telemetry/telemetry'
  * Emergency notifications - fetched at a regular interval.
  */
 export class NotificationsController {
-    public static readonly suggestedPollIntervalMs = 1000 * 60 * 10 // 10 minutes
-
     /** Internal memory state that is written to global state upon modification. */
-    private readonly state: NotificationsState
+    private state: NotificationsState
 
     static #instance: NotificationsController | undefined
 
     constructor(
         private readonly notificationsNode: NotificationsNode,
+        private readonly ruleContextFn: () => Promise<RuleContext>,
         private readonly fetcher: NotificationFetcher = new RemoteFetcher(),
         public readonly storageKey: globalKey = 'aws.notifications'
     ) {
@@ -56,33 +62,37 @@ export class NotificationsController {
         }
         NotificationsController.#instance = this
 
-        this.state = globals.globalState.tryGet<NotificationsState>(this.storageKey, NotificationsStateConstructor, {
-            startUp: {},
-            emergency: {},
-            dismissed: [],
-            newlyReceived: [],
-        })
+        this.state = this.getDefaultState()
     }
 
-    public pollForStartUp(ruleEngine: RuleEngine) {
-        return this.poll(ruleEngine, 'startUp')
+    public reset() {
+        this.state = defaultNotificationsState()
+        return this.writeState().then(() => this.displayNotifications())
     }
 
-    public pollForEmergencies(ruleEngine: RuleEngine) {
-        return this.poll(ruleEngine, 'emergency')
+    public pollForStartUp() {
+        return this.poll('startUp')
     }
 
-    private async poll(ruleEngine: RuleEngine, category: NotificationType) {
+    public pollForEmergencies() {
+        return this.poll('emergency')
+    }
+
+    private async poll(category: NotificationType) {
         try {
+            // Get latest state in case it was modified by other windows.
+            // It is a minimal read to avoid race conditions.
+            this.readState()
             await this.fetchNotifications(category)
         } catch (err: any) {
-            getLogger('notifications').error(`Unable to fetch %s notifications: %s`, category, err)
+            logger.error(`Unable to fetch %s notifications: %s`, category, err)
         }
 
-        await this.displayNotifications(ruleEngine)
+        await this.displayNotifications()
     }
 
-    private async displayNotifications(ruleEngine: RuleEngine) {
+    private async displayNotifications() {
+        const ruleEngine = new RuleEngine(await this.ruleContextFn())
         const dismissed = new Set(this.state.dismissed)
         const startUp =
             this.state.startUp.payload?.notifications.filter(
@@ -94,25 +104,20 @@ export class NotificationsController {
 
         await NotificationsNode.instance.setNotifications(startUp, emergency)
 
-        // Emergency notifications can't be dismissed, but if the user minimizes the panel then
-        // we don't want to focus it each time we set the notification nodes.
-        // So we store it in dismissed once a focus has been fired for it.
-        const newEmergencies = emergency.map((n) => n.id).filter((id) => !dismissed.has(id))
-        if (newEmergencies.length > 0) {
-            this.state.dismissed = [...this.state.dismissed, ...newEmergencies]
-            await this.writeState()
-            void this.notificationsNode.focusPanel()
-        }
-
         // Process on-receive behavior for newly received notifications that passes rule engine
-        const newlyReceivedToDisplay = [...startUp, ...emergency].filter((n) => this.state.newlyReceived.includes(n.id))
-        if (newlyReceivedToDisplay.length > 0) {
-            await this.notificationsNode.onReceiveNotifications(newlyReceivedToDisplay)
+        const wasNewlyReceived = (n: ToolkitNotification) => this.state.newlyReceived.includes(n.id)
+        const newStartUp = startUp.filter(wasNewlyReceived)
+        const newEmergency = emergency.filter(wasNewlyReceived)
+        const newlyReceived = [...newStartUp, ...newEmergency]
+
+        if (newlyReceived.length > 0) {
+            await this.notificationsNode.onReceiveNotifications(newlyReceived)
             // remove displayed notifications from newlyReceived
-            this.state.newlyReceived = this.state.newlyReceived.filter(
-                (id) => !newlyReceivedToDisplay.some((n) => n.id === id)
-            )
+            this.state.newlyReceived = this.state.newlyReceived.filter((id) => !newlyReceived.some((n) => n.id === id))
             await this.writeState()
+            if (newEmergency.length > 0) {
+                void this.notificationsNode.focusPanel()
+            }
         }
     }
 
@@ -122,7 +127,9 @@ export class NotificationsController {
      * hide all notifications.
      */
     public async dismissNotification(notificationId: string) {
-        getLogger('notifications').debug('Dismissing notification: %s', notificationId)
+        logger.debug('Dismissing notification: %s', notificationId)
+
+        this.readState() // Don't overwrite dismissals from other windows
         this.state.dismissed.push(notificationId)
         await this.writeState()
 
@@ -135,11 +142,11 @@ export class NotificationsController {
     private async fetchNotifications(category: NotificationType) {
         const response = await this.fetcher.fetch(category, this.state[category].eTag)
         if (!response.content) {
-            getLogger('notifications').verbose('No new notifications for category: %s', category)
+            logger.verbose('No new notifications for category: %s', category)
             return
         }
         // Parse the notifications
-        const newPayload = JSON.parse(response.content)
+        const newPayload: Notifications = JSON.parse(response.content)
         const newNotifications = newPayload.notifications ?? []
 
         // Get the current notifications
@@ -150,7 +157,7 @@ export class NotificationsController {
         const addedNotifications = newNotifications.filter((n: any) => !currentNotificationIds.has(n.id))
 
         if (addedNotifications.length > 0) {
-            getLogger('notifications').verbose(
+            logger.verbose(
                 'New notifications received for category %s, ids: %s',
                 category,
                 addedNotifications.map((n: any) => n.id).join(', ')
@@ -162,7 +169,7 @@ export class NotificationsController {
         this.state[category].eTag = response.eTag
         await this.writeState()
 
-        getLogger('notifications').verbose(
+        logger.verbose(
             "Fetched notifications JSON for category '%s' with schema version: %s. There were %d notifications.",
             category,
             this.state[category].payload?.schemaVersion,
@@ -174,7 +181,7 @@ export class NotificationsController {
      * Write the latest memory state to global state.
      */
     private async writeState() {
-        getLogger('notifications').debug('NotificationsController: Updating notifications state at %s', this.storageKey)
+        logger.debug('NotificationsController: Updating notifications state at %s', this.storageKey)
 
         // Clean out anything in 'dismissed' that doesn't exist anymore.
         const notifications = new Set(
@@ -186,6 +193,32 @@ export class NotificationsController {
         this.state.dismissed = this.state.dismissed.filter((id) => notifications.has(id))
 
         await globals.globalState.update(this.storageKey, this.state)
+    }
+
+    /**
+     * Read relevant values from the latest global state to memory. Useful to bring changes from other windows.
+     *
+     * Currently only brings dismissed, so users with multiple vscode instances open do not have issues with
+     * dismissing notifications multiple times. Otherwise, each instance has an independent session for
+     * displaying the notifications (e.g. multiple windows can be blocked in critical emergencies).
+     *
+     * Note: This sort of pattern (reading back and forth from global state in async functions) is prone to
+     * race conditions, which is why we limit the read to the fairly inconsequential `dismissed` property.
+     */
+    private readState() {
+        const state = this.getDefaultState()
+        this.state.dismissed = [...new Set([...this.state.dismissed, ...state.dismissed])]
+    }
+
+    /**
+     * Returns stored notification state, or a default state object if it is invalid or undefined.
+     */
+    private getDefaultState() {
+        return globals.globalState.tryGet<NotificationsState>(
+            this.storageKey,
+            NotificationsStateConstructor,
+            defaultNotificationsState()
+        )
     }
 
     static get instance() {
@@ -213,7 +246,7 @@ function registerDismissCommand() {
                     await NotificationsController.instance.dismissNotification(notification.id)
                 })
             } else {
-                getLogger('notifications').error(`${name}: Cannot dismiss notification: item is not a vscode.TreeItem`)
+                logger.error(`${name}: Cannot dismiss notification: item is not a vscode.TreeItem`)
             }
         })
     )
@@ -251,17 +284,23 @@ export class RemoteFetcher implements NotificationFetcher {
         const fetcher = new HttpResourceFetcher(endpoint, {
             showUrl: true,
         })
-        getLogger('notifications').verbose(
-            'Attempting to fetch notifications for category: %s at endpoint: %s',
-            category,
-            endpoint
-        )
+        logger.verbose('Attempting to fetch notifications for category: %s at endpoint: %s', category, endpoint)
 
-        return withRetries(async () => await fetcher.getNewETagContent(versionTag), {
-            maxRetries: RemoteFetcher.retryNumber,
-            delay: RemoteFetcher.retryIntervalMs,
-            // No exponential backoff - necessary?
-        })
+        return withRetries(
+            async () => {
+                try {
+                    return await fetcher.getNewETagContent(versionTag)
+                } catch (err) {
+                    logger.error('Failed to fetch at endpoint: %s, err: %s', endpoint, err)
+                    throw err
+                }
+            },
+            {
+                maxRetries: RemoteFetcher.retryNumber,
+                delay: RemoteFetcher.retryIntervalMs,
+                // No exponential backoff - necessary?
+            }
+        )
     }
 }
 
@@ -283,15 +322,64 @@ export class LocalFetcher implements NotificationFetcher {
 
     async fetch(category: NotificationType, versionTag?: string): Promise<ResourceResponse> {
         const uri = category === 'startUp' ? this.startUpLocalPath : this.emergencyLocalPath
-        getLogger('notifications').verbose(
-            'Attempting to fetch notifications locally for category: %s at path: %s',
-            category,
-            uri
-        )
+        logger.verbose('Attempting to fetch notifications locally for category: %s at path: %s', category, uri)
 
         return {
             content: await new FileResourceFetcher(globals.context.asAbsolutePath(uri)).get(),
             eTag: 'LOCAL_PATH',
         }
+    }
+}
+
+/**
+ * Fetches notifications from global state for local testing and verification. It is
+ * an extension of the RemoteFetcher so that devs can still see public notifications
+ * while testing (or while not testing, but they left dev mode on).
+ *
+ * Usage:
+ *   1. Enable dev mode: set `"aws.dev.forceDevMode": true` in your settings.
+ *   2. Open the extension Developer menu.
+ *   3. (optional) Reset the current notification state via the "Reset feature state" option.
+ *   4. Add notifications to the payload via the `Notifications: Edit Notifications` option.
+ *   5. Save to send the notification.
+ *
+ * Save to receive these notifications AND ALSO fetch from the public endpoint.
+ */
+export class DevFetcher extends RemoteFetcher implements NotificationFetcher {
+    constructor(public readonly storageKey: globalKey = 'aws.notifications.dev') {
+        super()
+    }
+
+    override async fetch(category: NotificationType, versionTag?: string): Promise<ResourceResponse> {
+        logger.debug('DevFetcher: Fetching notifications in dev mode for category: %s', category)
+
+        // Fetch the notifications that are currently released to users. Ignore eTag so that the
+        // complete current set of notifications is always returned to devs.
+        const data = await super.fetch(category, undefined)
+
+        const devNotifications: DevNotificationsState | undefined = await globals.globalState.getStrict(
+            this.storageKey,
+            Object
+        )
+
+        if (devNotifications && devNotifications[category] && devNotifications[category].length > 0) {
+            const content: Notifications = data.content
+                ? JSON.parse(data.content)
+                : { notifications: [], schemaVersion: 'devmode' }
+
+            // Give each dev notification a unique ID so the dev doesn't have to keep track of them.
+            content.notifications.push(
+                ...devNotifications[category].map((n) => {
+                    return { ...n, id: `${n.id ?? 'no-id'}_${randomUUID()}` }
+                })
+            )
+
+            return {
+                content: JSON.stringify(content),
+                eTag: data.eTag,
+            }
+        }
+
+        return data
     }
 }

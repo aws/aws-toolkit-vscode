@@ -18,7 +18,7 @@ import { showMessageWithUrl } from '../../shared/utilities/messages'
 import { parse } from '@aws-sdk/util-arn-parser'
 import { Commands } from '../../shared/vscode/commands2'
 import { vsCodeState } from '../models/model'
-import { FeatureConfigProvider } from '../../shared/featureConfig'
+import { FeatureConfigProvider, Features } from '../../shared/featureConfig'
 
 /**
  *
@@ -108,7 +108,9 @@ export const getSelectedCustomization = (): Customization => {
     const result = selectedCustomizationArr[AuthUtil.instance.conn.label] || baseCustomization
 
     // A/B case
-    const arnOverride = FeatureConfigProvider.instance.getCustomizationArnOverride()
+    const customizationFeature = FeatureConfigProvider.getFeature(Features.customizationArnOverride)
+    const arnOverride = customizationFeature?.value.stringValue
+    const customizationOverrideName = customizationFeature?.variation
     if (arnOverride === undefined || arnOverride === '') {
         return result
     } else {
@@ -116,7 +118,7 @@ export const getSelectedCustomization = (): Customization => {
         // but still shows customization info of user's currently selected.
         return {
             arn: arnOverride,
-            name: result.name,
+            name: customizationOverrideName,
             description: result.description,
         }
     }

@@ -17,6 +17,8 @@ import { sanitizeFilename } from './textUtilities'
 import { GitIgnoreAcceptor } from '@gerhobbelt/gitignore-parser'
 import * as parser from '@gerhobbelt/gitignore-parser'
 import fs from '../fs/fs'
+import { ChildProcess } from './processUtils'
+import { isWin } from '../vscode/env'
 
 type GitIgnoreRelativeAcceptor = {
     folderPath: string
@@ -70,6 +72,11 @@ export type CurrentWsFolders = [vscode.WorkspaceFolder, ...vscode.WorkspaceFolde
 export function hasWorkspace() {
     const wsFolders = vscode.workspace.workspaceFolders
     return wsFolders !== undefined && wsFolders.length > 0
+}
+
+export function isMultiRootWorkspace() {
+    const wsFolders = vscode.workspace.workspaceFolders
+    return wsFolders !== undefined && wsFolders.length > 1
 }
 
 /**
@@ -609,4 +616,25 @@ export async function collectFilesForIndex(
     }
     // pick top 100k files below size limit
     return storage.slice(0, Math.min(100000, i))
+}
+
+/**
+ * Performs a case-insensitive, recursive search for a string in a directory.
+ * note:
+ * 'error' is set when command fails to spawn; 'stderr' is set when command itself fails.
+ * 'exitCode' will be 0 when searchStr is detected (each line where it's found will be printed to 'stdout').
+ * 'exitCode' will be non-zero and 'stdout' / 'stderr' / 'error' will all be empty/undefined when searchStr is not detected.
+ * @param searchStr the string to search for
+ * @param dirPath the path of the directory to search in
+ * @returns the result of the search
+ */
+export async function findStringInDirectory(searchStr: string, dirPath: string) {
+    const isWindows = isWin()
+    const command = isWindows ? 'findstr' : 'grep'
+    // case-insensitive, recursive search
+    const args = isWindows ? ['/i', '/s', searchStr, '*.*'] : ['-i', '-r', searchStr]
+    const spawnResult = await new ChildProcess(command, args).run({
+        spawnOptions: { cwd: dirPath },
+    })
+    return spawnResult
 }

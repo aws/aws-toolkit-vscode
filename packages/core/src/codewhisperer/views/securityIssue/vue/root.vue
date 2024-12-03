@@ -4,7 +4,6 @@
     <div class="mb-16">
         <div class="container button-container" style="justify-content: space-between; top: 0">
             <h1>{{ title }} <img class="severity" :src="severityImage" :alt="severity" /></h1>
-            <input v-if="isFixAvailable" class="mt-4 ml-16" type="submit" @click="applyFix" value="Fix" />
         </div>
 
         <div class="mt-16">
@@ -15,7 +14,10 @@
 
         <div class="flex-container mt-16">
             <div>
-                <b>Common Weakness Enumeration (CWE)</b>
+                <b
+                    >Common Weakness <br />
+                    Enumeration (CWE)</b
+                >
                 <p>
                     <template v-for="(cwe, index) in relatedVulnerabilities">
                         <template v-if="index > 0"> , </template>
@@ -25,16 +27,6 @@
                     </template>
                 </p>
                 <p v-if="!relatedVulnerabilities || relatedVulnerabilities.length === 0">-</p>
-            </div>
-
-            <div>
-                <b>Code fix available</b>
-                <p v-if="isFixAvailable" style="color: var(--vscode-testing-iconPassed)">
-                    <span class="icon icon-sm icon-vscode-pass-filled"></span> Yes
-                </p>
-                <p v-else style="color: var(--vscode-testing-iconErrored)">
-                    <span class="icon icon-sm icon-vscode-circle-slash"></span> No
-                </p>
             </div>
 
             <div>
@@ -55,23 +47,47 @@
             </div>
         </div>
 
-        <div v-if="isFixAvailable">
+        <div v-if="isFixAvailable || isGenerateFixLoading || isGenerateFixError || isFixDescriptionAvailable">
             <hr />
 
             <h3>Suggested code fix preview</h3>
-            <span v-html="suggestedFixHtml"></span>
+            <pre v-if="isGenerateFixLoading" class="center"><div class="dot-typing"></div></pre>
+            <pre v-if="isGenerateFixError" class="center error">
+                Something went wrong. <a @click="regenerateFix">Retry</a>
+            </pre>
+            <div class="code-block">
+                <span v-if="isFixAvailable" v-html="suggestedFixHtml"></span>
+                <div v-if="isFixAvailable" class="code-diff-actions">
+                    <button class="code-diff-action-button" @click="copyFixedCode">
+                        <span class="icon icon-md icon-vscode-copy"></span> Copy
+                    </button>
+                    <button class="code-diff-action-button" @click="openDiff">
+                        <span class="icon icon-md icon-vscode-diff"></span> Open diff
+                    </button>
+                </div>
+            </div>
 
-            <div v-if="isFixDescriptionAvailable">
-                <h4>Why are we recommending this?</h4>
-                <span>{{ suggestedFixDescription }}</span>
+            <div v-if="isFixDescriptionAvailable && !isGenerateFixLoading">
+                <h4 v-if="!suggestedFixDescription.includes('No code fix generated')">Why are we recommending this?</h4>
+                <span v-html="suggestedFixDescription"></span>
             </div>
         </div>
     </div>
 
-    <hr />
-
-    <div class="mt-16 mb-16">
-        <input type="submit" class="mr-8" @click="explainWithQ" value="Explain" />
+    <div class="mt-16 mb-16 container button-container container-bottom">
+        <button
+            v-if="!isFixAvailable"
+            @click="generateFix"
+            class="mr-8 button-theme-primary"
+            :disabled="isGenerateFixLoading"
+        >
+            Generate Fix
+        </button>
+        <button v-if="isFixAvailable" @click="applyFix" class="mr-8 button-theme-primary">Accept Fix</button>
+        <button v-if="isFixAvailable" @click="regenerateFix" class="mr-8 button-theme-secondary">Regenerate Fix</button>
+        <button @click="explainWithQ" class="mr-8 button-theme-secondary">Explain</button>
+        <button @click="ignoreIssue" class="mr-8 button-theme-secondary">Ignore</button>
+        <button @click="ignoreAllIssues" class="mr-8 button-theme-secondary">Ignore All</button>
     </div>
 </template>
 
@@ -86,6 +102,8 @@ import highSeverity from '../../../../../resources/images/severity-high.svg'
 import criticalSeverity from '../../../../../resources/images/severity-critical.svg'
 import markdownIt from 'markdown-it'
 import hljs from 'highlight.js'
+import { parsePatch } from 'diff'
+import { CodeScanIssue } from '../../../models/model'
 
 const client = WebviewClientFactory.create<SecurityIssueWebview>()
 const severityImages: Record<string, string> = {
@@ -97,16 +115,64 @@ const severityImages: Record<string, string> = {
 }
 
 const md = markdownIt({
-    highlight: function (str, lang) {
-        if (lang && hljs.getLanguage(lang)) {
+    highlight: function (str, lang, attrRaw): string {
+        const attrs = attrRaw.split(/\s+/g)
+        const showLineNumbers = attrs.includes('showLineNumbers')
+        const startFrom = parseInt(attrRaw.match(/startFrom=(\d+)/)?.[1] ?? '1')
+        const highlightStart = parseInt(attrRaw.match(/highlightStart=(\d+)/)?.[1] ?? '0')
+        const highlightEnd = parseInt(attrRaw.match(/highlightEnd=(\d+)/)?.[1] ?? '0')
+        if (lang) {
             try {
-                return hljs.highlight(str, { language: lang }).value
+                const highlighted = hljs.highlight(str, {
+                    language: hljs.getLanguage(lang) ? lang : 'plaintext',
+                    ignoreIllegals: true,
+                }).value
+                let result = highlighted
+                    .trimEnd()
+                    .split('\n')
+                    .map((line) => {
+                        if (line.startsWith('+')) {
+                            return `<span class="hljs-addition">${line}</span>`
+                        } else if (line.startsWith('-')) {
+                            return `<span class="hljs-deletion">${line}</span>`
+                        }
+                        return line
+                    })
+                    .join('\n')
+                if (showLineNumbers) {
+                    result = applyLineNumbers(result, startFrom - 1)
+                }
+                if (highlightStart && highlightEnd) {
+                    result = applyHighlight(result, startFrom - 1, highlightStart, highlightEnd)
+                }
+                return result
             } catch (__) {}
         }
 
         return ''
     },
 })
+
+const applyLineNumbers = (code: string, lineNumberOffset = 0) => {
+    const lines = code.split('\n')
+    const rows = lines.map((line, idx) => {
+        const lineNumber = idx + 1 + lineNumberOffset
+        return `<div class="line-number">${lineNumber}</div>${line}`
+    })
+    return rows.join('\n')
+}
+
+const applyHighlight = (code: string, lineNumberOffset = 0, highlightStart: number, highlightEnd: number) => {
+    const lines = code.split('\n')
+    const rows = lines.map((line, idx) => {
+        const lineNumber = idx + 1 + lineNumberOffset
+        if (lineNumber >= highlightStart && lineNumber < highlightEnd) {
+            return `<div class="highlight reference-tracker">${line}</div>`
+        }
+        return line
+    })
+    return rows.join('\n')
+}
 
 export default defineComponent({
     data() {
@@ -123,42 +189,89 @@ export default defineComponent({
             isFixDescriptionAvailable: false,
             relatedVulnerabilities: [] as string[],
             startLine: 0,
+            endLine: 0,
             relativePath: '',
+            isGenerateFixLoading: false,
+            isGenerateFixError: false,
+            languageId: 'plaintext',
+            fixedCode: '',
+            referenceText: '',
+            referenceSpan: [0, 0],
         }
     },
     created() {
         this.getData()
     },
-    updated() {
+    beforeMount() {
         this.getData()
     },
     methods: {
         async getData() {
             const issue = await client.getIssue()
-            const relativePath = await client.getRelativePath()
             if (issue) {
-                const [suggestedFix] = issue.suggestedFixes
+                this.updateFromIssue(issue)
+            }
+            const relativePath = await client.getRelativePath()
+            this.updateRelativePath(relativePath)
+            const isGenerateFixLoading = await client.getIsGenerateFixLoading()
+            const isGenerateFixError = await client.getIsGenerateFixError()
+            this.updateGenerateFixState(isGenerateFixLoading, isGenerateFixError)
+            const languageId = await client.getLanguageId()
+            if (languageId) {
+                this.updateLanguageId(languageId)
+            }
+            const fixedCode = await client.getFixedCode()
+            this.updateFixedCode(fixedCode)
+        },
+        updateRelativePath(relativePath: string) {
+            this.relativePath = relativePath
+        },
+        updateGenerateFixState(isGenerateFixLoading: boolean, isGenerateFixError: boolean) {
+            this.isGenerateFixLoading = isGenerateFixLoading
+            this.isGenerateFixError = isGenerateFixError
+        },
+        updateLanguageId(languageId: string) {
+            this.languageId = languageId
+        },
+        updateFixedCode(fixedCode: string) {
+            this.fixedCode = fixedCode.replaceAll('\n\\ No newline at end of file', '')
+        },
+        updateFromIssue(issue: CodeScanIssue) {
+            const [suggestedFix] = issue.suggestedFixes
 
-                this.title = issue.title
-                this.detectorId = issue.detectorId
-                this.detectorName = issue.detectorName
-                this.detectorUrl = issue.recommendation.url
-                this.relatedVulnerabilities = issue.relatedVulnerabilities
-                this.severity = issue.severity
-                this.recommendationText = issue.recommendation.text
-                this.startLine = issue.startLine
-                this.relativePath = relativePath
-                this.isFixAvailable = false
-                if (suggestedFix) {
-                    this.isFixAvailable = true
-                    this.suggestedFix = suggestedFix.code
-                    if (
-                        suggestedFix.description.trim() !== '' &&
-                        suggestedFix.description.trim() !== 'Suggested remediation:'
-                    ) {
-                        this.isFixDescriptionAvailable = true
-                    }
-                    this.suggestedFixDescription = suggestedFix.description
+            this.title = issue.title
+            this.detectorId = issue.detectorId
+            this.detectorName = issue.detectorName
+            this.detectorUrl = issue.recommendation.url
+            this.relatedVulnerabilities = issue.relatedVulnerabilities
+            this.severity = issue.severity
+            this.recommendationText = issue.recommendation.text
+            this.startLine = issue.startLine
+            this.endLine = issue.endLine
+            this.isFixAvailable = false
+            this.isFixDescriptionAvailable = false
+            if (suggestedFix) {
+                this.isFixAvailable = !!suggestedFix.code && suggestedFix.code?.trim() !== ''
+                this.suggestedFix = suggestedFix.code ?? ''
+                if (
+                    suggestedFix.description?.trim() !== '' &&
+                    suggestedFix.description?.trim() !== 'Suggested remediation:'
+                ) {
+                    this.isFixDescriptionAvailable = true
+                }
+                this.suggestedFixDescription = md.render(suggestedFix.description)
+
+                const [reference] = suggestedFix.references ?? []
+                if (
+                    reference &&
+                    reference.recommendationContentSpan?.start &&
+                    reference.recommendationContentSpan.end
+                ) {
+                    this.referenceText = `Reference code under <i>${reference.licenseName}</i> license from repository <code>${reference.repository}</code>`
+                    this.referenceSpan = [
+                        reference.recommendationContentSpan.start,
+                        reference.recommendationContentSpan.end,
+                    ]
                 }
             }
         },
@@ -175,6 +288,57 @@ export default defineComponent({
         navigateToFile() {
             client.navigateToFile()
         },
+        generateFix() {
+            client.generateFix()
+        },
+        regenerateFix() {
+            client.regenerateFix()
+        },
+        rejectFix() {
+            client.rejectFix()
+        },
+        ignoreIssue() {
+            client.ignoreIssue()
+        },
+        ignoreAllIssues() {
+            client.ignoreAllIssues()
+        },
+        copyFixedCode() {
+            client.copyFixedCode()
+        },
+        insertAtCursor() {
+            client.insertAtCursor()
+        },
+        openDiff() {
+            client.openDiff()
+        },
+        computeSuggestedFixHtml() {
+            if (!this.isFixAvailable) {
+                return
+            }
+            const [parsedDiff] = parsePatch(this.suggestedFix)
+            const { oldStart } = parsedDiff.hunks[0]
+            const [referenceStart, referenceEnd] = this.referenceSpan
+            const htmlString = md.render(`
+\`\`\`${this.languageId} showLineNumbers startFrom=${oldStart} ${
+                referenceStart && referenceEnd
+                    ? `highlightStart=${referenceStart + 1} highlightEnd=${referenceEnd + 1}`
+                    : ''
+            }
+${this.fixedCode}
+\`\`\`
+      `)
+            const parser = new DOMParser()
+            const doc = parser.parseFromString(htmlString, 'text/html')
+            const referenceTracker = doc.querySelector('.reference-tracker')
+            if (referenceTracker) {
+                const tooltip = doc.createElement('div')
+                tooltip.classList.add('tooltip')
+                tooltip.innerHTML = this.referenceText
+                referenceTracker.appendChild(tooltip)
+            }
+            return doc.body.innerHTML
+        },
     },
     computed: {
         severityImage() {
@@ -184,11 +348,7 @@ export default defineComponent({
             return md.render(this.recommendationText)
         },
         suggestedFixHtml() {
-            return md.render(`
-\`\`\`diff
-${this.suggestedFix.replaceAll('\n\\ No newline at end of file', '')}
-\`\`\`
-      `)
+            return this.computeSuggestedFixHtml()
         },
     },
 })

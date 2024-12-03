@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Webview } from 'vscode'
+import { Webview, Uri } from 'vscode'
 import { MessagePublisher } from '../../messages/messagePublisher'
 import { MessageListener } from '../../messages/messageListener'
 import { TabType } from '../ui/storages/tabsStorage'
@@ -11,6 +11,8 @@ import { getLogger } from '../../../shared/logger'
 import { amazonqMark } from '../../../shared/performance/marks'
 import { telemetry } from '../../../shared/telemetry'
 import { AmazonQChatMessageDuration } from '../../messages/chatMessageDuration'
+import { openUrl } from '../../../shared'
+import { isClickTelemetry, isOpenAgentTelemetry } from '../ui/telemetry/actions'
 
 export function dispatchWebViewMessagesToApps(
     webview: Webview,
@@ -45,6 +47,25 @@ export function dispatchWebViewMessagesToApps(
             case 'stop-chat-message-telemetry': {
                 AmazonQChatMessageDuration.stopChatMessageTelemetry(msg)
                 return
+            }
+            case 'open-user-guide': {
+                const { userGuideLink } = msg
+                void openUrl(Uri.parse(userGuideLink))
+                return
+            }
+            case 'send-telemetry': {
+                if (isOpenAgentTelemetry(msg)) {
+                    telemetry.toolkit_openModule.emit({
+                        module: msg.module,
+                        source: msg.trigger,
+                        result: 'Succeeded',
+                    })
+                } else if (isClickTelemetry(msg)) {
+                    telemetry.ui_click.emit({
+                        elementId: msg.source,
+                        result: 'Succeeded',
+                    })
+                }
             }
         }
 
