@@ -255,6 +255,7 @@ export class TestController {
             result: isCancel ? 'Cancelled' : 'Failed',
             reasonDesc: getTelemetryReasonDesc(data.error),
             isSupportedLanguage: true,
+            credentialStartUrl: AuthUtil.instance.startUrl,
         })
         if (session.stopIteration) {
             // Error from Science
@@ -733,6 +734,7 @@ export class TestController {
             isCodeBlockSelected: session.isCodeBlockSelected,
             perfClientLatency: session.latencyOfTestGeneration,
             isSupportedLanguage: true,
+            credentialStartUrl: AuthUtil.instance.startUrl,
             result: 'Succeeded',
         })
 
@@ -855,6 +857,7 @@ export class TestController {
                 isCodeBlockSelected: session.isCodeBlockSelected,
                 perfClientLatency: session.latencyOfTestGeneration,
                 isSupportedLanguage: true,
+                credentialStartUrl: AuthUtil.instance.startUrl,
                 result: 'Succeeded',
             })
             telemetry.ui_click.emit({ elementId: 'unitTestGeneration_rejectDiff' })
