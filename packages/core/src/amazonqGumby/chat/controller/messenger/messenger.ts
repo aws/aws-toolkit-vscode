@@ -177,7 +177,9 @@ export class Messenger {
         this.dispatcher.sendAsyncEventProgress(
             new AsyncEventProgressMessage(tabID, {
                 inProgress: true,
-                message: CodeWhispererConstants.userPatchDescriptionChatMessage,
+                message: CodeWhispererConstants.userPatchDescriptionChatMessage(
+                    transformByQState.getSourceJDKVersion() === JDKVersion.JDK17
+                ),
             })
         )
 
