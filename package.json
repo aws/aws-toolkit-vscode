@@ -70,6 +70,7 @@
         "webpack-merge": "^5.10.0"
     },
     "dependencies": {
+        "@aws-sdk/client-ssm": "^3.699.0",
         "@aws-sdk/protocol-http": "^3.370.0",
         "@types/node": "^22.7.5",
         "vscode-nls": "^5.2.0",
