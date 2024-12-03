@@ -1,9 +1,11 @@
 # github actions: https://docs.github.com/en/actions/use-cases-and-examples/building-and-testing/building-and-testing-nodejs
 # setup-node: https://github.com/actions/setup-node
 
-name: Copy-Paste Detection
+name: jscpd
 
-on: [workflow_call]
+on:
+    pull_request:
+        branches: [master, feature/*, staging]
 jobs:
     jscpd:
         runs-on: ubuntu-latest
