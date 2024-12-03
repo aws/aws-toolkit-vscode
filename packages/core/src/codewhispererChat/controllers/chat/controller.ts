@@ -53,6 +53,7 @@ import { globals, waitUntil } from '../../../shared'
 import { telemetry } from '../../../shared/telemetry'
 import { isSsoConnection } from '../../../auth/connection'
 import { inspect } from '../../../shared/utilities/collectionUtils'
+import { DefaultAmazonQAppInitContext } from '../../../amazonq/apps/initContext'
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
@@ -377,11 +378,20 @@ export class ChatController {
 
         this.editorContextExtractor
             .extractContextForTrigger('ContextMenu')
-            .then((context) => {
+            .then(async (context) => {
                 const triggerID = randomUUID()
+                if (command.type === 'aws.amazonq.generateUnitTests') {
+                    DefaultAmazonQAppInitContext.instance.getAppsToWebViewMessagePublisher().publish({
+                        sender: 'testChat',
+                        command: 'test',
+                        type: 'chatMessage',
+                    })
+                    // For non-supported languages, we'll just open the standard chat.
+                    return
+                }
 
                 if (context?.focusAreaContext?.codeBlock === undefined) {
-                    throw 'Sorry, we cannot help with the selected language code snippet'
+                    throw 'Sorry, I cannot help with the selected language code snippet'
                 }
 
                 const prompt = this.promptGenerator.generateForContextMenuCommand(command)

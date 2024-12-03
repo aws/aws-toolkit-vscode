@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "Security Scan: New TreeView to display security scan issues and vulnerabilities detected in your project. The TreeView provides an organized and hierarchical view of the scan results, making it easier to navigate and prioritize the issues that need to be addressed."
+}

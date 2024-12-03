@@ -22,12 +22,14 @@ import {
     showScannedFilesMessage,
     stopScanMessage,
     CodeAnalysisScope,
-    projectScansLimitReached,
+    monthlyLimitReachedNotification,
+    scansLimitReachedErrorMessage,
 } from '../../codewhisperer/models/constants'
 import * as model from '../../codewhisperer/models/model'
 import { CodewhispererSecurityScan } from '../../shared/telemetry/telemetry.gen'
 import * as errors from '../../shared/errors'
 import * as timeoutUtils from '../../shared/utilities/timeoutUtils'
+import { SecurityIssuesTree } from '../../codewhisperer'
 import { createClient, mockGetCodeScanResponse } from './testUtil'
 
 let extensionContext: FakeExtensionContext
@@ -35,6 +37,7 @@ let mockSecurityPanelViewProvider: SecurityPanelViewProvider
 let appRoot: string
 let appCodePath: string
 let editor: vscode.TextEditor
+let focusStub: sinon.SinonStub
 
 describe('startSecurityScan', function () {
     const workspaceFolder = getTestWorkspaceFolder()
@@ -46,6 +49,7 @@ describe('startSecurityScan', function () {
         editor = await openTestFile(appCodePath)
         await model.CodeScansState.instance.setScansEnabled(false)
         sinon.stub(timeoutUtils, 'sleep')
+        focusStub = sinon.stub(SecurityIssuesTree.instance, 'focus')
     })
     afterEach(function () {
         sinon.restore()
@@ -63,6 +67,24 @@ describe('startSecurityScan', function () {
 
     it('Should render security scan result', async function () {
         getFetchStubWithResponse({ status: 200, statusText: 'testing stub' })
+        const securityScanRenderSpy = sinon.spy(diagnosticsProvider, 'initSecurityScanRender')
+
+        await startSecurityScan.startSecurityScan(
+            mockSecurityPanelViewProvider,
+            editor,
+            createClient(),
+            extensionContext,
+            CodeAnalysisScope.PROJECT,
+            false
+        )
+        assert.ok(focusStub.calledOnce)
+        assert.ok(securityScanRenderSpy.calledOnce)
+        const warnings = getTestWindow().shownMessages.filter((m) => m.severity === SeverityLevel.Warning)
+        assert.strictEqual(warnings.length, 0)
+    })
+
+    it('Should render security scan result for on-demand file scan', async function () {
+        getFetchStubWithResponse({ status: 200, statusText: 'testing stub' })
         const commandSpy = sinon.spy(vscode.commands, 'executeCommand')
         const securityScanRenderSpy = sinon.spy(diagnosticsProvider, 'initSecurityScanRender')
 
@@ -71,9 +93,10 @@ describe('startSecurityScan', function () {
             editor,
             createClient(),
             extensionContext,
-            CodeAnalysisScope.PROJECT
+            CodeAnalysisScope.FILE_ON_DEMAND,
+            true
         )
-        assert.ok(commandSpy.calledWith('workbench.action.problems.focus'))
+        assert.ok(commandSpy.neverCalledWith('workbench.action.problems.focus'))
         assert.ok(securityScanRenderSpy.calledOnce)
         const warnings = getTestWindow().shownMessages.filter((m) => m.severity === SeverityLevel.Warning)
         assert.strictEqual(warnings.length, 0)
@@ -81,7 +104,6 @@ describe('startSecurityScan', function () {
 
     it('Should not focus problems panel for file scans', async function () {
         getFetchStubWithResponse({ status: 200, statusText: 'testing stub' })
-        const commandSpy = sinon.spy(vscode.commands, 'executeCommand')
         const securityScanRenderSpy = sinon.spy(diagnosticsProvider, 'initSecurityScanRender')
 
         await model.CodeScansState.instance.setScansEnabled(true)
@@ -90,14 +112,15 @@ describe('startSecurityScan', function () {
             editor,
             createClient(),
             extensionContext,
-            CodeAnalysisScope.FILE
+            CodeAnalysisScope.FILE_AUTO,
+            false
         )
-        assert.ok(commandSpy.neverCalledWith('workbench.action.problems.focus'))
+        assert.ok(focusStub.notCalled)
         assert.ok(securityScanRenderSpy.calledOnce)
         const warnings = getTestWindow().shownMessages.filter((m) => m.severity === SeverityLevel.Warning)
         assert.strictEqual(warnings.length, 0)
         assertTelemetry('codewhisperer_securityScan', {
-            codewhispererCodeScanScope: 'FILE',
+            codewhispererCodeScanScope: 'FILE_AUTO',
             passive: true,
         })
     })
@@ -118,9 +141,15 @@ describe('startSecurityScan', function () {
             editor,
             createClient(),
             extensionContext,
-            CodeAnalysisScope.PROJECT
+            CodeAnalysisScope.PROJECT,
+            false
         )
-        await startSecurityScan.confirmStopSecurityScan()
+        await startSecurityScan.confirmStopSecurityScan(
+            model.codeScanState,
+            false,
+            CodeAnalysisScope.PROJECT,
+            undefined
+        )
         await scanPromise
         assert.ok(securityScanRenderSpy.notCalled)
         assert.ok(securityScanStoppedErrorSpy.calledOnce)
@@ -144,9 +173,15 @@ describe('startSecurityScan', function () {
             editor,
             createClient(),
             extensionContext,
-            CodeAnalysisScope.PROJECT
+            CodeAnalysisScope.PROJECT,
+            false
         )
-        await startSecurityScan.confirmStopSecurityScan()
+        await startSecurityScan.confirmStopSecurityScan(
+            model.codeScanState,
+            false,
+            CodeAnalysisScope.PROJECT,
+            undefined
+        )
         await scanPromise
         assert.ok(securityScanRenderSpy.calledOnce)
         assert.ok(securityScanStoppedErrorSpy.notCalled)
@@ -154,7 +189,7 @@ describe('startSecurityScan', function () {
         assert.ok(warnings.map((m) => m.message).includes(stopScanMessage))
     })
 
-    it('Should stop security scan for file scans if setting is disabled', async function () {
+    it('Should stop security scan for auto file scans if setting is disabled', async function () {
         getFetchStubWithResponse({ status: 200, statusText: 'testing stub' })
         const securityScanRenderSpy = sinon.spy(diagnosticsProvider, 'initSecurityScanRender')
         const securityScanStoppedErrorSpy = sinon.spy(model, 'CodeScanStoppedError')
@@ -164,7 +199,8 @@ describe('startSecurityScan', function () {
             editor,
             createClient(),
             extensionContext,
-            CodeAnalysisScope.FILE
+            CodeAnalysisScope.FILE_AUTO,
+            false
         )
         await model.CodeScansState.instance.setScansEnabled(false)
         await scanPromise
@@ -188,7 +224,8 @@ describe('startSecurityScan', function () {
             editor,
             createClient(),
             extensionContext,
-            CodeAnalysisScope.PROJECT
+            CodeAnalysisScope.PROJECT,
+            false
         )
         assertTelemetry('codewhisperer_securityScan', {
             codewhispererCodeScanTotalIssues: 1,
@@ -207,14 +244,16 @@ describe('startSecurityScan', function () {
             editor,
             createClient(),
             extensionContext,
-            CodeAnalysisScope.FILE
+            CodeAnalysisScope.FILE_AUTO,
+            false
         )
         await startSecurityScan.startSecurityScan(
             mockSecurityPanelViewProvider,
             editor,
             createClient(),
             extensionContext,
-            CodeAnalysisScope.FILE
+            CodeAnalysisScope.FILE_AUTO,
+            false
         )
         await scanPromise
         assertTelemetry('codewhisperer_securityScan', [
@@ -238,20 +277,22 @@ describe('startSecurityScan', function () {
             editor,
             createClient(),
             extensionContext,
-            CodeAnalysisScope.PROJECT
+            CodeAnalysisScope.PROJECT,
+            false
         )
         await startSecurityScan.startSecurityScan(
             mockSecurityPanelViewProvider,
             editor,
             createClient(),
             extensionContext,
-            CodeAnalysisScope.FILE
+            CodeAnalysisScope.FILE_AUTO,
+            false
         )
         await scanPromise
         assertTelemetry('codewhisperer_securityScan', [
             {
                 result: 'Succeeded',
-                codewhispererCodeScanScope: 'FILE',
+                codewhispererCodeScanScope: 'FILE_AUTO',
             },
             {
                 result: 'Succeeded',
@@ -273,7 +314,8 @@ describe('startSecurityScan', function () {
             editor,
             mockClient,
             extensionContext,
-            CodeAnalysisScope.PROJECT
+            CodeAnalysisScope.PROJECT,
+            false
         )
         assertTelemetry('codewhisperer_securityScan', {
             codewhispererCodeScanScope: 'PROJECT',
@@ -291,7 +333,7 @@ describe('startSecurityScan', function () {
             code: 'ThrottlingException',
             time: new Date(),
             name: 'error name',
-            message: 'Maximum project scan count reached for this month.',
+            message: scansLimitReachedErrorMessage,
         } satisfies AWSError)
         sinon.stub(errors, 'isAwsError').returns(true)
         const testWindow = getTestWindow()
@@ -300,19 +342,21 @@ describe('startSecurityScan', function () {
             editor,
             mockClient,
             extensionContext,
-            CodeAnalysisScope.PROJECT
+            CodeAnalysisScope.PROJECT,
+            false
         )
-        assert.ok(testWindow.shownMessages.map((m) => m.message).includes(projectScansLimitReached))
+
+        assert.ok(testWindow.shownMessages.map((m) => m.message).includes(monthlyLimitReachedNotification))
         assertTelemetry('codewhisperer_securityScan', {
             codewhispererCodeScanScope: 'PROJECT',
             result: 'Failed',
             reason: 'ThrottlingException',
-            reasonDesc: 'ThrottlingException: Maximum project scan count reached for this month.',
+            reasonDesc: `ThrottlingException: Maximum com.amazon.aws.codewhisperer.StartCodeAnalysis reached for this month.`,
             passive: false,
         } as unknown as CodewhispererSecurityScan)
     })
 
-    it('Should set monthly quota exceeded when throttled for file scans', async function () {
+    it('Should set monthly quota exceeded when throttled for auto file scans', async function () {
         getFetchStubWithResponse({ status: 200, statusText: 'testing stub' })
         await model.CodeScansState.instance.setScansEnabled(true)
         const mockClient = createClient()
@@ -320,7 +364,7 @@ describe('startSecurityScan', function () {
             code: 'ThrottlingException',
             time: new Date(),
             name: 'error name',
-            message: 'Maximum auto-scans count reached for this month.',
+            message: 'Maximum file scans count reached for this month',
         } satisfies AWSError)
         sinon.stub(errors, 'isAwsError').returns(true)
         assert.equal(model.CodeScansState.instance.isMonthlyQuotaExceeded(), false)
@@ -329,16 +373,17 @@ describe('startSecurityScan', function () {
             editor,
             mockClient,
             extensionContext,
-            CodeAnalysisScope.FILE
+            CodeAnalysisScope.FILE_AUTO,
+            false
         )
         assert.equal(model.CodeScansState.instance.isMonthlyQuotaExceeded(), true)
         const warnings = getTestWindow().shownMessages.filter((m) => m.severity === SeverityLevel.Warning)
         assert.strictEqual(warnings.length, 0)
         assertTelemetry('codewhisperer_securityScan', {
-            codewhispererCodeScanScope: 'FILE',
+            codewhispererCodeScanScope: 'FILE_AUTO',
             result: 'Failed',
             reason: 'ThrottlingException',
-            reasonDesc: 'ThrottlingException: Maximum auto-scans count reached for this month.',
+            reasonDesc: 'ThrottlingException: Maximum file scans count reached for this month',
             passive: true,
         } as unknown as CodewhispererSecurityScan)
     })

@@ -90,6 +90,7 @@ export type CreateCodeScanResponse =
     | CodeWhispererUserClient.StartCodeAnalysisResponse
 export type Import = CodeWhispererUserClient.Import
 export type Imports = CodeWhispererUserClient.Imports
+
 export class DefaultCodeWhispererClient {
     private async createSdkClient(): Promise<CodeWhispererClient> {
         const isOptedOut = CodeWhispererSettings.instance.isOptoutEnabled()
@@ -316,6 +317,30 @@ export class DefaultCodeWhispererClient {
         request: CodeWhispererUserClient.GetTransformationPlanRequest
     ): Promise<PromiseResult<CodeWhispererUserClient.GetTransformationPlanResponse, AWSError>> {
         return (await this.createUserSdkClient()).getTransformationPlan(request).promise()
+    }
+
+    public async startCodeFixJob(
+        request: CodeWhispererUserClient.StartCodeFixJobRequest
+    ): Promise<PromiseResult<CodeWhispererUserClient.StartCodeFixJobResponse, AWSError>> {
+        return (await this.createUserSdkClient()).startCodeFixJob(request).promise()
+    }
+
+    public async getCodeFixJob(
+        request: CodeWhispererUserClient.GetCodeFixJobRequest
+    ): Promise<PromiseResult<CodeWhispererUserClient.GetCodeFixJobResponse, AWSError>> {
+        return (await this.createUserSdkClient()).getCodeFixJob(request).promise()
+    }
+
+    public async startTestGeneration(
+        request: CodeWhispererUserClient.StartTestGenerationRequest
+    ): Promise<PromiseResult<CodeWhispererUserClient.StartTestGenerationResponse, AWSError>> {
+        return (await this.createUserSdkClient()).startTestGeneration(request).promise()
+    }
+
+    public async getTestGeneration(
+        request: CodeWhispererUserClient.GetTestGenerationRequest
+    ): Promise<PromiseResult<CodeWhispererUserClient.GetTestGenerationResponse, AWSError>> {
+        return (await this.createUserSdkClient()).getTestGeneration(request).promise()
     }
 }
 

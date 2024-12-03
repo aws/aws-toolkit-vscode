@@ -191,7 +191,7 @@ export class Connector extends BaseConnector {
         }
 
         if (messageData.type === 'authenticationUpdateMessage') {
-            this.onUpdateAuthentication(messageData.featureDevEnabled, messageData.authenticatingTabIDs)
+            this.onUpdateAuthentication(messageData.featureEnabled, messageData.authenticatingTabIDs)
             return
         }
 
