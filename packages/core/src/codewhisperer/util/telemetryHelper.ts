@@ -26,6 +26,7 @@ import { session } from './codeWhispererSession'
 import { CodeWhispererSupplementalContext } from '../models/model'
 import { FeatureConfigProvider } from '../../shared/featureConfig'
 import { CodeScanRemediationsEventType } from '../client/codewhispereruserclient'
+import { CodeAnalysisScope as CodeAnalysisScopeClientSide } from '../models/constants'
 
 export class TelemetryHelper {
     // Some variables for client component latency
@@ -620,6 +621,188 @@ export class TelemetryHelper {
 
                 getLogger().debug(
                     `Failed to sendCodeScanEvent to CodeWhisperer, requestId: ${requestId ?? ''}, message: ${
+                        error.message
+                    }`
+                )
+            })
+    }
+
+    public sendCodeScanSucceededEvent(
+        language: string,
+        jobId: string,
+        numberOfFindings: number,
+        scope: CodeAnalysisScopeClientSide
+    ) {
+        client
+            .sendTelemetryEvent({
+                telemetryEvent: {
+                    codeScanSucceededEvent: {
+                        programmingLanguage: {
+                            languageName: runtimeLanguageContext.toRuntimeLanguage(language as CodewhispererLanguage),
+                        },
+                        codeScanJobId: jobId,
+                        numberOfFindings: numberOfFindings,
+                        timestamp: new Date(Date.now()),
+                        codeAnalysisScope: scope === CodeAnalysisScopeClientSide.FILE_AUTO ? 'FILE' : 'PROJECT',
+                    },
+                },
+            })
+            .then()
+            .catch((error) => {
+                let requestId: string | undefined
+                if (isAwsError(error)) {
+                    requestId = error.requestId
+                }
+
+                getLogger().debug(
+                    `Failed to sendTelemetryEvent for code scan success, requestId: ${requestId ?? ''}, message: ${
+                        error.message
+                    }`
+                )
+            })
+    }
+
+    public sendCodeScanFailedEvent(language: string, jobId: string, scope: CodeAnalysisScopeClientSide) {
+        client
+            .sendTelemetryEvent({
+                telemetryEvent: {
+                    codeScanFailedEvent: {
+                        programmingLanguage: {
+                            languageName: runtimeLanguageContext.toRuntimeLanguage(language as CodewhispererLanguage),
+                        },
+                        codeScanJobId: jobId,
+                        codeAnalysisScope: scope === CodeAnalysisScopeClientSide.FILE_AUTO ? 'FILE' : 'PROJECT',
+                        timestamp: new Date(Date.now()),
+                    },
+                },
+            })
+            .then()
+            .catch((error) => {
+                let requestId: string | undefined
+                if (isAwsError(error)) {
+                    requestId = error.requestId
+                }
+                getLogger().debug(
+                    `Failed to sendTelemetryEvent for code scan failure, requestId: ${requestId ?? ''}, message: ${
+                        error.message
+                    }`
+                )
+            })
+    }
+
+    public sendCodeFixGenerationEvent(
+        jobId: string,
+        language?: string,
+        ruleId?: string,
+        detectorId?: string,
+        linesOfCodeGenerated?: number,
+        charsOfCodeGenerated?: number
+    ) {
+        client
+            .sendTelemetryEvent({
+                telemetryEvent: {
+                    codeFixGenerationEvent: {
+                        programmingLanguage: {
+                            languageName: runtimeLanguageContext.toRuntimeLanguage(language as CodewhispererLanguage),
+                        },
+                        jobId,
+                        ruleId,
+                        detectorId,
+                        linesOfCodeGenerated,
+                        charsOfCodeGenerated,
+                    },
+                },
+            })
+            .then()
+            .catch((error) => {
+                let requestId: string | undefined
+                if (isAwsError(error)) {
+                    requestId = error.requestId
+                }
+                getLogger().debug(
+                    `Failed to sendTelemetryEvent for code fix generation, requestId: ${requestId ?? ''}, message: ${
+                        error.message
+                    }`
+                )
+            })
+    }
+
+    public sendCodeFixAcceptanceEvent(
+        jobId: string,
+        language?: string,
+        ruleId?: string,
+        detectorId?: string,
+        linesOfCodeAccepted?: number,
+        charsOfCodeAccepted?: number
+    ) {
+        client
+            .sendTelemetryEvent({
+                telemetryEvent: {
+                    codeFixAcceptanceEvent: {
+                        programmingLanguage: {
+                            languageName: runtimeLanguageContext.toRuntimeLanguage(language as CodewhispererLanguage),
+                        },
+                        jobId,
+                        ruleId,
+                        detectorId,
+                        linesOfCodeAccepted,
+                        charsOfCodeAccepted,
+                    },
+                },
+            })
+            .then()
+            .catch((error) => {
+                let requestId: string | undefined
+                if (isAwsError(error)) {
+                    requestId = error.requestId
+                }
+                getLogger().debug(
+                    `Failed to sendTelemetryEvent for code fix acceptance, requestId: ${requestId ?? ''}, message: ${
+                        error.message
+                    }`
+                )
+            })
+    }
+
+    public sendTestGenerationEvent(
+        groupName: string,
+        jobId: string,
+        language?: string,
+        numberOfUnitTestCasesGenerated?: number,
+        numberOfUnitTestCasesAccepted?: number,
+        linesOfCodeGenerated?: number,
+        linesOfCodeAccepted?: number,
+        charsOfCodeGenerated?: number,
+        charsOfCodeAccepted?: number
+    ) {
+        client
+            .sendTelemetryEvent({
+                telemetryEvent: {
+                    testGenerationEvent: {
+                        programmingLanguage: {
+                            languageName: runtimeLanguageContext.toRuntimeLanguage(language as CodewhispererLanguage),
+                        },
+                        jobId,
+                        groupName,
+                        ideCategory: 'VSCODE',
+                        numberOfUnitTestCasesGenerated,
+                        numberOfUnitTestCasesAccepted,
+                        linesOfCodeGenerated,
+                        linesOfCodeAccepted,
+                        charsOfCodeGenerated,
+                        charsOfCodeAccepted,
+                        timestamp: new Date(Date.now()),
+                    },
+                },
+            })
+            .then()
+            .catch((error) => {
+                let requestId: string | undefined
+                if (isAwsError(error)) {
+                    requestId = error.requestId
+                }
+                getLogger().debug(
+                    `Failed to sendTelemetryEvent for test generation, requestId: ${requestId ?? ''}, message: ${
                         error.message
                     }`
                 )

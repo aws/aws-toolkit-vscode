@@ -58,7 +58,12 @@ export async function activate(
         'debugConsole'
     )
 
-    getLogger().info('Log level: %s%s', chanLogLevel, logUri ? `, file (always "debug" level): ${logUri.fsPath}` : '')
+    getLogger().info(
+        'Log level: %s, beta=%s%s',
+        chanLogLevel,
+        isBeta(),
+        logUri ? `, file (always "debug" level): ${logUri.fsPath}` : ''
+    )
     getLogger().debug('User agent: %s', getUserAgent({ includePlatform: true, includeClientId: true }))
     if (devLogfile && typeof devLogfile !== 'string') {
         getLogger().error('invalid aws.dev.logfile setting')

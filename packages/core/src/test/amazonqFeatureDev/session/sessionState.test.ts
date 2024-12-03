@@ -9,14 +9,15 @@ import sinon from 'sinon'
 import { MockCodeGenState, CodeGenState, PrepareCodeGenState } from '../../../amazonqFeatureDev/session/sessionState'
 import { VirtualFileSystem } from '../../../shared/virtualFilesystem'
 import { SessionStateConfig, SessionStateAction } from '../../../amazonqFeatureDev/types'
-import { Messenger } from '../../../amazonqFeatureDev/controllers/chat/messenger/messenger'
-import { AppToWebViewMessageDispatcher } from '../../../amazonqFeatureDev/views/connector/connector'
 import { MessagePublisher } from '../../../amazonq/messages/messagePublisher'
 import { FeatureDevClient } from '../../../amazonqFeatureDev/client/featureDev'
 import { ToolkitError } from '../../../shared/errors'
 import * as crypto from '../../../shared/crypto'
 import { TelemetryHelper } from '../../../amazonqFeatureDev/util/telemetryHelper'
 import { createTestWorkspaceFolder } from '../../testUtil'
+import { Messenger } from '../../../amazonq/commons/connector/baseMessenger'
+import { AppToWebViewMessageDispatcher } from '../../../amazonq/commons/connector/connectorMessages'
+import { featureDevChat } from '../../../amazonqFeatureDev'
 
 const mockSessionStateAction = (msg?: string): SessionStateAction => {
     return {
@@ -24,7 +25,8 @@ const mockSessionStateAction = (msg?: string): SessionStateAction => {
         msg: msg ?? 'test-msg',
         fs: new VirtualFileSystem(),
         messenger: new Messenger(
-            new AppToWebViewMessageDispatcher(new MessagePublisher<any>(new vscode.EventEmitter<any>()))
+            new AppToWebViewMessageDispatcher(new MessagePublisher<any>(new vscode.EventEmitter<any>())),
+            featureDevChat
         ),
         telemetry: new TelemetryHelper(),
         uploadHistory: {},

@@ -44,7 +44,12 @@ export function createMockDocument(
     filename = 'test.py',
     language = 'python'
 ): MockDocument {
-    return new MockDocument(doc, filename, sinon.spy(), language)
+    return new MockDocument(
+        doc,
+        filename,
+        sinon.spy(async (_doc) => true),
+        language
+    )
 }
 
 export function createMockTextEditor(
@@ -191,6 +196,9 @@ export function createCodeScanIssue(overrides?: Partial<CodeScanIssue>): CodeSca
         suggestedFixes: [
             { description: 'fix', code: '@@ -1,1 +1,1 @@\nfirst line\n-second line\n+third line\nfourth line' },
         ],
+        visible: true,
+        language: 'python',
+        scanJobId: 'scanJob',
         ...overrides,
     }
 }

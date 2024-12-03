@@ -1,3 +1,13 @@
+## 1.39.0 2024-12-03
+
+- **Feature** Added a getting started page for exploring amazon q agents
+- **Feature** `/test` in Q chat to generate unit tests for java and python
+- **Feature** `/doc` in Q chat to generate and update documentation for your project
+- **Feature** Amazon Q Code Scan is now Amazon Q Code Review
+- **Feature** `/review` in Q chat to scan your code for vulnerabilities and quality issues, and generate fixes
+- **Feature** Security Scan: New TreeView to display security scan issues and vulnerabilities detected in your project. The TreeView provides an organized and hierarchical view of the scan results, making it easier to navigate and prioritize the issues that need to be addressed.
+- **Feature** Security Scan: Added ability to suppress or ignore security issues
+
 ## 1.38.0 2024-11-27
 
 - **Feature** Amazon Q /dev: support `Dockerfile` files
