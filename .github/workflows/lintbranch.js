@@ -32,7 +32,7 @@ function _test() {
         '!invalid@start': false,
         '': false,
         'another/valid-name134': true,
-        'Hweinstock:feature/123";id;{echo,Y2F0IC9ldGMvcGFzc3dk}|{base64,-d}|{bash,-i};#': false,
+        'feature/123";id;{echo,Y2F0IC9ldGMvcGFzc3dk}|{base64,-d}|{bash,-i};#': false,
     }
 
     let passed = 0
