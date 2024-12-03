@@ -6,18 +6,23 @@
 # Agent capabilities
 
 ### Implement new features
+
 `/dev` to task Amazon Q with generating new code across your entire project and implement features.
 
 ### Generate documentation
-`/docs` to task Amazon Q with writing API, technical design, and onboarding documentation.
+
+`/doc` to task Amazon Q with writing API, technical design, and onboarding documentation.
 
 ### Automate code reviews
+
 `/review` to ask Amazon Q to perform code reviews, flagging suspicious code patterns and assessing deployment risk.
 
 ### Generate unit tests
+
 `/test` to ask Amazon Q to generate unit tests and add them to your project, helping you improve code quality, fast.
 
 ### Transform workloads
+
 `/transform` to upgrade your Java applications in minutes, not weeks.
 
 <br>
@@ -25,12 +30,15 @@
 # Core features
 
 ### Inline chat
+
 Seamlessly initiate chat within the inline coding experience. Select a section of code that you need assistance with and initiate chat within the editor to request actions such as "Optimize this code", "Add comments", or "Write tests".
 
 ### Chat
+
 Generate code, explain code, and get answers about software development.
 
 ### Inline suggestions
+
 Receive real-time code suggestions ranging from snippets to full functions based on your comments and existing code.
 
 [_15+ languages supported including Python, TypeScript, Rust, Terraform, AWS Cloudformation, and more_](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/q-language-ide-support.html)
