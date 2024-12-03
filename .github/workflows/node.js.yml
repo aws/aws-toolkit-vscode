@@ -59,6 +59,9 @@ jobs:
             - run: npm ci
             - run: npm run testCompile
             - run: npm run lint
+    jscpd:
+        needs: lint-commits
+        uses: ./github/workflows/copyPasteDetection.yml
 
     macos:
         needs: lint-commits
