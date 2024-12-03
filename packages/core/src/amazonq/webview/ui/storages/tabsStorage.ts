@@ -4,7 +4,39 @@
  */
 
 export type TabStatus = 'free' | 'busy' | 'dead'
-export type TabType = 'cwc' | 'featuredev' | 'gumby' | 'unknown'
+const TabTypes = [
+    'cwc',
+    'featuredev',
+    'gumby',
+    'review',
+    'testgen',
+    'doc',
+    'agentWalkthrough',
+    'welcome',
+    'unknown',
+] as const
+export type TabType = (typeof TabTypes)[number]
+export function isTabType(value: string): value is TabType {
+    return (TabTypes as readonly string[]).includes(value)
+}
+
+export function getTabCommandFromTabType(tabType: TabType): string {
+    switch (tabType) {
+        case 'featuredev':
+            return '/dev'
+        case 'doc':
+            return '/doc'
+        case 'gumby':
+            return '/transform'
+        case 'review':
+            return '/review'
+        case 'testgen':
+            return '/test'
+        default:
+            return ''
+    }
+}
+
 export type TabOpenType = 'click' | 'contextMenu' | 'hotkeys'
 
 const TabTimeoutDuration = 172_800_000 // 48hrs
@@ -86,7 +118,10 @@ export class TabsStorage {
 
     public updateTabTypeFromUnknown(tabID: string, tabType: TabType) {
         const currentTabValue = this.tabs.get(tabID)
-        if (currentTabValue === undefined || currentTabValue.type !== 'unknown') {
+        if (
+            currentTabValue === undefined ||
+            (currentTabValue.type !== 'unknown' && currentTabValue.type !== 'welcome')
+        ) {
             return
         }
 

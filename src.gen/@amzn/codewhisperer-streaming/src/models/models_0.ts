@@ -1928,10 +1928,24 @@ export interface TransformationExportContext {
 
 /**
  * @public
+ * Unit test generation export context
+ */
+export interface UnitTestGenerationExportContext {
+  /**
+   * @public
+   * Test generation job group name
+   */
+  testGenerationJobGroupName: string | undefined;
+
+  testGenerationJobId?: string;
+}
+
+/**
  * Export Context
  */
 export type ExportContext =
   | ExportContext.TransformationExportContextMember
+  | ExportContext.UnitTestGenerationExportContextMember
   | ExportContext.$UnknownMember
 
 /**
@@ -1945,6 +1959,17 @@ export namespace ExportContext {
    */
   export interface TransformationExportContextMember {
     transformationExportContext: TransformationExportContext;
+    unitTestGenerationExportContext?: never;
+    $unknown?: never;
+  }
+
+  /**
+   * @public
+   * Unit test generation export context
+   */
+  export interface UnitTestGenerationExportContextMember {
+    transformationExportContext?: never;
+    unitTestGenerationExportContext: UnitTestGenerationExportContext;
     $unknown?: never;
   }
 
@@ -1953,11 +1978,13 @@ export namespace ExportContext {
    */
   export interface $UnknownMember {
     transformationExportContext?: never;
+    unitTestGenerationExportContext?: never;
     $unknown: [string, any];
   }
 
   export interface Visitor<T> {
     transformationExportContext: (value: TransformationExportContext) => T;
+    unitTestGenerationExportContext: (value: UnitTestGenerationExportContext) => T;
     _: (name: string, value: any) => T;
   }
 
@@ -1966,6 +1993,7 @@ export namespace ExportContext {
     visitor: Visitor<T>
   ): T => {
     if (value.transformationExportContext !== undefined) return visitor.transformationExportContext(value.transformationExportContext);
+    if (value.unitTestGenerationExportContext !== undefined) return visitor.unitTestGenerationExportContext(value.unitTestGenerationExportContext);
     return visitor._(value.$unknown[0], value.$unknown[1]);
   }
 
@@ -1984,6 +2012,10 @@ export const ExportIntent = {
    * Code Transformation
    */
   TRANSFORMATION: "TRANSFORMATION",
+  /**
+   * Unit Test
+   */
+  UNIT_TESTS: "UNIT_TESTS",
 } as const
 /**
  * @public

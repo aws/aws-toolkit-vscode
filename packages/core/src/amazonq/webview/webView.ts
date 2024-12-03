@@ -22,6 +22,11 @@ import { TabType } from './ui/storages/tabsStorage'
 import { deactivateInitialViewBadge, shouldShowBadge } from '../util/viewBadgeHandler'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { amazonqMark } from '../../shared/performance/marks'
+import { globals } from '../../shared'
+import { AuthUtil } from '../../codewhisperer/util/authUtil'
+
+// The max number of times we should show the welcome to q chat panel before moving them to the regular one
+const maxWelcomeWebviewLoads = 3
 
 export class AmazonQChatViewProvider implements WebviewViewProvider {
     public static readonly viewType = 'aws.AmazonQChatView'
@@ -60,10 +65,33 @@ export class AmazonQChatViewProvider implements WebviewViewProvider {
 
         dispatchAppsMessagesToWebView(webviewView.webview, this.appsMessagesListener)
 
-        webviewView.webview.html = await this.webViewContentGenerator.generate(
-            this.extensionContext.extensionUri,
-            webviewView.webview
-        )
+        /**
+         * Show the welcome to q chat ${maxWelcomeWebviewLoads} times before showing the normal panel
+         */
+        const welcomeLoadCount = globals.globalState.tryGet('aws.amazonq.welcomeChatShowCount', Number, 0)
+        if (welcomeLoadCount < maxWelcomeWebviewLoads) {
+            webviewView.webview.html = await this.webViewContentGenerator.generate(
+                this.extensionContext.extensionUri,
+                webviewView.webview,
+                true
+            )
+
+            /**
+             * resolveWebviewView gets called even when the user isn't logged in and the auth page is showing.
+             * We don't want to incremenent the show count until the user has fully logged in and resolveWebviewView
+             * gets called again
+             */
+            const authenticated = (await AuthUtil.instance.getChatAuthState()).amazonQ === 'connected'
+            if (authenticated) {
+                await globals.globalState.update('aws.amazonq.welcomeChatShowCount', welcomeLoadCount + 1)
+            }
+        } else {
+            webviewView.webview.html = await this.webViewContentGenerator.generate(
+                this.extensionContext.extensionUri,
+                webviewView.webview,
+                false
+            )
+        }
 
         performance.mark(amazonqMark.open)
 
