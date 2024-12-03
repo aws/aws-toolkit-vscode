@@ -1,7 +1,3 @@
-form {
-    padding: 15px;
-}
-
 .section-header {
     margin: 0px;
     margin-bottom: 10px;
@@ -10,7 +6,9 @@ form {
 }
 
 textarea {
-    max-width: 100%;
+    color: var(--vscode-settings-textInputForeground);
+    background: var(--vscode-settings-textInputBackground);
+    border: 1px solid var(--vscode-settings-textInputBorder);
 }
 
 .config-item {
@@ -47,7 +45,133 @@ textarea {
     margin-bottom: 16px;
 }
 
+.header-buttons {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
 #target-type-selector {
     margin-bottom: 15px;
     margin-left: 8px;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 150px 1fr;
+    margin-bottom: 10px;
+}
+
+.form-control {
+    min-width: 170%; /* Set a minimum width */
+    width: 100%; /* Allow the width to adjust based on content */
+    display: inline-block;
+    flex-grow: 1;
+    margin-right: 0.5rem;
+}
+
+.payload-options-button {
+    display: grid;
+    align-items: center;
+    border: none;
+    padding: 5px 10px;
+    cursor: pointer;
+    font-size: 0.9em;
+    margin-bottom: 10px;
+}
+
+.payload-options-buttons {
+    display: flex;
+    align-items: center;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.Icontainer {
+    margin-inline: auto;
+    margin-top: 5rem;
+}
+
+.container {
+    width: 574px;
+    height: 824px;
+    top: 18px;
+    gap: 20px;
+    margin: auto;
+    left: 688px;
+    background-color: var(--vscode-editor-background);
+}
+
+.container em {
+    display: block;
+    text-align: justify;
+}
+
+.button-theme-primary {
+    color: var(--vscode-button-foreground);
+    background: var(--vscode-button-background);
+    border: 1px solid var(--vscode-button-border);
+    padding: 8px 12px;
+}
+.button-theme-primary:hover:not(:disabled) {
+    background: var(--vscode-button-hoverBackground);
+    cursor: pointer;
+}
+.button-theme-secondary {
+    color: var(--vscode-button-secondaryForeground);
+    background: var(--vscode-button-secondaryBackground);
+    border: 1px solid var(--vscode-button-border);
+    padding: 8px 12px;
+}
+.button-theme-secondary:hover:not(:disabled) {
+    background: var(--vscode-button-secondaryHoverBackground);
+    cursor: pointer;
+}
+
+.formfield {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.payload-options-buttons {
+    display: flex;
+    align-items: center;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.radio-selector {
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+}
+
+.label-selector {
+    padding-left: 7px;
+    font-weight: 500;
+    font-size: 13px;
+    line-height: 15.51px;
+    text-align: center;
+}
+
+.form-row-select {
+    width: 387px;
+    height: 28px;
+    border: 1px;
+    border-radius: 5px;
+    gap: 4px;
+    padding: 2px 8px;
+}
+
+.form-row-event-select {
+    width: 244px;
+    height: 28px;
+    margin-bottom: 15px;
+    margin-left: 8px;
+}
+
+.runtime-description {
+    font-size: 12px;
+    margin-top: 5px;
 }

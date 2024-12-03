@@ -15,6 +15,7 @@ export interface MessageControllerProps {
     tabsStorage: TabsStorage
     isFeatureDevEnabled: boolean
     isGumbyEnabled: boolean
+    disabledCommands?: string[]
 }
 
 export class MessageController {
@@ -30,6 +31,7 @@ export class MessageController {
         this.tabDataGenerator = new TabDataGenerator({
             isFeatureDevEnabled: props.isFeatureDevEnabled,
             isGumbyEnabled: props.isGumbyEnabled,
+            disabledCommands: props.disabledCommands,
         })
     }
 
@@ -76,6 +78,7 @@ export class MessageController {
 
             this.mynahUI.updateStore(selectedTab.id, {
                 loadingChat: true,
+                cancelButtonWhenLoading: false,
                 promptInputDisabledState: true,
             })
             this.mynahUI.addChatItem(selectedTab.id, message)
@@ -107,6 +110,7 @@ export class MessageController {
 
             this.mynahUI.updateStore(newTabID, {
                 loadingChat: true,
+                cancelButtonWhenLoading: false,
                 promptInputDisabledState: true,
             })
 

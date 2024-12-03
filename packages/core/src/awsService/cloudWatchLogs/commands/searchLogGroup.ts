@@ -16,7 +16,7 @@ import {
 } from '../registry/logDataRegistry'
 import { DataQuickPickItem } from '../../../shared/ui/pickerPrompter'
 import { isValidResponse, isWizardControl, Wizard, WIZARD_RETRY } from '../../../shared/wizards/wizard'
-import { createURIFromArgs, msgKey, parseCloudWatchLogsUri, recordTelemetryFilter } from '../cloudWatchLogsUtils'
+import { cwlUriSchema, msgKey, recordTelemetryFilter } from '../cloudWatchLogsUtils'
 import { DefaultCloudWatchLogsClient } from '../../../shared/clients/cloudWatchLogsClient'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { getLogger } from '../../../shared/logger'
@@ -29,6 +29,7 @@ import { createBackButton, createExitButton, createHelpButton } from '../../../s
 import { PromptResult } from '../../../shared/ui/prompter'
 import { ToolkitError } from '../../../shared/errors'
 import { Messages } from '../../../shared/utilities/messages'
+import { showFile } from '../../../shared/utilities/textDocumentUtilities'
 
 const localize = nls.loadMessageBundle()
 
@@ -65,9 +66,7 @@ export async function prepareDocument(uri: vscode.Uri, logData: CloudWatchLogsDa
     try {
         // Gets the data: calls filterLogEventsFromUri().
         await registry.fetchNextLogEvents(uri)
-        const doc = await vscode.workspace.openTextDocument(uri)
-        await vscode.window.showTextDocument(doc, { preview: false })
-        await vscode.languages.setTextDocumentLanguage(doc, 'log')
+        await showFile(uri)
     } catch (err) {
         if (CancellationError.isUserCancelled(err)) {
             throw err
@@ -78,7 +77,7 @@ export async function prepareDocument(uri: vscode.Uri, logData: CloudWatchLogsDa
             localize(
                 'AWS.cwl.searchLogGroup.errorRetrievingLogs',
                 'Failed to get logs for {0}',
-                parseCloudWatchLogsUri(uri).logGroupInfo.groupName
+                cwlUriSchema.parse(uri).logGroupInfo.groupName
             )
         )
     }
@@ -105,7 +104,7 @@ export async function searchLogGroup(
         }
 
         const userResponse = handleWizardResponse(response, registry)
-        const uri = createURIFromArgs(userResponse.logGroupInfo, userResponse.parameters)
+        const uri = cwlUriSchema.form({ logGroupInfo: userResponse.logGroupInfo, parameters: userResponse.parameters })
         await prepareDocument(uri, userResponse, registry)
     })
 }

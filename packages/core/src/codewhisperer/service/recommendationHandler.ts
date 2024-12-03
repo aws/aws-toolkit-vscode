@@ -14,7 +14,7 @@ import { AWSError } from 'aws-sdk'
 import { isAwsError } from '../../shared/errors'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { getLogger } from '../../shared/logger'
-import { isCloud9, isSageMaker } from '../../shared/extensionUtilities'
+import { isCloud9 } from '../../shared/extensionUtilities'
 import { hasVendedIamCredentials } from '../../auth/auth'
 import {
     asyncCallWithTimeout,
@@ -43,6 +43,7 @@ import { application } from '../util/codeWhispererApplication'
 import { openUrl } from '../../shared/utilities/vsCodeUtils'
 import { indent } from '../../shared/utilities/textUtilities'
 import path from 'path'
+import { isIamConnection } from '../../auth/connection'
 
 /**
  * This class is for getRecommendation/listRecommendation API calls and its states
@@ -158,8 +159,7 @@ export class RecommendationHandler {
         autoTriggerType?: CodewhispererAutomatedTriggerType,
         pagination: boolean = true,
         page: number = 0,
-        isSM: boolean = isSageMaker(),
-        retry: boolean = false
+        generate: boolean = isIamConnection(AuthUtil.instance.conn)
     ): Promise<GetRecommendationsResponse> {
         let invocationResult: 'Succeeded' | 'Failed' = 'Failed'
         let errorMessage: string | undefined = undefined
@@ -186,7 +186,7 @@ export class RecommendationHandler {
         ).language
         session.taskType = await this.getTaskTypeFromEditorFileName(editor.document.fileName)
 
-        if (pagination && !isSM) {
+        if (pagination && !generate) {
             if (page === 0) {
                 session.requestContext = await EditorContext.buildListRecommendationRequest(
                     editor as vscode.TextEditor,
@@ -220,10 +220,7 @@ export class RecommendationHandler {
              * Validate request
              */
             if (!EditorContext.validateRequest(request)) {
-                getLogger().verbose(
-                    'Invalid Request : ',
-                    JSON.stringify(request, undefined, EditorContext.getTabSize())
-                )
+                getLogger().verbose('Invalid Request: %O', request)
                 const languageName = request.fileContext.programmingLanguage.languageName
                 if (!runtimeLanguageContext.isLanguageSupported(languageName)) {
                     errorMessage = `${languageName} is currently not supported by Amazon Q inline suggestions`
@@ -241,7 +238,9 @@ export class RecommendationHandler {
             this.lastInvocationTime = startTime
             const mappedReq = runtimeLanguageContext.mapToRuntimeLanguage(request)
             const codewhispererPromise =
-                pagination && !isSM ? client.listRecommendations(mappedReq) : client.generateRecommendations(mappedReq)
+                pagination && !generate
+                    ? client.listRecommendations(mappedReq)
+                    : client.generateRecommendations(mappedReq)
             const resp = await this.getServerResponse(triggerType, config.isManualTriggerEnabled, codewhispererPromise)
             TelemetryHelper.instance.setSdkApiCallEndTime()
             latency = startTime !== 0 ? performance.now() - startTime : 0
@@ -391,6 +390,7 @@ export class RecommendationHandler {
 
         // send Empty userDecision event if user receives no recommendations in this session at all.
         if (invocationResult === 'Succeeded' && nextToken === '') {
+            // case 1: empty list of suggestion []
             if (session.recommendations.length === 0) {
                 session.requestIdList.push(requestId)
                 // Received an empty list of recommendations
@@ -405,7 +405,8 @@ export class RecommendationHandler {
                     session.requestContext.supplementalMetadata
                 )
             }
-            if (!this.hasAtLeastOneValidSuggestion(typedPrefix)) {
+            // case 2: non empty list of suggestion but with (a) empty content or (b) non-matching typeahead
+            else if (!this.hasAtLeastOneValidSuggestion(typedPrefix)) {
                 this.reportUserDecisions(-1)
             }
         }

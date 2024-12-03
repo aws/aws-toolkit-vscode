@@ -165,6 +165,7 @@ export class UIMessageListener {
             eventId: msg.eventId,
             codeBlockIndex: msg.codeBlockIndex,
             totalCodeBlocks: msg.totalCodeBlocks,
+            codeBlockLanguage: msg.codeBlockLanguage,
         })
     }
 
@@ -196,6 +197,7 @@ export class UIMessageListener {
             eventId: msg.eventId,
             codeBlockIndex: msg.codeBlockIndex,
             totalCodeBlocks: msg.totalCodeBlocks,
+            codeBlockLanguage: msg.codeBlockLanguage,
         })
     }
 

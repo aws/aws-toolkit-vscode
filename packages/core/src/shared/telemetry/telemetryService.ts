@@ -20,6 +20,7 @@ import { ClassToInterfaceType } from '../utilities/tsUtils'
 import { getClientId, validateMetricEvent } from './util'
 import { telemetry, MetricBase } from './telemetry'
 import fs from '../fs/fs'
+import fsNode from 'fs/promises'
 import * as collectionUtil from '../utilities/collectionUtils'
 
 export type TelemetryService = ClassToInterfaceType<DefaultTelemetryService>
@@ -116,7 +117,10 @@ export class DefaultTelemetryService {
             })
 
             try {
-                await fs.writeFile(this.persistFilePath, JSON.stringify(this._eventQueue))
+                /**
+                 * This function runs in deactivate() so we must use node fs. See the vscode behavior doc for more info.
+                 */
+                await fsNode.writeFile(this.persistFilePath, JSON.stringify(this._eventQueue))
             } catch {}
         }
     }
@@ -191,9 +195,11 @@ export class DefaultTelemetryService {
     }
 
     /**
-     * Publish metrics to the Telemetry Service.
+     * Publish metrics to the Telemetry Service. Usually it will automatically flush recent events
+     * on a regular interval. This should not be used unless you are interrupting this interval,
+     * e.g. via a forced window reload.
      */
-    private async flushRecords(): Promise<void> {
+    public async flushRecords(): Promise<void> {
         if (this.telemetryEnabled) {
             await this._flushRecords()
         }
@@ -466,7 +472,7 @@ export function filterTelemetryCacheEvents(input: any): MetricDatum[] {
                 !Object.prototype.hasOwnProperty.call(item, 'EpochTimestamp') ||
                 !Object.prototype.hasOwnProperty.call(item, 'Unit')
             ) {
-                getLogger().warn(`skipping invalid item in telemetry cache: ${JSON.stringify(item)}\n`)
+                getLogger().warn(`skipping invalid item in telemetry cache: %O\n`, item)
 
                 return false
             }

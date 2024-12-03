@@ -21,11 +21,11 @@ import {
     initLogData as initLogData,
     filterLogEventsFromUri,
 } from '../registry/logDataRegistry'
-import { createURIFromArgs } from '../cloudWatchLogsUtils'
 import { prepareDocument, searchLogGroup } from './searchLogGroup'
 import { telemetry, Result } from '../../../shared/telemetry/telemetry'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
-import { formatLocalized } from '../../../shared/utilities/textUtilities'
+import { cwlUriSchema } from '../cloudWatchLogsUtils'
+import { formatLocalized } from '../../../shared/datetime'
 
 export async function viewLogStream(node: LogGroupNode, registry: LogDataRegistry): Promise<void> {
     await telemetry.cloudwatchlogs_open.run(async (span) => {
@@ -52,7 +52,7 @@ export async function viewLogStream(node: LogGroupNode, registry: LogDataRegistr
             limit: registry.configuration.get('limit', 10000),
         }
 
-        const uri = createURIFromArgs(logGroupInfo, parameters)
+        const uri = cwlUriSchema.form({ logGroupInfo: logGroupInfo, parameters: parameters })
         const logData = initLogData(logGroupInfo, parameters, filterLogEventsFromUri)
         await prepareDocument(uri, logData, registry)
     })

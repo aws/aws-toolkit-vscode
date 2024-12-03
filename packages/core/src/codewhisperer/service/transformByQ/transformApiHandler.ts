@@ -16,6 +16,7 @@ import {
     jobPlanProgress,
     sessionJobHistory,
     StepProgress,
+    TransformationType,
     transformByQState,
     TransformByQStatus,
     TransformByQStoppedError,
@@ -46,7 +47,8 @@ import { downloadExportResultArchive } from '../../../shared/utilities/download'
 import { ExportIntent, TransformationDownloadArtifactType } from '@amzn/codewhisperer-streaming'
 import fs from '../../../shared/fs/fs'
 import { ChatSessionManager } from '../../../amazonqGumby/chat/storages/chatSession'
-import { convertToTimeString, encodeHTML } from '../../../shared/utilities/textUtilities'
+import { encodeHTML } from '../../../shared/utilities/textUtilities'
+import { convertToTimeString } from '../../../shared/datetime'
 
 export function getSha256(buffer: Buffer) {
     const hasher = crypto.createHash('sha256')
@@ -212,6 +214,11 @@ export async function uploadPayload(payloadFileName: string, uploadContext?: Upl
         transformByQState.setJobId(encodeHTML(response.uploadId))
     }
     jobPlanProgress['uploadCode'] = StepProgress.Succeeded
+    if (transformByQState.getTransformationType() === TransformationType.SQL_CONVERSION) {
+        // if doing a SQL conversion, we don't build the code or generate a plan, so mark these steps as succeeded immediately so that next step renders
+        jobPlanProgress['buildCode'] = StepProgress.Succeeded
+        jobPlanProgress['generatePlan'] = StepProgress.Succeeded
+    }
     updateJobHistory()
     return response.uploadId
 }
@@ -225,6 +232,8 @@ export async function uploadPayload(payloadFileName: string, uploadContext?: Upl
  */
 const mavenExcludedExtensions = ['.repositories', '.sha1']
 
+const sourceExcludedExtensions = ['.DS_Store']
+
 /**
  * Determines if the specified file path corresponds to a Maven metadata file
  * by checking against known metadata file extensions. This is used to identify
@@ -237,24 +246,22 @@ function isExcludedDependencyFile(path: string): boolean {
     return mavenExcludedExtensions.some((extension) => path.endsWith(extension))
 }
 
-/**
- * Gets all files in dir. We use this method to get the source code, then we run a mvn command to
- * copy over dependencies into their own folder, then we use this method again to get those
- * dependencies. If isDependenciesFolder is true, then we are getting all the files
- * of the dependencies which were copied over by the previously-run mvn command, in which case
- * we DO want to include any dependencies that may happen to be named "target", hence the check
- * in the first part of the IF statement. The point of excluding folders named target is that
- * "target" is also the name of the folder where .class files, large JARs, etc. are stored after
- * building, and we do not want these included in the ZIP so we exclude these when calling
- * getFilesRecursively on the source code folder.
- */
-function getFilesRecursively(dir: string, isDependenciesFolder: boolean): string[] {
+// do not zip the .DS_Store file as it may appear in the diff.patch
+function isExcludedSourceFile(path: string): boolean {
+    return sourceExcludedExtensions.some((extension) => path.endsWith(extension))
+}
+
+// zip all dependency files and all source files excluding "target" (contains large JARs) plus ".git" and ".idea" (may appear in diff.patch)
+export function getFilesRecursively(dir: string, isDependenciesFolder: boolean): string[] {
     const entries = nodefs.readdirSync(dir, { withFileTypes: true })
     const files = entries.flatMap((entry) => {
         const res = path.resolve(dir, entry.name)
-        // exclude 'target' directory from ZIP (except if zipping dependencies) due to issues in backend
         if (entry.isDirectory()) {
-            if (isDependenciesFolder || entry.name !== 'target') {
+            if (isDependenciesFolder) {
+                // include all dependency files
+                return getFilesRecursively(res, isDependenciesFolder)
+            } else if (entry.name !== 'target' && entry.name !== '.git' && entry.name !== '.idea') {
+                // exclude the above directories when zipping source code
                 return getFilesRecursively(res, isDependenciesFolder)
             } else {
                 return []
@@ -275,9 +282,9 @@ export function createZipManifest({ hilZipParams }: IZipManifestParams) {
 }
 
 interface IZipCodeParams {
-    dependenciesFolder: FolderInfo
+    dependenciesFolder?: FolderInfo
     humanInTheLoopFlag?: boolean
-    modulePath?: string
+    projectPath?: string
     zipManifest: ZipManifest | HilZipManifest
 }
 
@@ -287,25 +294,27 @@ interface ZipCodeResult {
     fileSize: number
 }
 
-export async function zipCode({ dependenciesFolder, humanInTheLoopFlag, modulePath, zipManifest }: IZipCodeParams) {
+export async function zipCode(
+    { dependenciesFolder, humanInTheLoopFlag, projectPath, zipManifest }: IZipCodeParams,
+    zip: AdmZip = new AdmZip()
+) {
     let tempFilePath = undefined
     let logFilePath = undefined
     let dependenciesCopied = false
     try {
         throwIfCancelled()
-        const zip = new AdmZip()
 
-        // If no modulePath is passed in, we are not uploaded the source folder
-        // NOTE: We only upload dependencies for human in the loop work
-        if (modulePath) {
-            const sourceFiles = getFilesRecursively(modulePath, false)
+        // if no project Path is passed in, we are not uploaded the source folder
+        // we only upload dependencies for human in the loop work
+        if (projectPath) {
+            const sourceFiles = getFilesRecursively(projectPath, false)
             let sourceFilesSize = 0
             for (const file of sourceFiles) {
-                if (nodefs.statSync(file).isDirectory()) {
-                    getLogger().info('CodeTransformation: Skipping directory, likely a symlink')
+                if (nodefs.statSync(file).isDirectory() || isExcludedSourceFile(file)) {
+                    getLogger().info('CodeTransformation: Skipping file')
                     continue
                 }
-                const relativePath = path.relative(modulePath, file)
+                const relativePath = path.relative(projectPath, file)
                 const paddedPath = path.join('sources', relativePath)
                 zip.addLocalFile(file, path.dirname(paddedPath))
                 sourceFilesSize += (await nodefs.promises.stat(file)).size
@@ -313,14 +322,41 @@ export async function zipCode({ dependenciesFolder, humanInTheLoopFlag, modulePa
             getLogger().info(`CodeTransformation: source code files size = ${sourceFilesSize}`)
         }
 
+        if (transformByQState.getMultipleDiffs() && zipManifest instanceof ZipManifest) {
+            zipManifest.transformCapabilities.push('SELECTIVE_TRANSFORMATION_V1')
+        }
+
+        if (
+            transformByQState.getTransformationType() === TransformationType.SQL_CONVERSION &&
+            zipManifest instanceof ZipManifest
+        ) {
+            // note that zipManifest must be a ZipManifest since only other option is HilZipManifest which is not used for SQL conversions
+            const metadataZip = new AdmZip(transformByQState.getMetadataPathSQL())
+            zipManifest.requestedConversions = {
+                sqlConversion: {
+                    source: transformByQState.getSourceDB(),
+                    target: transformByQState.getTargetDB(),
+                    schema: transformByQState.getSchema(),
+                    host: transformByQState.getSourceServerName(),
+                    sctFileName: metadataZip.getEntries().filter((entry) => entry.name.endsWith('.sct'))[0].name,
+                },
+            }
+            // TO-DO: later consider making this add to path.join(zipManifest.dependenciesRoot, 'qct-sct-metadata', entry.entryName) so that it's more organized
+            metadataZip
+                .getEntries()
+                .forEach((entry) => zip.addFile(path.join(zipManifest.dependenciesRoot, entry.name), entry.getData()))
+            const sqlMetadataSize = (await nodefs.promises.stat(transformByQState.getMetadataPathSQL())).size
+            getLogger().info(`CodeTransformation: SQL metadata file size = ${sqlMetadataSize}`)
+        }
+
         throwIfCancelled()
 
         let dependencyFiles: string[] = []
-        if (await fs.exists(dependenciesFolder.path)) {
+        if (dependenciesFolder && (await fs.exists(dependenciesFolder.path))) {
             dependencyFiles = getFilesRecursively(dependenciesFolder.path, true)
         }
 
-        if (dependencyFiles.length > 0) {
+        if (dependenciesFolder && dependencyFiles.length > 0) {
             let dependencyFilesSize = 0
             for (const file of dependencyFiles) {
                 if (isExcludedDependencyFile(file)) {
@@ -334,10 +370,6 @@ export async function zipCode({ dependenciesFolder, humanInTheLoopFlag, modulePa
             }
             getLogger().info(`CodeTransformation: dependency files size = ${dependencyFilesSize}`)
             dependenciesCopied = true
-        } else {
-            if (zipManifest instanceof ZipManifest) {
-                zipManifest.dependenciesRoot = undefined
-            }
         }
 
         zip.addFile('manifest.json', Buffer.from(JSON.stringify(zipManifest)), 'utf-8')
@@ -354,10 +386,11 @@ export async function zipCode({ dependenciesFolder, humanInTheLoopFlag, modulePa
 
         tempFilePath = path.join(os.tmpdir(), 'zipped-code.zip')
         await fs.writeFile(tempFilePath, zip.toBuffer())
-        if (await fs.exists(dependenciesFolder.path)) {
+        if (dependenciesFolder && (await fs.exists(dependenciesFolder.path))) {
             await fs.delete(dependenciesFolder.path, { recursive: true, force: true })
         }
     } catch (e: any) {
+        getLogger().error(`CodeTransformation: zipCode error = ${e}`)
         throw Error('Failed to zip project')
     } finally {
         if (logFilePath) {
@@ -392,9 +425,9 @@ export async function startJob(uploadId: string) {
                 programmingLanguage: { languageName: CodeWhispererConstants.defaultLanguage.toLowerCase() },
             },
             transformationSpec: {
-                transformationType: CodeWhispererConstants.transformationType,
-                source: { language: sourceLanguageVersion },
-                target: { language: targetLanguageVersion },
+                transformationType: CodeWhispererConstants.transformationType, // shared b/w language upgrades & sql conversions for now
+                source: { language: sourceLanguageVersion }, // dummy value of JDK8 used for SQL conversions just so that this API can be called
+                target: { language: targetLanguageVersion }, // always JDK17
             },
         })
         if (response.$response.requestId) {
@@ -542,6 +575,7 @@ export async function getTransformationPlan(jobId: string) {
         const linesOfCode = Number(
             jobStatistics.find((stat: { name: string; value: string }) => stat.name === 'linesOfCode').value
         )
+        transformByQState.setLinesOfCodeSubmitted(linesOfCode)
         if (authType === 'iamIdentityCenter' && linesOfCode > CodeWhispererConstants.codeTransformLocThreshold) {
             plan += CodeWhispererConstants.codeTransformBillingText(linesOfCode)
         }

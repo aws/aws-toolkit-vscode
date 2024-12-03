@@ -41,7 +41,7 @@ jobs:
         runs-on: ubuntu-latest
         strategy:
             matrix:
-                node-version: [16.x]
+                node-version: [18.x]
                 vscode-version: [stable]
         env:
             NODE_OPTIONS: '--max-old-space-size=8192'
@@ -62,7 +62,7 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                node-version: [16.x]
+                node-version: [18.x]
                 vscode-version: [minimum, stable, insiders]
         env:
             VSCODE_TEST_VERSION: ${{ matrix.vscode-version }}
@@ -80,23 +80,12 @@ jobs:
               uses: coactions/setup-xvfb@v1
               with:
                   run: npm test
-            - name: Code coverage (Core)
-              env:
-                  # Unset NODE_OPTIONS because of https://github.com/codecov/uploader/issues/475
-                  NODE_OPTIONS: ''
-              if: ${{ github.repository == 'aws/aws-toolkit-vscode' && github.ref == 'master' }}
-              uses: codecov/codecov-action@v4
-              with:
-                  flags: macos-core-unittests
-                  verbose: true
-                  file: ./coverage/core/lcov.info
-                  token: ${{ secrets.CODECOV_TOKEN }}
             - name: Code coverage (Toolkit)
               env:
                   # Unset NODE_OPTIONS because of https://github.com/codecov/uploader/issues/475
                   NODE_OPTIONS: ''
               if: ${{ github.repository == 'aws/aws-toolkit-vscode' && github.ref == 'master' }}
-              uses: codecov/codecov-action@v4
+              uses: codecov/codecov-action@v5
               with:
                   flags: macos-toolkit-unittests
                   verbose: true
@@ -107,22 +96,11 @@ jobs:
                   # Unset NODE_OPTIONS because of https://github.com/codecov/uploader/issues/475
                   NODE_OPTIONS: ''
               if: ${{ github.repository == 'aws/aws-toolkit-vscode' && github.ref == 'master' }}
-              uses: codecov/codecov-action@v4
+              uses: codecov/codecov-action@v5
               with:
                   flags: macos-amazonq-unittests
                   verbose: true
                   file: ./coverage/amazonq/lcov.info
-                  token: ${{ secrets.CODECOV_TOKEN }}
-            - name: Code coverage (CodeWhisperer)
-              env:
-                  # Unset NODE_OPTIONS because of https://github.com/codecov/uploader/issues/475
-                  NODE_OPTIONS: ''
-              if: ${{ github.repository == 'aws/aws-toolkit-vscode' && github.ref == 'master' }}
-              uses: codecov/codecov-action@v4
-              with:
-                  flags: codewhisperer
-                  verbose: true
-                  file: ./coverage/core/lcov.info
                   token: ${{ secrets.CODECOV_TOKEN }}
 
     web:
@@ -132,7 +110,7 @@ jobs:
         strategy:
             fail-fast: true
             matrix:
-                node-version: [16.x]
+                node-version: [18.x]
                 vscode-version: [stable, insiders]
         env:
             VSCODE_TEST_VERSION: ${{ matrix.vscode-version }}
@@ -158,7 +136,7 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                node-version: [16.x]
+                node-version: [18.x]
                 vscode-version: [stable, insiders]
         env:
             VSCODE_TEST_VERSION: ${{ matrix.vscode-version }}
@@ -177,7 +155,7 @@ jobs:
                   # Unset NODE_OPTIONS because of https://github.com/codecov/uploader/issues/475
                   NODE_OPTIONS: ''
               if: ${{ github.repository == 'aws/aws-toolkit-vscode' && github.ref == 'master' }}
-              uses: codecov/codecov-action@v4
+              uses: codecov/codecov-action@v5
               with:
                   flags: windows-unittests
                   verbose: true

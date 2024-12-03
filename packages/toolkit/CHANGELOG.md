@@ -1,3 +1,56 @@
+## 3.36.0 2024-11-27
+
+- **Bug Fix** appBuilder refresh feature doesnt work during sync --watch
+- **Bug Fix** 'View Logs...' action redirects to output channel instead of Terminal
+
+## 3.35.0 2024-11-22
+
+- **Bug Fix** SAM: Update Sync and Deploy prompter titles for parameter source
+- **Bug Fix** SAM: Add artifact bucket source prompter for SAM sync command
+- **Bug Fix** SAM: Update Sync prompter title for sync parameters
+- **Bug Fix** SAM: Fix prompter button URLs for build, deploy and sync commands
+- **Bug Fix** EC2: terminated instances no longer show pending icon
+- **Feature** python 3.13 support for SAM and lambda
+- **Feature** nodejs22.x support for SAM and lambda
+- **Feature** Notifications: Support for delivering critical alerts and product updates
+
+## 3.34.0 2024-11-14
+
+- **Bug Fix** SAM debugging: misleading 'IaC' message/placeholder
+- **Bug Fix** SAM local debugging: `aws.region` and `aws.credentials` specified in launch config should override default Toolkit region and credentials
+
+## 3.33.0 2024-11-11
+
+- **Feature** UI: region-related quickpicks now have a refresh button
+
+## 3.32.0 2024-11-07
+
+- **Bug Fix** SAM: Save SAM deploy parameters to correct samconfig.toml in project folder
+- **Bug Fix** System Path parsing should ignore Windows and only parse Mac/Linux system, Sam Local Invoke should get correct system Path on windows #5933 #5918
+- **Bug Fix** SAM: Skip unnecessary prompters for sync operation when using flag from samconfig.toml file
+- **Bug Fix** AWS Lambda: Removed action to delete a Lambda or S3 bucket in the AppBuilder section as resources created through IaC frameworks should not be directly modified since this creates drift
+
+## 3.31.0 2024-10-30
+
+- **Feature** SAM: Added support for Java 21 Lambda runtime
+- **Feature** AWS Lambda: AWS Explorer command palette actions and hover buttons to build, local invoke, deploy, and remote invoke
+- **Feature** AWS Lambda: Improved local test and debug and remote invoke to streamline creating and sharing sample events
+- **Feature** AWS Lambda: 'Application Builder' is a new sidebar view for viewing application resources and links to create, build, debug, and test serverless applications
+- **Feature** SAM: Added support for Ruby 3.3 Lambda runtime
+- **Feature** SAM: Added support for Ruby 3.2 Lambda runtime
+- **Feature** AWS Lambda: Guided walkthrough contains links to set up local IDE environment, install required tools, several starter templates, and guidance on how to get started building serverless applications
+- **Feature** SAM: Added support for .NET 8.0 Lambda runtime
+
+## 3.30.0 2024-10-29
+
+- **Bug Fix** EC2 connect: improve management of SSM sessions to minimize chance they are left active.
+- **Bug Fix** fixed device code detection when running auth through tunneled vscode
+- **Feature** EC2: provide view of ec2 system logs
+
+## 3.29.0 2024-10-17
+
+- **Bug Fix** Fix userCredentialsUtils.test.ts so it won't remove the actual aws config
+
 ## 3.28.0 2024-10-10
 
 - **Breaking Change** Bumping VS Code minimum version to 1.83.0

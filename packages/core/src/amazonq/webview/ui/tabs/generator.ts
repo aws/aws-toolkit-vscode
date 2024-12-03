@@ -12,6 +12,7 @@ import { TabTypeDataMap } from './constants'
 export interface TabDataGeneratorProps {
     isFeatureDevEnabled: boolean
     isGumbyEnabled: boolean
+    disabledCommands?: string[]
 }
 
 export class TabDataGenerator {
@@ -23,6 +24,7 @@ export class TabDataGenerator {
         this.quickActionsGenerator = new QuickActionGenerator({
             isFeatureDevEnabled: props.isFeatureDevEnabled,
             isGumbyEnabled: props.isGumbyEnabled,
+            disableCommands: props.disabledCommands,
         })
     }
 
@@ -33,17 +35,7 @@ export class TabDataGenerator {
                 'Amazon Q Developer uses generative AI. You may need to verify responses. See the [AWS Responsible AI Policy](https://aws.amazon.com/machine-learning/responsible-ai/policy/).',
             quickActionCommands: this.quickActionsGenerator.generateForTab(tabType),
             promptInputPlaceholder: TabTypeDataMap[tabType].placeholder,
-            contextCommands: [
-                {
-                    groupName: 'Mention code',
-                    commands: [
-                        {
-                            command: '@workspace',
-                            description: '(BETA) Reference all code in workspace.',
-                        },
-                    ],
-                },
-            ],
+            contextCommands: TabTypeDataMap[tabType].contextCommands,
             chatItems: needWelcomeMessages
                 ? [
                       {

@@ -83,6 +83,7 @@ describe('session', () => {
                         rejected: false,
                         virtualMemoryUri: uri,
                         workspaceFolder: controllerSetup.workspaceFolder,
+                        changeApplied: false,
                     },
                     {
                         zipFilePath: 'rejectedFile.js',
@@ -91,6 +92,7 @@ describe('session', () => {
                         rejected: true,
                         virtualMemoryUri: generateVirtualMemoryUri(uploadID, 'rejectedFile.js'),
                         workspaceFolder: controllerSetup.workspaceFolder,
+                        changeApplied: false,
                     },
                 ],
                 [],
@@ -107,6 +109,7 @@ describe('session', () => {
         it('only insert non rejected files', async () => {
             const fsSpyWriteFile = sinon.spy(fs, 'writeFile')
             const session = await createCodeGenState()
+            sinon.stub(session, 'sendLinesOfCodeAcceptedTelemetry').resolves()
             await sessionWriteFile(session, uri, encodedContent)
             await session.insertChanges()
 

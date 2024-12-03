@@ -51,6 +51,7 @@ export interface ChatPayload {
 export interface CWCChatItem extends ChatItem {
     traceId?: string
     userIntent?: UserIntent
+    codeBlockLanguage?: string
 }
 
 export interface ConnectorProps {
@@ -69,7 +70,8 @@ export interface ConnectorProps {
         tabID: string,
         filePaths: DiffTreeFileInfo[],
         deletedFiles: DiffTreeFileInfo[],
-        messageId: string
+        messageId: string,
+        disableFileActions: boolean
     ) => void
     onUpdatePlaceholder: (tabID: string, newPlaceholder: string) => void
     onChatInputEnabled: (tabID: string, enabled: boolean) => void
@@ -144,7 +146,7 @@ export class Connector {
             if (this.isUIReady) {
                 switch (this.tabsStorage.getTab(tabID)?.type) {
                     case 'featuredev':
-                        return this.featureDevChatConnector.requestGenerativeAIAnswer(tabID, payload)
+                        return this.featureDevChatConnector.requestGenerativeAIAnswer(tabID, messageId, payload)
                     default:
                         return this.cwChatConnector.requestGenerativeAIAnswer(tabID, messageId, payload)
                 }
@@ -173,6 +175,17 @@ export class Connector {
 
     transform = (tabID: string): void => {
         this.gumbyChatConnector.transform(tabID)
+    }
+
+    onStopChatResponse = (tabID: string): void => {
+        switch (this.tabsStorage.getTab(tabID)?.type) {
+            case 'featuredev':
+                this.featureDevChatConnector.onStopChatResponse(tabID)
+                break
+            case 'cwc':
+                this.cwChatConnector.onStopChatResponse(tabID)
+                break
+        }
     }
 
     handleMessageReceive = async (message: MessageEvent): Promise<void> => {
@@ -242,7 +255,8 @@ export class Connector {
         eventId?: string,
         codeBlockIndex?: number,
         totalCodeBlocks?: number,
-        userIntent?: string
+        userIntent?: string,
+        codeBlockLanguage?: string
     ): void => {
         switch (this.tabsStorage.getTab(tabID)?.type) {
             case 'cwc':
@@ -255,11 +269,23 @@ export class Connector {
                     eventId,
                     codeBlockIndex,
                     totalCodeBlocks,
-                    userIntent
+                    userIntent,
+                    codeBlockLanguage
                 )
                 break
             case 'featuredev':
-                this.featureDevChatConnector.onCodeInsertToCursorPosition(tabID, code, type, codeReference)
+                this.featureDevChatConnector.onCodeInsertToCursorPosition(
+                    tabID,
+                    messageId,
+                    code,
+                    type,
+                    codeReference,
+                    eventId,
+                    codeBlockIndex,
+                    totalCodeBlocks,
+                    userIntent,
+                    codeBlockLanguage
+                )
                 break
         }
     }
@@ -331,7 +357,8 @@ export class Connector {
         eventId?: string,
         codeBlockIndex?: number,
         totalCodeBlocks?: number,
-        userIntent?: string
+        userIntent?: string,
+        codeBlockLanguage?: string
     ): void => {
         switch (this.tabsStorage.getTab(tabID)?.type) {
             case 'cwc':
@@ -344,11 +371,23 @@ export class Connector {
                     eventId,
                     codeBlockIndex,
                     totalCodeBlocks,
-                    userIntent
+                    userIntent,
+                    codeBlockLanguage
                 )
                 break
             case 'featuredev':
-                this.featureDevChatConnector.onCopyCodeToClipboard(tabID, code, type, codeReference)
+                this.featureDevChatConnector.onCopyCodeToClipboard(
+                    tabID,
+                    messageId,
+                    code,
+                    type,
+                    codeReference,
+                    eventId,
+                    codeBlockIndex,
+                    totalCodeBlocks,
+                    userIntent,
+                    codeBlockLanguage
+                )
                 break
         }
     }
@@ -428,7 +467,7 @@ export class Connector {
                 this.amazonqCommonsConnector.followUpClicked(tabID, followUp)
                 break
             case 'featuredev':
-                this.featureDevChatConnector.followUpClicked(tabID, followUp)
+                this.featureDevChatConnector.followUpClicked(tabID, messageId, followUp)
                 break
             default:
                 this.cwChatConnector.followUpClicked(tabID, messageId, followUp)
@@ -448,17 +487,6 @@ export class Connector {
         switch (this.tabsStorage.getTab(tabID)?.type) {
             case 'featuredev':
                 this.featureDevChatConnector.onOpenDiff(tabID, filePath, deleted, messageId)
-                break
-        }
-    }
-
-    onStopChatResponse = (tabID: string): void => {
-        switch (this.tabsStorage.getTab(tabID)?.type) {
-            case 'featuredev':
-                this.featureDevChatConnector.onStopChatResponse(tabID)
-                break
-            case 'cwc':
-                this.cwChatConnector.onStopChatResponse(tabID)
                 break
         }
     }

@@ -31,14 +31,15 @@ import { tryNewMap } from '../../util/functionUtils'
 export const createMynahUI = (
     ideApi: any,
     amazonQEnabled: boolean,
-    featureConfigsSerialized: [string, FeatureContext][]
+    featureConfigsSerialized: [string, FeatureContext][],
+    disabledCommands?: string[]
 ) => {
     // eslint-disable-next-line prefer-const
     let mynahUI: MynahUI
     // eslint-disable-next-line prefer-const
     let connector: Connector
     //Store the mapping between messageId and messageUserIntent for amazonq_interactWithMessage telemetry
-    const messageUserIntentMap = new Map<string, string>()
+    const responseMetadata = new Map<string, string[]>()
 
     window.addEventListener('error', (e) => {
         const { error, message } = e
@@ -77,6 +78,7 @@ export const createMynahUI = (
     let tabDataGenerator = new TabDataGenerator({
         isFeatureDevEnabled,
         isGumbyEnabled,
+        disabledCommands,
     })
 
     // eslint-disable-next-line prefer-const
@@ -88,10 +90,10 @@ export const createMynahUI = (
     // eslint-disable-next-line prefer-const
     let messageController: MessageController
 
+    // @ts-ignore
     let featureConfigs: Map<string, FeatureContext> = tryNewMap(featureConfigsSerialized)
 
     function shouldDisplayDiff(messageData: any) {
-        const isEnabled = featureConfigs.get('ViewDiffInChat')?.variation === 'TREATMENT'
         const tab = tabsStorage.getTab(messageData?.tabID || '')
         const allowedCommands = [
             'aws.amazonq.refactorCode',
@@ -99,7 +101,7 @@ export const createMynahUI = (
             'aws.amazonq.optimizeCode',
             'aws.amazonq.sendToPrompt',
         ]
-        if (isEnabled && tab?.type === 'cwc' && allowedCommands.includes(tab.lastCommand || '')) {
+        if (tab?.type === 'cwc' && allowedCommands.includes(tab.lastCommand || '')) {
             return true
         }
         return false
@@ -118,11 +120,13 @@ export const createMynahUI = (
                 tabsStorage,
                 isFeatureDevEnabled,
                 isGumbyEnabled,
+                disabledCommands,
             })
 
             tabDataGenerator = new TabDataGenerator({
                 isFeatureDevEnabled,
                 isGumbyEnabled,
+                disabledCommands,
             })
 
             featureConfigs = tryNewMap(featureConfigsSerialized)
@@ -191,12 +195,14 @@ export const createMynahUI = (
             tabID: string,
             inProgress: boolean,
             message: string | undefined,
-            messageId: string | undefined = undefined
+            messageId: string | undefined = undefined,
+            enableStopAction: boolean = false
         ) => {
             if (inProgress) {
                 mynahUI.updateStore(tabID, {
                     loadingChat: true,
                     promptInputDisabledState: true,
+                    cancelButtonWhenLoading: enableStopAction,
                 })
 
                 if (message && messageId) {
@@ -232,12 +238,14 @@ export const createMynahUI = (
                 mynahUI.updateChatAnswerWithMessageId(tabID, item.messageId, {
                     ...(item.body !== undefined ? { body: item.body } : {}),
                     ...(item.buttons !== undefined ? { buttons: item.buttons } : {}),
+                    ...(item.followUp !== undefined ? { followUp: item.followUp } : {}),
                 })
             } else {
                 mynahUI.updateLastChatAnswer(tabID, {
                     ...(item.body !== undefined ? { body: item.body } : {}),
                     ...(item.buttons !== undefined ? { buttons: item.buttons } : {}),
-                } as ChatItem)
+                    ...(item.followUp !== undefined ? { followUp: item.followUp } : {}),
+                })
             }
         },
         onChatAnswerReceived: (tabID: string, item: CWCChatItem, messageData: any) => {
@@ -252,8 +260,12 @@ export const createMynahUI = (
                         ? { type: ChatItemType.CODE_RESULT, fileList: item.fileList }
                         : {}),
                 })
-                if (item.messageId !== undefined && item.userIntent !== undefined) {
-                    messageUserIntentMap.set(item.messageId, item.userIntent)
+                if (
+                    item.messageId !== undefined &&
+                    item.userIntent !== undefined &&
+                    item.codeBlockLanguage !== undefined
+                ) {
+                    responseMetadata.set(item.messageId, [item.userIntent, item.codeBlockLanguage])
                 }
                 ideApi.postMessage({
                     command: 'update-chat-message-telemetry',
@@ -303,6 +315,7 @@ export const createMynahUI = (
             ) {
                 mynahUI.updateStore(tabID, {
                     loadingChat: true,
+                    cancelButtonWhenLoading: false,
                     promptInputDisabledState: true,
                 })
 
@@ -337,7 +350,8 @@ export const createMynahUI = (
             tabID: string,
             filePaths: DiffTreeFileInfo[],
             deletedFiles: DiffTreeFileInfo[],
-            messageId: string
+            messageId: string,
+            disableFileActions: boolean
         ) => {
             const updateWith: Partial<ChatItem> = {
                 type: ChatItemType.ANSWER,
@@ -345,8 +359,8 @@ export const createMynahUI = (
                     rootFolderTitle: 'Changes',
                     filePaths: filePaths.map((i) => i.zipFilePath),
                     deletedFiles: deletedFiles.map((i) => i.zipFilePath),
-                    details: getDetails(filePaths),
-                    actions: getActions([...filePaths, ...deletedFiles]),
+                    details: getDetails([...filePaths, ...deletedFiles]),
+                    actions: disableFileActions ? undefined : getActions([...filePaths, ...deletedFiles]),
                 },
             }
             mynahUI.updateChatAnswerWithMessageId(tabID, messageId, updateWith)
@@ -458,6 +472,13 @@ export const createMynahUI = (
         onTabRemove: connector.onTabRemove,
         onTabChange: connector.onTabChange,
         // TODO: update mynah-ui this type doesn't seem correct https://github.com/aws/mynah-ui/blob/3777a39eb534a91fd6b99d6cf421ce78ee5c7526/src/main.ts#L372
+        onStopChatResponse: (tabID: string) => {
+            mynahUI.updateStore(tabID, {
+                loadingChat: false,
+                promptInputDisabledState: false,
+            })
+            connector.onStopChatResponse(tabID)
+        },
         onChatPrompt: (tabID: string, prompt: ChatPrompt, eventId: string | undefined) => {
             if ((prompt.prompt ?? '') === '' && (prompt.command ?? '') === '') {
                 return
@@ -515,7 +536,8 @@ export const createMynahUI = (
                 eventId,
                 codeBlockIndex,
                 totalCodeBlocks,
-                messageUserIntentMap.get(messageId) ?? undefined
+                responseMetadata.get(messageId)?.[0] ?? undefined,
+                responseMetadata.get(messageId)?.[1] ?? undefined
             )
         },
         onCodeBlockActionClicked: (
@@ -582,7 +604,8 @@ export const createMynahUI = (
                 eventId,
                 codeBlockIndex,
                 totalCodeBlocks,
-                messageUserIntentMap.get(messageId) ?? undefined
+                responseMetadata.get(messageId)?.[0] ?? undefined,
+                responseMetadata.get(messageId)?.[1] ?? undefined
             )
             mynahUI.notify({
                 type: NotificationType.SUCCESS,

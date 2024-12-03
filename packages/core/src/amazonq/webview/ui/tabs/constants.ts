@@ -3,11 +3,23 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import { TabType } from '../storages/tabsStorage'
+import { QuickActionCommandGroup } from '@aws/mynah-ui'
 
 export type TabTypeData = {
     title: string
     placeholder: string
     welcome: string
+    contextCommands?: QuickActionCommandGroup[]
+}
+
+const workspaceCommand: QuickActionCommandGroup = {
+    groupName: 'Mention code',
+    commands: [
+        {
+            command: '@workspace',
+            description: 'Reference all code in workspace.',
+        },
+    ],
 }
 
 const commonTabData: TabTypeData = {
@@ -16,6 +28,7 @@ const commonTabData: TabTypeData = {
     welcome: `Hi, I'm Amazon Q. I can answer your software development questions.
   Ask me to explain, debug, or optimize your code.
   You can enter \`/\` to see a list of quick actions. Add @workspace to beginning of your message to include your entire workspace as context.`,
+    contextCommands: [workspaceCommand],
 }
 
 export const TabTypeDataMap: Record<TabType, TabTypeData> = {
@@ -33,8 +46,6 @@ What would you like to work on?`,
     gumby: {
         title: 'Q - Code Transformation',
         placeholder: 'Open a new tab to chat with Q',
-        welcome: `Welcome to Code Transformation!
-
-I can help you upgrade your Java 8 and 11 codebases to Java 17.`,
+        welcome: 'Welcome to Code Transformation!',
     },
 }

@@ -13,18 +13,13 @@
         {
             "name": "documentFormat",
             "type": "string",
-            "allowedValues": [
-                "JSON, YAML"
-            ],
+            "allowedValues": ["JSON, YAML"],
             "description": "SSM Create document format selection"
         },
         {
             "name": "ssmOperation",
             "type": "string",
-            "allowedValues": [
-                "Create",
-                "Update"
-            ],
+            "allowedValues": ["Create", "Update"],
             "description": "SSM Publish Document operation type"
         },
         {
@@ -50,11 +45,7 @@
         {
             "name": "cwsprChatTriggerInteraction",
             "type": "string",
-            "allowedValues": [
-                "hotkeys",
-                "click",
-                "contextMenu"
-            ],
+            "allowedValues": ["hotkeys", "click", "contextMenu"],
             "description": "Identifies the specific interaction that opens the chat panel"
         },
         {
@@ -113,18 +104,9 @@
             "description": "CPU used by LSP server as a percentage of all available CPUs on the system"
         },
         {
-            "name": "cwsprChatProgrammingLanguage",
-            "type": "string",
-            "description": "Programming language associated with the message"
-        },
-        {
             "name": "cwsprChatConversationType",
             "type": "string",
-            "allowedValues": [
-                "Chat",
-                "Assign",
-                "Transform"
-            ],
+            "allowedValues": ["Chat", "Assign", "Transform"],
             "description": "Identifies the type of conversation"
         },
         {
@@ -175,7 +157,7 @@
         {
             "name": "cwsprChatTimeToFirstChunk",
             "type": "int",
-            "description": "The time between the initial server request and when we got back the first usable result"
+            "description": "The time between when the conversation id was created and when we got back the first usable result"
         },
         {
             "name": "cwsprChatTimeBetweenChunks",
@@ -185,10 +167,20 @@
         {
             "name": "cwsprChatFullResponseLatency",
             "type": "int",
-            "description": "The time between the initial server request and the final response from the server"
+            "description": "The time between when the conversation id was created and the final response from the server was received"
         },
         {
-            "name": "cwsprTimeToFirstDisplay",
+            "name": "cwsprChatTimeToFirstUsableChunk",
+            "type": "int",
+            "description": "The time between the initial server request, including creating the conversation id, and the first usable result"
+        },
+        {
+            "name": "cwsprChatFullServerResponseLatency",
+            "type": "int",
+            "description": "The time between the initial server request, including creating the conversation id, and the final response from the server"
+        },
+        {
+            "name": "cwsprChatTimeToFirstDisplay",
             "type": "int",
             "description": "The time between the user pressing enter and when the first chunk of data is displayed to the user"
         },
@@ -250,12 +242,7 @@
         {
             "name": "cwsprChatCommandType",
             "type": "string",
-            "allowedValues": [
-                "clear",
-                "help",
-                "transform",
-                "auth"
-            ],
+            "allowedValues": ["clear", "help", "transform", "auth"],
             "description": "Type of chat command (/command) executed"
         },
         {
@@ -271,12 +258,7 @@
         {
             "name": "authStatus",
             "type": "string",
-            "allowedValues": [
-                "connected",
-                "notConnected",
-                "expired",
-                "connectedWithNetworkError"
-            ],
+            "allowedValues": ["connected", "notConnected", "expired", "connectedWithNetworkError"],
             "description": "Status of the an auth connection."
         },
         {
@@ -338,6 +320,11 @@
             "name": "architecture",
             "type": "string",
             "description": "The CPU architecture"
+        },
+        {
+            "name": "timestamp",
+            "type": "int",
+            "description": "A timestamp in milliseconds"
         },
         {
             "name": "traceId",
@@ -781,7 +768,13 @@
                     "type": "cwsprChatFullResponseLatency"
                 },
                 {
-                    "type": "cwsprTimeToFirstDisplay"
+                    "type": "cwsprChatTimeToFirstUsableChunk"
+                },
+                {
+                    "type": "cwsprChatFullServerResponseLatency"
+                },
+                {
+                    "type": "cwsprChatTimeToFirstDisplay"
                 },
                 {
                     "type": "cwsprChatFullDisplayLatency"
@@ -855,57 +848,6 @@
                 },
                 {
                     "type": "cwsprChatResponseErrorReason",
-                    "required": false
-                }
-            ]
-        },
-        {
-            "name": "amazonq_interactWithMessage",
-            "description": "When a user interacts with a message in the conversation",
-            "metadata": [
-                {
-                    "type": "cwsprChatConversationId"
-                },
-                {
-                    "type": "credentialStartUrl",
-                    "required": false
-                },
-                {
-                    "type": "cwsprChatMessageId"
-                },
-                {
-                    "type": "cwsprChatUserIntent",
-                    "required": false
-                },
-                {
-                    "type": "cwsprChatInteractionType"
-                },
-                {
-                    "type": "cwsprChatInteractionTarget",
-                    "required": false
-                },
-                {
-                    "type": "cwsprChatAcceptedCharactersLength",
-                    "required": false
-                },
-                {
-                    "type": "cwsprChatAcceptedNumberOfLines",
-                    "required": false
-                },
-                {
-                    "type": "cwsprChatHasReference",
-                    "required": false
-                },
-                {
-                    "type": "cwsprChatCodeBlockIndex",
-                    "required": false
-                },
-                {
-                    "type": "cwsprChatTotalCodeBlocks",
-                    "required": false
-                },
-                {
-                    "type": "cwsprChatHasProjectContext",
                     "required": false
                 }
             ]
@@ -1195,6 +1137,10 @@
                 {
                     "type": "className",
                     "required": false
+                },
+                {
+                    "type": "source",
+                    "required": false
                 }
             ],
             "passive": true
@@ -1263,8 +1209,31 @@
                 {
                     "type": "proxiedSessionId",
                     "required": false
+                },
+                {
+                    "type": "timestamp",
+                    "required": false
                 }
             ]
+        },
+        {
+            "name": "ide_heartbeat",
+            "description": "A heartbeat sent by the extension",
+            "metadata": [
+                {
+                    "type": "id",
+                    "required": true
+                },
+                {
+                    "type": "name",
+                    "required": false
+                },
+                {
+                    "type": "timestamp",
+                    "required": false
+                }
+            ],
+            "passive": true
         },
         {
             "name": "docdb_listClusters",

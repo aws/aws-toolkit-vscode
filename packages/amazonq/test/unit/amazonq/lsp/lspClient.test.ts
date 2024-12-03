@@ -18,7 +18,7 @@ describe('Amazon Q LSP client', function () {
     })
 
     it('encrypts payload of query ', async () => {
-        await lspClient.query('mock_input')
+        await lspClient.queryVectorIndex('mock_input')
         assert.ok(encryptFunc.calledOnce)
         assert.ok(encryptFunc.calledWith(JSON.stringify({ query: 'mock_input' })))
         const value = await encryptFunc.returnValues[0]
@@ -27,14 +27,15 @@ describe('Amazon Q LSP client', function () {
     })
 
     it('encrypts payload of index files ', async () => {
-        await lspClient.indexFiles(['fileA'], 'path', false)
+        await lspClient.buildIndex(['fileA'], 'path', 'all')
         assert.ok(encryptFunc.calledOnce)
         assert.ok(
             encryptFunc.calledWith(
                 JSON.stringify({
                     filePaths: ['fileA'],
-                    rootPath: 'path',
-                    refresh: false,
+                    projectRoot: 'path',
+                    config: 'all',
+                    language: '',
                 })
             )
         )

@@ -750,6 +750,7 @@ const devSettings = {
     forceCloud9: Boolean,
     forceDevMode: Boolean,
     forceInstallTools: Boolean,
+    forceResolveEnv: Boolean,
     telemetryEndpoint: String,
     telemetryUserPool: String,
     renderDebugDetails: Boolean,
@@ -760,6 +761,7 @@ const devSettings = {
     ssoCacheDirectory: String,
     autofillStartUrl: String,
     webAuth: Boolean,
+    notificationsPollInterval: Number,
 }
 type ResolvedDevSettings = FromDescriptor<typeof devSettings>
 type AwsDevSetting = keyof ResolvedDevSettings

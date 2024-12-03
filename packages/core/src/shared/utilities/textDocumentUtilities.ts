@@ -5,10 +5,12 @@
 
 import * as _path from 'path'
 import * as vscode from 'vscode'
-import { getTabSizeSetting } from './editorUtilities'
+import { disposeOnEditorClose, getTabSizeSetting } from './editorUtilities'
 import { tempDirPath } from '../filesystemUtilities'
-import { fs, indent, ToolkitError } from '../index'
 import { getLogger } from '../logger'
+import fs from '../fs/fs'
+import { ToolkitError } from '../errors'
+import { indent } from './textUtilities'
 
 /**
  * Finds occurences of text in a document. Currently only used for highlighting cloudwatchlogs data.
@@ -184,3 +186,84 @@ export function getIndentedCode(message: any, doc: vscode.TextDocument, selectio
 
     return indent(message.code, indentation.length)
 }
+
+export async function showFile(uri: vscode.Uri) {
+    const doc = await vscode.workspace.openTextDocument(uri)
+    await vscode.window.showTextDocument(doc, { preview: false })
+    await vscode.languages.setTextDocumentLanguage(doc, 'log')
+}
+
+/**
+ * Expands the given selection to full line(s) in the document.
+ * If the selection is partial, it will be extended to include the entire line(s).
+ * @param document The current text document
+ * @param selection The current selection
+ * @returns A new Range that covers full line(s) of the selection
+ */
+export function expandSelectionToFullLines(document: vscode.TextDocument, selection: vscode.Selection): vscode.Range {
+    const startLine = document.lineAt(selection.start.line)
+    const endLine = document.lineAt(selection.end.line)
+    return new vscode.Range(startLine.range.start, endLine.range.end)
+}
+
+/**
+ * Ensures the document ends with a newline character.
+ * If the selection is at the end of the last line and the document doesn't end with a newline,
+ * this function inserts one.
+ * @param editor The VS Code text editor to modify
+ */
+export async function addEofNewline(editor: vscode.TextEditor) {
+    if (
+        editor.selection.end.line === editor.document.lineCount - 1 &&
+        editor.selection.end.character === editor.document.lineAt(editor.selection.end.line).text.length &&
+        !editor.document.getText().endsWith('\n')
+    ) {
+        await editor.edit((editBuilder) => {
+            editBuilder.insert(editor.selection.end, '\n')
+        })
+    }
+}
+
+class ReadonlyTextDocumentProvider implements vscode.TextDocumentContentProvider {
+    private content = ''
+
+    setContent(content: string) {
+        this.content = content
+    }
+
+    provideTextDocumentContent(uri: vscode.Uri): string {
+        return this.content
+    }
+}
+
+/**
+ * Shows a read only virtual txt file on a side column
+ * It's read-only so that the "save" option doesn't appear when user closes the pop up window
+ * Usage: ReadonlyDocument.show(content, filename)
+ * @param content The content to be displayed in the virtual document
+ * @param filename The title on top of the pop up window
+ */
+class ReadonlyDocument {
+    private readonly scheme = 'AWStoolkit-readonly'
+    private readonly provider = new ReadonlyTextDocumentProvider()
+
+    public async show(content: string, filename: string) {
+        const disposableProvider = vscode.workspace.registerTextDocumentContentProvider(this.scheme, this.provider)
+        this.provider.setContent(content)
+        const uri = vscode.Uri.parse(`${this.scheme}:/${filename}.txt`)
+        // txt document on side column, in focus and preview
+        const options: vscode.TextDocumentShowOptions = {
+            viewColumn: vscode.ViewColumn.Beside,
+            preserveFocus: false,
+            preview: true,
+        }
+
+        // Open the document with the updated content
+        const document = await vscode.workspace.openTextDocument(uri)
+        await vscode.window.showTextDocument(document, options)
+
+        disposeOnEditorClose(uri, disposableProvider)
+    }
+}
+
+export const readonlyDocument = new ReadonlyDocument()

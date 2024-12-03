@@ -129,9 +129,6 @@ export default defineComponent({
     created() {
         this.getData()
     },
-    updated() {
-        this.getData()
-    },
     methods: {
         async getData() {
             const issue = await client.getIssue()

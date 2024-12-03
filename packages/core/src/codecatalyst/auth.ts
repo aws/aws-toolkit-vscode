@@ -26,11 +26,11 @@ import {
     hasExactScopes,
 } from '../auth/connection'
 import { createBuilderIdConnection } from '../auth/utils'
-import { builderIdStartUrl } from '../auth/sso/model'
 import { showReauthenticateMessage } from '../shared/utilities/messages'
 import { ToolkitPromptSettings } from '../shared/settings'
 import { setContext } from '../shared/vscode/setContext'
 import { withTelemetryContext } from '../shared/telemetry/util'
+import { builderIdStartUrl } from '../auth/sso/constants'
 
 // Secrets stored on the macOS keychain appear as individual entries for each key
 // This is fine so long as the user has only a few accounts. Otherwise this should

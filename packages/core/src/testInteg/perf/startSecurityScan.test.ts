@@ -21,9 +21,20 @@ import {
 } from '../../test/testUtil'
 import { getTestWindow } from '../../test/shared/vscode/window'
 import { SeverityLevel } from '../../test/shared/vscode/message'
-import { CodeAnalysisScope } from '../../codewhisperer'
-import { performanceTest } from '../../shared/performance/performance'
+import { CodeAnalysisScope, ZipUtil } from '../../codewhisperer'
+import { getEqualOSTestOptions, performanceTest } from '../../shared/performance/performance'
 import { createClient } from '../../test/codewhisperer/testUtil'
+import { fs } from '../../shared'
+import { FileSystem } from '../../shared/fs/fs'
+import { getFsCallsUpperBound } from './utilities'
+
+interface SetupResult {
+    commandSpy: sinon.SinonSpy
+    securityScanRenderSpy: sinon.SinonSpy
+    zipUtil: ZipUtil
+    zipSpy: sinon.SinonSpiedInstance<ZipUtil>
+    fsSpy: sinon.SinonSpiedInstance<FileSystem>
+}
 
 describe('startSecurityScanPerformanceTest', function () {
     let extensionContext: FakeExtensionContext
@@ -57,40 +68,53 @@ describe('startSecurityScanPerformanceTest', function () {
         })
     }
 
-    performanceTest({}, 'Should calculate cpu and memory usage for file scans', function () {
-        return {
-            setup: async () => {
-                getFetchStubWithResponse({ status: 200, statusText: 'testing stub' })
-                const commandSpy = sinon.spy(vscode.commands, 'executeCommand')
-                const securityScanRenderSpy = sinon.spy(diagnosticsProvider, 'initSecurityScanRender')
-                await model.CodeScansState.instance.setScansEnabled(true)
-                return { commandSpy, securityScanRenderSpy }
-            },
-            execute: async () => {
-                await startSecurityScan.startSecurityScan(
-                    mockSecurityPanelViewProvider,
-                    editor,
-                    createClient(),
-                    extensionContext,
-                    CodeAnalysisScope.FILE
-                )
-            },
-            verify: ({
-                commandSpy,
-                securityScanRenderSpy,
-            }: {
-                commandSpy: sinon.SinonSpy
-                securityScanRenderSpy: sinon.SinonSpy
-            }) => {
-                assert.ok(commandSpy.neverCalledWith('workbench.action.problems.focus'))
-                assert.ok(securityScanRenderSpy.calledOnce)
-                const warnings = getTestWindow().shownMessages.filter((m) => m.severity === SeverityLevel.Warning)
-                assert.strictEqual(warnings.length, 0)
-                assertTelemetry('codewhisperer_securityScan', {
-                    codewhispererCodeScanScope: 'FILE',
-                    passive: true,
-                })
-            },
+    performanceTest(
+        getEqualOSTestOptions({
+            userCpuUsage: 150,
+            systemCpuUsage: 35,
+            heapTotal: 2,
+        }),
+        'Should calculate cpu and memory usage for file scans',
+        function () {
+            return {
+                setup: async () => {
+                    getFetchStubWithResponse({ status: 200, statusText: 'testing stub' })
+                    const commandSpy = sinon.spy(vscode.commands, 'executeCommand')
+                    const securityScanRenderSpy = sinon.spy(diagnosticsProvider, 'initSecurityScanRender')
+                    const zipUtil = new ZipUtil()
+                    const zipSpy = sinon.spy(zipUtil)
+                    const fsSpy = sinon.spy(fs)
+                    await model.CodeScansState.instance.setScansEnabled(true)
+                    return { commandSpy, securityScanRenderSpy, zipUtil, zipSpy, fsSpy }
+                },
+                execute: async (setup: SetupResult) => {
+                    await startSecurityScan.startSecurityScan(
+                        mockSecurityPanelViewProvider,
+                        editor,
+                        createClient(),
+                        extensionContext,
+                        CodeAnalysisScope.FILE,
+                        setup.zipUtil
+                    )
+                },
+                verify: (setup: SetupResult) => {
+                    assert.ok(setup.commandSpy.neverCalledWith('workbench.action.problems.focus'))
+                    assert.ok(setup.securityScanRenderSpy.calledOnce)
+
+                    assert.ok(setup.zipSpy.generateZip.calledOnce)
+                    assert.ok(setup.zipSpy.removeTmpFiles.calledOnce)
+                    assert.ok(
+                        getFsCallsUpperBound(setup.fsSpy) <= 5,
+                        'should make less than a small constant number of file system calls'
+                    )
+                    const warnings = getTestWindow().shownMessages.filter((m) => m.severity === SeverityLevel.Warning)
+                    assert.strictEqual(warnings.length, 0)
+                    assertTelemetry('codewhisperer_securityScan', {
+                        codewhispererCodeScanScope: 'FILE',
+                        passive: true,
+                    })
+                },
+            }
         }
-    })
+    )
 })

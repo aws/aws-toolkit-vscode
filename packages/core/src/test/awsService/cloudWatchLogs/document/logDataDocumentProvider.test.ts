@@ -7,7 +7,7 @@ import assert from 'assert'
 import * as vscode from 'vscode'
 import {
     CloudWatchLogsSettings,
-    createURIFromArgs,
+    cwlUriSchema,
     isLogStreamUri,
 } from '../../../../awsService/cloudWatchLogs/cloudWatchLogsUtils'
 import { LogDataDocumentProvider } from '../../../../awsService/cloudWatchLogs/document/logDataDocumentProvider'
@@ -64,7 +64,7 @@ describe('LogDataDocumentProvider', async function () {
         regionName: 'region',
         streamName: 'stream',
     }
-    const getLogsUri = createURIFromArgs(getLogsLogGroupInfo, {})
+    const getLogsUri = cwlUriSchema.form({ logGroupInfo: getLogsLogGroupInfo, parameters: {} })
 
     const filterLogsStream: CloudWatchLogsData = {
         events: [],
@@ -77,7 +77,10 @@ describe('LogDataDocumentProvider', async function () {
         busy: false,
     }
 
-    const filterLogsUri = createURIFromArgs(filterLogsStream.logGroupInfo, filterLogsStream.parameters)
+    const filterLogsUri = cwlUriSchema.form({
+        logGroupInfo: filterLogsStream.logGroupInfo,
+        parameters: filterLogsStream.parameters,
+    })
 
     before(function () {
         config = new Settings(vscode.ConfigurationTarget.Workspace)
@@ -130,7 +133,7 @@ describe('LogDataDocumentProvider', async function () {
             regionName: 'regionA',
             streamName: 'streamA',
         }
-        const logStreamNameUri = createURIFromArgs(logGroupInfo, {})
+        const logStreamNameUri = cwlUriSchema.form({ logGroupInfo: logGroupInfo, parameters: {} })
 
         const events: FilteredLogEvent[] = [
             {

@@ -10,7 +10,7 @@ import { WebviewContext } from '../../applicationcomposer/types'
 import { MockDocument } from '../fake/fakeDocument'
 
 export async function createTemplate() {
-    const manager = new ApplicationComposerManager(globals.context)
+    const manager = await ApplicationComposerManager.create(globals.context)
     const panel = await manager.createTemplate()
     assert.ok(panel)
     return panel

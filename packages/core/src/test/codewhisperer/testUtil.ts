@@ -76,7 +76,7 @@ export function createMockTextEditor(
                     insert: sinon.spy(),
                     setEndOfLine: sinon.spy(),
                     delete: function (_location: vscode.Selection | vscode.Range): void {
-                        getLogger().info(`delete ${JSON.stringify(_location)}`)
+                        getLogger().info(`delete %O`, _location)
                     },
                 }
                 resolve(editor)

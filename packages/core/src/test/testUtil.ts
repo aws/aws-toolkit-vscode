@@ -295,6 +295,13 @@ export function partialDeepCompare<T>(actual: unknown, expected: T, message?: st
     const partial = selectFrom(actual, ...keys(expected as object))
     assert.deepStrictEqual(partial, expected, message)
 }
+/**
+ * Asserts that no metrics metadata (key OR value) matches the given regex.
+ * @param keyword target substring to search for
+ */
+export function assertNoTelemetryMatch(re: RegExp | string): void | never {
+    return assert.ok(globals.telemetry.logger.queryRegex(re).length === 0)
+}
 
 /**
  * Finds the emitted telemetry metrics with the given `name`, then checks if the metadata fields
@@ -483,30 +490,30 @@ export async function closeAllEditors(): Promise<void> {
         /amazonwebservices\.[a-z\-]+-vscode\./,
         /nullExtensionDescription./, // Sometimes exists instead of the prior line, see https://github.com/aws/aws-toolkit-vscode/issues/4658
     ]
-    const editors: vscode.TextEditor[] = []
+    const editorsToClose: vscode.TextEditor[] = []
 
     const noVisibleEditor: boolean | undefined = await waitUntil(
         async () => {
             // Race: documents could appear after the call to closeAllEditors(), so retry.
             await vscode.commands.executeCommand(closeAllCmd)
-            editors.length = 0
-            editors.push(
+            editorsToClose.length = 0
+            editorsToClose.push(
                 ...vscode.window.visibleTextEditors.filter(
                     (editor) => !ignorePatterns.some((p) => p.test(editor.document.fileName))
                 )
             )
 
-            return editors.length === 0
+            return editorsToClose.length === 0
         },
         {
-            timeout: 5000, // Arbitrary values. Should succeed except when VS Code is lagging heavily.
+            timeout: 1000, // Arbitrary values. Should succeed except when VS Code is lagging heavily.
             interval: 250,
             truthy: true,
         }
     )
 
-    if (!noVisibleEditor) {
-        const editorNames = editors.map((editor) => `\t${editor.document.fileName}`)
+    if (!noVisibleEditor && editorsToClose.length > 0) {
+        const editorNames = editorsToClose.map((editor) => `\t${editor.document.fileName}`)
         throw new Error(`Editors were still open after closeAllEditors():\n${editorNames.join('\n')}`)
     }
 }
@@ -565,9 +572,18 @@ export function captureEvent<T>(event: vscode.Event<T>): EventCapturer<T> {
  * Captures the first value emitted by an event, optionally with a timeout
  */
 export function captureEventOnce<T>(event: vscode.Event<T>, timeout?: number): Promise<T> {
+    return captureEventNTimes(event, 1, timeout)
+}
+
+export function captureEventNTimes<T>(event: vscode.Event<T>, amount: number, timeout?: number): Promise<T> {
     return new Promise<T>((resolve, reject) => {
         const stop = () => reject(new Error('Timed out waiting for event'))
-        event((data) => resolve(data))
+        let count = 0
+        event((data) => {
+            if (++count === amount) {
+                resolve(data)
+            }
+        })
 
         if (timeout !== undefined) {
             setTimeout(stop, timeout)
@@ -613,4 +629,8 @@ export function tryRegister(command: DeclaredCommand<() => Promise<any>>) {
 // Returns a stubbed fetch for other tests.
 export function getFetchStubWithResponse(response: Partial<Response>) {
     return stub(request, 'fetch').returns({ response: new Promise((res, _) => res(response)) } as any)
+}
+
+export function copyEnv(): NodeJS.ProcessEnv {
+    return { ...process.env }
 }

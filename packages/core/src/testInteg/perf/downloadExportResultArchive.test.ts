@@ -9,7 +9,7 @@ import * as sinon from 'sinon'
 import path from 'path'
 import { fs, getRandomString } from '../../shared'
 import { createTestWorkspace } from '../../test/testUtil'
-import { performanceTest } from '../../shared/performance/performance'
+import { getEqualOSTestOptions, performanceTest } from '../../shared/performance/performance'
 import { downloadExportResultArchive } from '../../shared/utilities/download'
 
 interface SetupResult {
@@ -47,24 +47,11 @@ async function setup(pieces: number, pieceSize: number): Promise<SetupResult> {
 
 function perfTest(pieces: number, pieceSize: number, label: string) {
     return performanceTest(
-        {
-            testRuns: 10,
-            linux: {
-                userCpuUsage: 200,
-                systemCpuUsage: 35,
-                heapTotal: 4,
-            },
-            darwin: {
-                userCpuUsage: 200,
-                systemCpuUsage: 35,
-                heapTotal: 4,
-            },
-            win32: {
-                userCpuUsage: 200,
-                systemCpuUsage: 35,
-                heapTotal: 4,
-            },
-        },
+        getEqualOSTestOptions({
+            userCpuUsage: 200,
+            systemCpuUsage: 35,
+            heapTotal: 4,
+        }),
         label,
         function () {
             return {

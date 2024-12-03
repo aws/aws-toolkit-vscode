@@ -25,9 +25,15 @@ import { AwsSamDebuggerConfiguration } from '../shared/sam/debugger/awsSamDebugC
 import { AwsSamTargetType } from '../shared/sam/debugger/awsSamDebugConfiguration'
 import { insertTextIntoFile } from '../shared/utilities/textUtilities'
 import globals from '../shared/extensionGlobals'
-import { closeAllEditors } from '../test/testUtil'
+import { closeAllEditors, getWorkspaceFolder } from '../test/testUtil'
 import { ToolkitError } from '../shared/errors'
-import { fs } from '../shared'
+import { SamAppLocation } from '../awsService/appBuilder/explorer/samProject'
+import { AppNode } from '../awsService/appBuilder/explorer/nodes/appNode'
+import sinon from 'sinon'
+import { getTestWindow } from '../test/shared/vscode/window'
+import { ParamsSource, runBuild } from '../shared/sam/build'
+import { DataQuickPickItem } from '../shared/ui/pickerPrompter'
+import fs from '../shared/fs/fs'
 
 const projectFolder = testUtils.getTestWorkspaceFolder()
 
@@ -75,6 +81,15 @@ const scenarios: TestScenario[] = [
         vscodeMinimum: '1.50.0',
     },
     {
+        runtime: 'nodejs22.x',
+        displayName: 'nodejs22.x (ZIP)',
+        path: 'hello-world/app.mjs',
+        debugSessionType: 'pwa-node',
+        language: 'javascript',
+        dependencyManager: 'npm',
+        vscodeMinimum: '1.78.0',
+    },
+    {
         runtime: 'python3.10',
         displayName: 'python 3.10 (ZIP)',
         path: 'hello_world/app.py',
@@ -97,6 +112,16 @@ const scenarios: TestScenario[] = [
     {
         runtime: 'python3.12',
         displayName: 'python 3.12 (ZIP)',
+        path: 'hello_world/app.py',
+        debugSessionType: 'python',
+        language: 'python',
+        dependencyManager: 'pip',
+        // https://github.com/microsoft/vscode-python/blob/main/package.json
+        vscodeMinimum: '1.78.0',
+    },
+    {
+        runtime: 'python3.13',
+        displayName: 'python 3.13 (ZIP)',
         path: 'hello_world/app.py',
         debugSessionType: 'python',
         language: 'python',
@@ -173,6 +198,16 @@ const scenarios: TestScenario[] = [
         vscodeMinimum: '1.50.0',
     },
     {
+        runtime: 'nodejs22.x',
+        displayName: 'nodejs22.x (Image)',
+        baseImage: 'amazon/nodejs22.x-base',
+        path: 'hello-world/app.mjs',
+        debugSessionType: 'pwa-node',
+        language: 'javascript',
+        dependencyManager: 'npm',
+        vscodeMinimum: '1.78.0',
+    },
+    {
         runtime: 'python3.10',
         displayName: 'python 3.10 (ZIP)',
         baseImage: 'amazon/python3.10-base',
@@ -198,6 +233,17 @@ const scenarios: TestScenario[] = [
         runtime: 'python3.12',
         displayName: 'python 3.12 (ZIP)',
         baseImage: 'amazon/python3.12-base',
+        path: 'hello_world/app.py',
+        debugSessionType: 'python',
+        language: 'python',
+        dependencyManager: 'pip',
+        // https://github.com/microsoft/vscode-python/blob/main/package.json
+        vscodeMinimum: '1.78.0',
+    },
+    {
+        runtime: 'python3.13',
+        displayName: 'python 3.13 (ZIP)',
+        baseImage: 'amazon/python3.13-base',
         path: 'hello_world/app.py',
         debugSessionType: 'python',
         language: 'python',
@@ -650,6 +696,82 @@ describe('SAM Integration Tests', async function () {
             })
         })
     }
+
+    describe('SAM Build', async function () {
+        let workspaceFolder: vscode.WorkspaceFolder
+        // We're testing only one case (python 3.10 (ZIP)) on the integration tests. More niche cases are handled as unit tests.
+        const scenarioIndex = 2
+        const scenario = scenarios[scenarioIndex]
+        let testRoot: string
+        let sandbox: sinon.SinonSandbox
+        let testDir: string
+        let cfnTemplatePath: string
+
+        before(async function () {
+            workspaceFolder = getWorkspaceFolder(testSuiteRoot)
+            testRoot = path.join(testSuiteRoot, scenario.runtime)
+            await fs.mkdir(testRoot)
+
+            testDir = mkdtempSync(path.join(testRoot, 'samapp-'))
+            console.log(`testDir: ${testDir}`)
+
+            await createSamApplication(testDir, scenario)
+
+            cfnTemplatePath = path.join(testDir, samApplicationName, 'template.yaml')
+        })
+
+        after(async function () {
+            await tryRemoveFolder(testSuiteRoot)
+            // don't clean up after java tests so the java language server doesn't freak out
+            if (scenario.language !== 'java') {
+                await tryRemoveFolder(testRoot)
+            }
+        })
+
+        beforeEach(async function () {
+            sandbox = sinon.createSandbox()
+            await closeAllEditors()
+        })
+
+        afterEach(async function () {
+            sandbox.restore()
+        })
+
+        it('can build a SAM Template', async function () {
+            // Instantiate AppNode
+            const samAppLocation = {
+                samTemplateUri: vscode.Uri.file(cfnTemplatePath),
+                workspaceFolder: workspaceFolder,
+            } as SamAppLocation
+            const appNode = new AppNode(samAppLocation)
+
+            getTestWindow().onDidShowQuickPick((input) => {
+                if (input.title?.includes('Specify parameter source for build')) {
+                    input.acceptItem(input.items[0])
+                    const item = input.items[0] as DataQuickPickItem<ParamsSource>
+                    assert.deepStrictEqual(item.data as ParamsSource, ParamsSource.Specify)
+                } else if (input.title?.includes('Select build flags')) {
+                    const item1 = input.items[2] as DataQuickPickItem<string>
+                    const item2 = input.items[4] as DataQuickPickItem<string>
+                    const item3 = input.items[7] as DataQuickPickItem<string>
+                    input.acceptItems(item1, item2, item3) //--cached, --parallel, --use-container
+
+                    assert.strictEqual(item1.data as string, '--cached')
+                    assert.strictEqual(item2.data as string, '--parallel')
+                    assert.strictEqual(item3.data as string, '--use-container')
+                }
+            })
+
+            const response = await runBuild(appNode)
+
+            assert.deepStrictEqual(response, {
+                isSuccess: true,
+            })
+
+            const builtTemplatePath = path.join(testDir, samApplicationName, '.aws-sam', 'build', 'template.yaml')
+            assert.ok(await fs.existsFile(builtTemplatePath))
+        })
+    })
 
     async function createSamApplication(location: string, scenario: TestScenario): Promise<void> {
         const initArguments: SamCliInitArgs = {

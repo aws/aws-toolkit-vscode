@@ -353,8 +353,8 @@
         },
         "AppStudioStatePropertyValueString": {
             "type": "string",
-            "max": 1024,
-            "min": 1,
+            "max": 10240,
+            "min": 0,
             "sensitive": true
         },
         "ArtifactId": {
@@ -439,7 +439,8 @@
                 "acceptedCharacterCount": { "shape": "Integer" },
                 "acceptedLineCount": { "shape": "Integer" },
                 "acceptedSnippetHasReference": { "shape": "Boolean" },
-                "hasProjectLevelContext": { "shape": "Boolean" }
+                "hasProjectLevelContext": { "shape": "Boolean" },
+                "userIntent": { "shape": "UserIntent" }
             }
         },
         "ChatInteractWithMessageEventInteractionTargetString": {
@@ -613,6 +614,17 @@
             },
             "exception": true
         },
+        "ConsoleState": {
+            "type": "structure",
+            "members": {
+                "region": { "shape": "String" },
+                "consoleUrl": { "shape": "SensitiveString" },
+                "serviceId": { "shape": "String" },
+                "serviceConsolePage": { "shape": "String" },
+                "serviceSubconsolePage": { "shape": "String" },
+                "taskName": { "shape": "SensitiveString" }
+            }
+        },
         "ContentChecksumType": {
             "type": "string",
             "enum": ["SHA_256"]
@@ -657,7 +669,8 @@
                 "contentLength": { "shape": "CreateUploadUrlRequestContentLengthLong" },
                 "artifactType": { "shape": "ArtifactType" },
                 "uploadIntent": { "shape": "UploadIntent" },
-                "uploadContext": { "shape": "UploadContext" }
+                "uploadContext": { "shape": "UploadContext" },
+                "uploadId": { "shape": "UploadId" }
             }
         },
         "CreateUploadUrlRequestContentChecksumString": {
@@ -811,7 +824,8 @@
             "members": {
                 "document": { "shape": "TextDocument" },
                 "cursorState": { "shape": "CursorState" },
-                "relevantDocuments": { "shape": "RelevantDocumentList" }
+                "relevantDocuments": { "shape": "RelevantDocumentList" },
+                "useRelevantDocuments": { "shape": "Boolean" }
             }
         },
         "EnvState": {
@@ -857,6 +871,44 @@
             "type": "list",
             "member": { "shape": "EnvironmentVariable" },
             "max": 100,
+            "min": 0
+        },
+        "FeatureDevCodeAcceptanceEvent": {
+            "type": "structure",
+            "required": ["conversationId", "linesOfCodeAccepted", "charactersOfCodeAccepted"],
+            "members": {
+                "conversationId": { "shape": "ConversationId" },
+                "linesOfCodeAccepted": { "shape": "FeatureDevCodeAcceptanceEventLinesOfCodeAcceptedInteger" },
+                "charactersOfCodeAccepted": { "shape": "FeatureDevCodeAcceptanceEventCharactersOfCodeAcceptedInteger" },
+                "programmingLanguage": { "shape": "ProgrammingLanguage" }
+            }
+        },
+        "FeatureDevCodeAcceptanceEventCharactersOfCodeAcceptedInteger": {
+            "type": "integer",
+            "min": 0
+        },
+        "FeatureDevCodeAcceptanceEventLinesOfCodeAcceptedInteger": {
+            "type": "integer",
+            "min": 0
+        },
+        "FeatureDevCodeGenerationEvent": {
+            "type": "structure",
+            "required": ["conversationId", "linesOfCodeGenerated", "charactersOfCodeGenerated"],
+            "members": {
+                "conversationId": { "shape": "ConversationId" },
+                "linesOfCodeGenerated": { "shape": "FeatureDevCodeGenerationEventLinesOfCodeGeneratedInteger" },
+                "charactersOfCodeGenerated": {
+                    "shape": "FeatureDevCodeGenerationEventCharactersOfCodeGeneratedInteger"
+                },
+                "programmingLanguage": { "shape": "ProgrammingLanguage" }
+            }
+        },
+        "FeatureDevCodeGenerationEventCharactersOfCodeGeneratedInteger": {
+            "type": "integer",
+            "min": 0
+        },
+        "FeatureDevCodeGenerationEventLinesOfCodeGeneratedInteger": {
+            "type": "integer",
             "min": 0
         },
         "FeatureDevEvent": {
@@ -1092,6 +1144,21 @@
             "member": { "shape": "Import" },
             "max": 10,
             "min": 0
+        },
+        "InlineChatEvent": {
+            "type": "structure",
+            "members": {
+                "inputLength": { "shape": "PrimitiveInteger" },
+                "numSelectedLines": { "shape": "PrimitiveInteger" },
+                "codeIntent": { "shape": "Boolean" },
+                "userDecision": { "shape": "InlineChatUserDecision" },
+                "responseStartLatency": { "shape": "Double" },
+                "responseEndLatency": { "shape": "Double" }
+            }
+        },
+        "InlineChatUserDecision": {
+            "type": "string",
+            "enum": ["ACCEPT", "REJECT", "DISMISS"]
         },
         "Integer": {
             "type": "integer",
@@ -1535,7 +1602,10 @@
             "required": ["conversationState", "workspaceState"],
             "members": {
                 "conversationState": { "shape": "ConversationState" },
-                "workspaceState": { "shape": "WorkspaceState" }
+                "workspaceState": { "shape": "WorkspaceState" },
+                "taskAssistPlan": { "shape": "TaskAssistPlan" },
+                "codeGenerationId": { "shape": "CodeGenerationId" },
+                "currentCodeGenerationId": { "shape": "CodeGenerationId" }
             }
         },
         "StartTaskAssistCodeGenerationResponse": {
@@ -1648,6 +1718,46 @@
             "type": "string",
             "enum": ["DECLARATION", "USAGE"]
         },
+        "TaskAssistPlan": {
+            "type": "list",
+            "member": { "shape": "TaskAssistPlanStep" },
+            "min": 0
+        },
+        "TaskAssistPlanStep": {
+            "type": "structure",
+            "required": ["filePath", "description"],
+            "members": {
+                "filePath": { "shape": "TaskAssistPlanStepFilePathString" },
+                "description": { "shape": "TaskAssistPlanStepDescriptionString" },
+                "startLine": { "shape": "TaskAssistPlanStepStartLineInteger" },
+                "endLine": { "shape": "TaskAssistPlanStepEndLineInteger" },
+                "action": { "shape": "TaskAssistPlanStepAction" }
+            }
+        },
+        "TaskAssistPlanStepAction": {
+            "type": "string",
+            "enum": ["MODIFY", "CREATE", "DELETE", "UNKNOWN"]
+        },
+        "TaskAssistPlanStepDescriptionString": {
+            "type": "string",
+            "max": 1024,
+            "min": 1
+        },
+        "TaskAssistPlanStepEndLineInteger": {
+            "type": "integer",
+            "box": true,
+            "min": 0
+        },
+        "TaskAssistPlanStepFilePathString": {
+            "type": "string",
+            "max": 1024,
+            "min": 1
+        },
+        "TaskAssistPlanStepStartLineInteger": {
+            "type": "integer",
+            "box": true,
+            "min": 0
+        },
         "TaskAssistPlanningUploadContext": {
             "type": "structure",
             "required": ["conversationId"],
@@ -1668,7 +1778,10 @@
                 "chatInteractWithMessageEvent": { "shape": "ChatInteractWithMessageEvent" },
                 "chatUserModificationEvent": { "shape": "ChatUserModificationEvent" },
                 "terminalUserInteractionEvent": { "shape": "TerminalUserInteractionEvent" },
-                "featureDevEvent": { "shape": "FeatureDevEvent" }
+                "featureDevEvent": { "shape": "FeatureDevEvent" },
+                "featureDevCodeGenerationEvent": { "shape": "FeatureDevCodeGenerationEvent" },
+                "featureDevCodeAcceptanceEvent": { "shape": "FeatureDevCodeAcceptanceEvent" },
+                "inlineChatEvent": { "shape": "InlineChatEvent" }
             },
             "union": true
         },
@@ -1777,7 +1890,7 @@
         },
         "TransformationDownloadArtifactType": {
             "type": "string",
-            "enum": ["ClientInstructions", "Logs"]
+            "enum": ["ClientInstructions", "Logs", "GeneratedCode"]
         },
         "TransformationDownloadArtifacts": {
             "type": "list",
@@ -1808,7 +1921,15 @@
         },
         "TransformationLanguage": {
             "type": "string",
-            "enum": ["JAVA_8", "JAVA_11", "JAVA_17", "C_SHARP"]
+            "enum": ["JAVA_8", "JAVA_11", "JAVA_17", "C_SHARP", "COBOL", "PL_I", "JCL"]
+        },
+        "TransformationLanguages": {
+            "type": "list",
+            "member": { "shape": "TransformationLanguage" }
+        },
+        "TransformationMainframeRuntimeEnv": {
+            "type": "string",
+            "enum": ["MAINFRAME"]
         },
         "TransformationOperatingSystemFamily": {
             "type": "string",
@@ -1841,23 +1962,39 @@
         },
         "TransformationProgressUpdateStatus": {
             "type": "string",
-            "enum": ["IN_PROGRESS", "COMPLETED", "FAILED", "PAUSED"]
+            "enum": ["IN_PROGRESS", "COMPLETED", "FAILED", "PAUSED", "AWAITING_CLIENT_ACTION"]
+        },
+        "TransformationProjectArtifactDescriptor": {
+            "type": "structure",
+            "members": {
+                "sourceCodeArtifact": { "shape": "TransformationSourceCodeArtifactDescriptor" }
+            },
+            "union": true
         },
         "TransformationProjectState": {
             "type": "structure",
             "members": {
                 "language": { "shape": "TransformationLanguage" },
                 "runtimeEnv": { "shape": "TransformationRuntimeEnv" },
-                "platformConfig": { "shape": "TransformationPlatformConfig" }
+                "platformConfig": { "shape": "TransformationPlatformConfig" },
+                "projectArtifact": { "shape": "TransformationProjectArtifactDescriptor" }
             }
         },
         "TransformationRuntimeEnv": {
             "type": "structure",
             "members": {
                 "java": { "shape": "TransformationJavaRuntimeEnv" },
-                "dotNet": { "shape": "TransformationDotNetRuntimeEnv" }
+                "dotNet": { "shape": "TransformationDotNetRuntimeEnv" },
+                "mainframe": { "shape": "TransformationMainframeRuntimeEnv" }
             },
             "union": true
+        },
+        "TransformationSourceCodeArtifactDescriptor": {
+            "type": "structure",
+            "members": {
+                "languages": { "shape": "TransformationLanguages" },
+                "runtimeEnv": { "shape": "TransformationRuntimeEnv" }
+            }
         },
         "TransformationSpec": {
             "type": "structure",
@@ -1912,11 +2049,11 @@
         },
         "TransformationType": {
             "type": "string",
-            "enum": ["LANGUAGE_UPGRADE"]
+            "enum": ["LANGUAGE_UPGRADE", "DOCUMENT_GENERATION"]
         },
         "TransformationUploadArtifactType": {
             "type": "string",
-            "enum": ["Dependencies"]
+            "enum": ["Dependencies", "ClientBuildResult"]
         },
         "TransformationUploadContext": {
             "type": "structure",
@@ -1998,7 +2135,9 @@
                 "gitState": { "shape": "GitState" },
                 "envState": { "shape": "EnvState" },
                 "appStudioContext": { "shape": "AppStudioState" },
-                "diagnostic": { "shape": "Diagnostic" }
+                "diagnostic": { "shape": "Diagnostic" },
+                "consoleState": { "shape": "ConsoleState" },
+                "userSettings": { "shape": "UserSettings" }
             }
         },
         "UserIntent": {
@@ -2011,7 +2150,8 @@
                 "CITE_SOURCES",
                 "EXPLAIN_LINE_BY_LINE",
                 "EXPLAIN_CODE_SELECTION",
-                "GENERATE_CLOUDFORMATION_TEMPLATE"
+                "GENERATE_CLOUDFORMATION_TEMPLATE",
+                "GENERATE_UNIT_TESTS"
             ]
         },
         "UserModificationEvent": {
@@ -2024,6 +2164,12 @@
                 "modificationPercentage": { "shape": "Double" },
                 "customizationArn": { "shape": "CustomizationArn" },
                 "timestamp": { "shape": "Timestamp" }
+            }
+        },
+        "UserSettings": {
+            "type": "structure",
+            "members": {
+                "hasConsentedToCrossRegionCalls": { "shape": "Boolean" }
             }
         },
         "UserTriggerDecisionEvent": {

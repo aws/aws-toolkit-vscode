@@ -24,11 +24,12 @@ import { Result } from './telemetry.gen'
 import { MetricDatum } from './clienttelemetry'
 import { isValidationExemptMetric } from './exemptMetrics'
 import { isAmazonQ, isCloud9, isSageMaker } from '../../shared/extensionUtilities'
-import { randomUUID } from '../crypto'
+import { isUuid, randomUUID } from '../crypto'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
-import { FunctionEntry, type TelemetryTracer } from './spans'
+import { asStringifiedStack, FunctionEntry } from './spans'
 import { telemetry } from './telemetry'
 import { v5 as uuidV5 } from 'uuid'
+import { ToolkitError } from '../errors'
 
 const legacySettingsTelemetryValueDisable = 'Disable'
 const legacySettingsTelemetryValueEnable = 'Enable'
@@ -98,33 +99,59 @@ export function convertLegacy(value: unknown): boolean {
  * can be used in conjunction with the client ID to differntiate between
  * different VS Code windows on a users machine.
  *
- * ### Rules:
- *
- * - On startup of a new application instance, a new session ID must be created.
- *   - This identifier must be a `UUID`, it is enforced by the telemetry service.
- * - The session ID must be different from all other IDs on the machine
- * - A session ID exists until the application instance is terminated.
- *   It should never be used again after termination.
- * - All extensions on the same application instance MUST return the same session ID.
- *   - This will allow us to know which of our extensions (eg Q vs Toolkit) are in the
- *     same VS Code window.
- *
- * `vscode.env.sessionId` behaves as described aboved, EXCEPT its
- * value looks close to a UUID by does not exactly match it (has additional characters).
- * As a result we process it through uuidV5 which creates a proper UUID from it.
- * uuidV5 is idempotent, so as long as `vscode.env.sessionId` returns the same value,
- * we will get the same UUID.
+ * See spec: https://quip-amazon.com/9gqrAqwO5FCE
  */
-export const getSessionId = once(() => uuidV5(vscode.env.sessionId, sessionIdNonce))
-/**
- * This is an arbitrary nonce that is used in creating a v5 UUID for Session ID. We only
- * have this since the spec requires it.
- * - This should ONLY be used by {@link getSessionId}.
- * - This value MUST NOT change during runtime, otherwise {@link getSessionId} will lose its
- *   idempotency. But, if there was a reason to change the value in a PR, it would not be an issue.
- * - This is exported only for testing.
- */
-export const sessionIdNonce = '44cfdb20-b30b-4585-a66c-9f48f24f99b5' as const
+export const getSessionId = once(() => SessionId.getSessionId())
+
+/** IMPORTANT: Use {@link getSessionId()} only. This is exported just for testing. */
+export class SessionId {
+    public static getSessionId(): string {
+        // This implementation does not work in web
+        if (!isWeb()) {
+            return this._getSessionId()
+        }
+        // A best effort at a sessionId just for web mode
+        return this._getVscSessionId()
+    }
+
+    /**
+     * This implementation assumes that the `globalThis` is shared between extensions in the same
+     * Extension Host, so we can share a global variable that way.
+     *
+     * This does not seem to work on web mode since the `globalThis` is not shared due to WebWorker design
+     */
+    private static _getSessionId() {
+        const g = globalThis as any
+        if (g.amzn_sessionId === undefined || !isUuid(g.amzn_sessionId)) {
+            g.amzn_sessionId = randomUUID()
+        }
+        return g.amzn_sessionId
+    }
+
+    /**
+     * `vscode.env.sessionId` looks close to a UUID by does not exactly match it (has additional characters).
+     * As a result we process it through uuidV5 which creates a proper UUID from it.
+     * uuidV5 is idempotent, so as long as `vscode.env.sessionId` returns the same value,
+     * we will get the same UUID.
+     *
+     * We were initially using this implementation for all session ids, but it has some caveats:
+     * - If the extension host crashes, sesionId stays the same since the parent VSC process defines it and that does not crash.
+     *   We wanted it to generate a new sessionId on ext host crash.
+     * - This value may not be reliable, see the following sessionId in telemetry, it contains many events
+     *   all from different client ids: `sessionId: cabea8e7-a8a1-5e51-a60e-07218f4a5937`
+     */
+    private static _getVscSessionId() {
+        return uuidV5(vscode.env.sessionId, this.sessionIdNonce)
+    }
+    /**
+     * This is an arbitrary nonce that is used in creating a v5 UUID for Session ID. We only
+     * have this since the spec requires it.
+     * - This should ONLY be used by {@link getSessionId}.
+     * - This value MUST NOT change during runtime, otherwise {@link getSessionId} will lose its
+     *   idempotency. But, if there was a reason to change the value in a PR, it would not be an issue.
+     */
+    private static readonly sessionIdNonce = '44cfdb20-b30b-4585-a66c-9f48f24f99b5'
+}
 
 /**
  * Calculates the clientId for the current profile. This calculation is performed once
@@ -226,7 +253,7 @@ export function getUserAgent(
  * NOTES:
  * - append `-amzn` for any environment internal to Amazon
  */
-type EnvType =
+export type EnvType =
     | 'cloud9'
     | 'cloud9-codecatalyst'
     | 'cloudDesktop-amzn'
@@ -322,12 +349,13 @@ export function getOptOutPreference() {
     return globals.telemetry.telemetryEnabled ? 'OPTIN' : 'OPTOUT'
 }
 
+export type OperatingSystem = 'MAC' | 'WINDOWS' | 'LINUX'
 /**
  * Useful for populating the sendTelemetryEvent request from codewhisperer's api for publishing custom telemetry events for AB Testing.
  *
  * Returns one of the enum values of the OperatingSystem model (see SendTelemetryRequest model in the codebase)
  */
-export function getOperatingSystem(): 'MAC' | 'WINDOWS' | 'LINUX' {
+export function getOperatingSystem(): OperatingSystem {
     const osId = os.platform() // 'darwin', 'win32', 'linux', etc.
     if (osId === 'darwin') {
         return 'MAC'
@@ -338,9 +366,10 @@ export function getOperatingSystem(): 'MAC' | 'WINDOWS' | 'LINUX' {
     }
 }
 
+type TelemetryContextArgs = FunctionEntry & { emit?: boolean; errorCtx?: boolean }
 /**
  * Decorator that simply wraps the method with a non-emitting telemetry `run()`, automatically
- * `record()`ing the provided function id for later use by {@link TelemetryTracer.getFunctionStack()}
+ * `record()`ing the provided function id for later use by TelemetryTracer.getFunctionStack()
  *
  * This saves us from needing to wrap the entire function:
  *
@@ -366,25 +395,60 @@ export function getOperatingSystem(): 'MAC' | 'WINDOWS' | 'LINUX' {
  *     }
  * }
  * ```
+ *
+ * @param opts.name The name of the function
+ * @param opts.class The class name of the function
+ * @param opts.emit Whether or not to emit the telemetry event (default: false)
+ * @param opts.errorCtx Whether or not to add the error context to the error (default: false)
  */
-export function withTelemetryContext(functionId: FunctionEntry) {
+export function withTelemetryContext(opts: TelemetryContextArgs) {
+    const shouldErrorCtx = opts.errorCtx !== undefined ? opts.errorCtx : false
     function decorator<This, Args extends any[], Return>(
         originalMethod: (this: This, ...args: Args) => Return,
         _context: ClassMethodDecoratorContext // we dont need this currently but it keeps the compiler happy
     ) {
         function decoratedMethod(this: This, ...args: Args): Return {
             return telemetry.function_call.run(
-                () => {
-                    // DEVELOPERS: Set a breakpoint here and step in to it to debug the original function
-                    return originalMethod.call(this, ...args)
+                (span) => {
+                    try {
+                        span.record({
+                            functionName: opts.name,
+                            className: opts.class,
+                            source: asStringifiedStack(telemetry.getFunctionStack()),
+                        })
+
+                        // DEVELOPERS: Set a breakpoint here and step in and debug the original function
+                        const result = originalMethod.call(this, ...args)
+
+                        if (result instanceof Promise) {
+                            return result.catch((e) => {
+                                if (shouldErrorCtx) {
+                                    throw addContextToError(e, opts)
+                                }
+                                throw e
+                            }) as Return
+                        }
+                        return result
+                    } catch (e) {
+                        if (shouldErrorCtx) {
+                            throw addContextToError(e, opts)
+                        }
+                        throw e
+                    }
                 },
                 {
-                    emit: false,
-                    functionId: functionId,
+                    emit: opts.emit !== undefined ? opts.emit : false,
+                    functionId: { name: opts.name, class: opts.class },
                 }
             )
         }
         return decoratedMethod
     }
     return decorator
+
+    function addContextToError(e: unknown, functionId: FunctionEntry) {
+        return ToolkitError.chain(e, `ctx: ${functionId.name}`, {
+            code: functionId.class,
+        })
+    }
 }

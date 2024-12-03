@@ -13,9 +13,10 @@ import {
     QuickActionMessage,
 } from '../../../view/connector/connector'
 import { EditorContextCommandType } from '../../../commands/registerCommands'
+import { ChatResponseStream as qdevChatResponseStream } from '@amzn/amazon-q-developer-streaming-client'
 import {
+    ChatResponseStream as cwChatResponseStream,
     CodeWhispererStreamingServiceException,
-    GenerateAssistantResponseCommandOutput,
     SupplementaryWebLink,
 } from '@amzn/codewhisperer-streaming'
 import { ChatMessage, ErrorMessage, FollowUp, Suggestion } from '../../../view/connector/connector'
@@ -27,14 +28,20 @@ import { getHttpStatusCode, getRequestId, ToolkitError } from '../../../../share
 import { keys } from '../../../../shared/utilities/tsUtils'
 import { getLogger } from '../../../../shared/logger/logger'
 import { FeatureAuthState } from '../../../../codewhisperer/util/authUtil'
-import { AuthFollowUpType, AuthMessageDataMap } from '../../../../amazonq/auth/model'
 import { userGuideURL } from '../../../../amazonq/webview/ui/texts/constants'
 import { CodeScanIssue } from '../../../../codewhisperer/models/model'
 import { marked } from 'marked'
 import { JSDOM } from 'jsdom'
 import { LspController } from '../../../../amazonq/lsp/lspController'
+import { extractCodeBlockLanguage } from '../../../../shared/markdown'
+import { extractAuthFollowUp } from '../../../../amazonq/util/authUtils'
 
 export type StaticTextResponseType = 'quick-action-help' | 'onboarding-help' | 'transform' | 'help'
+
+export type MessengerResponseType = {
+    $metadata: { requestId?: string; httpStatusCode?: number }
+    message?: AsyncIterable<cwChatResponseStream | qdevChatResponseStream>
+}
 
 export class Messenger {
     public constructor(
@@ -43,26 +50,7 @@ export class Messenger {
     ) {}
 
     public async sendAuthNeededExceptionMessage(credentialState: FeatureAuthState, tabID: string, triggerID: string) {
-        let authType: AuthFollowUpType = 'full-auth'
-        let message = AuthMessageDataMap[authType].message
-        if (
-            credentialState.codewhispererChat === 'disconnected' &&
-            credentialState.codewhispererCore === 'disconnected'
-        ) {
-            authType = 'full-auth'
-            message = AuthMessageDataMap[authType].message
-        }
-
-        if (credentialState.codewhispererCore === 'connected' && credentialState.codewhispererChat === 'expired') {
-            authType = 'missing_scopes'
-            message = AuthMessageDataMap[authType].message
-        }
-
-        if (credentialState.codewhispererChat === 'expired' && credentialState.codewhispererCore === 'expired') {
-            authType = 're-auth'
-            message = AuthMessageDataMap[authType].message
-        }
-
+        const { message, authType } = extractAuthFollowUp(credentialState)
         this.dispatcher.sendAuthNeededExceptionMessage(
             new AuthNeededException(
                 {
@@ -87,6 +75,7 @@ export class Messenger {
                     triggerID,
                     messageID: '',
                     userIntent: undefined,
+                    codeBlockLanguage: undefined,
                 },
                 tabID
             )
@@ -120,7 +109,7 @@ export class Messenger {
     }
 
     public async sendAIResponse(
-        response: GenerateAssistantResponseCommandOutput,
+        response: MessengerResponseType,
         session: ChatSession,
         tabID: string,
         triggerID: string,
@@ -131,8 +120,9 @@ export class Messenger {
         let codeReference: CodeReference[] = []
         let followUps: FollowUp[] = []
         let relatedSuggestions: Suggestion[] = []
+        let codeBlockLanguage: string = 'plaintext'
 
-        if (response.generateAssistantResponseResponse === undefined) {
+        if (response.message === undefined) {
             throw new ToolkitError(
                 `Empty response from CodeWhisperer Streaming service. Request ID: ${response.$metadata.requestId}`
             )
@@ -149,7 +139,7 @@ export class Messenger {
         const eventCounts = new Map<string, number>()
         waitUntil(
             async () => {
-                for await (const chatEvent of response.generateAssistantResponseResponse!) {
+                for await (const chatEvent of response.message!) {
                     for (const key of keys(chatEvent)) {
                         if ((chatEvent[key] as any) !== undefined) {
                             eventCounts.set(key, (eventCounts.get(key) ?? 0) + 1)
@@ -182,7 +172,9 @@ export class Messenger {
                         chatEvent.assistantResponseEvent.content.length > 0
                     ) {
                         message += chatEvent.assistantResponseEvent.content
-
+                        if (codeBlockLanguage === 'plaintext') {
+                            codeBlockLanguage = extractCodeBlockLanguage(message)
+                        }
                         this.dispatcher.sendChatMessage(
                             new ChatMessage(
                                 {
@@ -195,6 +187,7 @@ export class Messenger {
                                     triggerID,
                                     messageID,
                                     userIntent: triggerPayload.userIntent,
+                                    codeBlockLanguage: codeBlockLanguage,
                                 },
                                 tabID
                             )
@@ -272,6 +265,7 @@ export class Messenger {
                                 triggerID,
                                 messageID,
                                 userIntent: triggerPayload.userIntent,
+                                codeBlockLanguage: codeBlockLanguage,
                             },
                             tabID
                         )
@@ -290,6 +284,7 @@ export class Messenger {
                                 triggerID,
                                 messageID,
                                 userIntent: triggerPayload.userIntent,
+                                codeBlockLanguage: undefined,
                             },
                             tabID
                         )
@@ -307,6 +302,7 @@ export class Messenger {
                             triggerID,
                             messageID,
                             userIntent: triggerPayload.userIntent,
+                            codeBlockLanguage: undefined,
                         },
                         tabID
                     )
@@ -431,6 +427,7 @@ export class Messenger {
                     triggerID,
                     messageID: 'static_message_' + triggerID,
                     userIntent: undefined,
+                    codeBlockLanguage: undefined,
                 },
                 tabID
             )
@@ -441,7 +438,7 @@ export class Messenger {
         let message = ''
         switch (quickAction) {
             case 'help':
-                message = 'What can Amazon Q help me with?'
+                message = 'How can Amazon Q help me?'
                 break
         }
 

@@ -1,0 +1,26 @@
+{
+	"date": "2024-10-29",
+	"version": "1.32.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Remove warning when no input is provided to inline chat input box"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Use Sagemaker environment IAM Credentials for Code Completion when they're available"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Inline: Code completion not working for Sagemaker Pro Tier users."
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Disable /transform and /dev commands for sagemaker users as they're not supported"
+		},
+		{
+			"type": "Feature",
+			"description": "Enable Free Tier Chat for IAM users"
+		}
+	]
+}

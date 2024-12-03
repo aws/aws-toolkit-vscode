@@ -185,6 +185,7 @@ export const codefileExtensions = new Set([
     '.d',
     '.dart',
     '.dfm',
+    '.dockerfile',
     '.dpr',
     '.e',
     '.el',
@@ -206,6 +207,7 @@ export const codefileExtensions = new Set([
     '.gd',
     '.go',
     '.gql',
+    '.gradle',
     '.graphql',
     '.groovy',
     '.gs',
@@ -346,8 +348,16 @@ export const codefileExtensions = new Set([
     '.zig',
 ])
 
+// Some well-known code files without an extension
+export const wellKnownCodeFiles = new Set(['Dockerfile', 'Dockerfile.build'])
+
 /** Returns true if `filename` is a code file. */
 export function isCodeFile(filename: string): boolean {
-    const ext = path.extname(filename).toLowerCase()
-    return codefileExtensions.has(ext)
+    if (codefileExtensions.has(path.extname(filename).toLowerCase())) {
+        return true
+    } else if (wellKnownCodeFiles.has(filename)) {
+        return true
+    } else {
+        return false
+    }
 }

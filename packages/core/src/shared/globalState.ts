@@ -22,7 +22,7 @@ type samInitStateKey =
 
 type stepFunctionsKey = 'SCRIPT_LAST_DOWNLOADED_URL' | 'CSS_LAST_DOWNLOADED_URL'
 
-type globalKey =
+export type globalKey =
     | samInitStateKey
     | stepFunctionsKey
     | ToolIdStateKey
@@ -31,6 +31,9 @@ type globalKey =
     | 'aws.amazonq.codewhisperer.newCustomizations'
     | 'aws.amazonq.hasShownWalkthrough'
     | 'aws.amazonq.showTryChatCodeLens'
+    | 'aws.amazonq.notifications'
+    | 'aws.notifications'
+    | 'aws.notifications.dev' // keys to store notifications for testing
     | 'aws.downloadPath'
     | 'aws.lastTouchedS3Folder'
     | 'aws.lastUploadedToS3Folder'
@@ -66,6 +69,9 @@ type globalKey =
     | 'sam.sync.updateMessage'
     | 'telemetryClientId'
     | 'telemetryId'
+    | 'aws.toolkit.lambda.walkthroughSelected'
+    | 'aws.toolkit.lambda.walkthroughCompleted'
+    | 'aws.toolkit.appComposer.templateToOpenOnStart'
 
 /**
  * Extension-local (not visible to other vscode extensions) shared state which persists after IDE

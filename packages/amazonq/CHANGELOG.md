@@ -1,3 +1,69 @@
+## 1.38.0 2024-11-27
+
+- **Feature** Amazon Q /dev: support `Dockerfile` files
+- **Feature** Introduce @workspace command to enhance context fetching for Chat
+- **Feature** Feature(Amazon Q Code Transformation): allow users to view results in 5 smaller diffs
+
+## 1.37.0 2024-11-22
+
+- **Bug Fix** Amazon Q Feature Dev: display limit reached error message
+- **Bug Fix** Amazon Q chat: `@workspace` command shown in all tab types
+- **Bug Fix** Chat container exceeds width of container
+- **Bug Fix** amazon q inline: skip indexing when no workspace folders are found
+- **Bug Fix** file details and name unneccessary cropping
+- **Bug Fix** Amazon Q /dev: update diff window behavior after a change is accepted
+- **Feature** Amazon Q /dev: support `.gradle` files
+- **Feature** Code Transform: Enable support for Java 17 projects.
+- **Feature** Notifications: Support for delivering critical alerts and product updates
+- **Feature** Retrieve and display a customization name when a customization is overridden in an AB test
+- **Feature** Feature(Amazon Q Code Transformation): support conversions of embedded SQL from Oracle to PostgreSQL
+
+## 1.36.0 2024-11-14
+
+- **Bug Fix** Fix broken inline suggestion auto-trigger on Systemverfilog files if users dont have systemverilog extension installed and enabled
+- **Bug Fix** tutorial always showing on start
+- **Feature** Enable default `@workspace` context of Amazon Q chat for certain users
+- **Feature** Amazon Q /dev: Add an action to accept individual files
+
+## 1.35.0 2024-11-11
+
+- **Breaking Change** Change focus chat keybind to win+alt+i on Windows, cmd+alt+i on macOS, and meta+alt+i on Linux
+- **Bug Fix** Fix suboptimal inline suggestions from Amazon Q caused by improperly formatted supplemental context
+- **Bug Fix** Fix empty chunks being sent to service and get validationException
+
+## 1.34.0 2024-11-07
+
+- **Bug Fix** Align example help text with prompt message in chat
+- **Bug Fix** Improve `@workspace` index auto pause start strategy. 
+- **Feature** Allow users to View and Apply diff when they explictily send code to Amazon Q using - Fix, Refactor, Optimize and Send To Prompt.
+- **Feature** Security Scan: Auto-scan now supports JSX, TSX, Kotlin, Scala, and Shell files.
+
+## 1.33.0 2024-10-30
+
+- **Bug Fix** Amazon Q /dev: fix for stop button showing for Code Transformation
+
+## 1.32.0 2024-10-29
+
+- **Bug Fix** Remove warning when no input is provided to inline chat input box
+- **Bug Fix** Use Sagemaker environment IAM Credentials for Code Completion when they're available
+- **Bug Fix** Inline: Code completion not working for Sagemaker Pro Tier users.
+- **Bug Fix** Disable /transform and /dev commands for sagemaker users as they're not supported
+- **Feature** Enable Free Tier Chat for IAM users
+
+## 1.31.0 2024-10-29
+
+- **Breaking Change** Change keybind for focusing chat to ctrl+win+i on Windows, ctrl+cmd+i on macOS and ctrl+meta+i on Linux
+- **Bug Fix** Inline Suggestions: Occasional `ValidationException` if user context has too many characters.
+- **Bug Fix** Update `@workspace` index when adding or deleting a file
+- **Bug Fix** fixed device code detection when running auth through tunneled vscode
+- **Feature** Use inline chat to select code and transform it with natural language instructions
+- **Feature** Amazon Q /dev: Add stop generation action
+- **Feature** Provide more frequent updates about code changes made by agent
+
+## 1.30.0 2024-10-17
+
+- **Bug Fix** Various fixes and changes
+
 ## 1.29.0 2024-10-10
 
 - **Bug Fix** Amazon Q /dev: include telemetry for workspace usage when generating new files

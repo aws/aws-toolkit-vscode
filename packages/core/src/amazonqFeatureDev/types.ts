@@ -21,6 +21,7 @@ export type Interaction = {
 export interface SessionStateInteraction {
     nextState: SessionState | Omit<SessionState, 'uploadId'> | undefined
     interaction: Interaction
+    currentCodeGenerationId?: string
 }
 
 export enum DevPhase {
@@ -60,7 +61,9 @@ export interface SessionState {
     readonly references?: CodeReference[]
     readonly phase?: SessionStatePhase
     readonly uploadId: string
-    readonly tokenSource: CancellationTokenSource
+    readonly currentIteration?: number
+    currentCodeGenerationId?: string
+    tokenSource?: CancellationTokenSource
     readonly codeGenerationId?: string
     readonly tabID: string
     interact(action: SessionStateAction): Promise<SessionStateInteraction>
@@ -76,6 +79,7 @@ export interface SessionStateConfig {
     conversationId: string
     proxyClient: FeatureDevClient
     uploadId: string
+    currentCodeGenerationId?: string
 }
 
 export interface SessionStateAction {
@@ -85,6 +89,7 @@ export interface SessionStateAction {
     fs: VirtualFileSystem
     telemetry: TelemetryHelper
     uploadHistory?: UploadHistory
+    tokenSource?: CancellationTokenSource
 }
 
 export type NewFileZipContents = { zipFilePath: string; fileContent: string }
@@ -109,3 +114,11 @@ export interface SessionStorage {
 }
 
 export type LLMResponseType = 'EMPTY' | 'INVALID_STATE' | 'VALID'
+
+export interface UpdateFilesPathsParams {
+    tabID: string
+    filePaths: NewFileInfo[]
+    deletedFiles: DeletedFileInfo[]
+    messageId: string
+    disableFileActions?: boolean
+}

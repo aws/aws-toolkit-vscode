@@ -206,3 +206,11 @@ function assertPerformanceMetrics(
         `Expected total duration for ${name} to be less than ${expectedDuration}. Actual duration was ${foundDuration}`
     )
 }
+
+export function getEqualOSTestOptions(testOptions: Partial<PerformanceMetrics>): Partial<TestOptions> {
+    return {
+        linux: testOptions,
+        darwin: testOptions,
+        win32: testOptions,
+    }
+}

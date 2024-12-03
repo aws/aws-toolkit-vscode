@@ -5,7 +5,7 @@
 import { Event as VSCodeEvent, Uri } from 'vscode'
 import { EditorContextExtractor } from '../../editor/context/extractor'
 import { ChatSessionStorage } from '../../storages/chatSession'
-import { Messenger, StaticTextResponseType } from './messenger/messenger'
+import { Messenger, MessengerResponseType, StaticTextResponseType } from './messenger/messenger'
 import {
     PromptMessage,
     ChatTriggerType,
@@ -34,10 +34,8 @@ import { EditorContentController } from '../../../amazonq/commons/controllers/co
 import { EditorContextCommand } from '../../commands/registerCommands'
 import { PromptsGenerator } from './prompts/promptsGenerator'
 import { TriggerEventsStorage } from '../../storages/triggerEvents'
-import {
-    CodeWhispererStreamingServiceException,
-    GenerateAssistantResponseCommandOutput,
-} from '@amzn/codewhisperer-streaming'
+import { SendMessageRequest } from '@amzn/amazon-q-developer-streaming-client'
+import { CodeWhispererStreamingServiceException } from '@amzn/codewhisperer-streaming'
 import { UserIntentRecognizer } from './userIntent/userIntentRecognizer'
 import { CWCTelemetryHelper, recordTelemetryChatRunCommand } from './telemetryHelper'
 import { CodeWhispererTracker } from '../../../codewhisperer/tracker/codewhispererTracker'
@@ -49,11 +47,12 @@ import { randomUUID } from '../../../shared/crypto'
 import { LspController } from '../../../amazonq/lsp/lspController'
 import { CodeWhispererSettings } from '../../../codewhisperer/util/codewhispererSettings'
 import { getSelectedCustomization } from '../../../codewhisperer/util/customizationUtil'
-import { FeatureConfigProvider } from '../../../shared/featureConfig'
 import { getHttpStatusCode, AwsClientResponseError } from '../../../shared/errors'
 import { uiEventRecorder } from '../../../amazonq/util/eventRecorder'
-import { globals } from '../../../shared'
+import { globals, waitUntil } from '../../../shared'
 import { telemetry } from '../../../shared/telemetry'
+import { isSsoConnection } from '../../../auth/connection'
+import { inspect } from '../../../shared/utilities/collectionUtils'
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
@@ -633,18 +632,20 @@ export class ChatController {
                     this.messenger.sendOpenSettingsMessage(triggerID, tabID)
                     return
                 }
-            }
-            // if user does not have @workspace in the prompt, but user is in the data collection group
-            // If the user is in the data collection group but turned off local index to opt-out, do not collect data.
-            // TODO: Remove this entire block of code in one month as requested
-            else if (
-                FeatureConfigProvider.instance.isAmznDataCollectionGroup() &&
+            } else if (
                 !LspController.instance.isIndexingInProgress() &&
                 CodeWhispererSettings.instance.isLocalIndexEnabled()
             ) {
-                getLogger().info(`amazonq: User is in data collection group`)
                 const start = performance.now()
-                triggerPayload.relevantTextDocuments = await LspController.instance.query(triggerPayload.message)
+                triggerPayload.relevantTextDocuments = await waitUntil(
+                    async function () {
+                        if (triggerPayload.message) {
+                            return await LspController.instance.query(triggerPayload.message)
+                        }
+                        return []
+                    },
+                    { timeout: 500, interval: 200, truthy: false }
+                )
                 triggerPayload.projectContextQueryLatencyMs = performance.now() - start
             }
         }
@@ -652,22 +653,35 @@ export class ChatController {
         const request = triggerPayloadToChatRequest(triggerPayload)
         const session = this.sessionStorage.getSession(tabID)
         getLogger().info(
-            `request from tab: ${tabID} conversationID: ${session.sessionIdentifier} request: ${JSON.stringify(
-                request
-            )}`
+            `request from tab: ${tabID} conversationID: ${session.sessionIdentifier} request: ${inspect(request, {
+                depth: 12,
+            })}`
         )
-        let response: GenerateAssistantResponseCommandOutput | undefined = undefined
+        let response: MessengerResponseType | undefined = undefined
         session.createNewTokenSource()
         try {
             this.messenger.sendInitalStream(tabID, triggerID)
-            response = await session.chat(request)
+            this.telemetryHelper.setConversationStreamStartTime(tabID)
+            if (isSsoConnection(AuthUtil.instance.conn)) {
+                const { $metadata, generateAssistantResponseResponse } = await session.chatSso(request)
+                response = {
+                    $metadata: $metadata,
+                    message: generateAssistantResponseResponse,
+                }
+            } else {
+                const { $metadata, sendMessageResponse } = await session.chatIam(request as SendMessageRequest)
+                response = {
+                    $metadata: $metadata,
+                    message: sendMessageResponse,
+                }
+            }
             this.telemetryHelper.recordEnterFocusConversation(triggerEvent.tabID)
             this.telemetryHelper.recordStartConversation(triggerEvent, triggerPayload)
 
             getLogger().info(
                 `response to tab: ${tabID} conversationID: ${session.sessionIdentifier} requestID: ${
                     response.$metadata.requestId
-                } metadata: ${JSON.stringify(response.$metadata)}`
+                } metadata: ${inspect(response.$metadata, { depth: 12 })}`
             )
             await this.messenger.sendAIResponse(response, session, tabID, triggerID, triggerPayload)
         } catch (e: any) {

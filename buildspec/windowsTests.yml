@@ -5,7 +5,7 @@ env:
 phases:
     install:
         runtime-versions:
-            nodejs: 16
+            nodejs: 18
         commands:
             - |
                 if(-Not($Env:CODECOV_TOKEN -eq $null)) {

@@ -19,7 +19,6 @@ import { tryGetAbsolutePath } from '../utilities/workspaceUtils'
 import { SamCliBuildInvocation, SamCliBuildInvocationArguments } from './cli/samCliBuild'
 import { SamCliLocalInvokeInvocation, SamCliLocalInvokeInvocationArguments } from './cli/samCliLocalInvoke'
 import { SamLaunchRequestArgs } from './debugger/awsSamDebugger'
-import { asEnvironmentVariables } from '../../auth/credentials/utils'
 import { buildSamCliStartApiArguments } from './cli/samCliStartApi'
 import { DefaultSamCliProcessInvoker } from './cli/samCliInvoker'
 import { APIGatewayProperties } from './debugger/awsSamDebugConfiguration.gen'
@@ -31,6 +30,8 @@ import { showMessageWithCancel } from '../utilities/messages'
 import { ToolkitError, UnknownError } from '../errors'
 import { SamCliError } from './cli/samCliInvokerUtils'
 import fs from '../fs/fs'
+import { getSpawnEnv } from '../env/resolveEnv'
+import { asEnvironmentVariables } from '../../auth/credentials/utils'
 
 const localize = nls.loadMessageBundle()
 
@@ -206,15 +207,13 @@ async function invokeLambdaHandler(
             containerEnvFile: config.containerEnvFile,
             extraArgs: config.sam?.localArguments,
             name: config.name,
+            region: config.region,
         })
 
         return config
             .samLocalInvokeCommand!.invoke({
                 options: {
-                    env: {
-                        ...process.env,
-                        ...env,
-                    },
+                    env: env,
                 },
                 command: samCommand,
                 args: samArgs,
@@ -247,6 +246,7 @@ async function invokeLambdaHandler(
                 config.sam?.skipNewImageCheck ?? ((await isImageLambdaConfig(config)) || config.sam?.containerBuild),
             parameterOverrides: config.parameterOverrides,
             name: config.name,
+            region: config.region,
         }
 
         // sam local invoke ...
@@ -288,10 +288,17 @@ export async function runLambdaFunction(
         getLogger().info(localize('AWS.output.sam.local.startRun', 'Preparing to run locally: {0}', config.handlerName))
     }
 
-    const envVars = {
-        ...(config.awsCredentials ? asEnvironmentVariables(config.awsCredentials) : {}),
-        ...(config.aws?.region ? { AWS_DEFAULT_REGION: config.aws.region } : {}),
-    }
+    const envVars = await getSpawnEnv(
+        {
+            ...process.env,
+            ...(config.awsCredentials ? asEnvironmentVariables(config.awsCredentials) : {}),
+            ...(config.aws?.region ? { AWS_DEFAULT_REGION: config.aws.region } : {}),
+        },
+        {
+            // only inject toolkit credential if config credential is not set
+            injectCredential: config.awsCredentials ? false : true,
+        }
+    )
 
     const settings = SamCliSettings.instance
     const timer = new Timeout(settings.getLocalInvokeTimeout())
@@ -314,12 +321,13 @@ export async function runLambdaFunction(
 
     // SAM CLI and any API requests are executed in parallel
     // A failure from either is a failure for the whole invocation
-    const [process] = await Promise.all([invokeLambdaHandler(timer, envVars, config, settings), apiRequest]).catch(
-        (err) => {
-            timer.cancel()
-            throw err
-        }
-    )
+    const [processInvoker] = await Promise.all([
+        invokeLambdaHandler(timer, envVars, config, settings),
+        apiRequest,
+    ]).catch((err) => {
+        timer.cancel()
+        throw err
+    })
 
     if (config.noDebug) {
         return config
@@ -328,7 +336,7 @@ export async function runLambdaFunction(
     const terminationListener = vscode.debug.onDidTerminateDebugSession((session) => {
         const config = session.configuration as SamLaunchRequestArgs
         if (config.invokeTarget?.target === 'api') {
-            stopApi(process, config)
+            stopApi(processInvoker, config)
         }
     })
 
@@ -452,16 +460,11 @@ export async function attachDebugger({
     },
     ...params
 }: AttachDebuggerContext): Promise<void> {
-    getLogger().debug(
-        `localLambdaRunner.attachDebugger: startDebugging with config: ${JSON.stringify(
-            {
-                name: params.debugConfig.name,
-                invokeTarget: params.debugConfig.invokeTarget,
-            },
-            undefined,
-            2
-        )}`
-    )
+    const obj = {
+        name: params.debugConfig.name,
+        invokeTarget: params.debugConfig.invokeTarget,
+    }
+    getLogger().debug(`localLambdaRunner.attachDebugger: startDebugging with config: %O`, obj)
 
     getLogger().info(localize('AWS.output.sam.local.attaching', 'Attaching debugger to SAM application...'))
 

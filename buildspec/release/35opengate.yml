@@ -1,0 +1,18 @@
+version: 0.2
+
+phases:
+    install:
+        runtime-versions:
+            nodejs: 16
+
+    pre_build:
+        commands:
+            - STAGE_NAME=SourceWithGit
+            - PIPELINE=$(echo $CODEBUILD_INITIATOR | sed -e 's/codepipeline\///')
+    build:
+        commands:
+            - |
+                aws codepipeline enable-stage-transition \
+                  --pipeline-name "$PIPELINE" \
+                  --stage-name "$STAGE_NAME" \
+                  --transition-type "Inbound"

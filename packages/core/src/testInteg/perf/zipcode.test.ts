@@ -8,14 +8,16 @@ import { TransformByQState, ZipManifest } from '../../codewhisperer'
 import { fs, getRandomString, globals } from '../../shared'
 import { createTestWorkspace } from '../../test/testUtil'
 import * as CodeWhispererConstants from '../../codewhisperer/models/constants'
-import { performanceTest } from '../../shared/performance/performance'
+import { getEqualOSTestOptions, performanceTest } from '../../shared/performance/performance'
 import { zipCode } from '../../codewhisperer/indexNode'
+import { FileSystem } from '../../shared/fs/fs'
+import { getFsCallsUpperBound } from './utilities'
 
 interface SetupResult {
     tempDir: string
     tempFileName: string
     transformQManifest: ZipManifest
-    writeSpy: sinon.SinonSpy
+    fsSpy: sinon.SinonSpiedInstance<FileSystem>
 }
 
 async function setup(numberOfFiles: number, fileSize: number): Promise<SetupResult> {
@@ -28,54 +30,43 @@ async function setup(numberOfFiles: number, fileSize: number): Promise<SetupResu
             fileNameSuffix: '.md',
         })
     ).uri.fsPath
-    const writeSpy = sinon.spy(fs, 'writeFile')
+    const fsSpy = sinon.spy(fs)
     const transformQManifest = new ZipManifest()
     transformByQState.setProjectPath(tempDir)
     transformQManifest.customBuildCommand = CodeWhispererConstants.skipUnitTestsBuildCommand
-    return { tempDir, tempFileName, transformQManifest, writeSpy }
+    return { tempDir, tempFileName, transformQManifest, fsSpy }
 }
 
 function performanceTestWrapper(numberOfFiles: number, fileSize: number) {
     return performanceTest(
-        {
-            testRuns: 10,
-            linux: {
-                userCpuUsage: 120,
-                systemCpuUsage: 50,
-                heapTotal: 4,
-            },
-            darwin: {
-                userCpuUsage: 120,
-                systemCpuUsage: 50,
-                heapTotal: 4,
-            },
-            win32: {
-                userCpuUsage: 120,
-                systemCpuUsage: 50,
-                heapTotal: 4,
-            },
-        },
+        getEqualOSTestOptions({
+            userCpuUsage: 300,
+            systemCpuUsage: 50,
+            heapTotal: 4,
+        }),
         'zipCode',
         function () {
             return {
                 setup: async () => await setup(numberOfFiles, fileSize),
-                execute: async ({ tempDir, tempFileName, transformQManifest, writeSpy }: SetupResult) => {
+                execute: async (setup: SetupResult) => {
                     await zipCode({
                         dependenciesFolder: {
-                            path: tempDir,
-                            name: tempFileName,
+                            path: setup.tempDir,
+                            name: setup.tempFileName,
                         },
                         humanInTheLoopFlag: false,
-                        modulePath: tempDir,
-                        zipManifest: transformQManifest,
+                        projectPath: setup.tempDir,
+                        zipManifest: setup.transformQManifest,
                     })
                 },
                 verify: async (setup: SetupResult) => {
                     assert.ok(
-                        setup.writeSpy.args.find((arg) => {
-                            return arg[0].endsWith('.zip')
+                        setup.fsSpy.writeFile.args.find((arg) => {
+                            return arg[0].toString().endsWith('.zip')
                         })
                     )
+
+                    assert.ok(getFsCallsUpperBound(setup.fsSpy) <= 15)
                 },
             }
         }

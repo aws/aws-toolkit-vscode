@@ -4,17 +4,23 @@
  */
 
 import * as vscode from 'vscode'
-import { fs } from '../../../shared'
+import { FeatureConfigProvider, fs } from '../../../shared'
 import path = require('path')
 import { BM25Document, BM25Okapi } from './rankBm25'
 import { ToolkitError } from '../../../shared/errors'
-import { crossFileContextConfig, supplemetalContextFetchingTimeoutMsg } from '../../models/constants'
+import {
+    crossFileContextConfig,
+    supplementalContextTimeoutInMs,
+    supplemetalContextFetchingTimeoutMsg,
+} from '../../models/constants'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { isTestFile } from './codeParsingUtil'
 import { getFileDistance } from '../../../shared/filesystemUtilities'
 import { getOpenFilesInWindow } from '../../../shared/utilities/editorUtilities'
 import { getLogger } from '../../../shared/logger/logger'
 import { CodeWhispererSupplementalContext, CodeWhispererSupplementalContextItem } from '../../models/model'
+import { LspController } from '../../../amazonq/lsp/lspController'
+import { waitUntil } from '../../../shared/utilities/timeoutUtils'
 
 type CrossFileSupportedLanguage =
     | 'java'
@@ -47,21 +53,137 @@ interface Chunk {
     score?: number
 }
 
+/**
+ * `none`: supplementalContext is not supported
+ * `opentabs`: opentabs_BM25
+ * `codemap`: repomap + opentabs BM25
+ * `bm25`: global_BM25
+ * `default`: repomap + global_BM25
+ */
+type SupplementalContextConfig = 'none' | 'opentabs' | 'codemap' | 'bm25' | 'default'
+
 export async function fetchSupplementalContextForSrc(
     editor: vscode.TextEditor,
     cancellationToken: vscode.CancellationToken
 ): Promise<Pick<CodeWhispererSupplementalContext, 'supplementalContextItems' | 'strategy'> | undefined> {
-    const shouldProceed = shouldFetchCrossFileContext(editor.document.languageId)
+    const supplementalContextConfig = getSupplementalContextConfig(editor.document.languageId)
 
-    if (!shouldProceed) {
-        return shouldProceed === undefined
-            ? undefined
-            : {
-                  supplementalContextItems: [],
-                  strategy: 'Empty',
-              }
+    // not supported case
+    if (supplementalContextConfig === 'none') {
+        return undefined
     }
 
+    // opentabs context will use bm25 and users' open tabs to fetch supplemental context
+    if (supplementalContextConfig === 'opentabs') {
+        return {
+            supplementalContextItems: (await fetchOpentabsContext(editor, cancellationToken)) ?? [],
+            strategy: 'opentabs',
+        }
+    }
+
+    // codemap will use opentabs context plus repomap if it's present
+    if (supplementalContextConfig === 'codemap') {
+        const opentabsContextAndCodemap = await waitUntil(
+            async function () {
+                const result: CodeWhispererSupplementalContextItem[] = []
+                const opentabsContext = await fetchOpentabsContext(editor, cancellationToken)
+                const codemap = await fetchProjectContext(editor, 'codemap')
+
+                if (codemap && codemap.length > 0) {
+                    result.push(...codemap)
+                }
+
+                if (opentabsContext && opentabsContext.length > 0) {
+                    result.push(...opentabsContext)
+                }
+
+                return result
+            },
+            { timeout: supplementalContextTimeoutInMs, interval: 5, truthy: false }
+        )
+
+        return {
+            supplementalContextItems: opentabsContextAndCodemap ?? [],
+            strategy: 'codemap',
+        }
+    }
+
+    // fallback to opentabs if projectContext timeout for 'default' | 'bm25'
+    const opentabsContextPromise = waitUntil(
+        async function () {
+            return await fetchOpentabsContext(editor, cancellationToken)
+        },
+        { timeout: supplementalContextTimeoutInMs, interval: 5, truthy: false }
+    )
+
+    // global bm25 without repomap
+    if (supplementalContextConfig === 'bm25') {
+        const projectBM25Promise = waitUntil(
+            async function () {
+                return await fetchProjectContext(editor, 'bm25')
+            },
+            { timeout: supplementalContextTimeoutInMs, interval: 5, truthy: false }
+        )
+
+        const [projectContext, opentabsContext] = await Promise.all([projectBM25Promise, opentabsContextPromise])
+        if (projectContext && projectContext.length > 0) {
+            return {
+                supplementalContextItems: projectContext,
+                strategy: 'bm25',
+            }
+        }
+
+        return {
+            supplementalContextItems: opentabsContext ?? [],
+            strategy: 'opentabs',
+        }
+    }
+
+    // global bm25 with repomap
+    const projectContextAndCodemapPromise = waitUntil(
+        async function () {
+            return await fetchProjectContext(editor, 'default')
+        },
+        { timeout: supplementalContextTimeoutInMs, interval: 5, truthy: false }
+    )
+
+    const [projectContext, opentabsContext] = await Promise.all([
+        projectContextAndCodemapPromise,
+        opentabsContextPromise,
+    ])
+    if (projectContext && projectContext.length > 0) {
+        return {
+            supplementalContextItems: projectContext,
+            strategy: 'default',
+        }
+    }
+
+    return {
+        supplementalContextItems: opentabsContext ?? [],
+        strategy: 'opentabs',
+    }
+}
+
+export async function fetchProjectContext(
+    editor: vscode.TextEditor,
+    target: 'default' | 'codemap' | 'bm25'
+): Promise<CodeWhispererSupplementalContextItem[]> {
+    const inputChunkContent = getInputChunk(editor)
+
+    const inlineProjectContext: { content: string; score: number; filePath: string }[] =
+        await LspController.instance.queryInlineProjectContext(
+            inputChunkContent.content,
+            editor.document.uri.fsPath,
+            target
+        )
+
+    return inlineProjectContext
+}
+
+export async function fetchOpentabsContext(
+    editor: vscode.TextEditor,
+    cancellationToken: vscode.CancellationToken
+): Promise<CodeWhispererSupplementalContextItem[] | undefined> {
     const codeChunksCalculated = crossFileContextConfig.numberOfChunkToFetch
 
     // Step 1: Get relevant cross files to refer
@@ -87,14 +209,21 @@ export async function fetchSupplementalContextForSrc(
 
     // Step 3: Generate Input chunk (10 lines left of cursor position)
     // and Find Best K chunks w.r.t input chunk using BM25
-    const inputChunk: Chunk = getInputChunk(editor, crossFileContextConfig.numberOfLinesEachChunk)
+    const inputChunk: Chunk = getInputChunk(editor)
     const bestChunks: Chunk[] = findBestKChunkMatches(inputChunk, chunkList, crossFileContextConfig.topK)
     throwIfCancelled(cancellationToken)
 
     // Step 4: Transform best chunks to supplemental contexts
     const supplementalContexts: CodeWhispererSupplementalContextItem[] = []
+    let totalLength = 0
     for (const chunk of bestChunks) {
         throwIfCancelled(cancellationToken)
+
+        totalLength += chunk.nextContent.length
+
+        if (totalLength > crossFileContextConfig.maximumTotalLength) {
+            break
+        }
 
         supplementalContexts.push({
             filePath: chunk.fileName,
@@ -105,10 +234,7 @@ export async function fetchSupplementalContextForSrc(
 
     // DO NOT send code chunk with empty content
     getLogger().debug(`CodeWhisperer finished fetching crossfile context out of ${relevantCrossFilePaths.length} files`)
-    return {
-        supplementalContextItems: supplementalContexts.filter((item) => item.content.trim().length !== 0),
-        strategy: 'OpenTabs_BM25',
-    }
+    return supplementalContexts
 }
 
 function findBestKChunkMatches(chunkInput: Chunk, chunkReferences: Chunk[], k: number): Chunk[] {
@@ -133,7 +259,8 @@ function findBestKChunkMatches(chunkInput: Chunk, chunkReferences: Chunk[], k: n
 /* This extract 10 lines to the left of the cursor from trigger file.
  * This will be the inputquery to bm25 matching against list of cross-file chunks
  */
-function getInputChunk(editor: vscode.TextEditor, chunkSize: number) {
+function getInputChunk(editor: vscode.TextEditor) {
+    const chunkSize = crossFileContextConfig.numberOfLinesEachChunk
     const cursorPosition = editor.selection.active
     const startLine = Math.max(cursorPosition.line - chunkSize, 0)
     const endLine = Math.max(cursorPosition.line - 1, 0)
@@ -147,16 +274,25 @@ function getInputChunk(editor: vscode.TextEditor, chunkSize: number) {
 /**
  * Util to decide if we need to fetch crossfile context since CodeWhisperer CrossFile Context feature is gated by userGroup and language level
  * @param languageId: VSCode language Identifier
- * @param userGroup: CodeWhisperer user group settings, refer to userGroupUtil.ts
  * @returns specifically returning undefined if the langueage is not supported,
  * otherwise true/false depending on if the language is fully supported or not belonging to the user group
  */
-function shouldFetchCrossFileContext(languageId: vscode.TextDocument['languageId']): boolean | undefined {
+function getSupplementalContextConfig(languageId: vscode.TextDocument['languageId']): SupplementalContextConfig {
     if (!isCrossFileSupported(languageId)) {
-        return undefined
+        return 'none'
     }
 
-    return true
+    const group = FeatureConfigProvider.instance.getProjectContextGroup()
+    switch (group) {
+        case 'control':
+            return 'opentabs'
+
+        case 't1':
+            return 'codemap'
+
+        case 't2':
+            return 'bm25'
+    }
 }
 
 /**
