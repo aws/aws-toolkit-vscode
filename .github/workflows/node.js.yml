@@ -33,8 +33,10 @@ jobs:
               with:
                   node-version: '20'
             - name: Check Branch title
+              env:
+                  BRANCH_NAME: ${{ github.head_ref }}
               run: |
-                  node "$GITHUB_WORKSPACE/.github/workflows/lintbranch.js"
+                  node "$GITHUB_WORKSPACE/.github/workflows/lintbranch.js run $BRANCH_NAME"
             - name: Check PR title
               run: |
                   node "$GITHUB_WORKSPACE/.github/workflows/lintcommit.js"
