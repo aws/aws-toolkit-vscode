@@ -8,11 +8,14 @@ import { ToolkitError } from '../shared/errors'
 import globals from '../shared/extensionGlobals'
 import { globalKey } from '../shared/globalState'
 import {
+    defaultNotificationsState,
+    DevNotificationsState,
     getNotificationTelemetryId,
     Notifications,
     NotificationsState,
     NotificationsStateConstructor,
     NotificationType,
+    RuleContext,
     ToolkitNotification,
 } from './types'
 import { HttpResourceFetcher } from '../shared/resourcefetcher/httpResourceFetcher'
@@ -25,6 +28,7 @@ import { withRetries } from '../shared/utilities/functionUtils'
 import { FileResourceFetcher } from '../shared/resourcefetcher/fileResourceFetcher'
 import { isAmazonQ } from '../shared/extensionUtilities'
 import { telemetry } from '../shared/telemetry/telemetry'
+import { randomUUID } from '../shared/crypto'
 
 const logger = getLogger('notifications')
 
@@ -42,12 +46,13 @@ const logger = getLogger('notifications')
  */
 export class NotificationsController {
     /** Internal memory state that is written to global state upon modification. */
-    private readonly state: NotificationsState
+    private state: NotificationsState
 
     static #instance: NotificationsController | undefined
 
     constructor(
         private readonly notificationsNode: NotificationsNode,
+        private readonly ruleContextFn: () => Promise<RuleContext>,
         private readonly fetcher: NotificationFetcher = new RemoteFetcher(),
         public readonly storageKey: globalKey = 'aws.notifications'
     ) {
@@ -60,15 +65,20 @@ export class NotificationsController {
         this.state = this.getDefaultState()
     }
 
-    public pollForStartUp(ruleEngine: RuleEngine) {
-        return this.poll(ruleEngine, 'startUp')
+    public reset() {
+        this.state = defaultNotificationsState()
+        return this.writeState().then(() => this.displayNotifications())
     }
 
-    public pollForEmergencies(ruleEngine: RuleEngine) {
-        return this.poll(ruleEngine, 'emergency')
+    public pollForStartUp() {
+        return this.poll('startUp')
     }
 
-    private async poll(ruleEngine: RuleEngine, category: NotificationType) {
+    public pollForEmergencies() {
+        return this.poll('emergency')
+    }
+
+    private async poll(category: NotificationType) {
         try {
             // Get latest state in case it was modified by other windows.
             // It is a minimal read to avoid race conditions.
@@ -78,10 +88,11 @@ export class NotificationsController {
             logger.error(`Unable to fetch %s notifications: %s`, category, err)
         }
 
-        await this.displayNotifications(ruleEngine)
+        await this.displayNotifications()
     }
 
-    private async displayNotifications(ruleEngine: RuleEngine) {
+    private async displayNotifications() {
+        const ruleEngine = new RuleEngine(await this.ruleContextFn())
         const dismissed = new Set(this.state.dismissed)
         const startUp =
             this.state.startUp.payload?.notifications.filter(
@@ -203,12 +214,11 @@ export class NotificationsController {
      * Returns stored notification state, or a default state object if it is invalid or undefined.
      */
     private getDefaultState() {
-        return globals.globalState.tryGet<NotificationsState>(this.storageKey, NotificationsStateConstructor, {
-            startUp: {},
-            emergency: {},
-            dismissed: [],
-            newlyReceived: [],
-        })
+        return globals.globalState.tryGet<NotificationsState>(
+            this.storageKey,
+            NotificationsStateConstructor,
+            defaultNotificationsState()
+        )
     }
 
     static get instance() {
@@ -318,5 +328,58 @@ export class LocalFetcher implements NotificationFetcher {
             content: await new FileResourceFetcher(globals.context.asAbsolutePath(uri)).get(),
             eTag: 'LOCAL_PATH',
         }
+    }
+}
+
+/**
+ * Fetches notifications from global state for local testing and verification. It is
+ * an extension of the RemoteFetcher so that devs can still see public notifications
+ * while testing (or while not testing, but they left dev mode on).
+ *
+ * Usage:
+ *   1. Enable dev mode: set `"aws.dev.forceDevMode": true` in your settings.
+ *   2. Open the extension Developer menu.
+ *   3. (optional) Reset the current notification state via the "Reset feature state" option.
+ *   4. Add notifications to the payload via the `Notifications: Edit Notifications` option.
+ *   5. Save to send the notification.
+ *
+ * Save to receive these notifications AND ALSO fetch from the public endpoint.
+ */
+export class DevFetcher extends RemoteFetcher implements NotificationFetcher {
+    constructor(public readonly storageKey: globalKey = 'aws.notifications.dev') {
+        super()
+    }
+
+    override async fetch(category: NotificationType, versionTag?: string): Promise<ResourceResponse> {
+        logger.debug('DevFetcher: Fetching notifications in dev mode for category: %s', category)
+
+        // Fetch the notifications that are currently released to users. Ignore eTag so that the
+        // complete current set of notifications is always returned to devs.
+        const data = await super.fetch(category, undefined)
+
+        const devNotifications: DevNotificationsState | undefined = await globals.globalState.getStrict(
+            this.storageKey,
+            Object
+        )
+
+        if (devNotifications && devNotifications[category] && devNotifications[category].length > 0) {
+            const content: Notifications = data.content
+                ? JSON.parse(data.content)
+                : { notifications: [], schemaVersion: 'devmode' }
+
+            // Give each dev notification a unique ID so the dev doesn't have to keep track of them.
+            content.notifications.push(
+                ...devNotifications[category].map((n) => {
+                    return { ...n, id: `${n.id ?? 'no-id'}_${randomUUID()}` }
+                })
+            )
+
+            return {
+                content: JSON.stringify(content),
+                eTag: data.eTag,
+            }
+        }
+
+        return data
     }
 }

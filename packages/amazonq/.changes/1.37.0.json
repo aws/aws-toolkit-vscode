@@ -1,0 +1,50 @@
+{
+	"date": "2024-11-22",
+	"version": "1.37.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q Feature Dev: display limit reached error message"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q chat: `@workspace` command shown in all tab types"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Chat container exceeds width of container"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "amazon q inline: skip indexing when no workspace folders are found"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "file details and name unneccessary cropping"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q /dev: update diff window behavior after a change is accepted"
+		},
+		{
+			"type": "Feature",
+			"description": "Amazon Q /dev: support `.gradle` files"
+		},
+		{
+			"type": "Feature",
+			"description": "Code Transform: Enable support for Java 17 projects."
+		},
+		{
+			"type": "Feature",
+			"description": "Notifications: Support for delivering critical alerts and product updates"
+		},
+		{
+			"type": "Feature",
+			"description": "Retrieve and display a customization name when a customization is overridden in an AB test"
+		},
+		{
+			"type": "Feature",
+			"description": "Feature(Amazon Q Code Transformation): support conversions of embedded SQL from Oracle to PostgreSQL"
+		}
+	]
+}

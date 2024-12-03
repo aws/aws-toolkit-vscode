@@ -93,7 +93,8 @@ describe('startSecurityScanPerformanceTest', function () {
                         editor,
                         createClient(),
                         extensionContext,
-                        CodeAnalysisScope.FILE,
+                        CodeAnalysisScope.FILE_AUTO,
+                        false,
                         setup.zipUtil
                     )
                 },
@@ -108,9 +109,12 @@ describe('startSecurityScanPerformanceTest', function () {
                         'should make less than a small constant number of file system calls'
                     )
                     const warnings = getTestWindow().shownMessages.filter((m) => m.severity === SeverityLevel.Warning)
-                    assert.strictEqual(warnings.length, 0)
+                    // If we see a warning, make sure its about the toolkit and unrelated to security scan.
+                    if (warnings.length > 0) {
+                        assert.ok(!warnings.some((s) => !s.message.includes('AWS Toolkit PREVIEW')))
+                    }
                     assertTelemetry('codewhisperer_securityScan', {
-                        codewhispererCodeScanScope: 'FILE',
+                        codewhispererCodeScanScope: 'FILE_AUTO',
                         passive: true,
                     })
                 },

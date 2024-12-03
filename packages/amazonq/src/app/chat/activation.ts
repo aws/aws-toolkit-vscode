@@ -9,6 +9,7 @@ import { telemetry } from 'aws-core-vscode/telemetry'
 import { AuthUtil, CodeWhispererSettings } from 'aws-core-vscode/codewhisperer'
 import { Commands, placeholder, funcUtil } from 'aws-core-vscode/shared'
 import * as amazonq from 'aws-core-vscode/amazonq'
+import { scanChatAppInit } from '../amazonqScan'
 import { init as inlineChatInit } from '../../inlineChat/app'
 
 export async function activate(context: ExtensionContext) {
@@ -69,6 +70,9 @@ function registerApps(appInitContext: amazonq.AmazonQAppInitContext, context: Ex
     amazonq.cwChatAppInit(appInitContext)
     amazonq.featureDevChatAppInit(appInitContext)
     amazonq.gumbyChatAppInit(appInitContext)
+    amazonq.testChatAppInit(appInitContext)
+    scanChatAppInit(appInitContext)
+    amazonq.docChatAppInit(appInitContext)
     inlineChatInit(context)
 }
 

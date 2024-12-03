@@ -603,7 +603,7 @@ export class Messenger {
     }
 
     public sendOneOrMultipleDiffsMessage(selectiveTransformationSelection: string, tabID: string) {
-        const message = `Okay, I will create ${selectiveTransformationSelection.toLowerCase()} when providing the proposed changes.`
+        const message = `Okay, I will create ${selectiveTransformationSelection.toLowerCase()} with my proposed changes.`
         this.dispatcher.sendChatMessage(new ChatMessage({ message, messageType: 'ai-prompt' }, tabID))
     }
 

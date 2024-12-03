@@ -354,9 +354,15 @@ export async function runSamSync(args: SyncParams) {
         }),
     })
 
-    await runInTerminal(sam, 'sync')
+    // with '--watch' selected, the sync process will run in the background until the user manually kills it
+    // we need to save the stack and region to the samconfig file now, otherwise the user would not see latest deployed resoure during this sync process
     const { paramsSource, stackName, region, projectRoot } = args
     const shouldWriteSyncSamconfigGlobal = paramsSource !== ParamsSource.SamConfig && !!stackName && !!region
+    if (boundArgs.includes('--watch')) {
+        shouldWriteSyncSamconfigGlobal && (await writeSamconfigGlobal(projectRoot, stackName, region))
+    }
+
+    await runInTerminal(sam, 'sync')
     shouldWriteSyncSamconfigGlobal && (await writeSamconfigGlobal(projectRoot, stackName, region))
 }
 
