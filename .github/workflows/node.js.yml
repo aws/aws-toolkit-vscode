@@ -61,7 +61,7 @@ jobs:
             - run: npm run lint
 
     jscpd:
-        needs: [lint-commits]
+        needs: lint-commits
         if: ${{ github.event_name == 'pull_request'}}
         runs-on: ubuntu-latest
         strategy:
