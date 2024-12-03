@@ -31,7 +31,9 @@ export type globalKey =
     | 'aws.amazonq.codewhisperer.newCustomizations'
     | 'aws.amazonq.hasShownWalkthrough'
     | 'aws.amazonq.showTryChatCodeLens'
+    | 'aws.amazonq.securityIssueFilters'
     | 'aws.amazonq.notifications'
+    | 'aws.amazonq.welcomeChatShowCount'
     | 'aws.notifications'
     | 'aws.notifications.dev' // keys to store notifications for testing
     | 'aws.downloadPath'

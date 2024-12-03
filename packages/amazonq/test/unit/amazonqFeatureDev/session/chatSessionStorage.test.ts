@@ -3,18 +3,18 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as assert from 'assert'
-
-import { Messenger, ChatSessionStorage } from 'aws-core-vscode/amazonqFeatureDev'
+import { FeatureDevChatSessionStorage } from 'aws-core-vscode/amazonqFeatureDev'
+import { Messenger } from 'aws-core-vscode/amazonq'
 import { createMessenger } from 'aws-core-vscode/test'
 
 describe('chatSession', () => {
     const tabID = '1234'
-    let chatStorage: ChatSessionStorage
+    let chatStorage: FeatureDevChatSessionStorage
     let messenger: Messenger
 
     beforeEach(() => {
         messenger = createMessenger()
-        chatStorage = new ChatSessionStorage(messenger)
+        chatStorage = new FeatureDevChatSessionStorage(messenger)
     })
 
     it('locks getSession', async () => {

@@ -26,6 +26,8 @@ import {
     QueryVectorIndexRequestType,
     UpdateIndexV2RequestPayload,
     UpdateIndexV2RequestType,
+    QueryRepomapIndexRequestType,
+    GetRepomapIndexJSONRequestType,
     Usage,
 } from './types'
 import { Writable } from 'stream'
@@ -137,6 +139,31 @@ export class LspClient {
         } catch (e) {
             getLogger().error(`LspClient: updateIndex error: ${e}`)
             return undefined
+        }
+    }
+    async queryRepomapIndex(filePaths: string[]) {
+        try {
+            const request = JSON.stringify({
+                filePaths: filePaths,
+            })
+            const resp: any = await this.client?.sendRequest(QueryRepomapIndexRequestType, await this.encrypt(request))
+            return resp
+        } catch (e) {
+            getLogger().error(`LspClient: QueryRepomapIndex error: ${e}`)
+            throw e
+        }
+    }
+    async getRepoMapJSON() {
+        try {
+            const request = JSON.stringify({})
+            const resp: any = await this.client?.sendRequest(
+                GetRepomapIndexJSONRequestType,
+                await this.encrypt(request)
+            )
+            return resp
+        } catch (e) {
+            getLogger().error(`LspClient: queryInlineProjectContext error: ${e}`)
+            throw e
         }
     }
 }
