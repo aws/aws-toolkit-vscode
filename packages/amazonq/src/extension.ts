@@ -97,10 +97,8 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
     globals.manifestPaths.endpoints = context.asAbsolutePath(join('resources', 'endpoints.json'))
     globals.regionProvider = RegionProvider.fromEndpointsProvider(makeEndpointsProvider())
 
-    const qOutputChannel = vscode.window.createOutputChannel('Amazon Q', { log: true })
     const qLogChannel = vscode.window.createOutputChannel('Amazon Q Logs', { log: true })
-    await activateLogger(context, amazonQContextPrefix, qOutputChannel, qLogChannel)
-    globals.outputChannel = qOutputChannel
+    await activateLogger(context, amazonQContextPrefix, qLogChannel)
     globals.logOutputChannel = qLogChannel
     globals.loginManager = new LoginManager(globals.awsContext, new CredentialsStore())
 

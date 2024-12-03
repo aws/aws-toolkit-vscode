@@ -89,7 +89,7 @@ export async function activateCommon(
     // Setup the logger
     const toolkitOutputChannel = vscode.window.createOutputChannel('AWS Toolkit', { log: true })
     const toolkitLogChannel = vscode.window.createOutputChannel('AWS Toolkit Logs', { log: true })
-    await activateLogger(context, contextPrefix, toolkitOutputChannel, toolkitLogChannel)
+    await activateLogger(context, contextPrefix, toolkitLogChannel, toolkitOutputChannel)
     globals.outputChannel = toolkitOutputChannel
     globals.logOutputChannel = toolkitLogChannel
 
