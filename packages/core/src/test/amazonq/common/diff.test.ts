@@ -12,6 +12,8 @@ import assert from 'assert'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import sinon from 'sinon'
+import { FileSystem } from '../../../shared/fs/fs'
+import { featureDevScheme } from '../../../amazonqFeatureDev'
 import {
     createAmazonQUri,
     getFileDiffUris,
@@ -20,7 +22,6 @@ import {
     openDiff,
     computeDiff,
 } from '../../../amazonq'
-import { FileSystem } from '../../../shared/fs/fs'
 import { TextDocument } from 'vscode'
 
 describe('diff', () => {
@@ -44,19 +45,19 @@ describe('diff', () => {
     describe('openDiff', () => {
         it('file exists locally', async () => {
             sandbox.stub(FileSystem.prototype, 'exists').resolves(true)
-            await openDiff(filePath, rightPath, tabId)
+            await openDiff(filePath, rightPath, tabId, featureDevScheme)
 
             const leftExpected = vscode.Uri.file(filePath)
-            const rightExpected = createAmazonQUri(rightPath, tabId)
+            const rightExpected = createAmazonQUri(rightPath, tabId, featureDevScheme)
             assert.ok(executeCommandSpy.calledWith('vscode.diff', leftExpected, rightExpected))
         })
 
         it('file does not exists locally', async () => {
             sandbox.stub(FileSystem.prototype, 'exists').resolves(false)
-            await openDiff(filePath, rightPath, tabId)
+            await openDiff(filePath, rightPath, tabId, featureDevScheme)
 
-            const leftExpected = await getOriginalFileUri(filePath, tabId)
-            const rightExpected = createAmazonQUri(rightPath, tabId)
+            const leftExpected = await getOriginalFileUri(filePath, tabId, featureDevScheme)
+            const rightExpected = createAmazonQUri(rightPath, tabId, featureDevScheme)
             assert.ok(executeCommandSpy.calledWith('vscode.diff', leftExpected, rightExpected))
         })
     })
@@ -66,19 +67,19 @@ describe('diff', () => {
 
         it('file exists locally', async () => {
             sandbox.stub(FileSystem.prototype, 'exists').resolves(true)
-            await openDeletedDiff(filePath, name, tabId)
+            await openDeletedDiff(filePath, name, tabId, featureDevScheme)
 
             const leftExpected = vscode.Uri.file(filePath)
-            const rightExpected = createAmazonQUri('empty', tabId)
+            const rightExpected = createAmazonQUri('empty', tabId, featureDevScheme)
             assert.ok(executeCommandSpy.calledWith('vscode.diff', leftExpected, rightExpected, `${name} (Deleted)`))
         })
 
         it('file does not exists locally', async () => {
             sandbox.stub(FileSystem.prototype, 'exists').resolves(false)
-            await openDeletedDiff(filePath, name, tabId)
+            await openDeletedDiff(filePath, name, tabId, featureDevScheme)
 
-            const leftExpected = createAmazonQUri('empty', tabId)
-            const rightExpected = createAmazonQUri('empty', tabId)
+            const leftExpected = createAmazonQUri('empty', tabId, featureDevScheme)
+            const rightExpected = createAmazonQUri('empty', tabId, featureDevScheme)
             assert.ok(executeCommandSpy.calledWith('vscode.diff', leftExpected, rightExpected, `${name} (Deleted)`))
         })
     })
@@ -86,13 +87,13 @@ describe('diff', () => {
     describe('getOriginalFileUri', () => {
         it('file exists locally', async () => {
             sandbox.stub(FileSystem.prototype, 'exists').resolves(true)
-            assert.deepStrictEqual((await getOriginalFileUri(filePath, tabId)).fsPath, filePath)
+            assert.deepStrictEqual((await getOriginalFileUri(filePath, tabId, featureDevScheme)).fsPath, filePath)
         })
 
         it('file does not exists locally', async () => {
             sandbox.stub(FileSystem.prototype, 'exists').resolves(false)
-            const expected = createAmazonQUri('empty', tabId)
-            assert.deepStrictEqual(await getOriginalFileUri(filePath, tabId), expected)
+            const expected = createAmazonQUri('empty', tabId, featureDevScheme)
+            assert.deepStrictEqual(await getOriginalFileUri(filePath, tabId, featureDevScheme), expected)
         })
     })
 
@@ -100,23 +101,23 @@ describe('diff', () => {
         it('file exists locally', async () => {
             sandbox.stub(FileSystem.prototype, 'exists').resolves(true)
 
-            const { left, right } = await getFileDiffUris(filePath, rightPath, tabId)
+            const { left, right } = await getFileDiffUris(filePath, rightPath, tabId, featureDevScheme)
 
             const leftExpected = vscode.Uri.file(filePath)
             assert.deepStrictEqual(left, leftExpected)
 
-            const rightExpected = createAmazonQUri(rightPath, tabId)
+            const rightExpected = createAmazonQUri(rightPath, tabId, featureDevScheme)
             assert.deepStrictEqual(right, rightExpected)
         })
 
         it('file does not exists locally', async () => {
             sandbox.stub(FileSystem.prototype, 'exists').resolves(false)
-            const { left, right } = await getFileDiffUris(filePath, rightPath, tabId)
+            const { left, right } = await getFileDiffUris(filePath, rightPath, tabId, featureDevScheme)
 
-            const leftExpected = await getOriginalFileUri(filePath, tabId)
+            const leftExpected = await getOriginalFileUri(filePath, tabId, featureDevScheme)
             assert.deepStrictEqual(left, leftExpected)
 
-            const rightExpected = createAmazonQUri(rightPath, tabId)
+            const rightExpected = createAmazonQUri(rightPath, tabId, featureDevScheme)
             assert.deepStrictEqual(right, rightExpected)
         })
     })
@@ -135,7 +136,8 @@ describe('diff', () => {
             const { changes, charsAdded, linesAdded, charsRemoved, linesRemoved } = await computeDiff(
                 filePath,
                 filePath,
-                tabId
+                tabId,
+                featureDevScheme
             )
 
             const expectedChanges = [
@@ -169,7 +171,8 @@ describe('diff', () => {
             const { changes, charsAdded, linesAdded, charsRemoved, linesRemoved } = await computeDiff(
                 filePath,
                 rightPath,
-                tabId
+                tabId,
+                featureDevScheme
             )
 
             const expectedChanges = [
@@ -213,7 +216,8 @@ describe('diff', () => {
             const { changes, charsAdded, linesAdded, charsRemoved, linesRemoved } = await computeDiff(
                 filePath,
                 rightPath,
-                tabId
+                tabId,
+                featureDevScheme
             )
 
             const expectedChanges = [
@@ -263,7 +267,8 @@ describe('diff', () => {
             const { changes, charsAdded, linesAdded, charsRemoved, linesRemoved } = await computeDiff(
                 filePath,
                 rightPath,
-                tabId
+                tabId,
+                featureDevScheme
             )
 
             const expectedChanges = [
@@ -313,7 +318,8 @@ describe('diff', () => {
             const { changes, charsAdded, linesAdded, charsRemoved, linesRemoved } = await computeDiff(
                 filePath,
                 rightPath,
-                tabId
+                tabId,
+                featureDevScheme
             )
 
             const expectedChanges = [
@@ -357,7 +363,8 @@ describe('diff', () => {
             const { changes, charsAdded, linesAdded, charsRemoved, linesRemoved } = await computeDiff(
                 filePath,
                 rightPath,
-                tabId
+                tabId,
+                featureDevScheme
             )
 
             const expectedChanges = [
@@ -407,7 +414,8 @@ describe('diff', () => {
             const { changes, charsAdded, linesAdded, charsRemoved, linesRemoved } = await computeDiff(
                 filePath,
                 rightPath,
-                tabId
+                tabId,
+                featureDevScheme
             )
 
             const expectedChanges = [
@@ -451,7 +459,8 @@ describe('diff', () => {
             const { changes, charsAdded, linesAdded, charsRemoved, linesRemoved } = await computeDiff(
                 filePath,
                 rightPath,
-                tabId
+                tabId,
+                featureDevScheme
             )
 
             const expectedChanges = [

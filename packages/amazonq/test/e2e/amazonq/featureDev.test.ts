@@ -9,7 +9,8 @@ import sinon from 'sinon'
 import { registerAuthHook, using } from 'aws-core-vscode/test'
 import { loginToIdC } from './utils/setup'
 import { Messenger } from './framework/messenger'
-import { FollowUpTypes, examples } from 'aws-core-vscode/amazonqFeatureDev'
+import { examples } from 'aws-core-vscode/amazonqFeatureDev'
+import { FollowUpTypes } from 'aws-core-vscode/amazonq'
 import { sleep } from 'aws-core-vscode/shared'
 
 describe('Amazon Q Feature Dev', function () {

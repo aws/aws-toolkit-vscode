@@ -2,12 +2,16 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
+import { i18n } from '../../shared'
 import { ToolkitError } from '../../shared/errors'
 import {
     DefaultCodeScanErrorMessage,
     FileSizeExceededErrorMessage,
     ProjectSizeExceededErrorMessage,
     UploadArtifactToS3ErrorMessage,
+    defaultCodeFixErrorMessage,
+    defaultTestGenErrorMessage,
+    noActiveFileErrorMessage,
     noSourceFilesErrorMessage,
 } from './constants'
 
@@ -51,6 +55,12 @@ export class NoSourceFilesError extends SecurityScanError {
     }
 }
 
+export class NoActiveFileError extends SecurityScanError {
+    constructor() {
+        super('Open valid file to run a file scan', 'NoActiveFileError', noActiveFileErrorMessage)
+    }
+}
+
 export class CreateUploadUrlError extends SecurityScanError {
     constructor(error: string) {
         super(error, 'CreateUploadUrlError', DefaultCodeScanErrorMessage)
@@ -84,5 +94,81 @@ export class SecurityScanTimedOutError extends SecurityScanError {
 export class CodeScanJobFailedError extends SecurityScanError {
     constructor() {
         super('Security scan failed.', 'CodeScanJobFailedError', DefaultCodeScanErrorMessage)
+    }
+}
+
+export class MaximumFileScanReachedError extends SecurityScanError {
+    constructor() {
+        super(
+            'Maximum file review count reached for this month.',
+            'MaximumFileScanReachedError',
+            i18n('AWS.amazonq.featureDev.error.monthlyLimitReached')
+        )
+    }
+}
+
+export class MaximumProjectScanReachedError extends SecurityScanError {
+    constructor() {
+        super(
+            'Maximum project review count reached for this month',
+            'MaximumProjectScanReachedError',
+            i18n('AWS.amazonq.featureDev.error.monthlyLimitReached')
+        )
+    }
+}
+
+export class TestGenError extends ToolkitError {
+    constructor(
+        error: string,
+        code: string,
+        public customerFacingMessage: string
+    ) {
+        super(error, { code })
+    }
+}
+
+export class TestGenTimedOutError extends TestGenError {
+    constructor() {
+        super('Test generation failed. Amazon Q timed out.', 'TestGenTimedOutError', defaultTestGenErrorMessage)
+    }
+}
+
+export class TestGenStoppedError extends TestGenError {
+    constructor() {
+        super('Test generation stopped by user.', 'TestGenCancelled', defaultTestGenErrorMessage)
+    }
+}
+
+export class TestGenFailedError extends TestGenError {
+    constructor(error?: string) {
+        super(error ?? 'Test generation failed', 'TestGenFailedError', defaultTestGenErrorMessage)
+    }
+}
+
+export class CodeFixError extends ToolkitError {
+    constructor(
+        error: string,
+        code: string,
+        public customerFacingMessage: string
+    ) {
+        super(error, { code })
+    }
+}
+
+export class CreateCodeFixError extends CodeFixError {
+    constructor() {
+        super('Code fix generation failed', 'CreateCodeFixFailed', defaultCodeFixErrorMessage)
+    }
+}
+
+export class CodeFixJobTimedOutError extends CodeFixError {
+    constructor() {
+        super('Code fix generation failed. Amazon Q timed out.', 'CodeFixTimedOutError', defaultCodeFixErrorMessage)
+    }
+}
+
+export class CodeFixJobStoppedError extends CodeFixError {
+    constructor() {
+        super('Code fix generation stopped by user.', 'CodeFixCancelled', defaultCodeFixErrorMessage)
     }
 }

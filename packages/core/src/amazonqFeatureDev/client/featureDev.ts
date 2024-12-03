@@ -139,8 +139,10 @@ export class FeatureDevClient {
         conversationId: string,
         uploadId: string,
         message: string,
+        intent: FeatureDevProxyClient.Intent,
         codeGenerationId: string,
-        currentCodeGenerationId?: string
+        currentCodeGenerationId?: string,
+        intentContext?: FeatureDevProxyClient.IntentContext
     ) {
         try {
             const client = await this.getClient(writeAPIRetryOptions)
@@ -157,9 +159,13 @@ export class FeatureDevClient {
                     uploadId,
                     programmingLanguage: { languageName: 'javascript' },
                 },
+                intent,
             } as FeatureDevProxyClient.Types.StartTaskAssistCodeGenerationRequest
             if (currentCodeGenerationId) {
                 params.currentCodeGenerationId = currentCodeGenerationId
+            }
+            if (intentContext) {
+                params.intentContext = intentContext
             }
             getLogger().debug(`Executing startTaskAssistCodeGeneration with %O`, params)
             const response = await client.startTaskAssistCodeGeneration(params).promise()
