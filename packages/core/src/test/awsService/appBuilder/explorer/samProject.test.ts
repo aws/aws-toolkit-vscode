@@ -64,21 +64,21 @@ describe('samProject', () => {
             assert.equal(region, undefined)
         })
 
-        it('returns {} when (unlikely) given an undefind project root uri', async () => {
+        it('returns {} when (unlikely) given an undefined project root uri', async () => {
             const wrapperCall = async (projectRootUri: any) => {
                 return await getStackName(projectRootUri)
             }
 
             const result = await wrapperCall(undefined)
             assert.deepStrictEqual(result, {})
-            assertLogsContain('Error getting stack name or region information: No project folder found', true, 'warn')
+            assertLogsContain('Error getting stack name or region information: No project folder found', false, 'warn')
         })
 
         it('returns empty object give no samconfig file found', async () => {
             // simulate error when no samconfig.toml file in directory
             const result = await getStackName(projectRoot)
             assert.deepStrictEqual(result, {})
-            assertLogsContain('No stack name or region information available in samconfig.toml: %O', true, 'info')
+            assertLogsContain('No stack name or region information available in samconfig.toml', false, 'info')
         })
 
         it('returns empty object give error parsing samconfig file', async () => {

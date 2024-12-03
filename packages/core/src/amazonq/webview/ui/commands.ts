@@ -35,5 +35,10 @@ type MessageCommand =
     | 'open-settings'
     | 'start-chat-message-telemetry'
     | 'stop-chat-message-telemetry'
+    | 'store-code-result-message-id'
+    | 'start-test-gen'
+    | 'review'
+    | 'open-user-guide'
+    | 'send-telemetry'
 
 export type ExtensionMessage = Record<string, any> & { command: MessageCommand }

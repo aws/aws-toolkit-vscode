@@ -19,8 +19,8 @@ import {
 import { Auth } from '../../../../auth/auth'
 import { CodeCatalystAuthenticationProvider } from '../../../../codecatalyst/auth'
 import { AuthError, AuthFlowState } from '../types'
-import { builderIdStartUrl } from '../../../../auth/sso/model'
 import { setContext } from '../../../../shared'
+import { builderIdStartUrl } from '../../../../auth/sso/constants'
 
 export class ToolkitLoginWebview extends CommonAuthWebview {
     public override id: string = 'aws.toolkit.AmazonCommonAuth'

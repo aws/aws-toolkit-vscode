@@ -16,6 +16,7 @@ export type contextKey =
     | 'aws.isWebExtHost'
     | 'aws.isInternalUser'
     | 'aws.amazonq.showLoginView'
+    | 'aws.amazonq.security.noMatches'
     | 'aws.amazonq.notifications.show'
     | 'aws.codecatalyst.connected'
     | 'aws.codewhisperer.connected'
@@ -36,22 +37,34 @@ export type contextKey =
     | 'amazonq.inline.codelensShortcutEnabled'
     | 'aws.toolkit.lambda.walkthroughSelected'
 
+const contextMap: Partial<Record<contextKey, any>> = {}
+
 /**
  * Calls the vscode "setContext" command.
  *
  * This wrapper adds structure and traceability to the vscode "setContext". It also opens the door
- * for:
- * - validation
- * - getContext() (see also https://github.com/microsoft/vscode/issues/10471)
+ * for validation.
  *
  * Use "setContext" only as a last resort, to set flags that are detectable in package.json
  * declarations. Do not use it as a general way to store global state (which should be avoided
  * anyway).
  *
  * Warning: vscode context keys/values are NOT isolated to individual extensions. Other extensions
- * can read and modify them.
+ * can read and modify them. See also https://github.com/microsoft/vscode/issues/10471
  */
 export async function setContext(key: contextKey, val: any): Promise<void> {
     // eslint-disable-next-line aws-toolkits/no-banned-usages
     await vscode.commands.executeCommand('setContext', key, val)
+    contextMap[key] = val
+}
+
+/**
+ * Returns the value of a context key set via {@link setContext} wrapper for this session.
+ *
+ * Warning: this does not guarantee the state of the context key in vscode because it may have
+ * been set via `vscode.commands.executeCommand('setContext')`. It has no connection the
+ * context keys stored in vscode itself because an API for this is not exposed.
+ */
+export function getContext(key: contextKey): any {
+    return contextMap[key]
 }

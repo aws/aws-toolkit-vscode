@@ -17,12 +17,14 @@ export interface ConnectorProps extends BaseConnectorProps {
         messageId: string | undefined,
         enableStopAction: boolean
     ) => void
+    onChatAnswerUpdated?: (tabID: string, message: ChatItem) => void
     sendFeedback?: (tabId: string, feedbackPayload: FeedbackPayload) => void | undefined
     onFileComponentUpdate: (
         tabID: string,
         filePaths: DiffTreeFileInfo[],
         deletedFiles: DiffTreeFileInfo[],
-        messageId: string
+        messageId: string,
+        disableFileActions: boolean
     ) => void
     onFileActionClick: (tabID: string, messageId: string, filePath: string, actionName: string) => void
     onUpdatePlaceholder: (tabID: string, newPlaceholder: string) => void
@@ -33,6 +35,7 @@ export interface ConnectorProps extends BaseConnectorProps {
 
 export class Connector extends BaseConnector {
     private readonly onFileComponentUpdate
+    private readonly onChatAnswerUpdated
     private readonly onAsyncEventProgress
     private readonly updatePlaceholder
     private readonly chatInputEnabled
@@ -51,6 +54,7 @@ export class Connector extends BaseConnector {
         this.chatInputEnabled = props.onChatInputEnabled
         this.onUpdateAuthentication = props.onUpdateAuthentication
         this.onNewTab = props.onNewTab
+        this.onChatAnswerUpdated = props.onChatAnswerUpdated
     }
 
     onOpenDiff = (tabID: string, filePath: string, deleted: boolean, messageId?: string): void => {
@@ -74,32 +78,49 @@ export class Connector extends BaseConnector {
         })
     }
 
+    private createAnswer = (messageData: any): ChatItem => {
+        return {
+            type: messageData.messageType,
+            body: messageData.message ?? undefined,
+            messageId: messageData.messageId ?? messageData.messageID ?? messageData.triggerID ?? '',
+            relatedContent: undefined,
+            canBeVoted: messageData.canBeVoted ?? undefined,
+            snapToTop: messageData.snapToTop ?? undefined,
+            followUp:
+                messageData.followUps !== undefined && Array.isArray(messageData.followUps)
+                    ? {
+                          text:
+                              messageData.messageType === ChatItemType.SYSTEM_PROMPT ||
+                              messageData.followUps.length === 0
+                                  ? ''
+                                  : 'Please follow up with one of these',
+                          options: messageData.followUps,
+                      }
+                    : undefined,
+        }
+    }
+
     private processChatMessage = async (messageData: any): Promise<void> => {
         if (this.onChatAnswerReceived !== undefined) {
-            const answer: ChatItem = {
-                type: messageData.messageType,
-                body: messageData.message ?? undefined,
-                messageId: messageData.messageID ?? messageData.triggerID ?? '',
-                relatedContent: undefined,
-                canBeVoted: messageData.canBeVoted,
-                snapToTop: messageData.snapToTop,
-                followUp:
-                    messageData.followUps !== undefined && messageData.followUps.length > 0
-                        ? {
-                              text:
-                                  messageData.messageType === ChatItemType.SYSTEM_PROMPT
-                                      ? ''
-                                      : 'Please follow up with one of these',
-                              options: messageData.followUps,
-                          }
-                        : undefined,
-            }
+            const answer = this.createAnswer(messageData)
             this.onChatAnswerReceived(messageData.tabID, answer, messageData)
         }
     }
 
     private processCodeResultMessage = async (messageData: any): Promise<void> => {
         if (this.onChatAnswerReceived !== undefined) {
+            const messageId =
+                messageData.codeGenerationId ??
+                messageData.messageId ??
+                messageData.messageID ??
+                messageData.triggerID ??
+                messageData.conversationID
+            this.sendMessageToExtension({
+                tabID: messageData.tabID,
+                command: 'store-code-result-message-id',
+                messageId,
+                tabType: 'featuredev',
+            })
             const actions = getActions([...messageData.filePaths, ...messageData.deletedFiles])
             const answer: ChatItem = {
                 type: ChatItemType.ANSWER,
@@ -107,12 +128,7 @@ export class Connector extends BaseConnector {
                 followUp: undefined,
                 canBeVoted: true,
                 codeReference: messageData.references,
-                // TODO get the backend to store a message id in addition to conversationID
-                messageId:
-                    messageData.codeGenerationId ??
-                    messageData.messageID ??
-                    messageData.triggerID ??
-                    messageData.conversationID,
+                messageId,
                 fileList: {
                     rootFolderTitle: 'Changes',
                     filePaths: messageData.filePaths.map((f: DiffTreeFileInfo) => f.zipFilePath),
@@ -131,8 +147,14 @@ export class Connector extends BaseConnector {
                 messageData.tabID,
                 messageData.filePaths,
                 messageData.deletedFiles,
-                messageData.messageId
+                messageData.messageId,
+                messageData.disableFileActions
             )
+            return
+        }
+        if (messageData.type === 'updateChatAnswer') {
+            const answer = this.createAnswer(messageData)
+            this.onChatAnswerUpdated?.(messageData.tabID, answer)
             return
         }
 
@@ -169,7 +191,7 @@ export class Connector extends BaseConnector {
         }
 
         if (messageData.type === 'authenticationUpdateMessage') {
-            this.onUpdateAuthentication(messageData.featureDevEnabled, messageData.authenticatingTabIDs)
+            this.onUpdateAuthentication(messageData.featureEnabled, messageData.authenticatingTabIDs)
             return
         }
 

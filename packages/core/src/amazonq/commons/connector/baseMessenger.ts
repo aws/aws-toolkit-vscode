@@ -3,28 +3,37 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { DeletedFileInfo, FollowUpTypes, NewFileInfo } from '../../../types'
-import { AuthFollowUpType, AuthMessageDataMap } from '../../../../amazonq/auth/model'
+import { ChatItemAction, ProgressField } from '@aws/mynah-ui'
+import { AuthFollowUpType, AuthMessageDataMap } from '../../../amazonq/auth/model'
+import { FeatureAuthState } from '../../../codewhisperer'
+import { i18n } from '../../../shared/i18n-helper'
+import { CodeReference } from '../../../amazonq/webview/ui/connector'
+
+import { MessengerTypes } from '../../../amazonqFeatureDev/controllers/chat/messenger/constants'
 import {
-    ChatMessage,
+    AppToWebViewMessageDispatcher,
     AsyncEventProgressMessage,
-    CodeResultMessage,
-    UpdatePlaceholderMessage,
-    ChatInputEnabledMessage,
     AuthenticationUpdateMessage,
     AuthNeededException,
-    OpenNewTabMessage,
+    ChatInputEnabledMessage,
+    ChatMessage,
+    CodeResultMessage,
     FileComponent,
-} from '../../../views/connector/connector'
-import { AppToWebViewMessageDispatcher } from '../../../views/connector/connector'
-import { ChatItemAction } from '@aws/mynah-ui'
-import { messageWithConversationId } from '../../../userFacingText'
-import { MessengerTypes } from './constants'
-import { FeatureAuthState } from '../../../../codewhisperer'
-import { CodeReference } from '../../../../codewhispererChat/view/connector/connector'
-import { i18n } from '../../../../shared/i18n-helper'
+    FolderConfirmationMessage,
+    OpenNewTabMessage,
+    UpdateAnswerMessage,
+    UpdatePlaceholderMessage,
+    UpdatePromptProgressMessage,
+} from './connectorMessages'
+import { FollowUpTypes } from '../types'
+import { messageWithConversationId } from '../../../amazonqFeatureDev/userFacingText'
+import { DeletedFileInfo, NewFileInfo } from '../../../amazonqFeatureDev/types'
+
 export class Messenger {
-    public constructor(private readonly dispatcher: AppToWebViewMessageDispatcher) {}
+    public constructor(
+        private readonly dispatcher: AppToWebViewMessageDispatcher,
+        private readonly sender: string
+    ) {}
 
     public sendAnswer(params: {
         message?: string
@@ -33,6 +42,8 @@ export class Messenger {
         tabID: string
         canBeVoted?: boolean
         snapToTop?: boolean
+        messageId?: string
+        disableChatInput?: boolean
     }) {
         this.dispatcher.sendChatMessage(
             new ChatMessage(
@@ -43,10 +54,15 @@ export class Messenger {
                     relatedSuggestions: undefined,
                     canBeVoted: params.canBeVoted ?? false,
                     snapToTop: params.snapToTop ?? false,
+                    messageId: params.messageId,
                 },
-                params.tabID
+                params.tabID,
+                this.sender
             )
         )
+        if (params.disableChatInput) {
+            this.sendChatInputEnabled(params.tabID, false)
+        }
     }
 
     public sendFeedback(tabID: string) {
@@ -71,6 +87,23 @@ export class Messenger {
             message: i18n('AWS.amazonq.featureDev.error.monthlyLimitReached'),
         })
         this.sendUpdatePlaceholder(tabID, i18n('AWS.amazonq.featureDev.placeholder.chatInputDisabled'))
+    }
+
+    public sendUpdatePromptProgress(tabID: string, progressField: ProgressField | null) {
+        this.dispatcher.sendUpdatePromptProgress(new UpdatePromptProgressMessage(tabID, this.sender, progressField))
+    }
+
+    public sendFolderConfirmationMessage(
+        tabID: string,
+        message: string,
+        folderPath: string,
+        followUps?: ChatItemAction[]
+    ) {
+        this.dispatcher.sendFolderConfirmationMessage(
+            new FolderConfirmationMessage(tabID, this.sender, message, folderPath, followUps)
+        )
+
+        this.sendChatInputEnabled(tabID, false)
     }
 
     public sendErrorMessage(
@@ -120,34 +153,41 @@ export class Messenger {
         codeGenerationId: string
     ) {
         this.dispatcher.sendCodeResult(
-            new CodeResultMessage(filePaths, deletedFiles, references, tabID, uploadId, codeGenerationId)
+            new CodeResultMessage(filePaths, deletedFiles, references, tabID, this.sender, uploadId, codeGenerationId)
         )
     }
 
     public sendAsyncEventProgress(tabID: string, inProgress: boolean, message: string | undefined) {
-        this.dispatcher.sendAsyncEventProgress(new AsyncEventProgressMessage(tabID, inProgress, message))
+        this.dispatcher.sendAsyncEventProgress(new AsyncEventProgressMessage(tabID, this.sender, inProgress, message))
     }
 
     public updateFileComponent(
         tabID: string,
         filePaths: NewFileInfo[],
         deletedFiles: DeletedFileInfo[],
-        messageId: string
+        messageId: string,
+        disableFileActions: boolean
     ) {
-        this.dispatcher.updateFileComponent(new FileComponent(tabID, filePaths, deletedFiles, messageId))
+        this.dispatcher.updateFileComponent(
+            new FileComponent(tabID, this.sender, filePaths, deletedFiles, messageId, disableFileActions)
+        )
+    }
+
+    public updateChatAnswer(message: UpdateAnswerMessage) {
+        this.dispatcher.updateChatAnswer(message)
     }
 
     public sendUpdatePlaceholder(tabID: string, newPlaceholder: string) {
-        this.dispatcher.sendPlaceholder(new UpdatePlaceholderMessage(tabID, newPlaceholder))
+        this.dispatcher.sendPlaceholder(new UpdatePlaceholderMessage(tabID, this.sender, newPlaceholder))
     }
 
     public sendChatInputEnabled(tabID: string, enabled: boolean) {
-        this.dispatcher.sendChatInputEnabled(new ChatInputEnabledMessage(tabID, enabled))
+        this.dispatcher.sendChatInputEnabled(new ChatInputEnabledMessage(tabID, this.sender, enabled))
     }
 
-    public sendAuthenticationUpdate(featureDevEnabled: boolean, authenticatingTabIDs: string[]) {
+    public sendAuthenticationUpdate(enabled: boolean, authenticatingTabIDs: string[]) {
         this.dispatcher.sendAuthenticationUpdate(
-            new AuthenticationUpdateMessage(featureDevEnabled, authenticatingTabIDs)
+            new AuthenticationUpdateMessage(this.sender, enabled, authenticatingTabIDs)
         )
     }
 
@@ -170,10 +210,10 @@ export class Messenger {
                 break
         }
 
-        this.dispatcher.sendAuthNeededExceptionMessage(new AuthNeededException(message, authType, tabID))
+        this.dispatcher.sendAuthNeededExceptionMessage(new AuthNeededException(message, authType, tabID, this.sender))
     }
 
     public openNewTask() {
-        this.dispatcher.sendOpenNewTask(new OpenNewTabMessage())
+        this.dispatcher.sendOpenNewTask(new OpenNewTabMessage(this.sender))
     }
 }

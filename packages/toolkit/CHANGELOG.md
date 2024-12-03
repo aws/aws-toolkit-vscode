@@ -1,3 +1,24 @@
+## 3.36.0 2024-11-27
+
+- **Bug Fix** appBuilder refresh feature doesnt work during sync --watch
+- **Bug Fix** 'View Logs...' action redirects to output channel instead of Terminal
+
+## 3.35.0 2024-11-22
+
+- **Bug Fix** SAM: Update Sync and Deploy prompter titles for parameter source
+- **Bug Fix** SAM: Add artifact bucket source prompter for SAM sync command
+- **Bug Fix** SAM: Update Sync prompter title for sync parameters
+- **Bug Fix** SAM: Fix prompter button URLs for build, deploy and sync commands
+- **Bug Fix** EC2: terminated instances no longer show pending icon
+- **Feature** python 3.13 support for SAM and lambda
+- **Feature** nodejs22.x support for SAM and lambda
+- **Feature** Notifications: Support for delivering critical alerts and product updates
+
+## 3.34.0 2024-11-14
+
+- **Bug Fix** SAM debugging: misleading 'IaC' message/placeholder
+- **Bug Fix** SAM local debugging: `aws.region` and `aws.credentials` specified in launch config should override default Toolkit region and credentials
+
 ## 3.33.0 2024-11-11
 
 - **Feature** UI: region-related quickpicks now have a refresh button

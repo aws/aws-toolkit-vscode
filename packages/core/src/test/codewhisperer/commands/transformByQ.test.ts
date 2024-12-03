@@ -16,7 +16,6 @@ import {
 import { HttpResponse } from 'aws-sdk'
 import * as codeWhisperer from '../../../codewhisperer/client/codewhisperer'
 import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
-import { convertToTimeString, convertDateToTimestamp } from '../../../shared/utilities/textUtilities'
 import path from 'path'
 import AdmZip from 'adm-zip'
 import { createTestWorkspaceFolder, TestFolder, toFile } from '../../testUtil'
@@ -33,6 +32,7 @@ import {
     updateJobHistory,
     zipCode,
     getTableMapping,
+    getFilesRecursively,
 } from '../../../codewhisperer/service/transformByQ/transformApiHandler'
 import {
     validateOpenProjects,
@@ -41,6 +41,7 @@ import {
 import { TransformationCandidateProject, ZipManifest } from '../../../codewhisperer/models/model'
 import globals from '../../../shared/extensionGlobals'
 import { fs } from '../../../shared'
+import { convertDateToTimestamp, convertToTimeString } from '../../../shared/datetime'
 
 describe('transformByQ', function () {
     let tempDir: string
@@ -286,6 +287,19 @@ describe('transformByQ', function () {
                 assert(expectedFilesAfterClean.includes(dependency.name))
             })
         })
+    })
+
+    it(`WHEN getFilesRecursively on source code THEN ignores excluded directories`, async function () {
+        const sourceFolder = path.join(tempDir, 'src')
+        await fs.mkdir(sourceFolder)
+        await fs.writeFile(path.join(sourceFolder, 'HelloWorld.java'), 'sample content for the test file')
+
+        const gitFolder = path.join(tempDir, '.git')
+        await fs.mkdir(gitFolder)
+        await fs.writeFile(path.join(gitFolder, 'config'), 'sample content for the test file')
+
+        const zippedFiles = getFilesRecursively(tempDir, false)
+        assert.strictEqual(zippedFiles.length, 1)
     })
 
     it(`WHEN getTableMapping on complete step 0 progressUpdates THEN map IDs to tables`, async function () {

@@ -155,6 +155,45 @@ export class Messenger {
         )
     }
 
+    public async sendOneOrMultipleDiffsPrompt(tabID: string) {
+        const formItems: ChatItemFormItem[] = []
+        formItems.push({
+            id: 'GumbyTransformOneOrMultipleDiffsForm',
+            type: 'select',
+            title: CodeWhispererConstants.selectiveTransformationFormTitle,
+            mandatory: true,
+            options: [
+                {
+                    value: CodeWhispererConstants.oneDiffMessage,
+                    label: CodeWhispererConstants.oneDiffMessage,
+                },
+                {
+                    value: CodeWhispererConstants.multipleDiffsMessage,
+                    label: CodeWhispererConstants.multipleDiffsMessage,
+                },
+            ],
+        })
+
+        this.dispatcher.sendAsyncEventProgress(
+            new AsyncEventProgressMessage(tabID, {
+                inProgress: true,
+                message: CodeWhispererConstants.userPatchDescriptionChatMessage,
+            })
+        )
+
+        this.dispatcher.sendChatPrompt(
+            new ChatPrompt(
+                {
+                    message: 'Q Code Transformation',
+                    formItems: formItems,
+                },
+                'TransformOneOrMultipleDiffsForm',
+                tabID,
+                false
+            )
+        )
+    }
+
     public async sendLanguageUpgradeProjectPrompt(projects: TransformationCandidateProject[], tabID: string) {
         const projectFormOptions: { value: any; label: string }[] = []
         const detectedJavaVersions = new Array<JDKVersion | undefined>()
@@ -190,6 +229,10 @@ export class Messenger {
                 {
                     value: JDKVersion.JDK11,
                     label: JDKVersion.JDK11,
+                },
+                {
+                    value: JDKVersion.JDK17,
+                    label: JDKVersion.JDK17,
                 },
                 {
                     value: JDKVersion.UNSUPPORTED,
@@ -252,7 +295,7 @@ export class Messenger {
         formItems.push({
             id: 'GumbyTransformSQLConversionProjectForm',
             type: 'select',
-            title: 'Choose a project to transform',
+            title: CodeWhispererConstants.chooseProjectFormTitle,
             mandatory: true,
             options: projectFormOptions,
         })
@@ -260,7 +303,7 @@ export class Messenger {
         formItems.push({
             id: 'GumbyTransformSQLSchemaForm',
             type: 'select',
-            title: 'Choose the schema of the database',
+            title: CodeWhispererConstants.chooseSchemaFormTitle,
             mandatory: true,
             options: Array.from(transformByQState.getSchemaOptions()).map((schema) => ({
                 value: schema,
@@ -271,7 +314,7 @@ export class Messenger {
         this.dispatcher.sendAsyncEventProgress(
             new AsyncEventProgressMessage(tabID, {
                 inProgress: true,
-                message: 'I can convert your embedded SQL, but I need some more info from you first.',
+                message: CodeWhispererConstants.chooseProjectSchemaFormMessage,
             })
         )
 
@@ -363,7 +406,6 @@ export class Messenger {
             },
             tabID
         )
-
         this.dispatcher.sendChatMessage(jobSubmittedMessage)
     }
 
@@ -390,7 +432,7 @@ export class Messenger {
                 message = 'I will continue transforming your code without upgrading this dependency.'
                 break
             case 'choose-transformation-objective':
-                message = 'Choose your transformation objective.'
+                message = CodeWhispererConstants.chooseTransformationObjective
                 break
         }
 
@@ -422,6 +464,7 @@ export class Messenger {
                 message = CodeWhispererConstants.noJavaProjectsFoundChatMessage
                 break
             case 'no-maven-java-project-found':
+                // shown when user has no pom.xml, but at this point also means they have no eligible SQL conversion projects
                 message = CodeWhispererConstants.noPomXmlFoundChatMessage
                 break
             case 'could-not-compile-project':
@@ -447,23 +490,7 @@ export class Messenger {
                 break
         }
 
-        const buttons: ChatItemButton[] = []
-        buttons.push({
-            keepCardAfterClick: false,
-            text: CodeWhispererConstants.startTransformationButtonText,
-            id: ButtonActions.CONFIRM_START_TRANSFORMATION_FLOW,
-        })
-
-        this.dispatcher.sendChatMessage(
-            new ChatMessage(
-                {
-                    message,
-                    messageType: 'ai-prompt',
-                    buttons,
-                },
-                tabID
-            )
-        )
+        this.sendJobFinishedMessage(tabID, message)
     }
 
     /**
@@ -488,13 +515,15 @@ export class Messenger {
         this.dispatcher.sendCommandMessage(new SendCommandMessage(message.command, message.tabID, message.eventId))
     }
 
-    public sendJobFinishedMessage(tabID: string, message: string) {
+    public sendJobFinishedMessage(tabID: string, message: string, includeStartNewTransformationButton: boolean = true) {
         const buttons: ChatItemButton[] = []
-        buttons.push({
-            keepCardAfterClick: false,
-            text: CodeWhispererConstants.startTransformationButtonText,
-            id: ButtonActions.CONFIRM_START_TRANSFORMATION_FLOW,
-        })
+        if (includeStartNewTransformationButton) {
+            buttons.push({
+                keepCardAfterClick: false,
+                text: CodeWhispererConstants.startTransformationButtonText,
+                id: ButtonActions.CONFIRM_START_TRANSFORMATION_FLOW,
+            })
+        }
 
         this.dispatcher.sendChatMessage(
             new ChatMessage(
@@ -570,6 +599,11 @@ export class Messenger {
 
     public sendSkipTestsSelectionMessage(skipTestsSelection: string, tabID: string) {
         const message = `Okay, I will ${skipTestsSelection.toLowerCase()} when building your project.`
+        this.dispatcher.sendChatMessage(new ChatMessage({ message, messageType: 'ai-prompt' }, tabID))
+    }
+
+    public sendOneOrMultipleDiffsMessage(selectiveTransformationSelection: string, tabID: string) {
+        const message = `Okay, I will create ${selectiveTransformationSelection.toLowerCase()} with my proposed changes.`
         this.dispatcher.sendChatMessage(new ChatMessage({ message, messageType: 'ai-prompt' }, tabID))
     }
 

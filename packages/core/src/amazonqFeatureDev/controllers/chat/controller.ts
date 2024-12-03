@@ -12,6 +12,8 @@ import { createSingleFileDialog } from '../../../shared/ui/common/openDialog'
 import {
     CodeIterationLimitError,
     ContentLengthError,
+    createUserFacingErrorMessage,
+    denyListedErrors,
     FeatureDevServiceError,
     MonthlyConversationLimitError,
     NoChangeRequiredException,
@@ -24,15 +26,11 @@ import {
     UserMessageNotFoundError,
     WorkspaceFolderNotFoundError,
     ZipFileError,
-    createUserFacingErrorMessage,
-    denyListedErrors,
 } from '../../errors'
 import { codeGenRetryLimit, defaultRetryLimit } from '../../limits'
 import { Session } from '../../session/session'
-import { featureName, generateDevFilePrompt } from '../../constants'
-import { ChatSessionStorage } from '../../storages/chatSession'
-import { DevPhase, FollowUpTypes, SessionStatePhase } from '../../types'
-import { Messenger } from './messenger/messenger'
+import { featureDevScheme, featureName, generateDevFilePrompt } from '../../constants'
+import { DeletedFileInfo, DevPhase, type NewFileInfo } from '../../types'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { AuthController } from '../../../amazonq/auth/controller'
 import { getLogger } from '../../../shared/logger'
@@ -47,6 +45,10 @@ import { openDeletedDiff, openDiff } from '../../../amazonq/commons/diff'
 import { i18n } from '../../../shared/i18n-helper'
 import globals from '../../../shared/extensionGlobals'
 import { CodeWhispererSettings } from '../../../codewhisperer'
+import { randomUUID } from '../../../shared'
+import { FollowUpTypes } from '../../../amazonq/commons/types'
+import { Messenger } from '../../../amazonq/commons/connector/baseMessenger'
+import { BaseChatSessionStorage } from '../../../amazonq/commons/baseChatStorage'
 
 export const TotalSteps = 3
 
@@ -63,6 +65,7 @@ export interface ChatControllerEventEmitters {
     readonly processResponseBodyLinkClick: EventEmitter<any>
     readonly insertCodeAtPositionClicked: EventEmitter<any>
     readonly fileClicked: EventEmitter<any>
+    readonly storeCodeResultMessageId: EventEmitter<any>
 }
 
 type OpenDiffMessage = {
@@ -80,9 +83,16 @@ type fileClickedMessage = {
     filePath: string
     actionName: string
 }
+
+type StoreMessageIdMessage = {
+    tabID: string
+    messageId: string
+}
+
 export class FeatureDevController {
+    private readonly scheme: string = featureDevScheme
     private readonly messenger: Messenger
-    private readonly sessionStorage: ChatSessionStorage
+    private readonly sessionStorage: BaseChatSessionStorage<Session>
     private isAmazonQVisible: boolean
     private authController: AuthController
     private contentController: EditorContentController
@@ -90,7 +100,7 @@ export class FeatureDevController {
     public constructor(
         private readonly chatControllerMessageListeners: ChatControllerEventEmitters,
         messenger: Messenger,
-        sessionStorage: ChatSessionStorage,
+        sessionStorage: BaseChatSessionStorage<Session>,
         onDidChangeAmazonQVisibility: vscode.Event<boolean>
     ) {
         this.messenger = messenger
@@ -184,6 +194,9 @@ export class FeatureDevController {
         })
         this.chatControllerMessageListeners.fileClicked.event(async (data) => {
             return await this.fileClicked(data)
+        })
+        this.chatControllerMessageListeners.storeCodeResultMessageId.event(async (data) => {
+            return await this.storeCodeResultMessageId(data)
         })
     }
 
@@ -290,7 +303,11 @@ export class FeatureDevController {
                     tabID: message.tabID,
                     followUps: [
                         {
-                            pillText: i18n('AWS.amazonq.featureDev.pillText.insertCode'),
+                            pillText:
+                                session?.getInsertCodePillText([
+                                    ...(session?.state.filePaths ?? []),
+                                    ...(session?.state.deletedFiles ?? []),
+                                ]) ?? i18n('AWS.amazonq.featureDev.pillText.acceptAllChanges'),
                             type: FollowUpTypes.InsertCode,
                             icon: 'ok' as MynahIcons,
                             status: 'success',
@@ -369,6 +386,7 @@ export class FeatureDevController {
             // set latestMessage in session as retry would lose context if function returns early
             session.latestMessage = message.message
 
+            await session.disableFileList()
             const authState = await AuthUtil.instance.getChatAuthState()
             if (authState.amazonQ !== 'connected') {
                 await this.messenger.sendAuthNeededExceptionMessage(authState, message.tabID)
@@ -503,19 +521,28 @@ export class FeatureDevController {
                 })
             }
 
-            this.messenger.sendAnswer({
-                message: undefined,
-                type: 'system-prompt',
-                followUps: this.getFollowUpOptions(session?.state.phase),
-                tabID: tabID,
-            })
+            if (session?.state.phase === DevPhase.CODEGEN) {
+                const messageId = randomUUID()
+                session.updateAcceptCodeMessageId(messageId)
+                session.updateAcceptCodeTelemetrySent(false)
+                // need to add the followUps with an extra update here, or it will double-render them
+                this.messenger.sendAnswer({
+                    message: undefined,
+                    type: 'system-prompt',
+                    followUps: [],
+                    tabID: tabID,
+                    messageId,
+                })
+                await session.updateChatAnswer(tabID, i18n('AWS.amazonq.featureDev.pillText.acceptAllChanges'))
+                await session.sendLinesOfCodeGeneratedTelemetry()
+            }
             this.messenger.sendUpdatePlaceholder(tabID, i18n('AWS.amazonq.featureDev.pillText.selectOption'))
         } finally {
             // Finish processing the event
 
             if (session?.state?.tokenSource?.token.isCancellationRequested) {
                 await this.workOnNewTask(
-                    session,
+                    session.tabID,
                     session.state.codeGenerationRemainingIterationCount ||
                         TotalSteps - (session.state?.currentIteration || 0),
                     session.state.codeGenerationTotalIterationCount || TotalSteps,
@@ -542,15 +569,23 @@ export class FeatureDevController {
             }
         }
     }
+
+    private sendUpdateCodeMessage(tabID: string) {
+        this.messenger.sendAnswer({
+            type: 'answer',
+            tabID,
+            message: i18n('AWS.amazonq.featureDev.answer.updateCode'),
+            canBeVoted: true,
+        })
+    }
+
     private async workOnNewTask(
-        message: any,
+        tabID: string,
         remainingIterations: number = 0,
         totalIterations?: number,
         isStoppedGeneration: boolean = false
     ) {
-        const hasDevFile = await checkForDevFile(
-            (await this.sessionStorage.getSession(message.tabID)).getWorkspaceRoot()
-        )
+        const hasDevFile = await checkForDevFile((await this.sessionStorage.getSession(tabID)).getWorkspaceRoot())
 
         if (isStoppedGeneration) {
             this.messenger.sendAnswer({
@@ -559,7 +594,7 @@ export class FeatureDevController {
                         ? "I stopped generating your code. You don't have more iterations left, however, you can start a new session."
                         : `I stopped generating your code. If you want to continue working on this task, provide another description. You have ${remainingIterations} out of ${totalIterations} code generations left.`,
                 type: 'answer-part',
-                tabID: message.tabID,
+                tabID,
             })
         }
 
@@ -586,27 +621,24 @@ export class FeatureDevController {
 
                 this.messenger.sendAnswer({
                     type: 'answer',
-                    tabID: message.tabID,
+                    tabID,
                     message: i18n('AWS.amazonq.featureDev.answer.devFileSuggestion'),
                 })
             }
 
             this.messenger.sendAnswer({
                 type: 'system-prompt',
-                tabID: message.tabID,
+                tabID,
                 followUps,
             })
-            this.messenger.sendChatInputEnabled(message.tabID, false)
-            this.messenger.sendUpdatePlaceholder(message.tabID, i18n('AWS.amazonq.featureDev.pillText.selectOption'))
+            this.messenger.sendChatInputEnabled(tabID, false)
+            this.messenger.sendUpdatePlaceholder(tabID, i18n('AWS.amazonq.featureDev.pillText.selectOption'))
             return
         }
 
         // Ensure that chat input is enabled so that they can provide additional iterations if they choose
-        this.messenger.sendChatInputEnabled(message.tabID, true)
-        this.messenger.sendUpdatePlaceholder(
-            message.tabID,
-            i18n('AWS.amazonq.featureDev.placeholder.additionalImprovements')
-        )
+        this.messenger.sendChatInputEnabled(tabID, true)
+        this.messenger.sendUpdatePlaceholder(tabID, i18n('AWS.amazonq.featureDev.placeholder.additionalImprovements'))
     }
 
     private async processDevCommandWorkspaceSetting(setting: boolean, msg: any) {
@@ -630,29 +662,21 @@ export class FeatureDevController {
 
             const acceptedFiles = (paths?: { rejected: boolean }[]) => (paths || []).filter((i) => !i.rejected).length
 
-            const amazonqNumberOfFilesAccepted =
-                acceptedFiles(session.state.filePaths) + acceptedFiles(session.state.deletedFiles)
+            const filesAccepted = acceptedFiles(session.state.filePaths) + acceptedFiles(session.state.deletedFiles)
 
-            telemetry.amazonq_isAcceptedCodeChanges.emit({
-                credentialStartUrl: AuthUtil.instance.startUrl,
-                amazonqConversationId: session.conversationId,
-                amazonqNumberOfFilesAccepted,
-                enabled: true,
-                result: 'Succeeded',
-            })
+            this.sendAcceptCodeTelemetry(session, filesAccepted)
+
             await session.insertChanges()
-            this.messenger.sendAnswer({
-                type: 'answer',
-                tabID: message.tabID,
-                message: i18n('AWS.amazonq.featureDev.answer.updateCode'),
-                canBeVoted: true,
-            })
 
-            await this.workOnNewTask(
-                message,
-                session.state.codeGenerationRemainingIterationCount,
-                session.state.codeGenerationTotalIterationCount
-            )
+            if (session.acceptCodeMessageId) {
+                this.sendUpdateCodeMessage(message.tabID)
+                await this.workOnNewTask(
+                    message.tabID,
+                    session.state.codeGenerationRemainingIterationCount,
+                    session.state.codeGenerationTotalIterationCount
+                )
+                await this.clearAcceptCodeMessageId(message.tabID)
+            }
         } catch (err: any) {
             this.messenger.sendErrorMessage(
                 createUserFacingErrorMessage(`Failed to insert code changes: ${err.message}`),
@@ -709,28 +733,6 @@ export class FeatureDevController {
         } finally {
             // Finish processing the event
             this.messenger.sendAsyncEventProgress(message.tabID, false, undefined)
-        }
-    }
-
-    private getFollowUpOptions(phase: SessionStatePhase | undefined): ChatItemAction[] {
-        switch (phase) {
-            case DevPhase.CODEGEN:
-                return [
-                    {
-                        pillText: i18n('AWS.amazonq.featureDev.pillText.insertCode'),
-                        type: FollowUpTypes.InsertCode,
-                        icon: 'ok' as MynahIcons,
-                        status: 'success',
-                    },
-                    {
-                        pillText: i18n('AWS.amazonq.featureDev.pillText.provideFeedback'),
-                        type: FollowUpTypes.ProvideFeedbackAndRegenerateCode,
-                        icon: 'refresh' as MynahIcons,
-                        status: 'info',
-                    },
-                ]
-            default:
-                return []
         }
     }
 
@@ -822,26 +824,67 @@ export class FeatureDevController {
         const tabId: string = message.tabID
         const messageId = message.messageId
         const filePathToUpdate: string = message.filePath
+        const action = message.actionName
 
         const session = await this.sessionStorage.getSession(tabId)
         const filePathIndex = (session.state.filePaths ?? []).findIndex((obj) => obj.relativePath === filePathToUpdate)
-        if (filePathIndex !== -1 && session.state.filePaths) {
-            session.state.filePaths[filePathIndex].rejected = !session.state.filePaths[filePathIndex].rejected
-        }
         const deletedFilePathIndex = (session.state.deletedFiles ?? []).findIndex(
             (obj) => obj.relativePath === filePathToUpdate
         )
+
+        if (filePathIndex !== -1 && session.state.filePaths) {
+            if (action === 'accept-change') {
+                this.sendAcceptCodeTelemetry(session, 1)
+                await session.insertNewFiles([session.state.filePaths[filePathIndex]])
+                await session.insertCodeReferenceLogs(session.state.references ?? [])
+                await this.openFile(session.state.filePaths[filePathIndex], tabId)
+            } else {
+                session.state.filePaths[filePathIndex].rejected = !session.state.filePaths[filePathIndex].rejected
+            }
+        }
         if (deletedFilePathIndex !== -1 && session.state.deletedFiles) {
-            session.state.deletedFiles[deletedFilePathIndex].rejected =
-                !session.state.deletedFiles[deletedFilePathIndex].rejected
+            if (action === 'accept-change') {
+                this.sendAcceptCodeTelemetry(session, 1)
+                await session.applyDeleteFiles([session.state.deletedFiles[deletedFilePathIndex]])
+                await session.insertCodeReferenceLogs(session.state.references ?? [])
+            } else {
+                session.state.deletedFiles[deletedFilePathIndex].rejected =
+                    !session.state.deletedFiles[deletedFilePathIndex].rejected
+            }
         }
 
-        await session.updateFilesPaths(
-            tabId,
-            session.state.filePaths ?? [],
-            session.state.deletedFiles ?? [],
-            messageId
-        )
+        await session.updateFilesPaths({
+            tabID: tabId,
+            filePaths: session.state.filePaths ?? [],
+            deletedFiles: session.state.deletedFiles ?? [],
+            messageId,
+        })
+
+        if (session.acceptCodeMessageId) {
+            const allFilePathsAccepted = session.state.filePaths?.every(
+                (filePath: NewFileInfo) => !filePath.rejected && filePath.changeApplied
+            )
+            const allDeletedFilePathsAccepted = session.state.deletedFiles?.every(
+                (filePath: DeletedFileInfo) => !filePath.rejected && filePath.changeApplied
+            )
+            if (allFilePathsAccepted && allDeletedFilePathsAccepted) {
+                this.sendUpdateCodeMessage(tabId)
+                await this.workOnNewTask(
+                    tabId,
+                    session.state.codeGenerationRemainingIterationCount,
+                    session.state.codeGenerationTotalIterationCount
+                )
+                await this.clearAcceptCodeMessageId(tabId)
+            }
+        }
+    }
+
+    private async storeCodeResultMessageId(message: StoreMessageIdMessage) {
+        const tabId: string = message.tabID
+        const messageId = message.messageId
+        const session = await this.sessionStorage.getSession(tabId)
+
+        session.updateCodeResultMessageId(messageId)
     }
 
     private async openDiff(message: OpenDiffMessage) {
@@ -861,15 +904,21 @@ export class FeatureDevController {
 
         if (message.deleted) {
             const name = path.basename(pathInfos.relativePath)
-            await openDeletedDiff(pathInfos.absolutePath, name, tabId)
+            await openDeletedDiff(pathInfos.absolutePath, name, tabId, this.scheme)
         } else {
             let uploadId = session.uploadId
             if (session?.state?.uploadHistory && session.state.uploadHistory[codeGenerationId]) {
                 uploadId = session?.state?.uploadHistory[codeGenerationId].uploadId
             }
             const rightPath = path.join(uploadId, zipFilePath)
-            await openDiff(pathInfos.absolutePath, rightPath, tabId)
+            await openDiff(pathInfos.absolutePath, rightPath, tabId, this.scheme)
         }
+    }
+
+    private async openFile(filePath: NewFileInfo, tabId: string) {
+        const leftPath = path.join(filePath.workspaceFolder.uri.fsPath, filePath.relativePath)
+        const rightPath = filePath.virtualMemoryUri.path
+        await openDiff(leftPath, rightPath, tabId, this.scheme)
     }
 
     private async stopResponse(message: any) {
@@ -942,6 +991,7 @@ export class FeatureDevController {
     private async newTask(message: any, prefilledPrompt?: string) {
         // Old session for the tab is ending, delete it so we can create a new one for the message id
         const session = await this.sessionStorage.getSession(message.tabID)
+        await session.disableFileList()
         telemetry.amazonq_endChat.emit({
             amazonqConversationId: session.conversationId,
             amazonqEndOfTheConversationLatency: performance.now() - session.telemetry.sessionStartTime,
@@ -970,6 +1020,7 @@ export class FeatureDevController {
         this.messenger.sendChatInputEnabled(message.tabID, false)
 
         const session = await this.sessionStorage.getSession(message.tabID)
+        await session.disableFileList()
         telemetry.amazonq_endChat.emit({
             amazonqConversationId: session.conversationId,
             amazonqEndOfTheConversationLatency: performance.now() - session.telemetry.sessionStartTime,
@@ -991,5 +1042,24 @@ export class FeatureDevController {
 
     private retriesRemaining(session: Session | undefined) {
         return session?.retries ?? defaultRetryLimit
+    }
+
+    private async clearAcceptCodeMessageId(tabID: string) {
+        const session = await this.sessionStorage.getSession(tabID)
+        session.updateAcceptCodeMessageId(undefined)
+    }
+
+    private sendAcceptCodeTelemetry(session: Session, amazonqNumberOfFilesAccepted: number) {
+        // accepted code telemetry is only to be sent once per iteration of code generation
+        if (amazonqNumberOfFilesAccepted > 0 && !session.acceptCodeTelemetrySent) {
+            session.updateAcceptCodeTelemetrySent(true)
+            telemetry.amazonq_isAcceptedCodeChanges.emit({
+                credentialStartUrl: AuthUtil.instance.startUrl,
+                amazonqConversationId: session.conversationId,
+                amazonqNumberOfFilesAccepted,
+                enabled: true,
+                result: 'Succeeded',
+            })
+        }
     }
 }

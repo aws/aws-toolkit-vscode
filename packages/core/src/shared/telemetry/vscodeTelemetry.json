@@ -1,6 +1,21 @@
 {
     "types": [
         {
+            "name": "acceptedCharactersCount",
+            "type": "int",
+            "description": "The number of accepted characters"
+        },
+        {
+            "name": "acceptedCount",
+            "type": "int",
+            "description": "The number of accepted cases"
+        },
+        {
+            "name": "acceptedLinesCount",
+            "type": "int",
+            "description": "The number of accepted lines of code"
+        },
+        {
             "name": "amazonGenerateApproachLatency",
             "type": "double",
             "description": "The time it takes to generate approach response"
@@ -282,6 +297,16 @@
             "description": "An AWS region."
         },
         {
+            "name": "buildPayloadBytes",
+            "type": "int",
+            "description": "The uncompressed payload size in bytes of the source files in customer project context"
+        },
+        {
+            "name": "buildZipFileBytes",
+            "type": "int",
+            "description": "The compressed payload size of source files in bytes of customer project context sent"
+        },
+        {
             "name": "connectionState",
             "type": "string",
             "description": "A detailed state of a specific auth connection. Use `authStatus` for a higher level view of an extension's general connection."
@@ -350,6 +375,51 @@
             "name": "amazonqMessageDisplayedMs",
             "type": "int",
             "description": "Duration between the partner teams code receiving the message and when the message was finally displayed in ms"
+        },
+        {
+            "name": "executedCount",
+            "type": "int",
+            "description": "The number of executed operations"
+        },
+        {
+            "name": "generatedCharactersCount",
+            "type": "int",
+            "description": "Number of characters of code generated"
+        },
+        {
+            "name": "generatedCount",
+            "type": "int",
+            "description": "The number of generated cases"
+        },
+        {
+            "name": "generatedLinesCount",
+            "type": "int",
+            "description": "The number of generated lines of code"
+        },
+        {
+            "name": "hasUserPromptSupplied",
+            "type": "boolean",
+            "description": "True if user supplied prompt message as input else false"
+        },
+        {
+            "name": "isCodeBlockSelected",
+            "type": "boolean",
+            "description": "True if user selected code snippet as input else false"
+        },
+        {
+            "name": "isSupportedLanguage",
+            "type": "boolean",
+            "description": "Indicate if the language is supported"
+        },
+        {
+            "name": "jobGroup",
+            "type": "string",
+            "description": "Job group name used in the operation"
+        },
+        {
+            "name": "jobId",
+            "type": "string",
+            "description": "Job id used in the operation"
         }
     ],
     "metrics": [
@@ -1069,6 +1139,77 @@
             ]
         },
         {
+            "name": "amazonq_utgGenerateTests",
+            "description": "Client side invocation of the AmazonQ Unit Test Generation",
+            "metadata": [
+                {
+                    "type": "acceptedCharactersCount",
+                    "required": false
+                },
+                {
+                    "type": "acceptedCount",
+                    "required": false
+                },
+                {
+                    "type": "acceptedLinesCount",
+                    "required": false
+                },
+                {
+                    "type": "artifactsUploadDuration",
+                    "required": false
+                },
+                {
+                    "type": "buildPayloadBytes",
+                    "required": false
+                },
+                {
+                    "type": "buildZipFileBytes",
+                    "required": false
+                },
+                {
+                    "type": "credentialStartUrl",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatProgrammingLanguage"
+                },
+                {
+                    "type": "generatedCharactersCount",
+                    "required": false
+                },
+                {
+                    "type": "generatedCount",
+                    "required": false
+                },
+                {
+                    "type": "generatedLinesCount",
+                    "required": false
+                },
+                {
+                    "type": "hasUserPromptSupplied"
+                },
+                {
+                    "type": "isCodeBlockSelected",
+                    "required": false
+                },
+                {
+                    "type": "isSupportedLanguage"
+                },
+                {
+                    "type": "jobGroup",
+                    "required": false
+                },
+                {
+                    "type": "jobId",
+                    "required": false
+                },
+                {
+                    "type": "perfClientLatency",
+                    "required": false
+                }
+            ]
+        },
+        {
             "name": "ide_editCodeFile",
             "description": "User opened a code file with the given file extension. Client should DEDUPLICATE this metric (ideally hourly/daily). AWS-specific files should (also) emit `file_editAwsFile`.",
             "passive": true,
@@ -1136,6 +1277,10 @@
                 },
                 {
                     "type": "className",
+                    "required": false
+                },
+                {
+                    "type": "source",
                     "required": false
                 }
             ],

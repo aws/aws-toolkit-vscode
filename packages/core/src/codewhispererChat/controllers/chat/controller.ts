@@ -47,12 +47,13 @@ import { randomUUID } from '../../../shared/crypto'
 import { LspController } from '../../../amazonq/lsp/lspController'
 import { CodeWhispererSettings } from '../../../codewhisperer/util/codewhispererSettings'
 import { getSelectedCustomization } from '../../../codewhisperer/util/customizationUtil'
-import { FeatureConfigProvider } from '../../../shared/featureConfig'
 import { getHttpStatusCode, AwsClientResponseError } from '../../../shared/errors'
 import { uiEventRecorder } from '../../../amazonq/util/eventRecorder'
-import { globals } from '../../../shared'
+import { globals, waitUntil } from '../../../shared'
 import { telemetry } from '../../../shared/telemetry'
 import { isSsoConnection } from '../../../auth/connection'
+import { inspect } from '../../../shared/utilities/collectionUtils'
+import { DefaultAmazonQAppInitContext } from '../../../amazonq/apps/initContext'
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
@@ -377,11 +378,20 @@ export class ChatController {
 
         this.editorContextExtractor
             .extractContextForTrigger('ContextMenu')
-            .then((context) => {
+            .then(async (context) => {
                 const triggerID = randomUUID()
+                if (command.type === 'aws.amazonq.generateUnitTests') {
+                    DefaultAmazonQAppInitContext.instance.getAppsToWebViewMessagePublisher().publish({
+                        sender: 'testChat',
+                        command: 'test',
+                        type: 'chatMessage',
+                    })
+                    // For non-supported languages, we'll just open the standard chat.
+                    return
+                }
 
                 if (context?.focusAreaContext?.codeBlock === undefined) {
-                    throw 'Sorry, we cannot help with the selected language code snippet'
+                    throw 'Sorry, I cannot help with the selected language code snippet'
                 }
 
                 const prompt = this.promptGenerator.generateForContextMenuCommand(command)
@@ -632,25 +642,31 @@ export class ChatController {
                     this.messenger.sendOpenSettingsMessage(triggerID, tabID)
                     return
                 }
-            }
-            // if user does not have @workspace in the prompt, but user is in the data collection group
-            // If the user is in the data collection group but turned off local index to opt-out, do not collect data.
-            // TODO: Remove this entire block of code in one month as requested
-            else if (
-                FeatureConfigProvider.instance.isAmznDataCollectionGroup() &&
+            } else if (
                 !LspController.instance.isIndexingInProgress() &&
                 CodeWhispererSettings.instance.isLocalIndexEnabled()
             ) {
-                getLogger().info(`amazonq: User is in data collection group`)
                 const start = performance.now()
-                triggerPayload.relevantTextDocuments = await LspController.instance.query(triggerPayload.message)
+                triggerPayload.relevantTextDocuments = await waitUntil(
+                    async function () {
+                        if (triggerPayload.message) {
+                            return await LspController.instance.query(triggerPayload.message)
+                        }
+                        return []
+                    },
+                    { timeout: 500, interval: 200, truthy: false }
+                )
                 triggerPayload.projectContextQueryLatencyMs = performance.now() - start
             }
         }
 
         const request = triggerPayloadToChatRequest(triggerPayload)
         const session = this.sessionStorage.getSession(tabID)
-        getLogger().info(`request from tab: ${tabID} conversationID: ${session.sessionIdentifier} request: %O`, request)
+        getLogger().info(
+            `request from tab: ${tabID} conversationID: ${session.sessionIdentifier} request: ${inspect(request, {
+                depth: 12,
+            })}`
+        )
         let response: MessengerResponseType | undefined = undefined
         session.createNewTokenSource()
         try {
@@ -675,8 +691,7 @@ export class ChatController {
             getLogger().info(
                 `response to tab: ${tabID} conversationID: ${session.sessionIdentifier} requestID: ${
                     response.$metadata.requestId
-                } metadata: %O`,
-                response.$metadata
+                } metadata: ${inspect(response.$metadata, { depth: 12 })}`
             )
             await this.messenger.sendAIResponse(response, session, tabID, triggerID, triggerPayload)
         } catch (e: any) {

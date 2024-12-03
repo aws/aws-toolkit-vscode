@@ -88,8 +88,8 @@ When you're satisfied with performance, you can [deploy your serverless applicat
 
 The Toolkit _local SAM debugging_ feature supports these runtimes:
 
--   JavaScript (Node.js 14.x, 16.x)
--   Python (3.7, 3.8, 3.9, 3.10, 3.11, 3.12)
+-   JavaScript (Node.js 16.x, Node.js 18.x, Node.js 20.x, Node.js 22.x,)
+-   Python (3.8, 3.9, 3.10, 3.11, 3.12, 3.13)
 
 For more information see [Working with AWS Serverless Applications](https://docs.aws.amazon.com/cloud9/latest/user-guide/serverless-apps-toolkit.html) in the user guide.
 

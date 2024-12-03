@@ -220,7 +220,7 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
                     item: item,
                 }
             } else {
-                getLogger().info(`${this.name}: failed to process: ${uri}`)
+                getLogger().debug(`${this.name}: failed to process: ${uri}`)
                 // if value isn't valid for type, remove from registry
                 this.registryData.delete(pathAsString)
             }
@@ -228,7 +228,7 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
             if (!quiet) {
                 throw e
             }
-            getLogger().info(`${this.name}: failed to process: ${uri}: ${(e as Error).message}`)
+            getLogger().error(`${this.name}: failed to process: ${uri}: ${(e as Error).message}`)
         }
         return undefined
     }

@@ -24,7 +24,7 @@ import {
     CurrentWsFolders,
     DeletedFileInfo,
     DevPhase,
-    FollowUpTypes,
+    Intent,
     NewFileInfo,
     NewFileZipContents,
     SessionState,
@@ -42,9 +42,10 @@ import { AuthUtil } from '../../codewhisperer/util/authUtil'
 import { randomUUID } from '../../shared/crypto'
 import { collectFiles, getWorkspaceFoldersByPrefixes } from '../../shared/utilities/workspaceUtils'
 import { i18n } from '../../shared/i18n-helper'
-import { Messenger } from '../controllers/chat/messenger/messenger'
+import { Messenger } from '../../amazonq/commons/connector/baseMessenger'
+import { FollowUpTypes } from '../../amazonq/commons/types'
 
-const EmptyCodeGenID = 'EMPTY_CURRENT_CODE_GENERATION_ID'
+export const EmptyCodeGenID = 'EMPTY_CURRENT_CODE_GENERATION_ID'
 
 export class ConversationNotStartedState implements Omit<SessionState, 'uploadId'> {
     public tokenSource: vscode.CancellationTokenSource
@@ -64,7 +65,8 @@ export function registerNewFiles(
     newFileContents: NewFileZipContents[],
     uploadId: string,
     workspaceFolders: CurrentWsFolders,
-    conversationId: string
+    conversationId: string,
+    scheme: string
 ): NewFileInfo[] {
     const result: NewFileInfo[] = []
     const workspaceFolderPrefixes = getWorkspaceFoldersByPrefixes(workspaceFolders)
@@ -72,7 +74,7 @@ export function registerNewFiles(
         const encoder = new TextEncoder()
         const contents = encoder.encode(fileContent)
         const generationFilePath = path.join(uploadId, zipFilePath)
-        const uri = vscode.Uri.from({ scheme: featureDevScheme, path: generationFilePath })
+        const uri = vscode.Uri.from({ scheme, path: generationFilePath })
         fs.registerProvider(uri, new VirtualMemoryFile(contents))
         const prefix =
             workspaceFolderPrefixes === undefined ? '' : zipFilePath.substring(0, zipFilePath.indexOf(path.sep))
@@ -102,13 +104,14 @@ export function registerNewFiles(
                 workspaceFolderPrefixes === undefined ? 0 : prefix.length > 0 ? prefix.length + 1 : 0
             ),
             rejected: false,
+            changeApplied: false,
         })
     }
 
     return result
 }
 
-function getDeletedFileInfos(deletedFiles: string[], workspaceFolders: CurrentWsFolders): DeletedFileInfo[] {
+export function getDeletedFileInfos(deletedFiles: string[], workspaceFolders: CurrentWsFolders): DeletedFileInfo[] {
     const workspaceFolderPrefixes = getWorkspaceFoldersByPrefixes(workspaceFolders)
     return deletedFiles
         .map((deletedFilePath) => {
@@ -127,6 +130,7 @@ function getDeletedFileInfos(deletedFiles: string[], workspaceFolders: CurrentWs
                 workspaceFolder: folder,
                 relativePath: deletedFilePath.substring(prefixLength),
                 rejected: false,
+                changeApplied: false,
             }
         })
         .filter(isPresent)
@@ -191,7 +195,8 @@ abstract class CodeGenBase {
                         newFileContents,
                         this.uploadId,
                         workspaceFolders,
-                        this.conversationId
+                        this.conversationId,
+                        featureDevScheme
                     )
                     telemetry.setNumberOfFilesGenerated(newFileInfo.length)
 
@@ -307,6 +312,7 @@ export class CodeGenState extends CodeGenBase implements SessionState {
                     this.config.conversationId,
                     this.config.uploadId,
                     action.msg,
+                    Intent.DEV,
                     codeGenerationId,
                     this.currentCodeGenerationId
                 )
@@ -418,7 +424,8 @@ export class MockCodeGenState implements SessionState {
                 newFileContents,
                 this.uploadId,
                 this.config.workspaceFolders,
-                this.conversationId
+                this.conversationId,
+                featureDevScheme
             )
             this.deletedFiles = [
                 {
@@ -426,6 +433,7 @@ export class MockCodeGenState implements SessionState {
                     workspaceFolder: this.config.workspaceFolders[0],
                     relativePath: 'src/this-file-should-be-deleted.ts',
                     rejected: false,
+                    changeApplied: false,
                 },
             ]
             action.messenger.sendCodeResult(
@@ -447,7 +455,7 @@ export class MockCodeGenState implements SessionState {
                 type: 'system-prompt',
                 followUps: [
                     {
-                        pillText: i18n('AWS.amazonq.featureDev.pillText.insertCode'),
+                        pillText: i18n('AWS.amazonq.featureDev.pillText.acceptAllChanges'),
                         type: FollowUpTypes.InsertCode,
                         icon: 'ok' as MynahIcons,
                         status: 'success',

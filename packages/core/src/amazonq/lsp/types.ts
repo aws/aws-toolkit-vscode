@@ -51,6 +51,7 @@ export type QueryInlineProjectContextRequest = string
 export type QueryInlineProjectContextRequestPayload = {
     query: string
     filePath: string
+    target: string
 }
 export const QueryInlineProjectContextRequestType: RequestType<QueryInlineProjectContextRequest, any, any> =
     new RequestType('lsp/queryInlineProjectContext')
@@ -64,3 +65,14 @@ export const QueryVectorIndexRequestType: RequestType<QueryVectorIndexRequest, a
 )
 
 export type IndexConfig = 'all' | 'default'
+
+//RepoMapData
+export type QueryRepomapIndexRequestPayload = { filePaths: string[] }
+export type QueryRepomapIndexRequest = string
+export const QueryRepomapIndexRequestType: RequestType<QueryRepomapIndexRequest, any, any> = new RequestType(
+    'lsp/queryRepomapIndex'
+)
+export type GetRepomapIndexJSONRequest = string
+export const GetRepomapIndexJSONRequestType: RequestType<GetRepomapIndexJSONRequest, any, any> = new RequestType(
+    'lsp/getRepomapIndexJSON'
+)

@@ -624,7 +624,9 @@
                 "acceptedCharacterCount": { "shape": "PrimitiveInteger" },
                 "totalCharacterCount": { "shape": "PrimitiveInteger" },
                 "timestamp": { "shape": "Timestamp" },
-                "unmodifiedAcceptedCharacterCount": { "shape": "PrimitiveInteger" }
+                "unmodifiedAcceptedCharacterCount": { "shape": "PrimitiveInteger" },
+                "totalNewCodeCharacterCount": { "shape": "PrimitiveInteger" },
+                "totalNewCodeLineCount": { "shape": "PrimitiveInteger" }
             }
         },
         "CodeFixAcceptanceEvent": {
@@ -661,7 +663,8 @@
             "type": "string",
             "documentation": "<p>Code fix name</p>",
             "max": 128,
-            "min": 1
+            "min": 1,
+            "pattern": "[a-zA-Z0-9-_$:.]*"
         },
         "CodeFixUploadContext": {
             "type": "structure",
@@ -705,7 +708,19 @@
                 "codeScanJobId": { "shape": "CodeScanJobId" },
                 "timestamp": { "shape": "Timestamp" },
                 "codeAnalysisScope": { "shape": "CodeAnalysisScope" }
-            }
+            },
+            "documentation": "<p>Published when a security scan or code review starts</p>"
+        },
+        "CodeScanFailedEvent": {
+            "type": "structure",
+            "required": ["programmingLanguage", "codeScanJobId", "timestamp"],
+            "members": {
+                "programmingLanguage": { "shape": "ProgrammingLanguage" },
+                "codeScanJobId": { "shape": "CodeScanJobId" },
+                "timestamp": { "shape": "Timestamp" },
+                "codeAnalysisScope": { "shape": "CodeAnalysisScope" }
+            },
+            "documentation": "<p>Published when a security scan or code review fails</p>"
         },
         "CodeScanJobId": {
             "type": "string",
@@ -737,6 +752,18 @@
             "type": "string",
             "documentation": "<p>Code Scan Remediations Interaction Type</p>",
             "enum": ["CODESCAN_ISSUE_HOVER", "CODESCAN_ISSUE_APPLY_FIX", "CODESCAN_ISSUE_VIEW_DETAILS"]
+        },
+        "CodeScanSucceededEvent": {
+            "type": "structure",
+            "required": ["programmingLanguage", "codeScanJobId", "timestamp", "numberOfFindings"],
+            "members": {
+                "programmingLanguage": { "shape": "ProgrammingLanguage" },
+                "codeScanJobId": { "shape": "CodeScanJobId" },
+                "timestamp": { "shape": "Timestamp" },
+                "numberOfFindings": { "shape": "PrimitiveInteger" },
+                "codeAnalysisScope": { "shape": "CodeAnalysisScope" }
+            },
+            "documentation": "<p>Published when a security scan or code review completes successfully</p>"
         },
         "Completion": {
             "type": "structure",
@@ -998,13 +1025,21 @@
                 "numberOfAddLines": { "shape": "PrimitiveInteger" },
                 "numberOfAddFiles": { "shape": "PrimitiveInteger" },
                 "userDecision": { "shape": "DocGenerationUserDecision" },
-                "interactionType": { "shape": "DocGenerationInteractionType" }
+                "interactionType": { "shape": "DocGenerationInteractionType" },
+                "userIdentity": { "shape": "String" },
+                "numberOfNavigation": { "shape": "PrimitiveInteger" },
+                "folderLevel": { "shape": "DocGenerationFolderLevel" }
             }
+        },
+        "DocGenerationFolderLevel": {
+            "type": "string",
+            "documentation": "<p>Doc Generation Folder Level</p>",
+            "enum": ["SUB_FOLDER", "ENTIRE_WORKSPACE"]
         },
         "DocGenerationInteractionType": {
             "type": "string",
             "documentation": "<p>Doc Generation Interaction Type</p>",
-            "enum": ["GENERATE_README", "UPDATE_README"]
+            "enum": ["GENERATE_README", "UPDATE_README", "EDIT_README"]
         },
         "DocGenerationUserDecision": {
             "type": "string",
@@ -2058,7 +2093,8 @@
         "StartCodeFixJobRequestDescriptionString": {
             "type": "string",
             "max": 2000,
-            "min": 1
+            "min": 1,
+            "sensitive": true
         },
         "StartCodeFixJobRequestRuleIdString": {
             "type": "string",
@@ -2194,11 +2230,12 @@
         "SuggestedFixDescriptionString": {
             "type": "string",
             "max": 2000,
-            "min": 1
+            "min": 1,
+            "sensitive": true
         },
         "SuggestionState": {
             "type": "string",
-            "enum": ["ACCEPT", "REJECT", "DISCARD", "EMPTY"]
+            "enum": ["ACCEPT", "REJECT", "DISCARD", "EMPTY", "MERGE"]
         },
         "SupplementalContext": {
             "type": "structure",
@@ -2366,6 +2403,8 @@
                 "codeCoverageEvent": { "shape": "CodeCoverageEvent" },
                 "userModificationEvent": { "shape": "UserModificationEvent" },
                 "codeScanEvent": { "shape": "CodeScanEvent" },
+                "codeScanSucceededEvent": { "shape": "CodeScanSucceededEvent" },
+                "codeScanFailedEvent": { "shape": "CodeScanFailedEvent" },
                 "codeScanRemediationsEvent": { "shape": "CodeScanRemediationsEvent" },
                 "codeFixGenerationEvent": { "shape": "CodeFixGenerationEvent" },
                 "codeFixAcceptanceEvent": { "shape": "CodeFixAcceptanceEvent" },
@@ -2629,7 +2668,7 @@
         },
         "TransformationProgressUpdateStatus": {
             "type": "string",
-            "enum": ["IN_PROGRESS", "COMPLETED", "FAILED", "PAUSED", "AWAITING_CLIENT_ACTION"]
+            "enum": ["IN_PROGRESS", "COMPLETED", "FAILED", "PAUSED", "AWAITING_CLIENT_ACTION", "SKIPPED"]
         },
         "TransformationProjectArtifactDescriptor": {
             "type": "structure",
@@ -2708,7 +2747,7 @@
         },
         "TransformationStepStatus": {
             "type": "string",
-            "enum": ["CREATED", "COMPLETED", "PARTIALLY_COMPLETED", "STOPPED", "FAILED", "PAUSED"]
+            "enum": ["CREATED", "COMPLETED", "PARTIALLY_COMPLETED", "STOPPED", "FAILED", "PAUSED", "SKIPPED"]
         },
         "TransformationSteps": {
             "type": "list",

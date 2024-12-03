@@ -8,7 +8,8 @@ import * as FakeTimers from '@sinonjs/fake-timers'
 import assert from 'assert'
 import sinon from 'sinon'
 import globals from '../../shared/extensionGlobals'
-import { randomUUID } from '../../shared'
+import { randomUUID } from '../../shared/crypto'
+import { getContext } from '../../shared/vscode/setContext'
 import { assertTelemetry, installFakeClock } from '../testUtil'
 import {
     NotificationFetcher,
@@ -19,6 +20,7 @@ import {
 import {
     NotificationData,
     NotificationType,
+    RuleContext,
     ToolkitNotification,
     getNotificationTelemetryId,
 } from '../../notifications/types'
@@ -30,7 +32,7 @@ import { RuleEngine } from '../../notifications/rules'
 export const panelNode: NotificationsNode = NotificationsNode.instance
 
 describe('Notifications Controller', function () {
-    const ruleEngine: RuleEngine = new RuleEngine({
+    const ruleContex: RuleContext = {
         ideVersion: '1.83.0',
         extensionVersion: '1.20.0',
         os: 'LINUX',
@@ -39,9 +41,8 @@ describe('Notifications Controller', function () {
         authRegions: ['us-east-1'],
         authStates: ['connected'],
         authScopes: ['codewhisperer:completions', 'codewhisperer:analysis'],
-        installedExtensions: ['ext1', 'ext2', 'ext3'],
         activeExtensions: ['ext1', 'ext2'],
-    })
+    }
 
     let controller: NotificationsController
     let fetcher: TestFetcher
@@ -88,11 +89,16 @@ describe('Notifications Controller', function () {
     }
 
     beforeEach(async function () {
-        panelNode.setNotifications([], [])
+        await panelNode.setNotifications([], [])
         fetcher = new TestFetcher()
-        controller = new NotificationsController(panelNode, fetcher)
+        controller = new NotificationsController(
+            panelNode,
+            async () => ruleContex,
+            fetcher,
+            '_aws.test.notification' as any
+        )
 
-        ruleEngineSpy = sinon.spy(ruleEngine, 'shouldDisplayNotification')
+        ruleEngineSpy = sinon.spy(RuleEngine.prototype, 'shouldDisplayNotification')
         focusPanelSpy = sinon.spy(panelNode, 'focusPanel')
 
         await globals.globalState.update(controller.storageKey, {
@@ -118,7 +124,7 @@ describe('Notifications Controller', function () {
             content: JSON.stringify(content),
         })
 
-        await controller.pollForStartUp(ruleEngine)
+        await controller.pollForStartUp()
 
         assert.equal(ruleEngineSpy.callCount, 2)
         assert.deepStrictEqual(ruleEngineSpy.args, [[content.notifications[0]], [content.notifications[1]]])
@@ -136,6 +142,7 @@ describe('Notifications Controller', function () {
         assert.deepStrictEqual(panelNode.startUpNotifications, [content.notifications[0]])
         assert.equal(panelNode.getChildren().length, 1)
         assert.equal(focusPanelSpy.callCount, 0)
+        assert.equal(getContext('aws.toolkit.notifications.show'), true)
     })
 
     it('can fetch and store emergency notifications', async function () {
@@ -149,7 +156,7 @@ describe('Notifications Controller', function () {
             content: JSON.stringify(content),
         })
 
-        await controller.pollForEmergencies(ruleEngine)
+        await controller.pollForEmergencies()
 
         assert.equal(ruleEngineSpy.callCount, 2)
         assert.deepStrictEqual(ruleEngineSpy.args, [[content.notifications[0]], [content.notifications[1]]])
@@ -159,7 +166,7 @@ describe('Notifications Controller', function () {
                 payload: content,
                 eTag,
             },
-            dismissed: [content.notifications[0].id],
+            dismissed: [],
             newlyReceived: ['id:emergency2'],
         })
         assert.equal(panelNode.startUpNotifications.length, 0)
@@ -167,6 +174,7 @@ describe('Notifications Controller', function () {
         assert.deepStrictEqual(panelNode.emergencyNotifications, [content.notifications[0]])
         assert.equal(panelNode.getChildren().length, 1)
         assert.equal(focusPanelSpy.callCount, 1)
+        assert.equal(getContext('aws.toolkit.notifications.show'), true)
     })
 
     it('can fetch and store both startup and emergency notifications', async function () {
@@ -189,8 +197,8 @@ describe('Notifications Controller', function () {
             content: JSON.stringify(emergencyContent),
         })
 
-        await controller.pollForStartUp(ruleEngine)
-        await controller.pollForEmergencies(ruleEngine)
+        await controller.pollForStartUp()
+        await controller.pollForEmergencies()
 
         // There are only 4 notifications in this test.
         // However, each time there is a poll, ALL notifications are evaluated for display.
@@ -216,7 +224,7 @@ describe('Notifications Controller', function () {
                 payload: emergencyContent,
                 eTag: eTag2,
             },
-            dismissed: [emergencyContent.notifications[0].id],
+            dismissed: [],
             newlyReceived: ['id:startup2', 'id:emergency2'],
         })
         assert.equal(panelNode.startUpNotifications.length, 1)
@@ -225,6 +233,7 @@ describe('Notifications Controller', function () {
         assert.deepStrictEqual(panelNode.emergencyNotifications, [emergencyContent.notifications[0]])
         assert.equal(panelNode.getChildren().length, 2)
         assert.equal(focusPanelSpy.callCount, 1)
+        assert.equal(getContext('aws.toolkit.notifications.show'), true)
     })
 
     it('dismisses a startup notification', async function () {
@@ -238,10 +247,11 @@ describe('Notifications Controller', function () {
             content: JSON.stringify(content),
         })
 
-        await controller.pollForStartUp(ruleEngine)
+        await controller.pollForStartUp()
 
         assert.equal(panelNode.getChildren().length, 2)
         assert.equal(panelNode.startUpNotifications.length, 2)
+        assert.equal(getContext('aws.toolkit.notifications.show'), true)
 
         assert.deepStrictEqual(await globals.globalState.get(controller.storageKey), {
             startUp: {
@@ -280,11 +290,13 @@ describe('Notifications Controller', function () {
             content: JSON.stringify(content),
         })
 
-        await controller.pollForStartUp(ruleEngine)
+        await controller.pollForStartUp()
         assert.equal(panelNode.getChildren().length, 1)
+        assert.equal(getContext('aws.toolkit.notifications.show'), true)
 
         await dismissNotification(content.notifications[0])
         assert.equal(panelNode.getChildren().length, 0)
+        assert.equal(getContext('aws.toolkit.notifications.show'), false)
 
         content.notifications.push(getValidTestNotification('id:startup2'))
         fetcher.setStartUpContent({
@@ -292,7 +304,7 @@ describe('Notifications Controller', function () {
             content: JSON.stringify(content),
         })
 
-        await controller.pollForStartUp(ruleEngine)
+        await controller.pollForStartUp()
 
         const actualState = await globals.globalState.get(controller.storageKey)
         assert.deepStrictEqual(actualState, {
@@ -306,6 +318,7 @@ describe('Notifications Controller', function () {
         })
 
         assert.equal(panelNode.getChildren().length, 1)
+        assert.equal(getContext('aws.toolkit.notifications.show'), true)
     })
 
     it('does not refocus emergency notifications', async function () {
@@ -326,9 +339,9 @@ describe('Notifications Controller', function () {
             content: JSON.stringify(emergencyContent),
         })
 
-        await controller.pollForEmergencies(ruleEngine)
-        await controller.pollForEmergencies(ruleEngine)
-        await controller.pollForStartUp(ruleEngine)
+        await controller.pollForEmergencies()
+        await controller.pollForEmergencies()
+        await controller.pollForStartUp()
 
         assert.equal(focusPanelSpy.callCount, 1)
         assert.equal(panelNode.getChildren().length, 2)
@@ -345,7 +358,7 @@ describe('Notifications Controller', function () {
             content: JSON.stringify(content),
         })
 
-        await controller.pollForStartUp(ruleEngine)
+        await controller.pollForStartUp()
 
         assert.deepStrictEqual(await globals.globalState.get(controller.storageKey), {
             startUp: {
@@ -362,7 +375,7 @@ describe('Notifications Controller', function () {
             eTag,
             content: undefined,
         })
-        await controller.pollForStartUp(ruleEngine)
+        await controller.pollForStartUp()
 
         assert.deepStrictEqual(await globals.globalState.get(controller.storageKey), {
             startUp: {
@@ -394,8 +407,8 @@ describe('Notifications Controller', function () {
             content: JSON.stringify(emergencyContent),
         })
 
-        await controller.pollForStartUp(ruleEngine)
-        await controller.pollForEmergencies(ruleEngine)
+        await controller.pollForStartUp()
+        await controller.pollForEmergencies()
 
         await dismissNotification(startUpContent.notifications[0])
 
@@ -408,7 +421,7 @@ describe('Notifications Controller', function () {
                 payload: emergencyContent,
                 eTag: '1',
             },
-            dismissed: [emergencyContent.notifications[0].id, startUpContent.notifications[0].id],
+            dismissed: [startUpContent.notifications[0].id],
             newlyReceived: [],
         })
 
@@ -421,7 +434,7 @@ describe('Notifications Controller', function () {
             content: JSON.stringify(emptyContent),
         })
 
-        await controller.pollForStartUp(ruleEngine)
+        await controller.pollForStartUp()
         assert.deepStrictEqual(await globals.globalState.get(controller.storageKey), {
             startUp: {
                 payload: emptyContent,
@@ -431,17 +444,18 @@ describe('Notifications Controller', function () {
                 payload: emergencyContent,
                 eTag: '1',
             },
-            dismissed: [emergencyContent.notifications[0].id],
+            dismissed: [],
             newlyReceived: [],
         })
         assert.equal(panelNode.getChildren().length, 1)
+        assert.equal(getContext('aws.toolkit.notifications.show'), true)
 
         fetcher.setEmergencyContent({
             eTag: '1',
             content: JSON.stringify(emptyContent),
         })
 
-        await controller.pollForEmergencies(ruleEngine)
+        await controller.pollForEmergencies()
         assert.deepStrictEqual(await globals.globalState.get(controller.storageKey), {
             startUp: {
                 payload: emptyContent,
@@ -456,6 +470,7 @@ describe('Notifications Controller', function () {
         })
 
         assert.equal(panelNode.getChildren().length, 0)
+        assert.equal(getContext('aws.toolkit.notifications.show'), false)
     })
 
     it('does not rethrow errors when fetching', async function () {
@@ -466,7 +481,9 @@ describe('Notifications Controller', function () {
                 throw new Error('test error')
             }
         })()
-        assert.doesNotThrow(() => new NotificationsController(panelNode, fetcher).pollForStartUp(ruleEngine))
+        assert.doesNotThrow(() =>
+            new NotificationsController(panelNode, async () => ruleContex, fetcher).pollForStartUp()
+        )
         assert.ok(wasCalled)
     })
 
@@ -483,7 +500,7 @@ describe('Notifications Controller', function () {
 
         const onReceiveSpy = sinon.spy(panelNode, 'onReceiveNotifications')
 
-        await controller.pollForStartUp(ruleEngine)
+        await controller.pollForStartUp()
 
         assert.equal(onReceiveSpy.callCount, 1)
         assert.deepStrictEqual(onReceiveSpy.args[0][0], [content.notifications[0]])
@@ -535,7 +552,7 @@ describe('RemoteFetcher', function () {
     })
 })
 
-function getValidTestNotification(id: string) {
+function getValidTestNotification(id: string): ToolkitNotification {
     return {
         id,
         displayIf: {
@@ -548,7 +565,7 @@ function getValidTestNotification(id: string) {
                     description: 'test',
                 },
             },
-            onRecieve: 'toast',
+            onReceive: 'toast',
             onClick: {
                 type: 'openUrl',
                 url: 'https://aws.amazon.com/visualstudiocode/',
@@ -557,7 +574,7 @@ function getValidTestNotification(id: string) {
     }
 }
 
-function getInvalidTestNotification(id: string) {
+function getInvalidTestNotification(id: string): ToolkitNotification {
     return {
         id,
         displayIf: {
@@ -571,6 +588,8 @@ function getInvalidTestNotification(id: string) {
                     description: 'test',
                 },
             },
+            onReceive: 'toast',
+            onClick: { type: 'modal' },
         },
     }
 }

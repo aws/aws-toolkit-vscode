@@ -13,6 +13,7 @@ import { resolvePath } from '../utilities/pathUtils'
 import fs from '../../shared/fs/fs'
 import { isWeb } from '../extensionGlobals'
 import { getUserAgent } from '../telemetry/util'
+import { isBeta } from '../vscode/env'
 
 /**
  * Activate Logger functionality for the extension.
@@ -57,7 +58,12 @@ export async function activate(
         'debugConsole'
     )
 
-    getLogger().info('Log level: %s%s', chanLogLevel, logUri ? `, file (always "debug" level): ${logUri.fsPath}` : '')
+    getLogger().info(
+        'Log level: %s, beta=%s%s',
+        chanLogLevel,
+        isBeta(),
+        logUri ? `, file (always "debug" level): ${logUri.fsPath}` : ''
+    )
     getLogger().debug('User agent: %s', getUserAgent({ includePlatform: true, includeClientId: true }))
     if (devLogfile && typeof devLogfile !== 'string') {
         getLogger().error('invalid aws.dev.logfile setting')
@@ -80,7 +86,7 @@ export function makeLogger(opts: {
     outputChannels?: vscode.OutputChannel[]
     useConsoleLog?: boolean
 }): Logger {
-    const logger = new ToolkitLogger(opts.logLevel)
+    const logger = new ToolkitLogger(opts.logLevel, isBeta())
     if (opts.logFile) {
         logger.logToFile(opts.logFile)
         logger.logFile = opts.logFile
