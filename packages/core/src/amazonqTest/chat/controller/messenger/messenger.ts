@@ -36,7 +36,7 @@ import { CodeReference } from '../../../../amazonq/webview/ui/apps/amazonqCommon
 import { getHttpStatusCode, getRequestId, getTelemetryReasonDesc, ToolkitError } from '../../../../shared/errors'
 import { sleep, waitUntil } from '../../../../shared/utilities/timeoutUtils'
 import { keys } from '../../../../shared/utilities/tsUtils'
-import { testGenState } from '../../../../codewhisperer'
+import { AuthUtil, testGenState } from '../../../../codewhisperer'
 import { cancellingProgressField, testGenCompletedField } from '../../../models/constants'
 import { telemetry } from '../../../../shared/telemetry/telemetry'
 
@@ -281,6 +281,7 @@ export class Messenger {
                         result: 'Cancelled',
                         reasonDesc: getTelemetryReasonDesc(CodeWhispererConstants.unitTestGenerationCancelMessage),
                         isSupportedLanguage: false,
+                        credentialStartUrl: AuthUtil.instance.startUrl,
                     })
 
                     this.dispatcher.sendUpdatePromptProgress(
@@ -294,6 +295,7 @@ export class Messenger {
                         perfClientLatency: performance.now() - session.testGenerationStartTime,
                         result: 'Succeeded',
                         isSupportedLanguage: false,
+                        credentialStartUrl: AuthUtil.instance.startUrl,
                     })
                     this.dispatcher.sendUpdatePromptProgress(
                         new UpdatePromptProgressMessage(tabID, testGenCompletedField)
