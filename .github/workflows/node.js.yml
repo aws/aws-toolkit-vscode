@@ -36,7 +36,7 @@ jobs:
               env:
                   BRANCH_NAME: ${{ github.head_ref }}
               run: |
-                  node "$GITHUB_WORKSPACE/.github/workflows/lintbranch.js" run $BRANCH_NAME"
+                  node "$GITHUB_WORKSPACE/.github/workflows/lintbranch.js" run "$BRANCH_NAME"
             - name: Check PR title
               run: |
                   node "$GITHUB_WORKSPACE/.github/workflows/lintcommit.js"
