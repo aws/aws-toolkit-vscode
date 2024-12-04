@@ -41,7 +41,8 @@ export const toolkitSettings = {
         "ssoCacheError": {}
     },
     "aws.experiments": {
-        "jsonResourceModification": {}
+        "jsonResourceModification": {},
+        "amazonqLSP": {}
     },
     "aws.resources.enabledResources": {},
     "aws.lambda.recentlyUploaded": {},
