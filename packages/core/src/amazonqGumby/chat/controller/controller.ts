@@ -427,22 +427,24 @@ export class GumbyController {
     }
 
     private async handleOneOrMultipleDiffs(message: any) {
-        const oneOrMultipleDiffsSelection = message.formSelectedValues['GumbyTransformOneOrMultipleDiffsForm']
-        if (oneOrMultipleDiffsSelection === CodeWhispererConstants.multipleDiffsMessage) {
-            transformByQState.setMultipleDiffs(true)
-        } else {
-            transformByQState.setMultipleDiffs(false)
-        }
         await telemetry.codeTransform_submitSelection.run(async () => {
-            telemetry.codeTransform_submitSelection.emit({
+            const oneOrMultipleDiffsSelection = message.formSelectedValues['GumbyTransformOneOrMultipleDiffsForm']
+            if (oneOrMultipleDiffsSelection === CodeWhispererConstants.multipleDiffsMessage) {
+                transformByQState.setMultipleDiffs(true)
+            } else {
+                transformByQState.setMultipleDiffs(false)
+            }
+
+            telemetry.record({
                 codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
                 userChoice: oneOrMultipleDiffsSelection,
                 result: MetadataResult.Pass,
             })
+
+            this.messenger.sendOneOrMultipleDiffsMessage(oneOrMultipleDiffsSelection, message.tabID)
+            // perform local build
+            await this.validateBuildWithPromptOnError(message)
         })
-        this.messenger.sendOneOrMultipleDiffsMessage(oneOrMultipleDiffsSelection, message.tabID)
-        // perform local build
-        await this.validateBuildWithPromptOnError(message)
     }
 
     private async handleUserLanguageUpgradeProjectChoice(message: any) {
