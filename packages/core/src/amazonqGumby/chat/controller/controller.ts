@@ -411,19 +411,20 @@ export class GumbyController {
     }
 
     private async handleSkipTestsSelection(message: any) {
-        const skipTestsSelection = message.formSelectedValues['GumbyTransformSkipTestsForm']
-        if (skipTestsSelection === CodeWhispererConstants.skipUnitTestsMessage) {
-            transformByQState.setCustomBuildCommand(CodeWhispererConstants.skipUnitTestsBuildCommand)
-        } else {
-            transformByQState.setCustomBuildCommand(CodeWhispererConstants.doNotSkipUnitTestsBuildCommand)
-        }
-        telemetry.codeTransform_submitSelection.emit({
-            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-            userChoice: skipTestsSelection,
-            result: MetadataResult.Pass,
+        await telemetry.codeTransform_submitSelection.run(async () => {
+            const skipTestsSelection = message.formSelectedValues['GumbyTransformSkipTestsForm']
+            if (skipTestsSelection === CodeWhispererConstants.skipUnitTestsMessage) {
+                transformByQState.setCustomBuildCommand(CodeWhispererConstants.skipUnitTestsBuildCommand)
+            } else {
+                transformByQState.setCustomBuildCommand(CodeWhispererConstants.doNotSkipUnitTestsBuildCommand)
+            }
+            telemetry.record({
+                codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
+                userChoice: skipTestsSelection,
+            })
+            this.messenger.sendSkipTestsSelectionMessage(skipTestsSelection, message.tabID)
+            await this.messenger.sendOneOrMultipleDiffsPrompt(message.tabID)
         })
-        this.messenger.sendSkipTestsSelectionMessage(skipTestsSelection, message.tabID)
-        await this.messenger.sendOneOrMultipleDiffsPrompt(message.tabID)
     }
 
     private async handleOneOrMultipleDiffs(message: any) {
@@ -438,7 +439,6 @@ export class GumbyController {
             telemetry.record({
                 codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
                 userChoice: oneOrMultipleDiffsSelection,
-                result: MetadataResult.Pass,
             })
 
             this.messenger.sendOneOrMultipleDiffsMessage(oneOrMultipleDiffsSelection, message.tabID)
