@@ -1,0 +1,88 @@
+/*!
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import { window } from 'vscode'
+import { RequestType, ResponseMessage } from '@aws/language-server-runtimes/protocol'
+import * as jose from 'jose'
+import * as crypto from 'crypto'
+import { LanguageClient } from 'vscode-languageclient'
+import { AuthUtil } from 'aws-core-vscode/codewhisperer'
+import { Writable } from 'stream'
+
+const encryptionKey = crypto.randomBytes(32)
+
+/**
+ * Sends a json payload to the language server, who is waiting to know what the encryption key is.
+ * Code reference: https://github.com/aws/language-servers/blob/7da212185a5da75a72ce49a1a7982983f438651a/client/vscode/src/credentialsActivation.ts#L77
+ */
+export function writeEncryptionInit(stream: Writable): void {
+    const request = {
+        version: '1.0',
+        mode: 'JWT',
+        key: encryptionKey.toString('base64'),
+    }
+    stream.write(JSON.stringify(request))
+    stream.write('\n')
+}
+
+/**
+ * Request for custom notifications that Update Credentials and tokens.
+ * See core\aws-lsp-core\src\credentials\updateCredentialsRequest.ts for details
+ */
+export interface UpdateCredentialsRequest {
+    /**
+     * Encrypted token (JWT or PASETO)
+     * The token's contents differ whether IAM or Bearer token is sent
+     */
+    data: string
+    /**
+     * Used by the runtime based language servers.
+     * Signals that this client will encrypt its credentials payloads.
+     */
+    encrypted: boolean
+}
+
+const notificationTypes = {
+    updateBearerToken: new RequestType<UpdateCredentialsRequest, ResponseMessage, Error>(
+        'aws/credentials/token/update'
+    ),
+}
+
+export class AmazonQLSPAuth {
+    constructor(private readonly client: LanguageClient) {}
+
+    async init() {
+        const activeConnection = AuthUtil.instance.auth.activeConnection
+        if (activeConnection?.type === 'sso') {
+            // send the token to the language server
+            const token = await AuthUtil.instance.getBearerToken()
+            await this.updateBearerToken(token)
+            void window.showErrorMessage(`Updated bearer token`)
+        }
+    }
+
+    private async updateBearerToken(token: string) {
+        const request = await this.createUpdateCredentialsRequest({
+            token,
+        })
+
+        await this.client.sendRequest(notificationTypes.updateBearerToken.method, request)
+
+        this.client.info(`UpdateBearerToken: ${JSON.stringify(request)}`)
+    }
+
+    private async createUpdateCredentialsRequest(data: any) {
+        const payload = new TextEncoder().encode(JSON.stringify({ data }))
+
+        const jwt = await new jose.CompactEncrypt(payload)
+            .setProtectedHeader({ alg: 'dir', enc: 'A256GCM' })
+            .encrypt(encryptionKey)
+
+        return {
+            data: jwt,
+            encrypted: true,
+        }
+    }
+}

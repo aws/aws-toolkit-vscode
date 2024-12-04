@@ -4,7 +4,9 @@
  */
 
 import vscode from 'vscode'
+import path from 'path'
 import { AmazonQLSPDownloader } from './download'
+import { startLanguageServer } from './client'
 
 export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
     const serverPath = ctx.asAbsolutePath('resources/qdeveloperserver')
@@ -18,4 +20,5 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
      *
      * TODO: actually hook up the language server
      */
+    await startLanguageServer(ctx, path.join(serverPath, 'aws-lsp-codewhisperer.js'))
 }
