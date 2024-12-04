@@ -8,7 +8,7 @@
 #   - "waiting for browser": from `ssoAccessTokenProvider.test.ts`, unclear how to fix it.
 #   - "HTTPError: Response code …": caused by github rate-limiting.
 #   - "npm WARN deprecated querystring": transitive dep of aws sdk v2 (check `npm ls querystring`), so that's blocked until we migrate to v3.
-_ignore_pat='Timed-out waiting for browser login flow\|HTTPError: Response code 403\|HTTPError: Response code 404\|npm WARN deprecated querystring\|npm WARN deprecated'
+_ignore_pat='HTTPError: Response code 403\|HTTPError: Response code 404\|npm WARN deprecated querystring\|npm WARN deprecated'
 
 # Do not print (noisy) lines matching these patterns.
 #   - "ERROR:bus… Failed to connect to the bus": noise related to "xvfb". https://github.com/cypress-io/cypress/issues/19299
