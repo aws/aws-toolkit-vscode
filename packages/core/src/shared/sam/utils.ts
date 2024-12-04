@@ -108,6 +108,35 @@ export async function updateRecentResponse(
         getLogger().warn(`sam: unable to save response at key "${key}": %s`, err)
     }
 }
+
+const buildProcessMementoRootKey = 'samcli.build.processes'
+
+/**
+ * Returns true if there's an ongoing build process for the provided template, false otherwise
+ * @Param templatePath The path to the template.yaml file
+ */
+function isBuildInProgress(templatePath: string): boolean {
+    return getRecentResponse(buildProcessMementoRootKey, 'global', templatePath) !== undefined
+}
+
+/**
+ * Throws an error if there's a build in progress for the provided template
+ * @Param templatePath The path to the template.yaml file
+ */
+export function throwIfTemplateIsBeingBuilt(templatePath: string) {
+    if (isBuildInProgress(templatePath)) {
+        throw new ToolkitError('Build in progress', { code: 'BuildInProgress' })
+    }
+}
+
+export async function registerTemplateBuild(templatePath: string) {
+    await updateRecentResponse(buildProcessMementoRootKey, 'global', templatePath, 'true')
+}
+
+export async function unregisterTemplateBuild(templatePath: string) {
+    await updateRecentResponse(buildProcessMementoRootKey, 'global', templatePath, undefined)
+}
+
 export function getSamCliErrorMessage(stderr: string): string {
     // Split the stderr string by newline, filter out empty lines, and get the last line
     const lines = stderr

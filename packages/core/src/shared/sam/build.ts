@@ -25,6 +25,9 @@ import {
     getSamCliPathAndVersion,
     getTerminalFromError,
     isDotnetRuntime,
+    registerTemplateBuild,
+    throwIfTemplateIsBeingBuilt,
+    unregisterTemplateBuild,
     updateRecentResponse,
 } from './utils'
 import { getConfigFileUri, validateSamBuildConfig } from './config'
@@ -207,6 +210,9 @@ export async function runBuild(arg?: TreeNode): Promise<SamBuildResult> {
         throw new CancellationError('user')
     }
 
+    throwIfTemplateIsBeingBuilt(params.template.uri.path)
+    await registerTemplateBuild(params.template.uri.path)
+
     const projectRoot = params.projectRoot
 
     const defaultFlags: string[] = ['--cached', '--parallel', '--save-params', '--use-container']
@@ -242,10 +248,13 @@ export async function runBuild(arg?: TreeNode): Promise<SamBuildResult> {
         // Run SAM build in Terminal
         await runInTerminal(buildProcess, 'build')
 
+        await unregisterTemplateBuild(params.template.uri.path)
+
         return {
             isSuccess: true,
         }
     } catch (error) {
+        await unregisterTemplateBuild(params.template.uri.path)
         throw ToolkitError.chain(error, 'Failed to build SAM template', {
             details: { terminal: getTerminalFromError(error), ...resolveBuildArgConflict(buildFlags) },
             code: getErrorCode(error),
