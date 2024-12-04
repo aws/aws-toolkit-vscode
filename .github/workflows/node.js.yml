@@ -84,7 +84,7 @@ jobs:
               env:
                   # Unset NODE_OPTIONS because of https://github.com/codecov/uploader/issues/475
                   NODE_OPTIONS: ''
-              if: ${{ github.repository == 'aws/aws-toolkit-vscode' && github.ref == 'master' }}
+              if: ${{ github.repository == 'aws/aws-toolkit-vscode' && github.event_name == 'pull_request' && github.base_ref == 'master' }}
               uses: codecov/codecov-action@v5
               with:
                   flags: macos-toolkit-unittests
@@ -95,7 +95,7 @@ jobs:
               env:
                   # Unset NODE_OPTIONS because of https://github.com/codecov/uploader/issues/475
                   NODE_OPTIONS: ''
-              if: ${{ github.repository == 'aws/aws-toolkit-vscode' && github.ref == 'master' }}
+              if: ${{ github.repository == 'aws/aws-toolkit-vscode' && github.event_name == 'pull_request' && github.base_ref == 'master' }}
               uses: codecov/codecov-action@v5
               with:
                   flags: macos-amazonq-unittests
@@ -154,7 +154,7 @@ jobs:
               env:
                   # Unset NODE_OPTIONS because of https://github.com/codecov/uploader/issues/475
                   NODE_OPTIONS: ''
-              if: ${{ github.repository == 'aws/aws-toolkit-vscode' && github.ref == 'master' }}
+              if: ${{ github.repository == 'aws/aws-toolkit-vscode' && github.event_name == 'pull_request' && github.base_ref == 'master' }}
               uses: codecov/codecov-action@v5
               with:
                   flags: windows-unittests
