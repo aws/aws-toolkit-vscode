@@ -28,7 +28,6 @@ _require_nolog() {
 
 _require() {
     _require_nolog "$@"
-    _log "$1=$2"
 }
 
 _ec2() {
@@ -51,6 +50,12 @@ _main() {
     _require TOKEN "${TOKEN:-}"
     _require SESSION_ID "${SESSION_ID:-}"
     _require LOG_FILE_LOCATION "${LOG_FILE_LOCATION:-}"
+
+    # Avoid logging sensitive data
+    _log "AWS_SSM_CLI=$AWS_SSM_CLI"
+    _log "AWS_REGION=$AWS_REGION"
+    _log SESSION_ID "${SESSION_ID:-}"
+    _log "LOG_FILE_LOCATION=$LOG_FILE_LOCATION"
 
     _ec2 "$AWS_SSM_CLI" "$AWS_REGION" "$STREAM_URL" "$TOKEN" "$SESSION_ID"
 }
