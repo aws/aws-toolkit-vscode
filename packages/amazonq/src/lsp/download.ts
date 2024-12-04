@@ -51,7 +51,7 @@ export class AmazonQLSPDownloader extends LSPDownloader {
         try {
             tempFolder = await makeTemporaryToolkitFolder()
 
-            // the business logic
+            // download and extract the business logic
             await this.downloadAndExtractServer({
                 content: server,
                 installLocation: this.serverPath,
@@ -59,7 +59,7 @@ export class AmazonQLSPDownloader extends LSPDownloader {
                 tempFolder,
             })
 
-            // mynah ui
+            // download and extract mynah ui
             await this.downloadAndExtractServer({
                 content: clients,
                 installLocation: this.clientPath,
@@ -67,7 +67,6 @@ export class AmazonQLSPDownloader extends LSPDownloader {
                 tempFolder,
             })
         } finally {
-            // clean up temp folder
             if (tempFolder) {
                 await tryRemoveFolder(tempFolder)
             }
