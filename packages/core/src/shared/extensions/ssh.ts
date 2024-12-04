@@ -19,7 +19,7 @@ const localize = nls.loadMessageBundle()
 
 export const sshAgentSocketVariable = 'SSH_AUTH_SOCK'
 
-export class SSHError extends ToolkitError {}
+export class SshError extends ToolkitError {}
 
 export function getSshConfigPath(): string {
     const sshConfigDir = path.join(fs.getUserHomeDir(), '.ssh')
