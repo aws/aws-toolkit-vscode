@@ -433,10 +433,12 @@ export class GumbyController {
         } else {
             transformByQState.setMultipleDiffs(false)
         }
-        telemetry.codeTransform_submitSelection.emit({
-            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-            userChoice: oneOrMultipleDiffsSelection,
-            result: MetadataResult.Pass,
+        await telemetry.codeTransform_submitSelection.run(async () => {
+            telemetry.codeTransform_submitSelection.emit({
+                codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
+                userChoice: oneOrMultipleDiffsSelection,
+                result: MetadataResult.Pass,
+            })
         })
         this.messenger.sendOneOrMultipleDiffsMessage(oneOrMultipleDiffsSelection, message.tabID)
         // perform local build
