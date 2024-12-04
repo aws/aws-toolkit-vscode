@@ -244,9 +244,9 @@ export class CodeGenState extends CodeGenBase implements SessionState {
                 action.telemetry.setGenerateCodeIteration(this.currentIteration)
                 action.telemetry.setGenerateCodeLastInvocationTime()
                 const codeGenerationId = randomUUID()
-
-                action.messenger.sendDocProgress(this.tabID, DocGenerationStep.SUMMARIZING_FILES, 0, action.mode)
-
+                if (!action.tokenSource?.token.isCancellationRequested) {
+                    action.messenger.sendDocProgress(this.tabID, DocGenerationStep.SUMMARIZING_FILES, 0, action.mode)
+                }
                 await this.config.proxyClient.startCodeGeneration(
                     this.config.conversationId,
                     this.config.uploadId,
