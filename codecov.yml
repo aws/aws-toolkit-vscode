@@ -5,6 +5,12 @@ codecov:
     notify:
         require_ci_to_pass: no
 
+ignore:
+    - 'node_modules/'
+    - 'plugins/'
+    - 'scripts/'
+    - 'src.gen/'
+
 coverage:
     precision: 2
     round: down
@@ -12,66 +18,85 @@ coverage:
 
     status:
         project:
+            # Note: `default` measures the entire project.
+            # It does NOT define defaults "inherited" by other `project` items.
             # https://docs.codecov.com/docs/commit-status
-            all:
-                target: 80%
-                threshold: 5%
-                informational: true
+            default:
+                informational: true # Always pass. Ignore `target`, `threshold`, etc.
+                target: 80
+                threshold: 5
                 only_pulls: true
             codewhisperer:
+                informational: true # Always pass. Ignore `target`, `threshold`, etc.
                 paths:
-                    - packages/core/src/codewhisperer/*
+                    - 'packages/core/src/codewhisperer/'
+                    - 'packages/core/src/amazonq*/*'
+                    - 'packages/amazonq/src/'
                 flags:
                     - 'codewhisperer'
-                target: 80%
-                threshold: 5%
-                informational: true
+                target: 80
+                threshold: 5
                 only_pulls: true
             amazonqFeatureDev:
+                informational: true # Always pass. Ignore `target`, `threshold`, etc.
                 paths:
-                    - packages/core/src/amazonqFeatureDev/*
+                    - 'packages/core/src/amazonqFeatureDev/*'
                 flags:
                     - 'amazonqFeatureDev'
-                target: 80%
-                threshold: 5%
-                informational: true
+                target: 80
+                threshold: 5
                 only_pulls: true
             amazonqGumby:
+                informational: true # Always pass. Ignore `target`, `threshold`, etc.
                 paths:
-                    - packages/core/src/amazonqGumby/*
-                target: 80%
-                threshold: 5%
-                informational: true
+                    - 'packages/core/src/amazonqGumby/*'
+                target: 80
+                threshold: 5
                 only_pulls: true
             codewhispererChat:
+                informational: true # Always pass. Ignore `target`, `threshold`, etc.
                 paths:
-                    - packages/core/src/codewhispererChat/*
-                target: 80%
-                threshold: 5%
-                informational: true
+                    - 'packages/core/src/codewhispererChat/*'
+                target: 80
+                threshold: 5
                 only_pulls: true
             applicationcomposer:
+                informational: true # Always pass. Ignore `target`, `threshold`, etc.
                 paths:
-                    - packages/core/src/applicationcomposer/*
-                target: 80%
-                threshold: 5%
-                informational: true
+                    - 'packages/core/src/applicationcomposer/*'
+                target: 80
+                threshold: 5
                 only_pulls: true
             stepFunctions:
+                informational: true # Always pass. Ignore `target`, `threshold`, etc.
                 paths:
-                    - packages/core/src/stepFunctions/*
-                target: 50%
-                threshold: 10%
-                informational: true
+                    - 'packages/core/src/stepFunctions/*'
+                target: 50
+                threshold: 10
                 only_pulls: true
             threatComposer:
+                informational: true # Always pass. Ignore `target`, `threshold`, etc.
                 paths:
-                    - packages/core/src/threatComposer/*
-                target: 80%
-                threshold: 5%
-                informational: true
+                    - 'packages/core/src/threatComposer/*'
+                target: 80
+                threshold: 5
                 only_pulls: true
-        patch: false
+            tests:
+                # Most code in test/ should always be "covered"!
+                target: 95
+                paths:
+                    - '**/test/**'
+        patch:
+            default:
+                # Note: `default` measures the entire project.
+                # It does NOT define defaults "inherited" by other `project` items.
+                # https://docs.codecov.com/docs/commit-status
+                target: 90
+                threshold: 5
+                only_pulls: true
+                informational: false # Fail if PR changes are not covered.
+                # branches:
+                #     - master
         changes: false
 
 comment: false
@@ -82,7 +107,9 @@ github_checks:
 flags:
     codewhisperer:
         paths:
-            - packages/core/src/codewhisperer/
+            - 'packages/core/src/codewhisperer/'
+            - 'packages/core/src/amazonq*/*'
+            - 'packages/amazonq/src/'
     amazonqFeatureDev:
         paths:
-            - packages/core/src/amazonqFeatureDev/
+            - 'packages/core/src/amazonqFeatureDev/'
