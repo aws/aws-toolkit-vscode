@@ -5,6 +5,7 @@
 This project is open source. We encourage issues, feature requests, code reviews, pull requests or
 any positive contribution. See [CONTRIBUTING.md](CONTRIBUTING.md) to get started.
 
+
 ### Amazon Q
 
 [![Marketplace Version](https://img.shields.io/vscode-marketplace/v/AmazonWebServices.amazon-q-vscode.svg) ![Marketplace Downloads](https://img.shields.io/vscode-marketplace/d/AmazonWebServices.amazon-q-vscode.svg)](https://marketplace.visualstudio.com/items?itemName=AmazonWebServices.amazon-q-vscode)
