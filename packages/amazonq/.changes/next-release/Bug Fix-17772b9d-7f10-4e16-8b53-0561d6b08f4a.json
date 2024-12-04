@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Fix chat syntax highlighting when using several different themes"
+}
