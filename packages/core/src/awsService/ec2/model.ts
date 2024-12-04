@@ -23,7 +23,7 @@ import { DefaultIamClient } from '../../shared/clients/iamClient'
 import { ErrorInformation } from '../../shared/errors'
 import {
     sshAgentSocketVariable,
-    SSHError,
+    SshError,
     startSshAgent,
     startVscodeRemote,
     testSshConnection,
@@ -203,7 +203,7 @@ export class Ec2Connecter implements vscode.Disposable {
             )
             await startVscodeRemote(remoteEnv.SessionProcess, remoteEnv.hostname, '/', remoteEnv.vscPath, remoteUser)
         } catch (err) {
-            const message = err instanceof SSHError ? 'Testing SSH connection to instance failed' : ''
+            const message = err instanceof SshError ? 'Testing SSH connection to instance failed' : ''
             this.throwConnectionError(message, selection, err as Error)
         } finally {
             await this.ssmClient.terminateSession(testSession)

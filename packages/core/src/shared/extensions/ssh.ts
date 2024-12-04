@@ -13,13 +13,20 @@ import { ArrayConstructor, NonNullObject } from '../utilities/typeConstructors'
 import { Settings } from '../settings'
 import { VSCODE_EXTENSION_ID } from '../extensions'
 import { SSM } from 'aws-sdk'
-import { ToolkitError } from '../errors'
+import { ErrorInformation, ToolkitError } from '../errors'
 
 const localize = nls.loadMessageBundle()
 
 export const sshAgentSocketVariable = 'SSH_AUTH_SOCK'
 
-export class SshError extends ToolkitError {}
+export class SshError extends ToolkitError {
+    constructor(message: string, options: ErrorInformation) {
+        super(message, {
+            ...options,
+            code: SshError.name,
+        })
+    }
+}
 
 export function getSshConfigPath(): string {
     const sshConfigDir = path.join(fs.getUserHomeDir(), '.ssh')
@@ -143,7 +150,7 @@ export async function testSshConnection(
         })
         return result
     } catch (error) {
-        throw new SSHError('SSH connection test failed', { cause: error as Error })
+        throw new SshError('SSH connection test failed', { cause: error as Error })
     }
 }
 
