@@ -10,6 +10,7 @@ export const welcomeScreenTabData = (tabs: TabDataGenerator): MynahUITabStoreTab
     isSelected: true,
     store: {
         quickActionCommands: tabs.quickActionsGenerator.generateForTab('welcome'),
+        contextCommands: tabs.getTabData('cwc', false).contextCommands,
         tabTitle: 'Welcome to Q',
         tabBackground: true,
         chatItems: [
