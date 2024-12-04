@@ -142,15 +142,29 @@ export abstract class LSPDownloader {
     /**
      * Downloads servers.zip, clients.zip, qserver.zip and then extracts them
      */
-    async downloadAndExtractServer(server: Content, installLocation: string, name: string, tempFolder: string) {
-        const qserverZipTempPath = path.join(tempFolder, `${name}.zip`)
-        const downloadOk = await this.downloadAndCheckHash(qserverZipTempPath, server)
+    async downloadAndExtractServer({
+        content,
+        installLocation,
+        name,
+        tempFolder,
+        extractToTempFolder = false,
+    }: {
+        content: Content
+        installLocation: string
+        name: string
+        tempFolder: string
+        extractToTempFolder?: boolean
+    }) {
+        const serverZipTempPath = path.join(tempFolder, `${name}.zip`)
+        const downloadOk = await this.downloadAndCheckHash(serverZipTempPath, content)
         if (!downloadOk) {
             return false
         }
 
-        const zip = new AdmZip(qserverZipTempPath)
-        zip.extractAllTo(tempFolder)
+        // load the zip contents
+        const extractPath = extractToTempFolder ? tempFolder : path.join(tempFolder, name)
+        new AdmZip(serverZipTempPath).extractAllTo(extractPath)
+
         await fs.rename(path.join(tempFolder, name), installLocation)
     }
 

@@ -4,12 +4,13 @@
  */
 
 import vscode from 'vscode'
+import path from 'path'
 import { AmazonQLSPDownloader } from './download'
 
 export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
     // use the codewhisperer language server
-    const serverPath = ctx.asAbsolutePath('dist/amazonqLSP/server.js')
-    const clientPath = ctx.asAbsolutePath('dist/amazonqLSP/client.js')
+    const serverPath = ctx.asAbsolutePath(path.join('resources', 'qdeveloperserver'))
+    const clientPath = ctx.asAbsolutePath(path.join('resources', 'qdeveloperclient'))
     await new AmazonQLSPDownloader(serverPath, clientPath).tryInstallLsp()
 
     /**

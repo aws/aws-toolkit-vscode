@@ -50,8 +50,22 @@ export class AmazonQLSPDownloader extends LSPDownloader {
 
         try {
             tempFolder = await makeTemporaryToolkitFolder()
-            await this.downloadAndExtractServer(server, this.serverPath, 'qdeveloperserver', tempFolder)
-            await this.downloadAndExtractServer(clients, this.clientPath, 'qdeveloperclient', tempFolder)
+
+            // the business logic
+            await this.downloadAndExtractServer({
+                content: server,
+                installLocation: this.serverPath,
+                name: 'qdeveloperserver',
+                tempFolder,
+            })
+
+            // mynah ui
+            await this.downloadAndExtractServer({
+                content: clients,
+                installLocation: this.clientPath,
+                name: 'qdeveloperclient',
+                tempFolder,
+            })
         } finally {
             // clean up temp folder
             if (tempFolder) {

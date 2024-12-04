@@ -198,7 +198,13 @@ export class LspController extends LSPDownloader {
 
         try {
             tempFolder = await makeTemporaryToolkitFolder()
-            await this.downloadAndExtractServer(server, this.serverPath, 'qserver', tempFolder)
+            await this.downloadAndExtractServer({
+                content: server,
+                installLocation: this.serverPath,
+                name: 'qserver',
+                tempFolder,
+                extractToTempFolder: true,
+            })
 
             const runtimeTempPath = path.join(tempFolder, nodeBinName)
             await this.installRuntime(runtime, this.nodePath, runtimeTempPath)
