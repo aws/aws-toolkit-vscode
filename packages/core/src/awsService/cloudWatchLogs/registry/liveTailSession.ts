@@ -93,7 +93,7 @@ export class LiveTailSession {
         if (!commandOutput.responseStream) {
             throw new ToolkitError('LiveTail session response stream is undefined.')
         }
-        this.startTime = Date.now()
+        this.startTime = globals.clock.Date.now()
         this.endTime = undefined
         this.statusBarUpdateTimer = globals.clock.setInterval(() => {
             this.updateStatusBarItemText()
@@ -102,7 +102,7 @@ export class LiveTailSession {
     }
 
     public stopLiveTailSession() {
-        this.endTime = Date.now()
+        this.endTime = globals.clock.Date.now()
         this.statusBarItem.dispose()
         globals.clock.clearInterval(this.statusBarUpdateTimer)
         this.liveTailClient.abortController.abort()
@@ -116,7 +116,7 @@ export class LiveTailSession {
         }
         //Currently running
         if (this.endTime === undefined) {
-            return Date.now() - this.startTime
+            return globals.clock.Date.now() - this.startTime
         }
         return this.endTime - this.startTime
     }
