@@ -12,37 +12,65 @@ coverage:
 
     status:
         project:
-            default:
-                target: 70%
+            # https://docs.codecov.com/docs/commit-status
+            all:
+                target: 80%
                 threshold: 5%
                 informational: true
+                only_pulls: true
             codewhisperer:
                 paths:
                     - packages/core/src/codewhisperer/*
                 flags:
                     - 'codewhisperer'
+                target: 80%
+                threshold: 5%
+                informational: true
+                only_pulls: true
             amazonqFeatureDev:
                 paths:
                     - packages/core/src/amazonqFeatureDev/*
                 flags:
                     - 'amazonqFeatureDev'
+                target: 80%
+                threshold: 5%
+                informational: true
+                only_pulls: true
             amazonqGumby:
                 paths:
                     - packages/core/src/amazonqGumby/*
+                target: 80%
+                threshold: 5%
+                informational: true
+                only_pulls: true
             codewhispererChat:
                 paths:
                     - packages/core/src/codewhispererChat/*
+                target: 80%
+                threshold: 5%
+                informational: true
+                only_pulls: true
             applicationcomposer:
                 paths:
                     - packages/core/src/applicationcomposer/*
+                target: 80%
+                threshold: 5%
+                informational: true
+                only_pulls: true
             stepFunctions:
-                target: 50%
-                threshold: 10%
                 paths:
                     - packages/core/src/stepFunctions/*
+                target: 50%
+                threshold: 10%
+                informational: true
+                only_pulls: true
             threatComposer:
                 paths:
                     - packages/core/src/threatComposer/*
+                target: 80%
+                threshold: 5%
+                informational: true
+                only_pulls: true
         patch: false
         changes: false
 
