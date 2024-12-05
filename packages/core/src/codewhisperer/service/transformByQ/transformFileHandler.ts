@@ -8,11 +8,16 @@ import * as path from 'path'
 import * as os from 'os'
 import xml2js = require('xml2js')
 import * as CodeWhispererConstants from '../../models/constants'
-import { existsSync, writeFileSync } from 'fs' // eslint-disable-line no-restricted-imports
-import { BuildSystem, FolderInfo, transformByQState } from '../../models/model'
+import { existsSync, readFileSync, writeFileSync } from 'fs' // eslint-disable-line no-restricted-imports
+import { BuildSystem, DB, FolderInfo, transformByQState } from '../../models/model'
 import { IManifestFile } from '../../../amazonqFeatureDev/models'
 import fs from '../../../shared/fs/fs'
 import globals from '../../../shared/extensionGlobals'
+import { ChatSessionManager } from '../../../amazonqGumby/chat/storages/chatSession'
+import { AbsolutePathDetectedError } from '../../../amazonqGumby/errors'
+import { getLogger } from '../../../shared/logger'
+import { isWin } from '../../../shared/vscode/env'
+import { HumanInTheLoopManager } from './humanInTheLoopManager'
 
 export function getDependenciesFolderInfo(): FolderInfo {
     const dependencyFolderName = `${CodeWhispererConstants.dependencyFolderName}${globals.clock.Date.now()}`
@@ -35,6 +40,113 @@ export async function checkBuildSystem(projectPath: string) {
         return BuildSystem.Maven
     }
     return BuildSystem.Unknown
+}
+
+export async function parseBuildFile() {
+    try {
+        const absolutePaths = ['users/', 'system/', 'volumes/', 'c:\\', 'd:\\']
+        const alias = path.basename(os.homedir())
+        absolutePaths.push(alias)
+        const buildFilePath = path.join(transformByQState.getProjectPath(), 'pom.xml')
+        if (existsSync(buildFilePath)) {
+            const buildFileContents = readFileSync(buildFilePath).toString().toLowerCase()
+            const detectedPaths = []
+            for (const absolutePath of absolutePaths) {
+                if (buildFileContents.includes(absolutePath)) {
+                    detectedPaths.push(absolutePath)
+                }
+            }
+            if (detectedPaths.length > 0) {
+                const warningMessage = CodeWhispererConstants.absolutePathDetectedMessage(
+                    detectedPaths.length,
+                    path.basename(buildFilePath),
+                    detectedPaths.join(', ')
+                )
+                transformByQState.getChatControllers()?.errorThrown.fire({
+                    error: new AbsolutePathDetectedError(warningMessage),
+                    tabID: ChatSessionManager.Instance.getSession().tabID,
+                })
+                getLogger().info('CodeTransformation: absolute path potentially in build file')
+                return warningMessage
+            }
+        }
+    } catch (err: any) {
+        // swallow error
+        getLogger().error(`CodeTransformation: error scanning for absolute paths, tranformation continuing: ${err}`)
+    }
+    return undefined
+}
+
+export async function validateSQLMetadataFile(fileContents: string, message: any) {
+    try {
+        const sctData = await xml2js.parseStringPromise(fileContents)
+        const dbEntities = sctData['tree']['instances'][0]['ProjectModel'][0]['entities'][0]
+        const sourceDB = dbEntities['sources'][0]['DbServer'][0]['$']['vendor'].trim().toUpperCase()
+        const targetDB = dbEntities['targets'][0]['DbServer'][0]['$']['vendor'].trim().toUpperCase()
+        const sourceServerName = dbEntities['sources'][0]['DbServer'][0]['$']['name'].trim()
+        transformByQState.setSourceServerName(sourceServerName)
+        if (sourceDB !== DB.ORACLE) {
+            transformByQState.getChatMessenger()?.sendUnrecoverableErrorResponse('unsupported-source-db', message.tabID)
+            return false
+        } else if (targetDB !== DB.AURORA_POSTGRESQL && targetDB !== DB.RDS_POSTGRESQL) {
+            transformByQState.getChatMessenger()?.sendUnrecoverableErrorResponse('unsupported-target-db', message.tabID)
+            return false
+        }
+        transformByQState.setSourceDB(sourceDB)
+        transformByQState.setTargetDB(targetDB)
+
+        const serverNodeLocations =
+            sctData['tree']['instances'][0]['ProjectModel'][0]['relations'][0]['server-node-location']
+        const schemaNames = new Set<string>()
+        serverNodeLocations.forEach((serverNodeLocation: any) => {
+            const schemaNodes = serverNodeLocation['FullNameNodeInfoList'][0]['nameParts'][0][
+                'FullNameNodeInfo'
+            ].filter((node: any) => node['$']['typeNode'].toLowerCase() === 'schema')
+            schemaNodes.forEach((node: any) => {
+                schemaNames.add(node['$']['nameNode'].toUpperCase())
+            })
+        })
+        transformByQState.setSchemaOptions(schemaNames) // user will choose one of these
+        getLogger().info(
+            `CodeTransformation: Parsed .sct file with source DB: ${sourceDB}, target DB: ${targetDB}, source host name: ${sourceServerName}, and schema names: ${Array.from(schemaNames)}`
+        )
+    } catch (err: any) {
+        getLogger().error('CodeTransformation: Error parsing .sct file. %O', err)
+        transformByQState.getChatMessenger()?.sendUnrecoverableErrorResponse('error-parsing-sct-file', message.tabID)
+        return false
+    }
+    return true
+}
+
+export async function setMaven() {
+    let mavenWrapperExecutableName = isWin() ? 'mvnw.cmd' : 'mvnw'
+    const mavenWrapperExecutablePath = path.join(transformByQState.getProjectPath(), mavenWrapperExecutableName)
+    if (existsSync(mavenWrapperExecutablePath)) {
+        if (mavenWrapperExecutableName === 'mvnw') {
+            mavenWrapperExecutableName = './mvnw' // add the './' for non-Windows
+        } else if (mavenWrapperExecutableName === 'mvnw.cmd') {
+            mavenWrapperExecutableName = '.\\mvnw.cmd' // add the '.\' for Windows
+        }
+        transformByQState.setMavenName(mavenWrapperExecutableName)
+    } else {
+        transformByQState.setMavenName('mvn')
+    }
+    getLogger().info(`CodeTransformation: using Maven ${transformByQState.getMavenName()}`)
+}
+
+export async function openHilPomFile() {
+    const humanInTheLoopManager = HumanInTheLoopManager.instance
+    await highlightPomIssueInProject(
+        humanInTheLoopManager.getNewPomFileVirtualFileReference(),
+        HumanInTheLoopManager.instance.diagnosticCollection,
+        humanInTheLoopManager.getManifestFileValues().sourcePomVersion
+    )
+}
+
+export async function openBuildLogFile() {
+    const logFilePath = transformByQState.getPreBuildLogFilePath()
+    const doc = await vscode.workspace.openTextDocument(logFilePath)
+    await vscode.window.showTextDocument(doc)
 }
 
 export async function createPomCopy(

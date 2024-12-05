@@ -20,18 +20,13 @@ import {
     compileProject,
     finishHumanInTheLoop,
     getValidLanguageUpgradeCandidateProjects,
-    openBuildLogFile,
-    openHilPomFile,
-    parseBuildFile,
     postTransformationJob,
     processLanguageUpgradeTransformFormInput,
     processSQLConversionTransformFormInput,
     startTransformByQ,
     stopTransformByQ,
     validateCanCompileProject,
-    setMaven,
     getValidSQLConversionCandidateProjects,
-    validateSQLMetadataFile,
 } from '../../../codewhisperer/commands/startTransformByQ'
 import { JDKVersion, TransformationCandidateProject, transformByQState } from '../../../codewhisperer/models/model'
 import {
@@ -62,6 +57,13 @@ import { getStringHash } from '../../../shared/utilities/textUtilities'
 import { getVersionData } from '../../../codewhisperer/service/transformByQ/transformMavenHandler'
 import AdmZip from 'adm-zip'
 import { AuthError } from '../../../auth/sso/server'
+import {
+    setMaven,
+    openHilPomFile,
+    openBuildLogFile,
+    parseBuildFile,
+    validateSQLMetadataFile,
+} from '../../../codewhisperer/service/transformByQ/transformFileHandler'
 
 // These events can be interactions within the chat,
 // or elsewhere in the IDE
