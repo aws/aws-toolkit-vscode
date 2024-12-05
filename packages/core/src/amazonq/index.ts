@@ -15,7 +15,7 @@ export {
     walkthroughInlineSuggestionsExample,
     walkthroughSecurityScanExample,
 } from './onboardingPage/walkthrough'
-export { LspController, Content } from './lsp/lspController'
+export { LspController } from './lsp/lspController'
 export { LspClient } from './lsp/lspClient'
 export { api } from './extApi'
 export { AmazonQChatViewProvider } from './webview/webView'

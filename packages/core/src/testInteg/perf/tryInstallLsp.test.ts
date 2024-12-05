@@ -8,7 +8,7 @@ import { Content } from 'aws-sdk/clients/codecommit'
 import AdmZip from 'adm-zip'
 import path from 'path'
 import { LspController } from '../../amazonq'
-import { fs, getRandomString, globals } from '../../shared'
+import { fs, getRandomString } from '../../shared'
 import { createTestWorkspace } from '../../test/testUtil'
 import { getEqualOSTestOptions, performanceTest } from '../../shared/performance/performance'
 import { getFsCallsUpperBound } from './utilities'
@@ -37,8 +37,11 @@ function createStubs(numberOfFiles: number, fileSize: number): sinon.SinonSpiedI
     // Avoid making HTTP request or mocking giant manifest, stub what we need directly from request.
     sinon.stub(LspController.prototype, 'fetchManifest')
     // Directly feed the runtime specifications.
-    sinon.stub(LspController.prototype, 'getQserverFromManifest').returns(fakeQServerContent)
-    sinon.stub(LspController.prototype, 'getNodeRuntimeFromManifest').returns(fakeNodeContent)
+    sinon
+        .stub(LspController.prototype, 'getDependency')
+        .withArgs(sinon.match.any, 'qserver')
+        .returns(fakeQServerContent)
+    sinon.stub(LspController.prototype, 'getDependency').withArgs(sinon.match.any, 'node').returns(fakeNodeContent)
     // avoid fetch call.
     sinon.stub(LspController.prototype, '_download').callsFake(getFakeDownload(numberOfFiles, fileSize))
     // Hard code the hash since we are creating files on the spot, whose hashes can't be predicted.
@@ -86,7 +89,7 @@ function performanceTestWrapper(numFiles: number, fileSize: number, message: str
                     return createStubs(numFiles, fileSize)
                 },
                 execute: async () => {
-                    return await LspController.instance.tryInstallLsp(globals.context)
+                    return await LspController.instance.tryInstallLsp()
                 },
                 verify: async (fsSpy: sinon.SinonSpiedInstance<FileSystem>, result: boolean) => {
                     assert.ok(result)

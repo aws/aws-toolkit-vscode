@@ -4,9 +4,9 @@
  */
 import assert from 'assert'
 import sinon from 'sinon'
-import { Content, LspController } from 'aws-core-vscode/amazonq'
+import { LspController } from 'aws-core-vscode/amazonq'
 import { createTestFile } from 'aws-core-vscode/test'
-import { fs } from 'aws-core-vscode/shared'
+import { fs, Content } from 'aws-core-vscode/shared'
 
 describe('Amazon Q LSP controller', function () {
     it('Download mechanism checks against hash, when hash matches', async function () {

@@ -5,23 +5,18 @@
 
 import * as vscode from 'vscode'
 import * as path from 'path'
-import * as crypto from 'crypto'
-import { createWriteStream } from 'fs' // eslint-disable-line no-restricted-imports
 import { getLogger } from '../../shared/logger/logger'
 import { CurrentWsFolders, collectFilesForIndex } from '../../shared/utilities/workspaceUtils'
-import fetch from 'node-fetch'
-import request from '../../shared/request'
 import { LspClient } from './lspClient'
-import AdmZip from 'adm-zip'
 import { RelevantTextDocument } from '@amzn/codewhisperer-streaming'
-import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../shared/filesystemUtilities'
 import { activate as activateLsp } from './lspClient'
 import { telemetry } from '../../shared/telemetry'
 import { isCloud9 } from '../../shared/extensionUtilities'
-import { fs, globals, ToolkitError } from '../../shared'
-import { isWeb } from '../../shared/extensionGlobals'
-import { getUserAgent } from '../../shared/telemetry/util'
+import globals, { isWeb } from '../../shared/extensionGlobals'
 import { isAmazonInternalOs } from '../../shared/vscode/env'
+import { LspDownloader, Manifest } from '../../shared/fetchLsp'
+import { fs } from '../../shared/fs/fs'
+import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../shared/filesystemUtilities'
 
 export interface Chunk {
     readonly filePath: string
@@ -31,31 +26,6 @@ export interface Chunk {
     readonly programmingLanguage?: string
 }
 
-export interface Content {
-    filename: string
-    url: string
-    hashes: string[]
-    bytes: number
-    serverVersion?: string
-}
-
-export interface Target {
-    platform: string
-    arch: string
-    contents: Content[]
-}
-
-export interface Manifest {
-    manifestSchemaVersion: string
-    artifactId: string
-    artifactDescription: string
-    isManifestDeprecated: boolean
-    versions: {
-        serverVersion: string
-        isDelisted: boolean
-        targets: Target[]
-    }[]
-}
 const manifestUrl = 'https://aws-toolkit-language-servers.amazonaws.com/q-context/manifest.json'
 // this LSP client in Q extension is only going to work with these LSP server versions
 const supportedLspServerVersions = ['0.1.29']
@@ -79,202 +49,24 @@ export interface BuildIndexConfig {
  *    Pre-process the input to Index Files API
  *    Post-process the output from Query API
  */
-export class LspController {
+export class LspController extends LspDownloader {
     static #instance: LspController
     private _isIndexingInProgress = false
+    private serverPath: string
+    private nodePath: string
 
     public static get instance() {
         return (this.#instance ??= new this())
     }
-    constructor() {}
+
+    constructor() {
+        super(manifestUrl, supportedLspServerVersions)
+        this.serverPath = globals.context.asAbsolutePath(path.join('resources', 'qserver'))
+        this.nodePath = globals.context.asAbsolutePath(path.join('resources', nodeBinName))
+    }
 
     isIndexingInProgress() {
         return this._isIndexingInProgress
-    }
-
-    async _download(localFile: string, remoteUrl: string) {
-        const res = await fetch(remoteUrl, {
-            headers: {
-                'User-Agent': getUserAgent({ includePlatform: true, includeClientId: true }),
-            },
-        })
-        if (!res.ok) {
-            throw new ToolkitError(`Failed to download. Error: ${JSON.stringify(res)}`)
-        }
-        return new Promise((resolve, reject) => {
-            const file = createWriteStream(localFile)
-            res.body.pipe(file)
-            res.body.on('error', (err) => {
-                reject(err)
-            })
-            file.on('finish', () => {
-                file.close(resolve)
-            })
-        })
-    }
-
-    async fetchManifest() {
-        try {
-            const resp = await request.fetch('GET', manifestUrl, {
-                headers: {
-                    'User-Agent': getUserAgent({ includePlatform: true, includeClientId: true }),
-                },
-            }).response
-            if (!resp.ok) {
-                throw new ToolkitError(`Failed to fetch manifest. Error: ${resp.statusText}`)
-            }
-            return resp.json()
-        } catch (e: any) {
-            throw new ToolkitError(`Failed to fetch manifest. Error: ${JSON.stringify(e)}`)
-        }
-    }
-
-    async getFileSha384(filePath: string): Promise<string> {
-        const fileBuffer = await fs.readFileBytes(filePath)
-        const hash = crypto.createHash('sha384')
-        hash.update(fileBuffer)
-        return hash.digest('hex')
-    }
-
-    async isLspInstalled(context: vscode.ExtensionContext) {
-        const localQServer = context.asAbsolutePath(path.join('resources', 'qserver'))
-        const localNodeRuntime = context.asAbsolutePath(path.join('resources', nodeBinName))
-        return (await fs.exists(localQServer)) && (await fs.exists(localNodeRuntime))
-    }
-
-    getQserverFromManifest(manifest: Manifest): Content | undefined {
-        if (manifest.isManifestDeprecated) {
-            return undefined
-        }
-        for (const version of manifest.versions) {
-            if (version.isDelisted) {
-                continue
-            }
-            if (!supportedLspServerVersions.includes(version.serverVersion)) {
-                continue
-            }
-            for (const t of version.targets) {
-                if (
-                    (t.platform === process.platform || (t.platform === 'windows' && process.platform === 'win32')) &&
-                    t.arch === process.arch
-                ) {
-                    for (const content of t.contents) {
-                        if (content.filename.startsWith('qserver') && content.hashes.length > 0) {
-                            content.serverVersion = version.serverVersion
-                            return content
-                        }
-                    }
-                }
-            }
-        }
-        return undefined
-    }
-
-    getNodeRuntimeFromManifest(manifest: Manifest): Content | undefined {
-        if (manifest.isManifestDeprecated) {
-            return undefined
-        }
-        for (const version of manifest.versions) {
-            if (version.isDelisted) {
-                continue
-            }
-            if (!supportedLspServerVersions.includes(version.serverVersion)) {
-                continue
-            }
-            for (const t of version.targets) {
-                if (
-                    (t.platform === process.platform || (t.platform === 'windows' && process.platform === 'win32')) &&
-                    t.arch === process.arch
-                ) {
-                    for (const content of t.contents) {
-                        if (content.filename.startsWith('node') && content.hashes.length > 0) {
-                            content.serverVersion = version.serverVersion
-                            return content
-                        }
-                    }
-                }
-            }
-        }
-        return undefined
-    }
-
-    private async hashMatch(filePath: string, content: Content) {
-        const sha384 = await this.getFileSha384(filePath)
-        if ('sha384:' + sha384 !== content.hashes[0]) {
-            getLogger().error(
-                `LspController: Downloaded file sha ${sha384} does not match manifest ${content.hashes[0]}.`
-            )
-            await fs.delete(filePath)
-            return false
-        }
-        return true
-    }
-
-    async downloadAndCheckHash(filePath: string, content: Content) {
-        await this._download(filePath, content.url)
-        const match = await this.hashMatch(filePath, content)
-        if (!match) {
-            return false
-        }
-        return true
-    }
-
-    async tryInstallLsp(context: vscode.ExtensionContext): Promise<boolean> {
-        let tempFolder = undefined
-        try {
-            if (await this.isLspInstalled(context)) {
-                getLogger().info(`LspController: LSP already installed`)
-                return true
-            }
-            // clean up previous downloaded LSP
-            const qserverPath = context.asAbsolutePath(path.join('resources', 'qserver'))
-            if (await fs.exists(qserverPath)) {
-                await tryRemoveFolder(qserverPath)
-            }
-            // clean up previous downloaded node runtime
-            const nodeRuntimePath = context.asAbsolutePath(path.join('resources', nodeBinName))
-            if (await fs.exists(nodeRuntimePath)) {
-                await fs.delete(nodeRuntimePath)
-            }
-            // fetch download url for qserver and node runtime
-            const manifest: Manifest = (await this.fetchManifest()) as Manifest
-            const qserverContent = this.getQserverFromManifest(manifest)
-            const nodeRuntimeContent = this.getNodeRuntimeFromManifest(manifest)
-            if (!qserverContent || !nodeRuntimeContent) {
-                getLogger().info(`LspController: Did not find LSP URL for ${process.platform} ${process.arch}`)
-                return false
-            }
-
-            tempFolder = await makeTemporaryToolkitFolder()
-
-            // download lsp to temp folder
-            const qserverZipTempPath = path.join(tempFolder, 'qserver.zip')
-            const downloadOk = await this.downloadAndCheckHash(qserverZipTempPath, qserverContent)
-            if (!downloadOk) {
-                return false
-            }
-            const zip = new AdmZip(qserverZipTempPath)
-            zip.extractAllTo(tempFolder)
-            await fs.rename(path.join(tempFolder, 'qserver'), qserverPath)
-
-            // download node runtime to temp folder
-            const nodeRuntimeTempPath = path.join(tempFolder, nodeBinName)
-            const downloadNodeOk = await this.downloadAndCheckHash(nodeRuntimeTempPath, nodeRuntimeContent)
-            if (!downloadNodeOk) {
-                return false
-            }
-            await fs.chmod(nodeRuntimeTempPath, 0o755)
-            await fs.rename(nodeRuntimeTempPath, nodeRuntimePath)
-            return true
-        } catch (e) {
-            getLogger().error(`LspController: Failed to setup LSP server ${e}`)
-            return false
-        } finally {
-            // clean up temp folder
-            if (tempFolder) {
-                await tryRemoveFolder(tempFolder)
-            }
-        }
     }
 
     async query(s: string): Promise<RelevantTextDocument[]> {
@@ -378,6 +170,54 @@ export class LspController {
         }
     }
 
+    async isLspInstalled(): Promise<boolean> {
+        return (await fs.exists(this.serverPath)) && (await fs.exists(this.nodePath))
+    }
+
+    async cleanup(): Promise<boolean> {
+        if (await fs.exists(this.serverPath)) {
+            await tryRemoveFolder(this.serverPath)
+        }
+
+        if (await fs.exists(this.nodePath)) {
+            await fs.delete(this.nodePath)
+        }
+
+        return true
+    }
+
+    async install(manifest: Manifest) {
+        const server = this.getDependency(manifest, 'qserver')
+        const runtime = this.getDependency(manifest, 'node')
+        if (!server || !runtime) {
+            getLogger('lsp').info(`Did not find LSP URL for ${process.platform} ${process.arch}`)
+            return false
+        }
+
+        let tempFolder = undefined
+
+        try {
+            tempFolder = await makeTemporaryToolkitFolder()
+            await this.downloadAndExtractServer({
+                content: server,
+                installLocation: this.serverPath,
+                name: 'qserver',
+                tempFolder,
+                extractToTempFolder: true,
+            })
+
+            const runtimeTempPath = path.join(tempFolder, nodeBinName)
+            await this.installRuntime(runtime, this.nodePath, runtimeTempPath)
+        } finally {
+            // clean up temp folder
+            if (tempFolder) {
+                await tryRemoveFolder(tempFolder)
+            }
+        }
+
+        return true
+    }
+
     async trySetupLsp(context: vscode.ExtensionContext, buildIndexConfig: BuildIndexConfig) {
         if (isCloud9() || isWeb() || isAmazonInternalOs()) {
             getLogger().warn('LspController: Skipping LSP setup. LSP is not compatible with the current environment. ')
@@ -385,7 +225,7 @@ export class LspController {
             return
         }
         setImmediate(async () => {
-            const ok = await LspController.instance.tryInstallLsp(context)
+            const ok = await LspController.instance.tryInstallLsp()
             if (!ok) {
                 return
             }
