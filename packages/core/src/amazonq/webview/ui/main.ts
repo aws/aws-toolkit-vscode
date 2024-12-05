@@ -613,61 +613,64 @@ export const createMynahUI = (
         },
         onVote: connector.onChatItemVoted,
         onInBodyButtonClicked: (tabId, messageId, action, eventId) => {
-            if (action.id === disclaimerAcknowledgeButtonId) {
-                disclaimerCardActive = false
+            switch (action.id) {
+                case disclaimerAcknowledgeButtonId: {
+                    disclaimerCardActive = false
 
-                // post message to tell VSCode that disclaimer is acknowledged
-                ideApi.postMessage({
-                    command: 'disclaimer-acknowledged',
-                })
+                    // post message to tell VSCode that disclaimer is acknowledged
+                    ideApi.postMessage({
+                        command: 'disclaimer-acknowledged',
+                    })
 
-                // create telemetry
-                ideApi.postMessage(createClickTelemetry('amazonq-disclaimer-acknowledge-button'))
+                    // create telemetry
+                    ideApi.postMessage(createClickTelemetry('amazonq-disclaimer-acknowledge-button'))
 
-                // remove all disclaimer cards from all tabs
-                Object.keys(mynahUI.getAllTabs()).forEach((storeTabKey) => {
-                    // eslint-disable-next-line unicorn/no-null
-                    mynahUI.updateStore(storeTabKey, { promptInputStickyCard: null })
-                })
-            }
-
-            if (action.id === 'quick-start') {
-                /**
-                 * quick start is the action on the welcome page. When its
-                 * clicked it collapses the view and puts it into regular
-                 * "chat" which is cwc
-                 */
-                tabsStorage.updateTabTypeFromUnknown(tabId, 'cwc')
-
-                // show quick start in the current tab instead of a new one
-                mynahUI.updateStore(tabId, {
-                    tabHeaderDetails: undefined,
-                    compactMode: false,
-                    tabBackground: false,
-                    promptInputText: '/',
-                    promptInputLabel: undefined,
-                    chatItems: [],
-                })
-
-                ideApi.postMessage(createClickTelemetry('amazonq-welcome-quick-start-button'))
-                return
-            }
-
-            if (action.id === 'explore') {
-                const newTabId = mynahUI.updateStore('', agentWalkthroughDataModel)
-                if (newTabId === undefined) {
-                    mynahUI.notify({
-                        content: uiComponentsTexts.noMoreTabsTooltip,
-                        type: NotificationType.WARNING,
+                    // remove all disclaimer cards from all tabs
+                    Object.keys(mynahUI.getAllTabs()).forEach((storeTabKey) => {
+                        // eslint-disable-next-line unicorn/no-null
+                        mynahUI.updateStore(storeTabKey, { promptInputStickyCard: null })
                     })
                     return
                 }
-                tabsStorage.updateTabTypeFromUnknown(newTabId, 'agentWalkthrough')
-                ideApi.postMessage(createClickTelemetry('amazonq-welcome-explore-button'))
-                return
-            }
+                case 'quick-start': {
+                    /**
+                     * quick start is the action on the welcome page. When its
+                     * clicked it collapses the view and puts it into regular
+                     * "chat" which is cwc
+                     */
+                    tabsStorage.updateTabTypeFromUnknown(tabId, 'cwc')
 
-            connector.onCustomFormAction(tabId, messageId, action, eventId)
+                    // show quick start in the current tab instead of a new one
+                    mynahUI.updateStore(tabId, {
+                        tabHeaderDetails: undefined,
+                        compactMode: false,
+                        tabBackground: false,
+                        promptInputText: '/',
+                        promptInputLabel: undefined,
+                        chatItems: [],
+                    })
+
+                    ideApi.postMessage(createClickTelemetry('amazonq-welcome-quick-start-button'))
+                    return
+                }
+                case 'explore': {
+                    const newTabId = mynahUI.updateStore('', agentWalkthroughDataModel)
+                    if (newTabId === undefined) {
+                        mynahUI.notify({
+                            content: uiComponentsTexts.noMoreTabsTooltip,
+                            type: NotificationType.WARNING,
+                        })
+                        return
+                    }
+                    tabsStorage.updateTabTypeFromUnknown(newTabId, 'agentWalkthrough')
+                    ideApi.postMessage(createClickTelemetry('amazonq-welcome-explore-button'))
+                    return
+                }
+                default: {
+                    connector.onCustomFormAction(tabId, messageId, action, eventId)
+                    return
+                }
+            }
         },
         onCustomFormAction: (tabId, action, eventId) => {
             connector.onCustomFormAction(tabId, undefined, action, eventId)
