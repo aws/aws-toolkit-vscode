@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ExtensionContext, LogOutputChannel, OutputChannel, Uri } from 'vscode'
+import { ExtensionContext, OutputChannel, Uri } from 'vscode'
 import { LoginManager } from '../auth/deprecated/loginManager'
 import { AwsResourceManager } from '../dynamicResources/awsResourceManager'
 import { AWSClientBuilder } from './awsClientBuilder'
@@ -191,7 +191,7 @@ export interface ToolkitGlobals {
     /**
      * Log messages. Use `outputChannel` for application messages.
      */
-    logOutputChannel: LogOutputChannel
+    logOutputChannel: OutputChannel
     loginManager: LoginManager
     awsContextCommands: AwsContextCommands
     awsContext: AwsContext

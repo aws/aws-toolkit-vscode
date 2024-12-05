@@ -44,14 +44,14 @@ _ec2() {
 
 _main() {
     _log "=============================================================================="
-    _require LOG_LEVEL "${LOG_LEVEL:-}"
+    _require DEBUG_LOGS "${DEBUG_LOGS:-}"
     _require AWS_REGION "${AWS_REGION:-}"
     _require SESSION_ID "${SESSION_ID:-}"
     _require_nolog STREAM_URL "${STREAM_URL:-}"
     _require_nolog TOKEN "${TOKEN:-}"
 
-    # Only log file paths when debug level is set in toolkit. 
-    if [ "${LOG_LEVEL:-}" -le 2 ]; then
+    # Only log file paths when debug level is enabled.
+    if [ "${DEBUG_LOGS:-}" -eq 1 ]; then
         _require AWS_SSM_CLI "${AWS_SSM_CLI:-}"
         _require LOG_FILE_LOCATION "${LOG_FILE_LOCATION:-}"
     else

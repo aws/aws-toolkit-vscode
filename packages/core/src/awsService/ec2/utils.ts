@@ -8,7 +8,7 @@ import { copyToClipboard } from '../../shared/utilities/messages'
 import { Ec2Selection } from './prompter'
 import { sshLogFileLocation } from '../../shared/sshConfig'
 import { SSM } from 'aws-sdk'
-import { globals } from '../../shared'
+import { getLogger } from '../../shared'
 
 export function getIconCode(instance: SafeEc2Instance) {
     if (instance.LastSeenStatus === 'running') {
@@ -43,7 +43,7 @@ export function getEc2SsmEnv(
             STREAM_URL: session.StreamUrl,
             SESSION_ID: session.SessionId,
             TOKEN: session.TokenValue,
-            LOG_LEVEL: globals.logOutputChannel.logLevel,
+            DEBUG_LOGS: getLogger().logLevelEnabled('debug') ? 1 : 0,
         },
         process.env
     )
