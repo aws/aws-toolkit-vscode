@@ -17,7 +17,6 @@ import { ChatSessionManager } from '../../../amazonqGumby/chat/storages/chatSess
 import { AbsolutePathDetectedError } from '../../../amazonqGumby/errors'
 import { getLogger } from '../../../shared/logger'
 import { isWin } from '../../../shared/vscode/env'
-import { HumanInTheLoopManager } from './humanInTheLoopManager'
 
 export function getDependenciesFolderInfo(): FolderInfo {
     const dependencyFolderName = `${CodeWhispererConstants.dependencyFolderName}${globals.clock.Date.now()}`
@@ -132,15 +131,6 @@ export async function setMaven() {
         transformByQState.setMavenName('mvn')
     }
     getLogger().info(`CodeTransformation: using Maven ${transformByQState.getMavenName()}`)
-}
-
-export async function openHilPomFile() {
-    const humanInTheLoopManager = HumanInTheLoopManager.instance
-    await highlightPomIssueInProject(
-        humanInTheLoopManager.getNewPomFileVirtualFileReference(),
-        HumanInTheLoopManager.instance.diagnosticCollection,
-        humanInTheLoopManager.getManifestFileValues().sourcePomVersion
-    )
 }
 
 export async function openBuildLogFile() {

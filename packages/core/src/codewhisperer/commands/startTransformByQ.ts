@@ -65,6 +65,7 @@ import {
     getCodeIssueSnippetFromPom,
     getDependenciesFolderInfo,
     getJsonValuesFromManifestFile,
+    highlightPomIssueInProject,
     parseVersionsListFromPomFile,
     setMaven,
     writeLogs,
@@ -389,6 +390,15 @@ export async function initiateHumanInTheLoopPrompt(jobId: string) {
         })
     }
     return false
+}
+
+export async function openHilPomFile() {
+    const humanInTheLoopManager = HumanInTheLoopManager.instance
+    await highlightPomIssueInProject(
+        humanInTheLoopManager.getNewPomFileVirtualFileReference(),
+        HumanInTheLoopManager.instance.diagnosticCollection,
+        humanInTheLoopManager.getManifestFileValues().sourcePomVersion
+    )
 }
 
 export async function terminateHILEarly(jobID: string) {
