@@ -61,7 +61,7 @@ export const notificationTypes = {
 /**
  * Facade over our VSCode Auth that does crud operations on the language server auth
  */
-export class AmazonQLSPAuth {
+export class AmazonQLspAuth {
     constructor(private readonly client: LanguageClient) {}
 
     async init() {

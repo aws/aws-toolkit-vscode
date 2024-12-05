@@ -9,7 +9,7 @@ import * as cp from 'child_process'
 import * as crypto from 'crypto'
 import { LanguageClient, LanguageClientOptions, ServerOptions, TransportKind } from 'vscode-languageclient'
 import { registerInlineCompletion } from '../inline/completion'
-import { AmazonQLSPAuth, notificationTypes, writeEncryptionInit } from './auth'
+import { AmazonQLspAuth, notificationTypes, writeEncryptionInit } from './auth'
 import { AuthUtil } from 'aws-core-vscode/codewhisperer'
 import { ConnectionMetadata } from '@aws/language-server-runtimes/protocol'
 import { registerChat } from '../chat/activation'
@@ -82,7 +82,7 @@ export function startLanguageServer(extensionContext: vscode.ExtensionContext, s
     const disposable = client.start()
     toDispose.push(disposable)
 
-    const auth = new AmazonQLSPAuth(client)
+    const auth = new AmazonQLspAuth(client)
 
     return client.onReady().then(async () => {
         await auth.init()
