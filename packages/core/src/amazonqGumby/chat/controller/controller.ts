@@ -384,7 +384,7 @@ export class GumbyController {
                 this.messenger.sendJobSubmittedMessage(message.tabID)
                 break
             case ButtonActions.STOP_TRANSFORMATION_JOB:
-                await stopTransformByQ(transformByQState.getJobId(), CancelActionPositions.Chat)
+                await stopTransformByQ(transformByQState.getJobId())
                 await postTransformationJob()
                 await cleanupTransformationJob()
                 break
@@ -466,10 +466,6 @@ export class GumbyController {
                 message.tabID
             )
 
-            if (fromJDKVersion === JDKVersion.UNSUPPORTED) {
-                this.messenger.sendUnrecoverableErrorResponse('unsupported-source-jdk-version', message.tabID)
-                return
-            }
             await processLanguageUpgradeTransformFormInput(pathToProject, fromJDKVersion, toJDKVersion)
             await this.messenger.sendSkipTestsPrompt(message.tabID)
         })
