@@ -120,12 +120,8 @@ export class ZipUtil {
             zip.addFile(zipEntryPath, Buffer.from(content, 'utf-8'))
 
             if (scope === CodeWhispererConstants.CodeAnalysisScope.FILE_ON_DEMAND) {
-                await this.processCombinedGitDiff(
-                    zip,
-                    [workspaceFolder.uri.fsPath],
-                    uri.fsPath,
-                    CodeWhispererConstants.CodeAnalysisScope.FILE_ON_DEMAND
-                )
+                const gitDiffContent = `+++ b/${zipEntryPath}`
+                zip.addFile(ZipConstants.codeDiffFilePath, Buffer.from(gitDiffContent, 'utf-8'))
             }
         } else {
             zip.addFile(uri.fsPath, Buffer.from(content, 'utf-8'))
