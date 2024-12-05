@@ -450,7 +450,7 @@ export class ZipUtil {
     }
 
     protected async processTestCoverageFiles(targetPath: string) {
-        //TODO: will be removed post release
+        // TODO: will be removed post release
         const coverageFilePatterns = ['**/coverage.xml', '**/coverage.json', '**/coverage.txt']
         let files: vscode.Uri[] = []
 
@@ -616,7 +616,7 @@ export class ZipUtil {
             throw error
         }
     }
-    //TODO: Refactor this
+    // TODO: Refactor this
     public async removeTmpFiles(zipMetadata: ZipMetadata, scope?: CodeWhispererConstants.CodeAnalysisScope) {
         const logger = getLoggerForScope(scope)
         logger.verbose(`Cleaning up temporary files...`)

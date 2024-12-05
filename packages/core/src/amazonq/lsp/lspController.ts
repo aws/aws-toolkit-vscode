@@ -360,7 +360,7 @@ export class LspController {
                 })
             }
         } catch (error) {
-            //TODO: use telemetry.run()
+            // TODO: use telemetry.run()
             getLogger().error(`LspController: Failed to build index of project`)
             telemetry.amazonq_indexWorkspace.emit({
                 duration: performance.now() - start,
