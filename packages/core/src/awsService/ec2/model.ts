@@ -242,6 +242,7 @@ export class Ec2Connecter implements vscode.Disposable {
         const ssmSession = await this.startSSMSession(selection.instanceId)
 
         const vars = getEc2SsmEnv(selection, ssm, ssmSession)
+        getLogger().info(`ec2: connect script logs at ${vars.LOG_FILE_LOCATION}`)
         const envProvider = async () => {
             return { [sshAgentSocketVariable]: await startSshAgent(), ...vars }
         }
