@@ -116,7 +116,7 @@ export class DocController {
     }
 
     /** Prompts user to choose a folder in current workspace for README creation/update.
-     * After user chooses a folder, displays confirmaiton message to user with selected path.
+     * After user chooses a folder, displays confirmation message to user with selected path.
      *
      */
     private async folderSelector(data: any) {
