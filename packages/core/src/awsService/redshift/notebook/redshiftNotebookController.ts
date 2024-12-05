@@ -122,13 +122,13 @@ export class RedshiftNotebookController {
         }
         let tableHtml = `<p>Results from ${connectionParams.warehouseIdentifier} - database: ${connectionParams.database}</p><table><thead><tr>`
 
-        //Adding column headers
+        // Adding column headers
         for (const column of columns) {
             tableHtml += `<th>${column}</th>`
         }
         tableHtml += '</tr></thead><tbody>'
 
-        //Adding data rows
+        // Adding data rows
         for (const row of records) {
             tableHtml += '<tr>'
             for (let columnIndex = 0; columnIndex < columns.length; columnIndex++) {

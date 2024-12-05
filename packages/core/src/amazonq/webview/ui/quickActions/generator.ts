@@ -39,7 +39,7 @@ export class QuickActionGenerator {
             return []
         }
 
-        //TODO: Update acc to UX
+        // TODO: Update acc to UX
         const quickActionCommands = [
             {
                 groupName: `Q Developer agentic capabilities`,

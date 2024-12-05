@@ -25,7 +25,7 @@ export function getStateMachineDefinitionFromCfnTemplate(uniqueIdentifier: strin
 
         const matchingKeyList: string[] = []
         for (const key of Object.keys(resources)) {
-            //the resources list always contains 'CDKMetadata'
+            // the resources list always contains 'CDKMetadata'
             if (key === 'CDKMetadata') {
                 continue
             }
@@ -37,7 +37,7 @@ export function getStateMachineDefinitionFromCfnTemplate(uniqueIdentifier: strin
         if (matchingKeyList.length === 0) {
             return ''
         } else {
-            //return minimum length key in matchingKeyList
+            // return minimum length key in matchingKeyList
             matchingKey = matchingKeyList.reduce((a, b) => (a.length <= b.length ? a : b))
         }
 
