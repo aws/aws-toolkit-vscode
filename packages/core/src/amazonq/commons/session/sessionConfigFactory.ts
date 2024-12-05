@@ -4,11 +4,9 @@
  */
 
 import * as vscode from 'vscode'
-import { featureDevScheme } from '../constants'
-import { VirtualFileSystem } from '../../shared/virtualFilesystem'
-import { VirtualMemoryFile } from '../../shared/virtualMemoryFile'
-import { WorkspaceFolderNotFoundError } from '../errors'
-import { CurrentWsFolders } from '../types'
+import { WorkspaceFolderNotFoundError } from '../../../amazonqFeatureDev/errors'
+import { VirtualFileSystem, VirtualMemoryFile } from '../../../shared'
+import { CurrentWsFolders } from '../../../amazonqFeatureDev/types'
 
 export interface SessionConfig {
     // The paths on disk to where the source code lives
@@ -21,7 +19,7 @@ export interface SessionConfig {
  * Factory method for creating session configurations
  * @returns An instantiated SessionConfig, using either the arguments provided or the defaults
  */
-export async function createSessionConfig(): Promise<SessionConfig> {
+export async function createSessionConfig(scheme: string): Promise<SessionConfig> {
     const workspaceFolders = vscode.workspace.workspaceFolders
     const firstFolder = workspaceFolders?.[0]
     if (workspaceFolders === undefined || workspaceFolders.length === 0 || firstFolder === undefined) {
@@ -33,10 +31,7 @@ export async function createSessionConfig(): Promise<SessionConfig> {
     const fs = new VirtualFileSystem()
 
     // Register an empty featureDev file that's used when a new file is being added by the LLM
-    fs.registerProvider(
-        vscode.Uri.from({ scheme: featureDevScheme, path: 'empty' }),
-        new VirtualMemoryFile(new Uint8Array())
-    )
+    fs.registerProvider(vscode.Uri.from({ scheme, path: 'empty' }), new VirtualMemoryFile(new Uint8Array()))
 
     return Promise.resolve({ workspaceRoots, fs, workspaceFolders: [firstFolder, ...workspaceFolders.slice(1)] })
 }
