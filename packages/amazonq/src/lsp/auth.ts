@@ -15,7 +15,7 @@ import { LanguageClient } from 'vscode-languageclient'
 import { AuthUtil } from 'aws-core-vscode/codewhisperer'
 import { Writable } from 'stream'
 
-const encryptionKey = crypto.randomBytes(32)
+export const encryptionKey = crypto.randomBytes(32)
 
 /**
  * Sends a json payload to the language server, who is waiting to know what the encryption key is.

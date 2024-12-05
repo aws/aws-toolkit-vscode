@@ -12,6 +12,7 @@ import { registerInlineCompletion } from '../inline/completion'
 import { AmazonQLSPAuth, notificationTypes, writeEncryptionInit } from './auth'
 import { AuthUtil } from 'aws-core-vscode/codewhisperer'
 import { ConnectionMetadata } from '@aws/language-server-runtimes/protocol'
+import { registerChat } from '../chat/activation'
 
 const localize = nls.loadMessageBundle()
 
@@ -86,6 +87,7 @@ export function startLanguageServer(extensionContext: vscode.ExtensionContext, s
     return client.onReady().then(async () => {
         await auth.init()
         registerInlineCompletion(client)
+        registerChat(client)
 
         // Request handler for when the server wants to know about the clients auth connnection
         client.onRequest<ConnectionMetadata, Error>(notificationTypes.getConnectionMetadata.method, () => {
