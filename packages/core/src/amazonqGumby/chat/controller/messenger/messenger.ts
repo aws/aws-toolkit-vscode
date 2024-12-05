@@ -45,7 +45,6 @@ export type UnrecoverableErrorType =
     | 'no-maven-java-project-found'
     | 'could-not-compile-project'
     | 'invalid-java-home'
-    | 'unsupported-source-jdk-version'
     | 'upload-to-s3-failed'
     | 'job-start-failed'
     | 'unsupported-source-db'
@@ -233,10 +232,6 @@ export class Messenger {
                 {
                     value: JDKVersion.JDK17,
                     label: JDKVersion.JDK17,
-                },
-                {
-                    value: JDKVersion.UNSUPPORTED,
-                    label: 'Other',
                 },
             ],
         })
@@ -472,9 +467,6 @@ export class Messenger {
                 break
             case 'invalid-java-home':
                 message = CodeWhispererConstants.noJavaHomeFoundChatMessage
-                break
-            case 'unsupported-source-jdk-version':
-                message = CodeWhispererConstants.unsupportedJavaVersionChatMessage
                 break
             case 'unsupported-source-db':
                 message = CodeWhispererConstants.invalidMetadataFileUnsupportedSourceDB
