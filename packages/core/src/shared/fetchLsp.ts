@@ -42,7 +42,7 @@ export interface Manifest {
     }[]
 }
 
-export abstract class LSPDownloader {
+export abstract class LspDownloader {
     constructor(
         private readonly manifestURL: string,
         private readonly supportedLspServerVersions?: string[]

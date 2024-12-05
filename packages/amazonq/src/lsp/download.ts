@@ -4,17 +4,17 @@
  */
 
 import {
-    LSPDownloader,
-    Manifest,
+    LspDownloader,
     getLogger,
     makeTemporaryToolkitFolder,
     tryRemoveFolder,
     fs,
+    Manifest,
 } from 'aws-core-vscode/shared'
 
 const manifestURL = 'https://aws-toolkit-language-servers.amazonaws.com/codewhisperer/0/manifest.json'
 
-export class AmazonQLSPDownloader extends LSPDownloader {
+export class AmazonQLSPDownloader extends LspDownloader {
     constructor(
         private readonly serverPath: string,
         private readonly clientPath: string

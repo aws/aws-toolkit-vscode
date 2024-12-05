@@ -14,7 +14,7 @@ import { telemetry } from '../../shared/telemetry'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import globals, { isWeb } from '../../shared/extensionGlobals'
 import { isAmazonInternalOs } from '../../shared/vscode/env'
-import { LSPDownloader, Manifest } from '../../shared/downloadLSP'
+import { LspDownloader, Manifest } from '../../shared/fetchLsp'
 import { fs } from '../../shared/fs/fs'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../shared/filesystemUtilities'
 
@@ -49,7 +49,7 @@ export interface BuildIndexConfig {
  *    Pre-process the input to Index Files API
  *    Post-process the output from Query API
  */
-export class LspController extends LSPDownloader {
+export class LspController extends LspDownloader {
     static #instance: LspController
     private _isIndexingInProgress = false
     private serverPath: string
