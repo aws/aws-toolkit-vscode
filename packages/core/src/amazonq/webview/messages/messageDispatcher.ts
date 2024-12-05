@@ -71,7 +71,7 @@ export function dispatchWebViewMessagesToApps(
                 return
             }
             case 'disclaimer-acknowledged': {
-                void globals.globalState.tryUpdate('aws.amazonq.disclaimerAcknowledged', true)
+                globals.globalState.tryUpdate('aws.amazonq.disclaimerAcknowledged', true)
                 return
             }
         }

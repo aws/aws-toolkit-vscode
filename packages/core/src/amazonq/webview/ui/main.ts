@@ -31,7 +31,7 @@ import { tryNewMap } from '../../util/functionUtils'
 import { welcomeScreenTabData } from './walkthrough/welcome'
 import { agentWalkthroughDataModel } from './walkthrough/agent'
 import { createClickTelemetry, createOpenAgentTelemetry } from './telemetry/actions'
-import { disclaimerAcknowledgeButtonId, disclaimerCard } from './disclaimer/disclaimer'
+import { disclaimerAcknowledgeButtonId, disclaimerCard } from './texts/disclaimer'
 
 export const createMynahUI = (
     ideApi: any,
