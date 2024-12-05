@@ -920,7 +920,7 @@ export async function cleanupTransformationJob() {
 }
 
 export async function stopTransformByQ(jobId: string) {
-    telemetry.codeTransform_jobIsCancelledByUser.run(async () => {
+    await telemetry.codeTransform_jobIsCancelledByUser.run(async () => {
         telemetry.record({
             codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
         })
