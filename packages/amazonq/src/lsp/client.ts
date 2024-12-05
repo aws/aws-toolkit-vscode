@@ -9,8 +9,9 @@ import * as cp from 'child_process'
 import * as crypto from 'crypto'
 import { LanguageClient, LanguageClientOptions, ServerOptions, TransportKind } from 'vscode-languageclient'
 import { registerInlineCompletion } from '../inline/completion'
-import { AmazonQLSPAuth, writeEncryptionInit } from './auth'
+import { AmazonQLSPAuth, notificationTypes, writeEncryptionInit } from './auth'
 import { AuthUtil } from 'aws-core-vscode/codewhisperer'
+import { ConnectionMetadata } from '@aws/language-server-runtimes/protocol'
 
 const localize = nls.loadMessageBundle()
 
@@ -86,9 +87,21 @@ export function startLanguageServer(extensionContext: vscode.ExtensionContext, s
         await auth.init()
         registerInlineCompletion(client)
 
+        // Request handler for when the server wants to know about the clients auth connnection
+        client.onRequest<ConnectionMetadata, Error>(notificationTypes.getConnectionMetadata.method, () => {
+            return {
+                sso: {
+                    startUrl: AuthUtil.instance.auth.startUrl,
+                },
+            }
+        })
+
         toDispose.push(
             AuthUtil.instance.auth.onDidChangeActiveConnection(async () => {
                 await auth.init()
+            }),
+            AuthUtil.instance.auth.onDidDeleteConnection(async () => {
+                client.sendNotification(notificationTypes.deleteBearerToken.method)
             })
         )
     })

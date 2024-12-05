@@ -3,7 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { RequestType, ResponseMessage } from '@aws/language-server-runtimes/protocol'
+import {
+    ConnectionMetadata,
+    NotificationType,
+    RequestType,
+    ResponseMessage,
+} from '@aws/language-server-runtimes/protocol'
 import * as jose from 'jose'
 import * as crypto from 'crypto'
 import { LanguageClient } from 'vscode-languageclient'
@@ -43,12 +48,19 @@ export interface UpdateCredentialsRequest {
     encrypted: boolean
 }
 
-const notificationTypes = {
+export const notificationTypes = {
     updateBearerToken: new RequestType<UpdateCredentialsRequest, ResponseMessage, Error>(
         'aws/credentials/token/update'
     ),
+    deleteBearerToken: new NotificationType('aws/credentials/token/delete'),
+    getConnectionMetadata: new RequestType<undefined, ConnectionMetadata, Error>(
+        'aws/credentials/getConnectionMetadata'
+    ),
 }
 
+/**
+ * Facade over our VSCode Auth that does crud operations on the language server auth
+ */
 export class AmazonQLSPAuth {
     constructor(private readonly client: LanguageClient) {}
 
