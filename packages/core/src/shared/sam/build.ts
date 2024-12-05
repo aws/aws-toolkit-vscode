@@ -235,18 +235,27 @@ export async function runBuild(arg?: TreeNode): Promise<SamBuildResult> {
     await updateRecentResponse(buildMementoRootKey, 'global', 'templatePath', templatePath)
 
     try {
-        const { path: samCliPath } = await getSamCliPathAndVersion()
+        await vscode.window.withProgress(
+            {
+                location: vscode.ProgressLocation.Notification,
+            },
+            async (progress) => {
+                progress.report({ message: `Building SAM template at ${params.template.uri.path}` })
 
-        // Create a child process to run the SAM build command
-        const buildProcess = new ChildProcess(samCliPath, ['build', ...buildFlags], {
-            spawnOptions: await addTelemetryEnvVar({
-                cwd: params.projectRoot.fsPath,
-                env: await getSpawnEnv(process.env),
-            }),
-        })
+                const { path: samCliPath } = await getSamCliPathAndVersion()
 
-        // Run SAM build in Terminal
-        await runInTerminal(buildProcess, 'build')
+                // Create a child process to run the SAM build command
+                const buildProcess = new ChildProcess(samCliPath, ['build', ...buildFlags], {
+                    spawnOptions: await addTelemetryEnvVar({
+                        cwd: params.projectRoot.fsPath,
+                        env: await getSpawnEnv(process.env),
+                    }),
+                })
+
+                // Run SAM build in Terminal
+                await runInTerminal(buildProcess, 'build')
+            }
+        )
 
         await unregisterTemplateBuild(params.template.uri.path)
 

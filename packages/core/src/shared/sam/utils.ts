@@ -125,7 +125,7 @@ function isBuildInProgress(templatePath: string): boolean {
  */
 export function throwIfTemplateIsBeingBuilt(templatePath: string) {
     if (isBuildInProgress(templatePath)) {
-        throw new ToolkitError('Build in progress', { code: 'BuildInProgress' })
+        throw new ToolkitError('Template is already being built', { code: 'BuildInProgress' })
     }
 }
 
