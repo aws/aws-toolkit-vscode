@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { window } from 'vscode'
 import { RequestType, ResponseMessage } from '@aws/language-server-runtimes/protocol'
 import * as jose from 'jose'
 import * as crypto from 'crypto'
@@ -59,7 +58,6 @@ export class AmazonQLSPAuth {
             // send the token to the language server
             const token = await AuthUtil.instance.getBearerToken()
             await this.updateBearerToken(token)
-            void window.showErrorMessage(`Updated bearer token`)
         }
     }
 
