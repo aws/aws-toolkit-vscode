@@ -43,7 +43,7 @@ export function getEc2SsmEnv(
             STREAM_URL: session.StreamUrl,
             SESSION_ID: session.SessionId,
             TOKEN: session.TokenValue,
-            DEBUG_LOGS: getLogger().logLevelEnabled('debug') ? 1 : 0,
+            DEBUG_LOG: getLogger().logLevelEnabled('debug') ? 1 : 0,
         },
         process.env
     )
