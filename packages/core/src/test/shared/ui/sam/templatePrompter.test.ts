@@ -22,7 +22,7 @@ describe('createTemplatePrompter', () => {
 
     beforeEach(() => {
         sandbox = sinon.createSandbox()
-        //Create a mock instance of CloudFormationTemplateRegistry
+        // Create a mock instance of CloudFormationTemplateRegistry
         registry = {
             items: [
                 { path: '/path/to/template1.yaml', item: {} } as WatchedItem<Cfn.Template>,

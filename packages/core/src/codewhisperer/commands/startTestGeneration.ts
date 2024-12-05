@@ -37,7 +37,7 @@ export async function startTestGenerationProcess(
 ) {
     const logger = getLogger()
     const session = ChatSessionManager.Instance.getSession()
-    //TODO: Step 0: Initial Test Gen telemetry
+    // TODO: Step 0: Initial Test Gen telemetry
     try {
         logger.verbose(`Starting Test Generation `)
         logger.verbose(`Tab ID: ${tabID} !== ${session.tabID}`)
@@ -118,7 +118,7 @@ export async function startTestGenerationProcess(
             fileName,
             initialExecution
         )
-        //TODO: Send status to test summary
+        // TODO: Send status to test summary
         if (jobStatus === TestGenerationJobStatus.FAILED) {
             logger.verbose(`Test generation failed.`)
             throw new TestGenFailedError()
@@ -130,7 +130,7 @@ export async function startTestGenerationProcess(
         /**
          * Step 5: Process and show the view diff by getting the results from exportResultsArchive
          */
-        //https://github.com/aws/aws-toolkit-vscode/blob/0164d4145e58ae036ddf3815455ea12a159d491d/packages/core/src/codewhisperer/service/transformByQ/transformationResultsViewProvider.ts#L314-L405
+        // https://github.com/aws/aws-toolkit-vscode/blob/0164d4145e58ae036ddf3815455ea12a159d491d/packages/core/src/codewhisperer/service/transformByQ/transformationResultsViewProvider.ts#L314-L405
         await exportResultsArchive(
             artifactMap.SourceCode,
             testJob.testGenerationJob.testGenerationJobGroupName,
@@ -141,7 +141,7 @@ export async function startTestGenerationProcess(
         )
     } catch (error) {
         logger.error(`startTestGenerationProcess failed: %O`, error)
-        //TODO: Send error message to Chat
+        // TODO: Send error message to Chat
         testGenState.getChatControllers()?.errorThrown.fire({
             tabID: session.tabID,
             error: error,

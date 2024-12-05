@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "Step Functions: Upgrade amazon-states-language-service to 1.13. This new version adds support for [JSONata and Variables](https://aws.amazon.com/blogs/compute/simplifying-developer-experience-with-variables-and-jsonata-in-aws-step-functions/)."
+}

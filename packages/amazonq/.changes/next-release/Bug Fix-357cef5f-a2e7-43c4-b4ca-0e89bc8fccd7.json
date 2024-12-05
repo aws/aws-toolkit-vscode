@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Amazon Q /doc: progress bar persists after cancelling README creation"
+}

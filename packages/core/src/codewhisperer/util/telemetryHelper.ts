@@ -245,7 +245,7 @@ export class TelemetryHelper {
             events.push(event)
         })
 
-        //aggregate suggestion references count
+        // aggregate suggestion references count
         const referenceCount = this.getAggregatedSuggestionReferenceCount(events)
 
         // aggregate user decision events at requestId level

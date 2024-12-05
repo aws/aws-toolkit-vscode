@@ -46,6 +46,7 @@ _main() {
     _log "=============================================================================="
     _require DEBUG_LOG "${DEBUG_LOG:-}"
     _require AWS_REGION "${AWS_REGION:-}"
+
     _require SESSION_ID "${SESSION_ID:-}"
     _require_nolog STREAM_URL "${STREAM_URL:-}"
     _require_nolog TOKEN "${TOKEN:-}"
