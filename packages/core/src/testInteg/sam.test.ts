@@ -46,10 +46,7 @@ const noDebugSessionInterval: number = 100
 /** Go can't handle API tests yet */
 const skipLanguagesOnApi = ['go']
 
-interface TestScenario {
-    displayName: string
-    runtime: Runtime
-    baseImage?: string
+interface TestScenarioDefaults {
     path: string
     debugSessionType: string
     language: Language
@@ -57,6 +54,11 @@ interface TestScenario {
     /** Minimum vscode version required by the relevant third-party extension. */
     vscodeMinimum: string
 }
+type TestScenario = {
+    displayName: string
+    runtime: Runtime
+    baseImage?: string
+} & TestScenarioDefaults
 
 const nodeDefaults = {
     path: 'hello-world/app.mjs',
@@ -90,163 +92,60 @@ const dotnetDefaults = {
     vscodeMinimum: '1.80.0',
 }
 
+const defaults: Record<Runtime, TestScenarioDefaults> = {
+    nodejs: nodeDefaults,
+    java: javaDefaults,
+    python: pythonDefaults,
+    dotnet: dotnetDefaults,
+}
+
+function generateScenario(
+    runtime: Runtime,
+    version: string,
+    options: Partial<TestScenario & { sourceTag: string }> = {},
+    fromImage: boolean = false
+): TestScenario {
+    if (fromImage && !options.baseImage) {
+        throw new Error('baseImage property must be specified when testing from image')
+    }
+    const { sourceTag, ...defaultOverride } = options
+    const source = `(${options.sourceTag ? `${options.sourceTag} ` : ''}${fromImage ? 'Image' : 'ZIP'})`
+    const fullName = `${runtime}${version}`
+    return {
+        runtime: fullName,
+        displayName: `${fullName} ${source}`,
+        ...defaults[runtime],
+        ...defaultOverride,
+    }
+}
 // When testing additional runtimes, consider pulling the docker container in buildspec\linuxIntegrationTests.yml
 // to reduce the chance of automated tests timing out.
 
 const scenarios: TestScenario[] = [
     // zips
-    {
-        runtime: 'nodejs18.x',
-        displayName: 'nodejs18.x (ZIP)',
-        ...nodeDefaults,
-    },
-    {
-        runtime: 'nodejs20.x',
-        displayName: 'nodejs20.x (ZIP)',
-        ...nodeDefaults,
-    },
-    {
-        runtime: 'nodejs22.x',
-        displayName: 'nodejs22.x (ZIP)',
-        ...nodeDefaults,
-        vscodeMinimum: '1.78.0',
-    },
-    {
-        runtime: 'python3.10',
-        displayName: 'python 3.10 (ZIP)',
-        ...pythonDefaults,
-    },
-    {
-        runtime: 'python3.11',
-        displayName: 'python 3.11 (ZIP)',
-        ...pythonDefaults,
-        vscodeMinimum: '1.78.0',
-    },
-    {
-        runtime: 'python3.12',
-        displayName: 'python 3.12 (ZIP)',
-        ...pythonDefaults,
-        vscodeMinimum: '1.78.0',
-    },
-    {
-        runtime: 'python3.13',
-        displayName: 'python 3.13 (ZIP)',
-        ...pythonDefaults,
-        vscodeMinimum: '1.78.0',
-    },
-    {
-        runtime: 'dotnet6',
-        displayName: 'dotnet6 (ZIP)',
-        ...dotnetDefaults,
-    },
-    {
-        runtime: 'java8.al2',
-        displayName: 'java8.al2 (Maven ZIP)',
-        ...javaDefaults,
-    },
-    {
-        runtime: 'java11',
-        displayName: 'java11 (Gradle ZIP)',
-        ...javaDefaults,
-    },
-    {
-        runtime: 'java17',
-        displayName: 'java17 (Gradle ZIP)',
-        ...javaDefaults,
-    },
-    // {
-    //     runtime: 'go1.x',
-    //     displayName: 'go1.x (ZIP)',
-    //     path: 'hello-world/main.go',
-    //     debugSessionType: 'delve',
-    //     language: 'go',
-    //     dependencyManager: 'mod',
-    //     // https://github.com/golang/vscode-go/blob/master/package.json
-    //     vscodeMinimum: '1.67.0',
-    // },
-
+    generateScenario('nodejs', '18.x'),
+    generateScenario('nodejs', '20.x'),
+    generateScenario('nodejs', '22.x', { vscodeMinimum: '1.78.0' }),
+    generateScenario('python', '3.10'),
+    generateScenario('python', '3.11', { vscodeMinimum: '1.78.0' }),
+    generateScenario('python', '3.12', { vscodeMinimum: '1.78.0' }),
+    generateScenario('python', '3.13', { vscodeMinimum: '1.78.0' }),
+    generateScenario('dotnet', '6'),
+    generateScenario('java', '8.al2', { sourceTag: 'Maven' }),
+    generateScenario('java', '11', { sourceTag: 'Gradle' }),
+    generateScenario('java', '17', { sourceTag: 'Gradle' }),
     // images
-    {
-        runtime: 'nodejs18.x',
-        displayName: 'nodejs18.x (Image)',
-        baseImage: 'amazon/nodejs18.x-base',
-        ...nodeDefaults,
-    },
-    {
-        runtime: 'nodejs20.x',
-        displayName: 'nodejs20.x (Image)',
-        baseImage: 'amazon/nodejs20.x-base',
-        ...nodeDefaults,
-    },
-    {
-        runtime: 'nodejs22.x',
-        displayName: 'nodejs22.x (Image)',
-        baseImage: 'amazon/nodejs22.x-base',
-        ...nodeDefaults,
-        vscodeMinimum: '1.78.0',
-    },
-    {
-        runtime: 'python3.10',
-        displayName: 'python 3.10 (ZIP)',
-        baseImage: 'amazon/python3.10-base',
-        ...pythonDefaults,
-    },
-    {
-        runtime: 'python3.11',
-        displayName: 'python 3.11 (ZIP)',
-        baseImage: 'amazon/python3.11-base',
-        ...pythonDefaults,
-        vscodeMinimum: '1.78.0',
-    },
-    {
-        runtime: 'python3.12',
-        displayName: 'python 3.12 (ZIP)',
-        baseImage: 'amazon/python3.12-base',
-        ...pythonDefaults,
-        vscodeMinimum: '1.78.0',
-    },
-    {
-        runtime: 'python3.13',
-        displayName: 'python 3.13 (ZIP)',
-        baseImage: 'amazon/python3.13-base',
-        ...pythonDefaults,
-        vscodeMinimum: '1.78.0',
-    },
-    // {
-    //     runtime: 'go1.x',
-    //     displayName: 'go1.x (Image)',
-    //     baseImage: 'amazon/go1.x-base',
-    //     path: 'hello-world/main.go',
-    //     debugSessionType: 'delve',
-    //     language: 'go',
-    //     dependencyManager: 'mod',
-    //     // https://github.com/golang/vscode-go/blob/master/package.json
-    //     vscodeMinimum: '1.67.0',
-    // },
-    {
-        runtime: 'java8.al2',
-        displayName: 'java8.al2 (Gradle Image)',
-        baseImage: 'amazon/java8.al2-base',
-        ...javaDefaults,
-    },
-    {
-        runtime: 'java11',
-        displayName: 'java11 (Maven Image)',
-        baseImage: 'amazon/java11-base',
-        ...javaDefaults,
-    },
-    {
-        runtime: 'java17',
-        displayName: 'java17 (Maven Image)',
-        baseImage: 'amazon/java17-base',
-        ...javaDefaults,
-    },
-    {
-        runtime: 'dotnet6',
-        displayName: 'dotnet6 (Image)',
-        baseImage: 'amazon/dotnet6-base',
-        ...dotnetDefaults,
-    },
+    generateScenario('nodejs', '18.x', { baseImage: 'amazon/nodejs18.x-base' }, true),
+    generateScenario('nodejs', '20.x', { baseImage: 'amazon/nodejs20.x-base' }, true),
+    generateScenario('nodejs', '22.x', { baseImage: 'amazon/nodejs18.x-base', vscodeMinimum: '1.78.0' }, true),
+    generateScenario('python', '3.10', { baseImage: 'amazon/python3.10.x-base' }, true),
+    generateScenario('python', '3.11', { baseImage: 'amazon/python3.11.x-base', vscodeMinimum: '1.78.0' }, true),
+    generateScenario('python', '3.12', { baseImage: 'amazon/python3.12.x-base', vscodeMinimum: '1.78.0' }, true),
+    generateScenario('python', '3.13', { baseImage: 'amazon/python3.13.x-base', vscodeMinimum: '1.78.0' }, true),
+    generateScenario('dotnet', '6', { baseImage: 'amazon/dotnet6-base' }, true),
+    generateScenario('java', '.al2', { baseImage: 'amazon/java8.al2-base', sourceTag: 'Maven' }, true),
+    generateScenario('java', '11', { baseImage: 'amazon/java11-base', sourceTag: 'Gradle' }, true),
+    generateScenario('java', '17', { baseImage: 'amazon/java17-base', sourceTag: 'Gradle' }, true),
 ]
 
 async function openSamAppFile(applicationPath: string): Promise<vscode.Uri> {
