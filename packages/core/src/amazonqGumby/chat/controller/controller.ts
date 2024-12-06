@@ -27,6 +27,7 @@ import {
     stopTransformByQ,
     validateCanCompileProject,
     getValidSQLConversionCandidateProjects,
+    openHilPomFile,
 } from '../../../codewhisperer/commands/startTransformByQ'
 import { JDKVersion, TransformationCandidateProject, transformByQState } from '../../../codewhisperer/models/model'
 import {
@@ -59,7 +60,6 @@ import AdmZip from 'adm-zip'
 import { AuthError } from '../../../auth/sso/server'
 import {
     setMaven,
-    openHilPomFile,
     openBuildLogFile,
     parseBuildFile,
     validateSQLMetadataFile,
