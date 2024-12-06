@@ -444,9 +444,8 @@ export class TestController {
 
             /*
                 For Re:Invent 2024 we are supporting only java and python for unit test generation, rest of the languages shows the similar experience as CWC
-                If user request test generation from input chat without opening a file, its difficult to get the language, so default will be plainText
             */
-            if (language !== 'java' && language !== 'python' && language !== 'plaintext') {
+            if (language !== 'java' && language !== 'python') {
                 const unsupportedLanguage = language.charAt(0).toUpperCase() + language.slice(1)
                 let unsupportedMessage = `<span style="color: #EE9D28;">&#9888;<b>I'm sorry, but /test only supports Python and Java</b><br></span> While ${unsupportedLanguage} is not supported, I will generate a suggestion below. `
                 // handle the case when language is undefined
@@ -640,7 +639,6 @@ export class TestController {
         const session = this.sessionStorage.getSession()
         session.acceptedJobId = session.listOfTestGenerationJobId[session.listOfTestGenerationJobId.length - 1]
         const filePath = session.generatedFilePath
-        session.fileLanguage = await this.getLanguageForFilePath(filePath)
         const absolutePath = path.join(session.projectRootPath, filePath)
         const fileExists = await fs.existsFile(absolutePath)
         const buildCommand = session.updatedBuildCommands?.join(' ')
@@ -724,7 +722,7 @@ export class TestController {
             acceptedCharactersCount: session.charsOfCodeAccepted,
             generatedLinesCount: session.linesOfCodeGenerated,
             acceptedLinesCount: session.linesOfCodeAccepted,
-            cwsprChatProgrammingLanguage: session.fileLanguage,
+            cwsprChatProgrammingLanguage: session.fileLanguage ?? 'plaintext',
             jobId: session.listOfTestGenerationJobId[0], // For RIV, UTG does only one StartTestGeneration API call so jobId = session.listOfTestGenerationJobId[0]
             jobGroup: session.testGenerationJobGroupName,
             buildPayloadBytes: session.srcPayloadSize,
