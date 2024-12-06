@@ -554,7 +554,6 @@ describe('SAM Integration Tests', async function () {
                 })
 
                 it('target=api: invokes and attaches on debug request (F5)', async function () {
-                    console.log(scenario)
                     if (
                         skipLanguagesOnApi.includes(scenario.language) ||
                         semver.lt(vscode.version, scenario.vscodeMinimum)
