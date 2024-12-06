@@ -156,8 +156,11 @@ export async function createWizardTester<T extends Partial<T>>(wizard: Wizard<T>
                                     `No properties of "${propPath}" would be shown`
                                 )
                         case NOT_ASSERT_SHOW:
-                            return () =>
-                                failIf(form.canShowProperty(propPath, state), `Property "${propPath}" would be shown`)
+                            return async () =>
+                                failIf(
+                                    await form.canShowProperty(propPath, state),
+                                    `Property "${propPath}" would be shown`
+                                )
                         case NOT_ASSERT_SHOW_ANY:
                             return assertShowNone(propPath)
                         case ASSERT_VALUE:
