@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Amazon Q /dev not adding Dockerfiles in nested folders"
+}
