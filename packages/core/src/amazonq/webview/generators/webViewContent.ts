@@ -78,6 +78,7 @@ export class WebViewContentGenerator {
         const featureConfigsString = await this.generateFeatureConfigsData()
 
         const disabledCommandsString = isSageMaker() ? `['/dev', '/transform']` : '[]'
+        const disclaimerAcknowledged = globals.globalState.tryGet('aws.amazonq.disclaimerAcknowledged', Boolean, false)
 
         return `
         <script type="text/javascript" src="${javascriptEntrypoint.toString()}" defer onload="init()"></script>
@@ -86,7 +87,7 @@ export class WebViewContentGenerator {
             const init = () => {
                 createMynahUI(acquireVsCodeApi(), ${
                     (await AuthUtil.instance.getChatAuthState()).amazonQ === 'connected'
-                },${featureConfigsString},${showWelcomePage},${disabledCommandsString});
+                },${featureConfigsString},${showWelcomePage},${disclaimerAcknowledged},${disabledCommandsString});
             }
         </script>
         `
