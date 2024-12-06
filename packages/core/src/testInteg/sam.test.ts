@@ -59,13 +59,12 @@ interface TestScenario {
     vscodeMinimum: string
 }
 
-const minVscode = getMinVscodeVersion()
 const nodeDefaults = {
     path: 'hello-world/app.mjs',
     debugSessionType: 'pwa-node',
     dependencyManager: 'npm' as DependencyManager,
     language: 'javascript' as Language,
-    vscodeMinimum: minVscode,
+    vscodeMinimum: '1.50.0',
 }
 // https://github.com/microsoft/vscode-python/blob/main/package.json
 const pythonDefaults = {
@@ -73,7 +72,7 @@ const pythonDefaults = {
     debugSessionType: 'python',
     dependencyManager: 'pip' as DependencyManager,
     language: 'python' as Language,
-    vscodeMinimum: minVscode,
+    vscodeMinimum: '1.77.0',
 }
 
 const javaDefaults = {
@@ -81,7 +80,7 @@ const javaDefaults = {
     debugSessionType: 'java',
     dependencyManager: 'gradle' as DependencyManager,
     language: 'java' as Language,
-    vscodeMinimum: minVscode,
+    vscodeMinimum: '1.50.0',
 }
 
 const dotnetDefaults = {
@@ -89,7 +88,7 @@ const dotnetDefaults = {
     debugSessionType: 'coreclr',
     language: 'csharp' as Language,
     dependencyManager: 'cli-package' as DependencyManager,
-    vscodeMinimum: minVscode,
+    vscodeMinimum: '1.80.0',
 }
 
 // When testing additional runtimes, consider pulling the docker container in buildspec\linuxIntegrationTests.yml
@@ -111,6 +110,7 @@ const scenarios: TestScenario[] = [
         runtime: 'nodejs22.x',
         displayName: 'nodejs22.x (ZIP)',
         ...nodeDefaults,
+        vscodeMinimum: '1.78.0',
     },
     {
         runtime: 'python3.10',
@@ -121,16 +121,19 @@ const scenarios: TestScenario[] = [
         runtime: 'python3.11',
         displayName: 'python 3.11 (ZIP)',
         ...pythonDefaults,
+        vscodeMinimum: '1.78.0',
     },
     {
         runtime: 'python3.12',
         displayName: 'python 3.12 (ZIP)',
         ...pythonDefaults,
+        vscodeMinimum: '1.78.0',
     },
     {
         runtime: 'python3.13',
         displayName: 'python 3.13 (ZIP)',
         ...pythonDefaults,
+        vscodeMinimum: '1.78.0',
     },
     {
         runtime: 'dotnet6',
@@ -181,6 +184,7 @@ const scenarios: TestScenario[] = [
         displayName: 'nodejs22.x (Image)',
         baseImage: 'amazon/nodejs22.x-base',
         ...nodeDefaults,
+        vscodeMinimum: '1.78.0',
     },
     {
         runtime: 'python3.10',
@@ -193,18 +197,21 @@ const scenarios: TestScenario[] = [
         displayName: 'python 3.11 (ZIP)',
         baseImage: 'amazon/python3.11-base',
         ...pythonDefaults,
+        vscodeMinimum: '1.78.0',
     },
     {
         runtime: 'python3.12',
         displayName: 'python 3.12 (ZIP)',
         baseImage: 'amazon/python3.12-base',
         ...pythonDefaults,
+        vscodeMinimum: '1.78.0',
     },
     {
         runtime: 'python3.13',
         displayName: 'python 3.13 (ZIP)',
         baseImage: 'amazon/python3.13-base',
         ...pythonDefaults,
+        vscodeMinimum: '1.78.0',
     },
     // {
     //     runtime: 'go1.x',
