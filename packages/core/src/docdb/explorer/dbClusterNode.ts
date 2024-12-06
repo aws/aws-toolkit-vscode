@@ -177,7 +177,7 @@ export class DBClusterNode extends DBResourceNode {
         })
     }
 
-    public [inspect.custom](): string {
+    public override [inspect.custom](): string {
         return 'DBClusterNode'
     }
 }

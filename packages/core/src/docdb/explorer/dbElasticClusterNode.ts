@@ -110,7 +110,7 @@ export class DBElasticClusterNode extends DBResourceNode {
         this.pollingSet.clearTimer()
     }
 
-    public [inspect.custom](): string {
+    public override [inspect.custom](): string {
         return 'DBElasticClusterNode'
     }
 }
