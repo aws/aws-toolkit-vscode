@@ -110,13 +110,14 @@ export async function updateRecentResponse(
 }
 
 const buildProcessMementoRootKey = 'samcli.build.processes'
+const globalIdentifier = 'global'
 
 /**
  * Returns true if there's an ongoing build process for the provided template, false otherwise
  * @Param templatePath The path to the template.yaml file
  */
 function isBuildInProgress(templatePath: string): boolean {
-    return getRecentResponse(buildProcessMementoRootKey, 'global', templatePath) !== undefined
+    return getRecentResponse(buildProcessMementoRootKey, globalIdentifier, templatePath) !== undefined
 }
 
 /**
@@ -125,7 +126,7 @@ function isBuildInProgress(templatePath: string): boolean {
  */
 export function throwIfTemplateIsBeingBuilt(templatePath: string) {
     if (isBuildInProgress(templatePath)) {
-        throw new ToolkitError('Template is already being built', { code: 'BuildInProgress' })
+        throw new ToolkitError('This template is already being built', { code: 'BuildInProgress' })
     }
 }
 

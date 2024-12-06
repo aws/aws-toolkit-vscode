@@ -442,7 +442,7 @@ describe('SAM runBuild', () => {
                 },
                 (e: any) => {
                     assert.strictEqual(e instanceof ToolkitError, true)
-                    assert.strictEqual(e.message, 'Template is already being built')
+                    assert.strictEqual(e.message, 'This template is already being built')
                     assert.strictEqual(e.code, 'BuildInProgress')
                     return true
                 }
