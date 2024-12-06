@@ -11,7 +11,7 @@ import { getLogger } from '../../../shared/logger'
 import { amazonqMark } from '../../../shared/performance/marks'
 import { telemetry } from '../../../shared/telemetry'
 import { AmazonQChatMessageDuration } from '../../messages/chatMessageDuration'
-import { openUrl } from '../../../shared'
+import { globals, openUrl } from '../../../shared'
 import { isClickTelemetry, isOpenAgentTelemetry } from '../ui/telemetry/actions'
 
 export function dispatchWebViewMessagesToApps(
@@ -60,12 +60,19 @@ export function dispatchWebViewMessagesToApps(
                         source: msg.trigger,
                         result: 'Succeeded',
                     })
+                    return
                 } else if (isClickTelemetry(msg)) {
                     telemetry.ui_click.emit({
                         elementId: msg.source,
                         result: 'Succeeded',
                     })
+                    return
                 }
+                return
+            }
+            case 'disclaimer-acknowledged': {
+                globals.globalState.tryUpdate('aws.amazonq.disclaimerAcknowledged', true)
+                return
             }
         }
 
