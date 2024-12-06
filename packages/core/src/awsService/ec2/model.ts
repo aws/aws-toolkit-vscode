@@ -3,13 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
-import { Session } from 'aws-sdk/clients/ssm'
-import { EC2, IAM, SSM } from 'aws-sdk'
+import { EC2, IAM } from 'aws-sdk'
 import { Ec2Selection } from './prompter'
 import { getOrInstallCli } from '../../shared/utilities/cliUtils'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { ToolkitError } from '../../shared/errors'
-import { SsmClient } from '../../shared/clients/ssmClient'
+import { SSMWrapper } from '../../shared/clients/ssm'
 import { Ec2Client } from '../../shared/clients/ec2Client'
 import {
     VscodeRemoteConnection,
@@ -29,17 +28,18 @@ import { SshConfig } from '../../shared/sshConfig'
 import { SshKeyPair } from './sshKeyPair'
 import { Ec2SessionTracker } from './remoteSessionManager'
 import { getEc2SsmEnv } from './utils'
+import { Session, StartSessionCommandOutput } from '@aws-sdk/client-ssm'
 
 export type Ec2ConnectErrorCode = 'EC2SSMStatus' | 'EC2SSMPermission' | 'EC2SSMConnect' | 'EC2SSMAgentStatus'
 
 export interface Ec2RemoteEnv extends VscodeRemoteConnection {
     selection: Ec2Selection
     keyPair: SshKeyPair
-    ssmSession: SSM.StartSessionResponse
+    ssmSession: StartSessionCommandOutput
 }
 
 export class Ec2Connecter implements vscode.Disposable {
-    protected ssmClient: SsmClient
+    protected ssm: SSMWrapper
     protected ec2Client: Ec2Client
     protected iamClient: DefaultIamClient
     protected sessionManager: Ec2SessionTracker
@@ -53,14 +53,14 @@ export class Ec2Connecter implements vscode.Disposable {
     )
 
     public constructor(readonly regionCode: string) {
-        this.ssmClient = this.createSsmSdkClient()
+        this.ssm = this.createSsmSdkClient()
         this.ec2Client = this.createEc2SdkClient()
         this.iamClient = this.createIamSdkClient()
-        this.sessionManager = new Ec2SessionTracker(regionCode, this.ssmClient)
+        this.sessionManager = new Ec2SessionTracker(regionCode, this.ssm)
     }
 
-    protected createSsmSdkClient(): SsmClient {
-        return new SsmClient(this.regionCode)
+    protected createSsmSdkClient(): SSMWrapper {
+        return new SSMWrapper(this.regionCode)
     }
 
     protected createEc2SdkClient(): Ec2Client {
@@ -71,7 +71,7 @@ export class Ec2Connecter implements vscode.Disposable {
         return new DefaultIamClient(this.regionCode)
     }
 
-    public async addActiveSession(sessionId: SSM.SessionId, instanceId: EC2.InstanceId): Promise<void> {
+    public async addActiveSession(sessionId: string, instanceId: EC2.InstanceId): Promise<void> {
         await this.sessionManager.addSession(instanceId, sessionId)
     }
 
@@ -139,7 +139,7 @@ export class Ec2Connecter implements vscode.Disposable {
     }
 
     private async checkForInstanceSsmError(selection: Ec2Selection): Promise<void> {
-        const isSsmAgentRunning = (await this.ssmClient.getInstanceAgentPingStatus(selection.instanceId)) === 'Online'
+        const isSsmAgentRunning = (await this.ssm.getInstanceAgentPingStatus(selection.instanceId)) === 'Online'
 
         if (!isSsmAgentRunning) {
             this.throwConnectionError('Is SSM Agent running on the target instance?', selection, {
@@ -173,7 +173,7 @@ export class Ec2Connecter implements vscode.Disposable {
             shellArgs: shellArgs,
         }
 
-        await openRemoteTerminal(terminalOptions, () => this.ssmClient.terminateSession(session)).catch((err) => {
+        await openRemoteTerminal(terminalOptions, () => this.ssm.terminateSession(session)).catch((err) => {
             throw ToolkitError.chain(err, 'Failed to open ec2 instance.')
         })
     }
@@ -181,7 +181,7 @@ export class Ec2Connecter implements vscode.Disposable {
     public async attemptToOpenEc2Terminal(selection: Ec2Selection): Promise<void> {
         await this.checkForStartSessionError(selection)
         try {
-            const response = await this.ssmClient.startSession(selection.instanceId)
+            const response = await this.ssm.startSession(selection.instanceId)
             await this.openSessionInTerminal(response, selection)
         } catch (err: unknown) {
             this.throwGeneralConnectionError(selection, err as Error)
@@ -222,7 +222,7 @@ export class Ec2Connecter implements vscode.Disposable {
 
             throw err
         }
-        const ssmSession = await this.ssmClient.startSession(selection.instanceId, 'AWS-StartSSHSession')
+        const ssmSession = await this.ssm.startSession(selection.instanceId, 'AWS-StartSSHSession')
         await this.addActiveSession(selection.instanceId, ssmSession.SessionId!)
 
         const vars = getEc2SsmEnv(selection, ssm, ssmSession)
@@ -270,13 +270,13 @@ export class Ec2Connecter implements vscode.Disposable {
         const command = `echo "${sshPubKey}" > ${remoteAuthorizedKeysPaths}`
         const documentName = 'AWS-RunShellScript'
 
-        await this.ssmClient.sendCommandAndWait(selection.instanceId, documentName, {
+        await this.ssm.sendCommandAndWait(selection.instanceId, documentName, {
             commands: [command],
         })
     }
 
     public async getRemoteUser(instanceId: string) {
-        const osName = await this.ssmClient.getTargetPlatformName(instanceId)
+        const osName = await this.ssm.getTargetPlatformName(instanceId)
         if (osName === 'Amazon Linux') {
             return 'ec2-user'
         }
