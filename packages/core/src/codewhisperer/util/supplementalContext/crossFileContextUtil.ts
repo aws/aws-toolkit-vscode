@@ -73,41 +73,6 @@ export async function fetchSupplementalContextForSrc(
         return undefined
     }
 
-    // opentabs context will use bm25 and users' open tabs to fetch supplemental context
-    if (supplementalContextConfig === 'opentabs') {
-        return {
-            supplementalContextItems: (await fetchOpentabsContext(editor, cancellationToken)) ?? [],
-            strategy: 'opentabs',
-        }
-    }
-
-    // codemap will use opentabs context plus repomap if it's present
-    if (supplementalContextConfig === 'codemap') {
-        const opentabsContextAndCodemap = await waitUntil(
-            async function () {
-                const result: CodeWhispererSupplementalContextItem[] = []
-                const opentabsContext = await fetchOpentabsContext(editor, cancellationToken)
-                const codemap = await fetchProjectContext(editor, 'codemap')
-
-                if (codemap && codemap.length > 0) {
-                    result.push(...codemap)
-                }
-
-                if (opentabsContext && opentabsContext.length > 0) {
-                    result.push(...opentabsContext)
-                }
-
-                return result
-            },
-            { timeout: supplementalContextTimeoutInMs, interval: 5, truthy: false }
-        )
-
-        return {
-            supplementalContextItems: opentabsContextAndCodemap ?? [],
-            strategy: 'codemap',
-        }
-    }
-
     // fallback to opentabs if projectContext timeout for 'default' | 'bm25'
     const opentabsContextPromise = waitUntil(
         async function () {
@@ -116,51 +81,86 @@ export async function fetchSupplementalContextForSrc(
         { timeout: supplementalContextTimeoutInMs, interval: 5, truthy: false }
     )
 
-    // global bm25 without repomap
-    if (supplementalContextConfig === 'bm25') {
-        const projectBM25Promise = waitUntil(
+    let supContextPromise: Promise<CodeWhispererSupplementalContextItem[] | undefined> | undefined = new Promise(
+        (resolve) => resolve(undefined)
+    )
+
+    let target: 'default' | 'codemap' | 'bm25' | undefined = undefined
+    switch (supplementalContextConfig) {
+        case 'codemap':
+            target = 'codemap'
+            break
+        case 'bm25':
+            target = 'bm25'
+            break
+        case 'default':
+            target = 'default'
+            break
+        default:
+            break
+    }
+
+    if (target) {
+        supContextPromise = waitUntil(
             async function () {
-                return await fetchProjectContext(editor, 'bm25')
+                if (target) {
+                    return await fetchProjectContext(editor, target)
+                }
+
+                return undefined
             },
             { timeout: supplementalContextTimeoutInMs, interval: 5, truthy: false }
         )
+    }
 
-        const [projectContext, opentabsContext] = await Promise.all([projectBM25Promise, opentabsContextPromise])
-        if (projectContext && projectContext.length > 0) {
+    const [nullableOpentabsContext, nullableSupContext] = await Promise.all([opentabsContextPromise, supContextPromise])
+    const opentabsContext = nullableOpentabsContext ?? []
+    const supContext = nullableSupContext ?? []
+
+    // opentabs context will use bm25 and users' open tabs to fetch supplemental context
+    if (supplementalContextConfig === 'opentabs') {
+        return {
+            supplementalContextItems: opentabsContext,
+            strategy: opentabsContext.length === 0 ? 'Empty' : 'opentabs',
+        }
+    }
+
+    // repomap + opentabs
+    if (supplementalContextConfig === 'codemap') {
+        if (supContext.length > 0) {
+            // TODO: truncation
+            const res = [...supContext, ...opentabsContext]
             return {
-                supplementalContextItems: projectContext,
+                supplementalContextItems: res,
+                strategy: 'codemap',
+            }
+        }
+    }
+
+    // global bm25 without repomap
+    if (supplementalContextConfig === 'bm25') {
+        if (supContext.length > 0) {
+            return {
+                supplementalContextItems: supContext,
                 strategy: 'bm25',
             }
         }
+    }
 
-        return {
-            supplementalContextItems: opentabsContext ?? [],
-            strategy: 'opentabs',
+    // repomap + global bm25
+    if (supplementalContextConfig === 'default') {
+        if (supContext.length > 0) {
+            return {
+                supplementalContextItems: supContext,
+                strategy: 'default',
+            }
         }
     }
 
-    // global bm25 with repomap
-    const projectContextAndCodemapPromise = waitUntil(
-        async function () {
-            return await fetchProjectContext(editor, 'default')
-        },
-        { timeout: supplementalContextTimeoutInMs, interval: 5, truthy: false }
-    )
-
-    const [projectContext, opentabsContext] = await Promise.all([
-        projectContextAndCodemapPromise,
-        opentabsContextPromise,
-    ])
-    if (projectContext && projectContext.length > 0) {
-        return {
-            supplementalContextItems: projectContext,
-            strategy: 'default',
-        }
-    }
-
+    // fallback to use opentabs if other srategy return empty or timeout
     return {
-        supplementalContextItems: opentabsContext ?? [],
-        strategy: 'opentabs',
+        supplementalContextItems: opentabsContext,
+        strategy: opentabsContext.length === 0 ? 'Empty' : 'opentabs',
     }
 }
 
