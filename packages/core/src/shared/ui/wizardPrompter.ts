@@ -57,7 +57,6 @@ export class WizardPrompter<T> extends Prompter<T> {
         }
     }
 
-    // eslint-disable-next-line @typescript-eslint/naming-convention
     protected async promptUser(): Promise<PromptResult<T>> {
         this.response = await this.wizard.run()
 
