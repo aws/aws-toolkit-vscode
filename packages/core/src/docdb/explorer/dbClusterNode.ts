@@ -143,9 +143,16 @@ export class DBClusterNode extends DBResourceNode {
     }
 
     override async getStatus() {
-        const [cluster] = await this.client.listClusters(this.arn)
-        getLogger().info(`Get Status: status ${cluster?.Status} for cluster ${this.arn}`)
-        this.cluster.Status = cluster?.Status
+        const clusters = await this.client.listClusters(this.arn)
+        const cluster = clusters[0]
+
+        if (!cluster) {
+            getLogger().warn(`No cluster found for ARN: ${this.arn}`)
+            return undefined
+        }
+
+        getLogger().info(`Get Status: status ${cluster.Status} for cluster ${this.arn}`)
+        this.cluster.Status = cluster.Status
         return cluster.Status
     }
 

@@ -13,10 +13,11 @@ import { DBInstance, DocumentDBClient } from '../../../shared/clients/docdbClien
 
 describe('DBClusterNode', function () {
     let mockClient: DocumentDBClient
+
     beforeEach(() => {
         mockClient = {
-            listClusters: sinon.stub().resolves([]), // Mock implementation
-            listInstances: sinon.stub().resolves([]), // Mock implementation
+            listClusters: sinon.stub().resolves([{ DBClusterIdentifier: 'Cluster-1', Status: 'available' }]), // Mocked cluster
+            listInstances: sinon.stub().resolves([]), // Mocked instances
         } as Partial<DocumentDBClient> as DocumentDBClient
 
         DBClusterNode['globalPollingArns'].clear()
@@ -32,12 +33,12 @@ describe('DBClusterNode', function () {
     const instanceB: DBInstance = { DBInstanceIdentifier: 'Instance-B' }
 
     function assertInstanceNode(node: AWSTreeNodeBase, expectedInstance: DBInstance): void {
-        assert.ok(node instanceof DBInstanceNode, `Node ${node} should be a Instance Node`)
+        assert.ok(node instanceof DBInstanceNode, `Node ${node} should be an Instance Node`)
         assert.deepStrictEqual((node as DBInstanceNode).instance, expectedInstance)
     }
 
     it('gets children', async function () {
-        ;(mockClient.listInstances as sinon.SinonStub) = sinon.stub().resolves([instanceA, instanceB])
+        ;(mockClient.listInstances as sinon.SinonStub).resolves([instanceA, instanceB])
         const node = new DBClusterNode(parentNode, cluster, mockClient)
         const [firstInstanceNode, secondInstanceNode, ...otherNodes] = await node.getChildren()
 
@@ -48,7 +49,6 @@ describe('DBClusterNode', function () {
 
     it('returns false for available status', function () {
         const clusterStatus = { ...cluster, Status: 'available' }
-
         const node = new DBClusterNode(parentNode, clusterStatus, mockClient)
         const requiresPolling = node.isStatusRequiringPolling()
 
@@ -57,7 +57,6 @@ describe('DBClusterNode', function () {
 
     it('returns true for creating status', function () {
         const clusterStatus = { ...cluster, Status: 'creating' }
-
         const node = new DBClusterNode(parentNode, clusterStatus, mockClient)
         const requiresPolling = node.isStatusRequiringPolling()
 
@@ -66,7 +65,6 @@ describe('DBClusterNode', function () {
 
     it('starts tracking changes when status requires polling', function () {
         const clusterStatus = { ...cluster, Status: 'creating' }
-
         const trackChangesSpy = sinon.spy(DBClusterNode.prototype, 'trackChanges')
         const node = new DBClusterNode(parentNode, clusterStatus, mockClient)
         const requiresPolling = node.isStatusRequiringPolling()
@@ -80,7 +78,6 @@ describe('DBClusterNode', function () {
 
     it('does not start tracking changes when status does not require polling', function () {
         const clusterStatus = { ...cluster, Status: 'available' }
-
         const trackChangesSpy = sinon.spy(DBClusterNode.prototype, 'trackChanges')
         const node = new DBClusterNode(parentNode, clusterStatus, mockClient)
         const requiresPolling = node.isStatusRequiringPolling()
@@ -92,9 +89,8 @@ describe('DBClusterNode', function () {
         trackChangesSpy.restore()
     })
 
-    it('does not polling when status is available', function () {
+    it('does not poll when status is available', function () {
         const clusterStatus = { ...cluster, Status: 'available' }
-
         const trackChangesSpy = sinon.spy(DBClusterNode.prototype, 'trackChanges')
         const node = new DBClusterNode(parentNode, clusterStatus, mockClient)
         const requiresPolling = node.isStatusRequiringPolling()
@@ -107,12 +103,20 @@ describe('DBClusterNode', function () {
     })
 
     it('has isPolling set to false and getStatus returns available when status is available', async function () {
-        const clusterStatus = { ...cluster, Status: 'available' }
-        mockClient.listClusters = sinon.stub().resolves([clusterStatus])
+        const clusterStatus = { DBClusterIdentifier: 'Cluster-1', Status: 'available' }
+        ;(mockClient.listClusters as sinon.SinonStub).resolves([clusterStatus])
 
         const node = new DBClusterNode(parentNode, clusterStatus, mockClient)
 
         assert.strictEqual(node.isPolling, false, 'Node should not be in polling state')
         assert.strictEqual(node.status, 'available', 'getStatus should return available for the node')
+    })
+
+    it('handles missing clusters gracefully in getStatus', async function () {
+        ;(mockClient.listClusters as sinon.SinonStub).resolves([])
+        const node = new DBClusterNode(parentNode, cluster, mockClient)
+
+        const status = await node.getStatus()
+        assert.strictEqual(status, undefined, 'getStatus should return undefined when no cluster is found')
     })
 })
