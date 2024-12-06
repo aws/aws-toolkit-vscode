@@ -374,6 +374,8 @@
     "AWS.amazonq.doc.answer.generating": "Generating documentation",
     "AWS.amazonq.doc.answer.creating": "Okay, I'm creating a README for your project. This may take a few minutes.",
     "AWS.amazonq.doc.answer.updating": "Okay, I'm updating the README to reflect your code changes. This may take a few minutes.",
+    "AWS.amazonq.doc.answer.chooseFolder": "Choose a folder to continue.",
+    "AWS.amazonq.doc.error.noFolderSelected": "It looks like you didn't choose a folder. Choose a folder to continue.",
     "AWS.amazonq.doc.error.contentLengthError": "Your workspace is too large for me to review. Your workspace must be within the quota, even if you choose a smaller folder. For more information on quotas, see the <a href=\"https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/doc-generation.html#quotas\" target=\"_blank\">Amazon Q Developer documentation.</a>",
     "AWS.amazonq.doc.error.readmeTooLarge": "The README in your folder is too large for me to review. Try reducing the size of your README, or choose a folder with a smaller README. For more information on quotas, see the <a href=\"https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/doc-generation.html#quotas\" target=\"_blank\">Amazon Q Developer documentation.</a>",
     "AWS.amazonq.doc.error.workspaceEmpty": "The folder you chose did not contain any source files in a supported language. Choose another folder and try again. For more information on supported languages, see the <a href=\"https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/doc-generation.html\" target=\"_blank\">Amazon Q Developer documentation.</a>",
