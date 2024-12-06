@@ -73,7 +73,6 @@ export async function fetchSupplementalContextForSrc(
         return undefined
     }
 
-    // fallback to opentabs if projectContext timeout for 'default' | 'bm25'
     const opentabsContextPromise = waitUntil(
         async function () {
             return await fetchOpentabsContext(editor, cancellationToken)
