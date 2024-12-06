@@ -43,6 +43,7 @@ For EC2 specifically, there are a few additional steps:
 
 1. If connecting to EC2 instance via remote window, the toolkit generates temporary SSH keys (30 second lifetime), with the public key sent to the remote instance.
     - Key type is ed25519 if supported, or RSA otherwise.
+    - This connection will overwrite the `.ssh/authorized_keys` file on the remote machine with each connection.
 1. If insufficient permissions are detected on the attached IAM role, toolkit will prompt to add an inline policy with the necessary actions.
 1. If SSM sessions remain open after closing the window/terminal, the toolkit will terminate them on-shutdown, or when starting another session to the same instance.
 
