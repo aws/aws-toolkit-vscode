@@ -24,11 +24,16 @@ export async function tailLogGroup(
     codeLensProvider: LiveTailCodeLensProvider,
     logData?: { regionName: string; groupName: string }
 ): Promise<void> {
-    await telemetry.cwlLiveTail_Start.run(async (span) => {
+    await telemetry.cloudwatchlogs_startLiveTail.run(async (span) => {
         const wizard = new TailLogGroupWizard(logData)
         const wizardResponse = await wizard.run()
         if (!wizardResponse) {
             throw new CancellationError('user')
+        }
+        if (wizardResponse.logStreamFilter.type === 'menu' || wizardResponse.logStreamFilter.type === undefined) {
+            //logstream filter wizard uses type to determine which submenu to show. 'menu' is set when no type is selected
+            //and to show the 'menu' of selecting a type. This should not be reachable due to the picker logic, but validating in case.
+            throw new ToolkitError(`Invalid Log Stream filter type: ${wizardResponse.logStreamFilter.type}`)
         }
         const awsCredentials = await globals.awsContext.getCredentials()
         if (awsCredentials === undefined) {
@@ -67,8 +72,8 @@ export async function tailLogGroup(
                 source: source,
                 result: 'Succeeded',
                 sessionAlreadyStarted: false,
-                hasLogEventFilterPattern: Boolean(wizardResponse.filterPattern),
-                logStreamFilterType: wizardResponse.logStreamFilter.type,
+                hasTextFilter: Boolean(wizardResponse.filterPattern),
+                filterType: wizardResponse.logStreamFilter.type,
             })
             await handleSessionStream(stream, document, session)
         } finally {
@@ -83,7 +88,7 @@ export function closeSession(
     source: string,
     codeLensProvider: LiveTailCodeLensProvider
 ) {
-    telemetry.cwlLiveTail_Stop.run((span) => {
+    telemetry.cloudwatchlogs_stopLiveTail.run((span) => {
         const session = registry.get(uriToKey(sessionUri))
         if (session === undefined) {
             throw new ToolkitError(`No LiveTail session found for URI: ${uriToKey(sessionUri)}`)
