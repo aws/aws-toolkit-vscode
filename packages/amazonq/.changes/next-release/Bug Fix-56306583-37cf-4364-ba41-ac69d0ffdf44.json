@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Code Review: Fixed a bug where some issues are missing from the code issues view for workspaces with custom names"
+}
