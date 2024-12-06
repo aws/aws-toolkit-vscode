@@ -13,7 +13,7 @@ import { resolvePath } from '../utilities/pathUtils'
 import fs from '../../shared/fs/fs'
 import { isWeb } from '../extensionGlobals'
 import { getUserAgent } from '../telemetry/util'
-import { isBeta } from '../vscode/env'
+import { isBeta, isDebugInstance } from '../vscode/env'
 
 /**
  * Activate Logger functionality for the extension.
@@ -46,7 +46,10 @@ export async function activate(
         const newLogLevel = fromVscodeLogLevel(logLevel)
         mainLogger.setLogLevel(newLogLevel) // Also logs a message.
     })
-    mainLogger.setLogLevel('debug') // HACK: set to "debug" when debugging the extension.
+
+    if (isDebugInstance()) {
+        mainLogger.setLogLevel('debug') // HACK: set to "debug" when debugging the extension.
+    }
 
     setLogger(mainLogger)
 
