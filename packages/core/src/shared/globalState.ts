@@ -34,6 +34,7 @@ export type globalKey =
     | 'aws.amazonq.securityIssueFilters'
     | 'aws.amazonq.notifications'
     | 'aws.amazonq.welcomeChatShowCount'
+    | 'aws.amazonq.disclaimerAcknowledged'
     | 'aws.notifications'
     | 'aws.notifications.dev' // keys to store notifications for testing
     | 'aws.downloadPath'
