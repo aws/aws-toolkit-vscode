@@ -34,6 +34,7 @@ import { getTestWindow } from '../test/shared/vscode/window'
 import { ParamsSource, runBuild } from '../shared/sam/build'
 import { DataQuickPickItem } from '../shared/ui/pickerPrompter'
 import fs from '../shared/fs/fs'
+import { getMinVscodeVersion } from '../shared/vscode/env'
 
 const projectFolder = testUtils.getTestWorkspaceFolder()
 
@@ -58,112 +59,98 @@ interface TestScenario {
     vscodeMinimum: string
 }
 
+const minVscode = getMinVscodeVersion()
+const nodeDefaults = {
+    path: 'hello-world/app.mjs',
+    debugSessionType: 'pwa-node',
+    dependencyManager: 'npm' as DependencyManager,
+    language: 'javascript' as Language,
+    vscodeMinimum: minVscode,
+}
+// https://github.com/microsoft/vscode-python/blob/main/package.json
+const pythonDefaults = {
+    path: 'hello_world/app.py',
+    debugSessionType: 'python',
+    dependencyManager: 'pip' as DependencyManager,
+    language: 'python' as Language,
+    vscodeMinimum: minVscode,
+}
+
+const javaDefaults = {
+    path: 'HelloWorldFunction/src/main/java/helloworld/App.java',
+    debugSessionType: 'java',
+    dependencyManager: 'gradle' as DependencyManager,
+    language: 'java' as Language,
+    vscodeMinimum: minVscode,
+}
+
+const dotnetDefaults = {
+    path: 'src/HelloWorld/Function.cs',
+    debugSessionType: 'coreclr',
+    language: 'csharp' as Language,
+    dependencyManager: 'cli-package' as DependencyManager,
+    vscodeMinimum: minVscode,
+}
+
 // When testing additional runtimes, consider pulling the docker container in buildspec\linuxIntegrationTests.yml
 // to reduce the chance of automated tests timing out.
+
 const scenarios: TestScenario[] = [
     // zips
     {
         runtime: 'nodejs18.x',
         displayName: 'nodejs18.x (ZIP)',
-        path: 'hello-world/app.mjs',
-        debugSessionType: 'pwa-node',
-        language: 'javascript',
-        dependencyManager: 'npm',
-        vscodeMinimum: '1.50.0',
+        ...nodeDefaults,
     },
     {
         runtime: 'nodejs20.x',
         displayName: 'nodejs20.x (ZIP)',
-        path: 'hello-world/app.mjs',
-        debugSessionType: 'pwa-node',
-        language: 'javascript',
-        dependencyManager: 'npm',
-        vscodeMinimum: '1.50.0',
+        ...nodeDefaults,
     },
     {
         runtime: 'nodejs22.x',
         displayName: 'nodejs22.x (ZIP)',
-        path: 'hello-world/app.mjs',
-        debugSessionType: 'pwa-node',
-        language: 'javascript',
-        dependencyManager: 'npm',
-        vscodeMinimum: '1.78.0',
+        ...nodeDefaults,
     },
     {
         runtime: 'python3.10',
         displayName: 'python 3.10 (ZIP)',
-        path: 'hello_world/app.py',
-        debugSessionType: 'python',
-        language: 'python',
-        dependencyManager: 'pip',
-        // https://github.com/microsoft/vscode-python/blob/main/package.json
-        vscodeMinimum: '1.77.0',
+        ...pythonDefaults,
     },
     {
         runtime: 'python3.11',
         displayName: 'python 3.11 (ZIP)',
-        path: 'hello_world/app.py',
-        debugSessionType: 'python',
-        language: 'python',
-        dependencyManager: 'pip',
-        // https://github.com/microsoft/vscode-python/blob/main/package.json
-        vscodeMinimum: '1.78.0',
+        ...pythonDefaults,
     },
     {
         runtime: 'python3.12',
         displayName: 'python 3.12 (ZIP)',
-        path: 'hello_world/app.py',
-        debugSessionType: 'python',
-        language: 'python',
-        dependencyManager: 'pip',
-        // https://github.com/microsoft/vscode-python/blob/main/package.json
-        vscodeMinimum: '1.78.0',
+        ...pythonDefaults,
     },
     {
         runtime: 'python3.13',
         displayName: 'python 3.13 (ZIP)',
-        path: 'hello_world/app.py',
-        debugSessionType: 'python',
-        language: 'python',
-        dependencyManager: 'pip',
-        // https://github.com/microsoft/vscode-python/blob/main/package.json
-        vscodeMinimum: '1.78.0',
+        ...pythonDefaults,
     },
     {
         runtime: 'dotnet6',
         displayName: 'dotnet6 (ZIP)',
-        path: 'src/HelloWorld/Function.cs',
-        debugSessionType: 'coreclr',
-        language: 'csharp',
-        dependencyManager: 'cli-package',
-        vscodeMinimum: '1.80.0',
+        ...dotnetDefaults,
     },
     {
         runtime: 'java8.al2',
         displayName: 'java8.al2 (Maven ZIP)',
-        path: 'HelloWorldFunction/src/main/java/helloworld/App.java',
-        debugSessionType: 'java',
-        language: 'java',
-        dependencyManager: 'maven',
-        vscodeMinimum: '1.50.0',
+        ...javaDefaults,
     },
     {
         runtime: 'java11',
         displayName: 'java11 (Gradle ZIP)',
-        path: 'HelloWorldFunction/src/main/java/helloworld/App.java',
-        debugSessionType: 'java',
-        language: 'java',
-        dependencyManager: 'gradle',
-        vscodeMinimum: '1.50.0',
+        ...javaDefaults,
     },
     {
         runtime: 'java17',
-        displayName: 'java11 (Gradle ZIP)',
-        path: 'HelloWorldFunction/src/main/java/helloworld/App.java',
-        debugSessionType: 'java',
-        language: 'java',
-        dependencyManager: 'gradle',
-        vscodeMinimum: '1.50.0',
+        displayName: 'java17 (Gradle ZIP)',
+        ...javaDefaults,
     },
     // {
     //     runtime: 'go1.x',
@@ -181,75 +168,43 @@ const scenarios: TestScenario[] = [
         runtime: 'nodejs18.x',
         displayName: 'nodejs18.x (Image)',
         baseImage: 'amazon/nodejs18.x-base',
-        path: 'hello-world/app.mjs',
-        debugSessionType: 'pwa-node',
-        language: 'javascript',
-        dependencyManager: 'npm',
-        vscodeMinimum: '1.50.0',
+        ...nodeDefaults,
     },
     {
         runtime: 'nodejs20.x',
         displayName: 'nodejs20.x (Image)',
         baseImage: 'amazon/nodejs20.x-base',
-        path: 'hello-world/app.mjs',
-        debugSessionType: 'pwa-node',
-        language: 'javascript',
-        dependencyManager: 'npm',
-        vscodeMinimum: '1.50.0',
+        ...nodeDefaults,
     },
     {
         runtime: 'nodejs22.x',
         displayName: 'nodejs22.x (Image)',
         baseImage: 'amazon/nodejs22.x-base',
-        path: 'hello-world/app.mjs',
-        debugSessionType: 'pwa-node',
-        language: 'javascript',
-        dependencyManager: 'npm',
-        vscodeMinimum: '1.78.0',
+        ...nodeDefaults,
     },
     {
         runtime: 'python3.10',
         displayName: 'python 3.10 (ZIP)',
         baseImage: 'amazon/python3.10-base',
-        path: 'hello_world/app.py',
-        debugSessionType: 'python',
-        language: 'python',
-        dependencyManager: 'pip',
-        // https://github.com/microsoft/vscode-python/blob/main/package.json
-        vscodeMinimum: '1.77.0',
+        ...pythonDefaults,
     },
     {
         runtime: 'python3.11',
         displayName: 'python 3.11 (ZIP)',
         baseImage: 'amazon/python3.11-base',
-        path: 'hello_world/app.py',
-        debugSessionType: 'python',
-        language: 'python',
-        dependencyManager: 'pip',
-        // https://github.com/microsoft/vscode-python/blob/main/package.json
-        vscodeMinimum: '1.78.0',
+        ...pythonDefaults,
     },
     {
         runtime: 'python3.12',
         displayName: 'python 3.12 (ZIP)',
         baseImage: 'amazon/python3.12-base',
-        path: 'hello_world/app.py',
-        debugSessionType: 'python',
-        language: 'python',
-        dependencyManager: 'pip',
-        // https://github.com/microsoft/vscode-python/blob/main/package.json
-        vscodeMinimum: '1.78.0',
+        ...pythonDefaults,
     },
     {
         runtime: 'python3.13',
         displayName: 'python 3.13 (ZIP)',
         baseImage: 'amazon/python3.13-base',
-        path: 'hello_world/app.py',
-        debugSessionType: 'python',
-        language: 'python',
-        dependencyManager: 'pip',
-        // https://github.com/microsoft/vscode-python/blob/main/package.json
-        vscodeMinimum: '1.78.0',
+        ...pythonDefaults,
     },
     // {
     //     runtime: 'go1.x',
@@ -265,42 +220,26 @@ const scenarios: TestScenario[] = [
     {
         runtime: 'java8.al2',
         displayName: 'java8.al2 (Gradle Image)',
-        path: 'HelloWorldFunction/src/main/java/helloworld/App.java',
         baseImage: 'amazon/java8.al2-base',
-        debugSessionType: 'java',
-        language: 'java',
-        dependencyManager: 'gradle',
-        vscodeMinimum: '1.50.0',
+        ...javaDefaults,
     },
     {
         runtime: 'java11',
         displayName: 'java11 (Maven Image)',
-        path: 'HelloWorldFunction/src/main/java/helloworld/App.java',
         baseImage: 'amazon/java11-base',
-        debugSessionType: 'java',
-        language: 'java',
-        dependencyManager: 'maven',
-        vscodeMinimum: '1.50.0',
+        ...javaDefaults,
     },
     {
         runtime: 'java17',
         displayName: 'java17 (Maven Image)',
-        path: 'HelloWorldFunction/src/main/java/helloworld/App.java',
         baseImage: 'amazon/java17-base',
-        debugSessionType: 'java',
-        language: 'java',
-        dependencyManager: 'maven',
-        vscodeMinimum: '1.50.0',
+        ...javaDefaults,
     },
     {
         runtime: 'dotnet6',
         displayName: 'dotnet6 (Image)',
-        path: 'src/HelloWorld/Function.cs',
         baseImage: 'amazon/dotnet6-base',
-        debugSessionType: 'coreclr',
-        language: 'csharp',
-        dependencyManager: 'cli-package',
-        vscodeMinimum: '1.80.0',
+        ...dotnetDefaults,
     },
 ]
 
@@ -609,6 +548,7 @@ describe('SAM Integration Tests', async function () {
                 })
 
                 it('target=api: invokes and attaches on debug request (F5)', async function () {
+                    console.log(scenario)
                     if (
                         skipLanguagesOnApi.includes(scenario.language) ||
                         semver.lt(vscode.version, scenario.vscodeMinimum)
