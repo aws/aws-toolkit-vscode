@@ -63,10 +63,10 @@ describe('DeployTypeWizard', function () {
                 assert.strictEqual(picker.items.length, 2)
                 picker.acceptItem(picker.items[1])
             })
-            .handleInputBox('Specify SAM parameter value for SourceBucketName', (inputBox) => {
+            .handleInputBox('Specify SAM Template parameter value for SourceBucketName', (inputBox) => {
                 inputBox.acceptValue('my-source-bucket-name')
             })
-            .handleInputBox('Specify SAM parameter value for DestinationBucketName', (inputBox) => {
+            .handleInputBox('Specify SAM Template parameter value for DestinationBucketName', (inputBox) => {
                 inputBox.acceptValue('my-destination-bucket-name')
             })
             .handleQuickPick('Specify parameter source for deploy', async (quickPick) => {
@@ -97,6 +97,12 @@ describe('DeployTypeWizard', function () {
                 assert.strictEqual(picker.items[1].label, 'Deploy')
                 assert.strictEqual(picker.items.length, 2)
                 picker.acceptItem(picker.items[0])
+            })
+            .handleInputBox('Specify SAM Template parameter value for SourceBucketName', (inputBox) => {
+                inputBox.acceptValue('my-source-bucket-name')
+            })
+            .handleInputBox('Specify SAM Template parameter value for DestinationBucketName', (inputBox) => {
+                inputBox.acceptValue('my-destination-bucket-name')
             })
             .handleQuickPick('Specify parameter source for sync', async (quickPick) => {
                 // Need time to check samconfig.toml file and generate options
