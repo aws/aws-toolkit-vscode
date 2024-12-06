@@ -120,7 +120,7 @@ export class ZipUtil {
             zip.addFile(zipEntryPath, Buffer.from(content, 'utf-8'))
 
             if (scope === CodeWhispererConstants.CodeAnalysisScope.FILE_ON_DEMAND) {
-                const gitDiffContent = `+++ b/${zipEntryPath}`
+                const gitDiffContent = `+++ b/${path.normalize(zipEntryPath)}` // Sending file path in payload for LLM code review
                 zip.addFile(ZipConstants.codeDiffFilePath, Buffer.from(gitDiffContent, 'utf-8'))
             }
         } else {
