@@ -13,11 +13,16 @@ import { DBInstance, DocumentDBClient } from '../../../shared/clients/docdbClien
 
 describe('DBClusterNode', function () {
     let mockClient: DocumentDBClient
+    let parentNode: AWSTreeNodeBase
 
     beforeEach(() => {
+        parentNode = {
+            refresh: sinon.stub(),
+        } as unknown as AWSTreeNodeBase
+
         mockClient = {
-            listClusters: sinon.stub().resolves([{ DBClusterIdentifier: 'Cluster-1', Status: 'available' }]), // Mocked cluster
-            listInstances: sinon.stub().resolves([]), // Mocked instances
+            listClusters: sinon.stub().resolves([{ DBClusterIdentifier: 'Cluster-1', Status: 'available' }]),
+            listInstances: sinon.stub().resolves([]),
         } as Partial<DocumentDBClient> as DocumentDBClient
 
         DBClusterNode['globalPollingArns'].clear()
@@ -27,7 +32,6 @@ describe('DBClusterNode', function () {
         DBClusterNode['globalPollingArns'].clear()
     })
 
-    const parentNode = {} as AWSTreeNodeBase
     const cluster: DBCluster = { DBClusterIdentifier: 'Cluster-1' }
     const instanceA: DBInstance = { DBInstanceIdentifier: 'Instance-A' }
     const instanceB: DBInstance = { DBInstanceIdentifier: 'Instance-B' }
