@@ -700,7 +700,7 @@ describe('SAM Integration Tests', async function () {
     describe('SAM Build', async function () {
         let workspaceFolder: vscode.WorkspaceFolder
         // We're testing only one case (python 3.10 (ZIP)) on the integration tests. More niche cases are handled as unit tests.
-        const scenarioIndex = 2
+        const scenarioIndex = 3
         const scenario = scenarios[scenarioIndex]
         let testRoot: string
         let sandbox: sinon.SinonSandbox
