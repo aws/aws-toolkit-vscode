@@ -34,7 +34,6 @@ import { getTestWindow } from '../test/shared/vscode/window'
 import { ParamsSource, runBuild } from '../shared/sam/build'
 import { DataQuickPickItem } from '../shared/ui/pickerPrompter'
 import fs from '../shared/fs/fs'
-import { getMinVscodeVersion } from '../shared/vscode/env'
 
 const projectFolder = testUtils.getTestWorkspaceFolder()
 
