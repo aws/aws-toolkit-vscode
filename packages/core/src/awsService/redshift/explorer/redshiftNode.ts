@@ -143,7 +143,7 @@ export class RedshiftNode extends AWSTreeNodeBase implements LoadMoreNode {
     }
 
     public async createCluster(clusterName: string): Promise<void> {
-        //Code for creating redshiftClient cluster
+        // Code for creating redshiftClient cluster
     }
 
     public [inspect.custom](): string {

@@ -25,6 +25,7 @@ import { ChildProcess } from '../../../shared/utilities/processUtils'
 import { assertTelemetryCurried } from '../../testUtil'
 import { HttpResourceFetcher } from '../../../shared/resourcefetcher/httpResourceFetcher'
 import { SamCliInfoInvocation } from '../../../shared/sam/cli/samCliInfo'
+import { CodeScansState } from '../../../codewhisperer'
 
 interface TestScenario {
     toolID: AwsClis
@@ -81,6 +82,12 @@ const scenarios: TestScenario[] = [
 ]
 
 describe('AppBuilder Walkthrough', function () {
+    before(async function () {
+        // ensure auto scan is disabled before testrun
+        await CodeScansState.instance.setScansEnabled(false)
+        assert.strictEqual(CodeScansState.instance.isScansEnabled(), false)
+    })
+
     describe('Reopen template after reload', function () {
         let sandbox: sinon.SinonSandbox
         let spyExecuteCommand: sinon.SinonSpy

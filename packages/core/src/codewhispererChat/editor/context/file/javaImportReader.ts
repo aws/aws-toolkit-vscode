@@ -24,13 +24,13 @@ export function extractContextFromJavaImports(names: any): string[] {
             if (commonJavaImportsPrefixesRegex.test(importStatement)) {
                 return ''
             } else if (importStatement.startsWith(awsJavaSdkV1Prefix)) {
-                //@ts-ignore
+                // @ts-ignore
                 return javaImport.packages?.at(1) ?? ''
             } else if (importStatement.startsWith(awsJavaSdkV2Prefix)) {
-                //@ts-ignore
+                // @ts-ignore
                 return javaImport.packages?.at(2) ?? ''
             } else {
-                //@ts-ignore
+                // @ts-ignore
                 return javaImport.packages?.at(0) ?? javaImport.organisation ?? javaImport.tld
             }
         })

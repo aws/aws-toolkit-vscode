@@ -27,7 +27,7 @@ export async function createPolicyVersionCommand(
     }
 
     try {
-        //Parse to ensure this is a valid JSON
+        // Parse to ensure this is a valid JSON
         const policyJSON = JSON.parse(data.toString())
         await node.iot.createPolicyVersion({
             policyName,
@@ -45,6 +45,6 @@ export async function createPolicyVersionCommand(
         return
     }
 
-    //Refresh the node
+    // Refresh the node
     node.refresh()
 }

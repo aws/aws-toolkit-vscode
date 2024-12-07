@@ -38,12 +38,12 @@ describe('CodeWhisperer service invocation', async function () {
     beforeEach(function () {
         void resetCodeWhispererGlobalVariables()
         RecommendationHandler.instance.clearRecommendations()
-        //valid connection required to run tests
+        // valid connection required to run tests
         skipTestIfNoValidConn(validConnection, this)
     })
 
     it('manual trigger returns valid recommendation response', async function () {
-        //check that handler is empty before invocation
+        // check that handler is empty before invocation
         const requestIdBefore = RecommendationHandler.instance.requestId
         const sessionIdBefore = session.sessionId
         const validRecsBefore = RecommendationHandler.instance.isValidResponse()
@@ -65,7 +65,7 @@ describe('CodeWhisperer service invocation', async function () {
     })
 
     it('auto trigger returns valid recommendation response', async function () {
-        //check that handler is empty before invocation
+        // check that handler is empty before invocation
         const requestIdBefore = RecommendationHandler.instance.requestId
         const sessionIdBefore = session.sessionId
         const validRecsBefore = RecommendationHandler.instance.isValidResponse()
@@ -83,7 +83,7 @@ describe('CodeWhisperer service invocation', async function () {
         )
 
         await KeyStrokeHandler.instance.processKeyStroke(mockEvent, mockEditor, client, config)
-        //wait for 5 seconds to allow time for response to be generated
+        // wait for 5 seconds to allow time for response to be generated
         await sleep(5000)
 
         const requestId = RecommendationHandler.instance.requestId
@@ -100,7 +100,7 @@ describe('CodeWhisperer service invocation', async function () {
         const appRoot = path.join(workspaceFolder, 'go1-plain-sam-app')
         const appCodePath = path.join(appRoot, 'hello-world', 'main.go')
 
-        //check that handler is empty before invocation
+        // check that handler is empty before invocation
         const requestIdBefore = RecommendationHandler.instance.requestId
         const sessionIdBefore = session.sessionId
         const validRecsBefore = RecommendationHandler.instance.isValidResponse()

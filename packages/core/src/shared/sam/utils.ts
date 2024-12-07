@@ -135,7 +135,7 @@ export function throwIfErrorMatches(result: ChildProcessResult, terminal?: vscod
 
 export function getTerminalFromError(error: any): vscode.Terminal {
     return error.details?.['terminal'] as unknown as vscode.Terminal
-    //return vscode.window.activeTerminal as vscode.Terminal
+    // return vscode.window.activeTerminal as vscode.Terminal
 }
 
 export enum SamCliErrorTypes {

@@ -209,7 +209,7 @@ describe('getReferencedHandlerPaths', function () {
         const resultSet = await getReferencedHandlerPaths(mockLaunchConfig)
         const workspaceFolder = mockLaunchConfig.workspaceFolder!.uri.fsPath
 
-        //template type handlers, these are all false as we throw all of these out
+        // template type handlers, these are all false as we throw all of these out
         assert.strictEqual(resultSet.has('resource'), false)
         assert.strictEqual(resultSet.has('relativePathGoodTemplate'), false)
         assert.strictEqual(resultSet.has('relativePathBadTemplate'), false)

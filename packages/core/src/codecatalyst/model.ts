@@ -19,7 +19,6 @@ import { getLogger } from '../shared/logger'
 import { AsyncCollection, toCollection } from '../shared/utilities/asyncCollection'
 import { getCodeCatalystSpaceName, getCodeCatalystProjectName, getCodeCatalystDevEnvId } from '../shared/vscode/env'
 import { sshAgentSocketVariable, startSshAgent, startVscodeRemote } from '../shared/extensions/ssh'
-import { ChildProcess } from '../shared/utilities/processUtils'
 import { isDevenvVscode } from './utils'
 import { Timeout } from '../shared/utilities/timeoutUtils'
 import { Commands } from '../shared/vscode/commands2'
@@ -28,7 +27,7 @@ import { fileExists } from '../shared/filesystemUtilities'
 import { CodeCatalystAuthenticationProvider } from './auth'
 import { ToolkitError } from '../shared/errors'
 import { Result } from '../shared/utilities/result'
-import { VscodeRemoteConnection, ensureDependencies } from '../shared/remoteSession'
+import { EnvProvider, VscodeRemoteConnection, createBoundProcess, ensureDependencies } from '../shared/remoteSession'
 import { SshConfig, sshLogFileLocation } from '../shared/sshConfig'
 import { fs } from '../shared'
 
@@ -108,28 +107,6 @@ export function createCodeCatalystEnvProvider(
         const vars = getCodeCatalystSsmEnv(client.regionCode, ssmPath, devenv)
 
         return useSshAgent ? { [sshAgentSocketVariable]: await startSshAgent(), ...vars } : vars
-    }
-}
-
-type EnvProvider = () => Promise<NodeJS.ProcessEnv>
-
-/**
- * Creates a new {@link ChildProcess} class bound to a specific dev environment. All instances of this
- * derived class will have SSM session information injected as environment variables as-needed.
- */
-export function createBoundProcess(envProvider: EnvProvider): typeof ChildProcess {
-    type Run = ChildProcess['run']
-    return class SessionBoundProcess extends ChildProcess {
-        public override async run(...args: Parameters<Run>): ReturnType<Run> {
-            const options = args[0]
-            const envVars = await envProvider()
-            const spawnOptions = {
-                ...options?.spawnOptions,
-                env: { ...envVars, ...options?.spawnOptions?.env },
-            }
-
-            return super.run({ ...options, spawnOptions })
-        }
     }
 }
 

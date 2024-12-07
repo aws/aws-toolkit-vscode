@@ -8,14 +8,25 @@ import * as path from 'path'
 import * as nls from 'vscode-nls'
 import fs from '../fs/fs'
 import { getLogger } from '../logger'
-import { ChildProcess } from '../utilities/processUtils'
+import { ChildProcess, ChildProcessResult } from '../utilities/processUtils'
 import { ArrayConstructor, NonNullObject } from '../utilities/typeConstructors'
 import { Settings } from '../settings'
 import { VSCODE_EXTENSION_ID } from '../extensions'
+import { SSM } from 'aws-sdk'
+import { ErrorInformation, ToolkitError } from '../errors'
 
 const localize = nls.loadMessageBundle()
 
 export const sshAgentSocketVariable = 'SSH_AUTH_SOCK'
+
+export class SshError extends ToolkitError {
+    constructor(message: string, options: ErrorInformation) {
+        super(message, {
+            ...options,
+            code: SshError.name,
+        })
+    }
+}
 
 export function getSshConfigPath(): string {
     const sshConfigDir = path.join(fs.getUserHomeDir(), '.ssh')
@@ -116,6 +127,30 @@ export class RemoteSshSettings extends Settings.define('remote.SSH', remoteSshTy
 
             return false
         }
+    }
+}
+
+export async function testSshConnection(
+    ProcessClass: typeof ChildProcess,
+    hostname: string,
+    sshPath: string,
+    user: string,
+    session: SSM.StartSessionResponse
+): Promise<ChildProcessResult | never> {
+    try {
+        const env = { SESSION_ID: session.SessionId, STREAM_URL: session.StreamUrl, TOKEN: session.TokenValue }
+        const result = await new ProcessClass(sshPath, [
+            '-T',
+            `${user}@${hostname}`,
+            'echo "test connection succeeded" && exit',
+        ]).run({
+            spawnOptions: {
+                env,
+            },
+        })
+        return result
+    } catch (error) {
+        throw new SshError('SSH connection test failed', { cause: error as Error })
     }
 }
 

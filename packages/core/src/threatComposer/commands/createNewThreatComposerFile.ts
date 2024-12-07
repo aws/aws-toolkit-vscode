@@ -32,7 +32,7 @@ const createNewThreatComposerFile = async () => {
             return
         }
 
-        const fileContent = '' //Empty content would be accepted by TC which will save default structure automatically
+        const fileContent = '' // Empty content would be accepted by TC which will save default structure automatically
         const filePath = path.join(rootFolder, `${title}.tc.json`)
         await fs.writeFile(filePath, fileContent)
 

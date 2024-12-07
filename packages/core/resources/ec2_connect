@@ -2,7 +2,7 @@
 
 # Usage:
 #   When connecting to a dev environment
-#       AWS_REGION=… AWS_SSM_CLI=… STREAM_URL=… TOKEN=… LOG_FILE_LOCATION==… ./ec2_connect
+#       AWS_REGION=… AWS_SSM_CLI=… STREAM_URL=… TOKEN=… LOG_FILE_LOCATION==… DEBUG_LOG=… ./ec2_connect 
 
 set -e
 set -u
@@ -44,13 +44,21 @@ _ec2() {
 
 _main() {
     _log "=============================================================================="
-
-    _require AWS_SSM_CLI "${AWS_SSM_CLI:-}"
+    _require DEBUG_LOG "${DEBUG_LOG:-}"
     _require AWS_REGION "${AWS_REGION:-}"
-    _require STREAM_URL "${STREAM_URL:-}"
-    _require TOKEN "${TOKEN:-}"
+
     _require SESSION_ID "${SESSION_ID:-}"
-    _require LOG_FILE_LOCATION "${LOG_FILE_LOCATION:-}"
+    _require_nolog STREAM_URL "${STREAM_URL:-}"
+    _require_nolog TOKEN "${TOKEN:-}"
+
+    # Only log file paths when debug level is enabled.
+    if [ "${DEBUG_LOG:-}" -eq 1 ]; then
+        _require AWS_SSM_CLI "${AWS_SSM_CLI:-}"
+        _require LOG_FILE_LOCATION "${LOG_FILE_LOCATION:-}"
+    else
+        _require_nolog AWS_SSM_CLI "${AWS_SSM_CLI:-}"
+        _require_nolog LOG_FILE_LOCATION "${LOG_FILE_LOCATION:-}"
+    fi
 
     _ec2 "$AWS_SSM_CLI" "$AWS_REGION" "$STREAM_URL" "$TOKEN" "$SESSION_ID"
 }

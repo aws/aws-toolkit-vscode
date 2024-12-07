@@ -510,8 +510,8 @@ describe('SamDebugConfigurationProvider', async function () {
                     target: TEMPLATE_TARGET_TYPE,
                     templatePath: relPath,
                     logicalId: 'TestResource',
-                    //lambdaHandler: 'sick handles',
-                    //projectRoot: 'root as in beer'
+                    // lambdaHandler: 'sick handles',
+                    // projectRoot: 'root as in beer'
                 },
             })
             assert.strictEqual(resolved!.name, name)

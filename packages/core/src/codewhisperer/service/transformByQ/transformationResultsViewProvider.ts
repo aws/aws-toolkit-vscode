@@ -39,7 +39,7 @@ export abstract class ProposedChangeNode {
         try {
             this.saveFile()
         } catch (err) {
-            //to do: file system-related error handling
+            // to do: file system-related error handling
             if (err instanceof Error) {
                 getLogger().error(err.message)
             }
@@ -468,7 +468,7 @@ export class ProposedTransformationExplorer {
                 } else {
                     patchFiles.push(singlePatchFile)
                 }
-                //Because multiple patches are returned once the ZIP is downloaded, we want to show the first one to start
+                // Because multiple patches are returned once the ZIP is downloaded, we want to show the first one to start
                 diffModel.parseDiff(
                     patchFiles[0],
                     transformByQState.getProjectPath(),
@@ -549,7 +549,7 @@ export class ProposedTransformationExplorer {
                 void vscode.window.showInformationMessage(CodeWhispererConstants.changesAppliedNotificationOneDiff)
             }
 
-            //We do this to ensure that the changesAppliedChatMessage is only sent to user when they accept the first diff.patch
+            // We do this to ensure that the changesAppliedChatMessage is only sent to user when they accept the first diff.patch
             transformByQState.getChatControllers()?.transformationFinished.fire({
                 message: CodeWhispererConstants.changesAppliedChatMessageMultipleDiffs(
                     diffModel.currentPatchIndex,

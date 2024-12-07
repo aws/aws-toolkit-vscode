@@ -46,7 +46,7 @@ export const createMynahUI = (
     let mynahUI: MynahUI
     // eslint-disable-next-line prefer-const
     let connector: Connector
-    //Store the mapping between messageId and messageUserIntent for amazonq_interactWithMessage telemetry
+    // Store the mapping between messageId and messageUserIntent for amazonq_interactWithMessage telemetry
     const responseMetadata = new Map<string, string[]>()
 
     window.addEventListener('error', (e) => {
@@ -110,7 +110,7 @@ export const createMynahUI = (
     let featureConfigs: Map<string, FeatureContext> = tryNewMap(featureConfigsSerialized)
 
     function getCodeBlockActions(messageData: any) {
-        //Show ViewDiff and AcceptDiff for allowedCommands in CWC
+        // Show ViewDiff and AcceptDiff for allowedCommands in CWC
         const isEnabled = featureConfigs.get('ViewDiffInChat')?.variation === 'TREATMENT'
         const tab = tabsStorage.getTab(messageData?.tabID || '')
         const allowedCommands = [
@@ -136,13 +136,13 @@ export const createMynahUI = (
                 },
             }
         }
-        //Show only "Copy" option for codeblocks in Q Test Tab
+        // Show only "Copy" option for codeblocks in Q Test Tab
         if (tab?.type === 'testgen') {
             return {
                 'insert-to-cursor': undefined,
             }
         }
-        //Default will show "Copy" and "Insert at cursor" for codeblocks
+        // Default will show "Copy" and "Insert at cursor" for codeblocks
         return {}
     }
 

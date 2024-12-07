@@ -31,7 +31,7 @@ export interface ExecuteQueryResponse {
     executionId: string
 }
 
-//Type definition for Provisioned and Serverless
+// Type definition for Provisioned and Serverless
 export class DefaultRedshiftClient {
     public constructor(
         public readonly regionCode: string,

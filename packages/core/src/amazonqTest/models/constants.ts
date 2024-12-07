@@ -111,12 +111,12 @@ export const testGenBuildProgressMessage = (currentStep: TestGenerationBuildStep
 ${session.shortAnswer?.testCoverage ? `- Unit test coverage ${session.shortAnswer?.testCoverage}%` : ``}
 ${icon} Build ${statusText}
 ${icon} Assertion ${statusText}`
-        //TODO: Update Assertion %
+        // TODO: Update Assertion %
     }
 
     return message.trim()
 }
-//TODO: Work on UX to show the build error in the progress message
+// TODO: Work on UX to show the build error in the progress message
 const updateStepStatuses = (currentStep: TestGenerationBuildStep, status?: string) => {
     for (let step = TestGenerationBuildStep.INSTALL_DEPENDENCIES; step <= currentStep; step++) {
         const stepStatus: StepStatus = {
