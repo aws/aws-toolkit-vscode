@@ -114,7 +114,9 @@ export class ZipUtil {
 
         const workspaceFolder = vscode.workspace.getWorkspaceFolder(uri)
         if (workspaceFolder) {
-            const projectName = workspaceFolder.name
+            // Note: workspaceFolder.name is not the same as the file system folder name,
+            // use the fsPath value instead
+            const projectName = path.basename(workspaceFolder.uri.fsPath)
             const relativePath = vscode.workspace.asRelativePath(uri)
             const zipEntryPath = this.getZipEntryPath(projectName, relativePath)
             zip.addFile(zipEntryPath, Buffer.from(content, 'utf-8'))
