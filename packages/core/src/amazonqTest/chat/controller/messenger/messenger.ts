@@ -187,7 +187,7 @@ export class Messenger {
         fileName: string
     ) {
         let message = ''
-        const messageId = response.$metadata.requestId ?? ''
+        let messageId = response.$metadata.requestId ?? ''
         let codeReference: CodeReference[] = []
 
         if (response.generateAssistantResponseResponse === undefined) {
@@ -267,6 +267,7 @@ export class Messenger {
                 }
 
                 if (requestID !== undefined) {
+                    messageId = requestID
                     message += `\n\nRequest ID: ${requestID}`
                 }
                 this.sendMessage(message.trim(), tabID, 'answer')
@@ -282,6 +283,7 @@ export class Messenger {
                         reasonDesc: getTelemetryReasonDesc(CodeWhispererConstants.unitTestGenerationCancelMessage),
                         isSupportedLanguage: false,
                         credentialStartUrl: AuthUtil.instance.startUrl,
+                        requestId: messageId,
                     })
 
                     this.dispatcher.sendUpdatePromptProgress(
@@ -296,6 +298,7 @@ export class Messenger {
                         result: 'Succeeded',
                         isSupportedLanguage: false,
                         credentialStartUrl: AuthUtil.instance.startUrl,
+                        requestId: messageId,
                     })
                     this.dispatcher.sendUpdatePromptProgress(
                         new UpdatePromptProgressMessage(tabID, testGenCompletedField)
