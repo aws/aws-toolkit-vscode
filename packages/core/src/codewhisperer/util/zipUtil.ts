@@ -114,18 +114,16 @@ export class ZipUtil {
 
         const workspaceFolder = vscode.workspace.getWorkspaceFolder(uri)
         if (workspaceFolder) {
-            const projectName = workspaceFolder.name
+            // Note: workspaceFolder.name is not the same as the file system folder name,
+            // use the fsPath value instead
+            const projectName = path.basename(workspaceFolder.uri.fsPath)
             const relativePath = vscode.workspace.asRelativePath(uri)
             const zipEntryPath = this.getZipEntryPath(projectName, relativePath)
             zip.addFile(zipEntryPath, Buffer.from(content, 'utf-8'))
 
             if (scope === CodeWhispererConstants.CodeAnalysisScope.FILE_ON_DEMAND) {
-                await this.processCombinedGitDiff(
-                    zip,
-                    [workspaceFolder.uri.fsPath],
-                    uri.fsPath,
-                    CodeWhispererConstants.CodeAnalysisScope.FILE_ON_DEMAND
-                )
+                const gitDiffContent = `+++ b/${path.normalize(zipEntryPath)}` // Sending file path in payload for LLM code review
+                zip.addFile(ZipConstants.codeDiffFilePath, Buffer.from(gitDiffContent, 'utf-8'))
             }
         } else {
             zip.addFile(uri.fsPath, Buffer.from(content, 'utf-8'))
