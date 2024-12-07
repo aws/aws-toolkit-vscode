@@ -94,13 +94,13 @@ export async function createTestJob(
     logger.debug('target line range end: %O', firstTargetLineRangeList?.end)
 
     const resp = await codewhispererClient.codeWhispererClient.startTestGeneration(req).catch((err) => {
-        ChatSessionManager.Instance.getSession().requestId = err.requestId
+        ChatSessionManager.Instance.getSession().startTestGenerationRequestId = err.requestId
         logger.error(`Failed creating test job. Request id: ${err.requestId}`)
         throw err
     })
     logger.info('Unit test generation request id: %s', resp.$response.requestId)
     logger.debug('Unit test generation data: %O', resp.$response.data)
-    ChatSessionManager.Instance.getSession().requestId = resp.$response.requestId
+    ChatSessionManager.Instance.getSession().startTestGenerationRequestId = resp.$response.requestId
     if (resp.$response.error) {
         logger.error('Unit test generation error: %O', resp.$response.error)
     }
