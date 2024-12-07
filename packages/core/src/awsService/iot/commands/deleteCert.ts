@@ -106,6 +106,6 @@ export async function deleteCertCommand(node: IotCertWithPoliciesNode): Promise<
         )
     }
 
-    //Refresh the Certificate Folder node
+    // Refresh the Certificate Folder node
     await node.parent.refreshNode()
 }

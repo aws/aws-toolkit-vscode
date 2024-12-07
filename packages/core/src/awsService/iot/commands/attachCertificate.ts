@@ -46,7 +46,7 @@ export async function attachCertificateCommand(node: IotThingNode, promptFun = p
 
     getLogger().debug('Attached certificate %O', cert.certificateId)
 
-    //Refresh the Thing node
+    // Refresh the Thing node
     await node.refreshNode()
 }
 

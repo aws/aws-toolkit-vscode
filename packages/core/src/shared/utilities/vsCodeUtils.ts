@@ -179,7 +179,7 @@ export function isUntitledScheme(uri: vscode.Uri): boolean {
  * Example: `['foo', '**\/bar/'] => "["foo", "bar"]"`
  */
 export function globDirPatterns(dirs: string[]): string[] {
-    //The patterns themselves are not useful, but with postformating like "**/${pattern}/" they become glob dir patterns
+    // The patterns themselves are not useful, but with postformating like "**/${pattern}/" they become glob dir patterns
     return dirs.map((current) => {
         // Trim all "*" and "/" chars.
         // Note that the replace() patterns and order is intentionaly so that "**/*foo*/**" yields "*foo*".

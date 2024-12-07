@@ -268,7 +268,7 @@ export default defineComponent({
             if (!field) {
                 return undefined
             }
-            //Reg ex for a comma with 0 or more whitespace before and/or after
+            // Reg ex for a comma with 0 or more whitespace before and/or after
             const re = /\s*,\s*/g
             return field.trim().split(re)
         },

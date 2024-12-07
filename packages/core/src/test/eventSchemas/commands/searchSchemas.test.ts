@@ -116,7 +116,7 @@ describe('Search Schemas', function () {
             const client = stub(DefaultSchemaClient, { regionCode: 'region-1' })
             const displayMessage = `Unable to search registry ${failRegistry}`
 
-            //make an api call with non existent registryName - should return empty results
+            // make an api call with non existent registryName - should return empty results
             const results = await getSearchListForSingleRegistry(client, failRegistry, 'randomText')
 
             assert.strictEqual(results.length, 0, 'should return 0 summaries')
@@ -145,7 +145,7 @@ describe('Search Schemas', function () {
 
             assert.strictEqual(results.length, 3, 'should return 3 summaries')
 
-            //results are unordered, sort for testing purposes
+            // results are unordered, sort for testing purposes
             results.sort(function (a, b) {
                 return a.RegistryName > b.RegistryName ? 1 : b.RegistryName > a.RegistryName ? -1 : 0
             })
@@ -165,7 +165,7 @@ describe('Search Schemas', function () {
             assert.strictEqual(results[1].VersionList.length, 1, 'second summary has 1 version')
             assert.strictEqual(results[2].VersionList.length, 1, 'third summary has 1 version')
 
-            //failed registries
+            // failed registries
             const errorMessages = getTestWindow().shownMessages.filter((m) => m.severity === SeverityLevel.Error)
             assert.strictEqual(errorMessages.length, 2, 'should display 2 error message, 1 per each failed registry')
             errorMessages[0].assertMessage(displayMessage)

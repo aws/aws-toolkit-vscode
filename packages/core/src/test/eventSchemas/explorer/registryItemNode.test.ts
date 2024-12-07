@@ -141,7 +141,7 @@ describe('DefaultRegistryNode', function () {
     })
 
     it('handles error', async function () {
-        //typo in the name of the method
+        // typo in the name of the method
         class ThrowErrorDefaultSchemaRegistrynNode extends SchemasNode {
             public constructor() {
                 super(createSchemaClient())

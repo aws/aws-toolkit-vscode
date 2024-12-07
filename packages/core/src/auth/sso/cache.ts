@@ -10,11 +10,12 @@ import { getLogger } from '../../shared/logger/logger'
 import fs from '../../shared/fs/fs'
 import { createDiskCache, KeyedCache, mapCache } from '../../shared/utilities/cacheUtils'
 import { stripUndefined } from '../../shared/utilities/collectionUtils'
-import { hasProps, selectFrom } from '../../shared/utilities/tsUtils'
+import { getMissingProps, hasProps, selectFrom } from '../../shared/utilities/tsUtils'
 import { SsoToken, ClientRegistration } from './model'
 import { DevSettings } from '../../shared/settings'
 import { onceChanged } from '../../shared/utilities/functionUtils'
 import globals from '../../shared/extensionGlobals'
+import { ToolkitError } from '../../shared'
 
 interface RegistrationKey {
     readonly startUrl: string
@@ -91,6 +92,12 @@ export function getTokenCache(directory = getCacheDir()): KeyedCache<SsoAccess> 
         }
 
         stripUndefined(token)
+
+        // Validate data is not missing.
+        const missingProps = getMissingProps(token, 'accessToken', 'refreshToken')
+        if (missingProps.length > 0) {
+            throw new ToolkitError(`SSO cache data unexpectedly missing props: ${JSON.stringify(missingProps)}`)
+        }
 
         return {
             token,

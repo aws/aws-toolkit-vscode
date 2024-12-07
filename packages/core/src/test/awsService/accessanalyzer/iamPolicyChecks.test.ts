@@ -354,7 +354,7 @@ describe('customChecks', function () {
 
         await fakePolicyChecksWebview.checkNoNewAccess(documentType, policyType, referenceDocument, cfnParameterPath)
 
-        //We do not want to validate the path of the temporary folder, so we check every other field instead of the entire args
+        // We do not want to validate the path of the temporary folder, so we check every other field instead of the entire args
         assert(executeCustomPolicyChecksCommandStub.called)
         const actualCommand = executeCustomPolicyChecksCommandStub.getCalls()[0].args[0]
         assert.deepStrictEqual(actualCommand.command, 'tf-policy-validator')

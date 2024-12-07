@@ -71,7 +71,7 @@ module.exports = (env, argv) => {
                 http: false, // http: require.resolve('stream-http'),
                 https: false, // https: require.resolve('https-browserify'),
                 zlib: false, // zlib: require.resolve('browserify-zlib'),
-                constants: false, //constants: require.resolve('constants-browserify'),
+                constants: false, // constants: require.resolve('constants-browserify'),
                 // These do not have a straight forward replacement
                 child_process: false, // Reason for error: 'TypeError: The "original" argument must be of type Function'
                 async_hooks: false,

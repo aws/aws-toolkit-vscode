@@ -754,7 +754,7 @@ describe('SAM Integration Tests', async function () {
                     const item1 = input.items[2] as DataQuickPickItem<string>
                     const item2 = input.items[4] as DataQuickPickItem<string>
                     const item3 = input.items[7] as DataQuickPickItem<string>
-                    input.acceptItems(item1, item2, item3) //--cached, --parallel, --use-container
+                    input.acceptItems(item1, item2, item3) // --cached, --parallel, --use-container
 
                     assert.strictEqual(item1.data as string, '--cached')
                     assert.strictEqual(item2.data as string, '--parallel')

@@ -47,8 +47,8 @@ _main() {
 
     _require AWS_SSM_CLI "${AWS_SSM_CLI:-}"
     _require AWS_REGION "${AWS_REGION:-}"
-    _require STREAM_URL "${STREAM_URL:-}"
-    _require TOKEN "${TOKEN:-}"
+    _require_nolog STREAM_URL "${STREAM_URL:-}"
+    _require_nolog TOKEN "${TOKEN:-}"
     _require SESSION_ID "${SESSION_ID:-}"
     _require LOG_FILE_LOCATION "${LOG_FILE_LOCATION:-}"
 

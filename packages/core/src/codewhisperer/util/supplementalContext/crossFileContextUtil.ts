@@ -240,7 +240,7 @@ export async function fetchOpentabsContext(
 function findBestKChunkMatches(chunkInput: Chunk, chunkReferences: Chunk[], k: number): Chunk[] {
     const chunkContentList = chunkReferences.map((chunk) => chunk.content)
 
-    //performBM25Scoring returns the output in a sorted order (descending of scores)
+    // performBM25Scoring returns the output in a sorted order (descending of scores)
     const top3: BM25Document[] = new BM25Okapi(chunkContentList).topN(chunkInput.content, crossFileContextConfig.topK)
 
     return top3.map((doc) => {

@@ -58,6 +58,6 @@ export async function deleteThingCommand(node: IotThingNode): Promise<void> {
         void showViewLogsMessage(localize('AWS.iot.deleteThing.error', 'Failed to delete Thing: {0}', thingName))
     }
 
-    //Refresh the Things Folder node
+    // Refresh the Things Folder node
     await node.parent.refreshNode()
 }
