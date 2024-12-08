@@ -51,15 +51,13 @@ describe('Amazon Q Code Transformation', function () {
     describe('Starting a transformation from chat', () => {
         it('Can click through all user input forms', async () => {
             tab.addChatMessage({ command: '/transform' })
-            sinon
-                .stub(GumbyController.prototype, 'validateLanguageUpgradeProjects' as keyof GumbyController)
-                .resolves([
-                    {
-                        name: 'qct-sample-java-8-app-main',
-                        path: '/Users/alias/Desktop/qct-sample-java-8-app-main',
-                        JDKVersion: JDKVersion.JDK8,
-                    },
-                ])
+            sinon.stub(GumbyController.prototype, 'validateLanguageUpgradeProjects' as keyof GumbyController).resolves([
+                {
+                    name: 'qct-sample-java-8-app-main',
+                    path: '/Users/alias/Desktop/qct-sample-java-8-app-main',
+                    JDKVersion: JDKVersion.JDK8,
+                },
+            ])
 
             // wait for /transform to respond with some intro messages and the first user input form
             await tab.waitForEvent(() => tab.getChatItems().length > 3, {
