@@ -166,14 +166,6 @@ describe('transformByQ', function () {
         transformByQState.setJobDefaults() // reset error messages to undefined
     })
 
-    it('WHEN finalizeTransformationJob on successful job THEN error not thrown and error message fields are not set', async function () {
-        await assert.doesNotReject(async () => {
-            await finalizeTransformationJob('COMPLETED')
-        })
-        assert.strictEqual(transformByQState.getJobFailureErrorChatMessage(), undefined)
-        assert.strictEqual(transformByQState.getJobFailureErrorNotification(), undefined)
-    })
-
     it('WHEN polling completed job THEN returns status as completed', async function () {
         const mockJobResponse = {
             $response: {

@@ -72,7 +72,7 @@ describe('transformByQ', async function () {
         await fs.writeFile(tempFilePath, pomXmlContents)
     })
 
-    // TODO: this test 1) is skipped in GitHub CI due to no valid connection (see line 60 above) and
+    // TODO: this test 1) is skipped in GitHub CI due to no valid connection (see line 62 above) and
     // 2) even locally, fails due to the max test duration being set to 30s (this test takes ~5m)
     // Once both of the above are resolved, this test will pass
     // You can manually override the 30s limit (in setupUtil.ts) to confirm that the test passes locally
