@@ -6,4 +6,6 @@
 export { activate } from './activation'
 export { default as DependencyVersions } from './models/dependencies'
 export { default as MessengerUtils } from './chat/controller/messenger/messengerUtils'
+export { GumbyController } from './chat/controller/controller'
+export { TabsStorage } from '../amazonq/webview/ui/storages/tabsStorage'
 export * from './errors'
