@@ -59,6 +59,14 @@ export class Messenger {
         this.mynahUIProps.onFollowUpClicked(this.tabID, lastChatItem?.messageId ?? '', option[0])
     }
 
+    clickCustomFormButton(action: { id: string; text?: string; formItemValues?: Record<string, string> }) {
+        if (!this.mynahUIProps.onCustomFormAction) {
+            assert.fail('onCustomFormAction must be defined to use it in the tests')
+        }
+
+        this.mynahUIProps.onCustomFormAction(this.tabID, action)
+    }
+
     clickFileActionButton(filePath: string, actionName: string) {
         if (!this.mynahUIProps.onFileActionClick) {
             assert.fail('onFileActionClick must be defined to use it in the tests')
@@ -173,7 +181,9 @@ export class Messenger {
 
         // Do another check just in case the waitUntil time'd out
         if (!event()) {
-            assert.fail(`Event has not finished loading in: ${this.waitTimeoutInMs} ms`)
+            assert.fail(
+                `Event has not finished loading in: ${waitOverrides ? waitOverrides.waitTimeoutInMs : this.waitTimeoutInMs} ms`
+            )
         }
     }
 
