@@ -434,7 +434,7 @@ export class TestController {
 
             session.hasUserPromptSupplied = message.prompt.length > 0
 
-            //displaying user message prompt in Test tab
+            // displaying user message prompt in Test tab
             this.messenger.sendMessage(userMessage, tabID, 'prompt')
             this.messenger.sendChatInputEnabled(tabID, false)
             this.sessionStorage.getSession().conversationState = ConversationState.IN_PROGRESS
@@ -714,7 +714,7 @@ export class TestController {
         const document = await vscode.workspace.openTextDocument(absolutePath)
         await vscode.window.showTextDocument(document)
         // TODO: send the message once again once build is enabled
-        //this.messenger.sendMessage('Accepted', message.tabID, 'prompt')
+        // this.messenger.sendMessage('Accepted', message.tabID, 'prompt')
         telemetry.ui_click.emit({ elementId: 'unitTestGeneration_acceptDiff' })
         telemetry.amazonq_utgGenerateTests.emit({
             generatedCount: session.numberOfTestsGenerated,
@@ -802,7 +802,7 @@ export class TestController {
         filePath: string
     ) {
         try {
-            //TODO: Write this entire gen response to basiccommands and call here.
+            // TODO: Write this entire gen response to basiccommands and call here.
             const editorText = await fs.readFileText(filePath)
 
             const triggerPayload = {
@@ -836,7 +836,7 @@ export class TestController {
         }
     }
 
-    //TODO: Check if there are more cases to endSession if yes create a enum or type for step
+    // TODO: Check if there are more cases to endSession if yes create a enum or type for step
     private async endSession(data: any, step: FollowUpTypes) {
         const session = this.sessionStorage.getSession()
         if (step === FollowUpTypes.RejectCode) {
@@ -879,7 +879,7 @@ export class TestController {
      */
 
     private startInitialBuild(data: any) {
-        //TODO: Remove the fallback build command after stable version of backend build command.
+        // TODO: Remove the fallback build command after stable version of backend build command.
         const userMessage = `Would you like me to help build and execute the test? I will need you to let me know what build command to run if you do.`
         const followUps: FollowUps = {
             text: '',
@@ -911,7 +911,7 @@ export class TestController {
     private async checkForInstallationDependencies(data: any) {
         // const session: Session = this.sessionStorage.getSession()
         // const listOfInstallationDependencies = session.testGenerationJob?.shortAnswer?.installationDependencies || []
-        //MOCK: As there is no installation dependencies in shortAnswer
+        // MOCK: As there is no installation dependencies in shortAnswer
         const listOfInstallationDependencies = ['']
         const installationDependencies = listOfInstallationDependencies.join('\n')
 
@@ -962,7 +962,7 @@ export class TestController {
     private async startLocalBuildExecution(data: any) {
         const session: Session = this.sessionStorage.getSession()
         // const installationDependencies = session.shortAnswer?.installationDependencies ?? []
-        //MOCK: ignoring the installation case until backend send response
+        // MOCK: ignoring the installation case until backend send response
         const installationDependencies: string[] = []
         const buildCommands = session.updatedBuildCommands
         if (!buildCommands) {
@@ -992,7 +992,7 @@ export class TestController {
             })
 
             const status = await runBuildCommand(installationDependencies)
-            //TODO: Add separate status for installation dependencies
+            // TODO: Add separate status for installation dependencies
             session.buildStatus = status
             if (status === BuildStatus.FAILURE) {
                 this.messenger.sendBuildProgressMessage({
@@ -1111,7 +1111,7 @@ export class TestController {
                 false
             )
         }
-        //TODO: Skip this if startTestGenerationProcess timeouts
+        // TODO: Skip this if startTestGenerationProcess timeouts
         if (session.generatedFilePath) {
             await this.showTestCaseSummary(data)
         }
@@ -1298,7 +1298,7 @@ export class TestController {
         if (session.tabID) {
             getLogger().debug('Setting input state with tabID: %s', session.tabID)
             this.messenger.sendChatInputEnabled(session.tabID, true)
-            this.messenger.sendUpdatePlaceholder(session.tabID, '/test Generate unit tests') //TODO: Change according to the UX
+            this.messenger.sendUpdatePlaceholder(session.tabID, '/test Generate unit tests') // TODO: Change according to the UX
         }
         getLogger().debug(
             'Deleting output.log and temp result directory. testGenerationLogsDir: %s',

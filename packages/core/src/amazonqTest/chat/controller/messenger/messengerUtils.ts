@@ -14,7 +14,7 @@ export enum ButtonActions {
     STOP_BUILD = 'Stop-Build-Process',
 }
 
-//TODO: Refactor the common functionality between Transform, FeatureDev, CWSPRChat, Scan and UTG to a new Folder.
+// TODO: Refactor the common functionality between Transform, FeatureDev, CWSPRChat, Scan and UTG to a new Folder.
 
 export default class MessengerUtils {
     static stringToEnumValue = <T extends { [key: string]: string }, K extends keyof T & string>(
