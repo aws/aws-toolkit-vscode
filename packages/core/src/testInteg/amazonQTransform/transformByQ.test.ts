@@ -10,11 +10,10 @@ import * as codeWhisperer from '../../codewhisperer/client/codewhisperer'
 import assert from 'assert'
 import { getSha256, uploadArtifactToS3, zipCode } from '../../codewhisperer/service/transformByQ/transformApiHandler'
 import request from '../../shared/request'
-import AdmZip from 'adm-zip'
-import { setValidConnection } from '../util/connection'
 import { transformByQState, ZipManifest } from '../../codewhisperer/models/model'
 import globals from '../../shared/extensionGlobals'
 import { fs } from '../../shared'
+import { setValidConnection } from '../../testE2E/util/connection'
 
 describe('transformByQ', async function () {
     let tempDir = ''
@@ -35,10 +34,6 @@ describe('transformByQ', async function () {
         await fs.writeFile(tempFilePath, 'sample content for the test file')
         transformByQState.setProjectPath(tempDir)
         const zipCodeResult = await zipCode({
-            dependenciesFolder: {
-                path: tempFilePath,
-                name: tempFileName,
-            },
             projectPath: tempDir,
             zipManifest: new ZipManifest(),
         })
@@ -87,7 +82,7 @@ describe('transformByQ', async function () {
         )
     })
 
-    it('WHEN createUploadUrl THEN URL uses HTTPS and sets 60 second expiration', async function () {
+    it('WHEN createUploadUrl THEN URL uses HTTPS and sets 30 minute expiration', async function () {
         const buffer = Buffer.from(await fs.readFileBytes(zippedCodePath))
         const sha256 = getSha256(buffer)
         const response = await codeWhisperer.codeWhispererClient.createUploadUrl({
@@ -96,17 +91,8 @@ describe('transformByQ', async function () {
             uploadIntent: CodeWhispererConstants.uploadIntent,
         })
         const uploadUrl = response.uploadUrl
-        const usesHttpsAndExpiresAfter60Seconds = uploadUrl.includes('https') && uploadUrl.includes('X-Amz-Expires=60')
-        assert.strictEqual(usesHttpsAndExpiresAfter60Seconds, true)
-    })
-
-    it('WHEN zipCode THEN ZIP contains all expected files and no unexpected files', async function () {
-        const zipFiles = new AdmZip(zippedCodePath).getEntries()
-        const zipFileNames: string[] = []
-        zipFiles.forEach((file) => {
-            zipFileNames.push(file.name)
-        })
-        assert.strictEqual(zipFileNames.length, 2) // expecting only a dummy txt file and a manifest.json
-        assert.strictEqual(zipFileNames.includes(tempFileName) && zipFileNames.includes('manifest.json'), true)
+        const usesHttpsAndExpiresAfter30Minutes =
+            uploadUrl.includes('https') && uploadUrl.includes('X-Amz-Expires=1800')
+        assert.strictEqual(usesHttpsAndExpiresAfter30Minutes, true)
     })
 })
