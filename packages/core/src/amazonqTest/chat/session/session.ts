@@ -28,9 +28,10 @@ export class Session {
     // A tab may or may not be currently open
     public tabID: string | undefined
 
-    //This is unique per each test generation cycle
+    // This is unique per each test generation cycle
     public testGenerationJobGroupName: string | undefined = undefined
     public listOfTestGenerationJobId: string[] = []
+    public startTestGenerationRequestId: string | undefined = undefined
     public testGenerationJob: TestGenerationJob | undefined
 
     // Start Test generation
@@ -56,8 +57,8 @@ export class Session {
     public charsOfCodeAccepted: number = 0
     public latencyOfTestGeneration: number = 0
 
-    //TODO: Take values from ShortAnswer or TestGenerationJob
-    //Build loop
+    // TODO: Take values from ShortAnswer or TestGenerationJob
+    // Build loop
     public buildStatus: BuildStatus = BuildStatus.SUCCESS
     public updatedBuildCommands: string[] | undefined = undefined
     public testCoveragePercentage: number = 90

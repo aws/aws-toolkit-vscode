@@ -66,7 +66,7 @@ export async function startCodeFixGeneration(
                 start: { line: issue.startLine + 1, character: 0 },
                 end: { line: issue.endLine, character: 0 },
             },
-            issue.description.text,
+            issue.recommendation.text,
             codeFixName,
             issue.ruleId
         )

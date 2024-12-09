@@ -52,7 +52,7 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
     public storagePath: string | undefined
     public logPath: string = ''
     public extensionUri: vscode.Uri = vscode.Uri.file(this._extensionPath)
-    public environmentVariableCollection: any //vscode.EnvironmentVariableCollection = {} as vscode.EnvironmentVariableCollection
+    public environmentVariableCollection: any // vscode.EnvironmentVariableCollection = {} as vscode.EnvironmentVariableCollection
     public storageUri: vscode.Uri | undefined
     public logUri: vscode.Uri = vscode.Uri.file('file://fake/log/uri')
     public extensionMode: vscode.ExtensionMode = vscode.ExtensionMode.Test

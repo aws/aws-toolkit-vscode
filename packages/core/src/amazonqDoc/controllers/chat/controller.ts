@@ -116,10 +116,17 @@ export class DocController {
     }
 
     /** Prompts user to choose a folder in current workspace for README creation/update.
-     * After user chooses a folder, displays confimraiton message to user with selected path.
+     * After user chooses a folder, displays confirmation message to user with selected path.
      *
      */
     private async folderSelector(data: any) {
+        this.messenger.sendAnswer({
+            type: 'answer',
+            tabID: data.tabID,
+            message: i18n('AWS.amazonq.doc.answer.chooseFolder'),
+            disableChatInput: true,
+        })
+
         const uri = await createSingleFileDialog({
             canSelectFolders: true,
             canSelectFiles: false,
@@ -133,7 +140,7 @@ export class DocController {
             this.messenger.sendAnswer({
                 type: 'answer',
                 tabID: data.tabID,
-                message: 'No folder was selected, please try again.',
+                message: i18n('AWS.amazonq.doc.error.noFolderSelected'),
                 followUps: retryFollowUps,
                 disableChatInput: true,
             })

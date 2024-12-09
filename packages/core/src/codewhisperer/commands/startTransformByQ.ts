@@ -232,7 +232,9 @@ export async function finalizeTransformByQ(status: string) {
 export async function preTransformationUploadCode() {
     await vscode.commands.executeCommand('aws.amazonq.transformationHub.focus')
 
-    void vscode.window.showInformationMessage(CodeWhispererConstants.jobStartedNotification)
+    void vscode.window.showInformationMessage(CodeWhispererConstants.jobStartedNotification, {
+        title: CodeWhispererConstants.jobStartedTitle,
+    })
 
     let uploadId = ''
     throwIfCancelled()
@@ -746,7 +748,9 @@ export async function postTransformationJob() {
     }
 
     if (transformByQState.isSucceeded()) {
-        void vscode.window.showInformationMessage(CodeWhispererConstants.jobCompletedNotification(diffMessage))
+        void vscode.window.showInformationMessage(CodeWhispererConstants.jobCompletedNotification(diffMessage), {
+            title: CodeWhispererConstants.transformationCompletedTitle,
+        })
     } else if (transformByQState.isPartiallySucceeded()) {
         void vscode.window
             .showInformationMessage(

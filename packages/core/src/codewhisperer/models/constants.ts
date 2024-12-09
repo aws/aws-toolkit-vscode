@@ -257,9 +257,9 @@ export const codeScanZipExt = '.zip'
 
 export const contextTruncationTimeoutSeconds = 10
 
-export const codeScanJobTimeoutSeconds = 60 * 10 //10 minutes
+export const codeScanJobTimeoutSeconds = 60 * 10 // 10 minutes
 
-export const codeFileScanJobTimeoutSeconds = 60 * 10 //10 minutes
+export const codeFileScanJobTimeoutSeconds = 60 * 10 // 10 minutes
 
 export const codeFixJobTimeoutMs = 60_000
 
@@ -396,7 +396,7 @@ export const failedToConnectIamIdentityCenter = `Failed to connect to IAM Identi
 export const stopScanMessage =
     'Stop security review? This review will be counted as one complete review towards your monthly security review limits.'
 
-//TODO: Change the Text according to the UX
+// TODO: Change the Text according to the UX
 export const stopScanMessageInChat = 'Review is stopped. Retry reviews by selecting below options'
 
 export const showScannedFilesMessage = 'View Code Issues'
@@ -554,6 +554,8 @@ export const noOngoingJobMessage = 'No ongoing job.'
 
 export const nothingToShowMessage = 'Nothing to show'
 
+export const jobStartedTitle = 'Transformation started'
+
 export const jobStartedNotification =
     'Amazon Q is transforming your code. It can take 10 to 30 minutes to upgrade your code, depending on the size of your project. To monitor progress, go to the Transformation Hub.'
 
@@ -635,6 +637,8 @@ export const jobCancelledChatMessage =
     'I cancelled your transformation. If you want to start another transformation, choose **Start a new transformation**.'
 
 export const jobCancelledNotification = 'You cancelled the transformation.'
+
+export const transformationCompletedTitle = 'Transformation complete'
 
 export const diffMessage = (multipleDiffs: boolean) => {
     return multipleDiffs

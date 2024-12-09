@@ -32,6 +32,12 @@ jobs:
             - uses: actions/setup-node@v4
               with:
                   node-version: '20'
+            - name: Validate Branch name
+              if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref != ''}}
+              env:
+                  BRANCH_NAME: ${{ github.event.pull_request.head.ref }}
+              run: |
+                  node "$GITHUB_WORKSPACE/.github/workflows/lintbranch.js" run "$BRANCH_NAME"
             - name: Check PR title
               run: |
                   node "$GITHUB_WORKSPACE/.github/workflows/lintcommit.js"
@@ -54,6 +60,87 @@ jobs:
             - run: npm ci
             - run: npm run testCompile
             - run: npm run lint
+
+    jscpd:
+        needs: lint-commits
+        if: ${{ github.event_name == 'pull_request'}}
+        runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                node-version: [18.x]
+        env:
+            NODE_OPTIONS: '--max-old-space-size=8192'
+
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+
+            - name: Use Node.js ${{ matrix.node-version }}
+              uses: actions/setup-node@v4
+              with:
+                  node-version: ${{ matrix.node-version }}
+
+            - name: Fetch fork upstream
+              env:
+                  REPO_NAME: ${{ github.event.pull_request.head.repo.full_name }}
+              run: |
+                  git remote add forkUpstream https://github.com/$REPO_NAME  # URL of the fork
+                  git fetch forkUpstream  # Fetch fork
+
+            - name: Compute git diff
+              env:
+                  CURRENT_BRANCH: ${{ github.head_ref }}
+                  TARGET_BRANCH: ${{ github.event.pull_request.base.ref }}
+              run: git diff --name-only origin/$TARGET_BRANCH forkUpstream/$CURRENT_BRANCH > diff_output.txt
+
+            - run: npm install -g jscpd
+
+            - run: jscpd --config "$GITHUB_WORKSPACE/.github/workflows/jscpd.json"
+
+            - if: always()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: unfiltered-jscpd-report
+                  path: ./jscpd-report.json
+
+            - name: Filter jscpd report for changed files
+              run: |
+                  if [ ! -f ./jscpd-report.json ]; then
+                    echo "jscpd-report.json not found"
+                    exit 1
+                  fi
+                  echo "Filtering jscpd report for changed files..."
+                  CHANGED_FILES=$(jq -R -s -c 'split("\n")[:-1]' diff_output.txt)
+                  echo "Changed files: $CHANGED_FILES"
+                  jq --argjson changed_files "$CHANGED_FILES" '
+                  .duplicates | map(select(
+                      (.firstFile?.name as $fname | $changed_files | any(. == $fname)) or
+                      (.secondFile?.name as $sname | $changed_files | any(. == $sname))
+                  ))
+                  ' ./jscpd-report.json > filtered-jscpd-report.json
+                  cat filtered-jscpd-report.json
+
+            - name: Check for duplicates
+              run: |
+                  if [ $(wc -l < ./filtered-jscpd-report.json) -gt 1 ]; then
+                    echo "filtered_report_exists=true" >> $GITHUB_ENV
+                  else
+                    echo "filtered_report_exists=false" >> $GITHUB_ENV
+                  fi
+            - name: upload filtered report (if applicable)
+              if: env.filtered_report_exists == 'true'
+              uses: actions/upload-artifact@v4
+              with:
+                  name: filtered-jscpd-report
+                  path: ./filtered-jscpd-report.json
+
+            - name: Fail and log found duplicates.
+              if: env.filtered_report_exists == 'true'
+              run: |
+                  cat ./filtered-jscpd-report.json
+                  echo "Duplications found, failing the check."
+                  exit 1
 
     macos:
         needs: lint-commits
