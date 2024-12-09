@@ -18,7 +18,7 @@ import { formatError, ToolkitError } from '../shared/errors'
 import { asString } from './providers/credentials'
 import { TreeNode } from '../shared/treeview/resourceTreeDataProvider'
 import { createInputBox } from '../shared/ui/inputPrompter'
-import { telemetry } from '../shared/telemetry/telemetry'
+import { CredentialSourceId, telemetry } from '../shared/telemetry/telemetry'
 import { createCommonButtons, createExitButton, createHelpButton, createRefreshButton } from '../shared/ui/buttons'
 import { getIdeProperties, isAmazonQ, isCloud9 } from '../shared/extensionUtilities'
 import { addScopes, getDependentAuths } from './secondaryAuth'
@@ -45,7 +45,7 @@ import { Commands, placeholder } from '../shared/vscode/commands2'
 import { Auth } from './auth'
 import { validateIsNewSsoUrl, validateSsoUrlFormat } from './sso/validation'
 import { getLogger } from '../shared/logger'
-import { isValidAmazonQConnection, isValidCodeWhispererCoreConnection } from '../codewhisperer/util/authUtil'
+import { AuthUtil, isValidAmazonQConnection, isValidCodeWhispererCoreConnection } from '../codewhisperer/util/authUtil'
 import { AuthFormId } from '../login/webview/vue/types'
 import { extensionVersion } from '../shared/vscode/env'
 import { ExtStartUpSources } from '../shared/telemetry'
@@ -797,4 +797,14 @@ export function initializeCredentialsProviderManager() {
     const manager = CredentialsProviderManager.getInstance()
     manager.addProviderFactory(new SharedCredentialsProviderFactory())
     manager.addProviders(new Ec2CredentialsProvider(), new EcsCredentialsProvider(), new EnvVarsCredentialsProvider())
+}
+
+export async function getAuthType() {
+    let authType: CredentialSourceId | undefined = undefined
+    if (AuthUtil.instance.isEnterpriseSsoInUse() && AuthUtil.instance.isConnectionValid()) {
+        authType = 'iamIdentityCenter'
+    } else if (AuthUtil.instance.isBuilderIdInUse() && AuthUtil.instance.isConnectionValid()) {
+        authType = 'awsId'
+    }
+    return authType
 }

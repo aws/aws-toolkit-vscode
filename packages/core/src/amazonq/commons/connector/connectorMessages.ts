@@ -3,20 +3,22 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { AuthFollowUpType } from '../../../amazonq/auth/model'
-import { MessagePublisher } from '../../../amazonq/messages/messagePublisher'
-import { CodeReference } from '../../../amazonq/webview/ui/connector'
-import { featureDevChat, licenseText } from '../../constants'
-import { ChatItemAction, SourceLink } from '@aws/mynah-ui'
-import { DeletedFileInfo, NewFileInfo } from '../../types'
-import { ChatItemType } from '../../../amazonq/commons/model'
+import { AuthFollowUpType } from '../../auth/model'
+import { MessagePublisher } from '../../messages/messagePublisher'
+import { CodeReference } from '../../webview/ui/connector'
+import { ChatItemAction, ProgressField, SourceLink } from '@aws/mynah-ui'
+import { ChatItemType } from '../model'
+import { DeletedFileInfo, NewFileInfo } from '../../../amazonqFeatureDev/types'
+import { licenseText } from '../../../amazonqFeatureDev/constants'
 
 class UiMessage {
     readonly time: number = Date.now()
-    readonly sender: string = featureDevChat
     readonly type: string = ''
 
-    public constructor(protected tabID: string) {}
+    public constructor(
+        protected tabID: string,
+        protected sender: string
+    ) {}
 }
 
 export class ErrorMessage extends UiMessage {
@@ -24,8 +26,8 @@ export class ErrorMessage extends UiMessage {
     readonly message!: string
     override type = 'errorMessage'
 
-    constructor(title: string, message: string, tabID: string) {
-        super(tabID)
+    constructor(title: string, message: string, tabID: string, sender: string) {
+        super(tabID, sender)
         this.title = title
         this.message = message
     }
@@ -49,10 +51,11 @@ export class CodeResultMessage extends UiMessage {
         readonly deletedFiles: DeletedFileInfo[],
         references: CodeReference[],
         tabID: string,
+        sender: string,
         conversationID: string,
         codeGenerationId: string
     ) {
-        super(tabID)
+        super(tabID, sender)
         this.references = references
             .filter((ref) => ref.licenseName && ref.repository && ref.url)
             .map((ref) => {
@@ -71,17 +74,51 @@ export class CodeResultMessage extends UiMessage {
     }
 }
 
+export class FolderConfirmationMessage extends UiMessage {
+    readonly folderPath: string
+    readonly message: string
+    readonly followUps?: ChatItemAction[]
+    override type = 'folderConfirmationMessage'
+    constructor(tabID: string, sender: string, message: string, folderPath: string, followUps?: ChatItemAction[]) {
+        super(tabID, sender)
+        this.message = message
+        this.folderPath = folderPath
+        this.followUps = followUps
+    }
+}
+
+export class UpdatePromptProgressMessage extends UiMessage {
+    readonly progressField: ProgressField | null
+    override type = 'updatePromptProgress'
+    constructor(tabID: string, sender: string, progressField: ProgressField | null) {
+        super(tabID, sender)
+        this.progressField = progressField
+    }
+}
+
 export class AsyncEventProgressMessage extends UiMessage {
     readonly inProgress: boolean
     readonly message: string | undefined
     override type = 'asyncEventProgressMessage'
 
-    constructor(tabID: string, inProgress: boolean, message: string | undefined) {
-        super(tabID)
+    constructor(tabID: string, sender: string, inProgress: boolean, message: string | undefined) {
+        super(tabID, sender)
         this.inProgress = inProgress
         this.message = message
     }
 }
+
+export class AuthenticationUpdateMessage {
+    readonly time: number = Date.now()
+    readonly type = 'authenticationUpdateMessage'
+
+    constructor(
+        readonly sender: string,
+        readonly featureEnabled: boolean,
+        readonly authenticatingTabIDs: string[]
+    ) {}
+}
+
 export class FileComponent extends UiMessage {
     readonly filePaths: NewFileInfo[]
     readonly deletedFiles: DeletedFileInfo[]
@@ -91,12 +128,13 @@ export class FileComponent extends UiMessage {
 
     constructor(
         tabID: string,
+        sender: string,
         filePaths: NewFileInfo[],
         deletedFiles: DeletedFileInfo[],
         messageId: string,
         disableFileActions: boolean
     ) {
-        super(tabID)
+        super(tabID, sender)
         this.filePaths = filePaths
         this.deletedFiles = deletedFiles
         this.messageId = messageId
@@ -108,8 +146,8 @@ export class UpdatePlaceholderMessage extends UiMessage {
     readonly newPlaceholder: string
     override type = 'updatePlaceholderMessage'
 
-    constructor(tabID: string, newPlaceholder: string) {
-        super(tabID)
+    constructor(tabID: string, sender: string, newPlaceholder: string) {
+        super(tabID, sender)
         this.newPlaceholder = newPlaceholder
     }
 }
@@ -118,29 +156,17 @@ export class ChatInputEnabledMessage extends UiMessage {
     readonly enabled: boolean
     override type = 'chatInputEnabledMessage'
 
-    constructor(tabID: string, enabled: boolean) {
-        super(tabID)
+    constructor(tabID: string, sender: string, enabled: boolean) {
+        super(tabID, sender)
         this.enabled = enabled
     }
 }
 
 export class OpenNewTabMessage {
     readonly time: number = Date.now()
-    readonly sender: string = featureDevChat
     readonly type = 'openNewTabMessage'
-}
 
-export class AuthenticationUpdateMessage {
-    readonly time: number = Date.now()
-    readonly sender: string = featureDevChat
-    readonly featureDevEnabled: boolean
-    readonly authenticatingTabIDs: string[]
-    readonly type = 'authenticationUpdateMessage'
-
-    constructor(featureDevEnabled: boolean, authenticatingTabIDs: string[]) {
-        this.featureDevEnabled = featureDevEnabled
-        this.authenticatingTabIDs = authenticatingTabIDs
-    }
+    constructor(protected sender: string) {}
 }
 
 export class AuthNeededException extends UiMessage {
@@ -148,8 +174,8 @@ export class AuthNeededException extends UiMessage {
     readonly authType: AuthFollowUpType
     override type = 'authNeededException'
 
-    constructor(message: string, authType: AuthFollowUpType, tabID: string) {
-        super(tabID)
+    constructor(message: string, authType: AuthFollowUpType, tabID: string, sender: string) {
+        super(tabID, sender)
         this.message = message
         this.authType = authType
     }
@@ -176,8 +202,8 @@ export class ChatMessage extends UiMessage {
     readonly messageId: string | undefined
     override type = 'chatMessage'
 
-    constructor(props: ChatMessageProps, tabID: string) {
-        super(tabID)
+    constructor(props: ChatMessageProps, tabID: string, sender: string) {
+        super(tabID, sender)
         this.message = props.message
         this.messageType = props.messageType
         this.followUps = props.followUps
@@ -200,8 +226,8 @@ export class UpdateAnswerMessage extends UiMessage {
     readonly followUps: ChatItemAction[] | undefined
     override type = 'updateChatAnswer'
 
-    constructor(props: UpdateAnswerMessageProps, tabID: string) {
-        super(tabID)
+    constructor(props: UpdateAnswerMessageProps, tabID: string, sender: string) {
+        super(tabID, sender)
         this.messageId = props.messageId
         this.messageType = props.messageType
         this.followUps = props.followUps
@@ -223,6 +249,14 @@ export class AppToWebViewMessageDispatcher {
         this.appsToWebViewMessagePublisher.publish(message)
     }
 
+    public sendUpdatePromptProgress(message: UpdatePromptProgressMessage) {
+        this.appsToWebViewMessagePublisher.publish(message)
+    }
+
+    public sendFolderConfirmationMessage(message: FolderConfirmationMessage) {
+        this.appsToWebViewMessagePublisher.publish(message)
+    }
+
     public sendAsyncEventProgress(message: AsyncEventProgressMessage) {
         this.appsToWebViewMessagePublisher.publish(message)
     }
@@ -235,11 +269,11 @@ export class AppToWebViewMessageDispatcher {
         this.appsToWebViewMessagePublisher.publish(message)
     }
 
-    public sendAuthenticationUpdate(message: AuthenticationUpdateMessage) {
+    public sendAuthNeededExceptionMessage(message: AuthNeededException) {
         this.appsToWebViewMessagePublisher.publish(message)
     }
 
-    public sendAuthNeededExceptionMessage(message: AuthNeededException) {
+    public sendAuthenticationUpdate(message: AuthenticationUpdateMessage) {
         this.appsToWebViewMessagePublisher.publish(message)
     }
 

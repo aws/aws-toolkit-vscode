@@ -52,6 +52,22 @@ export class FollowUpGenerator {
                         },
                     ],
                 }
+            case 'doc':
+                return {
+                    text: 'Select one of the following...',
+                    options: [
+                        {
+                            pillText: 'Create a README',
+                            prompt: 'Create a README',
+                            type: 'CreateDocumentation',
+                        },
+                        {
+                            pillText: 'Update an existing README',
+                            prompt: 'Update an existing README',
+                            type: 'UpdateDocumentation',
+                        },
+                    ],
+                }
             default:
                 return {
                     text: 'Try Examples:',

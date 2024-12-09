@@ -12,6 +12,7 @@ import {
     MynahUIDataModel,
     NotificationType,
     ReferenceTrackerInformation,
+    ProgressField,
 } from '@aws/mynah-ui'
 import { ChatPrompt } from '@aws/mynah-ui/dist/static'
 import { TabsStorage, TabType } from './storages/tabsStorage'
@@ -27,18 +28,25 @@ import { getActions, getDetails } from './diffTree/actions'
 import { DiffTreeFileInfo } from './diffTree/types'
 import { FeatureContext } from '../../../shared'
 import { tryNewMap } from '../../util/functionUtils'
+import { welcomeScreenTabData } from './walkthrough/welcome'
+import { agentWalkthroughDataModel } from './walkthrough/agent'
+import { createClickTelemetry, createOpenAgentTelemetry } from './telemetry/actions'
+import { disclaimerAcknowledgeButtonId, disclaimerCard } from './texts/disclaimer'
 
 export const createMynahUI = (
     ideApi: any,
     amazonQEnabled: boolean,
     featureConfigsSerialized: [string, FeatureContext][],
+    showWelcomePage: boolean,
+    disclaimerAcknowledged: boolean,
     disabledCommands?: string[]
 ) => {
+    let disclaimerCardActive = !disclaimerAcknowledged
     // eslint-disable-next-line prefer-const
     let mynahUI: MynahUI
     // eslint-disable-next-line prefer-const
     let connector: Connector
-    //Store the mapping between messageId and messageUserIntent for amazonq_interactWithMessage telemetry
+    // Store the mapping between messageId and messageUserIntent for amazonq_interactWithMessage telemetry
     const responseMetadata = new Map<string, string[]>()
 
     window.addEventListener('error', (e) => {
@@ -66,7 +74,7 @@ export const createMynahUI = (
     tabsStorage.addTab({
         id: 'tab-1',
         status: 'free',
-        type: 'cwc',
+        type: showWelcomePage ? 'welcome' : 'cwc',
         isSelected: true,
     })
 
@@ -75,9 +83,17 @@ export const createMynahUI = (
 
     let isGumbyEnabled = amazonQEnabled
 
+    let isScanEnabled = amazonQEnabled
+    let isTestEnabled = amazonQEnabled
+
+    let isDocEnabled = amazonQEnabled
+
     let tabDataGenerator = new TabDataGenerator({
         isFeatureDevEnabled,
         isGumbyEnabled,
+        isScanEnabled,
+        isTestEnabled,
+        isDocEnabled,
         disabledCommands,
     })
 
@@ -93,7 +109,9 @@ export const createMynahUI = (
     // @ts-ignore
     let featureConfigs: Map<string, FeatureContext> = tryNewMap(featureConfigsSerialized)
 
-    function shouldDisplayDiff(messageData: any) {
+    function getCodeBlockActions(messageData: any) {
+        // Show ViewDiff and AcceptDiff for allowedCommands in CWC
+        const isEnabled = featureConfigs.get('ViewDiffInChat')?.variation === 'TREATMENT'
         const tab = tabsStorage.getTab(messageData?.tabID || '')
         const allowedCommands = [
             'aws.amazonq.refactorCode',
@@ -101,18 +119,48 @@ export const createMynahUI = (
             'aws.amazonq.optimizeCode',
             'aws.amazonq.sendToPrompt',
         ]
-        if (tab?.type === 'cwc' && allowedCommands.includes(tab.lastCommand || '')) {
-            return true
+        if (isEnabled && tab?.type === 'cwc' && allowedCommands.includes(tab.lastCommand || '')) {
+            return {
+                'insert-to-cursor': undefined,
+                accept_diff: {
+                    id: 'accept_diff',
+                    label: 'Apply Diff',
+                    icon: MynahIcons.OK_CIRCLED,
+                    data: messageData,
+                },
+                view_diff: {
+                    id: 'view_diff',
+                    label: 'View Diff',
+                    icon: MynahIcons.EYE,
+                    data: messageData,
+                },
+            }
         }
-        return false
+        // Show only "Copy" option for codeblocks in Q Test Tab
+        if (tab?.type === 'testgen') {
+            return {
+                'insert-to-cursor': undefined,
+            }
+        }
+        // Default will show "Copy" and "Insert at cursor" for codeblocks
+        return {}
     }
 
     // eslint-disable-next-line prefer-const
     connector = new Connector({
         tabsStorage,
+        /**
+         * Proxy for allowing underlying common connectors to call quick action handlers
+         */
+        handleCommand: (chatPrompt: ChatPrompt, tabId: string) => {
+            quickActionHandler.handle(chatPrompt, tabId)
+        },
         onUpdateAuthentication: (isAmazonQEnabled: boolean, authenticatingTabIDs: string[]): void => {
             isFeatureDevEnabled = isAmazonQEnabled
             isGumbyEnabled = isAmazonQEnabled
+            isScanEnabled = isAmazonQEnabled
+            isTestEnabled = isAmazonQEnabled
+            isDocEnabled = isAmazonQEnabled
 
             quickActionHandler = new QuickActionHandler({
                 mynahUI,
@@ -120,12 +168,18 @@ export const createMynahUI = (
                 tabsStorage,
                 isFeatureDevEnabled,
                 isGumbyEnabled,
+                isScanEnabled,
+                isTestEnabled,
+                isDocEnabled,
                 disabledCommands,
             })
 
             tabDataGenerator = new TabDataGenerator({
                 isFeatureDevEnabled,
                 isGumbyEnabled,
+                isScanEnabled,
+                isTestEnabled,
+                isDocEnabled,
                 disabledCommands,
             })
 
@@ -146,7 +200,11 @@ export const createMynahUI = (
                         body: 'Authentication successful. Connected to Amazon Q.',
                     })
 
-                    if (tabsStorage.getTab(tabID)?.type === 'gumby') {
+                    if (
+                        tabsStorage.getTab(tabID)?.type === 'gumby' ||
+                        tabsStorage.getTab(tabID)?.type === 'review' ||
+                        tabsStorage.getTab(tabID)?.type === 'testgen'
+                    ) {
                         mynahUI.updateStore(tabID, {
                             promptInputDisabledState: false,
                         })
@@ -171,7 +229,8 @@ export const createMynahUI = (
                 return messageController.sendSelectedCodeToTab(message, command)
             } else {
                 const tabID = messageController.sendMessageToTab(message, 'cwc', command)
-                if (tabID) {
+                if (tabID && command) {
+                    ideApi.postMessage(createOpenAgentTelemetry('cwc', 'right-click'))
                     ideApi.postMessage({
                         command: 'start-chat-message-telemetry',
                         trigger: 'onContextCommand',
@@ -189,6 +248,11 @@ export const createMynahUI = (
         onChatInputEnabled: (tabID: string, enabled: boolean) => {
             mynahUI.updateStore(tabID, {
                 promptInputDisabledState: tabsStorage.isTabDead(tabID) || !enabled,
+            })
+        },
+        onUpdatePromptProgress(tabID: string, progressField: ProgressField) {
+            mynahUI.updateStore(tabID, {
+                promptInputProgress: progressField,
             })
         },
         onAsyncEventProgress: (
@@ -239,12 +303,16 @@ export const createMynahUI = (
                     ...(item.body !== undefined ? { body: item.body } : {}),
                     ...(item.buttons !== undefined ? { buttons: item.buttons } : {}),
                     ...(item.followUp !== undefined ? { followUp: item.followUp } : {}),
+                    ...(item.footer !== undefined ? { footer: item.footer } : {}),
+                    ...(item.canBeVoted !== undefined ? { canBeVoted: item.canBeVoted } : {}),
                 })
             } else {
                 mynahUI.updateLastChatAnswer(tabID, {
                     ...(item.body !== undefined ? { body: item.body } : {}),
                     ...(item.buttons !== undefined ? { buttons: item.buttons } : {}),
                     ...(item.followUp !== undefined ? { followUp: item.followUp } : {}),
+                    ...(item.footer !== undefined ? { footer: item.footer } : {}),
+                    ...(item.canBeVoted !== undefined ? { canBeVoted: item.canBeVoted } : {}),
                 })
             }
         },
@@ -256,9 +324,8 @@ export const createMynahUI = (
                     ...(item.codeReference !== undefined ? { codeReference: item.codeReference } : {}),
                     ...(item.body !== undefined ? { body: item.body } : {}),
                     ...(item.relatedContent !== undefined ? { relatedContent: item.relatedContent } : {}),
-                    ...(item.type === ChatItemType.CODE_RESULT
-                        ? { type: ChatItemType.CODE_RESULT, fileList: item.fileList }
-                        : {}),
+                    ...(item.followUp !== undefined ? { followUp: item.followUp } : {}),
+                    ...(item.fileList !== undefined ? { fileList: item.fileList } : {}),
                 })
                 if (
                     item.messageId !== undefined &&
@@ -286,25 +353,7 @@ export const createMynahUI = (
                 mynahUI.addChatItem(tabID, {
                     ...item,
                     messageId: item.messageId,
-                    codeBlockActions: {
-                        ...(shouldDisplayDiff(messageData)
-                            ? {
-                                  'insert-to-cursor': undefined,
-                                  accept_diff: {
-                                      id: 'accept_diff',
-                                      label: 'Apply Diff',
-                                      icon: MynahIcons.OK_CIRCLED,
-                                      data: messageData,
-                                  },
-                                  view_diff: {
-                                      id: 'view_diff',
-                                      label: 'View Diff',
-                                      icon: MynahIcons.EYE,
-                                      data: messageData,
-                                  },
-                              }
-                            : {}),
-                    },
+                    codeBlockActions: getCodeBlockActions(messageData),
                 })
             }
 
@@ -341,6 +390,11 @@ export const createMynahUI = (
                     tabType: tabsStorage.getTab(tabID)?.type,
                     time: Date.now(),
                 })
+            }
+        },
+        onRunTestMessageReceived: (tabID: string, shouldRunTestMessage: boolean) => {
+            if (shouldRunTestMessage) {
+                quickActionHandler.handle({ command: '/test' }, tabID)
             }
         },
         onMessageReceived: (tabID: string, messageData: MynahUIDataModel) => {
@@ -380,7 +434,7 @@ export const createMynahUI = (
         onError: (tabID: string, message: string, title: string) => {
             const answer: ChatItem = {
                 type: ChatItemType.ANSWER,
-                body: `**${title}** 
+                body: `**${title}**
  ${message}`,
             }
 
@@ -457,6 +511,31 @@ export const createMynahUI = (
             })
             return
         },
+        /**
+         * Helps with sending static messages that don't need to be sent through to the
+         * VSCode side. E.g. help messages
+         */
+        sendStaticMessages(tabID: string, messages: ChatItem[]) {
+            if (tabsStorage.getTab(tabID)?.type === 'welcome') {
+                // set the tab type to cwc since its the most general one
+                tabsStorage.updateTabTypeFromUnknown(tabID, 'cwc')
+
+                // collapse the ui before adding the message
+                mynahUI.updateStore(tabID, {
+                    tabHeaderDetails: void 0,
+                    compactMode: false,
+                    tabBackground: false,
+                    promptInputText: '',
+                    promptInputLabel: void 0,
+                    chatItems: [],
+                    tabTitle: 'Chat',
+                })
+            }
+
+            for (const message of messages) {
+                mynahUI.addChatItem(tabID, message)
+            }
+        },
     })
 
     mynahUI = new MynahUI({
@@ -466,6 +545,7 @@ export const createMynahUI = (
             // make sure to show/hide it accordingly
             mynahUI.updateStore(tabID, {
                 quickActionCommands: tabDataGenerator.quickActionsGenerator.generateForTab('unknown'),
+                ...(disclaimerCardActive ? { promptInputStickyCard: disclaimerCard } : {}),
             })
             connector.onTabAdd(tabID)
         },
@@ -484,30 +564,119 @@ export const createMynahUI = (
                 return
             }
 
-            if (tabsStorage.getTab(tabID)?.type === 'featuredev') {
+            const tabType = tabsStorage.getTab(tabID)?.type
+            if (tabType === 'featuredev') {
                 mynahUI.addChatItem(tabID, {
                     type: ChatItemType.ANSWER_STREAM,
                 })
-            } else if (tabsStorage.getTab(tabID)?.type === 'gumby') {
+            } else if (tabType === 'gumby') {
                 connector.requestAnswer(tabID, {
                     chatMessage: prompt.prompt ?? '',
                 })
                 return
             }
 
+            if (tabType === 'welcome') {
+                mynahUI.updateStore(tabID, {
+                    tabHeaderDetails: void 0,
+                    compactMode: false,
+                    tabBackground: false,
+                    promptInputText: '',
+                    promptInputLabel: void 0,
+                    chatItems: [],
+                })
+            }
+
+            // handler for the "/" agent commands
             if (prompt.command !== undefined && prompt.command.trim() !== '') {
                 quickActionHandler.handle(prompt, tabID, eventId)
+
+                const newTabType = tabsStorage.getSelectedTab()?.type
+                if (newTabType) {
+                    ideApi.postMessage(createOpenAgentTelemetry(newTabType, 'quick-action'))
+                }
                 return
             }
 
+            /**
+             * Update the tab title if coming from the welcome page
+             * non cwc panels will have this updated automatically
+             */
+            if (tabType === 'welcome') {
+                mynahUI.updateStore(tabID, {
+                    tabTitle: tabDataGenerator.getTabData('cwc', false).tabTitle,
+                })
+            }
+
+            // handler for the cwc panel
             textMessageHandler.handle(prompt, tabID, eventId as string)
         },
         onVote: connector.onChatItemVoted,
         onInBodyButtonClicked: (tabId, messageId, action, eventId) => {
-            connector.onCustomFormAction(tabId, messageId, action, eventId)
+            switch (action.id) {
+                case disclaimerAcknowledgeButtonId: {
+                    disclaimerCardActive = false
+
+                    // post message to tell VSCode that disclaimer is acknowledged
+                    ideApi.postMessage({
+                        command: 'disclaimer-acknowledged',
+                    })
+
+                    // create telemetry
+                    ideApi.postMessage(createClickTelemetry('amazonq-disclaimer-acknowledge-button'))
+
+                    // remove all disclaimer cards from all tabs
+                    Object.keys(mynahUI.getAllTabs()).forEach((storeTabKey) => {
+                        // eslint-disable-next-line unicorn/no-null
+                        mynahUI.updateStore(storeTabKey, { promptInputStickyCard: null })
+                    })
+                    return
+                }
+                case 'quick-start': {
+                    /**
+                     * quick start is the action on the welcome page. When its
+                     * clicked it collapses the view and puts it into regular
+                     * "chat" which is cwc
+                     */
+                    tabsStorage.updateTabTypeFromUnknown(tabId, 'cwc')
+
+                    // show quick start in the current tab instead of a new one
+                    mynahUI.updateStore(tabId, {
+                        tabHeaderDetails: undefined,
+                        compactMode: false,
+                        tabBackground: false,
+                        promptInputText: '/',
+                        promptInputLabel: undefined,
+                        chatItems: [],
+                    })
+
+                    ideApi.postMessage(createClickTelemetry('amazonq-welcome-quick-start-button'))
+                    return
+                }
+                case 'explore': {
+                    const newTabId = mynahUI.updateStore('', agentWalkthroughDataModel)
+                    if (newTabId === undefined) {
+                        mynahUI.notify({
+                            content: uiComponentsTexts.noMoreTabsTooltip,
+                            type: NotificationType.WARNING,
+                        })
+                        return
+                    }
+                    tabsStorage.updateTabTypeFromUnknown(newTabId, 'agentWalkthrough')
+                    ideApi.postMessage(createClickTelemetry('amazonq-welcome-explore-button'))
+                    return
+                }
+                default: {
+                    connector.onCustomFormAction(tabId, messageId, action, eventId)
+                    return
+                }
+            }
         },
         onCustomFormAction: (tabId, action, eventId) => {
             connector.onCustomFormAction(tabId, undefined, action, eventId)
+        },
+        onChatPromptProgressActionButtonClicked: (tabID, action) => {
+            connector.onCustomFormAction(tabID, undefined, action)
         },
         onSendFeedback: (tabId, feedbackPayload) => {
             connector.sendFeedback(tabId, feedbackPayload)
@@ -638,11 +807,16 @@ export const createMynahUI = (
         onFileActionClick: async (tabID: string, messageId: string, filePath: string, actionName: string) => {
             connector.onFileActionClick(tabID, messageId, filePath, actionName)
         },
-        onOpenDiff: connector.onOpenDiff,
+        onFileClick: connector.onFileClick,
         tabs: {
             'tab-1': {
                 isSelected: true,
-                store: tabDataGenerator.getTabData('cwc', true),
+                store: {
+                    ...(showWelcomePage
+                        ? welcomeScreenTabData(tabDataGenerator).store
+                        : tabDataGenerator.getTabData('cwc', true)),
+                    ...(disclaimerCardActive ? { promptInputStickyCard: disclaimerCard } : {}),
+                },
             },
         },
         defaults: {
@@ -666,6 +840,9 @@ export const createMynahUI = (
         tabsStorage,
         isFeatureDevEnabled,
         isGumbyEnabled,
+        isScanEnabled,
+        isTestEnabled,
+        isDocEnabled,
     })
     textMessageHandler = new TextMessageHandler({
         mynahUI,
@@ -678,6 +855,9 @@ export const createMynahUI = (
         tabsStorage,
         isFeatureDevEnabled,
         isGumbyEnabled,
+        isScanEnabled,
+        isTestEnabled,
+        isDocEnabled,
     })
 
     return {
