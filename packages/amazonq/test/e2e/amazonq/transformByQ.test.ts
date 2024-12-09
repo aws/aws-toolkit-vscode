@@ -7,14 +7,29 @@ import assert from 'assert'
 import { qTestingFramework } from './framework/framework'
 import sinon from 'sinon'
 import { Messenger } from './framework/messenger'
-import { JDKVersion } from 'aws-core-vscode/codewhisperer'
+import { JDKVersion, TransformationType, transformByQState } from 'aws-core-vscode/codewhisperer'
 import { GumbyController, startTransformByQ, TabsStorage } from 'aws-core-vscode/amazonqGumby'
+import { using, registerAuthHook, TestFolder } from 'aws-core-vscode/test'
+import { loginToIdC } from './utils/setup'
+import { fs } from 'aws-core-vscode/shared'
+import path from 'path'
+import {
+    setMaven,
+    processLanguageUpgradeTransformFormInput,
+} from '../../../../core/dist/src/codewhisperer/commands/startTransformByQ'
 
 describe('Amazon Q Code Transformation', function () {
     let framework: qTestingFramework
     let tab: Messenger
 
+    before(async function () {
+        await using(registerAuthHook('amazonq-test-account'), async () => {
+            await loginToIdC()
+        })
+    })
+
     beforeEach(() => {
+        registerAuthHook('amazonq-test-account')
         framework = new qTestingFramework('gumby', true, [])
         tab = framework.createTab()
     })
@@ -265,6 +280,71 @@ describe('Amazon Q Code Transformation', function () {
                 selectMetadataMessage?.body?.includes('I can convert the embedded SQL') ?? undefined,
                 true
             )
+        })
+    })
+
+    describe('Running a Java upgrade from start to finish', async function () {
+        let tempDir = ''
+        let tempFileName = ''
+        let tempFilePath = ''
+
+        const javaFileContents = `public class MyApp {
+                public static void main(String[] args) {
+                    Integer temp = new Integer("1234");
+                }
+            }`
+
+        const pomXmlContents = `<?xml version="1.0" encoding="UTF-8"?>
+            <project xmlns="http://maven.apache.org/POM/4.0.0"
+                    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+                <modelVersion>4.0.0</modelVersion>
+
+                <groupId>com.example</groupId>
+                <artifactId>basic-java-app</artifactId>
+                <version>1.0-SNAPSHOT</version>
+
+                <properties>
+                    <maven.compiler.source>1.8</maven.compiler.source>
+                    <maven.compiler.target>1.8</maven.compiler.target>
+                    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+                </properties>
+
+                <build>
+                    <plugins>
+                        <plugin>
+                            <groupId>org.apache.maven.plugins</groupId>
+                            <artifactId>maven-compiler-plugin</artifactId>
+                            <version>3.8.1</version>
+                            <configuration>
+                                <source>1.8</source>
+                                <target>1.8</target>
+                            </configuration>
+                        </plugin>
+                    </plugins>
+                </build>
+            </project>`
+
+        before(async function () {
+            tempDir = path.join((await TestFolder.create()).path, 'qct-java-upgrade-test')
+            tempFileName = 'MyApp.java'
+            tempFilePath = path.join(tempDir, tempFileName)
+            await fs.writeFile(tempFilePath, javaFileContents)
+            tempFileName = 'pom.xml'
+            tempFilePath = path.join(tempDir, tempFileName)
+            await fs.writeFile(tempFilePath, pomXmlContents)
+        })
+
+        after(async function () {
+            await fs.delete(tempDir, { recursive: true })
+        })
+
+        it('WHEN transforming a Java 8 project E2E THEN job is successful', async function () {
+            transformByQState.setTransformationType(TransformationType.LANGUAGE_UPGRADE)
+            await setMaven()
+            await processLanguageUpgradeTransformFormInput(tempDir, JDKVersion.JDK8, JDKVersion.JDK17)
+            await startTransformByQ.startTransformByQ()
+            assert.strictEqual(transformByQState.getPolledJobStatus(), 'COMPLETED')
         })
     })
 })
