@@ -65,6 +65,7 @@ export class TelemetryHelper {
         requestId?: string,
         perfClientLatency?: number,
         reasonDesc?: string,
+        httpStatusCode?: string,
         isCodeBlockSelected?: boolean,
         artifactsUploadDuration?: number,
         buildPayloadBytes?: number,
@@ -75,7 +76,7 @@ export class TelemetryHelper {
         generatedCharactersCount?: number,
         generatedCount?: number,
         generatedLinesCount?: number,
-        reason?: string
+        reason?: string,
     ) {
         telemetry.amazonq_utgGenerateTests.emit({
             cwsprChatProgrammingLanguage: session.fileLanguage ?? 'plaintext',
@@ -99,6 +100,7 @@ export class TelemetryHelper {
             requestId: requestId,
             reasonDesc: reasonDesc,
             reason: reason,
+            httpStatusCode: httpStatusCode,
         })
     }
 

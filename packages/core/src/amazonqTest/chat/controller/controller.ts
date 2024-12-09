@@ -241,8 +241,7 @@ export class TestController {
         // eslint-disable-next-line unicorn/no-null
         this.messenger.sendUpdatePromptProgress(data.tabID, null)
         const session = this.sessionStorage.getSession()
-        const isCancel = data.error.message === unitTestGenerationCancelMessage
-
+        const isCancel = data.error.customerFacingMessage === unitTestGenerationCancelMessage
         TelemetryHelper.instance.sendTestGenerationToolkitEvent(
             session,
             true,
@@ -250,42 +249,51 @@ export class TestController {
             session.startTestGenerationRequestId,
             performance.now() - session.testGenerationStartTime,
             getTelemetryReasonDesc(data.error),
+            data.error.statusCode ?? '0', // If status code is 0,  need to investigate where this is originating from.
             session.isCodeBlockSelected,
             session.artifactsUploadDuration,
             session.srcPayloadSize,
             session.srcZipFileSize
         )
-
         if (session.stopIteration) {
             // Error from Science
-            this.messenger.sendMessage(data.error.message.replaceAll('```', ''), data.tabID, 'answer')
+            this.messenger.sendMessage(data.error.customerFacingMessage.replaceAll('```', ''), data.tabID, 'answer')
         } else {
             isCancel
-                ? this.messenger.sendMessage(data.error.message, data.tabID, 'answer')
+                ? this.messenger.sendMessage(data.error.customerFacingMessage, data.tabID, 'answer')
                 : this.sendErrorMessage(data)
         }
         await this.sessionCleanUp()
         return
     }
     // Client side error messages
-    private sendErrorMessage(data: { tabID: string; error: { code: string; message: string } }) {
+    private sendErrorMessage(data: {
+        tabID: string
+        error: { customerFacingMessage: string; message: string; code: string; statusCode: string }
+    }) {
         const { error, tabID } = data
 
+        // If user reached montly limit for builderId
+        if (error.code === 'CreateTestJobError') {
+            if (error.message.includes(CodeWhispererConstants.utgLimitReached)) {
+                getLogger().error('Monthly quota reached for QSDA actions.')
+                return this.messenger.sendMessage(
+                    i18n('AWS.amazonq.featureDev.error.monthlyLimitReached'),
+                    tabID,
+                    'answer'
+                )
+            } else {
+                getLogger().error('Too many requests.')
+                // TODO: move to constants file
+                return this.messenger.sendErrorMessage('Too many requests. Please wait before retrying.', tabID)
+            }
+        }
         if (isAwsError(error)) {
             if (error.code === 'ThrottlingException') {
-                // TODO: use the explicitly modeled exception reason for quota vs throttle
-                if (error.message.includes(CodeWhispererConstants.utgLimitReached)) {
-                    getLogger().error('Monthly quota reached for QSDA actions.')
-                    return this.messenger.sendMessage(
-                        i18n('AWS.amazonq.featureDev.error.monthlyLimitReached'),
-                        tabID,
-                        'answer'
-                    )
-                } else {
-                    getLogger().error('Too many requests.')
-                    // TODO: move to constants file
-                    this.messenger.sendErrorMessage('Too many requests. Please wait before retrying.', tabID)
-                }
+                // TODO: use the explicitly modeled exception reason for quota vs throttle{
+                getLogger().error('Too many requests.')
+                // TODO: move to constants file
+                this.messenger.sendErrorMessage('Too many requests. Please wait before retrying.', tabID)
             } else {
                 // other service errors:
                 // AccessDeniedException - should not happen because access is validated before this point in the client
@@ -293,18 +301,12 @@ export class TestController {
                 // ConflictException - should not happen because the client will maintain proper state
                 // InternalServerException - shouldn't happen but needs to be caught
                 getLogger().error('Other error message: %s', error.message)
-                this.messenger.sendErrorMessage(
-                    'Encountered an unexpected error when generating tests. Please try again',
-                    tabID
-                )
+                this.messenger.sendErrorMessage('', tabID)
             }
         } else {
             // other unexpected errors (TODO enumerate all other failure cases)
-            getLogger().error('Other error message: %s', error.message)
-            this.messenger.sendErrorMessage(
-                'Encountered an unexpected error when generating tests. Please try again',
-                tabID
-            )
+            getLogger().error('Other error message: %s', error.customerFacingMessage)
+            this.messenger.sendErrorMessage('', tabID)
         }
     }
 
@@ -721,6 +723,7 @@ export class TestController {
             session.startTestGenerationRequestId,
             session.latencyOfTestGeneration,
             undefined,
+            '200',
             session.isCodeBlockSelected,
             session.artifactsUploadDuration,
             session.srcPayloadSize,
@@ -734,7 +737,6 @@ export class TestController {
         )
 
         await this.endSession(message, FollowUpTypes.SkipBuildAndFinish)
-        await this.sessionCleanUp()
         return
 
         if (session.listOfTestGenerationJobId.length === 1) {
@@ -842,10 +844,9 @@ export class TestController {
                 session.startTestGenerationRequestId,
                 session.latencyOfTestGeneration,
                 undefined,
+                '200',
                 session.isCodeBlockSelected,
                 session.artifactsUploadDuration,
-                session.srcPayloadSize,
-                session.srcZipFileSize,
                 0,
                 0,
                 0,
@@ -853,7 +854,6 @@ export class TestController {
                 session.numberOfTestsGenerated,
                 session.linesOfCodeGenerated
             )
-
             telemetry.ui_click.emit({ elementId: 'unitTestGeneration_rejectDiff' })
         }
 
@@ -1297,8 +1297,17 @@ export class TestController {
             'Deleting output.log and temp result directory. testGenerationLogsDir: %s',
             testGenerationLogsDir
         )
-        await fs.delete(path.join(testGenerationLogsDir, 'output.log'))
-        await fs.delete(this.tempResultDirPath, { recursive: true })
+        if (await fs.existsFile(path.join(testGenerationLogsDir, 'output.log'))) {
+            await fs.delete(path.join(testGenerationLogsDir, 'output.log'))
+        }
+        if (
+            await fs
+                .stat(this.tempResultDirPath)
+                .then(() => true)
+                .catch(() => false)
+        ) {
+            await fs.delete(this.tempResultDirPath, { recursive: true })
+        }
     }
 
     // TODO: return build command when product approves

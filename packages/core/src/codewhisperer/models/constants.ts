@@ -867,7 +867,7 @@ export enum TestGenerationJobStatus {
     COMPLETED = 'COMPLETED',
 }
 
-export enum ZipUseCase {
+export enum FeatureUseCase {
     TEST_GENERATION = 'TEST_GENERATION',
     CODE_SCAN = 'CODE_SCAN',
 }

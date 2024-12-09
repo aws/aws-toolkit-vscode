@@ -20,9 +20,10 @@ import {
     NoSourceFilesError,
     ProjectSizeExceededError,
 } from '../models/errors'
-import { ZipUseCase } from '../models/constants'
+import { FeatureUseCase } from '../models/constants'
 import { ChildProcess, ChildProcessOptions } from '../../shared/utilities/processUtils'
 import { removeAnsi } from '../../shared'
+import { ProjectZipError } from '../../amazonqTest/error'
 
 export interface ZipMetadata {
     rootDir: string
@@ -135,13 +136,19 @@ export class ZipUtil {
         if (this.reachSizeLimit(this._totalSize, scope)) {
             throw new FileSizeExceededError()
         }
-        const zipFilePath = this.getZipDirPath(ZipUseCase.CODE_SCAN) + CodeWhispererConstants.codeScanZipExt
+        const zipFilePath = this.getZipDirPath(FeatureUseCase.CODE_SCAN) + CodeWhispererConstants.codeScanZipExt
         zip.writeZip(zipFilePath)
         return zipFilePath
     }
 
-    protected getZipEntryPath(projectName: string, relativePath: string) {
-        return path.join(projectName, relativePath)
+    protected getZipEntryPath(projectName: string, relativePath: string, useCase?: FeatureUseCase) {
+        // Workspaces with multiple folders have the folder names as the root folder,
+        // but workspaces with only a single folder don't. So prepend the workspace folder name
+        // if it is not present.
+        if (useCase === FeatureUseCase.TEST_GENERATION) {
+            return path.join(projectName, relativePath)
+        }
+        return relativePath.split('/').shift() === projectName ? relativePath : path.join(projectName, relativePath)
     }
 
     /**
@@ -203,15 +210,15 @@ export class ZipUtil {
         await processDirectory(metadataDir)
     }
 
-    protected async zipProject(useCase: ZipUseCase, projectPath?: string, metadataDir?: string) {
+    protected async zipProject(useCase: FeatureUseCase, projectPath?: string, metadataDir?: string) {
         const zip = new admZip()
         let projectPaths = []
-        if (useCase === ZipUseCase.TEST_GENERATION && projectPath) {
+        if (useCase === FeatureUseCase.TEST_GENERATION && projectPath) {
             projectPaths.push(projectPath)
         } else {
             projectPaths = this.getProjectPaths()
         }
-        if (useCase === ZipUseCase.CODE_SCAN) {
+        if (useCase === FeatureUseCase.CODE_SCAN) {
             await this.processCombinedGitDiff(zip, projectPaths, '', CodeWhispererConstants.CodeAnalysisScope.PROJECT)
         }
         const languageCount = new Map<CodewhispererLanguage, number>()
@@ -220,7 +227,7 @@ export class ZipUtil {
         if (metadataDir) {
             await this.processMetadataDir(zip, metadataDir)
         }
-        if (useCase !== ZipUseCase.TEST_GENERATION) {
+        if (useCase !== FeatureUseCase.TEST_GENERATION) {
             this.processOtherFiles(zip, languageCount)
         }
 
@@ -403,7 +410,7 @@ export class ZipUtil {
         zip: admZip,
         languageCount: Map<CodewhispererLanguage, number>,
         projectPaths: string[] | undefined,
-        useCase: ZipUseCase
+        useCase: FeatureUseCase
     ) {
         if (!projectPaths || projectPaths.length === 0) {
             return
@@ -420,7 +427,7 @@ export class ZipUtil {
             const zipEntryPath = this.getZipEntryPath(projectName, file.relativeFilePath)
 
             if (ZipConstants.knownBinaryFileExts.includes(path.extname(file.fileUri.fsPath))) {
-                if (useCase === ZipUseCase.TEST_GENERATION) {
+                if (useCase === FeatureUseCase.TEST_GENERATION) {
                     continue
                 }
                 await this.processBinaryFile(zip, file.fileUri, zipEntryPath)
@@ -512,10 +519,10 @@ export class ZipUtil {
         return vscode.workspace.textDocuments.some((document) => document.uri.fsPath === uri.fsPath && document.isDirty)
     }
 
-    public getZipDirPath(useCase: ZipUseCase): string {
+    public getZipDirPath(useCase: FeatureUseCase): string {
         if (this._zipDir === '') {
             const prefix =
-                useCase === ZipUseCase.TEST_GENERATION
+                useCase === FeatureUseCase.TEST_GENERATION
                     ? CodeWhispererConstants.TestGenerationTruncDirPrefix
                     : CodeWhispererConstants.codeScanTruncDirPrefix
 
@@ -529,7 +536,7 @@ export class ZipUtil {
         scope: CodeWhispererConstants.CodeAnalysisScope
     ): Promise<ZipMetadata> {
         try {
-            const zipDirPath = this.getZipDirPath(ZipUseCase.CODE_SCAN)
+            const zipDirPath = this.getZipDirPath(FeatureUseCase.CODE_SCAN)
             let zipFilePath: string
             if (
                 scope === CodeWhispererConstants.CodeAnalysisScope.FILE_AUTO ||
@@ -537,7 +544,7 @@ export class ZipUtil {
             ) {
                 zipFilePath = await this.zipFile(uri, scope)
             } else if (scope === CodeWhispererConstants.CodeAnalysisScope.PROJECT) {
-                zipFilePath = await this.zipProject(ZipUseCase.CODE_SCAN)
+                zipFilePath = await this.zipProject(FeatureUseCase.CODE_SCAN)
             } else {
                 throw new ToolkitError(`Unknown code analysis scope: ${scope}`)
             }
@@ -563,7 +570,7 @@ export class ZipUtil {
     public async generateZipTestGen(projectPath: string, initialExecution: boolean): Promise<ZipMetadata> {
         try {
             // const repoMapFile = await LspClient.instance.getRepoMapJSON()
-            const zipDirPath = this.getZipDirPath(ZipUseCase.TEST_GENERATION)
+            const zipDirPath = this.getZipDirPath(FeatureUseCase.TEST_GENERATION)
 
             const metadataDir = path.join(zipDirPath, 'utgRequiredArtifactsDir')
 
@@ -591,7 +598,7 @@ export class ZipUtil {
                 }
             }
 
-            const zipFilePath: string = await this.zipProject(ZipUseCase.TEST_GENERATION, projectPath, metadataDir)
+            const zipFilePath: string = await this.zipProject(FeatureUseCase.TEST_GENERATION, projectPath, metadataDir)
             const zipFileSize = (await fs.stat(zipFilePath)).size
             return {
                 rootDir: zipDirPath,
@@ -605,7 +612,9 @@ export class ZipUtil {
             }
         } catch (error) {
             getLogger().error('Zip error caused by: %s', error)
-            throw error
+            throw new ProjectZipError(
+                error instanceof Error ? error.message : 'Unknown error occurred during zip operation'
+            )
         }
     }
     // TODO: Refactor this

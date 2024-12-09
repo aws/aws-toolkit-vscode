@@ -21,7 +21,7 @@ import { ChildProcess, spawn } from 'child_process'
 import { BuildStatus } from '../../amazonqTest/chat/session/session'
 import { fs } from '../../shared/fs/fs'
 import { TestGenerationJobStatus } from '../models/constants'
-import { TestGenFailedError } from '../models/errors'
+import { TestGenFailedError } from '../../amazonqTest/error'
 import { Range } from '../client/codewhispereruserclient'
 
 // eslint-disable-next-line unicorn/no-null
@@ -121,7 +121,7 @@ export async function startTestGenerationProcess(
         // TODO: Send status to test summary
         if (jobStatus === TestGenerationJobStatus.FAILED) {
             logger.verbose(`Test generation failed.`)
-            throw new TestGenFailedError()
+            throw new TestGenFailedError('500')
         }
         throwIfCancelled()
         if (!shouldContinueRunning(tabID)) {

@@ -280,9 +280,9 @@ export class Messenger {
                         'Cancelled',
                         messageId,
                         performance.now() - session.testGenerationStartTime,
-                        getTelemetryReasonDesc(CodeWhispererConstants.unitTestGenerationCancelMessage)
+                        getTelemetryReasonDesc(CodeWhispererConstants.unitTestGenerationCancelMessage),
+                        '400'
                     )
-
                     this.dispatcher.sendUpdatePromptProgress(
                         new UpdatePromptProgressMessage(tabID, cancellingProgressField)
                     )
@@ -293,9 +293,10 @@ export class Messenger {
                         false,
                         'Succeeded',
                         messageId,
-                        performance.now() - session.testGenerationStartTime
+                        performance.now() - session.testGenerationStartTime,
+                        undefined,
+                        '200',
                     )
-
                     this.dispatcher.sendUpdatePromptProgress(
                         new UpdatePromptProgressMessage(tabID, testGenCompletedField)
                     )
