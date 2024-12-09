@@ -8,7 +8,7 @@ import { qTestingFramework } from './framework/framework'
 import sinon from 'sinon'
 import { Messenger } from './framework/messenger'
 import { JDKVersion } from 'aws-core-vscode/codewhisperer'
-import { GumbyController, TabsStorage } from 'aws-core-vscode/amazonqGumby'
+import { GumbyController, startTransformByQ, TabsStorage } from 'aws-core-vscode/amazonqGumby'
 
 describe('Amazon Q Code Transformation', function () {
     let framework: qTestingFramework
@@ -49,8 +49,8 @@ describe('Amazon Q Code Transformation', function () {
     })
 
     describe('Starting a transformation from chat', () => {
-        it('Can click through all user input forms', async () => {
-            tab.addChatMessage({ command: '/transform' })
+        it('Can click through all user input forms for a Java upgrade', async () => {
+            sinon.stub(startTransformByQ, 'getValidSQLConversionCandidateProjects').resolves([])
             sinon.stub(GumbyController.prototype, 'validateLanguageUpgradeProjects' as keyof GumbyController).resolves([
                 {
                     name: 'qct-sample-java-8-app-main',
@@ -58,6 +58,8 @@ describe('Amazon Q Code Transformation', function () {
                     JDKVersion: JDKVersion.JDK8,
                 },
             ])
+
+            tab.addChatMessage({ command: '/transform' })
 
             // wait for /transform to respond with some intro messages and the first user input form
             await tab.waitForEvent(() => tab.getChatItems().length > 3, {
@@ -140,6 +142,129 @@ describe('Amazon Q Code Transformation', function () {
             const jdkPathResponse = tab.getChatItems().pop()
             // this 'Sorry' message is OK - just making sure that the UI components are working correctly
             assert.strictEqual(jdkPathResponse?.body?.includes("Sorry, I couldn't locate your Java installation"), true)
+        })
+
+        it('Can provide metadata file for a SQL conversion', async () => {
+            sinon.stub(startTransformByQ, 'getValidSQLConversionCandidateProjects').resolves([
+                {
+                    name: 'OracleExample',
+                    path: '/Users/alias/Desktop/OracleExample',
+                    JDKVersion: JDKVersion.JDK17,
+                },
+            ])
+            sinon.stub(startTransformByQ, 'getValidLanguageUpgradeCandidateProjects').resolves([])
+            sinon.stub(GumbyController.prototype, 'validateSQLConversionProjects' as keyof GumbyController).resolves([
+                {
+                    name: 'OracleExample',
+                    path: '/Users/alias/Desktop/OracleExample',
+                    JDKVersion: JDKVersion.JDK17,
+                },
+            ])
+
+            tab.addChatMessage({ command: '/transform' })
+
+            // wait for /transform to respond with some intro messages and the first user input message
+            await tab.waitForEvent(() => tab.getChatItems().length > 3, {
+                waitTimeoutInMs: 5000,
+                waitIntervalInMs: 1000,
+            })
+            const selectMetadataMessage = tab.getChatItems().pop()
+            assert.strictEqual(
+                selectMetadataMessage?.body?.includes('I can convert the embedded SQL') ?? undefined,
+                true
+            )
+
+            // verify that we processed the metadata file
+            const processMetadataFileStub = sinon.stub(
+                GumbyController.prototype,
+                'processMetadataFile' as keyof GumbyController
+            )
+            tab.clickCustomFormButton({
+                id: 'gumbySQLConversionMetadataTransformFormConfirm',
+                text: 'Select metadata file',
+            })
+            sinon.assert.calledOnce(processMetadataFileStub)
+        })
+
+        it('Can choose "language upgrade" when eligible for a Java upgrade AND SQL conversion', async () => {
+            sinon.stub(startTransformByQ, 'getValidSQLConversionCandidateProjects').resolves([
+                {
+                    name: 'OracleExample',
+                    path: '/Users/alias/Desktop/OracleExample',
+                    JDKVersion: JDKVersion.JDK17,
+                },
+            ])
+            sinon.stub(startTransformByQ, 'getValidLanguageUpgradeCandidateProjects').resolves([
+                {
+                    name: 'qct-sample-java-8-app-main',
+                    path: '/Users/alias/Desktop/qct-sample-java-8-app-main',
+                    JDKVersion: JDKVersion.JDK8,
+                },
+            ])
+
+            tab.addChatMessage({ command: '/transform' })
+
+            // wait for /transform to respond with some intro messages and a prompt asking user what they want to do
+            await tab.waitForEvent(() => tab.getChatItems().length > 2, {
+                waitTimeoutInMs: 5000,
+                waitIntervalInMs: 1000,
+            })
+            const prompt = tab.getChatItems().pop()
+            assert.strictEqual(
+                prompt?.body?.includes('You can enter "language upgrade" or "sql conversion"') ?? undefined,
+                true
+            )
+
+            // 3 additional chat messages get sent after user enters a choice; wait for all of them
+            tab.addChatMessage({ prompt: 'language upgrade' })
+            await tab.waitForEvent(() => tab.getChatItems().length > 5, {
+                waitTimeoutInMs: 5000,
+                waitIntervalInMs: 1000,
+            })
+            const projectForm = tab.getChatItems().pop()
+            assert.strictEqual(projectForm?.formItems?.[0]?.id ?? undefined, 'GumbyTransformLanguageUpgradeProjectForm')
+        })
+
+        it('Can choose "sql conversion" when eligible for a Java upgrade AND SQL conversion', async () => {
+            sinon.stub(startTransformByQ, 'getValidSQLConversionCandidateProjects').resolves([
+                {
+                    name: 'OracleExample',
+                    path: '/Users/alias/Desktop/OracleExample',
+                    JDKVersion: JDKVersion.JDK17,
+                },
+            ])
+            sinon.stub(startTransformByQ, 'getValidLanguageUpgradeCandidateProjects').resolves([
+                {
+                    name: 'qct-sample-java-8-app-main',
+                    path: '/Users/alias/Desktop/qct-sample-java-8-app-main',
+                    JDKVersion: JDKVersion.JDK8,
+                },
+            ])
+
+            tab.addChatMessage({ command: '/transform' })
+
+            // wait for /transform to respond with some intro messages and a prompt asking user what they want to do
+            await tab.waitForEvent(() => tab.getChatItems().length > 2, {
+                waitTimeoutInMs: 5000,
+                waitIntervalInMs: 1000,
+            })
+            const prompt = tab.getChatItems().pop()
+            assert.strictEqual(
+                prompt?.body?.includes('You can enter "language upgrade" or "sql conversion"') ?? undefined,
+                true
+            )
+
+            // 3 additional chat messages get sent after user enters a choice; wait for all of them
+            tab.addChatMessage({ prompt: 'sql conversion' })
+            await tab.waitForEvent(() => tab.getChatItems().length > 5, {
+                waitTimeoutInMs: 5000,
+                waitIntervalInMs: 1000,
+            })
+            const selectMetadataMessage = tab.getChatItems().pop()
+            assert.strictEqual(
+                selectMetadataMessage?.body?.includes('I can convert the embedded SQL') ?? undefined,
+                true
+            )
         })
     })
 })
