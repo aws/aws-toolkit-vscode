@@ -26,7 +26,7 @@ describe('Amazon Q Code Transformation', function () {
     })
 
     describe('Quick action availability', () => {
-        it('Shows /transform when QCT is enabled', async () => {
+        it('Can invoke /transform when QCT is enabled', async () => {
             const command = tab.findCommand('/transform')
             if (!command) {
                 assert.fail('Could not find command')
@@ -37,7 +37,7 @@ describe('Amazon Q Code Transformation', function () {
             }
         })
 
-        it('Does NOT show /transform when QCT is NOT enabled', () => {
+        it('CANNOT invoke /transform when QCT is NOT enabled', () => {
             framework.dispose()
             framework = new qTestingFramework('gumby', false, [])
             const tab = framework.createTab()
