@@ -175,6 +175,7 @@ export async function uploadPayload(payloadFileName: string, uploadContext?: Upl
     throwIfCancelled()
     let response = undefined
     try {
+        console.log('QCT: about to create upload URL')
         response = await codeWhisperer.codeWhispererClient.createUploadUrl({
             contentChecksum: sha256,
             contentChecksumType: CodeWhispererConstants.contentChecksumType,
@@ -185,14 +186,17 @@ export async function uploadPayload(payloadFileName: string, uploadContext?: Upl
             transformByQState.setJobFailureMetadata(` (request ID: ${response.$response.requestId})`)
         }
     } catch (e: any) {
+        console.log('QCT: error creating upload URL ' + e)
         const errorMessage = `The upload failed due to: ${(e as Error).message}`
         getLogger().error(`CodeTransformation: CreateUploadUrl error: = ${e}`)
         throw new Error(errorMessage)
     }
 
     try {
+        console.log('QCT: about to upload artifact')
         await uploadArtifactToS3(payloadFileName, response, sha256, buffer)
     } catch (e: any) {
+        console.log('QCT: error uploading artifact ' + e)
         const errorMessage = (e as Error).message
         getLogger().error(`CodeTransformation: UploadArtifactToS3 error: = ${errorMessage}`)
         throw new Error(errorMessage)
