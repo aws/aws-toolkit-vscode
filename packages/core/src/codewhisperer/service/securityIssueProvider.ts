@@ -12,7 +12,6 @@ export class SecurityIssueProvider {
     }
 
     private _issues: AggregatedCodeScanIssue[] = []
-    private _disableEventHandler: boolean = false
     public get issues() {
         return this._issues
     }
@@ -21,17 +20,9 @@ export class SecurityIssueProvider {
         this._issues = issues
     }
 
-    public disableEventHandler() {
-        this._disableEventHandler = true
-    }
-
     public handleDocumentChange(event: vscode.TextDocumentChangeEvent) {
         // handleDocumentChange function may be triggered while testing by our own code generation.
         if (!event.contentChanges || event.contentChanges.length === 0) {
-            return
-        }
-        if (this._disableEventHandler) {
-            this._disableEventHandler = false
             return
         }
         const { changedRange, lineOffset } = event.contentChanges.reduce(
