@@ -16,6 +16,7 @@ export type contextKey =
     | 'aws.isWebExtHost'
     | 'aws.isInternalUser'
     | 'aws.amazonq.showLoginView'
+    | 'aws.amazonq.security.noMatches'
     | 'aws.amazonq.notifications.show'
     | 'aws.codecatalyst.connected'
     | 'aws.codewhisperer.connected'

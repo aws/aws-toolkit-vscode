@@ -49,6 +49,6 @@ export async function detachThingCertCommand(node: IotThingCertNode): Promise<vo
         void showViewLogsMessage(localize('AWS.iot.detachCert.error', 'Failed to detach: {0}', certId))
     }
 
-    //Refresh the parent Thing node
+    // Refresh the parent Thing node
     await node.parent.refreshNode()
 }
