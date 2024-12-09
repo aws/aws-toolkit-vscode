@@ -33,7 +33,7 @@ export interface MessageData {
     tabID: string
     type: TestMessageType
 }
-//TODO: Refactor testChatConnector, scanChatConnector and other apps connector files post RIV
+// TODO: Refactor testChatConnector, scanChatConnector and other apps connector files post RIV
 export class Connector extends BaseConnector {
     override getTabType(): TabType {
         return 'testgen'
