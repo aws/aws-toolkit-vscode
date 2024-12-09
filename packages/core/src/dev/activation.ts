@@ -411,7 +411,7 @@ async function openStorageFromInput() {
                         title: 'Enter a key',
                     })
                 } else if (target === 'globalsView') {
-                    return new SkipPrompter('')
+                    return new SkipPrompter()
                 } else if (target === 'globals') {
                     // List all globalState keys in the quickpick menu.
                     const items = globalState
@@ -483,7 +483,7 @@ async function resetState() {
 
             this.form.key.bindPrompter(({ target }) => {
                 if (target && resettableFeatures.some((f) => f.name === target)) {
-                    return new SkipPrompter('')
+                    return new SkipPrompter()
                 }
                 throw new Error('invalid feature target')
             })
