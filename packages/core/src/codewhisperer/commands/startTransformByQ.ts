@@ -235,8 +235,12 @@ export async function startTransformByQ() {
         // step 1: CreateUploadUrl and upload code
         const uploadId = await preTransformationUploadCode()
 
+        console.log('upload ID = ' + uploadId)
+
         // step 2: StartJob and store the returned jobId in TransformByQState
         const jobId = await startTransformationJob(uploadId, transformStartTime)
+
+        console.log('jobId =' + jobId)
 
         // step 3 (intermediate step): show transformation-plan.md file
         await pollTransformationStatusUntilPlanReady(jobId)
@@ -246,6 +250,7 @@ export async function startTransformByQ() {
     } catch (error: any) {
         await transformationJobErrorHandler(error)
     } finally {
+        console.log('QCT: in finally block')
         await postTransformationJob()
         await cleanupTransformationJob()
     }
@@ -341,12 +346,14 @@ export async function preTransformationUploadCode() {
             const transformZipManifest = new ZipManifest()
             // if the user chose to skip unit tests, add the custom build command here
             transformZipManifest.customBuildCommand = transformByQState.getCustomBuildCommand()
+            console.log('QCT: about to zipCode')
             const zipCodeResult = await zipCode({
                 // dependenciesFolder will be undefined for SQL conversions since we don't compileProject
                 dependenciesFolder: transformByQState.getDependencyFolderInfo(),
                 projectPath: transformByQState.getProjectPath(),
                 zipManifest: transformZipManifest,
             })
+            console.log('QCT: done zipping')
 
             const payloadFilePath = zipCodeResult.tempFilePath
             const zipSize = zipCodeResult.fileSize
