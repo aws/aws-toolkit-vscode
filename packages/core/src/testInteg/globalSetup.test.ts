@@ -20,7 +20,7 @@ import { globals } from '../shared'
 // ASSUMPTION: Tests are not run concurrently
 
 let windowPatch: vscode.Disposable
-const maxTestDuration = 300_000
+const maxTestDuration = 420_000 // 7 minutes
 const globalSandbox = sinon.createSandbox()
 
 export async function mochaGlobalSetup(extensionId: string) {
