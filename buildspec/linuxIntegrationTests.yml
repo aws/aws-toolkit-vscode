@@ -55,23 +55,23 @@ phases:
 
             # Nodejs
             - |
-                docker pull public.ecr.aws/docker/library/node:18
-                docker pull public.ecr.aws/docker/library/node:20
-                docker pull public.ecr.aws/docker/library/node:22
+                docker pull public.ecr.aws/sam/build-nodejs18.x:latest
+                docker pull public.ecr.aws/sam/build-nodejs20.x:latest
+                docker pull public.ecr.aws/sam/build-nodejs22.x:latest
             # Java
             - |
-                docker pull public.ecr.aws/amazoncorretto/openjdk8:al2
-                docker pull public.ecr.aws/amazoncorretto/openjdk11
-                docker pull public.ecr.aws/amazoncorretto/openjdk17
+                docker pull public.ecr.aws/sam/build-java8.al2:latest
+                docker pull public.ecr.aws/sam/build-java11:latest
+                docker pull public.ecr.aws/sam/build-java17:latest
             # Python
             - |
-                docker pull public.ecr.aws/lambda/python:3.10
-                docker pull public.ecr.aws/lambda/python:3.11
-                docker pull public.ecr.aws/lambda/python:3.12
-                docker pull public.ecr.aws/lambda/python:3.13
+                docker pull public.ecr.aws/sam/build-python3.10:latest
+                docker pull public.ecr.aws/sam/build-python3.11:latest
+                docker pull public.ecr.aws/sam/build-python3.12:latest
+                docker pull public.ecr.aws/sam/build-python3.13:latest
             # Dotnet
             - |
-                docker pull public.ecr.aws/lambda/dotnet6
+                docker pull public.ecr.aws/sam/build-dotnet6:latest
 
     pre_build:
         commands:
