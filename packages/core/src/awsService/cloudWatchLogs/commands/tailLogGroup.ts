@@ -31,8 +31,8 @@ export async function tailLogGroup(
             throw new CancellationError('user')
         }
         if (wizardResponse.logStreamFilter.type === 'menu' || wizardResponse.logStreamFilter.type === undefined) {
-            //logstream filter wizard uses type to determine which submenu to show. 'menu' is set when no type is selected
-            //and to show the 'menu' of selecting a type. This should not be reachable due to the picker logic, but validating in case.
+            // logstream filter wizard uses type to determine which submenu to show. 'menu' is set when no type is selected
+            // and to show the 'menu' of selecting a type. This should not be reachable due to the picker logic, but validating in case.
             throw new ToolkitError(`Invalid Log Stream filter type: ${wizardResponse.logStreamFilter.type}`)
         }
         const awsCredentials = await globals.awsContext.getCredentials()
@@ -134,8 +134,8 @@ async function handleSessionStream(
                     formatLogEvent(logEvent)
                 )
                 if (formattedLogEvents.length !== 0) {
-                    //Determine should scroll before adding new lines to doc because adding large
-                    //amount of new lines can push bottom of file out of view before scrolling.
+                    // Determine should scroll before adding new lines to doc because adding large
+                    // amount of new lines can push bottom of file out of view before scrolling.
                     const editorsToScroll = getTextEditorsToScroll(document)
                     await updateTextDocumentWithNewLogEvents(formattedLogEvents, document, session.maxLines)
                     editorsToScroll.forEach(scrollTextEditorToBottom)
@@ -146,13 +146,13 @@ async function handleSessionStream(
         }
     } catch (e) {
         if (session.isAborted) {
-            //Expected case. User action cancelled stream (CodeLens, Close Editor, etc.).
-            //AbortSignal interrupts the LiveTail stream, causing error to be thrown here.
-            //Can assume that stopLiveTailSession() has already been called - AbortSignal is only
-            //exposed through that method.
+            // Expected case. User action cancelled stream (CodeLens, Close Editor, etc.).
+            // AbortSignal interrupts the LiveTail stream, causing error to be thrown here.
+            // Can assume that stopLiveTailSession() has already been called - AbortSignal is only
+            // exposed through that method.
             getLogger().info(`LiveTail session stopped: ${uriToKey(session.uri)}`)
         } else {
-            //Unexpected exception.
+            // Unexpected exception.
             session.stopLiveTailSession()
             throw ToolkitError.chain(
                 e,
@@ -178,8 +178,8 @@ function formatLogEvent(logEvent: LiveTailSessionLogEvent): string {
     return line
 }
 
-//Auto scroll visible LiveTail session editors if the end-of-file is in view.
-//This allows for newly added log events to stay in view.
+// Auto scroll visible LiveTail session editors if the end-of-file is in view.
+// This allows for newly added log events to stay in view.
 function getTextEditorsToScroll(document: vscode.TextDocument): vscode.TextEditor[] {
     return vscode.window.visibleTextEditors.filter((editor) => {
         if (editor.document !== document) {

@@ -117,7 +117,7 @@ describe('LiveTailSession', async function () {
         assert.strictEqual(session.isAborted, true)
         assert.strictEqual(clock.countTimers(), 0)
 
-        //Session is stopped; ticking the clock forward should not change the session duration
+        // Session is stopped; ticking the clock forward should not change the session duration
         clock.tick(1000)
         assert.strictEqual(session.getLiveTailSessionDuration(), 1000)
     })

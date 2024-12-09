@@ -42,7 +42,7 @@ export class LiveTailSession {
     private _eventRate: number
     private _isSampled: boolean
 
-    //While session is running, used to update the StatusBar each half second.
+    // While session is running, used to update the StatusBar each half second.
     private statusBarUpdateTimer: NodeJS.Timer | undefined
 
     static settings = new CloudWatchLogsSettings(Settings.instance)
@@ -110,11 +110,11 @@ export class LiveTailSession {
     }
 
     public getLiveTailSessionDuration(): number {
-        //Never started
+        // Never started
         if (this.startTime === undefined) {
             return 0
         }
-        //Currently running
+        // Currently running
         if (this.endTime === undefined) {
             return globals.clock.Date.now() - this.startTime
         }

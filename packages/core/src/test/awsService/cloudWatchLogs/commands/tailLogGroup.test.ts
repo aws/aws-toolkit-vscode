@@ -56,10 +56,10 @@ describe('TailLogGroup', function () {
             getSessionUpdateFrame(false, `${testMessage}-2`, startTimestamp + 2000),
             getSessionUpdateFrame(false, `${testMessage}-3`, startTimestamp + 3000),
         ]
-        //Returns the configured update frames and then indefinitely blocks.
-        //This keeps the stream 'open', simulating an open network stream waiting for new events.
-        //If the stream were to close, the event listeners in the TailLogGroup command would dispose,
-        //breaking the 'closes tab closes session' assertions this test makes.
+        // Returns the configured update frames and then indefinitely blocks.
+        // This keeps the stream 'open', simulating an open network stream waiting for new events.
+        // If the stream were to close, the event listeners in the TailLogGroup command would dispose,
+        // breaking the 'closes tab closes session' assertions this test makes.
         async function* generator(): AsyncIterable<StartLiveTailResponseStream> {
             for (const frame of updateFrames) {
                 yield frame
@@ -78,21 +78,21 @@ describe('TailLogGroup', function () {
         wizardSpy = sandbox.stub(TailLogGroupWizard.prototype, 'run').callsFake(async function () {
             return getTestWizardResponse()
         })
-        //Set maxLines to 1.
+        // Set maxLines to 1.
         cloudwatchSettingsSpy = sandbox.stub(CloudWatchLogsSettings.prototype, 'get').callsFake(() => {
             return 1
         })
 
-        //The mock stream doesn't 'close', causing tailLogGroup to not return. If we `await`, it will never resolve.
-        //Run it in the background and use waitUntil to poll its state.
+        // The mock stream doesn't 'close', causing tailLogGroup to not return. If we `await`, it will never resolve.
+        // Run it in the background and use waitUntil to poll its state.
         void tailLogGroup(registry, testSource, codeLensProvider, {
             groupName: testLogGroup,
             regionName: testRegion,
         })
         await waitUntil(async () => registry.size !== 0, { interval: 100, timeout: 1000 })
 
-        //registry is asserted to have only one entry, so this is assumed to be the session that was
-        //started in this test.
+        // registry is asserted to have only one entry, so this is assumed to be the session that was
+        // started in this test.
         let sessionUri: vscode.Uri | undefined
         registry.forEach((session) => (sessionUri = session.uri))
         if (sessionUri === undefined) {
@@ -104,8 +104,8 @@ describe('TailLogGroup', function () {
         assert.strictEqual(startLiveTailSessionSpy.calledOnce, true)
         assert.strictEqual(registry.size, 1)
 
-        //Validate writing to the document.
-        //MaxLines is set to 1, and "testMessage3" is the last event in the stream, its contents should be the only thing in the doc.
+        // Validate writing to the document.
+        // MaxLines is set to 1, and "testMessage3" is the last event in the stream, its contents should be the only thing in the doc.
         const window = getTestWindow()
         const document = window.activeTextEditor?.document
         assert.strictEqual(sessionUri.toString(), document?.uri.toString())
@@ -115,7 +115,7 @@ describe('TailLogGroup', function () {
         )
         assert.strictEqual(doesDocumentContainExpectedContent, true)
 
-        //Test that closing all tabs the session's document is open in will cause the session to close
+        // Test that closing all tabs the session's document is open in will cause the session to close
         let tabs: vscode.Tab[] = []
         window.tabGroups.all.forEach((tabGroup) => {
             tabs = tabs.concat(getLiveTailSessionTabsFromTabGroup(tabGroup, sessionUri!))
