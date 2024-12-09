@@ -91,8 +91,8 @@ describe('transformByQ', async function () {
             uploadIntent: CodeWhispererConstants.uploadIntent,
         })
         const uploadUrl = response.uploadUrl
-        const usesHttpsAndExpiresAfter60Seconds =
+        const usesHttpsAndExpiresAfter30Minutes =
             uploadUrl.includes('https') && uploadUrl.includes('X-Amz-Expires=1800')
-        assert.strictEqual(usesHttpsAndExpiresAfter60Seconds, true)
+        assert.strictEqual(usesHttpsAndExpiresAfter30Minutes, true)
     })
 })
