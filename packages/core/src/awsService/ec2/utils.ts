@@ -53,5 +53,5 @@ export function getEc2SsmEnv(
  * @returns bash command to remove lines from file.
  */
 export function getRemoveLinesCommand(hintComment: string, filepath: string): string {
-    return `sed /${hintComment}/d ${filepath}`
+    return `sed -i '' /${hintComment}/d ${filepath}`
 }
