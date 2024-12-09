@@ -13,7 +13,15 @@ import CodeWhispererUserClient, {
     CreateUploadUrlRequest,
     TargetCode,
 } from '../client/codewhispereruserclient'
-import { CreateUploadUrlError, InvalidSourceZipError, TestGenFailedError, TestGenTimedOutError } from '../models/errors'
+import {
+    CreateTestJobError,
+    CreateUploadUrlError,
+    ExportResultsArchiveError,
+    InvalidSourceZipError,
+    TestGenFailedError,
+    TestGenStoppedError,
+    TestGenTimedOutError,
+} from '../../amazonqTest/error'
 import { getMd5, uploadArtifactToS3 } from './securityScanHandler'
 import { fs, randomUUID, sleep, tempDirPath } from '../../shared'
 import { ShortAnswer, TestGenerationJobStatus, testGenState } from '..'
@@ -29,7 +37,7 @@ import { glob } from 'glob'
 export function throwIfCancelled() {
     // TODO: fileName will be '' if user gives propt without opening
     if (testGenState.isCancelling()) {
-        throw Error(CodeWhispererConstants.unitTestGenerationCancelMessage)
+        throw new TestGenStoppedError()
     }
 }
 
@@ -47,12 +55,12 @@ export async function getPresignedUrlAndUploadTestGen(zipMetadata: ZipMetadata) 
     logger.verbose(`Prepare for uploading src context...`)
     const srcResp = await codeWhisperer.codeWhispererClient.createUploadUrl(srcReq).catch((err) => {
         getLogger().error(`Failed getting presigned url for uploading src context. Request id: ${err.requestId}`)
-        throw new CreateUploadUrlError(err)
+        throw new CreateUploadUrlError(err.message, err.code)
     })
     logger.verbose(`CreateUploadUrlRequest requestId: ${srcResp.$response.requestId}`)
     logger.verbose(`Complete Getting presigned Url for uploading src context.`)
     logger.verbose(`Uploading src context...`)
-    await uploadArtifactToS3(zipMetadata.zipFilePath, srcResp)
+    await uploadArtifactToS3(zipMetadata.zipFilePath, srcResp, CodeWhispererConstants.FeatureUseCase.TEST_GENERATION)
     logger.verbose(`Complete uploading src context.`)
     const artifactMap: ArtifactMap = {
         SourceCode: srcResp.uploadId,
@@ -96,7 +104,7 @@ export async function createTestJob(
     const resp = await codewhispererClient.codeWhispererClient.startTestGeneration(req).catch((err) => {
         ChatSessionManager.Instance.getSession().startTestGenerationRequestId = err.requestId
         logger.error(`Failed creating test job. Request id: ${err.requestId}`)
-        throw err
+        throw new CreateTestJobError(err.message, err.statusCode)
     })
     logger.info('Unit test generation request id: %s', resp.$response.requestId)
     logger.debug('Unit test generation data: %O', resp.$response.data)
@@ -151,7 +159,7 @@ export async function pollTestJobStatus(
             // Stop the Unit test generation workflow if IDE receive stopIteration = true
             if (shortAnswer.stopIteration === 'true') {
                 session.stopIteration = true
-                throw new TestGenFailedError(shortAnswer.planSummary)
+                throw new TestGenFailedError('400', shortAnswer.planSummary)
             }
             if (shortAnswer.numberOfTestMethods) {
                 session.numberOfTestsGenerated = Number(shortAnswer.numberOfTestMethods)
@@ -250,7 +258,7 @@ export async function exportResultsArchive(
     } catch (e) {
         downloadErrorMessage = (e as Error).message
         getLogger().error(`Unit Test Generation: ExportResultArchive error = ${downloadErrorMessage}`)
-        throw new Error('Error downloading test generation result artifacts: ' + downloadErrorMessage)
+        throw new ExportResultsArchiveError(downloadErrorMessage)
     }
 }
 
@@ -289,7 +297,7 @@ export async function downloadResultArchive(
     } catch (e: any) {
         downloadErrorMessage = (e as Error).message
         getLogger().error(`Unit Test Generation: ExportResultArchive error = ${downloadErrorMessage}`)
-        throw e
+        throw new ExportResultsArchiveError(downloadErrorMessage)
     } finally {
         cwStreamingClient.destroy()
     }
