@@ -279,7 +279,8 @@ describe('Amazon Q Code Transformation', function () {
         })
     })
 
-    describe('Running a Java upgrade from start to finish', async function () {
+    // TODO: enable when we no longer get throttled on CreateUploadUrl and other APIs
+    describe.skip('Running a Java upgrade from start to finish', async function () {
         let tempDir = ''
         let tempFileName = ''
         let tempFilePath = ''

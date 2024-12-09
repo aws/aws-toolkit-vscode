@@ -175,7 +175,6 @@ export async function uploadPayload(payloadFileName: string, uploadContext?: Upl
     throwIfCancelled()
     let response = undefined
     try {
-        console.log('QCT: about to create upload URL')
         response = await codeWhisperer.codeWhispererClient.createUploadUrl({
             contentChecksum: sha256,
             contentChecksumType: CodeWhispererConstants.contentChecksumType,
@@ -186,17 +185,14 @@ export async function uploadPayload(payloadFileName: string, uploadContext?: Upl
             transformByQState.setJobFailureMetadata(` (request ID: ${response.$response.requestId})`)
         }
     } catch (e: any) {
-        console.log('QCT: error creating upload URL ' + e)
         const errorMessage = `The upload failed due to: ${(e as Error).message}`
         getLogger().error(`CodeTransformation: CreateUploadUrl error: = ${e}`)
         throw new Error(errorMessage)
     }
 
     try {
-        console.log('QCT: about to upload artifact')
         await uploadArtifactToS3(payloadFileName, response, sha256, buffer)
     } catch (e: any) {
-        console.log('QCT: error uploading artifact ' + e)
         const errorMessage = (e as Error).message
         getLogger().error(`CodeTransformation: UploadArtifactToS3 error: = ${errorMessage}`)
         throw new Error(errorMessage)
@@ -385,7 +381,6 @@ export async function zipCode(
         }
     } catch (e: any) {
         getLogger().error(`CodeTransformation: zipCode error = ${e}`)
-        console.log('QCT: error zipping: ' + e)
         throw Error('Failed to zip project')
     } finally {
         if (logFilePath) {
@@ -414,7 +409,6 @@ export async function startJob(uploadId: string) {
     const sourceLanguageVersion = `JAVA_${transformByQState.getSourceJDKVersion()}`
     const targetLanguageVersion = `JAVA_${transformByQState.getTargetJDKVersion()}`
     try {
-        console.log('QCT: about to start Job')
         const response = await codeWhisperer.codeWhispererClient.codeModernizerStartCodeTransformation({
             workspaceState: {
                 uploadId: uploadId,
@@ -433,7 +427,6 @@ export async function startJob(uploadId: string) {
     } catch (e: any) {
         const errorMessage = `Starting the job failed due to: ${(e as Error).message}`
         getLogger().error(`CodeTransformation: StartTransformation error = ${errorMessage}`)
-        console.log('QCT: startJob failed: ' + e)
         throw new Error(errorMessage)
     }
 }
@@ -631,7 +624,6 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
                 transformationJobId: jobId,
             })
             status = response.transformationJob.status!
-            console.log('QCT: status = ' + status)
             if (CodeWhispererConstants.validStatesForBuildSucceeded.includes(status)) {
                 jobPlanProgress['buildCode'] = StepProgress.Succeeded
             }
