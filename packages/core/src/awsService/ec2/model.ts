@@ -28,7 +28,7 @@ import { showMessageWithCancel } from '../../shared/utilities/messages'
 import { SshConfig } from '../../shared/sshConfig'
 import { SshKeyPair } from './sshKeyPair'
 import { Ec2SessionTracker } from './remoteSessionManager'
-import { getEc2SsmEnv } from './utils'
+import { getEc2SsmEnv, getRemoveLabeledEntriesCommand } from './utils'
 
 export type Ec2ConnectErrorCode = 'EC2SSMStatus' | 'EC2SSMPermission' | 'EC2SSMConnect' | 'EC2SSMAgentStatus'
 
@@ -265,13 +265,17 @@ export class Ec2Connecter implements vscode.Disposable {
         remoteUser: string
     ): Promise<void> {
         const sshPubKey = await sshKeyPair.getPublicKey()
+        const hintComment = '# Added by AWS Toolkit for VSCode'
 
-        const remoteAuthorizedKeysPaths = `/home/${remoteUser}/.ssh/authorized_keys`
-        const command = `echo "${sshPubKey}" > ${remoteAuthorizedKeysPaths}`
-        const documentName = 'AWS-RunShellScript'
+        const remoteAuthorizedKeysPath = `/home/${remoteUser}/.ssh/authorized_keys`
+        const deleteExistingKeyCommand = getRemoveLabeledEntriesCommand(hintComment, remoteAuthorizedKeysPath)
 
-        await this.ssmClient.sendCommandAndWait(selection.instanceId, documentName, {
-            commands: [command],
+        const appendStr = (s: string) => `echo "${s}" >> ${remoteAuthorizedKeysPath}`
+        const writeCommentCommand = appendStr(hintComment)
+        const writeKeyCommand = appendStr(sshPubKey)
+
+        await this.ssmClient.sendCommandAndWait(selection.instanceId, 'AWS-RunShellScript', {
+            commands: [deleteExistingKeyCommand, writeCommentCommand, writeKeyCommand],
         })
     }
 
