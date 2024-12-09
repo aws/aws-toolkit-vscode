@@ -31,6 +31,7 @@ export class Session {
     // This is unique per each test generation cycle
     public testGenerationJobGroupName: string | undefined = undefined
     public listOfTestGenerationJobId: string[] = []
+    public startTestGenerationRequestId: string | undefined = undefined
     public testGenerationJob: TestGenerationJob | undefined
 
     // Start Test generation
