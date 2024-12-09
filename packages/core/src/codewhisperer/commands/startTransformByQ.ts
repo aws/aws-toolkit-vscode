@@ -328,8 +328,6 @@ export async function parseBuildFile() {
 export async function preTransformationUploadCode() {
     await vscode.commands.executeCommand('aws.amazonq.transformationHub.focus')
 
-    void vscode.window.showInformationMessage(CodeWhispererConstants.jobStartedNotification)
-
     let uploadId = ''
     throwIfCancelled()
     try {

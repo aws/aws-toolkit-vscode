@@ -554,9 +554,6 @@ export const noOngoingJobMessage = 'No ongoing job.'
 
 export const nothingToShowMessage = 'Nothing to show'
 
-export const jobStartedNotification =
-    'Amazon Q is transforming your code. It can take 10 to 30 minutes to upgrade your code, depending on the size of your project. To monitor progress, go to the Transformation Hub.'
-
 export const openTransformationHubButtonText = 'Open Transformation Hub'
 
 export const startTransformationButtonText = 'Start a new transformation'
