@@ -464,7 +464,6 @@ export const applySecurityFix = Commands.declare(
                 new vscode.Range(document.lineAt(0).range.start, document.lineAt(document.lineCount - 1).range.end),
                 updatedContent
             )
-            SecurityIssueProvider.instance.disableEventHandler()
             const isApplied = await vscode.workspace.applyEdit(edit)
             if (isApplied) {
                 void document.save().then((didSave) => {
