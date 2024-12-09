@@ -114,7 +114,7 @@ describe('zipUtil', function () {
             assert.equal(zipMetadata2.lines, zipMetadata.lines + 1)
         })
 
-        it('should handle path with repeated project name', async function () {
+        it('should handle path with repeated project name for file scan', async function () {
             const appCodePathWithRepeatedProjectName = join(workspaceFolder, 'workspaceFolder', 'App.java')
             const zipMetadata = await zipUtil.generateZip(
                 vscode.Uri.file(appCodePathWithRepeatedProjectName),
@@ -125,6 +125,20 @@ describe('zipUtil', function () {
             const zip = await JSZip.loadAsync(zipFileData)
             const files = Object.keys(zip.files)
             assert.equal(files.length, 2)
+            assert.ok(files.includes('codeDiff/code.diff'))
+            assert.ok(files.includes('workspaceFolder/workspaceFolder/App.java'))
+        })
+
+        it('should handle path with repeated project name for project scan', async function () {
+            const appCodePathWithRepeatedProjectName = join(workspaceFolder, 'workspaceFolder', 'App.java')
+            const zipMetadata = await zipUtil.generateZip(
+                vscode.Uri.file(appCodePathWithRepeatedProjectName),
+                CodeAnalysisScope.PROJECT
+            )
+
+            const zipFileData = await fs.readFileBytes(zipMetadata.zipFilePath)
+            const zip = await JSZip.loadAsync(zipFileData)
+            const files = Object.keys(zip.files)
             assert.ok(files.includes('codeDiff/code.diff'))
             assert.ok(files.includes('workspaceFolder/workspaceFolder/App.java'))
         })
