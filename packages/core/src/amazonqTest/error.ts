@@ -74,7 +74,12 @@ export class TestGenFailedError extends TestGenError {
     }
 }
 export class ExportResultsArchiveError extends TestGenError {
-    constructor(error?: string) {
-        super(error ?? 'Test generation failed', 'ExportResultsArchiveError', '500', techinalErrorCustomerFacingMessage)
+    constructor(error?: string, statusCode?: string) {
+        super(
+            error ?? 'Test generation failed',
+            'ExportResultsArchiveError',
+            statusCode ?? '400',
+            techinalErrorCustomerFacingMessage
+        )
     }
 }

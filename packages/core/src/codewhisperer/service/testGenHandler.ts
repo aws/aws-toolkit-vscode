@@ -297,7 +297,7 @@ export async function downloadResultArchive(
     } catch (e: any) {
         downloadErrorMessage = (e as Error).message
         getLogger().error(`Unit Test Generation: ExportResultArchive error = ${downloadErrorMessage}`)
-        throw new ExportResultsArchiveError(downloadErrorMessage)
+        throw new ExportResultsArchiveError(downloadErrorMessage, e.statusCode)
     } finally {
         cwStreamingClient.destroy()
     }
