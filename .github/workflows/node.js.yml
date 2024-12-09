@@ -35,7 +35,7 @@ jobs:
             - name: Check Branch title
               if: ${{ github.event_name == 'pull_request'}}
               env:
-                  BRANCH_NAME: ${{ github.head_ref }}
+                  BRANCH_NAME: ${{ github.event.pull_request.head.ref }}
               run: |
                   node "$GITHUB_WORKSPACE/.github/workflows/lintbranch.js" run "$BRANCH_NAME"
             - name: Check PR title
