@@ -13,10 +13,6 @@ import { using, registerAuthHook, TestFolder } from 'aws-core-vscode/test'
 import { loginToIdC } from './utils/setup'
 import { fs } from 'aws-core-vscode/shared'
 import path from 'path'
-import {
-    setMaven,
-    processLanguageUpgradeTransformFormInput,
-} from '../../../../core/dist/src/codewhisperer/commands/startTransformByQ'
 
 describe('Amazon Q Code Transformation', function () {
     let framework: qTestingFramework
@@ -341,8 +337,8 @@ describe('Amazon Q Code Transformation', function () {
 
         it('WHEN transforming a Java 8 project E2E THEN job is successful', async function () {
             transformByQState.setTransformationType(TransformationType.LANGUAGE_UPGRADE)
-            await setMaven()
-            await processLanguageUpgradeTransformFormInput(tempDir, JDKVersion.JDK8, JDKVersion.JDK17)
+            await startTransformByQ.setMaven()
+            await startTransformByQ.processLanguageUpgradeTransformFormInput(tempDir, JDKVersion.JDK8, JDKVersion.JDK17)
             await startTransformByQ.startTransformByQ()
             assert.strictEqual(transformByQState.getPolledJobStatus(), 'COMPLETED')
         })
