@@ -137,7 +137,7 @@ const scenarios: TestScenario[] = [
     // images
     generateScenario('nodejs', '18.x', { baseImage: 'amazon/nodejs18.x-base' }, true),
     generateScenario('nodejs', '20.x', { baseImage: 'amazon/nodejs20.x-base' }, true),
-    generateScenario('nodejs', '22.x', { baseImage: 'amazon/nodejs18.x-base', vscodeMinimum: '1.78.0' }, true),
+    generateScenario('nodejs', '22.x', { baseImage: 'amazon/nodejs22.x-base', vscodeMinimum: '1.78.0' }, true),
     generateScenario('python', '3.10', { baseImage: 'amazon/python3.10-base' }, true),
     generateScenario('python', '3.11', { baseImage: 'amazon/python3.11-base', vscodeMinimum: '1.78.0' }, true),
     generateScenario('python', '3.12', { baseImage: 'amazon/python3.12-base', vscodeMinimum: '1.78.0' }, true),

@@ -51,18 +51,27 @@ phases:
             # Ensure that "docker" group has permissions to the socket.
             # - chown codebuild-user /var/run/docker.sock
             - chmod 666 /var/run/docker.sock
-            -  # Install and Verify Node.js 20
-            - |
-                curl -sL https://rpm.nodesource.com/setup_20.x | sudo bash -
-                sudo yum install -y nodejs
-                node -v
-                npm -v
+            # Pull Docker Images for SAM tests
 
+            # Nodejs
             - |
-                curl -sL https://rpm.nodesource.com/setup_22.x | sudo bash -
-                sudo yum install -y nodejs
-                node -v
-                npm -v
+                docker pull public.ecr.aws/docker/library/node:18
+                docker pull public.ecr.aws/docker/library/node:20
+                docker pull public.ecr.aws/docker/library/node:22
+            # Java
+            - |
+                docker pull public.ecr.aws/amazoncorretto/openjdk8:al2
+                docker pull public.ecr.aws/amazoncorretto/openjdk11
+                docker pull public.ecr.aws/amazoncorretto/openjdk17
+            # Python
+            - |
+                docker pull public.ecr.aws/lambda/python:3.10
+                docker pull public.ecr.aws/lambda/python:3.11
+                docker pull public.ecr.aws/lambda/python:3.12
+                docker pull public.ecr.aws/lambda/python:3.13
+            # Dotnet
+            - |
+                docker pull public.ecr.aws/lambda/dotnet6
 
     pre_build:
         commands:
