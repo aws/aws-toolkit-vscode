@@ -58,7 +58,7 @@
 - **Bug Fix** Use Sagemaker environment IAM Credentials for Code Completion when they're available
 - **Bug Fix** Inline: Code completion not working for Sagemaker Pro Tier users.
 - **Bug Fix** Disable /transform and /dev commands for sagemaker users as they're not supported
-- **Feature** Enable Free Tier Chat for IAM users
+- **Feature** Amazon SageMaker Studio: Enable Free Tier Chat for IAM users
 
 ## 1.31.0 2024-10-29
 
