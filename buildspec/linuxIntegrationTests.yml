@@ -51,6 +51,18 @@ phases:
             # Ensure that "docker" group has permissions to the socket.
             # - chown codebuild-user /var/run/docker.sock
             - chmod 666 /var/run/docker.sock
+            -  # Install and Verify Node.js 20
+            - |
+                curl -sL https://rpm.nodesource.com/setup_20.x | sudo bash -
+                sudo yum install -y nodejs
+                node -v
+                npm -v
+
+            - |
+                curl -sL https://rpm.nodesource.com/setup_22.x | sudo bash -
+                sudo yum install -y nodejs
+                node -v
+                npm -v
 
     pre_build:
         commands:
