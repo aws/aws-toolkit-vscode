@@ -246,6 +246,7 @@ export class TestController {
             cwsprChatProgrammingLanguage: session.fileLanguage ?? 'plaintext',
             jobId: session.listOfTestGenerationJobId[0], // For RIV, UTG does only one StartTestGeneration API call
             jobGroup: session.testGenerationJobGroupName,
+            requestId: session.startTestGenerationRequestId,
             hasUserPromptSupplied: session.hasUserPromptSupplied,
             isCodeBlockSelected: session.isCodeBlockSelected,
             buildPayloadBytes: session.srcPayloadSize,
@@ -725,6 +726,7 @@ export class TestController {
             cwsprChatProgrammingLanguage: session.fileLanguage ?? 'plaintext',
             jobId: session.listOfTestGenerationJobId[0], // For RIV, UTG does only one StartTestGeneration API call so jobId = session.listOfTestGenerationJobId[0]
             jobGroup: session.testGenerationJobGroupName,
+            requestId: session.startTestGenerationRequestId,
             buildPayloadBytes: session.srcPayloadSize,
             buildZipFileBytes: session.srcZipFileSize,
             artifactsUploadDuration: session.artifactsUploadDuration,
@@ -848,6 +850,7 @@ export class TestController {
                 cwsprChatProgrammingLanguage: session.fileLanguage ?? 'plaintext',
                 jobId: session.listOfTestGenerationJobId[0], // For RIV, UTG does only one StartTestGeneration API call so jobId = session.listOfTestGenerationJobId[0]
                 jobGroup: session.testGenerationJobGroupName,
+                requestId: session.startTestGenerationRequestId,
                 buildPayloadBytes: session.srcPayloadSize,
                 buildZipFileBytes: session.srcZipFileSize,
                 artifactsUploadDuration: session.artifactsUploadDuration,
