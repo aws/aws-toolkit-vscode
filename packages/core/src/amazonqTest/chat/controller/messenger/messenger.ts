@@ -283,6 +283,7 @@ export class Messenger {
                         reasonDesc: getTelemetryReasonDesc(CodeWhispererConstants.unitTestGenerationCancelMessage),
                         isSupportedLanguage: false,
                         credentialStartUrl: AuthUtil.instance.startUrl,
+                        httpStatusCode: '400',
                         requestId: messageId,
                     })
 
@@ -298,6 +299,7 @@ export class Messenger {
                         result: 'Succeeded',
                         isSupportedLanguage: false,
                         credentialStartUrl: AuthUtil.instance.startUrl,
+                        httpStatusCode: '200',
                         requestId: messageId,
                     })
                     this.dispatcher.sendUpdatePromptProgress(
