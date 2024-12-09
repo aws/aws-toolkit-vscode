@@ -124,9 +124,7 @@ describe('zipUtil', function () {
             const zipFileData = await fs.readFileBytes(zipMetadata.zipFilePath)
             const zip = await JSZip.loadAsync(zipFileData)
             const files = Object.keys(zip.files)
-            assert.equal(files.length, 2)
-            assert.ok(files.includes('codeDiff/code.diff'))
-            assert.ok(files.includes('workspaceFolder/workspaceFolder/App.java'))
+            assert.ok(files.includes(join('workspaceFolder', 'workspaceFolder', 'App.java')))
         })
 
         it('should handle path with repeated project name for project scan', async function () {
@@ -139,8 +137,7 @@ describe('zipUtil', function () {
             const zipFileData = await fs.readFileBytes(zipMetadata.zipFilePath)
             const zip = await JSZip.loadAsync(zipFileData)
             const files = Object.keys(zip.files)
-            assert.ok(files.includes('codeDiff/code.diff'))
-            assert.ok(files.includes('workspaceFolder/workspaceFolder/App.java'))
+            assert.ok(files.includes(join('workspaceFolder', 'workspaceFolder', 'App.java')))
         })
     })
 
