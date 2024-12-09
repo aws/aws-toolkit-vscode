@@ -22,8 +22,7 @@ import {
 } from '../models/errors'
 import { ZipUseCase } from '../models/constants'
 import { ChildProcess, ChildProcessOptions } from '../../shared/utilities/processUtils'
-import { showOutputMessage } from '../../shared/utilities/messages'
-import { globals, removeAnsi } from '../../shared'
+import { removeAnsi } from '../../shared'
 
 export interface ZipMetadata {
     rootDir: string
@@ -303,10 +302,10 @@ export class ZipUtil {
             rejectOnErrorCode: false,
             onStdout: (text) => {
                 diffContent += text
-                showOutputMessage(removeAnsi(text), globals.outputChannel)
+                getLogger().verbose(removeAnsi(text))
             },
             onStderr: (text) => {
-                showOutputMessage(removeAnsi(text), globals.outputChannel)
+                getLogger().error(removeAnsi(text))
             },
             spawnOptions: {
                 cwd: projectPath,
@@ -340,10 +339,10 @@ export class ZipUtil {
             rejectOnErrorCode: true,
             onStdout: (text) => {
                 diffContent += text
-                showOutputMessage(removeAnsi(text), globals.outputChannel)
+                getLogger().verbose(removeAnsi(text))
             },
             onStderr: (text) => {
-                showOutputMessage(removeAnsi(text), globals.outputChannel)
+                getLogger().error(removeAnsi(text))
             },
             spawnOptions: {
                 cwd: projectPath,
