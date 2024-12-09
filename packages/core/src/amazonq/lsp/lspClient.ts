@@ -32,7 +32,7 @@ import {
 } from './types'
 import { Writable } from 'stream'
 import { CodeWhispererSettings } from '../../codewhisperer/util/codewhispererSettings'
-import { fs, getLogger } from '../../shared'
+import { fs, getLogger, globals } from '../../shared'
 
 const localize = nls.loadMessageBundle()
 
@@ -228,6 +228,9 @@ export async function activate(extensionContext: ExtensionContext) {
             // this is used by LSP to determine index cache path, move to this folder so that when extension updates index is not deleted.
             extensionPath: path.join(fs.getUserHomeDir(), '.aws', 'amazonq', 'cache'),
         },
+        // Log to the Amazon Q Logs so everything is in a single channel
+        // TODO: Add prefix to the language server logs so it is easier to search
+        outputChannel: globals.logOutputChannel,
     }
 
     // Create the language client and start the client.
