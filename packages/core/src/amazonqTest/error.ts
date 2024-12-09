@@ -12,7 +12,7 @@ export class TestGenError extends ToolkitError {
         error: string,
         code: string,
         public statusCode: string,
-        public customerFacingMessage: string
+        public uiMessage: string
     ) {
         super(error, { code })
     }

@@ -242,26 +242,31 @@ export class TestController {
         // eslint-disable-next-line unicorn/no-null
         this.messenger.sendUpdatePromptProgress(data.tabID, null)
         const session = this.sessionStorage.getSession()
-        const isCancel = data.error.customerFacingMessage === unitTestGenerationCancelMessage
-        TelemetryHelper.instance.sendTestGenerationToolkitEvent(
-            session,
-            true,
-            isCancel ? 'Cancelled' : 'Failed',
-            session.startTestGenerationRequestId,
-            performance.now() - session.testGenerationStartTime,
-            getTelemetryReasonDesc(data.error),
-            data.error.statusCode ?? '0', // If status code is 0,  need to investigate where this is originating from.
-            session.isCodeBlockSelected,
-            session.artifactsUploadDuration,
-            session.srcPayloadSize,
-            session.srcZipFileSize
-        )
+        const isCancel = data.error.uiMessage === unitTestGenerationCancelMessage
+        telemetry.amazonq_utgGenerateTests.emit({
+            cwsprChatProgrammingLanguage: session.fileLanguage ?? 'plaintext',
+            jobId: session.listOfTestGenerationJobId[0], // For RIV, UTG does only one StartTestGeneration API call
+            jobGroup: session.testGenerationJobGroupName,
+            requestId: session.startTestGenerationRequestId,
+            hasUserPromptSupplied: session.hasUserPromptSupplied,
+            isCodeBlockSelected: session.isCodeBlockSelected,
+            buildPayloadBytes: session.srcPayloadSize,
+            buildZipFileBytes: session.srcZipFileSize,
+            artifactsUploadDuration: session.artifactsUploadDuration,
+            perfClientLatency: performance.now() - session.testGenerationStartTime,
+            result: isCancel ? 'Cancelled' : 'Failed',
+            reasonDesc: getTelemetryReasonDesc(data.error),
+            isSupportedLanguage: true,
+            credentialStartUrl: AuthUtil.instance.startUrl,
+            httpStatusCode: data.error.statusCode ?? 0, // If status code is 0,  need to investigate where this is originating from.
+            reason: data.error.code,
+        })
         if (session.stopIteration) {
             // Error from Science
-            this.messenger.sendMessage(data.error.customerFacingMessage.replaceAll('```', ''), data.tabID, 'answer')
+            this.messenger.sendMessage(data.error.uiMessage.replaceAll('```', ''), data.tabID, 'answer')
         } else {
             isCancel
-                ? this.messenger.sendMessage(data.error.customerFacingMessage, data.tabID, 'answer')
+                ? this.messenger.sendMessage(data.error.uiMessage, data.tabID, 'answer')
                 : this.sendErrorMessage(data)
         }
         await this.sessionCleanUp()
@@ -270,7 +275,7 @@ export class TestController {
     // Client side error messages
     private sendErrorMessage(data: {
         tabID: string
-        error: { customerFacingMessage: string; message: string; code: string; statusCode: string }
+        error: { uiMessage: string; message: string; code: string; statusCode: string }
     }) {
         const { error, tabID } = data
 
@@ -304,7 +309,7 @@ export class TestController {
             }
         } else {
             // other unexpected errors (TODO enumerate all other failure cases)
-            getLogger().error('Other error message: %s', error.customerFacingMessage)
+            getLogger().error('Other error message: %s', error.uiMessage)
             this.messenger.sendErrorMessage('', tabID)
         }
     }
@@ -715,6 +720,9 @@ export class TestController {
         // this.messenger.sendMessage('Accepted', message.tabID, 'prompt')
         telemetry.ui_click.emit({ elementId: 'unitTestGeneration_acceptDiff' })
 
+        getLogger().info(
+            `Generated unit tests are accepted for ${session.fileLanguage ?? 'plaintext'} language with jobId: ${session.listOfTestGenerationJobId[0]}, jobGroupName: ${session.testGenerationJobGroupName}, result: Succeeded`
+        )
         TelemetryHelper.instance.sendTestGenerationToolkitEvent(
             session,
             true,
@@ -734,6 +742,29 @@ export class TestController {
             session.numberOfTestsGenerated,
             session.linesOfCodeGenerated
         )
+
+        telemetry.amazonq_utgGenerateTests.emit({
+            generatedCount: session.numberOfTestsGenerated,
+            acceptedCount: session.numberOfTestsGenerated,
+            generatedCharactersCount: session.charsOfCodeGenerated,
+            acceptedCharactersCount: session.charsOfCodeAccepted,
+            generatedLinesCount: session.linesOfCodeGenerated,
+            acceptedLinesCount: session.linesOfCodeAccepted,
+            cwsprChatProgrammingLanguage: session.fileLanguage ?? 'plaintext',
+            jobId: session.listOfTestGenerationJobId[0], // For RIV, UTG does only one StartTestGeneration API call so jobId = session.listOfTestGenerationJobId[0]
+            jobGroup: session.testGenerationJobGroupName,
+            requestId: session.startTestGenerationRequestId,
+            buildPayloadBytes: session.srcPayloadSize,
+            buildZipFileBytes: session.srcZipFileSize,
+            artifactsUploadDuration: session.artifactsUploadDuration,
+            hasUserPromptSupplied: session.hasUserPromptSupplied,
+            isCodeBlockSelected: session.isCodeBlockSelected,
+            perfClientLatency: session.latencyOfTestGeneration,
+            isSupportedLanguage: true,
+            credentialStartUrl: AuthUtil.instance.startUrl,
+            result: 'Succeeded',
+            httpStatusCode: '200',
+        })
 
         await this.endSession(message, FollowUpTypes.SkipBuildAndFinish)
         return
