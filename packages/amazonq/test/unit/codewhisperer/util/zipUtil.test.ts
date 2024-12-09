@@ -14,6 +14,7 @@ import { ToolkitError } from 'aws-core-vscode/shared'
 import { LspClient } from 'aws-core-vscode/amazonq'
 import { fs } from 'aws-core-vscode/shared'
 import path from 'path'
+import JSZip from 'jszip'
 
 describe('zipUtil', function () {
     const workspaceFolder = getTestWorkspaceFolder()
@@ -111,6 +112,21 @@ describe('zipUtil', function () {
                 CodeAnalysisScope.PROJECT
             )
             assert.equal(zipMetadata2.lines, zipMetadata.lines + 1)
+        })
+
+        it('should handle path with repeated project name', async function () {
+            const appCodePathWithRepeatedProjectName = join(workspaceFolder, 'workspaceFolder', 'App.java')
+            const zipMetadata = await zipUtil.generateZip(
+                vscode.Uri.file(appCodePathWithRepeatedProjectName),
+                CodeAnalysisScope.FILE_ON_DEMAND
+            )
+
+            const zipFileData = await fs.readFileBytes(zipMetadata.zipFilePath)
+            const zip = await JSZip.loadAsync(zipFileData)
+            const files = Object.keys(zip.files)
+            assert.equal(files.length, 2)
+            assert.ok(files.includes('codeDiff/code.diff'))
+            assert.ok(files.includes('workspaceFolder/workspaceFolder/App.java'))
         })
     })
 
