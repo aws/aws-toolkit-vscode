@@ -20,6 +20,7 @@ import {
     TelemetryHelper,
     TestGenerationBuildStep,
     testGenState,
+    tooManyRequestErrorMessage,
     unitTestGenerationCancelMessage,
 } from '../../../codewhisperer'
 import {
@@ -284,16 +285,14 @@ export class TestController {
                 )
             } else {
                 getLogger().error('Too many requests.')
-                // TODO: move to constants file
-                return this.messenger.sendErrorMessage('Too many requests. Please wait before retrying.', tabID)
+                return this.messenger.sendErrorMessage(tooManyRequestErrorMessage, tabID)
             }
         }
         if (isAwsError(error)) {
             if (error.code === 'ThrottlingException') {
                 // TODO: use the explicitly modeled exception reason for quota vs throttle{
                 getLogger().error('Too many requests.')
-                // TODO: move to constants file
-                this.messenger.sendErrorMessage('Too many requests. Please wait before retrying.', tabID)
+                this.messenger.sendErrorMessage(tooManyRequestErrorMessage, tabID)
             } else {
                 // other service errors:
                 // AccessDeniedException - should not happen because access is validated before this point in the client
