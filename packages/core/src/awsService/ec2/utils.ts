@@ -47,11 +47,11 @@ export function getEc2SsmEnv(
     )
 }
 /**
- * Generate bash command (as string) to remove lines in file prefixed by `hintComment`.
- * @param hintComment prefix comment for deleted lines.
+ * Generate bash command (as string) to remove lines in file suffixed by `hintComment`.
+ * @param hintComment suffix comment for deleted lines.
  * @param filepath filepath (as string) to target with the command.
  * @returns bash command to remove lines from file.
  */
-export function getRemoveLabeledEntriesCommand(hintComment: string, filepath: string): string {
-    return `sed -i '' '/${hintComment}/N; /${hintComment}/ {N; d}' ${filepath}`
+export function getRemoveLinesCommand(hintComment: string, filepath: string): string {
+    return `sed /${hintComment}/d ${filepath}`
 }

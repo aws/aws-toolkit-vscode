@@ -6,8 +6,12 @@
 import assert from 'assert'
 import * as sinon from 'sinon'
 import { SafeEc2Instance } from '../../../shared/clients/ec2Client'
-import { getIconCode } from '../../../awsService/ec2/utils'
-import { DefaultAwsContext } from '../../../shared'
+import { getIconCode, getRemoveLinesCommand } from '../../../awsService/ec2/utils'
+import { DefaultAwsContext, globals } from '../../../shared'
+import { fs } from '../../../shared/fs/fs'
+import { createTestWorkspaceFolder } from '../../testUtil'
+import path from 'path'
+import { ChildProcess } from '../../../shared/utilities/processUtils'
 
 describe('utils', async function () {
     before(function () {
@@ -50,6 +54,27 @@ describe('utils', async function () {
 
             assert.strictEqual(getIconCode(pendingInstance), 'loading~spin')
             assert.strictEqual(getIconCode(stoppingInstance), 'loading~spin')
+        })
+    })
+
+    describe('getRemoveLinesCommand', async function () {
+        it('removes lines prefixed by pattern', async function () {
+            const pattern = 'pattern'
+            const lines = ['line1', 'line2 pattern', 'line3', 'line4 pattern', 'line5', 'line6 pattern', 'line7']
+            const expected = ['line1', 'line3', 'line5', 'line7']
+            const tempPath = await createTestWorkspaceFolder()
+            const textFile = path.join(tempPath.uri.fsPath, 'test.txt')
+            await fs.writeFile(textFile, lines.join('\n'))
+
+            const [command, ...args] = getRemoveLinesCommand(pattern, textFile).split(' ')
+            const process = new ChildProcess(command, args, { collect: true })
+            const result = await process.run()
+
+            assert.strictEqual(result.exitCode, 0, `ChildProcess failed with error=${result.error}`)
+            const newContent = await fs.readFileText(textFile)
+
+            assert.strictEqual(newContent, expected.join('\n') + '\n')
+            await fs.delete(tempPath.uri.fsPath, { recursive: true, force: true })
         })
     })
 })
