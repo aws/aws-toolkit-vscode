@@ -33,6 +33,7 @@ jobs:
               with:
                   node-version: '20'
             - name: Check Branch title
+              if: ${{ github.event_name == 'pull_request'}}
               env:
                   BRANCH_NAME: ${{ github.head_ref }}
               run: |
