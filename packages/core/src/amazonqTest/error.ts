@@ -1,8 +1,7 @@
 /*!
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
- */
-import { CodeWhispererConstants } from '../codewhisperer/indexNode'
+//  */
 import { ToolkitError } from '../shared/errors'
 
 export const techinalErrorCustomerFacingMessage =
@@ -55,12 +54,7 @@ export class TestGenTimedOutError extends TestGenError {
 }
 export class TestGenStoppedError extends TestGenError {
     constructor() {
-        super(
-            CodeWhispererConstants.unitTestGenerationCancelMessage,
-            'TestGenCancelled',
-            '400',
-            CodeWhispererConstants.unitTestGenerationCancelMessage
-        )
+        super('Unit test generation cancelled.', 'TestGenCancelled', '400', 'Unit test generation cancelled.')
     }
 }
 export class TestGenFailedError extends TestGenError {
