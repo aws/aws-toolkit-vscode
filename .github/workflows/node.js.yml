@@ -32,9 +32,10 @@ jobs:
             - uses: actions/setup-node@v4
               with:
                   node-version: '20'
-            - name: Check Branch title
+            - name: Validate Branch name
+              if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref != ''}}
               env:
-                  BRANCH_NAME: ${{ github.head_ref }}
+                  BRANCH_NAME: ${{ github.event.pull_request.head.ref }}
               run: |
                   node "$GITHUB_WORKSPACE/.github/workflows/lintbranch.js" run "$BRANCH_NAME"
             - name: Check PR title
