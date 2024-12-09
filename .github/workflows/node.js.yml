@@ -32,7 +32,7 @@ jobs:
             - uses: actions/setup-node@v4
               with:
                   node-version: '20'
-            - name: Check Branch title
+            - name: Validate Branch name
               if: ${{ github.event_name == 'pull_request'}}
               env:
                   BRANCH_NAME: ${{ github.event.pull_request.head.ref }}
