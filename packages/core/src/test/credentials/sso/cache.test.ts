@@ -8,6 +8,7 @@ import * as path from 'path'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../../shared/filesystemUtilities'
 import { getRegistrationCache, getTokenCache } from '../../../auth/sso/cache'
 import { fs } from '../../../shared'
+import { SsoToken } from '../../../auth/sso/model'
 
 describe('SSO Cache', function () {
     const region = 'dummyRegion'
@@ -26,7 +27,8 @@ describe('SSO Cache', function () {
     const validToken = {
         accessToken: 'longstringofrandomcharacters',
         expiresAt: new Date(Date.now() + hourInMs),
-    }
+        refreshToken: 'dummyRefreshToken',
+    } as SsoToken
 
     beforeEach(async function () {
         testDir = await makeTemporaryToolkitFolder()
