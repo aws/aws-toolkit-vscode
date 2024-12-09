@@ -19,6 +19,7 @@ import { UriHandler } from './vscode/uriHandler'
 import { GlobalState } from './globalState'
 import { setContext } from './vscode/setContext'
 import { getLogger } from './logger/logger'
+import { AWSClientBuilderV3 } from './awsClientBuilderV3'
 
 type Clock = Pick<
     typeof globalThis,
@@ -197,6 +198,7 @@ export interface ToolkitGlobals {
     awsContext: AwsContext
     regionProvider: RegionProvider
     sdkClientBuilder: AWSClientBuilder
+    sdkClientBuilderV3: AWSClientBuilderV3
     telemetry: TelemetryService & { logger: TelemetryLogger }
     /** template.yaml registry. _Avoid_ calling this until it is actually needed (for SAM features). */
     templateRegistry: Promise<CloudFormationTemplateRegistry>
