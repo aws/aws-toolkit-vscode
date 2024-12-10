@@ -229,7 +229,7 @@ describe('getRemoveLinesCommand', async function () {
         await fs.writeFile(textFile, originalContent)
         console.log('running on os: %s', hostOS)
         const [command, ...args] = getRemoveLinesCommand('pattern', hostOS, textFile).split(' ')
-        console.log('running command: %s', command)
+        console.log('running command: %s with args %s', command, args.join(' '))
         const process = new ChildProcess(command, args, { collect: true })
         const result = await process.run()
         assert.strictEqual(result.exitCode, 0, `ChildProcess failed with error=${result.error}`)
