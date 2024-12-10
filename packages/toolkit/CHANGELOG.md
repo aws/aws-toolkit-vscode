@@ -1,3 +1,7 @@
+## 3.38.0 2024-12-10
+
+- **Feature** Step Functions: Upgrade amazon-states-language-service to 1.13. This new version adds support for [JSONata and Variables](https://aws.amazon.com/blogs/compute/simplifying-developer-experience-with-variables-and-jsonata-in-aws-step-functions/).
+
 ## 3.36.0 2024-11-27
 
 - **Bug Fix** appBuilder refresh feature doesnt work during sync --watch
