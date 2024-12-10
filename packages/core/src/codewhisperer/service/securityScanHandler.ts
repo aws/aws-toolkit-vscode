@@ -376,10 +376,14 @@ export async function uploadArtifactToS3(
             `Amazon Q is unable to upload workspace artifacts to Amazon S3 for ${featureType}. ` +
                 'For more information, see the Amazon Q documentation or contact your network or organization administrator.'
         )
-        const messageWithOutId = getTelemetryReasonDesc(error)?.includes('"PUT" request failed with code "403"')
-        errorMessage = messageWithOutId
-            ? '"PUT" request failed with code "403"'
-            : (getTelemetryReasonDesc(error) ?? defaultMessage)
+        const errorDesc = getTelemetryReasonDesc(error)
+        if (errorDesc?.includes('"PUT" request failed with code "403"')) {
+            errorMessage = '"PUT" request failed with code "403"'
+        } else if (errorDesc?.includes('"PUT" request failed with code "503"')) {
+            errorMessage = '"PUT" request failed with code "503"'
+        } else {
+            errorMessage = errorDesc ?? defaultMessage
+        }
         throw isCodeScan ? new UploadArtifactToS3Error(errorMessage) : new UploadTestArtifactToS3Error(errorMessage)
     }
 }
