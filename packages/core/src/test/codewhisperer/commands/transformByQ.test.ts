@@ -7,13 +7,7 @@ import assert, { fail } from 'assert'
 import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import { DB, transformByQState, TransformByQStoppedError } from '../../../codewhisperer/models/model'
-import {
-    finalizeTransformationJob,
-    parseBuildFile,
-    setMaven,
-    stopTransformByQ,
-    validateSQLMetadataFile,
-} from '../../../codewhisperer/commands/startTransformByQ'
+import { stopTransformByQ, finalizeTransformationJob } from '../../../codewhisperer/commands/startTransformByQ'
 import { HttpResponse } from 'aws-sdk'
 import * as codeWhisperer from '../../../codewhisperer/client/codewhisperer'
 import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
@@ -43,6 +37,11 @@ import { TransformationCandidateProject, ZipManifest } from '../../../codewhispe
 import globals from '../../../shared/extensionGlobals'
 import { env, fs } from '../../../shared'
 import { convertDateToTimestamp, convertToTimeString } from '../../../shared/datetime'
+import {
+    setMaven,
+    parseBuildFile,
+    validateSQLMetadataFile,
+} from '../../../codewhisperer/service/transformByQ/transformFileHandler'
 
 describe('transformByQ', function () {
     let tempDir: string
