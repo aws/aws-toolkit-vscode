@@ -1,0 +1,66 @@
+{
+	"date": "2024-12-10",
+	"version": "1.40.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Improved LLM code review for file review."
+		},
+		{
+			"type": "Bug Fix",
+			"description": "@workspace is missing from the welcome to q chat tab"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Fix chat syntax highlighting when using several different themes"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q /doc: progress bar persists after cancelling README creation"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Code Review: Fixed a bug where some issues are missing from the code issues view for workspaces with custom names"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q /doc: Prompt user to choose a folder in chat"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q /dev not adding Dockerfiles in nested folders"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Improved Code Fix generation for code review issues"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Fix the quick start buttons on the explore page to show amazon q colours on hover"
+		},
+		{
+			"type": "Feature",
+			"description": "Q feature dev: recognize .bms, .pli code files"
+		},
+		{
+			"type": "Feature",
+			"description": "Amazon Q Code Transformation: show job ID in Transformation Hub"
+		},
+		{
+			"type": "Feature",
+			"description": "UI improvements to Amazon Q Chat: New splash loader animation, initial streaming card animation, improved button colours"
+		},
+		{
+			"type": "Feature",
+			"description": "Add acknowledgement button for amazon q chat disclaimer"
+		},
+		{
+			"type": "Feature",
+			"description": "Navigate through prompt history by using the up/down arrows"
+		},
+		{
+			"type": "Feature",
+			"description": "Amazon Q: Simplify log channel"
+		}
+	]
+}
