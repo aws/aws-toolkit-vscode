@@ -20,6 +20,7 @@ describe('zipUtil', function () {
     const workspaceFolder = getTestWorkspaceFolder()
     const appRoot = join(workspaceFolder, 'java11-plain-maven-sam-app')
     const appCodePath = join(appRoot, 'HelloWorldFunction', 'src', 'main', 'java', 'helloworld', 'App.java')
+    const appCodePathWithRepeatedProjectName = join(workspaceFolder, 'workspaceFolder', 'App.java')
 
     describe('getProjectPaths', function () {
         it('Should return the correct project paths', function () {
@@ -115,7 +116,6 @@ describe('zipUtil', function () {
         })
 
         it('should handle path with repeated project name for file scan', async function () {
-            const appCodePathWithRepeatedProjectName = join(workspaceFolder, 'workspaceFolder', 'App.java')
             const zipMetadata = await zipUtil.generateZip(
                 vscode.Uri.file(appCodePathWithRepeatedProjectName),
                 CodeAnalysisScope.FILE_ON_DEMAND
@@ -128,7 +128,6 @@ describe('zipUtil', function () {
         })
 
         it('should handle path with repeated project name for project scan', async function () {
-            const appCodePathWithRepeatedProjectName = join(workspaceFolder, 'workspaceFolder', 'App.java')
             const zipMetadata = await zipUtil.generateZip(
                 vscode.Uri.file(appCodePathWithRepeatedProjectName),
                 CodeAnalysisScope.PROJECT
