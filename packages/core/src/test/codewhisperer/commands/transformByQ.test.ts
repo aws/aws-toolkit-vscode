@@ -46,7 +46,7 @@ import { convertDateToTimestamp, convertToTimeString } from '../../../shared/dat
 
 describe('transformByQ', function () {
     let tempDir: string
-    let validSctFile = `<?xml version="1.0" encoding="UTF-8"?>
+    const validSctFile = `<?xml version="1.0" encoding="UTF-8"?>
     <tree>
     <instances>
         <ProjectModel>
