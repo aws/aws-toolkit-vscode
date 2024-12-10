@@ -28,7 +28,7 @@ import { showMessageWithCancel } from '../../shared/utilities/messages'
 import { SshConfig } from '../../shared/sshConfig'
 import { SshKeyPair } from './sshKeyPair'
 import { Ec2SessionTracker } from './remoteSessionManager'
-import { getEc2SsmEnv, getRemoveLinesCommand } from './utils'
+import { getEc2SsmEnv } from './utils'
 
 export type Ec2ConnectErrorCode = 'EC2SSMStatus' | 'EC2SSMPermission' | 'EC2SSMConnect' | 'EC2SSMAgentStatus'
 
@@ -36,6 +36,12 @@ export interface Ec2RemoteEnv extends VscodeRemoteConnection {
     selection: Ec2Selection
     keyPair: SshKeyPair
     ssmSession: SSM.StartSessionResponse
+}
+
+export type Ec2OS = 'Amazon Linux' | 'Ubuntu' | 'macOS'
+interface RemoteUser {
+    os: Ec2OS
+    name: string
 }
 
 export class Ec2Connecter implements vscode.Disposable {
@@ -195,20 +201,29 @@ export class Ec2Connecter implements vscode.Disposable {
         const remoteEnv = await this.prepareEc2RemoteEnvWithProgress(selection, remoteUser)
 
         try {
-            await startVscodeRemote(remoteEnv.SessionProcess, remoteEnv.hostname, '/', remoteEnv.vscPath, remoteUser)
+            await startVscodeRemote(
+                remoteEnv.SessionProcess,
+                remoteEnv.hostname,
+                '/',
+                remoteEnv.vscPath,
+                remoteUser.name
+            )
         } catch (err) {
             this.throwGeneralConnectionError(selection, err as Error)
         }
     }
 
-    public async prepareEc2RemoteEnvWithProgress(selection: Ec2Selection, remoteUser: string): Promise<Ec2RemoteEnv> {
+    public async prepareEc2RemoteEnvWithProgress(
+        selection: Ec2Selection,
+        remoteUser: RemoteUser
+    ): Promise<Ec2RemoteEnv> {
         const timeout = new Timeout(60000)
         await showMessageWithCancel('AWS: Opening remote connection...', timeout)
         const remoteEnv = await this.prepareEc2RemoteEnv(selection, remoteUser).finally(() => timeout.cancel())
         return remoteEnv
     }
 
-    public async prepareEc2RemoteEnv(selection: Ec2Selection, remoteUser: string): Promise<Ec2RemoteEnv> {
+    public async prepareEc2RemoteEnv(selection: Ec2Selection, remoteUser: RemoteUser): Promise<Ec2RemoteEnv> {
         const logger = this.configureRemoteConnectionLogger(selection.instanceId)
         const { ssm, vsc, ssh } = (await ensureDependencies()).unwrap()
         const keyPair = await this.configureSshKeys(selection, remoteUser)
@@ -253,19 +268,23 @@ export class Ec2Connecter implements vscode.Disposable {
         return logger
     }
 
-    public async configureSshKeys(selection: Ec2Selection, remoteUser: string): Promise<SshKeyPair> {
+    public async configureSshKeys(selection: Ec2Selection, remoteUser: RemoteUser): Promise<SshKeyPair> {
         const keyPair = await SshKeyPair.getSshKeyPair(`aws-ec2-key`, 30000)
         await this.sendSshKeyToInstance(selection, keyPair, remoteUser)
         return keyPair
     }
 
-    private async attemptToCleanKeys(instanceId: string, hintComment: string, remoteAuthorizedKeysPath: string) {
+    private async attemptToCleanKeys(
+        instanceId: string,
+        hintComment: string,
+        hostOS: Ec2OS,
+        remoteAuthorizedKeysPath: string
+    ) {
         try {
-            const deleteExistingKeyCommand = getRemoveLinesCommand(hintComment, remoteAuthorizedKeysPath)
-            const result = await this.ssmClient.sendCommandAndWait(instanceId, 'AWS-RunShellScript', {
+            const deleteExistingKeyCommand = getRemoveLinesCommand(hintComment, hostOS, remoteAuthorizedKeysPath)
+            await this.ssmClient.sendCommandAndWait(instanceId, 'AWS-RunShellScript', {
                 commands: [deleteExistingKeyCommand],
             })
-            console.log(result)
         } catch (e) {
             getLogger().warn(`ec2: failed to clean keys: %O`, e)
         }
@@ -274,32 +293,47 @@ export class Ec2Connecter implements vscode.Disposable {
     public async sendSshKeyToInstance(
         selection: Ec2Selection,
         sshKeyPair: SshKeyPair,
-        remoteUser: string
+        remoteUser: RemoteUser
     ): Promise<void> {
         const sshPubKey = await sshKeyPair.getPublicKey()
         const hintComment = '#AWSToolkitForVSCode'
 
-        const remoteAuthorizedKeysPath = `/home/${remoteUser}/.ssh/authorized_keys`
+        const remoteAuthorizedKeysPath = `/home/${remoteUser.name}/.ssh/authorized_keys`
 
         const appendStr = (s: string) => `echo "${s}" >> ${remoteAuthorizedKeysPath}`
         const writeKeyCommand = appendStr([sshPubKey.replace('\n', ''), hintComment].join(' '))
 
-        await this.attemptToCleanKeys(selection.instanceId, hintComment, remoteAuthorizedKeysPath)
+        await this.attemptToCleanKeys(selection.instanceId, hintComment, remoteUser.os, remoteAuthorizedKeysPath)
         await this.ssmClient.sendCommandAndWait(selection.instanceId, 'AWS-RunShellScript', {
             commands: [writeKeyCommand],
         })
     }
 
-    public async getRemoteUser(instanceId: string) {
-        const osName = await this.ssmClient.getTargetPlatformName(instanceId)
-        if (osName === 'Amazon Linux') {
-            return 'ec2-user'
+    public async getRemoteUser(instanceId: string): Promise<RemoteUser> {
+        const os = await this.ssmClient.getTargetPlatformName(instanceId)
+        if (os === 'Amazon Linux') {
+            return { name: 'ec2-user', os }
         }
 
-        if (osName === 'Ubuntu') {
-            return 'ubuntu'
+        if (os === 'Ubuntu') {
+            return { name: 'ubuntu', os }
         }
 
-        throw new ToolkitError(`Unrecognized OS name ${osName} on instance ${instanceId}`, { code: 'UnknownEc2OS' })
+        throw new ToolkitError(`Unrecognized OS name ${os} on instance ${instanceId}`, { code: 'UnknownEc2OS' })
     }
+}
+
+/**
+ * Generate bash command (as string) to remove lines in file suffixed by `hintComment`.
+ * @param hintComment suffix comment for deleted lines.
+ * @param filepath filepath (as string) to target with the command.
+ * @returns bash command to remove lines from file.
+ */
+export function getRemoveLinesCommand(hintComment: string, hostOS: Ec2OS, filepath: string): string {
+    // Linux allows not passing extension to -i, whereas macOS requires zero length extension.
+    return `sed -i ${isLinux(hostOS) ? '' : "''"} /${hintComment}/d ${filepath}`
+}
+
+function isLinux(os: Ec2OS): boolean {
+    return os === 'Amazon Linux' || os === 'Ubuntu'
 }

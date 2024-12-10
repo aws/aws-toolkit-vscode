@@ -6,12 +6,8 @@
 import assert from 'assert'
 import * as sinon from 'sinon'
 import { SafeEc2Instance } from '../../../shared/clients/ec2Client'
-import { getIconCode, getRemoveLinesCommand } from '../../../awsService/ec2/utils'
+import { getIconCode } from '../../../awsService/ec2/utils'
 import { DefaultAwsContext } from '../../../shared'
-import { fs } from '../../../shared/fs/fs'
-import { createTestWorkspaceFolder } from '../../testUtil'
-import path from 'path'
-import { ChildProcess } from '../../../shared/utilities/processUtils'
 
 describe('utils', async function () {
     before(function () {
@@ -54,39 +50,6 @@ describe('utils', async function () {
 
             assert.strictEqual(getIconCode(pendingInstance), 'loading~spin')
             assert.strictEqual(getIconCode(stoppingInstance), 'loading~spin')
-        })
-    })
-
-    describe('getRemoveLinesCommand', async function () {
-        let tempPath: { uri: { fsPath: string } }
-
-        before(async function () {
-            tempPath = await createTestWorkspaceFolder()
-        })
-
-        after(async function () {
-            await fs.delete(tempPath.uri.fsPath, { recursive: true, force: true })
-        })
-
-        it('removes lines prefixed by pattern', async function () {
-            const lines = ['line1', 'line2 pattern', 'line3', 'line4 pattern', 'line5', 'line6 pattern', 'line7']
-            const expected = ['line1', 'line3', 'line5', 'line7']
-
-            const lineToStr = (ls: string[]) => ls.join('\n') + '\n'
-
-            const textFile = path.join(tempPath.uri.fsPath, 'test.txt')
-            const originalContent = lineToStr(lines)
-            await fs.writeFile(textFile, originalContent)
-
-            const [command, ...args] = getRemoveLinesCommand('pattern', textFile).split(' ')
-            const process = new ChildProcess(command, args, { collect: true })
-            const result = await process.run()
-
-            assert.strictEqual(result.exitCode, 0, `ChildProcess failed with error=${result.error}`)
-
-            const newContent = await fs.readFileText(textFile)
-            assert.notStrictEqual(newContent, originalContent)
-            assert.strictEqual(newContent, lineToStr(expected))
         })
     })
 })

@@ -46,12 +46,3 @@ export function getEc2SsmEnv(
         process.env
     )
 }
-/**
- * Generate bash command (as string) to remove lines in file suffixed by `hintComment`.
- * @param hintComment suffix comment for deleted lines.
- * @param filepath filepath (as string) to target with the command.
- * @returns bash command to remove lines from file.
- */
-export function getRemoveLinesCommand(hintComment: string, filepath: string): string {
-    return `sed -i '' /${hintComment}/d ${filepath}`
-}

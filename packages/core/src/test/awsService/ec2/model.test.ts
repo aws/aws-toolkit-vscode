@@ -5,7 +5,7 @@
 
 import assert from 'assert'
 import * as sinon from 'sinon'
-import { Ec2Connecter } from '../../../awsService/ec2/model'
+import { Ec2Connecter, getRemoveLinesCommand } from '../../../awsService/ec2/model'
 import { SsmClient } from '../../../shared/clients/ssmClient'
 import { Ec2Client } from '../../../shared/clients/ec2Client'
 import { Ec2Selection } from '../../../awsService/ec2/prompter'
@@ -15,6 +15,9 @@ import { SshKeyPair } from '../../../awsService/ec2/sshKeyPair'
 import { DefaultIamClient } from '../../../shared/clients/iamClient'
 import { assertNoTelemetryMatch, createTestWorkspaceFolder } from '../../testUtil'
 import { fs } from '../../../shared'
+import path from 'path'
+import { ChildProcess } from '../../../shared/utilities/processUtils'
+import { isLinux, isWin } from '../../../shared/vscode/env'
 
 describe('Ec2ConnectClient', function () {
     let client: Ec2Connecter
@@ -140,7 +143,7 @@ describe('Ec2ConnectClient', function () {
             }
 
             const keys = await SshKeyPair.getSshKeyPair('key', 30000)
-            await client.sendSshKeyToInstance(testSelection, keys, 'test-user')
+            await client.sendSshKeyToInstance(testSelection, keys, { name: 'test-user', os: 'Amazon Linux' })
             sinon.assert.calledWith(sendCommandStub, testSelection.instanceId, 'AWS-RunShellScript')
             sinon.restore()
         })
@@ -154,7 +157,7 @@ describe('Ec2ConnectClient', function () {
             }
             const testWorkspaceFolder = await createTestWorkspaceFolder()
             const keys = await SshKeyPair.getSshKeyPair('key', 60000)
-            await client.sendSshKeyToInstance(testSelection, keys, 'test-user')
+            await client.sendSshKeyToInstance(testSelection, keys, { name: 'test-user', os: 'Amazon Linux' })
             const privKey = await fs.readFileText(keys.getPrivateKeyPath())
             assertNoTelemetryMatch(privKey)
             sinon.restore()
@@ -178,13 +181,13 @@ describe('Ec2ConnectClient', function () {
         it('identifies the user for ubuntu as ubuntu', async function () {
             getTargetPlatformNameStub.resolves('Ubuntu')
             const remoteUser = await client.getRemoteUser('testInstance')
-            assert.strictEqual(remoteUser, 'ubuntu')
+            assert.strictEqual(remoteUser.name, 'ubuntu')
         })
 
         it('identifies the user for amazon linux as ec2-user', async function () {
             getTargetPlatformNameStub.resolves('Amazon Linux')
             const remoteUser = await client.getRemoteUser('testInstance')
-            assert.strictEqual(remoteUser, 'ec2-user')
+            assert.strictEqual(remoteUser.name, 'ec2-user')
         })
 
         it('throws error when not given known OS', async function () {
@@ -196,5 +199,42 @@ describe('Ec2ConnectClient', function () {
                 assert.ok(true)
             }
         })
+    })
+})
+
+describe('getRemoveLinesCommand', async function () {
+    let tempPath: { uri: { fsPath: string } }
+
+    before(async function () {
+        tempPath = await createTestWorkspaceFolder()
+    })
+
+    after(async function () {
+        await fs.delete(tempPath.uri.fsPath, { recursive: true, force: true })
+    })
+
+    it('removes lines prefixed by pattern', async function () {
+        if (isWin()) {
+            this.skip()
+        }
+        // For the test, we only need to distinguish mac and linux
+        const hostOS = isLinux() ? 'Amazon Linux' : 'macOS'
+        const lines = ['line1', 'line2 pattern', 'line3', 'line4 pattern', 'line5', 'line6 pattern', 'line7']
+        const expected = ['line1', 'line3', 'line5', 'line7']
+
+        const lineToStr = (ls: string[]) => ls.join('\n') + '\n'
+
+        const textFile = path.join(tempPath.uri.fsPath, 'test.txt')
+        const originalContent = lineToStr(lines)
+        await fs.writeFile(textFile, originalContent)
+        const [command, ...args] = getRemoveLinesCommand('pattern', hostOS, textFile).split(' ')
+        const process = new ChildProcess(command, args, { collect: true })
+        const result = await process.run()
+
+        assert.strictEqual(result.exitCode, 0, `ChildProcess failed with error=${result.error}`)
+
+        const newContent = await fs.readFileText(textFile)
+        assert.notStrictEqual(newContent, originalContent)
+        assert.strictEqual(newContent, lineToStr(expected))
     })
 })
