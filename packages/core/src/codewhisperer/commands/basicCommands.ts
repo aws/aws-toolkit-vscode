@@ -222,7 +222,7 @@ export const showFileScan = Commands.declare(
                     scanUuid
                 )
             } else if (onDemandFileScanState.isRunning()) {
-                //TODO: Pending with progress bar implementation in the Q chat Panel
+                // TODO: Pending with progress bar implementation in the Q chat Panel
                 // User intends to stop the scan from Q chat panel.
                 // Cancel only when the file scan state is "Running"
                 await confirmStopSecurityScan(

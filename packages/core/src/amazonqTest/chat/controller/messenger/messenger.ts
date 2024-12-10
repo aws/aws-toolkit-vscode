@@ -177,7 +177,7 @@ export class Messenger {
         )
     }
 
-    //To show the response of unsupported languages to the user in the Q-Test tab
+    // To show the response of unsupported languages to the user in the Q-Test tab
     public async sendAIResponse(
         response: GenerateAssistantResponseCommandOutput,
         session: Session,
@@ -311,7 +311,7 @@ export class Messenger {
             })
     }
 
-    //To show the Build progress in the chat
+    // To show the Build progress in the chat
     public sendBuildProgressMessage(params: SendBuildProgressMessageParams) {
         const {
             tabID,

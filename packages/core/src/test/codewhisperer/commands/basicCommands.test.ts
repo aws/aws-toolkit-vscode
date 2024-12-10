@@ -84,6 +84,12 @@ describe('CodeWhisperer-basicCommands', function () {
         sinon.restore()
     })
 
+    after(async function () {
+        // disable auto scan after testrun
+        await CodeScansState.instance.setScansEnabled(false)
+        assert.strictEqual(CodeScansState.instance.isScansEnabled(), false)
+    })
+
     describe('toggleCodeSuggestion', function () {
         class TestCodeSuggestionsState extends CodeSuggestionsState {
             public constructor(initialState?: boolean) {

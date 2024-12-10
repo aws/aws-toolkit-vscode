@@ -335,7 +335,7 @@ export async function runDeploy(arg: any, wizardParams?: DeployParams): Promise<
             })
 
             try {
-                //Run SAM build in Terminal
+                // Run SAM build in Terminal
                 await runInTerminal(buildProcess, 'build')
             } catch (error) {
                 throw ToolkitError.chain(error, 'Failed to build SAM template', { details: { ...buildFlags } })
@@ -349,7 +349,7 @@ export async function runDeploy(arg: any, wizardParams?: DeployParams): Promise<
                 }),
             })
 
-            //Run SAM deploy in Terminal
+            // Run SAM deploy in Terminal
             const { paramsSource, stackName, region, projectRoot } = params
             const shouldWriteDeploySamconfigGlobal = paramsSource !== ParamsSource.SamConfig && !!stackName && !!region
             try {

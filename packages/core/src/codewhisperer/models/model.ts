@@ -370,7 +370,7 @@ enum TestGenStatus {
     Running,
     Cancelling,
 }
-//TODO: Refactor model of /scan and /test
+// TODO: Refactor model of /scan and /test
 export class TestGenState {
     // Define a constructor for this class
     private testGenState: TestGenStatus = TestGenStatus.NotStarted
