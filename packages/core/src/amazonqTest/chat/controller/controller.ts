@@ -243,6 +243,10 @@ export class TestController {
         this.messenger.sendUpdatePromptProgress(data.tabID, null)
         const session = this.sessionStorage.getSession()
         const isCancel = data.error.uiMessage === unitTestGenerationCancelMessage
+        let telemetryErrorMessage = getTelemetryReasonDesc(data.error)
+        if (session.stopIteration) {
+            telemetryErrorMessage = getTelemetryReasonDesc(data.error.uiMessage.replaceAll('```', ''))
+        }
         telemetry.amazonq_utgGenerateTests.emit({
             cwsprChatProgrammingLanguage: session.fileLanguage ?? 'plaintext',
             jobId: session.listOfTestGenerationJobId[0], // For RIV, UTG does only one StartTestGeneration API call
@@ -255,7 +259,8 @@ export class TestController {
             artifactsUploadDuration: session.artifactsUploadDuration,
             perfClientLatency: performance.now() - session.testGenerationStartTime,
             result: isCancel ? 'Cancelled' : 'Failed',
-            reasonDesc: getTelemetryReasonDesc(data.error),
+            reason: data.error.code,
+            reasonDesc: telemetryErrorMessage,
             isSupportedLanguage: true,
             credentialStartUrl: AuthUtil.instance.startUrl,
             httpStatusCode: data.error.statusCode ?? 0, // If status code is 0,  need to investigate where this is originating from.
