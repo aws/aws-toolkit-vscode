@@ -10,6 +10,7 @@ type MessageCommand =
     | 'tab-was-removed'
     | 'tab-was-changed'
     | 'ui-is-ready'
+    | 'disclaimer-acknowledged'
     | 'ui-focus'
     | 'follow-up-was-clicked'
     | 'auth-follow-up-was-clicked'

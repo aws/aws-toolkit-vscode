@@ -7,7 +7,7 @@
 // https://github.com/microsoft/vscode/blob/7ed4699079f647ef53807f511ac87ff06a7b37b5/extensions/git/src/api/git.d.ts
 // Note that this file should be imported as 'git.d' since it contains enums and thus must be compiled.
 
-/*---------------------------------------------------------------------------------------------
+/* ---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/

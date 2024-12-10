@@ -25,9 +25,9 @@ import path from 'path'
 import { ExportIntent } from '@amzn/codewhisperer-streaming'
 import { glob } from 'glob'
 
-//TODO: Get TestFileName and Framework and to error message
+// TODO: Get TestFileName and Framework and to error message
 export function throwIfCancelled() {
-    //TODO: fileName will be '' if user gives propt without opening
+    // TODO: fileName will be '' if user gives propt without opening
     if (testGenState.isCancelling()) {
         throw Error(CodeWhispererConstants.unitTestGenerationCancelMessage)
     }
@@ -94,11 +94,13 @@ export async function createTestJob(
     logger.debug('target line range end: %O', firstTargetLineRangeList?.end)
 
     const resp = await codewhispererClient.codeWhispererClient.startTestGeneration(req).catch((err) => {
+        ChatSessionManager.Instance.getSession().startTestGenerationRequestId = err.requestId
         logger.error(`Failed creating test job. Request id: ${err.requestId}`)
         throw err
     })
     logger.info('Unit test generation request id: %s', resp.$response.requestId)
     logger.debug('Unit test generation data: %O', resp.$response.data)
+    ChatSessionManager.Instance.getSession().startTestGenerationRequestId = resp.$response.requestId
     if (resp.$response.error) {
         logger.error('Unit test generation error: %O', resp.$response.error)
     }
@@ -146,7 +148,7 @@ export async function pollTestJobStatus(
         if (shortAnswerString) {
             const parsedShortAnswer = JSON.parse(shortAnswerString)
             const shortAnswer: ShortAnswer = JSON.parse(parsedShortAnswer)
-            //Stop the Unit test generation workflow if IDE receive stopIteration = true
+            // Stop the Unit test generation workflow if IDE receive stopIteration = true
             if (shortAnswer.stopIteration === 'true') {
                 session.stopIteration = true
                 throw new TestGenFailedError(shortAnswer.planSummary)
@@ -181,7 +183,7 @@ export async function pollTestJobStatus(
             ChatSessionManager.Instance.getSession().shortAnswer = shortAnswer
         }
         if (resp.testGenerationJob?.status !== TestGenerationJobStatus.IN_PROGRESS) {
-            //This can be FAILED or COMPLETED
+            // This can be FAILED or COMPLETED
             status = resp.testGenerationJob?.status as TestGenerationJobStatus
             logger.verbose(`testgen job status: ${status}`)
             logger.verbose(`Complete polling test job status.`)
@@ -210,7 +212,7 @@ export async function exportResultsArchive(
     projectPath: string,
     initialExecution: boolean
 ) {
-    //TODO: Make a common Temp folder
+    // TODO: Make a common Temp folder
     const pathToArchiveDir = path.join(tempDirPath, 'q-testgen')
 
     const archivePathExists = await fs.existsDir(pathToArchiveDir)
@@ -239,7 +241,7 @@ export async function exportResultsArchive(
                 projectName,
             })
 
-            //If User accepts the diff
+            // If User accepts the diff
             testGenState.getChatControllers()?.sendUpdatePromptProgress.fire({
                 tabID: ChatSessionManager.Instance.getSession().tabID,
                 status: 'Completed',

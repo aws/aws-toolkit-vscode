@@ -114,18 +114,16 @@ export class ZipUtil {
 
         const workspaceFolder = vscode.workspace.getWorkspaceFolder(uri)
         if (workspaceFolder) {
-            const projectName = workspaceFolder.name
+            // Note: workspaceFolder.name is not the same as the file system folder name,
+            // use the fsPath value instead
+            const projectName = path.basename(workspaceFolder.uri.fsPath)
             const relativePath = vscode.workspace.asRelativePath(uri)
             const zipEntryPath = this.getZipEntryPath(projectName, relativePath)
             zip.addFile(zipEntryPath, Buffer.from(content, 'utf-8'))
 
             if (scope === CodeWhispererConstants.CodeAnalysisScope.FILE_ON_DEMAND) {
-                await this.processCombinedGitDiff(
-                    zip,
-                    [workspaceFolder.uri.fsPath],
-                    uri.fsPath,
-                    CodeWhispererConstants.CodeAnalysisScope.FILE_ON_DEMAND
-                )
+                const gitDiffContent = `+++ b/${path.normalize(zipEntryPath)}` // Sending file path in payload for LLM code review
+                zip.addFile(ZipConstants.codeDiffFilePath, Buffer.from(gitDiffContent, 'utf-8'))
             }
         } else {
             zip.addFile(uri.fsPath, Buffer.from(content, 'utf-8'))
@@ -450,7 +448,7 @@ export class ZipUtil {
     }
 
     protected async processTestCoverageFiles(targetPath: string) {
-        //TODO: will be removed post release
+        // TODO: will be removed post release
         const coverageFilePatterns = ['**/coverage.xml', '**/coverage.json', '**/coverage.txt']
         let files: vscode.Uri[] = []
 
@@ -616,7 +614,7 @@ export class ZipUtil {
             throw error
         }
     }
-    //TODO: Refactor this
+    // TODO: Refactor this
     public async removeTmpFiles(zipMetadata: ZipMetadata, scope?: CodeWhispererConstants.CodeAnalysisScope) {
         const logger = getLoggerForScope(scope)
         logger.verbose(`Cleaning up temporary files...`)

@@ -310,13 +310,6 @@ describe('SsoAccessTokenProvider', function () {
         })
 
         it('respects the device authorization expiration time', async function () {
-            // XXX: Don't know how to fix this "unhandled rejection" caused by this test:
-            //      rejected promise not handled within 1 second: Error: Timed-out waiting for browser login flow to complete
-            //          at poll (…/src/auth/sso/ssoAccessTokenProvider.ts:251:15)
-            //          at async SsoAccessTokenProvider.authorize (…/src/auth/sso/ssoAccessTokenProvider.ts:188:23)
-            //          at async SsoAccessTokenProvider.runFlow (…/src/auth/sso/ssoAccessTokenProvider.ts:113:20)
-            //          at async SsoAccessTokenProvider.createToken (…/src/auth/sso/ssoAccessTokenProvider.ts:102:24)
-
             setupFlow()
             stubOpen()
             const exception = new AuthorizationPendingException({ message: '', $metadata: {} })
@@ -324,13 +317,22 @@ describe('SsoAccessTokenProvider', function () {
             oidcClient.createToken.rejects(exception)
             oidcClient.startDeviceAuthorization.resolves(authorization)
 
-            const resp = sut.createToken()
+            const resp = sut
+                .createToken()
+                .then(() => assert.fail('Should not resolve'))
+                .catch((e) => {
+                    assert.ok(
+                        e instanceof ToolkitError &&
+                            e.message === 'Timed-out waiting for browser login flow to complete'
+                    )
+                })
+
             const progress = await getTestWindow().waitForMessage(/login page opened/i)
             await clock.tickAsync(750)
             assert.ok(progress.visible)
             await clock.tickAsync(750)
             assert.ok(!progress.visible)
-            await assert.rejects(resp, ToolkitError)
+            await resp
             assertTelemetry('aws_loginWithBrowser', {
                 result: 'Failed',
                 isReAuth: undefined,
