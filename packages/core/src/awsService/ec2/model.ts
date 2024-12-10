@@ -300,12 +300,16 @@ export class Ec2Connecter implements vscode.Disposable {
     ) {
         try {
             const deleteExistingKeyCommand = getRemoveLinesCommand(hintComment, hostOS, remoteAuthorizedKeysPath)
-            await this.ssmClient.sendCommandAndWait(instanceId, 'AWS-RunShellScript', {
-                commands: [deleteExistingKeyCommand],
-            })
+            await this.sendCommandAndWait(instanceId, deleteExistingKeyCommand)
         } catch (e) {
             getLogger().warn(`ec2: failed to clean keys: %O`, e)
         }
+    }
+
+    private async sendCommandAndWait(instanceId: string, command: string) {
+        return await this.ssmClient.sendCommandAndWait(instanceId, 'AWS-RunShellScript', {
+            commands: [command],
+        })
     }
 
     public async sendSshKeyToInstance(
@@ -322,9 +326,7 @@ export class Ec2Connecter implements vscode.Disposable {
         const writeKeyCommand = appendStr([sshPubKey.replace('\n', ''), hintComment].join(' '))
 
         await this.attemptToCleanKeys(selection.instanceId, hintComment, remoteUser.os, remoteAuthorizedKeysPath)
-        await this.ssmClient.sendCommandAndWait(selection.instanceId, 'AWS-RunShellScript', {
-            commands: [writeKeyCommand],
-        })
+        await this.sendCommandAndWait(selection.instanceId, writeKeyCommand)
     }
 
     public async getRemoteUser(instanceId: string): Promise<RemoteUser> {
@@ -342,7 +344,7 @@ export class Ec2Connecter implements vscode.Disposable {
 }
 
 /**
- * Generate bash command (as string) to remove lines containing `hintComment`.
+ * Generate bash command (as string) to remove lines containing `pattern`.
  * @param pattern pattern for deleted lines.
  * @param filepath filepath (as string) to target with the command.
  * @returns bash command to remove lines from file.
