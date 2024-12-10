@@ -461,7 +461,7 @@ describe('transformByQ', function () {
     })
 
     it(`WHEN validateMetadataFile on .sct file with unsupported target DB THEN fails validation`, async function () {
-        const sctFileWithInvalidTarget = validSctFile.replace('postgresql', 'not-postgresql')
+        const sctFileWithInvalidTarget = validSctFile.replace('aurora_postgresql', 'not-postgresql')
         const isValidMetadata = await validateSQLMetadataFile(sctFileWithInvalidTarget, { tabID: 'abc123' })
         assert.strictEqual(isValidMetadata, false)
     })
