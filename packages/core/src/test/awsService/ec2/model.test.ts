@@ -18,6 +18,7 @@ import { fs } from '../../../shared'
 import path from 'path'
 import { ChildProcess } from '../../../shared/utilities/processUtils'
 import { isMac, isWin } from '../../../shared/vscode/env'
+import { inspect } from '../../../shared/utilities/collectionUtils'
 
 describe('Ec2ConnectClient', function () {
     let client: Ec2Connecter
@@ -227,12 +228,14 @@ describe('getRemoveLinesCommand', async function () {
         const textFile = path.join(tempPath.uri.fsPath, 'test.txt')
         const originalContent = lineToStr(lines)
         await fs.writeFile(textFile, originalContent)
-        console.log('running on os: %s', hostOS)
         const [command, ...args] = getRemoveLinesCommand('pattern', hostOS, textFile).split(' ')
-        console.log('running command: %s with args %s', command, args.join(' '))
         const process = new ChildProcess(command, args, { collect: true })
         const result = await process.run()
-        assert.strictEqual(result.exitCode, 0, `ChildProcess failed with error=${result.error}`)
+        assert.strictEqual(
+            result.exitCode,
+            0,
+            `Ran command '${command} ${args.join(' ')}' and failed with result ${inspect(result)}`
+        )
 
         const newContent = await fs.readFileText(textFile)
         assert.notStrictEqual(newContent, originalContent)

@@ -349,7 +349,7 @@ export class Ec2Connecter implements vscode.Disposable {
  */
 export function getRemoveLinesCommand(pattern: string, hostOS: Ec2OS, filepath: string): string {
     // Linux allows not passing extension to -i, whereas macOS requires zero length extension.
-    return `sed -i ${isLinux(hostOS) ? '' : "''"} /${pattern}/d ${filepath}`
+    return `sed -i${isLinux(hostOS) ? '' : " ''"} /${pattern}/d ${filepath}`
 }
 
 function isLinux(os: Ec2OS): boolean {
