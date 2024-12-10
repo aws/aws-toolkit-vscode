@@ -888,11 +888,8 @@ export class TestController {
         }
 
         await this.sessionCleanUp()
-        // TODO: revert 'Accepted' to 'Skip build and finish' once supported
-        const message = step === FollowUpTypes.RejectCode ? 'Rejected' : 'Accepted'
 
-        this.messenger.sendMessage(message, data.tabID, 'prompt')
-        this.messenger.sendMessage(`Unit test generation workflow is completed.`, data.tabID, 'answer')
+        // this.messenger.sendMessage(`Unit test generation workflow is completed.`, data.tabID, 'answer')
         this.messenger.sendChatInputEnabled(data.tabID, true)
         return
     }
