@@ -210,7 +210,8 @@
                     "type": "tree",
                     "id": "aws.amazonq.SecurityIssuesTree",
                     "name": "%AWS.amazonq.security%",
-                    "when": "!aws.isSageMaker && !aws.isWebExtHost && !aws.amazonq.showLoginView"
+                    "when": "!aws.isSageMaker && !aws.isWebExtHost && !aws.amazonq.showLoginView",
+                    "visibility": "collapsed"
                 },
                 {
                     "type": "webview",
