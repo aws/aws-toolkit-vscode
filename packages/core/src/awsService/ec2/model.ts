@@ -342,14 +342,14 @@ export class Ec2Connecter implements vscode.Disposable {
 }
 
 /**
- * Generate bash command (as string) to remove lines in file suffixed by `hintComment`.
- * @param hintComment suffix comment for deleted lines.
+ * Generate bash command (as string) to remove lines containing `hintComment`.
+ * @param pattern pattern for deleted lines.
  * @param filepath filepath (as string) to target with the command.
  * @returns bash command to remove lines from file.
  */
-export function getRemoveLinesCommand(hintComment: string, hostOS: Ec2OS, filepath: string): string {
+export function getRemoveLinesCommand(pattern: string, hostOS: Ec2OS, filepath: string): string {
     // Linux allows not passing extension to -i, whereas macOS requires zero length extension.
-    return `sed -i ${isLinux(hostOS) ? '' : "''"} /${hintComment}/d ${filepath}`
+    return `sed -i ${isLinux(hostOS) ? '' : "''"} /${pattern}/d ${filepath}`
 }
 
 function isLinux(os: Ec2OS): boolean {

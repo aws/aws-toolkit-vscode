@@ -134,7 +134,7 @@ export function isRemoteWorkspace(): boolean {
  * Example: `5.10.220-188.869.amzn2int.x86_64`
  */
 export function isAmazonInternalOs() {
-    return os.release().includes('amzn2int') && isLinux()
+    return os.release().includes('amzn2int') && process.platform === 'linux'
 }
 
 /**
@@ -149,6 +149,9 @@ export async function isCloudDesktop() {
     return (await new ChildProcess('/apollo/bin/getmyfabric').run().then((r) => r.exitCode)) === 0
 }
 
+export function isMac(): boolean {
+    return process.platform === 'darwin'
+}
 /** Returns true if OS is Windows. */
 export function isWin(): boolean {
     // if (isWeb()) {
@@ -156,10 +159,6 @@ export function isWin(): boolean {
     // }
 
     return process.platform === 'win32'
-}
-
-export function isLinux(): boolean {
-    return process.platform === 'linux'
 }
 
 const UIKind = {

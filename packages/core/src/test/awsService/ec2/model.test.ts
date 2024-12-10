@@ -17,7 +17,7 @@ import { assertNoTelemetryMatch, createTestWorkspaceFolder } from '../../testUti
 import { fs } from '../../../shared'
 import path from 'path'
 import { ChildProcess } from '../../../shared/utilities/processUtils'
-import { isLinux, isWin } from '../../../shared/vscode/env'
+import { isMac, isWin } from '../../../shared/vscode/env'
 
 describe('Ec2ConnectClient', function () {
     let client: Ec2Connecter
@@ -213,12 +213,12 @@ describe('getRemoveLinesCommand', async function () {
         await fs.delete(tempPath.uri.fsPath, { recursive: true, force: true })
     })
 
-    it('removes lines prefixed by pattern', async function () {
+    it('removes lines containing pattern', async function () {
         if (isWin()) {
             this.skip()
         }
         // For the test, we only need to distinguish mac and linux
-        const hostOS = isLinux() ? 'Amazon Linux' : 'macOS'
+        const hostOS = isMac() ? 'macOS' : 'Amazon Linux'
         const lines = ['line1', 'line2 pattern', 'line3', 'line4 pattern', 'line5', 'line6 pattern', 'line7']
         const expected = ['line1', 'line3', 'line5', 'line7']
 
