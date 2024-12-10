@@ -292,7 +292,7 @@ export class Ec2Connecter implements vscode.Disposable {
         return keyPair
     }
 
-    private async attemptToCleanKeys(
+    public async attemptToCleanKeys(
         instanceId: string,
         hintComment: string,
         hostOS: Ec2OS,

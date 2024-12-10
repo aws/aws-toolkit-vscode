@@ -19,6 +19,7 @@ import path from 'path'
 import { ChildProcess } from '../../../shared/utilities/processUtils'
 import { isMac, isWin } from '../../../shared/vscode/env'
 import { inspect } from '../../../shared/utilities/collectionUtils'
+import { assertLogsContain } from '../../globalSetup.test'
 
 describe('Ec2ConnectClient', function () {
     let client: Ec2Connecter
@@ -199,6 +200,42 @@ describe('Ec2ConnectClient', function () {
             } catch (exception) {
                 assert.ok(true)
             }
+        })
+    })
+
+    describe('attemptToCleanKeys', async function () {
+        it('calls the sdk with the proper parameters', async function () {
+            const sendCommandStub = sinon.stub(SsmClient.prototype, 'sendCommandAndWait')
+
+            const testSelection = {
+                instanceId: 'test-id',
+                region: 'test-region',
+            }
+
+            await client.attemptToCleanKeys(testSelection.instanceId, 'hint', 'macOS', 'path/to/keys')
+            sendCommandStub.calledWith(testSelection.instanceId, 'AWS-RunShellScript', {
+                commands: [getRemoveLinesCommand('hint', 'macOS', 'path/to/keys')],
+            })
+            sinon.assert.calledWith(sendCommandStub, testSelection.instanceId, 'AWS-RunShellScript')
+            sinon.restore()
+        })
+
+        it('logs warning when sdk call fails', async function () {
+            const sendCommandStub = sinon
+                .stub(SsmClient.prototype, 'sendCommandAndWait')
+                .throws(new ToolkitError('error'))
+
+            const testSelection = {
+                instanceId: 'test-id',
+                region: 'test-region',
+            }
+
+            await client.attemptToCleanKeys(testSelection.instanceId, 'hint', 'macOS', 'path/to/keys')
+            sinon.assert.calledWith(sendCommandStub, testSelection.instanceId, 'AWS-RunShellScript', {
+                commands: [getRemoveLinesCommand('hint', 'macOS', 'path/to/keys')],
+            })
+            sinon.restore()
+            assertLogsContain('failed to clean keys', false, 'warn')
         })
     })
 })
