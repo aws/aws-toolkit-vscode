@@ -5,8 +5,6 @@
 
 import * as vscode from 'vscode'
 import * as fs from 'fs' // eslint-disable-line no-restricted-imports
-import * as os from 'os'
-import * as xml2js from 'xml2js'
 import path from 'path'
 import { getLogger } from '../../shared/logger'
 import * as CodeWhispererConstants from '../models/constants'
@@ -18,7 +16,6 @@ import {
     FolderInfo,
     ZipManifest,
     TransformByQStatus,
-    DB,
     TransformationType,
     TransformationCandidateProject,
 } from '../models/model'
@@ -56,7 +53,6 @@ import { MetadataResult } from '../../shared/telemetry/telemetryClient'
 import { submitFeedback } from '../../feedback/vue/submitFeedback'
 import { placeholder } from '../../shared/vscode/commands2'
 import {
-    AbsolutePathDetectedError,
     AlternateDependencyVersionsNotFoundError,
     JavaHomeNotSetError,
     JobStartError,
@@ -71,6 +67,7 @@ import {
     getJsonValuesFromManifestFile,
     highlightPomIssueInProject,
     parseVersionsListFromPomFile,
+    setMaven,
     writeLogs,
 } from '../service/transformByQ/transformFileHandler'
 import { sleep } from '../../shared/utilities/timeoutUtils'
@@ -81,7 +78,6 @@ import { setContext } from '../../shared/vscode/setContext'
 import { makeTemporaryToolkitFolder } from '../../shared'
 import globals from '../../shared/extensionGlobals'
 import { convertDateToTimestamp } from '../../shared/datetime'
-import { isWin } from '../../shared/vscode/env'
 import { findStringInDirectory } from '../../shared/utilities/workspaceUtils'
 
 function getFeedbackCommentData() {
@@ -109,63 +105,6 @@ export async function processSQLConversionTransformFormInput(pathToProject: stri
     transformByQState.setSchema(schema)
     transformByQState.setSourceJDKVersion(JDKVersion.JDK8) // use dummy value of JDK8 so that startJob API can be called
     // targetJDKVersion defaults to JDK17, the only supported version, which is fine
-}
-
-export async function validateSQLMetadataFile(fileContents: string, message: any) {
-    try {
-        const sctData = await xml2js.parseStringPromise(fileContents)
-        const dbEntities = sctData['tree']['instances'][0]['ProjectModel'][0]['entities'][0]
-        const sourceDB = dbEntities['sources'][0]['DbServer'][0]['$']['vendor'].trim().toUpperCase()
-        const targetDB = dbEntities['targets'][0]['DbServer'][0]['$']['vendor'].trim().toUpperCase()
-        const sourceServerName = dbEntities['sources'][0]['DbServer'][0]['$']['name'].trim()
-        transformByQState.setSourceServerName(sourceServerName)
-        if (sourceDB !== DB.ORACLE) {
-            transformByQState.getChatMessenger()?.sendUnrecoverableErrorResponse('unsupported-source-db', message.tabID)
-            return false
-        } else if (targetDB !== DB.AURORA_POSTGRESQL && targetDB !== DB.RDS_POSTGRESQL) {
-            transformByQState.getChatMessenger()?.sendUnrecoverableErrorResponse('unsupported-target-db', message.tabID)
-            return false
-        }
-        transformByQState.setSourceDB(sourceDB)
-        transformByQState.setTargetDB(targetDB)
-
-        const serverNodeLocations =
-            sctData['tree']['instances'][0]['ProjectModel'][0]['relations'][0]['server-node-location']
-        const schemaNames = new Set<string>()
-        serverNodeLocations.forEach((serverNodeLocation: any) => {
-            const schemaNodes = serverNodeLocation['FullNameNodeInfoList'][0]['nameParts'][0][
-                'FullNameNodeInfo'
-            ].filter((node: any) => node['$']['typeNode'].toLowerCase() === 'schema')
-            schemaNodes.forEach((node: any) => {
-                schemaNames.add(node['$']['nameNode'].toUpperCase())
-            })
-        })
-        transformByQState.setSchemaOptions(schemaNames) // user will choose one of these
-        getLogger().info(
-            `CodeTransformation: Parsed .sct file with source DB: ${sourceDB}, target DB: ${targetDB}, source host name: ${sourceServerName}, and schema names: ${Array.from(schemaNames)}`
-        )
-    } catch (err: any) {
-        getLogger().error('CodeTransformation: Error parsing .sct file. %O', err)
-        transformByQState.getChatMessenger()?.sendUnrecoverableErrorResponse('error-parsing-sct-file', message.tabID)
-        return false
-    }
-    return true
-}
-
-export async function setMaven() {
-    let mavenWrapperExecutableName = isWin() ? 'mvnw.cmd' : 'mvnw'
-    const mavenWrapperExecutablePath = path.join(transformByQState.getProjectPath(), mavenWrapperExecutableName)
-    if (fs.existsSync(mavenWrapperExecutablePath)) {
-        if (mavenWrapperExecutableName === 'mvnw') {
-            mavenWrapperExecutableName = './mvnw' // add the './' for non-Windows
-        } else if (mavenWrapperExecutableName === 'mvnw.cmd') {
-            mavenWrapperExecutableName = '.\\mvnw.cmd' // add the '.\' for Windows
-        }
-        transformByQState.setMavenName(mavenWrapperExecutableName)
-    } else {
-        transformByQState.setMavenName('mvn')
-    }
-    getLogger().info(`CodeTransformation: using Maven ${transformByQState.getMavenName()}`)
 }
 
 async function validateJavaHome(): Promise<boolean> {
@@ -288,41 +227,6 @@ export async function finalizeTransformByQ(status: string) {
     } catch (error: any) {
         await transformationJobErrorHandler(error)
     }
-}
-
-export async function parseBuildFile() {
-    try {
-        const absolutePaths = ['users/', 'system/', 'volumes/', 'c:\\', 'd:\\']
-        const alias = path.basename(os.homedir())
-        absolutePaths.push(alias)
-        const buildFilePath = path.join(transformByQState.getProjectPath(), 'pom.xml')
-        if (fs.existsSync(buildFilePath)) {
-            const buildFileContents = fs.readFileSync(buildFilePath).toString().toLowerCase()
-            const detectedPaths = []
-            for (const absolutePath of absolutePaths) {
-                if (buildFileContents.includes(absolutePath)) {
-                    detectedPaths.push(absolutePath)
-                }
-            }
-            if (detectedPaths.length > 0) {
-                const warningMessage = CodeWhispererConstants.absolutePathDetectedMessage(
-                    detectedPaths.length,
-                    path.basename(buildFilePath),
-                    detectedPaths.join(', ')
-                )
-                transformByQState.getChatControllers()?.errorThrown.fire({
-                    error: new AbsolutePathDetectedError(warningMessage),
-                    tabID: ChatSessionManager.Instance.getSession().tabID,
-                })
-                getLogger().info('CodeTransformation: absolute path potentially in build file')
-                return warningMessage
-            }
-        }
-    } catch (err: any) {
-        // swallow error
-        getLogger().error(`CodeTransformation: error scanning for absolute paths, tranformation continuing: ${err}`)
-    }
-    return undefined
 }
 
 export async function preTransformationUploadCode() {
@@ -497,12 +401,6 @@ export async function openHilPomFile() {
         HumanInTheLoopManager.instance.diagnosticCollection,
         humanInTheLoopManager.getManifestFileValues().sourcePomVersion
     )
-}
-
-export async function openBuildLogFile() {
-    const logFilePath = transformByQState.getPreBuildLogFilePath()
-    const doc = await vscode.workspace.openTextDocument(logFilePath)
-    await vscode.window.showTextDocument(doc)
 }
 
 export async function terminateHILEarly(jobID: string) {
