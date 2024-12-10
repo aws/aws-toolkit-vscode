@@ -259,22 +259,34 @@ export class Ec2Connecter implements vscode.Disposable {
         return keyPair
     }
 
+    private async attemptToCleanKeys(instanceId: string, hintComment: string, remoteAuthorizedKeysPath: string) {
+        try {
+            const deleteExistingKeyCommand = getRemoveLinesCommand(hintComment, remoteAuthorizedKeysPath)
+            const result = await this.ssmClient.sendCommandAndWait(instanceId, 'AWS-RunShellScript', {
+                commands: [deleteExistingKeyCommand],
+            })
+            console.log(result)
+        } catch (e) {
+            getLogger().warn(`ec2: failed to clean keys: %O`, e)
+        }
+    }
+
     public async sendSshKeyToInstance(
         selection: Ec2Selection,
         sshKeyPair: SshKeyPair,
         remoteUser: string
     ): Promise<void> {
         const sshPubKey = await sshKeyPair.getPublicKey()
-        const hintComment = '# Added by AWS Toolkit for VSCode'
+        const hintComment = '#AWSToolkitForVSCode'
 
         const remoteAuthorizedKeysPath = `/home/${remoteUser}/.ssh/authorized_keys`
-        const deleteExistingKeyCommand = getRemoveLinesCommand(hintComment, remoteAuthorizedKeysPath)
 
         const appendStr = (s: string) => `echo "${s}" >> ${remoteAuthorizedKeysPath}`
-        const writeKeyCommand = appendStr([sshPubKey, hintComment].join(' '))
+        const writeKeyCommand = appendStr([sshPubKey.replace('\n', ''), hintComment].join(' '))
 
+        await this.attemptToCleanKeys(selection.instanceId, hintComment, remoteAuthorizedKeysPath)
         await this.ssmClient.sendCommandAndWait(selection.instanceId, 'AWS-RunShellScript', {
-            commands: [deleteExistingKeyCommand, writeKeyCommand],
+            commands: [writeKeyCommand],
         })
     }
 
