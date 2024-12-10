@@ -588,7 +588,7 @@ export class IamPolicyChecksWebview extends VueWebview {
                 })
             } catch (err: any) {
                 if (err.status === 2) {
-                    //CLI responds with a status code of 2 when findings are discovered
+                    // CLI responds with a status code of 2 when findings are discovered
                     const findingsCount = this.handleValidatePolicyCliResponse(err.stdout.toString())
                     span.record({
                         findingsCount: findingsCount,
@@ -652,7 +652,7 @@ export class IamPolicyChecksWebview extends VueWebview {
                 })
             } catch (err: any) {
                 if (err.status === 2) {
-                    //CLI responds with a status code of 2 when findings are discovered
+                    // CLI responds with a status code of 2 when findings are discovered
                     const findingsCount = this.handleCustomPolicyChecksCliResponse(err.stdout.toString())
                     span.record({
                         findingsCount: findingsCount,
@@ -752,7 +752,7 @@ export async function renderIamPolicyChecks(context: ExtContext): Promise<VueWeb
     const logger: Logger = getLogger()
     try {
         const client = new AccessAnalyzer({ region: context.regionProvider.defaultRegionId })
-        //Read from settings to auto-fill some inputs
+        // Read from settings to auto-fill some inputs
         const checkNoNewAccessFilePath: string = vscode.workspace
             .getConfiguration()
             .get(IamPolicyChecksConstants.CheckNoNewAccessFilePathSetting)!
@@ -827,7 +827,7 @@ export async function _readCustomChecksFile(input: string): Promise<string> {
     }
 }
 
-//Check if Cfn and Tf tools are installed
+// Check if Cfn and Tf tools are installed
 export function arePythonToolsInstalled(): boolean {
     const logger: Logger = getLogger()
     let cfnToolInstalled = true
