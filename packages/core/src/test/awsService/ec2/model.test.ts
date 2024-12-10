@@ -278,4 +278,14 @@ describe('getRemoveLinesCommand', async function () {
         assert.notStrictEqual(newContent, originalContent)
         assert.strictEqual(newContent, lineToStr(expected))
     })
+
+    it('includes empty extension on macOS only', async function () {
+        const macCommand = getRemoveLinesCommand('pattern', 'macOS', 'test.txt')
+        const alCommand = getRemoveLinesCommand('pattern', 'Amazon Linux', 'test.txt')
+        const ubuntuCommand = getRemoveLinesCommand('pattern', 'Ubuntu', 'test.txt')
+
+        assert.ok(macCommand.includes("''"))
+        assert.ok(!alCommand.includes("''"))
+        assert.strictEqual(ubuntuCommand, alCommand)
+    })
 })
