@@ -315,7 +315,6 @@ export class TestController {
             case ButtonActions.STOP_TEST_GEN:
                 testGenState.setToCancelling()
                 telemetry.ui_click.emit({ elementId: 'unitTestGeneration_cancelTestGenerationProgress' })
-                await this.sessionCleanUp()
                 break
             case ButtonActions.STOP_BUILD:
                 cancelBuild()
