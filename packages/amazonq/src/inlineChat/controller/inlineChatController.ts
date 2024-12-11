@@ -200,7 +200,6 @@ export class InlineChatController {
                     return
                 }
                 UserWrittenCodeTracker.instance.onQStartsMakingEdits()
-                UserWrittenCodeTracker.instance.onQFeatureInvoked()
                 this.userQuery = query
                 await textDocumentUtil.addEofNewline(editor)
                 this.task = await this.createTask(query, editor.document, editor.selection)

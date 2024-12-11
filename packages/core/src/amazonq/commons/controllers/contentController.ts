@@ -102,6 +102,7 @@ export class EditorContentController {
 
         if (filePath && message?.code?.trim().length > 0 && selection) {
             try {
+                UserWrittenCodeTracker.instance.onQStartsMakingEdits()
                 const doc = await vscode.workspace.openTextDocument(filePath)
 
                 const code = getIndentedCode(message, doc, selection)
@@ -135,6 +136,8 @@ export class EditorContentController {
                 const wrappedError = ChatDiffError.chain(error, `Failed to Accept Diff`, { code: chatDiffCode })
                 getLogger().error('%s: Failed to open diff view %s', chatDiffCode, getErrorMsg(wrappedError, true))
                 throw wrappedError
+            } finally {
+                UserWrittenCodeTracker.instance.onQFinishesEdits()
             }
         }
     }

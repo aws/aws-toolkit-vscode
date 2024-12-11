@@ -49,6 +49,7 @@ export class ChatSession {
             }
         }
 
+        UserWrittenCodeTracker.instance.onQFeatureInvoked()
         return response
     }
 
