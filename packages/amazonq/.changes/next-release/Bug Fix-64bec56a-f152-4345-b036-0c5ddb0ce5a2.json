@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Code Review: Fixed a bug where applying a fix did not update the positions of other issues in the same file."
+}
