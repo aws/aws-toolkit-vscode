@@ -3,19 +3,29 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { StepEstimator, Wizard } from '../wizards/wizard'
+import _ from 'lodash'
+import { StepEstimator, Wizard, WIZARD_BACK, WIZARD_SKIP } from '../wizards/wizard'
 import { Prompter, PromptResult } from './prompter'
 
 /**
  * Wraps {@link Wizard} object into its own {@link Prompter}, allowing wizards to use other
  * wizards in their flows.
+ *
+ * @remarks
+ *  - This class should only be used inside wizard classes that extend {@link NestedWizard}.
+ *  - See examples:
+ *     - {@link SingleNestedWizard}
+ *     - {@link DoubleNestedWizard}
  */
+
+// eslint-disable-next-line @typescript-eslint/naming-convention
+export const WIZARD_PROMPTER = 'WIZARD_PROMPTER'
+
 export class WizardPrompter<T> extends Prompter<T> {
     public get recentItem(): any {
         return undefined
     }
     public set recentItem(response: any) {}
-
     private stepOffset: number = 0
     private response: T | undefined
 
@@ -51,6 +61,15 @@ export class WizardPrompter<T> extends Prompter<T> {
 
     protected async promptUser(): Promise<PromptResult<T>> {
         this.response = await this.wizard.run()
-        return this.response
+
+        if (this.response === undefined) {
+            return WIZARD_BACK as PromptResult<T>
+        } else if (_.isEmpty(this.response)) {
+            return WIZARD_SKIP as PromptResult<T>
+        }
+
+        return {
+            ...this.response,
+        } as PromptResult<T>
     }
 }

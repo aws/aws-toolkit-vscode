@@ -25,7 +25,7 @@ interface ContextOptions<TState, TProp> {
      * in a single resolution step then they will be added in the order in which they were
      * bound.
      */
-    showWhen?: (state: WizardState<TState>) => boolean
+    showWhen?: (state: WizardState<TState>) => boolean | Promise<boolean>
     /**
      * Sets a default value to the target property. This default is applied to the current state
      * as long as the property has not been set.
@@ -135,7 +135,11 @@ export class WizardForm<TState extends Partial<Record<keyof TState, unknown>>> {
         this.formData.set(key, { ...this.formData.get(key), ...element })
     }
 
-    public canShowProperty(prop: string, state: TState, defaultState: TState = this.applyDefaults(state)): boolean {
+    public canShowProperty(
+        prop: string,
+        state: TState,
+        defaultState: TState = this.applyDefaults(state)
+    ): boolean | Promise<boolean> {
         const current = _.get(state, prop)
         const options = this.formData.get(prop) ?? {}
 
@@ -143,8 +147,18 @@ export class WizardForm<TState extends Partial<Record<keyof TState, unknown>>> {
             return false
         }
 
-        if (options.showWhen !== undefined && !options.showWhen(defaultState as WizardState<TState>)) {
-            return false
+        if (options.showWhen !== undefined) {
+            const showStatus = options.showWhen(defaultState as WizardState<TState>)
+            if (showStatus instanceof Promise) {
+                return showStatus
+                    .then((result) => {
+                        return result
+                    })
+                    .catch(() => {
+                        return false // Default to not showing if there's an error
+                    })
+            }
+            return showStatus
         }
 
         return options.provider !== undefined
