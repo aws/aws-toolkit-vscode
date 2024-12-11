@@ -22,8 +22,7 @@ import {
 } from '../models/errors'
 import { ZipUseCase } from '../models/constants'
 import { ChildProcess, ChildProcessOptions } from '../../shared/utilities/processUtils'
-import { showOutputMessage } from '../../shared/utilities/messages'
-import { globals, removeAnsi } from '../../shared'
+import { removeAnsi } from '../../shared'
 
 export interface ZipMetadata {
     rootDir: string
@@ -141,14 +140,8 @@ export class ZipUtil {
         return zipFilePath
     }
 
-    protected getZipEntryPath(projectName: string, relativePath: string, useCase?: ZipUseCase) {
-        // Workspaces with multiple folders have the folder names as the root folder,
-        // but workspaces with only a single folder don't. So prepend the workspace folder name
-        // if it is not present.
-        if (useCase === ZipUseCase.TEST_GENERATION) {
-            return path.join(projectName, relativePath)
-        }
-        return relativePath.split('/').shift() === projectName ? relativePath : path.join(projectName, relativePath)
+    protected getZipEntryPath(projectName: string, relativePath: string) {
+        return path.join(projectName, relativePath)
     }
 
     /**
@@ -303,10 +296,10 @@ export class ZipUtil {
             rejectOnErrorCode: false,
             onStdout: (text) => {
                 diffContent += text
-                showOutputMessage(removeAnsi(text), globals.outputChannel)
+                getLogger().verbose(removeAnsi(text))
             },
             onStderr: (text) => {
-                showOutputMessage(removeAnsi(text), globals.outputChannel)
+                getLogger().error(removeAnsi(text))
             },
             spawnOptions: {
                 cwd: projectPath,
@@ -340,10 +333,10 @@ export class ZipUtil {
             rejectOnErrorCode: true,
             onStdout: (text) => {
                 diffContent += text
-                showOutputMessage(removeAnsi(text), globals.outputChannel)
+                getLogger().verbose(removeAnsi(text))
             },
             onStderr: (text) => {
-                showOutputMessage(removeAnsi(text), globals.outputChannel)
+                getLogger().error(removeAnsi(text))
             },
             spawnOptions: {
                 cwd: projectPath,
@@ -423,7 +416,8 @@ export class ZipUtil {
             this.getProjectScanPayloadSizeLimitInBytes()
         )
         for (const file of sourceFiles) {
-            const zipEntryPath = this.getZipEntryPath(file.workspaceFolder.name, file.relativeFilePath, useCase)
+            const projectName = path.basename(file.workspaceFolder.uri.fsPath)
+            const zipEntryPath = this.getZipEntryPath(projectName, file.relativeFilePath)
 
             if (ZipConstants.knownBinaryFileExts.includes(path.extname(file.fileUri.fsPath))) {
                 if (useCase === ZipUseCase.TEST_GENERATION) {

@@ -7,13 +7,7 @@ import assert, { fail } from 'assert'
 import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import { DB, transformByQState, TransformByQStoppedError } from '../../../codewhisperer/models/model'
-import {
-    finalizeTransformationJob,
-    parseBuildFile,
-    setMaven,
-    stopTransformByQ,
-    validateSQLMetadataFile,
-} from '../../../codewhisperer/commands/startTransformByQ'
+import { stopTransformByQ, finalizeTransformationJob } from '../../../codewhisperer/commands/startTransformByQ'
 import { HttpResponse } from 'aws-sdk'
 import * as codeWhisperer from '../../../codewhisperer/client/codewhisperer'
 import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
@@ -43,9 +37,56 @@ import { TransformationCandidateProject, ZipManifest } from '../../../codewhispe
 import globals from '../../../shared/extensionGlobals'
 import { env, fs } from '../../../shared'
 import { convertDateToTimestamp, convertToTimeString } from '../../../shared/datetime'
+import {
+    setMaven,
+    parseBuildFile,
+    validateSQLMetadataFile,
+} from '../../../codewhisperer/service/transformByQ/transformFileHandler'
 
 describe('transformByQ', function () {
     let tempDir: string
+    const validSctFile = `<?xml version="1.0" encoding="UTF-8"?>
+    <tree>
+    <instances>
+        <ProjectModel>
+        <entities>
+            <sources>
+            <DbServer vendor="oracle" name="sample.rds.amazonaws.com">
+            </DbServer>
+            </sources>
+            <targets>
+            <DbServer vendor="aurora_postgresql" />
+            </targets>
+        </entities>
+        <relations>
+            <server-node-location>
+            <FullNameNodeInfoList>
+                <nameParts>
+                <FullNameNodeInfo typeNode="schema" nameNode="schema1"/>
+                <FullNameNodeInfo typeNode="table" nameNode="table1"/>
+                </nameParts>
+            </FullNameNodeInfoList>
+            </server-node-location>
+            <server-node-location>
+            <FullNameNodeInfoList>
+                <nameParts>
+                <FullNameNodeInfo typeNode="schema" nameNode="schema2"/>
+                <FullNameNodeInfo typeNode="table" nameNode="table2"/>
+                </nameParts>
+            </FullNameNodeInfoList>
+            </server-node-location>
+            <server-node-location>
+            <FullNameNodeInfoList>
+                <nameParts>
+                <FullNameNodeInfo typeNode="schema" nameNode="schema3"/>
+                <FullNameNodeInfo typeNode="table" nameNode="table3"/>
+                </nameParts>
+            </FullNameNodeInfoList>
+            </server-node-location>
+        </relations>
+        </ProjectModel>
+    </instances>
+    </tree>`
 
     beforeEach(async function () {
         tempDir = (await TestFolder.create()).path
@@ -401,49 +442,7 @@ describe('transformByQ', function () {
     })
 
     it(`WHEN validateMetadataFile on fully valid .sct file THEN passes validation`, async function () {
-        const sampleFileContents = `<?xml version="1.0" encoding="UTF-8"?>
-        <tree>
-        <instances>
-            <ProjectModel>
-            <entities>
-                <sources>
-                <DbServer vendor="oracle" name="sample.rds.amazonaws.com">
-                </DbServer>
-                </sources>
-                <targets>
-                <DbServer vendor="aurora_postgresql" />
-                </targets>
-            </entities>
-            <relations>
-                <server-node-location>
-                <FullNameNodeInfoList>
-                    <nameParts>
-                    <FullNameNodeInfo typeNode="schema" nameNode="schema1"/>
-                    <FullNameNodeInfo typeNode="table" nameNode="table1"/>
-                    </nameParts>
-                </FullNameNodeInfoList>
-                </server-node-location>
-                <server-node-location>
-                <FullNameNodeInfoList>
-                    <nameParts>
-                    <FullNameNodeInfo typeNode="schema" nameNode="schema2"/>
-                    <FullNameNodeInfo typeNode="table" nameNode="table2"/>
-                    </nameParts>
-                </FullNameNodeInfoList>
-                </server-node-location>
-                <server-node-location>
-                <FullNameNodeInfoList>
-                    <nameParts>
-                    <FullNameNodeInfo typeNode="schema" nameNode="schema3"/>
-                    <FullNameNodeInfo typeNode="table" nameNode="table3"/>
-                    </nameParts>
-                </FullNameNodeInfoList>
-                </server-node-location>
-            </relations>
-            </ProjectModel>
-        </instances>
-        </tree>`
-        const isValidMetadata = await validateSQLMetadataFile(sampleFileContents, { tabID: 'abc123' })
+        const isValidMetadata = await validateSQLMetadataFile(validSctFile, { tabID: 'abc123' })
         assert.strictEqual(isValidMetadata, true)
         assert.strictEqual(transformByQState.getSourceDB(), DB.ORACLE)
         assert.strictEqual(transformByQState.getTargetDB(), DB.AURORA_POSTGRESQL)
@@ -455,96 +454,14 @@ describe('transformByQ', function () {
     })
 
     it(`WHEN validateMetadataFile on .sct file with unsupported source DB THEN fails validation`, async function () {
-        const sampleFileContents = `<?xml version="1.0" encoding="UTF-8"?>
-        <tree>
-        <instances>
-            <ProjectModel>
-            <entities>
-                <sources>
-                <DbServer vendor="not-oracle" name="sample.rds.amazonaws.com">
-                </DbServer>
-                </sources>
-                <targets>
-                <DbServer vendor="aurora_postgresql" />
-                </targets>
-            </entities>
-            <relations>
-                <server-node-location>
-                <FullNameNodeInfoList>
-                    <nameParts>
-                    <FullNameNodeInfo typeNode="schema" nameNode="schema1"/>
-                    <FullNameNodeInfo typeNode="table" nameNode="table1"/>
-                    </nameParts>
-                </FullNameNodeInfoList>
-                </server-node-location>
-                <server-node-location>
-                <FullNameNodeInfoList>
-                    <nameParts>
-                    <FullNameNodeInfo typeNode="schema" nameNode="schema2"/>
-                    <FullNameNodeInfo typeNode="table" nameNode="table2"/>
-                    </nameParts>
-                </FullNameNodeInfoList>
-                </server-node-location>
-                <server-node-location>
-                <FullNameNodeInfoList>
-                    <nameParts>
-                    <FullNameNodeInfo typeNode="schema" nameNode="schema3"/>
-                    <FullNameNodeInfo typeNode="table" nameNode="table3"/>
-                    </nameParts>
-                </FullNameNodeInfoList>
-                </server-node-location>
-            </relations>
-            </ProjectModel>
-        </instances>
-        </tree>`
-        const isValidMetadata = await validateSQLMetadataFile(sampleFileContents, { tabID: 'abc123' })
+        const sctFileWithInvalidSource = validSctFile.replace('oracle', 'not-oracle')
+        const isValidMetadata = await validateSQLMetadataFile(sctFileWithInvalidSource, { tabID: 'abc123' })
         assert.strictEqual(isValidMetadata, false)
     })
 
     it(`WHEN validateMetadataFile on .sct file with unsupported target DB THEN fails validation`, async function () {
-        const sampleFileContents = `<?xml version="1.0" encoding="UTF-8"?>
-        <tree>
-        <instances>
-            <ProjectModel>
-            <entities>
-                <sources>
-                <DbServer vendor="oracle" name="sample.rds.amazonaws.com">
-                </DbServer>
-                </sources>
-                <targets>
-                <DbServer vendor="not-postgresql" />
-                </targets>
-            </entities>
-            <relations>
-                <server-node-location>
-                <FullNameNodeInfoList>
-                    <nameParts>
-                    <FullNameNodeInfo typeNode="schema" nameNode="schema1"/>
-                    <FullNameNodeInfo typeNode="table" nameNode="table1"/>
-                    </nameParts>
-                </FullNameNodeInfoList>
-                </server-node-location>
-                <server-node-location>
-                <FullNameNodeInfoList>
-                    <nameParts>
-                    <FullNameNodeInfo typeNode="schema" nameNode="schema2"/>
-                    <FullNameNodeInfo typeNode="table" nameNode="table2"/>
-                    </nameParts>
-                </FullNameNodeInfoList>
-                </server-node-location>
-                <server-node-location>
-                <FullNameNodeInfoList>
-                    <nameParts>
-                    <FullNameNodeInfo typeNode="schema" nameNode="schema3"/>
-                    <FullNameNodeInfo typeNode="table" nameNode="table3"/>
-                    </nameParts>
-                </FullNameNodeInfoList>
-                </server-node-location>
-            </relations>
-            </ProjectModel>
-        </instances>
-        </tree>`
-        const isValidMetadata = await validateSQLMetadataFile(sampleFileContents, { tabID: 'abc123' })
+        const sctFileWithInvalidTarget = validSctFile.replace('aurora_postgresql', 'not-postgresql')
+        const isValidMetadata = await validateSQLMetadataFile(sctFileWithInvalidTarget, { tabID: 'abc123' })
         assert.strictEqual(isValidMetadata, false)
     })
 })

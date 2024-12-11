@@ -8,7 +8,7 @@ import { qTestingFramework } from './framework/framework'
 import sinon from 'sinon'
 import { Messenger } from './framework/messenger'
 import { JDKVersion, TransformationType, transformByQState } from 'aws-core-vscode/codewhisperer'
-import { GumbyController, startTransformByQ, TabsStorage } from 'aws-core-vscode/amazonqGumby'
+import { GumbyController, setMaven, startTransformByQ, TabsStorage } from 'aws-core-vscode/amazonqGumby'
 import { using, registerAuthHook, TestFolder } from 'aws-core-vscode/test'
 import { loginToIdC } from './utils/setup'
 import { fs } from 'aws-core-vscode/shared'
@@ -338,7 +338,7 @@ describe('Amazon Q Code Transformation', function () {
 
         it('WHEN transforming a Java 8 project E2E THEN job is successful', async function () {
             transformByQState.setTransformationType(TransformationType.LANGUAGE_UPGRADE)
-            await startTransformByQ.setMaven()
+            await setMaven()
             await startTransformByQ.processLanguageUpgradeTransformFormInput(tempDir, JDKVersion.JDK8, JDKVersion.JDK17)
             await startTransformByQ.startTransformByQ()
             assert.strictEqual(transformByQState.getPolledJobStatus(), 'COMPLETED')
