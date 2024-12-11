@@ -247,25 +247,27 @@ export class TestController {
         if (session.stopIteration) {
             telemetryErrorMessage = getTelemetryReasonDesc(data.error.uiMessage.replaceAll('```', ''))
         }
-        telemetry.amazonq_utgGenerateTests.emit({
-            cwsprChatProgrammingLanguage: session.fileLanguage ?? 'plaintext',
-            jobId: session.listOfTestGenerationJobId[0], // For RIV, UTG does only one StartTestGeneration API call
-            jobGroup: session.testGenerationJobGroupName,
-            requestId: session.startTestGenerationRequestId,
-            hasUserPromptSupplied: session.hasUserPromptSupplied,
-            isCodeBlockSelected: session.isCodeBlockSelected,
-            buildPayloadBytes: session.srcPayloadSize,
-            buildZipFileBytes: session.srcZipFileSize,
-            artifactsUploadDuration: session.artifactsUploadDuration,
-            perfClientLatency: performance.now() - session.testGenerationStartTime,
-            result: isCancel ? 'Cancelled' : 'Failed',
-            reason: data.error.code,
-            reasonDesc: telemetryErrorMessage,
-            isSupportedLanguage: true,
-            credentialStartUrl: AuthUtil.instance.startUrl,
-            httpStatusCode: data.error.statusCode ?? 0, // If status code is 0,  need to investigate where this is originating from.
-            reason: data.error.code,
-        })
+        TelemetryHelper.instance.sendTestGenerationToolkitEvent(
+            session,
+            true,
+            isCancel ? 'Cancelled' : 'Failed',
+            session.startTestGenerationRequestId,
+            performance.now() - session.testGenerationStartTime,
+            telemetryErrorMessage,
+            data.error.statusCode ?? '0',
+            session.isCodeBlockSelected,
+            session.artifactsUploadDuration,
+            session.srcPayloadSize,
+            session.srcZipFileSize,
+            session.charsOfCodeAccepted,
+            session.numberOfTestsGenerated,
+            session.linesOfCodeAccepted,
+            session.charsOfCodeGenerated,
+            session.numberOfTestsGenerated,
+            session.linesOfCodeGenerated,
+            data.error.code
+        )
+
         if (session.stopIteration) {
             // Error from Science
             this.messenger.sendMessage(data.error.uiMessage.replaceAll('```', ''), data.tabID, 'answer')
@@ -747,29 +749,6 @@ export class TestController {
             session.numberOfTestsGenerated,
             session.linesOfCodeGenerated
         )
-
-        telemetry.amazonq_utgGenerateTests.emit({
-            generatedCount: session.numberOfTestsGenerated,
-            acceptedCount: session.numberOfTestsGenerated,
-            generatedCharactersCount: session.charsOfCodeGenerated,
-            acceptedCharactersCount: session.charsOfCodeAccepted,
-            generatedLinesCount: session.linesOfCodeGenerated,
-            acceptedLinesCount: session.linesOfCodeAccepted,
-            cwsprChatProgrammingLanguage: session.fileLanguage ?? 'plaintext',
-            jobId: session.listOfTestGenerationJobId[0], // For RIV, UTG does only one StartTestGeneration API call so jobId = session.listOfTestGenerationJobId[0]
-            jobGroup: session.testGenerationJobGroupName,
-            requestId: session.startTestGenerationRequestId,
-            buildPayloadBytes: session.srcPayloadSize,
-            buildZipFileBytes: session.srcZipFileSize,
-            artifactsUploadDuration: session.artifactsUploadDuration,
-            hasUserPromptSupplied: session.hasUserPromptSupplied,
-            isCodeBlockSelected: session.isCodeBlockSelected,
-            perfClientLatency: session.latencyOfTestGeneration,
-            isSupportedLanguage: true,
-            credentialStartUrl: AuthUtil.instance.startUrl,
-            result: 'Succeeded',
-            httpStatusCode: '200',
-        })
 
         await this.endSession(message, FollowUpTypes.SkipBuildAndFinish)
         return
