@@ -292,7 +292,8 @@ export class Ec2Connecter implements vscode.Disposable {
         return keyPair
     }
 
-    public async attemptToCleanKeys(
+    /** Removes old key(s) that we added to the remote ~/.ssh/authorized_keys file. */
+    public async tryCleanKeys(
         instanceId: string,
         hintComment: string,
         hostOS: Ec2OS,
