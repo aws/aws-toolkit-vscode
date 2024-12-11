@@ -47,7 +47,10 @@
             </div>
         </div>
 
-        <div v-if="isFixAvailable || isGenerateFixLoading || isGenerateFixError || isFixDescriptionAvailable">
+        <div
+            v-if="isFixAvailable || isGenerateFixLoading || isGenerateFixError || isFixDescriptionAvailable"
+            ref="codeFixSection"
+        >
             <hr />
 
             <h3>Suggested code fix preview</h3>
@@ -57,7 +60,7 @@
             </pre>
             <div class="code-block">
                 <span v-if="isFixAvailable" v-html="suggestedFixHtml"></span>
-                <div v-if="isFixAvailable" class="code-diff-actions">
+                <div v-if="isFixAvailable" class="code-diff-actions" ref="codeFixAction">
                     <button class="code-diff-action-button" @click="copyFixedCode">
                         <span class="icon icon-md icon-vscode-copy"></span> Copy
                     </button>
@@ -201,6 +204,7 @@ export default defineComponent({
     },
     created() {
         this.getData()
+        this.setupEventListeners()
     },
     beforeMount() {
         this.getData()
@@ -222,6 +226,32 @@ export default defineComponent({
             }
             const fixedCode = await client.getFixedCode()
             this.updateFixedCode(fixedCode)
+        },
+        setupEventListeners() {
+            client.onChangeIssue(async (issue) => {
+                if (issue) {
+                    this.updateFromIssue(issue)
+                }
+                const fixedCode = await client.getFixedCode()
+                this.updateFixedCode(fixedCode)
+                this.scrollTo('codeFixActions')
+            })
+            client.onChangeFilePath(async (filePath) => {
+                const relativePath = await client.getRelativePath()
+                this.updateRelativePath(relativePath)
+
+                const languageId = await client.getLanguageId()
+                if (languageId) {
+                    this.updateLanguageId(languageId)
+                }
+            })
+            client.onChangeGenerateFixLoading((isGenerateFixLoading) => {
+                this.isGenerateFixLoading = isGenerateFixLoading
+                this.scrollTo('codeFixSection')
+            })
+            client.onChangeGenerateFixError((isGenerateFixError) => {
+                this.isGenerateFixError = isGenerateFixError
+            })
         },
         updateRelativePath(relativePath: string) {
             this.relativePath = relativePath
@@ -338,6 +368,9 @@ ${this.fixedCode}
                 referenceTracker.appendChild(tooltip)
             }
             return doc.body.innerHTML
+        },
+        scrollTo(refName: string) {
+            this.$nextTick(() => this.$refs?.[refName]?.scrollIntoView({ behavior: 'smooth' }))
         },
     },
     computed: {
