@@ -66,7 +66,7 @@ import { cancel, confirm } from '../../shared'
 import { startCodeFixGeneration } from './startCodeFixGeneration'
 import { DefaultAmazonQAppInitContext } from '../../amazonq/apps/initContext'
 import path from 'path'
-import { UserWrittenCodeTracker } from '../indexNode'
+import { UserWrittenCodeTracker } from '../tracker/userWrittenCodeTracker'
 
 const MessageTimeOut = 5_000
 

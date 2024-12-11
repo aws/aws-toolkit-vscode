@@ -5,7 +5,6 @@
 
 import * as vscode from 'vscode'
 import { getLogger } from '../../shared/logger/logger'
-import * as CodeWhispererConstants from '../models/constants'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { AuthUtil } from '../util/authUtil'
@@ -29,7 +28,7 @@ export class UserWrittenCodeTracker {
     static #instance: UserWrittenCodeTracker
     static copySnippetThreshold = 50
     static resetQIsEditingTimeoutMs = 5 * 60 * 1000
-
+    static defaultCheckPeriodMillis = 1000 * 60 * 5
     private constructor() {
         this._userWrittenNewCodeLineCount = 0
         this._userWrittenNewCodeCharacterCount = 0
@@ -114,7 +113,7 @@ export class UserWrittenCodeTracker {
         this._timer = setTimeout(() => {
             try {
                 const currentTime = performance.now()
-                const delay: number = CodeWhispererConstants.defaultCheckPeriodMillis
+                const delay: number = UserWrittenCodeTracker.defaultCheckPeriodMillis
                 const diffTime: number = startTime + delay
                 if (diffTime <= currentTime) {
                     if (this._qUsageCount <= 0) {
@@ -133,7 +132,7 @@ export class UserWrittenCodeTracker {
                 this.resetTracker()
                 this.closeTimer()
             }
-        }, CodeWhispererConstants.defaultCheckPeriodMillis)
+        }, UserWrittenCodeTracker.defaultCheckPeriodMillis)
     }
 
     private closeTimer() {
