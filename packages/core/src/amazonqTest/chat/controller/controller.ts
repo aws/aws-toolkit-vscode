@@ -295,30 +295,31 @@ export class TestController {
                     tabID,
                     'answer'
                 )
-            } else {
-                getLogger().error('Too many requests.')
+            }
+            if (error.message.includes('Too many requests')) {
+                getLogger().error(error.message)
                 return this.messenger.sendErrorMessage(tooManyRequestErrorMessage, tabID)
             }
         }
         if (isAwsError(error)) {
             if (error.code === 'ThrottlingException') {
                 // TODO: use the explicitly modeled exception reason for quota vs throttle{
-                getLogger().error('Too many requests.')
+                getLogger().error(error.message)
                 this.messenger.sendErrorMessage(tooManyRequestErrorMessage, tabID)
-            } else {
-                // other service errors:
-                // AccessDeniedException - should not happen because access is validated before this point in the client
-                // ValidationException - shouldn't happen because client should not send malformed requests
-                // ConflictException - should not happen because the client will maintain proper state
-                // InternalServerException - shouldn't happen but needs to be caught
-                getLogger().error('Other error message: %s', error.message)
-                this.messenger.sendErrorMessage('', tabID)
+                return
             }
-        } else {
-            // other unexpected errors (TODO enumerate all other failure cases)
-            getLogger().error('Other error message: %s', error.uiMessage)
+            // other service errors:
+            // AccessDeniedException - should not happen because access is validated before this point in the client
+            // ValidationException - shouldn't happen because client should not send malformed requests
+            // ConflictException - should not happen because the client will maintain proper state
+            // InternalServerException - shouldn't happen but needs to be caught
+            getLogger().error('Other error message: %s', error.message)
             this.messenger.sendErrorMessage('', tabID)
+            return
         }
+        // other unexpected errors (TODO enumerate all other failure cases)
+        getLogger().error('Other error message: %s', error.uiMessage)
+        this.messenger.sendErrorMessage('', tabID)
     }
 
     // This function handles actions if user clicked on any Button one of these cases will be executed
