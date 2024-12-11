@@ -284,14 +284,8 @@ function getSupplementalContextConfig(languageId: vscode.TextDocument['languageI
 
     const group = FeatureConfigProvider.instance.getProjectContextGroup()
     switch (group) {
-        case 'control':
-            return 'opentabs'
-
-        case 't1':
+        default:
             return 'codemap'
-
-        case 't2':
-            return 'bm25'
     }
 }
 
