@@ -1314,8 +1314,9 @@ export class TestController {
             'Deleting output.log and temp result directory. testGenerationLogsDir: %s',
             testGenerationLogsDir
         )
-        if (await fs.existsFile(path.join(testGenerationLogsDir, 'output.log'))) {
-            await fs.delete(path.join(testGenerationLogsDir, 'output.log'))
+        const outputLogPath = path.join(testGenerationLogsDir, 'output.log')
+        if (await fs.existsFile(outputLogPath)) {
+            await fs.delete(outputLogPath)
         }
         if (
             await fs
