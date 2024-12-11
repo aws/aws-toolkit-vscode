@@ -288,4 +288,8 @@ describe('getRemoveLinesCommand', async function () {
         assert.ok(!alCommand.includes("''"))
         assert.strictEqual(ubuntuCommand, alCommand)
     })
+
+    it('throws when given invalid pattern', function () {
+        assert.throws(() => getRemoveLinesCommand('pat/tern', 'macOS', 'test.txt'))
+    })
 })

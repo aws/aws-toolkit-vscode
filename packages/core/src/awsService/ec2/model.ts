@@ -351,6 +351,9 @@ export class Ec2Connecter implements vscode.Disposable {
  * @returns bash command to remove lines from file.
  */
 export function getRemoveLinesCommand(pattern: string, hostOS: Ec2OS, filepath: string): string {
+    if (pattern.includes('/')) {
+        throw new ToolkitError(`ec2: cannot match pattern containing '/', given: ${pattern}`)
+    }
     // Linux allows not passing extension to -i, whereas macOS requires zero length extension.
     return `sed -i${isLinux(hostOS) ? '' : " ''"} /${pattern}/d ${filepath}`
 }
