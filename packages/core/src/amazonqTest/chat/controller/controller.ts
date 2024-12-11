@@ -286,7 +286,7 @@ export class TestController {
     }) {
         const { error, tabID } = data
 
-        // If user reached montly limit for builderId
+        // If user reached monthly limit for builderId
         if (error.code === 'CreateTestJobError') {
             if (error.message.includes(CodeWhispererConstants.utgLimitReached)) {
                 getLogger().error('Monthly quota reached for QSDA actions.')
@@ -1309,8 +1309,9 @@ export class TestController {
             'Deleting output.log and temp result directory. testGenerationLogsDir: %s',
             testGenerationLogsDir
         )
-        if (await fs.existsFile(path.join(testGenerationLogsDir, 'output.log'))) {
-            await fs.delete(path.join(testGenerationLogsDir, 'output.log'))
+        const outputLogPath = path.join(testGenerationLogsDir, 'output.log')
+        if (await fs.existsFile(outputLogPath)) {
+            await fs.delete(outputLogPath)
         }
         if (
             await fs

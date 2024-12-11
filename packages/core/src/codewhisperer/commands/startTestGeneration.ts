@@ -75,8 +75,9 @@ export async function startTestGenerationProcess(
         try {
             artifactMap = await getPresignedUrlAndUploadTestGen(zipMetadata)
         } finally {
-            if (await fs.existsFile(path.join(testGenerationLogsDir, 'output.log'))) {
-                await fs.delete(path.join(testGenerationLogsDir, 'output.log'))
+            const outputLogPath = path.join(testGenerationLogsDir, 'output.log')
+            if (await fs.existsFile(outputLogPath)) {
+                await fs.delete(outputLogPath)
             }
             await zipUtil.removeTmpFiles(zipMetadata)
             session.artifactsUploadDuration = performance.now() - uploadStartTime
