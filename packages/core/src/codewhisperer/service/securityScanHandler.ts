@@ -384,7 +384,9 @@ export async function uploadArtifactToS3(
         } else {
             errorMessage = errorDesc ?? defaultMessage
         }
-        throw isCodeScan ? new UploadArtifactToS3Error(errorMessage) : new UploadTestArtifactToS3Error(errorMessage)
+        throw isCodeScan
+            ? new UploadArtifactToS3Error(errorMessage)
+            : new UploadTestArtifactToS3Error(errorMessage, (error as any).statusCode)
     }
 }
 
