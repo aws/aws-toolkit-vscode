@@ -188,7 +188,6 @@ export class CWCTelemetryHelper {
     ) {
         const conversationId = this.getConversationId(message.tabID)
         let event: AmazonqInteractWithMessage | undefined
-
         switch (message.command) {
             case 'insert_code_at_cursor_position':
                 message = message as InsertCodeAtCursorPosition
@@ -322,6 +321,7 @@ export class CWCTelemetryHelper {
             return
         }
         telemetry.amazonq_interactWithMessage.emit(event)
+
         codeWhispererClient
             .sendTelemetryEvent({
                 telemetryEvent: {
