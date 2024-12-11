@@ -80,13 +80,13 @@ describe('Amazon Q Doc', async function () {
         })
     })
 
-    describe('README create', () => {
+    describe('Creates a README', () => {
         beforeEach(async function () {
             tab.addChatMessage({ command: '/doc' })
             await tab.waitForChatFinishesLoading()
         })
 
-        it('Creates a README', async () => {
+        it('Creates a README for root folder', async () => {
             await tab.waitForButtons([FollowUpTypes.CreateDocumentation])
 
             tab.clickButton(FollowUpTypes.CreateDocumentation)
