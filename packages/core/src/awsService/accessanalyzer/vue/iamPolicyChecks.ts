@@ -827,7 +827,7 @@ export async function _readCustomChecksFile(input: string): Promise<string> {
     }
 }
 
-//Check if Cfn and Tf tools are installed
+// Check if Cfn and Tf tools are installed
 export async function arePythonToolsInstalled(): Promise<boolean> {
     const logger: Logger = getLogger()
     let cfnToolInstalled = true
