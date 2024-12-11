@@ -15,7 +15,7 @@ import { SsoToken, ClientRegistration } from './model'
 import { DevSettings } from '../../shared/settings'
 import { onceChanged } from '../../shared/utilities/functionUtils'
 import globals from '../../shared/extensionGlobals'
-import { ToolkitError } from '../../shared'
+import { ToolkitError } from '../../shared/errors'
 
 interface RegistrationKey {
     readonly startUrl: string
