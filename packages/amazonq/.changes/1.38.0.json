@@ -1,0 +1,18 @@
+{
+	"date": "2024-11-27",
+	"version": "1.38.0",
+	"entries": [
+		{
+			"type": "Feature",
+			"description": "Amazon Q /dev: support `Dockerfile` files"
+		},
+		{
+			"type": "Feature",
+			"description": "Introduce @workspace command to enhance context fetching for Chat"
+		},
+		{
+			"type": "Feature",
+			"description": "Feature(Amazon Q Code Transformation): allow users to view results in 5 smaller diffs"
+		}
+	]
+}

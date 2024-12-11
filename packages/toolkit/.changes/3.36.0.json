@@ -1,0 +1,14 @@
+{
+	"date": "2024-11-27",
+	"version": "3.36.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "appBuilder refresh feature doesnt work during sync --watch"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "'View Logs...' action redirects to output channel instead of Terminal"
+		}
+	]
+}

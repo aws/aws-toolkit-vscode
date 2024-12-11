@@ -1,3 +1,23 @@
+## 3.38.0 2024-12-10
+
+- **Feature** Step Functions: Upgrade amazon-states-language-service to 1.13. This new version adds support for [JSONata and Variables](https://aws.amazon.com/blogs/compute/simplifying-developer-experience-with-variables-and-jsonata-in-aws-step-functions/).
+
+## 3.36.0 2024-11-27
+
+- **Bug Fix** appBuilder refresh feature doesnt work during sync --watch
+- **Bug Fix** 'View Logs...' action redirects to output channel instead of Terminal
+
+## 3.35.0 2024-11-22
+
+- **Bug Fix** SAM: Update Sync and Deploy prompter titles for parameter source
+- **Bug Fix** SAM: Add artifact bucket source prompter for SAM sync command
+- **Bug Fix** SAM: Update Sync prompter title for sync parameters
+- **Bug Fix** SAM: Fix prompter button URLs for build, deploy and sync commands
+- **Bug Fix** EC2: terminated instances no longer show pending icon
+- **Feature** python 3.13 support for SAM and lambda
+- **Feature** nodejs22.x support for SAM and lambda
+- **Feature** Notifications: Support for delivering critical alerts and product updates
+
 ## 3.34.0 2024-11-14
 
 - **Bug Fix** SAM debugging: misleading 'IaC' message/placeholder

@@ -6,7 +6,7 @@
 import assert from 'assert'
 import { MynahUI, MynahUIProps, MynahUIDataModel } from '@aws/mynah-ui'
 import { waitUntil } from 'aws-core-vscode/shared'
-import { FollowUpTypes } from 'aws-core-vscode/amazonqFeatureDev'
+import { FollowUpTypes } from 'aws-core-vscode/amazonq'
 
 export interface MessengerOptions {
     waitIntervalInMs?: number
@@ -57,6 +57,14 @@ export class Messenger {
         }
 
         this.mynahUIProps.onFollowUpClicked(this.tabID, lastChatItem?.messageId ?? '', option[0])
+    }
+
+    clickCustomFormButton(action: { id: string; text?: string; formItemValues?: Record<string, string> }) {
+        if (!this.mynahUIProps.onCustomFormAction) {
+            assert.fail('onCustomFormAction must be defined to use it in the tests')
+        }
+
+        this.mynahUIProps.onCustomFormAction(this.tabID, action)
     }
 
     clickFileActionButton(filePath: string, actionName: string) {
@@ -173,7 +181,9 @@ export class Messenger {
 
         // Do another check just in case the waitUntil time'd out
         if (!event()) {
-            assert.fail(`Event has not finished loading in: ${this.waitTimeoutInMs} ms`)
+            assert.fail(
+                `Event has not finished loading in: ${waitOverrides ? waitOverrides.waitTimeoutInMs : this.waitTimeoutInMs} ms`
+            )
         }
     }
 

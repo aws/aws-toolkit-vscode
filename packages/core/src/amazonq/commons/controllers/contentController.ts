@@ -17,7 +17,7 @@ import {
 } from '../../../shared/utilities/textDocumentUtilities'
 import { extractFileAndCodeSelectionFromMessage, fs, getErrorMsg, ToolkitError } from '../../../shared'
 
-class ContentProvider implements vscode.TextDocumentContentProvider {
+export class ContentProvider implements vscode.TextDocumentContentProvider {
     constructor(private uri: vscode.Uri) {}
 
     provideTextDocumentContent(_uri: vscode.Uri) {

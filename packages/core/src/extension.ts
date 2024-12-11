@@ -75,7 +75,7 @@ export async function activateCommon(
     errors.init(fs.getUsername(), isAutomation())
     await initializeComputeRegion()
 
-    globals.contextPrefix = '' //todo: disconnect supplied argument
+    globals.contextPrefix = '' // todo: disconnect supplied argument
 
     registerCommandErrorHandler((info, error) => {
         const defaultMessage = localize('AWS.generic.message.error', 'Failed to run command: {0}', info.id)
@@ -89,7 +89,7 @@ export async function activateCommon(
     // Setup the logger
     const toolkitOutputChannel = vscode.window.createOutputChannel('AWS Toolkit', { log: true })
     const toolkitLogChannel = vscode.window.createOutputChannel('AWS Toolkit Logs', { log: true })
-    await activateLogger(context, contextPrefix, toolkitOutputChannel, toolkitLogChannel)
+    await activateLogger(context, contextPrefix, toolkitLogChannel, toolkitOutputChannel)
     globals.outputChannel = toolkitOutputChannel
     globals.logOutputChannel = toolkitLogChannel
 
@@ -112,7 +112,7 @@ export async function activateCommon(
         )
     }
 
-    //setup globals
+    // setup globals
     globals.machineId = await getMachineId()
     globals.awsContext = new DefaultAwsContext()
     globals.sdkClientBuilder = new DefaultAWSClientBuilder(globals.awsContext)

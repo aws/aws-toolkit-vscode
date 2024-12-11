@@ -4,9 +4,10 @@
  */
 
 import * as vscode from 'vscode'
-import { NotificationsController } from './controller'
+import { DevSettings } from '../shared/settings'
+import { DevFetcher, NotificationsController, RemoteFetcher } from './controller'
 import { NotificationsNode } from './panelNode'
-import { RuleEngine, getRuleContext } from './rules'
+import { getRuleContext } from './rules'
 import globals from '../shared/extensionGlobals'
 import { AuthState } from './types'
 import { getLogger } from '../shared/logger/logger'
@@ -24,25 +25,26 @@ const emergencyPollTime = oneMinute * 10
  * @param initialState initial auth state
  * @param authStateFn fn to get current auth state
  */
-export async function activate(
-    context: vscode.ExtensionContext,
-    initialState: AuthState,
-    authStateFn: () => Promise<AuthState>
-) {
+export async function activate(context: vscode.ExtensionContext, authStateFn: () => Promise<AuthState>) {
     try {
         const panelNode = NotificationsNode.instance
         panelNode.registerView(context)
 
-        const controller = new NotificationsController(panelNode)
-        const engine = new RuleEngine(await getRuleContext(context, initialState))
+        const controller = new NotificationsController(
+            panelNode,
+            async () => await getRuleContext(context, await authStateFn()),
+            DevSettings.instance.isDevMode() ? new DevFetcher() : new RemoteFetcher()
+        )
 
-        await controller.pollForStartUp(engine)
-        await controller.pollForEmergencies(engine)
+        await controller.pollForStartUp()
+        await controller.pollForEmergencies()
 
-        globals.clock.setInterval(async () => {
-            const ruleContext = await getRuleContext(context, await authStateFn())
-            await controller.pollForEmergencies(new RuleEngine(ruleContext))
-        }, emergencyPollTime)
+        globals.clock.setInterval(
+            async () => {
+                await controller.pollForEmergencies()
+            },
+            DevSettings.instance.get('notificationsPollInterval', emergencyPollTime)
+        )
 
         logger.debug('Activated in-IDE notifications polling module')
     } catch (err) {

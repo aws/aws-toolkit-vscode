@@ -45,7 +45,6 @@ export type UnrecoverableErrorType =
     | 'no-maven-java-project-found'
     | 'could-not-compile-project'
     | 'invalid-java-home'
-    | 'unsupported-source-jdk-version'
     | 'upload-to-s3-failed'
     | 'job-start-failed'
     | 'unsupported-source-db'
@@ -233,10 +232,6 @@ export class Messenger {
                 {
                     value: JDKVersion.JDK17,
                     label: JDKVersion.JDK17,
-                },
-                {
-                    value: JDKVersion.UNSUPPORTED,
-                    label: 'Other',
                 },
             ],
         })
@@ -473,9 +468,6 @@ export class Messenger {
             case 'invalid-java-home':
                 message = CodeWhispererConstants.noJavaHomeFoundChatMessage
                 break
-            case 'unsupported-source-jdk-version':
-                message = CodeWhispererConstants.unsupportedJavaVersionChatMessage
-                break
             case 'unsupported-source-db':
                 message = CodeWhispererConstants.invalidMetadataFileUnsupportedSourceDB
                 break
@@ -603,7 +595,7 @@ export class Messenger {
     }
 
     public sendOneOrMultipleDiffsMessage(selectiveTransformationSelection: string, tabID: string) {
-        const message = `Okay, I will create ${selectiveTransformationSelection.toLowerCase()} when providing the proposed changes.`
+        const message = `Okay, I will create ${selectiveTransformationSelection.toLowerCase()} with my proposed changes.`
         this.dispatcher.sendChatMessage(new ChatMessage({ message, messageType: 'ai-prompt' }, tabID))
     }
 

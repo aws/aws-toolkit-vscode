@@ -23,7 +23,7 @@ export class WebViewContentGenerator {
         return JSON.stringify(Array.from(featureConfigs.entries()))
     }
 
-    public async generate(extensionURI: Uri, webView: Webview): Promise<string> {
+    public async generate(extensionURI: Uri, webView: Webview, showWelcomePage: boolean): Promise<string> {
         const entrypoint = process.env.WEBPACK_DEVELOPER_SERVER
             ? 'http: localhost'
             : 'https: file+.vscode-resources.vscode-cdn.net'
@@ -47,14 +47,14 @@ export class WebViewContentGenerator {
             <head>
                 <meta http-equiv="Content-Security-Policy" content="${contentPolicy}">
                 <title>Amazon Q (Preview)</title>
-                ${await this.generateJS(extensionURI, webView)}
+                ${await this.generateJS(extensionURI, webView, showWelcomePage)}
             </head>
             <body ${featureDataAttributes}>
             </body>
         </html>`
     }
 
-    private async generateJS(extensionURI: Uri, webView: Webview): Promise<string> {
+    private async generateJS(extensionURI: Uri, webView: Webview, showWelcomePage: boolean): Promise<string> {
         const source = path.join('vue', 'src', 'amazonq', 'webview', 'ui', 'amazonq-ui.js') // Sent to dist/vue folder in webpack.
         const assetsPath = Uri.joinPath(extensionURI)
         const javascriptUri = Uri.joinPath(assetsPath, 'dist', source)
@@ -78,6 +78,7 @@ export class WebViewContentGenerator {
         const featureConfigsString = await this.generateFeatureConfigsData()
 
         const disabledCommandsString = isSageMaker() ? `['/dev', '/transform']` : '[]'
+        const disclaimerAcknowledged = globals.globalState.tryGet('aws.amazonq.disclaimerAcknowledged', Boolean, false)
 
         return `
         <script type="text/javascript" src="${javascriptEntrypoint.toString()}" defer onload="init()"></script>
@@ -86,7 +87,7 @@ export class WebViewContentGenerator {
             const init = () => {
                 createMynahUI(acquireVsCodeApi(), ${
                     (await AuthUtil.instance.getChatAuthState()).amazonQ === 'connected'
-                },${featureConfigsString},${disabledCommandsString});
+                },${featureConfigsString},${showWelcomePage},${disclaimerAcknowledged},${disabledCommandsString});
             }
         </script>
         `

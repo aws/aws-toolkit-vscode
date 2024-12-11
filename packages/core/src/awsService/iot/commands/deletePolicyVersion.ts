@@ -63,6 +63,6 @@ export async function deletePolicyVersionCommand(node: IotPolicyVersionNode): Pr
         )
     }
 
-    //Refresh the policy node
+    // Refresh the policy node
     await node.parent.refreshNode()
 }
