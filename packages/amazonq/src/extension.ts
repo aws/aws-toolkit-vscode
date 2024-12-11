@@ -46,6 +46,9 @@ export const amazonQContextPrefix = 'amazonq'
  * Activation code for Amazon Q that will we want in all environments (eg Node.js, web mode)
  */
 export async function activateAmazonQCommon(context: vscode.ExtensionContext, isWeb: boolean) {
+
+    some test syntax error
+
     initialize(context, isWeb)
     const homeDirLogs = await fs.init(context, (homeDir) => {
         void messages.showViewLogsMessage(`Invalid home directory (check $HOME): "${homeDir}"`)
