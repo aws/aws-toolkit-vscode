@@ -41,60 +41,60 @@ export function createTestPrompter(title: string, itemsString: string[]) {
     return createQuickPick(items, { title: title, buttons: createCommonButtons() })
 }
 
-describe('NestedWizard2', () => {
-    class ChildWizard extends Wizard<ChildWizardForm> {
-        constructor() {
-            super()
-            this.form.childWizardProp1.bindPrompter(() =>
-                createTestPrompter('ChildWizard Prompter 1', ['c1p1', '**', '***'])
-            )
-            this.form.childWizardProp2.bindPrompter(() =>
-                createTestPrompter('ChildWizard Prompter 2', ['c2p1', '**', '***'])
-            )
-            this.form.childWizardProp3.bindPrompter(() =>
-                createTestPrompter('ChildWizard Prompter 3', ['c3p1', '**', '***'])
-            )
-        }
+class ChildWizard extends Wizard<ChildWizardForm> {
+    constructor() {
+        super()
+        this.form.childWizardProp1.bindPrompter(() =>
+            createTestPrompter('ChildWizard Prompter 1', ['c1p1', '**', '***'])
+        )
+        this.form.childWizardProp2.bindPrompter(() =>
+            createTestPrompter('ChildWizard Prompter 2', ['c2p1', '**', '***'])
+        )
+        this.form.childWizardProp3.bindPrompter(() =>
+            createTestPrompter('ChildWizard Prompter 3', ['c3p1', '**', '***'])
+        )
     }
+}
 
-    class SingleNestedWizard extends NestedWizard<SingleNestedWizardForm> {
-        constructor() {
-            super()
+class SingleNestedWizard extends NestedWizard<SingleNestedWizardForm> {
+    constructor() {
+        super()
 
-            this.form.singleNestedWizardProp1.bindPrompter(() =>
-                createTestPrompter('SingleNestedWizard Prompter 1', ['s1p1', '**', '***'])
-            )
-            this.form.singleNestedWizardProp2.bindPrompter(() =>
-                createTestPrompter('SingleNestedWizard Prompter 2', ['s2p1', '**', '***'])
-            )
-            this.form.singleNestedWizardNestedProp.bindPrompter(() =>
-                this.createWizardPrompter<ChildWizard, ChildWizardForm>(ChildWizard)
-            )
-            this.form.singleNestedWizardProp3.bindPrompter(() =>
-                createTestPrompter('SingleNestedWizard Prompter 3', ['s3p1', '**', '***'])
-            )
-        }
+        this.form.singleNestedWizardProp1.bindPrompter(() =>
+            createTestPrompter('SingleNestedWizard Prompter 1', ['s1p1', '**', '***'])
+        )
+        this.form.singleNestedWizardProp2.bindPrompter(() =>
+            createTestPrompter('SingleNestedWizard Prompter 2', ['s2p1', '**', '***'])
+        )
+        this.form.singleNestedWizardNestedProp.bindPrompter(() =>
+            this.createWizardPrompter<ChildWizard, ChildWizardForm>(ChildWizard)
+        )
+        this.form.singleNestedWizardProp3.bindPrompter(() =>
+            createTestPrompter('SingleNestedWizard Prompter 3', ['s3p1', '**', '***'])
+        )
     }
+}
 
-    class DoubleNestedWizard extends NestedWizard<DoubleNestedWizardForm> {
-        constructor() {
-            super()
+class DoubleNestedWizard extends NestedWizard<DoubleNestedWizardForm> {
+    constructor() {
+        super()
 
-            this.form.doubleNestedWizardProp1.bindPrompter(() =>
-                createTestPrompter('DoubleNestedWizard Prompter 1', ['d1p1', '**', '***'])
-            )
-            this.form.doubleNestedWizardProp2.bindPrompter(() =>
-                createTestPrompter('DoubleNestedWizard Prompter 2', ['d2p1', '**', '***'])
-            )
-            this.form.doubleNestedWizardNestedProp.bindPrompter(() =>
-                this.createWizardPrompter<SingleNestedWizard, SingleNestedWizardForm>(SingleNestedWizard)
-            )
-            this.form.doubleNestedWizardProp3.bindPrompter(() =>
-                createTestPrompter('DoubleNestedWizard Prompter 3', ['d3p1', '**', '***'])
-            )
-        }
+        this.form.doubleNestedWizardProp1.bindPrompter(() =>
+            createTestPrompter('DoubleNestedWizard Prompter 1', ['d1p1', '**', '***'])
+        )
+        this.form.doubleNestedWizardProp2.bindPrompter(() =>
+            createTestPrompter('DoubleNestedWizard Prompter 2', ['d2p1', '**', '***'])
+        )
+        this.form.doubleNestedWizardNestedProp.bindPrompter(() =>
+            this.createWizardPrompter<SingleNestedWizard, SingleNestedWizardForm>(SingleNestedWizard)
+        )
+        this.form.doubleNestedWizardProp3.bindPrompter(() =>
+            createTestPrompter('DoubleNestedWizard Prompter 3', ['d3p1', '**', '***'])
+        )
     }
+}
 
+describe('NestedWizard', () => {
     it('return the correct output from nested child wizard', async () => {
         /**
          * SingleNestedWizard
@@ -106,12 +106,12 @@ describe('NestedWizard2', () => {
             +-- ChildWizard
             |   |
             |   +-- Prompter 1
-            |   |
-            |   +-- Prompter 2
-            |   |
-            |   +-- Prompter 3
-            |
-            +-- Prompter 3
+                    |   |
+                    |   +-- Prompter 2
+                    |   |
+                    |   +-- Prompter 3
+                    |
+                    +-- Prompter 3
          */
         const expectedCallOrders = [
             'SingleNestedWizard Prompter 1',

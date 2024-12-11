@@ -12,8 +12,10 @@ import { Prompter, PromptResult } from './prompter'
  * wizards in their flows.
  *
  * @remarks
- *  - This class should not use direclty inside a parent class.
- *  - Consider extending {@link NestedWizard} instead. Example: {@link SyncWizard}
+ *  - This class should only be used inside wizard classes that extend {@link NestedWizard}.
+ *  - See examples:
+ *     - {@link SingleNestedWizard}
+ *     - {@link DoubleNestedWizard}
  */
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
