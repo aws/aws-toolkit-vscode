@@ -497,6 +497,7 @@
     "dependencies": {
         "@amzn/amazon-q-developer-streaming-client": "file:../../src.gen/@amzn/amazon-q-developer-streaming-client",
         "@amzn/codewhisperer-streaming": "file:../../src.gen/@amzn/codewhisperer-streaming",
+        "@aws-sdk/client-cloudwatch-logs": "^3.666.0",
         "@aws-sdk/client-cloudformation": "^3.667.0",
         "@aws-sdk/client-cognito-identity": "^3.637.0",
         "@aws-sdk/client-lambda": "^3.637.0",
