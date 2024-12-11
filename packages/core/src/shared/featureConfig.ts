@@ -35,6 +35,7 @@ export const Features = {
     customizationArnOverride: 'customizationArnOverride',
     dataCollectionFeature: 'IDEProjectContextDataCollection',
     projectContextFeature: 'ProjectContextV2',
+    workspaceContextFeature: 'WorkspaceContext',
     test: 'testFeature',
 } as const
 
@@ -77,6 +78,21 @@ export class FeatureConfigProvider {
 
             case 'TREATMENT_2':
                 return 't2'
+
+            default:
+                return 'control'
+        }
+    }
+
+    getWorkspaceContextGroup(): 'control' | 'treatment' {
+        const variation = this.featureConfigs.get(Features.projectContextFeature)?.variation
+
+        switch (variation) {
+            case 'CONTROL':
+                return 'control'
+
+            case 'TREATMENT':
+                return 'treatment'
 
             default:
                 return 'control'
@@ -157,7 +173,7 @@ export class FeatureConfigProvider {
                     await vscode.commands.executeCommand('aws.amazonq.refreshStatusBar')
                 }
             }
-            if (Auth.instance.isInternalAmazonUser()) {
+            if (this.getWorkspaceContextGroup() === 'treatment') {
                 // Enable local workspace index by default only once, for Amzn users.
                 const isSet = globals.globalState.get<boolean>('aws.amazonq.workspaceIndexToggleOn') || false
                 if (!isSet) {
