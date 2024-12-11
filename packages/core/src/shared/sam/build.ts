@@ -32,7 +32,7 @@ import {
 } from './utils'
 import { getConfigFileUri, validateSamBuildConfig } from './config'
 import { runInTerminal } from './processTerminal'
-import { BUILD_MEMENTO_ROOT_KEY } from './constants'
+import { buildMementoRootKey } from './constants'
 
 export interface BuildParams {
     readonly template: TemplateItem
@@ -140,7 +140,7 @@ export class BuildWizard extends Wizard<BuildParams> {
         if (this.arg === undefined) {
             // "Build" command was invoked on the command palette.
             this.form.template.bindPrompter(() =>
-                createTemplatePrompter(this.registry, BUILD_MEMENTO_ROOT_KEY, samBuildUrl)
+                createTemplatePrompter(this.registry, buildMementoRootKey, samBuildUrl)
             )
             this.form.projectRoot.setDefault(({ template }) => getProjectRoot(template))
             this.form.paramsSource.bindPrompter(async ({ projectRoot }) => {
@@ -232,7 +232,7 @@ export async function runBuild(arg?: TreeNode): Promise<SamBuildResult> {
     const templatePath = params.template.uri.fsPath
     buildFlags.push('--template', `${templatePath}`)
 
-    await updateRecentResponse(BUILD_MEMENTO_ROOT_KEY, 'global', 'templatePath', templatePath)
+    await updateRecentResponse(buildMementoRootKey, 'global', 'templatePath', templatePath)
 
     try {
         await vscode.window.withProgress(

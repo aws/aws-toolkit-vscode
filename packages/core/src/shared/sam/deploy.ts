@@ -35,7 +35,7 @@ import {
     updateRecentResponse,
 } from './utils'
 import { runInTerminal } from './processTerminal'
-import { DEPLOY_MEMENTO_ROOT_KEY } from './constants'
+import { deployMementoRootKey } from './constants'
 
 export interface DeployParams {
     readonly paramsSource: ParamsSource
@@ -50,7 +50,7 @@ export interface DeployParams {
 }
 
 function getRecentDeployParams(identifier: string, key: string): string | undefined {
-    return getRecentResponse(DEPLOY_MEMENTO_ROOT_KEY, identifier, key)
+    return getRecentResponse(deployMementoRootKey, identifier, key)
 }
 
 function createParamPromptProvider(name: string, defaultValue: string | undefined, templateFsPath: string = 'default') {
@@ -105,11 +105,7 @@ export class DeployWizard extends Wizard<DeployParams> {
             })
             this.form.stackName.bindPrompter(
                 ({ region }) =>
-                    createStackPrompter(
-                        new DefaultCloudFormationClient(region!),
-                        DEPLOY_MEMENTO_ROOT_KEY,
-                        samDeployUrl
-                    ),
+                    createStackPrompter(new DefaultCloudFormationClient(region!), deployMementoRootKey, samDeployUrl),
                 {
                     showWhen: ({ paramsSource }) =>
                         paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
@@ -121,7 +117,7 @@ export class DeployWizard extends Wizard<DeployParams> {
             })
             this.form.bucketName.bindPrompter(
                 ({ region }) =>
-                    createBucketNamePrompter(new DefaultS3Client(region!), DEPLOY_MEMENTO_ROOT_KEY, samDeployUrl),
+                    createBucketNamePrompter(new DefaultS3Client(region!), deployMementoRootKey, samDeployUrl),
                 {
                     showWhen: ({ bucketSource }) => bucketSource === BucketSource.UserProvided,
                 }
@@ -129,7 +125,7 @@ export class DeployWizard extends Wizard<DeployParams> {
         } else if (this.arg && this.arg.regionCode) {
             // "Deploy" command was invoked on a regionNode.
             this.form.template.bindPrompter(() =>
-                createTemplatePrompter(this.registry, DEPLOY_MEMENTO_ROOT_KEY, samDeployUrl)
+                createTemplatePrompter(this.registry, deployMementoRootKey, samDeployUrl)
             )
             this.form.projectRoot.setDefault(({ template }) => getProjectRoot(template))
             this.form.paramsSource.bindPrompter(async ({ projectRoot }) => {
@@ -139,11 +135,7 @@ export class DeployWizard extends Wizard<DeployParams> {
             this.form.region.setDefault(() => this.arg.regionCode)
             this.form.stackName.bindPrompter(
                 ({ region }) =>
-                    createStackPrompter(
-                        new DefaultCloudFormationClient(region!),
-                        DEPLOY_MEMENTO_ROOT_KEY,
-                        samDeployUrl
-                    ),
+                    createStackPrompter(new DefaultCloudFormationClient(region!), deployMementoRootKey, samDeployUrl),
                 {
                     showWhen: ({ paramsSource }) =>
                         paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
@@ -155,7 +147,7 @@ export class DeployWizard extends Wizard<DeployParams> {
             })
             this.form.bucketName.bindPrompter(
                 ({ region }) =>
-                    createBucketNamePrompter(new DefaultS3Client(region!), DEPLOY_MEMENTO_ROOT_KEY, samDeployUrl),
+                    createBucketNamePrompter(new DefaultS3Client(region!), deployMementoRootKey, samDeployUrl),
                 {
                     showWhen: ({ bucketSource }) => bucketSource === BucketSource.UserProvided,
                 }
@@ -178,11 +170,7 @@ export class DeployWizard extends Wizard<DeployParams> {
             })
             this.form.stackName.bindPrompter(
                 ({ region }) =>
-                    createStackPrompter(
-                        new DefaultCloudFormationClient(region!),
-                        DEPLOY_MEMENTO_ROOT_KEY,
-                        samDeployUrl
-                    ),
+                    createStackPrompter(new DefaultCloudFormationClient(region!), deployMementoRootKey, samDeployUrl),
                 {
                     showWhen: ({ paramsSource }) =>
                         paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
@@ -194,7 +182,7 @@ export class DeployWizard extends Wizard<DeployParams> {
             })
             this.form.bucketName.bindPrompter(
                 ({ region }) =>
-                    createBucketNamePrompter(new DefaultS3Client(region!), DEPLOY_MEMENTO_ROOT_KEY, samDeployUrl),
+                    createBucketNamePrompter(new DefaultS3Client(region!), deployMementoRootKey, samDeployUrl),
                 {
                     showWhen: ({ bucketSource }) => bucketSource === BucketSource.UserProvided,
                 }
@@ -203,7 +191,7 @@ export class DeployWizard extends Wizard<DeployParams> {
         } else {
             // "Deploy" command was invoked on the command palette.
             this.form.template.bindPrompter(() =>
-                createTemplatePrompter(this.registry, DEPLOY_MEMENTO_ROOT_KEY, samDeployUrl)
+                createTemplatePrompter(this.registry, deployMementoRootKey, samDeployUrl)
             )
             this.form.projectRoot.setDefault(({ template }) => getProjectRoot(template))
             this.form.paramsSource.bindPrompter(async ({ projectRoot }) => {
@@ -216,11 +204,7 @@ export class DeployWizard extends Wizard<DeployParams> {
             })
             this.form.stackName.bindPrompter(
                 ({ region }) =>
-                    createStackPrompter(
-                        new DefaultCloudFormationClient(region!),
-                        DEPLOY_MEMENTO_ROOT_KEY,
-                        samDeployUrl
-                    ),
+                    createStackPrompter(new DefaultCloudFormationClient(region!), deployMementoRootKey, samDeployUrl),
                 {
                     showWhen: ({ paramsSource }) =>
                         paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
@@ -232,7 +216,7 @@ export class DeployWizard extends Wizard<DeployParams> {
             })
             this.form.bucketName.bindPrompter(
                 ({ region }) =>
-                    createBucketNamePrompter(new DefaultS3Client(region!), DEPLOY_MEMENTO_ROOT_KEY, samDeployUrl),
+                    createBucketNamePrompter(new DefaultS3Client(region!), deployMementoRootKey, samDeployUrl),
                 {
                     showWhen: ({ bucketSource }) => bucketSource === BucketSource.UserProvided,
                 }
@@ -329,14 +313,14 @@ export async function runDeploy(arg: any, wizardParams?: DeployParams): Promise<
             const paramsToSet: string[] = []
             for (const name of parameterNames) {
                 if (params[name]) {
-                    await updateRecentResponse(DEPLOY_MEMENTO_ROOT_KEY, params.template.uri.fsPath, name, params[name])
+                    await updateRecentResponse(deployMementoRootKey, params.template.uri.fsPath, name, params[name])
                     paramsToSet.push(`ParameterKey=${name},ParameterValue=${params[name]}`)
                 }
             }
             paramsToSet.length > 0 && deployFlags.push('--parameter-overrides', paramsToSet.join(' '))
         }
 
-        await updateRecentResponse(DEPLOY_MEMENTO_ROOT_KEY, 'global', 'templatePath', params.template.uri.fsPath)
+        await updateRecentResponse(deployMementoRootKey, 'global', 'templatePath', params.template.uri.fsPath)
 
         try {
             const { path: samCliPath } = await getSamCliPathAndVersion()

@@ -52,7 +52,7 @@ import { ParamsSource, createSyncParamsSourcePrompter } from '../ui/sam/paramsSo
 import { createEcrPrompter } from '../ui/sam/ecrPrompter'
 import { BucketSource, createBucketNamePrompter, createBucketSourcePrompter } from '../ui/sam/bucketPrompter'
 import { runInTerminal } from './processTerminal'
-import { SYNC_MEMENTO_ROOT_KEY } from './constants'
+import { syncMementoRootKey } from './constants'
 
 export interface SyncParams {
     readonly paramsSource: ParamsSource
@@ -71,7 +71,7 @@ export interface SyncParams {
 
 // TODO: hook this up so it prompts the user when more than 1 environment is present in `samconfig.toml`
 export function createEnvironmentPrompter(config: SamConfig, environments = config.listEnvironments()) {
-    const recentEnvironmentName = getRecentResponse(SYNC_MEMENTO_ROOT_KEY, config.location.fsPath, 'environmentName')
+    const recentEnvironmentName = getRecentResponse(syncMementoRootKey, config.location.fsPath, 'environmentName')
     const items = environments.map((env) => ({
         label: env.name,
         data: env,
@@ -155,7 +155,7 @@ export class SyncWizard extends Wizard<SyncParams> {
     ) {
         super({ initState: state, exitPrompterProvider: shouldPromptExit ? createExitPrompter : undefined })
         this.registry = registry
-        this.form.template.bindPrompter(() => createTemplatePrompter(this.registry, SYNC_MEMENTO_ROOT_KEY, samSyncUrl))
+        this.form.template.bindPrompter(() => createTemplatePrompter(this.registry, syncMementoRootKey, samSyncUrl))
         this.form.projectRoot.setDefault(({ template }) => getProjectRoot(template))
 
         this.form.paramsSource.bindPrompter(async ({ projectRoot }) => {
@@ -168,7 +168,7 @@ export class SyncWizard extends Wizard<SyncParams> {
         })
         this.form.stackName.bindPrompter(
             ({ region }) =>
-                createStackPrompter(new DefaultCloudFormationClient(region!), SYNC_MEMENTO_ROOT_KEY, samSyncUrl),
+                createStackPrompter(new DefaultCloudFormationClient(region!), syncMementoRootKey, samSyncUrl),
             {
                 showWhen: ({ paramsSource }) =>
                     paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
@@ -180,14 +180,14 @@ export class SyncWizard extends Wizard<SyncParams> {
         })
 
         this.form.bucketName.bindPrompter(
-            ({ region }) => createBucketNamePrompter(new DefaultS3Client(region!), SYNC_MEMENTO_ROOT_KEY, samSyncUrl),
+            ({ region }) => createBucketNamePrompter(new DefaultS3Client(region!), syncMementoRootKey, samSyncUrl),
             {
                 showWhen: ({ bucketSource }) => bucketSource === BucketSource.UserProvided,
             }
         )
 
         this.form.ecrRepoUri.bindPrompter(
-            ({ region }) => createEcrPrompter(new DefaultEcrClient(region!), SYNC_MEMENTO_ROOT_KEY),
+            ({ region }) => createEcrPrompter(new DefaultEcrClient(region!), syncMementoRootKey),
             {
                 showWhen: ({ template, paramsSource }) =>
                     !!template &&
@@ -515,7 +515,7 @@ export async function runSync(
 }
 
 async function updateSyncRecentResponse(region: string, key: string, value: string | undefined) {
-    return await updateRecentResponse(SYNC_MEMENTO_ROOT_KEY, region, key, value)
+    return await updateRecentResponse(syncMementoRootKey, region, key, value)
 }
 
 export async function confirmDevStack() {

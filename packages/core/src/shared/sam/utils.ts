@@ -1,5 +1,3 @@
-/* eslint-disable header/header */
-/* eslint-disable @typescript-eslint/naming-convention */
 /*!
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
@@ -20,7 +18,7 @@ import { telemetry } from '../telemetry/telemetry'
 import globals from '../extensionGlobals'
 import { getLogger } from '../logger/logger'
 import { ChildProcessResult } from '../utilities/processUtils'
-import { BUILD_PROCESS_MEMENTO_ROOT_KEY, GLOBAL_IDENTIFIER } from './constants'
+import { buildProcessMementoRootKey, globalIdentifier } from './constants'
 
 /**
  * @description determines the root directory of the project given Template Item
@@ -117,7 +115,7 @@ export async function updateRecentResponse(
  * @Param templatePath The path to the template.yaml file
  */
 function isBuildInProgress(templatePath: string): boolean {
-    return getRecentResponse(BUILD_PROCESS_MEMENTO_ROOT_KEY, GLOBAL_IDENTIFIER, templatePath) !== undefined
+    return getRecentResponse(buildProcessMementoRootKey, globalIdentifier, templatePath) !== undefined
 }
 
 /**
@@ -131,11 +129,11 @@ export function throwIfTemplateIsBeingBuilt(templatePath: string) {
 }
 
 export async function registerTemplateBuild(templatePath: string) {
-    await updateRecentResponse(BUILD_PROCESS_MEMENTO_ROOT_KEY, GLOBAL_IDENTIFIER, templatePath, 'true')
+    await updateRecentResponse(buildProcessMementoRootKey, globalIdentifier, templatePath, 'true')
 }
 
 export async function unregisterTemplateBuild(templatePath: string) {
-    await updateRecentResponse(BUILD_PROCESS_MEMENTO_ROOT_KEY, GLOBAL_IDENTIFIER, templatePath, undefined)
+    await updateRecentResponse(buildProcessMementoRootKey, globalIdentifier, templatePath, undefined)
 }
 
 export function getSamCliErrorMessage(stderr: string): string {
