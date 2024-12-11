@@ -19,6 +19,7 @@ describe('DefaultAmazonQAppInitContext', () => {
             const publisher = new MessagePublisher(new EventEmitter())
             context.registerWebViewToAppMessagePublisher(publisher, 'unknown')
             assert.strictEqual(context.getWebViewToAppsMessagePublishers().get('unknown'), publisher)
+            assert.fail('foo')
         })
     })
 
