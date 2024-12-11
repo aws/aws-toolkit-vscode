@@ -16,6 +16,7 @@ import {
     getSelectionFromRange,
 } from '../../../shared/utilities/textDocumentUtilities'
 import { extractFileAndCodeSelectionFromMessage, fs, getErrorMsg, ToolkitError } from '../../../shared'
+import { UserWrittenCodeTracker } from '../../../codewhisperer/tracker/userWrittenCodeTracker'
 
 export class ContentProvider implements vscode.TextDocumentContentProvider {
     constructor(private uri: vscode.Uri) {}
@@ -41,6 +42,7 @@ export class EditorContentController {
     ) {
         const editor = window.activeTextEditor
         if (editor) {
+            UserWrittenCodeTracker.instance.onQStartsMakingEdits()
             const cursorStart = editor.selection.active
             const indentRange = new vscode.Range(new vscode.Position(cursorStart.line, 0), cursorStart)
             // use the user editor intent if the position to the left of cursor is just space or tab
@@ -71,6 +73,9 @@ export class EditorContentController {
                         getLogger().error('TextEditor.edit failed: %s', (e as Error).message)
                     }
                 )
+                .then(() => {
+                    UserWrittenCodeTracker.instance.onQFinishesEdits()
+                })
         }
     }
 

@@ -32,7 +32,7 @@ import { RecommendationService } from '../service/recommendationService'
 import { Container } from '../service/serviceContainer'
 import { telemetry } from '../../shared/telemetry'
 import { TelemetryHelper } from '../util/telemetryHelper'
-import { QCodeGenTracker } from '../tracker/qCodeGenTracker'
+import { UserWrittenCodeTracker } from '../tracker/userWrittenCodeTracker'
 
 export const acceptSuggestion = Commands.declare(
     'aws.amazonq.accept',
@@ -127,7 +127,7 @@ export async function onInlineAcceptance(acceptanceEntry: OnRecommendationAccept
             acceptanceEntry.editor.document.getText(insertedCoderange),
             acceptanceEntry.editor.document.fileName
         )
-        QCodeGenTracker.instance.onInlineCompletionAcceptance(acceptanceEntry)
+        UserWrittenCodeTracker.instance.onQFinishesEdits()
         if (acceptanceEntry.references !== undefined) {
             const referenceLog = ReferenceLogViewProvider.getReferenceLog(
                 acceptanceEntry.recommendation,

@@ -6,7 +6,6 @@
 import * as vscode from 'vscode'
 import { getLogger } from '../../shared/logger/logger'
 import * as CodeWhispererConstants from '../models/constants'
-import { OnRecommendationAcceptanceEntry, vsCodeState } from '../models/model'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { AuthUtil } from '../util/authUtil'
@@ -15,22 +14,37 @@ import { codeWhispererClient as client } from '../client/codewhisperer'
 import { isAwsError } from '../../shared/errors'
 
 /**
- * This singleton class is mainly used for calculating the total code written by Amazon Q and user
- * It is meant to replace `CodeWhispererCodeCoverageTracker`
+ * This singleton class is mainly used for calculating the user written code
+ * for active Amazon Q users.
+ * It reports the user written code per 5 minutes when the user is coding and using Amazon Q features
  */
-export class QCodeGenTracker {
-    private _totalNewCodeCharacterCount: number
-    private _totalNewCodeLineCount: number
+export class UserWrittenCodeTracker {
+    private _userWrittenNewCodeCharacterCount: number
+    private _userWrittenNewCodeLineCount: number
+    private _qIsMakingEdits: boolean
     private _timer?: NodeJS.Timer
     private _qUsageCount: number
+    private _lastQInvocationTime: number
 
-    static #instance: QCodeGenTracker
+    static #instance: UserWrittenCodeTracker
     static copySnippetThreshold = 50
+    static resetQIsEditingTimeoutMs = 5 * 60 * 1000
 
     private constructor() {
-        this._totalNewCodeLineCount = 0
-        this._totalNewCodeCharacterCount = 0
+        this._userWrittenNewCodeLineCount = 0
+        this._userWrittenNewCodeCharacterCount = 0
         this._qUsageCount = 0
+        this._qIsMakingEdits = false
+        this._timer = undefined
+        this._lastQInvocationTime = 0
+    }
+
+    private resetTracker() {
+        this._userWrittenNewCodeLineCount = 0
+        this._userWrittenNewCodeCharacterCount = 0
+        this._qUsageCount = 0
+        this._qIsMakingEdits = false
+        this._lastQInvocationTime = 0
     }
 
     public static get instance() {
@@ -45,6 +59,15 @@ export class QCodeGenTracker {
     // for all Q features
     public onQFeatureInvoked() {
         this._qUsageCount += 1
+        this._lastQInvocationTime = performance.now()
+    }
+
+    public onQStartsMakingEdits() {
+        this._qIsMakingEdits = true
+    }
+
+    public onQFinishesEdits() {
+        this._qIsMakingEdits = false
     }
 
     public emitCodeContribution() {
@@ -60,8 +83,8 @@ export class QCodeGenTracker {
                         acceptedCharacterCount: 0,
                         totalCharacterCount: 0,
                         timestamp: new Date(Date.now()),
-                        totalNewCodeCharacterCount: this._totalNewCodeCharacterCount,
-                        totalNewCodeLineCount: this._totalNewCodeLineCount,
+                        userWrittenCodeCharacterCount: this._userWrittenNewCodeCharacterCount,
+                        userWrittenCodeLineCount: this._userWrittenNewCodeLineCount,
                     },
                 },
             })
@@ -98,7 +121,7 @@ export class QCodeGenTracker {
                         getLogger().debug(`Skip emiting code contribution metric. There is no active Amazon Q usage. `)
                         return
                     }
-                    if (this._totalNewCodeCharacterCount === 0) {
+                    if (this._userWrittenNewCodeCharacterCount === 0) {
                         getLogger().debug(`Skip emiting code contribution metric. There is no new code added. `)
                         return
                     }
@@ -113,12 +136,6 @@ export class QCodeGenTracker {
         }, CodeWhispererConstants.defaultCheckPeriodMillis)
     }
 
-    private resetTracker() {
-        this._totalNewCodeLineCount = 0
-        this._totalNewCodeCharacterCount = 0
-        this._qUsageCount = 0
-    }
-
     private closeTimer() {
         if (this._timer !== undefined) {
             clearTimeout(this._timer)
@@ -131,65 +148,32 @@ export class QCodeGenTracker {
     }
 
     public onTextDocumentChange(e: vscode.TextDocumentChangeEvent) {
+        // do not count code written by Q as user written code
         if (
             !runtimeLanguageContext.isLanguageSupported(e.document.languageId) ||
-            vsCodeState.isCodeWhispererEditing ||
-            e.contentChanges.length === 0
+            e.contentChanges.length === 0 ||
+            this._qIsMakingEdits
         ) {
+            // if the boolean of qIsMakingEdits was incorrectly set to true
+            // due to unhandled edge cases or early terminated code paths
+            // reset it back to false after reasonabe period of time
+            if (this._qIsMakingEdits) {
+                if (performance.now() - this._lastQInvocationTime > UserWrittenCodeTracker.resetQIsEditingTimeoutMs) {
+                    this._qIsMakingEdits = false
+                }
+            }
             return
         }
         const contentChange = e.contentChanges[0]
         // if user copies code into the editor for more than 50 characters
-        // do not count this as total new code, this will skew the data.
-        if (contentChange.text.length > QCodeGenTracker.copySnippetThreshold) {
+        // do not count this as total new code, this will skew the data,
+        // reporting highly inflated user written code
+        if (contentChange.text.length > UserWrittenCodeTracker.copySnippetThreshold) {
             return
         }
-        this._totalNewCodeCharacterCount += contentChange.text.length
-        this._totalNewCodeLineCount += this.countNewLines(contentChange.text)
+        this._userWrittenNewCodeCharacterCount += contentChange.text.length
+        this._userWrittenNewCodeLineCount += this.countNewLines(contentChange.text)
         // start 5 min data reporting once valid user input is detected
         this.tryStartTimer()
     }
-
-    // add Q inline completion contributed code to total code written
-    public onInlineCompletionAcceptance(acceptanceEntry: OnRecommendationAcceptanceEntry) {
-        let typeaheadLength = 0
-        if (acceptanceEntry.editor) {
-            typeaheadLength = acceptanceEntry.editor.document.getText(acceptanceEntry.range).length
-        }
-        const documentChangeLength = acceptanceEntry.recommendation.length - typeaheadLength
-        // if the inline completion is less than 50 characters, it will be auto captured by onTextDocumentChange
-        // notice that the document change event of such acceptance do not include typeahead
-        if (documentChangeLength <= QCodeGenTracker.copySnippetThreshold) {
-            return
-        }
-        this._totalNewCodeCharacterCount += acceptanceEntry.recommendation.length
-        this._totalNewCodeLineCount += this.countNewLines(acceptanceEntry.recommendation)
-    }
-
-    // add Q chat insert to cursor code to total code written
-    public onQChatInsertion(acceptedCharacterCount?: number, acceptedLineCount?: number) {
-        if (acceptedCharacterCount && acceptedLineCount) {
-            // if the chat inserted code is less than 50 characters, it will be auto captured by onTextDocumentChange
-            if (acceptedCharacterCount <= QCodeGenTracker.copySnippetThreshold) {
-                return
-            }
-            this._totalNewCodeCharacterCount += acceptedCharacterCount
-            this._totalNewCodeLineCount += acceptedLineCount
-        }
-    }
-
-    // add Q inline chat acceptance to total code written
-    public onInlineChatAcceptance() {}
-
-    // TODO: add Q inline chat acceptance to total code written
-    public onTransformAcceptance() {}
-
-    // TODO: add Q feature dev acceptance to total code written
-    public onFeatureDevAcceptance() {}
-
-    // TODO: add Q UTG acceptance to total code written
-    public onUtgAcceptance() {}
-
-    // TODO: add Q UTG acceptance to total code written
-    public onDocAcceptance() {}
 }

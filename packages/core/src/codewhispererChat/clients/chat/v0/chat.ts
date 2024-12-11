@@ -9,7 +9,7 @@ import * as vscode from 'vscode'
 import { ToolkitError } from '../../../../shared/errors'
 import { createCodeWhispererChatStreamingClient } from '../../../../shared/clients/codewhispererChatClient'
 import { createQDeveloperStreamingClient } from '../../../../shared/clients/qDeveloperChatClient'
-import { QCodeGenTracker } from '../../../../codewhisperer/tracker/qCodeGenTracker'
+import { UserWrittenCodeTracker } from '../../../../codewhisperer/tracker/userWrittenCodeTracker'
 
 export class ChatSession {
     private sessionId?: string
@@ -68,7 +68,7 @@ export class ChatSession {
 
         this.sessionId = response.conversationId
 
-        QCodeGenTracker.instance.onQFeatureInvoked()
+        UserWrittenCodeTracker.instance.onQFeatureInvoked()
 
         return response
     }
