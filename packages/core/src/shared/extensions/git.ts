@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import * as GitTypes from '../../../types/git.d'
 import { SemVer, parse as semverParse } from 'semver'
-import { execFile } from 'child_process'
+import { execFile } from 'child_process' // eslint-disable-line no-restricted-imports
 import { promisify } from 'util'
 import { VSCODE_EXTENSION_ID } from '../extensions'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../filesystemUtilities'
