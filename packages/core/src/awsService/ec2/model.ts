@@ -326,7 +326,7 @@ export class Ec2Connecter implements vscode.Disposable {
         const appendStr = (s: string) => `echo "${s}" >> ${remoteAuthorizedKeysPath}`
         const writeKeyCommand = appendStr([sshPubKey.replace('\n', ''), hintComment].join(' '))
 
-        await this.attemptToCleanKeys(selection.instanceId, hintComment, remoteUser.os, remoteAuthorizedKeysPath)
+        await this.tryCleanKeys(selection.instanceId, hintComment, remoteUser.os, remoteAuthorizedKeysPath)
         await this.sendCommandAndWait(selection.instanceId, writeKeyCommand)
     }
 

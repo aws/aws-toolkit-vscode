@@ -212,7 +212,7 @@ describe('Ec2ConnectClient', function () {
                 region: 'test-region',
             }
 
-            await client.attemptToCleanKeys(testSelection.instanceId, 'hint', 'macOS', 'path/to/keys')
+            await client.tryCleanKeys(testSelection.instanceId, 'hint', 'macOS', 'path/to/keys')
             sendCommandStub.calledWith(testSelection.instanceId, 'AWS-RunShellScript', {
                 commands: [getRemoveLinesCommand('hint', 'macOS', 'path/to/keys')],
             })
@@ -230,7 +230,7 @@ describe('Ec2ConnectClient', function () {
                 region: 'test-region',
             }
 
-            await client.attemptToCleanKeys(testSelection.instanceId, 'hint', 'macOS', 'path/to/keys')
+            await client.tryCleanKeys(testSelection.instanceId, 'hint', 'macOS', 'path/to/keys')
             sinon.assert.calledWith(sendCommandStub, testSelection.instanceId, 'AWS-RunShellScript', {
                 commands: [getRemoveLinesCommand('hint', 'macOS', 'path/to/keys')],
             })
