@@ -35,6 +35,7 @@ import {
     updateRecentResponse,
 } from './utils'
 import { runInTerminal } from './processTerminal'
+import { deployMementoRootKey } from './constants'
 
 export interface DeployParams {
     readonly paramsSource: ParamsSource
@@ -47,8 +48,6 @@ export interface DeployParams {
 
     [key: string]: any
 }
-
-const deployMementoRootKey = 'samcli.deploy.params'
 
 function getRecentDeployParams(identifier: string, key: string): string | undefined {
     return getRecentResponse(deployMementoRootKey, identifier, key)

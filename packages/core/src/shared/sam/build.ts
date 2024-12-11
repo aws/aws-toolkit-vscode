@@ -25,12 +25,15 @@ import {
     getSamCliPathAndVersion,
     getTerminalFromError,
     isDotnetRuntime,
+    registerTemplateBuild,
+    throwIfTemplateIsBeingBuilt,
+    unregisterTemplateBuild,
     updateRecentResponse,
 } from './utils'
 import { getConfigFileUri, validateSamBuildConfig } from './config'
 import { runInTerminal } from './processTerminal'
+import { buildMementoRootKey } from './constants'
 
-const buildMementoRootKey = 'samcli.build.params'
 export interface BuildParams {
     readonly template: TemplateItem
     readonly projectRoot: vscode.Uri
@@ -207,6 +210,9 @@ export async function runBuild(arg?: TreeNode): Promise<SamBuildResult> {
         throw new CancellationError('user')
     }
 
+    throwIfTemplateIsBeingBuilt(params.template.uri.path)
+    await registerTemplateBuild(params.template.uri.path)
+
     const projectRoot = params.projectRoot
 
     const defaultFlags: string[] = ['--cached', '--parallel', '--save-params', '--use-container']
@@ -229,23 +235,35 @@ export async function runBuild(arg?: TreeNode): Promise<SamBuildResult> {
     await updateRecentResponse(buildMementoRootKey, 'global', 'templatePath', templatePath)
 
     try {
-        const { path: samCliPath } = await getSamCliPathAndVersion()
+        await vscode.window.withProgress(
+            {
+                location: vscode.ProgressLocation.Notification,
+            },
+            async (progress) => {
+                progress.report({ message: `Building SAM template at ${params.template.uri.path}` })
 
-        // Create a child process to run the SAM build command
-        const buildProcess = new ChildProcess(samCliPath, ['build', ...buildFlags], {
-            spawnOptions: await addTelemetryEnvVar({
-                cwd: params.projectRoot.fsPath,
-                env: await getSpawnEnv(process.env),
-            }),
-        })
+                const { path: samCliPath } = await getSamCliPathAndVersion()
 
-        // Run SAM build in Terminal
-        await runInTerminal(buildProcess, 'build')
+                // Create a child process to run the SAM build command
+                const buildProcess = new ChildProcess(samCliPath, ['build', ...buildFlags], {
+                    spawnOptions: await addTelemetryEnvVar({
+                        cwd: params.projectRoot.fsPath,
+                        env: await getSpawnEnv(process.env),
+                    }),
+                })
+
+                // Run SAM build in Terminal
+                await runInTerminal(buildProcess, 'build')
+            }
+        )
+
+        await unregisterTemplateBuild(params.template.uri.path)
 
         return {
             isSuccess: true,
         }
     } catch (error) {
+        await unregisterTemplateBuild(params.template.uri.path)
         throw ToolkitError.chain(error, 'Failed to build SAM template', {
             details: { terminal: getTerminalFromError(error), ...resolveBuildArgConflict(buildFlags) },
             code: getErrorCode(error),
