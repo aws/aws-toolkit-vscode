@@ -68,14 +68,13 @@ export class EditorContentController {
                         if (appliedEdits) {
                             trackCodeEdit(editor, cursorStart)
                         }
+                        UserWrittenCodeTracker.instance.onQFinishesEdits()
                     },
                     (e) => {
                         getLogger().error('TextEditor.edit failed: %s', (e as Error).message)
+                        UserWrittenCodeTracker.instance.onQFinishesEdits()
                     }
                 )
-                .then(() => {
-                    UserWrittenCodeTracker.instance.onQFinishesEdits()
-                })
         }
     }
 
