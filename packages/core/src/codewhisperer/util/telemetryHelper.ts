@@ -76,7 +76,7 @@ export class TelemetryHelper {
         generatedCharactersCount?: number,
         generatedCount?: number,
         generatedLinesCount?: number,
-        reason?: string,
+        reason?: string
     ) {
         telemetry.amazonq_utgGenerateTests.emit({
             cwsprChatProgrammingLanguage: session.fileLanguage ?? 'plaintext',
