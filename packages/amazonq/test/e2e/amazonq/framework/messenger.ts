@@ -155,7 +155,6 @@ export class Messenger {
 
     async waitForText(text: string, waitOverrides?: MessengerOptions) {
         await this.waitForEvent(() => {
-            console.log(this.getChatItems())
             return this.getChatItems().some((chatItem) => chatItem.body === text)
         }, waitOverrides)
     }
