@@ -24,6 +24,10 @@ import { ExtContext } from '../../../shared/extensions'
 export class SecurityIssueWebview extends VueWebview {
     public static readonly sourcePath: string = 'src/codewhisperer/views/securityIssue/vue/index.js'
     public readonly id = 'aws.codeWhisperer.securityIssue'
+    public readonly onChangeIssue = new vscode.EventEmitter<CodeScanIssue | undefined>()
+    public readonly onChangeFilePath = new vscode.EventEmitter<string | undefined>()
+    public readonly onChangeGenerateFixLoading = new vscode.EventEmitter<boolean>()
+    public readonly onChangeGenerateFixError = new vscode.EventEmitter<boolean>()
 
     private issue: CodeScanIssue | undefined
     private filePath: string | undefined
@@ -40,10 +44,12 @@ export class SecurityIssueWebview extends VueWebview {
 
     public setIssue(issue: CodeScanIssue) {
         this.issue = issue
+        this.onChangeIssue.fire(issue)
     }
 
     public setFilePath(filePath: string) {
         this.filePath = filePath
+        this.onChangeFilePath.fire(filePath)
     }
 
     public applyFix() {
@@ -90,6 +96,7 @@ export class SecurityIssueWebview extends VueWebview {
 
     public setIsGenerateFixLoading(isGenerateFixLoading: boolean) {
         this.isGenerateFixLoading = isGenerateFixLoading
+        this.onChangeGenerateFixLoading.fire(isGenerateFixLoading)
     }
 
     public getIsGenerateFixError() {
@@ -98,6 +105,7 @@ export class SecurityIssueWebview extends VueWebview {
 
     public setIsGenerateFixError(isGenerateFixError: boolean) {
         this.isGenerateFixError = isGenerateFixError
+        this.onChangeGenerateFixError.fire(isGenerateFixError)
     }
 
     public generateFix() {
@@ -189,12 +197,7 @@ const Panel = VueWebview.compilePanel(SecurityIssueWebview)
 let activePanel: InstanceType<typeof Panel> | undefined
 
 export async function showSecurityIssueWebview(ctx: vscode.ExtensionContext, issue: CodeScanIssue, filePath: string) {
-    const previousPanel = activePanel
-    const previousId = previousPanel?.server?.getIssue()?.findingId
-    if (previousPanel && previousId) {
-        previousPanel.server.closeWebview(previousId)
-    }
-    activePanel = new Panel(ctx)
+    activePanel ??= new Panel(ctx)
     activePanel.server.setIssue(issue)
     activePanel.server.setFilePath(filePath)
     activePanel.server.setIsGenerateFixLoading(false)
