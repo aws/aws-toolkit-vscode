@@ -142,7 +142,7 @@
     "AWS.command.refreshAwsExplorer": "Refresh Explorer",
     "AWS.command.refreshCdkExplorer": "Refresh CDK Explorer",
     "AWS.command.cdk.help": "View CDK Documentation",
-    "AWS.command.ec2.openTerminal": "Connect Terminal to EC2 Instance...",
+    "AWS.command.ec2.openTerminal": "Open Terminal to EC2 Instance...",
     "AWS.command.ec2.openRemoteConnection": "Connect VS Code to EC2 Instance...",
     "AWS.command.ec2.startInstance": "Start EC2 Instance",
     "AWS.command.ec2.linkToLaunch": "Launch EC2 Instance",
