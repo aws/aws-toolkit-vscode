@@ -3,19 +3,26 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { StepEstimator, Wizard } from '../wizards/wizard'
+import _ from 'lodash'
+import { StepEstimator, Wizard, WIZARD_BACK, WIZARD_SKIP } from '../wizards/wizard'
 import { Prompter, PromptResult } from './prompter'
 
 /**
- * Wraps {@link Wizard} object into its own {@link Prompter}, allowing wizards to use other
- * wizards in their flows.
+ * Wraps {@link Wizard} object into its own {@link Prompter}, allowing wizards to use other wizards in their flows.
+ * This is meant to be used exclusively in createWizardPrompter() method of {@link NestedWizard} class.
+ *
+ * @remarks
+ *  - The WizardPrompter class should never be instantiated with directly.
+ *  - Use createWizardPrompter() method of {@link NestedWizard} when creating a nested wizard prompter for proper state management.
+ *  - See examples:
+ *     - {@link SingleNestedWizard}
+ *     - {@link DoubleNestedWizard}
  */
 export class WizardPrompter<T> extends Prompter<T> {
     public get recentItem(): any {
         return undefined
     }
     public set recentItem(response: any) {}
-
     private stepOffset: number = 0
     private response: T | undefined
 
@@ -51,6 +58,15 @@ export class WizardPrompter<T> extends Prompter<T> {
 
     protected async promptUser(): Promise<PromptResult<T>> {
         this.response = await this.wizard.run()
-        return this.response
+
+        if (this.response === undefined) {
+            return WIZARD_BACK as PromptResult<T>
+        } else if (_.isEmpty(this.response)) {
+            return WIZARD_SKIP as PromptResult<T>
+        }
+
+        return {
+            ...this.response,
+        } as PromptResult<T>
     }
 }
