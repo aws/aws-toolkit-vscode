@@ -581,7 +581,7 @@ export class IamPolicyChecksWebview extends VueWebview {
                     documentType: opts.documentType,
                     inputPolicyType: opts.policyType ?? 'None',
                 })
-                const result = await ChildProcess.exec(opts.command, opts.args, { collect: true })
+                const result = await ChildProcess.run(opts.command, opts.args, { collect: true })
                 const findingsCount = this.handleValidatePolicyCliResponse(result.stdout)
                 span.record({
                     findingsCount: findingsCount,
@@ -645,7 +645,7 @@ export class IamPolicyChecksWebview extends VueWebview {
                     inputPolicyType: 'None', // Note: This will change once JSON policy language is enabled for Custom policy checks
                     referencePolicyType: opts.referencePolicyType ?? 'None',
                 })
-                const resp = await ChildProcess.exec(opts.command, opts.args)
+                const resp = await ChildProcess.run(opts.command, opts.args)
                 const findingsCount = this.handleCustomPolicyChecksCliResponse(resp.stdout)
                 span.record({
                     findingsCount: findingsCount,
@@ -833,7 +833,7 @@ export async function arePythonToolsInstalled(): Promise<boolean> {
     let cfnToolInstalled = true
     let tfToolInstalled = true
     try {
-        await ChildProcess.exec('tf-policy-validator')
+        await ChildProcess.run('tf-policy-validator')
     } catch (err: any) {
         if (isProcessNotFoundErr(err.message)) {
             tfToolInstalled = false
@@ -841,7 +841,7 @@ export async function arePythonToolsInstalled(): Promise<boolean> {
         }
     }
     try {
-        await ChildProcess.exec('cfn-policy-validator')
+        await ChildProcess.run('cfn-policy-validator')
     } catch (err: any) {
         if (isProcessNotFoundErr(err.message)) {
             cfnToolInstalled = false

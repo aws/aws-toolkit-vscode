@@ -177,7 +177,7 @@ async function makeInstallScript(debuggerPath: string, isWindows: boolean): Prom
     async function getDelveVersion(repo: string, silent: boolean): Promise<string> {
         try {
             return (
-                await ChildProcess.exec('git', ['-C', repo, 'describe', '--tags', '--abbrev=0'], { collect: true })
+                await ChildProcess.run('git', ['-C', repo, 'describe', '--tags', '--abbrev=0'], { collect: true })
             ).stdout.trim()
         } catch (e) {
             if (!silent) {
@@ -189,9 +189,8 @@ async function makeInstallScript(debuggerPath: string, isWindows: boolean): Prom
 
     // It's fine if we can't get the latest Delve version, the Toolkit will use the last built one instead
     try {
-        const goPath: string = JSON.parse(
-            (await ChildProcess.exec('go', ['env', '-json'], { collect: true })).stdout
-        ).GOPATH
+        const result = await ChildProcess.run('go', ['env', '-json'], { collect: true })
+        const goPath: string = JSON.parse(result.stdout).GOPATH
         let repoPath: string = path.join(goPath, 'src', delveRepo)
 
         if (!getDelveVersion(repoPath, true)) {
@@ -204,7 +203,7 @@ async function makeInstallScript(debuggerPath: string, isWindows: boolean): Prom
             installOptions.env!['GOPATH'] = debuggerPath
             repoPath = path.join(debuggerPath, 'src', delveRepo)
             const args = ['get', '-d', `${delveRepo}/cmd/dlv`]
-            const out = await ChildProcess.exec('go', args, { ...(installOptions as any), collect: true })
+            const out = await ChildProcess.run('go', args, { ...(installOptions as any), collect: true })
             getLogger().debug('"go %O": %s', args, out)
         }
 

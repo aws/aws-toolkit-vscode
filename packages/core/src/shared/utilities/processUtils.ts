@@ -100,7 +100,7 @@ export class ChildProcess {
         // TODO: allow caller to use the various loggers instead of just the single one
         this.#log = baseOptions.logging !== 'no' ? logger.getLogger() : logger.getNullLogger()
     }
-    public static async exec(
+    public static async run(
         command: string,
         args: string[] = [],
         options?: ChildProcessOptions

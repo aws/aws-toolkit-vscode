@@ -218,7 +218,7 @@ export async function createNewSamApplication(
         // Needs to be done or else gopls won't start
         if (goRuntimes.includes(createRuntime)) {
             try {
-                await ChildProcess.exec('go', ['mod', 'tidy'], {
+                await ChildProcess.run('go', ['mod', 'tidy'], {
                     spawnOptions: { cwd: path.join(path.dirname(templateUri.fsPath), 'hello-world') },
                 })
             } catch (err) {
