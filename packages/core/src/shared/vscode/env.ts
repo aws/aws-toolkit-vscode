@@ -149,6 +149,9 @@ export async function isCloudDesktop() {
     return (await new ChildProcess('/apollo/bin/getmyfabric').run().then((r) => r.exitCode)) === 0
 }
 
+export function isMac(): boolean {
+    return process.platform === 'darwin'
+}
 /** Returns true if OS is Windows. */
 export function isWin(): boolean {
     // if (isWeb()) {
