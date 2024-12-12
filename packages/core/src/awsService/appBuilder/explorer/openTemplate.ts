@@ -5,8 +5,7 @@
 
 import { samSyncUrl } from '../../../shared/constants'
 import { CloudFormationTemplateRegistry } from '../../../shared/fs/templateRegistry'
-import { syncMementoRootKey } from '../../../shared/sam/sync'
-
+import { syncMementoRootKey } from '../../../shared/sam/constants'
 import { createExitPrompter } from '../../../shared/ui/common/exitPrompter'
 import { createTemplatePrompter, TemplateItem } from '../../../shared/ui/sam/templatePrompter'
 import { Wizard } from '../../../shared/wizards/wizard'
