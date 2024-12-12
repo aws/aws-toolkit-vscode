@@ -20,6 +20,7 @@
         "./auth": "./dist/src/auth/index.js",
         "./amazonqGumby": "./dist/src/amazonqGumby/index.js",
         "./amazonqFeatureDev": "./dist/src/amazonqFeatureDev/index.js",
+        "./amazonqDoc": "./dist/src/amazonqDoc/index.js",
         "./amazonqScan": "./dist/src/amazonqScan/index.js",
         "./amazonqTest": "./dist/src/amazonqTest/index.js",
         "./codewhispererChat": "./dist/src/codewhispererChat/index.js",
