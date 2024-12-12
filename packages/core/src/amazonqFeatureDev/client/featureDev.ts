@@ -25,7 +25,12 @@ import { createCodeWhispererChatStreamingClient } from '../../shared/clients/cod
 import { getClientId, getOptOutPreference, getOperatingSystem } from '../../shared/telemetry/util'
 import { extensionVersion } from '../../shared/vscode/env'
 import apiConfig = require('./codewhispererruntime-2022-11-11.json')
-import { FeatureDevCodeAcceptanceEvent, FeatureDevCodeGenerationEvent, TelemetryEvent } from './featuredevproxyclient'
+import {
+    FeatureDevCodeAcceptanceEvent,
+    FeatureDevCodeGenerationEvent,
+    MetricData,
+    TelemetryEvent,
+} from './featuredevproxyclient'
 
 // Re-enable once BE is able to handle retries.
 const writeAPIRetryOptions = {
@@ -297,6 +302,32 @@ export class FeatureDevClient {
             `featureDevCodeAcceptanceEvent: conversationId: ${event.conversationId} charactersOfCodeAccepted: ${event.charactersOfCodeAccepted} linesOfCodeAccepted: ${event.linesOfCodeAccepted}`
         )
         await this.sendFeatureDevEvent('featureDevCodeAcceptanceEvent', event)
+    }
+
+    public async sendMetricDataRaw(event: MetricData) {
+        getLogger().debug(
+            `featureDevCodeGenerationMetricData: metricName: ${event.metricName} metricValue: ${event.metricValue} dimensions: ${event.dimensions}`
+        )
+        await this.sendFeatureDevEvent('metricData', event)
+    }
+
+    public async sendMetricData(operationName: string, result: string) {
+        await this.sendMetricDataRaw({
+            metricName: 'Operation',
+            metricValue: 1,
+            timestamp: new Date(Date.now()),
+            product: 'Amazon Q For VS Code',
+            dimensions: [
+                {
+                    name: 'operationName',
+                    value: operationName,
+                },
+                {
+                    name: 'result',
+                    value: result,
+                },
+            ],
+        })
     }
 
     public async sendFeatureDevEvent<T extends keyof TelemetryEvent>(

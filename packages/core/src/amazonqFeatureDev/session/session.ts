@@ -285,6 +285,10 @@ export class Session {
         return { leftPath, rightPath, ...diff }
     }
 
+    public async sendMetricDataTelemetry(operationName: string, result: string) {
+        await this.proxyClient.sendMetricData(operationName, result)
+    }
+
     public async sendLinesOfCodeGeneratedTelemetry() {
         let charactersOfCodeGenerated = 0
         let linesOfCodeGenerated = 0

@@ -30,7 +30,7 @@ import {
 import { codeGenRetryLimit, defaultRetryLimit } from '../../limits'
 import { Session } from '../../session/session'
 import { featureDevScheme, featureName } from '../../constants'
-import { DeletedFileInfo, DevPhase, type NewFileInfo } from '../../types'
+import { DeletedFileInfo, DevPhase, MetricDataOperationName, MetricDataResult, type NewFileInfo } from '../../types'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { AuthController } from '../../../amazonq/auth/controller'
 import { getLogger } from '../../../shared/logger'
@@ -413,6 +413,10 @@ export class FeatureDevController {
                 canBeVoted: true,
             })
             this.messenger.sendUpdatePlaceholder(tabID, i18n('AWS.amazonq.featureDev.pillText.generatingCode'))
+            await session.sendMetricDataTelemetry(
+                MetricDataOperationName.START_CODE_GENERATION,
+                MetricDataResult.SUCCESS
+            )
             await session.send(message)
             const filePaths = session.state.filePaths ?? []
             const deletedFiles = session.state.deletedFiles ?? []
@@ -484,8 +488,45 @@ export class FeatureDevController {
                 })
                 await session.updateChatAnswer(tabID, i18n('AWS.amazonq.featureDev.pillText.acceptAllChanges'))
                 await session.sendLinesOfCodeGeneratedTelemetry()
+                await session.sendMetricDataTelemetry(
+                    MetricDataOperationName.END_CODE_GENERATION,
+                    MetricDataResult.SUCCESS
+                )
             }
             this.messenger.sendUpdatePlaceholder(tabID, i18n('AWS.amazonq.featureDev.pillText.selectOption'))
+        } catch (err: any) {
+            getLogger().error(`${featureName}: Error during code generation: ${err}`)
+
+            switch (err.constructor.name) {
+                case FeatureDevServiceError.name:
+                    if (err.code === 'EmptyPatchException') {
+                        await session.sendMetricDataTelemetry(
+                            MetricDataOperationName.END_CODE_GENERATION,
+                            MetricDataResult.LLMFAILURE
+                        )
+                    } else {
+                        await session.sendMetricDataTelemetry(
+                            MetricDataOperationName.END_CODE_GENERATION,
+                            MetricDataResult.ERROR
+                        )
+                    }
+                    break
+                case PromptRefusalException.name:
+                case NoChangeRequiredException.name:
+                    await session.sendMetricDataTelemetry(
+                        MetricDataOperationName.END_CODE_GENERATION,
+                        MetricDataResult.ERROR
+                    )
+                    break
+                default:
+                    await session.sendMetricDataTelemetry(
+                        MetricDataOperationName.END_CODE_GENERATION,
+                        MetricDataResult.FAULT
+                    )
+
+                    break
+            }
+            throw err
         } finally {
             // Finish processing the event
 
