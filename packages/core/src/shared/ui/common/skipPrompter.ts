@@ -6,7 +6,7 @@
 import { StepEstimator, WIZARD_SKIP } from '../../wizards/wizard'
 import { Prompter, PromptResult } from '../prompter'
 
-/** Prompter that return SKIP control signal to parent wizard */
+/** Prompter that returns SKIP control signal to parent wizard */
 export class SkipPrompter<T> extends Prompter<T> {
     constructor() {
         super()
