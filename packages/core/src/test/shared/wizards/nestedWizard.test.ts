@@ -4,7 +4,6 @@
  */
 import * as vscode from 'vscode'
 import { createCommonButtons } from '../../../shared/ui/buttons'
-import { NestedWizard } from '../../../shared/ui/nestedWizardPrompter'
 import { createQuickPick, DataQuickPickItem } from '../../../shared/ui/pickerPrompter'
 import { Wizard } from '../../../shared/wizards/wizard'
 import * as assert from 'assert'
@@ -56,7 +55,7 @@ class ChildWizard extends Wizard<ChildWizardForm> {
     }
 }
 
-class SingleNestedWizard extends NestedWizard<SingleNestedWizardForm> {
+class SingleNestedWizard extends Wizard<SingleNestedWizardForm> {
     constructor() {
         super()
 
@@ -75,7 +74,7 @@ class SingleNestedWizard extends NestedWizard<SingleNestedWizardForm> {
     }
 }
 
-class DoubleNestedWizard extends NestedWizard<DoubleNestedWizardForm> {
+class DoubleNestedWizard extends Wizard<DoubleNestedWizardForm> {
     constructor() {
         super()
 

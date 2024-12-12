@@ -8,19 +8,12 @@ import { StepEstimator, Wizard, WIZARD_BACK, WIZARD_SKIP } from '../wizards/wiza
 import { Prompter, PromptResult } from './prompter'
 
 /**
- * Wraps {@link Wizard} object into its own {@link Prompter}, allowing wizards to use other
- * wizards in their flows.
- *
+ * Wraps {@link Wizard} object into its own {@link Prompter}, allowing wizards to use other wizards in their flows.
+ * This is meant to be used exclusively in createWizardPrompter() method of {@link Wizard} class.
  * @remarks
- *  - This class should only be used inside wizard classes that extend {@link NestedWizard}.
- *  - See examples:
- *     - {@link SingleNestedWizard}
- *     - {@link DoubleNestedWizard}
+ *  - Use createWizardPrompter() method of {@link Wizard} when creating a nested wizard prompter for proper state management.
+ *  - The WizardPrompter class should never be instantiated with directly.
  */
-
-// eslint-disable-next-line @typescript-eslint/naming-convention
-export const WIZARD_PROMPTER = 'WIZARD_PROMPTER'
-
 export class WizardPrompter<T> extends Prompter<T> {
     public get recentItem(): any {
         return undefined
@@ -64,7 +57,7 @@ export class WizardPrompter<T> extends Prompter<T> {
 
         if (this.response === undefined) {
             return WIZARD_BACK as PromptResult<T>
-        } else if (_.isEmpty(this.response)) {
+        } else if (JSON.stringify(this.response) === '{}') {
             return WIZARD_SKIP as PromptResult<T>
         }
 
