@@ -23,7 +23,7 @@ interface SetupResult {
 
 async function verifyResult(setup: SetupResult) {
     // A correct run makes 2 requests, but don't want to make it exact to avoid over-sensitivity to implementation. If we make 10+ something is likely wrong.
-    assert.ok(setup.clientReqStub.callCount >= 1 && setup.clientReqStub.callCount <= 10)
+    assert.ok(setup.clientReqStub.callCount >= 2 && setup.clientReqStub.callCount <= 10)
     assert.ok(setup.clientReqStub.calledWith(BuildIndexRequestType))
     assert.ok(setup.clientReqStub.calledWith(GetUsageRequestType))
 
