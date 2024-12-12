@@ -4,7 +4,7 @@
  */
 
 import assert from 'assert'
-import { SpawnOptions } from 'child_process'
+import { SpawnOptions } from 'child_process' // eslint-disable-line no-restricted-imports
 import * as path from 'path'
 import { makeTemporaryToolkitFolder } from '../../../../shared/filesystemUtilities'
 import { makeUnexpectedExitCodeError } from '../../../../shared/sam/cli/samCliInvokerUtils'
