@@ -141,14 +141,8 @@ export class ZipUtil {
         return zipFilePath
     }
 
-    protected getZipEntryPath(projectName: string, relativePath: string, useCase?: FeatureUseCase) {
-        // Workspaces with multiple folders have the folder names as the root folder,
-        // but workspaces with only a single folder don't. So prepend the workspace folder name
-        // if it is not present.
-        if (useCase === FeatureUseCase.TEST_GENERATION) {
-            return path.join(projectName, relativePath)
-        }
-        return relativePath.split('/').shift() === projectName ? relativePath : path.join(projectName, relativePath)
+    protected getZipEntryPath(projectName: string, relativePath: string) {
+        return path.join(projectName, relativePath)
     }
 
     /**
