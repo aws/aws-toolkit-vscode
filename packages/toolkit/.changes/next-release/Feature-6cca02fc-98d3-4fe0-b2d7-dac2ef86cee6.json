@@ -1,4 +1,4 @@
 {
 	"type": "Feature",
-	"description": "New experimental feature EC2 Remote connect."
+	"description": "Enable the EC2 experiment (setting id: `aws.experiments`) in VSCode settings to try the new EC2 features of AWS Toolkit! Remote Connect and Open Terminal to EC2 instances, list EC2 instances and view their status in AWS Explorer. "
 }
