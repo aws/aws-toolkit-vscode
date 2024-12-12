@@ -29,7 +29,8 @@ export class UserWrittenCodeTracker {
     static #instance: UserWrittenCodeTracker
     static copySnippetThreshold = 50
     static resetQIsEditingTimeoutMs = 5 * 60 * 1000
-    static defaultCheckPeriodMillis = 1000 * 60 * 5
+    static defaultCheckPeriodMillis = 5 * 60 * 1000
+
     private constructor() {
         this._userWrittenNewCodeLineCount = new Map<CodewhispererLanguage, number>()
         this._userWrittenNewCodeCharacterCount = new Map<CodewhispererLanguage, number>()
@@ -166,9 +167,10 @@ export class UserWrittenCodeTracker {
         ) {
             // if the boolean of qIsMakingEdits was incorrectly set to true
             // due to unhandled edge cases or early terminated code paths
-            // reset it back to false after reasonabe period of time
+            // reset it back to false after a reasonable period of time
             if (this._qIsMakingEdits) {
                 if (performance.now() - this._lastQInvocationTime > UserWrittenCodeTracker.resetQIsEditingTimeoutMs) {
+                    getLogger().warn(`Reset Q is editing state to false.`)
                     this._qIsMakingEdits = false
                 }
             }
