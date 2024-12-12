@@ -20,6 +20,7 @@
         "./auth": "./dist/src/auth/index.js",
         "./amazonqGumby": "./dist/src/amazonqGumby/index.js",
         "./amazonqFeatureDev": "./dist/src/amazonqFeatureDev/index.js",
+        "./amazonqDoc": "./dist/src/amazonqDoc/index.js",
         "./amazonqScan": "./dist/src/amazonqScan/index.js",
         "./amazonqTest": "./dist/src/amazonqTest/index.js",
         "./codewhispererChat": "./dist/src/codewhispererChat/index.js",
@@ -495,6 +496,7 @@
     "dependencies": {
         "@amzn/amazon-q-developer-streaming-client": "file:../../src.gen/@amzn/amazon-q-developer-streaming-client",
         "@amzn/codewhisperer-streaming": "file:../../src.gen/@amzn/codewhisperer-streaming",
+        "@aws-sdk/client-cloudwatch-logs": "^3.666.0",
         "@aws-sdk/client-cloudformation": "^3.667.0",
         "@aws-sdk/client-cognito-identity": "^3.637.0",
         "@aws-sdk/client-lambda": "^3.637.0",
