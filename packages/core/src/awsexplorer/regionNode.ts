@@ -42,7 +42,7 @@ interface ServiceNode {
      * when: () => DevSettings.instance.isDevMode()
      * ```
      */
-    when?: () => boolean | Promise<boolean>
+    when?: () => boolean
     createFn: (regionCode: string, partitionId: string) => any
 }
 
@@ -65,7 +65,7 @@ const serviceCandidates: ServiceNode[] = [
     },
     {
         serviceId: 'ec2',
-        when: async () => await Experiments.instance.isExperimentEnabled('ec2RemoteConnect'),
+        when: () => Experiments.instance.isExperimentEnabled('ec2RemoteConnect'),
         createFn: (regionCode: string, partitionId: string) =>
             new Ec2ParentNode(regionCode, partitionId, new Ec2Client(regionCode)),
     },
@@ -145,7 +145,7 @@ export class RegionNode extends AWSTreeNodeBase {
         const partitionId = this.regionProvider.getPartitionId(this.regionCode) ?? defaultPartition
         const childNodes: AWSTreeNodeBase[] = []
         for (const service of serviceCandidates) {
-            if (service.when !== undefined && !(await service.when())) {
+            if (service.when !== undefined && !service.when()) {
                 continue
             }
             if (service.allRegions || this.regionProvider.isServiceInRegion(service.serviceId, this.regionCode)) {
