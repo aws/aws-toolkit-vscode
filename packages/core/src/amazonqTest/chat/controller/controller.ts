@@ -862,6 +862,8 @@ export class TestController {
                 '200',
                 session.isCodeBlockSelected,
                 session.artifactsUploadDuration,
+                session.srcPayloadSize,
+                session.srcZipFileSize,
                 0,
                 0,
                 0,
