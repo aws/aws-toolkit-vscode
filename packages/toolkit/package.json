@@ -1511,6 +1511,11 @@
                     "when": "viewItem == awsEc2RunningNode && config.aws.experiments.ec2RemoteConnect"
                 },
                 {
+                    "command": "aws.ec2.copyInstanceId",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsEc2(Running|Stopped|Pending)Node)$/ && config.aws.experiments.ec2RemoteConnect",
+                    "group": "2@0"
+                },
+                {
                     "command": "aws.ecr.createRepository",
                     "when": "view == aws.explorer && viewItem == awsEcrNode",
                     "group": "inline@1"
@@ -1609,11 +1614,6 @@
                     "command": "aws.samcli.sync",
                     "when": "!config.aws.samcli.legacyDeploy && view == aws.explorer && viewItem =~ /^(awsLambdaNode|awsRegionNode|awsCloudFormationRootNode)$/",
                     "group": "1@2"
-                },
-                {
-                    "command": "aws.ec2.copyInstanceId",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsEc2(Running|Stopped|Pending)Node)$/ && config.aws.experiments.ec2RemoteConnect",
-                    "group": "2@0"
                 },
                 {
                     "command": "aws.ecr.copyTagUri",
