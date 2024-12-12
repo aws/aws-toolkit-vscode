@@ -7,8 +7,6 @@ import { Branch, ControlSignal, StateMachineController, StepFunction } from './s
 import * as _ from 'lodash'
 import { Prompter, PromptResult } from '../../shared/ui/prompter'
 import { PrompterProvider, WizardForm } from './wizardForm'
-import { createHash } from 'crypto'
-import { WizardPrompter } from '../ui/wizardPrompter'
 
 /** Checks if the user response is valid (i.e. not undefined and not a control signal) */
 export function isValidResponse<T>(response: PromptResult<T>): response is T {
@@ -91,10 +89,6 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
     private _exitStep?: StepFunction<TState>
     /** Guards against accidental use of the Wizard before `init()`. */
     private _ready: boolean
-    /**
-     * Map to store memoized wizard instances using SHA-256 hashed keys
-     */
-    private childWizards: Map<string, any> = new Map()
 
     /** Checks that `init()` was performed (if it was defined). */
     private assertReady() {
@@ -103,45 +97,6 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
         if (this._ready === false && this.init) {
             throw Error('run() (or init()) must be called immediately after creating the Wizard')
         }
-    }
-
-    /**
-     * Creates a prompter for a wizard instance with memoization.
-     *
-     * @template TWizard - The type of wizard, must extend Wizard<TState>
-     * @template TState - The type of state managed by the wizard
-     *
-     * @param wizardClass - The wizard class constructor
-     * @param args - Constructor arguments for the wizard instance
-     *
-     * @returns A wizard prompter to be used as prompter
-     *
-     * @example
-     * // Create a prompter for SyncWizard
-     * const prompter = this.createWizardPrompter<SyncWizard, SyncParams>(
-     *     SyncWizard,
-     *     template.uri,
-     *     syncUrl
-     * )
-     *
-     * @remarks
-     * - Instances are memoized using a SHA-256 hash of the wizard class name and arguments
-     * - The same wizard instance is reused for identical constructor parameters for restoring wizard prompter
-     *   states during back button click event
-     */
-    protected createWizardPrompter<TWizard extends Wizard<TState>, TState>(
-        wizardClass: new (...args: any[]) => TWizard,
-        ...args: ConstructorParameters<new (...args: any[]) => TWizard>
-    ): Prompter<TState> {
-        const memoizeKey = createHash('sha256')
-            .update(wizardClass.name + JSON.stringify(args))
-            .digest('hex')
-
-        if (!this.childWizards.get(memoizeKey)) {
-            this.childWizards.set(memoizeKey, new wizardClass(...args))
-        }
-
-        return new WizardPrompter(this.childWizards.get(memoizeKey)) as Prompter<TState>
     }
 
     /**

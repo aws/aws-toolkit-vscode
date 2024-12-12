@@ -9,10 +9,14 @@ import { Prompter, PromptResult } from './prompter'
 
 /**
  * Wraps {@link Wizard} object into its own {@link Prompter}, allowing wizards to use other wizards in their flows.
- * This is meant to be used exclusively in createWizardPrompter() method of {@link Wizard} class.
+ * This is meant to be used exclusively in createWizardPrompter() method of {@link NestedWizard} class.
+ *
  * @remarks
- *  - Use createWizardPrompter() method of {@link Wizard} when creating a nested wizard prompter for proper state management.
  *  - The WizardPrompter class should never be instantiated with directly.
+ *  - Use createWizardPrompter() method of {@link NestedWizard} when creating a nested wizard prompter for proper state management.
+ *  - See examples:
+ *     - {@link SingleNestedWizard}
+ *     - {@link DoubleNestedWizard}
  */
 export class WizardPrompter<T> extends Prompter<T> {
     public get recentItem(): any {
@@ -57,7 +61,7 @@ export class WizardPrompter<T> extends Prompter<T> {
 
         if (this.response === undefined) {
             return WIZARD_BACK as PromptResult<T>
-        } else if (JSON.stringify(this.response) === '{}') {
+        } else if (_.isEmpty(this.response)) {
             return WIZARD_SKIP as PromptResult<T>
         }
 

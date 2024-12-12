@@ -4,8 +4,8 @@
  */
 import * as vscode from 'vscode'
 import { createCommonButtons } from '../../../shared/ui/buttons'
+import { NestedWizard } from '../../../shared/ui/nestedWizardPrompter'
 import { createQuickPick, DataQuickPickItem } from '../../../shared/ui/pickerPrompter'
-import { Wizard } from '../../../shared/wizards/wizard'
 import * as assert from 'assert'
 import { PrompterTester } from './prompterTester'
 import { TestQuickPick } from '../vscode/quickInput'
@@ -40,7 +40,7 @@ export function createTestPrompter(title: string, itemsString: string[]) {
     return createQuickPick(items, { title: title, buttons: createCommonButtons() })
 }
 
-class ChildWizard extends Wizard<ChildWizardForm> {
+class ChildWizard extends NestedWizard<ChildWizardForm> {
     constructor() {
         super()
         this.form.childWizardProp1.bindPrompter(() =>
@@ -55,7 +55,7 @@ class ChildWizard extends Wizard<ChildWizardForm> {
     }
 }
 
-class SingleNestedWizard extends Wizard<SingleNestedWizardForm> {
+class SingleNestedWizard extends NestedWizard<SingleNestedWizardForm> {
     constructor() {
         super()
 
@@ -74,7 +74,7 @@ class SingleNestedWizard extends Wizard<SingleNestedWizardForm> {
     }
 }
 
-class DoubleNestedWizard extends Wizard<DoubleNestedWizardForm> {
+class DoubleNestedWizard extends NestedWizard<DoubleNestedWizardForm> {
     constructor() {
         super()
 
@@ -105,12 +105,12 @@ describe('NestedWizard', () => {
             +-- ChildWizard
             |   |
             |   +-- Prompter 1
-                    |   |
-                    |   +-- Prompter 2
-                    |   |
-                    |   +-- Prompter 3
-                    |
-                    +-- Prompter 3
+            |   |
+            |   +-- Prompter 2
+            |   |
+            |   +-- Prompter 3
+            |
+            +-- Prompter 3
          */
         const expectedCallOrders = [
             'SingleNestedWizard Prompter 1',
