@@ -203,7 +203,7 @@ describe('Ec2ConnectClient', function () {
         })
     })
 
-    describe('attemptToCleanKeys', async function () {
+    describe('tryCleanKeys', async function () {
         it('calls the sdk with the proper parameters', async function () {
             const sendCommandStub = sinon.stub(SsmClient.prototype, 'sendCommandAndWait')
 
