@@ -15,7 +15,7 @@ import { AwsContext } from '../awsContext'
 import { getIdeProperties, isAmazonQ, isCloud9 } from '../extensionUtilities'
 import { ResourceFetcher } from '../resourcefetcher/resourcefetcher'
 import { isSsoConnection } from '../../auth/connection'
-import { Auth } from '../../auth'
+import { Auth } from '../../auth/auth'
 
 export const defaultRegion = 'us-east-1'
 export const defaultPartition = 'aws'

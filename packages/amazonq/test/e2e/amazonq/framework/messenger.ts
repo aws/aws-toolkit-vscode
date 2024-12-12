@@ -52,7 +52,7 @@ export class Messenger {
 
         const lastChatItem = this.getChatItems().pop()
         const option = lastChatItem?.followUp?.options?.filter((option) => option.type === type)
-        if (!option || option.length > 1) {
+        if (!option?.length || option.length > 1) {
             assert.fail('Could not find follow up option')
         }
 
@@ -153,17 +153,23 @@ export class Messenger {
         return this.getActionsByFilePath(filePath).some((action) => action.name === actionName)
     }
 
+    async waitForText(text: string, waitOverrides?: MessengerOptions) {
+        await this.waitForEvent(() => {
+            return this.getChatItems().some((chatItem) => chatItem.body === text)
+        }, waitOverrides)
+    }
+
+    async waitForButtons(buttons: FollowUpTypes[]) {
+        return this.waitForEvent(() => {
+            return buttons.every((value) => this.hasButton(value))
+        })
+    }
+
     async waitForChatFinishesLoading() {
         return this.waitForEvent(() => this.getStore().loadingChat === false || this.hasButton(FollowUpTypes.Retry))
     }
 
-    async waitForEvent(
-        event: () => boolean,
-        waitOverrides?: {
-            waitIntervalInMs: number
-            waitTimeoutInMs: number
-        }
-    ) {
+    async waitForEvent(event: () => boolean, waitOverrides?: MessengerOptions) {
         /**
          * Wait until the chat has finished loading. This happens when a backend request
          * has finished and responded in the chat
