@@ -1831,6 +1831,16 @@
                     "when": "view == aws.explorer && viewItem =~ /^awsCloudWatchLogNode|awsCloudWatchLogParentNode$/"
                 },
                 {
+                    "command": "aws.cwl.tailLogGroup",
+                    "group": "0@1",
+                    "when": "view == aws.explorer && viewItem =~ /^awsCloudWatchLogNode|awsCloudWatchLogParentNode$/"
+                },
+                {
+                    "command": "aws.cwl.tailLogGroup",
+                    "group": "inline@1",
+                    "when": "view == aws.explorer && viewItem =~ /^awsCloudWatchLogNode|awsCloudWatchLogParentNode$/"
+                },
+                {
                     "command": "aws.apig.copyUrl",
                     "when": "view =~ /^(aws.explorer|aws.appBuilder|aws.appBuilderForFileExplorer)$/ && viewItem =~ /^(awsApiGatewayNode)$/",
                     "group": "2@0"
@@ -3384,6 +3394,18 @@
                 "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(search-view-icon)",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.cwl.tailLogGroup",
+                "title": "%AWS.command.cloudWatchLogs.tailLogGroup%",
+                "category": "%AWS.title%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
+                "icon": "$(notebook-execute)",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
