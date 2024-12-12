@@ -36,9 +36,8 @@ import { CodeReference } from '../../../../amazonq/webview/ui/apps/amazonqCommon
 import { getHttpStatusCode, getRequestId, getTelemetryReasonDesc, ToolkitError } from '../../../../shared/errors'
 import { sleep, waitUntil } from '../../../../shared/utilities/timeoutUtils'
 import { keys } from '../../../../shared/utilities/tsUtils'
-import { AuthUtil, testGenState } from '../../../../codewhisperer'
+import { TelemetryHelper, testGenState } from '../../../../codewhisperer'
 import { cancellingProgressField, testGenCompletedField } from '../../../models/constants'
-import { telemetry } from '../../../../shared/telemetry/telemetry'
 
 export type UnrecoverableErrorType = 'no-project-found' | 'no-open-file-found' | 'invalid-file-type'
 
@@ -275,31 +274,28 @@ export class Messenger {
             .finally(async () => {
                 if (testGenState.isCancelling()) {
                     this.sendMessage(CodeWhispererConstants.unitTestGenerationCancelMessage, tabID, 'answer')
-                    telemetry.amazonq_utgGenerateTests.emit({
-                        cwsprChatProgrammingLanguage: session.fileLanguage ?? 'plaintext',
-                        hasUserPromptSupplied: session.hasUserPromptSupplied,
-                        perfClientLatency: performance.now() - session.testGenerationStartTime,
-                        result: 'Cancelled',
-                        reasonDesc: getTelemetryReasonDesc(CodeWhispererConstants.unitTestGenerationCancelMessage),
-                        isSupportedLanguage: false,
-                        credentialStartUrl: AuthUtil.instance.startUrl,
-                        requestId: messageId,
-                    })
+                    TelemetryHelper.instance.sendTestGenerationToolkitEvent(
+                        session,
+                        false,
+                        'Cancelled',
+                        messageId,
+                        performance.now() - session.testGenerationStartTime,
+                        getTelemetryReasonDesc(CodeWhispererConstants.unitTestGenerationCancelMessage)
+                    )
 
                     this.dispatcher.sendUpdatePromptProgress(
                         new UpdatePromptProgressMessage(tabID, cancellingProgressField)
                     )
                     await sleep(500)
                 } else {
-                    telemetry.amazonq_utgGenerateTests.emit({
-                        cwsprChatProgrammingLanguage: session.fileLanguage ?? 'plaintext',
-                        hasUserPromptSupplied: session.hasUserPromptSupplied,
-                        perfClientLatency: performance.now() - session.testGenerationStartTime,
-                        result: 'Succeeded',
-                        isSupportedLanguage: false,
-                        credentialStartUrl: AuthUtil.instance.startUrl,
-                        requestId: messageId,
-                    })
+                    TelemetryHelper.instance.sendTestGenerationToolkitEvent(
+                        session,
+                        false,
+                        'Succeeded',
+                        messageId,
+                        performance.now() - session.testGenerationStartTime
+                    )
+
                     this.dispatcher.sendUpdatePromptProgress(
                         new UpdatePromptProgressMessage(tabID, testGenCompletedField)
                     )
