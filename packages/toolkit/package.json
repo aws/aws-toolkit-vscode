@@ -1208,27 +1208,27 @@
                 },
                 {
                     "command": "aws.ec2.openRemoteConnection",
-                    "when": "aws.isDevMode"
+                    "when": "config.aws.experiments.ec2RemoteConnect"
                 },
                 {
                     "command": "aws.ec2.openTerminal",
-                    "when": "aws.isDevMode"
+                    "when": "config.aws.experiments.ec2RemoteConnect"
                 },
                 {
                     "command": "aws.ec2.linkToLaunch",
-                    "when": "aws.isDevMode"
+                    "when": "config.aws.experiments.ec2RemoteConnect"
                 },
                 {
                     "command": "aws.ec2.startInstance",
-                    "when": "aws.isDevMode"
+                    "when": "config.aws.experiments.ec2RemoteConnect"
                 },
                 {
                     "command": "aws.ec2.stopInstance",
-                    "when": "aws.isDevMode"
+                    "when": "config.aws.experiments.ec2RemoteConnect"
                 },
                 {
                     "command": "aws.ec2.rebootInstance",
-                    "when": "aws.isDevMode"
+                    "when": "config.aws.experiments.ec2RemoteConnect"
                 },
                 {
                     "command": "aws.dev.openMenu",
@@ -1453,62 +1453,62 @@
                 {
                     "command": "aws.ec2.openTerminal",
                     "group": "0@1",
-                    "when": "viewItem =~ /^(awsEc2(Parent|Running)Node)$/"
+                    "when": "viewItem =~ /^(awsEc2(Parent|Running)Node)$/ && config.aws.experiments.ec2RemoteConnect"
                 },
                 {
                     "command": "aws.ec2.openTerminal",
                     "group": "inline@1",
-                    "when": "viewItem =~ /^(awsEc2(Parent|Running)Node)$/"
+                    "when": "viewItem =~ /^(awsEc2(Parent|Running)Node)$/ && config.aws.experiments.ec2RemoteConnect"
                 },
                 {
                     "command": "aws.ec2.linkToLaunch",
                     "group": "0@1",
-                    "when": "viewItem =~ /^(awsEc2ParentNode)$/"
+                    "when": "viewItem =~ /^(awsEc2ParentNode)$/ && config.aws.experiments.ec2RemoteConnect"
                 },
                 {
                     "command": "aws.ec2.linkToLaunch",
                     "group": "inline@1",
-                    "when": "viewItem =~ /^(awsEc2ParentNode)$/"
+                    "when": "viewItem =~ /^(awsEc2ParentNode)$/ && config.aws.experiments.ec2RemoteConnect"
                 },
                 {
                     "command": "aws.ec2.openRemoteConnection",
                     "group": "0@1",
-                    "when": "viewItem =~ /^(awsEc2(Parent|Running)Node)$/"
+                    "when": "viewItem =~ /^(awsEc2(Parent|Running)Node)$/ && config.aws.experiments.ec2RemoteConnect"
                 },
                 {
                     "command": "aws.ec2.openRemoteConnection",
                     "group": "inline@1",
-                    "when": "viewItem =~ /^(awsEc2(Parent|Running)Node)$/"
+                    "when": "viewItem =~ /^(awsEc2(Parent|Running)Node)$/ && config.aws.experiments.ec2RemoteConnect"
                 },
                 {
                     "command": "aws.ec2.startInstance",
                     "group": "0@1",
-                    "when": "viewItem == awsEc2StoppedNode"
+                    "when": "viewItem == awsEc2StoppedNode && config.aws.experiments.ec2RemoteConnect"
                 },
                 {
                     "command": "aws.ec2.startInstance",
                     "group": "inline@1",
-                    "when": "viewItem == awsEc2StoppedNode"
+                    "when": "viewItem == awsEc2StoppedNode && config.aws.experiments.ec2RemoteConnect"
                 },
                 {
                     "command": "aws.ec2.stopInstance",
                     "group": "0@1",
-                    "when": "viewItem == awsEc2RunningNode"
+                    "when": "viewItem == awsEc2RunningNode && config.aws.experiments.ec2RemoteConnect"
                 },
                 {
                     "command": "aws.ec2.stopInstance",
                     "group": "inline@1",
-                    "when": "viewItem == awsEc2RunningNode"
+                    "when": "viewItem == awsEc2RunningNode && config.aws.experiments.ec2RemoteConnect"
                 },
                 {
                     "command": "aws.ec2.rebootInstance",
                     "group": "0@1",
-                    "when": "viewItem == awsEc2RunningNode"
+                    "when": "viewItem == awsEc2RunningNode && config.aws.experiments.ec2RemoteConnect"
                 },
                 {
                     "command": "aws.ec2.rebootInstance",
                     "group": "inline@1",
-                    "when": "viewItem == awsEc2RunningNode"
+                    "when": "viewItem == awsEc2RunningNode && config.aws.experiments.ec2RemoteConnect"
                 },
                 {
                     "command": "aws.ecr.createRepository",
@@ -1612,7 +1612,7 @@
                 },
                 {
                     "command": "aws.ec2.copyInstanceId",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsEc2(Running|Stopped|Pending)Node)$/",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsEc2(Running|Stopped|Pending)Node)$/ && config.aws.experiments.ec2RemoteConnect",
                     "group": "2@0"
                 },
                 {
