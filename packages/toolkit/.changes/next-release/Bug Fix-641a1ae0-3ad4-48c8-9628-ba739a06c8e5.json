@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "EC2: avoid overwriting authorized_keys file on remote"
-}
