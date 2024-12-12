@@ -240,10 +240,15 @@
                     "type": "object",
                     "markdownDescription": "%AWS.configuration.description.experiments%",
                     "default": {
-                        "jsonResourceModification": false
+                        "jsonResourceModification": false,
+                        "ec2RemoteConnect": false
                     },
                     "properties": {
                         "jsonResourceModification": {
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "ec2RemoteConnect": {
                             "type": "boolean",
                             "default": false
                         }
