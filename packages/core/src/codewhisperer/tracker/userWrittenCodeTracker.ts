@@ -95,7 +95,7 @@ export class UserWrittenCodeTracker {
                                 customizationArn:
                                     selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
                                 programmingLanguage: {
-                                    languageName: language,
+                                    languageName: runtimeLanguageContext.toRuntimeLanguage(language),
                                 },
                                 acceptedCharacterCount: 0,
                                 totalCharacterCount: 0,
