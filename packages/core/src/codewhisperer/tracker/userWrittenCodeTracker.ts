@@ -11,6 +11,7 @@ import { AuthUtil } from '../util/authUtil'
 import { getSelectedCustomization } from '../util/customizationUtil'
 import { codeWhispererClient as client } from '../client/codewhisperer'
 import { isAwsError } from '../../shared/errors'
+import { CodewhispererLanguage } from '../../shared'
 
 /**
  * This singleton class is mainly used for calculating the user written code
@@ -18,8 +19,8 @@ import { isAwsError } from '../../shared/errors'
  * It reports the user written code per 5 minutes when the user is coding and using Amazon Q features
  */
 export class UserWrittenCodeTracker {
-    private _userWrittenNewCodeCharacterCount: number
-    private _userWrittenNewCodeLineCount: number
+    private _userWrittenNewCodeCharacterCount: Map<CodewhispererLanguage, number>
+    private _userWrittenNewCodeLineCount: Map<CodewhispererLanguage, number>
     private _qIsMakingEdits: boolean
     private _timer?: NodeJS.Timer
     private _qUsageCount: number
@@ -30,19 +31,11 @@ export class UserWrittenCodeTracker {
     static resetQIsEditingTimeoutMs = 5 * 60 * 1000
     static defaultCheckPeriodMillis = 1000 * 60 * 5
     private constructor() {
-        this._userWrittenNewCodeLineCount = 0
-        this._userWrittenNewCodeCharacterCount = 0
+        this._userWrittenNewCodeLineCount = new Map<CodewhispererLanguage, number>()
+        this._userWrittenNewCodeCharacterCount = new Map<CodewhispererLanguage, number>()
         this._qUsageCount = 0
         this._qIsMakingEdits = false
         this._timer = undefined
-        this._lastQInvocationTime = 0
-    }
-
-    private resetTracker() {
-        this._userWrittenNewCodeLineCount = 0
-        this._userWrittenNewCodeCharacterCount = 0
-        this._qUsageCount = 0
-        this._qIsMakingEdits = false
         this._lastQInvocationTime = 0
     }
 
@@ -69,34 +62,61 @@ export class UserWrittenCodeTracker {
         this._qIsMakingEdits = false
     }
 
-    public emitCodeContribution() {
+    public getUserWrittenCharacters(language: CodewhispererLanguage) {
+        return this._userWrittenNewCodeCharacterCount.get(language) || 0
+    }
+
+    public getUserWrittenLines(language: CodewhispererLanguage) {
+        return this._userWrittenNewCodeLineCount.get(language) || 0
+    }
+
+    public reset() {
+        this._userWrittenNewCodeLineCount = new Map<CodewhispererLanguage, number>()
+        this._userWrittenNewCodeCharacterCount = new Map<CodewhispererLanguage, number>()
+        this._qUsageCount = 0
+        this._qIsMakingEdits = false
+        this._lastQInvocationTime = 0
+        if (this._timer !== undefined) {
+            clearTimeout(this._timer)
+            this._timer = undefined
+        }
+    }
+
+    public emitCodeContributions() {
         const selectedCustomization = getSelectedCustomization()
-        client
-            .sendTelemetryEvent({
-                telemetryEvent: {
-                    codeCoverageEvent: {
-                        customizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
-                        programmingLanguage: {
-                            languageName: 'plaintext',
+
+        for (const [language, charCount] of this._userWrittenNewCodeCharacterCount) {
+            const lineCount = this._userWrittenNewCodeLineCount.get(language) || 0
+            if (charCount > 0) {
+                client
+                    .sendTelemetryEvent({
+                        telemetryEvent: {
+                            codeCoverageEvent: {
+                                customizationArn:
+                                    selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
+                                programmingLanguage: {
+                                    languageName: language,
+                                },
+                                acceptedCharacterCount: 0,
+                                totalCharacterCount: 0,
+                                timestamp: new Date(Date.now()),
+                                userWrittenCodeCharacterCount: charCount,
+                                userWrittenCodeLineCount: lineCount,
+                            },
                         },
-                        acceptedCharacterCount: 0,
-                        totalCharacterCount: 0,
-                        timestamp: new Date(Date.now()),
-                        userWrittenCodeCharacterCount: this._userWrittenNewCodeCharacterCount,
-                        userWrittenCodeLineCount: this._userWrittenNewCodeLineCount,
-                    },
-                },
-            })
-            .then()
-            .catch((error) => {
-                let requestId: string | undefined
-                if (isAwsError(error)) {
-                    requestId = error.requestId
-                }
-                getLogger().debug(
-                    `Failed to sendTelemetryEvent, requestId: ${requestId ?? ''}, message: ${error.message}`
-                )
-            })
+                    })
+                    .then()
+                    .catch((error) => {
+                        let requestId: string | undefined
+                        if (isAwsError(error)) {
+                            requestId = error.requestId
+                        }
+                        getLogger().debug(
+                            `Failed to sendTelemetryEvent, requestId: ${requestId ?? ''}, message: ${error.message}`
+                        )
+                    })
+            }
+        }
     }
 
     private tryStartTimer() {
@@ -105,8 +125,7 @@ export class UserWrittenCodeTracker {
         }
         if (!this.isActive()) {
             getLogger().debug(`Skip emiting code contribution metric. Telemetry disabled or not logged in. `)
-            this.resetTracker()
-            this.closeTimer()
+            this.reset()
             return
         }
         const startTime = performance.now()
@@ -120,26 +139,18 @@ export class UserWrittenCodeTracker {
                         getLogger().debug(`Skip emiting code contribution metric. There is no active Amazon Q usage. `)
                         return
                     }
-                    if (this._userWrittenNewCodeCharacterCount === 0) {
+                    if (this._userWrittenNewCodeCharacterCount.size === 0) {
                         getLogger().debug(`Skip emiting code contribution metric. There is no new code added. `)
                         return
                     }
-                    this.emitCodeContribution()
+                    this.emitCodeContributions()
                 }
             } catch (e) {
                 getLogger().verbose(`Exception Thrown from QCodeGenTracker: ${e}`)
             } finally {
-                this.resetTracker()
-                this.closeTimer()
+                this.reset()
             }
         }, UserWrittenCodeTracker.defaultCheckPeriodMillis)
-    }
-
-    private closeTimer() {
-        if (this._timer !== undefined) {
-            clearTimeout(this._timer)
-            this._timer = undefined
-        }
     }
 
     private countNewLines(str: string) {
@@ -170,9 +181,14 @@ export class UserWrittenCodeTracker {
         if (contentChange.text.length > UserWrittenCodeTracker.copySnippetThreshold) {
             return
         }
-        this._userWrittenNewCodeCharacterCount += contentChange.text.length
-        this._userWrittenNewCodeLineCount += this.countNewLines(contentChange.text)
-        // start 5 min data reporting once valid user input is detected
-        this.tryStartTimer()
+        const language = runtimeLanguageContext.normalizeLanguage(e.document.languageId)
+        if (language) {
+            const charCount = this._userWrittenNewCodeCharacterCount.get(language) || 0
+            this._userWrittenNewCodeCharacterCount.set(language, charCount + contentChange.text.length)
+            const lineCount = this._userWrittenNewCodeLineCount.get(language) || 0
+            this._userWrittenNewCodeLineCount.set(language, lineCount + this.countNewLines(contentChange.text))
+            // start 5 min data reporting once valid user input is detected
+            this.tryStartTimer()
+        }
     }
 }
