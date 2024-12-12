@@ -19,7 +19,6 @@ import globals from './extensionGlobals'
 import { getClientId, getOperatingSystem } from './telemetry/util'
 import { extensionVersion } from './vscode/env'
 import { telemetry } from './telemetry'
-import { Auth } from '../auth'
 
 export class FeatureContext {
     constructor(
