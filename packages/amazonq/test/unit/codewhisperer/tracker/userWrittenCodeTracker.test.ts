@@ -90,11 +90,26 @@ describe('userWrittenCodeTracker', function () {
                     },
                 ],
             })
-            assert.strictEqual(tracker.getUserWrittenCharacters('python'), 0)
+            tracker.onTextDocumentChange({
+                reason: undefined,
+                document: createMockDocument('', 'test.java', 'java'),
+                contentChanges: [
+                    {
+                        range: new vscode.Range(0, 0, 1, 3),
+                        rangeOffset: 0,
+                        rangeLength: 11,
+                        text: 'a = 123\nbcd',
+                    },
+                ],
+            })
+            assert.strictEqual(tracker.getUserWrittenCharacters('python'), 49)
             assert.strictEqual(tracker.getUserWrittenLines('python'), 0)
+            assert.strictEqual(tracker.getUserWrittenCharacters('java'), 11)
+            assert.strictEqual(tracker.getUserWrittenLines('java'), 1)
+            assert.strictEqual(tracker.getUserWrittenLines('cpp'), 0)
         })
 
-        it('Should skip when CodeWhisperer is editing', function () {
+        it('Should skip when Q is editing', function () {
             if (!tracker) {
                 assert.fail()
             }
@@ -112,8 +127,21 @@ describe('userWrittenCodeTracker', function () {
                     },
                 ],
             })
-            assert.strictEqual(tracker.getUserWrittenCharacters('python'), 0)
-            assert.strictEqual(tracker.getUserWrittenLines('python'), 0)
+            tracker.onQFinishesEdits()
+            tracker.onTextDocumentChange({
+                reason: undefined,
+                document: createMockDocument(),
+                contentChanges: [
+                    {
+                        range: new vscode.Range(0, 0, 0, 2),
+                        rangeOffset: 0,
+                        rangeLength: 2,
+                        text: '\na',
+                    },
+                ],
+            })
+            assert.strictEqual(tracker.getUserWrittenCharacters('python'), 2)
+            assert.strictEqual(tracker.getUserWrittenLines('python'), 1)
         })
 
         it('Should not reduce tokens when delete', function () {
@@ -147,7 +175,7 @@ describe('userWrittenCodeTracker', function () {
                     },
                 ],
             })
-            assert.strictEqual(tracker.getUserWrittenCharacters('python'), 0)
+            assert.strictEqual(tracker.getUserWrittenCharacters('python'), 2)
             tracker.onTextDocumentChange({
                 reason: undefined,
                 document: doc,
@@ -160,28 +188,7 @@ describe('userWrittenCodeTracker', function () {
                     },
                 ],
             })
-            assert.strictEqual(tracker.getUserWrittenCharacters('python'), 0)
+            assert.strictEqual(tracker.getUserWrittenCharacters('python'), 2)
         })
-    })
-
-    describe('emitCodeWhispererCodeContribution', function () {
-        let tracker: UserWrittenCodeTracker | undefined
-
-        beforeEach(async function () {
-            await resetCodeWhispererGlobalVariables()
-            tracker = UserWrittenCodeTracker.instance
-            tracker.reset()
-            if (tracker) {
-                sinon.stub(tracker, 'isActive').returns(true)
-            }
-        })
-
-        afterEach(function () {
-            sinon.restore()
-        })
-
-        it('should emit correct code coverage telemetry in python file', async function () {})
-
-        it('Should not emit if user has not use any Q feature', async function () {})
     })
 })
