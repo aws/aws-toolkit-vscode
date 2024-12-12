@@ -202,7 +202,7 @@ module.exports = {
                     {
                         name: 'child_process',
                         message:
-                            'Avoid child_process, use ChildProcess wrapper from `packages/core/src/shared/utilities/processUtils.ts` instead.',
+                            'Avoid child_process, use ChildProcess from `shared/utilities/processUtils.ts` instead.',
                     },
                 ],
             },
