@@ -905,162 +905,161 @@ describe('SAM SyncWizard', async () => {
                 prompterTester.assertCallOrder(title, index + 1)
             })
         })
-    })
 
-    describe('entry: command palette', () => {
-        it('happy path with invalid samconfig.toml', async () => {
-            /**
-             * Selection:
-             *  - template              : [Select]   template/yaml set
-             *  - projectRoot           : [Skip]     automatically set
-             *
-             *  - SourceBucketName      : [Select]   prefill value
-             *  - DestinationBucketName : [Select]   prefill value
-             *
-             *  - paramsSource          : [Select]   1. ('Specify required parameters and save as defaults')
-             *  - region                : [Select]   'us-west-2'
-             *  - stackName             : [Select]   3. 'stack3'
-             *  - bucketName            : [select]   3. stack-3-bucket
-             *  - syncFlags             : [Select]   all
-             */
+        describe('entry: command palette', () => {
+            it('happy path with invalid samconfig.toml', async () => {
+                /**
+                 * Selection:
+                 *  - template              : [Select]   template/yaml set
+                 *  - projectRoot           : [Skip]     automatically set
+                 *
+                 *  - SourceBucketName      : [Select]   prefill value
+                 *  - DestinationBucketName : [Select]   prefill value
+                 *
+                 *  - paramsSource          : [Select]   1. ('Specify required parameters and save as defaults')
+                 *  - region                : [Select]   'us-west-2'
+                 *  - stackName             : [Select]   3. 'stack3'
+                 *  - bucketName            : [select]   3. stack-3-bucket
+                 *  - syncFlags             : [Select]   all
+                 */
 
-            const prompterTester = PrompterTester.init()
-                .handleQuickPick('Select a SAM/CloudFormation Template', async (quickPick) => {
-                    // Need sometime to wait for the template to search for template file
-                    await quickPick.untilReady()
-                    assert.strictEqual(quickPick.items.length, 1)
-                    assert.strictEqual(quickPick.items[0].label, templateFile.fsPath)
-                    quickPick.acceptItem(quickPick.items[0])
-                })
-                .handleInputBox('Specify SAM Template parameter value for SourceBucketName', (inputBox) => {
-                    inputBox.acceptValue('my-source-bucket-name')
-                })
-                .handleInputBox('Specify SAM Template parameter value for DestinationBucketName', (inputBox) => {
-                    inputBox.acceptValue('my-destination-bucket-name')
-                })
-                .handleQuickPick('Specify parameter source for sync', async (picker) => {
-                    // Need time to check samconfig.toml file and generate options
-                    await picker.untilReady()
-
-                    assert.strictEqual(picker.items.length, 2)
-                    assert.strictEqual(picker.items[0].label, 'Specify required parameters and save as defaults')
-                    assert.strictEqual(picker.items[1].label, 'Specify required parameters')
-                    picker.acceptItem(picker.items[0])
-                })
-                .handleQuickPick('Select a region', (quickPick) => {
-                    const select = quickPick.items.filter((i) => i.detail === 'us-west-2')[0]
-                    quickPick.acceptItem(select || quickPick.items[0])
-                })
-                .handleQuickPick('Select a CloudFormation Stack', async (picker) => {
-                    await picker.untilReady()
-                    assert.strictEqual(picker.items.length, 3)
-                    assert.strictEqual(picker.items[0].label, 'stack1')
-                    assert.strictEqual(picker.items[1].label, 'stack2')
-                    assert.strictEqual(picker.items[2].label, 'stack3')
-                    picker.acceptItem(picker.items[2])
-                })
-                .handleQuickPick('Specify S3 bucket for deployment artifacts', async (picker) => {
-                    await picker.untilReady()
-                    assert.strictEqual(picker.items.length, 2)
-                    assert.deepStrictEqual(picker.items[0], {
-                        label: 'Create a SAM CLI managed S3 bucket',
-                        data: BucketSource.SamCliManaged,
+                const prompterTester = PrompterTester.init()
+                    .handleQuickPick('Select a SAM/CloudFormation Template', async (quickPick) => {
+                        // Need sometime to wait for the template to search for template file
+                        await quickPick.untilReady()
+                        assert.strictEqual(quickPick.items.length, 1)
+                        assert.strictEqual(quickPick.items[0].label, templateFile.fsPath)
+                        quickPick.acceptItem(quickPick.items[0])
                     })
-                    assert.deepStrictEqual(picker.items[1], {
-                        label: 'Specify an S3 bucket',
-                        data: BucketSource.UserProvided,
+                    .handleInputBox('Specify SAM Template parameter value for SourceBucketName', (inputBox) => {
+                        inputBox.acceptValue('my-source-bucket-name')
                     })
-                    picker.acceptItem(picker.items[0])
-                })
-                .handleQuickPick('Specify parameters for sync', async (picker) => {
-                    await picker.untilReady()
-                    assert.strictEqual(picker.items.length, 9)
-                    const dependencyLayer = picker.items.filter((item) => item.label === 'Dependency layer')[0]
-                    const useContainer = picker.items.filter((item) => item.label === 'Use container')[0]
-                    picker.acceptItems(dependencyLayer, useContainer)
-                })
-                .build()
+                    .handleInputBox('Specify SAM Template parameter value for DestinationBucketName', (inputBox) => {
+                        inputBox.acceptValue('my-destination-bucket-name')
+                    })
+                    .handleQuickPick('Specify parameter source for sync', async (picker) => {
+                        // Need time to check samconfig.toml file and generate options
+                        await picker.untilReady()
 
-            const parameters = await (await getSyncWizard('infra', undefined, false, false)).run()
+                        assert.strictEqual(picker.items.length, 2)
+                        assert.strictEqual(picker.items[0].label, 'Specify required parameters and save as defaults')
+                        assert.strictEqual(picker.items[1].label, 'Specify required parameters')
+                        picker.acceptItem(picker.items[0])
+                    })
+                    .handleQuickPick('Select a region', (quickPick) => {
+                        const select = quickPick.items.filter((i) => i.detail === 'us-west-2')[0]
+                        quickPick.acceptItem(select || quickPick.items[0])
+                    })
+                    .handleQuickPick('Select a CloudFormation Stack', async (picker) => {
+                        await picker.untilReady()
+                        assert.strictEqual(picker.items.length, 3)
+                        assert.strictEqual(picker.items[0].label, 'stack1')
+                        assert.strictEqual(picker.items[1].label, 'stack2')
+                        assert.strictEqual(picker.items[2].label, 'stack3')
+                        picker.acceptItem(picker.items[2])
+                    })
+                    .handleQuickPick('Specify S3 bucket for deployment artifacts', async (picker) => {
+                        await picker.untilReady()
+                        assert.strictEqual(picker.items.length, 2)
+                        assert.deepStrictEqual(picker.items[0], {
+                            label: 'Create a SAM CLI managed S3 bucket',
+                            data: BucketSource.SamCliManaged,
+                        })
+                        assert.deepStrictEqual(picker.items[1], {
+                            label: 'Specify an S3 bucket',
+                            data: BucketSource.UserProvided,
+                        })
+                        picker.acceptItem(picker.items[0])
+                    })
+                    .handleQuickPick('Specify parameters for sync', async (picker) => {
+                        await picker.untilReady()
+                        assert.strictEqual(picker.items.length, 9)
+                        const dependencyLayer = picker.items.filter((item) => item.label === 'Dependency layer')[0]
+                        const useContainer = picker.items.filter((item) => item.label === 'Use container')[0]
+                        picker.acceptItems(dependencyLayer, useContainer)
+                    })
+                    .build()
 
-            assert(parameters)
+                const parameters = await (await getSyncWizard('infra', undefined, false, false)).run()
 
-            assert.strictEqual(parameters.template.uri.fsPath, templateFile.fsPath)
-            assert.strictEqual(parameters.projectRoot.fsPath, projectRoot.fsPath)
-            assert.strictEqual(parameters.paramsSource, ParamsSource.SpecifyAndSave)
-            assert.strictEqual(parameters.region, 'us-west-2')
-            assert.strictEqual(parameters.stackName, 'stack3')
-            assert.strictEqual(parameters.bucketSource, BucketSource.SamCliManaged)
-            assert(!parameters.bucketName)
-            assert.strictEqual(parameters.deployType, 'infra')
-            assert.strictEqual(parameters.skipDependencyLayer, true)
-            assert.strictEqual(parameters.syncFlags, '["--dependency-layer","--use-container"]')
-            prompterTester.assertCallAll()
-        })
+                assert(parameters)
 
-        it('happy path with valid samconfig.toml', async () => {
-            /**
-             * Selection:
-             *  - template              : [Select]  template.yaml
-             *  - projectRoot           : [Skip]     automatically set
-             *
-             *  - SourceBucketName      : [Select]   prefill value
-             *  - DestinationBucketName : [Select]   prefill value
-             *
-             *  - paramsSource          : [Select]  3. ('Use default values from samconfig')
-             *  - region                : [Skip]    automatically set from region node 'us-west-2'
-             *  - stackName             : [Skip]    null; will use value from samconfig file
-             *  - bucketName            : [Skip]    automatically set for bucketSource option 1
-             *  - syncFlags             : [Skip]    null; will use flags from samconfig
-             */
+                assert.strictEqual(parameters.template.uri.fsPath, templateFile.fsPath)
+                assert.strictEqual(parameters.projectRoot.fsPath, projectRoot.fsPath)
+                assert.strictEqual(parameters.paramsSource, ParamsSource.SpecifyAndSave)
+                assert.strictEqual(parameters.region, 'us-west-2')
+                assert.strictEqual(parameters.stackName, 'stack3')
+                assert.strictEqual(parameters.bucketSource, BucketSource.SamCliManaged)
+                assert(!parameters.bucketName)
+                assert.strictEqual(parameters.deployType, 'infra')
+                assert.strictEqual(parameters.skipDependencyLayer, true)
+                assert.strictEqual(parameters.syncFlags, '["--dependency-layer","--use-container"]')
+                prompterTester.assertCallAll()
+            })
 
-            // generate samconfig.toml in temporary test folder
-            await testFolder.write('samconfig.toml', samconfigCompleteData)
+            it('happy path with valid samconfig.toml', async () => {
+                /**
+                 * Selection:
+                 *  - template              : [Select]  template.yaml
+                 *  - projectRoot           : [Skip]     automatically set
+                 *
+                 *  - SourceBucketName      : [Select]   prefill value
+                 *  - DestinationBucketName : [Select]   prefill value
+                 *
+                 *  - paramsSource          : [Select]  3. ('Use default values from samconfig')
+                 *  - region                : [Skip]    automatically set from region node 'us-west-2'
+                 *  - stackName             : [Skip]    null; will use value from samconfig file
+                 *  - bucketName            : [Skip]    automatically set for bucketSource option 1
+                 *  - syncFlags             : [Skip]    null; will use flags from samconfig
+                 */
 
-            const prompterTester = PrompterTester.init()
-                .handleQuickPick('Select a SAM/CloudFormation Template', async (quickPick) => {
-                    // Need sometime to wait for the template to search for template file
-                    await quickPick.untilReady()
-                    assert.strictEqual(quickPick.items.length, 1)
-                    assert.strictEqual(quickPick.items[0].label, templateFile.fsPath)
-                    quickPick.acceptItem(quickPick.items[0])
-                })
-                .handleInputBox('Specify SAM Template parameter value for SourceBucketName', (inputBox) => {
-                    inputBox.acceptValue('my-source-bucket-name')
-                })
-                .handleInputBox('Specify SAM Template parameter value for DestinationBucketName', (inputBox) => {
-                    inputBox.acceptValue('my-destination-bucket-name')
-                })
-                .handleQuickPick('Specify parameter source for sync', async (picker) => {
-                    // Need time to check samconfig.toml file and generate options
-                    await picker.untilReady()
+                // generate samconfig.toml in temporary test folder
+                await testFolder.write('samconfig.toml', samconfigCompleteData)
 
-                    assert.strictEqual(picker.items.length, 3)
-                    assert.strictEqual(picker.items[0].label, 'Specify required parameters and save as defaults')
-                    assert.strictEqual(picker.items[1].label, 'Specify required parameters')
-                    assert.strictEqual(picker.items[2].label, 'Use default values from samconfig')
-                    picker.acceptItem(picker.items[2])
-                })
-                .build()
+                const prompterTester = PrompterTester.init()
+                    .handleQuickPick('Select a SAM/CloudFormation Template', async (quickPick) => {
+                        // Need sometime to wait for the template to search for template file
+                        await quickPick.untilReady()
+                        assert.strictEqual(quickPick.items.length, 1)
+                        assert.strictEqual(quickPick.items[0].label, templateFile.fsPath)
+                        quickPick.acceptItem(quickPick.items[0])
+                    })
+                    .handleInputBox('Specify SAM Template parameter value for SourceBucketName', (inputBox) => {
+                        inputBox.acceptValue('my-source-bucket-name')
+                    })
+                    .handleInputBox('Specify SAM Template parameter value for DestinationBucketName', (inputBox) => {
+                        inputBox.acceptValue('my-destination-bucket-name')
+                    })
+                    .handleQuickPick('Specify parameter source for sync', async (picker) => {
+                        // Need time to check samconfig.toml file and generate options
+                        await picker.untilReady()
 
-            const parameters = await (await getSyncWizard('infra', undefined, false, false)).run()
+                        assert.strictEqual(picker.items.length, 3)
+                        assert.strictEqual(picker.items[0].label, 'Specify required parameters and save as defaults')
+                        assert.strictEqual(picker.items[1].label, 'Specify required parameters')
+                        assert.strictEqual(picker.items[2].label, 'Use default values from samconfig')
+                        picker.acceptItem(picker.items[2])
+                    })
+                    .build()
 
-            assert(parameters)
+                const parameters = await (await getSyncWizard('infra', undefined, false, false)).run()
 
-            assert.strictEqual(parameters.template.uri.fsPath, templateFile.fsPath)
-            assert.strictEqual(parameters.projectRoot.fsPath, projectRoot.fsPath)
-            assert.strictEqual(parameters.paramsSource, ParamsSource.SamConfig)
-            assert.strictEqual(parameters.deployType, 'infra')
-            assert(!parameters.region)
-            assert(!parameters.stackName)
-            assert(!parameters.bucketSource)
-            assert(!parameters.syncFlags)
-            assert.strictEqual(parameters.skipDependencyLayer, true)
-            prompterTester.assertCallAll()
+                assert(parameters)
+
+                assert.strictEqual(parameters.template.uri.fsPath, templateFile.fsPath)
+                assert.strictEqual(parameters.projectRoot.fsPath, projectRoot.fsPath)
+                assert.strictEqual(parameters.paramsSource, ParamsSource.SamConfig)
+                assert.strictEqual(parameters.deployType, 'infra')
+                assert(!parameters.region)
+                assert(!parameters.stackName)
+                assert(!parameters.bucketSource)
+                assert(!parameters.syncFlags)
+                assert.strictEqual(parameters.skipDependencyLayer, true)
+                prompterTester.assertCallAll()
+            })
         })
     })
 })
-
 describe('SAM runSync', () => {
     let sandbox: sinon.SinonSandbox
     let testFolder: TestFolder
@@ -1225,6 +1224,8 @@ describe('SAM runSync', () => {
                     'us-west-2',
                     '--no-dependency-layer',
                     '--save-params',
+                    '--parameter-overrides',
+                    'ParameterKey=SourceBucketName,ParameterValue=my-source-bucket-name ParameterKey=DestinationBucketName,ParameterValue=my-destination-bucket-name',
                     '--dependency-layer',
                     '--use-container',
                 ],
@@ -1314,6 +1315,8 @@ describe('SAM runSync', () => {
                     'us-west-2',
                     '--no-dependency-layer',
                     '--save-params',
+                    '--parameter-overrides',
+                    'ParameterKey=SourceBucketName,ParameterValue=my-source-bucket-name ParameterKey=DestinationBucketName,ParameterValue=my-destination-bucket-name',
                     '--dependency-layer',
                     '--use-container',
                     '--watch',
@@ -1403,6 +1406,8 @@ describe('SAM runSync', () => {
                     '--region',
                     'us-west-2',
                     '--no-dependency-layer',
+                    '--parameter-overrides',
+                    'ParameterKey=SourceBucketName,ParameterValue=my-source-bucket-name ParameterKey=DestinationBucketName,ParameterValue=my-destination-bucket-name',
                     '--dependency-layer',
                     '--use-container',
                 ],
@@ -1467,6 +1472,8 @@ describe('SAM runSync', () => {
                     '--no-dependency-layer',
                     '--config-file',
                     `${samconfigFile.fsPath}`,
+                    '--parameter-overrides',
+                    'ParameterKey=SourceBucketName,ParameterValue=my-source-bucket-name ParameterKey=DestinationBucketName,ParameterValue=my-destination-bucket-name',
                 ],
                 {
                     spawnOptions: {

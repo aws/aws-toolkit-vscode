@@ -27,7 +27,7 @@ import { createExitPrompter } from '../ui/common/exitPrompter'
 import { getConfigFileUri, SamConfig, validateSamSyncConfig, writeSamconfigGlobal } from './config'
 import { cast, Optional } from '../utilities/typeConstructors'
 import { pushIf, toRecord } from '../utilities/collectionUtils'
-import { getOverriddenParameters, getParameters } from '../../lambda/config/parameterUtils'
+import { getParameters } from '../../lambda/config/parameterUtils'
 import { addTelemetryEnvVar } from './cli/samCliInvokerUtils'
 import { samSyncParamUrl, samSyncUrl, samUpgradeUrl } from '../constants'
 import { openUrl } from '../utilities/vsCodeUtils'
@@ -346,30 +346,22 @@ export async function saveAndBindArgs(args: SyncParams): Promise<{ readonly boun
     return { boundArgs }
 }
 
-async function loadLegacyParameterOverrides(template: TemplateItem) {
-    try {
-        const params = await getOverriddenParameters(template.uri)
-        if (!params) {
-            return
-        }
-
-        return [...params.entries()].map(([k, v]) => `${k}=${v}`)
-    } catch (err) {
-        getLogger().warn(`sam: unable to load legacy parameter overrides: %s`, err)
-    }
-}
-
 export async function runSamSync(args: SyncParams) {
     telemetry.record({ lambdaPackageType: args.ecrRepoUri !== undefined ? 'Image' : 'Zip' })
 
     const { path: samCliPath, parsedVersion } = await getSamCliPathAndVersion()
     const { boundArgs } = await saveAndBindArgs(args)
-    const overrides = await loadLegacyParameterOverrides(args.template)
-    if (overrides !== undefined) {
-        // Leaving this out of the definitions file as this is _very_ niche and specific to the
-        // implementation. Plus we would have to redefine `sam_sync` to add it.
-        telemetry.record({ isUsingTemplatesJson: true } as any)
-        boundArgs.push('--parameter-overrides', ...overrides)
+
+    if (!!args.templateParameters && Object.entries(args.templateParameters).length > 0) {
+        const templateParameters = new Map<string, string>(Object.entries(args.templateParameters))
+        const paramsToSet: string[] = []
+        for (const [key, value] of templateParameters.entries()) {
+            if (value) {
+                await updateRecentResponse(syncMementoRootKey, args.template.uri.fsPath, key, value)
+                paramsToSet.push(`ParameterKey=${key},ParameterValue=${value}`)
+            }
+        }
+        paramsToSet.length > 0 && boundArgs.push('--parameter-overrides', paramsToSet.join(' '))
     }
 
     // '--no-watch' was not added until https://github.com/aws/aws-sam-cli/releases/tag/v1.77.0

@@ -195,7 +195,7 @@ export async function runDeploy(arg: any, wizardParams?: DeployParams): Promise<
             deployFlags.push('--save-params')
         }
 
-        if (params.templateParameters && Object.entries(params.templateParameters).length > 0) {
+        if (!!params.templateParameters && Object.entries(params.templateParameters).length > 0) {
             const templateParameters = new Map<string, string>(Object.entries(params.templateParameters))
             const paramsToSet: string[] = []
             for (const [key, value] of templateParameters.entries()) {
