@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "AppBuilder : Support template parameters override for SAM deploy and sync for all entry points"
+}
