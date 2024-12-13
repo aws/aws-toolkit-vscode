@@ -45,7 +45,6 @@ describe('SsoAccessTokenProvider', function () {
         return {
             accessToken: 'dummyAccessToken',
             expiresAt: new clock.Date(clock.Date.now() + timeDelta),
-            refreshToken: 'dummyRefreshToken',
             ...extras,
         }
     }
