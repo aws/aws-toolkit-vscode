@@ -325,7 +325,7 @@ export class ProposedTransformationExplorer {
             treeDataProvider: transformDataProvider,
         })
 
-        const patchFiles: string[] = []
+        let patchFiles: string[] = []
         let singlePatchFile: string = ''
         let patchFilesDescriptions: DescriptionContent | undefined = undefined
 
@@ -430,6 +430,7 @@ export class ProposedTransformationExplorer {
 
             let deserializeErrorMessage = undefined
             let pathContainingArchive = ''
+            patchFiles = [] // reset patchFiles if there was a previous transformation
             try {
                 // Download and deserialize the zip
                 pathContainingArchive = path.dirname(pathToArchive)
