@@ -19,6 +19,7 @@ import globals from './extensionGlobals'
 import { getClientId, getOperatingSystem } from './telemetry/util'
 import { extensionVersion } from './vscode/env'
 import { telemetry } from './telemetry'
+import { Commands } from './vscode/commands2'
 
 export class FeatureContext {
     constructor(
@@ -178,6 +179,14 @@ export class FeatureConfigProvider {
                 if (!isSet) {
                     await CodeWhispererSettings.instance.enableLocalIndex()
                     globals.globalState.tryUpdate('aws.amazonq.workspaceIndexToggleOn', true)
+                    const response = await vscode.window.showInformationMessage(
+                        'Amazon Q: Workspace index is now enabled. You can disable it in the Amazon Q settings.',
+                        'Open settings'
+                    )
+
+                    if (response === 'Open settings') {
+                        Commands.tryExecute('aws.amazonq.configure')
+                    }
                 }
             }
         } catch (e) {
