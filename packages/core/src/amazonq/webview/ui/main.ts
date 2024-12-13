@@ -106,6 +106,11 @@ export const createMynahUI = (
 
     let isDocEnabled = amazonQEnabled
 
+    // @ts-ignore
+    let featureConfigs: Map<string, FeatureContext> = tryNewMap(featureConfigsSerialized)
+
+    const highlightCommand = featureConfigs.get('highlightCommand')
+
     let tabDataGenerator = new TabDataGenerator({
         isFeatureDevEnabled,
         isGumbyEnabled,
@@ -113,6 +118,7 @@ export const createMynahUI = (
         isTestEnabled,
         isDocEnabled,
         disabledCommands,
+        highlightCommand,
     })
 
     // eslint-disable-next-line prefer-const
@@ -123,9 +129,6 @@ export const createMynahUI = (
     let textMessageHandler: TextMessageHandler
     // eslint-disable-next-line prefer-const
     let messageController: MessageController
-
-    // @ts-ignore
-    let featureConfigs: Map<string, FeatureContext> = tryNewMap(featureConfigsSerialized)
 
     function getCodeBlockActions(messageData: any) {
         // Show ViewDiff and AcceptDiff for allowedCommands in CWC
@@ -199,6 +202,7 @@ export const createMynahUI = (
                 isTestEnabled,
                 isDocEnabled,
                 disabledCommands,
+                highlightCommand,
             })
 
             featureConfigs = tryNewMap(featureConfigsSerialized)
