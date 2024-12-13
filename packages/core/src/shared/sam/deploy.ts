@@ -25,9 +25,12 @@ import { TemplateItem, createTemplatePrompter } from '../ui/sam/templatePrompter
 import { createDeployParamsSourcePrompter, ParamsSource } from '../ui/sam/paramsSourcePrompter'
 import { getErrorCode, getProjectRoot, getSamCliPathAndVersion, getSource, updateRecentResponse } from './utils'
 import { runInTerminal } from './processTerminal'
-import { TemplateParametersWizard } from '../../awsService/appBuilder/wizards/templateParametersWizard'
+import {
+    TemplateParametersForm,
+    TemplateParametersWizard,
+} from '../../awsService/appBuilder/wizards/templateParametersWizard'
 import { getParameters } from '../../lambda/config/parameterUtils'
-import { NestedWizard } from '../ui/nestedWizardPrompter'
+import { CompositeWizard } from '../wizards/compositeWizard'
 
 export interface DeployParams {
     readonly paramsSource: ParamsSource
@@ -66,7 +69,7 @@ type DeployResult = {
     isSuccess: boolean
 }
 
-export class DeployWizard extends NestedWizard<DeployParams> {
+export class DeployWizard extends CompositeWizard<DeployParams> {
     registry: CloudFormationTemplateRegistry
     state: Partial<DeployParams>
     arg: any
@@ -87,7 +90,7 @@ export class DeployWizard extends NestedWizard<DeployParams> {
 
         this.form.templateParameters.bindPrompter(
             async ({ template }) =>
-                this.createWizardPrompter<TemplateParametersWizard>(
+                this.createWizardPrompter<TemplateParametersWizard, TemplateParametersForm>(
                     TemplateParametersWizard,
                     template!.uri,
                     samDeployUrl,

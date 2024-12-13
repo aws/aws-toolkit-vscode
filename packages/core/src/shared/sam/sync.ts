@@ -51,8 +51,11 @@ import { ParamsSource, createSyncParamsSourcePrompter } from '../ui/sam/paramsSo
 import { createEcrPrompter } from '../ui/sam/ecrPrompter'
 import { BucketSource, createBucketNamePrompter, createBucketSourcePrompter } from '../ui/sam/bucketPrompter'
 import { runInTerminal } from './processTerminal'
-import { TemplateParametersWizard } from '../../awsService/appBuilder/wizards/templateParametersWizard'
-import { NestedWizard } from '../ui/nestedWizardPrompter'
+import {
+    TemplateParametersForm,
+    TemplateParametersWizard,
+} from '../../awsService/appBuilder/wizards/templateParametersWizard'
+import { CompositeWizard } from '../wizards/compositeWizard'
 
 export interface SyncParams {
     readonly paramsSource: ParamsSource
@@ -172,7 +175,7 @@ function getSyncEntryPoint(arg: vscode.Uri | AWSTreeNodeBase | TreeNode | undefi
     }
 }
 
-export class SyncWizard extends NestedWizard<SyncParams> {
+export class SyncWizard extends CompositeWizard<SyncParams> {
     registry: CloudFormationTemplateRegistry
     public constructor(
         state: Pick<SyncParams, 'deployType'> & Partial<SyncParams>,
@@ -187,7 +190,7 @@ export class SyncWizard extends NestedWizard<SyncParams> {
         this.form.template.bindPrompter(() => createTemplatePrompter(this.registry, syncMementoRootKey, samSyncUrl))
         this.form.templateParameters.bindPrompter(
             async ({ template }) =>
-                this.createWizardPrompter<TemplateParametersWizard>(
+                this.createWizardPrompter<TemplateParametersWizard, TemplateParametersForm>(
                     TemplateParametersWizard,
                     template!.uri,
                     samSyncUrl,
