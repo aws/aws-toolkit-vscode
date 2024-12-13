@@ -110,7 +110,7 @@ class TestPrompter<T, S = any> extends Prompter<T> {
         this.acceptedEstimators.push(estimator)
     }
 
-    //----------------------------Test helper methods go below this line----------------------------//
+    // ----------------------------Test helper methods go below this line----------------------------//
 
     public acceptState(state: StateWithCache<S, T>): this {
         this.acceptedStates[this.promptCount] = state

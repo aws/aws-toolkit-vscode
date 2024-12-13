@@ -242,20 +242,20 @@ export class TestController {
         this.messenger.sendUpdatePromptProgress(data.tabID, null)
         const session = this.sessionStorage.getSession()
         const isCancel = data.error.message === unitTestGenerationCancelMessage
-        telemetry.amazonq_utgGenerateTests.emit({
-            cwsprChatProgrammingLanguage: session.fileLanguage ?? 'plaintext',
-            jobId: session.listOfTestGenerationJobId[0], // For RIV, UTG does only one StartTestGeneration API call
-            jobGroup: session.testGenerationJobGroupName,
-            hasUserPromptSupplied: session.hasUserPromptSupplied,
-            isCodeBlockSelected: session.isCodeBlockSelected,
-            buildPayloadBytes: session.srcPayloadSize,
-            buildZipFileBytes: session.srcZipFileSize,
-            artifactsUploadDuration: session.artifactsUploadDuration,
-            perfClientLatency: performance.now() - session.testGenerationStartTime,
-            result: isCancel ? 'Cancelled' : 'Failed',
-            reasonDesc: getTelemetryReasonDesc(data.error),
-            isSupportedLanguage: true,
-        })
+
+        TelemetryHelper.instance.sendTestGenerationToolkitEvent(
+            session,
+            true,
+            isCancel ? 'Cancelled' : 'Failed',
+            session.startTestGenerationRequestId,
+            performance.now() - session.testGenerationStartTime,
+            getTelemetryReasonDesc(data.error),
+            session.isCodeBlockSelected,
+            session.artifactsUploadDuration,
+            session.srcPayloadSize,
+            session.srcZipFileSize
+        )
+
         if (session.stopIteration) {
             // Error from Science
             this.messenger.sendMessage(data.error.message.replaceAll('```', ''), data.tabID, 'answer')
@@ -315,7 +315,6 @@ export class TestController {
             case ButtonActions.STOP_TEST_GEN:
                 testGenState.setToCancelling()
                 telemetry.ui_click.emit({ elementId: 'unitTestGeneration_cancelTestGenerationProgress' })
-                await this.sessionCleanUp()
                 break
             case ButtonActions.STOP_BUILD:
                 cancelBuild()
@@ -432,7 +431,7 @@ export class TestController {
 
             session.hasUserPromptSupplied = message.prompt.length > 0
 
-            //displaying user message prompt in Test tab
+            // displaying user message prompt in Test tab
             this.messenger.sendMessage(userMessage, tabID, 'prompt')
             this.messenger.sendChatInputEnabled(tabID, false)
             this.sessionStorage.getSession().conversationState = ConversationState.IN_PROGRESS
@@ -443,9 +442,8 @@ export class TestController {
 
             /*
                 For Re:Invent 2024 we are supporting only java and python for unit test generation, rest of the languages shows the similar experience as CWC
-                If user request test generation from input chat without opening a file, its difficult to get the language, so default will be plainText
             */
-            if (language !== 'java' && language !== 'python' && language !== 'plaintext') {
+            if (language !== 'java' && language !== 'python') {
                 const unsupportedLanguage = language.charAt(0).toUpperCase() + language.slice(1)
                 let unsupportedMessage = `<span style="color: #EE9D28;">&#9888;<b>I'm sorry, but /test only supports Python and Java</b><br></span> While ${unsupportedLanguage} is not supported, I will generate a suggestion below. `
                 // handle the case when language is undefined
@@ -639,7 +637,6 @@ export class TestController {
         const session = this.sessionStorage.getSession()
         session.acceptedJobId = session.listOfTestGenerationJobId[session.listOfTestGenerationJobId.length - 1]
         const filePath = session.generatedFilePath
-        session.fileLanguage = await this.getLanguageForFilePath(filePath)
         const absolutePath = path.join(session.projectRootPath, filePath)
         const fileExists = await fs.existsFile(absolutePath)
         const buildCommand = session.updatedBuildCommands?.join(' ')
@@ -714,27 +711,27 @@ export class TestController {
         const document = await vscode.workspace.openTextDocument(absolutePath)
         await vscode.window.showTextDocument(document)
         // TODO: send the message once again once build is enabled
-        //this.messenger.sendMessage('Accepted', message.tabID, 'prompt')
+        // this.messenger.sendMessage('Accepted', message.tabID, 'prompt')
         telemetry.ui_click.emit({ elementId: 'unitTestGeneration_acceptDiff' })
-        telemetry.amazonq_utgGenerateTests.emit({
-            generatedCount: session.numberOfTestsGenerated,
-            acceptedCount: session.numberOfTestsGenerated,
-            generatedCharactersCount: session.charsOfCodeGenerated,
-            acceptedCharactersCount: session.charsOfCodeAccepted,
-            generatedLinesCount: session.linesOfCodeGenerated,
-            acceptedLinesCount: session.linesOfCodeAccepted,
-            cwsprChatProgrammingLanguage: session.fileLanguage,
-            jobId: session.listOfTestGenerationJobId[0], // For RIV, UTG does only one StartTestGeneration API call so jobId = session.listOfTestGenerationJobId[0]
-            jobGroup: session.testGenerationJobGroupName,
-            buildPayloadBytes: session.srcPayloadSize,
-            buildZipFileBytes: session.srcZipFileSize,
-            artifactsUploadDuration: session.artifactsUploadDuration,
-            hasUserPromptSupplied: session.hasUserPromptSupplied,
-            isCodeBlockSelected: session.isCodeBlockSelected,
-            perfClientLatency: session.latencyOfTestGeneration,
-            isSupportedLanguage: true,
-            result: 'Succeeded',
-        })
+
+        TelemetryHelper.instance.sendTestGenerationToolkitEvent(
+            session,
+            true,
+            'Succeeded',
+            session.startTestGenerationRequestId,
+            session.latencyOfTestGeneration,
+            undefined,
+            session.isCodeBlockSelected,
+            session.artifactsUploadDuration,
+            session.srcPayloadSize,
+            session.srcZipFileSize,
+            session.charsOfCodeAccepted,
+            session.numberOfTestsGenerated,
+            session.linesOfCodeAccepted,
+            session.charsOfCodeGenerated,
+            session.numberOfTestsGenerated,
+            session.linesOfCodeGenerated
+        )
 
         await this.endSession(message, FollowUpTypes.SkipBuildAndFinish)
         await this.sessionCleanUp()
@@ -800,7 +797,7 @@ export class TestController {
         filePath: string
     ) {
         try {
-            //TODO: Write this entire gen response to basiccommands and call here.
+            // TODO: Write this entire gen response to basiccommands and call here.
             const editorText = await fs.readFileText(filePath)
 
             const triggerPayload = {
@@ -834,29 +831,29 @@ export class TestController {
         }
     }
 
-    //TODO: Check if there are more cases to endSession if yes create a enum or type for step
+    // TODO: Check if there are more cases to endSession if yes create a enum or type for step
     private async endSession(data: any, step: FollowUpTypes) {
         const session = this.sessionStorage.getSession()
         if (step === FollowUpTypes.RejectCode) {
-            telemetry.amazonq_utgGenerateTests.emit({
-                generatedCount: session.numberOfTestsGenerated,
-                acceptedCount: 0,
-                generatedCharactersCount: session.charsOfCodeGenerated,
-                acceptedCharactersCount: 0,
-                generatedLinesCount: session.linesOfCodeGenerated,
-                acceptedLinesCount: 0,
-                cwsprChatProgrammingLanguage: session.fileLanguage ?? 'plaintext',
-                jobId: session.listOfTestGenerationJobId[0], // For RIV, UTG does only one StartTestGeneration API call so jobId = session.listOfTestGenerationJobId[0]
-                jobGroup: session.testGenerationJobGroupName,
-                buildPayloadBytes: session.srcPayloadSize,
-                buildZipFileBytes: session.srcZipFileSize,
-                artifactsUploadDuration: session.artifactsUploadDuration,
-                hasUserPromptSupplied: session.hasUserPromptSupplied,
-                isCodeBlockSelected: session.isCodeBlockSelected,
-                perfClientLatency: session.latencyOfTestGeneration,
-                isSupportedLanguage: true,
-                result: 'Succeeded',
-            })
+            TelemetryHelper.instance.sendTestGenerationToolkitEvent(
+                session,
+                true,
+                'Succeeded',
+                session.startTestGenerationRequestId,
+                session.latencyOfTestGeneration,
+                undefined,
+                session.isCodeBlockSelected,
+                session.artifactsUploadDuration,
+                session.srcPayloadSize,
+                session.srcZipFileSize,
+                0,
+                0,
+                0,
+                session.charsOfCodeGenerated,
+                session.numberOfTestsGenerated,
+                session.linesOfCodeGenerated
+            )
+
             telemetry.ui_click.emit({ elementId: 'unitTestGeneration_rejectDiff' })
         }
 
@@ -875,7 +872,7 @@ export class TestController {
      */
 
     private startInitialBuild(data: any) {
-        //TODO: Remove the fallback build command after stable version of backend build command.
+        // TODO: Remove the fallback build command after stable version of backend build command.
         const userMessage = `Would you like me to help build and execute the test? I will need you to let me know what build command to run if you do.`
         const followUps: FollowUps = {
             text: '',
@@ -907,7 +904,7 @@ export class TestController {
     private async checkForInstallationDependencies(data: any) {
         // const session: Session = this.sessionStorage.getSession()
         // const listOfInstallationDependencies = session.testGenerationJob?.shortAnswer?.installationDependencies || []
-        //MOCK: As there is no installation dependencies in shortAnswer
+        // MOCK: As there is no installation dependencies in shortAnswer
         const listOfInstallationDependencies = ['']
         const installationDependencies = listOfInstallationDependencies.join('\n')
 
@@ -958,7 +955,7 @@ export class TestController {
     private async startLocalBuildExecution(data: any) {
         const session: Session = this.sessionStorage.getSession()
         // const installationDependencies = session.shortAnswer?.installationDependencies ?? []
-        //MOCK: ignoring the installation case until backend send response
+        // MOCK: ignoring the installation case until backend send response
         const installationDependencies: string[] = []
         const buildCommands = session.updatedBuildCommands
         if (!buildCommands) {
@@ -988,7 +985,7 @@ export class TestController {
             })
 
             const status = await runBuildCommand(installationDependencies)
-            //TODO: Add separate status for installation dependencies
+            // TODO: Add separate status for installation dependencies
             session.buildStatus = status
             if (status === BuildStatus.FAILURE) {
                 this.messenger.sendBuildProgressMessage({
@@ -1107,7 +1104,7 @@ export class TestController {
                 false
             )
         }
-        //TODO: Skip this if startTestGenerationProcess timeouts
+        // TODO: Skip this if startTestGenerationProcess timeouts
         if (session.generatedFilePath) {
             await this.showTestCaseSummary(data)
         }
@@ -1294,7 +1291,7 @@ export class TestController {
         if (session.tabID) {
             getLogger().debug('Setting input state with tabID: %s', session.tabID)
             this.messenger.sendChatInputEnabled(session.tabID, true)
-            this.messenger.sendUpdatePlaceholder(session.tabID, '/test Generate unit tests') //TODO: Change according to the UX
+            this.messenger.sendUpdatePlaceholder(session.tabID, '/test Generate unit tests') // TODO: Change according to the UX
         }
         getLogger().debug(
             'Deleting output.log and temp result directory. testGenerationLogsDir: %s',

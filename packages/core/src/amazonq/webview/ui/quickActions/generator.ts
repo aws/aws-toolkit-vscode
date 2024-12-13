@@ -39,7 +39,7 @@ export class QuickActionGenerator {
             return []
         }
 
-        //TODO: Update acc to UX
+        // TODO: Update acc to UX
         const quickActionCommands = [
             {
                 groupName: `Q Developer agentic capabilities`,
@@ -86,7 +86,7 @@ export class QuickActionGenerator {
                         ? [
                               {
                                   command: '/transform',
-                                  description: 'Transform your Java 8 or 11 Maven project to Java 17',
+                                  description: 'Transform your Java 8, 11, or 17 Maven projects',
                                   icon: MynahIcons.TRANSFORM,
                               },
                           ]

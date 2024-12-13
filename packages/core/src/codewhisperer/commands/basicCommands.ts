@@ -222,7 +222,7 @@ export const showFileScan = Commands.declare(
                     scanUuid
                 )
             } else if (onDemandFileScanState.isRunning()) {
-                //TODO: Pending with progress bar implementation in the Q chat Panel
+                // TODO: Pending with progress bar implementation in the Q chat Panel
                 // User intends to stop the scan from Q chat panel.
                 // Cancel only when the file scan state is "Running"
                 await confirmStopSecurityScan(
@@ -464,7 +464,6 @@ export const applySecurityFix = Commands.declare(
                 new vscode.Range(document.lineAt(0).range.start, document.lineAt(document.lineCount - 1).range.end),
                 updatedContent
             )
-            SecurityIssueProvider.instance.disableEventHandler()
             const isApplied = await vscode.workspace.applyEdit(edit)
             if (isApplied) {
                 void document.save().then((didSave) => {

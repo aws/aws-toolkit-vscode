@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit",
     "description": "Including CodeCatalyst, Infrastructure Composer, and support for Lambda, S3, CloudWatch Logs, CloudFormation, and many other services.",
-    "version": "3.38.0-SNAPSHOT",
+    "version": "3.40.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -240,10 +240,15 @@
                     "type": "object",
                     "markdownDescription": "%AWS.configuration.description.experiments%",
                     "default": {
-                        "jsonResourceModification": false
+                        "jsonResourceModification": false,
+                        "ec2RemoteConnect": false
                     },
                     "properties": {
                         "jsonResourceModification": {
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "ec2RemoteConnect": {
                             "type": "boolean",
                             "default": false
                         }
@@ -1203,27 +1208,27 @@
                 },
                 {
                     "command": "aws.ec2.openRemoteConnection",
-                    "when": "aws.isDevMode"
+                    "when": "config.aws.experiments.ec2RemoteConnect"
                 },
                 {
                     "command": "aws.ec2.openTerminal",
-                    "when": "aws.isDevMode"
+                    "when": "config.aws.experiments.ec2RemoteConnect"
                 },
                 {
                     "command": "aws.ec2.linkToLaunch",
-                    "when": "aws.isDevMode"
+                    "when": "config.aws.experiments.ec2RemoteConnect"
                 },
                 {
                     "command": "aws.ec2.startInstance",
-                    "when": "aws.isDevMode"
+                    "when": "config.aws.experiments.ec2RemoteConnect"
                 },
                 {
                     "command": "aws.ec2.stopInstance",
-                    "when": "aws.isDevMode"
+                    "when": "config.aws.experiments.ec2RemoteConnect"
                 },
                 {
                     "command": "aws.ec2.rebootInstance",
-                    "when": "aws.isDevMode"
+                    "when": "config.aws.experiments.ec2RemoteConnect"
                 },
                 {
                     "command": "aws.dev.openMenu",
@@ -1448,62 +1453,67 @@
                 {
                     "command": "aws.ec2.openTerminal",
                     "group": "0@1",
-                    "when": "viewItem =~ /^(awsEc2(Parent|Running)Node)$/"
+                    "when": "viewItem =~ /^(awsEc2(Parent|Running)Node)$/ && config.aws.experiments.ec2RemoteConnect"
                 },
                 {
                     "command": "aws.ec2.openTerminal",
                     "group": "inline@1",
-                    "when": "viewItem =~ /^(awsEc2(Parent|Running)Node)$/"
+                    "when": "viewItem =~ /^(awsEc2(Parent|Running)Node)$/ && config.aws.experiments.ec2RemoteConnect"
                 },
                 {
                     "command": "aws.ec2.linkToLaunch",
-                    "group": "0@1",
-                    "when": "viewItem =~ /^(awsEc2ParentNode)$/"
+                    "group": "0@0",
+                    "when": "viewItem =~ /^(awsEc2ParentNode)$/ && config.aws.experiments.ec2RemoteConnect"
                 },
                 {
                     "command": "aws.ec2.linkToLaunch",
-                    "group": "inline@1",
-                    "when": "viewItem =~ /^(awsEc2ParentNode)$/"
+                    "group": "inline@0",
+                    "when": "viewItem =~ /^(awsEc2ParentNode)$/ && config.aws.experiments.ec2RemoteConnect"
                 },
                 {
                     "command": "aws.ec2.openRemoteConnection",
                     "group": "0@1",
-                    "when": "viewItem =~ /^(awsEc2(Parent|Running)Node)$/"
+                    "when": "viewItem =~ /^(awsEc2(Parent|Running)Node)$/ && config.aws.experiments.ec2RemoteConnect"
                 },
                 {
                     "command": "aws.ec2.openRemoteConnection",
                     "group": "inline@1",
-                    "when": "viewItem =~ /^(awsEc2(Parent|Running)Node)$/"
+                    "when": "viewItem =~ /^(awsEc2(Parent|Running)Node)$/ && config.aws.experiments.ec2RemoteConnect"
                 },
                 {
                     "command": "aws.ec2.startInstance",
                     "group": "0@1",
-                    "when": "viewItem == awsEc2StoppedNode"
+                    "when": "viewItem == awsEc2StoppedNode && config.aws.experiments.ec2RemoteConnect"
                 },
                 {
                     "command": "aws.ec2.startInstance",
                     "group": "inline@1",
-                    "when": "viewItem == awsEc2StoppedNode"
+                    "when": "viewItem == awsEc2StoppedNode && config.aws.experiments.ec2RemoteConnect"
                 },
                 {
                     "command": "aws.ec2.stopInstance",
                     "group": "0@1",
-                    "when": "viewItem == awsEc2RunningNode"
+                    "when": "viewItem == awsEc2RunningNode && config.aws.experiments.ec2RemoteConnect"
                 },
                 {
                     "command": "aws.ec2.stopInstance",
                     "group": "inline@1",
-                    "when": "viewItem == awsEc2RunningNode"
+                    "when": "viewItem == awsEc2RunningNode && config.aws.experiments.ec2RemoteConnect"
                 },
                 {
                     "command": "aws.ec2.rebootInstance",
                     "group": "0@1",
-                    "when": "viewItem == awsEc2RunningNode"
+                    "when": "viewItem == awsEc2RunningNode && config.aws.experiments.ec2RemoteConnect"
                 },
                 {
                     "command": "aws.ec2.rebootInstance",
                     "group": "inline@1",
-                    "when": "viewItem == awsEc2RunningNode"
+                    "when": "viewItem == awsEc2RunningNode && config.aws.experiments.ec2RemoteConnect"
+                },
+                {
+                    "command": "aws.ec2.copyInstanceId",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsEc2(Running|Stopped|Pending)Node)$/ && config.aws.experiments.ec2RemoteConnect",
+                    "group": "2@0"
                 },
                 {
                     "command": "aws.ecr.createRepository",
@@ -1604,11 +1614,6 @@
                     "command": "aws.samcli.sync",
                     "when": "!config.aws.samcli.legacyDeploy && view == aws.explorer && viewItem =~ /^(awsLambdaNode|awsRegionNode|awsCloudFormationRootNode)$/",
                     "group": "1@2"
-                },
-                {
-                    "command": "aws.ec2.copyInstanceId",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsEc2(Running|Stopped|Pending)Node)$/",
-                    "group": "2@0"
                 },
                 {
                     "command": "aws.ecr.copyTagUri",
@@ -1827,6 +1832,16 @@
                 },
                 {
                     "command": "aws.cwl.searchLogGroup",
+                    "group": "inline@1",
+                    "when": "view == aws.explorer && viewItem =~ /^awsCloudWatchLogNode|awsCloudWatchLogParentNode$/"
+                },
+                {
+                    "command": "aws.cwl.tailLogGroup",
+                    "group": "0@1",
+                    "when": "view == aws.explorer && viewItem =~ /^awsCloudWatchLogNode|awsCloudWatchLogParentNode$/"
+                },
+                {
+                    "command": "aws.cwl.tailLogGroup",
                     "group": "inline@1",
                     "when": "view == aws.explorer && viewItem =~ /^awsCloudWatchLogNode|awsCloudWatchLogParentNode$/"
                 },
@@ -3384,6 +3399,18 @@
                 "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(search-view-icon)",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.cwl.tailLogGroup",
+                "title": "%AWS.command.cloudWatchLogs.tailLogGroup%",
+                "category": "%AWS.title%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
+                "icon": "$(notebook-execute)",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"

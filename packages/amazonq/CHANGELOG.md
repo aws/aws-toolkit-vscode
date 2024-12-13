@@ -1,3 +1,21 @@
+## 1.40.0 2024-12-10
+
+- **Bug Fix** Improved LLM code review for file review.
+- **Bug Fix** @workspace is missing from the welcome to q chat tab
+- **Bug Fix** Fix chat syntax highlighting when using several different themes
+- **Bug Fix** Amazon Q /doc: progress bar persists after cancelling README creation
+- **Bug Fix** Code Review: Fixed a bug where some issues are missing from the code issues view for workspaces with custom names
+- **Bug Fix** Amazon Q /doc: Prompt user to choose a folder in chat
+- **Bug Fix** Amazon Q /dev not adding Dockerfiles in nested folders
+- **Bug Fix** Improved Code Fix generation for code review issues
+- **Bug Fix** Fix the quick start buttons on the explore page to show amazon q colours on hover
+- **Feature** Q feature dev: recognize .bms, .pli code files
+- **Feature** Amazon Q Code Transformation: show job ID in Transformation Hub
+- **Feature** UI improvements to Amazon Q Chat: New splash loader animation, initial streaming card animation, improved button colours
+- **Feature** Add acknowledgement button for amazon q chat disclaimer
+- **Feature** Navigate through prompt history by using the up/down arrows
+- **Feature** Amazon Q: Simplify log channel
+
 ## 1.39.0 2024-12-03
 
 - **Feature** Added a getting started page for exploring amazon q agents
@@ -58,7 +76,7 @@
 - **Bug Fix** Use Sagemaker environment IAM Credentials for Code Completion when they're available
 - **Bug Fix** Inline: Code completion not working for Sagemaker Pro Tier users.
 - **Bug Fix** Disable /transform and /dev commands for sagemaker users as they're not supported
-- **Feature** Enable Free Tier Chat for IAM users
+- **Feature** Amazon SageMaker Studio: Enable Free Tier Chat for IAM users
 
 ## 1.31.0 2024-10-29
 

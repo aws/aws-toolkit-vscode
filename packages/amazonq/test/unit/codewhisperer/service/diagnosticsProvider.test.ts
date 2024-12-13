@@ -12,6 +12,8 @@ import {
     removeDiagnostic,
     disposeSecurityDiagnostic,
     SecurityDiagnostic,
+    createSecurityDiagnostic,
+    codewhispererDiagnosticSourceLabel,
 } from 'aws-core-vscode/codewhisperer'
 import { createCodeScanIssue, createMockDocument, createTextDocumentChangeEvent } from 'aws-core-vscode/test'
 
@@ -82,5 +84,17 @@ describe('diagnosticsProvider', function () {
         assert.strictEqual(actual[0].range.end.line, 4)
         assert.strictEqual(actual[1].range.start.line, 5)
         assert.strictEqual(actual[1].range.end.line, 6)
+    })
+
+    it('should create securityDiagnostic from codeScanIssue', function () {
+        const codeScanIssue = createCodeScanIssue()
+        const securityDiagnostic = createSecurityDiagnostic(codeScanIssue)
+        assert.strictEqual(securityDiagnostic.findingId, codeScanIssue.findingId)
+        assert.strictEqual(securityDiagnostic.message, codeScanIssue.title)
+        assert.strictEqual(securityDiagnostic.range.start.line, codeScanIssue.startLine)
+        assert.strictEqual(securityDiagnostic.range.end.line, codeScanIssue.endLine)
+        assert.strictEqual(securityDiagnostic.severity, vscode.DiagnosticSeverity.Warning)
+        assert.strictEqual(securityDiagnostic.source, codewhispererDiagnosticSourceLabel)
+        assert.strictEqual(securityDiagnostic.code, codeScanIssue.ruleId)
     })
 })

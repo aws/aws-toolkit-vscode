@@ -66,7 +66,7 @@ export const QueryVectorIndexRequestType: RequestType<QueryVectorIndexRequest, a
 
 export type IndexConfig = 'all' | 'default'
 
-//RepoMapData
+// RepoMapData
 export type QueryRepomapIndexRequestPayload = { filePaths: string[] }
 export type QueryRepomapIndexRequest = string
 export const QueryRepomapIndexRequestType: RequestType<QueryRepomapIndexRequest, any, any> = new RequestType(
