@@ -4,7 +4,7 @@
  */
 import * as vscode from 'vscode'
 import { createCommonButtons } from '../../../shared/ui/buttons'
-import { NestedWizard } from '../../../shared/ui/nestedWizardPrompter'
+import { CompositeWizard } from '../../../shared/wizards/compositeWizard'
 import { createQuickPick, DataQuickPickItem } from '../../../shared/ui/pickerPrompter'
 import * as assert from 'assert'
 import { PrompterTester } from './prompterTester'
@@ -40,7 +40,7 @@ export function createTestPrompter(title: string, itemsString: string[]) {
     return createQuickPick(items, { title: title, buttons: createCommonButtons() })
 }
 
-class ChildWizard extends NestedWizard<ChildWizardForm> {
+class ChildWizard extends CompositeWizard<ChildWizardForm> {
     constructor() {
         super()
         this.form.childWizardProp1.bindPrompter(() =>
@@ -55,7 +55,7 @@ class ChildWizard extends NestedWizard<ChildWizardForm> {
     }
 }
 
-class SingleNestedWizard extends NestedWizard<SingleNestedWizardForm> {
+class SingleNestedWizard extends CompositeWizard<SingleNestedWizardForm> {
     constructor() {
         super()
 
@@ -74,7 +74,7 @@ class SingleNestedWizard extends NestedWizard<SingleNestedWizardForm> {
     }
 }
 
-class DoubleNestedWizard extends NestedWizard<DoubleNestedWizardForm> {
+class DoubleNestedWizard extends CompositeWizard<DoubleNestedWizardForm> {
     constructor() {
         super()
 
