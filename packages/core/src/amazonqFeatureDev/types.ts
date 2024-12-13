@@ -6,11 +6,11 @@
 import * as vscode from 'vscode'
 import { VirtualFileSystem } from '../shared/virtualFilesystem'
 import type { CancellationTokenSource } from 'vscode'
-import { Messenger } from './controllers/chat/messenger/messenger'
 import { FeatureDevClient } from './client/featureDev'
 import { TelemetryHelper } from './util/telemetryHelper'
 import { CodeReference, UploadHistory } from '../amazonq/webview/ui/connector'
 import { DiffTreeFileInfo } from '../amazonq/webview/ui/diffTree/types'
+import { Messenger } from '../amazonq/commons/connector/baseMessenger'
 
 export type Interaction = {
     // content to be sent back to the chat UI
@@ -22,6 +22,11 @@ export interface SessionStateInteraction {
     nextState: SessionState | Omit<SessionState, 'uploadId'> | undefined
     interaction: Interaction
     currentCodeGenerationId?: string
+}
+
+export enum Intent {
+    DEV = 'DEV',
+    DOC = 'DOC',
 }
 
 export enum DevPhase {
@@ -37,18 +42,6 @@ export enum CodeGenerationStatus {
     PREDICT_FAILED = 'predict-failed',
     DEBATE_FAILED = 'debate-failed',
     FAILED = 'Failed',
-}
-
-export enum FollowUpTypes {
-    GenerateCode = 'GenerateCode',
-    InsertCode = 'InsertCode',
-    ProvideFeedbackAndRegenerateCode = 'ProvideFeedbackAndRegenerateCode',
-    Retry = 'Retry',
-    ModifyDefaultSourceFolder = 'ModifyDefaultSourceFolder',
-    DevExamples = 'DevExamples',
-    NewTask = 'NewTask',
-    CloseSession = 'CloseSession',
-    SendFeedback = 'SendFeedback',
 }
 
 export type SessionStatePhase = DevPhase.INIT | DevPhase.CODEGEN

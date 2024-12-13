@@ -9,7 +9,6 @@ import * as vscode from 'vscode'
 import * as path from 'path'
 import * as localizedText from '../localizedText'
 import { DefaultS3Client } from '../clients/s3Client'
-import { Wizard } from '../wizards/wizard'
 import { DataQuickPickItem, createMultiPick, createQuickPick } from '../ui/pickerPrompter'
 import { DefaultCloudFormationClient } from '../clients/cloudFormationClient'
 import * as CloudFormation from '../cloudformation/cloudformation'
@@ -52,9 +51,11 @@ import { ParamsSource, createSyncParamsSourcePrompter } from '../ui/sam/paramsSo
 import { createEcrPrompter } from '../ui/sam/ecrPrompter'
 import { BucketSource, createBucketNamePrompter, createBucketSourcePrompter } from '../ui/sam/bucketPrompter'
 import { runInTerminal } from './processTerminal'
-import { WizardPrompter } from '../ui/wizardPrompter'
-import { TemplateParametersWizard } from '../../awsService/appBuilder/wizards/templateParametersWizard'
-import { SkipPrompter } from '../ui/common/skipPrompter'
+import {
+    TemplateParametersForm,
+    TemplateParametersWizard,
+} from '../../awsService/appBuilder/wizards/templateParametersWizard'
+import { CompositeWizard } from '../wizards/compositeWizard'
 
 export interface SyncParams {
     readonly paramsSource: ParamsSource
@@ -174,7 +175,7 @@ function getSyncEntryPoint(arg: vscode.Uri | AWSTreeNodeBase | TreeNode | undefi
     }
 }
 
-export class SyncWizard extends Wizard<SyncParams> {
+export class SyncWizard extends CompositeWizard<SyncParams> {
     registry: CloudFormationTemplateRegistry
     public constructor(
         state: Pick<SyncParams, 'deployType'> & Partial<SyncParams>,
@@ -183,14 +184,25 @@ export class SyncWizard extends Wizard<SyncParams> {
     ) {
         super({ initState: state, exitPrompterProvider: shouldPromptExit ? createExitPrompter : undefined })
         this.registry = registry
+    }
+
+    public override async init(): Promise<this> {
         this.form.template.bindPrompter(() => createTemplatePrompter(this.registry, syncMementoRootKey, samSyncUrl))
-        this.form.templateParameters.bindPrompter(async ({ template }) => {
-            const samTemplateParameters = await getParameters(template!.uri)
-            if (!samTemplateParameters || samTemplateParameters.size === 0) {
-                return new SkipPrompter({} as Partial<any>)
+        this.form.templateParameters.bindPrompter(
+            async ({ template }) =>
+                this.createWizardPrompter<TemplateParametersWizard, TemplateParametersForm>(
+                    TemplateParametersWizard,
+                    template!.uri,
+                    samSyncUrl,
+                    syncMementoRootKey
+                ),
+            {
+                showWhen: async ({ template }) => {
+                    const samTemplateParameters = await getParameters(template!.uri)
+                    return !!samTemplateParameters && samTemplateParameters.size > 0
+                },
             }
-            return new WizardPrompter(new TemplateParametersWizard(template!.uri, samSyncParamUrl, syncMementoRootKey))
-        })
+        )
 
         this.form.projectRoot.setDefault(({ template }) => getProjectRoot(template))
 
@@ -203,6 +215,7 @@ export class SyncWizard extends Wizard<SyncParams> {
             showWhen: ({ paramsSource }) =>
                 paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
         })
+
         this.form.stackName.bindPrompter(
             ({ region }) =>
                 createStackPrompter(new DefaultCloudFormationClient(region!), syncMementoRootKey, samSyncUrl),
@@ -246,6 +259,7 @@ export class SyncWizard extends Wizard<SyncParams> {
                     paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
             }
         )
+        return this
     }
 }
 

@@ -161,6 +161,7 @@ export const codefileExtensions = new Set([
     '.bash',
     '.bat',
     '.boo',
+    '.bms',
     '.c',
     '.cbl',
     '.cc',
@@ -267,6 +268,7 @@ export const codefileExtensions = new Set([
     '.pike',
     '.pir',
     '.pl',
+    '.pli',
     '.pm',
     '.pmod',
     '.pp',
@@ -348,16 +350,11 @@ export const codefileExtensions = new Set([
     '.zig',
 ])
 
-// Some well-known code files without an extension
-export const wellKnownCodeFiles = new Set(['Dockerfile', 'Dockerfile.build'])
+// Code file names without an extension
+export const codefileNames = new Set(['Dockerfile', 'Dockerfile.build'])
 
 /** Returns true if `filename` is a code file. */
 export function isCodeFile(filename: string): boolean {
-    if (codefileExtensions.has(path.extname(filename).toLowerCase())) {
-        return true
-    } else if (wellKnownCodeFiles.has(filename)) {
-        return true
-    } else {
-        return false
-    }
+    const ext = path.extname(filename).toLowerCase()
+    return codefileExtensions.has(ext) || codefileNames.has(path.basename(filename))
 }

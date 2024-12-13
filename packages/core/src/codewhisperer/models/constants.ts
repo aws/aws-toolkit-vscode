@@ -144,11 +144,13 @@ export type PlatformLanguageId = (typeof platformLanguageIds)[number]
  */
 export const pendingResponse = 'Waiting for Amazon Q...'
 
-export const runningSecurityScan = 'Scanning project for security issues...'
+export const runningSecurityScan = 'Reviewing project for code issues...'
+
+export const runningFileScan = 'Reviewing current file for code issues...'
 
 export const noSuggestions = 'No suggestions from Amazon Q'
 
-export const licenseFilter = 'Amazon Q suggestions were filtered due to reference setting'
+export const licenseFilter = 'Amazon Q suggestions were filtered due to reference settings'
 
 /**
  * Key bindings JSON file path
@@ -249,21 +251,39 @@ export const projectScanUploadIntent = 'FULL_PROJECT_SECURITY_SCAN'
 
 export const codeScanTruncDirPrefix = 'codewhisperer_scan'
 
+export const TestGenerationTruncDirPrefix = 'Q_TestGeneration'
+
 export const codeScanZipExt = '.zip'
 
 export const contextTruncationTimeoutSeconds = 10
 
-export const codeScanJobTimeoutSeconds = 60 * 10 //10 minutes
+export const codeScanJobTimeoutSeconds = 60 * 10 // 10 minutes
 
-export const codeFileScanJobTimeoutSeconds = 60 //1 minute
+export const codeFileScanJobTimeoutSeconds = 60 * 10 // 10 minutes
+
+export const codeFixJobTimeoutMs = 60_000
 
 export const projectSizeCalculateTimeoutSeconds = 10
 
 export const codeScanJobPollingIntervalSeconds = 1
 
+export const codeFixJobPollingIntervalMs = 1000
+
 export const fileScanPollingDelaySeconds = 10
 
 export const projectScanPollingDelaySeconds = 30
+
+export const codeFixJobPollingDelayMs = 5_000
+
+export const testGenPollingDelaySeconds = 10
+
+export const testGenJobPollingIntervalMilliseconds = 1000
+
+export const testGenJobTimeoutMilliseconds = 60 * 10 * 1000 // 10 minutes
+
+export const testGenUploadIntent = 'UNIT_TESTS_GENERATION'
+
+export const codeFixUploadIntent = 'CODE_FIX_GENERATION'
 
 export const artifactTypeSource = 'SourceCode'
 
@@ -328,30 +348,41 @@ export const settingsLearnMore = 'Learn More about Amazon Q Settings'
 
 export const freeTierLimitReached = 'You have reached the monthly fair use limit of code recommendations.'
 
-export const freeTierLimitReachedCodeScan = 'You have reached the monthly quota of code scans.'
+export const freeTierLimitReachedCodeScan = 'You have reached the monthly quota of code reviews.'
 
-export const fileScansLimitReached = 'Amazon Q: You have reached the monthly limit for auto-scans.'
+export const scansLimitReachedErrorMessage =
+    'Maximum com.amazon.aws.codewhisperer.StartCodeAnalysis reached for this month.'
 
-export const projectScansLimitReached = 'Amazon Q: You have reached the monthly limit for project scans.'
+export const utgLimitReached =
+    'Maximum com.amazon.aws.codewhisperer.runtime.StartTestGeneration reached for this month.'
 
 export const DefaultCodeScanErrorMessage =
-    'Amazon Q encountered an error while scanning for security issues. Try again later.'
+    'Amazon Q encountered an error while reviewing for code issues. Try again later.'
 
-export const FileSizeExceededErrorMessage = `Amazon Q: The selected file exceeds the input artifact limit. Try again with a smaller file. For more information about scan limits, see the [Amazon Q documentation](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/security-scans.html#quotas).`
+export const defaultTestGenErrorMessage = 'Amazon Q encountered an error while generating tests. Try again later.'
 
-export const ProjectSizeExceededErrorMessage = `Amazon Q: The selected project exceeds the input artifact limit. Try again with a smaller project. For more information about scan limits, see the [Amazon Q documentation](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/security-scans.html#quotas).`
+export const defaultCodeFixErrorMessage = 'Amazon Q encountered an error while generating code fixes. Try again later.'
 
-export const noSourceFilesErrorMessage = 'Amazon Q: Project does not contain valid files to scan'
+export const FileSizeExceededErrorMessage = `Amazon Q: The selected file exceeds the input artifact limit. Try again with a smaller file. For more information about review limits, see the [Amazon Q documentation](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/security-scans.html#quotas).`
 
-export const UploadArtifactToS3ErrorMessage = `Amazon Q is unable to upload your workspace artifacts to Amazon S3 for security scans. For more information, see the [Amazon Q documentation](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/security_iam_manage-access-with-policies.html#data-perimeters).`
+export const ProjectSizeExceededErrorMessage = `Amazon Q: The selected workspace exceeds the input artifact limit. Try again with a smaller workspace. For more information about review limits, see the [Amazon Q documentation](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/security-scans.html#quotas).`
+
+export const monthlyLimitReachedNotification =
+    "You've reached the monthly quota for Amazon Q Developer's agent capabilities. You can try again next month. For more information on usage limits, see the Amazon Q Developer pricing page."
+
+export const noSourceFilesErrorMessage = 'Amazon Q: workspace does not contain valid files to review'
+
+export const noActiveFileErrorMessage = 'Amazon Q: Open valid file to run a file review'
+
+export const UploadArtifactToS3ErrorMessage = `Amazon Q is unable to upload your workspace artifacts to Amazon S3 for security reviews. For more information, see the [Amazon Q documentation](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/security_iam_manage-access-with-policies.html#data-perimeters).`
 
 export const throttlingLearnMore = `Learn More`
 
 export const throttlingMessage = `Maximum recommendation count reached for this month`
 
-export const fileScansThrottlingMessage = `Maximum auto-scans count reached for this month`
+export const fileScansThrottlingMessage = `Maximum file reviews count reached for this month`
 
-export const projectScansThrottlingMessage = `Maximum project scan count reached for this month`
+export const projectScansThrottlingMessage = `Maximum workspace review count reached for this month`
 
 export const connectionChangeMessage = `Keep using Amazon Q with `
 
@@ -363,9 +394,16 @@ export const failedToConnectAwsBuilderId = `Failed to connect to AWS Builder ID`
 export const failedToConnectIamIdentityCenter = `Failed to connect to IAM Identity Center`
 
 export const stopScanMessage =
-    'Stop security scan? This scan will be counted as one complete scan towards your monthly security scan limits.'
+    'Stop security review? This review will be counted as one complete review towards your monthly security review limits.'
 
-export const showScannedFilesMessage = 'Show Scanned Files'
+// TODO: Change the Text according to the UX
+export const stopScanMessageInChat = 'Review is stopped. Retry reviews by selecting below options'
+
+export const showScannedFilesMessage = 'View Code Issues'
+
+export const ignoreAllIssuesMessage = (issueTitle: string) => {
+    return `Are you sure you want to ignore all "${issueTitle}" issues? Amazon Q will not show these issues for future reviews. You can manage a list of your ignored issues in the Amazon Q extension settings.`
+}
 
 export const updateInlineLockKey = 'CODEWHISPERER_INLINE_UPDATE_LOCK_KEY'
 
@@ -378,8 +416,6 @@ export const uploadZipSizeLimitInBytes = 2000000000 // 2GB
 export const maxBufferSize = 1024 * 1024 * 8 // this is 8MB; the default max buffer size for stdout for spawnSync is 1MB
 
 export const transformationJobPollingIntervalSeconds = 5
-
-export const transformationJobTimeoutSeconds = 3 * 60 * 60 // 3 hours, to match backend
 
 export const defaultLanguage = 'Java'
 
@@ -506,7 +542,7 @@ export const buildingCodeMessage =
     'Amazon Q is building your code using Java JAVA_VERSION_HERE in a secure build environment.'
 
 export const scanningProjectMessage =
-    'Amazon Q is scanning the project files and getting ready to start the job. To start the job, Amazon Q needs to upload the project artifacts. Once that is done, Amazon Q can start the transformation job. The estimated time for this operation ranges from a few seconds to several minutes.'
+    'Amazon Q is reviewing the project files and getting ready to start the job. To start the job, Amazon Q needs to upload the project artifacts. Once that is done, Amazon Q can start the transformation job. The estimated time for this operation ranges from a few seconds to several minutes.'
 
 export const failedStepMessage = 'The step failed, fetching additional details...'
 
@@ -517,6 +553,8 @@ export const noChangesMadeMessage = "I didn't make any changes for this transfor
 export const noOngoingJobMessage = 'No ongoing job.'
 
 export const nothingToShowMessage = 'Nothing to show'
+
+export const jobStartedTitle = 'Transformation started'
 
 export const jobStartedNotification =
     'Amazon Q is transforming your code. It can take 10 to 30 minutes to upgrade your code, depending on the size of your project. To monitor progress, go to the Transformation Hub.'
@@ -539,8 +577,6 @@ export const buildSucceededNotification =
 
 export const absolutePathDetectedMessage = (numPaths: number, buildFile: string, listOfPaths: string) =>
     `I detected ${numPaths} potential absolute file path(s) in your ${buildFile} file: **${listOfPaths}**. Absolute file paths might cause issues when I build your code. Any errors will show up in the build log.`
-
-export const unsupportedJavaVersionChatMessage = `I can only upgrade Java 8, Java 11, or Java 17 projects. For more information, see the [Amazon Q documentation](${codeTransformPrereqDoc}).`
 
 export const selectSQLMetadataFileHelpMessage =
     'Okay, I can convert the embedded SQL code for your Oracle to PostgreSQL transformation. To get started, upload the zipped metadata file from your schema conversion in AWS Data Migration Service (DMS). To retrieve the metadata file:\n1. Open your database migration project in the AWS DMS console.\n2. Open the schema conversion and choose **Convert the embedded SQL in your application**.\n3. Choose the link to Amazon S3 console.\n\nYou can download the metadata file from the {schema-conversion-project}/ directory. For more info, refer to the [documentation](https://docs.aws.amazon.com/dms/latest/userguide/schema-conversion-save-apply.html#schema-conversion-save).'
@@ -572,18 +608,6 @@ export const failedToStartJobTooManyJobsChatMessage =
 export const failedToStartJobTooManyJobsNotification =
     'Amazon Q could not begin the transformation. You have too many active transformations running. Please try again after your other transformations have completed.'
 
-export const failedToStartJobMonthlyLimitNotification =
-    'Amazon Q cannot transform your project because it will exceed the free tier limit of 2000 lines of code per month. Try transforming a smaller project.'
-
-export const failedToStartJobMonthlyLimitChatMessage =
-    'I am sorry, I cannot transform your project because it will exceed the free tier limit of 2000 lines of code per month. You can try again with a smaller project.'
-
-export const failedToStartJobLinesLimitNotification =
-    'Your project exceeds the free tier limit of 1000 lines of code per transformation. Try transforming a smaller project.'
-
-export const failedToStartJobLinesLimitChatMessage =
-    'I am sorry, your project exceeds the free tier limit of 1000 lines of code per transformation. You can try again with a smaller project.'
-
 export const failedToUploadProjectChatMessage =
     "Sorry, I couldn't upload your project. Please try starting the transformation again."
 
@@ -614,6 +638,8 @@ export const jobCancelledChatMessage =
 
 export const jobCancelledNotification = 'You cancelled the transformation.'
 
+export const transformationCompletedTitle = 'Transformation complete'
+
 export const diffMessage = (multipleDiffs: boolean) => {
     return multipleDiffs
         ? 'You can review the diffs to see my proposed changes and accept or reject them. You will be able to accept changes from one diff at a time. If you reject changes in one diff, you will not be able to view or accept changes in the other diffs.'
@@ -636,16 +662,14 @@ export const jobPartiallyCompletedNotification = (multipleDiffsString: string) =
     return `Amazon Q transformed part of your code. ${multipleDiffsString} The transformation summary has details about the files I updated and the errors that prevented a complete transformation.`
 }
 
-export const noPomXmlFoundChatMessage = `I couldn\'t find a project that I can upgrade. I couldn\'t find a pom.xml file in any of your open projects, nor could I find any embedded SQL statements. Currently, I can upgrade Java 8 or Java 11 projects built on Maven, or Oracle SQL to PostgreSQL statements in Java projects. For more information, see the [Amazon Q documentation](${codeTransformPrereqDoc}).`
-
-export const noPomXmlFoundNotification = `None of your open modules are supported for code transformation with Amazon Q. A pom.xml is required for transformation.`
+export const noPomXmlFoundChatMessage = `I couldn\'t find a project that I can upgrade. I couldn\'t find a pom.xml file in any of your open projects, nor could I find any embedded SQL statements. Currently, I can upgrade Java 8, 11, or 17 projects built on Maven, or Oracle SQL to PostgreSQL statements in Java projects. For more information, see the [Amazon Q documentation](${codeTransformPrereqDoc}).`
 
 export const noJavaHomeFoundChatMessage = `Sorry, I couldn\'t locate your Java installation. For more information, see the [Amazon Q documentation](${codeTransformPrereqDoc}).`
 
 export const dependencyVersionsErrorMessage =
     'I could not find any other versions of this dependency in your local Maven repository. Try transforming the dependency to make it compatible with Java 17, and then try transforming this module again.'
 
-export const errorUploadingWithExpiredUrl = `The upload error may have been caused by the expiration of the S3 pre-signed URL that was used to upload code artifacts to Q Code Transformation. The S3 pre-signed URL expires in 30 minutes. This could be caused by any delays introduced by intermediate services in your network infrastructure. Please investigate your network configuration and consider allowlisting 'amazonq-code-transformation-us-east-1-c6160f047e0.s3.amazonaws.com' to skip any scanning that might delay the upload. For more information, see the [Amazon Q documentation](${codeTransformTroubleshootAllowS3Access}).`
+export const errorUploadingWithExpiredUrl = `The upload error may have been caused by the expiration of the S3 pre-signed URL that was used to upload code artifacts to Q Code Transformation. The S3 pre-signed URL expires in 30 minutes. This could be caused by any delays introduced by intermediate services in your network infrastructure. Please investigate your network configuration and consider allowlisting 'amazonq-code-transformation-us-east-1-c6160f047e0.s3.amazonaws.com' to skip any reviewing that might delay the upload. For more information, see the [Amazon Q documentation](${codeTransformTroubleshootAllowS3Access}).`
 
 export const socketConnectionFailed =
     'Please check your network connectivity or firewall configuration, and then try again.'
@@ -694,6 +718,14 @@ export const changesAppliedNotificationMultipleDiffs = (currentPatchIndex: numbe
 }
 
 export const noOpenProjectsFoundChatMessage = `I couldn\'t find a project that I can upgrade. Currently, I support Java 8, Java 11, and Java 17 projects built on Maven. Make sure your project is open in the IDE. For more information, see the [Amazon Q documentation](${codeTransformPrereqDoc}).`
+
+export const noOpenFileFoundChatMessage = `Sorry, there isn't a source file open right now that I can generate a test for. Make sure you open a source file so I can generate tests.`
+
+export const invalidFileTypeChatMessage = `Sorry, your current active window is not a source code file. Make sure you select a source file as your primary context.`
+
+export const noOpenProjectsFoundChatTestGenMessage = `Sorry, I couldn\'t find a project to generate tests`
+
+export const unitTestGenerationCancelMessage = 'Unit test generation cancelled.'
 
 export const noJavaProjectsFoundChatMessage = `I couldn\'t find a project that I can upgrade. Currently, I support Java 8, Java 11, and Java 17 projects built on Maven. Make sure your project is open in the IDE. For more information, see the [Amazon Q documentation](${codeTransformPrereqDoc}).`
 
@@ -802,7 +834,15 @@ export const supplemetalContextFetchingTimeoutMsg = 'Amazon Q supplemental conte
 
 export const codeFixAppliedFailedMessage = 'Failed to apply suggested code fix.'
 
-export const runSecurityScanButtonTitle = 'Run security scan'
+export const runSecurityScanButtonTitle = 'Run security review'
+
+export const startProjectScan = 'Review Project'
+
+export const startFileScan = 'Review Current File in Focus'
+
+export const noOpenProjectsFound = `Sorry, I couldn\'t find a project in the workspace. Open a project in your IDE and retry the review.`
+
+export const noOpenFileFound = `Sorry, I couldn\'t find an active file in the editor. Open a file in your IDE and retry the review.`
 
 export const crossFileContextConfig = {
     numberOfChunkToFetch: 60,
@@ -816,6 +856,39 @@ export const utgConfig = {
 }
 
 export enum CodeAnalysisScope {
-    FILE = 'FILE',
+    FILE_AUTO = 'FILE_AUTO',
+    FILE_ON_DEMAND = 'FILE_ON_DEMAND',
     PROJECT = 'PROJECT',
 }
+
+export enum TestGenerationJobStatus {
+    IN_PROGRESS = 'IN_PROGRESS',
+    FAILED = 'FAILED',
+    COMPLETED = 'COMPLETED',
+}
+
+export enum ZipUseCase {
+    TEST_GENERATION = 'TEST_GENERATION',
+    CODE_SCAN = 'CODE_SCAN',
+}
+
+export const amazonqIgnoreNextLine = 'amazonq-ignore-next-line'
+
+export enum TestGenerationBuildStep {
+    START_STEP,
+    INSTALL_DEPENDENCIES,
+    RUN_BUILD,
+    RUN_EXECUTION_TESTS,
+    FIXING_TEST_CASES,
+    PROCESS_TEST_RESULTS,
+}
+
+export enum SecurityScanStep {
+    GENERATE_ZIP,
+    UPLOAD_TO_S3,
+    CREATE_SCAN_JOB,
+    POLL_SCAN_STATUS,
+    PROCESS_SCAN_RESULTS,
+}
+
+export const amazonqCodeIssueDetailsTabTitle = 'Code Issue Details'

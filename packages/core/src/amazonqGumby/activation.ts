@@ -16,7 +16,6 @@ import { transformByQState } from '../codewhisperer/models/model'
 import { ProposedTransformationExplorer } from '../codewhisperer/service/transformByQ/transformationResultsViewProvider'
 import { CodeTransformTelemetryState } from './telemetry/codeTransformTelemetryState'
 import { telemetry } from '../shared/telemetry/telemetry'
-import { CancelActionPositions } from './telemetry/codeTransformTelemetry'
 import { setContext } from '../shared'
 
 export async function activate(context: ExtContext) {
@@ -50,9 +49,9 @@ export async function activate(context: ExtContext) {
     context.extensionContext.subscriptions.push(
         vscode.window.registerWebviewViewProvider('aws.amazonq.transformationHub', transformationHubViewProvider),
 
-        Commands.register('aws.amazonq.stopTransformationInHub', async (cancelSrc: CancelActionPositions) => {
+        Commands.register('aws.amazonq.stopTransformationInHub', async () => {
             if (transformByQState.isRunning()) {
-                await stopTransformByQ(transformByQState.getJobId(), cancelSrc)
+                await stopTransformByQ(transformByQState.getJobId())
                 await postTransformationJob()
                 await cleanupTransformationJob()
             }

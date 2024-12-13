@@ -17,7 +17,6 @@ import { createExitPrompter } from '../ui/common/exitPrompter'
 import { createRegionPrompter } from '../ui/common/region'
 import { ChildProcess } from '../utilities/processUtils'
 import { CancellationError } from '../utilities/timeoutUtils'
-import { Wizard } from '../wizards/wizard'
 import { addTelemetryEnvVar } from './cli/samCliInvokerUtils'
 import { validateSamDeployConfig, SamConfig, writeSamconfigGlobal } from './config'
 import { BucketSource, createBucketSourcePrompter, createBucketNamePrompter } from '../ui/sam/bucketPrompter'
@@ -26,15 +25,17 @@ import { TemplateItem, createTemplatePrompter } from '../ui/sam/templatePrompter
 import { createDeployParamsSourcePrompter, ParamsSource } from '../ui/sam/paramsSourcePrompter'
 import { getErrorCode, getProjectRoot, getSamCliPathAndVersion, getSource, updateRecentResponse } from './utils'
 import { runInTerminal } from './processTerminal'
-import { WizardPrompter } from '../ui/wizardPrompter'
-import { TemplateParametersWizard } from '../../awsService/appBuilder/wizards/templateParametersWizard'
-import { SkipPrompter } from '../ui/common/skipPrompter'
+import {
+    TemplateParametersForm,
+    TemplateParametersWizard,
+} from '../../awsService/appBuilder/wizards/templateParametersWizard'
 import { getParameters } from '../../lambda/config/parameterUtils'
+import { CompositeWizard } from '../wizards/compositeWizard'
 
 export interface DeployParams {
     readonly paramsSource: ParamsSource
     readonly template: TemplateItem
-    readonly templateParameters: Partial<any>
+    readonly templateParameters: any
     readonly region: string
     readonly stackName: string
     readonly bucketSource: BucketSource
@@ -68,7 +69,7 @@ type DeployResult = {
     isSuccess: boolean
 }
 
-export class DeployWizard extends Wizard<DeployParams> {
+export class DeployWizard extends CompositeWizard<DeployParams> {
     registry: CloudFormationTemplateRegistry
     state: Partial<DeployParams>
     arg: any
@@ -82,16 +83,26 @@ export class DeployWizard extends Wizard<DeployParams> {
         this.registry = registry
         this.state = state
         this.arg = arg
+    }
 
+    public override async init(): Promise<this> {
         this.form.template.bindPrompter(() => createTemplatePrompter(this.registry, deployMementoRootKey, samDeployUrl))
 
-        this.form.templateParameters.bindPrompter(async ({ template }) => {
-            const samTemplateParameters = await getParameters(template.uri)
-            if (!samTemplateParameters || samTemplateParameters.size === 0) {
-                return new SkipPrompter({} as Partial<any>)
+        this.form.templateParameters.bindPrompter(
+            async ({ template }) =>
+                this.createWizardPrompter<TemplateParametersWizard, TemplateParametersForm>(
+                    TemplateParametersWizard,
+                    template!.uri,
+                    samDeployUrl,
+                    deployMementoRootKey
+                ),
+            {
+                showWhen: async ({ template }) => {
+                    const samTemplateParameters = await getParameters(template!.uri)
+                    return !!samTemplateParameters && samTemplateParameters.size > 0
+                },
             }
-            return new WizardPrompter(new TemplateParametersWizard(template.uri, samDeployUrl, deployMementoRootKey))
-        })
+        )
 
         this.form.projectRoot.setDefault(({ template }) => getProjectRoot(template))
 
@@ -210,7 +221,7 @@ export async function runDeploy(arg: any, wizardParams?: DeployParams): Promise<
             })
 
             try {
-                //Run SAM build in Terminal
+                // Run SAM build in Terminal
                 await runInTerminal(buildProcess, 'build')
             } catch (error) {
                 throw ToolkitError.chain(error, 'Failed to build SAM template', { details: { ...buildFlags } })
@@ -224,7 +235,7 @@ export async function runDeploy(arg: any, wizardParams?: DeployParams): Promise<
                 }),
             })
 
-            //Run SAM deploy in Terminal
+            // Run SAM deploy in Terminal
             const { paramsSource, stackName, region, projectRoot } = params
             const shouldWriteDeploySamconfigGlobal = paramsSource !== ParamsSource.SamConfig && !!stackName && !!region
             try {

@@ -12,7 +12,11 @@ import { createCommonButtons } from '../../../shared/ui/buttons'
 import { getRecentResponse, updateRecentResponse } from '../../../shared/sam/utils'
 import { getParameters } from '../../../lambda/config/parameterUtils'
 
-export class TemplateParametersWizard extends Wizard<any> {
+export interface TemplateParametersForm {
+    [key: string]: any
+}
+
+export class TemplateParametersWizard extends Wizard<TemplateParametersForm> {
     template: vscode.Uri
     preloadedTemplate: CloudFormation.Template | undefined
     samTemplateParameters: Map<string, { required: boolean }> | undefined
