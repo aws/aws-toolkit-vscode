@@ -619,78 +619,44 @@ export function fromExtensionManifest<T extends TypeDescriptor & Partial<Section
  * core lib as necessary.
  */
 export const toolkitPrompts = settingsProps['aws.suppressPrompts']
-type toolkitPromptName = keyof typeof toolkitPrompts
-export class ToolkitPromptSettings
-    extends Settings.define(
-        'aws.suppressPrompts',
-        toRecord(keys(toolkitPrompts), () => Boolean)
-    )
-    implements PromptSettings
-{
-    public isPromptEnabled(promptName: toolkitPromptName) {
-        return isPromptEnabled(this, promptName)
-    }
-
-    public async disablePrompt(promptName: toolkitPromptName): Promise<void> {
-        return await disablePrompt(this, promptName)
-    }
-
-    static #instance: ToolkitPromptSettings
-
-    public static get instance() {
-        return (this.#instance ??= new this())
-    }
-}
+export const ToolkitPromptSettings = getPromptSettings('aws.suppressPrompts', toolkitPrompts)
 
 export const amazonQPrompts = settingsProps['amazonQ.suppressPrompts']
-type amazonQPromptName = keyof typeof amazonQPrompts
-export class AmazonQPromptSettings
-    extends Settings.define(
-        'amazonQ.suppressPrompts',
-        toRecord(keys(amazonQPrompts), () => Boolean)
-    )
-    implements PromptSettings
-{
-    public isPromptEnabled(promptName: amazonQPromptName): boolean {
-        return isPromptEnabled(this, promptName)
-    }
+export const AmazonQPromptSettings = getPromptSettings('amazonQ.suppressPrompts', amazonQPrompts)
 
-    public async disablePrompt(promptName: amazonQPromptName): Promise<void> {
-        return await disablePrompt(this, promptName)
-    }
+function getPromptSettings<P extends 'amazonQ.suppressPrompts' | 'aws.suppressPrompts'>(
+    promptsKey: P,
+    prompts: (typeof settingsProps)[keyof typeof settingsProps]
+) {
+    type promptName = keyof typeof prompts
+    return class AnonymousPromptSettings extends Settings.define(
+        promptsKey,
+        toRecord(keys(prompts), () => Boolean)
+    ) {
+        public isPromptEnabled(promptName: promptName) {
+            try {
+                return !this._getOrThrow(promptName, false as never)
+            } catch (e) {
+                this._log('prompt check for "%s" failed: %s', promptName, (e as Error).message)
+                this.reset().catch((e) =>
+                    getLogger().error(`failed to reset prompt settings: %O`, (e as Error).message)
+                )
 
-    static #instance: AmazonQPromptSettings
+                return true
+            }
+        }
 
-    public static get instance() {
-        return (this.#instance ??= new this())
-    }
-}
+        public async disablePrompt(promptName: promptName) {
+            if (this.isPromptEnabled(promptName)) {
+                await this.update(promptName, true as never)
+            }
+        }
 
-function isPromptEnabled<
-    S extends {
-        _getOrThrow(key: P & string, defaultValue: boolean): boolean
-        _log(message: string, ...args: any[]): void
-        update(key: P & string, value: boolean): Promise<boolean>
-        reset(): Promise<void>
-    } & PromptSettings,
-    P extends AllPromptNames,
->(settings: S, promptName: P) {
-    try {
-        return !settings._getOrThrow(promptName, false)
-    } catch (e) {
-        settings._log('prompt check for "%s" failed: %s', promptName, (e as Error).message)
-        settings.reset().catch((e) => getLogger().error(`failed to reset prompt settings: %O`, (e as Error).message))
+        static #instance: AnonymousPromptSettings
 
-        return true
-    }
-}
-
-async function disablePrompt<
-    S extends { update(key: P & string, value: boolean): Promise<boolean> } & PromptSettings,
-    P extends AllPromptNames,
->(settings: S, promptName: P) {
-    if (settings.isPromptEnabled(promptName)) {
-        await settings.update(promptName, true)
+        public static get instance() {
+            return (this.#instance ??= new this())
+        }
     }
 }
 
@@ -699,7 +665,7 @@ async function disablePrompt<
  * which is the intersection of the types (only the values that occur
  * in each are selected), but idk how to do that.
  */
-type AllPromptNames = amazonQPromptName | toolkitPromptName
+type AllPromptNames = keyof typeof toolkitPrompts | keyof typeof amazonQPrompts
 
 export interface PromptSettings {
     isPromptEnabled(promptName: AllPromptNames): boolean
