@@ -600,7 +600,7 @@ export function fromExtensionManifest<T extends TypeDescriptor & Partial<Section
  *
  * ### Usage:
  * ```
- * if (await settings.isPromptEnabled('myPromptName')) {
+ * if (settings.isPromptEnabled('myPromptName')) {
  *     // Show some sort of prompt
  *     const userResponse = await promptUser()
  *
@@ -627,19 +627,12 @@ export class ToolkitPromptSettings
     )
     implements PromptSettings
 {
-    public async isPromptEnabled(promptName: toolkitPromptName): Promise<boolean> {
-        try {
-            return !this._getOrThrow(promptName, false)
-        } catch (e) {
-            this._log('prompt check for "%s" failed: %s', promptName, (e as Error).message)
-            await this.reset()
-
-            return true
-        }
+    public isPromptEnabled(promptName: toolkitPromptName) {
+        return isEnabled(this, promptName)
     }
 
     public async disablePrompt(promptName: toolkitPromptName): Promise<void> {
-        if (await this.isPromptEnabled(promptName)) {
+        if (this.isPromptEnabled(promptName)) {
             await this.update(promptName, true)
         }
     }
@@ -660,19 +653,12 @@ export class AmazonQPromptSettings
     )
     implements PromptSettings
 {
-    public async isPromptEnabled(promptName: amazonQPromptName): Promise<boolean> {
-        try {
-            return !this._getOrThrow(promptName, false)
-        } catch (e) {
-            this._log('prompt check for "%s" failed: %s', promptName, (e as Error).message)
-            await this.reset()
-
-            return true
-        }
+    public isPromptEnabled(promptName: amazonQPromptName): boolean {
+        return isEnabled(this, promptName)
     }
 
     public async disablePrompt(promptName: amazonQPromptName): Promise<void> {
-        if (await this.isPromptEnabled(promptName)) {
+        if (this.isPromptEnabled(promptName)) {
             await this.update(promptName, true)
         }
     }
@@ -692,7 +678,7 @@ export class AmazonQPromptSettings
 type AllPromptNames = amazonQPromptName | toolkitPromptName
 
 export interface PromptSettings {
-    isPromptEnabled(promptName: AllPromptNames): Promise<boolean>
+    isPromptEnabled(promptName: AllPromptNames): boolean
     disablePrompt(promptName: AllPromptNames): Promise<void>
 }
 
@@ -708,7 +694,7 @@ type ExperimentName = keyof typeof experiments
  * ### Usage:
  * ```
  * function myExperimentalFeature(): void {
- *   if (!(await settings.isExperimentEnabled('myExperimentalFeature'))) {
+ *   if (!(settings.isExperimentEnabled('myExperimentalFeature'))) {
  *       return
  *   }
  *
@@ -727,14 +713,7 @@ export class Experiments extends Settings.define(
     toRecord(keys(experiments), () => Boolean)
 ) {
     public isExperimentEnabled(name: ExperimentName): boolean {
-        try {
-            return this._getOrThrow(name, false)
-        } catch (error) {
-            this._log(`experiment check for ${name} failed: %s`, error)
-            this.reset().catch((e) => getLogger().error(`failed to reset experiment settings: %O`, e))
-
-            return false
-        }
+        return isEnabled(this, name)
     }
 
     static #instance: Experiments
@@ -948,4 +927,23 @@ export async function openSettings(prefix: string): Promise<void> {
  */
 export async function openSettingsId<K extends keyof SettingsProps>(key: K): Promise<void> {
     await vscode.commands.executeCommand('workbench.action.openSettings', `@id:${key}`)
+}
+
+function isEnabled<
+    S extends {
+        _getOrThrow(key: P & string, defaultValue: boolean): boolean
+        _log(message: string, ...args: any[]): void
+        update(key: P & string, value: boolean): Promise<boolean>
+        reset(): Promise<void>
+    },
+    P extends AllPromptNames | ExperimentName,
+>(settings: S, promptName: P) {
+    try {
+        return !settings._getOrThrow(promptName, false)
+    } catch (e) {
+        settings._log('prompt check for "%s" failed: %s', promptName, (e as Error).message)
+        settings.reset().catch((e) => getLogger().error(`failed to reset prompt settings: %O`, (e as Error).message))
+
+        return true
+    }
 }
