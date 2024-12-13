@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { SpawnOptions } from 'child_process'
+import { SpawnOptions } from 'child_process' // eslint-disable-line no-restricted-imports
 import { getLogger } from '../../logger'
 import { getUserAgent } from '../../telemetry/util'
 import { ChildProcessResult, ChildProcessOptions } from '../../utilities/processUtils'
