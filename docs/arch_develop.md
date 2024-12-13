@@ -484,17 +484,17 @@ class ExampleWizard extends Wizard<ExampleState> {
 
 ### 2. `CompositeWizard` Class
 
-This abstract class extends the `Wizard` class with an addition method to create and manage state of the nested wizards.
+`CompositeWizard` extends `Wizard` to create and manage a collection of nested/child wizards.
 
-Extends this class to create a wizard that contains other wizards as part of the prompter flow.
-Use `this.createWizardPrompter()` to use another wizard class as a prompter in the main wizard.
+Extend this class to create a wizard that contains other wizards as part of a prompter flow.
+Use `this.createWizardPrompter()` to use a wizard as a prompter in the `CompositeWizard`.
 
 Example:
 
 ```ts
 
 // Child wizard
-class ChildWizard extends Wizards<ChildWizardForm> {...}
+class ChildWizard extends Wizard<ChildWizardForm> {...}
 
 
 // Composite wizard
