@@ -536,9 +536,9 @@ export class ProposedTransformationExplorer {
             diffModel.saveChanges()
             telemetry.codeTransform_submitSelection.emit({
                 codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
+                codeTransformJobId: transformByQState.getJobId(),
                 userChoice: `acceptChanges-${patchFilesDescriptions?.content[diffModel.currentPatchIndex].name}`,
             })
-            telemetry.ui_click.emit({ elementId: 'transformationHub_acceptChanges' })
             if (transformByQState.getMultipleDiffs()) {
                 void vscode.window.showInformationMessage(
                     CodeWhispererConstants.changesAppliedNotificationMultipleDiffs(
@@ -596,7 +596,6 @@ export class ProposedTransformationExplorer {
         vscode.commands.registerCommand('aws.amazonq.transformationHub.reviewChanges.rejectChanges', async () => {
             diffModel.rejectChanges()
             await reset()
-            telemetry.ui_click.emit({ elementId: 'transformationHub_rejectChanges' })
 
             transformByQState.getChatControllers()?.transformationFinished.fire({
                 tabID: ChatSessionManager.Instance.getSession().tabID,
