@@ -179,14 +179,18 @@ export class FeatureConfigProvider {
                 if (!isSet) {
                     await CodeWhispererSettings.instance.enableLocalIndex()
                     globals.globalState.tryUpdate('aws.amazonq.workspaceIndexToggleOn', true)
-                    const response = await vscode.window.showInformationMessage(
-                        'Amazon Q: Workspace index is now enabled. You can disable it in the Amazon Q settings.',
-                        'Open settings'
-                    )
 
-                    if (response === 'Open settings') {
-                        Commands.tryExecute('aws.amazonq.configure')
-                    }
+                    // todo: localize and finalize string to use
+                    await vscode.window
+                        .showInformationMessage(
+                            'Amazon Q: Workspace index is now enabled. You can disable it in the Amazon Q settings.',
+                            'Open settings'
+                        )
+                        .then((r) => {
+                            if (r === 'Open settings') {
+                                Commands.tryExecute('aws.amazonq.configure')
+                            }
+                        })
                 }
             }
         } catch (e) {
