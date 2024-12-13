@@ -9,11 +9,11 @@ import { Prompter, PromptResult } from './prompter'
 
 /**
  * Wraps {@link Wizard} object into its own {@link Prompter}, allowing wizards to use other wizards in their flows.
- * This is meant to be used exclusively in createWizardPrompter() method of {@link NestedWizard} class.
+ * This is meant to be used exclusively in createWizardPrompter() method of {@link CompositeWizard} class.
  *
  * @remarks
  *  - The WizardPrompter class should never be instantiated with directly.
- *  - Use createWizardPrompter() method of {@link NestedWizard} when creating a nested wizard prompter for proper state management.
+ *  - Use createWizardPrompter() method of {@link CompositeWizard} when creating a nested wizard prompter for proper state management.
  *  - See examples:
  *     - {@link SingleNestedWizard}
  *     - {@link DoubleNestedWizard}
