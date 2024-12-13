@@ -666,6 +666,34 @@ export class AmazonQPromptSettings
     }
 }
 
+function isPromptEnabled<
+    S extends {
+        _getOrThrow(key: P & string, defaultValue: boolean): boolean
+        _log(message: string, ...args: any[]): void
+        update(key: P & string, value: boolean): Promise<boolean>
+        reset(): Promise<void>
+    } & PromptSettings,
+    P extends AllPromptNames,
+>(settings: S, promptName: P) {
+    try {
+        return !settings._getOrThrow(promptName, false)
+    } catch (e) {
+        settings._log('prompt check for "%s" failed: %s', promptName, (e as Error).message)
+        settings.reset().catch((e) => getLogger().error(`failed to reset prompt settings: %O`, (e as Error).message))
+
+        return true
+    }
+}
+
+async function disablePrompt<
+    S extends { update(key: P & string, value: boolean): Promise<boolean> } & PromptSettings,
+    P extends AllPromptNames,
+>(settings: S, promptName: P) {
+    if (settings.isPromptEnabled(promptName)) {
+        await settings.update(promptName, true)
+    }
+}
+
 /**
  * Use cautiously as this is misleading. Ideally we create a type
  * which is the intersection of the types (only the values that occur
@@ -930,32 +958,4 @@ export async function openSettings(prefix: string): Promise<void> {
  */
 export async function openSettingsId<K extends keyof SettingsProps>(key: K): Promise<void> {
     await vscode.commands.executeCommand('workbench.action.openSettings', `@id:${key}`)
-}
-
-function isPromptEnabled<
-    S extends {
-        _getOrThrow(key: P & string, defaultValue: boolean): boolean
-        _log(message: string, ...args: any[]): void
-        update(key: P & string, value: boolean): Promise<boolean>
-        reset(): Promise<void>
-    } & PromptSettings,
-    P extends AllPromptNames,
->(settings: S, promptName: P) {
-    try {
-        return !settings._getOrThrow(promptName, false)
-    } catch (e) {
-        settings._log('prompt check for "%s" failed: %s', promptName, (e as Error).message)
-        settings.reset().catch((e) => getLogger().error(`failed to reset prompt settings: %O`, (e as Error).message))
-
-        return true
-    }
-}
-
-async function disablePrompt<
-    S extends { update(key: P & string, value: boolean): Promise<boolean> } & PromptSettings,
-    P extends AllPromptNames,
->(settings: S, promptName: P) {
-    if (settings.isPromptEnabled(promptName)) {
-        await settings.update(promptName, true)
-    }
 }
