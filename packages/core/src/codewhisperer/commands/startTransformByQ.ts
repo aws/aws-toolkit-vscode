@@ -263,6 +263,7 @@ export async function preTransformationUploadCode() {
 
             transformByQState.setPayloadFilePath(payloadFilePath)
             uploadId = await uploadPayload(payloadFilePath)
+            telemetry.record({ codeTransformJobId: uploadId }) // uploadId is re-used as jobId
         })
     } catch (err) {
         const errorMessage = (err as Error).message
@@ -825,6 +826,7 @@ export async function stopTransformByQ(jobId: string) {
     await telemetry.codeTransform_jobIsCancelledByUser.run(async () => {
         telemetry.record({
             codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
+            codeTransformJobId: jobId,
         })
         if (transformByQState.isRunning()) {
             getLogger().info('CodeTransformation: User requested to stop transformation. Stopping transformation.')
