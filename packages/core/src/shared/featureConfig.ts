@@ -10,6 +10,7 @@ import {
     ListFeatureEvaluationsResponse,
 } from '../codewhisperer/client/codewhispereruserclient'
 import * as vscode from 'vscode'
+import * as nls from 'vscode-nls'
 import { codeWhispererClient as client } from '../codewhisperer/client/codewhisperer'
 import { AuthUtil } from '../codewhisperer/util/authUtil'
 import { getLogger } from './logger'
@@ -20,6 +21,8 @@ import { getClientId, getOperatingSystem } from './telemetry/util'
 import { extensionVersion } from './vscode/env'
 import { telemetry } from './telemetry'
 import { Commands } from './vscode/commands2'
+
+const localize = nls.loadMessageBundle()
 
 export class FeatureContext {
     constructor(
@@ -180,11 +183,14 @@ export class FeatureConfigProvider {
                     await CodeWhispererSettings.instance.enableLocalIndex()
                     globals.globalState.tryUpdate('aws.amazonq.workspaceIndexToggleOn', true)
 
-                    // todo: localize and finalize string to use
+                    // todo: finalize string
                     await vscode.window
                         .showInformationMessage(
-                            'Amazon Q: Workspace index is now enabled. You can disable it in the Amazon Q settings.',
-                            'Open settings'
+                            localize(
+                                'AWS.amazonq.chat.workspacecontext.enable.message',
+                                'Amazon Q: Workspace index is now enabled. You can disable it in the Amazon Q settings.'
+                            ),
+                            localize('AWS.amazonq.opensettings', 'Open settings')
                         )
                         .then((r) => {
                             if (r === 'Open settings') {
