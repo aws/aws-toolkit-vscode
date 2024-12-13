@@ -628,7 +628,7 @@ export class ToolkitPromptSettings
     implements PromptSettings
 {
     public isPromptEnabled(promptName: toolkitPromptName) {
-        return isEnabled(this, promptName)
+        return isPromptEnabled(this, promptName)
     }
 
     public async disablePrompt(promptName: toolkitPromptName): Promise<void> {
@@ -654,7 +654,7 @@ export class AmazonQPromptSettings
     implements PromptSettings
 {
     public isPromptEnabled(promptName: amazonQPromptName): boolean {
-        return isEnabled(this, promptName)
+        return isPromptEnabled(this, promptName)
     }
 
     public async disablePrompt(promptName: amazonQPromptName): Promise<void> {
@@ -694,7 +694,7 @@ type ExperimentName = keyof typeof experiments
  * ### Usage:
  * ```
  * function myExperimentalFeature(): void {
- *   if (!(settings.isExperimentEnabled('myExperimentalFeature'))) {
+ *   if (!( settings.isExperimentEnabled('myExperimentalFeature'))) {
  *       return
  *   }
  *
@@ -713,7 +713,14 @@ export class Experiments extends Settings.define(
     toRecord(keys(experiments), () => Boolean)
 ) {
     public isExperimentEnabled(name: ExperimentName): boolean {
-        return isEnabled(this, name)
+        try {
+            return this._getOrThrow(name, false)
+        } catch (error) {
+            this._log(`experiment check for ${name} failed: %s`, error)
+            this.reset().catch((e) => getLogger().error(`failed to reset experiment settings: %O`, e))
+
+            return false
+        }
     }
 
     static #instance: Experiments
@@ -929,14 +936,14 @@ export async function openSettingsId<K extends keyof SettingsProps>(key: K): Pro
     await vscode.commands.executeCommand('workbench.action.openSettings', `@id:${key}`)
 }
 
-function isEnabled<
+function isPromptEnabled<
     S extends {
         _getOrThrow(key: P & string, defaultValue: boolean): boolean
         _log(message: string, ...args: any[]): void
         update(key: P & string, value: boolean): Promise<boolean>
         reset(): Promise<void>
-    },
-    P extends AllPromptNames | ExperimentName,
+    } & PromptSettings,
+    P extends AllPromptNames,
 >(settings: S, promptName: P) {
     try {
         return !settings._getOrThrow(promptName, false)
