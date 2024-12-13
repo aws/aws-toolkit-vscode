@@ -736,15 +736,15 @@ export async function postTransformationJob() {
         const mavenVersionInfoMessage = `${versionInfo[0]} (${transformByQState.getMavenName()})`
         const javaVersionInfoMessage = `${versionInfo[1]} (${transformByQState.getMavenName()})`
 
-        // Note: IntelliJ implementation of ResultStatusMessage includes additional metadata such as jobId.
         telemetry.codeTransform_totalRunTime.emit({
             buildSystemVersion: mavenVersionInfoMessage,
             codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
+            codeTransformJobId: transformByQState.getJobId(),
             codeTransformResultStatusMessage: resultStatusMessage,
             codeTransformRunTimeLatency: durationInMs,
             codeTransformLocalJavaVersion: javaVersionInfoMessage,
             result: resultStatusMessage === TransformByQStatus.Succeeded ? MetadataResult.Pass : MetadataResult.Fail,
-            reason: resultStatusMessage,
+            reason: `${resultStatusMessage}-${chatMessage}`,
         })
     }
 
