@@ -632,9 +632,7 @@ export class ToolkitPromptSettings
     }
 
     public async disablePrompt(promptName: toolkitPromptName): Promise<void> {
-        if (this.isPromptEnabled(promptName)) {
-            await this.update(promptName, true)
-        }
+        return await disablePrompt(this, promptName)
     }
 
     static #instance: ToolkitPromptSettings
@@ -658,9 +656,7 @@ export class AmazonQPromptSettings
     }
 
     public async disablePrompt(promptName: amazonQPromptName): Promise<void> {
-        if (this.isPromptEnabled(promptName)) {
-            await this.update(promptName, true)
-        }
+        return await disablePrompt(this, promptName)
     }
 
     static #instance: AmazonQPromptSettings
@@ -952,5 +948,14 @@ function isPromptEnabled<
         settings.reset().catch((e) => getLogger().error(`failed to reset prompt settings: %O`, (e as Error).message))
 
         return true
+    }
+}
+
+async function disablePrompt<
+    S extends { update(key: P & string, value: boolean): Promise<boolean> } & PromptSettings,
+    P extends AllPromptNames,
+>(settings: S, promptName: P) {
+    if (settings.isPromptEnabled(promptName)) {
+        await settings.update(promptName, true)
     }
 }
