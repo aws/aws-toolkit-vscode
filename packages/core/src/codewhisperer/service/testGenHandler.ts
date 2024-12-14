@@ -55,7 +55,7 @@ export async function getPresignedUrlAndUploadTestGen(zipMetadata: ZipMetadata) 
     logger.verbose(`Prepare for uploading src context...`)
     const srcResp = await codeWhisperer.codeWhispererClient.createUploadUrl(srcReq).catch((err) => {
         getLogger().error(`Failed getting presigned url for uploading src context. Request id: ${err.requestId}`)
-        throw new CreateUploadUrlError(err.message, err.code)
+        throw new CreateUploadUrlError(err.message)
     })
     logger.verbose(`CreateUploadUrlRequest requestId: ${srcResp.$response.requestId}`)
     logger.verbose(`Complete Getting presigned Url for uploading src context.`)
@@ -104,7 +104,7 @@ export async function createTestJob(
     const resp = await codewhispererClient.codeWhispererClient.startTestGeneration(req).catch((err) => {
         ChatSessionManager.Instance.getSession().startTestGenerationRequestId = err.requestId
         logger.error(`Failed creating test job. Request id: ${err.requestId}`)
-        throw new CreateTestJobError(err.message, err.statusCode)
+        throw new CreateTestJobError(err.message)
     })
     logger.info('Unit test generation request id: %s', resp.$response.requestId)
     logger.debug('Unit test generation data: %O', resp.$response.data)
@@ -159,7 +159,7 @@ export async function pollTestJobStatus(
             // Stop the Unit test generation workflow if IDE receive stopIteration = true
             if (shortAnswer.stopIteration === 'true') {
                 session.stopIteration = true
-                throw new TestGenFailedError(400, shortAnswer.planSummary)
+                throw new TestGenFailedError(shortAnswer.planSummary)
             }
             if (shortAnswer.numberOfTestMethods) {
                 session.numberOfTestsGenerated = Number(shortAnswer.numberOfTestMethods)
@@ -297,7 +297,7 @@ export async function downloadResultArchive(
     } catch (e: any) {
         downloadErrorMessage = (e as Error).message
         getLogger().error(`Unit Test Generation: ExportResultArchive error = ${downloadErrorMessage}`)
-        throw new ExportResultsArchiveError(downloadErrorMessage, e.statusCode)
+        throw new ExportResultsArchiveError(downloadErrorMessage)
     } finally {
         cwStreamingClient.destroy()
     }
