@@ -122,7 +122,7 @@ export async function startTestGenerationProcess(
         // TODO: Send status to test summary
         if (jobStatus === TestGenerationJobStatus.FAILED) {
             logger.verbose(`Test generation failed.`)
-            throw new TestGenFailedError('500')
+            throw new TestGenFailedError(500)
         }
         throwIfCancelled()
         if (!shouldContinueRunning(tabID)) {

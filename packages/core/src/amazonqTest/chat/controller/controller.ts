@@ -254,7 +254,7 @@ export class TestController {
             session.startTestGenerationRequestId,
             performance.now() - session.testGenerationStartTime,
             telemetryErrorMessage,
-            data.error.statusCode ?? '0',
+            data.error.statusCode.toString() ?? '0',
             session.isCodeBlockSelected,
             session.artifactsUploadDuration,
             session.srcPayloadSize,
@@ -280,10 +280,7 @@ export class TestController {
         return
     }
     // Client side error messages
-    private sendErrorMessage(data: {
-        tabID: string
-        error: { uiMessage: string; message: string; code: string; statusCode: string }
-    }) {
+    private sendErrorMessage(data: { tabID: string; error: { uiMessage: string; message: string; code: string } }) {
         const { error, tabID } = data
 
         // If user reached monthly limit for builderId

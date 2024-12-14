@@ -159,7 +159,7 @@ export async function pollTestJobStatus(
             // Stop the Unit test generation workflow if IDE receive stopIteration = true
             if (shortAnswer.stopIteration === 'true') {
                 session.stopIteration = true
-                throw new TestGenFailedError('400', shortAnswer.planSummary)
+                throw new TestGenFailedError(400, shortAnswer.planSummary)
             }
             if (shortAnswer.numberOfTestMethods) {
                 session.numberOfTestsGenerated = Number(shortAnswer.numberOfTestMethods)

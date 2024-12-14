@@ -11,7 +11,7 @@ export class TestGenError extends ToolkitError {
     constructor(
         error: string,
         code: string,
-        public statusCode: string,
+        public statusCode: number,
         public uiMessage: string
     ) {
         super(error, { code })
@@ -19,27 +19,27 @@ export class TestGenError extends ToolkitError {
 }
 export class ProjectZipError extends TestGenError {
     constructor(error: string) {
-        super(error, 'ProjectZipError', '400', defaultTestGenErrorMessage)
+        super(error, 'ProjectZipError', 400, defaultTestGenErrorMessage)
     }
 }
 export class InvalidSourceZipError extends TestGenError {
     constructor() {
-        super('Failed to create valid source zip', 'InvalidSourceZipError', '400', defaultTestGenErrorMessage)
+        super('Failed to create valid source zip', 'InvalidSourceZipError', 400, defaultTestGenErrorMessage)
     }
 }
 export class CreateUploadUrlError extends TestGenError {
-    constructor(errorMessage: string, errorCode: string) {
+    constructor(errorMessage: string, errorCode: number) {
         super(errorMessage, 'CreateUploadUrlError', errorCode, technicalErrorCustomerFacingMessage)
     }
 }
 export class UploadTestArtifactToS3Error extends TestGenError {
-    constructor(error: string, statusCode?: string) {
-        super(error, 'UploadTestArtifactToS3Error', statusCode ?? '400', technicalErrorCustomerFacingMessage)
+    constructor(error: string, statusCode?: number) {
+        super(error, 'UploadTestArtifactToS3Error', statusCode ?? 400, technicalErrorCustomerFacingMessage)
     }
 }
 export class CreateTestJobError extends TestGenError {
-    constructor(error: string, code: string) {
-        super(error, 'CreateTestJobError', code, technicalErrorCustomerFacingMessage)
+    constructor(error: string, statusCode: number) {
+        super(error, 'CreateTestJobError', statusCode, technicalErrorCustomerFacingMessage)
     }
 }
 export class TestGenTimedOutError extends TestGenError {
@@ -47,32 +47,32 @@ export class TestGenTimedOutError extends TestGenError {
         super(
             'Test generation failed. Amazon Q timed out.',
             'TestGenTimedOutError',
-            '500',
+            500,
             technicalErrorCustomerFacingMessage
         )
     }
 }
 export class TestGenStoppedError extends TestGenError {
     constructor() {
-        super('Unit test generation cancelled.', 'TestGenCancelled', '400', 'Unit test generation cancelled.')
+        super('Unit test generation cancelled.', 'TestGenCancelled', 400, 'Unit test generation cancelled.')
     }
 }
 export class TestGenFailedError extends TestGenError {
-    constructor(code: string, error?: string) {
+    constructor(statusCode: number, error?: string) {
         super(
             error ?? 'Test generation failed',
             'TestGenFailedError',
-            code,
+            statusCode,
             error ?? technicalErrorCustomerFacingMessage
         )
     }
 }
 export class ExportResultsArchiveError extends TestGenError {
-    constructor(error?: string, statusCode?: string) {
+    constructor(error?: string, statusCode?: number) {
         super(
             error ?? 'Test generation failed',
             'ExportResultsArchiveError',
-            statusCode ?? '400',
+            statusCode ?? 400,
             technicalErrorCustomerFacingMessage
         )
     }
