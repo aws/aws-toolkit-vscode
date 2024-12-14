@@ -65,7 +65,6 @@ export class TelemetryHelper {
         requestId?: string,
         perfClientLatency?: number,
         reasonDesc?: string,
-        httpStatusCode?: string,
         isCodeBlockSelected?: boolean,
         artifactsUploadDuration?: number,
         buildPayloadBytes?: number,
@@ -100,7 +99,6 @@ export class TelemetryHelper {
             requestId: requestId,
             reasonDesc: reasonDesc,
             reason: reason,
-            httpStatusCode: httpStatusCode,
         })
     }
 
