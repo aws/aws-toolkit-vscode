@@ -103,18 +103,41 @@ export async function uploadArtifactToS3(
     try {
         const uploadFileByteSize = (await nodefs.promises.stat(fileName)).size
         getLogger().info(
-            `Uploading project artifact at %s with checksum %s using uploadId: %s and size %s kB`,
+            `CodeTransformation: Uploading project artifact at %s with checksum %s using uploadId: %s and size %s kB`,
             fileName,
             sha256,
             resp.uploadId,
             Math.round(uploadFileByteSize / 1000)
         )
 
-        const response = await request.fetch('PUT', resp.uploadUrl, {
-            body: buffer,
-            headers: getHeadersObj(sha256, resp.kmsKeyArn),
-        }).response
-        getLogger().info(`CodeTransformation: Status from S3 Upload = ${response.status}`)
+        let response = undefined
+        const retriableCodes = [408, 429, 500, 502, 503, 504]
+        for (let i = 0; i < 3; i++) {
+            try {
+                response = await request.fetch('PUT', resp.uploadUrl, {
+                    body: buffer,
+                    headers: getHeadersObj(sha256, resp.kmsKeyArn),
+                }).response
+                getLogger().info(`CodeTransformation: upload to S3 status on attempt ${i + 1}/3 = ${response.status}`)
+                if (response.status === 200) {
+                    break
+                }
+                throw new Error('Upload failed')
+            } catch (e: any) {
+                if (response && !retriableCodes.includes(response.status)) {
+                    throw new Error(`Upload failed with status code = ${response.status}; did not automatically retry.`)
+                }
+                if (i !== 2) {
+                    await sleep(1000 * Math.pow(2, i))
+                }
+            }
+        }
+        if (!response || response.status !== 200) {
+            const uploadFailedError = `Upload failed after up to 2 retries with status code = ${response?.status ?? 'unavailable'}`
+            getLogger().error(`CodeTransformation: ${uploadFailedError}`)
+            throw new Error(uploadFailedError)
+        }
+        getLogger().info('CodeTransformation: Upload to S3 succeeded')
     } catch (e: any) {
         let errorMessage = `The upload failed due to: ${(e as Error).message}. For more information, see the [Amazon Q documentation](${CodeWhispererConstants.codeTransformTroubleshootUploadError})`
         if (errorMessage.includes('Request has expired')) {
