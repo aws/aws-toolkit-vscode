@@ -489,7 +489,7 @@ describe('transformByQ', function () {
         sinon.assert.calledOnce(fetchStub)
     })
 
-    it('should retry on retriable error and succeed', async () => {
+    it('should retry upload on retriable error and succeed', async () => {
         const failedResponse = {
             ok: false,
             status: 503,
@@ -511,7 +511,7 @@ describe('transformByQ', function () {
         sinon.assert.calledTwice(fetchStub)
     })
 
-    it('should throw error after 3 failed attempts', async () => {
+    it('should throw error after 3 failed upload attempts', async () => {
         const failedResponse = {
             ok: false,
             status: 500,
@@ -535,7 +535,7 @@ describe('transformByQ', function () {
         sinon.assert.calledThrice(fetchStub)
     })
 
-    it('should not retry on non-retriable error', async () => {
+    it('should not retry upload on non-retriable error', async () => {
         const failedResponse = {
             ok: false,
             status: 400,
