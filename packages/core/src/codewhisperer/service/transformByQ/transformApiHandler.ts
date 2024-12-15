@@ -133,7 +133,7 @@ export async function uploadArtifactToS3(
             }
         }
         if (!response || response.status !== 200) {
-            const uploadFailedError = `Upload failed after up to 2 retries with status code = ${response?.status ?? 'unavailable'}`
+            const uploadFailedError = `Upload failed after up to 3 attempts with status code = ${response?.status ?? 'unavailable'}`
             getLogger().error(`CodeTransformation: ${uploadFailedError}`)
             throw new Error(uploadFailedError)
         }

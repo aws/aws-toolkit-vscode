@@ -531,7 +531,7 @@ describe('transformByQ', function () {
             error = e as Error
         }
 
-        sinon.assert.match(error?.message.includes('Upload failed after up to 3 retries'), true)
+        sinon.assert.match(error?.message.includes('Upload failed after up to 3 attempts'), true)
         sinon.assert.calledThrice(fetchStub)
     })
 
