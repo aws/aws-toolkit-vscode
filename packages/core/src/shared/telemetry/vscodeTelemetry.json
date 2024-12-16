@@ -18,6 +18,11 @@
             "description": "SSM Publish Document operation type"
         },
         {
+            "name": "isInvalidJson",
+            "type": "boolean",
+            "description": "Indicates whether the message contains an invalid JSON definition."
+        },
+        {
             "name": "starterTemplate",
             "type": "string",
             "description": "Starter template chosen during create document"
@@ -528,7 +533,7 @@
         },
         {
             "name": "stepfunctions_saveFile",
-            "description": "Called after the user saves local ASL file (inlcuding autosave) from VSCode editor or Workflow Studio",
+            "description": "Triggered when Workflow Studio auto-syncs to the local file or when unsaved local changes are saved from Workflow Studio or VSCode.",
             "metadata": [
                 {
                     "type": "id",
@@ -541,6 +546,9 @@
                 {
                     "type": "source",
                     "required": true
+                },
+                {
+                    "type": "isInvalidJson"
                 }
             ]
         },

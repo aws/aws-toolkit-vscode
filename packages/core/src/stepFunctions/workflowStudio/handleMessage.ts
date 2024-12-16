@@ -12,6 +12,7 @@ import {
     InitResponseMessage,
     FileChangedMessage,
     FileChangeEventTrigger,
+    SyncFileRequestMessage,
 } from './types'
 import { submitFeedback } from '../../feedback/vue/submitFeedback'
 import { placeholder } from '../../shared/vscode/commands2'
@@ -38,8 +39,8 @@ export async function handleMessage(message: Message, context: WebviewContext) {
             case Command.SAVE_FILE:
                 void saveFileMessageHandler(message as SaveFileRequestMessage, context)
                 break
-            case Command.AUTO_SAVE_FILE:
-                void autoSaveFileMessageHandler(message as SaveFileRequestMessage, context)
+            case Command.AUTO_SYNC_FILE:
+                void autoSyncFileMessageHandler(message as SyncFileRequestMessage, context)
                 break
             case Command.CLOSE_WFS:
                 void closeCustomEditorMessageHandler(context)
@@ -136,12 +137,11 @@ async function saveFileMessageHandler(request: SaveFileRequestMessage, context: 
             id: context.fileId,
             saveType: 'MANUAL_SAVE',
             source: 'WORKFLOW_STUDIO',
+            isInvalidJson: request.isInvalidJson,
         })
 
         try {
-            await saveWorkspace(context, request.fileContents)
             await context.textDocument.save()
-
             void vscode.window.showInformationMessage(
                 localize(
                     'AWS.stepFunctions.workflowStudio.actions.saveSuccessMessage',
@@ -156,34 +156,30 @@ async function saveFileMessageHandler(request: SaveFileRequestMessage, context: 
 }
 
 /**
- * Handler for auto saving a file from the webview which updates the workspace but does not save the file.
- * Triggered on every code change from WFS.
+ * Handler for auto syncing a file from the webview which updates the workspace but does not save the file.
+ * Triggered on every code change from WFS, including invalid JSON.
  * @param request The request message containing the file contents.
  * @param context The webview context containing the necessary information for saving the file.
  */
-async function autoSaveFileMessageHandler(request: SaveFileRequestMessage, context: WebviewContext) {
+async function autoSyncFileMessageHandler(request: SyncFileRequestMessage, context: WebviewContext) {
     await telemetry.stepfunctions_saveFile.run(async (span) => {
         span.record({
             id: context.fileId,
             saveType: 'AUTO_SAVE',
             source: 'WORKFLOW_STUDIO',
+            isInvalidJson: request.isInvalidJson,
         })
 
         try {
-            await saveWorkspace(context, request.fileContents)
+            const edit = new vscode.WorkspaceEdit()
+            edit.replace(
+                context.textDocument.uri,
+                new vscode.Range(0, 0, context.textDocument.lineCount, 0),
+                request.fileContents
+            )
+            await vscode.workspace.applyEdit(edit)
         } catch (err) {
             throw ToolkitError.chain(err, 'Could not autosave asl file.', { code: 'AutoSaveFailed' })
         }
     })
-}
-
-/**
- * Saves to the workspace with the provided file contents.
- * @param context The webview context containing the necessary information for saving the file.
- * @param fileContents The file contents to save.
- */
-async function saveWorkspace(context: WebviewContext, fileContents: string) {
-    const edit = new vscode.WorkspaceEdit()
-    edit.replace(context.textDocument.uri, new vscode.Range(0, 0, context.textDocument.lineCount, 0), fileContents)
-    await vscode.workspace.applyEdit(edit)
 }

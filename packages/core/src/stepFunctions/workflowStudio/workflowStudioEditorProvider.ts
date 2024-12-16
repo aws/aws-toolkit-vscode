@@ -13,11 +13,12 @@ import globals from '../../shared/extensionGlobals'
 import { getRandomString, getStringHash } from '../../shared/utilities/textUtilities'
 import { ToolkitError } from '../../shared/errors'
 import { WorkflowStudioEditor } from './workflowStudioEditor'
+import { i18n } from '../../shared/i18n-helper'
+import { isInvalidJsonFile } from '../utils'
 
-// TODO: switch to production mode: change isLocalDev to false and add CDN link
-const isLocalDev = true
+const isLocalDev = false
 const localhost = 'http://127.0.0.1:3002'
-const cdn = 'TBD'
+const cdn = 'https://d5t62uwepi9lu.cloudfront.net'
 let clientId = ''
 
 /**
@@ -30,7 +31,7 @@ export class WorkflowStudioEditorProvider implements vscode.CustomTextEditorProv
     public static readonly viewType = 'workflowStudio.asl'
 
     /**
-     * Registers a new custom editor provider for `.tc.json` files.
+     * Registers a new custom editor provider for asl files.
      * @remarks This should only be called once per extension.
      * @param context The extension context
      */
@@ -115,6 +116,21 @@ export class WorkflowStudioEditorProvider implements vscode.CustomTextEditorProv
         _token: vscode.CancellationToken
     ): Promise<void> {
         await telemetry.stepfunctions_openWorkflowStudio.run(async () => {
+            // For invalid JSON, open default editor and show warning message
+            if (isInvalidJsonFile(document)) {
+                await vscode.commands.executeCommand('vscode.openWith', document.uri, 'default')
+                webviewPanel.dispose()
+                void vscode.window.showWarningMessage(i18n('AWS.stepFunctions.workflowStudio.actions.invalidJson'))
+
+                throw ToolkitError.chain(
+                    'Invalid JSON file',
+                    'The Workflow Studio editor was not opened because the JSON in the file is invalid',
+                    {
+                        code: 'InvalidJSONContent',
+                    }
+                )
+            }
+
             if (!this.webviewHtml) {
                 await this.fetchWebviewHtml()
             }
