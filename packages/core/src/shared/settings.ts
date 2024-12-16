@@ -619,23 +619,22 @@ export function fromExtensionManifest<T extends TypeDescriptor & Partial<Section
  * core lib as necessary.
  */
 export const toolkitPrompts = settingsProps['aws.suppressPrompts']
-export const ToolkitPromptSettings = getPromptSettings('aws.suppressPrompts', toolkitPrompts)
+export const ToolkitPromptSettings = getPromptSettings('aws.suppressPrompts')
 
 export const amazonQPrompts = settingsProps['amazonQ.suppressPrompts']
-export const AmazonQPromptSettings = getPromptSettings('amazonQ.suppressPrompts', amazonQPrompts)
+export const AmazonQPromptSettings = getPromptSettings('amazonQ.suppressPrompts')
+type promptSettingsKey = 'amazonQ.suppressPrompts' | 'aws.suppressPrompts'
 
-function getPromptSettings<P extends 'amazonQ.suppressPrompts' | 'aws.suppressPrompts'>(
-    promptsKey: P,
-    prompts: (typeof settingsProps)[keyof typeof settingsProps]
-) {
+function getPromptSettings(promptsKey: promptSettingsKey) {
+    const prompts = settingsProps[promptsKey]
     type promptName = keyof typeof prompts
     return class AnonymousPromptSettings extends Settings.define(
         promptsKey,
         toRecord(keys(prompts), () => Boolean)
     ) {
-        public isPromptEnabled(promptName: promptName) {
+        public isPromptEnabled(promptName: promptName & string) {
             try {
-                return !this._getOrThrow(promptName, false as never)
+                return !this._getOrThrow(promptName, false)
             } catch (e) {
                 this._log('prompt check for "%s" failed: %s', promptName, (e as Error).message)
                 this.reset().catch((e) =>
@@ -646,9 +645,9 @@ function getPromptSettings<P extends 'amazonQ.suppressPrompts' | 'aws.suppressPr
             }
         }
 
-        public async disablePrompt(promptName: promptName) {
+        public async disablePrompt(promptName: promptName & string) {
             if (this.isPromptEnabled(promptName)) {
-                await this.update(promptName, true as never)
+                await this.update(promptName, true)
             }
         }
 
