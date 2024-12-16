@@ -498,7 +498,7 @@ describe('PromptSetting', function () {
             it(scenario.desc, async () => {
                 await settings.update(promptSettingKey, scenario.testValue)
                 const before = settings.get(promptSettingKey, Object, {})
-                const result = await sut.isPromptEnabled(promptName)
+                const result = sut.isPromptEnabled(promptName)
 
                 assert.deepStrictEqual(result, scenario.expected)
                 assert.deepStrictEqual(

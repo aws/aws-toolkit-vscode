@@ -620,21 +620,23 @@ export function fromExtensionManifest<T extends TypeDescriptor & Partial<Section
  */
 export const toolkitPrompts = settingsProps['aws.suppressPrompts']
 export const ToolkitPromptSettings = getPromptSettings('aws.suppressPrompts')
+export type ToolkitPromptSettings = InstanceType<typeof ToolkitPromptSettings>
 
 export const amazonQPrompts = settingsProps['amazonQ.suppressPrompts']
 export const AmazonQPromptSettings = getPromptSettings('amazonQ.suppressPrompts')
+export type AmazonQPromptSettings = InstanceType<typeof ToolkitPromptSettings>
 type promptSettingsKey = 'amazonQ.suppressPrompts' | 'aws.suppressPrompts'
 
-function getPromptSettings(promptsKey: promptSettingsKey) {
+function getPromptSettings<P extends promptSettingsKey>(promptsKey: P) {
     const prompts = settingsProps[promptsKey]
-    type promptName = keyof typeof prompts
+    type promptName = keyof typeof prompts & string
     return class AnonymousPromptSettings extends Settings.define(
         promptsKey,
         toRecord(keys(prompts), () => Boolean)
     ) {
-        public isPromptEnabled(promptName: promptName & string) {
+        public isPromptEnabled(promptName: promptName) {
             try {
-                return !this._getOrThrow(promptName, false)
+                return !this._getOrThrow(promptName, false as never)
             } catch (e) {
                 this._log('prompt check for "%s" failed: %s', promptName, (e as Error).message)
                 this.reset().catch((e) =>
@@ -645,9 +647,9 @@ function getPromptSettings(promptsKey: promptSettingsKey) {
             }
         }
 
-        public async disablePrompt(promptName: promptName & string) {
+        public async disablePrompt(promptName: promptName) {
             if (this.isPromptEnabled(promptName)) {
-                await this.update(promptName, true)
+                await this.update(promptName, true as never)
             }
         }
 
