@@ -17,7 +17,7 @@ import { featureName } from '../../models/constants'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import {
     cleanupTransformationJob,
-    // compileProject,
+    compileProject,
     finishHumanInTheLoop,
     getValidLanguageUpgradeCandidateProjects,
     postTransformationJob,
@@ -534,7 +534,7 @@ export class GumbyController {
         try {
             this.sessionStorage.getSession().conversationState = ConversationState.COMPILING
             this.messenger.sendCompilationInProgress(message.tabID)
-            // await compileProject()
+            await compileProject()
         } catch (err: any) {
             this.messenger.sendUnrecoverableErrorResponse('could-not-compile-project', message.tabID)
             // reset state to allow "Start a new transformation" button to work
