@@ -1462,12 +1462,12 @@
                 },
                 {
                     "command": "aws.ec2.linkToLaunch",
-                    "group": "0@1",
+                    "group": "0@0",
                     "when": "viewItem =~ /^(awsEc2ParentNode)$/ && config.aws.experiments.ec2RemoteConnect"
                 },
                 {
                     "command": "aws.ec2.linkToLaunch",
-                    "group": "inline@1",
+                    "group": "inline@0",
                     "when": "viewItem =~ /^(awsEc2ParentNode)$/ && config.aws.experiments.ec2RemoteConnect"
                 },
                 {

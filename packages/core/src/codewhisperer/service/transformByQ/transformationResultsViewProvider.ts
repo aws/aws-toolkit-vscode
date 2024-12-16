@@ -325,7 +325,7 @@ export class ProposedTransformationExplorer {
             treeDataProvider: transformDataProvider,
         })
 
-        const patchFiles: string[] = []
+        let patchFiles: string[] = []
         let singlePatchFile: string = ''
         let patchFilesDescriptions: DescriptionContent | undefined = undefined
 
@@ -430,6 +430,7 @@ export class ProposedTransformationExplorer {
 
             let deserializeErrorMessage = undefined
             let pathContainingArchive = ''
+            patchFiles = [] // reset patchFiles if there was a previous transformation
             try {
                 // Download and deserialize the zip
                 pathContainingArchive = path.dirname(pathToArchive)
@@ -535,9 +536,9 @@ export class ProposedTransformationExplorer {
             diffModel.saveChanges()
             telemetry.codeTransform_submitSelection.emit({
                 codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
+                codeTransformJobId: transformByQState.getJobId(),
                 userChoice: `acceptChanges-${patchFilesDescriptions?.content[diffModel.currentPatchIndex].name}`,
             })
-            telemetry.ui_click.emit({ elementId: 'transformationHub_acceptChanges' })
             if (transformByQState.getMultipleDiffs()) {
                 void vscode.window.showInformationMessage(
                     CodeWhispererConstants.changesAppliedNotificationMultipleDiffs(
@@ -595,7 +596,6 @@ export class ProposedTransformationExplorer {
         vscode.commands.registerCommand('aws.amazonq.transformationHub.reviewChanges.rejectChanges', async () => {
             diffModel.rejectChanges()
             await reset()
-            telemetry.ui_click.emit({ elementId: 'transformationHub_rejectChanges' })
 
             transformByQState.getChatControllers()?.transformationFinished.fire({
                 tabID: ChatSessionManager.Instance.getSession().tabID,

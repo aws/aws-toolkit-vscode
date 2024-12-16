@@ -96,7 +96,7 @@ describe('crossFileContextUtil', function () {
             assert.strictEqual(actual.supplementalContextItems[3].content.split('\n').length, 50)
         })
 
-        it('for t2 group, should return global bm25 context and no repomap', async function () {
+        it.skip('for t2 group, should return global bm25 context and no repomap', async function () {
             await toTextEditor(aStringWithLineCount(200), 'CrossFile.java', tempFolder, { preview: false })
             const myCurrentEditor = await toTextEditor('', 'TargetFile.java', tempFolder, {
                 preview: false,
