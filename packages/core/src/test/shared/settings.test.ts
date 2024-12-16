@@ -521,17 +521,17 @@ describe('Experiments', function () {
     // The `Experiments` class is basically an immutable form of `PromptSettings`
 
     it('returns false when the setting is missing', async function () {
-        assert.strictEqual(await sut.isExperimentEnabled('jsonResourceModification'), false)
+        assert.strictEqual(sut.isExperimentEnabled('jsonResourceModification'), false)
     })
 
     it('returns false for invalid types', async function () {
         await sut.update('jsonResourceModification', 'definitely a boolean' as unknown as boolean)
-        assert.strictEqual(await sut.isExperimentEnabled('jsonResourceModification'), false)
+        assert.strictEqual(sut.isExperimentEnabled('jsonResourceModification'), false)
     })
 
     it('returns true when the flag is set', async function () {
         await sut.update('jsonResourceModification', true)
-        assert.strictEqual(await sut.isExperimentEnabled('jsonResourceModification'), true)
+        assert.strictEqual(sut.isExperimentEnabled('jsonResourceModification'), true)
     })
 
     it('fires events from nested settings', async function () {

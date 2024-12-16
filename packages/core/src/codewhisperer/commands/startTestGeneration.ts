@@ -17,7 +17,7 @@ import {
 import path from 'path'
 import { testGenState } from '..'
 import { ChatSessionManager } from '../../amazonqTest/chat/storages/chatSession'
-import { ChildProcess, spawn } from 'child_process'
+import { ChildProcess, spawn } from 'child_process' // eslint-disable-line no-restricted-imports
 import { BuildStatus } from '../../amazonqTest/chat/session/session'
 import { fs } from '../../shared/fs/fs'
 import { TestGenerationJobStatus } from '../models/constants'

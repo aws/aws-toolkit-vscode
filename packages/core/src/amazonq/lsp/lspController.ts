@@ -164,9 +164,6 @@ export class LspController extends LspDownloader {
             })
         } finally {
             this._isIndexingInProgress = false
-            const repomapFile = await LspClient.instance.getRepoMapJSON()
-            // console.log(repomapFile)
-            getLogger().info(`File path ${repomapFile}`)
         }
     }
 

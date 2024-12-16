@@ -726,12 +726,12 @@ export class Experiments extends Settings.define(
     'aws.experiments',
     toRecord(keys(experiments), () => Boolean)
 ) {
-    public async isExperimentEnabled(name: ExperimentName): Promise<boolean> {
+    public isExperimentEnabled(name: ExperimentName): boolean {
         try {
             return this._getOrThrow(name, false)
         } catch (error) {
             this._log(`experiment check for ${name} failed: %s`, error)
-            await this.reset()
+            this.reset().catch((e) => getLogger().error(`failed to reset experiment settings: %O`, e))
 
             return false
         }

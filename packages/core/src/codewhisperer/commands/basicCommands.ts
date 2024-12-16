@@ -66,6 +66,7 @@ import { cancel, confirm } from '../../shared'
 import { startCodeFixGeneration } from './startCodeFixGeneration'
 import { DefaultAmazonQAppInitContext } from '../../amazonq/apps/initContext'
 import path from 'path'
+import { parsePatch } from 'diff'
 
 const MessageTimeOut = 5_000
 
@@ -459,11 +460,21 @@ export const applySecurityFix = Commands.declare(
             }
 
             const edit = new vscode.WorkspaceEdit()
-            edit.replace(
-                document.uri,
-                new vscode.Range(document.lineAt(0).range.start, document.lineAt(document.lineCount - 1).range.end),
-                updatedContent
-            )
+            const diffs = parsePatch(suggestedFix.code)
+            for (const diff of diffs) {
+                for (const hunk of [...diff.hunks].reverse()) {
+                    const startLine = document.lineAt(hunk.oldStart - 1)
+                    const endLine = document.lineAt(hunk.oldStart - 1 + hunk.oldLines - 1)
+                    const range = new vscode.Range(startLine.range.start, endLine.range.end)
+
+                    const newText = updatedContent
+                        .split('\n')
+                        .slice(hunk.newStart - 1, hunk.newStart - 1 + hunk.newLines)
+                        .join('\n')
+
+                    edit.replace(document.uri, range, newText)
+                }
+            }
             const isApplied = await vscode.workspace.applyEdit(edit)
             if (isApplied) {
                 void document.save().then((didSave) => {

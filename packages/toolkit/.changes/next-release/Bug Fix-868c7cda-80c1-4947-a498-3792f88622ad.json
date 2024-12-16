@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Auth: SSO session was bad, but no reauth prompt given"
-}

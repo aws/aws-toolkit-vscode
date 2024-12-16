@@ -7,7 +7,7 @@
 // Generates CHANGELOG.md
 //
 
-import * as child_process from 'child_process'
+import * as child_process from 'child_process' // eslint-disable-line no-restricted-imports
 import * as nodefs from 'fs' // eslint-disable-line no-restricted-imports
 import * as path from 'path'
 

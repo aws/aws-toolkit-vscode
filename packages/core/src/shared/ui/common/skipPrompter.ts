@@ -3,24 +3,17 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { StepEstimator } from '../../wizards/wizard'
+import { StepEstimator, WIZARD_SKIP } from '../../wizards/wizard'
 import { Prompter, PromptResult } from '../prompter'
 
-/** Pseudo-prompter that immediately returns a value (and thus "skips" a step). */
+/** Prompter that returns SKIP control signal to parent wizard */
 export class SkipPrompter<T> extends Prompter<T> {
-    /**
-     * @param val Value immediately returned by the prompter.
-     */
-    constructor(public readonly val: T) {
+    constructor() {
         super()
     }
 
     protected async promptUser(): Promise<PromptResult<T>> {
-        const promptPromise = new Promise<PromptResult<T>>((resolve) => {
-            resolve(this.val)
-        })
-
-        return await promptPromise
+        return WIZARD_SKIP
     }
 
     public get recentItem(): any {

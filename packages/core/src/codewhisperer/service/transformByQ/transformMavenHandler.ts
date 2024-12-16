@@ -6,7 +6,8 @@ import * as vscode from 'vscode'
 import { FolderInfo, transformByQState } from '../../models/model'
 import { getLogger } from '../../../shared/logger'
 import * as CodeWhispererConstants from '../../models/constants'
-import { spawnSync } from 'child_process' // Consider using ChildProcess once we finalize all spawnSync calls
+// Consider using ChildProcess once we finalize all spawnSync calls
+import { spawnSync } from 'child_process' // eslint-disable-line no-restricted-imports
 import { CodeTransformBuildCommand, telemetry } from '../../../shared/telemetry/telemetry'
 import { CodeTransformTelemetryState } from '../../../amazonqGumby/telemetry/codeTransformTelemetryState'
 import { ToolkitError } from '../../../shared/errors'

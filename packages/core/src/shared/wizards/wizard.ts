@@ -46,10 +46,12 @@ export const WIZARD_RETRY = {
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export const WIZARD_BACK = { id: WIZARD_CONTROL, type: ControlSignal.Back, toString: () => makeControlString('Back') }
 // eslint-disable-next-line @typescript-eslint/naming-convention
+export const WIZARD_SKIP = { id: WIZARD_CONTROL, type: ControlSignal.Skip, toString: () => makeControlString('Skip') }
+// eslint-disable-next-line @typescript-eslint/naming-convention
 export const WIZARD_EXIT = { id: WIZARD_CONTROL, type: ControlSignal.Exit, toString: () => makeControlString('Exit') }
 
 /** Control signals allow for alterations of the normal wizard flow */
-export type WizardControl = typeof WIZARD_RETRY | typeof WIZARD_BACK | typeof WIZARD_EXIT
+export type WizardControl = typeof WIZARD_RETRY | typeof WIZARD_BACK | typeof WIZARD_EXIT | typeof WIZARD_SKIP
 
 export function isWizardControl(obj: any): obj is WizardControl {
     return obj !== undefined && obj.id === WIZARD_CONTROL
@@ -269,9 +271,7 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
 
         if (isValidResponse(answer)) {
             state.stepCache.picked = prompter.recentItem
-        }
-
-        if (!isValidResponse(answer)) {
+        } else {
             delete state.stepCache.stepOffset
         }
 

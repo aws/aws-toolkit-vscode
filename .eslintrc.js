@@ -199,6 +199,11 @@ module.exports = {
                         name: 'fs',
                         message: 'Avoid node:fs and use shared/fs/fs.ts when possible.',
                     },
+                    {
+                        name: 'child_process',
+                        message:
+                            'Avoid child_process, use ChildProcess from `shared/utilities/processUtils.ts` instead.',
+                    },
                 ],
             },
         ],

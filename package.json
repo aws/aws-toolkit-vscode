@@ -39,7 +39,7 @@
         "generateNonCodeFiles": "npm run generateNonCodeFiles -w packages/ --if-present"
     },
     "devDependencies": {
-        "@aws-toolkits/telemetry": "^1.0.287",
+        "@aws-toolkits/telemetry": "^1.0.289",
         "@playwright/browser-chromium": "^1.43.1",
         "@stylistic/eslint-plugin": "^2.11.0",
         "@types/he": "^1.2.3",

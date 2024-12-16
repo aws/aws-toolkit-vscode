@@ -9,7 +9,16 @@ export enum ControlSignal {
     Retry,
     Exit,
     Back,
-    Continue,
+    Skip,
+}
+
+/**
+ * Value for indicating current direction of the wizard
+ * Created mainly to support skipping prompters
+ */
+export enum Direction {
+    Forward,
+    Backward,
 }
 
 export interface StepResult<TState> {
@@ -39,9 +48,11 @@ export class StateMachineController<TState> {
     private extraSteps = new Map<number, Branch<TState>>()
     private steps: Branch<TState> = []
     private internalStep: number = 0
+    private direction: Direction
 
     public constructor(private state: TState = {} as TState) {
         this.previousStates = [_.cloneDeep(state)]
+        this.direction = Direction.Forward
     }
 
     public addStep(step: StepFunction<TState>): void {
@@ -71,12 +82,14 @@ export class StateMachineController<TState> {
 
         this.state = this.previousStates.pop()!
         this.internalStep -= 1
+        this.direction = Direction.Backward
     }
 
     protected advanceState(nextState: TState): void {
         this.previousStates.push(this.state)
         this.state = nextState
         this.internalStep += 1
+        this.direction = Direction.Forward
     }
 
     protected detectCycle(step: StepFunction<TState>): TState | undefined {
@@ -105,6 +118,12 @@ export class StateMachineController<TState> {
         }
 
         if (isMachineResult(result)) {
+            if (result.controlSignal === ControlSignal.Skip) {
+                /**
+                 * Depending on current wizard direction, skip signal get converted to forward or backward control signal
+                 */
+                result.controlSignal = this.direction === Direction.Forward ? undefined : ControlSignal.Back
+            }
             return result
         } else {
             return { nextState: result }

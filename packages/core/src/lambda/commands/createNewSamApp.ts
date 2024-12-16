@@ -45,7 +45,6 @@ import {
     isCloud9,
     getLaunchConfigDocUrl,
 } from '../../shared/extensionUtilities'
-import { execFileSync } from 'child_process'
 import { checklogs } from '../../shared/localizedText'
 import globals from '../../shared/extensionGlobals'
 import { telemetry } from '../../shared/telemetry/telemetry'
@@ -53,6 +52,7 @@ import { LambdaArchitecture, Result, Runtime } from '../../shared/telemetry/tele
 import { getTelemetryReason, getTelemetryResult } from '../../shared/errors'
 import { openUrl, replaceVscodeVars } from '../../shared/utilities/vsCodeUtils'
 import { fs } from '../../shared'
+import { ChildProcess } from '../../shared/utilities/processUtils'
 
 export const samInitTemplateFiles: string[] = ['template.yaml', 'template.yml']
 export const samInitReadmeFile: string = 'README.TOOLKIT.md'
@@ -218,7 +218,9 @@ export async function createNewSamApplication(
         // Needs to be done or else gopls won't start
         if (goRuntimes.includes(createRuntime)) {
             try {
-                execFileSync('go', ['mod', 'tidy'], { cwd: path.join(path.dirname(templateUri.fsPath), 'hello-world') })
+                await ChildProcess.run('go', ['mod', 'tidy'], {
+                    spawnOptions: { cwd: path.join(path.dirname(templateUri.fsPath), 'hello-world') },
+                })
             } catch (err) {
                 getLogger().warn(
                     localize(
