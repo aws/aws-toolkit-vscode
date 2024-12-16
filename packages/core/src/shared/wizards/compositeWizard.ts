@@ -3,16 +3,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Wizard, WizardOptions } from '../wizards/wizard'
-import { Prompter } from './prompter'
-import { WizardPrompter } from './wizardPrompter'
+import { Wizard, WizardOptions } from './wizard'
+import { Prompter } from '../ui/prompter'
+import { WizardPrompter } from '../ui/wizardPrompter'
 import { createHash } from 'crypto'
 
 /**
  * An abstract class that extends the base Wizard class plus the ability to
  * use other wizard classes as prompters
  */
-export abstract class NestedWizard<T> extends Wizard<T> {
+export abstract class CompositeWizard<T> extends Wizard<T> {
     /**
      * Map to store memoized wizard instances using SHA-256 hashed keys
      */

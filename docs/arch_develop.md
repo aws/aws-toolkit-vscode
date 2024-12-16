@@ -444,7 +444,7 @@ await tester.result(items[0].data) // Execute the actions, asserting the final r
 
 Abstractly, a 'wizard' is a collection of discrete, linear steps (subroutines), where each step can potentially be dependent on prior steps, that results in some final state. Wizards are extremely common in top-level flows such as creating a new resource, deployments, or confirmation messages. For these kinds of flows, we have a shared `Wizard` class that handles the bulk of control flow and state management logic for us.
 
-### Creating a Wizard (Quick Picks)
+### 1. `Wizard` Class
 
 Create a new wizard by extending the base `Wizard` class, using the template type to specify the
 shape of the wizard state. All wizards have an internal `form` property that is used to assign
@@ -482,6 +482,41 @@ class ExampleWizard extends Wizard<ExampleState> {
 }
 ```
 
+### 2. `CompositeWizard` Class
+
+`CompositeWizard` extends `Wizard` to create and manage a collection of nested/child wizards.
+
+Extend this class to create a wizard that contains other wizards as part of a prompter flow.
+Use `this.createWizardPrompter()` to use a wizard as a prompter in the `CompositeWizard`.
+
+Example:
+
+```ts
+
+// Child wizard
+class ChildWizard extends Wizard<ChildWizardForm> {...}
+
+
+// Composite wizard
+interface SingleNestedWizardForm {
+    ...
+    singleNestedWizardNestedProp: string
+    ...
+}
+
+class SingleNestedWizard extends CompositeWizard<SingleNestedWizardForm> {
+    constructor() {
+        super()
+        ...
+        this.form.singleNestedWizardNestedProp.bindPrompter(() =>
+            this.createWizardPrompter<ChildWizard, ChildWizardForm>(ChildWizard)
+        )
+        ...
+    }
+}
+
+```
+
 ### Executing
 
 Wizards can be ran by calling the async `run` method:
@@ -495,6 +530,8 @@ Note that all wizards can potentially return `undefined` if the workflow was can
 
 ### Testing
 
+#### Using `WizardTester`
+
 Use `createWizardTester` on an instance of a wizard. Tests can then be constructed by asserting both the user-defined and internal state. Using the above `ExampleWizard`:
 
 ```ts
@@ -503,6 +540,70 @@ tester.foo.assertShowFirst() // Fails if `foo` is not shown (or not shown first)
 tester.bar.assertDoesNotShow() // True since `foo` is not assigned an explicit value
 tester.foo.applyInput('Hello, world!') // Manipulate 'user' state
 tester.bar.assertShow() // True since 'foo' has a defined value
+```
+
+#### Using `PrompterTester`
+
+Use `PrompterTester` to simulate user behavior (click, input and selection) on prompters to test end-to-end flow of a wizard.
+
+Example:
+
+```ts
+// 1. Register PrompterTester handlers
+const prompterTester = PrompterTester.init()
+    .handleInputBox('Input Prompter title 1', (inputBox) => {
+        // Register Input Prompter handler
+        inputBox.acceptValue('my-source-bucket-name')
+    })
+    .handleQuickPick('Quick Pick Prompter title 2', (quickPick) => {
+        // Register Quick Pick Prompter handler
+
+        // Optional assertion can be added as part of the handler function
+        assert.strictEqual(quickPick.items.length, 2)
+        assert.strictEqual(quickPick.items[0].label, 'Specify required parameters and save as defaults')
+        assert.strictEqual(quickPick.items[1].label, 'Specify required parameters')
+        // Choose item
+        quickPick.acceptItem(quickPick.items[0])
+    })
+    .handleQuickPick(
+        'Quick Pick Prompter with various handler behavior title 3',
+        (() => {
+            // Register handler with dynamic behavior
+            const generator = (function* () {
+                // First call, choose '**'
+                yield async (picker: TestQuickPick) => {
+                    await picker.untilReady()
+                    assert.strictEqual(picker.items[1].label, '**')
+                    picker.acceptItem(picker.items[1])
+                }
+                // Second call, choose BACK button
+                yield async (picker: TestQuickPick) => {
+                    await picker.untilReady()
+                    picker.pressButton(vscode.QuickInputButtons.Back)
+                }
+                // Third and subsequent call
+                while (true) {
+                    yield async (picker: TestQuickPick) => {
+                        await picker.untilReady()
+                        picker.acceptItem(picker.items[1])
+                    }
+                }
+            })()
+
+            return (picker: TestQuickPick) => {
+                const next = generator.next().value
+                return next(picker)
+            }
+        })()
+    )
+    .build()
+
+// 2. Run your wizard class
+const result = await wizard.run()
+
+// 3. Assert your tests
+prompterTester.assertCallAll()
+prompterTester.assertCallOrder('Input Prompter title 1', 1)
 ```
 
 ## Module path debugging
