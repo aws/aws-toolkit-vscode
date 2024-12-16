@@ -330,6 +330,16 @@ describe('crossFileContextUtil', function () {
         fileExtLists.forEach((fileExt) => {
             it('should be non empty', async function () {
                 sinon.stub(FeatureConfigProvider.instance, 'getProjectContextGroup').returns('control')
+                sinon
+                    .stub(LspController.instance, 'queryInlineProjectContext')
+                    .withArgs(sinon.match.any, sinon.match.any, 'codemap')
+                    .resolves([
+                        {
+                            content: 'foo',
+                            score: 0,
+                            filePath: 'q-inline',
+                        },
+                    ])
                 const editor = await toTextEditor('content-1', `file-1.${fileExt}`, tempFolder)
                 await toTextEditor('content-2', `file-2.${fileExt}`, tempFolder, { preview: false })
                 await toTextEditor('content-3', `file-3.${fileExt}`, tempFolder, { preview: false })
