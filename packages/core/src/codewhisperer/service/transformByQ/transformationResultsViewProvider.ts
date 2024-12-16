@@ -325,11 +325,7 @@ export class ProposedTransformationExplorer {
             treeDataProvider: transformDataProvider,
         })
 
-<<<<<<< HEAD
         let patchFiles: string[] = []
-=======
-        const patchFiles: string[] = []
->>>>>>> d92cadc19 (remove short circuiting steps)
         let singlePatchFile: string = ''
         let patchFilesDescriptions: DescriptionContent | undefined = undefined
 
@@ -434,10 +430,7 @@ export class ProposedTransformationExplorer {
 
             let deserializeErrorMessage = undefined
             let pathContainingArchive = ''
-<<<<<<< HEAD
             patchFiles = [] // reset patchFiles if there was a previous transformation
-=======
->>>>>>> d92cadc19 (remove short circuiting steps)
             try {
                 // Download and deserialize the zip
                 pathContainingArchive = path.dirname(pathToArchive)
