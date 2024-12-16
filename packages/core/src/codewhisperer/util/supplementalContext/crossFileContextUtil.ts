@@ -7,13 +7,7 @@ import * as vscode from 'vscode'
 import { FeatureConfigProvider, fs } from '../../../shared'
 import path = require('path')
 import { BM25Document, BM25Okapi } from './rankBm25'
-import { ToolkitError } from '../../../shared/errors'
-import {
-    crossFileContextConfig,
-    supplementalContextTimeoutInMs,
-    supplemetalContextFetchingTimeoutMsg,
-} from '../../models/constants'
-import { CancellationError } from '../../../shared/utilities/timeoutUtils'
+import { crossFileContextConfig, supplementalContextTimeoutInMs } from '../../models/constants'
 import { isTestFile } from './codeParsingUtil'
 import { getFileDistance } from '../../../shared/filesystemUtilities'
 import { getOpenFilesInWindow } from '../../../shared/utilities/editorUtilities'
@@ -77,9 +71,17 @@ export async function fetchSupplementalContextForSrc(
         return undefined
     }
 
+    // fallback to opentabs if projectContext timeout for 'default' | 'bm25'
+    const opentabsContextPromise = waitUntil(
+        async function () {
+            return await fetchOpentabsContext(editor, cancellationToken)
+        },
+        { timeout: supplementalContextTimeoutInMs, interval: 5, truthy: false }
+    )
+
     // opentabs context will use bm25 and users' open tabs to fetch supplemental context
     if (supplementalContextConfig === 'opentabs') {
-        const supContext = (await fetchOpentabsContext(editor, cancellationToken)) ?? []
+        const supContext = (await opentabsContextPromise) ?? []
         return {
             supplementalContextItems: supContext,
             strategy: supContext.length === 0 ? 'Empty' : 'opentabs',
@@ -125,14 +127,6 @@ export async function fetchSupplementalContextForSrc(
             strategy: strategy,
         }
     }
-
-    // fallback to opentabs if projectContext timeout for 'default' | 'bm25'
-    const opentabsContextPromise = waitUntil(
-        async function () {
-            return await fetchOpentabsContext(editor, cancellationToken)
-        },
-        { timeout: supplementalContextTimeoutInMs, interval: 5, truthy: false }
-    )
 
     // global bm25 without repomap
     if (supplementalContextConfig === 'bm25') {
@@ -207,14 +201,12 @@ export async function fetchOpentabsContext(
 
     // Step 1: Get relevant cross files to refer
     const relevantCrossFilePaths = await getCrossFileCandidates(editor)
-    throwIfCancelled(cancellationToken)
 
     // Step 2: Split files to chunks with upper bound on chunkCount
     // We restrict the total number of chunks to improve on latency.
     // Chunk linking is required as we want to pass the next chunk value for matched chunk.
     let chunkList: Chunk[] = []
     for (const relevantFile of relevantCrossFilePaths) {
-        throwIfCancelled(cancellationToken)
         const chunks: Chunk[] = await splitFileToChunks(relevantFile, crossFileContextConfig.numberOfLinesEachChunk)
         const linkedChunks = linkChunks(chunks)
         chunkList.push(...linkedChunks)
@@ -230,14 +222,11 @@ export async function fetchOpentabsContext(
     // and Find Best K chunks w.r.t input chunk using BM25
     const inputChunk: Chunk = getInputChunk(editor)
     const bestChunks: Chunk[] = findBestKChunkMatches(inputChunk, chunkList, crossFileContextConfig.topK)
-    throwIfCancelled(cancellationToken)
 
     // Step 4: Transform best chunks to supplemental contexts
     const supplementalContexts: CodeWhispererSupplementalContextItem[] = []
     let totalLength = 0
     for (const chunk of bestChunks) {
-        throwIfCancelled(cancellationToken)
-
         totalLength += chunk.nextContent.length
 
         if (totalLength > crossFileContextConfig.maximumTotalLength) {
@@ -389,10 +378,4 @@ export async function getCrossFileCandidates(editor: vscode.TextEditor): Promise
         .map((fileToDistance) => {
             return fileToDistance.file
         })
-}
-
-function throwIfCancelled(token: vscode.CancellationToken): void | never {
-    if (token.isCancellationRequested) {
-        throw new ToolkitError(supplemetalContextFetchingTimeoutMsg, { cause: new CancellationError('timeout') })
-    }
 }
