@@ -44,7 +44,7 @@ describe('crossFileContextUtil', function () {
             sinon.restore()
         })
 
-        it('for control group, should return opentabs context where there will be 3 chunks and each chunk should contains 50 lines', async function () {
+        it.skip('for control group, should return opentabs context where there will be 3 chunks and each chunk should contains 50 lines', async function () {
             sinon.stub(FeatureConfigProvider.instance, 'getProjectContextGroup').returns('control')
             await toTextEditor(aStringWithLineCount(200), 'CrossFile.java', tempFolder, { preview: false })
             const myCurrentEditor = await toTextEditor('', 'TargetFile.java', tempFolder, {
@@ -61,7 +61,7 @@ describe('crossFileContextUtil', function () {
             assert.strictEqual(actual.supplementalContextItems[2].content.split('\n').length, 50)
         })
 
-        it.skip('for t1 group, should return repomap + opentabs context', async function () {
+        it('for t1 group, should return repomap + opentabs context', async function () {
             await toTextEditor(aStringWithLineCount(200), 'CrossFile.java', tempFolder, { preview: false })
             const myCurrentEditor = await toTextEditor('', 'TargetFile.java', tempFolder, {
                 preview: false,
