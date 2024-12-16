@@ -198,7 +198,18 @@ jobs:
               with:
                   flags: macos-analytics-toolkit-unittests
                   verbose: true
-                  file: ./coverage/toolkit/test-results.json
+                  file: .test-reports/amazonwebservices.aws-toolkit-vscode-report.xml
+                  token: ${{ secrets.CODECOV_TOKEN }}
+            - name: 'Test Analytics (Amazon Q)'
+              env:
+                  # Unset NODE_OPTIONS because of https://github.com/codecov/uploader/issues/475
+                  NODE_OPTIONS: ''
+              if: ${{ !cancelled() && github.repository == 'aws/aws-toolkit-vscode' && github.event_name == 'pull_request' && github.base_ref == 'master' }}
+              uses: codecov/test-results-action@v1
+              with:
+                  flags: macos-analytics-amazonq-unittests
+                  verbose: true
+                  file: .test-reports/amazonwebservices.amazon-q-vscode-report.xml
                   token: ${{ secrets.CODECOV_TOKEN }}
 
     web:
