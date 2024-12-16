@@ -10,6 +10,7 @@ import * as crossFile from 'aws-core-vscode/codewhisperer'
 import { TestFolder, assertTabCount } from 'aws-core-vscode/test'
 import { FeatureConfigProvider } from 'aws-core-vscode/codewhisperer'
 import { toTextEditor } from 'aws-core-vscode/test'
+import { LspController } from 'aws-core-vscode/amazonq'
 
 describe('supplementalContextUtil', function () {
     let testFolder: TestFolder
@@ -31,6 +32,16 @@ describe('supplementalContextUtil', function () {
     describe('fetchSupplementalContext', function () {
         describe('openTabsContext', function () {
             it('opentabContext should include chunks if non empty', async function () {
+                sinon
+                    .stub(LspController.instance, 'queryInlineProjectContext')
+                    .withArgs(sinon.match.any, sinon.match.any, 'codemap')
+                    .resolves([
+                        {
+                            content: 'foo',
+                            score: 0,
+                            filePath: 'q-inline',
+                        },
+                    ])
                 await toTextEditor('class Foo', 'Foo.java', testFolder.path, { preview: false })
                 await toTextEditor('class Bar', 'Bar.java', testFolder.path, { preview: false })
                 await toTextEditor('class Baz', 'Baz.java', testFolder.path, { preview: false })
@@ -42,7 +53,7 @@ describe('supplementalContextUtil', function () {
                 await assertTabCount(4)
 
                 const actual = await crossFile.fetchSupplementalContext(editor, fakeCancellationToken)
-                assert.ok(actual?.supplementalContextItems.length === 3)
+                assert.ok(actual?.supplementalContextItems.length === 4)
             })
 
             it('opentabsContext should filter out empty chunks', async function () {
