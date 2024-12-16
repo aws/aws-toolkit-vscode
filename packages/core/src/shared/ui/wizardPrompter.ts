@@ -18,6 +18,9 @@ import { Prompter, PromptResult } from './prompter'
  *     - {@link SingleNestedWizard}
  *     - {@link DoubleNestedWizard}
  */
+
+// eslint-disable-next-line @typescript-eslint/naming-convention
+export const WIZARD_PROMPTER = 'WIZARD_PROMPTER'
 export class WizardPrompter<T> extends Prompter<T> {
     public get recentItem(): any {
         return undefined
@@ -56,6 +59,7 @@ export class WizardPrompter<T> extends Prompter<T> {
         }
     }
 
+    // eslint-disable-next-line @typescript-eslint/naming-convention
     protected async promptUser(): Promise<PromptResult<T>> {
         this.response = await this.wizard.run()
 
