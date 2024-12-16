@@ -46,6 +46,6 @@ describe('tech debt', function () {
         // Monitor telemtry to determine removal or snooze
         // toolkit_showNotification.id = sessionSeparation
         // auth_modifyConnection.action = deleteProfile OR auth_modifyConnection.source contains CodeCatalyst
-        fixByDate('2024-12-15', 'Remove the edge case code from the commit that this test is a part of.')
+        fixByDate('2025-01-06', 'Remove the edge case code from the commit that this test is a part of.')
     })
 })
