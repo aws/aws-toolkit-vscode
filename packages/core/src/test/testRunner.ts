@@ -65,9 +65,9 @@ export async function runTests(
     }
 
     const root = getRoot()
-    const outputFile = path.resolve(root, '../../', '.test-reports', 'report.xml')
+    const outputFile = path.resolve(root, '../../', '.test-reports', `${extensionId}-report.xml`)
     const colorOutput = !process.env['AWS_TOOLKIT_TEST_NO_COLOR']
-
+    console.log('Test being output to %s', outputFile)
     // Create the mocha test
     const mocha = new Mocha({
         ui: 'bdd',
