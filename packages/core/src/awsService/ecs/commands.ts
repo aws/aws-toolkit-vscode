@@ -32,7 +32,7 @@ async function runCommandWizard(
 
     const wizard = new CommandWizard(
         container,
-        await ToolkitPromptSettings.instance.isPromptEnabled('ecsRunCommand'),
+        ToolkitPromptSettings.instance.isPromptEnabled('ecsRunCommand'),
         command
     )
     const response = await wizard.run()
