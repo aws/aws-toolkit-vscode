@@ -328,7 +328,7 @@ describe('crossFileContextUtil', function () {
         })
 
         fileExtLists.forEach((fileExt) => {
-            it('should be non empty', async function () {
+            it(`supplemental context for file ${fileExt} should be non empty`, async function () {
                 sinon.stub(FeatureConfigProvider.instance, 'getProjectContextGroup').returns('control')
                 sinon
                     .stub(LspController.instance, 'queryInlineProjectContext')
