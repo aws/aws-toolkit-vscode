@@ -18,7 +18,11 @@ import { isTestFile } from './codeParsingUtil'
 import { getFileDistance } from '../../../shared/filesystemUtilities'
 import { getOpenFilesInWindow } from '../../../shared/utilities/editorUtilities'
 import { getLogger } from '../../../shared/logger/logger'
-import { CodeWhispererSupplementalContext, CodeWhispererSupplementalContextItem } from '../../models/model'
+import {
+    CodeWhispererSupplementalContext,
+    CodeWhispererSupplementalContextItem,
+    SupplementalContextStrategy,
+} from '../../models/model'
 import { LspController } from '../../../amazonq/lsp/lspController'
 import { waitUntil } from '../../../shared/utilities/timeoutUtils'
 
@@ -75,14 +79,18 @@ export async function fetchSupplementalContextForSrc(
 
     // opentabs context will use bm25 and users' open tabs to fetch supplemental context
     if (supplementalContextConfig === 'opentabs') {
+        const supContext = (await fetchOpentabsContext(editor, cancellationToken)) ?? []
         return {
-            supplementalContextItems: (await fetchOpentabsContext(editor, cancellationToken)) ?? [],
-            strategy: 'opentabs',
+            supplementalContextItems: supContext,
+            strategy: supContext.length === 0 ? 'Empty' : 'opentabs',
         }
     }
 
     // codemap will use opentabs context plus repomap if it's present
     if (supplementalContextConfig === 'codemap') {
+        let strategy: SupplementalContextStrategy = 'Empty'
+        let hasCodemap: boolean = false
+        let hasOpentabs: boolean = false
         const opentabsContextAndCodemap = await waitUntil(
             async function () {
                 const result: CodeWhispererSupplementalContextItem[] = []
@@ -91,10 +99,12 @@ export async function fetchSupplementalContextForSrc(
 
                 if (codemap && codemap.length > 0) {
                     result.push(...codemap)
+                    hasCodemap = true
                 }
 
                 if (opentabsContext && opentabsContext.length > 0) {
                     result.push(...opentabsContext)
+                    hasOpentabs = true
                 }
 
                 return result
@@ -102,9 +112,17 @@ export async function fetchSupplementalContextForSrc(
             { timeout: supplementalContextTimeoutInMs, interval: 5, truthy: false }
         )
 
+        if (hasCodemap) {
+            strategy = 'codemap'
+        } else if (hasOpentabs) {
+            strategy = 'opentabs'
+        } else {
+            strategy = 'Empty'
+        }
+
         return {
             supplementalContextItems: opentabsContextAndCodemap ?? [],
-            strategy: 'codemap',
+            strategy: strategy,
         }
     }
 
@@ -133,9 +151,10 @@ export async function fetchSupplementalContextForSrc(
             }
         }
 
+        const supContext = opentabsContext ?? []
         return {
-            supplementalContextItems: opentabsContext ?? [],
-            strategy: 'opentabs',
+            supplementalContextItems: supContext,
+            strategy: supContext.length === 0 ? 'Empty' : 'opentabs',
         }
     }
 
@@ -284,14 +303,8 @@ function getSupplementalContextConfig(languageId: vscode.TextDocument['languageI
 
     const group = FeatureConfigProvider.instance.getProjectContextGroup()
     switch (group) {
-        case 'control':
-            return 'opentabs'
-
-        case 't1':
+        default:
             return 'codemap'
-
-        case 't2':
-            return 'bm25'
     }
 }
 
