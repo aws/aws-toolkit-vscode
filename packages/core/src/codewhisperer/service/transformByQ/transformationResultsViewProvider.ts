@@ -3,13 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import AdmZip from 'adm-zip'
+// import AdmZip from 'adm-zip'
 import os from 'os'
 import fs from 'fs' // eslint-disable-line no-restricted-imports
 import { parsePatch, applyPatches, ParsedDiff } from 'diff'
 import path from 'path'
 import vscode from 'vscode'
-import { ExportIntent } from '@amzn/codewhisperer-streaming'
+// import { ExportIntent } from '@amzn/codewhisperer-streaming'
 import {
     TransformByQReviewStatus,
     transformByQState,
@@ -17,13 +17,13 @@ import {
     DescriptionContent,
     TransformationType,
 } from '../../models/model'
-import { ExportResultArchiveStructure, downloadExportResultArchive } from '../../../shared/utilities/download'
+import { ExportResultArchiveStructure } from '../../../shared/utilities/download'
 import { getLogger } from '../../../shared/logger'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 import { CodeTransformTelemetryState } from '../../../amazonqGumby/telemetry/codeTransformTelemetryState'
 import { MetadataResult } from '../../../shared/telemetry/telemetryClient'
 import * as CodeWhispererConstants from '../../models/constants'
-import { createCodeWhispererChatStreamingClient } from '../../../shared/clients/codewhispererChatClient'
+// import { createCodeWhispererChatStreamingClient } from '../../../shared/clients/codewhispererChatClient'
 import { ChatSessionManager } from '../../../amazonqGumby/chat/storages/chatSession'
 import { setContext } from '../../../shared/vscode/setContext'
 import * as codeWhisperer from '../../client/codewhisperer'
@@ -364,28 +364,28 @@ export class ProposedTransformationExplorer {
             }
         })
 
-        vscode.commands.registerCommand('aws.amazonq.transformationHub.summary.reveal', async () => {
-            if (transformByQState.getSummaryFilePath() !== '') {
-                await vscode.commands.executeCommand(
-                    'markdown.showPreview',
-                    vscode.Uri.file(transformByQState.getSummaryFilePath())
-                )
-                telemetry.ui_click.emit({ elementId: 'transformationHub_viewSummary' })
-            }
-        })
+        // vscode.commands.registerCommand('aws.amazonq.transformationHub.summary.reveal', async () => {
+        //     if (transformByQState.getSummaryFilePath() !== '') {
+        //         await vscode.commands.executeCommand(
+        //             'markdown.showPreview',
+        //             vscode.Uri.file(transformByQState.getSummaryFilePath())
+        //         )
+        //         telemetry.ui_click.emit({ elementId: 'transformationHub_viewSummary' })
+        //     }
+        // })
 
         vscode.commands.registerCommand('aws.amazonq.transformationHub.reviewChanges.startReview', async () => {
             await setContext('gumby.reviewState', TransformByQReviewStatus.PreparingReview)
 
-            const pathToArchive = path.join(
-                ProposedTransformationExplorer.TmpDir,
-                transformByQState.getJobId(),
-                'ExportResultsArchive.zip'
-            )
-            let exportResultsArchiveSize = 0
+            // const pathToArchive = path.join(
+            //     ProposedTransformationExplorer.TmpDir,
+            //     transformByQState.getJobId(),
+            //     'ExportResultsArchive.zip'
+            // )
+            const exportResultsArchiveSize = 0
             let downloadErrorMessage = undefined
 
-            const cwStreamingClient = await createCodeWhispererChatStreamingClient()
+            // const cwStreamingClient = await createCodeWhispererChatStreamingClient()
             try {
                 await telemetry.codeTransform_downloadArtifact.run(async () => {
                     telemetry.record({
@@ -394,17 +394,17 @@ export class ProposedTransformationExplorer {
                         codeTransformJobId: transformByQState.getJobId(),
                     })
 
-                    await downloadExportResultArchive(
-                        cwStreamingClient,
-                        {
-                            exportId: transformByQState.getJobId(),
-                            exportIntent: ExportIntent.TRANSFORMATION,
-                        },
-                        pathToArchive
-                    )
+                    // await downloadExportResultArchive(
+                    //     cwStreamingClient,
+                    //     {
+                    //         exportId: transformByQState.getJobId(),
+                    //         exportIntent: ExportIntent.TRANSFORMATION,
+                    //     },
+                    //     pathToArchive
+                    // )
 
                     // Update downloaded artifact size
-                    exportResultsArchiveSize = (await fs.promises.stat(pathToArchive)).size
+                    // exportResultsArchiveSize = (await fs.promises.stat(pathToArchive)).size
 
                     telemetry.record({ codeTransformTotalByteSize: exportResultsArchiveSize })
                 })
@@ -425,7 +425,7 @@ export class ProposedTransformationExplorer {
                 getLogger().error(`CodeTransformation: ExportResultArchive error = ${downloadErrorMessage}`)
                 throw new Error('Error downloading diff')
             } finally {
-                cwStreamingClient.destroy()
+                // cwStreamingClient.destroy()
             }
 
             let deserializeErrorMessage = undefined
@@ -433,9 +433,9 @@ export class ProposedTransformationExplorer {
             patchFiles = [] // reset patchFiles if there was a previous transformation
             try {
                 // Download and deserialize the zip
-                pathContainingArchive = path.dirname(pathToArchive)
-                const zip = new AdmZip(pathToArchive)
-                zip.extractAllTo(pathContainingArchive)
+                // pathContainingArchive = path.dirname(pathToArchive)
+                // const zip = new AdmZip(pathToArchive)
+                // zip.extractAllTo(pathContainingArchive)
                 const files = fs.readdirSync(path.join(pathContainingArchive, ExportResultArchiveStructure.PathToPatch))
                 if (files.length === 1) {
                     singlePatchFile = path.join(
@@ -491,7 +491,7 @@ export class ProposedTransformationExplorer {
                     message: CodeWhispererConstants.viewProposedChangesChatMessage,
                     tabID: ChatSessionManager.Instance.getSession().tabID,
                 })
-                await vscode.commands.executeCommand('aws.amazonq.transformationHub.summary.reveal')
+                // await vscode.commands.executeCommand('aws.amazonq.transformationHub.summary.reveal')
             } catch (e: any) {
                 deserializeErrorMessage = (e as Error).message
                 getLogger().error(`CodeTransformation: ParseDiff error = ${deserializeErrorMessage}`)

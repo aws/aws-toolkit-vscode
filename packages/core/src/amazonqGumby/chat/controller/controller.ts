@@ -17,7 +17,7 @@ import { featureName } from '../../models/constants'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import {
     cleanupTransformationJob,
-    compileProject,
+    // compileProject,
     finishHumanInTheLoop,
     getValidLanguageUpgradeCandidateProjects,
     postTransformationJob,
@@ -395,6 +395,17 @@ export class GumbyController {
                 this.messenger.sendCommandMessage({ ...message, command: GumbyCommands.CLEAR_CHAT })
                 await this.transformInitiated(message)
                 break
+            case ButtonActions.CONFIRM_VIEW_TRANSFORMATION_SUMMARY:
+                await vscode.commands.executeCommand(
+                    GumbyCommands.SHOW_TRANSFORMATION_SUMMARY,
+                    CancelActionPositions.Chat
+                )
+                this.messenger.sendJobFinishedMessage(
+                    message.tabID,
+                    CodeWhispererConstants.viewProposedChangesChatMessage
+                )
+                telemetry.ui_click.emit({ elementId: 'transformationHub_viewSummary' })
+                break
             case ButtonActions.CONFIRM_DEPENDENCY_FORM:
                 await this.continueJobWithSelectedDependency(message)
                 break
@@ -523,7 +534,7 @@ export class GumbyController {
         try {
             this.sessionStorage.getSession().conversationState = ConversationState.COMPILING
             this.messenger.sendCompilationInProgress(message.tabID)
-            await compileProject()
+            // await compileProject()
         } catch (err: any) {
             this.messenger.sendUnrecoverableErrorResponse('could-not-compile-project', message.tabID)
             // reset state to allow "Start a new transformation" button to work

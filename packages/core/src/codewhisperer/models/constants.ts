@@ -563,6 +563,8 @@ export const openTransformationHubButtonText = 'Open Transformation Hub'
 
 export const startTransformationButtonText = 'Start a new transformation'
 
+export const viewTransformationSummaryButtonText = 'View transformation summary'
+
 export const stopTransformationButtonText = 'Stop transformation'
 
 export const checkingForProjectsChatMessage = 'Checking for eligible projects...'

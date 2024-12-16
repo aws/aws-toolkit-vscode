@@ -26,6 +26,7 @@ export enum ButtonActions {
     CONFIRM_JAVA_HOME_FORM = 'gumbyJavaHomeFormConfirm',
     CANCEL_JAVA_HOME_FORM = 'gumbyJavaHomeFormCancel',
     CONFIRM_START_TRANSFORMATION_FLOW = 'gumbyStartTransformation',
+    CONFIRM_VIEW_TRANSFORMATION_SUMMARY = 'gumbyViewSummary',
     OPEN_FILE = 'gumbyOpenFile',
     OPEN_BUILD_LOG = 'gumbyOpenBuildLog',
 }
@@ -34,6 +35,7 @@ export enum GumbyCommands {
     CLEAR_CHAT = 'aws.awsq.clearchat',
     START_TRANSFORMATION_FLOW = 'aws.awsq.transform',
     FOCUS_TRANSFORMATION_HUB = 'aws.amazonq.showTransformationHub',
+    SHOW_TRANSFORMATION_SUMMARY = 'aws.amazonq.transformationHub.summary.reveal',
 }
 
 export default class MessengerUtils {

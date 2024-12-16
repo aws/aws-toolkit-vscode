@@ -5,10 +5,23 @@
 
 import * as vscode from 'vscode'
 import { Commands } from '../shared/vscode/commands2'
+import { transformByQState } from '../codewhisperer'
 
 export const showTransformationHub = Commands.declare(
     { id: 'aws.amazonq.showTransformationHub', compositeKey: { 0: 'source' } },
     () => async (source: string) => {
         await vscode.commands.executeCommand('workbench.view.extension.aws-codewhisperer-transformation-hub')
+    }
+)
+
+export const showTransformationSummary = Commands.declare(
+    { id: 'aws.amazonq.transformationHub.summary.reveal', compositeKey: { 0: 'source' } },
+    () => async (source: string) => {
+        if (transformByQState.getSummaryFilePath() !== '') {
+            await vscode.commands.executeCommand(
+                'markdown.showPreview',
+                vscode.Uri.file(String(transformByQState.getSummaryFilePath()))
+            )
+        }
     }
 )

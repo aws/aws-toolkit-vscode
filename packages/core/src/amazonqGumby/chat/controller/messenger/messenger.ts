@@ -509,6 +509,14 @@ export class Messenger {
 
     public sendJobFinishedMessage(tabID: string, message: string, includeStartNewTransformationButton: boolean = true) {
         const buttons: ChatItemButton[] = []
+        // We only want to show this button when the proposed changes were downloaded (ie the summary is available)
+        if (transformByQState.getSummaryFilePath() !== '') {
+            buttons.push({
+                keepCardAfterClick: false,
+                text: CodeWhispererConstants.viewTransformationSummaryButtonText,
+                id: ButtonActions.CONFIRM_VIEW_TRANSFORMATION_SUMMARY,
+            })
+        }
         if (includeStartNewTransformationButton) {
             buttons.push({
                 keepCardAfterClick: false,
