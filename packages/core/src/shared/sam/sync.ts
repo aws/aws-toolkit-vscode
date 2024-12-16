@@ -520,7 +520,7 @@ async function updateSyncRecentResponse(region: string, key: string, value: stri
 }
 
 export async function confirmDevStack() {
-    const canPrompt = await ToolkitPromptSettings.instance.isPromptEnabled('samcliConfirmDevStack')
+    const canPrompt = ToolkitPromptSettings.instance.isPromptEnabled('samcliConfirmDevStack')
     if (!canPrompt) {
         return
     }

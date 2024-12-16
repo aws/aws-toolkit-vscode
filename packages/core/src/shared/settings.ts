@@ -625,9 +625,8 @@ export type ToolkitPromptSettings = InstanceType<typeof ToolkitPromptSettings>
 export const amazonQPrompts = settingsProps['amazonQ.suppressPrompts']
 export const AmazonQPromptSettings = getPromptSettings('amazonQ.suppressPrompts')
 export type AmazonQPromptSettings = InstanceType<typeof AmazonQPromptSettings>
-type promptSettingsKey = 'amazonQ.suppressPrompts' | 'aws.suppressPrompts'
 
-function getPromptSettings<P extends promptSettingsKey>(promptsKey: P) {
+function getPromptSettings<P extends 'amazonQ.suppressPrompts' | 'aws.suppressPrompts'>(promptsKey: P) {
     const prompts = settingsProps[promptsKey]
     type promptName = keyof typeof prompts & string
     return class AnonymousPromptSettings extends Settings.define(
