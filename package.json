@@ -25,10 +25,10 @@
         "buildCustomLintPlugin": "npm run build -w plugins/eslint-plugin-aws-toolkits",
         "compile": "npm run compile -w packages/",
         "testCompile": "npm run testCompile -w packages/ --if-present",
-        "test": "npm run test -w packages/ --if-present",
-        "testWeb": "npm run testWeb -w packages/ --if-present",
-        "testE2E": "npm run testE2E -w packages/ --if-present",
-        "testInteg": "npm run testInteg -w packages/ --if-present",
+        "test": "npm run test -w packages/ --if-present && npm run mergeReports",
+        "testWeb": "npm run testWeb -w packages/ --if-present && npm run mergeReports",
+        "testE2E": "npm run testE2E -w packages/ --if-present && npm run mergeReports",
+        "testInteg": "npm run testInteg -w packages/ --if-present && npm run mergeReports",
         "package": "npm run package -w packages/toolkit -w packages/amazonq",
         "newChange": "echo 'Must specify subproject/workspace with -w packages/<subproject>' && false",
         "createRelease": "echo 'Must specify subproject/workspace with -w packages/<subproject>' && false",
@@ -36,7 +36,8 @@
         "lintfix": "eslint -c .eslintrc.js --ignore-path .gitignore --ignore-pattern '**/*.json' --ignore-pattern '**/*.gen.ts' --ignore-pattern '**/types/*.d.ts' --ignore-pattern '**/src/testFixtures/**' --ignore-pattern '**/resources/js/graphStateMachine.js' --fix --ext .ts packages plugins",
         "clean": "npm run clean -w packages/ -w plugins/",
         "reset": "npm run clean && ts-node ./scripts/clean.ts node_modules && npm install",
-        "generateNonCodeFiles": "npm run generateNonCodeFiles -w packages/ --if-present"
+        "generateNonCodeFiles": "npm run generateNonCodeFiles -w packages/ --if-present",
+        "mergeReports": "ts-node ./scripts/mergeReports.ts"
     },
     "devDependencies": {
         "@aws-toolkits/telemetry": "^1.0.289",
