@@ -532,7 +532,7 @@ describe('transformByQ', function () {
                 message: expectedMessage,
             }
         )
-        sinon.assert.calledThrice(fetchStub)
+        sinon.assert.callCount(fetchStub, 4)
     })
 
     it('should not retry upload on non-retriable error', async () => {
