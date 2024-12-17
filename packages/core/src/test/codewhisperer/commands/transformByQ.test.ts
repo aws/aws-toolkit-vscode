@@ -42,8 +42,12 @@ import {
     parseBuildFile,
     validateSQLMetadataFile,
 } from '../../../codewhisperer/service/transformByQ/transformFileHandler'
+import { uploadArtifactToS3 } from '../../../codewhisperer/indexNode'
+import request from '../../../shared/request'
+import * as nodefs from 'fs' // eslint-disable-line no-restricted-imports
 
 describe('transformByQ', function () {
+    let fetchStub: sinon.SinonStub
     let tempDir: string
     const validSctFile = `<?xml version="1.0" encoding="UTF-8"?>
     <tree>
@@ -91,6 +95,10 @@ describe('transformByQ', function () {
     beforeEach(async function () {
         tempDir = (await TestFolder.create()).path
         transformByQState.setToNotStarted()
+        fetchStub = sinon.stub(request, 'fetch')
+        // use Partial to avoid having to mock all 25 fields in the response; only care about 'size'
+        const mockStats: Partial<nodefs.Stats> = { size: 1000 }
+        sinon.stub(nodefs.promises, 'stat').resolves(mockStats as nodefs.Stats)
     })
 
     afterEach(async function () {
@@ -463,5 +471,91 @@ describe('transformByQ', function () {
         const sctFileWithInvalidTarget = validSctFile.replace('aurora_postgresql', 'not-postgresql')
         const isValidMetadata = await validateSQLMetadataFile(sctFileWithInvalidTarget, { tabID: 'abc123' })
         assert.strictEqual(isValidMetadata, false)
+    })
+
+    it('should successfully upload on first attempt', async () => {
+        const successResponse = {
+            ok: true,
+            status: 200,
+            text: () => Promise.resolve('Success'),
+        }
+        fetchStub.returns({ response: Promise.resolve(successResponse) })
+        await uploadArtifactToS3(
+            'test.zip',
+            { uploadId: '123', uploadUrl: 'http://test.com', kmsKeyArn: 'arn' },
+            'sha256',
+            Buffer.from('test')
+        )
+        sinon.assert.calledOnce(fetchStub)
+    })
+
+    it('should retry upload on retriable error and succeed', async () => {
+        const failedResponse = {
+            ok: false,
+            status: 503,
+            text: () => Promise.resolve('Service Unavailable'),
+        }
+        const successResponse = {
+            ok: true,
+            status: 200,
+            text: () => Promise.resolve('Success'),
+        }
+        fetchStub.onFirstCall().returns({ response: Promise.resolve(failedResponse) })
+        fetchStub.onSecondCall().returns({ response: Promise.resolve(successResponse) })
+        await uploadArtifactToS3(
+            'test.zip',
+            { uploadId: '123', uploadUrl: 'http://test.com', kmsKeyArn: 'arn' },
+            'sha256',
+            Buffer.from('test')
+        )
+        sinon.assert.calledTwice(fetchStub)
+    })
+
+    it('should throw error after 4 failed upload attempts', async () => {
+        const failedResponse = {
+            ok: false,
+            status: 500,
+            text: () => Promise.resolve('Internal Server Error'),
+        }
+        fetchStub.returns({ response: Promise.resolve(failedResponse) })
+        const expectedMessage =
+            'The upload failed due to: Upload failed after up to 4 attempts with status code = 500. For more information, see the [Amazon Q documentation](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/troubleshooting-code-transformation.html#project-upload-fail)'
+        await assert.rejects(
+            uploadArtifactToS3(
+                'test.zip',
+                { uploadId: '123', uploadUrl: 'http://test.com', kmsKeyArn: 'arn' },
+                'sha256',
+                Buffer.from('test')
+            ),
+            {
+                name: 'Error',
+                message: expectedMessage,
+            }
+        )
+        sinon.assert.callCount(fetchStub, 4)
+    })
+
+    it('should not retry upload on non-retriable error', async () => {
+        const failedResponse = {
+            ok: false,
+            status: 400,
+            text: () => Promise.resolve('Bad Request'),
+        }
+        fetchStub.onFirstCall().returns({ response: Promise.resolve(failedResponse) })
+        const expectedMessage =
+            'The upload failed due to: Upload failed with status code = 400; did not automatically retry. For more information, see the [Amazon Q documentation](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/troubleshooting-code-transformation.html#project-upload-fail)'
+        await assert.rejects(
+            uploadArtifactToS3(
+                'test.zip',
+                { uploadId: '123', uploadUrl: 'http://test.com', kmsKeyArn: 'arn' },
+                'sha256',
+                Buffer.from('test')
+            ),
+            {
+                name: 'Error',
+                message: expectedMessage,
+            }
+        )
+        sinon.assert.calledOnce(fetchStub)
     })
 })
