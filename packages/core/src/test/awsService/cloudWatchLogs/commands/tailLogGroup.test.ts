@@ -56,15 +56,21 @@ describe('TailLogGroup', function () {
             getSessionUpdateFrame(false, `${testMessage}-2`, startTimestamp + 2000),
             getSessionUpdateFrame(false, `${testMessage}-3`, startTimestamp + 3000),
         ]
-        // Returns the configured update frames and then indefinitely blocks.
+        // Returns the configured update frames and then blocks until an AbortCcontroller is signaled.
         // This keeps the stream 'open', simulating an open network stream waiting for new events.
         // If the stream were to close, the event listeners in the TailLogGroup command would dispose,
         // breaking the 'closes tab closes session' assertions this test makes.
-        async function* generator(): AsyncIterable<StartLiveTailResponseStream> {
+        const controller = new AbortController()
+        const p = new Promise((resolve, reject) => {
+            controller.signal.addEventListener('abort', () => {
+                reject()
+            })
+        })
+        async function* generator() {
             for (const frame of updateFrames) {
                 yield frame
             }
-            await new Promise(() => {})
+            await p
         }
 
         startLiveTailSessionSpy = sandbox
@@ -84,11 +90,12 @@ describe('TailLogGroup', function () {
         })
 
         // The mock stream doesn't 'close', causing tailLogGroup to not return. If we `await`, it will never resolve.
-        // Run it in the background and use waitUntil to poll its state.
+        // Run it in the background and use waitUntil to poll its state. Due to the test setup, we expect this to throw
+        // after the abortController is fired at the end of the test.
         void tailLogGroup(registry, testSource, codeLensProvider, {
             groupName: testLogGroup,
             regionName: testRegion,
-        })
+        }).catch((e) => {})
         await waitUntil(async () => registry.size !== 0, { interval: 100, timeout: 1000 })
 
         // registry is asserted to have only one entry, so this is assumed to be the session that was
@@ -121,6 +128,11 @@ describe('TailLogGroup', function () {
             tabs = tabs.concat(getLiveTailSessionTabsFromTabGroup(tabGroup, sessionUri!))
         })
         await Promise.all(tabs.map((tab) => window.tabGroups.close(tab)))
+
+        // Before the test ends, signal the abort controller, interrupting the mock response stream. This
+        // causes `handleSessionStream` in TailLogGroup to throw, triggering the disposables to dispose.
+        controller.abort()
+
         assert.strictEqual(registry.size, 0)
         assert.strictEqual(stopLiveTailSessionSpy.calledOnce, true)
     })
