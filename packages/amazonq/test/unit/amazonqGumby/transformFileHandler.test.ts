@@ -6,9 +6,6 @@ import assert from 'assert'
 import { parseVersionsListFromPomFile } from 'aws-core-vscode/codewhisperer/node'
 
 describe('Amazon Q Transform - transformFileHandler tests', function () {
-    it('test failure', function () {
-        assert.fail('testing')
-    })
     describe('parseXmlDependenciesReport', function () {
         it('Will return parsed values', async function () {
             const testXmlReport = `

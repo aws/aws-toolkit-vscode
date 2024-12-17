@@ -23,7 +23,7 @@ async function mergeReports() {
         .map((dir) => path.join(dir, '.test-reports', 'report.xml'))
         .filter((file) => fs.existsSync(file))
 
-    let mergedReport = {
+    const mergedReport = {
         testsuites: {
             testsuite: [],
         },
