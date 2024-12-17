@@ -11,6 +11,8 @@ import * as xml2js from 'xml2js'
  * Merge all of the packages/ test reports into a single directory
  */
 async function mergeReports() {
+    console.log('Merging test reports')
+
     const packagesDir = path.join(__dirname, '..', 'packages')
 
     // Get all packages/* directories
