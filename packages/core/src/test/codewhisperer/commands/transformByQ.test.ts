@@ -511,7 +511,7 @@ describe('transformByQ', function () {
         sinon.assert.calledTwice(fetchStub)
     })
 
-    it('should throw error after 3 failed upload attempts', async () => {
+    it('should throw error after 4 failed upload attempts', async () => {
         const failedResponse = {
             ok: false,
             status: 500,
@@ -519,7 +519,7 @@ describe('transformByQ', function () {
         }
         fetchStub.returns({ response: Promise.resolve(failedResponse) })
         const expectedMessage =
-            'The upload failed due to: Upload failed after up to 3 attempts with status code = 500. For more information, see the [Amazon Q documentation](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/troubleshooting-code-transformation.html#project-upload-fail)'
+            'The upload failed due to: Upload failed after up to 4 attempts with status code = 500. For more information, see the [Amazon Q documentation](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/troubleshooting-code-transformation.html#project-upload-fail)'
         await assert.rejects(
             uploadArtifactToS3(
                 'test.zip',
