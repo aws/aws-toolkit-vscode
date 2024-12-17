@@ -4,10 +4,11 @@
  */
 
 import assert from 'assert'
+import * as FakeTimers from '@sinonjs/fake-timers'
 import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import * as crossFile from 'aws-core-vscode/codewhisperer'
-import { aStringWithLineCount, createMockTextEditor } from 'aws-core-vscode/test'
+import { aStringWithLineCount, createMockTextEditor, installFakeClock } from 'aws-core-vscode/test'
 import { FeatureConfigProvider, crossFileContextConfig } from 'aws-core-vscode/codewhisperer'
 import {
     assertTabCount,
@@ -30,6 +31,15 @@ describe('crossFileContextUtil', function () {
     }
 
     let mockEditor: vscode.TextEditor
+    let clock: FakeTimers.InstalledClock
+
+    before(function () {
+        clock = installFakeClock()
+    })
+
+    after(function () {
+        clock.uninstall()
+    })
 
     afterEach(function () {
         sinon.restore()
@@ -313,8 +323,8 @@ describe('crossFileContextUtil', function () {
 
     describe('full support', function () {
         // TODO: fix it
-        // const fileExtLists = ['java', 'js', 'ts', 'py', 'tsx', 'jsx']
-        const fileExtLists = ['java']
+        const fileExtLists = ['java', 'js', 'ts', 'py', 'tsx', 'jsx']
+        // const fileExtLists = ['java']
 
         before(async function () {
             this.timeout(60000)
