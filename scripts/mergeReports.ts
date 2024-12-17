@@ -8,7 +8,7 @@ import * as path from 'path'
 import * as xml2js from 'xml2js'
 
 /**
- * Merge all of the packages/ test reports and test logs into a single directory
+ * Merge all of the packages/ test reports into a single directory
  */
 async function mergeReports() {
     const packagesDir = path.join(__dirname, '..', 'packages')
