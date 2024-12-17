@@ -442,7 +442,7 @@ describe('Controller', () => {
             { name: 'default', error: new ToolkitError('Default', { code: 'Default' }) },
         ]
 
-        async function fireChatMessage() {
+        async function fireChatMessage(session: Session) {
             const getSessionStub = sinon.stub(controllerSetup.sessionStorage, 'getSession').resolves(session)
 
             controllerSetup.emitters.processHumanChatMessage.fire({
@@ -458,52 +458,104 @@ describe('Controller', () => {
         }
 
         describe('onCodeGeneration', function () {
-            async function verifyException(error: ToolkitError) {
-                sinon.stub(session, 'preloader').resolves()
-                sinon.stub(session, 'send').throws(error)
-                const sendMetricDataTelemetrySpy = sinon.stub(session, 'sendMetricDataTelemetry')
+            let session: any
+            let sendMetricDataTelemetrySpy: sinon.SinonStub
 
-                await fireChatMessage()
+            const errorResultMapping = new Map([
+                ['EmptyPatchException', MetricDataResult.LLMFAILURE],
+                [PromptRefusalException.name, MetricDataResult.ERROR],
+                [NoChangeRequiredException.name, MetricDataResult.ERROR],
+            ])
 
-                sendMetricDataTelemetrySpy.calledWith(
-                    MetricDataOperationName.START_CODE_GENERATION,
-                    MetricDataResult.SUCCESS
-                )
-
-                switch (error.constructor.name) {
-                    case FeatureDevServiceError.name:
-                        if (error.code === 'EmptyPatchException') {
-                            sendMetricDataTelemetrySpy.calledWith(
-                                MetricDataOperationName.END_CODE_GENERATION,
-                                MetricDataResult.LLMFAILURE
-                            )
-                        } else {
-                            sendMetricDataTelemetrySpy.calledWith(
-                                MetricDataOperationName.END_CODE_GENERATION,
-                                MetricDataResult.ERROR
-                            )
-                        }
-                        break
-                    case PromptRefusalException.name:
-                    case NoChangeRequiredException.name:
-                        sendMetricDataTelemetrySpy.calledWith(
-                            MetricDataOperationName.END_CODE_GENERATION,
-                            MetricDataResult.ERROR
-                        )
-                        break
-                    default:
-                        sendMetricDataTelemetrySpy.calledWith(
-                            MetricDataOperationName.END_CODE_GENERATION,
-                            MetricDataResult.FAULT
-                        )
-
-                        break
+            function getMetricResult(error: ToolkitError): MetricDataResult {
+                if (error instanceof FeatureDevServiceError && error.code) {
+                    return errorResultMapping.get(error.code) ?? MetricDataResult.ERROR
                 }
+                return errorResultMapping.get(error.constructor.name) ?? MetricDataResult.FAULT
             }
 
-            runs.forEach((run) => {
-                it(`sends operation telemetry on ${run.name}`, async function () {
-                    await verifyException(run.error)
+            async function createCodeGenState() {
+                mockGetCodeGeneration = sinon.stub().resolves({ codeGenerationStatus: { status: 'Complete' } })
+
+                const workspaceFolders = [controllerSetup.workspaceFolder] as CurrentWsFolders
+                const testConfig = {
+                    conversationId: conversationID,
+                    proxyClient: {
+                        createConversation: () => sinon.stub(),
+                        createUploadUrl: () => sinon.stub(),
+                        generatePlan: () => sinon.stub(),
+                        startCodeGeneration: () => sinon.stub(),
+                        getCodeGeneration: () => mockGetCodeGeneration(),
+                        exportResultArchive: () => sinon.stub(),
+                    } as unknown as FeatureDevClient,
+                    workspaceRoots: [''],
+                    uploadId: uploadID,
+                    workspaceFolders,
+                }
+
+                const codeGenState = new CodeGenState(testConfig, getFilePaths(controllerSetup), [], [], tabID, 0, {})
+                const newSession = await createSession({
+                    messenger: controllerSetup.messenger,
+                    sessionState: codeGenState,
+                    conversationID,
+                    tabID,
+                    uploadID,
+                    scheme: featureDevScheme,
+                })
+                return newSession
+            }
+
+            async function verifyException(error: ToolkitError) {
+                sinon.stub(session, 'send').throws(error)
+
+                await fireChatMessage(session)
+                await verifyMetricsCalled()
+                assert.ok(
+                    sendMetricDataTelemetrySpy.calledWith(
+                        MetricDataOperationName.START_CODE_GENERATION,
+                        MetricDataResult.SUCCESS
+                    )
+                )
+                const metricResult = getMetricResult(error)
+                assert.ok(
+                    sendMetricDataTelemetrySpy.calledWith(MetricDataOperationName.END_CODE_GENERATION, metricResult)
+                )
+            }
+
+            async function verifyMetricsCalled() {
+                await waitUntil(() => Promise.resolve(sendMetricDataTelemetrySpy.callCount >= 2), {})
+            }
+
+            beforeEach(async () => {
+                session = await createCodeGenState()
+                sinon.stub(session, 'preloader').resolves()
+                sendMetricDataTelemetrySpy = sinon.stub(session, 'sendMetricDataTelemetry')
+            })
+
+            it('sends success operation telemetry', async () => {
+                sinon.stub(session, 'send').resolves()
+                sinon.stub(session, 'sendLinesOfCodeGeneratedTelemetry').resolves() // Avoid sending extra telemetry
+
+                await fireChatMessage(session)
+                await verifyMetricsCalled()
+
+                assert.ok(
+                    sendMetricDataTelemetrySpy.calledWith(
+                        MetricDataOperationName.START_CODE_GENERATION,
+                        MetricDataResult.SUCCESS
+                    )
+                )
+                assert.ok(
+                    sendMetricDataTelemetrySpy.calledWith(
+                        MetricDataOperationName.END_CODE_GENERATION,
+                        MetricDataResult.SUCCESS
+                    )
+                )
+            })
+
+            runs.forEach(({ name, error }) => {
+                it(`sends failure operation telemetry on ${name}`, async () => {
+                    await verifyException(error)
                 })
             })
         })
@@ -519,7 +571,7 @@ describe('Controller', () => {
                 const sendErrorMessageSpy = sinon.stub(controllerSetup.messenger, 'sendErrorMessage')
                 const sendMonthlyLimitErrorSpy = sinon.stub(controllerSetup.messenger, 'sendMonthlyLimitError')
 
-                await fireChatMessage()
+                await fireChatMessage(session)
 
                 switch (error.constructor.name) {
                     case ContentLengthError.name:
