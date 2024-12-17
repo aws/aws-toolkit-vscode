@@ -286,7 +286,22 @@ export class Session {
     }
 
     public async sendMetricDataTelemetry(operationName: string, result: string) {
-        await this.proxyClient.sendMetricData(operationName, result)
+        await this.proxyClient.sendMetricData({
+            metricName: 'Operation',
+            metricValue: 1,
+            timestamp: new Date(Date.now()),
+            product: 'Amazon Q For VS Code',
+            dimensions: [
+                {
+                    name: 'operationName',
+                    value: operationName,
+                },
+                {
+                    name: 'result',
+                    value: result,
+                },
+            ],
+        })
     }
 
     public async sendLinesOfCodeGeneratedTelemetry() {
