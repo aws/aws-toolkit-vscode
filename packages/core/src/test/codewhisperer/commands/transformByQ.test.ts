@@ -518,20 +518,20 @@ describe('transformByQ', function () {
             text: () => Promise.resolve('Internal Server Error'),
         }
         fetchStub.returns({ response: Promise.resolve(failedResponse) })
-
-        let error: Error | undefined
-        try {
-            await uploadArtifactToS3(
+        const expectedMessage =
+            'The upload failed due to: Upload failed after up to 3 attempts with status code = 500. For more information, see the [Amazon Q documentation](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/troubleshooting-code-transformation.html#project-upload-fail)'
+        await assert.rejects(
+            uploadArtifactToS3(
                 'test.zip',
                 { uploadId: '123', uploadUrl: 'http://test.com', kmsKeyArn: 'arn' },
                 'sha256',
                 Buffer.from('test')
-            )
-        } catch (e) {
-            error = e as Error
-        }
-
-        sinon.assert.match(error?.message.includes('Upload failed after up to 3 attempts'), true)
+            ),
+            {
+                name: 'Error',
+                message: expectedMessage,
+            }
+        )
         sinon.assert.calledThrice(fetchStub)
     })
 
@@ -542,21 +542,19 @@ describe('transformByQ', function () {
             text: () => Promise.resolve('Bad Request'),
         }
         fetchStub.onFirstCall().returns({ response: Promise.resolve(failedResponse) })
-
-        let error: Error | undefined
-        try {
-            await uploadArtifactToS3(
+        const expectedMessage =
+            'The upload failed due to: Upload failed with status code = 400; did not automatically retry. For more information, see the [Amazon Q documentation](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/troubleshooting-code-transformation.html#project-upload-fail)'
+        await assert.rejects(
+            uploadArtifactToS3(
                 'test.zip',
                 { uploadId: '123', uploadUrl: 'http://test.com', kmsKeyArn: 'arn' },
                 'sha256',
                 Buffer.from('test')
-            )
-        } catch (e) {
-            error = e as Error
-        }
-        sinon.assert.match(
-            error?.message.includes('Upload failed with status code = 400; did not automatically retry'),
-            true
+            ),
+            {
+                name: 'Error',
+                message: expectedMessage,
+            }
         )
         sinon.assert.calledOnce(fetchStub)
     })

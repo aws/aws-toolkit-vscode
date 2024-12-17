@@ -111,6 +111,9 @@ export async function uploadArtifactToS3(
         )
 
         let response = undefined
+        /* The existing S3 client has built-in retries but it requires the bucket name, so until
+         * CreateUploadUrl can be modified to return the S3 bucket name, manually implement retries
+         */
         const retriableCodes = [408, 429, 500, 502, 503, 504]
         for (let i = 0; i < 3; i++) {
             try {
@@ -125,7 +128,7 @@ export async function uploadArtifactToS3(
                 throw new Error('Upload failed')
             } catch (e: any) {
                 if (response && !retriableCodes.includes(response.status)) {
-                    throw new Error(`Upload failed with status code = ${response.status}; did not automatically retry.`)
+                    throw new Error(`Upload failed with status code = ${response.status}; did not automatically retry`)
                 }
                 if (i !== 2) {
                     await sleep(1000 * Math.pow(2, i))
