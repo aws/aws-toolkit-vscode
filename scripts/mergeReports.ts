@@ -54,9 +54,12 @@ async function mergeReports() {
     fs.writeFileSync(path.join(reportsDir, 'report.xml'), xml)
 
     /**
-     * Grab the previous test runs exit code. This makes it so that merge and upload
-     * the reports regardless of the test run exit code and then use the previous test
-     * exit code to properly inform ci of the test run status
+     * Retrieves the exit code from the previous test run execution.
+     *
+     * This allows us to:
+     * 1. Merge and upload test reports regardless of the test execution status
+     * 2. Preserve the original test run exit code
+     * 3. Report the test status back to CI
      */
     const exitCode = parseInt(process.env.PREVIOUS_TEST_EXIT_CODE || '0', 10)
     process.exit(exitCode)
