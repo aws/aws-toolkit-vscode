@@ -18,7 +18,6 @@ import {
     DocumentChangedSource,
     KeyStrokeHandler,
     DefaultDocumentChangedType,
-    RecommendationService,
     ClassifierTrigger,
     isInlineCompletionEnabled,
     RecommendationHandler,
@@ -37,11 +36,9 @@ describe('keyStrokeHandler', function () {
     })
     describe('processKeyStroke', async function () {
         let invokeSpy: sinon.SinonStub
-        let startTimerSpy: sinon.SinonStub
         let mockClient: codewhispererSdkClient.DefaultCodeWhispererClient
         beforeEach(async function () {
             invokeSpy = sinon.stub(KeyStrokeHandler.instance, 'invokeAutomatedTrigger')
-            startTimerSpy = sinon.stub(KeyStrokeHandler.instance, 'startIdleTimeTriggerTimer')
             sinon.spy(RecommendationHandler.instance, 'getRecommendations')
             mockClient = new codewhispererSdkClient.DefaultCodeWhispererClient()
             await resetCodeWhispererGlobalVariables()
@@ -68,7 +65,6 @@ describe('keyStrokeHandler', function () {
             const keyStrokeHandler = new KeyStrokeHandler()
             await keyStrokeHandler.processKeyStroke(mockEvent, mockEditor, mockClient, cfg)
             assert.ok(!invokeSpy.called)
-            assert.ok(!startTimerSpy.called)
         })
 
         it('Should not call invokeAutomatedTrigger when changed text across multiple lines', async function () {
@@ -182,15 +178,6 @@ describe('keyStrokeHandler', function () {
             const getRecommendationsStub = sinon.stub(InlineCompletionService.instance, 'getPaginatedRecommendation')
             await keyStrokeHandler.invokeAutomatedTrigger('Enter', mockEditor, mockClient, config, mockEvent)
             assert.strictEqual(getRecommendationsStub.called, isInlineCompletionEnabled())
-        })
-    })
-
-    describe('shouldTriggerIdleTime', function () {
-        it('should return false when inline is enabled and inline completion is in progress ', function () {
-            const keyStrokeHandler = new KeyStrokeHandler()
-            sinon.stub(RecommendationService.instance, 'isRunning').get(() => true)
-            const result = keyStrokeHandler.shouldTriggerIdleTime()
-            assert.strictEqual(result, !isInlineCompletionEnabled())
         })
     })
 
