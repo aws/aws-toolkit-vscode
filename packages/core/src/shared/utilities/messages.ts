@@ -194,7 +194,7 @@ export async function showReauthenticateMessage({
     reauthFunc: () => Promise<void>
     source?: string
 }) {
-    const shouldShow = await settings.isPromptEnabled(suppressId as any)
+    const shouldShow = settings.isPromptEnabled(suppressId as any)
     if (!shouldShow) {
         return
     }
