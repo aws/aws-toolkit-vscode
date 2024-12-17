@@ -87,7 +87,7 @@ export async function validateSQLMetadataFile(fileContents: string, message: any
         if (sourceDB !== DB.ORACLE) {
             transformByQState.getChatMessenger()?.sendUnrecoverableErrorResponse('unsupported-source-db', message.tabID)
             return false
-        } else if (targetDB !== DB.AURORA_POSTGRESQL && targetDB !== DB.RDS_POSTGRESQL) {
+        } else if (targetDB !== DB.AURORA_POSTGRESQL && targetDB !== DB.RDS_POSTGRESQL && targetDB !== DB.POSTGRESQL) {
             transformByQState.getChatMessenger()?.sendUnrecoverableErrorResponse('unsupported-target-db', message.tabID)
             return false
         }
