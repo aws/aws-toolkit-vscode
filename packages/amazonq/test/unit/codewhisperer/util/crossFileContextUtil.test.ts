@@ -322,9 +322,7 @@ describe('crossFileContextUtil', function () {
     })
 
     describe('full support', function () {
-        // TODO: fix it
         const fileExtLists = ['java', 'js', 'ts', 'py', 'tsx', 'jsx']
-        // const fileExtLists = ['java']
 
         before(async function () {
             this.timeout(60000)
