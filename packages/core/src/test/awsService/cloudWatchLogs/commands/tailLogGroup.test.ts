@@ -56,7 +56,7 @@ describe('TailLogGroup', function () {
             getSessionUpdateFrame(false, `${testMessage}-2`, startTimestamp + 2000),
             getSessionUpdateFrame(false, `${testMessage}-3`, startTimestamp + 3000),
         ]
-        // Returns the configured update frames and then blocks until an AbortCcontroller is signaled.
+        // Returns the configured update frames and then blocks until an AbortController is signaled.
         // This keeps the stream 'open', simulating an open network stream waiting for new events.
         // If the stream were to close, the event listeners in the TailLogGroup command would dispose,
         // breaking the 'closes tab closes session' assertions this test makes.
@@ -95,7 +95,10 @@ describe('TailLogGroup', function () {
         void tailLogGroup(registry, testSource, codeLensProvider, {
             groupName: testLogGroup,
             regionName: testRegion,
-        }).catch((e) => {})
+        }).catch((e) => {
+            const err = e as Error
+            assert.strictEqual(err.message.startsWith('Unexpected on-stream exception while tailing session:'), true)
+        })
         await waitUntil(async () => registry.size !== 0, { interval: 100, timeout: 1000 })
 
         // registry is asserted to have only one entry, so this is assumed to be the session that was
