@@ -32,7 +32,7 @@ export class Ec2SessionTracker extends Map<EC2.InstanceId, SSM.SessionId> implem
     }
 
     public async dispose(): Promise<void> {
-        await mapOverMap(this, async (_, instanceId) => await this.disconnectEnv(instanceId))
+        await mapOverMap(this, async (instanceId, _sessionId) => await this.disconnectEnv(instanceId))
     }
 
     public isConnectedTo(instanceId: EC2.InstanceId): boolean {
