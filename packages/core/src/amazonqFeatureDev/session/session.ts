@@ -290,7 +290,7 @@ export class Session {
             metricName: 'Operation',
             metricValue: 1,
             timestamp: new Date(Date.now()),
-            product: 'Amazon Q For VS Code',
+            product: 'FeatureDev',
             dimensions: [
                 {
                     name: 'operationName',
