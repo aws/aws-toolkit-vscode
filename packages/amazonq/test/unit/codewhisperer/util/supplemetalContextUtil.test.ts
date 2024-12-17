@@ -4,21 +4,31 @@
  */
 
 import assert from 'assert'
+import * as FakeTimers from '@sinonjs/fake-timers'
 import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import * as crossFile from 'aws-core-vscode/codewhisperer'
-import { TestFolder, assertTabCount } from 'aws-core-vscode/test'
+import { TestFolder, assertTabCount, installFakeClock } from 'aws-core-vscode/test'
 import { FeatureConfigProvider } from 'aws-core-vscode/codewhisperer'
 import { toTextEditor } from 'aws-core-vscode/test'
 import { LspController } from 'aws-core-vscode/amazonq'
 
 describe('supplementalContextUtil', function () {
     let testFolder: TestFolder
+    let clock: FakeTimers.InstalledClock
 
     const fakeCancellationToken: vscode.CancellationToken = {
         isCancellationRequested: false,
         onCancellationRequested: sinon.spy(),
     }
+
+    before(function () {
+        clock = installFakeClock()
+    })
+
+    after(function () {
+        clock.uninstall()
+    })
 
     beforeEach(async function () {
         testFolder = await TestFolder.create()
