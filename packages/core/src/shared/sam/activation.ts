@@ -323,7 +323,7 @@ async function createYamlExtensionPrompt(): Promise<void> {
     // Show this only in VSCode since other VSCode-like IDEs (e.g. Theia) may
     // not have a marketplace or contain the YAML plugin.
     if (
-        (await settings.isPromptEnabled('yamlExtPrompt')) &&
+        settings.isPromptEnabled('yamlExtPrompt') &&
         getIdeType() === 'vscode' &&
         !vscode.extensions.getExtension(VSCODE_EXTENSION_ID.yaml)
     ) {

@@ -32,7 +32,7 @@ async function runCommandWizard(
 
     const wizard = new CommandWizard(
         container,
-        await ToolkitPromptSettings.instance.isPromptEnabled('ecsRunCommand'),
+        ToolkitPromptSettings.instance.isPromptEnabled('ecsRunCommand'),
         command
     )
     const response = await wizard.run()
@@ -75,7 +75,7 @@ export async function toggleExecuteCommandFlag(
               'Disabling command execution will change the state of resources in your AWS account, including but not limited to stopping and restarting the service.\n Continue?'
           )
 
-    if (await settings.isPromptEnabled(prompt)) {
+    if (settings.isPromptEnabled(prompt)) {
         const choice = await window.showWarningMessage(warningMessage, yes, yesDontAskAgain, no)
         if (choice === undefined || choice === no) {
             throw new CancellationError('user')

@@ -24,7 +24,7 @@ const localize = nls.loadMessageBundle()
  */
 export async function maybeShowMinVscodeWarning(minVscode: string) {
     const settings = isAmazonQ() ? AmazonQPromptSettings.instance : ToolkitPromptSettings.instance
-    if (!(await settings.isPromptEnabled('minIdeVersion'))) {
+    if (!settings.isPromptEnabled('minIdeVersion')) {
         return
     }
     const updateButton = `Update ${vscode.env.appName}`
