@@ -11,6 +11,7 @@ import { TypescriptLambdaHandlerSearch } from '../shared/typescriptLambdaHandler
 
 describe('TypescriptLambdaHandlerSearch', function () {
     it('finds export declared functions in Typescript code', async function () {
+        assert.fail('testing')
         const filename: string = path.join(testFixturesDir(), 'typescript/sampleFunctions.ts')
 
         const expectedHandlerNames: Set<string> = new Set([
