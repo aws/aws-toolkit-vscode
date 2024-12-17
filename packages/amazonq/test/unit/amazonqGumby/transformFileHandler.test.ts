@@ -6,9 +6,11 @@ import assert from 'assert'
 import { parseVersionsListFromPomFile } from 'aws-core-vscode/codewhisperer/node'
 
 describe('Amazon Q Transform - transformFileHandler tests', function () {
+    it('test failure', function () {
+        assert.fail('testing')
+    })
     describe('parseXmlDependenciesReport', function () {
         it('Will return parsed values', async function () {
-            assert.fail('testing')
             const testXmlReport = `
             <?xml version="1.0" encoding="UTF-8"?>
                 <DependencyUpdatesReport xsi:schemaLocation="https://www.mojohaus.org/VERSIONS/DEPENDENCY-UPDATES-REPORT/2.0.0 https://www.mojohaus.org/versions/versions-model-report/xsd/dependency-updates-report-2.0.0.xsd"

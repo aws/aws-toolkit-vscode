@@ -10,8 +10,11 @@ import { RootlessLambdaHandlerCandidate } from '../shared/lambdaHandlerSearch'
 import { TypescriptLambdaHandlerSearch } from '../shared/typescriptLambdaHandlerSearch'
 
 describe('TypescriptLambdaHandlerSearch', function () {
-    it('finds export declared functions in Typescript code', async function () {
+    it('test failure', function () {
         assert.fail('testing')
+    })
+
+    it('finds export declared functions in Typescript code', async function () {
         const filename: string = path.join(testFixturesDir(), 'typescript/sampleFunctions.ts')
 
         const expectedHandlerNames: Set<string> = new Set([
