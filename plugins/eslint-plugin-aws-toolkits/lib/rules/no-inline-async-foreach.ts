@@ -7,7 +7,7 @@ import { ESLintUtils, TSESTree } from '@typescript-eslint/utils'
 import { AST_NODE_TYPES } from '@typescript-eslint/types'
 import { Rule } from 'eslint'
 
-export const errMsg = 'Avoid using async methods with .forEach as it leads to race conditions and confusing behavior'
+export const errMsg = 'Avoid using async methods with .forEach as it leads to race conditions'
 
 function isAsyncFunction(node: TSESTree.CallExpressionArgument): boolean {
     return (
