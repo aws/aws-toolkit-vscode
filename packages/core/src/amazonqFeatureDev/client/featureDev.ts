@@ -26,6 +26,7 @@ import { getClientId, getOptOutPreference, getOperatingSystem } from '../../shar
 import { extensionVersion } from '../../shared/vscode/env'
 import apiConfig = require('./codewhispererruntime-2022-11-11.json')
 import { FeatureDevCodeAcceptanceEvent, FeatureDevCodeGenerationEvent, TelemetryEvent } from './featuredevproxyclient'
+import { UserWrittenCodeTracker } from '../../codewhisperer'
 
 // Re-enable once BE is able to handle retries.
 const writeAPIRetryOptions = {
@@ -255,6 +256,7 @@ export class FeatureDevClient {
                     references?: CodeReference[]
                 }
             }
+            UserWrittenCodeTracker.instance.onQFeatureInvoked()
 
             const newFileContents: { zipFilePath: string; fileContent: string }[] = []
             for (const [filePath, fileContent] of Object.entries(newFiles)) {

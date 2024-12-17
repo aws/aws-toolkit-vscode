@@ -16,7 +16,7 @@ import CodeWhispererUserClient, {
 import { CreateUploadUrlError, InvalidSourceZipError, TestGenFailedError, TestGenTimedOutError } from '../models/errors'
 import { getMd5, uploadArtifactToS3 } from './securityScanHandler'
 import { fs, randomUUID, sleep, tempDirPath } from '../../shared'
-import { ShortAnswer, TestGenerationJobStatus, testGenState } from '..'
+import { ShortAnswer, TestGenerationJobStatus, testGenState, UserWrittenCodeTracker } from '..'
 import { ChatSessionManager } from '../../amazonqTest/chat/storages/chatSession'
 import { createCodeWhispererChatStreamingClient } from '../../shared/clients/codewhispererChatClient'
 import { downloadExportResultArchive } from '../../shared/utilities/download'
@@ -292,5 +292,6 @@ export async function downloadResultArchive(
         throw e
     } finally {
         cwStreamingClient.destroy()
+        UserWrittenCodeTracker.instance.onQFeatureInvoked()
     }
 }
