@@ -6,6 +6,7 @@
 import { EC2, SSM } from 'aws-sdk'
 import { SsmClient } from '../../shared/clients/ssmClient'
 import { Disposable } from 'vscode'
+import { mapOverMap } from '../../shared/utilities/collectionUtils'
 
 export class Ec2SessionTracker extends Map<EC2.InstanceId, SSM.SessionId> implements Disposable {
     public constructor(
@@ -31,7 +32,7 @@ export class Ec2SessionTracker extends Map<EC2.InstanceId, SSM.SessionId> implem
     }
 
     public async dispose(): Promise<void> {
-        this.forEach(async (_sessionId, instanceId) => await this.disconnectEnv(instanceId))
+        await mapOverMap(this, async (_, instanceId) => await this.disconnectEnv(instanceId))
     }
 
     public isConnectedTo(instanceId: EC2.InstanceId): boolean {

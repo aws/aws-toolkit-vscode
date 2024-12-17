@@ -62,7 +62,7 @@ describe('listSamResources', () => {
             { name: 'stringify array', value: '[]' },
             { name: 'array object', value: [] },
         ]
-        testcases.forEach(async ({ name, value }) => {
+        testcases.forEach(({ name, value }) => {
             it(`returns empty array given SAM CLI return ${name} given any issue`, async () => {
                 runSamCliListResourceStub.resolves(value)
 

@@ -566,3 +566,7 @@ export function createCollectionFromPages<T>(...pages: T[]): AsyncCollection<T> 
 export function isPresent<T>(value: T | undefined): value is T {
     return value !== undefined
 }
+
+export async function mapOverMap<K, V, O>(m: Map<K, V>, f: (k: K, v: V) => Promise<O>): Promise<O[]> {
+    return await Promise.all(Array.from(m).map(async ([k, v]) => await f(k, v)))
+}

@@ -218,7 +218,7 @@ describe('FileSystem', function () {
     describe('mkdir()', function () {
         const paths = ['a', 'a/b', 'a/b/c', 'a/b/c/d/']
 
-        paths.forEach(async function (p) {
+        paths.forEach(function (p) {
             it(`creates folder: '${p}'`, async function () {
                 const dirPath = testFolder.pathFrom(p)
                 await fs.mkdir(dirPath)
@@ -226,7 +226,7 @@ describe('FileSystem', function () {
             })
         })
 
-        paths.forEach(async function (p) {
+        paths.forEach(function (p) {
             it(`creates folder but uses the "fs" module if in Cloud9: '${p}'`, async function () {
                 sandbox.stub(extensionUtilities, 'isCloud9').returns(true)
                 const dirPath = testFolder.pathFrom(p)
