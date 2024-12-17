@@ -665,7 +665,7 @@ export class AmazonQPromptSettings
             return !this._getOrThrow(promptName, false)
         } catch (e) {
             this._log('prompt check for "%s" failed: %s', promptName, (e as Error).message)
-            this.reset().catch((e) => getLogger().error(`failed to reset prompt settings: %O`, (e as Error).message))
+            this.reset().catch((e) => getLogger().error(`isPromptEnabled: reset() failed: %O`, (e as Error).message))
 
             return true
         }
