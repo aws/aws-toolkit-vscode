@@ -25,6 +25,5 @@ getRuleTester().run('no-inline-async-foreach', rules['no-inline-async-foreach'],
         { code: 'async function f(){} \n list.forEach(f)', errors: [errMsg] },
         { code: 'const f = async () => {} \n list.forEach(f)', errors: [errMsg] },
         { code: 'const f = async function () {} \n list.forEach(f)', errors: [errMsg] },
-        { code: 'const f = function () {} \n list.forEach(f)', errors: [errMsg] },
     ],
 })
