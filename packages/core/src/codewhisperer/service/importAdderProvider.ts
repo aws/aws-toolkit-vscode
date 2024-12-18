@@ -55,7 +55,7 @@ export class ImportAdderProvider implements vscode.CodeLensProvider {
         ) {
             const line = findLineToInsertImportStatement(editor, firstLineOfRecommendation)
             let mergedStatements = ``
-            r.mostRelevantMissingImports?.forEach(async (i) => {
+            r.mostRelevantMissingImports?.forEach((i) => {
                 // trust service response that this to-be-added import is necessary
                 if (i.statement) {
                     mergedStatements += i.statement + '\n'
