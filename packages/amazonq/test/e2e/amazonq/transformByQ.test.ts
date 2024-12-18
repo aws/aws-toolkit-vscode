@@ -12,6 +12,7 @@ import { GumbyController, setMaven, startTransformByQ, TabsStorage } from 'aws-c
 import { using, registerAuthHook, TestFolder } from 'aws-core-vscode/test'
 import { loginToIdC } from './utils/setup'
 import { fs } from 'aws-core-vscode/shared'
+import * as os from 'os'
 import path from 'path'
 
 describe('Amazon Q Code Transformation', function () {
@@ -153,6 +154,21 @@ describe('Amazon Q Code Transformation', function () {
             const jdkPathResponse = tab.getChatItems().pop()
             // this 'Sorry' message is OK - just making sure that the UI components are working correctly
             assert.strictEqual(jdkPathResponse?.body?.includes("Sorry, I couldn't locate your Java installation"), true)
+
+            transformByQState.setSummaryFilePath(path.join(os.tmpdir(), 'summary.md'))
+
+            tab.clickCustomFormButton({
+                id: 'gumbyViewSummary',
+                text: 'View summary',
+            })
+
+            await tab.waitForEvent(() => tab.getChatItems().length > 14, {
+                waitTimeoutInMs: 5000,
+                waitIntervalInMs: 1000,
+            })
+
+            const viewSummaryChatItem = tab.getChatItems().pop()
+            assert.strictEqual(viewSummaryChatItem?.body?.includes('view a summary'), true)
         })
 
         it('Can provide metadata file for a SQL conversion', async () => {
