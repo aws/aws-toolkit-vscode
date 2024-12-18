@@ -289,7 +289,7 @@ export class Session {
         await this.proxyClient.sendMetricData({
             metricName: 'Operation',
             metricValue: 1,
-            timestamp: new Date(Date.now()),
+            timestamp: new Date(),
             product: 'FeatureDev',
             dimensions: [
                 {

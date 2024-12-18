@@ -117,13 +117,13 @@ export interface UpdateFilesPathsParams {
 }
 
 export enum MetricDataOperationName {
-    START_CODE_GENERATION = 'StartCodeGeneration',
-    END_CODE_GENERATION = 'EndCodeGeneration',
+    StartCodeGeneration = 'StartCodeGeneration',
+    EndCodeGeneration = 'EndCodeGeneration',
 }
 
 export enum MetricDataResult {
-    SUCCESS = 'Success',
-    FAULT = 'Fault',
-    ERROR = 'Error',
-    LLMFAILURE = 'LLMFailure',
+    Success = 'Success',
+    Fault = 'Fault',
+    Error = 'Error',
+    LlmFailure = 'LLMFailure',
 }

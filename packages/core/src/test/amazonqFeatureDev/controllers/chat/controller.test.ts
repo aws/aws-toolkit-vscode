@@ -462,16 +462,16 @@ describe('Controller', () => {
             let sendMetricDataTelemetrySpy: sinon.SinonStub
 
             const errorResultMapping = new Map([
-                ['EmptyPatchException', MetricDataResult.LLMFAILURE],
-                [PromptRefusalException.name, MetricDataResult.ERROR],
-                [NoChangeRequiredException.name, MetricDataResult.ERROR],
+                ['EmptyPatchException', MetricDataResult.LlmFailure],
+                [PromptRefusalException.name, MetricDataResult.Error],
+                [NoChangeRequiredException.name, MetricDataResult.Error],
             ])
 
             function getMetricResult(error: ToolkitError): MetricDataResult {
                 if (error instanceof FeatureDevServiceError && error.code) {
-                    return errorResultMapping.get(error.code) ?? MetricDataResult.ERROR
+                    return errorResultMapping.get(error.code) ?? MetricDataResult.Error
                 }
-                return errorResultMapping.get(error.constructor.name) ?? MetricDataResult.FAULT
+                return errorResultMapping.get(error.constructor.name) ?? MetricDataResult.Fault
             }
 
             async function createCodeGenState() {
@@ -512,13 +512,13 @@ describe('Controller', () => {
                 await verifyMetricsCalled()
                 assert.ok(
                     sendMetricDataTelemetrySpy.calledWith(
-                        MetricDataOperationName.START_CODE_GENERATION,
-                        MetricDataResult.SUCCESS
+                        MetricDataOperationName.StartCodeGeneration,
+                        MetricDataResult.Success
                     )
                 )
                 const metricResult = getMetricResult(error)
                 assert.ok(
-                    sendMetricDataTelemetrySpy.calledWith(MetricDataOperationName.END_CODE_GENERATION, metricResult)
+                    sendMetricDataTelemetrySpy.calledWith(MetricDataOperationName.EndCodeGeneration, metricResult)
                 )
             }
 
@@ -541,14 +541,14 @@ describe('Controller', () => {
 
                 assert.ok(
                     sendMetricDataTelemetrySpy.calledWith(
-                        MetricDataOperationName.START_CODE_GENERATION,
-                        MetricDataResult.SUCCESS
+                        MetricDataOperationName.StartCodeGeneration,
+                        MetricDataResult.Success
                     )
                 )
                 assert.ok(
                     sendMetricDataTelemetrySpy.calledWith(
-                        MetricDataOperationName.END_CODE_GENERATION,
-                        MetricDataResult.SUCCESS
+                        MetricDataOperationName.EndCodeGeneration,
+                        MetricDataResult.Success
                     )
                 )
             })
