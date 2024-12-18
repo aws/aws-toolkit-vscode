@@ -13,6 +13,7 @@ import DependencyVersions from '../../../models/dependencies'
 export enum ButtonActions {
     STOP_TRANSFORMATION_JOB = 'gumbyStopTransformationJob',
     VIEW_TRANSFORMATION_HUB = 'gumbyViewTransformationHub',
+    VIEW_SUMMARY = 'gumbyViewSummary',
     CONFIRM_LANGUAGE_UPGRADE_TRANSFORMATION_FORM = 'gumbyLanguageUpgradeTransformFormConfirm',
     CONFIRM_SQL_CONVERSION_TRANSFORMATION_FORM = 'gumbySQLConversionTransformFormConfirm',
     CANCEL_TRANSFORMATION_FORM = 'gumbyTransformFormCancel', // shared between Language Upgrade & SQL Conversion
