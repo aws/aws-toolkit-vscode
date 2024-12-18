@@ -13,6 +13,8 @@ getRuleTester().run('no-inline-async-foreach', rules['no-inline-async-foreach'],
         'list.forEach(asyncFunctionOrNot)',
         'list.forEach(() => console.log(x))',
         'list.forEach(function () {})',
+        'function f(){} \n list.forEach(f)',
+        'const f = function () {} \n list.forEach(f)',
     ],
 
     invalid: [
@@ -20,5 +22,9 @@ getRuleTester().run('no-inline-async-foreach', rules['no-inline-async-foreach'],
         { code: 'list.forEach(async (a: any) => console.log(x))', errors: [errMsg] },
         { code: 'list.forEach((a) => a.forEach(async (b) => a * b))', errors: [errMsg] },
         { code: 'list.forEach(async function () {})', errors: [errMsg] },
+        { code: 'async function f(){} \n list.forEach(f)', errors: [errMsg] },
+        { code: 'const f = async () => {} \n list.forEach(f)', errors: [errMsg] },
+        { code: 'const f = async function () {} \n list.forEach(f)', errors: [errMsg] },
+        { code: 'const f = function () {} \n list.forEach(f)', errors: [errMsg] },
     ],
 })
