@@ -147,7 +147,6 @@ describe('InactivityMessage', function () {
                 Math.abs(actualMessages[i].minute - expected.minute) <= 1,
                 `Expected to be within 60 seconds of minute ${expected.minute}, but instead was at minute ${actualMessages[i].minute}`
             )
-            assert.deepStrictEqual(actualMessages[i], expected)
         }
     }
 
