@@ -4,10 +4,10 @@
  */
 
 import { rules } from '../../index'
-import { errMsg } from '../../lib/rules/no-inline-async-foreach'
+import { errMsg } from '../../lib/rules/no-async-in-foreach'
 import { getRuleTester } from '../testUtil'
 
-getRuleTester().run('no-inline-async-foreach', rules['no-inline-async-foreach'], {
+getRuleTester().run('no-async-in-foreach', rules['no-async-in-foreach'], {
     valid: [
         'list.forEach((a) => a * a)',
         'list.forEach(asyncFunctionOrNot)',
@@ -33,6 +33,10 @@ getRuleTester().run('no-inline-async-foreach', rules['no-inline-async-foreach'],
         { code: 'function f() { \n return async function () {}} \n [].forEach(f())', errors: [errMsg] },
         {
             code: 'function f() { \n return new (class c { \n public async f2() {} \n })().f2 \n } \n list.forEach(f())',
+            errors: [errMsg],
+        },
+        {
+            code: 'function f() { \n return function f2() { \n return function f3() { \n return function f4() { \n return function f5() { \n return async function f6() { \n \n } \n } \n } \n } \n } \n } \n list.forEach(f()()()()())',
             errors: [errMsg],
         },
     ],
