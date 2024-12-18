@@ -488,10 +488,6 @@ export class FeatureDevController {
                 })
                 await session.updateChatAnswer(tabID, i18n('AWS.amazonq.featureDev.pillText.acceptAllChanges'))
                 await session.sendLinesOfCodeGeneratedTelemetry()
-                await session.sendMetricDataTelemetry(
-                    MetricDataOperationName.END_CODE_GENERATION,
-                    MetricDataResult.SUCCESS
-                )
             }
             this.messenger.sendUpdatePlaceholder(tabID, i18n('AWS.amazonq.featureDev.pillText.selectOption'))
         } catch (err: any) {
@@ -504,10 +500,15 @@ export class FeatureDevController {
                             MetricDataOperationName.END_CODE_GENERATION,
                             MetricDataResult.LLMFAILURE
                         )
-                    } else {
+                    } else if (err.code === 'GuardrailsException' || err.code === 'ThrottlingException') {
                         await session.sendMetricDataTelemetry(
                             MetricDataOperationName.END_CODE_GENERATION,
                             MetricDataResult.ERROR
+                        )
+                    } else {
+                        await session.sendMetricDataTelemetry(
+                            MetricDataOperationName.END_CODE_GENERATION,
+                            MetricDataResult.FAULT
                         )
                     }
                     break
@@ -558,6 +559,7 @@ export class FeatureDevController {
                 }
             }
         }
+        await session.sendMetricDataTelemetry(MetricDataOperationName.END_CODE_GENERATION, MetricDataResult.SUCCESS)
     }
 
     private sendUpdateCodeMessage(tabID: string) {
