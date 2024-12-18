@@ -25,5 +25,15 @@ getRuleTester().run('no-inline-async-foreach', rules['no-inline-async-foreach'],
         { code: 'async function f(){} \n list.forEach(f)', errors: [errMsg] },
         { code: 'const f = async () => {} \n list.forEach(f)', errors: [errMsg] },
         { code: 'const f = async function () {} \n list.forEach(f)', errors: [errMsg] },
+        { code: 'class c { \n public async f() {} \n } \n [].forEach((new c().f))', errors: [errMsg] },
+        {
+            code: 'class c { \n public async f() {} \n } \n const c2 = new c() \n list.forEach(c2.f)',
+            errors: [errMsg],
+        },
+        { code: 'function f() { \n return async function () {}} \n [].forEach(f())', errors: [errMsg] },
+        {
+            code: 'function f() { \n return new (class c { \n public async f2() {} \n })().f2 \n } \n list.forEach(f())',
+            errors: [errMsg],
+        },
     ],
 })
