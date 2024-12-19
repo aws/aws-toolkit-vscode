@@ -570,3 +570,9 @@ export function isPresent<T>(value: T | undefined): value is T {
 export async function mapOverMap<K, V, O>(m: Map<K, V>, f: (k: K, v: V) => Promise<O>): Promise<O[]> {
     return await Promise.all(Array.from(m).map(async ([k, v]) => await f(k, v)))
 }
+
+export function addAll<T>(s: Set<T>, items: T[]) {
+    for (const item of items) {
+        s.add(item)
+    }
+}

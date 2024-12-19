@@ -114,8 +114,7 @@ export default ESLintUtils.RuleCreator.withoutDocs({
                 ) {
                     return
                 }
-
-                node.declarations.forEach((declaration) => {
+                for (const declaration of node.declarations) {
                     if (
                         declaration.init?.type === AST_NODE_TYPES.CallExpression &&
                         declaration.id.type === AST_NODE_TYPES.Identifier &&
@@ -134,11 +133,11 @@ export default ESLintUtils.RuleCreator.withoutDocs({
                             // Check if it is being referenced multiple times
                             // TODO: expand to check if it is being referenced inside nested scopes only? (currently checks current scope as well)
                             if (refs.length > 1) {
-                                return
+                                continue
                             }
 
                             // Check if it is being referenced once, but inside a loop.
-                            refs.forEach((ref) => {
+                            for (const ref of refs) {
                                 let currNode: TSESTree.Node | undefined = ref.identifier
 
                                 while (currNode && currNode !== scope.block) {
@@ -154,18 +153,18 @@ export default ESLintUtils.RuleCreator.withoutDocs({
                                     }
                                     currNode = currNode.parent
                                 }
-                            })
+                            }
                         }
 
                         // If the variable is somehow not assigned? or only used once and not in a loop.
                         if (variable === undefined || !isUsedInLoopScope) {
-                            return context.report({
+                            context.report({
                                 node: declaration.init.callee,
                                 messageId: 'notReusableErr',
                             })
                         }
                     }
-                })
+                }
             },
         }
     },

@@ -13,7 +13,7 @@ getRuleTester().run('no-foreach', rules['no-foreach'], {
     invalid: [
         { code: 'list.forEach((a) => await Promise.resolve(a * a))', errors: [errMsg] },
         { code: 'list.forEach(async (a: any) => console.log(x))', errors: [errMsg] },
-        { code: 'list.forEach((a) => a.forEach(async (b) => a * b))', errors: [errMsg] },
+        { code: 'list.forEach((a) => a.forEach(async (b) => a * b))', errors: [errMsg, errMsg] },
         { code: 'list.forEach(async function () {})', errors: [errMsg] },
         { code: 'function f(){} \n list.forEach(f)', errors: [errMsg] },
         { code: 'const f = async () => {} \n list.forEach(f)', errors: [errMsg] },

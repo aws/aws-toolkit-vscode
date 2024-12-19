@@ -60,6 +60,7 @@ import { activate as activateThreatComposerEditor } from './threatComposer/activ
 import { isSsoConnection, hasScopes } from './auth/connection'
 import { CrashMonitoring, setContext } from './shared'
 import { AuthFormId } from './login/webview/vue/types'
+import { addAll } from './shared/utilities/collectionUtils'
 
 let localize: nls.LocalizeFunc
 
@@ -85,10 +86,11 @@ export async function activate(context: vscode.ExtensionContext) {
 
         const toolkitEnvDetails = getExtEnvironmentDetails()
         // Splits environment details by new line, filter removes the empty string
-        toolkitEnvDetails
-            .split(/\r?\n/)
-            .filter(Boolean)
-            .forEach((line) => getLogger().info(line))
+        const logger = getLogger()
+        const linesToLog = toolkitEnvDetails.split(/\r?\n/).filter(Boolean)
+        for (const line of linesToLog) {
+            logger.info(line)
+        }
 
         globals.awsContextCommands = new AwsContextCommands(globals.regionProvider, Auth.instance)
         globals.schemaService = new SchemaService()
@@ -343,17 +345,19 @@ async function getAuthState(): Promise<Omit<AuthUserState, 'source'>> {
     const enabledScopes: Set<string> = new Set()
     if (Auth.instance.hasConnections) {
         authStatus = 'expired'
-        ;(await Auth.instance.listConnections()).forEach((conn) => {
+        const connections = await Auth.instance.listConnections()
+        for (const conn of connections) {
             const state = Auth.instance.getConnectionState(conn)
             if (state === 'valid') {
                 authStatus = 'connected'
             }
+            const connectionsIds = getAuthFormIdsFromConnection(conn)
+            addAll(enabledConnections, connectionsIds)
 
-            getAuthFormIdsFromConnection(conn).forEach((id) => enabledConnections.add(id))
             if (isSsoConnection(conn)) {
-                conn.scopes?.forEach((s) => enabledScopes.add(s))
+                addAll(enabledScopes, conn.scopes ?? [])
             }
-        })
+        }
     }
 
     // There may be other SSO connections in toolkit, but there is no use case for

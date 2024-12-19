@@ -23,16 +23,16 @@ function main() {
     type Configuration = { [key: string]: { [key: string]: {} } }
     const settings: Configuration = {}
 
-    Object.entries(packageJson.contributes.configuration.properties as { [key: string]: { properties?: {} } }).forEach(
-        ([k, v]) => {
-            settings[k] = {}
-            if (v.properties !== undefined) {
-                for (const inner of Object.keys(v.properties)) {
-                    settings[k][inner] = {}
-                }
+    for (const [k, v] of Object.entries(
+        packageJson.contributes.configuration.properties as { [key: string]: { properties?: {} } }
+    )) {
+        settings[k] = {}
+        if (v.properties !== undefined) {
+            for (const inner of Object.keys(v.properties)) {
+                settings[k][inner] = {}
             }
         }
-    )
+    }
 
     const contents = `/*!
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.

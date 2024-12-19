@@ -20,24 +20,25 @@ export const awsToolkitApi = {
             async listConnections(): Promise<AwsConnection[]> {
                 getLogger().debug(`listConnections: extension ${extensionId}`)
                 const connections = await Auth.instance.listConnections()
-                const exposedConnections: AwsConnection[] = []
-                connections.forEach((x: Connection) => {
+                return connections.flatMap((x: Connection) => {
                     if (x.type === 'sso') {
                         const connState = Auth.instance.getConnectionState(x)
                         if (connState) {
-                            exposedConnections.push({
-                                id: x.id,
-                                label: x.label,
-                                type: x.type,
-                                ssoRegion: x.ssoRegion,
-                                startUrl: x.startUrl,
-                                scopes: x.scopes,
-                                state: connState,
-                            })
+                            return [
+                                {
+                                    id: x.id,
+                                    label: x.label,
+                                    type: x.type,
+                                    ssoRegion: x.ssoRegion,
+                                    startUrl: x.startUrl,
+                                    scopes: x.scopes,
+                                    state: connState,
+                                },
+                            ]
                         }
                     }
+                    return []
                 })
-                return exposedConnections
             },
 
             /**
