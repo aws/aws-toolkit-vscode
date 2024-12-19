@@ -14,7 +14,6 @@ import {
     toSnakeCase,
     undefinedIfEmpty,
     formatTextWithIndent,
-    formatTextWithIndent2,
 } from '../../../shared/utilities/textUtilities'
 
 describe('textUtilities', async function () {
