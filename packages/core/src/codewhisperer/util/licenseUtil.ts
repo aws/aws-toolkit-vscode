@@ -471,11 +471,9 @@ export class LicenseUtil {
 
     public static getUniqueLicenseNames(references: References | undefined): Set<string> {
         const n = new Set<string>()
-        references?.forEach((r) => {
-            if (r.licenseName) {
-                n.add(r.licenseName)
-            }
-        })
+        // eslint-disable-next-line aws-toolkits/no-foreach
+        references?.filter((r) => r.licenseName).forEach((r) => n.add(r.licenseName!))
+
         return n
     }
 }

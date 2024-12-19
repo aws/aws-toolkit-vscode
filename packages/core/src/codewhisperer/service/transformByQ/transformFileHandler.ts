@@ -97,14 +97,14 @@ export async function validateSQLMetadataFile(fileContents: string, message: any
         const serverNodeLocations =
             sctData['tree']['instances'][0]['ProjectModel'][0]['relations'][0]['server-node-location']
         const schemaNames = new Set<string>()
-        serverNodeLocations.forEach((serverNodeLocation: any) => {
+        for (const serverNodeLocation of serverNodeLocations) {
             const schemaNodes = serverNodeLocation['FullNameNodeInfoList'][0]['nameParts'][0][
                 'FullNameNodeInfo'
             ].filter((node: any) => node['$']['typeNode'].toLowerCase() === 'schema')
-            schemaNodes.forEach((node: any) => {
+            for (const node of schemaNodes) {
                 schemaNames.add(node['$']['nameNode'].toUpperCase())
-            })
-        })
+            }
+        }
         transformByQState.setSchemaOptions(schemaNames) // user will choose one of these
         getLogger().info(
             `CodeTransformation: Parsed .sct file with source DB: ${sourceDB}, target DB: ${targetDB}, source host name: ${sourceServerName}, and schema names: ${Array.from(schemaNames)}`

@@ -145,7 +145,7 @@ export class DiffModel {
     public copyProject(pathToWorkspace: string, changedFiles: ParsedDiff[]) {
         const pathToTmpSrcDir = path.join(os.tmpdir(), `project-copy-${Date.now()}`)
         fs.mkdirSync(pathToTmpSrcDir)
-        changedFiles.forEach((file) => {
+        for (const file of changedFiles) {
             const pathToTmpFile = path.join(pathToTmpSrcDir, file.oldFileName!.substring(2))
             // use mkdirsSync to create parent directories in pathToTmpFile too
             fs.mkdirSync(path.dirname(pathToTmpFile), { recursive: true })
@@ -154,7 +154,7 @@ export class DiffModel {
             if (fs.existsSync(pathToOldFile)) {
                 fs.copyFileSync(pathToOldFile, pathToTmpFile)
             }
-        })
+        }
         return pathToTmpSrcDir
     }
 
@@ -243,11 +243,11 @@ export class DiffModel {
     }
 
     public saveChanges() {
-        this.patchFileNodes.forEach((patchFileNode) => {
-            patchFileNode.children.forEach((changeNode) => {
+        for (const parentFileNode of this.patchFileNodes) {
+            for (const changeNode of parentFileNode.children) {
                 changeNode.saveChange()
-            })
-        })
+            }
+        }
     }
 
     public rejectChanges() {

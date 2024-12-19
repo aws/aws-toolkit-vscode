@@ -527,9 +527,7 @@ export class RecommendationHandler {
         // do not show recommendation if cursor is before invocation position
         // also mark as Discard
         if (editor.selection.active.isBefore(session.startPos)) {
-            session.recommendations.forEach((r, i) => {
-                session.setSuggestionState(i, 'Discard')
-            })
+            this.discardSuggestions()
             reject()
             return false
         }
@@ -545,9 +543,7 @@ export class RecommendationHandler {
             )
         )
         if (!session.recommendations[0].content.startsWith(typedPrefix.trimStart())) {
-            session.recommendations.forEach((r, i) => {
-                session.setSuggestionState(i, 'Discard')
-            })
+            this.discardSuggestions()
             reject()
             return false
         }
@@ -575,6 +571,12 @@ export class RecommendationHandler {
         this.prev.dispose()
         this.reject.dispose()
         this.next.dispose()
+    }
+
+    private discardSuggestions() {
+        for (const [i, _] of session.suggestionStates.entries()) {
+            session.setSuggestionState(i, 'Discard')
+        }
     }
 
     // These commands override the vs code inline completion commands
@@ -669,9 +671,7 @@ export class RecommendationHandler {
             editor.selection.active.isBefore(session.startPos) ||
             editor.document.uri.fsPath !== this.documentUri?.fsPath
         ) {
-            session.recommendations.forEach((r, i) => {
-                session.setSuggestionState(i, 'Discard')
-            })
+            this.discardSuggestions()
             this.reportUserDecisions(-1)
         } else if (session.recommendations.length > 0) {
             await this.showRecommendation(0, true)

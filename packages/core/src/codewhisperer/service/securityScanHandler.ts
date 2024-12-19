@@ -68,13 +68,13 @@ export async function listScanResults(
             return resp.codeAnalysisFindings
         })
         .promise()
-    issues.forEach((issue) => {
+    for (const issue of issues) {
         mapToAggregatedList(codeScanIssueMap, issue, editor, scope)
-    })
-    codeScanIssueMap.forEach((issues, key) => {
+    }
+    for (const [key, issues] of codeScanIssueMap.entries()) {
         // Project path example: /Users/username/project
         // Key example: project/src/main/java/com/example/App.java
-        projectPaths.forEach((projectPath) => {
+        for (const projectPath of projectPaths) {
             // We need to remove the project path from the key to get the absolute path to the file
             // Do not use .. in between because there could be multiple project paths in the same parent dir.
             const filePath = path.join(projectPath, key.split('/').slice(1).join('/'))
@@ -85,7 +85,7 @@ export async function listScanResults(
                 }
                 aggregatedCodeScanIssueList.push(aggregatedCodeScanIssue)
             }
-        })
+        }
         const maybeAbsolutePath = `/${key}`
         if (existsSync(maybeAbsolutePath) && statSync(maybeAbsolutePath).isFile()) {
             const aggregatedCodeScanIssue: AggregatedCodeScanIssue = {
@@ -94,7 +94,7 @@ export async function listScanResults(
             }
             aggregatedCodeScanIssueList.push(aggregatedCodeScanIssue)
         }
-    })
+    }
     return aggregatedCodeScanIssueList
 }
 
@@ -157,8 +157,7 @@ export function mapToAggregatedList(
         }
         return true
     })
-
-    filteredIssues.forEach((issue) => {
+    for (const issue of filteredIssues) {
         const filePath = issue.filePath
         if (codeScanIssueMap.has(filePath)) {
             if (!isExistingIssue(issue, codeScanIssueMap)) {
@@ -169,7 +168,7 @@ export function mapToAggregatedList(
         } else {
             codeScanIssueMap.set(filePath, [issue])
         }
-    })
+    }
 }
 
 function isDuplicateIssue(issueA: RawCodeScanIssue, issueB: RawCodeScanIssue) {

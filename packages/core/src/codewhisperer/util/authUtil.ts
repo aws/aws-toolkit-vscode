@@ -457,7 +457,9 @@ export class AuthUtil {
                 state[Features.codewhispererCore] = AuthStates.connected
             }
             if (isValidAmazonQConnection(conn)) {
-                Object.values(Features).forEach((v) => (state[v as Feature] = AuthStates.connected))
+                for (const v of Object.values(Features)) {
+                    state[v as Feature] = AuthStates.connected
+                }
             }
         }
 
