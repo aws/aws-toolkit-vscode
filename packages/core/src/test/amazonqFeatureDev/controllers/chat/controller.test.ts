@@ -9,14 +9,33 @@ import * as path from 'path'
 import sinon from 'sinon'
 import { waitUntil } from '../../../../shared/utilities/timeoutUtils'
 import { ControllerSetup, createController, createSession, generateVirtualMemoryUri } from '../../utils'
-import { CurrentWsFolders, FollowUpTypes, NewFileInfo, DeletedFileInfo } from '../../../../amazonqFeatureDev/types'
+import { CurrentWsFolders, DeletedFileInfo, NewFileInfo } from '../../../../amazonqFeatureDev/types'
 import { Session } from '../../../../amazonqFeatureDev/session/session'
 import { Prompter } from '../../../../shared/ui/prompter'
 import { assertTelemetry, toFile } from '../../../testUtil'
-import { SelectedFolderNotInWorkspaceFolderError } from '../../../../amazonqFeatureDev/errors'
+import {
+    CodeIterationLimitError,
+    ContentLengthError,
+    createUserFacingErrorMessage,
+    FeatureDevServiceError,
+    MonthlyConversationLimitError,
+    NoChangeRequiredException,
+    PrepareRepoFailedError,
+    PromptRefusalException,
+    SelectedFolderNotInWorkspaceFolderError,
+    TabIdNotFoundError,
+    UploadCodeError,
+    UploadURLExpired,
+    UserMessageNotFoundError,
+    ZipFileError,
+} from '../../../../amazonqFeatureDev/errors'
 import { CodeGenState, PrepareCodeGenState } from '../../../../amazonqFeatureDev/session/sessionState'
 import { FeatureDevClient } from '../../../../amazonqFeatureDev/client/featureDev'
 import { createAmazonQUri } from '../../../../amazonq/commons/diff'
+import { AuthUtil } from '../../../../codewhisperer'
+import { featureDevScheme, featureName, messageWithConversationId } from '../../../../amazonqFeatureDev'
+import { i18n } from '../../../../shared/i18n-helper'
+import { FollowUpTypes } from '../../../../amazonq/commons/types'
 
 let mockGetCodeGeneration: sinon.SinonStub
 describe('Controller', () => {
@@ -33,16 +52,18 @@ describe('Controller', () => {
             relativePath: 'myfile1.js',
             fileContent: '',
             rejected: false,
-            virtualMemoryUri: generateVirtualMemoryUri(uploadID, 'myfile1.js'),
+            virtualMemoryUri: generateVirtualMemoryUri(uploadID, 'myfile1.js', featureDevScheme),
             workspaceFolder: controllerSetup.workspaceFolder,
+            changeApplied: false,
         },
         {
             zipFilePath: 'myfile2.js',
             relativePath: 'myfile2.js',
             fileContent: '',
             rejected: true,
-            virtualMemoryUri: generateVirtualMemoryUri(uploadID, 'myfile2.js'),
+            virtualMemoryUri: generateVirtualMemoryUri(uploadID, 'myfile2.js', featureDevScheme),
             workspaceFolder: controllerSetup.workspaceFolder,
+            changeApplied: false,
         },
     ]
 
@@ -52,12 +73,14 @@ describe('Controller', () => {
             relativePath: 'myfile3.js',
             rejected: false,
             workspaceFolder: controllerSetup.workspaceFolder,
+            changeApplied: false,
         },
         {
             zipFilePath: 'myfile4.js',
             relativePath: 'myfile4.js',
             rejected: true,
             workspaceFolder: controllerSetup.workspaceFolder,
+            changeApplied: false,
         },
     ]
 
@@ -67,7 +90,19 @@ describe('Controller', () => {
 
     beforeEach(async () => {
         controllerSetup = await createController()
-        session = await createSession({ messenger: controllerSetup.messenger, conversationID, tabID, uploadID })
+        session = await createSession({
+            messenger: controllerSetup.messenger,
+            conversationID,
+            tabID,
+            uploadID,
+            scheme: featureDevScheme,
+        })
+
+        sinon.stub(AuthUtil.instance, 'getChatAuthState').resolves({
+            codewhispererCore: 'connected',
+            codewhispererChat: 'connected',
+            amazonQ: 'connected',
+        })
     })
 
     afterEach(() => {
@@ -93,8 +128,8 @@ describe('Controller', () => {
             assert.strictEqual(
                 executedDiff.calledWith(
                     'vscode.diff',
-                    createAmazonQUri('empty', tabID),
-                    createAmazonQUri(path.join(uploadID, 'src', 'mynewfile.js'), tabID)
+                    createAmazonQUri('empty', tabID, featureDevScheme),
+                    createAmazonQUri(path.join(uploadID, 'src', 'mynewfile.js'), tabID, featureDevScheme)
                 ),
                 true
             )
@@ -111,7 +146,7 @@ describe('Controller', () => {
                 executedDiff.calledWith(
                     'vscode.diff',
                     vscode.Uri.file(newFileLocation),
-                    createAmazonQUri(path.join(uploadID, 'mynewfile.js'), tabID)
+                    createAmazonQUri(path.join(uploadID, 'mynewfile.js'), tabID, featureDevScheme)
                 ),
                 true
             )
@@ -128,7 +163,7 @@ describe('Controller', () => {
                 executedDiff.calledWith(
                     'vscode.diff',
                     vscode.Uri.file(newFileLocation),
-                    createAmazonQUri(path.join(uploadID, 'src', 'mynewfile.js'), tabID)
+                    createAmazonQUri(path.join(uploadID, 'src', 'mynewfile.js'), tabID, featureDevScheme)
                 ),
                 true
             )
@@ -147,7 +182,7 @@ describe('Controller', () => {
                 executedDiff.calledWith(
                     'vscode.diff',
                     vscode.Uri.file(newFileLocation),
-                    createAmazonQUri(path.join(uploadID, 'foo', 'fi', 'mynewfile.js'), tabID)
+                    createAmazonQUri(path.join(uploadID, 'foo', 'fi', 'mynewfile.js'), tabID, featureDevScheme)
                 ),
                 true
             )
@@ -199,7 +234,6 @@ describe('Controller', () => {
         })
 
         it('accepts valid source folders under a workspace root', async () => {
-            const controllerSetup = await createController()
             sinon.stub(controllerSetup.sessionStorage, 'getSession').resolves(session)
             sinon.stub(vscode.workspace, 'getWorkspaceFolder').returns(controllerSetup.workspaceFolder)
             const expectedSourceRoot = path.join(controllerSetup.workspaceFolder.uri.fsPath, 'src')
@@ -253,13 +287,14 @@ describe('Controller', () => {
                 workspaceFolders,
             }
 
-            const codeGenState = new CodeGenState(testConfig, getFilePaths(controllerSetup), [], [], tabID, 0)
+            const codeGenState = new CodeGenState(testConfig, getFilePaths(controllerSetup), [], [], tabID, 0, {})
             const newSession = await createSession({
                 messenger: controllerSetup.messenger,
                 sessionState: codeGenState,
                 conversationID,
                 tabID,
                 uploadID,
+                scheme: featureDevScheme,
             })
             return newSession
         }
@@ -330,6 +365,7 @@ describe('Controller', () => {
                     conversationID,
                     tabID,
                     uploadID,
+                    scheme: featureDevScheme,
                 })
                 const getSessionStub = sinon.stub(controllerSetup.sessionStorage, 'getSession').resolves(newSession)
 
@@ -355,6 +391,170 @@ describe('Controller', () => {
                 enabled: true,
                 result: 'Succeeded',
             })
+        })
+    })
+
+    describe('processUserChatMessage', function () {
+        async function fireChatMessage() {
+            const getSessionStub = sinon.stub(controllerSetup.sessionStorage, 'getSession').resolves(session)
+
+            controllerSetup.emitters.processHumanChatMessage.fire({
+                tabID,
+                conversationID,
+                message: 'test message',
+            })
+
+            // Wait until the controller has time to process the event
+            await waitUntil(() => {
+                return Promise.resolve(getSessionStub.callCount > 0)
+            }, {})
+        }
+
+        describe('processErrorChatMessage', function () {
+            // TODO: fix disablePreviousFileList error
+            const runs = [
+                { name: 'ContentLengthError', error: new ContentLengthError() },
+                {
+                    name: 'MonthlyConversationLimitError',
+                    error: new MonthlyConversationLimitError('Service Quota Exceeded'),
+                },
+                {
+                    name: 'FeatureDevServiceError',
+                    error: new FeatureDevServiceError(
+                        i18n('AWS.amazonq.featureDev.error.codeGen.default'),
+                        'GuardrailsException'
+                    ),
+                },
+                { name: 'UploadCodeError', error: new UploadCodeError('403: Forbiden') },
+                { name: 'UserMessageNotFoundError', error: new UserMessageNotFoundError() },
+                { name: 'TabIdNotFoundError', error: new TabIdNotFoundError() },
+                { name: 'PrepareRepoFailedError', error: new PrepareRepoFailedError() },
+                { name: 'PromptRefusalException', error: new PromptRefusalException() },
+                { name: 'ZipFileError', error: new ZipFileError() },
+                { name: 'CodeIterationLimitError', error: new CodeIterationLimitError() },
+                { name: 'UploadURLExpired', error: new UploadURLExpired() },
+                { name: 'NoChangeRequiredException', error: new NoChangeRequiredException() },
+                { name: 'default', error: new Error() },
+            ]
+
+            function createTestErrorMessage(message: string) {
+                return createUserFacingErrorMessage(`${featureName} request failed: ${message}`)
+            }
+
+            async function verifyException(error: Error) {
+                sinon.stub(session, 'preloader').throws(error)
+                const sendAnswerSpy = sinon.stub(controllerSetup.messenger, 'sendAnswer')
+                const sendErrorMessageSpy = sinon.stub(controllerSetup.messenger, 'sendErrorMessage')
+                const sendMonthlyLimitErrorSpy = sinon.stub(controllerSetup.messenger, 'sendMonthlyLimitError')
+
+                await fireChatMessage()
+
+                switch (error.constructor.name) {
+                    case ContentLengthError.name:
+                        assert.ok(
+                            sendAnswerSpy.calledWith({
+                                type: 'answer',
+                                tabID,
+                                message: error.message + messageWithConversationId(session?.conversationIdUnsafe),
+                                canBeVoted: true,
+                            })
+                        )
+                        break
+                    case MonthlyConversationLimitError.name:
+                        assert.ok(sendMonthlyLimitErrorSpy.calledWith(tabID))
+                        break
+                    case FeatureDevServiceError.name:
+                    case UploadCodeError.name:
+                    case UserMessageNotFoundError.name:
+                    case TabIdNotFoundError.name:
+                    case PrepareRepoFailedError.name:
+                        assert.ok(
+                            sendErrorMessageSpy.calledWith(
+                                createTestErrorMessage(error.message),
+                                tabID,
+                                session?.retries,
+                                session?.conversationIdUnsafe
+                            )
+                        )
+                        break
+                    case PromptRefusalException.name:
+                    case ZipFileError.name:
+                        assert.ok(
+                            sendErrorMessageSpy.calledWith(
+                                createTestErrorMessage(error.message),
+                                tabID,
+                                0,
+                                session?.conversationIdUnsafe,
+                                true
+                            )
+                        )
+                        break
+                    case NoChangeRequiredException.name:
+                    case CodeIterationLimitError.name:
+                    case UploadURLExpired.name:
+                        assert.ok(
+                            sendAnswerSpy.calledWith({
+                                type: 'answer',
+                                tabID,
+                                message: error.message,
+                                canBeVoted: true,
+                            })
+                        )
+                        break
+                    default:
+                        assert.ok(
+                            sendErrorMessageSpy.calledWith(
+                                i18n('AWS.amazonq.featureDev.error.codeGen.default'),
+                                tabID,
+                                session?.retries,
+                                session?.conversationIdUnsafe,
+                                true
+                            )
+                        )
+                        break
+                }
+            }
+
+            runs.forEach((run) => {
+                it(`should handle ${run.name}`, async function () {
+                    await verifyException(run.error)
+                })
+            })
+        })
+    })
+
+    describe('stopResponse', () => {
+        it('should emit ui_click telemetry with elementId amazonq_stopCodeGeneration', async () => {
+            const getSessionStub = sinon.stub(controllerSetup.sessionStorage, 'getSession').resolves(session)
+            controllerSetup.emitters.stopResponse.fire({ tabID, conversationID })
+            await waitUntil(() => {
+                return Promise.resolve(getSessionStub.callCount > 0)
+            }, {})
+            assertTelemetry('ui_click', { elementId: 'amazonq_stopCodeGeneration' })
+        })
+    })
+
+    describe('closeSession', async () => {
+        async function closeSessionClicked() {
+            const getSessionStub = sinon.stub(controllerSetup.sessionStorage, 'getSession').resolves(session)
+
+            controllerSetup.emitters.followUpClicked.fire({
+                tabID,
+                followUp: {
+                    type: FollowUpTypes.CloseSession,
+                },
+            })
+
+            // Wait until the controller has time to process the event
+            await waitUntil(() => {
+                return Promise.resolve(getSessionStub.callCount > 0)
+            }, {})
+        }
+
+        it('end chat telemetry is sent', async () => {
+            await closeSessionClicked()
+
+            assertTelemetry('amazonq_endChat', { amazonqConversationId: conversationID, result: 'Succeeded' })
         })
     })
 })

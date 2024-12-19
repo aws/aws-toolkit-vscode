@@ -3,17 +3,18 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as proc from 'child_process'
+import * as proc from 'child_process' // eslint-disable-line no-restricted-imports
 import * as crossSpawn from 'cross-spawn'
 import * as logger from '../logger'
 import { Timeout, CancellationError, waitUntil } from './timeoutUtils'
-import { isWeb } from '../extensionGlobals'
 
-interface RunParameterContext {
+export interface RunParameterContext {
     /** Reports an error parsed from the stdin/stdout streams. */
     reportError(err: string | Error): void
     /** Attempts to stop the running process. See {@link ChildProcess.stop}. */
     stop(force?: boolean, signal?: string): void
+    /** Send string to stdin */
+    send(text: string): Promise<void>
     /** The active `Timeout` object (if applicable). */
     readonly timeout?: Timeout
     /** The logger being used by the process. */
@@ -99,6 +100,13 @@ export class ChildProcess {
         // TODO: allow caller to use the various loggers instead of just the single one
         this.#log = baseOptions.logging !== 'no' ? logger.getLogger() : logger.getNullLogger()
     }
+    public static async run(
+        command: string,
+        args: string[] = [],
+        options?: ChildProcessOptions
+    ): Promise<ChildProcessResult> {
+        return await new ChildProcess(command, args, options).run()
+    }
 
     // Inspired by 'got'
     /**
@@ -161,6 +169,7 @@ export class ChildProcess {
                 timeout,
                 logger: this.#log,
                 stop: this.stop.bind(this),
+                send: this.send.bind(this),
                 reportError: (err) => errorHandler(err instanceof Error ? err : new Error(err)),
             }
 
@@ -365,18 +374,4 @@ export class ChildProcess {
         const pid = this.pid() > 0 ? `PID ${this.pid()}:` : '(not started)'
         return `${pid} [${this.#command} ${noparams ? '...' : this.#args.join(' ')}]`
     }
-}
-
-/**
- * Returns a sorted list of all PIDs currently running
- */
-export async function getPids(): Promise<number[]> {
-    if (isWeb()) {
-        throw new Error('getPids() is not supported in web mode')
-    }
-    // Note: This is an ESM module, which is why we cannot import it the standard way
-    // Note: This module is explicitly excluded in the web mode webpack since this breaks the bundling.
-    const psList = (await import('ps-list')).default
-    const pids = (await psList()).map((p) => p.pid)
-    return pids.sort((a, b) => a - b)
 }

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Timeout } from './timeoutUtils'
+import { sleep, Timeout } from './timeoutUtils'
 
 /**
  * Creates a function that always returns a 'shared' Promise.
@@ -143,5 +143,36 @@ export function cancellableDebounce<T, U extends any[]>(
             }))
         },
         cancel: cancel,
+    }
+}
+
+/**
+ * Executes the given function, retrying if it throws.
+ *
+ * @param opts - if no opts given, defaults are used
+ */
+export async function withRetries<T>(
+    fn: () => Promise<T>,
+    opts?: { maxRetries?: number; delay?: number; backoff?: number }
+): Promise<T> {
+    const maxRetries = opts?.maxRetries ?? 3
+    const delay = opts?.delay ?? 0
+    const backoff = opts?.backoff ?? 1
+
+    let retryCount = 0
+    let latestDelay = delay
+    while (true) {
+        try {
+            return await fn()
+        } catch (err) {
+            retryCount++
+            if (retryCount >= maxRetries) {
+                throw err
+            }
+            if (latestDelay > 0) {
+                await sleep(latestDelay)
+                latestDelay = latestDelay * backoff
+            }
+        }
     }
 }

@@ -112,14 +112,27 @@ export function createDiskCache<V, K>(
             const target = mapKey(key)
 
             try {
-                const result = JSON.parse(await fs.readFileAsString(target))
+                const result = JSON.parse(await fs.readFileText(target))
                 log('loaded', key)
                 return result
             } catch (error) {
+                // Non-recoverable errors mean there is no usable data.
+                // Recoverable errors mean we can possibly use the data for something like
+                // an SSO token refresh, or to just retry.
+                // Returning undefined implies non-recoverable.
+
+                // -- Non-recoverable Errors --
                 if (isFileNotFoundError(error)) {
                     log('read failed (file not found)', key)
                     return
                 }
+                if (error instanceof SyntaxError) {
+                    // file content was malformed or empty
+                    log(`read failed (invalid JSON)`, key)
+                    return
+                }
+
+                // -- Recoverable Errors --
                 log(`read failed ${error}`, key)
                 throw createDiskCacheError(error, 'LOAD', target, key)
             }

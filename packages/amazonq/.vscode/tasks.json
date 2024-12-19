@@ -109,7 +109,6 @@
             // Since `webpack --watch` never terminates (but finishes packaging at some point),
             // VS Code uses this to parse the CLI output to pattern match something that indicates it is done
             "problemMatcher": "$ts-webpack-watch",
-            "dependsOn": ["copyPackageJson"],
             "options": {
                 "cwd": "${workspaceFolder}/../../packages/core"
             }
@@ -124,7 +123,7 @@
             "label": "webRunTerminate",
             "command": "echo ${input:webRunTerminate}",
             "type": "shell",
-            "dependsOn": ["restorePackageJson"]
+            "dependsOn": []
         },
         // ---------- End: Web Mode Tasks ----------
         {

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as fs from 'fs'
+import * as fs from 'fs' // eslint-disable-line no-restricted-imports
 import { Readable, Writable, pipeline } from 'stream'
 import * as vscode from 'vscode'
 

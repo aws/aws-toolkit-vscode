@@ -10,7 +10,8 @@ import * as os from 'os'
 import { getLogger } from '../logger'
 import { onceChanged } from '../utilities/functionUtils'
 import { ChildProcess } from '../utilities/processUtils'
-import { isWeb } from '../extensionGlobals'
+import globals, { isWeb } from '../extensionGlobals'
+import * as devConfig from '../../dev/config'
 
 /**
  * Returns true if the current build is running on CI (build server).
@@ -31,10 +32,29 @@ try {
 
 /**
  * Returns true if the current build is a production build (as opposed to a
- * prerelease/test/nightly build)
+ * prerelease/test/nightly build).
+ *
+ * Note: `isBeta()` is treated separately.
  */
 export function isReleaseVersion(prereleaseOk: boolean = false): boolean {
     return (prereleaseOk || !semver.prerelease(extensionVersion)) && extensionVersion !== testVersion
+}
+
+/**
+ * Returns true if the current build is a "beta" build.
+ */
+export function isBeta(): boolean {
+    const testing = extensionVersion === testVersion
+    for (const url of Object.values(devConfig.betaUrl)) {
+        if (url && url.length > 0) {
+            if (!testing && semver.lt(extensionVersion, '99.0.0-dev')) {
+                throw Error('beta build must set version=99.0.0 in package.json')
+            }
+
+            return true
+        }
+    }
+    return false
 }
 
 /**
@@ -67,10 +87,10 @@ export { extensionVersion }
  *
  * @param throwWhen Throw if minimum vscode is equal or later than this version.
  */
-export function isMinVscode(throwWhen?: string): boolean {
+export function isMinVscode(options?: { throwWhen: string }): boolean {
     const minVscode = getMinVscodeVersion()
-    if (throwWhen && semver.gte(minVscode, throwWhen)) {
-        throw Error(`Min vscode ${minVscode} >= ${throwWhen}. Delete or update the code that called this.`)
+    if (options?.throwWhen && semver.gte(minVscode, options.throwWhen)) {
+        throw Error(`Min vscode ${minVscode} >= ${options.throwWhen}. Delete or update the code that called this.`)
     }
     return vscode.version.startsWith(getMinVscodeVersion())
 }
@@ -129,6 +149,9 @@ export async function isCloudDesktop() {
     return (await new ChildProcess('/apollo/bin/getmyfabric').run().then((r) => r.exitCode)) === 0
 }
 
+export function isMac(): boolean {
+    return process.platform === 'darwin'
+}
 /** Returns true if OS is Windows. */
 export function isWin(): boolean {
     // if (isWeb()) {
@@ -138,8 +161,33 @@ export function isWin(): boolean {
     return process.platform === 'win32'
 }
 
-export function isWebWorkspace(): boolean {
-    return vscode.env.uiKind === vscode.UIKind.Web
+const UIKind = {
+    [vscode.UIKind.Desktop]: 'desktop',
+    [vscode.UIKind.Web]: 'web',
+} as const
+export type ExtensionHostUI = (typeof UIKind)[keyof typeof UIKind]
+export type ExtensionHostLocation = 'local' | 'remote' | 'webworker'
+
+/**
+ * Detects where the ui and the extension host are running
+ */
+export function getExtRuntimeContext(): {
+    ui: ExtensionHostUI
+    extensionHost: ExtensionHostLocation
+} {
+    const extensionHost =
+        // taken from https://github.com/microsoft/vscode/blob/7c9e4bb23992c63f20cd86bbe7a52a3aa4bed89d/extensions/github-authentication/src/githubServer.ts#L121 to help determine which auth flows
+        // should be used
+        typeof navigator === 'undefined'
+            ? globals.context.extension.extensionKind === vscode.ExtensionKind.UI
+                ? 'local'
+                : 'remote'
+            : 'webworker'
+
+    return {
+        ui: UIKind[vscode.env.uiKind],
+        extensionHost,
+    }
 }
 
 export function getCodeCatalystProjectName(): string | undefined {

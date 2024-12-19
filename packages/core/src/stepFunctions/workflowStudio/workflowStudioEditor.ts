@@ -50,7 +50,7 @@ export class WorkflowStudioEditor {
         this.defaultTemplateName = path.basename(this.defaultTemplatePath)
         this.fileId = fileId
 
-        telemetry.stepfunctions_openWorkflowStudio.record({
+        telemetry.stepfunctions_openWorkflowStudio.emit({
             id: this.fileId,
         })
 

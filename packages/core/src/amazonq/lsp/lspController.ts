@@ -5,8 +5,8 @@
 
 import * as vscode from 'vscode'
 import * as path from 'path'
-import * as fs from 'fs-extra'
 import * as crypto from 'crypto'
+import { createWriteStream } from 'fs' // eslint-disable-line no-restricted-imports
 import { getLogger } from '../../shared/logger/logger'
 import { CurrentWsFolders, collectFilesForIndex } from '../../shared/utilities/workspaceUtils'
 import fetch from 'node-fetch'
@@ -15,23 +15,13 @@ import { LspClient } from './lspClient'
 import AdmZip from 'adm-zip'
 import { RelevantTextDocument } from '@amzn/codewhisperer-streaming'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../shared/filesystemUtilities'
-import { CodeWhispererSettings } from '../../codewhisperer/util/codewhispererSettings'
 import { activate as activateLsp } from './lspClient'
 import { telemetry } from '../../shared/telemetry'
 import { isCloud9 } from '../../shared/extensionUtilities'
-import { globals, ToolkitError } from '../../shared'
-import { AuthUtil } from '../../codewhisperer'
+import { fs, globals, ToolkitError } from '../../shared'
 import { isWeb } from '../../shared/extensionGlobals'
 import { getUserAgent } from '../../shared/telemetry/util'
 import { isAmazonInternalOs } from '../../shared/vscode/env'
-
-function getProjectPaths() {
-    const workspaceFolders = vscode.workspace.workspaceFolders
-    if (!workspaceFolders || workspaceFolders.length === 0) {
-        throw new ToolkitError('No workspace folders found')
-    }
-    return workspaceFolders.map((folder) => folder.uri.fsPath)
-}
 
 export interface Chunk {
     readonly filePath: string
@@ -68,9 +58,16 @@ export interface Manifest {
 }
 const manifestUrl = 'https://aws-toolkit-language-servers.amazonaws.com/q-context/manifest.json'
 // this LSP client in Q extension is only going to work with these LSP server versions
-const supportedLspServerVersions = ['0.1.9']
+const supportedLspServerVersions = ['0.1.32']
 
 const nodeBinName = process.platform === 'win32' ? 'node.exe' : 'node'
+
+export interface BuildIndexConfig {
+    startUrl?: string
+    maxIndexSize: number
+    isVectorIndexEnabled: boolean
+}
+
 /*
  * LSP Controller manages the status of Amazon Q LSP:
  * 1. Downloading, verifying and installing LSP using DEXP LSP manifest and CDN.
@@ -105,7 +102,7 @@ export class LspController {
             throw new ToolkitError(`Failed to download. Error: ${JSON.stringify(res)}`)
         }
         return new Promise((resolve, reject) => {
-            const file = fs.createWriteStream(localFile)
+            const file = createWriteStream(localFile)
             res.body.pipe(file)
             res.body.on('error', (err) => {
                 reject(err)
@@ -133,16 +130,16 @@ export class LspController {
     }
 
     async getFileSha384(filePath: string): Promise<string> {
-        const fileBuffer = await fs.promises.readFile(filePath)
+        const fileBuffer = await fs.readFileBytes(filePath)
         const hash = crypto.createHash('sha384')
         hash.update(fileBuffer)
         return hash.digest('hex')
     }
 
-    isLspInstalled(context: vscode.ExtensionContext) {
+    async isLspInstalled(context: vscode.ExtensionContext) {
         const localQServer = context.asAbsolutePath(path.join('resources', 'qserver'))
         const localNodeRuntime = context.asAbsolutePath(path.join('resources', nodeBinName))
-        return fs.existsSync(localQServer) && fs.existsSync(localNodeRuntime)
+        return (await fs.exists(localQServer)) && (await fs.exists(localNodeRuntime))
     }
 
     getQserverFromManifest(manifest: Manifest): Content | undefined {
@@ -207,7 +204,7 @@ export class LspController {
             getLogger().error(
                 `LspController: Downloaded file sha ${sha384} does not match manifest ${content.hashes[0]}.`
             )
-            fs.removeSync(filePath)
+            await fs.delete(filePath)
             return false
         }
         return true
@@ -225,19 +222,19 @@ export class LspController {
     async tryInstallLsp(context: vscode.ExtensionContext): Promise<boolean> {
         let tempFolder = undefined
         try {
-            if (this.isLspInstalled(context)) {
+            if (await this.isLspInstalled(context)) {
                 getLogger().info(`LspController: LSP already installed`)
                 return true
             }
             // clean up previous downloaded LSP
             const qserverPath = context.asAbsolutePath(path.join('resources', 'qserver'))
-            if (fs.existsSync(qserverPath)) {
+            if (await fs.exists(qserverPath)) {
                 await tryRemoveFolder(qserverPath)
             }
             // clean up previous downloaded node runtime
             const nodeRuntimePath = context.asAbsolutePath(path.join('resources', nodeBinName))
-            if (fs.existsSync(nodeRuntimePath)) {
-                fs.rmSync(nodeRuntimePath)
+            if (await fs.exists(nodeRuntimePath)) {
+                await fs.delete(nodeRuntimePath)
             }
             // fetch download url for qserver and node runtime
             const manifest: Manifest = (await this.fetchManifest()) as Manifest
@@ -258,7 +255,7 @@ export class LspController {
             }
             const zip = new AdmZip(qserverZipTempPath)
             zip.extractAllTo(tempFolder)
-            fs.moveSync(path.join(tempFolder, 'qserver'), qserverPath)
+            await fs.rename(path.join(tempFolder, 'qserver'), qserverPath)
 
             // download node runtime to temp folder
             const nodeRuntimeTempPath = path.join(tempFolder, nodeBinName)
@@ -266,8 +263,8 @@ export class LspController {
             if (!downloadNodeOk) {
                 return false
             }
-            fs.chmodSync(nodeRuntimeTempPath, 0o755)
-            fs.moveSync(nodeRuntimeTempPath, nodeRuntimePath)
+            await fs.chmod(nodeRuntimeTempPath, 0o755)
+            await fs.rename(nodeRuntimeTempPath, nodeRuntimePath)
             return true
         } catch (e) {
             getLogger().error(`LspController: Failed to setup LSP server ${e}`)
@@ -281,11 +278,11 @@ export class LspController {
     }
 
     async query(s: string): Promise<RelevantTextDocument[]> {
-        const chunks: Chunk[] | undefined = await LspClient.instance.query(s)
+        const chunks: Chunk[] | undefined = await LspClient.instance.queryVectorIndex(s)
         const resp: RelevantTextDocument[] = []
         chunks?.forEach((chunk) => {
             const text = chunk.context ? chunk.context : chunk.content
-            if (chunk.programmingLanguage) {
+            if (chunk.programmingLanguage && chunk.programmingLanguage !== 'unknown') {
                 resp.push({
                     text: text,
                     relativeFilePath: chunk.relativePath ? chunk.relativePath : path.basename(chunk.filePath),
@@ -303,35 +300,45 @@ export class LspController {
         return resp
     }
 
-    async buildIndex() {
-        getLogger().info(`LspController: Starting to build vector index of project`)
+    async queryInlineProjectContext(query: string, path: string, target: 'bm25' | 'codemap' | 'default') {
+        try {
+            return await LspClient.instance.queryInlineProjectContext(query, path, target)
+        } catch (e) {
+            if (e instanceof Error) {
+                getLogger().error(`unexpected error while querying inline project context, e=${e.message}`)
+            }
+            return []
+        }
+    }
+
+    async buildIndex(buildIndexConfig: BuildIndexConfig) {
+        getLogger().info(`LspController: Starting to build index of project`)
         const start = performance.now()
-        const projPaths = getProjectPaths()
+        const projPaths = (vscode.workspace.workspaceFolders ?? []).map((folder) => folder.uri.fsPath)
+        if (projPaths.length === 0) {
+            getLogger().info(`LspController: Skipping building index. No projects found in workspace`)
+            return
+        }
         projPaths.sort()
         try {
-            if (projPaths.length === 0) {
-                throw Error('No project')
-            }
             this._isIndexingInProgress = true
             const projRoot = projPaths[0]
             const files = await collectFilesForIndex(
                 projPaths,
                 vscode.workspace.workspaceFolders as CurrentWsFolders,
                 true,
-                CodeWhispererSettings.instance.getMaxIndexSize() * 1024 * 1024
+                buildIndexConfig.maxIndexSize * 1024 * 1024
             )
             const totalSizeBytes = files.reduce(
                 (accumulator, currentFile) => accumulator + currentFile.fileSizeBytes,
                 0
             )
-            getLogger().info(`LspController: Found ${files.length} files in current project ${getProjectPaths()}`)
-            const resp = await LspClient.instance.indexFiles(
-                files.map((f) => f.fileUri.fsPath),
-                projRoot,
-                false
-            )
+            getLogger().info(`LspController: Found ${files.length} files in current project ${projPaths}`)
+            const config = buildIndexConfig.isVectorIndexEnabled ? 'all' : 'default'
+            const r = files.map((f) => f.fileUri.fsPath)
+            const resp = await LspClient.instance.buildIndex(r, projRoot, config)
             if (resp) {
-                getLogger().debug(`LspController: Finish building vector index of project`)
+                getLogger().debug(`LspController: Finish building index of project`)
                 const usage = await LspClient.instance.getLspServerUsage()
                 telemetry.amazonq_indexWorkspace.emit({
                     duration: performance.now() - start,
@@ -340,43 +347,41 @@ export class LspController {
                     amazonqIndexMemoryUsageInMB: usage ? usage.memoryUsage / (1024 * 1024) : undefined,
                     amazonqIndexCpuUsagePercentage: usage ? usage.cpuUsage : undefined,
                     amazonqIndexFileSizeInMB: totalSizeBytes / (1024 * 1024),
-                    credentialStartUrl: AuthUtil.instance.startUrl,
+                    credentialStartUrl: buildIndexConfig.startUrl,
                 })
             } else {
-                getLogger().error(`LspController: Failed to build vector index of project`)
+                getLogger().error(`LspController: Failed to build index of project`)
                 telemetry.amazonq_indexWorkspace.emit({
                     duration: performance.now() - start,
                     result: 'Failed',
                     amazonqIndexFileCount: 0,
                     amazonqIndexFileSizeInMB: 0,
+                    reason: `Unknown`,
                 })
             }
-        } catch (e) {
-            getLogger().error(`LspController: Failed to build vector index of project`)
+        } catch (error) {
+            // TODO: use telemetry.run()
+            getLogger().error(`LspController: Failed to build index of project`)
             telemetry.amazonq_indexWorkspace.emit({
                 duration: performance.now() - start,
                 result: 'Failed',
                 amazonqIndexFileCount: 0,
                 amazonqIndexFileSizeInMB: 0,
+                reason: `${error instanceof Error ? error.name : 'Unknown'}`,
+                reasonDesc: `Error when building index. ${error instanceof Error ? error.message : error}`,
             })
         } finally {
             this._isIndexingInProgress = false
         }
     }
 
-    async trySetupLsp(context: vscode.ExtensionContext) {
+    async trySetupLsp(context: vscode.ExtensionContext, buildIndexConfig: BuildIndexConfig) {
         if (isCloud9() || isWeb() || isAmazonInternalOs()) {
             getLogger().warn('LspController: Skipping LSP setup. LSP is not compatible with the current environment. ')
             // do not do anything if in Cloud9 or Web mode or in AL2 (AL2 does not support node v18+)
             return
         }
         setImmediate(async () => {
-            if (!CodeWhispererSettings.instance.isLocalIndexEnabled()) {
-                // only download LSP for users who did not turn on this feature
-                // do not start LSP server
-                await LspController.instance.tryInstallLsp(context)
-                return
-            }
             const ok = await LspController.instance.tryInstallLsp(context)
             if (!ok) {
                 return
@@ -384,7 +389,7 @@ export class LspController {
             try {
                 await activateLsp(context)
                 getLogger().info('LspController: LSP activated')
-                void LspController.instance.buildIndex()
+                void LspController.instance.buildIndex(buildIndexConfig)
                 // log the LSP server CPU and Memory usage per 30 minutes.
                 globals.clock.setInterval(
                     async () => {

@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { CloudWatchLogs } from 'aws-sdk'
-import { CloudWatchLogsSettings, parseCloudWatchLogsUri, uriToKey, msgKey } from '../cloudWatchLogsUtils'
+import { CloudWatchLogsSettings, uriToKey, msgKey, cwlUriSchema } from '../cloudWatchLogsUtils'
 import { DefaultCloudWatchLogsClient } from '../../../shared/clients/cloudWatchLogsClient'
 import { waitTimeout } from '../../../shared/utilities/timeoutUtils'
 import { Messages } from '../../../shared/utilities/messages'
@@ -190,7 +190,7 @@ export class LogDataRegistry {
         if (this.isRegistered(uri)) {
             throw new Error(`Already registered: ${uri.toString()}`)
         }
-        const data = parseCloudWatchLogsUri(uri)
+        const data = cwlUriSchema.parse(uri)
         this.setLogData(uri, initLogData(data.logGroupInfo, data.parameters, retrieveLogsFunction))
     }
 
@@ -279,6 +279,11 @@ export function initLogData(
         retrieveLogsFunction: retrieveLogsFunction,
         busy: false,
     }
+}
+
+export type CloudWatchLogsArgs = {
+    logGroupInfo: CloudWatchLogsGroupInfo
+    parameters: CloudWatchLogsParameters
 }
 
 export type CloudWatchLogsGroupInfo = {

@@ -1,0 +1,26 @@
+{
+	"date": "2024-10-10",
+	"version": "3.28.0",
+	"entries": [
+		{
+			"type": "Breaking Change",
+			"description": "Bumping VS Code minimum version to 1.83.0"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "update animate graph for infraComposer in toolkit README"
+		},
+		{
+			"type": "Deprecation",
+			"description": "The next release of this extension will require VS Code 1.83.0 or newer."
+		},
+		{
+			"type": "Feature",
+			"description": "Show a one-time warning if new VS Code is required"
+		},
+		{
+			"type": "Removal",
+			"description": "Minimum required VSCode version is now 1.83"
+		}
+	]
+}

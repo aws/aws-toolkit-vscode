@@ -38,7 +38,7 @@ export class TimeFilterSubmenu extends Prompter<TimeFilterResponse> {
 
     private get recentTimeItems(): DataQuickPickItem<number>[] {
         const options: DataQuickPickItem<number>[] = []
-        //appromixate 31 days as month length (better to overshoot)
+        // appromixate 31 days as month length (better to overshoot)
         options.push({
             label: 'All time',
             data: 0,

@@ -60,3 +60,21 @@ export async function getOpenFilesInWindow(
         return filesOpenedInEditor
     }
 }
+
+/**
+ * Disposes of resources (content provider) when the temporary diff editor is closed.
+ *
+ * @param {vscode.Uri} tempFileUri - The URI of the temporary file used for diff comparison.
+ * @param {vscode.Disposable} disposable - The disposable resource to be cleaned up (e.g., content provider).
+ */
+export function disposeOnEditorClose(tempFileUri: vscode.Uri, disposable: vscode.Disposable) {
+    vscode.window.onDidChangeVisibleTextEditors(() => {
+        if (
+            !vscode.window.visibleTextEditors.some(
+                (editor) => editor.document.uri.toString() === tempFileUri.toString()
+            )
+        ) {
+            disposable.dispose()
+        }
+    })
+}

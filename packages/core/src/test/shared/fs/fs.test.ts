@@ -7,8 +7,9 @@ import assert from 'assert'
 import vscode from 'vscode'
 import * as path from 'path'
 import * as utils from 'util'
-import { existsSync, mkdirSync, promises as nodefs, readFileSync } from 'fs'
-import nodeFs from 'fs'
+import { existsSync, mkdirSync, promises as nodefs, readFileSync } from 'fs' // eslint-disable-line no-restricted-imports
+import { stat } from 'fs/promises'
+import nodeFs from 'fs' // eslint-disable-line no-restricted-imports
 import fs, { FileSystem } from '../../../shared/fs/fs'
 import * as os from 'os'
 import { isMinVscode, isWin } from '../../../shared/vscode/env'
@@ -43,8 +44,8 @@ describe('FileSystem', function () {
             const path = await testFolder.write('test.txt', 'hello world')
             const pathAsUri = vscode.Uri.file(path)
 
-            assert.strictEqual(await fs.readFileAsString(path), 'hello world')
-            assert.strictEqual(await fs.readFileAsString(pathAsUri), 'hello world')
+            assert.strictEqual(await fs.readFileText(path), 'hello world')
+            assert.strictEqual(await fs.readFileText(pathAsUri), 'hello world')
         })
 
         it('throws when no permissions', async function () {
@@ -56,7 +57,7 @@ describe('FileSystem', function () {
             const fileName = 'test.txt'
             const path = await testFolder.write(fileName, 'hello world', { mode: 0o000 })
 
-            await assert.rejects(fs.readFileAsString(path), (err) => {
+            await assert.rejects(fs.readFileText(path), (err) => {
                 assert(err instanceof PermissionsError)
                 assert.strictEqual(err.code, 'InvalidPermissions')
                 assert(err.message.includes(fileName))
@@ -315,8 +316,8 @@ describe('FileSystem', function () {
             const destDir = path.join(testFolder.path, 'destDir')
             await fs.copy(targetDir, destDir)
 
-            assert.strictEqual(await fs.readFileAsString(path.join(destDir, 'a.txt')), 'I am A')
-            assert.strictEqual(await fs.readFileAsString(path.join(destDir, 'dirB/b.txt')), 'I am B')
+            assert.strictEqual(await fs.readFileText(path.join(destDir, 'a.txt')), 'I am A')
+            assert.strictEqual(await fs.readFileText(path.join(destDir, 'dirB/b.txt')), 'I am B')
         })
     })
 
@@ -339,6 +340,7 @@ describe('FileSystem', function () {
 
         it('deletes directory with recursive:true', async function () {
             const dir = await testFolder.mkdir()
+            await testFolder.write('testfile.txt', 'testText')
             await fs.delete(dir, { recursive: true })
             assert(!existsSync(dir))
         })
@@ -385,6 +387,23 @@ describe('FileSystem', function () {
         })
     })
 
+    describe('chmod()', async function () {
+        it('changes permissions when not on web, otherwise does not throw', async function () {
+            const filePath = await testFolder.write('test.txt', 'hello world', { mode: 0o777 })
+            await fs.chmod(filePath, 0o644)
+            // chmod doesn't exist on windows, non-unix permission system.
+            if (!globals.isWeb && os.platform() !== 'win32') {
+                const result = await stat(filePath)
+                assert.strictEqual(result.mode & 0o777, 0o644)
+            }
+        })
+
+        it('throws if no file exists', async function () {
+            const filePath = testFolder.pathFrom('thisDoesNotExist.txt')
+            await assert.rejects(() => fs.chmod(filePath, 0o644))
+        })
+    })
+
     describe('rename()', async () => {
         it('renames a file', async () => {
             const oldPath = await testFolder.write('oldFile.txt', 'hello world')
@@ -392,7 +411,7 @@ describe('FileSystem', function () {
 
             await fs.rename(oldPath, newPath)
 
-            assert.strictEqual(await fs.readFileAsString(newPath), 'hello world')
+            assert.strictEqual(await fs.readFileText(newPath), 'hello world')
             assert(!existsSync(oldPath))
             assert.deepStrictEqual(testutil.getMetrics('ide_fileSystem').length, 0)
         })
@@ -405,7 +424,7 @@ describe('FileSystem', function () {
             await fs.rename(oldPath, newPath)
 
             assert(existsSync(newPath))
-            assert.deepStrictEqual(await fs.readFileAsString(path.join(newPath, 'file.txt')), 'test text')
+            assert.deepStrictEqual(await fs.readFileText(path.join(newPath, 'file.txt')), 'test text')
             assert(!existsSync(oldPath))
         })
 
@@ -415,7 +434,7 @@ describe('FileSystem', function () {
 
             await fs.rename(oldPath, newPath)
 
-            assert.strictEqual(await fs.readFileAsString(newPath), 'hello world')
+            assert.strictEqual(await fs.readFileText(newPath), 'hello world')
             assert(!existsSync(oldPath))
         })
 
@@ -624,7 +643,7 @@ describe('FileSystem', function () {
                 it('bubbles up ENOENT', async function () {
                     const dirPath = path.join(testDir, `dir${runCounter}`)
                     await fs.mkdir(dirPath)
-                    const err = await fs.readFileAsString(path.join(dirPath, 'foo')).catch((e) => e)
+                    const err = await fs.readFileText(path.join(dirPath, 'foo')).catch((e) => e)
                     assertError(err, Error)
                     assert.ok(isFileNotFoundError(err))
                 })
@@ -675,7 +694,7 @@ describe('FileSystem', function () {
                 it('fails reading an existing file without `u+r`', async function () {
                     const filePath = path.join(testDir, `file${runCounter}`)
                     await fs.writeFile(filePath, 'foo', { mode: 0o200 })
-                    const err = await fs.readFile(filePath).catch((e) => e)
+                    const err = await fs.readFileBytes(filePath).catch((e) => e)
                     assert.match(
                         formatError(err),
                         /incorrect permissions. Expected rw-, found -w-. \[InvalidPermissions\] \(isOwner: true; mode: --w------- [^ ]* \d+\)/

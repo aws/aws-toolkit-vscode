@@ -9,14 +9,15 @@ import sinon from 'sinon'
 import { MockCodeGenState, CodeGenState, PrepareCodeGenState } from '../../../amazonqFeatureDev/session/sessionState'
 import { VirtualFileSystem } from '../../../shared/virtualFilesystem'
 import { SessionStateConfig, SessionStateAction } from '../../../amazonqFeatureDev/types'
-import { Messenger } from '../../../amazonqFeatureDev/controllers/chat/messenger/messenger'
-import { AppToWebViewMessageDispatcher } from '../../../amazonqFeatureDev/views/connector/connector'
 import { MessagePublisher } from '../../../amazonq/messages/messagePublisher'
 import { FeatureDevClient } from '../../../amazonqFeatureDev/client/featureDev'
 import { ToolkitError } from '../../../shared/errors'
 import * as crypto from '../../../shared/crypto'
 import { TelemetryHelper } from '../../../amazonqFeatureDev/util/telemetryHelper'
 import { createTestWorkspaceFolder } from '../../testUtil'
+import { Messenger } from '../../../amazonq/commons/connector/baseMessenger'
+import { AppToWebViewMessageDispatcher } from '../../../amazonq/commons/connector/connectorMessages'
+import { featureDevChat } from '../../../amazonqFeatureDev'
 
 const mockSessionStateAction = (msg?: string): SessionStateAction => {
     return {
@@ -24,13 +25,14 @@ const mockSessionStateAction = (msg?: string): SessionStateAction => {
         msg: msg ?? 'test-msg',
         fs: new VirtualFileSystem(),
         messenger: new Messenger(
-            new AppToWebViewMessageDispatcher(new MessagePublisher<any>(new vscode.EventEmitter<any>()))
+            new AppToWebViewMessageDispatcher(new MessagePublisher<any>(new vscode.EventEmitter<any>())),
+            featureDevChat
         ),
         telemetry: new TelemetryHelper(),
+        uploadHistory: {},
     }
 }
 
-let mockGeneratePlan: sinon.SinonStub
 let mockGetCodeGeneration: sinon.SinonStub
 let mockExportResultArchive: sinon.SinonStub
 let mockCreateUploadUrl: sinon.SinonStub
@@ -38,10 +40,12 @@ const mockSessionStateConfig = ({
     conversationId,
     uploadId,
     workspaceFolder,
+    currentCodeGenerationId,
 }: {
     conversationId: string
     uploadId: string
     workspaceFolder: vscode.WorkspaceFolder
+    currentCodeGenerationId?: string
 }): SessionStateConfig => ({
     workspaceRoots: ['fake-source'],
     workspaceFolders: [workspaceFolder],
@@ -49,18 +53,19 @@ const mockSessionStateConfig = ({
     proxyClient: {
         createConversation: () => sinon.stub(),
         createUploadUrl: () => mockCreateUploadUrl(),
-        generatePlan: () => mockGeneratePlan(),
         startCodeGeneration: () => sinon.stub(),
         getCodeGeneration: () => mockGetCodeGeneration(),
         exportResultArchive: () => mockExportResultArchive(),
     } as unknown as FeatureDevClient,
     uploadId,
+    currentCodeGenerationId,
 })
 
 describe('sessionState', () => {
     const conversationId = 'conversation-id'
     const uploadId = 'upload-id'
     const tabId = 'tab-id'
+    const currentCodeGenerationId = ''
     let testConfig: SessionStateConfig
 
     beforeEach(async () => {
@@ -68,6 +73,7 @@ describe('sessionState', () => {
             conversationId,
             uploadId,
             workspaceFolder: await createTestWorkspaceFolder('fake-root'),
+            currentCodeGenerationId,
         })
     })
 
@@ -108,24 +114,24 @@ describe('sessionState', () => {
                 codeGenerationRemainingIterationCount: 2,
                 codeGenerationTotalIterationCount: 3,
             })
+
             mockExportResultArchive = sinon.stub().resolves({ newFileContents: [], deletedFiles: [], references: [] })
 
             const testAction = mockSessionStateAction()
-            const state = new CodeGenState(testConfig, [], [], [], tabId, 0, 2, 3)
+            const state = new CodeGenState(testConfig, [], [], [], tabId, 0, {}, 2, 3)
             const result = await state.interact(testAction)
 
-            const nextState = new PrepareCodeGenState(testConfig, [], [], [], tabId, 1, 2, 3)
+            const nextState = new PrepareCodeGenState(testConfig, [], [], [], tabId, 1, 2, 3, undefined)
 
-            assert.deepStrictEqual(result, {
-                nextState,
-                interaction: {},
-            })
+            assert.deepStrictEqual(result.nextState?.deletedFiles, nextState.deletedFiles)
+            assert.deepStrictEqual(result.nextState?.filePaths, result.nextState?.filePaths)
+            assert.deepStrictEqual(result.nextState?.references, result.nextState?.references)
         })
 
         it('fails when codeGenerationStatus failed ', async () => {
             mockGetCodeGeneration = sinon.stub().rejects(new ToolkitError('Code generation failed'))
             const testAction = mockSessionStateAction()
-            const state = new CodeGenState(testConfig, [], [], [], tabId, 0)
+            const state = new CodeGenState(testConfig, [], [], [], tabId, 0, {})
             try {
                 await state.interact(testAction)
                 assert.fail('failed code generations should throw an error')

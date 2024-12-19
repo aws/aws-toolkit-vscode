@@ -165,7 +165,7 @@ async function autoSyncFileMessageHandler(request: SyncFileRequestMessage, conte
     await telemetry.stepfunctions_saveFile.run(async (span) => {
         span.record({
             id: context.fileId,
-            saveType: 'AUTO_SAVE',
+            saveType: 'AUTO_SYNC',
             source: 'WORKFLOW_STUDIO',
             isInvalidJson: request.isInvalidJson,
         })

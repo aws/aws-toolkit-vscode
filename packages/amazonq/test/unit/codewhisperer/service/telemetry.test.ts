@@ -53,7 +53,6 @@ describe.skip('CodeWhisperer telemetry', async function () {
             codewhispererSuggestionState: 'Accept',
             codewhispererSuggestionImportCount: 0,
             codewhispererTypeaheadLength: 0,
-            codewhispererUserGroup: 'Control',
             ...ops,
         }
     }

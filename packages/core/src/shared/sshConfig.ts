@@ -5,7 +5,6 @@
 
 import * as vscode from 'vscode'
 import * as path from 'path'
-import * as fs from 'fs-extra'
 import * as nls from 'vscode-nls'
 import { getLogger } from './logger'
 import { ChildProcess, ChildProcessResult } from './utilities/processUtils'
@@ -17,6 +16,8 @@ import { CancellationError } from './utilities/timeoutUtils'
 import { getSshConfigPath } from './extensions/ssh'
 import globals from './extensionGlobals'
 import { fileExists, readFileAsString } from './filesystemUtilities'
+import { chmodSync } from 'fs' // eslint-disable-line no-restricted-imports
+import fs from './fs/fs'
 
 const localize = nls.loadMessageBundle()
 
@@ -109,9 +110,17 @@ export class SshConfig {
         const sshConfigPath = getSshConfigPath()
         const section = this.createSSHConfigSection(proxyCommand)
         try {
-            await fs.ensureDir(path.dirname(path.dirname(sshConfigPath)), { mode: 0o755 })
-            await fs.ensureDir(path.dirname(sshConfigPath), 0o700)
-            await fs.appendFile(sshConfigPath, section, { mode: 0o600 })
+            const parentsDir = path.dirname(sshConfigPath)
+            const grandParentsDir = path.dirname(parentsDir)
+            // TODO: replace w/ fs.chmod once stub is merged.
+            await fs.mkdir(grandParentsDir)
+            chmodSync(grandParentsDir, 0o755)
+
+            await fs.mkdir(parentsDir)
+            chmodSync(parentsDir, 0o700)
+
+            await fs.appendFile(sshConfigPath, section)
+            chmodSync(sshConfigPath, 0o600)
         } catch (e) {
             const message = localize(
                 'AWS.sshConfig.error.writeFail',
@@ -218,7 +227,7 @@ export async function ensureConnectScript(
         const isOutdated = contents1 !== contents2
 
         if (isOutdated) {
-            await fs.copyFile(versionedScript.fsPath, connectScript.fsPath)
+            await fs.copy(versionedScript.fsPath, connectScript.fsPath)
             getLogger().info('ssh: updated connect script')
         }
 

@@ -5,12 +5,12 @@
 
 import assert from 'assert'
 import { IAM } from 'aws-sdk'
-import * as fs from 'fs-extra'
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { isDocumentValid, isStepFunctionsRole, StateMachineGraphCache } from '../../stepFunctions/utils'
 import globals from '../../shared/extensionGlobals'
+import { fs } from '../../shared'
 
 const requestBody = 'request body string'
 const assetUrl = 'https://something'
@@ -24,7 +24,7 @@ describe('StateMachineGraphCache', function () {
     })
 
     after(async function () {
-        await fs.remove(tempFolder)
+        await fs.delete(tempFolder, { recursive: true, force: true })
     })
 
     describe('updateCachedFile', function () {

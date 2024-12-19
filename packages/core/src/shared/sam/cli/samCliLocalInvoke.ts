@@ -3,10 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as proc from 'child_process'
+import { SpawnOptions } from 'child_process' // eslint-disable-line no-restricted-imports
 import { pushIf } from '../../utilities/collectionUtils'
 import * as nls from 'vscode-nls'
-import { fileExists } from '../../filesystemUtilities'
 import { getLogger, getDebugConsoleLogger, Logger } from '../../logger'
 import { ChildProcess } from '../../utilities/processUtils'
 import { Timeout } from '../../utilities/timeoutUtils'
@@ -15,6 +14,7 @@ import * as vscode from 'vscode'
 import globals from '../../extensionGlobals'
 import { SamCliSettings } from './samCliSettings'
 import { addTelemetryEnvVar, collectSamErrors, SamCliError } from './samCliInvokerUtils'
+import { fs } from '../../fs/fs'
 
 const localize = nls.loadMessageBundle()
 
@@ -30,7 +30,7 @@ export const waitForDebuggerMessages = {
 export interface SamLocalInvokeCommandArgs {
     command: string
     args: string[]
-    options?: proc.SpawnOptions
+    options?: SpawnOptions
     /** Wait until strings specified in `debuggerAttachCues` appear in the process output.  */
     waitForCues: boolean
     timeout?: Timeout
@@ -62,7 +62,7 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
         const childProcess = new ChildProcess(params.command, params.args, {
             spawnOptions: await addTelemetryEnvVar(options),
         })
-        getLogger().info('AWS.running.command', 'Command: {0}', `${childProcess}`)
+        getLogger().info('AWS.running.command: Command: %O', childProcess)
         // "sam local invoke", "sam local start-api", etc.
         const samCommandName = `sam ${params.args[0]} ${params.args[1]}`
 
@@ -216,6 +216,8 @@ export interface SamCliLocalInvokeInvocationArguments {
     extraArgs?: string[]
     /** Debug session name */
     name?: string
+    /** AWS region */
+    region?: string
 }
 
 /**
@@ -230,7 +232,6 @@ export class SamCliLocalInvokeInvocation {
 
     public async execute(timeout?: Timeout): Promise<ChildProcess> {
         await this.validate()
-
         const sam = await this.config.getOrDetectSamCli()
         if (!sam.path) {
             getLogger().warn('SAM CLI not found and not configured')
@@ -256,6 +257,7 @@ export class SamCliLocalInvokeInvocation {
         pushIf(invokeArgs, !!this.args.debuggerPath, '--debugger-path', this.args.debuggerPath!)
         pushIf(invokeArgs, !!this.args.debugArgs, '--debug-args', ...(this.args.debugArgs ?? []))
         pushIf(invokeArgs, !!this.args.containerEnvFile, '--container-env-vars', this.args.containerEnvFile)
+        pushIf(invokeArgs, !!this.args.region, '--region', this.args.region)
 
         pushIf(
             invokeArgs,
@@ -285,11 +287,11 @@ export class SamCliLocalInvokeInvocation {
             throw new Error('template resource name is missing or empty')
         }
 
-        if (!(await fileExists(this.args.templatePath))) {
+        if (!(await fs.exists(this.args.templatePath))) {
             throw new Error(`template path does not exist: ${this.args.templatePath}`)
         }
 
-        if (this.args.eventPath !== undefined && !(await fileExists(this.args.eventPath))) {
+        if (this.args.eventPath !== undefined && !(await fs.exists(this.args.eventPath))) {
             throw new Error(`event path does not exist: ${this.args.eventPath}`)
         }
     }

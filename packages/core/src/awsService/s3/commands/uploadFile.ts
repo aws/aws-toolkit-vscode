@@ -6,7 +6,7 @@
 import * as path from 'path'
 import * as mime from 'mime-types'
 import * as vscode from 'vscode'
-import { statSync } from 'fs'
+import { statSync } from 'fs' // eslint-disable-line no-restricted-imports
 import { S3 } from 'aws-sdk'
 import { getLogger } from '../../../shared/logger'
 import { S3Node } from '../explorer/s3Nodes'
@@ -111,8 +111,8 @@ export async function uploadFileCommand(
             const filesToUpload = await getFile(document)
 
             if (!filesToUpload || filesToUpload.length === 0) {
-                //if file is undefined, means the back button was pressed(there is no step before) or no file was selected
-                //thus break the loop of the 'wizard'
+                // if file is undefined, means the back button was pressed(there is no step before) or no file was selected
+                // thus break the loop of the 'wizard'
                 showOutputMessage(
                     localize(
                         'AWS.message.error.uploadFileCommand.noFileSelected',
@@ -232,7 +232,7 @@ async function runBatchUploads(uploadRequests: UploadRequest[], outputChannel = 
                 outputChannel
             )
         }
-        //at least one request failed
+        // at least one request failed
         const response = await vscode.window.showErrorMessage(
             localize(
                 'AWS.s3.uploadFile.retryPrompt',
@@ -325,7 +325,7 @@ async function uploadBatchOfFiles(
                 })
 
                 if (uploadResult) {
-                    //this request failed to upload
+                    // this request failed to upload
                     failedRequests.push(uploadResult)
                 }
 
@@ -415,7 +415,7 @@ export async function promptUserForBucket(
     try {
         allBuckets = await s3client.listAllBuckets()
     } catch (e) {
-        getLogger().error('Failed to list buckets from client', e)
+        getLogger().error('Failed to list buckets from client %O', e)
         void vscode.window.showErrorMessage(
             localize('AWS.message.error.promptUserForBucket.listBuckets', 'Failed to list buckets from client')
         )

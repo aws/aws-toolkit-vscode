@@ -6,13 +6,48 @@
 import * as _ from 'lodash'
 import * as path from 'path'
 import * as vscode from 'vscode'
+import * as semver from 'semver'
 import * as nls from 'vscode-nls'
 
 import { BaseTemplates } from './templates/baseTemplates'
 import { fs } from '../shared/fs/fs'
-import { getIdeProperties, isCloud9, isCn } from './extensionUtilities'
+import { getIdeProperties, getIdeType, isAmazonQ, isCloud9, isCn, productName } from './extensionUtilities'
+import * as localizedText from './localizedText'
+import { AmazonQPromptSettings, ToolkitPromptSettings } from './settings'
+import { showMessage } from './utilities/messages'
+import { getTelemetryReasonDesc } from './errors'
 
 const localize = nls.loadMessageBundle()
+
+/**
+ * Shows a (suppressible) warning if the current vscode version is older than `minVscode`.
+ */
+export async function maybeShowMinVscodeWarning(minVscode: string) {
+    const settings = isAmazonQ() ? AmazonQPromptSettings.instance : ToolkitPromptSettings.instance
+    if (!settings.isPromptEnabled('minIdeVersion')) {
+        return
+    }
+    const updateButton = `Update ${vscode.env.appName}`
+    const msg = `${productName()} will soon require VS Code ${minVscode} or newer. The currently running version ${vscode.version} will no longer receive updates.`
+    if (getIdeType() === 'vscode' && semver.lt(vscode.version, minVscode)) {
+        void showMessage(
+            'warn',
+            msg,
+            [updateButton, localizedText.dontShow],
+            {},
+            {
+                id: 'maybeShowMinVscodeWarning',
+                reasonDesc: getTelemetryReasonDesc(msg),
+            }
+        ).then(async (resp) => {
+            if (resp === updateButton) {
+                await vscode.commands.executeCommand('update.checkForUpdate')
+            } else if (resp === localizedText.dontShow) {
+                void settings.disablePrompt('minIdeVersion')
+            }
+        })
+    }
+}
 
 /**
  * Helper function to show a webview containing the quick start page
@@ -60,7 +95,7 @@ export async function createQuickStartWebview(
     const baseTemplateFn = _.template(BaseTemplates.simpleHtml)
 
     const htmlBody = convertExtensionRootTokensToPath(
-        await fs.readFileAsString(path.join(context.extensionPath, actualPage)),
+        await fs.readFileText(path.join(context.extensionPath, actualPage)),
         context.extensionPath,
         view.webview
     )

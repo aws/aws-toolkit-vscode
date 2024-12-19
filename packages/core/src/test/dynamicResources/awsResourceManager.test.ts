@@ -16,12 +16,12 @@ import { CloudControlClient, DefaultCloudControlClient } from '../../shared/clie
 import { CloudFormationClient, DefaultCloudFormationClient } from '../../shared/clients/cloudFormationClient'
 import { makeTemporaryToolkitFolder, readFileAsString } from '../../shared/filesystemUtilities'
 import { FakeExtensionContext } from '../fakeExtensionContext'
-import { remove } from 'fs-extra'
-import { existsSync } from 'fs'
+import { existsSync } from 'fs' // eslint-disable-line no-restricted-imports
 import { ResourceTypeMetadata } from '../../dynamicResources/model/resources'
 import globals from '../../shared/extensionGlobals'
 import { Stub, stub } from '../utilities/stubber'
 import { CloudControl, CloudFormation } from 'aws-sdk'
+import { fs } from '../../shared'
 
 describe('ResourceManager', function () {
     let sandbox: sinon.SinonSandbox
@@ -71,7 +71,7 @@ describe('ResourceManager', function () {
         registerMappingSpy.restore()
         sandbox.restore()
         await resourceManager.dispose()
-        await remove(tempFolder)
+        await fs.delete(tempFolder, { recursive: true })
     })
 
     it('opens resources in preview mode', async function () {

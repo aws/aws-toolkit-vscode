@@ -39,7 +39,9 @@ export async function fetchSupplementalContext(
                 return {
                     isUtg: isUtg,
                     isProcessTimeout: false,
-                    supplementalContextItems: value.supplementalContextItems,
+                    supplementalContextItems: value.supplementalContextItems.filter(
+                        (item) => item.content.trim().length !== 0
+                    ),
                     contentsLength: value.supplementalContextItems.reduce((acc, curr) => acc + curr.content.length, 0),
                     latency: performance.now() - timesBeforeFetching,
                     strategy: value.strategy,

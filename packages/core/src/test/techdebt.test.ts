@@ -18,16 +18,7 @@ describe('tech debt', function () {
 
     it('vscode minimum version', async function () {
         const minVscode = env.getMinVscodeVersion()
-
-        assert.ok(
-            semver.lt(minVscode, '1.75.0'),
-            'remove filesystemUtilities.findFile(), use vscode.workspace.findFiles() instead (after Cloud9 VFS fixes bug)'
-        )
-
-        assert.ok(
-            semver.lt(minVscode, '1.75.0'),
-            'remove AsyncLocalStorage polyfill used in `spans.ts` if Cloud9 is on node 14+'
-        )
+        assert.ok(semver.lt(minVscode, '1.84.0'))
 
         // see https://github.com/microsoft/vscode/issues/173861
         assert.ok(
@@ -44,6 +35,8 @@ describe('tech debt', function () {
             semver.lt(minNodejs, '18.0.0'),
             'with node16+, we can now use AbortController to cancel Node things (child processes, HTTP requests, etc.)'
         )
+        // This is relevant for the use of `fs.cpSync` in the copyFiles scripts.
+        assert.ok(semver.lt(minNodejs, '18.0.0'), 'with node18+, we can remove the dependency on @types/node@18')
     })
 
     it('remove separate sessions login edge cases', async function () {
@@ -53,6 +46,6 @@ describe('tech debt', function () {
         // Monitor telemtry to determine removal or snooze
         // toolkit_showNotification.id = sessionSeparation
         // auth_modifyConnection.action = deleteProfile OR auth_modifyConnection.source contains CodeCatalyst
-        fixByDate('2024-9-30', 'Remove the edge case code from the commit that this test is a part of.')
+        fixByDate('2025-01-06', 'Remove the edge case code from the commit that this test is a part of.')
     })
 })

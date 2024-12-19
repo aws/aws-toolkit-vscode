@@ -7,9 +7,9 @@ import * as vscode from 'vscode'
 import { SearchParams, UriHandler } from '../shared/vscode/uriHandler'
 import { getCodeCatalystConfig } from '../shared/clients/codecatalystClient'
 import { CodeCatalystCommands } from './commands'
-import { builderIdStartUrl } from '../auth/sso/model'
 import { defaultSsoRegion } from '../auth/connection'
 import { getLogger } from '../shared/logger'
+import { builderIdStartUrl } from '../auth/sso/constants'
 
 type ConnectParams = {
     devEnvironmentId: string

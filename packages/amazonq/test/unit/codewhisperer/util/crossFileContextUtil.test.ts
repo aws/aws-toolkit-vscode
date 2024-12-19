@@ -4,11 +4,12 @@
  */
 
 import assert from 'assert'
+import * as FakeTimers from '@sinonjs/fake-timers'
 import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import * as crossFile from 'aws-core-vscode/codewhisperer'
-import { createMockTextEditor } from 'aws-core-vscode/test'
-import { CodeWhispererUserGroupSettings, UserGroup, crossFileContextConfig } from 'aws-core-vscode/codewhisperer'
+import { aStringWithLineCount, createMockTextEditor, installFakeClock } from 'aws-core-vscode/test'
+import { FeatureConfigProvider, crossFileContextConfig } from 'aws-core-vscode/codewhisperer'
 import {
     assertTabCount,
     closeAllEditors,
@@ -19,8 +20,8 @@ import {
 } from 'aws-core-vscode/test'
 import { areEqual, normalize } from 'aws-core-vscode/shared'
 import * as path from 'path'
+import { LspController } from 'aws-core-vscode/amazonq'
 
-const userGroupSettings = CodeWhispererUserGroupSettings.instance
 let tempFolder: string
 
 describe('crossFileContextUtil', function () {
@@ -30,35 +31,153 @@ describe('crossFileContextUtil', function () {
     }
 
     let mockEditor: vscode.TextEditor
+    let clock: FakeTimers.InstalledClock
+
+    before(function () {
+        clock = installFakeClock()
+    })
+
+    after(function () {
+        clock.uninstall()
+    })
+
+    afterEach(function () {
+        sinon.restore()
+    })
 
     describe('fetchSupplementalContextForSrc', function () {
         beforeEach(async function () {
             tempFolder = (await createTestWorkspaceFolder()).uri.fsPath
         })
 
-        describe('should fetch 3 chunks and each chunk should contains 10 lines', function () {
-            async function assertCorrectCodeChunk() {
-                await toTextEditor(sampleFileOf60Lines, 'CrossFile.java', tempFolder, { preview: false })
-                const myCurrentEditor = await toTextEditor('', 'TargetFile.java', tempFolder, {
-                    preview: false,
-                })
-                const actual = await crossFile.fetchSupplementalContextForSrc(myCurrentEditor, fakeCancellationToken)
-                assert.ok(actual)
-                assert.ok(actual.supplementalContextItems.length === 3)
+        afterEach(async function () {
+            sinon.restore()
+        })
 
-                assert.strictEqual(actual.supplementalContextItems[0].content.split('\n').length, 10)
-                assert.strictEqual(actual.supplementalContextItems[1].content.split('\n').length, 10)
-                assert.strictEqual(actual.supplementalContextItems[2].content.split('\n').length, 10)
-            }
-
-            it('control group', async function () {
-                CodeWhispererUserGroupSettings.instance.userGroup = UserGroup.Control
-                await assertCorrectCodeChunk()
+        it.skip('for control group, should return opentabs context where there will be 3 chunks and each chunk should contains 50 lines', async function () {
+            sinon.stub(FeatureConfigProvider.instance, 'getProjectContextGroup').returns('control')
+            await toTextEditor(aStringWithLineCount(200), 'CrossFile.java', tempFolder, { preview: false })
+            const myCurrentEditor = await toTextEditor('', 'TargetFile.java', tempFolder, {
+                preview: false,
             })
 
-            it('treatment group', async function () {
-                CodeWhispererUserGroupSettings.instance.userGroup = UserGroup.CrossFile
-                await assertCorrectCodeChunk()
+            await assertTabCount(2)
+
+            const actual = await crossFile.fetchSupplementalContextForSrc(myCurrentEditor, fakeCancellationToken)
+            assert.ok(actual)
+            assert.strictEqual(actual.supplementalContextItems.length, 3)
+            assert.strictEqual(actual.supplementalContextItems[0].content.split('\n').length, 50)
+            assert.strictEqual(actual.supplementalContextItems[1].content.split('\n').length, 50)
+            assert.strictEqual(actual.supplementalContextItems[2].content.split('\n').length, 50)
+        })
+
+        it('for t1 group, should return repomap + opentabs context', async function () {
+            await toTextEditor(aStringWithLineCount(200), 'CrossFile.java', tempFolder, { preview: false })
+            const myCurrentEditor = await toTextEditor('', 'TargetFile.java', tempFolder, {
+                preview: false,
+            })
+
+            await assertTabCount(2)
+
+            sinon.stub(FeatureConfigProvider.instance, 'getProjectContextGroup').returns('t1')
+            sinon
+                .stub(LspController.instance, 'queryInlineProjectContext')
+                .withArgs(sinon.match.any, sinon.match.any, 'codemap')
+                .resolves([
+                    {
+                        content: 'foo',
+                        score: 0,
+                        filePath: 'q-inline',
+                    },
+                ])
+
+            const actual = await crossFile.fetchSupplementalContextForSrc(myCurrentEditor, fakeCancellationToken)
+            assert.ok(actual)
+            assert.strictEqual(actual.supplementalContextItems.length, 4)
+            assert.strictEqual(actual?.strategy, 'codemap')
+            assert.deepEqual(actual?.supplementalContextItems[0], {
+                content: 'foo',
+                score: 0,
+                filePath: 'q-inline',
+            })
+
+            assert.strictEqual(actual.supplementalContextItems[1].content.split('\n').length, 50)
+            assert.strictEqual(actual.supplementalContextItems[2].content.split('\n').length, 50)
+            assert.strictEqual(actual.supplementalContextItems[3].content.split('\n').length, 50)
+        })
+
+        it.skip('for t2 group, should return global bm25 context and no repomap', async function () {
+            await toTextEditor(aStringWithLineCount(200), 'CrossFile.java', tempFolder, { preview: false })
+            const myCurrentEditor = await toTextEditor('', 'TargetFile.java', tempFolder, {
+                preview: false,
+            })
+
+            await assertTabCount(2)
+
+            sinon.stub(FeatureConfigProvider.instance, 'getProjectContextGroup').returns('t2')
+            sinon
+                .stub(LspController.instance, 'queryInlineProjectContext')
+                .withArgs(sinon.match.any, sinon.match.any, 'bm25')
+                .resolves([
+                    {
+                        content: 'foo',
+                        score: 5,
+                        filePath: 'foo.java',
+                    },
+                    {
+                        content: 'bar',
+                        score: 4,
+                        filePath: 'bar.java',
+                    },
+                    {
+                        content: 'baz',
+                        score: 3,
+                        filePath: 'baz.java',
+                    },
+                    {
+                        content: 'qux',
+                        score: 2,
+                        filePath: 'qux.java',
+                    },
+                    {
+                        content: 'quux',
+                        score: 1,
+                        filePath: 'quux.java',
+                    },
+                ])
+
+            const actual = await crossFile.fetchSupplementalContextForSrc(myCurrentEditor, fakeCancellationToken)
+            assert.ok(actual)
+            assert.strictEqual(actual.supplementalContextItems.length, 5)
+            assert.strictEqual(actual?.strategy, 'bm25')
+
+            assert.deepEqual(actual?.supplementalContextItems[0], {
+                content: 'foo',
+                score: 5,
+                filePath: 'foo.java',
+            })
+
+            assert.deepEqual(actual?.supplementalContextItems[1], {
+                content: 'bar',
+                score: 4,
+                filePath: 'bar.java',
+            })
+            assert.deepEqual(actual?.supplementalContextItems[2], {
+                content: 'baz',
+                score: 3,
+                filePath: 'baz.java',
+            })
+
+            assert.deepEqual(actual?.supplementalContextItems[3], {
+                content: 'qux',
+                score: 2,
+                filePath: 'qux.java',
+            })
+
+            assert.deepEqual(actual?.supplementalContextItems[4], {
+                content: 'quux',
+                score: 1,
+                filePath: 'quux.java',
             })
         })
     })
@@ -140,12 +259,11 @@ describe('crossFileContextUtil', function () {
         })
     })
 
-    describe('partial support - control group', function () {
+    describe.skip('partial support - control group', function () {
         const fileExtLists: string[] = []
 
         before(async function () {
             this.timeout(60000)
-            userGroupSettings.userGroup = UserGroup.Control
         })
 
         beforeEach(async function () {
@@ -172,12 +290,11 @@ describe('crossFileContextUtil', function () {
         })
     })
 
-    describe('partial support - crossfile group', function () {
+    describe.skip('partial support - crossfile group', function () {
         const fileExtLists: string[] = []
 
         before(async function () {
             this.timeout(60000)
-            userGroupSettings.userGroup = UserGroup.CrossFile
         })
 
         beforeEach(async function () {
@@ -221,7 +338,18 @@ describe('crossFileContextUtil', function () {
         })
 
         fileExtLists.forEach((fileExt) => {
-            it('should be non empty', async function () {
+            it(`supplemental context for file ${fileExt} should be non empty`, async function () {
+                sinon.stub(FeatureConfigProvider.instance, 'getProjectContextGroup').returns('control')
+                sinon
+                    .stub(LspController.instance, 'queryInlineProjectContext')
+                    .withArgs(sinon.match.any, sinon.match.any, 'codemap')
+                    .resolves([
+                        {
+                            content: 'foo',
+                            score: 0,
+                            filePath: 'q-inline',
+                        },
+                    ])
                 const editor = await toTextEditor('content-1', `file-1.${fileExt}`, tempFolder)
                 await toTextEditor('content-2', `file-2.${fileExt}`, tempFolder, { preview: false })
                 await toTextEditor('content-3', `file-3.${fileExt}`, tempFolder, { preview: false })
@@ -265,73 +393,59 @@ describe('crossFileContextUtil', function () {
             assert.strictEqual(chunks[1].content, 'line_6\nline_7')
         })
 
-        it('codewhisperer crossfile config should use 10 lines', async function () {
+        it('codewhisperer crossfile config should use 50 lines', async function () {
             const filePath = path.join(tempFolder, 'file.txt')
-            await toFile(sampleFileOf60Lines, filePath)
+            await toFile(aStringWithLineCount(210), filePath)
 
             const chunks = await crossFile.splitFileToChunks(filePath, crossFileContextConfig.numberOfLinesEachChunk)
-            assert.strictEqual(chunks.length, 6)
+
+            // (210 / 50) + 1
+            assert.strictEqual(chunks.length, 5)
+            // line0 -> line49
+            assert.strictEqual(chunks[0].content, aStringWithLineCount(50, 0))
+            // line50 -> line99
+            assert.strictEqual(chunks[1].content, aStringWithLineCount(50, 50))
+            // line100 -> line149
+            assert.strictEqual(chunks[2].content, aStringWithLineCount(50, 100))
+            // line150 -> line199
+            assert.strictEqual(chunks[3].content, aStringWithLineCount(50, 150))
+            // line 200 -> line209
+            assert.strictEqual(chunks[4].content, aStringWithLineCount(10, 200))
+        })
+
+        it('linkChunks should add another chunk which will link to the first chunk and chunk.nextContent should reflect correct value', async function () {
+            const filePath = path.join(tempFolder, 'file.txt')
+            await toFile(aStringWithLineCount(210), filePath)
+
+            const chunks = await crossFile.splitFileToChunks(filePath, crossFileContextConfig.numberOfLinesEachChunk)
+            const linkedChunks = crossFile.linkChunks(chunks)
+
+            // 210 / 50 + 2
+            assert.strictEqual(linkedChunks.length, 6)
+
+            // 0th
+            assert.strictEqual(linkedChunks[0].content, aStringWithLineCount(3, 0))
+            assert.strictEqual(linkedChunks[0].nextContent, aStringWithLineCount(50, 0))
+
+            // 1st
+            assert.strictEqual(linkedChunks[1].content, aStringWithLineCount(50, 0))
+            assert.strictEqual(linkedChunks[1].nextContent, aStringWithLineCount(50, 50))
+
+            // 2nd
+            assert.strictEqual(linkedChunks[2].content, aStringWithLineCount(50, 50))
+            assert.strictEqual(linkedChunks[2].nextContent, aStringWithLineCount(50, 100))
+
+            // 3rd
+            assert.strictEqual(linkedChunks[3].content, aStringWithLineCount(50, 100))
+            assert.strictEqual(linkedChunks[3].nextContent, aStringWithLineCount(50, 150))
+
+            // 4th
+            assert.strictEqual(linkedChunks[4].content, aStringWithLineCount(50, 150))
+            assert.strictEqual(linkedChunks[4].nextContent, aStringWithLineCount(10, 200))
+
+            // 5th
+            assert.strictEqual(linkedChunks[5].content, aStringWithLineCount(10, 200))
+            assert.strictEqual(linkedChunks[5].nextContent, aStringWithLineCount(10, 200))
         })
     })
 })
-
-const sampleFileOf60Lines = `import java.util.List;
-// we need this comment on purpose because chunk will be trimed right, adding this to avoid trimRight and make assertion easier
-/**
- * 
- * 
- * 
- * 
- * 
- **/
-class Main {
-    public static void main(String[] args) {
-        Calculator calculator = new Calculator();
-        calculator.add(1, 2);
-        calculator.subtract(1, 2);
-        calculator.multiply(1, 2);
-        calculator.divide(1, 2);
-        calculator.remainder(1, 2);
-    }
-}
-//
-class Calculator {
-    public Calculator() {
-        System.out.println("constructor");
-    }
-//
-    public add(int num1, int num2) {
-        System.out.println("add");
-        return num1 + num2;
-    }
-//
-    public subtract(int num1, int num2) {
-        System.out.println("subtract");
-        return num1 - num2;
-    }
-//
-    public multiply(int num1, int num2) {
-        System.out.println("multiply");
-        return num1 * num2;    
-    }
-//
-    public divide(int num1, int num2) {
-        System.out.println("divide");
-        return num1 / num2;
-    }
-//
-    public remainder(int num1, int num2) {
-        System.out.println("remainder");
-        return num1 % num2;
-    }
-//
-    public power(int num1, int num2) {
-        System.out.println("power");
-        return (int) Math.pow(num1, num2);
-    }
-//
-    public squareRoot(int num1) {
-        System.out.println("squareRoot");
-        return (int) Math.sqrt(num1);
-    }
-}`

@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as fs from 'fs-extra'
+/* eslint-disable no-restricted-imports */
+import fs from 'fs'
 import * as path from 'path'
 
 // Moves all dependencies into `dist`
@@ -72,14 +73,14 @@ const tasks: CopyTask[] = [
     },
 ]
 
-async function copy(task: CopyTask): Promise<void> {
+function copy(task: CopyTask): void {
     const src = path.resolve(projectRoot, task.target)
     const dst = path.resolve(outRoot, task.destination ?? task.target)
 
     try {
-        await fs.copy(src, dst, {
+        fs.cpSync(src, dst, {
             recursive: true,
-            overwrite: true,
+            force: true,
             errorOnExist: false,
         })
     } catch (error) {
@@ -87,18 +88,20 @@ async function copy(task: CopyTask): Promise<void> {
     }
 }
 
-void (async () => {
-    const args = process.argv.slice(2)
-    if (args.includes('--vueHr')) {
-        vueHr = true
-        console.log('Using Vue Hot Reload webpacks from core/')
-    }
+const args = process.argv.slice(2)
+if (args.includes('--vueHr')) {
+    vueHr = true
+    console.log('Using Vue Hot Reload webpacks from core/')
+}
 
+function main() {
     try {
-        await Promise.all(tasks.map(copy))
+        tasks.map(copy)
     } catch (error) {
         console.error('`copyFiles.ts` failed')
         console.error(error)
         process.exit(1)
     }
-})()
+}
+
+void main()

@@ -18,10 +18,15 @@ import { isUserCancelledError, ToolkitError } from '../shared/errors'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { cast } from '../shared/utilities/typeConstructors'
 import { CancellationError } from '../shared/utilities/timeoutUtils'
+import { isAmazonQ, isCloud9, productName } from '../shared/extensionUtilities'
+import * as devConfig from './config'
+import { isReleaseVersion } from '../shared/vscode/env'
+import { getRelativeDate } from '../shared/datetime'
 
 const localize = nls.loadMessageBundle()
+const logger = getLogger('dev/beta')
 
-const downloadIntervalMs = 1000 * 60 * 60 * 24 // A day in milliseconds
+const downloadIntervalMs = 1000 * 60 * 60 * 3 // 3 hours (8 times/day).
 
 interface BetaToolkit {
     readonly needUpdate: boolean
@@ -40,16 +45,27 @@ async function updateBetaToolkitData(vsixUrl: string, data: BetaToolkit) {
 }
 
 /**
+ * Set up "beta" update monitoring.
+ */
+export async function activate(ctx: vscode.ExtensionContext) {
+    const betaUrl = isAmazonQ() ? devConfig.betaUrl.amazonq : devConfig.betaUrl.toolkit
+    if (!isCloud9() && !isReleaseVersion() && betaUrl) {
+        ctx.subscriptions.push(watchBetaVSIX(betaUrl))
+    }
+}
+
+/**
  * Watch the beta VSIX daily for changes.
  * If this is the first time we are watching the beta version or if its been 24 hours since it was last checked then try to prompt for update
  */
 export function watchBetaVSIX(vsixUrl: string): vscode.Disposable {
-    getLogger().info(`dev: watching ${vsixUrl} for beta artifacts`)
-
     const toolkit = getBetaToolkitData(vsixUrl)
+    const lastCheckRel = toolkit ? getRelativeDate(new Date(toolkit.lastCheck)) : ''
+    logger.info('watching beta artifacts url (lastCheck: %s): %s', lastCheckRel, vsixUrl)
+
     if (!toolkit || toolkit.needUpdate || Date.now() - toolkit.lastCheck > downloadIntervalMs) {
         runAutoUpdate(vsixUrl).catch((e) => {
-            getLogger().error('runAutoUpdate failed: %s', (e as Error).message)
+            logger.error('runAutoUpdate failed: %s', (e as Error).message)
         })
     }
 
@@ -58,13 +74,13 @@ export function watchBetaVSIX(vsixUrl: string): vscode.Disposable {
 }
 
 async function runAutoUpdate(vsixUrl: string) {
-    getLogger().debug(`dev: checking ${vsixUrl} for a new version`)
+    logger.debug(`checking url for a new version: %s`, vsixUrl)
 
     try {
         await telemetry.aws_autoUpdateBeta.run(() => checkBetaUrl(vsixUrl))
     } catch (e) {
         if (!isUserCancelledError(e)) {
-            getLogger().warn(`dev: beta extension auto-update failed: %s`, e)
+            logger.warn('beta extension auto-update failed: %s', e)
         }
     }
 }
@@ -75,11 +91,12 @@ async function runAutoUpdate(vsixUrl: string) {
 async function checkBetaUrl(vsixUrl: string): Promise<void> {
     const resp = await got(vsixUrl).buffer()
     const latestBetaInfo = await getExtensionInfo(resp)
-    if (VSCODE_EXTENSION_ID.awstoolkit !== `${latestBetaInfo.publisher}.${latestBetaInfo.name}`) {
+    const extId = isAmazonQ() ? VSCODE_EXTENSION_ID.amazonq : VSCODE_EXTENSION_ID.awstoolkit
+    if (extId !== `${latestBetaInfo.publisher}.${latestBetaInfo.name}`) {
         throw new ToolkitError('URL does not point to an AWS Toolkit artifact', { code: 'InvalidExtensionName' })
     }
 
-    const currentVersion = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.awstoolkit)?.packageJSON.version
+    const currentVersion = vscode.extensions.getExtension(extId)?.packageJSON.version
     if (latestBetaInfo.version !== currentVersion) {
         const tmpFolder = await makeTemporaryToolkitFolder()
         const betaPath = vscode.Uri.joinPath(vscode.Uri.file(tmpFolder), path.basename(vsixUrl))
@@ -141,7 +158,8 @@ async function promptInstallToolkit(pluginPath: vscode.Uri, newVersion: string, 
     const response = await vscode.window.showInformationMessage(
         localize(
             'AWS.dev.beta.updatePrompt',
-            `New version of AWS Toolkit is available at the [beta URL]({0}). Install the new version "{1}" to continue using the beta.`,
+            'New version of {0} is available at the [beta URL]({1}). Install the new version "{2}" to continue using the beta.',
+            productName(),
             vsixUrl,
             newVersion
         ),
@@ -151,13 +169,15 @@ async function promptInstallToolkit(pluginPath: vscode.Uri, newVersion: string, 
     switch (response) {
         case installBtn:
             try {
-                getLogger().info(`dev: installing artifact ${vsixName}`)
+                logger.info(`installing artifact: ${vsixName}`)
                 await vscode.commands.executeCommand('workbench.extensions.installExtension', pluginPath)
                 await updateBetaToolkitData(vsixUrl, {
                     lastCheck: Date.now(),
                     needUpdate: false,
                 })
-                reloadWindowPrompt(localize('AWS.dev.beta.reloadPrompt', 'Reload now to use the new beta AWS Toolkit.'))
+                reloadWindowPrompt(
+                    localize('AWS.dev.beta.reloadPrompt', 'Reload now to use the new beta {0}.', productName())
+                )
             } catch (e) {
                 throw ToolkitError.chain(e, `Failed to install ${vsixName}`, { code: 'FailedExtensionInstall' })
             }

@@ -17,6 +17,7 @@ export const amazonqSettings = {
         "codeWhispererConnectionExpired": {},
         "amazonQWelcomePage": {},
         "amazonQSessionConfigurationMessage": {},
+        "minIdeVersion": {},
         "ssoCacheError": {}
     },
     "amazonQ.showInlineCodeSuggestionsWithCodeReferences": {},
@@ -25,7 +26,8 @@ export const amazonqSettings = {
     "amazonQ.workspaceIndex": {},
     "amazonQ.workspaceIndexWorkerThreads": {},
     "amazonQ.workspaceIndexUseGPU": {},
-    "amazonQ.workspaceIndexMaxSize": {}
+    "amazonQ.workspaceIndexMaxSize": {},
+    "amazonQ.ignoredSecurityIssues": {}
 }
 
 export default amazonqSettings

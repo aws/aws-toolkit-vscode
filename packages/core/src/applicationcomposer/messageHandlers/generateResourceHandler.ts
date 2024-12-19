@@ -86,13 +86,13 @@ async function generateResource(cfnType: string) {
         // TODO-STARLING - Revisit to see if timeout still needed prior to launch
         const data = await timeout(amazonqApi.chatApi.chat(request), TIMEOUT)
         const initialResponseTime = globals.clock.Date.now() - startTime
-        getLogger().debug(`CW Chat initial response: ${JSON.stringify(data, undefined, 2)}, ${initialResponseTime} ms`)
+        getLogger().debug(`CW Chat initial response: %O, ${initialResponseTime} ms`, data)
         if (data['$metadata']) {
             metadata = data['$metadata']
         }
 
         if (data.generateAssistantResponseResponse === undefined) {
-            getLogger().debug(`Error: Unexpected model response: ${JSON.stringify(data, undefined, 2)}`)
+            getLogger().debug(`Error: Unexpected model response: %O`, data)
             throw new Error('No model response')
         }
 
@@ -141,12 +141,15 @@ async function generateResource(cfnType: string) {
             `CW Chat Debug message:
              cfnType = "${cfnType}",
              conversationId = ${conversationId},
-             metadata = \n${JSON.stringify(metadata, undefined, 2)},
-             supplementaryWebLinks = \n${JSON.stringify(supplementaryWebLinks, undefined, 2)},
-             references = \n${JSON.stringify(references, undefined, 2)},
+             metadata = %O,
+             supplementaryWebLinks = %O,
+             references = %O,
              response = "${response}",
              initialResponse = ${initialResponseTime} ms,
-             elapsed time = ${elapsedTime} ms`
+             elapsed time = ${elapsedTime} ms`,
+            metadata,
+            supplementaryWebLinks,
+            references
         )
 
         return {
@@ -163,7 +166,7 @@ async function generateResource(cfnType: string) {
         getLogger().debug(`CW Chat error: ${error.name} - ${error.message}`)
         if (error.$metadata) {
             const { requestId, cfId, extendedRequestId } = error.$metadata
-            getLogger().debug(JSON.stringify({ requestId, cfId, extendedRequestId }, undefined, 2))
+            getLogger().debug('%O', { requestId, cfId, extendedRequestId })
         }
 
         throw error

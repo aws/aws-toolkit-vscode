@@ -3,13 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { mkdirp, writeFile } from 'fs-extra'
 import * as yaml from 'js-yaml'
 import * as path from 'path'
 import { Architecture } from '../../../lambda/models/samLambdaRuntime'
 import * as filesystemUtilities from '../../../shared/filesystemUtilities'
 import * as CloudFormation from '../../cloudformation/cloudformation'
 import ZipResourceProperties = CloudFormation.ZipResourceProperties
+import fs from '../../fs/fs'
 
 export class SamTemplateGenerator {
     private resourceName?: string
@@ -128,8 +128,8 @@ export class SamTemplateGenerator {
 
         const parentDirectory: string = path.dirname(filename)
         if (!(await filesystemUtilities.fileExists(parentDirectory))) {
-            await mkdirp(parentDirectory)
+            await fs.mkdir(parentDirectory)
         }
-        await writeFile(filename, templateAsYaml, 'utf8')
+        await fs.writeFile(filename, templateAsYaml, 'utf8')
     }
 }

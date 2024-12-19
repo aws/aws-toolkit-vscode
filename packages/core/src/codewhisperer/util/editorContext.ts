@@ -14,9 +14,10 @@ import { fetchSupplementalContext } from './supplementalContext/supplementalCont
 import { supplementalContextTimeoutInMs } from '../models/constants'
 import { getSelectedCustomization } from './customizationUtil'
 import { selectFrom } from '../../shared/utilities/tsUtils'
-import { checkLeftContextKeywordsForJsonAndYaml } from './commonUtil'
+import { checkLeftContextKeywordsForJson } from './commonUtil'
 import { CodeWhispererSupplementalContext } from '../models/model'
 import { getOptOutPreference } from '../../shared/telemetry/util'
+import { indent } from '../../shared'
 
 let tabSize: number = getTabSizeSetting()
 
@@ -39,7 +40,7 @@ export function extractContextForCodeWhisperer(editor: vscode.TextEditor): codew
         )
     )
     let languageName = 'plaintext'
-    if (!checkLeftContextKeywordsForJsonAndYaml(caretLeftFileContext, editor.document.languageId)) {
+    if (!checkLeftContextKeywordsForJson(document.fileName, caretLeftFileContext, editor.document.languageId)) {
         languageName =
             runtimeLanguageContext.normalizeLanguage(editor.document.languageId) ?? editor.document.languageId
     }
@@ -129,9 +130,11 @@ export async function buildGenerateRecommendationRequest(editor: vscode.TextEdit
     const fileContext = extractContextForCodeWhisperer(editor)
 
     const tokenSource = new vscode.CancellationTokenSource()
+    // the supplement context fetch mechanisms each has a timeout of supplementalContextTimeoutInMs
+    // adding 10 ms for overall timeout as buffer
     setTimeout(() => {
         tokenSource.cancel()
-    }, supplementalContextTimeoutInMs)
+    }, supplementalContextTimeoutInMs + 10)
     const supplementalContexts = await fetchSupplementalContext(editor, tokenSource.token)
 
     logSupplementalContext(supplementalContexts)
@@ -202,18 +205,26 @@ function logSupplementalContext(supplementalContext: CodeWhispererSupplementalCo
         return
     }
 
-    let logString = `CodeWhispererSupplementalContext:
-    isUtg: ${supplementalContext.isUtg},
-    isProcessTimeout: ${supplementalContext.isProcessTimeout},
-    contentsLength: ${supplementalContext.contentsLength},
-    latency: ${supplementalContext.latency},
-`
+    let logString = indent(
+        `CodeWhispererSupplementalContext:
+        isUtg: ${supplementalContext.isUtg},
+        isProcessTimeout: ${supplementalContext.isProcessTimeout},
+        contentsLength: ${supplementalContext.contentsLength},
+        latency: ${supplementalContext.latency}
+        strategy: ${supplementalContext.strategy}`,
+        4,
+        true
+    ).trimStart()
+
     supplementalContext.supplementalContextItems.forEach((context, index) => {
-        logString += `Chunk ${index}:
-        Path: ${context.filePath}
-        Content: ${index}:${context.content}
-        Score: ${context.score}
-        -----------------------------------------------`
+        logString += indent(`\nChunk ${index}:\n`, 4, true)
+        logString += indent(
+            `Path: ${context.filePath}
+            Length: ${context.content.length}
+            Score: ${context.score}`,
+            8,
+            true
+        )
     })
 
     getLogger().debug(logString)

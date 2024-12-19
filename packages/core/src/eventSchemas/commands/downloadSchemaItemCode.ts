@@ -139,7 +139,7 @@ export class SchemaCodeDownloader {
         } catch (err) {
             const error = err as Error
             if (error.name === 'ResourceNotFound') {
-                //If the code generation wasn't previously kicked off, do so
+                // If the code generation wasn't previously kicked off, do so
                 void vscode.window.showInformationMessage(
                     localize(
                         'AWS.message.info.schemas.downloadCodeBindings.generate',
@@ -149,10 +149,10 @@ export class SchemaCodeDownloader {
                 )
                 await this.generator.generate(request)
 
-                //Then, poll for completion
+                // Then, poll for completion
                 await this.poller.pollForCompletion(request)
 
-                //Download generated code bindings
+                // Download generated code bindings
                 void vscode.window.showInformationMessage(
                     localize(
                         'AWS.message.info.schemas.downloadCodeBindings.downloading',
@@ -294,7 +294,7 @@ export class CodeExtractor {
             const codeZipFile = path.join(codeZipDir, fileName)
             const destinationDirectory = request.destinationDirectory.fsPath
 
-            //write binary data into a temp zip file in a temp directory
+            // write binary data into a temp zip file in a temp directory
             const zipContentsBinary = new Uint8Array(zipContents)
             const fd = fs.openSync(codeZipFile, 'w')
             fs.writeSync(fd, zipContentsBinary, 0, zipContentsBinary.byteLength, 0)

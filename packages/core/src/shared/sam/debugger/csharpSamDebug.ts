@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { chmod, ensureDir, writeFile } from 'fs-extra'
 import * as os from 'os'
 import * as path from 'path'
 import {
@@ -24,6 +23,7 @@ import { getLogger } from '../../logger'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import globals from '../../extensionGlobals'
+import fs from '../../fs/fs'
 const localize = nls.loadMessageBundle()
 
 /**
@@ -109,7 +109,7 @@ function getDebuggerPath(parentFolder: string): string {
 }
 
 async function _installDebugger({ debuggerPath }: InstallDebuggerArgs): Promise<void> {
-    await ensureDir(debuggerPath)
+    await fs.mkdir(debuggerPath)
 
     try {
         getLogger().info(
@@ -202,8 +202,8 @@ async function downloadInstallScript(debuggerPath: string): Promise<string> {
         throw Error(`Failed to download ${installScriptUrl}`)
     }
 
-    await writeFile(installScriptPath, installScript, 'utf8')
-    await chmod(installScriptPath, 0o700)
+    await fs.writeFile(installScriptPath, installScript, 'utf8')
+    await fs.chmod(installScriptPath, 0o700)
 
     return installScriptPath
 }
@@ -224,7 +224,7 @@ export async function makeDotnetDebugConfiguration(
     }
     const pipeArgs = ['-c', `docker exec -i $(docker ps -q -f publish=${config.debugPort}) \${debuggerCommand}`]
     config.debuggerPath = pathutil.normalize(getDebuggerPath(codeUri))
-    await ensureDir(config.debuggerPath)
+    await fs.mkdir(config.debuggerPath)
 
     const isImageLambda = await isImageLambdaConfig(config)
 

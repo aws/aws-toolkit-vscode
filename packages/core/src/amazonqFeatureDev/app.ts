@@ -12,13 +12,13 @@ import { MessageListener } from '../amazonq/messages/messageListener'
 import { fromQueryToParameters } from '../shared/utilities/uriUtils'
 import { getLogger } from '../shared/logger'
 import { TabIdNotFoundError } from './errors'
-import { featureDevScheme } from './constants'
-import { Messenger } from './controllers/chat/messenger/messenger'
-import { AppToWebViewMessageDispatcher } from './views/connector/connector'
+import { featureDevChat, featureDevScheme } from './constants'
 import globals from '../shared/extensionGlobals'
-import { ChatSessionStorage } from './storages/chatSession'
+import { FeatureDevChatSessionStorage } from './storages/chatSession'
 import { AuthUtil } from '../codewhisperer/util/authUtil'
 import { debounce } from 'lodash'
+import { Messenger } from '../amazonq/commons/connector/baseMessenger'
+import { AppToWebViewMessageDispatcher } from '../amazonq/commons/connector/connectorMessages'
 
 export function init(appContext: AmazonQAppInitContext) {
     const featureDevChatControllerEventEmitters: ChatControllerEventEmitters = {
@@ -34,10 +34,14 @@ export function init(appContext: AmazonQAppInitContext) {
         processResponseBodyLinkClick: new vscode.EventEmitter<any>(),
         insertCodeAtPositionClicked: new vscode.EventEmitter<any>(),
         fileClicked: new vscode.EventEmitter<any>(),
+        storeCodeResultMessageId: new vscode.EventEmitter<any>(),
     }
 
-    const messenger = new Messenger(new AppToWebViewMessageDispatcher(appContext.getAppsToWebViewMessagePublisher()))
-    const sessionStorage = new ChatSessionStorage(messenger)
+    const messenger = new Messenger(
+        new AppToWebViewMessageDispatcher(appContext.getAppsToWebViewMessagePublisher()),
+        featureDevChat
+    )
+    const sessionStorage = new FeatureDevChatSessionStorage(messenger)
 
     new FeatureDevController(
         featureDevChatControllerEventEmitters,

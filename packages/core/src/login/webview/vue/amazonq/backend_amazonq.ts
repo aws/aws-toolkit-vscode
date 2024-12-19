@@ -19,9 +19,9 @@ import { VSCODE_EXTENSION_ID } from '../../../../shared/extensions'
 import { getLogger } from '../../../../shared/logger'
 import { debounce } from 'lodash'
 import { AuthError, AuthFlowState, userCancelled } from '../types'
-import { builderIdStartUrl } from '../../../../auth/sso/model'
 import { ToolkitError } from '../../../../shared/errors'
 import { withTelemetryContext } from '../../../../shared/telemetry/util'
+import { builderIdStartUrl } from '../../../../auth/sso/constants'
 
 const className = 'AmazonQLoginWebview'
 export class AmazonQLoginWebview extends CommonAuthWebview {
@@ -45,7 +45,7 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
         }
         await activateExtension(VSCODE_EXTENSION_ID.awstoolkit)
         const toolkitExt = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.awstoolkit)
-        const importedApi = toolkitExt?.exports.getApi(VSCODE_EXTENSION_ID.amazonq)
+        const importedApi = toolkitExt?.exports?.getApi(VSCODE_EXTENSION_ID.amazonq)
         if (importedApi && 'listConnections' in importedApi) {
             return ((await importedApi?.listConnections()) as AwsConnection[]).filter(
                 // No need to display Builder ID as an existing connection,

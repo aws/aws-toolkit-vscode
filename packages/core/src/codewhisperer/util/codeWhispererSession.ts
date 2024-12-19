@@ -12,7 +12,7 @@ import {
 } from '../../shared/telemetry/telemetry.gen'
 import { GenerateRecommendationsRequest, ListRecommendationsRequest, Recommendation } from '../client/codewhisperer'
 import { Position } from 'vscode'
-import { CodeWhispererSupplementalContext } from '../models/model'
+import { CodeWhispererSupplementalContext, vsCodeState } from '../models/model'
 
 class CodeWhispererSession {
     static #instance: CodeWhispererSession
@@ -41,6 +41,9 @@ class CodeWhispererSession {
     fetchCredentialStartTime = 0
     sdkApiCallStartTime = 0
     invokeSuggestionStartTime = 0
+    timeToFirstRecommendation = 0
+    firstSuggestionShowTime = 0
+    perceivedLatency = 0
 
     public static get instance() {
         return (this.#instance ??= new CodeWhispererSession())
@@ -55,6 +58,12 @@ class CodeWhispererSession {
     setSdkApiCallStart() {
         if (this.sdkApiCallStartTime === 0 && this.fetchCredentialStartTime !== 0) {
             this.sdkApiCallStartTime = performance.now()
+        }
+    }
+
+    setTimeToFirstRecommendation(timeToFirstRecommendation: number) {
+        if (this.invokeSuggestionStartTime) {
+            this.timeToFirstRecommendation = timeToFirstRecommendation - this.invokeSuggestionStartTime
         }
     }
 
@@ -73,6 +82,25 @@ class CodeWhispererSession {
 
     getCompletionType(index: number): CodewhispererCompletionType {
         return this.completionTypes.get(index) || 'Line'
+    }
+
+    getPerceivedLatency(triggerType: CodewhispererTriggerType) {
+        if (triggerType === 'OnDemand') {
+            return this.timeToFirstRecommendation
+        } else {
+            return session.firstSuggestionShowTime - vsCodeState.lastUserModificationTime
+        }
+    }
+
+    setPerceivedLatency() {
+        if (this.perceivedLatency !== 0) {
+            return
+        }
+        if (this.triggerType === 'OnDemand') {
+            this.perceivedLatency = this.timeToFirstRecommendation
+        } else {
+            this.perceivedLatency = this.firstSuggestionShowTime - vsCodeState.lastUserModificationTime
+        }
     }
 
     reset() {

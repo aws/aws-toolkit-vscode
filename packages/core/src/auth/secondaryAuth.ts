@@ -12,7 +12,7 @@ import { isNonNullable } from '../shared/utilities/tsUtils'
 import { ToolIdStateKey } from '../shared/globalState'
 import { Connection, getTelemetryMetadataForConn, SsoConnection, StatefulConnection } from './connection'
 import { indent } from '../shared/utilities/textUtilities'
-import { AuthStatus, telemetry } from '../shared/telemetry/telemetry'
+import { AuthModifyConnection, AuthStatus, Span, telemetry } from '../shared/telemetry/telemetry'
 import { asStringifiedStack } from '../shared/telemetry/spans'
 import { withTelemetryContext } from '../shared/telemetry/util'
 import { isNetworkError } from '../shared/errors'
@@ -307,7 +307,7 @@ export class SecondaryAuth<T extends Connection = Connection> {
                     connectionState: 'undefined',
                 })
                 await this.auth.tryAutoConnect()
-                this.#savedConnection = await this._loadSavedConnection()
+                this.#savedConnection = await this._loadSavedConnection(span)
                 this.#onDidChangeActiveConnection.fire(this.activeConnection)
 
                 const conn = this.#savedConnection
@@ -328,7 +328,7 @@ export class SecondaryAuth<T extends Connection = Connection> {
     /**
      * Provides telemetry if called by restoreConnection() (or another auth_modifyConnection context)
      */
-    private async _loadSavedConnection() {
+    private async _loadSavedConnection(span: Span<AuthModifyConnection>) {
         const id = this.getStateConnectionId()
         if (id === undefined) {
             return
@@ -349,7 +349,7 @@ export class SecondaryAuth<T extends Connection = Connection> {
             let connectionState = this.auth.getConnectionState(conn)
 
             // This function is expected to be called in the context of restoreConnection()
-            telemetry.auth_modifyConnection.record({
+            span.record({
                 connectionState,
                 authStatus: getAuthStatus(connectionState),
             })
@@ -358,7 +358,7 @@ export class SecondaryAuth<T extends Connection = Connection> {
                 await this.auth.refreshConnectionState(conn)
 
                 connectionState = this.auth.getConnectionState(conn)
-                telemetry.auth_modifyConnection.record({
+                span.record({
                     connectionState,
                     authStatus: getAuthStatus(connectionState),
                 })
@@ -367,7 +367,7 @@ export class SecondaryAuth<T extends Connection = Connection> {
                 // If updating the state fails, then we should delegate downstream to handle getting the proper state.
                 getLogger().error('loadSavedConnection: Failed to refresh connection state: %s', err)
                 if (isNetworkError(err) && connectionState === 'valid') {
-                    telemetry.auth_modifyConnection.record({
+                    span.record({
                         authStatus: 'connectedWithNetworkError',
                     })
                 }

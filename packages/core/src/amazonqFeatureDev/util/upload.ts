@@ -7,7 +7,9 @@ import request, { RequestError } from '../../shared/request'
 import { getLogger } from '../../shared/logger/logger'
 import { featureName } from '../constants'
 
-import { UploadCodeError } from '../errors'
+import { UploadCodeError, UploadURLExpired } from '../errors'
+import { ToolkitError } from '../../shared'
+import { i18n } from '../../shared/i18n-helper'
 
 /**
  * uploadCode
@@ -30,8 +32,16 @@ export async function uploadCode(url: string, buffer: Buffer, checksumSha256: st
         }).response
     } catch (e: any) {
         getLogger().error(`${featureName}: failed to upload code to s3: ${(e as Error).message}`)
-        throw new UploadCodeError(
-            e instanceof RequestError ? `${e.response.status}: ${e.response.statusText}` : 'Unknown'
-        )
+        if (e instanceof RequestError) {
+            switch (e.response.status) {
+                case 403:
+                    throw new UploadURLExpired()
+                default:
+                    throw new UploadCodeError(
+                        e instanceof RequestError ? `${e.response.status}: ${e.response.statusText}` : 'Unknown'
+                    )
+            }
+        }
+        throw ToolkitError.chain(e, i18n('AWS.amazonq.featureDev.error.codeGen.default'))
     }
 }

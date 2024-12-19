@@ -4,7 +4,7 @@
  */
 import * as vscode from 'vscode'
 import { ToolkitError } from '../../shared/errors'
-import { getIcon } from '../../shared/icons'
+import { getIcon, Icon } from '../../shared/icons'
 import {
     CodewhispererCodeScanScope,
     CodewhispererCompletionType,
@@ -17,6 +17,9 @@ import { References } from '../client/codewhisperer'
 import globals from '../../shared/extensionGlobals'
 import { ChatControllerEventEmitters } from '../../amazonqGumby/chat/controller/controller'
 import { TransformationSteps } from '../client/codewhispereruserclient'
+import { Messenger } from '../../amazonqGumby/chat/controller/messenger/messenger'
+import { TestChatControllerEventEmitters } from '../../amazonqTest/chat/controller/controller'
+import { ScanChatControllerEventEmitters } from '../../amazonqScan/controller'
 
 // unavoidable global variables
 interface VsCodeState {
@@ -46,9 +49,19 @@ export const vsCodeState: VsCodeState = {
 
 export type UtgStrategy = 'ByName' | 'ByContent'
 
-export type CrossFileStrategy = 'OpenTabs_BM25'
+export type CrossFileStrategy = 'opentabs' | 'codemap' | 'bm25' | 'default'
 
 export type SupplementalContextStrategy = CrossFileStrategy | UtgStrategy | 'Empty'
+
+export type PatchInfo = {
+    name: string
+    filename: string
+    isSuccessful: boolean
+}
+
+export type DescriptionContent = {
+    content: PatchInfo[]
+}
 
 export interface CodeWhispererSupplementalContext {
     isUtg: boolean
@@ -109,6 +122,136 @@ export class CodeSuggestionsState {
     }
 }
 
+export interface AcceptedSuggestionEntry {
+    readonly time: Date
+    readonly fileUrl: vscode.Uri
+    readonly originalString: string
+    readonly startPosition: vscode.Position
+    readonly endPosition: vscode.Position
+    readonly requestId: string
+    readonly sessionId: string
+    readonly index: number
+    readonly triggerType: CodewhispererTriggerType
+    readonly completionType: CodewhispererCompletionType
+    readonly language: CodewhispererLanguage
+}
+
+export interface OnRecommendationAcceptanceEntry {
+    readonly editor: vscode.TextEditor | undefined
+    readonly range: vscode.Range
+    readonly effectiveRange: vscode.Range
+    readonly acceptIndex: number
+    readonly recommendation: string
+    readonly requestId: string
+    readonly sessionId: string
+    readonly triggerType: CodewhispererTriggerType
+    readonly completionType: CodewhispererCompletionType
+    readonly language: CodewhispererLanguage
+    readonly references: References | undefined
+}
+
+export interface ConfigurationEntry {
+    readonly isShowMethodsEnabled: boolean
+    readonly isManualTriggerEnabled: boolean
+    readonly isAutomatedTriggerEnabled: boolean
+    readonly isSuggestionsWithCodeReferencesEnabled: boolean
+}
+
+export interface InlineCompletionItem {
+    content: string
+    index: number
+}
+
+/**
+ *  Q Security Scans
+ */
+
+enum ScanStatus {
+    NotStarted,
+    Running,
+    Cancelling,
+}
+
+type IconPath = { light: vscode.Uri; dark: vscode.Uri; toString: () => string } | Icon
+
+abstract class BaseScanState {
+    protected scanState: ScanStatus = ScanStatus.NotStarted
+
+    protected chatControllers: ScanChatControllerEventEmitters | undefined = undefined
+
+    public isNotStarted(): boolean {
+        return this.scanState === ScanStatus.NotStarted
+    }
+
+    public isRunning(): boolean {
+        return this.scanState === ScanStatus.Running
+    }
+
+    public isCancelling(): boolean {
+        return this.scanState === ScanStatus.Cancelling
+    }
+
+    public setToNotStarted(): void {
+        this.scanState = ScanStatus.NotStarted
+    }
+
+    public setToCancelling(): void {
+        this.scanState = ScanStatus.Cancelling
+    }
+
+    public setToRunning(): void {
+        this.scanState = ScanStatus.Running
+    }
+
+    public getPrefixTextForButton(): string {
+        switch (this.scanState) {
+            case ScanStatus.NotStarted:
+                return 'Run'
+            case ScanStatus.Running:
+                return 'Stop'
+            case ScanStatus.Cancelling:
+                return 'Stopping'
+        }
+    }
+
+    public setChatControllers(controllers: ScanChatControllerEventEmitters) {
+        this.chatControllers = controllers
+    }
+    public getChatControllers() {
+        return this.chatControllers
+    }
+
+    public abstract getIconForButton(): IconPath
+}
+
+export class CodeScanState extends BaseScanState {
+    public getIconForButton(): IconPath {
+        switch (this.scanState) {
+            case ScanStatus.NotStarted:
+                return getIcon('vscode-debug-all')
+            case ScanStatus.Running:
+                return getIcon('vscode-stop-circle')
+            case ScanStatus.Cancelling:
+                return getIcon('vscode-loading~spin')
+        }
+    }
+}
+
+export class OnDemandFileScanState extends BaseScanState {
+    public getIconForButton(): IconPath {
+        switch (this.scanState) {
+            case ScanStatus.NotStarted:
+                return getIcon('vscode-debug-all')
+            case ScanStatus.Running:
+                return getIcon('vscode-stop-circle')
+            case ScanStatus.Cancelling:
+                return getIcon('vscode-icons:loading~spin')
+        }
+    }
+}
+export const codeScanState: CodeScanState = new CodeScanState()
+export const onDemandFileScanState: OnDemandFileScanState = new OnDemandFileScanState()
+
 export class CodeScansState {
     /** The initial state if scan state was not defined */
     #fallback: boolean
@@ -164,113 +307,266 @@ export class CodeScansState {
     }
 }
 
-export interface AcceptedSuggestionEntry {
-    readonly time: Date
-    readonly fileUrl: vscode.Uri
-    readonly originalString: string
-    readonly startPosition: vscode.Position
-    readonly endPosition: vscode.Position
-    readonly requestId: string
-    readonly sessionId: string
-    readonly index: number
-    readonly triggerType: CodewhispererTriggerType
-    readonly completionType: CodewhispererCompletionType
-    readonly language: CodewhispererLanguage
-}
-
-export interface OnRecommendationAcceptanceEntry {
-    readonly editor: vscode.TextEditor | undefined
-    readonly range: vscode.Range
-    readonly effectiveRange: vscode.Range
-    readonly acceptIndex: number
-    readonly recommendation: string
-    readonly requestId: string
-    readonly sessionId: string
-    readonly triggerType: CodewhispererTriggerType
-    readonly completionType: CodewhispererCompletionType
-    readonly language: CodewhispererLanguage
-    readonly references: References | undefined
-}
-
-export interface ConfigurationEntry {
-    readonly isShowMethodsEnabled: boolean
-    readonly isManualTriggerEnabled: boolean
-    readonly isAutomatedTriggerEnabled: boolean
-    readonly isSuggestionsWithCodeReferencesEnabled: boolean
-}
-
-export interface InlineCompletionItem {
-    content: string
-    index: number
-}
-
-/**
- * Security Scan Interfaces
- */
-enum CodeScanStatus {
-    NotStarted,
-    Running,
-    Cancelling,
-}
-
-export class CodeScanState {
-    // Define a constructor for this class
-    private codeScanState: CodeScanStatus = CodeScanStatus.NotStarted
-
-    public isNotStarted() {
-        return this.codeScanState === CodeScanStatus.NotStarted
-    }
-
-    public isRunning() {
-        return this.codeScanState === CodeScanStatus.Running
-    }
-
-    public isCancelling() {
-        return this.codeScanState === CodeScanStatus.Cancelling
-    }
-
-    public setToNotStarted() {
-        this.codeScanState = CodeScanStatus.NotStarted
-    }
-
-    public setToCancelling() {
-        this.codeScanState = CodeScanStatus.Cancelling
-    }
-
-    public setToRunning() {
-        this.codeScanState = CodeScanStatus.Running
-    }
-
-    public getPrefixTextForButton() {
-        switch (this.codeScanState) {
-            case CodeScanStatus.NotStarted:
-                return 'Run'
-            case CodeScanStatus.Running:
-                return 'Stop'
-            case CodeScanStatus.Cancelling:
-                return 'Stopping'
-        }
-    }
-
-    public getIconForButton() {
-        switch (this.codeScanState) {
-            case CodeScanStatus.NotStarted:
-                return getIcon('vscode-debug-all')
-            case CodeScanStatus.Running:
-                return getIcon('vscode-stop-circle')
-            case CodeScanStatus.Cancelling:
-                return getIcon('vscode-loading~spin')
-        }
-    }
-}
-
-export const codeScanState: CodeScanState = new CodeScanState()
-
 export class CodeScanStoppedError extends ToolkitError {
     constructor() {
         super('Security scan stopped by user.', { cancelled: true })
     }
 }
+
+export interface CodeScanTelemetryEntry extends MetricBase {
+    codewhispererCodeScanJobId?: string
+    codewhispererLanguage: CodewhispererLanguage
+    codewhispererCodeScanProjectBytes?: number
+    codewhispererCodeScanSrcPayloadBytes: number
+    codewhispererCodeScanBuildPayloadBytes?: number
+    codewhispererCodeScanSrcZipFileBytes: number
+    codewhispererCodeScanBuildZipFileBytes?: number
+    codewhispererCodeScanLines: number
+    duration: number
+    contextTruncationDuration: number
+    artifactsUploadDuration: number
+    codeScanServiceInvocationsDuration: number
+    result: Result
+    reason?: string
+    reasonDesc?: string
+    codewhispererCodeScanTotalIssues: number
+    codewhispererCodeScanIssuesWithFixes: number
+    credentialStartUrl: string | undefined
+    codewhispererCodeScanScope: CodewhispererCodeScanScope
+    source?: string
+}
+
+export interface RecommendationDescription {
+    text: string
+    markdown: string
+}
+
+export interface Recommendation {
+    text: string
+    url: string
+}
+
+export interface SuggestedFix {
+    description: string
+    code?: string
+    references?: References
+}
+
+export interface Remediation {
+    recommendation: Recommendation
+    suggestedFixes: SuggestedFix[]
+}
+
+export interface CodeLine {
+    content: string
+    number: number
+}
+
+/**
+ * Unit Test Generation
+ */
+enum TestGenStatus {
+    NotStarted,
+    Running,
+    Cancelling,
+}
+// TODO: Refactor model of /scan and /test
+export class TestGenState {
+    // Define a constructor for this class
+    private testGenState: TestGenStatus = TestGenStatus.NotStarted
+
+    protected chatControllers: TestChatControllerEventEmitters | undefined = undefined
+
+    public isNotStarted() {
+        return this.testGenState === TestGenStatus.NotStarted
+    }
+
+    public isRunning() {
+        return this.testGenState === TestGenStatus.Running
+    }
+
+    public isCancelling() {
+        return this.testGenState === TestGenStatus.Cancelling
+    }
+
+    public setToNotStarted() {
+        this.testGenState = TestGenStatus.NotStarted
+    }
+
+    public setToCancelling() {
+        this.testGenState = TestGenStatus.Cancelling
+    }
+
+    public setToRunning() {
+        this.testGenState = TestGenStatus.Running
+    }
+
+    public setChatControllers(controllers: TestChatControllerEventEmitters) {
+        this.chatControllers = controllers
+    }
+    public getChatControllers() {
+        return this.chatControllers
+    }
+}
+
+export const testGenState: TestGenState = new TestGenState()
+
+enum CodeFixStatus {
+    NotStarted,
+    Running,
+    Cancelling,
+}
+
+export class CodeFixState {
+    // Define a constructor for this class
+    private codeFixState: CodeFixStatus = CodeFixStatus.NotStarted
+
+    public isNotStarted() {
+        return this.codeFixState === CodeFixStatus.NotStarted
+    }
+
+    public isRunning() {
+        return this.codeFixState === CodeFixStatus.Running
+    }
+
+    public isCancelling() {
+        return this.codeFixState === CodeFixStatus.Cancelling
+    }
+
+    public setToNotStarted() {
+        this.codeFixState = CodeFixStatus.NotStarted
+    }
+
+    public setToCancelling() {
+        this.codeFixState = CodeFixStatus.Cancelling
+    }
+
+    public setToRunning() {
+        this.codeFixState = CodeFixStatus.Running
+    }
+}
+
+export const codeFixState: CodeFixState = new CodeFixState()
+
+/**
+ * Security Scan Interfaces
+ */
+
+export interface RawCodeScanIssue {
+    filePath: string
+    startLine: number
+    endLine: number
+    title: string
+    description: RecommendationDescription
+    detectorId: string
+    detectorName: string
+    findingId: string
+    ruleId?: string
+    relatedVulnerabilities: string[]
+    severity: string
+    remediation: Remediation
+    codeSnippet: CodeLine[]
+}
+
+export interface CodeScanIssue {
+    startLine: number
+    endLine: number
+    comment: string
+    title: string
+    description: RecommendationDescription
+    detectorId: string
+    detectorName: string
+    findingId: string
+    ruleId?: string
+    relatedVulnerabilities: string[]
+    severity: string
+    recommendation: Recommendation
+    suggestedFixes: SuggestedFix[]
+    visible: boolean
+    scanJobId: string
+    language: string
+    fixJobId?: string
+}
+
+export interface AggregatedCodeScanIssue {
+    filePath: string
+    issues: CodeScanIssue[]
+}
+
+export interface SecurityPanelItem {
+    path: string
+    range: vscode.Range
+    severity: vscode.DiagnosticSeverity
+    message: string
+    issue: CodeScanIssue
+    decoration: vscode.DecorationOptions
+}
+
+export interface SecurityPanelSet {
+    path: string
+    uri: vscode.Uri
+    items: SecurityPanelItem[]
+}
+
+export const severities = ['Critical', 'High', 'Medium', 'Low', 'Info'] as const
+export type Severity = (typeof severities)[number]
+
+export interface SecurityIssueFilters {
+    severity: {
+        Critical: boolean
+        High: boolean
+        Medium: boolean
+        Low: boolean
+        Info: boolean
+    }
+}
+const defaultVisibilityState: SecurityIssueFilters = {
+    severity: {
+        Critical: true,
+        High: true,
+        Medium: true,
+        Low: true,
+        Info: true,
+    },
+}
+
+export class SecurityTreeViewFilterState {
+    #fallback: SecurityIssueFilters
+    #onDidChangeState = new vscode.EventEmitter<SecurityIssueFilters>()
+    onDidChangeState = this.#onDidChangeState.event
+
+    static #instance: SecurityTreeViewFilterState
+    static get instance() {
+        return (this.#instance ??= new this())
+    }
+
+    protected constructor(fallback: SecurityIssueFilters = defaultVisibilityState) {
+        this.#fallback = fallback
+    }
+
+    public getState(): SecurityIssueFilters {
+        return globals.globalState.tryGet('aws.amazonq.securityIssueFilters', Object) ?? this.#fallback
+    }
+
+    public async setState(state: SecurityIssueFilters) {
+        await globals.globalState.update('aws.amazonq.securityIssueFilters', state)
+        this.#onDidChangeState.fire(state)
+    }
+
+    public getHiddenSeverities() {
+        return Object.entries(this.getState().severity)
+            .filter(([_, value]) => !value)
+            .map(([key]) => key)
+    }
+
+    public resetFilters() {
+        return this.setState(defaultVisibilityState)
+    }
+}
+
+/**
+ *  Q - Transform
+ */
 
 // for internal use; store status of job
 export enum TransformByQStatus {
@@ -281,6 +577,11 @@ export enum TransformByQStatus {
     Failed = 'Failed', // if job is rejected or if any other error experienced; user will receive specific error message
     Succeeded = 'Succeeded',
     PartiallySucceeded = 'Partially Succeeded',
+}
+
+export enum TransformationType {
+    LANGUAGE_UPGRADE = 'Language Upgrade',
+    SQL_CONVERSION = 'SQL Conversion',
 }
 
 export enum TransformByQReviewStatus {
@@ -303,6 +604,13 @@ export enum JDKVersion {
     UNSUPPORTED = 'UNSUPPORTED',
 }
 
+export enum DB {
+    ORACLE = 'ORACLE',
+    RDS_POSTGRESQL = 'POSTGRESQL',
+    AURORA_POSTGRESQL = 'AURORA_POSTGRESQL',
+    OTHER = 'OTHER',
+}
+
 export enum BuildSystem {
     Maven = 'Maven',
     Gradle = 'Gradle',
@@ -311,12 +619,21 @@ export enum BuildSystem {
 
 export class ZipManifest {
     sourcesRoot: string = 'sources/'
-    dependenciesRoot: string | undefined = 'dependencies/'
+    dependenciesRoot: string = 'dependencies/'
     buildLogs: string = 'build-logs.txt'
     version: string = '1.0'
     hilCapabilities: string[] = ['HIL_1pDependency_VersionUpgrade']
     transformCapabilities: string[] = ['EXPLAINABILITY_V1']
     customBuildCommand: string = 'clean test'
+    requestedConversions?: {
+        sqlConversion?: {
+            source?: string
+            target?: string
+            schema?: string
+            host?: string
+            sctFileName?: string
+        }
+    }
 }
 
 export interface IHilZipManifestParams {
@@ -364,6 +681,8 @@ export let sessionJobHistory: {
 export class TransformByQState {
     private transformByQState: TransformByQStatus = TransformByQStatus.NotStarted
 
+    private transformationType: TransformationType | undefined = undefined
+
     private projectName: string = ''
     private projectPath: string = ''
 
@@ -375,7 +694,23 @@ export class TransformByQState {
 
     private targetJDKVersion: JDKVersion = JDKVersion.JDK17
 
+    private produceMultipleDiffs: boolean = false
+
     private customBuildCommand: string = ''
+
+    private sourceDB: DB | undefined = undefined
+
+    private targetDB: DB | undefined = undefined
+
+    private schema: string = ''
+
+    private schemaOptions: Set<string> = new Set()
+
+    private sourceServerName: string = ''
+
+    private metadataPathSQL: string = ''
+
+    private linesOfCodeSubmitted: number | undefined = undefined
 
     private planFilePath: string = ''
     private summaryFilePath: string = ''
@@ -401,6 +736,7 @@ export class TransformByQState {
     private javaHome: string | undefined = undefined
 
     private chatControllers: ChatControllerEventEmitters | undefined = undefined
+    private chatMessenger: Messenger | undefined = undefined
 
     private dependencyFolderInfo: FolderInfo | undefined = undefined
 
@@ -432,6 +768,10 @@ export class TransformByQState {
         return this.transformByQState === TransformByQStatus.PartiallySucceeded
     }
 
+    public getTransformationType() {
+        return this.transformationType
+    }
+
     public getProjectName() {
         return this.projectName
     }
@@ -442,6 +782,14 @@ export class TransformByQState {
 
     public getCustomBuildCommand() {
         return this.customBuildCommand
+    }
+
+    public getLinesOfCodeSubmitted() {
+        return this.linesOfCodeSubmitted
+    }
+
+    public getMultipleDiffs() {
+        return this.produceMultipleDiffs
     }
 
     public getPreBuildLogFilePath() {
@@ -462,6 +810,30 @@ export class TransformByQState {
 
     public getTargetJDKVersion() {
         return this.targetJDKVersion
+    }
+
+    public getSourceDB() {
+        return this.sourceDB
+    }
+
+    public getTargetDB() {
+        return this.targetDB
+    }
+
+    public getSchema() {
+        return this.schema
+    }
+
+    public getSchemaOptions() {
+        return this.schemaOptions
+    }
+
+    public getSourceServerName() {
+        return this.sourceServerName
+    }
+
+    public getMetadataPathSQL() {
+        return this.metadataPathSQL
     }
 
     public getStatus() {
@@ -520,6 +892,10 @@ export class TransformByQState {
         return this.chatControllers
     }
 
+    public getChatMessenger() {
+        return this.chatMessenger
+    }
+
     public getDependencyFolderInfo(): FolderInfo | undefined {
         return this.dependencyFolderInfo
     }
@@ -560,6 +936,10 @@ export class TransformByQState {
         this.transformByQState = TransformByQStatus.PartiallySucceeded
     }
 
+    public setTransformationType(type: TransformationType) {
+        this.transformationType = type
+    }
+
     public setProjectName(name: string) {
         this.projectName = name
     }
@@ -570,6 +950,14 @@ export class TransformByQState {
 
     public setCustomBuildCommand(command: string) {
         this.customBuildCommand = command
+    }
+
+    public setLinesOfCodeSubmitted(lines: number) {
+        this.linesOfCodeSubmitted = lines
+    }
+
+    public setMultipleDiffs(produceMultipleDiffs: boolean) {
+        this.produceMultipleDiffs = produceMultipleDiffs
     }
 
     public setStartTime(time: string) {
@@ -586,6 +974,30 @@ export class TransformByQState {
 
     public setTargetJDKVersion(version: JDKVersion) {
         this.targetJDKVersion = version
+    }
+
+    public setSourceDB(db: DB) {
+        this.sourceDB = db
+    }
+
+    public setTargetDB(db: DB) {
+        this.targetDB = db
+    }
+
+    public setSchema(schema: string) {
+        this.schema = schema
+    }
+
+    public setSchemaOptions(schemaOptions: Set<string>) {
+        this.schemaOptions = schemaOptions
+    }
+
+    public setSourceServerName(serverName: string) {
+        this.sourceServerName = serverName
+    }
+
+    public setMetadataPathSQL(path: string) {
+        this.metadataPathSQL = path
     }
 
     public setPlanFilePath(filePath: string) {
@@ -636,6 +1048,10 @@ export class TransformByQState {
         this.chatControllers = controllers
     }
 
+    public setChatMessenger(messenger: Messenger) {
+        this.chatMessenger = messenger
+    }
+
     public setDependencyFolderInfo(folderInfo: FolderInfo) {
         this.dependencyFolderInfo = folderInfo
     }
@@ -666,9 +1082,18 @@ export class TransformByQState {
         this.jobFailureErrorChatMessage = undefined
         this.jobFailureMetadata = ''
         this.payloadFilePath = ''
+        this.metadataPathSQL = ''
+        this.sourceJDKVersion = undefined
+        this.targetJDKVersion = JDKVersion.JDK17
+        this.sourceDB = undefined
+        this.targetDB = undefined
+        this.sourceServerName = ''
+        this.schemaOptions.clear()
+        this.schema = ''
         this.errorLog = ''
         this.customBuildCommand = ''
         this.intervalId = undefined
+        this.produceMultipleDiffs = false
     }
 }
 
@@ -678,105 +1103,6 @@ export class TransformByQStoppedError extends ToolkitError {
     constructor() {
         super('Transform by Q stopped by user.', { cancelled: true })
     }
-}
-
-export interface CodeScanTelemetryEntry extends MetricBase {
-    codewhispererCodeScanJobId?: string
-    codewhispererLanguage: CodewhispererLanguage
-    codewhispererCodeScanProjectBytes?: number
-    codewhispererCodeScanSrcPayloadBytes: number
-    codewhispererCodeScanBuildPayloadBytes?: number
-    codewhispererCodeScanSrcZipFileBytes: number
-    codewhispererCodeScanBuildZipFileBytes?: number
-    codewhispererCodeScanLines: number
-    duration: number
-    contextTruncationDuration: number
-    artifactsUploadDuration: number
-    codeScanServiceInvocationsDuration: number
-    result: Result
-    reason?: string
-    reasonDesc?: string
-    codewhispererCodeScanTotalIssues: number
-    codewhispererCodeScanIssuesWithFixes: number
-    credentialStartUrl: string | undefined
-    codewhispererCodeScanScope: CodewhispererCodeScanScope
-}
-
-export interface RecommendationDescription {
-    text: string
-    markdown: string
-}
-
-export interface Recommendation {
-    text: string
-    url: string
-}
-
-export interface SuggestedFix {
-    description: string
-    code: string
-}
-
-export interface Remediation {
-    recommendation: Recommendation
-    suggestedFixes: SuggestedFix[]
-}
-
-export interface CodeLine {
-    content: string
-    number: number
-}
-
-export interface RawCodeScanIssue {
-    filePath: string
-    startLine: number
-    endLine: number
-    title: string
-    description: RecommendationDescription
-    detectorId: string
-    detectorName: string
-    findingId: string
-    ruleId?: string
-    relatedVulnerabilities: string[]
-    severity: string
-    remediation: Remediation
-    codeSnippet: CodeLine[]
-}
-
-export interface CodeScanIssue {
-    startLine: number
-    endLine: number
-    comment: string
-    title: string
-    description: RecommendationDescription
-    detectorId: string
-    detectorName: string
-    findingId: string
-    ruleId?: string
-    relatedVulnerabilities: string[]
-    severity: string
-    recommendation: Recommendation
-    suggestedFixes: SuggestedFix[]
-}
-
-export interface AggregatedCodeScanIssue {
-    filePath: string
-    issues: CodeScanIssue[]
-}
-
-export interface SecurityPanelItem {
-    path: string
-    range: vscode.Range
-    severity: vscode.DiagnosticSeverity
-    message: string
-    issue: CodeScanIssue
-    decoration: vscode.DecorationOptions
-}
-
-export interface SecurityPanelSet {
-    path: string
-    uri: vscode.Uri
-    items: SecurityPanelItem[]
 }
 
 export enum Cloud9AccessState {
@@ -794,4 +1120,28 @@ export interface TransformationCandidateProject {
 export interface FolderInfo {
     path: string
     name: string
+}
+
+export interface ShortAnswerReference {
+    licenseName?: string
+    repository?: string
+    url?: string
+    recommendationContentSpan?: {
+        start: number
+        end: number
+    }
+}
+
+export interface ShortAnswer {
+    testFilePath: string
+    buildCommands: string[]
+    planSummary: string
+    sourceFilePath?: string
+    testFramework?: string
+    executionCommands?: string[]
+    testCoverage?: number
+    stopIteration?: string
+    errorMessage?: string
+    codeReferences?: ShortAnswerReference[]
+    numberOfTestMethods?: number
 }

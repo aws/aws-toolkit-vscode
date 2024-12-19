@@ -54,7 +54,16 @@ export function getLanguageDetails(language: SchemaCodeLangs): {
 }
 
 export function supportsEventBridgeTemplates(runtime: Runtime): boolean {
-    return ['python3.7', 'python3.8', 'python3.9', 'python3.10', 'python3.11', 'python3.12', 'go1.x'].includes(runtime)
+    return [
+        'python3.7',
+        'python3.8',
+        'python3.9',
+        'python3.10',
+        'python3.11',
+        'python3.12',
+        'python3.13',
+        'go1.x',
+    ].includes(runtime)
 }
 
 export function getApiValueForSchemasDownload(runtime: Runtime): string {
