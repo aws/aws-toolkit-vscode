@@ -61,6 +61,12 @@ function getClassDeclarationNode<T extends string, T2 extends readonly unknown[]
                 ?.node as TSESTree.ClassDeclaration) ?? undefined
         return maybeDefNode
     }
+    if (node.type === AST_NODE_TYPES.Identifier) {
+        const scope = context.sourceCode.getScope(node)
+        const maybeDefNode = scope.variables.find((v) => v.name === node.name)?.defs.find((d) => !!d)?.node ?? undefined
+        console.log('got maybeDefNode %O', maybeDefNode)
+        return undefined
+    }
 }
 
 function isAsyncClassMethod(defObjNode: TSESTree.ClassDeclaration, functionName: string): boolean {

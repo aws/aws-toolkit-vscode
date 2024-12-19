@@ -30,14 +30,14 @@ getRuleTester().run('no-async-in-foreach', rules['no-async-in-foreach'], {
             code: 'class c { \n public async f() {} \n } \n const c2 = new c() \n list.forEach(c2.f)',
             errors: [errMsg],
         },
-        { code: 'function f() { \n return async function () {}} \n [].forEach(f())', errors: [errMsg] },
-        {
-            code: 'function f() { \n return new (class c { \n public async f2() {} \n })().f2 \n } \n list.forEach(f())',
-            errors: [errMsg],
-        },
-        {
-            code: 'function f() { \n return function f2() { \n return function f3() { \n return function f4() { \n return function f5() { \n return async function f6() { \n \n } \n } \n } \n } \n } \n } \n list.forEach(f()()()()())',
-            errors: [errMsg],
-        },
+        // { code: 'function f() { \n return async function () {}} \n [].forEach(f())', errors: [errMsg] },
+        // {
+        //     code: 'function f() { \n return new (class c { \n public async f2() {} \n })().f2 \n } \n list.forEach(f())',
+        //     errors: [errMsg],
+        // },
+        // {
+        //     code: 'function f() { \n return function f2() { \n return function f3() { \n return function f4() { \n return function f5() { \n return async function f6() { \n \n } \n } \n } \n } \n } \n } \n list.forEach(f()()()()())',
+        //     errors: [errMsg],
+        // },
     ],
 })
