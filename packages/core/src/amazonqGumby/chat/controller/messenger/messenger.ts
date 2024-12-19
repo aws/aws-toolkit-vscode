@@ -243,8 +243,8 @@ export class Messenger {
             mandatory: true,
             options: [
                 {
-                    value: JDKVersion.JDK17.toString(),
-                    label: JDKVersion.JDK17.toString(),
+                    value: JDKVersion.JDK17,
+                    label: JDKVersion.JDK17,
                 },
             ],
         })
@@ -514,6 +514,14 @@ export class Messenger {
                 keepCardAfterClick: false,
                 text: CodeWhispererConstants.startTransformationButtonText,
                 id: ButtonActions.CONFIRM_START_TRANSFORMATION_FLOW,
+            })
+        }
+
+        if (transformByQState.getSummaryFilePath()) {
+            buttons.push({
+                keepCardAfterClick: true,
+                text: CodeWhispererConstants.viewSummaryButtonText,
+                id: ButtonActions.VIEW_SUMMARY,
             })
         }
 
