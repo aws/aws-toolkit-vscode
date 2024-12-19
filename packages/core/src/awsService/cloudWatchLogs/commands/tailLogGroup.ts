@@ -269,15 +269,7 @@ function closeSessionWhenAllEditorsClosed(
 }
 
 function isLiveTailSessionOpenInAnyTab(liveTailSession: LiveTailSession) {
-    let isOpen = false
-    vscode.window.tabGroups.all.forEach(async (tabGroup) => {
-        tabGroup.tabs.forEach((tab) => {
-            if (tab.input instanceof vscode.TabInputText) {
-                if (liveTailSession.uri.toString() === tab.input.uri.toString()) {
-                    isOpen = true
-                }
-            }
-        })
-    })
-    return isOpen
+    const isOpen = (tab: vscode.Tab) =>
+        tab.input instanceof vscode.TabInputText && tab.input.uri.toString() === liveTailSession.uri.toString()
+    return vscode.window.tabGroups.all.some((tabGroup) => tabGroup.tabs.some(isOpen))
 }

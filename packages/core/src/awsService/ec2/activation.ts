@@ -21,6 +21,7 @@ import {
 import { Ec2ConnecterMap } from './connectionManagerMap'
 import { ec2LogsScheme } from '../../shared/constants'
 import { Ec2LogDocumentProvider } from './ec2LogDocumentProvider'
+import { mapOverMap } from '../../shared/utilities/collectionUtils'
 
 const connectionManagers = new Ec2ConnecterMap()
 
@@ -83,5 +84,5 @@ export async function activate(ctx: ExtContext): Promise<void> {
 }
 
 export async function deactivate(): Promise<void> {
-    connectionManagers.forEach(async (manager) => await manager.dispose())
+    await mapOverMap(connectionManagers, async (_, manager) => await manager.dispose())
 }
