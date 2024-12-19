@@ -77,7 +77,9 @@ export async function tailLogGroup(
             })
             await handleSessionStream(stream, document, session)
         } finally {
-            disposables.forEach((disposable) => disposable.dispose())
+            for (const d of disposables) {
+                d.dispose()
+            }
         }
     })
 }
@@ -138,7 +140,9 @@ async function handleSessionStream(
                     // amount of new lines can push bottom of file out of view before scrolling.
                     const editorsToScroll = getTextEditorsToScroll(document)
                     await updateTextDocumentWithNewLogEvents(formattedLogEvents, document, session.maxLines)
-                    editorsToScroll.forEach(scrollTextEditorToBottom)
+                    for (const e of editorsToScroll) {
+                        scrollTextEditorToBottom(e)
+                    }
                 }
                 session.eventRate = eventRate(event.sessionUpdate)
                 session.isSampled = isSampled(event.sessionUpdate)
@@ -200,9 +204,9 @@ async function updateTextDocumentWithNewLogEvents(
     maxLines: number
 ) {
     const edit = new vscode.WorkspaceEdit()
-    formattedLogEvents.forEach((formattedLogEvent) =>
-        edit.insert(document.uri, new vscode.Position(document.lineCount, 0), formattedLogEvent)
-    )
+    for (const event of formattedLogEvents) {
+        edit.insert(document.uri, new vscode.Position(document.lineCount, 0), event)
+    }
     if (document.lineCount + formattedLogEvents.length > maxLines) {
         trimOldestLines(formattedLogEvents.length, maxLines, document, edit)
     }

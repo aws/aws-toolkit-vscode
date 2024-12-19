@@ -79,16 +79,16 @@ commandMap.set(['aws.apprunner.deleteService', deleteServiceFailed], deleteServi
  * Activates App Runner
  */
 export async function activate(context: ExtContext): Promise<void> {
-    commandMap.forEach((command, tuple) => {
+    for (const [[commandName, errorMsg], command] of commandMap.entries()) {
         context.extensionContext.subscriptions.push(
-            Commands.register(tuple[0], async (...args: any) => {
+            Commands.register(commandName, async (...args: any) => {
                 try {
                     await command(...args)
                 } catch (err) {
-                    getLogger().error(`${tuple[1]}: %s`, err)
-                    await showViewLogsMessage(tuple[1])
+                    getLogger().error(`${errorMsg}: %s`, err)
+                    await showViewLogsMessage(errorMsg)
                 }
             })
         )
-    })
+    }
 }

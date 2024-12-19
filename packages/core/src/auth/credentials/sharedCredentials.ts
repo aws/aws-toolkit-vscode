@@ -10,6 +10,7 @@ import { assertHasProps } from '../../shared/utilities/tsUtils'
 import { getConfigFilename, getCredentialsFilename } from './sharedCredentialsFile'
 import { SectionName, StaticProfile } from './types'
 import { UserCredentialsUtils } from '../../shared/credentials/userCredentialsUtils'
+import { enumerate } from '../../shared/utilities/collectionUtils'
 
 export async function updateAwsSdkLoadConfigEnvVar(): Promise<void> {
     const configFileExists = await fs.exists(getConfigFilename())
@@ -176,7 +177,8 @@ export function mergeAndValidateSections(data: BaseSection[]): ParseResult {
 export function parseIni(iniData: string, source: vscode.Uri): BaseSection[] {
     const sections = [] as BaseSection[]
     const lines = iniData.split(/\r?\n/).map((l) => l.split(/(^|\s)[;#]/)[0]) // remove comments
-    lines.forEach((line, lineNumber) => {
+    for (const item of enumerate(lines)) {
+        const [line, lineNumber] = item
         const section = line.match(/^\s*\[([^\[\]]+)]\s*$/)
         const currentSection: BaseSection | undefined = sections[sections.length - 1]
         if (section) {
@@ -195,7 +197,7 @@ export function parseIni(iniData: string, source: vscode.Uri): BaseSection[] {
                 })
             }
         }
-    })
+    }
 
     return sections
 }

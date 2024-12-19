@@ -721,6 +721,7 @@ function toggleIssuesVisibility(visibleCondition: (issue: CodeScanIssue, filePat
         issues: group.issues.map((issue) => ({ ...issue, visible: visibleCondition(issue, group.filePath) })),
     }))
     securityScanRender.securityDiagnosticCollection?.clear()
+    // eslint-disable-next-line aws-toolkits/no-foreach
     updatedIssues.forEach((issue) => updateSecurityDiagnosticCollection(issue))
     SecurityIssueProvider.instance.issues = updatedIssues
     SecurityIssueTreeViewProvider.instance.refresh()

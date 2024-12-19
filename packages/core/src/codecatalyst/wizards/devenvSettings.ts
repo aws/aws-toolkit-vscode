@@ -50,6 +50,7 @@ export function getInstanceDescription(type: InstanceType): InstanceDescription 
 
 export function getAllInstanceDescriptions(): { [key: string]: InstanceDescription } {
     const desc: { [key: string]: InstanceDescription } = {}
+    // eslint-disable-next-line aws-toolkits/no-foreach
     entries(devenvOptions.instanceType).forEach(([k]) => (desc[k] = getInstanceDescription(k)))
     return desc
 }

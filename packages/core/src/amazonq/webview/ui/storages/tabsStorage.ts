@@ -91,6 +91,13 @@ export class TabsStorage {
         return Array.from(this.tabs.values())
     }
 
+    public getTabByType(type: string): Tab | undefined {
+        // TODO: Is there ever multiple tabs with the same type or is taking the last one unnecesary?
+        return this.getTabs()
+            .reverse()
+            .find((tab) => tab.type === type)
+    }
+
     public isTabDead(tabID: string): boolean {
         return this.tabs.get(tabID)?.status === 'dead'
     }

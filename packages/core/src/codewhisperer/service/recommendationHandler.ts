@@ -44,6 +44,7 @@ import { openUrl } from '../../shared/utilities/vsCodeUtils'
 import { indent } from '../../shared/utilities/textUtilities'
 import path from 'path'
 import { isIamConnection } from '../../auth/connection'
+import { enumerate } from '../../shared/utilities/collectionUtils'
 
 /**
  * This class is for getRecommendation/listRecommendation API calls and its states
@@ -309,10 +310,10 @@ export class RecommendationHandler {
                 4,
                 true
             ).trimStart()
-            recommendations.forEach((item, index) => {
+            for (const [index, item] of recommendations.entries()) {
                 msg += `\n    ${index.toString().padStart(2, '0')}: ${indent(item.content, 8, true).trim()}`
                 session.requestIdList.push(requestId)
-            })
+            }
             getLogger().debug(msg)
             if (invocationResult === 'Succeeded') {
                 CodeWhispererCodeCoverageTracker.getTracker(session.language)?.incrementServiceInvocationCount()
@@ -368,7 +369,7 @@ export class RecommendationHandler {
             TelemetryHelper.instance.setTypeAheadLength(typedPrefix.length)
             // mark suggestions that does not match typeahead when arrival as Discard
             // these suggestions can be marked as Showed if typeahead can be removed with new inline API
-            recommendations.forEach((r, i) => {
+            for (const [r, i] of enumerate(recommendations)) {
                 const recommendationIndex = i + session.recommendations.length
                 if (
                     !r.content.startsWith(typedPrefix) &&
@@ -377,7 +378,7 @@ export class RecommendationHandler {
                     session.setSuggestionState(recommendationIndex, 'Discard')
                 }
                 session.setCompletionType(recommendationIndex, r)
-            })
+            }
             session.recommendations = pagination ? session.recommendations.concat(recommendations) : recommendations
             if (isInlineCompletionEnabled() && this.hasAtLeastOneValidSuggestion(typedPrefix)) {
                 this._onDidReceiveRecommendation.fire()
@@ -472,9 +473,9 @@ export class RecommendationHandler {
     }
 
     reportDiscardedUserDecisions() {
-        session.recommendations.forEach((r, i) => {
+        for (const [i, _] of session.suggestionStates.entries()) {
             session.setSuggestionState(i, 'Discard')
-        })
+        }
         this.reportUserDecisions(-1)
     }
 

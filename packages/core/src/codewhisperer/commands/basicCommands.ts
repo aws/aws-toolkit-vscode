@@ -489,7 +489,7 @@ export const applySecurityFix = Commands.declare(
             const fileName = path.basename(targetFilePath)
             const time = new Date().toLocaleString()
             // TODO: this is duplicated in controller.ts for test. Fix this later.
-            suggestedFix.references?.forEach((reference) => {
+            for (const reference of suggestedFix.references ?? []) {
                 getLogger().debug('Processing reference: %O', reference)
                 // Log values for debugging
                 getLogger().debug('suggested fix code: %s', suggestedFix.code)
@@ -524,7 +524,7 @@ export const applySecurityFix = Commands.declare(
                     '<br>'
                 getLogger().debug('Adding reference log: %s', referenceLog)
                 ReferenceLogViewProvider.instance.addReferenceLog(referenceLog)
-            })
+            }
 
             removeDiagnostic(document.uri, targetIssue)
             SecurityIssueProvider.instance.removeIssue(document.uri, targetIssue)

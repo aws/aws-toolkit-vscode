@@ -14,7 +14,7 @@ import { CodeWhispererSettings } from '../util/codewhispererSettings'
 import { PromiseResult } from 'aws-sdk/lib/request'
 import { AuthUtil } from '../util/authUtil'
 import { isSsoConnection } from '../../auth/connection'
-import { pageableToCollection } from '../../shared/utilities/collectionUtils'
+import { enumerate, pageableToCollection } from '../../shared/utilities/collectionUtils'
 import apiConfig = require('./service-2.json')
 import userApiConfig = require('./user-service-2.json')
 import { session } from '../util/codeWhispererSession'
@@ -227,18 +227,18 @@ export class DefaultCodeWhispererClient {
         const client = await this.createUserSdkClient()
         const requester = async (request: CodeWhispererUserClient.ListAvailableCustomizationsRequest) =>
             client.listAvailableCustomizations(request).promise()
-        return pageableToCollection(requester, {}, 'nextToken')
+        return pageableToCollection(requester, {}, 'nextToken' as never)
             .promise()
             .then((resps) => {
                 let logStr = 'amazonq: listAvailableCustomizations API request:'
-                resps.forEach((resp) => {
+                for (const resp of resps) {
                     const requestId = resp.$response.requestId
                     logStr += `\n${indent('RequestID: ', 4)}${requestId},\n${indent('Customizations:', 4)}`
-                    resp.customizations.forEach((c, index) => {
+                    for (const [c, index] of enumerate(resp.customizations)) {
                         const entry = `${index.toString().padStart(2, '0')}: ${c.name?.trim()}`
                         logStr += `\n${indent(entry, 8)}`
-                    })
-                })
+                    }
+                }
                 getLogger().debug(logStr)
                 return resps
             })

@@ -203,7 +203,7 @@ export class IamPolicyChecksWebview extends VueWebview {
                                         span.record({
                                             findingsCount: data.findings.length,
                                         })
-                                        data.findings.forEach((finding: AccessAnalyzer.ValidatePolicyFinding) => {
+                                        for (const finding of data.findings) {
                                             const message = `${finding.findingType}: ${finding.issueCode} - ${finding.findingDetails} Learn more: ${finding.learnMoreLink}`
                                             if ((finding.findingType as ValidatePolicyFindingType) === 'ERROR') {
                                                 diagnostics.push(
@@ -240,7 +240,7 @@ export class IamPolicyChecksWebview extends VueWebview {
                                                     diagnostics
                                                 )
                                             }
-                                        })
+                                        }
                                         this.onValidatePolicyResponse.fire([
                                             IamPolicyChecksConstants.ValidatePolicySuccessWithFindings,
                                             getResultCssColor('Warning'),
@@ -607,7 +607,6 @@ export class IamPolicyChecksWebview extends VueWebview {
     }
 
     public handleValidatePolicyCliResponse(response: string): number {
-        let findingsCount = 0
         const diagnostics: vscode.Diagnostic[] = []
         const jsonOutput = JSON.parse(response)
         if (jsonOutput.BlockingFindings.length === 0 && jsonOutput.NonBlockingFindings.length === 0) {
@@ -616,21 +615,20 @@ export class IamPolicyChecksWebview extends VueWebview {
                 getResultCssColor('Success'),
             ])
         } else {
-            jsonOutput.BlockingFindings.forEach((finding: any) => {
+            for (const finding of jsonOutput.BlockingFindings) {
                 this.pushValidatePolicyDiagnostic(diagnostics, finding, true)
-                findingsCount++
-            })
-            jsonOutput.NonBlockingFindings.forEach((finding: any) => {
+            }
+            for (const finding of jsonOutput.NonBlockingFindings) {
                 this.pushValidatePolicyDiagnostic(diagnostics, finding, false)
-                findingsCount++
-            })
+            }
+
             this.onValidatePolicyResponse.fire([
                 IamPolicyChecksConstants.ValidatePolicySuccessWithFindings,
                 getResultCssColor('Warning'),
             ])
             void vscode.commands.executeCommand('workbench.actions.view.problems')
         }
-        return findingsCount
+        return jsonOutput.BlockingFindings.length + jsonOutput.NonBlockingFindings.length
     }
 
     public async executeCustomPolicyChecksCommand(
@@ -682,15 +680,15 @@ export class IamPolicyChecksWebview extends VueWebview {
                     getResultCssColor('Success'),
                 ])
             } else {
-                jsonOutput.BlockingFindings.forEach((finding: any) => {
+                findingsCount = jsonOutput.BlockingFindings.length + jsonOutput.NonBlockingFindings.length
+                for (const finding of jsonOutput.BlockingFindings) {
                     this.pushCustomCheckDiagnostic(diagnostics, finding, true)
                     errorMessage = getCheckNoNewAccessErrorMessage(finding)
-                    findingsCount++
-                })
-                jsonOutput.NonBlockingFindings.forEach((finding: any) => {
+                }
+                for (const finding of jsonOutput.NonBlockingFindings) {
                     this.pushCustomCheckDiagnostic(diagnostics, finding, false)
-                    findingsCount++
-                })
+                }
+
                 if (errorMessage) {
                     this.onCustomPolicyCheckResponse.fire([errorMessage, getResultCssColor('Error')])
                 } else {
@@ -724,15 +722,16 @@ export class IamPolicyChecksWebview extends VueWebview {
             : finding.message
         const message = `${finding.findingType}: ${findingMessage} - Resource name: ${finding.resourceName}, Policy name: ${finding.policyName}`
         if (finding.details.reasons) {
-            finding.details.reasons.forEach((reason: any) => {
-                diagnostics.push(
-                    new vscode.Diagnostic(
-                        new vscode.Range(0, 0, 0, 0),
-                        message + ` - ${reason.description}`,
-                        isBlocking ? vscode.DiagnosticSeverity.Error : vscode.DiagnosticSeverity.Warning
-                    )
+            diagnostics.push(
+                ...finding.details.reasons.map(
+                    (reason: any) =>
+                        new vscode.Diagnostic(
+                            new vscode.Range(0, 0, 0, 0),
+                            message + ` - ${reason.description}`,
+                            isBlocking ? vscode.DiagnosticSeverity.Error : vscode.DiagnosticSeverity.Warning
+                        )
                 )
-            })
+            )
         } else {
             diagnostics.push(
                 new vscode.Diagnostic(

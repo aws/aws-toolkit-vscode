@@ -576,3 +576,7 @@ export function addAll<T>(s: Set<T>, items: T[]) {
         s.add(item)
     }
 }
+
+export function enumerate<T>(a: T[]) {
+    return a.map((value, index) => [value, index] as const)
+}

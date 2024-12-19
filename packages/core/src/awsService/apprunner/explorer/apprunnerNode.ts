@@ -57,8 +57,7 @@ export class AppRunnerNode extends AWSTreeNodeBase {
 
         while (true) {
             const next = await iterator.next()
-
-            next.value.ServiceSummaryList.forEach((summary: AppRunner.Service) => services.push(summary))
+            services.push(...next.value.ServiceSummaryList)
 
             if (next.done) {
                 break
@@ -86,8 +85,9 @@ export class AppRunnerNode extends AWSTreeNodeBase {
                 deletedNodeArns.delete(summary.ServiceArn)
             })
         )
-
-        deletedNodeArns.forEach(this.deleteNode.bind(this))
+        for (const deletedNodeArn of deletedNodeArns) {
+            this.deleteNode.bind(this)(deletedNodeArn)
+        }
     }
 
     public startPollingNode(id: string): void {
