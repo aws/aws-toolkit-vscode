@@ -12,7 +12,7 @@ export const errMsg = 'Avoid using .forEach as it can lead to race conditions'
 export default ESLintUtils.RuleCreator.withoutDocs({
     meta: {
         docs: {
-            description: 'disallow async functions with .forEach',
+            description: 'disallow .forEach',
             recommended: 'recommended',
         },
         messages: {
