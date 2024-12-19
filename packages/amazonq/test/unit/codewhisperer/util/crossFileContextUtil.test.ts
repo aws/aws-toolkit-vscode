@@ -241,11 +241,12 @@ describe('crossFileContextUtil', function () {
             const actual = await crossFile.getCrossFileCandidates(editor)
 
             assert.ok(actual.length === 5)
-            actual.forEach((actualFile, index) => {
+            for (const item of actual.map((v: string, i: number) => [i, v] as const)) {
+                const [index, actualFile] = item
                 const expectedFile = path.join(tempFolder, expectedFilePaths[index])
                 assert.strictEqual(normalize(expectedFile), normalize(actualFile))
                 assert.ok(areEqual(tempFolder, actualFile, expectedFile))
-            })
+            }
         })
     })
 
@@ -264,7 +265,7 @@ describe('crossFileContextUtil', function () {
             await closeAllEditors()
         })
 
-        fileExtLists.forEach((fileExt) => {
+        for (const fileExt of fileExtLists) {
             it('should be empty if userGroup is control', async function () {
                 const editor = await toTextEditor('content-1', `file-1.${fileExt}`, tempFolder)
                 await toTextEditor('content-2', `file-2.${fileExt}`, tempFolder, { preview: false })
@@ -277,7 +278,7 @@ describe('crossFileContextUtil', function () {
 
                 assert.ok(actual && actual.supplementalContextItems.length === 0)
             })
-        })
+        }
     })
 
     describe.skip('partial support - crossfile group', function () {
@@ -294,8 +295,7 @@ describe('crossFileContextUtil', function () {
         afterEach(async function () {
             await closeAllEditors()
         })
-
-        fileExtLists.forEach((fileExt) => {
+        for (const fileExt of fileExtLists) {
             it('should be non empty if usergroup is Crossfile', async function () {
                 const editor = await toTextEditor('content-1', `file-1.${fileExt}`, tempFolder)
                 await toTextEditor('content-2', `file-2.${fileExt}`, tempFolder, { preview: false })
@@ -308,7 +308,7 @@ describe('crossFileContextUtil', function () {
 
                 assert.ok(actual && actual.supplementalContextItems.length !== 0)
             })
-        })
+        }
     })
 
     describe('full support', function () {
@@ -329,7 +329,7 @@ describe('crossFileContextUtil', function () {
             await closeAllEditors()
         })
 
-        fileExtLists.forEach((fileExt) => {
+        for (const fileExt of fileExtLists) {
             it(`supplemental context for file ${fileExt} should be non empty`, async function () {
                 sinon.stub(FeatureConfigProvider.instance, 'getProjectContextGroup').returns('control')
                 sinon
@@ -353,7 +353,7 @@ describe('crossFileContextUtil', function () {
 
                 assert.ok(actual && actual.supplementalContextItems.length !== 0)
             })
-        })
+        }
     })
 
     describe('splitFileToChunks', function () {
