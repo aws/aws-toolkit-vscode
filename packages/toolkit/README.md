@@ -25,15 +25,15 @@ Threat Composer for the AWS Toolkit for Visual Studio Code allows you to create,
 
 ![Threat Composer](https://raw.githubusercontent.com/aws/aws-toolkit-vscode/HEAD/docs/marketplace/vscode/threatComposer.gif)
 
-## [Application Composer](https://aws.amazon.com/application-composer/)
+## [Infrastructure Composer](https://aws.amazon.com/application-composer/)
 
-AWS Application Composer maintains a real-time visual representation of your application architecture in sync with your IaC. Changes to the architecture—such as adding new resources or changing service configuration—are reflected in the IaC artifacts, and vice versa.
+AWS Infrastructure Composer maintains a real-time visual representation of your application architecture in sync with your IaC. Changes to the architecture—such as adding new resources or changing service configuration—are reflected in the IaC artifacts, and vice versa.
 
 -   Visually compose modern applications from 1,000+ AWS CloudFormation resources with little guesswork.
 -   Use the right tool for the task, including visual, code, or generative AI powered code suggestions in your IDE.
 -   Integrate with Workflow Studio to visually orchestrate over 220 AWS services or public http endpoints with Step Functions workflows.
 
-![Application Composer](https://raw.githubusercontent.com/aws/aws-toolkit-vscode/HEAD/docs/marketplace/vscode/appComposer.gif)
+![Infrastructure Composer](https://raw.githubusercontent.com/aws/aws-toolkit-vscode/HEAD/docs/marketplace/vscode/infraComposer.webp)
 
 ## [Amazon CodeCatalyst](https://codecatalyst.aws/explore)
 
@@ -71,6 +71,7 @@ Unified software development service to quickly build and deliver applications o
 
 ## More features
 
+-   **EC2** - `Connect VS Code` or `Open Terminal` to EC2 instances
 -   **Redshift** - view database objects and run SQL queries in a notebook interface
 -   **Step Functions** - work with asl files and render state machine visuals
 -   **CloudFormation** - view CloudFormation stacks

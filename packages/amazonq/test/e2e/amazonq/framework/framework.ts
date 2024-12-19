@@ -12,6 +12,7 @@ import * as vscode from 'vscode'
 import { MynahUI, MynahUIProps } from '@aws/mynah-ui'
 import { DefaultAmazonQAppInitContext, TabType, createMynahUI } from 'aws-core-vscode/amazonq'
 import { Messenger, MessengerOptions } from './messenger'
+import { FeatureContext } from 'aws-core-vscode/shared'
 
 /**
  * Abstraction over Amazon Q to make e2e testing easier
@@ -23,7 +24,7 @@ export class qTestingFramework {
 
     lastEventId: string = ''
 
-    constructor(featureName: TabType, amazonQEnabled: boolean) {
+    constructor(featureName: TabType, amazonQEnabled: boolean, featureConfigsSerialized: [string, FeatureContext][]) {
         /**
          * Instantiate the UI and override the postMessage to publish using the app message
          * publishers directly.
@@ -42,7 +43,8 @@ export class qTestingFramework {
                     appMessagePublisher.publish(message)
                 },
             },
-            amazonQEnabled
+            amazonQEnabled,
+            featureConfigsSerialized
         )
         this.mynahUI = ui.mynahUI
         this.mynahUIProps = (this.mynahUI as any).props

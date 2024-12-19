@@ -90,6 +90,7 @@ export type CreateCodeScanResponse =
     | CodeWhispererUserClient.StartCodeAnalysisResponse
 export type Import = CodeWhispererUserClient.Import
 export type Imports = CodeWhispererUserClient.Imports
+
 export class DefaultCodeWhispererClient {
     private async createSdkClient(): Promise<CodeWhispererClient> {
         const isOptedOut = CodeWhispererSettings.instance.isOptoutEnabled()
@@ -131,7 +132,7 @@ export class DefaultCodeWhispererClient {
         )) as CodeWhispererClient
     }
 
-    async createUserSdkClient(): Promise<CodeWhispererUserClient> {
+    async createUserSdkClient(maxRetries?: number): Promise<CodeWhispererUserClient> {
         const isOptedOut = CodeWhispererSettings.instance.isOptoutEnabled()
         session.setFetchCredentialStart()
         const bearerToken = await AuthUtil.instance.getBearerToken()
@@ -143,6 +144,7 @@ export class DefaultCodeWhispererClient {
                 apiConfig: userApiConfig,
                 region: cwsprConfig.region,
                 endpoint: cwsprConfig.endpoint,
+                maxRetries: maxRetries,
                 credentials: new Credentials({ accessKeyId: 'xxx', secretAccessKey: 'xxx' }),
                 onRequestSetup: [
                     (req) => {
@@ -292,7 +294,8 @@ export class DefaultCodeWhispererClient {
     public async codeModernizerGetCodeTransformation(
         request: CodeWhispererUserClient.GetTransformationRequest
     ): Promise<PromiseResult<CodeWhispererUserClient.GetTransformationResponse, AWSError>> {
-        return (await this.createUserSdkClient()).getTransformation(request).promise()
+        // instead of the default of 3 retries, use 8 retries for this API which is polled every 5 seconds
+        return (await this.createUserSdkClient(8)).getTransformation(request).promise()
     }
 
     /**
@@ -316,6 +319,30 @@ export class DefaultCodeWhispererClient {
         request: CodeWhispererUserClient.GetTransformationPlanRequest
     ): Promise<PromiseResult<CodeWhispererUserClient.GetTransformationPlanResponse, AWSError>> {
         return (await this.createUserSdkClient()).getTransformationPlan(request).promise()
+    }
+
+    public async startCodeFixJob(
+        request: CodeWhispererUserClient.StartCodeFixJobRequest
+    ): Promise<PromiseResult<CodeWhispererUserClient.StartCodeFixJobResponse, AWSError>> {
+        return (await this.createUserSdkClient()).startCodeFixJob(request).promise()
+    }
+
+    public async getCodeFixJob(
+        request: CodeWhispererUserClient.GetCodeFixJobRequest
+    ): Promise<PromiseResult<CodeWhispererUserClient.GetCodeFixJobResponse, AWSError>> {
+        return (await this.createUserSdkClient()).getCodeFixJob(request).promise()
+    }
+
+    public async startTestGeneration(
+        request: CodeWhispererUserClient.StartTestGenerationRequest
+    ): Promise<PromiseResult<CodeWhispererUserClient.StartTestGenerationResponse, AWSError>> {
+        return (await this.createUserSdkClient()).startTestGeneration(request).promise()
+    }
+
+    public async getTestGeneration(
+        request: CodeWhispererUserClient.GetTestGenerationRequest
+    ): Promise<PromiseResult<CodeWhispererUserClient.GetTestGenerationResponse, AWSError>> {
+        return (await this.createUserSdkClient()).getTestGeneration(request).promise()
     }
 }
 

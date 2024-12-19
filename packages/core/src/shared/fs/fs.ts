@@ -4,7 +4,8 @@
  */
 import vscode from 'vscode'
 import os from 'os'
-import { promises as nodefs, constants as nodeConstants, WriteFileOptions } from 'fs'
+import { promises as nodefs, constants as nodeConstants, WriteFileOptions } from 'fs' // eslint-disable-line no-restricted-imports
+import { chmod } from 'fs/promises'
 import { isCloud9 } from '../extensionUtilities'
 import _path from 'path'
 import {
@@ -104,8 +105,12 @@ export class FileSystem {
         return vfs.createDirectory(uri).then(undefined, errHandler)
     }
 
-    // TODO: rename to readFileBytes()?
-    async readFile(path: Uri | string): Promise<Uint8Array> {
+    /**
+     * Read file into byte array.
+     * @param path uri or path to file.
+     * @returns byte content of file.
+     */
+    async readFileBytes(path: Uri | string): Promise<Uint8Array> {
         const uri = toUri(path)
         const errHandler = createPermissionsErrorHandler(this.isWeb, uri, 'r**')
 
@@ -115,11 +120,15 @@ export class FileSystem {
 
         return vfs.readFile(uri).then(undefined, errHandler)
     }
-
-    // TODO: rename to readFile()?
-    async readFileAsString(path: Uri | string, decoder: TextDecoder = FileSystem.#decoder): Promise<string> {
+    /**
+     * Read file and convert the resulting bytes to a string.
+     * @param path uri or path to file.
+     * @param decoder decoder to be used, defaults to UTF-8
+     * @returns string of decoded text.
+     */
+    async readFileText(path: Uri | string, decoder: TextDecoder = FileSystem.#decoder): Promise<string> {
         const uri = toUri(path)
-        const bytes = await this.readFile(uri)
+        const bytes = await this.readFileBytes(uri)
         return decoder.decode(bytes)
     }
 
@@ -130,7 +139,9 @@ export class FileSystem {
     async appendFile(path: Uri | string, content: Uint8Array | string): Promise<void> {
         path = toUri(path)
 
-        const currentContent: Uint8Array = (await this.existsFile(path)) ? await this.readFile(path) : new Uint8Array(0)
+        const currentContent: Uint8Array = (await this.existsFile(path))
+            ? await this.readFileBytes(path)
+            : new Uint8Array(0)
         const currentLength = currentContent.length
 
         const newContent = this.#toBytes(content)
@@ -142,7 +153,12 @@ export class FileSystem {
 
         return this.writeFile(path, finalContent)
     }
-
+    /**
+     * Checks if file or folder exists.
+     * @param path path to check.
+     * @param fileType optional assert that path contains certain filetype.
+     * @returns if path exists and matches filetype.
+     */
     async exists(path: Uri | string, fileType?: vscode.FileType): Promise<boolean> {
         if (path === undefined || path === '') {
             return false
@@ -290,6 +306,12 @@ export class FileSystem {
         await write(uri)
     }
 
+    /**
+     * Rename (move) a file or folder.
+     * @param oldPath
+     * @param newPath
+     * @returns
+     */
     async rename(oldPath: vscode.Uri | string, newPath: vscode.Uri | string) {
         const oldUri = toUri(oldPath)
         const newUri = toUri(newPath)
@@ -355,6 +377,20 @@ export class FileSystem {
     async stat(uri: vscode.Uri | string): Promise<vscode.FileStat> {
         const path = toUri(uri)
         return await vfs.stat(path)
+    }
+
+    /**
+     * Change permissions on file. Note that this will do nothing on browser.
+     * @param uri file whose permissions should be set.
+     * @param mode new permissions in octal notation.
+     * More info: https://nodejs.org/api/fs.html#fspromiseschmodpath-mode
+     * Examples: https://www.geeksforgeeks.org/node-js-fspromises-chmod-method/
+     */
+    async chmod(uri: vscode.Uri | string, mode: number): Promise<void> {
+        if (!this.isWeb) {
+            const path = toUri(uri)
+            await chmod(path.fsPath, mode)
+        }
     }
 
     /**
@@ -440,7 +476,12 @@ export class FileSystem {
 
         return await vfs.readDirectory(path)
     }
-
+    /**
+     * Copy target file or directory
+     * @param source
+     * @param target
+     * @returns
+     */
     async copy(source: vscode.Uri | string, target: vscode.Uri | string): Promise<void> {
         const sourcePath = toUri(source)
         const targetPath = toUri(target)
@@ -619,7 +660,7 @@ export class FileSystem {
             return fallback
         }
     }
-
+    // Defaults to UTF-8 encoding/decoding.
     static readonly #decoder = new TextDecoder()
     static readonly #encoder = new TextEncoder()
 

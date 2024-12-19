@@ -18,7 +18,7 @@ import { formatError, ToolkitError } from '../shared/errors'
 import { asString } from './providers/credentials'
 import { TreeNode } from '../shared/treeview/resourceTreeDataProvider'
 import { createInputBox } from '../shared/ui/inputPrompter'
-import { telemetry } from '../shared/telemetry/telemetry'
+import { CredentialSourceId, telemetry } from '../shared/telemetry/telemetry'
 import { createCommonButtons, createExitButton, createHelpButton, createRefreshButton } from '../shared/ui/buttons'
 import { getIdeProperties, isAmazonQ, isCloud9 } from '../shared/extensionUtilities'
 import { addScopes, getDependentAuths } from './secondaryAuth'
@@ -45,13 +45,21 @@ import { Commands, placeholder } from '../shared/vscode/commands2'
 import { Auth } from './auth'
 import { validateIsNewSsoUrl, validateSsoUrlFormat } from './sso/validation'
 import { getLogger } from '../shared/logger'
-import { isValidAmazonQConnection, isValidCodeWhispererCoreConnection } from '../codewhisperer/util/authUtil'
+import { AuthUtil, isValidAmazonQConnection, isValidCodeWhispererCoreConnection } from '../codewhisperer/util/authUtil'
 import { AuthFormId } from '../login/webview/vue/types'
 import { extensionVersion } from '../shared/vscode/env'
 import { ExtStartUpSources } from '../shared/telemetry'
 import { CommonAuthWebview } from '../login/webview/vue/backend'
 import { AuthSource } from '../login/webview/util'
 import { setContext } from '../shared/vscode/setContext'
+import { CredentialsProviderManager } from './providers/credentialsProviderManager'
+import { SharedCredentialsProviderFactory } from './providers/sharedCredentialsProviderFactory'
+import { Ec2CredentialsProvider } from './providers/ec2CredentialsProvider'
+import { EcsCredentialsProvider } from './providers/ecsCredentialsProvider'
+import { EnvVarsCredentialsProvider } from './providers/envVarsCredentialsProvider'
+import { showMessageWithUrl } from '../shared/utilities/messages'
+import { credentialHelpUrl } from '../shared/constants'
+import { ExtStartUpSource } from '../shared/telemetry/util'
 
 // iam-only excludes Builder ID and IAM Identity Center from the list of valid connections
 // TODO: Understand if "iam" should include these from the list at all
@@ -99,6 +107,46 @@ export async function promptAndUseConnection(...[auth, type]: Parameters<typeof 
 
         await auth.useConnection(conn)
     })
+}
+
+/**
+ * Get a IAM connection, while prompt && connection not valid: prompt for choosing a new connection
+ * @param opts.prompt: controls if prompt is shown when no valid connection is found
+ * @returns active iam connection, or undefined if not found/no prompt
+ */
+export async function getIAMConnection(opts: { prompt: boolean } = { prompt: false }) {
+    const connection = Auth.instance.activeConnection
+    if (connection?.type === 'iam' && connection.state === 'valid') {
+        return connection
+    }
+    if (!opts.prompt) {
+        return
+    }
+    let errorMessage = localize(
+        'aws.toolkit.auth.requireIAMmessage',
+        'The current command requires authentication with IAM credentials.'
+    )
+    if (connection?.state === 'valid') {
+        errorMessage =
+            localize(
+                'aws.toolkit.auth.requireIAMInvalidAuth',
+                'Authentication through Builder ID or IAM Identity Center detected. '
+            ) + errorMessage
+    }
+    const acceptMessage = localize('aws.toolkit.auth.accept', 'Authenticate with IAM credentials')
+    const modalResponse = await showMessageWithUrl(
+        errorMessage,
+        credentialHelpUrl,
+        localizedText.viewDocs,
+        'info',
+        [acceptMessage],
+        true
+    )
+    if (modalResponse !== acceptMessage) {
+        return
+    }
+    await promptAndUseConnection(Auth.instance, 'iam-only')
+    return Auth.instance.activeConnection
 }
 
 export async function signout(auth: Auth, conn: Connection | undefined = auth.activeConnection): Promise<void> {
@@ -687,6 +735,19 @@ export class ExtensionUse {
         return this.wasExtensionUpdated
     }
 
+    /**
+     * Returns a {@link ExtStartUpSource} based on the current state of the extension.
+     */
+    sourceForTelemetry(): ExtStartUpSource {
+        if (this.isFirstUse()) {
+            return ExtStartUpSources.firstStartUp
+        } else if (this.wasUpdated()) {
+            return ExtStartUpSources.update
+        } else {
+            return ExtStartUpSources.reload
+        }
+    }
+
     private updateMemento(key: 'isExtensionFirstUse' | 'lastExtensionVersion', val: any) {
         globals.globalState.tryUpdate(key, val)
     }
@@ -730,4 +791,20 @@ export function getAuthFormIdsFromConnection(conn?: Connection): AuthFormId[] {
     }
 
     return authIds
+}
+
+export function initializeCredentialsProviderManager() {
+    const manager = CredentialsProviderManager.getInstance()
+    manager.addProviderFactory(new SharedCredentialsProviderFactory())
+    manager.addProviders(new Ec2CredentialsProvider(), new EcsCredentialsProvider(), new EnvVarsCredentialsProvider())
+}
+
+export async function getAuthType() {
+    let authType: CredentialSourceId | undefined = undefined
+    if (AuthUtil.instance.isEnterpriseSsoInUse() && AuthUtil.instance.isConnectionValid()) {
+        authType = 'iamIdentityCenter'
+    } else if (AuthUtil.instance.isBuilderIdInUse() && AuthUtil.instance.isConnectionValid()) {
+        authType = 'awsId'
+    }
+    return authType
 }

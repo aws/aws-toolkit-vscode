@@ -17,8 +17,8 @@
 // 3. restore the original package.json
 //
 
-import * as child_process from 'child_process'
-import * as fs from 'fs-extra'
+import * as child_process from 'child_process' // eslint-disable-line no-restricted-imports
+import * as nodefs from 'fs' // eslint-disable-line no-restricted-imports
 import * as path from 'path'
 
 function parseArgs() {
@@ -87,22 +87,6 @@ function isBeta(): boolean {
 }
 
 /**
- * Restores package.json after `scripts/build/handlePackageJson.ts` overwrote it.
- *
- * TODO: remove this after IDE-12831 is resolved.
- */
-function restorePackageJson() {
-    const packageJsonFile = './package.json'
-    const backupJsonFile = `${packageJsonFile}.handlePackageJson.bk`
-
-    if (fs.existsSync(backupJsonFile)) {
-        fs.copyFileSync(backupJsonFile, packageJsonFile)
-        fs.unlinkSync(backupJsonFile)
-        console.log(`package.ts: restored package.json from ${backupJsonFile}`)
-    }
-}
-
-/**
  * Gets a suffix to append to the version-string, or empty for release builds.
  *
  * TODO: use `git describe` instead.
@@ -130,7 +114,7 @@ function main() {
     const webpackConfigJsFile = '../webpack.base.config.js'
     const backupWebpackConfigFile = `${webpackConfigJsFile}.package.bk`
 
-    if (!fs.existsSync(packageJsonFile)) {
+    if (!nodefs.existsSync(packageJsonFile)) {
         throw new Error(`package.json not found, cannot package this directory: ${process.cwd()}`)
     }
 
@@ -143,8 +127,8 @@ function main() {
             throw new Error('Cannot package VSIX as both a release and a beta simultaneously')
         }
         // Create backup file so we can restore the originals later.
-        fs.copyFileSync(packageJsonFile, backupJsonFile)
-        const packageJson = JSON.parse(fs.readFileSync(packageJsonFile, { encoding: 'utf-8' }))
+        nodefs.copyFileSync(packageJsonFile, backupJsonFile)
+        const packageJson = JSON.parse(nodefs.readFileSync(packageJsonFile, { encoding: 'utf-8' }))
 
         if (!release || args.debug) {
             const versionSuffix = getVersionSuffix(args.feature, args.debug)
@@ -164,13 +148,13 @@ function main() {
             }
 
             if (args.debug) {
-                fs.copyFileSync(webpackConfigJsFile, backupWebpackConfigFile)
-                const webpackConfigJs = fs.readFileSync(webpackConfigJsFile, { encoding: 'utf-8' })
-                fs.writeFileSync(webpackConfigJsFile, webpackConfigJs.replace(/minimize: true/, 'minimize: false'))
+                nodefs.copyFileSync(webpackConfigJsFile, backupWebpackConfigFile)
+                const webpackConfigJs = nodefs.readFileSync(webpackConfigJsFile, { encoding: 'utf-8' })
+                nodefs.writeFileSync(webpackConfigJsFile, webpackConfigJs.replace(/minimize: true/, 'minimize: false'))
             }
         }
 
-        fs.writeFileSync(packageJsonFile, JSON.stringify(packageJson, undefined, '    '))
+        nodefs.writeFileSync(packageJsonFile, JSON.stringify(packageJson, undefined, '    '))
         child_process.execFileSync(
             'vsce',
             [
@@ -197,19 +181,18 @@ function main() {
         // TODO: Once we can support releasing multiple artifacts,
         // let's just keep the .vsix in its respective project folder in packages/
         const vsixName = `${packageJson.name}-${packageJson.version}.vsix`
-        fs.moveSync(vsixName, `../../${vsixName}`, { overwrite: true })
+        nodefs.renameSync(vsixName, `../../${vsixName}`)
     } catch (e) {
         console.log(e)
         throw Error('package.ts: failed')
     } finally {
         // Restore the original files.
-        fs.copyFileSync(backupJsonFile, packageJsonFile)
-        fs.unlinkSync(backupJsonFile)
+        nodefs.copyFileSync(backupJsonFile, packageJsonFile)
+        nodefs.unlinkSync(backupJsonFile)
         if (args.debug) {
-            fs.copyFileSync(backupWebpackConfigFile, webpackConfigJsFile)
-            fs.unlinkSync(backupWebpackConfigFile)
+            nodefs.copyFileSync(backupWebpackConfigFile, webpackConfigJsFile)
+            nodefs.unlinkSync(backupWebpackConfigFile)
         }
-        restorePackageJson()
     }
 }
 

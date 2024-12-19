@@ -34,7 +34,7 @@ export enum MessageType {
 export enum Command {
     INIT = 'INIT',
     SAVE_FILE = 'SAVE_FILE',
-    AUTO_SAVE_FILE = 'AUTO_SAVE_FILE',
+    AUTO_SYNC_FILE = 'AUTO_SYNC_FILE',
     FILE_CHANGED = 'FILE_CHANGED',
     LOAD_STAGE = 'LOAD_STAGE',
     OPEN_FEEDBACK = 'OPEN_FEEDBACK',
@@ -43,12 +43,6 @@ export enum Command {
 
 export type FileWatchInfo = {
     fileContents: string
-}
-
-export enum SaveCompleteSubType {
-    SAVED = 'SAVED',
-    SAVE_SKIPPED_SAME_CONTENT = 'SAVE_SKIPPED_SAME_CONTENT',
-    SAVE_FAILED = 'SAVE_FAILED',
 }
 
 export interface Message {
@@ -71,5 +65,9 @@ export interface InitResponseMessage extends Omit<FileChangedMessage, 'trigger'>
 }
 
 export interface SaveFileRequestMessage extends Message {
+    isInvalidJson: boolean
+}
+
+export interface SyncFileRequestMessage extends SaveFileRequestMessage {
     fileContents: string
 }

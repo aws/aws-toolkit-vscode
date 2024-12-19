@@ -14,10 +14,11 @@ import { maxFileSizeBytes } from '../limits'
 import { createHash } from 'crypto'
 import { CurrentWsFolders } from '../types'
 import { ToolkitError } from '../../shared/errors'
-import { AmazonqCreateUpload, Metric, telemetry as amznTelemetry } from '../../shared/telemetry/telemetry'
+import { AmazonqCreateUpload, Span, telemetry as amznTelemetry } from '../../shared/telemetry/telemetry'
 import { TelemetryHelper } from './telemetryHelper'
 import { maxRepoSizeBytes } from '../constants'
 import { isCodeFile } from '../../shared/filetypes'
+import { fs } from '../../shared'
 
 const getSha256 = (file: Buffer) => createHash('sha256').update(file).digest('base64')
 
@@ -28,17 +29,17 @@ export async function prepareRepoData(
     repoRootPaths: string[],
     workspaceFolders: CurrentWsFolders,
     telemetry: TelemetryHelper,
-    span: Metric<AmazonqCreateUpload>
+    span: Span<AmazonqCreateUpload>,
+    zip: AdmZip = new AdmZip()
 ) {
     try {
         const files = await collectFiles(repoRootPaths, workspaceFolders, true, maxRepoSizeBytes)
-        const zip = new AdmZip()
 
         let totalBytes = 0
         const ignoredExtensionMap = new Map<string, number>()
 
         for (const file of files) {
-            const fileSize = (await vscode.workspace.fs.stat(file.fileUri)).size
+            const fileSize = (await fs.stat(file.fileUri)).size
             const isCodeFile_ = isCodeFile(file.relativeFilePath)
 
             if (fileSize >= maxFileSizeBytes || !isCodeFile_) {

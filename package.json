@@ -20,7 +20,7 @@
     },
     "scripts": {
         "prepare": "ts-node ./scripts/prepare.ts",
-        "preinstall": "cd src.gen/@amzn/codewhisperer-streaming && npm i",
+        "preinstall": "cd src.gen/@amzn/codewhisperer-streaming && npm i && cd ../amazon-q-developer-streaming-client && npm i",
         "postinstall": "npm run buildCustomLintPlugin && npm run postinstall -ws --if-present",
         "buildCustomLintPlugin": "npm run build -w plugins/eslint-plugin-aws-toolkits",
         "compile": "npm run compile -w packages/",
@@ -39,11 +39,13 @@
         "generateNonCodeFiles": "npm run generateNonCodeFiles -w packages/ --if-present"
     },
     "devDependencies": {
-        "@aws-toolkits/telemetry": "^1.0.258",
+        "@aws-toolkits/telemetry": "^1.0.290",
         "@playwright/browser-chromium": "^1.43.1",
+        "@stylistic/eslint-plugin": "^2.11.0",
+        "@types/he": "^1.2.3",
         "@types/vscode": "^1.68.0",
         "@types/vscode-webview": "^1.57.1",
-        "@types/webpack-env": "^1.18.1",
+        "@types/webpack-env": "^1.18.5",
         "@typescript-eslint/eslint-plugin": "^7.14.1",
         "@typescript-eslint/parser": "^7.14.1",
         "@vscode/codicons": "^0.0.33",
@@ -58,17 +60,18 @@
         "eslint-plugin-security-node": "^1.1.4",
         "eslint-plugin-unicorn": "^54.0.0",
         "husky": "^9.0.7",
-        "prettier": "^3.3.2",
+        "prettier": "^3.3.3",
         "prettier-plugin-sh": "^0.14.0",
         "pretty-quick": "^4.0.0",
         "ts-node": "^10.9.1",
         "typescript": "^5.0.4",
-        "webpack": "^5.83.0",
+        "webpack": "^5.95.0",
         "webpack-cli": "^5.1.4",
-        "webpack-dev-server": "^4.15.1",
+        "webpack-dev-server": "^4.15.2",
         "webpack-merge": "^5.10.0"
     },
     "dependencies": {
+        "@types/node": "^22.7.5",
         "vscode-nls": "^5.2.0",
         "vscode-nls-dev": "^4.0.4"
     }

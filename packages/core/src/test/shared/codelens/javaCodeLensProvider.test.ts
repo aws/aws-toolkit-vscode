@@ -4,7 +4,6 @@
  */
 
 import assert from 'assert'
-import * as fs from 'fs-extra'
 import * as os from 'os'
 import * as path from 'path'
 import * as vscode from 'vscode'
@@ -17,6 +16,7 @@ import {
 } from '../../../shared/codelens/javaCodeLensProvider'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import * as SampleJavaSamProgram from './sampleJavaSamProgram'
+import { fs } from '../../../shared'
 
 const fakeRange = new vscode.Range(0, 0, 0, 0)
 
@@ -30,7 +30,7 @@ describe('javaCodeLensProvider', () => {
         })
 
         afterEach(async () => {
-            await fs.remove(tempFolder)
+            await fs.delete(tempFolder, { recursive: true })
         })
 
         it('Detects a public function symbol', async function () {

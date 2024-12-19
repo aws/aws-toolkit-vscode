@@ -13,7 +13,7 @@ phases:
     install:
         run-as: root
         runtime-versions:
-            nodejs: 16
+            nodejs: 18
         commands:
             - bash buildspec/shared/linux-install.sh
 

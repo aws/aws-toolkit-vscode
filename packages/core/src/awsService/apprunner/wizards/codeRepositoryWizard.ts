@@ -15,14 +15,10 @@ import { AppRunnerClient } from '../../../shared/clients/apprunnerClient'
 import { makeDeploymentButton } from './deploymentButton'
 import { createLabelQuickPick, createQuickPick, QuickPickPrompter } from '../../../shared/ui/pickerPrompter'
 import { createInputBox, InputBoxPrompter } from '../../../shared/ui/inputPrompter'
-import {
-    apprunnerConnectionHelpUrl,
-    apprunnerConfigHelpUrl,
-    apprunnerRuntimeHelpUrl,
-    apprunnerCreateServiceDocsUrl,
-} from '../../../shared/constants'
+import { apprunnerConnectionHelpUrl, apprunnerConfigHelpUrl, apprunnerRuntimeHelpUrl } from '../../../shared/constants'
 import { Wizard, WIZARD_BACK } from '../../../shared/wizards/wizard'
 import { openUrl } from '../../../shared/utilities/vsCodeUtils'
+import { getAppRunnerCreateServiceDocUrl } from '../../../shared/extensionUtilities'
 
 const localize = nls.loadMessageBundle()
 
@@ -140,7 +136,7 @@ function createPortPrompter(): InputBoxPrompter {
         validateInput: validatePort,
         title: localize('AWS.apprunner.createService.selectPort.title', 'Enter a port for the new service'),
         placeholder: 'Enter a port',
-        buttons: createCommonButtons(apprunnerCreateServiceDocsUrl),
+        buttons: createCommonButtons(getAppRunnerCreateServiceDocUrl()),
     })
 }
 
@@ -220,7 +216,7 @@ function createCodeRepositorySubForm(git: GitExtension): WizardForm<AppRunner.Co
     codeConfigForm.body.StartCommand.bindPrompter((state) => createStartCommandPrompter(state.Runtime!))
     codeConfigForm.body.Port.bindPrompter(createPortPrompter)
     codeConfigForm.body.RuntimeEnvironmentVariables.bindPrompter(() =>
-        createVariablesPrompter(createCommonButtons(apprunnerCreateServiceDocsUrl))
+        createVariablesPrompter(createCommonButtons(getAppRunnerCreateServiceDocUrl()))
     )
     // TODO: ask user if they would like to save their parameters into an App Runner config file
 

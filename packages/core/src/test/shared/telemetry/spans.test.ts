@@ -4,7 +4,7 @@
  */
 
 import assert from 'assert'
-import { ToolkitError } from '../../../shared/errors'
+import { getErrorId, ToolkitError } from '../../../shared/errors'
 import { asStringifiedStack, FunctionEntry, TelemetrySpan, TelemetryTracer } from '../../../shared/telemetry/spans'
 import { MetricName, MetricShapes, telemetry } from '../../../shared/telemetry/telemetry'
 import { assertTelemetry, getMetrics, installFakeClock } from '../../testUtil'
@@ -14,7 +14,6 @@ import { sleep } from '../../../shared'
 import { withTelemetryContext } from '../../../shared/telemetry/util'
 import { SinonSandbox } from 'sinon'
 import sinon from 'sinon'
-import { stubPerformance } from '../../utilities/performance'
 import * as crypto from '../../../shared/crypto'
 
 describe('TelemetrySpan', function () {
@@ -76,23 +75,6 @@ describe('TelemetrySpan', function () {
             { result: 'Failed', reason: 'bar' },
             { result: 'Succeeded', duration: 100 },
         ])
-    })
-
-    it('records performance', function () {
-        const { expectedUserCpuUsage, expectedSystemCpuUsage, expectedHeapTotal } = stubPerformance(sandbox)
-        const span = new TelemetrySpan('function_call', {
-            emit: true,
-        })
-        span.start()
-        clock.tick(90)
-        span.stop()
-        assertTelemetry('function_call', {
-            userCpuUsage: expectedUserCpuUsage,
-            systemCpuUsage: expectedSystemCpuUsage,
-            heapTotal: expectedHeapTotal,
-            duration: 90,
-            result: 'Succeeded',
-        })
     })
 })
 
@@ -191,7 +173,7 @@ describe('TelemetryTracer', function () {
 
         it('does not change the active span when using a different span', function () {
             tracer.run(metricName, (span) => {
-                tracer.vscode_executeCommand.record({ command: 'foo', debounceCount: 1 })
+                tracer.vscode_executeCommand.emit({ command: 'foo', debounceCount: 1 })
                 assert.strictEqual(tracer.activeSpan, span)
             })
 
@@ -267,28 +249,6 @@ describe('TelemetryTracer', function () {
             assert.match(metric.awsRegion ?? '', /not-set|\w+-\w+-\d+/)
             assert.match(String(metric.duration) ?? '', /\d+/)
             assert.match(metric.requestId ?? '', /[a-z0-9-]+/)
-        })
-
-        it('records performance', function () {
-            clock = installFakeClock()
-            const { expectedUserCpuUsage, expectedSystemCpuUsage, expectedHeapTotal } = stubPerformance(sandbox)
-            tracer.run(
-                'function_call',
-                () => {
-                    clock?.tick(90)
-                },
-                {
-                    emit: true,
-                }
-            )
-
-            assertTelemetry('function_call', {
-                userCpuUsage: expectedUserCpuUsage,
-                systemCpuUsage: expectedSystemCpuUsage,
-                heapTotal: expectedHeapTotal,
-                duration: 90,
-                result: 'Succeeded',
-            })
         })
 
         describe('nested run()', function () {
@@ -615,19 +575,112 @@ describe('TelemetryTracer', function () {
                     'A#a1,a2:B#b1,b2'
                 )
             })
+        })
+    })
 
-            class TestEmit {
-                @withTelemetryContext({ name: 'doesNotEmit', class: 'TestEmit' })
-                doesNotEmit() {
-                    return
-                }
+    describe('withTelemetryContext', async function () {
+        class TestEmit {
+            @withTelemetryContext({ name: 'doesNotEmit', class: 'TestEmit' })
+            doesNotEmit() {
+                return
             }
 
-            it(`withTelemetryContext does not emit an event on its own`, function () {
-                const inst = new TestEmit()
-                inst.doesNotEmit()
-                assertTelemetry('function_call', [])
-            })
+            @withTelemetryContext({ name: 'doesEmit', class: 'TestEmit', emit: false })
+            doesEmit() {
+                return this.doesEmitNested()
+            }
+
+            @withTelemetryContext({ name: 'doesEmitNested', class: 'TestEmit', emit: true })
+            doesEmitNested() {
+                return
+            }
+        }
+
+        it(`does NOT emit an event if not explicitly set`, function () {
+            const inst = new TestEmit()
+            inst.doesNotEmit()
+            assertTelemetry('function_call', [])
+        })
+
+        it(`does emit an event on its own when explicitly set`, function () {
+            const inst = new TestEmit()
+            inst.doesEmit()
+            assertTelemetry('function_call', [
+                {
+                    functionName: 'doesEmitNested',
+                    className: 'TestEmit',
+                    source: 'TestEmit#doesEmit,doesEmitNested',
+                },
+            ])
+        })
+
+        class TestThrows {
+            @withTelemetryContext({ name: 'throwsError', class: 'TestThrows', errorCtx: true })
+            throwsError() {
+                throw arbitraryError
+            }
+
+            @withTelemetryContext({ name: 'throwsError', errorCtx: true })
+            throwsErrorButNoClass() {
+                throw arbitraryError
+            }
+
+            @withTelemetryContext({ name: 'throwsError', errorCtx: true })
+            async throwsAsyncError() {
+                throw arbitraryError
+            }
+
+            @withTelemetryContext({ name: 'throwsErrorButNoCtx', class: 'TestThrows' })
+            throwsErrorButNoCtx() {
+                throw arbitraryError
+            }
+        }
+        const arbitraryError = new Error('arbitrary error')
+
+        it(`wraps errors with function id context`, async function () {
+            const inst = new TestThrows()
+            assert.throws(
+                () => inst.throwsError(),
+                (e) => {
+                    return (
+                        e instanceof ToolkitError &&
+                        getErrorId(e) === 'TestThrows' &&
+                        e.message === 'ctx: throwsError' &&
+                        e.cause === arbitraryError
+                    )
+                }
+            )
+            assert.throws(
+                () => inst.throwsErrorButNoClass(),
+                (e) => {
+                    return (
+                        e instanceof ToolkitError &&
+                        getErrorId(e) === 'Error' &&
+                        e.message === 'ctx: throwsError' &&
+                        e.cause === arbitraryError
+                    )
+                }
+            )
+            await assert.rejects(
+                () => inst.throwsAsyncError(),
+                (e) => {
+                    return (
+                        e instanceof ToolkitError &&
+                        getErrorId(e) === 'Error' &&
+                        e.message === 'ctx: throwsError' &&
+                        e.cause === arbitraryError
+                    )
+                }
+            )
+        })
+
+        it('does not add error context by default', async function () {
+            const inst = new TestThrows()
+
+            assert.throws(
+                () => inst.throwsErrorButNoCtx(),
+                (e) => e === arbitraryError
+            )
         })
     })
 

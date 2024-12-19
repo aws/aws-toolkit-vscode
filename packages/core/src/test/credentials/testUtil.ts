@@ -8,7 +8,7 @@ import * as vscode from 'vscode'
 import { Auth } from '../../auth/auth'
 import { CredentialsProviderManager } from '../../auth/providers/credentialsProviderManager'
 import { SsoClient } from '../../auth/sso/clients'
-import { builderIdStartUrl, ClientRegistration, SsoToken } from '../../auth/sso/model'
+import { ClientRegistration, SsoToken } from '../../auth/sso/model'
 import { DeviceFlowAuthorization, SsoAccessTokenProvider } from '../../auth/sso/ssoAccessTokenProvider'
 import { captureEvent, EventCapturer } from '../testUtil'
 import { stub } from '../utilities/stubber'
@@ -18,6 +18,7 @@ import { mergeAndValidateSections, parseIni } from '../../auth/credentials/share
 import { SharedCredentialsProvider } from '../../auth/providers/sharedCredentialsProvider'
 import { Connection, IamConnection, ProfileStore, SsoConnection, SsoProfile } from '../../auth/connection'
 import * as sinon from 'sinon'
+import { builderIdStartUrl } from '../../auth/sso/constants'
 
 export const mockRegistration = {
     clientId: 'test-client-id',

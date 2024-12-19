@@ -5,18 +5,15 @@
 
 import assert, { fail } from 'assert'
 import * as vscode from 'vscode'
-import * as fs from 'fs-extra'
 import * as sinon from 'sinon'
-import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
-import { transformByQState, TransformByQStoppedError } from '../../../codewhisperer/models/model'
-import { parseBuildFile, stopTransformByQ } from '../../../codewhisperer/commands/startTransformByQ'
+import { DB, transformByQState, TransformByQStoppedError } from '../../../codewhisperer/models/model'
+import { stopTransformByQ, finalizeTransformationJob } from '../../../codewhisperer/commands/startTransformByQ'
 import { HttpResponse } from 'aws-sdk'
 import * as codeWhisperer from '../../../codewhisperer/client/codewhisperer'
 import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
-import { convertToTimeString, convertDateToTimestamp } from '../../../shared/utilities/textUtilities'
 import path from 'path'
 import AdmZip from 'adm-zip'
-import { createTestWorkspaceFolder, toFile } from '../../testUtil'
+import { createTestWorkspaceFolder, TestFolder, toFile } from '../../testUtil'
 import {
     NoJavaProjectsFoundError,
     NoMavenJavaProjectsFoundError,
@@ -30,6 +27,7 @@ import {
     updateJobHistory,
     zipCode,
     getTableMapping,
+    getFilesRecursively,
 } from '../../../codewhisperer/service/transformByQ/transformApiHandler'
 import {
     validateOpenProjects,
@@ -37,18 +35,75 @@ import {
 } from '../../../codewhisperer/service/transformByQ/transformProjectValidationHandler'
 import { TransformationCandidateProject, ZipManifest } from '../../../codewhisperer/models/model'
 import globals from '../../../shared/extensionGlobals'
+import { env, fs } from '../../../shared'
+import { convertDateToTimestamp, convertToTimeString } from '../../../shared/datetime'
+import {
+    setMaven,
+    parseBuildFile,
+    validateSQLMetadataFile,
+} from '../../../codewhisperer/service/transformByQ/transformFileHandler'
+import { uploadArtifactToS3 } from '../../../codewhisperer/indexNode'
+import request from '../../../shared/request'
+import * as nodefs from 'fs' // eslint-disable-line no-restricted-imports
 
 describe('transformByQ', function () {
+    let fetchStub: sinon.SinonStub
     let tempDir: string
+    const validSctFile = `<?xml version="1.0" encoding="UTF-8"?>
+    <tree>
+    <instances>
+        <ProjectModel>
+        <entities>
+            <sources>
+            <DbServer vendor="oracle" name="sample.rds.amazonaws.com">
+            </DbServer>
+            </sources>
+            <targets>
+            <DbServer vendor="aurora_postgresql" />
+            </targets>
+        </entities>
+        <relations>
+            <server-node-location>
+            <FullNameNodeInfoList>
+                <nameParts>
+                <FullNameNodeInfo typeNode="schema" nameNode="schema1"/>
+                <FullNameNodeInfo typeNode="table" nameNode="table1"/>
+                </nameParts>
+            </FullNameNodeInfoList>
+            </server-node-location>
+            <server-node-location>
+            <FullNameNodeInfoList>
+                <nameParts>
+                <FullNameNodeInfo typeNode="schema" nameNode="schema2"/>
+                <FullNameNodeInfo typeNode="table" nameNode="table2"/>
+                </nameParts>
+            </FullNameNodeInfoList>
+            </server-node-location>
+            <server-node-location>
+            <FullNameNodeInfoList>
+                <nameParts>
+                <FullNameNodeInfo typeNode="schema" nameNode="schema3"/>
+                <FullNameNodeInfo typeNode="table" nameNode="table3"/>
+                </nameParts>
+            </FullNameNodeInfoList>
+            </server-node-location>
+        </relations>
+        </ProjectModel>
+    </instances>
+    </tree>`
 
     beforeEach(async function () {
-        tempDir = await makeTemporaryToolkitFolder()
+        tempDir = (await TestFolder.create()).path
         transformByQState.setToNotStarted()
+        fetchStub = sinon.stub(request, 'fetch')
+        // use Partial to avoid having to mock all 25 fields in the response; only care about 'size'
+        const mockStats: Partial<nodefs.Stats> = { size: 1000 }
+        sinon.stub(nodefs.promises, 'stat').resolves(mockStats as nodefs.Stats)
     })
 
     afterEach(async function () {
         sinon.restore()
-        await fs.remove(tempDir)
+        await fs.delete(tempDir, { recursive: true })
     })
 
     it('WHEN converting short duration in milliseconds THEN converts correctly', async function () {
@@ -144,6 +199,22 @@ describe('transformByQ', function () {
         sinon.assert.calledWithExactly(stopJobStub, { transformationJobId: 'dummyId' })
     })
 
+    it('WHEN stopTransformByQ called with job that has already terminated THEN stop API not called', async function () {
+        const stopJobStub = sinon.stub(codeWhisperer.codeWhispererClient, 'codeModernizerStopCodeTransformation')
+        transformByQState.setToSucceeded()
+        await stopTransformByQ('abc-123')
+        sinon.assert.notCalled(stopJobStub)
+    })
+
+    it('WHEN finalizeTransformationJob on failed job THEN error thrown and error message fields are set', async function () {
+        await assert.rejects(async () => {
+            await finalizeTransformationJob('FAILED')
+        })
+        assert.notStrictEqual(transformByQState.getJobFailureErrorChatMessage(), undefined)
+        assert.notStrictEqual(transformByQState.getJobFailureErrorNotification(), undefined)
+        transformByQState.setJobDefaults() // reset error messages to undefined
+    })
+
     it('WHEN polling completed job THEN returns status as completed', async function () {
         const mockJobResponse = {
             $response: {
@@ -203,6 +274,16 @@ describe('transformByQ', function () {
         assert.deepStrictEqual(actual, expected)
     })
 
+    it(`WHEN transforming a project with a Windows Maven executable THEN mavenName set correctly`, async function () {
+        sinon.stub(env, 'isWin').returns(true)
+        const tempFileName = 'mvnw.cmd'
+        const tempFilePath = path.join(tempDir, tempFileName)
+        await toFile('', tempFilePath)
+        transformByQState.setProjectPath(tempDir)
+        await setMaven()
+        assert.strictEqual(transformByQState.getMavenName(), '.\\mvnw.cmd')
+    })
+
     it(`WHEN zip created THEN manifest.json contains test-compile custom build command`, async function () {
         const tempFileName = `testfile-${globals.clock.Date.now()}.zip`
         transformByQState.setProjectPath(tempDir)
@@ -214,7 +295,7 @@ describe('transformByQ', function () {
                 name: tempFileName,
             },
             humanInTheLoopFlag: false,
-            modulePath: tempDir,
+            projectPath: tempDir,
             zipManifest: transformManifest,
         }).then((zipCodeResult) => {
             const zip = new AdmZip(zipCodeResult.tempFilePath)
@@ -227,6 +308,19 @@ describe('transformByQ', function () {
             const manifest = JSON.parse(manifestText)
             assert.strictEqual(manifest.customBuildCommand, CodeWhispererConstants.skipUnitTestsBuildCommand)
         })
+    })
+
+    it('WHEN zipCode THEN ZIP contains all expected files and no unexpected files', async function () {
+        const zipFilePath = path.join(tempDir, 'test.zip')
+        const zip = new AdmZip()
+        await fs.writeFile(path.join(tempDir, 'pom.xml'), 'dummy pom.xml')
+        zip.addLocalFile(path.join(tempDir, 'pom.xml'))
+        zip.addFile('manifest.json', Buffer.from(JSON.stringify({ version: '1.0' })))
+        zip.writeZip(zipFilePath)
+        const zipFiles = new AdmZip(zipFilePath).getEntries()
+        const zipFileNames = zipFiles.map((file) => file.name)
+        assert.strictEqual(zipFileNames.length, 2) // expecting only pom.xml and manifest.json
+        assert.strictEqual(zipFileNames.includes('pom.xml') && zipFileNames.includes('manifest.json'), true)
     })
 
     it(`WHEN zip created THEN dependencies contains no .sha1 or .repositories files`, async function () {
@@ -254,13 +348,13 @@ describe('transformByQ', function () {
             'resolver-status.properties',
         ]
 
-        m2Folders.forEach((folder) => {
+        for (const folder of m2Folders) {
             const folderPath = path.join(tempDir, folder)
-            fs.mkdirSync(folderPath, { recursive: true })
-            filesToAdd.forEach((file) => {
-                fs.writeFileSync(path.join(folderPath, file), 'sample content for the test file')
-            })
-        })
+            await fs.mkdir(folderPath)
+            for (const file of filesToAdd) {
+                await fs.writeFile(path.join(folderPath, file), 'sample content for the test file')
+            }
+        }
 
         const tempFileName = `testfile-${globals.clock.Date.now()}.zip`
         transformByQState.setProjectPath(tempDir)
@@ -270,7 +364,7 @@ describe('transformByQ', function () {
                 name: tempFileName,
             },
             humanInTheLoopFlag: false,
-            modulePath: tempDir,
+            projectPath: tempDir,
             zipManifest: new ZipManifest(),
         }).then((zipCodeResult) => {
             const zip = new AdmZip(zipCodeResult.tempFilePath)
@@ -282,6 +376,19 @@ describe('transformByQ', function () {
                 assert(expectedFilesAfterClean.includes(dependency.name))
             })
         })
+    })
+
+    it(`WHEN getFilesRecursively on source code THEN ignores excluded directories`, async function () {
+        const sourceFolder = path.join(tempDir, 'src')
+        await fs.mkdir(sourceFolder)
+        await fs.writeFile(path.join(sourceFolder, 'HelloWorld.java'), 'sample content for the test file')
+
+        const gitFolder = path.join(tempDir, '.git')
+        await fs.mkdir(gitFolder)
+        await fs.writeFile(path.join(gitFolder, 'config'), 'sample content for the test file')
+
+        const zippedFiles = getFilesRecursively(tempDir, false)
+        assert.strictEqual(zippedFiles.length, 1)
     })
 
     it(`WHEN getTableMapping on complete step 0 progressUpdates THEN map IDs to tables`, async function () {
@@ -332,13 +439,123 @@ describe('transformByQ', function () {
     })
 
     it(`WHEN parseBuildFile on pom.xml with absolute path THEN absolute path detected`, async function () {
-        const dirPath = await createTestWorkspaceFolder()
-        transformByQState.setProjectPath(dirPath.uri.fsPath)
-        const pomPath = path.join(dirPath.uri.fsPath, 'pom.xml')
+        const dirPath = await TestFolder.create()
+        transformByQState.setProjectPath(dirPath.path)
+        const pomPath = path.join(dirPath.path, 'pom.xml')
         await toFile('<project><properties><path>system/name/here</path></properties></project>', pomPath)
         const expectedWarning =
             'I detected 1 potential absolute file path(s) in your pom.xml file: **system/**. Absolute file paths might cause issues when I build your code. Any errors will show up in the build log.'
         const warningMessage = await parseBuildFile()
         assert.strictEqual(expectedWarning, warningMessage)
+    })
+
+    it(`WHEN validateMetadataFile on fully valid .sct file THEN passes validation`, async function () {
+        const isValidMetadata = await validateSQLMetadataFile(validSctFile, { tabID: 'abc123' })
+        assert.strictEqual(isValidMetadata, true)
+        assert.strictEqual(transformByQState.getSourceDB(), DB.ORACLE)
+        assert.strictEqual(transformByQState.getTargetDB(), DB.AURORA_POSTGRESQL)
+        assert.strictEqual(transformByQState.getSourceServerName(), 'sample.rds.amazonaws.com')
+        const expectedSchemaOptions = ['SCHEMA1', 'SCHEMA2', 'SCHEMA3']
+        expectedSchemaOptions.forEach((schema) => {
+            assert(transformByQState.getSchemaOptions().has(schema))
+        })
+    })
+
+    it(`WHEN validateMetadataFile on .sct file with unsupported source DB THEN fails validation`, async function () {
+        const sctFileWithInvalidSource = validSctFile.replace('oracle', 'not-oracle')
+        const isValidMetadata = await validateSQLMetadataFile(sctFileWithInvalidSource, { tabID: 'abc123' })
+        assert.strictEqual(isValidMetadata, false)
+    })
+
+    it(`WHEN validateMetadataFile on .sct file with unsupported target DB THEN fails validation`, async function () {
+        const sctFileWithInvalidTarget = validSctFile.replace('aurora_postgresql', 'not-postgresql')
+        const isValidMetadata = await validateSQLMetadataFile(sctFileWithInvalidTarget, { tabID: 'abc123' })
+        assert.strictEqual(isValidMetadata, false)
+    })
+
+    it('should successfully upload on first attempt', async () => {
+        const successResponse = {
+            ok: true,
+            status: 200,
+            text: () => Promise.resolve('Success'),
+        }
+        fetchStub.returns({ response: Promise.resolve(successResponse) })
+        await uploadArtifactToS3(
+            'test.zip',
+            { uploadId: '123', uploadUrl: 'http://test.com', kmsKeyArn: 'arn' },
+            'sha256',
+            Buffer.from('test')
+        )
+        sinon.assert.calledOnce(fetchStub)
+    })
+
+    it('should retry upload on retriable error and succeed', async () => {
+        const failedResponse = {
+            ok: false,
+            status: 503,
+            text: () => Promise.resolve('Service Unavailable'),
+        }
+        const successResponse = {
+            ok: true,
+            status: 200,
+            text: () => Promise.resolve('Success'),
+        }
+        fetchStub.onFirstCall().returns({ response: Promise.resolve(failedResponse) })
+        fetchStub.onSecondCall().returns({ response: Promise.resolve(successResponse) })
+        await uploadArtifactToS3(
+            'test.zip',
+            { uploadId: '123', uploadUrl: 'http://test.com', kmsKeyArn: 'arn' },
+            'sha256',
+            Buffer.from('test')
+        )
+        sinon.assert.calledTwice(fetchStub)
+    })
+
+    it('should throw error after 4 failed upload attempts', async () => {
+        const failedResponse = {
+            ok: false,
+            status: 500,
+            text: () => Promise.resolve('Internal Server Error'),
+        }
+        fetchStub.returns({ response: Promise.resolve(failedResponse) })
+        const expectedMessage =
+            'The upload failed due to: Upload failed after up to 4 attempts with status code = 500. For more information, see the [Amazon Q documentation](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/troubleshooting-code-transformation.html#project-upload-fail)'
+        await assert.rejects(
+            uploadArtifactToS3(
+                'test.zip',
+                { uploadId: '123', uploadUrl: 'http://test.com', kmsKeyArn: 'arn' },
+                'sha256',
+                Buffer.from('test')
+            ),
+            {
+                name: 'Error',
+                message: expectedMessage,
+            }
+        )
+        sinon.assert.callCount(fetchStub, 4)
+    })
+
+    it('should not retry upload on non-retriable error', async () => {
+        const failedResponse = {
+            ok: false,
+            status: 400,
+            text: () => Promise.resolve('Bad Request'),
+        }
+        fetchStub.onFirstCall().returns({ response: Promise.resolve(failedResponse) })
+        const expectedMessage =
+            'The upload failed due to: Upload failed with status code = 400; did not automatically retry. For more information, see the [Amazon Q documentation](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/troubleshooting-code-transformation.html#project-upload-fail)'
+        await assert.rejects(
+            uploadArtifactToS3(
+                'test.zip',
+                { uploadId: '123', uploadUrl: 'http://test.com', kmsKeyArn: 'arn' },
+                'sha256',
+                Buffer.from('test')
+            ),
+            {
+                name: 'Error',
+                message: expectedMessage,
+            }
+        )
+        sinon.assert.calledOnce(fetchStub)
     })
 })

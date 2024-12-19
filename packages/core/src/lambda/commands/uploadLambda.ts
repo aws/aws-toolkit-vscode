@@ -12,7 +12,7 @@ import AdmZip from 'adm-zip'
 import * as path from 'path'
 import { fs } from '../../shared'
 import { showConfirmationMessage, showViewLogsMessage } from '../../shared/utilities/messages'
-import { cloud9Findfile, makeTemporaryToolkitFolder, tryRemoveFolder } from '../../shared/filesystemUtilities'
+import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../shared/filesystemUtilities'
 import * as localizedText from '../../shared/localizedText'
 import { getLogger } from '../../shared/logger'
 import { SamCliBuildInvocation } from '../../shared/sam/cli/samCliBuild'
@@ -419,7 +419,7 @@ async function runUploadLambdaZipFile(lambda: LambdaFunction, zipFileUri: vscode
             cancellable: false,
         },
         async (progress) => {
-            const zipFile = await fs.readFile(zipFileUri.fsPath).catch((err) => {
+            const zipFile = await fs.readFileBytes(zipFileUri.fsPath).catch((err) => {
                 throw new ToolkitError('Failed to read zip', { cause: err })
             })
             return await uploadZipBuffer(lambda, zipFile, progress)
@@ -494,17 +494,15 @@ export async function findApplicationJsonFile(
     }
     const isdir = await fs.existsDir(startPath.fsPath)
     const parentDir = isdir ? startPath.fsPath : path.dirname(startPath.fsPath)
-    const found = cloud9
-        ? await cloud9Findfile(parentDir, '.application.json')
-        : await vscode.workspace.findFiles(
-              new vscode.RelativePattern(parentDir, '**/.application.json'),
-              // exclude:
-              // - null      = NO excludes apply
-              // - undefined = default excludes apply (e.g. the `files.exclude` setting but not `search.exclude`).
-              // eslint-disable-next-line unicorn/no-null
-              null,
-              1
-          )
+    const found = await vscode.workspace.findFiles(
+        new vscode.RelativePattern(parentDir, '**/.application.json'),
+        // exclude:
+        // - null      = NO excludes apply
+        // - undefined = default excludes apply (e.g. the `files.exclude` setting but not `search.exclude`).
+        // eslint-disable-next-line unicorn/no-null
+        null,
+        1
+    )
     if (!found || found.length === 0) {
         getLogger().debug('uploadLambda: .application.json not found in: "%s"', parentDir)
     }
@@ -514,7 +512,7 @@ export async function findApplicationJsonFile(
 export async function getFunctionNames(file: vscode.Uri, region: string): Promise<string[] | undefined> {
     try {
         const names: string[] = []
-        const appData = JSON.parse(await fs.readFileAsString(file.fsPath))
+        const appData = JSON.parse(await fs.readFileText(file.fsPath))
         if (appData['Functions']) {
             const functions = Object.keys(appData['Functions'])
             if (functions) {

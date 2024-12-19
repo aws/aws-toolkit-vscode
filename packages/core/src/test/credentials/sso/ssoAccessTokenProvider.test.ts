@@ -24,7 +24,7 @@ import { getOpenExternalStub } from '../../globalSetup.test'
 import { getTestWindow } from '../../shared/vscode/window'
 import { SeverityLevel } from '../../shared/vscode/message'
 import { ToolkitError } from '../../../shared/errors'
-import * as fs from 'fs'
+import * as fs from 'fs' // eslint-disable-line no-restricted-imports
 import * as path from 'path'
 import { Stub, stub } from '../../utilities/stubber'
 
@@ -265,14 +265,51 @@ describe('SsoAccessTokenProvider', function () {
             assert.notDeepStrictEqual(await sut.getToken(), cachedToken)
         })
 
-        it('respects the device authorization expiration time', async function () {
-            // XXX: Don't know how to fix this "unhandled rejection" caused by this test:
-            //      rejected promise not handled within 1 second: Error: Timed-out waiting for browser login flow to complete
-            //          at poll (…/src/auth/sso/ssoAccessTokenProvider.ts:251:15)
-            //          at async SsoAccessTokenProvider.authorize (…/src/auth/sso/ssoAccessTokenProvider.ts:188:23)
-            //          at async SsoAccessTokenProvider.runFlow (…/src/auth/sso/ssoAccessTokenProvider.ts:113:20)
-            //          at async SsoAccessTokenProvider.createToken (…/src/auth/sso/ssoAccessTokenProvider.ts:102:24)
+        it(`emits session duration between logins of the same startUrl`, async function () {
+            setupFlow()
+            stubOpen()
 
+            await sut.createToken()
+            clock.tick(5000)
+            await sut.createToken()
+            clock.tick(10_000)
+            await sut.createToken()
+
+            // Mimic when we sign out then in again with the same region+startUrl. The ID is the only thing different.
+            sut = SsoAccessTokenProvider.create(
+                { region, startUrl, identifier: 'bbb' },
+                cache,
+                oidcClient,
+                reAuthState,
+                () => true
+            )
+            await sut.createToken()
+
+            assertTelemetry('aws_loginWithBrowser', [
+                {
+                    credentialStartUrl: startUrl,
+                    awsRegion: region,
+                    sessionDuration: undefined, // A new login.
+                },
+                {
+                    credentialStartUrl: startUrl,
+                    awsRegion: region,
+                    sessionDuration: 5000, // A reauth. 5000 - 0, is the diff between this and previous login
+                },
+                {
+                    credentialStartUrl: startUrl,
+                    awsRegion: region,
+                    sessionDuration: 10000, // A reauth. 15_000 - 5000 is the diff between this and previous login
+                },
+                {
+                    credentialStartUrl: startUrl,
+                    awsRegion: region,
+                    sessionDuration: undefined, // A new login, since we signed out of the last.
+                },
+            ])
+        })
+
+        it('respects the device authorization expiration time', async function () {
             setupFlow()
             stubOpen()
             const exception = new AuthorizationPendingException({ message: '', $metadata: {} })
@@ -280,13 +317,22 @@ describe('SsoAccessTokenProvider', function () {
             oidcClient.createToken.rejects(exception)
             oidcClient.startDeviceAuthorization.resolves(authorization)
 
-            const resp = sut.createToken()
+            const resp = sut
+                .createToken()
+                .then(() => assert.fail('Should not resolve'))
+                .catch((e) => {
+                    assert.ok(
+                        e instanceof ToolkitError &&
+                            e.message === 'Timed-out waiting for browser login flow to complete'
+                    )
+                })
+
             const progress = await getTestWindow().waitForMessage(/login page opened/i)
             await clock.tickAsync(750)
             assert.ok(progress.visible)
             await clock.tickAsync(750)
             assert.ok(!progress.visible)
-            await assert.rejects(resp, ToolkitError)
+            await resp
             assertTelemetry('aws_loginWithBrowser', {
                 result: 'Failed',
                 isReAuth: undefined,

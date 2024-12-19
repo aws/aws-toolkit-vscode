@@ -7,9 +7,11 @@ import * as vscode from 'vscode'
 import { SecurityIssueProvider } from './securityIssueProvider'
 import { CodeScanIssue } from '../models/model'
 import { Component } from '../../shared/telemetry/telemetry'
+import { amazonqCodeIssueDetailsTabTitle } from '../models/constants'
 
-export class SecurityIssueCodeActionProvider extends SecurityIssueProvider implements vscode.CodeActionProvider {
+export class SecurityIssueCodeActionProvider implements vscode.CodeActionProvider {
     static #instance: SecurityIssueCodeActionProvider
+    private issueProvider = SecurityIssueProvider.instance
 
     public static get instance() {
         return (this.#instance ??= new this())
@@ -23,12 +25,15 @@ export class SecurityIssueCodeActionProvider extends SecurityIssueProvider imple
     ): vscode.CodeAction[] {
         const codeActions: vscode.CodeAction[] = []
 
-        for (const group of this.issues) {
+        for (const group of this.issueProvider.issues) {
             if (document.fileName !== group.filePath) {
                 continue
             }
 
             for (const issue of group.issues) {
+                if (!issue.visible) {
+                    continue
+                }
                 const issueRange = new vscode.Range(issue.startLine, 0, issue.endLine, 0)
                 if (issueRange.contains(range)) {
                     const [suggestedFix] = issue.suggestedFixes
@@ -51,7 +56,7 @@ export class SecurityIssueCodeActionProvider extends SecurityIssueProvider imple
                     )
                     const args: [CodeScanIssue, string] = [issue, group.filePath]
                     openIssue.command = {
-                        title: 'Open "Amazon Q Security Issue"',
+                        title: `Open "${amazonqCodeIssueDetailsTabTitle}"`,
                         command: 'aws.amazonq.openSecurityIssuePanel',
                         arguments: args,
                     }
@@ -68,6 +73,30 @@ export class SecurityIssueCodeActionProvider extends SecurityIssueProvider imple
                         arguments: explainWithQArgs,
                     }
                     codeActions.push(explainWithQ)
+
+                    const ignoreIssue = new vscode.CodeAction(
+                        `Amazon Q: Ignore this "${issue.title}" issue`,
+                        vscode.CodeActionKind.QuickFix
+                    )
+                    const ignoreIssueArgs = [issue, group.filePath, 'quickfix']
+                    ignoreIssue.command = {
+                        title: 'Ignore this issue',
+                        command: 'aws.amazonq.security.ignore',
+                        arguments: ignoreIssueArgs,
+                    }
+                    codeActions.push(ignoreIssue)
+
+                    const ignoreAllIssues = new vscode.CodeAction(
+                        `Amazon Q: Ignore all "${issue.title}" issues`,
+                        vscode.CodeActionKind.QuickFix
+                    )
+                    const ignoreAllIssuesArgs = [issue, 'quickfix']
+                    ignoreAllIssues.command = {
+                        title: 'Ignore similar issues',
+                        command: 'aws.amazonq.security.ignoreAll',
+                        arguments: ignoreAllIssuesArgs,
+                    }
+                    codeActions.push(ignoreAllIssues)
                 }
             }
         }

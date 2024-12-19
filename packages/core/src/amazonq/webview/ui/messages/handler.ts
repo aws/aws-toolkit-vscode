@@ -25,6 +25,7 @@ export class TextMessageHandler {
     }
 
     public handle(chatPrompt: ChatPrompt, tabID: string, eventID: string) {
+        this.tabsStorage.updateTabLastCommand(tabID, chatPrompt.command)
         this.tabsStorage.updateTabTypeFromUnknown(tabID, 'cwc')
         this.tabsStorage.resetTabTimer(tabID)
         this.connector.onUpdateTabType(tabID)
@@ -35,16 +36,16 @@ export class TextMessageHandler {
 
         this.mynahUI.updateStore(tabID, {
             loadingChat: true,
+            cancelButtonWhenLoading: false,
             promptInputDisabledState: true,
         })
 
         this.tabsStorage.updateTabStatus(tabID, 'busy')
 
         void this.connector
-            .requestGenerativeAIAnswer(tabID, {
+            .requestGenerativeAIAnswer(tabID, eventID, {
                 chatMessage: chatPrompt.prompt ?? '',
                 chatCommand: chatPrompt.command,
-                traceId: eventID,
             })
             .then(() => {})
     }

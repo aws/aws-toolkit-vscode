@@ -104,10 +104,11 @@ describe('GlobalState', function () {
         await globalState.update(keys[2] as any, 'val3')
         assert.deepStrictEqual(globalState.keys(), keys)
         assert.deepStrictEqual(globalState.values(), ['val1', 'val2', 'val3'])
+
         await globalState.clear()
-        // XXX: no way to actually delete the key?
-        assert.deepStrictEqual(globalState.keys(), keys)
-        assert.deepStrictEqual(globalState.values(), [undefined, undefined, undefined])
+
+        assert.deepStrictEqual(globalState.keys(), [])
+        assert.deepStrictEqual(globalState.values(), [])
     })
 
     describe('redshift state', function () {

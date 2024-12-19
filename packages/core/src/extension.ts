@@ -16,10 +16,10 @@ import * as nls from 'vscode-nls'
 import globals, { initialize, isWeb } from './shared/extensionGlobals'
 import { join } from 'path'
 import { Commands } from './shared/vscode/commands2'
-import { documentationUrl, endpointsFileUrl, githubCreateIssueUrl, githubUrl } from './shared/constants'
-import { getIdeProperties, aboutExtension, isCloud9 } from './shared/extensionUtilities'
+import { endpointsFileUrl, githubCreateIssueUrl, githubUrl } from './shared/constants'
+import { getIdeProperties, aboutExtension, isCloud9, getDocUrl } from './shared/extensionUtilities'
 import { logAndShowError, logAndShowWebviewError } from './shared/utilities/logAndShowUtils'
-import { AuthStatus, telemetry } from './shared/telemetry/telemetry'
+import { telemetry } from './shared/telemetry/telemetry'
 import { openUrl } from './shared/utilities/vsCodeUtils'
 import { activateViewsShared } from './awsexplorer/activationShared'
 import fs from './shared/fs/fs'
@@ -45,17 +45,12 @@ import { UriHandler } from './shared/vscode/uriHandler'
 import { disableAwsSdkWarning } from './shared/awsClientBuilder'
 import { FileResourceFetcher } from './shared/resourcefetcher/fileResourceFetcher'
 import { ResourceFetcher } from './shared/resourcefetcher/resourcefetcher'
-import { ExtStartUpSources } from './shared/telemetry/util'
-import { ExtensionUse, getAuthFormIdsFromConnection } from './auth/utils'
-import { Auth } from './auth'
-import { AuthFormId } from './login/webview/vue/types'
-import { getTelemetryMetadataForConn, isSsoConnection } from './auth/connection'
 import { registerCommands } from './commands'
 
 // In web mode everything must be in a single file, so things like the endpoints file will not be available.
 // The following imports the endpoints file, which causes webpack to bundle it in the final output file
 import endpoints from '../resources/endpoints.json'
-import { getLogger, setupUninstallHandler } from './shared'
+import { getLogger, maybeShowMinVscodeWarning, setupUninstallHandler } from './shared'
 import { showViewLogsMessage } from './shared/utilities/messages'
 
 disableAwsSdkWarning()
@@ -80,7 +75,7 @@ export async function activateCommon(
     errors.init(fs.getUsername(), isAutomation())
     await initializeComputeRegion()
 
-    globals.contextPrefix = '' //todo: disconnect supplied argument
+    globals.contextPrefix = '' // todo: disconnect supplied argument
 
     registerCommandErrorHandler((info, error) => {
         const defaultMessage = localize('AWS.generic.message.error', 'Failed to run command: {0}', info.id)
@@ -88,19 +83,21 @@ export async function activateCommon(
     })
 
     registerWebviewErrorHandler((error: unknown, webviewId: string, command: string) => {
-        logAndShowWebviewError(localize, error, webviewId, command)
+        return logAndShowWebviewError(localize, error, webviewId, command)
     })
 
     // Setup the logger
     const toolkitOutputChannel = vscode.window.createOutputChannel('AWS Toolkit', { log: true })
     const toolkitLogChannel = vscode.window.createOutputChannel('AWS Toolkit Logs', { log: true })
-    await activateLogger(context, contextPrefix, toolkitOutputChannel, toolkitLogChannel)
+    await activateLogger(context, contextPrefix, toolkitLogChannel, toolkitOutputChannel)
     globals.outputChannel = toolkitOutputChannel
     globals.logOutputChannel = toolkitLogChannel
 
     if (homeDirLogs.length > 0) {
         getLogger().error('fs.init: invalid home directory given by env vars: %O', homeDirLogs)
     }
+
+    void maybeShowMinVscodeWarning('1.83.0')
 
     if (isCloud9()) {
         vscode.window.withProgress = wrapWithProgressForCloud9(globals.outputChannel)
@@ -115,7 +112,7 @@ export async function activateCommon(
         )
     }
 
-    //setup globals
+    // setup globals
     globals.machineId = await getMachineId()
     globals.awsContext = new DefaultAwsContext()
     globals.sdkClientBuilder = new DefaultAWSClientBuilder(globals.awsContext)
@@ -149,13 +146,13 @@ export async function activateCommon(
         ),
         // register URLs in extension menu
         Commands.register(`aws.toolkit.help`, async () => {
-            void openUrl(vscode.Uri.parse(documentationUrl))
+            void openUrl(getDocUrl())
             telemetry.aws_help.emit()
         })
     )
 
     // Handle AWS Toolkit un-installation.
-    setupUninstallHandler(VSCODE_EXTENSION_ID.awstoolkit, context)
+    setupUninstallHandler(VSCODE_EXTENSION_ID.awstoolkit, context.extension.id, context)
 
     // auth
     await initializeAuth(globals.loginManager)
@@ -255,52 +252,4 @@ function wrapWithProgressForCloud9(channel: vscode.OutputChannel): (typeof vscod
             return task(newProgress, token)
         })
     }
-}
-
-export async function emitUserState() {
-    await telemetry.auth_userState.run(async () => {
-        telemetry.record({ passive: true })
-
-        const firstUse = ExtensionUse.instance.isFirstUse()
-        const wasUpdated = ExtensionUse.instance.wasUpdated()
-
-        if (firstUse) {
-            telemetry.record({ source: ExtStartUpSources.firstStartUp })
-        } else if (wasUpdated) {
-            telemetry.record({ source: ExtStartUpSources.update })
-        } else {
-            telemetry.record({ source: ExtStartUpSources.reload })
-        }
-
-        let authStatus: AuthStatus = 'notConnected'
-        const enabledConnections: Set<AuthFormId> = new Set()
-        const enabledScopes: Set<string> = new Set()
-        if (Auth.instance.hasConnections) {
-            authStatus = 'expired'
-            ;(await Auth.instance.listConnections()).forEach((conn) => {
-                const state = Auth.instance.getConnectionState(conn)
-                if (state === 'valid') {
-                    authStatus = 'connected'
-                }
-
-                getAuthFormIdsFromConnection(conn).forEach((id) => enabledConnections.add(id))
-                if (isSsoConnection(conn)) {
-                    conn.scopes?.forEach((s) => enabledScopes.add(s))
-                }
-            })
-        }
-
-        // There may be other SSO connections in toolkit, but there is no use case for
-        // displaying registration info for non-active connections at this time.
-        const activeConn = Auth.instance.activeConnection
-        if (activeConn?.type === 'sso') {
-            telemetry.record(await getTelemetryMetadataForConn(activeConn))
-        }
-
-        telemetry.record({
-            authStatus,
-            authEnabledConnections: [...enabledConnections].join(','),
-            authScopes: [...enabledScopes].join(','),
-        })
-    })
 }

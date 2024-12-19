@@ -1,0 +1,10 @@
+{
+	"date": "2024-10-17",
+	"version": "1.30.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Various fixes and changes"
+		}
+	]
+}

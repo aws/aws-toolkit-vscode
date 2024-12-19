@@ -6,11 +6,10 @@
 import * as vscode from 'vscode'
 import * as path from 'path'
 import assert from 'assert'
-import * as fs from 'fs-extra'
-import { writeFileSync } from 'fs-extra'
 import { createWizardTester, WizardTester } from '../../shared/wizards/wizardTestUtils'
 import { UploadLambdaWizard, UploadLambdaWizardState, LambdaFunction } from '../../../lambda/commands/uploadLambda'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
+import { fs } from '../../../shared'
 
 describe('UploadLambdaWizard', function () {
     let tester: WizardTester<UploadLambdaWizardState>
@@ -59,7 +58,7 @@ describe('UploadLambdaWizard', function () {
             tester = await createWizardTester(new UploadLambdaWizard(undefined, invokePath))
         })
         afterEach(async function () {
-            await fs.remove(tempDir)
+            await fs.delete(tempDir, { recursive: true })
         })
 
         it('skip select directory, auto selected', function () {
@@ -80,12 +79,12 @@ describe('UploadLambdaWizard', function () {
         beforeEach(async function () {
             tempDir = await makeTemporaryToolkitFolder()
             tempDirUri = vscode.Uri.file(tempDir)
-            writeFileSync(path.join(tempDir, 'template.yaml'), '')
+            await fs.writeFile(path.join(tempDir, 'template.yaml'), '')
             invokePath = vscode.Uri.file(path.join(tempDir, 'template.yaml'))
             tester = await createWizardTester(new UploadLambdaWizard(undefined, invokePath))
         })
         afterEach(async function () {
-            await fs.remove(tempDir)
+            await fs.delete(tempDir, { recursive: true })
         })
 
         it('skip select directory, auto selected', function () {

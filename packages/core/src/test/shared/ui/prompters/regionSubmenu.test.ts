@@ -4,15 +4,16 @@
  */
 
 import assert from 'assert'
+import * as sinon from 'sinon'
 import { RegionSubmenu } from '../../../../shared/ui/common/regionSubmenu'
 import { DataQuickPickItem, QuickPickPrompter } from '../../../../shared/ui/pickerPrompter'
-import { createQuickPickPrompterTester } from '../../../shared/ui/testUtils'
+import { createQuickPickPrompterTester } from '../testUtils'
 
 describe('regionSubmenu', function () {
     let submenuPrompter: RegionSubmenu<string>
 
     const region1Data = ['option1a', 'option2a', 'option3a']
-    const region2Data = ['option1b', 'option2b', 'option3b']
+    let region2Data = ['option1b', 'option2b', 'option3b']
 
     before(async function () {
         const mockDataProvider = function (regionCode: string) {
@@ -63,5 +64,35 @@ describe('regionSubmenu', function () {
             region: 'us-west-2',
             data: 'option2b',
         })
+    })
+
+    it('only has a refresh button', function () {
+        const activeButtons = submenuPrompter.activePrompter!.quickPick.buttons
+        assert.strictEqual(activeButtons.length, 1)
+    })
+
+    it('refresh button calls refresh once onClick', function () {
+        const refreshButton = submenuPrompter.activePrompter!.quickPick.buttons[0]
+        const refreshStub = sinon.stub(RegionSubmenu.prototype, 'refresh')
+        refreshButton.onClick!()
+        sinon.assert.calledOnce(refreshStub)
+        sinon.restore()
+    })
+
+    it('refresh reloads items', async function () {
+        const itemsBeforeLabels = submenuPrompter.activePrompter!.quickPick.items.map((i) => i.label)
+        region2Data = ['option1c', 'option2c', 'option3c']
+
+        // Note that onDidChangeBusy event fires with busy=false when we load new items in.
+        // Since regionSubmenu retroactively adds the default items, they won't be there yet.
+        // So we don't check for them in test to avoid looking at implementation level details.
+        submenuPrompter.activePrompter!.onDidChangeBusy((b: boolean) => {
+            if (!b) {
+                const itemsAfterLabels = submenuPrompter.activePrompter!.quickPick.items.map((i) => i.label)
+                region2Data.forEach((item) => assert(itemsAfterLabels.includes(item)))
+                assert.notStrictEqual(itemsBeforeLabels, itemsAfterLabels)
+            }
+        })
+        submenuPrompter.refresh(submenuPrompter.activePrompter! as QuickPickPrompter<any>)
     })
 })

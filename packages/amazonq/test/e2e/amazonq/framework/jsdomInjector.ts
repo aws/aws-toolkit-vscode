@@ -3,15 +3,24 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { JSDOM } from 'jsdom'
+import { JSDOM, VirtualConsole } from 'jsdom'
 
+/**
+ * JSDOM is used to help hoist MynahUI to running in a node environment vs in the browser (which is what it's made for)
+ */
 export function injectJSDOM() {
-    /**
-     * JSDOM is used to help hoist MynahUI to running in a node environment vs in the browser (which is what it's made for)
-     */
+    const virtualConsole = new VirtualConsole()
+    virtualConsole.on('error', (error) => {
+        // JSDOM can't load scss from mynah UI, just skip it
+        if (!error.includes('Could not parse CSS stylesheet')) {
+            console.error(error)
+        }
+    })
+
     const dom = new JSDOM(undefined, {
         pretendToBeVisual: true,
         includeNodeLocations: true,
+        virtualConsole,
     })
     global.window = dom.window as unknown as Window & typeof globalThis
     global.document = dom.window.document
@@ -34,5 +43,5 @@ export function injectJSDOM() {
     })
 
     // jsdom doesn't have support for structuredClone. See https://github.com/jsdom/jsdom/issues/3363
-    global.structuredClone = (val) => JSON.parse(JSON.stringify(val))
+    global.structuredClone = (val: any) => JSON.parse(JSON.stringify(val))
 }

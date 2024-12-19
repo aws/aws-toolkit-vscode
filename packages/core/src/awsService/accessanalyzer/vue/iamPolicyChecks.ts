@@ -4,15 +4,14 @@
  */
 
 import * as vscode from 'vscode'
-import * as fs from 'fs'
+import * as fs from 'fs' // eslint-disable-line no-restricted-imports
 import * as path from 'path'
 import { getLogger, Logger } from '../../../shared/logger'
 import { localize } from '../../../shared/utilities/vsCodeUtils'
-import { VueWebview } from '../../../webviews/main'
+import { VueWebview, VueWebviewPanel } from '../../../webviews/main'
 import { ExtContext } from '../../../shared/extensions'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 import { AccessAnalyzer, SharedIniFileCredentials } from 'aws-sdk'
-import { execFileSync } from 'child_process'
 import { ToolkitError } from '../../../shared/errors'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../../shared/filesystemUtilities'
 import { globals } from '../../../shared'
@@ -28,11 +27,12 @@ import {
 } from './constants'
 import { DefaultS3Client, parseS3Uri } from '../../../shared/clients/s3Client'
 import { ExpiredTokenException } from '@aws-sdk/client-sso-oidc'
+import { ChildProcess } from '../../../shared/utilities/processUtils'
 
 const defaultTerraformConfigPath = 'resources/policychecks-tf-default.yaml'
 // Diagnostics for Custom checks are shared
-const customPolicyCheckDiagnosticCollection = vscode.languages.createDiagnosticCollection('customPolicyCheck')
-const validatePolicyDiagnosticCollection = vscode.languages.createDiagnosticCollection('validatePolicy')
+export const customPolicyCheckDiagnosticCollection = vscode.languages.createDiagnosticCollection('customPolicyCheck')
+export const validatePolicyDiagnosticCollection = vscode.languages.createDiagnosticCollection('validatePolicy')
 
 export interface IamPolicyChecksInitialData {
     checkNoNewAccessFilePath: string
@@ -56,7 +56,7 @@ export class IamPolicyChecksWebview extends VueWebview {
     public static readonly sourcePath: string = 'src/awsService/accessanalyzer/vue/index.js'
     public readonly id = 'iamPolicyChecks'
     private static editedDocumentUri: vscode.Uri
-    private static editedDocumentFileName: string
+    public static editedDocumentFileName: string
     private static editedDocument: string
 
     public constructor(
@@ -119,14 +119,18 @@ export class IamPolicyChecksWebview extends VueWebview {
         // Send the current active text editor to Webview to show what is being targeted by the user
         vscode.window.onDidChangeActiveTextEditor((message: any) => {
             const editedFile = vscode.window.activeTextEditor?.document
-            IamPolicyChecksWebview.editedDocumentFileName = editedFile!.uri.path
-            IamPolicyChecksWebview.editedDocument = editedFile!.getText()
-            IamPolicyChecksWebview.editedDocumentUri = editedFile!.uri
-            this.onChangeInputPath.fire(editedFile!.uri.path)
+            if (editedFile !== undefined) {
+                IamPolicyChecksWebview.editedDocumentFileName = editedFile.uri.path
+                IamPolicyChecksWebview.editedDocument = editedFile.getText()
+                IamPolicyChecksWebview.editedDocumentUri = editedFile.uri
+                this.onChangeInputPath.fire(editedFile.uri.path)
+            }
         })
         vscode.workspace.onDidChangeTextDocument((message: any) => {
             const editedFile = vscode.window.activeTextEditor?.document
-            IamPolicyChecksWebview.editedDocument = editedFile!.getText()
+            if (editedFile !== undefined) {
+                IamPolicyChecksWebview.editedDocument = editedFile.getText()
+            }
         })
     }
 
@@ -273,7 +277,7 @@ export class IamPolicyChecksWebview extends VueWebview {
                         '--config',
                         `${globals.context.asAbsolutePath(defaultTerraformConfigPath)}`,
                     ]
-                    this.executeValidatePolicyCommand({
+                    await this.executeValidatePolicyCommand({
                         command,
                         args,
                         cfnParameterPathExists: !!cfnParameterPath,
@@ -296,7 +300,7 @@ export class IamPolicyChecksWebview extends VueWebview {
                     if (cfnParameterPath !== '') {
                         args.push('--template-configuration-file', `${cfnParameterPath}`)
                     }
-                    this.executeValidatePolicyCommand({
+                    await this.executeValidatePolicyCommand({
                         command,
                         args,
                         cfnParameterPathExists: !!cfnParameterPath,
@@ -353,7 +357,7 @@ export class IamPolicyChecksWebview extends VueWebview {
                         '--reference-policy-type',
                         `${policyType}`,
                     ]
-                    this.executeCustomPolicyChecksCommand({
+                    await this.executeCustomPolicyChecksCommand({
                         command,
                         args,
                         cfnParameterPathExists: !!cfnParameterPath,
@@ -387,7 +391,7 @@ export class IamPolicyChecksWebview extends VueWebview {
                     if (cfnParameterPath !== '') {
                         args.push('--template-configuration-file', `${cfnParameterPath}`)
                     }
-                    this.executeCustomPolicyChecksCommand({
+                    await this.executeCustomPolicyChecksCommand({
                         command,
                         args,
                         cfnParameterPathExists: !!cfnParameterPath,
@@ -450,7 +454,7 @@ export class IamPolicyChecksWebview extends VueWebview {
                     if (resources !== '') {
                         args.push('--resources', `${resources}`)
                     }
-                    this.executeCustomPolicyChecksCommand({
+                    await this.executeCustomPolicyChecksCommand({
                         command,
                         args,
                         cfnParameterPathExists: !!cfnParameterPath,
@@ -485,7 +489,7 @@ export class IamPolicyChecksWebview extends VueWebview {
                     if (cfnParameterPath !== '') {
                         args.push('--template-configuration-file', `${cfnParameterPath}`)
                     }
-                    this.executeCustomPolicyChecksCommand({
+                    await this.executeCustomPolicyChecksCommand({
                         command,
                         args,
                         cfnParameterPathExists: !!cfnParameterPath,
@@ -521,7 +525,7 @@ export class IamPolicyChecksWebview extends VueWebview {
                         '--config',
                         `${globals.context.asAbsolutePath(defaultTerraformConfigPath)}`,
                     ]
-                    this.executeCustomPolicyChecksCommand({
+                    await this.executeCustomPolicyChecksCommand({
                         command,
                         args,
                         cfnParameterPathExists: !!cfnParameterPath,
@@ -550,7 +554,7 @@ export class IamPolicyChecksWebview extends VueWebview {
                     if (cfnParameterPath !== '') {
                         args.push('--template-configuration-file', `${cfnParameterPath}`)
                     }
-                    this.executeCustomPolicyChecksCommand({
+                    await this.executeCustomPolicyChecksCommand({
                         command,
                         args,
                         cfnParameterPathExists: !!cfnParameterPath,
@@ -569,22 +573,22 @@ export class IamPolicyChecksWebview extends VueWebview {
         }
     }
 
-    public executeValidatePolicyCommand(opts: PolicyCommandOpts & { policyType?: PolicyChecksPolicyType }) {
-        telemetry.accessanalyzer_iamPolicyChecksValidatePolicy.run((span) => {
+    public async executeValidatePolicyCommand(opts: PolicyCommandOpts & { policyType?: PolicyChecksPolicyType }) {
+        await telemetry.accessanalyzer_iamPolicyChecksValidatePolicy.run(async (span) => {
             try {
                 span.record({
                     cfnParameterFileUsed: opts.cfnParameterPathExists,
                     documentType: opts.documentType,
                     inputPolicyType: opts.policyType ?? 'None',
                 })
-                const resp = execFileSync(opts.command, opts.args)
-                const findingsCount = this.handleValidatePolicyCliResponse(resp.toString())
+                const result = await ChildProcess.run(opts.command, opts.args, { collect: true })
+                const findingsCount = this.handleValidatePolicyCliResponse(result.stdout)
                 span.record({
                     findingsCount: findingsCount,
                 })
             } catch (err: any) {
                 if (err.status === 2) {
-                    //CLI responds with a status code of 2 when findings are discovered
+                    // CLI responds with a status code of 2 when findings are discovered
                     const findingsCount = this.handleValidatePolicyCliResponse(err.stdout.toString())
                     span.record({
                         findingsCount: findingsCount,
@@ -629,10 +633,10 @@ export class IamPolicyChecksWebview extends VueWebview {
         return findingsCount
     }
 
-    public executeCustomPolicyChecksCommand(
+    public async executeCustomPolicyChecksCommand(
         opts: PolicyCommandOpts & { checkType: PolicyChecksCheckType; referencePolicyType?: PolicyChecksPolicyType }
     ) {
-        telemetry.accessanalyzer_iamPolicyChecksCustomChecks.run((span) => {
+        await telemetry.accessanalyzer_iamPolicyChecksCustomChecks.run(async (span) => {
             try {
                 span.record({
                     cfnParameterFileUsed: opts.cfnParameterPathExists,
@@ -641,14 +645,14 @@ export class IamPolicyChecksWebview extends VueWebview {
                     inputPolicyType: 'None', // Note: This will change once JSON policy language is enabled for Custom policy checks
                     referencePolicyType: opts.referencePolicyType ?? 'None',
                 })
-                const resp = execFileSync(opts.command, opts.args)
-                const findingsCount = this.handleCustomPolicyChecksCliResponse(resp.toString())
+                const resp = await ChildProcess.run(opts.command, opts.args)
+                const findingsCount = this.handleCustomPolicyChecksCliResponse(resp.stdout)
                 span.record({
                     findingsCount: findingsCount,
                 })
             } catch (err: any) {
                 if (err.status === 2) {
-                    //CLI responds with a status code of 2 when findings are discovered
+                    // CLI responds with a status code of 2 when findings are discovered
                     const findingsCount = this.handleCustomPolicyChecksCliResponse(err.stdout.toString())
                     span.record({
                         findingsCount: findingsCount,
@@ -715,10 +719,10 @@ export class IamPolicyChecksWebview extends VueWebview {
     }
 
     public pushCustomCheckDiagnostic(diagnostics: vscode.Diagnostic[], finding: any, isBlocking: boolean) {
-        const message = `${finding.findingType}: ${finding.message} - Resource name: ${finding.resourceName}, Policy name: ${finding.policyName}`
-        if (message.includes('existingPolicyDocument')) {
-            message.replace('existingPolicyDocument', 'reference document')
-        }
+        const findingMessage: string = finding.message.includes('existingPolicyDocument')
+            ? finding.message.replace('existingPolicyDocument', 'reference document')
+            : finding.message
+        const message = `${finding.findingType}: ${findingMessage} - Resource name: ${finding.resourceName}, Policy name: ${finding.policyName}`
         if (finding.details.reasons) {
             finding.details.reasons.forEach((reason: any) => {
                 diagnostics.push(
@@ -744,11 +748,11 @@ export class IamPolicyChecksWebview extends VueWebview {
 
 const Panel = VueWebview.compilePanel(IamPolicyChecksWebview)
 
-export async function renderIamPolicyChecks(context: ExtContext): Promise<void> {
+export async function renderIamPolicyChecks(context: ExtContext): Promise<VueWebviewPanel | undefined> {
     const logger: Logger = getLogger()
     try {
         const client = new AccessAnalyzer({ region: context.regionProvider.defaultRegionId })
-        //Read from settings to auto-fill some inputs
+        // Read from settings to auto-fill some inputs
         const checkNoNewAccessFilePath: string = vscode.workspace
             .getConfiguration()
             .get(IamPolicyChecksConstants.CheckNoNewAccessFilePathSetting)!
@@ -786,7 +790,7 @@ export async function renderIamPolicyChecks(context: ExtContext): Promise<void> 
                 checkAccessNotGrantedResourcesTextArea,
                 customChecksFileErrorMessage,
                 cfnParameterPath: cfnParameterPath ? cfnParameterPath : '',
-                pythonToolsInstalled: arePythonToolsInstalled(),
+                pythonToolsInstalled: await arePythonToolsInstalled(),
             },
             client,
             context.regionProvider.defaultRegionId
@@ -795,13 +799,14 @@ export async function renderIamPolicyChecks(context: ExtContext): Promise<void> 
             viewColumn: vscode.ViewColumn.Beside,
             title: localize('AWS.iamPolicyChecks.title', 'IAM Policy Checks'),
         })
+        return wv
     } catch (err) {
         logger.error(err as Error)
     }
 }
 
 // Helper function to get document contents from a path
-async function _readCustomChecksFile(input: string): Promise<string> {
+export async function _readCustomChecksFile(input: string): Promise<string> {
     if (fs.existsSync(input)) {
         return fs.readFileSync(input).toString()
     } else {
@@ -822,13 +827,13 @@ async function _readCustomChecksFile(input: string): Promise<string> {
     }
 }
 
-//Check if Cfn and Tf tools are installed
-function arePythonToolsInstalled(): boolean {
+// Check if Cfn and Tf tools are installed
+export async function arePythonToolsInstalled(): Promise<boolean> {
     const logger: Logger = getLogger()
     let cfnToolInstalled = true
     let tfToolInstalled = true
     try {
-        execFileSync('tf-policy-validator')
+        await ChildProcess.run('tf-policy-validator')
     } catch (err: any) {
         if (isProcessNotFoundErr(err.message)) {
             tfToolInstalled = false
@@ -836,7 +841,7 @@ function arePythonToolsInstalled(): boolean {
         }
     }
     try {
-        execFileSync('cfn-policy-validator')
+        await ChildProcess.run('cfn-policy-validator')
     } catch (err: any) {
         if (isProcessNotFoundErr(err.message)) {
             cfnToolInstalled = false
@@ -846,12 +851,12 @@ function arePythonToolsInstalled(): boolean {
     return cfnToolInstalled && tfToolInstalled
 }
 
-function isProcessNotFoundErr(errMsg: string) {
+export function isProcessNotFoundErr(errMsg: string) {
     return errMsg.includes('command not found') || errMsg.includes('ENOENT')
 }
 
 // Since TypeScript can only get the CLI tool's error output as a string, we have to parse and sanitize it ourselves
-function parseCliErrorMessage(message: string, documentType: PolicyChecksDocumentType): string {
+export function parseCliErrorMessage(message: string, documentType: PolicyChecksDocumentType): string {
     const cfnMatch = message.match(/ERROR: .*/)
     const botoMatch = message.match(/(?<=botocore\.exceptions\.).*/) // Boto errors have a special match
     const terraformMatch = message.match(/AttributeError:.*/) // Terraform CLI responds with a different error schema... this catches invalid .json plans
@@ -876,7 +881,7 @@ function parseCliErrorMessage(message: string, documentType: PolicyChecksDocumen
     return message
 }
 
-function getCheckNoNewAccessErrorMessage(finding: any) {
+export function getCheckNoNewAccessErrorMessage(finding: any) {
     if (finding.findingType === 'ERROR') {
         if (
             finding.message.includes(
@@ -888,7 +893,7 @@ function getCheckNoNewAccessErrorMessage(finding: any) {
     }
 }
 
-function getResultCssColor(resultType: PolicyChecksResult): string {
+export function getResultCssColor(resultType: PolicyChecksResult): string {
     switch (resultType) {
         case 'Success':
             return 'var(--vscode-terminal-ansiGreen)'
@@ -899,17 +904,17 @@ function getResultCssColor(resultType: PolicyChecksResult): string {
     }
 }
 
-function isCloudFormationTemplate(document: string): boolean {
+export function isCloudFormationTemplate(document: string): boolean {
     const cfnFileTypes = ['.yaml', '.yml', '.json']
     return cfnFileTypes.some((t) => document.endsWith(t))
 }
 
-function isTerraformPlan(document: string) {
+export function isTerraformPlan(document: string) {
     const terraformPlanFileTypes = ['.json']
     return terraformPlanFileTypes.some((t) => document.endsWith(t))
 }
 
-function isJsonPolicyLanguage(document: string) {
+export function isJsonPolicyLanguage(document: string) {
     const policyLanguageFileTypes = ['.json']
     return policyLanguageFileTypes.some((t) => document.endsWith(t))
 }

@@ -57,10 +57,6 @@ export class ThreatComposerEditor {
         this.defaultTemplateName = path.basename(this.defaultTemplatePath)
         this.fileId = fileId
 
-        telemetry.threatComposer_opened.record({
-            id: this.fileId,
-        })
-
         this.setupWebviewPanel(textDocument, context)
     }
 

@@ -5,7 +5,6 @@
 
 import assert from 'assert'
 import * as vscode from 'vscode'
-import * as fs from 'fs-extra'
 import * as fsUtils from '../../../shared/filesystemUtilities'
 import { SamCliBuildInvocation, SamCliBuildInvocationArguments } from '../../../shared/sam/cli/samCliBuild'
 import * as localLambdaRunner from '../../../shared/sam/localLambdaRunner'
@@ -14,6 +13,7 @@ import { FakeExtensionContext } from '../../fakeExtensionContext'
 import { SamLaunchRequestArgs } from '../../../shared/sam/debugger/awsSamDebugger'
 import { assertLogsContain } from '../../globalSetup.test'
 import { ToolkitError } from '../../../shared/errors'
+import { fs } from '../../../shared'
 
 describe('localLambdaRunner', async function () {
     let tempDir: string
@@ -26,7 +26,7 @@ describe('localLambdaRunner', async function () {
     })
 
     afterEach(async function () {
-        await fs.remove(tempDir)
+        await fs.delete(tempDir, { recursive: true })
     })
 
     describe('attachDebugger', async function () {

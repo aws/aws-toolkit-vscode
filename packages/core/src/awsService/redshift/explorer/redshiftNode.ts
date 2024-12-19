@@ -127,7 +127,7 @@ export class RedshiftNode extends AWSTreeNodeBase implements LoadMoreNode {
                     newServerlessToken = response.nextToken ?? ''
                 }
             } catch (error) {
-                getLogger().error("Serverless workgroup operation isn't supported or failed:", error)
+                getLogger().error("Serverless workgroup operation isn't supported or failed: %O", error)
                 // Continue without interrupting the provisioned cluster loading
             }
         }
@@ -143,7 +143,7 @@ export class RedshiftNode extends AWSTreeNodeBase implements LoadMoreNode {
     }
 
     public async createCluster(clusterName: string): Promise<void> {
-        //Code for creating redshiftClient cluster
+        // Code for creating redshiftClient cluster
     }
 
     public [inspect.custom](): string {

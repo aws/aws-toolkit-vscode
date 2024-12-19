@@ -4,7 +4,6 @@
  */
 
 import { Runtime } from 'aws-sdk/clients/lambda'
-import { writeFile } from 'fs-extra'
 import * as os from 'os'
 import * as path from 'path'
 import {
@@ -26,6 +25,7 @@ import { getWorkspaceRelativePath } from '../../utilities/workspaceUtils'
 import { DefaultSamLocalInvokeCommand, waitForDebuggerMessages } from '../cli/samCliLocalInvoke'
 import { runLambdaFunction } from '../localLambdaRunner'
 import { SamLaunchRequestArgs } from './awsSamDebugger'
+import fs from '../../fs/fs'
 
 /** SAM will mount the --debugger-path to /tmp/lambci_debug_files */
 const debugpyWrapperPath = '/tmp/lambci_debug_files/py_debug_wrapper.py'
@@ -49,21 +49,21 @@ async function makePythonDebugManifest(params: {
     if (await fileExists(manfestPath)) {
         manifestText = await readFileAsString(manfestPath)
     }
-    getLogger().debug(`pythonCodeLensProvider.makePythonDebugManifest params: ${JSON.stringify(params, undefined, 2)}`)
+    getLogger().debug(`pythonCodeLensProvider.makePythonDebugManifest params: %O`, params)
     // TODO: If another module name includes the string "ikp3db", this will be skipped...
     // HACK: Cloud9-created Lambdas hardcode ikp3db 1.1.4, which only functions with Python 3.6 (which we don't support)
     //       Remove any ikp3db dependency if it exists and manually add a non-pinned ikp3db dependency.
     if (params.useIkpdb) {
         manifestText = manifestText.replace(/[ \t]*ikp3db\b[^\r\n]*/, '')
         manifestText += `${os.EOL}ikp3db`
-        await writeFile(debugManifestPath, manifestText)
+        await fs.writeFile(debugManifestPath, manifestText)
         return debugManifestPath
     }
 
     // TODO: If another module name includes the string "debugpy", this will be skipped...
     if (!params.useIkpdb && !manifestText.includes('debugpy')) {
         manifestText += `${os.EOL}debugpy>=1.0,<2`
-        await writeFile(debugManifestPath, manifestText)
+        await fs.writeFile(debugManifestPath, manifestText)
 
         return debugManifestPath
     }
@@ -263,6 +263,8 @@ function getPythonExeAndBootstrap(runtime: Runtime) {
             return { python: '/var/lang/bin/python3.11', bootstrap: '/var/runtime/bootstrap.py' }
         case 'python3.12':
             return { python: '/var/lang/bin/python3.12', bootstrap: '/var/runtime/bootstrap.py' }
+        case 'python3.13':
+            return { python: '/var/lang/bin/python3.13', bootstrap: '/var/runtime/bootstrap.py' }
         default:
             throw new Error(`Python SAM debug logic ran for invalid Python runtime: ${runtime}`)
     }

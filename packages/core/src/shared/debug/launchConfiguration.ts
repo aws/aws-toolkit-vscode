@@ -24,9 +24,9 @@ import * as pathutils from '../utilities/pathUtils'
 import { tryGetAbsolutePath } from '../utilities/workspaceUtils'
 import { getLogger } from '../logger'
 import { makeFailedWriteMessage, showViewLogsMessage } from '../utilities/messages'
-import { launchConfigDocUrl } from '../constants'
 import { openUrl } from '../utilities/vsCodeUtils'
 import globals from '../extensionGlobals'
+import { getLaunchConfigDocUrl } from '../extensionUtilities'
 
 const localize = nls.loadMessageBundle()
 
@@ -130,7 +130,7 @@ class DefaultDebugConfigSource implements DebugConfigurationSource {
             await showViewLogsMessage(makeFailedWriteMessage('launch.json'), 'error', [helpText]).then(
                 async (buttonText) => {
                     if (buttonText === helpText) {
-                        await openUrl(vscode.Uri.parse(launchConfigDocUrl))
+                        await openUrl(getLaunchConfigDocUrl())
                     }
                 }
             )

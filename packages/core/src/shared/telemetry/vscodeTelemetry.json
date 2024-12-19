@@ -6,6 +6,11 @@
             "description": "The time it takes to generate approach response"
         },
         {
+            "name": "proxiedSessionId",
+            "type": "string",
+            "description": "The sessionId of the extension instance that this instance is reporting on behalf of."
+        },
+        {
             "name": "documentFormat",
             "type": "string",
             "allowedValues": ["JSON, YAML"],
@@ -16,6 +21,11 @@
             "type": "string",
             "allowedValues": ["Create", "Update"],
             "description": "SSM Publish Document operation type"
+        },
+        {
+            "name": "isInvalidJson",
+            "type": "boolean",
+            "description": "Indicates whether the message contains an invalid JSON definition."
         },
         {
             "name": "starterTemplate",
@@ -99,11 +109,6 @@
             "description": "CPU used by LSP server as a percentage of all available CPUs on the system"
         },
         {
-            "name": "cwsprChatProgrammingLanguage",
-            "type": "string",
-            "description": "Programming language associated with the message"
-        },
-        {
             "name": "cwsprChatConversationType",
             "type": "string",
             "allowedValues": ["Chat", "Assign", "Transform"],
@@ -157,17 +162,42 @@
         {
             "name": "cwsprChatTimeToFirstChunk",
             "type": "int",
-            "description": "Time taken in ms to get back the first chunk"
+            "description": "The time between when the conversation id was created and when we got back the first usable result"
         },
         {
             "name": "cwsprChatTimeBetweenChunks",
             "type": "string",
-            "description": "Time (list of int) taken in ms between chunks"
+            "description": "An array of time when successive chunks of data are received from the server"
         },
         {
             "name": "cwsprChatFullResponseLatency",
             "type": "int",
-            "description": "Time taken to get the full response in ms"
+            "description": "The time between when the conversation id was created and the final response from the server was received"
+        },
+        {
+            "name": "cwsprChatTimeToFirstUsableChunk",
+            "type": "int",
+            "description": "The time between the initial server request, including creating the conversation id, and the first usable result"
+        },
+        {
+            "name": "cwsprChatFullServerResponseLatency",
+            "type": "int",
+            "description": "The time between the initial server request, including creating the conversation id, and the final response from the server"
+        },
+        {
+            "name": "cwsprChatTimeToFirstDisplay",
+            "type": "int",
+            "description": "The time between the user pressing enter and when the first chunk of data is displayed to the user"
+        },
+        {
+            "name": "cwsprChatTimeBetweenDisplays",
+            "type": "string",
+            "description": "An array of time when successive chunks of server responses are displayed to the user"
+        },
+        {
+            "name": "cwsprChatFullDisplayLatency",
+            "type": "int",
+            "description": "The time between the user pressing enter and the entire response being rendered"
         },
         {
             "name": "cwsprChatResponseLength",
@@ -178,22 +208,6 @@
             "name": "cwsprChatRequestLength",
             "type": "int",
             "description": "Number of characters in request"
-        },
-        {
-            "name": "cwsprChatInteractionType",
-            "allowedValues": [
-                "insertAtCursor",
-                "copySnippet",
-                "copy",
-                "clickLink",
-                "clickFollowUp",
-                "hoverReference",
-                "upvote",
-                "downvote",
-                "clickBodyLink"
-            ],
-            "type": "string",
-            "description": "Indicates the specific interaction type with a message in a conversation"
         },
         {
             "name": "cwsprChatInteractionTarget",
@@ -293,6 +307,11 @@
             "description": "Memory heap usage in MB"
         },
         {
+            "name": "className",
+            "type": "string",
+            "description": "The name of the class"
+        },
+        {
             "name": "functionName",
             "type": "string",
             "description": "The name of the function"
@@ -308,14 +327,9 @@
             "description": "The CPU architecture"
         },
         {
-            "name": "totalFileSizeInMB",
+            "name": "timestamp",
             "type": "int",
-            "description": "The total size of all files being sent to Amazon Q"
-        },
-        {
-            "name": "totalFiles",
-            "type": "int",
-            "description": "The total number of files being sent to Amazon Q"
+            "description": "A timestamp in milliseconds"
         },
         {
             "name": "traceId",
@@ -341,6 +355,11 @@
             "name": "amazonqMessageDisplayedMs",
             "type": "int",
             "description": "Duration between the partner teams code receiving the message and when the message was finally displayed in ms"
+        },
+        {
+            "name": "executedCount",
+            "type": "int",
+            "description": "The number of executed operations"
         }
     ],
     "metrics": [
@@ -528,7 +547,7 @@
         },
         {
             "name": "stepfunctions_saveFile",
-            "description": "Called after the user saves local ASL file (inlcuding autosave) from VSCode editor or Workflow Studio",
+            "description": "Triggered when Workflow Studio auto-syncs to the local file or when unsaved local changes are saved from Workflow Studio or VSCode.",
             "metadata": [
                 {
                     "type": "id",
@@ -541,6 +560,9 @@
                 {
                     "type": "source",
                     "required": true
+                },
+                {
+                    "type": "isInvalidJson"
                 }
             ]
         },
@@ -797,6 +819,21 @@
                     "type": "cwsprChatFullResponseLatency"
                 },
                 {
+                    "type": "cwsprChatTimeToFirstUsableChunk"
+                },
+                {
+                    "type": "cwsprChatFullServerResponseLatency"
+                },
+                {
+                    "type": "cwsprChatTimeToFirstDisplay"
+                },
+                {
+                    "type": "cwsprChatFullDisplayLatency"
+                },
+                {
+                    "type": "cwsprChatTimeBetweenDisplays"
+                },
+                {
                     "type": "cwsprChatRequestLength"
                 },
                 {
@@ -862,57 +899,6 @@
                 },
                 {
                     "type": "cwsprChatResponseErrorReason",
-                    "required": false
-                }
-            ]
-        },
-        {
-            "name": "amazonq_interactWithMessage",
-            "description": "When a user interacts with a message in the conversation",
-            "metadata": [
-                {
-                    "type": "cwsprChatConversationId"
-                },
-                {
-                    "type": "credentialStartUrl",
-                    "required": false
-                },
-                {
-                    "type": "cwsprChatMessageId"
-                },
-                {
-                    "type": "cwsprChatUserIntent",
-                    "required": false
-                },
-                {
-                    "type": "cwsprChatInteractionType"
-                },
-                {
-                    "type": "cwsprChatInteractionTarget",
-                    "required": false
-                },
-                {
-                    "type": "cwsprChatAcceptedCharactersLength",
-                    "required": false
-                },
-                {
-                    "type": "cwsprChatAcceptedNumberOfLines",
-                    "required": false
-                },
-                {
-                    "type": "cwsprChatHasReference",
-                    "required": false
-                },
-                {
-                    "type": "cwsprChatCodeBlockIndex",
-                    "required": false
-                },
-                {
-                    "type": "cwsprChatTotalCodeBlocks",
-                    "required": false
-                },
-                {
-                    "type": "cwsprChatHasProjectContext",
                     "required": false
                 }
             ]
@@ -1196,36 +1182,19 @@
             "description": "Represents a function call. In most cases this should wrap code with a run(), then you can add context.",
             "metadata": [
                 {
-                    "type": "userCpuUsage",
-                    "required": false
-                },
-                {
-                    "type": "systemCpuUsage",
-                    "required": false
-                },
-                {
-                    "type": "totalFiles",
-                    "required": false
-                },
-                {
-                    "type": "totalFileSizeInMB",
-                    "required": false
-                },
-                {
-                    "type": "architecture",
-                    "required": false
-                },
-                {
-                    "type": "heapTotal",
-                    "required": false
-                },
-                {
                     "type": "functionName",
                     "required": true
+                },
+                {
+                    "type": "className",
+                    "required": false
+                },
+                {
+                    "type": "source",
+                    "required": false
                 }
             ],
-            "passive": true,
-            "trackPerformance": true
+            "passive": true
         },
         {
             "name": "webview_load",
@@ -1280,10 +1249,42 @@
                     "type": "amazonqMessageDisplayedMs"
                 },
                 {
-                    "type": "source",
+                    "type": "source"
+                }
+            ]
+        },
+        {
+            "name": "session_end",
+            "description": "Called when stopping the IDE on a best effort basis",
+            "metadata": [
+                {
+                    "type": "proxiedSessionId",
+                    "required": false
+                },
+                {
+                    "type": "timestamp",
                     "required": false
                 }
             ]
+        },
+        {
+            "name": "ide_heartbeat",
+            "description": "A heartbeat sent by the extension",
+            "metadata": [
+                {
+                    "type": "id",
+                    "required": true
+                },
+                {
+                    "type": "name",
+                    "required": false
+                },
+                {
+                    "type": "timestamp",
+                    "required": false
+                }
+            ],
+            "passive": true
         }
     ]
 }

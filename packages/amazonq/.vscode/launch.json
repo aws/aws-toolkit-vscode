@@ -100,6 +100,25 @@
             }
         },
         {
+            "name": "Extension Tests (web)",
+            "type": "extensionHost",
+            "debugWebWorkerHost": true,
+            "request": "launch",
+            "args": [
+                "--disable-extension=amazonwebservices.aws-toolkit-vscode",
+                "--extensionDevelopmentPath=${workspaceFolder}",
+                "--extensionDevelopmentKind=web",
+                "--extensionTestsPath=${workspaceFolder}/dist/test/web/testRunnerWebCore",
+                "${workspaceFolder}/../core/dist/src/testFixtures/workspaceFolder"
+            ],
+            "outFiles": ["${workspaceFolder}/dist/**/*.js", "${workspaceFolder}/../core/dist/**/*.js"],
+            "preLaunchTask": "webRun",
+            "presentation": {
+                "group": "3_ExtensionTests",
+                "order": 3
+            }
+        },
+        {
             "name": "E2E Test (current file)",
             "type": "extensionHost",
             "request": "launch",

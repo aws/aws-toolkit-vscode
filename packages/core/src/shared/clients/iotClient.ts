@@ -26,7 +26,7 @@ export type IotPolicy = IotThing
 export type IotClient = InterfaceNoSymbol<DefaultIotClient>
 
 const iotServiceArn = 'iot'
-//Pattern to extract the certificate ID from the parsed ARN resource.
+// Pattern to extract the certificate ID from the parsed ARN resource.
 const certArnResourcePattern = /cert\/(\w+)/
 
 export interface ListThingCertificatesResponse {

@@ -31,6 +31,7 @@ import {
     joinAll,
     isPresent,
     partialClone,
+    inspect,
 } from '../../../shared/utilities/collectionUtils'
 
 import { asyncGenerator } from '../../../shared/utilities/collectionUtils'
@@ -511,7 +512,7 @@ describe('CollectionUtils', async function () {
         const requester = async (request: { next?: string }) => pages[request.next ?? 'page1']
 
         it('creates a new AsyncCollection', async function () {
-            const collection = pageableToCollection(requester, {}, 'next', 'data')
+            const collection = pageableToCollection(requester, {}, 'next' as never, 'data')
             assert.deepStrictEqual(await collection.promise(), [[0, 1, 2], [3, 4], [5], []])
         })
 
@@ -540,7 +541,7 @@ describe('CollectionUtils', async function () {
 
         describe('last', function () {
             it('it persists last element when mapped', async function () {
-                const collection = pageableToCollection(requester, {}, 'next', 'data')
+                const collection = pageableToCollection(requester, {}, 'next' as never, 'data')
                 const mapped = collection.map((i) => i[0] ?? -1)
                 assert.strictEqual(await last(mapped), -1)
             })
@@ -676,6 +677,36 @@ describe('CollectionUtils', async function () {
         })
         it('returns false for undefined', function () {
             assert.strictEqual(isPresent<string>(undefined), false)
+        })
+    })
+
+    describe('inspect', function () {
+        let testData: any
+        before(function () {
+            testData = {
+                root: {
+                    A: {
+                        B: {
+                            C: {
+                                D: {
+                                    E: 'data',
+                                },
+                            },
+                        },
+                    },
+                },
+            }
+        })
+
+        it('defaults to a depth of 3', function () {
+            assert.strictEqual(inspect(testData), '{\n  root: { A: { B: { C: [Object] } } }\n}')
+        })
+
+        it('allows depth to be set manually', function () {
+            assert.strictEqual(
+                inspect(testData, { depth: 6 }),
+                "{\n  root: {\n    A: {\n      B: { C: { D: { E: 'data' } } }\n    }\n  }\n}"
+            )
         })
     })
 

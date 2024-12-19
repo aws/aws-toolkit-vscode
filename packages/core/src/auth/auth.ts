@@ -16,7 +16,7 @@ import { Timeout } from '../shared/utilities/timeoutUtils'
 import { errorCode, isAwsError, isNetworkError, ToolkitError, UnknownError } from '../shared/errors'
 import { getCache, getCacheFileWatcher } from './sso/cache'
 import { isNonNullable, Mutable } from '../shared/utilities/tsUtils'
-import { builderIdStartUrl, SsoToken, truncateStartUrl } from './sso/model'
+import { SsoToken, truncateStartUrl } from './sso/model'
 import { SsoClient } from './sso/clients'
 import { getLogger } from '../shared/logger'
 import { CredentialsProviderManager } from './providers/credentialsProviderManager'
@@ -68,6 +68,7 @@ import { asStringifiedStack } from '../shared/telemetry/spans'
 import { withTelemetryContext } from '../shared/telemetry/util'
 import { DiskCacheError } from '../shared/utilities/cacheUtils'
 import { setContext } from '../shared/vscode/setContext'
+import { builderIdStartUrl, internalStartUrl } from './sso/constants'
 
 interface AuthService {
     /**
@@ -124,8 +125,6 @@ export interface ConnectionStateChangeEvent {
     readonly id: Connection['id']
     readonly state: ProfileMetadata['connectionState']
 }
-
-export type AuthType = Auth
 
 export type DeletedConnection = { connId: Connection['id']; storedProfile?: StoredProfile }
 type DeclaredConnection = Pick<SsoProfile, 'ssoRegion' | 'startUrl'> & { source: string }
@@ -189,7 +188,7 @@ export class Auth implements AuthService, ConnectionManager {
     }
 
     public isInternalAmazonUser(): boolean {
-        return this.isConnected() && this.startUrl === 'https://amzn.awsapps.com/start'
+        return this.isConnected() && this.startUrl === internalStartUrl
     }
 
     /**

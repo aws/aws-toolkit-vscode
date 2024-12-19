@@ -5,7 +5,6 @@
 
 import assert from 'assert'
 import { getLogger } from '../logger'
-import { isWeb } from '../extensionGlobals'
 
 interface PerformanceMetrics {
     /**
@@ -45,10 +44,6 @@ export class PerformanceTracker {
         | undefined
 
     constructor(private readonly name: string) {}
-
-    static enabled(name: string, trackPerformance: boolean): boolean {
-        return name === 'function_call' && trackPerformance && !isWeb()
-    }
 
     start() {
         this.#startPerformance = {
@@ -210,4 +205,12 @@ function assertPerformanceMetrics(
         foundDuration < expectedDuration,
         `Expected total duration for ${name} to be less than ${expectedDuration}. Actual duration was ${foundDuration}`
     )
+}
+
+export function getEqualOSTestOptions(testOptions: Partial<PerformanceMetrics>): Partial<TestOptions> {
+    return {
+        linux: testOptions,
+        darwin: testOptions,
+        win32: testOptions,
+    }
 }

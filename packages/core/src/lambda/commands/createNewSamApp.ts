@@ -39,16 +39,20 @@ import { isTemplateTargetProperties } from '../../shared/sam/debugger/awsSamDebu
 import { TemplateTargetProperties } from '../../shared/sam/debugger/awsSamDebugConfiguration'
 import { openLaunchJsonFile } from '../../shared/sam/debugger/commands/addSamDebugConfiguration'
 import { waitUntil } from '../../shared/utilities/timeoutUtils'
-import { debugNewSamAppUrl, launchConfigDocUrl } from '../../shared/constants'
-import { getIdeProperties, isCloud9 } from '../../shared/extensionUtilities'
-import { execFileSync } from 'child_process'
-import { writeFile } from 'fs-extra'
+import {
+    getIdeProperties,
+    getDebugNewSamAppDocUrl,
+    isCloud9,
+    getLaunchConfigDocUrl,
+} from '../../shared/extensionUtilities'
 import { checklogs } from '../../shared/localizedText'
 import globals from '../../shared/extensionGlobals'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { LambdaArchitecture, Result, Runtime } from '../../shared/telemetry/telemetry'
 import { getTelemetryReason, getTelemetryResult } from '../../shared/errors'
 import { openUrl, replaceVscodeVars } from '../../shared/utilities/vsCodeUtils'
+import { fs } from '../../shared'
+import { ChildProcess } from '../../shared/utilities/processUtils'
 
 export const samInitTemplateFiles: string[] = ['template.yaml', 'template.yml']
 export const samInitReadmeFile: string = 'README.TOOLKIT.md'
@@ -214,7 +218,9 @@ export async function createNewSamApplication(
         // Needs to be done or else gopls won't start
         if (goRuntimes.includes(createRuntime)) {
             try {
-                execFileSync('go', ['mod', 'tidy'], { cwd: path.join(path.dirname(templateUri.fsPath), 'hello-world') })
+                await ChildProcess.run('go', ['mod', 'tidy'], {
+                    spawnOptions: { cwd: path.join(path.dirname(templateUri.fsPath), 'hello-world') },
+                })
             } catch (err) {
                 getLogger().warn(
                     localize(
@@ -316,7 +322,7 @@ export async function createNewSamApplication(
                 )
                 .then(async (buttonText) => {
                     if (buttonText === helpText) {
-                        void openUrl(vscode.Uri.parse(launchConfigDocUrl))
+                        void openUrl(getLaunchConfigDocUrl())
                     }
                 })
         }
@@ -441,7 +447,7 @@ async function showCompletionNotification(appName: string, configs: string): Pro
     if (action === openJson) {
         await openLaunchJsonFile()
     } else if (action === learnMore) {
-        void openUrl(vscode.Uri.parse(debugNewSamAppUrl))
+        void openUrl(getDebugNewSamAppDocUrl())
     }
 }
 
@@ -472,7 +478,7 @@ export async function writeToolkitReadme(
                     : 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/serverless-apps.html'
             )
 
-        await writeFile(readmeLocation, readme)
+        await fs.writeFile(readmeLocation, readme)
         getLogger().debug(`writeToolkitReadme: wrote file: %O`, readmeLocation)
 
         return true

@@ -14,7 +14,7 @@ import {
     CloudWatchLogsData,
 } from '../../../../awsService/cloudWatchLogs/registry/logDataRegistry'
 import { Settings } from '../../../../shared/settings'
-import { CloudWatchLogsSettings, createURIFromArgs } from '../../../../awsService/cloudWatchLogs/cloudWatchLogsUtils'
+import { CloudWatchLogsSettings, cwlUriSchema } from '../../../../awsService/cloudWatchLogs/cloudWatchLogsUtils'
 import {
     backwardToken,
     fakeGetLogEvents,
@@ -27,18 +27,30 @@ import {
 } from '../utils.test'
 import { CloudWatchLogs } from 'aws-sdk'
 import { FilteredLogEvents } from 'aws-sdk/clients/cloudwatchlogs'
-import { formatDateTimestamp } from '../../../../shared/utilities/textUtilities'
+import { formatDateTimestamp } from '../../../../shared/datetime'
 
 describe('LogDataRegistry', async function () {
     let registry: GetSetLogDataRegistry
 
     const config = new Settings(vscode.ConfigurationTarget.Workspace)
 
-    const registeredUri = createURIFromArgs(testLogData.logGroupInfo, testLogData.parameters)
-    const unregisteredUri = createURIFromArgs(unregisteredData.logGroupInfo, unregisteredData.parameters)
-    const newLineUri = createURIFromArgs(newLineData.logGroupInfo, newLineData.parameters)
-    const searchLogGroupUri = createURIFromArgs(logGroupsData.logGroupInfo, logGroupsData.parameters)
-    const paginatedUri = createURIFromArgs(paginatedData.logGroupInfo, paginatedData.parameters)
+    const registeredUri = cwlUriSchema.form({
+        logGroupInfo: testLogData.logGroupInfo,
+        parameters: testLogData.parameters,
+    })
+    const unregisteredUri = cwlUriSchema.form({
+        logGroupInfo: unregisteredData.logGroupInfo,
+        parameters: unregisteredData.parameters,
+    })
+    const newLineUri = cwlUriSchema.form({ logGroupInfo: newLineData.logGroupInfo, parameters: newLineData.parameters })
+    const searchLogGroupUri = cwlUriSchema.form({
+        logGroupInfo: logGroupsData.logGroupInfo,
+        parameters: logGroupsData.parameters,
+    })
+    const paginatedUri = cwlUriSchema.form({
+        logGroupInfo: paginatedData.logGroupInfo,
+        parameters: paginatedData.parameters,
+    })
 
     /**
      * Only intended to expose the {get|set}LogData methods for testing purposes.

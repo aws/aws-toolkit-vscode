@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { promises as nodefs } from 'fs'
+import { promises as nodefs } from 'fs' // eslint-disable-line no-restricted-imports
 import * as vscode from 'vscode'
 import { schema } from 'yaml-cfn'
 import * as yaml from 'js-yaml'
@@ -17,6 +17,12 @@ import { isUntitledScheme, normalizeVSCodeUri } from '../utilities/vsCodeUtils'
 export const SERVERLESS_API_TYPE = 'AWS::Serverless::Api' // eslint-disable-line @typescript-eslint/naming-convention
 export const SERVERLESS_FUNCTION_TYPE = 'AWS::Serverless::Function' // eslint-disable-line @typescript-eslint/naming-convention
 export const LAMBDA_FUNCTION_TYPE = 'AWS::Lambda::Function' // eslint-disable-line @typescript-eslint/naming-convention
+export const serverlessTableType = 'AWS::Serverless::SimpleTable'
+export const s3BucketType = 'AWS::S3::Bucket'
+export const appRunnerType = 'AWS::AppRunner::Service'
+export const ecrRepositoryType = 'AWS::ECR::Repository'
+export const snsTopicType = 'AWS::SNS::Topic'
+export const sqsQueueType = 'AWS::SQS::Queue'
 
 export const templateFileGlobPattern = '**/*.{yaml,yml,json,template}'
 export const templateFileRegexPattern = /.*\.(yaml|yml|json|template)$/i

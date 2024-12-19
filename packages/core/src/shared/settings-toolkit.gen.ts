@@ -37,10 +37,12 @@ export const toolkitSettings = {
         "samcliConfirmDevStack": {},
         "remoteConnected": {},
         "codeCatalystConnectionExpired": {},
+        "minIdeVersion": {},
         "ssoCacheError": {}
     },
     "aws.experiments": {
-        "jsonResourceModification": {}
+        "jsonResourceModification": {},
+        "ec2RemoteConnect": {}
     },
     "aws.resources.enabledResources": {},
     "aws.lambda.recentlyUploaded": {},

@@ -6,7 +6,7 @@
 import globals, { isWeb } from './extensionGlobals'
 
 import type * as packageJson from '../../package.json'
-import * as fs from 'fs'
+import * as fs from 'fs' // eslint-disable-line no-restricted-imports
 import * as path from 'path'
 import { Uri, ThemeIcon, ThemeColor } from 'vscode'
 import { isCloud9 } from './extensionUtilities'
@@ -17,7 +17,7 @@ import { getLogger } from './logger/logger'
 // https://code.visualstudio.com/api/references/icons-in-labels#animation
 
 type ContributedIcon = keyof typeof packageJson.contributes.icons
-type IconPath = { light: Uri; dark: Uri; toString: () => string } | Icon
+export type IconPath = { light: Uri; dark: Uri; toString: () => string } | Icon
 type IconId = `vscode-${string}` | ContributedIcon
 
 /**

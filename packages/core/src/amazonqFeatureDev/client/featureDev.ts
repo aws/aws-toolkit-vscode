@@ -10,7 +10,6 @@ import { ServiceOptions } from '../../shared/awsClientBuilder'
 import globals from '../../shared/extensionGlobals'
 import { getLogger } from '../../shared/logger'
 import * as FeatureDevProxyClient from './featuredevproxyclient'
-import apiConfig = require('./codewhispererruntime-2022-11-11.json')
 import { featureName } from '../constants'
 import { CodeReference } from '../../amazonq/webview/ui/connector'
 import {
@@ -25,9 +24,20 @@ import { getCodewhispererConfig } from '../../codewhisperer/client/codewhisperer
 import { createCodeWhispererChatStreamingClient } from '../../shared/clients/codewhispererChatClient'
 import { getClientId, getOptOutPreference, getOperatingSystem } from '../../shared/telemetry/util'
 import { extensionVersion } from '../../shared/vscode/env'
+import apiConfig = require('./codewhispererruntime-2022-11-11.json')
+import { FeatureDevCodeAcceptanceEvent, FeatureDevCodeGenerationEvent, TelemetryEvent } from './featuredevproxyclient'
+
+// Re-enable once BE is able to handle retries.
+const writeAPIRetryOptions = {
+    maxRetries: 0,
+    retryDelayOptions: {
+        // The default number of milliseconds to use in the exponential backoff
+        base: 500,
+    },
+}
 
 // Create a client for featureDev proxy client based off of aws sdk v2
-export async function createFeatureDevProxyClient(): Promise<FeatureDevProxyClient> {
+export async function createFeatureDevProxyClient(options?: Partial<ServiceOptions>): Promise<FeatureDevProxyClient> {
     const bearerToken = await AuthUtil.instance.getBearerToken()
     const cwsprConfig = getCodewhispererConfig()
     return (await globals.sdkClientBuilder.createAwsService(
@@ -37,27 +47,25 @@ export async function createFeatureDevProxyClient(): Promise<FeatureDevProxyClie
             region: cwsprConfig.region,
             endpoint: cwsprConfig.endpoint,
             token: new Token({ token: bearerToken }),
-            // SETTING TO 0 FOR BETA. RE-ENABLE FOR RE-INVENT
-            maxRetries: 0,
-            retryDelayOptions: {
-                // The default number of milliseconds to use in the exponential backoff
-                base: 500,
+            httpOptions: {
+                connectTimeout: 10000, // 10 seconds, 3 times P99 API latency
             },
+            ...options,
         } as ServiceOptions,
         undefined
     )) as FeatureDevProxyClient
 }
 
 export class FeatureDevClient {
-    public async getClient() {
+    public async getClient(options?: Partial<ServiceOptions>) {
         // Should not be stored for the whole session.
         // Client has to be reinitialized for each request so we always have a fresh bearerToken
-        return await createFeatureDevProxyClient()
+        return await createFeatureDevProxyClient(options)
     }
 
     public async createConversation() {
         try {
-            const client = await this.getClient()
+            const client = await this.getClient(writeAPIRetryOptions)
             getLogger().debug(`Executing createTaskAssistConversation with {}`)
             const { conversationId, $response } = await client.createTaskAssistConversation().promise()
             getLogger().debug(`${featureName}: Created conversation: %O`, {
@@ -70,7 +78,11 @@ export class FeatureDevClient {
                 getLogger().error(
                     `${featureName}: failed to start conversation: ${e.message} RequestId: ${e.requestId}`
                 )
-                if (e.code === 'ServiceQuotaExceededException') {
+                // BE service will throw ServiceQuota if conversation limit is reached. API Front-end will throw Throttling with this message if conversation limit is reached
+                if (
+                    e.code === 'ServiceQuotaExceededException' ||
+                    (e.code === 'ThrottlingException' && e.message.includes('reached for this month.'))
+                ) {
                     throw new MonthlyConversationLimitError(e.message)
                 }
                 throw new ApiError(e.message, 'CreateConversation', e.code, e.statusCode ?? 400)
@@ -80,15 +92,21 @@ export class FeatureDevClient {
         }
     }
 
-    public async createUploadUrl(conversationId: string, contentChecksumSha256: string, contentLength: number) {
+    public async createUploadUrl(
+        conversationId: string,
+        contentChecksumSha256: string,
+        contentLength: number,
+        uploadId: string
+    ) {
         try {
-            const client = await this.getClient()
+            const client = await this.getClient(writeAPIRetryOptions)
             const params = {
                 uploadContext: {
                     taskAssistPlanningUploadContext: {
                         conversationId,
                     },
                 },
+                uploadId,
                 contentChecksum: contentChecksumSha256,
                 contentChecksumType: 'SHA_256',
                 artifactType: 'SourceCode',
@@ -98,7 +116,7 @@ export class FeatureDevClient {
             getLogger().debug(`Executing createUploadUrl with %O`, omit(params, 'contentChecksum'))
             const response = await client.createUploadUrl(params).promise()
             getLogger().debug(`${featureName}: Created upload url: %O`, {
-                uploadId: response.uploadId,
+                uploadId: uploadId,
                 requestId: response.$response.requestId,
             })
             return response
@@ -117,10 +135,19 @@ export class FeatureDevClient {
         }
     }
 
-    public async startCodeGeneration(conversationId: string, uploadId: string, message: string) {
+    public async startCodeGeneration(
+        conversationId: string,
+        uploadId: string,
+        message: string,
+        intent: FeatureDevProxyClient.Intent,
+        codeGenerationId: string,
+        currentCodeGenerationId?: string,
+        intentContext?: FeatureDevProxyClient.IntentContext
+    ) {
         try {
-            const client = await this.getClient()
+            const client = await this.getClient(writeAPIRetryOptions)
             const params = {
+                codeGenerationId,
                 conversationState: {
                     conversationId,
                     currentMessage: {
@@ -132,6 +159,13 @@ export class FeatureDevClient {
                     uploadId,
                     programmingLanguage: { languageName: 'javascript' },
                 },
+                intent,
+            } as FeatureDevProxyClient.Types.StartTaskAssistCodeGenerationRequest
+            if (currentCodeGenerationId) {
+                params.currentCodeGenerationId = currentCodeGenerationId
+            }
+            if (intentContext) {
+                params.intentContext = intentContext
             }
             getLogger().debug(`Executing startTaskAssistCodeGeneration with %O`, params)
             const response = await client.startTaskAssistCodeGeneration(params).promise()
@@ -143,13 +177,22 @@ export class FeatureDevClient {
                     (e as any).requestId
                 }`
             )
-            if (
-                isAwsError(e) &&
-                ((e.code === 'ThrottlingException' &&
-                    e.message.includes('limit for number of iterations on a code generation')) ||
-                    e.code === 'ServiceQuotaExceededException')
-            ) {
-                throw new CodeIterationLimitError()
+            if (isAwsError(e)) {
+                // API Front-end will throw Throttling if conversation limit is reached. API Front-end monitors StartCodeGeneration for throttling
+                if (
+                    e.code === 'ThrottlingException' &&
+                    e.message.includes('StartTaskAssistCodeGeneration reached for this month.')
+                ) {
+                    throw new MonthlyConversationLimitError(e.message)
+                }
+                // BE service will throw ServiceQuota if code generation iteration limit is reached
+                else if (
+                    e.code === 'ServiceQuotaExceededException' ||
+                    (e.code === 'ThrottlingException' &&
+                        e.message.includes('limit for number of iterations on a code generation'))
+                ) {
+                    throw new CodeIterationLimitError()
+                }
             }
             throw new ToolkitError((e as Error).message, { code: 'StartCodeGenerationFailed' })
         }
@@ -237,13 +280,34 @@ export class FeatureDevClient {
      * @param conversationId
      */
     public async sendFeatureDevTelemetryEvent(conversationId: string) {
+        await this.sendFeatureDevEvent('featureDevEvent', {
+            conversationId,
+        })
+    }
+
+    public async sendFeatureDevCodeGenerationEvent(event: FeatureDevCodeGenerationEvent) {
+        getLogger().debug(
+            `featureDevCodeGenerationEvent: conversationId: ${event.conversationId} charactersOfCodeGenerated: ${event.charactersOfCodeGenerated} linesOfCodeGenerated: ${event.linesOfCodeGenerated}`
+        )
+        await this.sendFeatureDevEvent('featureDevCodeGenerationEvent', event)
+    }
+
+    public async sendFeatureDevCodeAcceptanceEvent(event: FeatureDevCodeAcceptanceEvent) {
+        getLogger().debug(
+            `featureDevCodeAcceptanceEvent: conversationId: ${event.conversationId} charactersOfCodeAccepted: ${event.charactersOfCodeAccepted} linesOfCodeAccepted: ${event.linesOfCodeAccepted}`
+        )
+        await this.sendFeatureDevEvent('featureDevCodeAcceptanceEvent', event)
+    }
+
+    public async sendFeatureDevEvent<T extends keyof TelemetryEvent>(
+        eventName: T,
+        event: NonNullable<TelemetryEvent[T]>
+    ) {
         try {
             const client = await this.getClient()
             const params: FeatureDevProxyClient.SendTelemetryEventRequest = {
                 telemetryEvent: {
-                    featureDevEvent: {
-                        conversationId,
-                    },
+                    [eventName]: event,
                 },
                 optOutPreference: getOptOutPreference(),
                 userContext: {
@@ -256,11 +320,11 @@ export class FeatureDevClient {
             }
             const response = await client.sendTelemetryEvent(params).promise()
             getLogger().debug(
-                `${featureName}: successfully sent featureDevEvent: ConversationId: ${conversationId} RequestId: ${response.$response.requestId}`
+                `${featureName}: successfully sent ${eventName} telemetryEvent:${'conversationId' in event ? ' ConversationId: ' + event.conversationId : ''} RequestId: ${response.$response.requestId}`
             )
         } catch (e) {
             getLogger().error(
-                `${featureName}: failed to send feature dev telemetry: ${(e as Error).name}: ${
+                `${featureName}: failed to send ${eventName} telemetry: ${(e as Error).name}: ${
                     (e as Error).message
                 } RequestId: ${(e as any).requestId}`
             )

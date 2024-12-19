@@ -12,7 +12,7 @@ module.exports = {
         mocha: true,
         es2024: true,
     },
-    plugins: ['@typescript-eslint', 'unicorn', 'header', 'security-node', 'aws-toolkits'],
+    plugins: ['@typescript-eslint', '@stylistic', 'unicorn', 'header', 'security-node', 'aws-toolkits'],
     extends: [
         'eslint:recommended',
         'plugin:@typescript-eslint/eslint-recommended',
@@ -113,6 +113,20 @@ module.exports = {
         'no-constant-condition': ['error', { checkLoops: false }],
         'no-empty': 'off',
 
+        // https://eslint.style/rules/default/spaced-comment
+        // Require space after // comment.
+        '@stylistic/spaced-comment': [
+            'error',
+            'always',
+            {
+                block: {
+                    markers: ['!'], // Allow the /*!…*/ license header.
+                    // exceptions: ['*'],
+                    // balanced: true
+                },
+            },
+        ],
+
         // Rules from https://github.com/sindresorhus/eslint-plugin-unicorn
         // TODO: 'unicorn/no-useless-promise-resolve-reject': 'error',
         // TODO: 'unicorn/prefer-at': 'error',
@@ -162,7 +176,8 @@ module.exports = {
         'aws-toolkits/no-incorrect-once-usage': 'error',
         'aws-toolkits/no-string-exec-for-child-process': 'error',
         'aws-toolkits/no-console-log': 'error',
-
+        'aws-toolkits/no-json-stringify-in-log': 'error',
+        'aws-toolkits/no-printf-mismatch': 'error',
         'no-restricted-imports': [
             'error',
             {
@@ -173,13 +188,24 @@ module.exports = {
                             "Avoid importing from the core lib's dist/ folders; please use directly from the core lib defined exports.",
                     },
                 ],
+                // The following will place an error on the `fs-extra` import since we do not want it to be used for browser compatibility reasons.
+                paths: [
+                    {
+                        name: 'fs-extra',
+                        message:
+                            'Avoid fs-extra, use shared/fs/fs.ts. Notify the Toolkit team if your required functionality is not available.',
+                    },
+                    {
+                        name: 'fs',
+                        message: 'Avoid node:fs and use shared/fs/fs.ts when possible.',
+                    },
+                    {
+                        name: 'child_process',
+                        message:
+                            'Avoid child_process, use ChildProcess from `shared/utilities/processUtils.ts` instead.',
+                    },
+                ],
             },
-            // The following will place an error on the `fs-extra` import since we do not want it to be used for browser compatibility reasons.
-            // {
-            //     name: 'fs-extra',
-            //     message:
-            //         'Avoid fs-extra, use shared/fs/fs.ts. Notify the Toolkit team if your required functionality is not available.',
-            // },
         ],
     },
 }

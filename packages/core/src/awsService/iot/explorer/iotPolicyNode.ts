@@ -39,7 +39,7 @@ export class IotPolicyNode extends AWSTreeNodeBase implements AWSResourceNode {
             'AWS.explorerNode.iot.policyToolTip',
             '{0}{1}',
             policy.name,
-            certs?.length ?? 0 > 0 ? `\nAttached to: ${certs?.join(', ')}` : ''
+            (certs?.length ?? 0 > 0) ? `\nAttached to: ${certs?.join(', ')}` : ''
         )
         this.iconPath = getIcon('aws-iot-policy')
         this.contextValue = 'awsIotPolicyNode.Certificates'

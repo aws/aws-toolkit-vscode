@@ -110,7 +110,7 @@ class TestPrompter<T, S = any> extends Prompter<T> {
         this.acceptedEstimators.push(estimator)
     }
 
-    //----------------------------Test helper methods go below this line----------------------------//
+    // ----------------------------Test helper methods go below this line----------------------------//
 
     public acceptState(state: StateWithCache<S, T>): this {
         this.acceptedStates[this.promptCount] = state
@@ -211,11 +211,11 @@ describe('Wizard', function () {
 
     it('binds prompter to (sync AND async) property', async function () {
         wizard.form.prop1.bindPrompter(() => helloPrompter)
-        wizard.form.prop3.bindPrompter(async () => new SkipPrompter('helloooo (async)'))
+        wizard.form.prop3.bindPrompter(async () => new SkipPrompter())
 
         const result = await wizard.run()
         assert.strictEqual(result?.prop1, 'hello')
-        assert.strictEqual(result?.prop3, 'helloooo (async)')
+        assert(!result?.prop3)
     })
 
     it('initializes state to empty object if not provided', async function () {

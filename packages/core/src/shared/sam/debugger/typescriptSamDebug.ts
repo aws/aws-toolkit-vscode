@@ -3,8 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { existsSync, PathLike, readFileSync } from 'fs'
-import { writeFileSync } from 'fs-extra'
+import { existsSync, PathLike, readFileSync } from 'fs' // eslint-disable-line no-restricted-imports
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { isImageLambdaConfig, NodejsDebugConfiguration } from '../../../lambda/local/debugConfiguration'
@@ -18,6 +17,7 @@ import { DefaultSamLocalInvokeCommand, waitForDebuggerMessages } from '../cli/sa
 import { runLambdaFunction, waitForPort } from '../localLambdaRunner'
 import { SamLaunchRequestArgs } from './awsSamDebugger'
 import { findTypescriptCompiler } from '../../utilities/pathFind'
+import fs from '../../fs/fs'
 
 const tsConfigFile = 'aws-toolkit-tsconfig.json'
 
@@ -202,7 +202,7 @@ async function compileTypeScript(config: SamLaunchRequestArgs): Promise<void> {
     types.push('node')
     compilerOptions.types = [...new Set(types)]
 
-    writeFileSync(tsConfigPath, JSON.stringify(tsConfig, undefined, 4))
+    await fs.writeFile(tsConfigPath, JSON.stringify(tsConfig, undefined, 4))
 
     // resolve ts lambda handler to point into build directory relative to codeRoot
     const tsLambdaHandler = path.relative(config.codeRoot, path.join(tsBuildDir, config.invokeTarget.lambdaHandler))

@@ -7,7 +7,7 @@
 
 export interface BM25Document {
     content: string
-    /** The score that the document recieves. */
+    /** The score that the document receives. */
     score: number
 
     index: number
