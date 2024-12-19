@@ -15,7 +15,13 @@ import {
     getIndentedCode,
     getSelectionFromRange,
 } from '../../../shared/utilities/textDocumentUtilities'
-import { extractFileAndCodeSelectionFromMessage, fs, getErrorMsg, ToolkitError } from '../../../shared'
+import {
+    extractFileAndCodeSelectionFromMessage,
+    formatTextWithIndent,
+    fs,
+    getErrorMsg,
+    ToolkitError,
+} from '../../../shared'
 
 export class ContentProvider implements vscode.TextDocumentContentProvider {
     constructor(private uri: vscode.Uri) {}
@@ -49,14 +55,7 @@ export class EditorContentController {
             if (indent.trim().length !== 0) {
                 indent = ' '.repeat(indent.length - indent.trimStart().length)
             }
-            let textWithIndent = ''
-            text.split('\n').forEach((line, index) => {
-                if (index === 0) {
-                    textWithIndent += line
-                } else {
-                    textWithIndent += '\n' + indent + line
-                }
-            })
+            const textWithIndent = formatTextWithIndent(text, indent)
             editor
                 .edit((editBuilder) => {
                     editBuilder.insert(cursorStart, textWithIndent)

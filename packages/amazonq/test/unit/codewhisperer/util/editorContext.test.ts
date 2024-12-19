@@ -94,13 +94,12 @@ describe('editorContext', function () {
                 ['typescript', 'ts'],
                 ['c', 'c'],
             ])
-
-            languageToExtension.forEach((extension, language) => {
+            for (const language of languageToExtension.keys()) {
                 const editor = createMockTextEditor('', 'test.ipynb', language, 1, 17)
                 const actual = EditorContext.getFileRelativePath(editor)
-                const expected = 'test.' + extension
+                const expected = 'test.' + languageToExtension.get(language)
                 assert.strictEqual(actual, expected)
-            })
+            }
         })
 
         it('Should return relative path', async function () {

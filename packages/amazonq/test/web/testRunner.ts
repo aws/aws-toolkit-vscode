@@ -35,6 +35,7 @@ function setupMocha() {
 
 function gatherTestFiles() {
     // Bundles all files in the current directory matching `*.test`
+    // eslint-disable-next-line aws-toolkits/no-foreach
     const importAll = (r: __WebpackModuleApi.RequireContext) => r.keys().forEach(r)
     importAll(require.context('.', true, /\.test$/))
 }

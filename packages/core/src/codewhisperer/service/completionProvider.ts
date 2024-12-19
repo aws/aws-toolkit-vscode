@@ -15,11 +15,12 @@ import path from 'path'
  * completion provider for intelliSense popup
  */
 export function getCompletionItems(document: vscode.TextDocument, position: vscode.Position) {
-    const completionItems: vscode.CompletionItem[] = []
-    session.recommendations.forEach((recommendation, index) => {
-        completionItems.push(getCompletionItem(document, position, recommendation, index))
+    const completionItems: vscode.CompletionItem[] = session.recommendations.map((recommendation, index) =>
+        getCompletionItem(document, position, recommendation, index)
+    )
+    for (let index: number = 0; index < session.recommendations.length; index++) {
         session.setSuggestionState(index, 'Showed')
-    })
+    }
     return completionItems
 }
 

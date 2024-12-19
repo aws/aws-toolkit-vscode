@@ -194,16 +194,13 @@ export class Messenger {
     }
 
     public async sendLanguageUpgradeProjectPrompt(projects: TransformationCandidateProject[], tabID: string) {
-        const projectFormOptions: { value: any; label: string }[] = []
-        const detectedJavaVersions = new Array<JDKVersion | undefined>()
-
-        projects.forEach((candidateProject) => {
-            projectFormOptions.push({
+        const projectFormOptions: { value: any; label: string }[] = projects.map((candidateProject) => {
+            return {
                 value: candidateProject.path,
                 label: candidateProject.name,
-            })
-            detectedJavaVersions.push(candidateProject.JDKVersion)
+            }
         })
+        const detectedJavaVersions = projects.map((candidateProject) => candidateProject.JDKVersion)
 
         const formItems: ChatItemFormItem[] = []
         formItems.push({
@@ -277,13 +274,11 @@ export class Messenger {
     }
 
     public async sendSQLConversionProjectPrompt(projects: TransformationCandidateProject[], tabID: string) {
-        const projectFormOptions: { value: any; label: string }[] = []
-
-        projects.forEach((candidateProject) => {
-            projectFormOptions.push({
+        const projectFormOptions: { value: any; label: string }[] = projects.map((candidateProject) => {
+            return {
                 value: candidateProject.path,
                 label: candidateProject.name,
-            })
+            }
         })
 
         const formItems: ChatItemFormItem[] = []
@@ -659,14 +654,12 @@ ${codeSnippet}
     public sendDependencyVersionsFoundMessage(versions: DependencyVersions, tabID: string) {
         const message = MessengerUtils.createAvailableDependencyVersionString(versions)
 
-        const valueFormOptions: { value: any; label: string }[] = []
-
-        versions.allVersions.forEach((version) => {
-            valueFormOptions.push({
+        const valueFormOptions: { value: any; label: string }[] = Object.entries(versions.allVersions).map(
+            ([version, _]) => ({
                 value: version,
                 label: version,
             })
-        })
+        )
 
         const formItems: ChatItemFormItem[] = []
         formItems.push({

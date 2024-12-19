@@ -35,10 +35,10 @@ export function initSecurityScanRender(
     } else if (scope === CodeAnalysisScope.PROJECT) {
         securityScanRender.securityDiagnosticCollection?.clear()
     }
-    securityRecommendationList.forEach((securityRecommendation) => {
+    for (const securityRecommendation of securityRecommendationList) {
         updateSecurityDiagnosticCollection(securityRecommendation)
         updateSecurityIssuesForProviders(securityRecommendation)
-    })
+    }
     securityScanRender.initialized = true
 }
 
@@ -58,11 +58,11 @@ export function updateSecurityDiagnosticCollection(securityRecommendation: Aggre
     const securityDiagnostics: vscode.Diagnostic[] = vscode.languages
         .getDiagnostics(uri)
         .filter((diagnostic) => diagnostic.source === codewhispererDiagnosticSourceLabel)
-    securityRecommendation.issues
-        .filter((securityIssue) => securityIssue.visible)
-        .forEach((securityIssue) => {
-            securityDiagnostics.push(createSecurityDiagnostic(securityIssue))
-        })
+    securityDiagnostics.push(
+        ...securityRecommendation.issues
+            .filter((securityIssue) => securityIssue.visible)
+            .map((securityIssue) => createSecurityDiagnostic(securityIssue))
+    )
     securityDiagnosticCollection.set(uri, securityDiagnostics)
 }
 
@@ -108,7 +108,7 @@ export function disposeSecurityDiagnostic(event: vscode.TextDocumentChangeEvent)
         }
     )
 
-    currentSecurityDiagnostics?.forEach((issue) => {
+    for (const issue of currentSecurityDiagnostics ?? []) {
         const intersection = changedRange.intersection(issue.range)
         if (
             issue.severity === vscode.DiagnosticSeverity.Warning &&
@@ -128,7 +128,7 @@ export function disposeSecurityDiagnostic(event: vscode.TextDocumentChangeEvent)
             )
         }
         newSecurityDiagnostics.push(issue)
-    })
+    }
     securityScanRender.securityDiagnosticCollection?.set(uri, newSecurityDiagnostics)
 }
 

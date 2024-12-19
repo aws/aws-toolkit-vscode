@@ -104,9 +104,9 @@ export class ApplicationComposer {
             }
             this.isPanelDisposed = true
             this.onVisualizationDisposeEmitter.fire()
-            this.disposables.forEach((disposable) => {
-                disposable.dispose()
-            })
+            for (const d of this.disposables) {
+                d.dispose()
+            }
             this.onVisualizationDisposeEmitter.dispose()
         }
 

@@ -35,7 +35,7 @@ export class TemplateParametersWizard extends Wizard<TemplateParametersForm> {
         this.preloadedTemplate = await CloudFormation.load(this.template.fsPath)
         const samTemplateNames = new Set<string>(this.samTemplateParameters?.keys() ?? [])
 
-        samTemplateNames.forEach((name) => {
+        for (const name of samTemplateNames) {
             if (this.preloadedTemplate) {
                 const defaultValue = this.preloadedTemplate.Parameters
                     ? (this.preloadedTemplate.Parameters[name]?.Default as string)
@@ -47,7 +47,7 @@ export class TemplateParametersWizard extends Wizard<TemplateParametersForm> {
                     })
                 )
             }
-        })
+        }
 
         return this
     }

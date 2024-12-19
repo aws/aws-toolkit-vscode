@@ -328,6 +328,7 @@ export const selectCustomization = async (customization: Customization) => {
 export const getAvailableCustomizationsList = async () => {
     const items: Customization[] = []
     const response = await codeWhispererClient.listAvailableCustomizations()
+    // eslint-disable-next-line aws-toolkits/no-foreach
     response
         .map((listAvailableCustomizationsResponse) => listAvailableCustomizationsResponse.customizations)
         .forEach((customizations) => {

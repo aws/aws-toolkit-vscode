@@ -107,13 +107,10 @@ export class QuickActionHandler {
         if (!this.isScanEnabled) {
             return
         }
-        let scanTabId: string | undefined = undefined
-
-        this.tabsStorage.getTabs().forEach((tab) => {
-            if (tab.type === 'review') {
-                scanTabId = tab.id
-            }
-        })
+        const scanTabId = this.tabsStorage
+            .getTabs()
+            .reverse()
+            .find((tab) => tab.type === 'review')?.id
 
         if (scanTabId !== undefined) {
             this.mynahUI.selectTab(scanTabId, eventId || '')
@@ -161,7 +158,7 @@ export class QuickActionHandler {
         if (!this.isTestEnabled) {
             return
         }
-        const testTabId = this.tabsStorage.getTabs().find((tab) => tab.type === 'testgen')?.id
+        const testTabId = this.tabsStorage.getTabByType('testgen')?.id
         const realPromptText = chatPrompt.escapedPrompt?.trim() ?? ''
 
         if (testTabId !== undefined) {
@@ -290,13 +287,7 @@ export class QuickActionHandler {
             return
         }
 
-        let gumbyTabId: string | undefined = undefined
-
-        this.tabsStorage.getTabs().forEach((tab) => {
-            if (tab.type === 'gumby') {
-                gumbyTabId = tab.id
-            }
-        })
+        const gumbyTabId = this.tabsStorage.getTabByType('gumby')?.id
 
         if (gumbyTabId !== undefined) {
             this.mynahUI.selectTab(gumbyTabId, eventId || '')

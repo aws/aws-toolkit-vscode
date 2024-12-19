@@ -13,6 +13,7 @@ import {
     sanitizeFilename,
     toSnakeCase,
     undefinedIfEmpty,
+    formatTextWithIndent,
 } from '../../../shared/utilities/textUtilities'
 
 describe('textUtilities', async function () {
@@ -131,21 +132,35 @@ describe('toSnakeCase', function () {
     })
 })
 
+interface TestCase<Input, Output> {
+    input: Input
+    params?: any[]
+    output: Output
+    case: string
+}
+
+function generateTestCases<Input, Output>(
+    cases: TestCase<Input, Output>[],
+    f: (t: Input, ...p: any[]) => Output
+): void {
+    for (const c of cases) {
+        it(c.case, function () {
+            assert.strictEqual(c.params ? f(c.input, ...c.params) : f(c.input), c.output)
+        })
+    }
+}
+
 describe('sanitizeFilename', function () {
-    const cases: { input: string; output: string; case: string; replaceString?: string }[] = [
+    const cases = [
         { input: 'foo🤷', output: 'foo_', case: 'removes emojis' },
         { input: 'foo/zub', output: 'foo_zub', case: 'replaces slash with underscore' },
         { input: 'foo zub', output: 'foo_zub', case: 'replaces space with underscore' },
-        { input: 'foo:bar', output: 'fooXbar', replaceString: 'X', case: 'replaces dot with replaceString' },
+        { input: 'foo:bar', output: 'fooXbar', params: ['X'], case: 'replaces dot with replaceString' },
         { input: 'foo🤷bar/zu b.txt', output: 'foo_bar_zu_b.txt', case: 'docstring example' },
         { input: 'foo.txt', output: 'foo.txt', case: 'keeps dot' },
         { input: 'züb', output: 'züb', case: 'keeps special chars' },
     ]
-    cases.forEach((testCase) => {
-        it(testCase.case, function () {
-            assert.strictEqual(sanitizeFilename(testCase.input, testCase.replaceString), testCase.output)
-        })
-    })
+    generateTestCases(cases, sanitizeFilename)
 })
 
 describe('undefinedIfEmpty', function () {
@@ -157,9 +172,37 @@ describe('undefinedIfEmpty', function () {
         { input: ' foo ', output: ' foo ', case: 'return original str without trim' },
     ]
 
-    cases.forEach((testCases) => {
-        it(testCases.case, function () {
-            assert.strictEqual(undefinedIfEmpty(testCases.input), testCases.output)
-        })
-    })
+    generateTestCases(cases, undefinedIfEmpty)
+})
+
+describe('formatStringWithIndent', function () {
+    const cases = [
+        { input: 'foo', output: 'foo', params: ['  '], case: 'return str if input is not multiline' },
+        {
+            input: 'foo\nbar',
+            output: 'foo\n   bar',
+            params: ['   '],
+            case: 'return str with indent if input is multiline',
+        },
+        {
+            input: 'foo\n\nbar',
+            output: 'foo\n  \n  bar',
+            params: ['  '],
+            case: 'return str with indent if input is multiline with empty line',
+        },
+        {
+            input: 'foo\nbar\nfoo\nbar\n',
+            output: 'foo\n  bar\n  foo\n  bar\n  ',
+            params: ['  '],
+            case: 'return str with indent if input is multiline with empty line at the end',
+        },
+        {
+            input: 'foo\nbar\nfoo\nbar\n',
+            output: 'foo\nbar\nfoo\nbar\n',
+            params: [''],
+            case: 'returns original string with empty indent',
+        },
+    ]
+
+    generateTestCases(cases, formatTextWithIndent)
 })

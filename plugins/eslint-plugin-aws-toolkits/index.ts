@@ -11,6 +11,7 @@ import NoStringExecForChildProcess from './lib/rules/no-string-exec-for-child-pr
 import NoConsoleLog from './lib/rules/no-console-log'
 import noJsonStringifyInLog from './lib/rules/no-json-stringify-in-log'
 import noPrintfMismatch from './lib/rules/no-printf-mismatch'
+import noForeach from './lib/rules/no-foreach'
 
 const rules = {
     'no-await-on-vscode-msg': NoAwaitOnVscodeMsg,
@@ -21,6 +22,7 @@ const rules = {
     'no-console-log': NoConsoleLog,
     'no-json-stringify-in-log': noJsonStringifyInLog,
     'no-printf-mismatch': noPrintfMismatch,
+    'no-foreach': noForeach,
 }
 
 export { rules }

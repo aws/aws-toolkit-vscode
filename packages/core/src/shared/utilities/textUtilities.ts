@@ -274,3 +274,8 @@ export function extractFileAndCodeSelectionFromMessage(message: any) {
     const selection = message?.context?.focusAreaContext?.selectionInsideExtendedCodeBlock as vscode.Selection
     return { filePath, selection }
 }
+
+export function formatTextWithIndent(text: string, indent: string): string {
+    // TODO: shouldn't this trim the resulting string?
+    return text.split('\n').reduce((prev, curr) => (prev === '' ? prev + curr : prev + '\n' + indent + curr))
+}

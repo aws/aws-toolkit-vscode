@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { fs } from '../../shared'
-import { diffLines } from 'diff'
+import { Change, diffLines } from 'diff'
 
 export async function openDiff(leftPath: string, rightPath: string, tabId: string, scheme: string) {
     const { left, right } = await getFileDiffUris(leftPath, rightPath, tabId, scheme)
@@ -42,21 +42,30 @@ export async function computeDiff(leftPath: string, rightPath: string, tabId: st
         ignoreWhitespace: true,
     })
 
-    let charsAdded = 0
-    let charsRemoved = 0
-    let linesAdded = 0
-    let linesRemoved = 0
-    changes.forEach((change) => {
-        const lines = change.value.split('\n')
-        const charCount = lines.reduce((sum, line) => sum + line.length, 0)
-        const lineCount = change.count ?? lines.length - 1 // ignoring end-of-file empty line
-        if (change.added) {
-            charsAdded += charCount
-            linesAdded += lineCount
-        } else if (change.removed) {
-            charsRemoved += charCount
-            linesRemoved += lineCount
-        }
-    })
-    return { changes, charsAdded, linesAdded, charsRemoved, linesRemoved }
+    interface Result {
+        charsAdded: number
+        linesAdded: number
+        charsRemoved: number
+        linesRemoved: number
+    }
+
+    const changeDetails = changes.reduce(
+        (curResult: Result, change: Change) => {
+            const lines = change.value.split('\n')
+            const charCount = lines.reduce((sum, line) => sum + line.length, 0)
+            const lineCount = change.count ?? lines.length - 1 // ignoring end-of-file empty line
+
+            if (change.added) {
+                curResult.charsAdded += charCount
+                curResult.linesAdded += lineCount
+            } else if (change.removed) {
+                curResult.charsRemoved += charCount
+                curResult.linesRemoved += lineCount
+            }
+            return curResult
+        },
+        { charsAdded: 0, linesAdded: 0, charsRemoved: 0, linesRemoved: 0 }
+    )
+
+    return { changes, ...changeDetails }
 }

@@ -346,13 +346,13 @@ export function inspect(obj: any, opt?: { depth: number }): string {
 export function stripUndefined<T extends Record<string, any>>(
     obj: T
 ): asserts obj is { [P in keyof T]-?: NonNullable<T[P]> } {
-    Object.keys(obj).forEach((key) => {
+    for (const key of Object.keys(obj)) {
         if (obj[key] === undefined) {
             delete obj[key]
         } else if (typeof obj[key] === 'object') {
             stripUndefined(obj[key])
         }
-    })
+    }
 }
 
 export function isAsyncIterable(obj: any): obj is AsyncIterable<unknown> {
@@ -565,4 +565,18 @@ export function createCollectionFromPages<T>(...pages: T[]): AsyncCollection<T> 
 }
 export function isPresent<T>(value: T | undefined): value is T {
     return value !== undefined
+}
+
+export async function mapOverMap<K, V, O>(m: Map<K, V>, f: (k: K, v: V) => Promise<O>): Promise<O[]> {
+    return await Promise.all(Array.from(m).map(async ([k, v]) => await f(k, v)))
+}
+
+export function addAll<T>(s: Set<T>, items: T[]) {
+    for (const item of items) {
+        s.add(item)
+    }
+}
+
+export function enumerate<T>(a: T[]) {
+    return a.map((value, index) => [value, index] as const)
 }
