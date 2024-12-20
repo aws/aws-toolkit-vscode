@@ -77,7 +77,9 @@ export async function tailLogGroup(
             })
             await handleSessionStream(stream, document, session)
         } finally {
-            disposables.forEach((disposable) => disposable.dispose())
+            for (const disposable of disposables) {
+                disposable.dispose()
+            }
         }
     })
 }
@@ -200,9 +202,10 @@ async function updateTextDocumentWithNewLogEvents(
     maxLines: number
 ) {
     const edit = new vscode.WorkspaceEdit()
-    formattedLogEvents.forEach((formattedLogEvent) =>
+    for (const formattedLogEvent of formattedLogEvents) {
         edit.insert(document.uri, new vscode.Position(document.lineCount, 0), formattedLogEvent)
-    )
+    }
+
     if (document.lineCount + formattedLogEvents.length > maxLines) {
         trimOldestLines(formattedLogEvents.length, maxLines, document, edit)
     }
@@ -271,13 +274,13 @@ function closeSessionWhenAllEditorsClosed(
 function isLiveTailSessionOpenInAnyTab(liveTailSession: LiveTailSession) {
     let isOpen = false
     vscode.window.tabGroups.all.forEach(async (tabGroup) => {
-        tabGroup.tabs.forEach((tab) => {
+        for (const tab of tabGroup.tabs) {
             if (tab.input instanceof vscode.TabInputText) {
                 if (liveTailSession.uri.toString() === tab.input.uri.toString()) {
                     isOpen = true
                 }
             }
-        })
+        }
     })
     return isOpen
 }

@@ -95,7 +95,9 @@ export function init(appContext: AmazonQAppInitContext) {
             authenticatingSessionIDs = authenticatingSessions.map((session) => session.tabID)
 
             // We've already authenticated these sessions
-            authenticatingSessions.forEach((session) => (session.isAuthenticating = false))
+            for (const session of authenticatingSessions) {
+                session.isAuthenticating = false
+            }
         }
 
         messenger.sendAuthenticationUpdate(authenticated, authenticatingSessionIDs)

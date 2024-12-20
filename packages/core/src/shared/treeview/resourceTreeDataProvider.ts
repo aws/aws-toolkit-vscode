@@ -144,7 +144,11 @@ export class ResourceTreeDataProvider implements vscode.TreeDataProvider<TreeNod
         this.listeners.get(node.id)?.dispose()
         this.listeners.delete(node.id)
 
-        children?.forEach((c) => this.clear(c))
+        if (children) {
+            for (const c of children) {
+                this.clear(c)
+            }
+        }
     }
 
     private insert(id: string, resource: TreeNode): TreeNode {

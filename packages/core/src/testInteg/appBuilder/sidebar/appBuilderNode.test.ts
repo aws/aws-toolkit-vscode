@@ -110,7 +110,7 @@ describe('Application Builder', async () => {
 
             const expectedStackName = await samConfig.getCommandParam('global', 'stack_name')
             const expectedRegion = await samConfig.getCommandParam('global', 'region')
-            appBuilderTestAppResourceNodes.forEach((node) => {
+            for (const node of appBuilderTestAppResourceNodes) {
                 if (node instanceof ResourceNode) {
                     assert.strictEqual(node.resource.region, expectedRegion)
                     assert.strictEqual(node.resource.stackName, expectedStackName)
@@ -119,7 +119,7 @@ describe('Application Builder', async () => {
                 } else {
                     assert.fail('Node is not an instance of ResourceNode')
                 }
-            })
+            }
 
             // Validate Lambda resource node
             const lambdaResourceNode = getResourceNodeByType(

@@ -107,7 +107,7 @@ describe('workspaceUtils', () => {
             globals.codelensRootRegistry.dispose()
         })
 
-        testScenarios.forEach((test) => {
+        for (const test of testScenarios) {
             it(test.scenario, async () => {
                 filesToDelete = test.filesToUse
                 for (const file of test.filesToUse) {
@@ -125,7 +125,7 @@ describe('workspaceUtils', () => {
                     assert.strictEqual(projectFile, test.expectedResult)
                 }
             })
-        })
+        }
     })
 
     describe('getWorkspaceRelativePath', function () {

@@ -31,24 +31,22 @@ export abstract class BM25 {
         this.corpusSize = corpus.length
 
         let numDoc = 0
-        corpus
-            .map((document) => {
-                return tokenizer(document)
-            })
-            .forEach((document) => {
-                this.docLen.push(document.length)
-                numDoc += document.length
+        for (const document of corpus.map((document) => {
+            return tokenizer(document)
+        })) {
+            this.docLen.push(document.length)
+            numDoc += document.length
 
-                const frequencies = new Map<string, number>()
-                document.forEach((word) => {
-                    frequencies.set(word, (frequencies.get(word) || 0) + 1)
-                })
-                this.docFreqs.push(frequencies)
+            const frequencies = new Map<string, number>()
+            for (const word of document) {
+                frequencies.set(word, (frequencies.get(word) || 0) + 1)
+            }
+            this.docFreqs.push(frequencies)
 
-                frequencies.forEach((freq, word) => {
-                    this.nd.set(word, (this.nd.get(word) || 0) + 1)
-                })
-            })
+            for (const [word, freq] of frequencies.entries()) {
+                this.nd.set(word, (this.nd.get(word) || 0) + 1)
+            }
+        }
 
         this.avgdl = numDoc / this.corpusSize
 
@@ -96,14 +94,14 @@ export class BM25Okapi extends BM25 {
         const queryWords = defaultTokenizer(query)
         return this.docFreqs.map((docFreq, index) => {
             let score = 0
-            queryWords.forEach((queryWord, _) => {
+            for (const [_, queryWord] of queryWords.entries()) {
                 const queryWordFreqForDocument = docFreq.get(queryWord) || 0
                 const numerator = (this.idf.get(queryWord) || 0.0) * queryWordFreqForDocument * (this.k1 + 1)
                 const denominator =
                     queryWordFreqForDocument + this.k1 * (1 - this.b + (this.b * this.docLen[index]) / this.avgdl)
 
                 score += numerator / denominator
-            })
+            }
 
             return {
                 content: this.corpus[index],

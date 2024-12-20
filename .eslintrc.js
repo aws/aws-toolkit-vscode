@@ -158,6 +158,7 @@ module.exports = {
         'unicorn/prefer-reflect-apply': 'error',
         'unicorn/prefer-string-trim-start-end': 'error',
         'unicorn/prefer-type-error': 'error',
+        'unicorn/no-array-for-each': 'error',
         'security-node/detect-child-process': 'error',
 
         'header/header': [

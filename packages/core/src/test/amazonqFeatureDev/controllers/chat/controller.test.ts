@@ -515,11 +515,11 @@ describe('Controller', () => {
                 }
             }
 
-            runs.forEach((run) => {
+            for (const run of runs) {
                 it(`should handle ${run.name}`, async function () {
                     await verifyException(run.error)
                 })
-            })
+            }
         })
     })
 

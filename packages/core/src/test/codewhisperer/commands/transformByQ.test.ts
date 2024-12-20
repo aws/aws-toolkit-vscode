@@ -364,9 +364,9 @@ describe('transformByQ', function () {
             // Each dependency version folder contains each expected file, thus we multiply
             const expectedNumberOfDependencyFiles = m2Folders.length * expectedFilesAfterClean.length
             assert.strictEqual(expectedNumberOfDependencyFiles, dependenciesToUpload.length)
-            dependenciesToUpload.forEach((dependency) => {
+            for (const dependency of dependenciesToUpload) {
                 assert(expectedFilesAfterClean.includes(dependency.name))
-            })
+            }
         })
     })
 
@@ -448,9 +448,9 @@ describe('transformByQ', function () {
         assert.strictEqual(transformByQState.getTargetDB(), DB.AURORA_POSTGRESQL)
         assert.strictEqual(transformByQState.getSourceServerName(), 'sample.rds.amazonaws.com')
         const expectedSchemaOptions = ['SCHEMA1', 'SCHEMA2', 'SCHEMA3']
-        expectedSchemaOptions.forEach((schema) => {
+        for (const schema of expectedSchemaOptions) {
             assert(transformByQState.getSchemaOptions().has(schema))
-        })
+        }
     })
 
     it(`WHEN validateMetadataFile on .sct file with unsupported source DB THEN fails validation`, async function () {

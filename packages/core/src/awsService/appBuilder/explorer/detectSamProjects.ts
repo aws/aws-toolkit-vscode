@@ -21,7 +21,9 @@ export async function detectSamProjects(): Promise<SamAppLocation[]> {
         []
     )
 
-    projects.forEach((p) => results.set(p.samTemplateUri.toString(), p))
+    for (const p of projects) {
+        results.set(p.samTemplateUri.toString(), p)
+    }
 
     return Array.from(results.values())
 }
