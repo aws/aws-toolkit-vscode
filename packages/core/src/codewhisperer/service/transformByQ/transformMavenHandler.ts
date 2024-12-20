@@ -13,7 +13,6 @@ import { CodeTransformTelemetryState } from '../../../amazonqGumby/telemetry/cod
 import { ToolkitError } from '../../../shared/errors'
 import { writeLogs } from './transformFileHandler'
 import { throwIfCancelled } from './transformApiHandler'
-import { sleep } from '../../../shared/utilities/timeoutUtils'
 
 // run 'install' with either 'mvnw.cmd', './mvnw', or 'mvn' (if wrapper exists, we use that, otherwise we use regular 'mvn')
 function installProjectDependencies(dependenciesFolder: FolderInfo, modulePath: string) {
@@ -109,8 +108,8 @@ function copyProjectDependencies(dependenciesFolder: FolderInfo, modulePath: str
 }
 
 export async function prepareProjectDependencies(dependenciesFolder: FolderInfo, rootPomPath: string) {
-    // sleep for 0.5s to allow QCT to 1) process JAVA_HOME path and 2) send multiple chat messages
-    await sleep(500)
+    // use await to allow other chat messages to send as well, before the build starts
+    await vscode.window.showInformationMessage(CodeWhispererConstants.buildStartedNotification)
     try {
         copyProjectDependencies(dependenciesFolder, rootPomPath)
     } catch (err) {
