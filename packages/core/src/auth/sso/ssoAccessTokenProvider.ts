@@ -33,7 +33,7 @@ import { randomUUID } from '../../shared/crypto'
 import { getExtRuntimeContext } from '../../shared/vscode/env'
 import { showInputBox } from '../../shared/ui/inputPrompter'
 import { AmazonQPromptSettings, DevSettings, PromptSettings, ToolkitPromptSettings } from '../../shared/settings'
-import { onceChanged } from '../../shared/utilities/functionUtils'
+import { debounce, onceChanged } from '../../shared/utilities/functionUtils'
 import { NestedMap } from '../../shared/utilities/map'
 import { asStringifiedStack } from '../../shared/telemetry/spans'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
@@ -97,7 +97,13 @@ export abstract class SsoAccessTokenProvider {
         this.reAuthState.set(this.profile, { reAuthReason: `invalidate():${reason}` })
     }
 
-    public async getToken(): Promise<SsoToken | undefined> {
+    /**
+     * Sometimes we get many calls at once and this
+     * can trigger redundant disk reads, or token refreshes.
+     * We debounce to avoid this.
+     */
+    public getToken = debounce(this._getToken.bind(this), 100)
+    public async _getToken(): Promise<SsoToken | undefined> {
         const data = await this.cache.token.load(this.tokenCacheKey)
         SsoAccessTokenProvider.logIfChanged(
             indent(
