@@ -153,6 +153,23 @@ describe('Amazon Q Code Transformation', function () {
             const jdkPathResponse = tab.getChatItems().pop()
             // this 'Sorry' message is OK - just making sure that the UI components are working correctly
             assert.strictEqual(jdkPathResponse?.body?.includes("Sorry, I couldn't locate your Java installation"), true)
+
+            const tmpDir = (await TestFolder.create()).path
+
+            transformByQState.setSummaryFilePath(path.join(tmpDir, 'summary.md'))
+
+            tab.clickCustomFormButton({
+                id: 'gumbyViewSummary',
+                text: 'View summary',
+            })
+
+            await tab.waitForEvent(() => tab.getChatItems().length > 14, {
+                waitTimeoutInMs: 5000,
+                waitIntervalInMs: 1000,
+            })
+
+            const viewSummaryChatItem = tab.getChatItems().pop()
+            assert.strictEqual(viewSummaryChatItem?.body?.includes('view a summary'), true)
         })
 
         it('Can provide metadata file for a SQL conversion', async () => {
