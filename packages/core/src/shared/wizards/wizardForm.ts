@@ -110,7 +110,7 @@ export class WizardForm<TState extends Partial<Record<keyof TState, unknown>>> {
     public applyDefaults(state: TState): TState {
         const defaultState = _.cloneDeep(state)
 
-        this.formData.forEach((opt, targetProp) => {
+        for (const [targetProp, opt] of this.formData.entries()) {
             const current = _.get(state, targetProp)
 
             if (!isAssigned(current) && opt.setDefault !== undefined && !checkParent(targetProp, state, opt)) {
@@ -119,7 +119,7 @@ export class WizardForm<TState extends Partial<Record<keyof TState, unknown>>> {
                     _.set(defaultState, targetProp, defaultValue)
                 }
             }
-        })
+        }
 
         return defaultState
     }
@@ -212,10 +212,10 @@ export class WizardForm<TState extends Partial<Record<keyof TState, unknown>>> {
 
     private createApplyFormMethod<TProp extends Record<string, any>>(prop: string): ApplyBoundForm<TProp, TState> {
         return (form: WizardForm<TProp>, options?: ContextOptions<TState, TProp>) => {
-            form.formData.forEach((element, key) => {
+            for (const [key, element] of form.formData.entries()) {
                 // TODO: use an assert here to ensure that no elements are rewritten
                 this.applyElement(`${prop}.${key}`, this.convertElement(prop, element, options))
-            })
+            }
         }
     }
 

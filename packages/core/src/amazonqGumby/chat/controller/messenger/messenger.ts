@@ -197,13 +197,13 @@ export class Messenger {
         const projectFormOptions: { value: any; label: string }[] = []
         const detectedJavaVersions = new Array<JDKVersion | undefined>()
 
-        projects.forEach((candidateProject) => {
+        for (const candidateProject of projects) {
             projectFormOptions.push({
                 value: candidateProject.path,
                 label: candidateProject.name,
             })
             detectedJavaVersions.push(candidateProject.JDKVersion)
-        })
+        }
 
         const formItems: ChatItemFormItem[] = []
         formItems.push({
@@ -279,12 +279,12 @@ export class Messenger {
     public async sendSQLConversionProjectPrompt(projects: TransformationCandidateProject[], tabID: string) {
         const projectFormOptions: { value: any; label: string }[] = []
 
-        projects.forEach((candidateProject) => {
+        for (const candidateProject of projects) {
             projectFormOptions.push({
                 value: candidateProject.path,
                 label: candidateProject.name,
             })
-        })
+        }
 
         const formItems: ChatItemFormItem[] = []
         formItems.push({
@@ -661,12 +661,12 @@ ${codeSnippet}
 
         const valueFormOptions: { value: any; label: string }[] = []
 
-        versions.allVersions.forEach((version) => {
+        for (const version of versions.allVersions) {
             valueFormOptions.push({
                 value: version,
                 label: version,
             })
-        })
+        }
 
         const formItems: ChatItemFormItem[] = []
         formItems.push({

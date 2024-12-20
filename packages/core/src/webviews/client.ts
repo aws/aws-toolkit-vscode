@@ -68,7 +68,9 @@ export class WebviewClientFactory {
             const { command } = event.data
             if (command === '$clear') {
                 vscode.setState({})
-                this.messageListeners.forEach((listener) => this.removeListener(listener))
+                for (const listener of this.messageListeners) {
+                    this.removeListener(listener)
+                }
                 window.dispatchEvent(remountEvent)
             }
         })

@@ -257,7 +257,7 @@ export class TelemetryHelper {
     ) {
         const events: CodewhispererUserDecision[] = []
         // emit user decision telemetry
-        recommendations.forEach((_elem, i) => {
+        for (const [i, _elem] of recommendations.entries()) {
             let uniqueSuggestionReferences: string | undefined = undefined
             const uniqueLicenseSet = LicenseUtil.getUniqueLicenseNames(_elem.references)
             if (uniqueLicenseSet.size > 0) {
@@ -288,7 +288,7 @@ export class TelemetryHelper {
             }
             telemetry.codewhisperer_userDecision.emit(event)
             events.push(event)
-        })
+        }
 
         // aggregate suggestion references count
         const referenceCount = this.getAggregatedSuggestionReferenceCount(events)

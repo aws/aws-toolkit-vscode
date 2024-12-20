@@ -328,7 +328,7 @@ export class CodeExtractor {
         const zipEntries = zip.getEntries()
         const detectedCollisions: string[] = []
 
-        zipEntries.forEach(function (zipEntry) {
+        for (const zipEntry of zipEntries) {
             if (zipEntry.isDirectory) {
                 // Ignore directories because those can/will merged
             } else {
@@ -337,7 +337,7 @@ export class CodeExtractor {
                     detectedCollisions.push(intendedDestinationPath)
                 }
             }
-        })
+        }
 
         if (detectedCollisions.length > 0) {
             this.writeToOutputChannel(detectedCollisions)

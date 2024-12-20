@@ -721,7 +721,9 @@ function toggleIssuesVisibility(visibleCondition: (issue: CodeScanIssue, filePat
         issues: group.issues.map((issue) => ({ ...issue, visible: visibleCondition(issue, group.filePath) })),
     }))
     securityScanRender.securityDiagnosticCollection?.clear()
-    updatedIssues.forEach((issue) => updateSecurityDiagnosticCollection(issue))
+    for (const issue of updatedIssues) {
+        updateSecurityDiagnosticCollection(issue)
+    }
     SecurityIssueProvider.instance.issues = updatedIssues
     SecurityIssueTreeViewProvider.instance.refresh()
 }

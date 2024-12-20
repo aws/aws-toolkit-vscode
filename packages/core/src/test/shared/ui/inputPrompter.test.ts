@@ -21,9 +21,9 @@ describe('createInputBox', function () {
         const prompter = createInputBox()
         const inputBox = prompter.inputBox
 
-        Object.keys(defaultInputboxOptions).forEach((key) => {
+        for (const key of Object.keys(defaultInputboxOptions)) {
             assert.strictEqual(inputBox[key as keyof vscode.InputBox], (defaultInputboxOptions as any)[key])
-        })
+        }
     })
 })
 

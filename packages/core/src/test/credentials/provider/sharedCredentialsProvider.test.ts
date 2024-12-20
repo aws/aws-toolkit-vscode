@@ -463,5 +463,7 @@ describe('SharedCredentialsProvider', async function () {
 
 function assertSubstringsInText(text: string | undefined, ...substrings: string[]) {
     assert.ok(text)
-    substrings.forEach((substring) => assert.notStrictEqual(text!.indexOf(substring), -1))
+    for (const substring of substrings) {
+        assert.notStrictEqual(text!.indexOf(substring), -1)
+    }
 }

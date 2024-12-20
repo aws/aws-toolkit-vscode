@@ -151,7 +151,9 @@ export class TryChatCodeLensProvider implements vscode.CodeLensProvider {
     dispose() {
         globals.globalState.tryUpdate('aws.amazonq.showTryChatCodeLens', false)
         TryChatCodeLensProvider.providerDisposable?.dispose()
-        this.disposables.forEach((d) => d.dispose())
+        for (const d of this.disposables) {
+            d.dispose()
+        }
     }
 }
 

@@ -801,9 +801,9 @@ describe('SAM DeployWizard', async function () {
                 }
             )
 
-            expectedCallOrder.forEach((title, index) => {
+            for (const [index, title] of expectedCallOrder.entries()) {
                 prompterTester.assertCallOrder(title, index + 1)
-            })
+            }
         })
 
         it('happy path with samconfig.toml', async () => {

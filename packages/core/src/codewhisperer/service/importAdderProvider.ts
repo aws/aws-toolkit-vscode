@@ -55,6 +55,7 @@ export class ImportAdderProvider implements vscode.CodeLensProvider {
         ) {
             const line = findLineToInsertImportStatement(editor, firstLineOfRecommendation)
             let mergedStatements = ``
+            // eslint-disable-next-line unicorn/no-array-for-each
             r.mostRelevantMissingImports?.forEach(async (i) => {
                 // trust service response that this to-be-added import is necessary
                 if (i.statement) {

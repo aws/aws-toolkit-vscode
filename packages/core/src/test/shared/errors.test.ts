@@ -367,12 +367,12 @@ describe('resolveErrorMessageToDisplay()', function () {
     })
 
     // Sanity check specific errors are resolved as expected
-    prioritiziedAwsErrors.forEach((error) => {
+    for (const error of prioritiziedAwsErrors) {
         it(`resolves ${error.code} message when provided directly`, function () {
             const message = resolveErrorMessageToDisplay(error, defaultMessage)
             assert.strictEqual(message, `${defaultMessage}: ${awsErrorMessage}`)
         })
-    })
+    }
 
     it('gets default message if no error is given', function () {
         const message = resolveErrorMessageToDisplay(undefined, defaultMessage)

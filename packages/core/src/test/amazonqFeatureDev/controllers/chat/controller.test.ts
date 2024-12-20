@@ -553,11 +553,11 @@ describe('Controller', () => {
                 )
             })
 
-            runs.forEach(({ name, error }) => {
+            for (const { name, error } of runs) {
                 it(`sends failure operation telemetry on ${name}`, async () => {
                     await verifyException(error)
                 })
-            })
+            }
         })
 
         describe('processErrorChatMessage', function () {
@@ -639,11 +639,11 @@ describe('Controller', () => {
                 }
             }
 
-            runs.forEach((run) => {
+            for (const run of runs) {
                 it(`should handle ${run.name}`, async function () {
                     await verifyException(run.error)
                 })
-            })
+            }
         })
     })
 

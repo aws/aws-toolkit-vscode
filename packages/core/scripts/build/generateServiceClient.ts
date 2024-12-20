@@ -106,7 +106,7 @@ async function insertServiceClientsIntoJsSdk(
     jsSdkPath: string,
     serviceClientDefinitions: ServiceClientDefinition[]
 ): Promise<void> {
-    serviceClientDefinitions.forEach((serviceClientDefinition) => {
+    for (const serviceClientDefinition of serviceClientDefinitions) {
         const apiVersion = getApiVersion(serviceClientDefinition.serviceJsonPath)
 
         // Copy the Service Json into the JS SDK for generation
@@ -116,7 +116,7 @@ async function insertServiceClientsIntoJsSdk(
             `${serviceClientDefinition.serviceName.toLowerCase()}-${apiVersion}.normal.json`
         )
         nodefs.copyFileSync(serviceClientDefinition.serviceJsonPath, jsSdkServiceJsonPath)
-    })
+    }
 
     const apiMetadataPath = path.join(jsSdkPath, 'apis', 'metadata.json')
     await patchServicesIntoApiMetadata(
@@ -151,9 +151,9 @@ async function patchServicesIntoApiMetadata(apiMetadataPath: string, serviceName
     const apiMetadataJson = nodefs.readFileSync(apiMetadataPath).toString()
     const apiMetadata = JSON.parse(apiMetadataJson) as ApiMetadata
 
-    serviceNames.forEach((serviceName) => {
+    for (const serviceName of serviceNames) {
         apiMetadata[serviceName.toLowerCase()] = { name: serviceName }
-    })
+    }
 
     nodefs.writeFileSync(apiMetadataPath, JSON.stringify(apiMetadata, undefined, 4))
 }

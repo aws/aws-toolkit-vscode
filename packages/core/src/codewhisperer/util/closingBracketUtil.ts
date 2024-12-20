@@ -111,13 +111,13 @@ const removeBracketsFromRightContext = async (
     } else {
         await editor.edit(
             (editBuilder) => {
-                idxToRemove.forEach((idx) => {
+                for (const idx of idxToRemove) {
                     const range = new vscode.Range(
                         editor.document.positionAt(offset + idx),
                         editor.document.positionAt(offset + idx + 1)
                     )
                     editBuilder.delete(range)
-                })
+                }
             },
             { undoStopAfter: false, undoStopBefore: false }
         )

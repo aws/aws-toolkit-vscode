@@ -134,7 +134,7 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
      */
     async fetchConnections(): Promise<AwsConnection[] | undefined> {
         const connections: AwsConnection[] = []
-        Auth.instance.declaredConnections.forEach((conn) => {
+        for (const conn of Auth.instance.declaredConnections) {
             // No need to display Builder ID as an existing connection,
             // users can just select the Builder ID login option and it would have the same effect.
             if (conn.startUrl !== builderIdStartUrl) {
@@ -143,7 +143,7 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
                     startUrl: conn.startUrl,
                 } as AwsConnection)
             }
-        })
+        }
         return connections
     }
 

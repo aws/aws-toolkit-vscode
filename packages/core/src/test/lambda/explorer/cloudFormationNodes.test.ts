@@ -107,9 +107,9 @@ describe('CloudFormationStackNode', function () {
 
         assert.strictEqual(childNodes.length, 2, 'Unexpected child count')
 
-        childNodes.forEach((node) =>
+        for (const node of childNodes) {
             assert.ok(node instanceof LambdaFunctionNode, 'Expected child node to be LambdaFunctionNode')
-        )
+        }
     })
 
     it('has child nodes with CloudFormation contextValue', async function () {
@@ -121,13 +121,13 @@ describe('CloudFormationStackNode', function () {
         const node = generateTestNode({ lambdaClient, cloudFormationClient })
         const childNodes = await node.getChildren()
 
-        childNodes.forEach((node) =>
+        for (const node of childNodes) {
             assert.strictEqual(
                 node.contextValue,
                 contextValueCloudformationLambdaFunction,
                 'expected the node to have a CloudFormation contextValue'
             )
-        )
+        }
     })
 
     it('only includes functions which are in a CloudFormation stack', async function () {
@@ -163,9 +163,9 @@ describe('CloudFormationNode', function () {
         const cloudFormationNode = new CloudFormationNode(regionCode, client)
         const children = await cloudFormationNode.getChildren()
 
-        children.forEach((node) =>
+        for (const node of children) {
             assert.ok(node instanceof CloudFormationStackNode, 'Expected child node to be CloudFormationStackNode')
-        )
+        }
     })
 
     it('has sorted child nodes', async function () {

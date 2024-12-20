@@ -946,11 +946,11 @@ async function getTemplateChoices(...workspaceFolders: vscode.Uri[]): Promise<Sa
     const uriToLabel: Map<vscode.Uri, string> = new Map<vscode.Uri, string>()
     const labelCounts: Map<string, number> = new Map()
 
-    templateUris.forEach((uri) => {
+    for (const uri of templateUris) {
         const label = SamTemplateQuickPickItem.getLabel(uri)
         uriToLabel.set(uri, label)
         labelCounts.set(label, 1 + (labelCounts.get(label) || 0))
-    })
+    }
 
     return Array.from(uriToLabel, ([uri, label]) => {
         const showWorkspaceFolderDetails: boolean = (labelCounts.get(label) || 0) > 1

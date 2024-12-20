@@ -298,9 +298,9 @@ describe('generateDeployedNode', () => {
                 name?: string
                 description?: string
             }
-            Object.entries(options).forEach(([key, value]) => {
+            for (const [key, value] of Object.entries(options)) {
                 value !== undefined && Object.defineProperty(mockNode, key, { value, writable: true })
-            })
+            }
             return mockNode
         }
 

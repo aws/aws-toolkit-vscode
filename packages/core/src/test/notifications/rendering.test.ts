@@ -65,12 +65,12 @@ describe('Notifications Rendering', function () {
         testWindow.onDidShowMessage((message) => {
             const expectedButtons =
                 notification.uiRenderInstructions.actions?.map((actions) => actions.displayText['en-US']) ?? []
-            expectedButtons.forEach((buttonText) => {
+            for (const buttonText of expectedButtons) {
                 assert.ok(
                     message.items.some((item) => item.title === buttonText),
                     `Button "${buttonText}" is missing`
                 )
-            })
+            }
         })
 
         await panelNode.onReceiveNotifications([notification])

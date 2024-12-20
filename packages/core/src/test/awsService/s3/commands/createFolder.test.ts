@@ -75,7 +75,7 @@ describe('createFolderCommand', function () {
         sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', node)
     })
 
-    invalidFolderNames.forEach((invalid) => {
+    for (const invalid of invalidFolderNames) {
         it(`warns '${invalid.error}' when folder name is '${invalid.folderName}'`, async () => {
             getTestWindow().onDidShowInputBox((input) => {
                 input.acceptValue(invalid.folderName)
@@ -84,5 +84,5 @@ describe('createFolderCommand', function () {
             })
             await assert.rejects(() => createFolderCommand(node))
         })
-    })
+    }
 })

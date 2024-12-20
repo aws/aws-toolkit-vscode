@@ -103,7 +103,7 @@ export async function assertLogContainsBadExitInformation(
         .getLoggedEntries()
         .filter((x) => !isError(x))
         .join('\n')
-    expectedTexts.forEach((expectedText) => {
+    for (const expectedText of expectedTexts) {
         assert.ok(logText.includes(expectedText.text), expectedText.verifyMessage)
-    })
+    }
 }

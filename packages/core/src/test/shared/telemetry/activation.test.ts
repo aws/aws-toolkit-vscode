@@ -59,10 +59,10 @@ describe('hasUserSeenTelemetryNotice', async function () {
         { currentState: 9999, expectedHasSeen: true, desc: 'seen a future version' },
     ]
 
-    scenarios.forEach((scenario) => {
+    for (const scenario of scenarios) {
         it(scenario.desc, async () => {
             await globals.globalState.update('awsTelemetryNoticeVersionAck', scenario.currentState)
             assert.strictEqual(hasUserSeenTelemetryNotice(), scenario.expectedHasSeen)
         })
-    })
+    }
 })

@@ -429,18 +429,18 @@ describe('NestedWizard', () => {
 
 function setupPrompterTester(titles: string[]) {
     const prompterTester = PrompterTester.init()
-    titles.forEach((title) => {
+    for (const title of titles) {
         prompterTester.handleQuickPick(title, (quickPick) => {
             quickPick.acceptItem(quickPick.items[0])
         })
-    })
+    }
     prompterTester.build()
     return prompterTester
 }
 
 function assertWizardOutput(prompterTester: PrompterTester, orderedTitle: string[], result: any, output: any) {
     assert.deepStrictEqual(result, output)
-    orderedTitle.forEach((title, index) => {
+    for (const [index, title] of orderedTitle.entries()) {
         prompterTester.assertCallOrder(title, index + 1)
-    })
+    }
 }
