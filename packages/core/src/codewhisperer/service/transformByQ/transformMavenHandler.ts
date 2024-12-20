@@ -108,8 +108,7 @@ function copyProjectDependencies(dependenciesFolder: FolderInfo, modulePath: str
 }
 
 export async function prepareProjectDependencies(dependenciesFolder: FolderInfo, rootPomPath: string) {
-    // use await to allow other chat messages to send as well, before the build starts
-    await vscode.window.showInformationMessage(CodeWhispererConstants.buildStartedNotification)
+    void vscode.window.showInformationMessage(CodeWhispererConstants.buildStartedNotification)
     try {
         copyProjectDependencies(dependenciesFolder, rootPomPath)
     } catch (err) {
