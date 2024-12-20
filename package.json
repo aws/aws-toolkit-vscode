@@ -36,7 +36,8 @@
         "lintfix": "eslint -c .eslintrc.js --ignore-path .gitignore --ignore-pattern '**/*.json' --ignore-pattern '**/*.gen.ts' --ignore-pattern '**/types/*.d.ts' --ignore-pattern '**/src/testFixtures/**' --ignore-pattern '**/resources/js/graphStateMachine.js' --fix --ext .ts packages plugins",
         "clean": "npm run clean -w packages/ -w plugins/",
         "reset": "npm run clean && ts-node ./scripts/clean.ts node_modules && npm install",
-        "generateNonCodeFiles": "npm run generateNonCodeFiles -w packages/ --if-present"
+        "generateNonCodeFiles": "npm run generateNonCodeFiles -w packages/ --if-present",
+        "mergeReports": "ts-node ./scripts/mergeReports.ts"
     },
     "devDependencies": {
         "@aws-toolkits/telemetry": "^1.0.289",
