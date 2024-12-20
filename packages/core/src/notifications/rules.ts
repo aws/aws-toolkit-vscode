@@ -8,6 +8,7 @@ import * as semver from 'semver'
 import globals from '../shared/extensionGlobals'
 import { ConditionalClause, RuleContext, DisplayIf, CriteriaCondition, ToolkitNotification, AuthState } from './types'
 import { getComputeEnvType, getOperatingSystem } from '../shared/telemetry/util'
+import { isAutomation } from '../shared/vscode/env'
 import { AuthFormId } from '../login/webview/vue/types'
 import { getLogger } from '../shared/logger/logger'
 import { ToolkitError } from '../shared/errors'
@@ -28,23 +29,24 @@ const logger = getLogger('notifications')
  * @returns true if the version satisfies the condition
  */
 function isValidVersion(version: string, condition: ConditionalClause): boolean {
+    const cleanVersion = version.split('-')[0] // remove any pre-release tags
     switch (condition.type) {
         case 'range': {
             const lowerConstraint =
                 !condition.lowerInclusive ||
                 condition.lowerInclusive === '-inf' ||
-                semver.gte(version, condition.lowerInclusive)
+                semver.gte(cleanVersion, condition.lowerInclusive)
             const upperConstraint =
                 !condition.upperExclusive ||
                 condition.upperExclusive === '+inf' ||
-                semver.lt(version, condition.upperExclusive)
+                semver.lt(cleanVersion, condition.upperExclusive)
             return lowerConstraint && upperConstraint
         }
         case 'exactMatch':
-            return condition.values.some((v) => semver.eq(v, version))
+            return condition.values.some((v) => semver.eq(v, cleanVersion))
         case 'or':
             /** Check case where any of the subconditions are true, i.e. one of multiple range or exactMatch conditions */
-            return condition.clauses.some((clause) => isValidVersion(version, clause))
+            return condition.clauses.some((clause) => isValidVersion(cleanVersion, clause))
         default:
             throw new Error(`Unknown clause type: ${(condition as any).type}`)
     }
@@ -79,7 +81,8 @@ export class RuleEngine {
 
     private evaluate(id: string, condition: DisplayIf): boolean {
         const currentExt = globals.context.extension.id
-        if (condition.extensionId !== currentExt) {
+        // if in test, skip the extension id check since its fake
+        if (condition.extensionId !== currentExt && !isAutomation()) {
             logger.verbose(
                 'notification id: (%s) did NOT pass extension id check, actual ext id: (%s), expected ext id: (%s)',
                 id,

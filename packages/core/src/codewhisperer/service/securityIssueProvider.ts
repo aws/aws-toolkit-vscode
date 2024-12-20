@@ -5,7 +5,12 @@
 
 import * as vscode from 'vscode'
 import { AggregatedCodeScanIssue, CodeScanIssue, CodeScansState, SuggestedFix } from '../models/model'
-export abstract class SecurityIssueProvider {
+export class SecurityIssueProvider {
+    static #instance: SecurityIssueProvider
+    public static get instance() {
+        return (this.#instance ??= new this())
+    }
+
     private _issues: AggregatedCodeScanIssue[] = []
     public get issues() {
         return this._issues
@@ -80,7 +85,7 @@ export abstract class SecurityIssueProvider {
     private _offsetSuggestedFix(suggestedFix: SuggestedFix, lines: number): SuggestedFix {
         return {
             ...suggestedFix,
-            code: suggestedFix.code.replace(
+            code: suggestedFix.code?.replace(
                 /^(@@ -)(\d+)(,\d+ \+)(\d+)(,\d+ @@)/,
                 function (_fullMatch, ...groups: string[]) {
                     return (
@@ -92,6 +97,15 @@ export abstract class SecurityIssueProvider {
                     )
                 }
             ),
+            references:
+                suggestedFix.references?.map((ref) => ({
+                    ...ref,
+                    recommendationContentSpan: {
+                        ...ref.recommendationContentSpan,
+                        start: Number(ref.recommendationContentSpan?.start) + lines,
+                        end: Number(ref.recommendationContentSpan?.end) + lines,
+                    },
+                })) ?? [],
         }
     }
 
@@ -103,6 +117,18 @@ export abstract class SecurityIssueProvider {
             return {
                 ...group,
                 issues: group.issues.filter((i) => i.findingId !== issue.findingId),
+            }
+        })
+    }
+
+    public updateIssue(issue: CodeScanIssue, filePath?: string) {
+        this._issues = this._issues.map((group) => {
+            if (filePath && group.filePath !== filePath) {
+                return group
+            }
+            return {
+                ...group,
+                issues: group.issues.map((i) => (i.findingId === issue.findingId ? issue : i)),
             }
         })
     }

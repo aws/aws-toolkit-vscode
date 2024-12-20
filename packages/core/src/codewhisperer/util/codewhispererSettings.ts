@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import { fromExtensionManifest, migrateSetting } from '../../shared/settings'
+import { ArrayConstructor } from '../../shared/utilities/typeConstructors'
 
 const description = {
     showInlineCodeSuggestionsWithCodeReferences: Boolean, // eslint-disable-line id-length
@@ -12,6 +13,7 @@ const description = {
     workspaceIndexWorkerThreads: Number,
     workspaceIndexUseGPU: Boolean,
     workspaceIndexMaxSize: Number,
+    ignoredSecurityIssues: ArrayConstructor(String),
 }
 
 export class CodeWhispererSettings extends fromExtensionManifest('amazonQ', description) {
@@ -62,6 +64,14 @@ export class CodeWhispererSettings extends fromExtensionManifest('amazonQ', desc
     public getMaxIndexSize(): number {
         // minimal 1MB
         return Math.max(this.get('workspaceIndexMaxSize', 250), 1)
+    }
+
+    public getIgnoredSecurityIssues(): string[] {
+        return this.get('ignoredSecurityIssues', [])
+    }
+
+    public async addToIgnoredSecurityIssuesList(issueTitle: string) {
+        await this.update('ignoredSecurityIssues', [...this.getIgnoredSecurityIssues(), issueTitle])
     }
 
     static #instance: CodeWhispererSettings

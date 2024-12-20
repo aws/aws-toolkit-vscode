@@ -135,6 +135,15 @@ export type NotificationsState = {
     newlyReceived: string[]
 }
 
+export const defaultNotificationsState: () => NotificationsState = () => {
+    return {
+        startUp: {},
+        emergency: {},
+        dismissed: [],
+        newlyReceived: [],
+    }
+}
+
 export const NotificationsStateConstructor: TypeConstructor<NotificationsState> = (v: unknown): NotificationsState => {
     const isNotificationsState = (v: Partial<NotificationsState>): v is NotificationsState => {
         const requiredKeys: (keyof NotificationsState)[] = ['startUp', 'emergency', 'dismissed', 'newlyReceived']
@@ -173,3 +182,5 @@ export type AuthState = Omit<AuthUserState, 'source'>
 export function getNotificationTelemetryId(n: ToolkitNotification): string {
     return `TARGETED_NOTIFICATION:${n.id}`
 }
+
+export type DevNotificationsState = { startUp: ToolkitNotification[]; emergency: ToolkitNotification[] }

@@ -34,14 +34,13 @@ import {
 import { sleep } from '../../../shared/utilities/timeoutUtils'
 import AdmZip from 'adm-zip'
 import globals from '../../../shared/extensionGlobals'
-import { CredentialSourceId, telemetry } from '../../../shared/telemetry/telemetry'
+import { telemetry } from '../../../shared/telemetry/telemetry'
 import { CodeTransformTelemetryState } from '../../../amazonqGumby/telemetry/codeTransformTelemetryState'
 import { calculateTotalLatency } from '../../../amazonqGumby/telemetry/codeTransformTelemetry'
 import { MetadataResult } from '../../../shared/telemetry/telemetryClient'
 import request from '../../../shared/request'
 import { JobStoppedError, ZipExceedsSizeLimitError } from '../../../amazonqGumby/errors'
 import { writeLogs } from './transformFileHandler'
-import { AuthUtil } from '../../util/authUtil'
 import { createCodeWhispererChatStreamingClient } from '../../../shared/clients/codewhispererChatClient'
 import { downloadExportResultArchive } from '../../../shared/utilities/download'
 import { ExportIntent, TransformationDownloadArtifactType } from '@amzn/codewhisperer-streaming'
@@ -49,21 +48,12 @@ import fs from '../../../shared/fs/fs'
 import { ChatSessionManager } from '../../../amazonqGumby/chat/storages/chatSession'
 import { encodeHTML } from '../../../shared/utilities/textUtilities'
 import { convertToTimeString } from '../../../shared/datetime'
+import { getAuthType } from '../../../auth/utils'
 
 export function getSha256(buffer: Buffer) {
     const hasher = crypto.createHash('sha256')
     hasher.update(buffer)
     return hasher.digest('base64')
-}
-
-export async function getAuthType() {
-    let authType: CredentialSourceId | undefined = undefined
-    if (AuthUtil.instance.isEnterpriseSsoInUse() && AuthUtil.instance.isConnectionValid()) {
-        authType = 'iamIdentityCenter'
-    } else if (AuthUtil.instance.isBuilderIdInUse() && AuthUtil.instance.isConnectionValid()) {
-        authType = 'awsId'
-    }
-    return authType
 }
 
 export function throwIfCancelled() {
@@ -113,18 +103,45 @@ export async function uploadArtifactToS3(
     try {
         const uploadFileByteSize = (await nodefs.promises.stat(fileName)).size
         getLogger().info(
-            `Uploading project artifact at %s with checksum %s using uploadId: %s and size %s kB`,
+            `CodeTransformation: Uploading project artifact at %s with checksum %s using uploadId: %s and size %s kB`,
             fileName,
             sha256,
             resp.uploadId,
             Math.round(uploadFileByteSize / 1000)
         )
 
-        const response = await request.fetch('PUT', resp.uploadUrl, {
-            body: buffer,
-            headers: getHeadersObj(sha256, resp.kmsKeyArn),
-        }).response
-        getLogger().info(`CodeTransformation: Status from S3 Upload = ${response.status}`)
+        let response = undefined
+        /* The existing S3 client has built-in retries but it requires the bucket name, so until
+         * CreateUploadUrl can be modified to return the S3 bucket name, manually implement retries.
+         * Alternatively, when waitUntil supports a fixed number of retries and retriableCodes, use that.
+         */
+        const retriableCodes = [408, 429, 500, 502, 503, 504]
+        for (let i = 0; i < 4; i++) {
+            try {
+                response = await request.fetch('PUT', resp.uploadUrl, {
+                    body: buffer,
+                    headers: getHeadersObj(sha256, resp.kmsKeyArn),
+                }).response
+                getLogger().info(`CodeTransformation: upload to S3 status on attempt ${i + 1}/4 = ${response.status}`)
+                if (response.status === 200) {
+                    break
+                }
+                throw new Error('Upload failed')
+            } catch (e: any) {
+                if (response && !retriableCodes.includes(response.status)) {
+                    throw new Error(`Upload failed with status code = ${response.status}; did not automatically retry`)
+                }
+                if (i !== 3) {
+                    await sleep(1000 * Math.pow(2, i))
+                }
+            }
+        }
+        if (!response || response.status !== 200) {
+            const uploadFailedError = `Upload failed after up to 4 attempts with status code = ${response?.status ?? 'unavailable'}`
+            getLogger().error(`CodeTransformation: ${uploadFailedError}`)
+            throw new Error(uploadFailedError)
+        }
+        getLogger().info('CodeTransformation: Upload to S3 succeeded')
     } catch (e: any) {
         let errorMessage = `The upload failed due to: ${(e as Error).message}. For more information, see the [Amazon Q documentation](${CodeWhispererConstants.codeTransformTroubleshootUploadError})`
         if (errorMessage.includes('Request has expired')) {
@@ -232,6 +249,8 @@ export async function uploadPayload(payloadFileName: string, uploadContext?: Upl
  */
 const mavenExcludedExtensions = ['.repositories', '.sha1']
 
+const sourceExcludedExtensions = ['.DS_Store']
+
 /**
  * Determines if the specified file path corresponds to a Maven metadata file
  * by checking against known metadata file extensions. This is used to identify
@@ -244,24 +263,22 @@ function isExcludedDependencyFile(path: string): boolean {
     return mavenExcludedExtensions.some((extension) => path.endsWith(extension))
 }
 
-/**
- * Gets all files in dir. We use this method to get the source code, then we run a mvn command to
- * copy over dependencies into their own folder, then we use this method again to get those
- * dependencies. If isDependenciesFolder is true, then we are getting all the files
- * of the dependencies which were copied over by the previously-run mvn command, in which case
- * we DO want to include any dependencies that may happen to be named "target", hence the check
- * in the first part of the IF statement. The point of excluding folders named target is that
- * "target" is also the name of the folder where .class files, large JARs, etc. are stored after
- * building, and we do not want these included in the ZIP so we exclude these when calling
- * getFilesRecursively on the source code folder.
- */
-function getFilesRecursively(dir: string, isDependenciesFolder: boolean): string[] {
+// do not zip the .DS_Store file as it may appear in the diff.patch
+function isExcludedSourceFile(path: string): boolean {
+    return sourceExcludedExtensions.some((extension) => path.endsWith(extension))
+}
+
+// zip all dependency files and all source files excluding "target" (contains large JARs) plus ".git" and ".idea" (may appear in diff.patch)
+export function getFilesRecursively(dir: string, isDependenciesFolder: boolean): string[] {
     const entries = nodefs.readdirSync(dir, { withFileTypes: true })
     const files = entries.flatMap((entry) => {
         const res = path.resolve(dir, entry.name)
-        // exclude 'target' directory from ZIP (except if zipping dependencies) due to issues in backend
         if (entry.isDirectory()) {
-            if (isDependenciesFolder || entry.name !== 'target') {
+            if (isDependenciesFolder) {
+                // include all dependency files
+                return getFilesRecursively(res, isDependenciesFolder)
+            } else if (entry.name !== 'target' && entry.name !== '.git' && entry.name !== '.idea') {
+                // exclude the above directories when zipping source code
                 return getFilesRecursively(res, isDependenciesFolder)
             } else {
                 return []
@@ -310,8 +327,8 @@ export async function zipCode(
             const sourceFiles = getFilesRecursively(projectPath, false)
             let sourceFilesSize = 0
             for (const file of sourceFiles) {
-                if (nodefs.statSync(file).isDirectory()) {
-                    getLogger().info('CodeTransformation: Skipping directory, likely a symlink')
+                if (nodefs.statSync(file).isDirectory() || isExcludedSourceFile(file)) {
+                    getLogger().info('CodeTransformation: Skipping file')
                     continue
                 }
                 const relativePath = path.relative(projectPath, file)
@@ -320,6 +337,10 @@ export async function zipCode(
                 sourceFilesSize += (await nodefs.promises.stat(file)).size
             }
             getLogger().info(`CodeTransformation: source code files size = ${sourceFilesSize}`)
+        }
+
+        if (transformByQState.getMultipleDiffs() && zipManifest instanceof ZipManifest) {
+            zipManifest.transformCapabilities.push('SELECTIVE_TRANSFORMATION_V1')
         }
 
         if (
@@ -334,16 +355,13 @@ export async function zipCode(
                     target: transformByQState.getTargetDB(),
                     schema: transformByQState.getSchema(),
                     host: transformByQState.getSourceServerName(),
-                    sctFileName: metadataZip.getEntries().filter((entry) => entry.entryName.endsWith('.sct'))[0]
-                        .entryName,
+                    sctFileName: metadataZip.getEntries().filter((entry) => entry.name.endsWith('.sct'))[0].name,
                 },
             }
             // TO-DO: later consider making this add to path.join(zipManifest.dependenciesRoot, 'qct-sct-metadata', entry.entryName) so that it's more organized
             metadataZip
                 .getEntries()
-                .forEach((entry) =>
-                    zip.addFile(path.join(zipManifest.dependenciesRoot, entry.entryName), entry.getData())
-                )
+                .forEach((entry) => zip.addFile(path.join(zipManifest.dependenciesRoot, entry.name), entry.getData()))
             const sqlMetadataSize = (await nodefs.promises.stat(transformByQState.getMetadataPathSQL())).size
             getLogger().info(`CodeTransformation: SQL metadata file size = ${sqlMetadataSize}`)
         }
@@ -626,7 +644,6 @@ export async function getTransformationSteps(jobId: string, handleThrottleFlag: 
 
 export async function pollTransformationJob(jobId: string, validStates: string[]) {
     let status: string = ''
-    let timer: number = 0
     while (true) {
         throwIfCancelled()
         try {
@@ -679,10 +696,6 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
                 throw new JobStoppedError(response.$response.requestId)
             }
             await sleep(CodeWhispererConstants.transformationJobPollingIntervalSeconds * 1000)
-            timer += CodeWhispererConstants.transformationJobPollingIntervalSeconds
-            if (timer > CodeWhispererConstants.transformationJobTimeoutSeconds) {
-                throw new Error('Job timed out')
-            }
         } catch (e: any) {
             let errorMessage = (e as Error).message
             errorMessage += ` -- ${transformByQState.getJobFailureMetadata()}`

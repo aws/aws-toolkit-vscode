@@ -26,6 +26,8 @@ import { session } from './codeWhispererSession'
 import { CodeWhispererSupplementalContext } from '../models/model'
 import { FeatureConfigProvider } from '../../shared/featureConfig'
 import { CodeScanRemediationsEventType } from '../client/codewhispereruserclient'
+import { CodeAnalysisScope as CodeAnalysisScopeClientSide } from '../models/constants'
+import { Session } from '../../amazonqTest/chat/session/session'
 
 export class TelemetryHelper {
     // Some variables for client component latency
@@ -56,6 +58,50 @@ export class TelemetryHelper {
         return (this.#instance ??= new this())
     }
 
+    public sendTestGenerationToolkitEvent(
+        session: Session,
+        isSupportedLanguage: boolean,
+        result: 'Succeeded' | 'Failed' | 'Cancelled',
+        requestId?: string,
+        perfClientLatency?: number,
+        reasonDesc?: string,
+        isCodeBlockSelected?: boolean,
+        artifactsUploadDuration?: number,
+        buildPayloadBytes?: number,
+        buildZipFileBytes?: number,
+        acceptedCharactersCount?: number,
+        acceptedCount?: number,
+        acceptedLinesCount?: number,
+        generatedCharactersCount?: number,
+        generatedCount?: number,
+        generatedLinesCount?: number,
+        reason?: string
+    ) {
+        telemetry.amazonq_utgGenerateTests.emit({
+            cwsprChatProgrammingLanguage: session.fileLanguage ?? 'plaintext',
+            hasUserPromptSupplied: session.hasUserPromptSupplied,
+            isSupportedLanguage: isSupportedLanguage,
+            result: result,
+            artifactsUploadDuration: artifactsUploadDuration,
+            buildPayloadBytes: buildPayloadBytes,
+            buildZipFileBytes: buildZipFileBytes,
+            credentialStartUrl: AuthUtil.instance.startUrl,
+            acceptedCharactersCount: acceptedCharactersCount,
+            acceptedCount: acceptedCount,
+            acceptedLinesCount: acceptedLinesCount,
+            generatedCharactersCount: generatedCharactersCount,
+            generatedCount: generatedCount,
+            generatedLinesCount: generatedLinesCount,
+            isCodeBlockSelected: isCodeBlockSelected,
+            jobGroup: session.testGenerationJobGroupName,
+            jobId: session.listOfTestGenerationJobId[0],
+            perfClientLatency: perfClientLatency,
+            requestId: requestId,
+            reasonDesc: reasonDesc,
+            reason: reason,
+        })
+    }
+
     public recordServiceInvocationTelemetry(
         requestId: string,
         sessionId: string,
@@ -68,25 +114,25 @@ export class TelemetryHelper {
         supplementalContextMetadata?: CodeWhispererSupplementalContext | undefined
     ) {
         const event = {
+            codewhispererAutomatedTriggerType: session.autoTriggerType,
+            codewhispererCursorOffset: session.startCursorOffset,
+            codewhispererCustomizationArn: getSelectedCustomization().arn,
+            CodewhispererGettingStartedTask: taskType,
+            codewhispererImportRecommendationEnabled: CodeWhispererSettings.instance.isImportRecommendationEnabled(),
+            codewhispererLastSuggestionIndex: lastSuggestionIndex,
+            codewhispererLanguage: language,
+            codewhispererLineNumber: session.startPos.line,
             codewhispererRequestId: requestId ? requestId : undefined,
             codewhispererSessionId: sessionId ? sessionId : undefined,
-            codewhispererLastSuggestionIndex: lastSuggestionIndex,
-            codewhispererTriggerType: session.triggerType,
-            codewhispererAutomatedTriggerType: session.autoTriggerType,
-            result,
-            duration: duration || 0,
-            codewhispererLineNumber: session.startPos.line,
-            codewhispererCursorOffset: session.startCursorOffset,
-            codewhispererLanguage: language,
-            CodewhispererGettingStartedTask: taskType,
-            reason: reason ? reason.substring(0, 200) : undefined,
-            credentialStartUrl: AuthUtil.instance.startUrl,
-            codewhispererImportRecommendationEnabled: CodeWhispererSettings.instance.isImportRecommendationEnabled(),
-            codewhispererSupplementalContextTimeout: supplementalContextMetadata?.isProcessTimeout,
             codewhispererSupplementalContextIsUtg: supplementalContextMetadata?.isUtg,
             codewhispererSupplementalContextLatency: supplementalContextMetadata?.latency,
             codewhispererSupplementalContextLength: supplementalContextMetadata?.contentsLength,
-            codewhispererCustomizationArn: getSelectedCustomization().arn,
+            codewhispererSupplementalContextTimeout: supplementalContextMetadata?.isProcessTimeout,
+            codewhispererTriggerType: session.triggerType,
+            credentialStartUrl: AuthUtil.instance.startUrl,
+            duration: duration || 0,
+            reason: reason ? reason.substring(0, 200) : undefined,
+            result,
             traceId: this.traceId,
         }
         telemetry.codewhisperer_serviceInvocation.emit(event)
@@ -99,24 +145,94 @@ export class TelemetryHelper {
         language: CodewhispererLanguage,
         supplementalContextMetadata?: CodeWhispererSupplementalContext | undefined
     ) {
+        const selectedCustomization = getSelectedCustomization()
+
         telemetry.codewhisperer_userDecision.emit({
+            codewhispererCompletionType: 'Line',
+            codewhispererGettingStartedTask: session.taskType,
+            codewhispererLanguage: language,
+            codewhispererPaginationProgress: paginationIndex,
             codewhispererRequestId: requestIdList[0],
             codewhispererSessionId: sessionId ? sessionId : undefined,
-            codewhispererPaginationProgress: paginationIndex,
-            codewhispererTriggerType: session.triggerType,
             codewhispererSuggestionIndex: -1,
             codewhispererSuggestionState: 'Empty',
-            codewhispererSuggestionReferences: undefined,
             codewhispererSuggestionReferenceCount: 0,
-            codewhispererCompletionType: 'Line',
-            codewhispererLanguage: language,
-            codewhispererGettingStartedTask: session.taskType,
-            credentialStartUrl: AuthUtil.instance.startUrl,
-            codewhispererSupplementalContextTimeout: supplementalContextMetadata?.isProcessTimeout,
+            codewhispererSuggestionReferences: undefined,
             codewhispererSupplementalContextIsUtg: supplementalContextMetadata?.isUtg,
             codewhispererSupplementalContextLength: supplementalContextMetadata?.contentsLength,
+            codewhispererSupplementalContextTimeout: supplementalContextMetadata?.isProcessTimeout,
+            codewhispererTriggerType: session.triggerType,
+            credentialStartUrl: AuthUtil.instance.startUrl,
             traceId: this.traceId,
         })
+
+        telemetry.codewhisperer_userTriggerDecision.emit({
+            codewhispererAutomatedTriggerType: session.autoTriggerType,
+            codewhispererClassifierResult: this.classifierResult,
+            codewhispererClassifierThreshold: this.classifierThreshold,
+            codewhispererCompletionType: 'Line',
+            codewhispererCursorOffset: session.startCursorOffset,
+            codewhispererCustomizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
+            codewhispererFeatureEvaluations: FeatureConfigProvider.instance.getFeatureConfigsTelemetry(),
+            codewhispererFirstRequestId: requestIdList[0],
+            codewhispererGettingStartedTask: session.taskType,
+            codewhispererLanguage: language,
+            codewhispererLineNumber: session.startPos.line,
+            codewhispererPreviousSuggestionState: this.prevTriggerDecision,
+            codewhispererSessionId: sessionId,
+            codewhispererSuggestionCount: 0,
+            codewhispererSuggestionImportCount: 0,
+            codewhispererSuggestionState: 'Empty',
+            codewhispererSupplementalContextIsUtg: supplementalContextMetadata?.isUtg,
+            codewhispererSupplementalContextLength: supplementalContextMetadata?.contentsLength,
+            // eslint-disable-next-line id-length
+            codewhispererSupplementalContextStrategyId: supplementalContextMetadata?.strategy,
+            codewhispererSupplementalContextTimeout: supplementalContextMetadata?.isProcessTimeout,
+            codewhispererTimeSinceLastDocumentChange: this.timeSinceLastModification
+                ? this.timeSinceLastModification
+                : undefined,
+            codewhispererTimeSinceLastUserDecision: this.lastTriggerDecisionTime
+                ? performance.now() - this.lastTriggerDecisionTime
+                : undefined,
+            codewhispererTimeToFirstRecommendation: session.timeToFirstRecommendation,
+            codewhispererTriggerType: session.triggerType,
+            codewhispererTypeaheadLength: this.typeAheadLength,
+            credentialStartUrl: AuthUtil.instance.startUrl,
+            traceId: this.traceId,
+        })
+
+        client
+            .sendTelemetryEvent({
+                telemetryEvent: {
+                    userTriggerDecisionEvent: {
+                        sessionId: sessionId,
+                        requestId: requestIdList[0],
+                        customizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
+                        programmingLanguage: {
+                            languageName: runtimeLanguageContext.toRuntimeLanguage(language),
+                        },
+                        completionType: 'LINE',
+                        suggestionState: 'EMPTY',
+                        recommendationLatencyMilliseconds: 0,
+                        triggerToResponseLatencyMilliseconds: session.timeToFirstRecommendation,
+                        perceivedLatencyMilliseconds: session.perceivedLatency,
+                        timestamp: new Date(Date.now()),
+                        suggestionReferenceCount: 0,
+                        generatedLine: 0,
+                        numberOfRecommendations: 0,
+                        acceptedCharacterCount: 0,
+                    },
+                },
+            })
+            .then()
+            .catch((error) => {
+                let requestId: string | undefined
+                if (isAwsError(error)) {
+                    requestId = error.requestId
+                }
+
+                getLogger().error(`Failed to invoke sendTelemetryEvent, requestId: ${requestId ?? ''}`)
+            })
     }
 
     /**
@@ -152,29 +268,29 @@ export class TelemetryHelper {
             }
             const event: CodewhispererUserDecision = {
                 // TODO: maintain a list of RecommendationContexts with both recommendation and requestId in it, instead of two separate list items.
+                codewhispererCompletionType: this.getCompletionType(i, completionTypes),
+                codewhispererGettingStartedTask: session.taskType,
+                codewhispererLanguage: session.language,
+                codewhispererPaginationProgress: paginationIndex,
                 codewhispererRequestId: requestIdList[i],
                 codewhispererSessionId: sessionId ? sessionId : undefined,
-                codewhispererPaginationProgress: paginationIndex,
-                codewhispererTriggerType: session.triggerType,
+                codewhispererSuggestionImportCount: getImportCount(_elem),
                 codewhispererSuggestionIndex: i,
                 codewhispererSuggestionState: this.getSuggestionState(i, acceptIndex, recommendationSuggestionState),
-                codewhispererSuggestionReferences: uniqueSuggestionReferences,
                 codewhispererSuggestionReferenceCount: _elem.references ? _elem.references.length : 0,
-                codewhispererSuggestionImportCount: getImportCount(_elem),
-                codewhispererCompletionType: this.getCompletionType(i, completionTypes),
-                codewhispererLanguage: session.language,
-                codewhispererGettingStartedTask: session.taskType,
-                credentialStartUrl: AuthUtil.instance.startUrl,
-                codewhispererSupplementalContextTimeout: supplementalContextMetadata?.isProcessTimeout,
+                codewhispererSuggestionReferences: uniqueSuggestionReferences,
                 codewhispererSupplementalContextIsUtg: supplementalContextMetadata?.isUtg,
                 codewhispererSupplementalContextLength: supplementalContextMetadata?.contentsLength,
+                codewhispererSupplementalContextTimeout: supplementalContextMetadata?.isProcessTimeout,
+                codewhispererTriggerType: session.triggerType,
+                credentialStartUrl: AuthUtil.instance.startUrl,
                 traceId: this.traceId,
             }
             telemetry.codewhisperer_userDecision.emit(event)
             events.push(event)
         })
 
-        //aggregate suggestion references count
+        // aggregate suggestion references count
         const referenceCount = this.getAggregatedSuggestionReferenceCount(events)
 
         // aggregate user decision events at requestId level
@@ -212,25 +328,25 @@ export class TelemetryHelper {
             return
         }
         const aggregated: CodewhispererUserTriggerDecision = {
-            codewhispererSessionId: sessionId,
-            codewhispererFirstRequestId: requestId,
-            credentialStartUrl: events[0].credentialStartUrl,
-            codewhispererLanguage: events[0].codewhispererLanguage,
-            codewhispererGettingStartedTask: session.taskType,
-            codewhispererTriggerType: events[0].codewhispererTriggerType,
-            codewhispererCompletionType: events[0].codewhispererCompletionType,
-            codewhispererSuggestionCount: events.length,
             codewhispererAutomatedTriggerType: session.autoTriggerType,
-            codewhispererLineNumber: session.startPos.line,
+            codewhispererCompletionType: events[0].codewhispererCompletionType,
             codewhispererCursorOffset: session.startCursorOffset,
-            codewhispererSuggestionState: this.getAggregatedSuggestionState(events),
+            codewhispererFirstRequestId: requestId,
+            codewhispererGettingStartedTask: session.taskType,
+            codewhispererLanguage: events[0].codewhispererLanguage,
+            codewhispererLineNumber: session.startPos.line,
+            codewhispererSessionId: sessionId,
+            codewhispererSuggestionCount: events.length,
             codewhispererSuggestionImportCount: events
                 .map((e) => e.codewhispererSuggestionImportCount || 0)
                 .reduce((a, b) => a + b, 0),
-            codewhispererTypeaheadLength: 0,
-            codewhispererSupplementalContextTimeout: supplementalContextMetadata?.isProcessTimeout,
+            codewhispererSuggestionState: this.getAggregatedSuggestionState(events),
             codewhispererSupplementalContextIsUtg: supplementalContextMetadata?.isUtg,
             codewhispererSupplementalContextLength: supplementalContextMetadata?.contentsLength,
+            codewhispererSupplementalContextTimeout: supplementalContextMetadata?.isProcessTimeout,
+            codewhispererTriggerType: events[0].codewhispererTriggerType,
+            codewhispererTypeaheadLength: 0,
+            credentialStartUrl: events[0].credentialStartUrl,
             traceId: this.traceId,
         }
         return aggregated
@@ -261,21 +377,30 @@ export class TelemetryHelper {
             .reduce((a, b) => a + b, 0)
 
         const aggregated: CodewhispererUserTriggerDecision = {
-            codewhispererSessionId: this.sessionDecisions[0].codewhispererSessionId,
-            codewhispererFirstRequestId: this.sessionDecisions[0].codewhispererFirstRequestId,
-            credentialStartUrl: this.sessionDecisions[0].credentialStartUrl,
-            codewhispererCompletionType: aggregatedCompletionType,
-            codewhispererLanguage: language,
-            codewhispererGettingStartedTask: session.taskType,
-            codewhispererTriggerType: this.sessionDecisions[0].codewhispererTriggerType,
-            codewhispererSuggestionCount: suggestionCount,
             codewhispererAutomatedTriggerType: autoTriggerType,
-            codewhispererLineNumber: this.sessionDecisions[0].codewhispererLineNumber,
+            codewhispererCharactersAccepted: acceptedRecommendationContent.length,
+            codewhispererClassifierResult: this.classifierResult,
+            codewhispererClassifierThreshold: this.classifierThreshold,
+            codewhispererCompletionType: aggregatedCompletionType,
             codewhispererCursorOffset: this.sessionDecisions[0].codewhispererCursorOffset,
+            codewhispererCustomizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
+            codewhispererFeatureEvaluations: FeatureConfigProvider.instance.getFeatureConfigsTelemetry(),
+            codewhispererFirstRequestId: this.sessionDecisions[0].codewhispererFirstRequestId,
+            codewhispererGettingStartedTask: session.taskType,
+            codewhispererLanguage: language,
+            codewhispererLineNumber: this.sessionDecisions[0].codewhispererLineNumber,
+            codewhispererPreviousSuggestionState: this.prevTriggerDecision,
+            codewhispererSessionId: this.sessionDecisions[0].codewhispererSessionId,
+            codewhispererSuggestionCount: suggestionCount,
             codewhispererSuggestionImportCount: this.sessionDecisions
                 .map((e) => e.codewhispererSuggestionImportCount || 0)
                 .reduce((a, b) => a + b, 0),
-            codewhispererTypeaheadLength: this.typeAheadLength,
+            codewhispererSuggestionState: aggregatedSuggestionState,
+            codewhispererSupplementalContextIsUtg: supplementalContextMetadata?.isUtg,
+            codewhispererSupplementalContextLength: supplementalContextMetadata?.contentsLength,
+            // eslint-disable-next-line id-length
+            codewhispererSupplementalContextStrategyId: supplementalContextMetadata?.strategy,
+            codewhispererSupplementalContextTimeout: supplementalContextMetadata?.isProcessTimeout,
             codewhispererTimeSinceLastDocumentChange: this.timeSinceLastModification
                 ? this.timeSinceLastModification
                 : undefined,
@@ -284,18 +409,9 @@ export class TelemetryHelper {
                 : undefined,
             codewhispererTimeToFirstRecommendation: session.timeToFirstRecommendation,
             codewhispererTriggerCharacter: autoTriggerType === 'SpecialCharacters' ? this.triggerChar : undefined,
-            codewhispererSuggestionState: aggregatedSuggestionState,
-            codewhispererPreviousSuggestionState: this.prevTriggerDecision,
-            codewhispererClassifierResult: this.classifierResult,
-            codewhispererClassifierThreshold: this.classifierThreshold,
-            codewhispererSupplementalContextTimeout: supplementalContextMetadata?.isProcessTimeout,
-            codewhispererSupplementalContextIsUtg: supplementalContextMetadata?.isUtg,
-            codewhispererSupplementalContextLength: supplementalContextMetadata?.contentsLength,
-            codewhispererCustomizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
-            // eslint-disable-next-line id-length
-            codewhispererSupplementalContextStrategyId: supplementalContextMetadata?.strategy,
-            codewhispererCharactersAccepted: acceptedRecommendationContent.length,
-            codewhispererFeatureEvaluations: FeatureConfigProvider.instance.getFeatureConfigsTelemetry(),
+            codewhispererTriggerType: this.sessionDecisions[0].codewhispererTriggerType,
+            codewhispererTypeaheadLength: this.typeAheadLength,
+            credentialStartUrl: this.sessionDecisions[0].credentialStartUrl,
             traceId: this.traceId,
         }
         telemetry.codewhisperer_userTriggerDecision.emit(aggregated)
@@ -511,19 +627,19 @@ export class TelemetryHelper {
             return
         }
         telemetry.codewhisperer_clientComponentLatency.emit({
+            codewhispererAllCompletionsLatency: this.allPaginationEndTime - session.sdkApiCallStartTime,
+            codewhispererCompletionType: 'Line',
+            codewhispererCredentialFetchingLatency: session.sdkApiCallStartTime - session.fetchCredentialStartTime,
+            codewhispererCustomizationArn: getSelectedCustomization().arn,
+            codewhispererEndToEndLatency: session.firstSuggestionShowTime - session.invokeSuggestionStartTime,
+            codewhispererFirstCompletionLatency: this.sdkApiCallEndTime - session.sdkApiCallStartTime,
+            codewhispererLanguage: session.language,
+            codewhispererPostprocessingLatency: session.firstSuggestionShowTime - this.sdkApiCallEndTime,
+            codewhispererPreprocessingLatency: session.fetchCredentialStartTime - session.invokeSuggestionStartTime,
             codewhispererRequestId: this.firstResponseRequestId,
             codewhispererSessionId: session.sessionId,
-            codewhispererFirstCompletionLatency: this.sdkApiCallEndTime - session.sdkApiCallStartTime,
-            codewhispererEndToEndLatency: session.firstSuggestionShowTime - session.invokeSuggestionStartTime,
-            codewhispererAllCompletionsLatency: this.allPaginationEndTime - session.sdkApiCallStartTime,
-            codewhispererPostprocessingLatency: session.firstSuggestionShowTime - this.sdkApiCallEndTime,
-            codewhispererCredentialFetchingLatency: session.sdkApiCallStartTime - session.fetchCredentialStartTime,
-            codewhispererPreprocessingLatency: session.fetchCredentialStartTime - session.invokeSuggestionStartTime,
-            codewhispererCompletionType: 'Line',
             codewhispererTriggerType: session.triggerType,
-            codewhispererLanguage: session.language,
             credentialStartUrl: AuthUtil.instance.startUrl,
-            codewhispererCustomizationArn: getSelectedCustomization().arn,
         })
     }
     public sendCodeScanEvent(languageId: string, jobId: string) {
@@ -550,6 +666,188 @@ export class TelemetryHelper {
 
                 getLogger().debug(
                     `Failed to sendCodeScanEvent to CodeWhisperer, requestId: ${requestId ?? ''}, message: ${
+                        error.message
+                    }`
+                )
+            })
+    }
+
+    public sendCodeScanSucceededEvent(
+        language: string,
+        jobId: string,
+        numberOfFindings: number,
+        scope: CodeAnalysisScopeClientSide
+    ) {
+        client
+            .sendTelemetryEvent({
+                telemetryEvent: {
+                    codeScanSucceededEvent: {
+                        programmingLanguage: {
+                            languageName: runtimeLanguageContext.toRuntimeLanguage(language as CodewhispererLanguage),
+                        },
+                        codeScanJobId: jobId,
+                        numberOfFindings: numberOfFindings,
+                        timestamp: new Date(Date.now()),
+                        codeAnalysisScope: scope === CodeAnalysisScopeClientSide.FILE_AUTO ? 'FILE' : 'PROJECT',
+                    },
+                },
+            })
+            .then()
+            .catch((error) => {
+                let requestId: string | undefined
+                if (isAwsError(error)) {
+                    requestId = error.requestId
+                }
+
+                getLogger().debug(
+                    `Failed to sendTelemetryEvent for code scan success, requestId: ${requestId ?? ''}, message: ${
+                        error.message
+                    }`
+                )
+            })
+    }
+
+    public sendCodeScanFailedEvent(language: string, jobId: string, scope: CodeAnalysisScopeClientSide) {
+        client
+            .sendTelemetryEvent({
+                telemetryEvent: {
+                    codeScanFailedEvent: {
+                        programmingLanguage: {
+                            languageName: runtimeLanguageContext.toRuntimeLanguage(language as CodewhispererLanguage),
+                        },
+                        codeScanJobId: jobId,
+                        codeAnalysisScope: scope === CodeAnalysisScopeClientSide.FILE_AUTO ? 'FILE' : 'PROJECT',
+                        timestamp: new Date(Date.now()),
+                    },
+                },
+            })
+            .then()
+            .catch((error) => {
+                let requestId: string | undefined
+                if (isAwsError(error)) {
+                    requestId = error.requestId
+                }
+                getLogger().debug(
+                    `Failed to sendTelemetryEvent for code scan failure, requestId: ${requestId ?? ''}, message: ${
+                        error.message
+                    }`
+                )
+            })
+    }
+
+    public sendCodeFixGenerationEvent(
+        jobId: string,
+        language?: string,
+        ruleId?: string,
+        detectorId?: string,
+        linesOfCodeGenerated?: number,
+        charsOfCodeGenerated?: number
+    ) {
+        client
+            .sendTelemetryEvent({
+                telemetryEvent: {
+                    codeFixGenerationEvent: {
+                        programmingLanguage: {
+                            languageName: runtimeLanguageContext.toRuntimeLanguage(language as CodewhispererLanguage),
+                        },
+                        jobId,
+                        ruleId,
+                        detectorId,
+                        linesOfCodeGenerated,
+                        charsOfCodeGenerated,
+                    },
+                },
+            })
+            .then()
+            .catch((error) => {
+                let requestId: string | undefined
+                if (isAwsError(error)) {
+                    requestId = error.requestId
+                }
+                getLogger().debug(
+                    `Failed to sendTelemetryEvent for code fix generation, requestId: ${requestId ?? ''}, message: ${
+                        error.message
+                    }`
+                )
+            })
+    }
+
+    public sendCodeFixAcceptanceEvent(
+        jobId: string,
+        language?: string,
+        ruleId?: string,
+        detectorId?: string,
+        linesOfCodeAccepted?: number,
+        charsOfCodeAccepted?: number
+    ) {
+        client
+            .sendTelemetryEvent({
+                telemetryEvent: {
+                    codeFixAcceptanceEvent: {
+                        programmingLanguage: {
+                            languageName: runtimeLanguageContext.toRuntimeLanguage(language as CodewhispererLanguage),
+                        },
+                        jobId,
+                        ruleId,
+                        detectorId,
+                        linesOfCodeAccepted,
+                        charsOfCodeAccepted,
+                    },
+                },
+            })
+            .then()
+            .catch((error) => {
+                let requestId: string | undefined
+                if (isAwsError(error)) {
+                    requestId = error.requestId
+                }
+                getLogger().debug(
+                    `Failed to sendTelemetryEvent for code fix acceptance, requestId: ${requestId ?? ''}, message: ${
+                        error.message
+                    }`
+                )
+            })
+    }
+
+    public sendTestGenerationEvent(
+        groupName: string,
+        jobId: string,
+        language?: string,
+        numberOfUnitTestCasesGenerated?: number,
+        numberOfUnitTestCasesAccepted?: number,
+        linesOfCodeGenerated?: number,
+        linesOfCodeAccepted?: number,
+        charsOfCodeGenerated?: number,
+        charsOfCodeAccepted?: number
+    ) {
+        client
+            .sendTelemetryEvent({
+                telemetryEvent: {
+                    testGenerationEvent: {
+                        programmingLanguage: {
+                            languageName: runtimeLanguageContext.toRuntimeLanguage(language as CodewhispererLanguage),
+                        },
+                        jobId,
+                        groupName,
+                        ideCategory: 'VSCODE',
+                        numberOfUnitTestCasesGenerated,
+                        numberOfUnitTestCasesAccepted,
+                        linesOfCodeGenerated,
+                        linesOfCodeAccepted,
+                        charsOfCodeGenerated,
+                        charsOfCodeAccepted,
+                        timestamp: new Date(Date.now()),
+                    },
+                },
+            })
+            .then()
+            .catch((error) => {
+                let requestId: string | undefined
+                if (isAwsError(error)) {
+                    requestId = error.requestId
+                }
+                getLogger().debug(
+                    `Failed to sendTelemetryEvent for test generation, requestId: ${requestId ?? ''}, message: ${
                         error.message
                     }`
                 )

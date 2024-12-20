@@ -7,15 +7,10 @@ on:
     push:
         branches: [master, staging]
     pull_request:
-        branches: [master, feature/*, staging]
-        # Default = opened + synchronize + reopened.
-        # We also want "edited" so that lint-commits runs when PR title is updated.
+        # By default, CI will trigger on opened/synchronize/reopened event types.
         # https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows#pull_request
-        types:
-            - edited
-            - opened
-            - reopened
-            - synchronize
+        # Note: To re-run `lint-commits` after fixing the PR title, close-and-reopen the PR.
+        branches: [master, feature/*, staging]
 
 # Cancel old jobs when a pull request is updated.
 concurrency:
@@ -24,6 +19,7 @@ concurrency:
 
 jobs:
     lint-commits:
+        # Note: To re-run `lint-commits` after fixing the PR title, close-and-reopen the PR.
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
@@ -32,6 +28,12 @@ jobs:
             - uses: actions/setup-node@v4
               with:
                   node-version: '20'
+            - name: Validate Branch name
+              if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref != ''}}
+              env:
+                  BRANCH_NAME: ${{ github.event.pull_request.head.ref }}
+              run: |
+                  node "$GITHUB_WORKSPACE/.github/workflows/lintbranch.js" run "$BRANCH_NAME"
             - name: Check PR title
               run: |
                   node "$GITHUB_WORKSPACE/.github/workflows/lintcommit.js"
@@ -54,6 +56,52 @@ jobs:
             - run: npm ci
             - run: npm run testCompile
             - run: npm run lint
+
+    jscpd:
+        needs: lint-commits
+        if: ${{ github.event_name == 'pull_request'}}
+        runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                node-version: [18.x]
+        env:
+            NODE_OPTIONS: '--max-old-space-size=8192'
+
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+
+            - name: Use Node.js ${{ matrix.node-version }}
+              uses: actions/setup-node@v4
+              with:
+                  node-version: ${{ matrix.node-version }}
+
+            - name: Fetch fork upstream
+              env:
+                  REPO_NAME: ${{ github.event.pull_request.head.repo.full_name }}
+              run: |
+                  git remote add forkUpstream https://github.com/$REPO_NAME  # URL of the fork
+                  git fetch forkUpstream  # Fetch fork
+
+            - name: Compute git diff
+              env:
+                  CURRENT_BRANCH: ${{ github.head_ref }}
+                  TARGET_BRANCH: ${{ github.event.pull_request.base.ref }}
+              run: git diff origin/$TARGET_BRANCH forkUpstream/$CURRENT_BRANCH > diff_output.txt
+
+            - run: npm install -g jscpd
+
+            - run: jscpd --config "$GITHUB_WORKSPACE/.github/workflows/jscpd.json"
+
+            - if: always()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: unfiltered-jscpd-report
+                  path: ./jscpd-report.json
+
+            - name: Check for Duplicates
+              run: node "$GITHUB_WORKSPACE/.github/workflows/filterDuplicates.js" run diff_output.txt jscpd-report.json
 
     macos:
         needs: lint-commits
@@ -84,8 +132,8 @@ jobs:
               env:
                   # Unset NODE_OPTIONS because of https://github.com/codecov/uploader/issues/475
                   NODE_OPTIONS: ''
-              if: ${{ github.repository == 'aws/aws-toolkit-vscode' && github.ref == 'master' }}
-              uses: codecov/codecov-action@v4
+              if: ${{ github.repository == 'aws/aws-toolkit-vscode' && github.event_name == 'pull_request' && github.base_ref == 'master' }}
+              uses: codecov/codecov-action@v5
               with:
                   flags: macos-toolkit-unittests
                   verbose: true
@@ -95,8 +143,8 @@ jobs:
               env:
                   # Unset NODE_OPTIONS because of https://github.com/codecov/uploader/issues/475
                   NODE_OPTIONS: ''
-              if: ${{ github.repository == 'aws/aws-toolkit-vscode' && github.ref == 'master' }}
-              uses: codecov/codecov-action@v4
+              if: ${{ github.repository == 'aws/aws-toolkit-vscode' && github.event_name == 'pull_request' && github.base_ref == 'master' }}
+              uses: codecov/codecov-action@v5
               with:
                   flags: macos-amazonq-unittests
                   verbose: true
@@ -154,8 +202,8 @@ jobs:
               env:
                   # Unset NODE_OPTIONS because of https://github.com/codecov/uploader/issues/475
                   NODE_OPTIONS: ''
-              if: ${{ github.repository == 'aws/aws-toolkit-vscode' && github.ref == 'master' }}
-              uses: codecov/codecov-action@v4
+              if: ${{ github.repository == 'aws/aws-toolkit-vscode' && github.event_name == 'pull_request' && github.base_ref == 'master' }}
+              uses: codecov/codecov-action@v5
               with:
                   flags: windows-unittests
                   verbose: true

@@ -181,7 +181,11 @@ export class NotificationsNode implements TreeNode {
                 // Display read-only txt document
                 logger.verbose(`showing txt document for notification: ${notification.id} ...`)
                 await telemetry.toolkit_invokeAction.run(async () => {
-                    telemetry.record({ source: getNotificationTelemetryId(notification), action: onClickType })
+                    telemetry.record({
+                        id: getNotificationTelemetryId(notification),
+                        source: getNotificationTelemetryId(notification),
+                        action: onClickType,
+                    })
                     await readonlyDocument.show(
                         notification.uiRenderInstructions.content['en-US'].description,
                         `Notification: ${notification.id}`
@@ -225,11 +229,16 @@ export class NotificationsNode implements TreeNode {
             .showInformationMessage(title, { modal: isModal, detail }, ...buttonLabels)
             .then((response) => {
                 return telemetry.toolkit_invokeAction.run(async (span) => {
-                    span.record({ source: getNotificationTelemetryId(notification), action: response ?? 'OK' })
+                    span.record({
+                        id: getNotificationTelemetryId(notification),
+                        source: getNotificationTelemetryId(notification),
+                        action: response ?? 'OK',
+                    })
                     if (response) {
                         const selectedButton = buttons.find((actions) => actions.displayText['en-US'] === response)
                         // Different button options
                         if (selectedButton) {
+                            span.record({ action: selectedButton.type })
                             switch (selectedButton.type) {
                                 case 'openTextDocument':
                                     await readonlyDocument.show(

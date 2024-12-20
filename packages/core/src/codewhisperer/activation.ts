@@ -10,7 +10,15 @@ import { KeyStrokeHandler } from './service/keyStrokeHandler'
 import * as EditorContext from './util/editorContext'
 import * as CodeWhispererConstants from './models/constants'
 import { getCompletionItems } from './service/completionProvider'
-import { vsCodeState, ConfigurationEntry, CodeSuggestionsState, CodeScansState } from './models/model'
+import {
+    vsCodeState,
+    ConfigurationEntry,
+    CodeSuggestionsState,
+    CodeScansState,
+    SecurityTreeViewFilterState,
+    AggregatedCodeScanIssue,
+    CodeScanIssue,
+} from './models/model'
 import { invokeRecommendation } from './commands/invokeRecommendation'
 import { acceptSuggestion } from './commands/onInlineAcceptance'
 import { resetIntelliSenseState } from './util/globalStateUtil'
@@ -41,12 +49,27 @@ import {
     signoutCodeWhisperer,
     toggleCodeScans,
     registerToolkitApiCallback,
+    showFileScan,
+    clearFilters,
+    generateFix,
+    explainIssue,
+    ignoreIssue,
+    rejectFix,
+    showSecurityIssueFilters,
+    regenerateFix,
+    ignoreAllIssues,
+    focusIssue,
+    showExploreAgentsView,
 } from './commands/basicCommands'
 import { sleep } from '../shared/utilities/timeoutUtils'
 import { ReferenceLogViewProvider } from './service/referenceLogViewProvider'
 import { ReferenceHoverProvider } from './service/referenceHoverProvider'
 import { ReferenceInlineProvider } from './service/referenceInlineProvider'
-import { disposeSecurityDiagnostic, securityScanRender } from './service/diagnosticsProvider'
+import {
+    disposeSecurityDiagnostic,
+    securityScanRender,
+    updateSecurityDiagnosticCollection,
+} from './service/diagnosticsProvider'
 import { SecurityPanelViewProvider, openEditorAtRange } from './views/securityPanelViewProvider'
 import { RecommendationHandler } from './service/recommendationHandler'
 import { Commands, registerCommandErrorHandler, registerDeclaredCommands } from '../shared/vscode/commands2'
@@ -71,6 +94,11 @@ import { logAndShowError, logAndShowWebviewError } from '../shared/utilities/log
 import { openSettings } from '../shared/settings'
 import { telemetry } from '../shared/telemetry'
 import { FeatureConfigProvider } from '../shared/featureConfig'
+import { SecurityIssueProvider } from './service/securityIssueProvider'
+import { SecurityIssueTreeViewProvider } from './service/securityIssueTreeViewProvider'
+import { setContext } from '../shared/vscode/setContext'
+import { syncSecurityIssueWebview } from './views/securityIssue/securityIssueWebview'
+import { detectCommentAboveLine } from '../shared/utilities/commentUtils'
 
 let localize: nls.LocalizeFunc
 
@@ -186,6 +214,11 @@ export async function activate(context: ExtContext): Promise<void> {
             if (configurationChangeEvent.affectsConfiguration('http.proxy')) {
                 updateUserProxyUrl()
             }
+
+            if (configurationChangeEvent.affectsConfiguration('amazonQ.ignoredSecurityIssues')) {
+                const ignoredIssues = CodeWhispererSettings.instance.getIgnoredSecurityIssues()
+                toggleIssuesVisibility((issue) => !ignoredIssues.includes(issue.title))
+            }
         }),
         /**
          * Open Configuration
@@ -222,8 +255,10 @@ export async function activate(context: ExtContext): Promise<void> {
         toggleCodeScans.register(CodeScansState.instance),
         // enable code suggestions
         enableCodeSuggestions.register(context),
-        // code scan
+        // project scan
         showSecurityScan.register(context, securityPanelViewProvider, client),
+        // on demand file scan
+        showFileScan.register(context, securityPanelViewProvider, client),
         // show security issue webview panel
         openSecurityIssuePanel.register(context),
         // sign in with sso or AWS ID
@@ -238,10 +273,40 @@ export async function activate(context: ExtContext): Promise<void> {
         updateReferenceLog.register(),
         // refresh codewhisperer status bar
         refreshStatusBar.register(),
+        // generate code fix
+        generateFix.register(client, context),
+        // regenerate code fix
+        regenerateFix.register(),
         // apply suggested fix
         applySecurityFix.register(),
+        // reject suggested fix
+        rejectFix.register(context.extensionContext),
+        // ignore issues by title
+        ignoreAllIssues.register(),
+        // ignore single issue
+        ignoreIssue.register(),
+        // explain issue
+        explainIssue.register(),
         // quick pick with codewhisperer options
         listCodeWhispererCommands.register(),
+        // quick pick with security issues tree filters
+        showSecurityIssueFilters.register(),
+        // reset security issue filters
+        clearFilters.register(),
+        // handle security issues tree item clicked
+        focusIssue.register(),
+        // refresh the treeview on every change
+        SecurityTreeViewFilterState.instance.onDidChangeState((e) => {
+            SecurityIssueTreeViewProvider.instance.refresh()
+        }),
+        // show a no match state
+        SecurityIssueTreeViewProvider.instance.onDidChangeTreeData((e) => {
+            const noMatches =
+                Array.isArray(e) &&
+                e.length === 0 &&
+                SecurityIssueProvider.instance.issues.some((group) => group.issues.some((issue) => issue.visible))
+            void setContext('aws.amazonq.security.noMatches', noMatches)
+        }),
         // manual trigger
         Commands.register({ id: 'aws.amazonq.invokeInlineCompletion', autoconnect: true }, async () => {
             invokeRecommendation(
@@ -278,6 +343,7 @@ export async function activate(context: ExtContext): Promise<void> {
         ),
         vscode.window.registerWebviewViewProvider(ReferenceLogViewProvider.viewType, ReferenceLogViewProvider.instance),
         showReferenceLog.register(),
+        showExploreAgentsView.register(),
         vscode.languages.registerCodeLensProvider(
             [...CodeWhispererConstants.platformLanguageIds],
             ReferenceInlineProvider.instance
@@ -328,6 +394,8 @@ export async function activate(context: ExtContext): Promise<void> {
      */
     setSubscriptionsForAutoScans()
 
+    setSubscriptionsForCodeIssues()
+
     function shouldRunAutoScan(editor: vscode.TextEditor | undefined, isScansEnabled?: boolean) {
         return (
             (isScansEnabled ?? CodeScansState.instance.isScansEnabled()) &&
@@ -349,7 +417,8 @@ export async function activate(context: ExtContext): Promise<void> {
                 editor,
                 client,
                 context.extensionContext,
-                CodeWhispererConstants.CodeAnalysisScope.FILE
+                CodeWhispererConstants.CodeAnalysisScope.FILE_AUTO,
+                false
             )
         }
 
@@ -373,7 +442,8 @@ export async function activate(context: ExtContext): Promise<void> {
                         editor,
                         client,
                         context.extensionContext,
-                        CodeWhispererConstants.CodeAnalysisScope.FILE
+                        CodeWhispererConstants.CodeAnalysisScope.FILE_AUTO,
+                        false
                     )
                 }
             }),
@@ -391,7 +461,8 @@ export async function activate(context: ExtContext): Promise<void> {
                         editor,
                         client,
                         context.extensionContext,
-                        CodeWhispererConstants.CodeAnalysisScope.FILE
+                        CodeWhispererConstants.CodeAnalysisScope.FILE_AUTO,
+                        false
                     )
                 }
             })
@@ -406,7 +477,8 @@ export async function activate(context: ExtContext): Promise<void> {
                     editor,
                     client,
                     context.extensionContext,
-                    CodeWhispererConstants.CodeAnalysisScope.FILE
+                    CodeWhispererConstants.CodeAnalysisScope.FILE_AUTO,
+                    false
                 )
             }
         })
@@ -481,14 +553,6 @@ export async function activate(context: ExtContext): Promise<void> {
                 if (!runtimeLanguageContext.isLanguageSupported(e.document)) {
                     return
                 }
-
-                /**
-                 * CodeWhisperer security panel dynamic handling
-                 */
-                disposeSecurityDiagnostic(e)
-
-                SecurityIssueHoverProvider.instance.handleDocumentChange(e)
-                SecurityIssueCodeActionProvider.instance.handleDocumentChange(e)
 
                 CodeWhispererCodeCoverageTracker.getTracker(e.document.languageId)?.countTotalTokens(e)
 
@@ -602,6 +666,35 @@ export async function activate(context: ExtContext): Promise<void> {
 
     await Commands.tryExecute('aws.amazonq.refreshConnectionCallback')
     container.ready()
+
+    function setSubscriptionsForCodeIssues() {
+        context.extensionContext.subscriptions.push(
+            vscode.workspace.onDidChangeTextDocument(async (e) => {
+                if (e.document.uri.scheme !== 'file') {
+                    return
+                }
+                const diagnostics = securityScanRender.securityDiagnosticCollection?.get(e.document.uri)
+                if (!diagnostics || diagnostics.length === 0) {
+                    return
+                }
+                disposeSecurityDiagnostic(e)
+
+                SecurityIssueProvider.instance.handleDocumentChange(e)
+                SecurityIssueTreeViewProvider.instance.refresh()
+                await syncSecurityIssueWebview(context)
+
+                toggleIssuesVisibility((issue, filePath) =>
+                    filePath !== e.document.uri.fsPath
+                        ? issue.visible
+                        : !detectCommentAboveLine(
+                              e.document,
+                              issue.startLine,
+                              CodeWhispererConstants.amazonqIgnoreNextLine
+                          )
+                )
+            })
+        )
+    }
 }
 
 export async function shutdown() {
@@ -620,4 +713,15 @@ export async function enableDefaultConfigCloud9() {
     } catch (error) {
         getLogger().error('amazonq: Failed to update user settings %O', error)
     }
+}
+
+function toggleIssuesVisibility(visibleCondition: (issue: CodeScanIssue, filePath: string) => boolean) {
+    const updatedIssues: AggregatedCodeScanIssue[] = SecurityIssueProvider.instance.issues.map((group) => ({
+        ...group,
+        issues: group.issues.map((issue) => ({ ...issue, visible: visibleCondition(issue, group.filePath) })),
+    }))
+    securityScanRender.securityDiagnosticCollection?.clear()
+    updatedIssues.forEach((issue) => updateSecurityDiagnosticCollection(issue))
+    SecurityIssueProvider.instance.issues = updatedIssues
+    SecurityIssueTreeViewProvider.instance.refresh()
 }

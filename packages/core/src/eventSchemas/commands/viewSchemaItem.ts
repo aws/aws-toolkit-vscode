@@ -51,5 +51,5 @@ export async function showSchemaContent(
         language: 'json',
     })
     const editor = await vscode.window.showTextDocument(newDoc, vscode.ViewColumn.One, false)
-    await editor.edit((edit) => edit.insert(new vscode.Position(/*line*/ 0, /*character*/ 0), prettySchemaContent))
+    await editor.edit((edit) => edit.insert(new vscode.Position(/* line*/ 0, /* character*/ 0), prettySchemaContent))
 }

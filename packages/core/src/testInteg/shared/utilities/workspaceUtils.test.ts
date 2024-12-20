@@ -10,6 +10,7 @@ import {
     collectFiles,
     collectFilesForIndex,
     findParentProjectFile,
+    findStringInDirectory,
     getWorkspaceFoldersByPrefixes,
     getWorkspaceRelativePath,
 } from '../../../shared/utilities/workspaceUtils'
@@ -507,6 +508,17 @@ describe('workspaceUtils', () => {
                 ] satisfies typeof result,
                 result
             )
+        })
+    })
+
+    describe('findStringInDirectory', function () {
+        it('prints the line with the detected string to stdout', async () => {
+            const fileAmount = 1
+            const searchStr = 'oracle.jdbc.OracleDriver'
+            const fileContent = `test content ${searchStr} more test content`
+            const workspaceFolder = await createTestWorkspace(fileAmount, { fileContent: fileContent })
+            const spawnResult = await findStringInDirectory(searchStr, workspaceFolder.uri.fsPath)
+            assert.equal(spawnResult.stdout.includes(searchStr), true)
         })
     })
 })
