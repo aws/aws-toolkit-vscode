@@ -218,6 +218,7 @@ describe('FileSystem', function () {
     describe('mkdir()', function () {
         const paths = ['a', 'a/b', 'a/b/c', 'a/b/c/d/']
 
+        // eslint-disable-next-line unicorn/no-array-for-each
         paths.forEach(async function (p) {
             it(`creates folder: '${p}'`, async function () {
                 const dirPath = testFolder.pathFrom(p)
@@ -226,6 +227,7 @@ describe('FileSystem', function () {
             })
         })
 
+        // eslint-disable-next-line unicorn/no-array-for-each
         paths.forEach(async function (p) {
             it(`creates folder but uses the "fs" module if in Cloud9: '${p}'`, async function () {
                 sandbox.stub(extensionUtilities, 'isCloud9').returns(true)

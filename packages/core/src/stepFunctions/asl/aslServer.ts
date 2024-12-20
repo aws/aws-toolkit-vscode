@@ -323,6 +323,7 @@ connection.onDidChangeWatchedFiles((change) => {
         }
     }
     if (hasChanges) {
+        // eslint-disable-next-line unicorn/no-array-for-each
         documents.all().forEach(triggerValidation)
     }
 })

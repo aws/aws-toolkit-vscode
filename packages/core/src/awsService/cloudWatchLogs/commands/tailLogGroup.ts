@@ -140,6 +140,7 @@ async function handleSessionStream(
                     // amount of new lines can push bottom of file out of view before scrolling.
                     const editorsToScroll = getTextEditorsToScroll(document)
                     await updateTextDocumentWithNewLogEvents(formattedLogEvents, document, session.maxLines)
+                    // eslint-disable-next-line unicorn/no-array-for-each
                     editorsToScroll.forEach(scrollTextEditorToBottom)
                 }
                 session.eventRate = eventRate(event.sessionUpdate)
@@ -273,6 +274,7 @@ function closeSessionWhenAllEditorsClosed(
 
 function isLiveTailSessionOpenInAnyTab(liveTailSession: LiveTailSession) {
     let isOpen = false
+    // eslint-disable-next-line unicorn/no-array-for-each
     vscode.window.tabGroups.all.forEach(async (tabGroup) => {
         for (const tab of tabGroup.tabs) {
             if (tab.input instanceof vscode.TabInputText) {

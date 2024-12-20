@@ -261,6 +261,7 @@ export class SecurityPanelViewProvider implements vscode.WebviewViewProvider {
         const changedText = event.contentChanges[0].text
         const lineOffset = this.getLineOffset(changedRange, changedText)
 
+        // eslint-disable-next-line unicorn/no-array-for-each
         currentPanelSet.items.forEach((item, index, items) => {
             const intersection = changedRange.intersection(item.range)
             if (
