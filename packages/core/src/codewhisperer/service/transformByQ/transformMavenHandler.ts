@@ -108,6 +108,7 @@ function copyProjectDependencies(dependenciesFolder: FolderInfo, modulePath: str
 }
 
 export async function prepareProjectDependencies(dependenciesFolder: FolderInfo, rootPomPath: string) {
+    void vscode.window.showInformationMessage(CodeWhispererConstants.buildStartedNotification)
     try {
         copyProjectDependencies(dependenciesFolder, rootPomPath)
     } catch (err) {
