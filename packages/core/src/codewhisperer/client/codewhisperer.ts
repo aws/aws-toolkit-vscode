@@ -132,7 +132,7 @@ export class DefaultCodeWhispererClient {
         )) as CodeWhispererClient
     }
 
-    async createUserSdkClient(): Promise<CodeWhispererUserClient> {
+    async createUserSdkClient(maxRetries?: number): Promise<CodeWhispererUserClient> {
         const isOptedOut = CodeWhispererSettings.instance.isOptoutEnabled()
         session.setFetchCredentialStart()
         const bearerToken = await AuthUtil.instance.getBearerToken()
@@ -144,6 +144,7 @@ export class DefaultCodeWhispererClient {
                 apiConfig: userApiConfig,
                 region: cwsprConfig.region,
                 endpoint: cwsprConfig.endpoint,
+                maxRetries: maxRetries,
                 credentials: new Credentials({ accessKeyId: 'xxx', secretAccessKey: 'xxx' }),
                 onRequestSetup: [
                     (req) => {
@@ -293,7 +294,8 @@ export class DefaultCodeWhispererClient {
     public async codeModernizerGetCodeTransformation(
         request: CodeWhispererUserClient.GetTransformationRequest
     ): Promise<PromiseResult<CodeWhispererUserClient.GetTransformationResponse, AWSError>> {
-        return (await this.createUserSdkClient()).getTransformation(request).promise()
+        // instead of the default of 3 retries, use 8 retries for this API which is polled every 5 seconds
+        return (await this.createUserSdkClient(8)).getTransformation(request).promise()
     }
 
     /**

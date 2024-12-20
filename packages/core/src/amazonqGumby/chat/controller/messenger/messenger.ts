@@ -252,7 +252,7 @@ export class Messenger {
         this.dispatcher.sendAsyncEventProgress(
             new AsyncEventProgressMessage(tabID, {
                 inProgress: true,
-                message: MessengerUtils.createLanguageUpgradeConfirmationPrompt(detectedJavaVersions),
+                message: CodeWhispererConstants.projectPromptChatMessage,
             })
         )
 

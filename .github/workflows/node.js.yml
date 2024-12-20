@@ -7,15 +7,10 @@ on:
     push:
         branches: [master, staging]
     pull_request:
-        branches: [master, feature/*, staging]
-        # Default = opened + synchronize + reopened.
-        # We also want "edited" so that lint-commits runs when PR title is updated.
+        # By default, CI will trigger on opened/synchronize/reopened event types.
         # https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows#pull_request
-        types:
-            - edited
-            - opened
-            - reopened
-            - synchronize
+        # Note: To re-run `lint-commits` after fixing the PR title, close-and-reopen the PR.
+        branches: [master, feature/*, staging]
 
 # Cancel old jobs when a pull request is updated.
 concurrency:
@@ -24,6 +19,7 @@ concurrency:
 
 jobs:
     lint-commits:
+        # Note: To re-run `lint-commits` after fixing the PR title, close-and-reopen the PR.
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4

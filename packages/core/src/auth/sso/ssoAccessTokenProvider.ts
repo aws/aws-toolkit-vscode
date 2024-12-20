@@ -808,7 +808,7 @@ class DiskCacheErrorMessage {
             : ToolkitPromptSettings.instance
 
         // We know 'ssoCacheError' is in all extension prompt settings
-        if (await promptSettings.isPromptEnabled('ssoCacheError')) {
+        if (promptSettings.isPromptEnabled('ssoCacheError')) {
             const result = await showMessage()
             if (result === dontShow) {
                 await promptSettings.disablePrompt('ssoCacheError')
