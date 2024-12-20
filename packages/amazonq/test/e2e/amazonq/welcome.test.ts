@@ -51,11 +51,11 @@ describe('Amazon Q Welcome page', function () {
             framework.createTab()
 
             let welcomeCount = 0
-            framework.getTabs().forEach((tab) => {
+            for (const tab of framework.getTabs()) {
                 if (tab.getStore().tabTitle === 'Welcome to Q') {
                     welcomeCount++
                 }
-            })
+            }
             // 3 welcome tabs
             assert.deepStrictEqual(welcomeCount, 3)
 
