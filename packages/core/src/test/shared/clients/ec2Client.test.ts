@@ -47,6 +47,35 @@ const completeReservationsList: EC2.ReservationList = [
     },
 ]
 
+const completeReservationsList2: EC2.ReservationList = [
+    {
+        Instances: [
+            {
+                InstanceId: 'running-1',
+                Tags: [{ Key: 'Name', Value: 'name1' }],
+            },
+            {
+                InstanceId: 'stopped-2',
+                Tags: [{ Key: 'Name', Value: 'name2' }],
+            },
+        ],
+    },
+    {
+        Instances: [
+            {
+                InstanceId: 'pending-3',
+                Tags: [{ Key: 'Name', Value: 'name3' }],
+            },
+            {
+                InstanceId: 'running-4',
+                Tags: [{ Key: 'Name', Value: 'name4' }],
+            },
+        ],
+    },
+]
+
+completeReservationsList2.every(Boolean)
+
 const completeInstanceList: EC2.InstanceList = [
     { InstanceId: 'running-1', Tags: [{ Key: 'Name', Value: 'name1' }] },
     { InstanceId: 'stopped-2', Tags: [{ Key: 'Name', Value: 'name2' }] },
