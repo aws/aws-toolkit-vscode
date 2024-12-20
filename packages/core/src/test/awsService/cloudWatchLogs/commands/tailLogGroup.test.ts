@@ -94,7 +94,7 @@ describe('TailLogGroup', function () {
         // registry is asserted to have only one entry, so this is assumed to be the session that was
         // started in this test.
         let sessionUri: vscode.Uri | undefined
-        for (const session of registry) {
+        for (const [_, session] of registry) {
             sessionUri = session.uri
         }
         if (sessionUri === undefined) {

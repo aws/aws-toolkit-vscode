@@ -86,7 +86,7 @@ export const crashMonitoringTest = async () => {
         // clean up all running instances
         if (spawnedExtensions) {
             for (const e of spawnedExtensions) {
-                e.crash()
+                void e.crash()
             }
         }
         sandbox.restore()

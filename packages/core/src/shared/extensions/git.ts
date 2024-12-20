@@ -209,8 +209,10 @@ export class GitExtension {
     public async getRemotes(): Promise<GitTypes.Remote[]> {
         const api = await this.validateApi('git: api is disabled, returning empty array of remotes')
         const remotes: GitTypes.Remote[] = []
-        for (const repo of api?.repositories) {
-            remotes.push(...repo.state.remotes)
+        if (api) {
+            for (const repo of api.repositories) {
+                remotes.push(...repo.state.remotes)
+            }
         }
 
         return remotes

@@ -2,7 +2,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { type LinesOptions, diffLines, Change } from 'diff'
+import { type LinesOptions, diffLines } from 'diff'
 import * as vscode from 'vscode'
 import { InlineTask, TextDiff } from '../controller/inlineTask'
 

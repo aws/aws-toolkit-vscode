@@ -44,7 +44,7 @@ export function triggerPayloadToChatRequest(triggerPayload: TriggerPayload): { c
     if (triggerPayload.filePath !== undefined && triggerPayload.filePath !== '') {
         const documentSymbolFqns: DocumentSymbol[] = []
         if (triggerPayload.codeQuery?.fullyQualifiedNames?.used) {
-            for (const fqn of triggerPayload.codeQuery?.fullyQualifiedNames?.used) {
+            for (const fqn of triggerPayload.codeQuery.fullyQualifiedNames.used) {
                 const elem = {
                     name: fqn.symbol?.join('.') ?? '',
                     type: SymbolType.USAGE,

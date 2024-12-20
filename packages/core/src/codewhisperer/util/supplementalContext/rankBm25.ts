@@ -43,7 +43,7 @@ export abstract class BM25 {
             }
             this.docFreqs.push(frequencies)
 
-            for (const [word, freq] of frequencies.entries()) {
+            for (const [word, _] of frequencies.entries()) {
                 this.nd.set(word, (this.nd.get(word) || 0) + 1)
             }
         }

@@ -472,7 +472,7 @@ export class RecommendationHandler {
     }
 
     reportDiscardedUserDecisions() {
-        for (const [i, r] of session.recommendations.entries()) {
+        for (const [i, _] of session.recommendations.entries()) {
             session.setSuggestionState(i, 'Discard')
         }
         this.reportUserDecisions(-1)
@@ -526,7 +526,7 @@ export class RecommendationHandler {
         // do not show recommendation if cursor is before invocation position
         // also mark as Discard
         if (editor.selection.active.isBefore(session.startPos)) {
-            for (const [i, r] of session.recommendations.entries()) {
+            for (const [i, _] of session.recommendations.entries()) {
                 session.setSuggestionState(i, 'Discard')
             }
             reject()
@@ -544,7 +544,7 @@ export class RecommendationHandler {
             )
         )
         if (!session.recommendations[0].content.startsWith(typedPrefix.trimStart())) {
-            for (const [i, r] of session.recommendations.entries()) {
+            for (const [i, _] of session.recommendations.entries()) {
                 session.setSuggestionState(i, 'Discard')
             }
             reject()
@@ -668,7 +668,7 @@ export class RecommendationHandler {
             editor.selection.active.isBefore(session.startPos) ||
             editor.document.uri.fsPath !== this.documentUri?.fsPath
         ) {
-            for (const [i, r] of session.recommendations.entries()) {
+            for (const [i, _] of session.recommendations.entries()) {
                 session.setSuggestionState(i, 'Discard')
             }
             this.reportUserDecisions(-1)
