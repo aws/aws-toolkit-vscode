@@ -269,29 +269,41 @@ export class GumbyController {
     }
 
     private async handleLanguageUpgrade(message: any) {
-        try {
-            await this.beginTransformation(message)
-            const validProjects = await this.validateLanguageUpgradeProjects(message)
-            if (validProjects.length > 0) {
-                this.sessionStorage.getSession().updateCandidateProjects(validProjects)
-                await this.messenger.sendLanguageUpgradeProjectPrompt(validProjects, message.tabID)
+        await telemetry.codeTransform_submitSelection.run(async () => {
+            telemetry.record({
+                codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
+                userChoice: 'language upgrade',
+            })
+            try {
+                await this.beginTransformation(message)
+                const validProjects = await this.validateLanguageUpgradeProjects(message)
+                if (validProjects.length > 0) {
+                    this.sessionStorage.getSession().updateCandidateProjects(validProjects)
+                    await this.messenger.sendLanguageUpgradeProjectPrompt(validProjects, message.tabID)
+                }
+            } catch (err: any) {
+                getLogger().error(`Error handling language upgrade: ${err}`)
             }
-        } catch (err: any) {
-            getLogger().error(`Error handling language upgrade: ${err}`)
-        }
+        })
     }
 
     private async handleSQLConversion(message: any) {
-        try {
-            await this.beginTransformation(message)
-            const validProjects = await this.validateSQLConversionProjects(message)
-            if (validProjects.length > 0) {
-                this.sessionStorage.getSession().updateCandidateProjects(validProjects)
-                await this.messenger.sendSelectSQLMetadataFileMessage(message.tabID)
+        await telemetry.codeTransform_submitSelection.run(async () => {
+            telemetry.record({
+                codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
+                userChoice: 'sql conversion',
+            })
+            try {
+                await this.beginTransformation(message)
+                const validProjects = await this.validateSQLConversionProjects(message)
+                if (validProjects.length > 0) {
+                    this.sessionStorage.getSession().updateCandidateProjects(validProjects)
+                    await this.messenger.sendSelectSQLMetadataFileMessage(message.tabID)
+                }
+            } catch (err: any) {
+                getLogger().error(`Error handling SQL conversion: ${err}`)
             }
-        } catch (err: any) {
-            getLogger().error(`Error handling SQL conversion: ${err}`)
-        }
+        })
     }
 
     private async validateLanguageUpgradeProjects(message: any) {
