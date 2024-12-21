@@ -650,14 +650,19 @@ export async function getValidSQLConversionCandidateProjects() {
         })
         const openProjects = await getOpenProjects()
         const javaProjects = await getJavaProjects(openProjects)
+        let resultLog = ''
         for (const project of javaProjects) {
             // as long as at least one of these strings is found, project contains embedded SQL statements
             const searchStrings = ['oracle.jdbc.OracleDriver', 'jdbc:oracle:thin:@', 'jdbc:oracle:oci:@', 'jdbc:odbc:']
             for (const str of searchStrings) {
                 const spawnResult = await findStringInDirectory(str, project.path)
-                getLogger().info(
-                    `CodeTransformation: searching for ${str} in ${project.path}, status code = ${spawnResult.exitCode}`
-                )
+                // just for telemetry purposes
+                if (spawnResult.error || spawnResult.stderr) {
+                    resultLog += `search failed: ${JSON.stringify(spawnResult)}`
+                } else {
+                    resultLog += `search succeeded: ${spawnResult.exitCode}`
+                }
+                getLogger().info(`CodeTransformation: searching for ${str} in ${project.path}, result = ${resultLog}`)
                 if (spawnResult.exitCode === 0) {
                     embeddedSQLProjects.push(project)
                     break
@@ -668,7 +673,7 @@ export async function getValidSQLConversionCandidateProjects() {
             `CodeTransformation: found ${embeddedSQLProjects.length} projects with embedded SQL statements`
         )
         telemetry.record({
-            codeTransformMetadata: `Found ${embeddedSQLProjects.length} projects with embedded SQL`,
+            codeTransformMetadata: resultLog,
         })
     })
     return embeddedSQLProjects
