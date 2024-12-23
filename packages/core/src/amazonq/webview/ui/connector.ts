@@ -80,7 +80,7 @@ export interface ConnectorProps {
         disableFileActions: boolean
     ) => void
     onUpdatePlaceholder: (tabID: string, newPlaceholder: string) => void
-    onUpdatePromptProgress: (tabID: string, progressField: ProgressField) => void
+    onUpdatePromptProgress: (tabID: string, progressField: ProgressField | null) => void;
     onChatInputEnabled: (tabID: string, enabled: boolean) => void
     onUpdateAuthentication: (featureDevEnabled: boolean, authenticatingTabIDs: string[]) => void
     onNewTab: (tabType: TabType) => void
@@ -129,8 +129,7 @@ export class Connector {
                 this.cwChatConnector.onSourceLinkClick(tabID, messageId, link)
                 break
         }
-    }
-
+    }   
     onResponseBodyLinkClick = (tabID: string, messageId: string, link: string): void => {
         switch (this.tabsStorage.getTab(tabID)?.type) {
             case 'cwc':
@@ -625,6 +624,11 @@ export class Connector {
         eventId: string | undefined = undefined
     ): void | undefined => {
         switch (this.tabsStorage.getTab(tabId)?.type) {
+            case 'featuredev':
+                if (action.id === 'cancel-running-task') {
+                    this.onStopChatResponse(tabId);
+                }
+                break
             case 'gumby':
                 this.gumbyChatConnector.onCustomFormAction(tabId, action)
                 break
