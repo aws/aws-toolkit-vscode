@@ -154,12 +154,12 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
     public async init?(): Promise<this>
 
     private assignSteps(): void {
-        this._form.properties.forEach((prop) => {
+        for (const prop of this._form.properties) {
             const provider = this._form.getPrompterProvider(prop)
             if (!this.boundSteps.has(prop) && provider !== undefined) {
                 this.boundSteps.set(prop, this.createBoundStep(prop, provider))
             }
-        })
+        }
     }
 
     public async run(): Promise<TState | undefined> {
@@ -170,9 +170,9 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
         }
 
         this.assignSteps()
-        this.resolveNextSteps((this.options.initState ?? {}) as TState).forEach((step) =>
+        for (const step of this.resolveNextSteps((this.options.initState ?? {}) as TState)) {
             this.stateController.addStep(step)
-        )
+        }
 
         const outputState = await this.stateController.run()
 
@@ -238,14 +238,14 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
     protected resolveNextSteps(state: TState): Branch<TState> {
         const nextSteps: Branch<TState> = []
         const defaultState = this._form.applyDefaults(state)
-        this.boundSteps.forEach((step, targetProp) => {
+        for (const [targetProp, step] of this.boundSteps.entries()) {
             if (
                 this._form.canShowProperty(targetProp, state, defaultState) &&
                 !this.stateController.containsStep(step)
             ) {
                 nextSteps.push(step)
             }
-        })
+        }
         return nextSteps
     }
 

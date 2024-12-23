@@ -344,9 +344,9 @@ export function assertTelemetry<K extends MetricName>(
         const passive = expectedCopy?.passive
         delete expectedCopy['passive']
 
-        Object.keys(expectedCopy).forEach(
-            (k) => ((expectedCopy as any)[k] = (expectedCopy as Record<string, any>)[k]?.toString())
-        )
+        for (const k of Object.keys(expectedCopy)) {
+            ;(expectedCopy as any)[k] = (expectedCopy as Record<string, any>)[k]?.toString()
+        }
 
         const msg = `telemetry metric ${i + 1} (of ${
             expectedList.length

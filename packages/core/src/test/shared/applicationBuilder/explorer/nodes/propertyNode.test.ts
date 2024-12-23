@@ -105,11 +105,11 @@ describe('PropertyNode', () => {
                 { key: 'baz', value: 42 },
             ]
             assert.strictEqual(nodes.length, expectedNodes.length)
-            nodes.forEach((node, index) => {
+            for (const [index, node] of nodes.entries()) {
                 assert(node instanceof PropertyNode)
                 assert.strictEqual(node.id, expectedNodes[index].key)
                 assert.strictEqual(node.resource, expectedNodes[index].value)
-            })
+            }
         })
     })
 })

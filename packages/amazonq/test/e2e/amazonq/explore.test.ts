@@ -36,10 +36,10 @@ describe('Amazon Q Explore page', function () {
     it('should have correct button IDs', async () => {
         const features = ['featuredev', 'testgen', 'doc', 'review', 'gumby']
 
-        features.forEach((feature, index) => {
+        for (const [index, feature] of features.entries()) {
             const buttons = (tab.getStore().chatItems ?? [])[index].buttons ?? []
             assert.deepStrictEqual(buttons[0].id, `user-guide-${feature}`)
             assert.deepStrictEqual(buttons[1].id, `quick-start-${feature}`)
-        })
+        }
     })
 })

@@ -146,11 +146,13 @@ export function createPromptHandler<T>(config: {
         const handlersMap = new Map()
 
         // Setup handlers map
-        config.numbered?.forEach((item) => {
-            item.order.forEach((orderNum) => {
-                handlersMap.set(orderNum, item.handler)
-            })
-        })
+        if (config.numbered) {
+            for (const item of config.numbered) {
+                for (const orderNum of item.order) {
+                    handlersMap.set(orderNum, item.handler)
+                }
+            }
+        }
 
         while (true) {
             currentIteration++

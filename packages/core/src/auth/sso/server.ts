@@ -163,9 +163,9 @@ export class AuthSSOServer {
 
             getLogger().debug('AuthSSOServer: Attempting to close server.')
 
-            this.connections.forEach((connection) => {
+            for (const connection of this.connections) {
                 connection.destroy()
-            })
+            }
 
             this.server.close((err) => {
                 if (err) {

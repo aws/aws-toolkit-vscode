@@ -104,12 +104,12 @@ export class CodeWhispererCodeCoverageTracker {
         // the accepted characters after calculating user modification
         let unmodifiedAcceptedTokens = 0
         for (const filename in this._acceptedTokens) {
-            this._acceptedTokens[filename].forEach((v) => {
+            for (const v of this._acceptedTokens[filename]) {
                 if (filename in this._totalTokens && this._totalTokens[filename] >= v.accepted) {
                     unmodifiedAcceptedTokens += v.accepted
                     acceptedTokens += v.text.length
                 }
-            })
+            }
         }
         const percentCount = ((acceptedTokens / totalTokens) * 100).toFixed(2)
         const percentage = Math.round(parseInt(percentCount))

@@ -21,6 +21,7 @@ export const awsToolkitApi = {
                 getLogger().debug(`listConnections: extension ${extensionId}`)
                 const connections = await Auth.instance.listConnections()
                 const exposedConnections: AwsConnection[] = []
+                // eslint-disable-next-line unicorn/no-array-for-each
                 connections.forEach((x: Connection) => {
                     if (x.type === 'sso') {
                         const connState = Auth.instance.getConnectionState(x)
