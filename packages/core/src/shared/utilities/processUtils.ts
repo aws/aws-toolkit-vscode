@@ -7,6 +7,8 @@ import * as proc from 'child_process' // eslint-disable-line no-restricted-impor
 import * as crossSpawn from 'cross-spawn'
 import * as logger from '../logger'
 import { Timeout, CancellationError, waitUntil } from './timeoutUtils'
+import { PollingSet } from './pollingSet'
+import { getLogger } from '../logger/logger'
 
 export interface RunParameterContext {
     /** Reports an error parsed from the stdin/stdout streams. */
@@ -61,6 +63,53 @@ export interface ChildProcessResult {
 
 export const eof = Symbol('EOF')
 
+export class ChildProcessTracker extends Map<number, ChildProcess> {
+    static pollingInterval: number = 5000
+    #processPoller: PollingSet<number>
+
+    public constructor() {
+        super()
+        this.#processPoller = new PollingSet(ChildProcessTracker.pollingInterval, () => {})
+    }
+
+    private cleanUpProcesses() {
+        const terminatedProcesses = Array.from(this.#processPoller.values()).filter(
+            (pid: number) => !this.has(pid) || this.get(pid)?.stopped
+        )
+        for (const pid of terminatedProcesses) {
+            this.#processPoller.delete(pid)
+        }
+    }
+
+    public monitorProcesses() {
+        this.cleanUpProcesses()
+        getLogger().debug(`Active running processes size: ${this.#processPoller.size}`)
+
+        for (const pid of this.#processPoller.values()) {
+            const process = this.get(pid)
+            if (process) {
+                getLogger().debug(`Active running process: ${process.toString()}`)
+            }
+        }
+    }
+
+    public override set(key: number, value: ChildProcess): this {
+        this.#processPoller.add(key)
+        super.set(key, value)
+        return this
+    }
+
+    public override delete(key: number): boolean {
+        this.#processPoller.delete(key)
+        return super.delete(key)
+    }
+
+    public override clear(): void {
+        this.#processPoller.clear()
+        super.clear()
+    }
+}
+
 /**
  * Convenience class to manage a child process
  * To use:
@@ -68,7 +117,7 @@ export const eof = Symbol('EOF')
  * - call and await run to get the results (pass or fail)
  */
 export class ChildProcess {
-    static #runningProcesses: Map<number, ChildProcess> = new Map()
+    static #runningProcesses: ChildProcessTracker = new ChildProcessTracker()
     #childProcess: proc.ChildProcess | undefined
     #processErrors: Error[] = []
     #processResult: ChildProcessResult | undefined
