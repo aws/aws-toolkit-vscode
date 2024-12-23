@@ -141,7 +141,9 @@ export class CodeCatalystRootNode implements TreeNode {
         this.addRefreshEmitter(() => this.onDidChangeEmitter.fire())
 
         this.authProvider.onDidChange(() => {
-            this.refreshEmitters.forEach((fire) => fire())
+            for (const fire of this.refreshEmitters) {
+                fire()
+            }
         })
     }
 

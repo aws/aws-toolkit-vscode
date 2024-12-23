@@ -663,10 +663,10 @@ export const createMynahUI = (
                     ideApi.postMessage(createClickTelemetry('amazonq-disclaimer-acknowledge-button'))
 
                     // remove all disclaimer cards from all tabs
-                    Object.keys(mynahUI.getAllTabs()).forEach((storeTabKey) => {
+                    for (const storeTabKey of Object.keys(mynahUI.getAllTabs())) {
                         // eslint-disable-next-line unicorn/no-null
                         mynahUI.updateStore(storeTabKey, { promptInputStickyCard: null })
-                    })
+                    }
                     return
                 }
                 case 'quick-start': {
