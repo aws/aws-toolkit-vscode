@@ -1,5 +1,5 @@
 /**
- * Filters the report produces by jscpd to only include clones within the code affected by a given git diff.
+ * Filters the report produced by jscpd to only include clones that involve changes from the given git diff.
  * If the filtered report is non-empty, i.e. there exists a clone in the changes,
  * the program exits with an error and logs the filtered report to console.
  *
