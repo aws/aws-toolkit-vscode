@@ -63,13 +63,14 @@ export interface ChildProcessResult {
 
 export const eof = Symbol('EOF')
 
-export class ChildProcessTracker extends Map<number, ChildProcess> {
-    static pollingInterval: number = 5000
+class ChildProcessTracker extends Map<number, ChildProcess> {
+    static pollingInterval: number = 1000
     #processPoller: PollingSet<number>
 
     public constructor() {
         super()
-        this.#processPoller = new PollingSet(ChildProcessTracker.pollingInterval, () => {})
+        this.#processPoller = new PollingSet(ChildProcessTracker.pollingInterval, () => this.monitorProcesses())
+        getLogger().debug(`ChildProcessTracker created with polling interval: ${ChildProcessTracker.pollingInterval}`)
     }
 
     private cleanUpProcesses() {
@@ -94,7 +95,7 @@ export class ChildProcessTracker extends Map<number, ChildProcess> {
     }
 
     public override set(key: number, value: ChildProcess): this {
-        this.#processPoller.add(key)
+        this.#processPoller.start(key)
         super.set(key, value)
         return this
     }
