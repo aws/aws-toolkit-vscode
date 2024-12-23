@@ -417,12 +417,12 @@ export async function addInitialLaunchConfiguration(
 
         // optional for ZIP-lambdas but required for Image-lambdas
         if (runtime !== undefined) {
-            filtered.forEach((configuration) => {
+            for (const configuration of filtered) {
                 if (!configuration.lambda) {
                     configuration.lambda = {}
                 }
                 configuration.lambda.runtime = runtime
-            })
+            }
         }
 
         await launchConfiguration.addDebugConfigurations(filtered)

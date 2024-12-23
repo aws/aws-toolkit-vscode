@@ -160,12 +160,20 @@ class TestPrompter<T, S = any> extends Prompter<T> {
 
     public assertStepEstimate(input: T, expected: number): AssertStepMethods {
         return {
-            onCall: (...order: number[]) => order.forEach((i) => this.checkEstimate(input, expected, i)),
+            onCall: (...order: number[]) => {
+                for (const i of order) {
+                    this.checkEstimate(input, expected, i)
+                }
+            },
             onFirstCall: () => this.checkEstimate(input, expected, 1),
             onSecondCall: () => this.checkEstimate(input, expected, 2),
             onThirdCall: () => this.checkEstimate(input, expected, 3),
             onFourthCall: () => this.checkEstimate(input, expected, 4),
-            onEveryCall: () => this.acceptedStates.forEach((_, i) => this.checkEstimate(input, expected, i + 1)),
+            onEveryCall: () => {
+                for (const [i, _] of this.acceptedStates.entries()) {
+                    this.checkEstimate(input, expected, i + 1)
+                }
+            },
         } as AssertStepMethods
     }
 
@@ -185,12 +193,20 @@ class TestPrompter<T, S = any> extends Prompter<T> {
     /** Check if the prompter was given the expected steps */
     public assertSteps(current: number, total: number): AssertStepMethods {
         return {
-            onCall: (...order: number[]) => order.forEach((i) => this.checkSteps([current, total], i)),
+            onCall: (...order: number[]) => {
+                for (const i of order) {
+                    this.checkSteps([current, total], i)
+                }
+            },
             onFirstCall: () => this.checkSteps([current, total], 1),
             onSecondCall: () => this.checkSteps([current, total], 2),
             onThirdCall: () => this.checkSteps([current, total], 3),
             onFourthCall: () => this.checkSteps([current, total], 4),
-            onEveryCall: () => this.acceptedSteps.forEach((_, i) => this.checkSteps([current, total], i + 1)),
+            onEveryCall: () => {
+                for (const [i, _] of this.acceptedSteps.entries()) {
+                    this.checkSteps([current, total], i + 1)
+                }
+            },
         } as AssertStepMethods
     }
 

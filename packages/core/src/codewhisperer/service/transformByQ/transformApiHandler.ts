@@ -359,9 +359,9 @@ export async function zipCode(
                 },
             }
             // TO-DO: later consider making this add to path.join(zipManifest.dependenciesRoot, 'qct-sct-metadata', entry.entryName) so that it's more organized
-            metadataZip
-                .getEntries()
-                .forEach((entry) => zip.addFile(path.join(zipManifest.dependenciesRoot, entry.name), entry.getData()))
+            for (const entry of metadataZip.getEntries()) {
+                zip.addFile(path.join(zipManifest.dependenciesRoot, entry.name), entry.getData())
+            }
             const sqlMetadataSize = (await nodefs.promises.stat(transformByQState.getMetadataPathSQL())).size
             getLogger().info(`CodeTransformation: SQL metadata file size = ${sqlMetadataSize}`)
         }
@@ -514,15 +514,19 @@ export function addTableMarkdown(plan: string, stepId: string, tableMapping: { [
     const table = JSON.parse(tableObj)
     plan += `\n\n\n${table.name}\n|`
     const columns = table.columnNames
+    // eslint-disable-next-line unicorn/no-array-for-each
     columns.forEach((columnName: string) => {
         plan += ` ${getFormattedString(columnName)} |`
     })
     plan += '\n|'
+    // eslint-disable-next-line unicorn/no-array-for-each
     columns.forEach((_: any) => {
         plan += '-----|'
     })
+    // eslint-disable-next-line unicorn/no-array-for-each
     table.rows.forEach((row: any) => {
         plan += '\n|'
+        // eslint-disable-next-line unicorn/no-array-for-each
         columns.forEach((columnName: string) => {
             if (columnName === 'relativePath') {
                 plan += ` [${row[columnName]}](${row[columnName]}) |` // add MD link only for files
@@ -537,11 +541,11 @@ export function addTableMarkdown(plan: string, stepId: string, tableMapping: { [
 
 export function getTableMapping(stepZeroProgressUpdates: ProgressUpdates) {
     const map: { [key: string]: string } = {}
-    stepZeroProgressUpdates.forEach((update) => {
+    for (const update of stepZeroProgressUpdates) {
         // description should never be undefined since even if no data we show an empty table
         // but just in case, empty string allows us to skip this table without errors when rendering
         map[update.name] = update.description ?? ''
-    })
+    }
     return map
 }
 
@@ -551,6 +555,7 @@ export function getJobStatisticsHtml(jobStatistics: any) {
         return htmlString
     }
     htmlString += `<div style="flex: 1; margin-left: 20px; border: 1px solid #424750; border-radius: 8px; padding: 10px;">`
+    // eslint-disable-next-line unicorn/no-array-for-each
     jobStatistics.forEach((stat: { name: string; value: string }) => {
         htmlString += `<p style="margin-bottom: 4px"><img src="${getTransformationIcon(
             stat.name
@@ -600,11 +605,11 @@ export async function getTransformationPlan(jobId: string) {
             CodeWhispererConstants.planIntroductionMessage
         }</p></div>${getJobStatisticsHtml(jobStatistics)}</div>`
         plan += `<div style="margin-top: 32px; border: 1px solid #424750; border-radius: 8px; padding: 10px;"><p style="font-size: 18px; margin-bottom: 4px;"><b>${CodeWhispererConstants.planHeaderMessage}</b></p><i>${CodeWhispererConstants.planDisclaimerMessage} <a href="https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/code-transformation.html">Read more.</a></i><br><br>`
-        response.transformationPlan.transformationSteps.slice(1).forEach((step) => {
+        for (const step of response.transformationPlan.transformationSteps.slice(1)) {
             plan += `<div style="border: 1px solid #424750; border-radius: 8px; padding: 20px;"><div style="display:flex; justify-content:space-between; align-items:center;"><p style="font-size: 16px; margin-bottom: 4px;">${step.name}</p><a href="#top">Scroll to top <img src="${arrowIcon}" style="vertical-align: middle"></a></div><p>${step.description}</p>`
             plan = addTableMarkdown(plan, step.id, tableMapping)
             plan += `</div><br>`
-        })
+        }
         plan += `</div><br>`
         plan += `<p style="font-size: 18px; margin-bottom: 4px;"><b>Appendix</b><br><a href="#top" style="float: right; font-size: 14px;">Scroll to top <img src="${arrowIcon}" style="vertical-align: middle;"></a></p><br>`
         plan = addTableMarkdown(plan, '-1', tableMapping) // ID of '-1' reserved for appendix table

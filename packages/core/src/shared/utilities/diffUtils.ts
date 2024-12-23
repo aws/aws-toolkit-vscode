@@ -136,6 +136,7 @@ export function getDiffCharsAndLines(
         ignoreNewlineAtEof: true,
     } as LinesOptions)
 
+    // eslint-disable-next-line unicorn/no-array-for-each
     diffs.forEach((part: Change) => {
         if (part.added) {
             addedChars += part.value.length

@@ -36,12 +36,12 @@ export function getCredentialsErrors(
     validateFunc: GetCredentialError = getCredentialError
 ): CredentialsErrors | undefined {
     const errors: CredentialsData = {}
-    Object.entries(data).forEach(([key, value]) => {
+    for (const [key, value] of Object.entries(data)) {
         if (!isCredentialsKey(key)) {
-            return
+            continue
         }
         errors[key] = validateFunc(key, value)
-    })
+    }
 
     const hasErrors = Object.values(errors).some(Boolean)
     if (!hasErrors) {

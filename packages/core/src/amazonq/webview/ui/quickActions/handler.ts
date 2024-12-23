@@ -109,11 +109,11 @@ export class QuickActionHandler {
         }
         let scanTabId: string | undefined = undefined
 
-        this.tabsStorage.getTabs().forEach((tab) => {
+        for (const tab of this.tabsStorage.getTabs()) {
             if (tab.type === 'review') {
                 scanTabId = tab.id
             }
-        })
+        }
 
         if (scanTabId !== undefined) {
             this.mynahUI.selectTab(scanTabId, eventId || '')
@@ -292,11 +292,11 @@ export class QuickActionHandler {
 
         let gumbyTabId: string | undefined = undefined
 
-        this.tabsStorage.getTabs().forEach((tab) => {
+        for (const tab of this.tabsStorage.getTabs()) {
             if (tab.type === 'gumby') {
                 gumbyTabId = tab.id
             }
-        })
+        }
 
         if (gumbyTabId !== undefined) {
             this.mynahUI.selectTab(gumbyTabId, eventId || '')

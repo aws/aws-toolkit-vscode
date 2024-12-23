@@ -203,6 +203,7 @@ export class IamPolicyChecksWebview extends VueWebview {
                                         span.record({
                                             findingsCount: data.findings.length,
                                         })
+                                        // eslint-disable-next-line unicorn/no-array-for-each
                                         data.findings.forEach((finding: AccessAnalyzer.ValidatePolicyFinding) => {
                                             const message = `${finding.findingType}: ${finding.issueCode} - ${finding.findingDetails} Learn more: ${finding.learnMoreLink}`
                                             if ((finding.findingType as ValidatePolicyFindingType) === 'ERROR') {
@@ -616,10 +617,12 @@ export class IamPolicyChecksWebview extends VueWebview {
                 getResultCssColor('Success'),
             ])
         } else {
+            // eslint-disable-next-line unicorn/no-array-for-each
             jsonOutput.BlockingFindings.forEach((finding: any) => {
                 this.pushValidatePolicyDiagnostic(diagnostics, finding, true)
                 findingsCount++
             })
+            // eslint-disable-next-line unicorn/no-array-for-each
             jsonOutput.NonBlockingFindings.forEach((finding: any) => {
                 this.pushValidatePolicyDiagnostic(diagnostics, finding, false)
                 findingsCount++
@@ -682,11 +685,13 @@ export class IamPolicyChecksWebview extends VueWebview {
                     getResultCssColor('Success'),
                 ])
             } else {
+                // eslint-disable-next-line unicorn/no-array-for-each
                 jsonOutput.BlockingFindings.forEach((finding: any) => {
                     this.pushCustomCheckDiagnostic(diagnostics, finding, true)
                     errorMessage = getCheckNoNewAccessErrorMessage(finding)
                     findingsCount++
                 })
+                // eslint-disable-next-line unicorn/no-array-for-each
                 jsonOutput.NonBlockingFindings.forEach((finding: any) => {
                     this.pushCustomCheckDiagnostic(diagnostics, finding, false)
                     findingsCount++
@@ -724,6 +729,7 @@ export class IamPolicyChecksWebview extends VueWebview {
             : finding.message
         const message = `${finding.findingType}: ${findingMessage} - Resource name: ${finding.resourceName}, Policy name: ${finding.policyName}`
         if (finding.details.reasons) {
+            // eslint-disable-next-line unicorn/no-array-for-each
             finding.details.reasons.forEach((reason: any) => {
                 diagnostics.push(
                     new vscode.Diagnostic(

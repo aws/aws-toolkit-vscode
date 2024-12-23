@@ -212,7 +212,7 @@ describe('keyStrokeHandler', function () {
             ['function suggestedByIntelliSense():', DocumentChangedSource.Unknown],
         ]
 
-        cases.forEach((tuple) => {
+        for (const tuple of cases) {
             const input = tuple[0]
             const expected = tuple[1]
             it(`test input ${input} should return ${expected}`, function () {
@@ -221,7 +221,7 @@ describe('keyStrokeHandler', function () {
                 ).checkChangeSource()
                 assert.strictEqual(actual, expected)
             })
-        })
+        }
 
         function createFakeDocumentChangeEvent(str: string): ReadonlyArray<vscode.TextDocumentContentChangeEvent> {
             return [
