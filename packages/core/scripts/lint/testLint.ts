@@ -12,9 +12,9 @@ void (async () => {
         const mocha = new Mocha()
 
         const testFiles = await glob('dist/src/testLint/**/*.test.js')
-        testFiles.forEach((file) => {
+        for (const file of testFiles) {
             mocha.addFile(file)
-        })
+        }
 
         mocha.run((failures) => {
             const exitCode = failures ? 1 : 0

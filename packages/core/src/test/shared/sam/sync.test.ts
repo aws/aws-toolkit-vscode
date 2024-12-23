@@ -901,9 +901,9 @@ describe('SAM SyncWizard', async () => {
                 'Select an S3 Bucket',
                 'Specify parameters for sync',
             ]
-            expectedCallOrder.forEach((title, index) => {
+            for (const [index, title] of expectedCallOrder.entries()) {
                 prompterTester.assertCallOrder(title, index + 1)
-            })
+            }
         })
 
         describe('entry: command palette', () => {
@@ -2160,7 +2160,7 @@ describe('SAM sync helper functions', () => {
                 },
             ]
 
-            testCases.forEach(({ name, response }) => {
+            for (const { name, response } of testCases) {
                 it(`should handle ${name}`, async () => {
                     createRepositoryStub.resolves(response)
 
@@ -2169,7 +2169,7 @@ describe('SAM sync helper functions', () => {
                     assert(!result)
                     assert(createRepositoryStub.calledOnceWith(repoName))
                 })
-            })
+            }
         })
     })
 })

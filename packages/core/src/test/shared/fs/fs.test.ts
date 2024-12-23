@@ -69,13 +69,13 @@ describe('FileSystem', function () {
     describe('writeFile()', function () {
         const opts: { atomic: boolean }[] = [{ atomic: false }, { atomic: true }]
 
-        opts.forEach((opt) => {
+        for (const opt of opts) {
             it(`writes a file (atomic: ${opt.atomic})`, async function () {
                 const filePath = testFolder.pathFrom('myFileName')
                 await fs.writeFile(filePath, 'MyContent', opt)
                 assert.strictEqual(readFileSync(filePath, 'utf-8'), 'MyContent')
             })
-        })
+        }
 
         it('writes a file with encoded text', async function () {
             const filePath = testFolder.pathFrom('myFileName')
@@ -100,7 +100,7 @@ describe('FileSystem', function () {
             { vsc: true, node: false },
             { vsc: true, node: true },
         ]
-        throwCombinations.forEach((throws) => {
+        for (const throws of throwCombinations) {
             it(`still writes a file if one of the atomic write methods fails: ${JSON.stringify(throws)}`, async function () {
                 if (throws.vsc) {
                     sandbox.stub(fs, 'rename').throws(new Error('Test Error Message VSC'))
@@ -134,7 +134,7 @@ describe('FileSystem', function () {
                     testutil.assertTelemetry('ide_fileSystem', expectedTelemetry)
                 }
             })
-        })
+        }
 
         it('throws when existing file + no permission', async function () {
             if (isWin()) {
@@ -218,6 +218,7 @@ describe('FileSystem', function () {
     describe('mkdir()', function () {
         const paths = ['a', 'a/b', 'a/b/c', 'a/b/c/d/']
 
+        // eslint-disable-next-line unicorn/no-array-for-each
         paths.forEach(async function (p) {
             it(`creates folder: '${p}'`, async function () {
                 const dirPath = testFolder.pathFrom(p)
@@ -226,6 +227,7 @@ describe('FileSystem', function () {
             })
         })
 
+        // eslint-disable-next-line unicorn/no-array-for-each
         paths.forEach(async function (p) {
             it(`creates folder but uses the "fs" module if in Cloud9: '${p}'`, async function () {
                 sandbox.stub(extensionUtilities, 'isCloud9').returns(true)

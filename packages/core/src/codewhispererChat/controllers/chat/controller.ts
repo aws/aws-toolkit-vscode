@@ -632,11 +632,11 @@ export class ChatController {
                 if (CodeWhispererSettings.instance.isLocalIndexEnabled()) {
                     const start = performance.now()
                     triggerPayload.relevantTextDocuments = await LspController.instance.query(triggerPayload.message)
-                    triggerPayload.relevantTextDocuments.forEach((doc) => {
+                    for (const doc of triggerPayload.relevantTextDocuments) {
                         getLogger().info(
                             `amazonq: Using workspace files ${doc.relativeFilePath}, content(partial): ${doc.text?.substring(0, 200)}`
                         )
-                    })
+                    }
                     triggerPayload.projectContextQueryLatencyMs = performance.now() - start
                 } else {
                     this.messenger.sendOpenSettingsMessage(triggerID, tabID)
