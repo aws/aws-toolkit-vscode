@@ -8,7 +8,7 @@ import { qTestingFramework } from './framework/framework'
 import sinon from 'sinon'
 import { Messenger } from './framework/messenger'
 import { MynahUIDataModel } from '@aws/mynah-ui'
-import { assertQuickActions } from './assert'
+import { assertContextCommands, assertQuickActions } from './assert'
 
 describe('Amazon Q Welcome page', function () {
     let framework: qTestingFramework
@@ -34,13 +34,7 @@ describe('Amazon Q Welcome page', function () {
     })
 
     it('Shows @workspace', async () => {
-        assert.deepStrictEqual(
-            store.contextCommands
-                ?.map((x) => x.commands)
-                .flat()
-                .map((x) => x.command),
-            ['@workspace']
-        )
+        assertContextCommands(tab, ['@workspace'])
     })
 
     describe('shows 3 times', async () => {
