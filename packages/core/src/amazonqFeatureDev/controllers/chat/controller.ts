@@ -504,6 +504,10 @@ export class FeatureDevController {
                         result = MetricDataResult.Fault
                     }
                     break
+                case ContentLengthError.name:
+                case MonthlyConversationLimitError.name:
+                case CodeIterationLimitError.name:
+                case UploadURLExpired.name:
                 case PromptRefusalException.name:
                 case NoChangeRequiredException.name:
                     result = MetricDataResult.Error
@@ -513,7 +517,7 @@ export class FeatureDevController {
                     break
             }
 
-            await session.sendMetricDataTelemetry(MetricDataOperationName.EndCodeGeneration, result)
+            await session.sendMetricDataTelemetry(MetricDataOperationName.EndCodeGeneration, result, err.stack)
             throw err
         } finally {
             // Finish processing the event
