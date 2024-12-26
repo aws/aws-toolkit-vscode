@@ -285,7 +285,7 @@ export class Session {
         return { leftPath, rightPath, ...diff }
     }
 
-    public async sendMetricDataTelemetry(operationName: string, result: string) {
+    public async sendMetricDataTelemetry(operationName: string, result: string, log?: string) {
         await this.proxyClient.sendMetricData({
             metricName: 'Operation',
             metricValue: 1,
@@ -300,6 +300,16 @@ export class Session {
                     name: 'result',
                     value: result,
                 },
+
+                // The log dimension will not be emitted to CloudWatch
+                ...(log
+                    ? [
+                          {
+                              name: 'log',
+                              value: log,
+                          },
+                      ]
+                    : []),
             ],
         })
     }
