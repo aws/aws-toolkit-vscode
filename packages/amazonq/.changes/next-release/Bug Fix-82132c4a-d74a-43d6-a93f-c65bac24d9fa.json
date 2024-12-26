@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Chat: When navigating to previous prompts, code attachments are sometimes displayed incorrectly"
-}

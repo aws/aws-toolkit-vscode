@@ -379,13 +379,13 @@ export class UserActivity implements vscode.Disposable {
         )
 
         if (customEvents) {
-            customEvents.forEach((event) =>
+            for (const event of customEvents) {
                 this.register(
                     event(() => {
                         throttledEmit(event)
                     })
                 )
-            )
+            }
         } else {
             this.registerAllEvents(throttledEmit)
         }
@@ -409,13 +409,13 @@ export class UserActivity implements vscode.Disposable {
             vscode.window.onDidChangeTextEditorViewColumn,
         ]
 
-        activityEvents.forEach((event) =>
+        for (const event of activityEvents) {
             this.register(
                 event(() => {
                     throttledEmit(event)
                 })
             )
-        )
+        }
 
         //
         // Events with special cases:
@@ -478,6 +478,8 @@ export class UserActivity implements vscode.Disposable {
     }
 
     dispose() {
-        this.disposables.forEach((d) => d.dispose())
+        for (const d of this.disposables) {
+            d.dispose()
+        }
     }
 }

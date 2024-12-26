@@ -161,7 +161,7 @@ export async function showCodeWhispererWebview(
         ]
         const prompts = AmazonQPromptSettings.instance
         // To check the condition If the user has already seen the welcome message
-        if (await prompts.isPromptEnabled('codeWhispererNewWelcomeMessage')) {
+        if (prompts.isPromptEnabled('codeWhispererNewWelcomeMessage')) {
             telemetry.ui_click.emit({ elementId: 'codewhisperer_Learn_PageOpen', passive: true })
         } else {
             telemetry.ui_click.emit({ elementId: 'codewhisperer_Learn_PageOpen', passive: false })

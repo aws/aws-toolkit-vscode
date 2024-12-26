@@ -10,7 +10,7 @@ describe('Walkthrough pattern URL exists', function () {
     const serverlessLandOwner = 'aws-samples'
     const serverlessLandRepo = 'serverless-patterns'
 
-    appMap.forEach((app, key) => {
+    for (const [key, app] of appMap.entries()) {
         it(`Walkthrough pattern URL exists for ${key}`, async function () {
             const url = `https://github.com/${serverlessLandOwner}/${serverlessLandRepo}/releases/latest/download/${app.asset}`
             const response = await fetch(url, {
@@ -19,5 +19,5 @@ describe('Walkthrough pattern URL exists', function () {
             // ignore if too frequent
             assert.ok(response.status === 200 || response.status === 429)
         })
-    })
+    }
 })

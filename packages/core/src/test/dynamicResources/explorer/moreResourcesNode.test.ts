@@ -61,21 +61,21 @@ describe('ResourcesNode', function () {
 
         assert.strictEqual(childNodes.length, resourceTypes.length, 'Unexpected child count')
 
-        childNodes.forEach((node) =>
+        for (const node of childNodes) {
             assert.ok(node instanceof ResourceTypeNode, 'Expected child node to be ResourceTypeNode')
-        )
+        }
     })
 
     it('has child nodes with ResourceTypeNode contextValue', async function () {
         const childNodes = await testNode.getChildren()
 
-        childNodes.forEach((node) =>
+        for (const node of childNodes) {
             assert.strictEqual(
                 node.contextValue?.endsWith('ResourceTypeNode'),
                 true,
                 'expected the node to have a resourceTypeNode contextValue'
             )
-        )
+        }
     })
 
     it('sorts child nodes', async function () {

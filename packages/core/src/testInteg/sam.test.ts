@@ -396,7 +396,9 @@ describe('SAM Integration Tests', async function () {
                 })
 
                 afterEach(async function () {
-                    testDisposables.forEach((d) => d.dispose())
+                    for (const d of testDisposables) {
+                        d.dispose()
+                    }
                     await stopDebugger(undefined)
                 })
 

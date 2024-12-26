@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Auth: SSO failed to missing refreshToken"
-}

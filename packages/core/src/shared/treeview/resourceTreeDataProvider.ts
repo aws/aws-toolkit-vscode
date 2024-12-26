@@ -101,7 +101,11 @@ export class ResourceTreeDataProvider implements vscode.TreeDataProvider<TreeNod
             if (previousChildren !== undefined) {
                 return previousChildren
             } else {
-                this.children.get(element.id)?.forEach((n) => this.clear(n))
+                if (this.children.has(element.id)) {
+                    for (const n of this.children.get(element.id)!) {
+                        this.clear(n)
+                    }
+                }
             }
         }
 
@@ -144,7 +148,11 @@ export class ResourceTreeDataProvider implements vscode.TreeDataProvider<TreeNod
         this.listeners.get(node.id)?.dispose()
         this.listeners.delete(node.id)
 
-        children?.forEach((c) => this.clear(c))
+        if (children) {
+            for (const c of children) {
+                this.clear(c)
+            }
+        }
     }
 
     private insert(id: string, resource: TreeNode): TreeNode {
@@ -154,7 +162,11 @@ export class ResourceTreeDataProvider implements vscode.TreeDataProvider<TreeNod
         if (node.onDidChangeChildren) {
             listeners.push(
                 node.onDidChangeChildren?.(() => {
-                    this.children.get(node.id)?.forEach((n) => this.clear(n))
+                    if (this.children.has(node.id)) {
+                        for (const n of this.children.get(node.id)!) {
+                            this.clear(n)
+                        }
+                    }
                     this.children.delete(node.id)
                     this.onDidChangeTreeDataEmitter.fire(node)
                 })

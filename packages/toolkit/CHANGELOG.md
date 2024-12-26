@@ -1,3 +1,8 @@
+## 3.40.0 2024-12-17
+
+- **Bug Fix** Auth: SSO failed to missing refreshToken
+- **Bug Fix** AppBuilder : Support template parameters override for SAM deploy and sync for all entry points
+
 ## 3.39.0 2024-12-12
 
 - **Bug Fix** EC2: avoid overwriting authorized_keys file on remote

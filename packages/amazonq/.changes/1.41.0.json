@@ -1,0 +1,62 @@
+{
+	"date": "2024-12-17",
+	"version": "1.41.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "/review: Apply fix removes other issues in the same file."
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Fix(Amazon Q Code Transformation): show correct diff when running consecutive transformations"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Improve when the welcome page is shown in amazon q chat"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Code Review: Cleaned up output logs when running /review"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Code Review: Fixed a bug where applying a fix did not update the positions of other issues in the same file."
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Chat: When navigating to previous prompts, code attachments are sometimes displayed incorrectly"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "/review: Diagnostics in the problems panel are mapped to the wrong code"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Fix opentabs context possibly timeout due to race condition of misuse of different timeout functionalities"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Auth: SSO session was bad, but no reauth prompt given"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Reduce frequency of system status poll"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Chat: When writing a prompt without sending it, navigating via up/down arrows sometimes deletes the unsent prompt."
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Code Review: Fixed a bug where projects with repeated path names did not scan properly."
+		},
+		{
+			"type": "Feature",
+			"description": "/review: Code fix automatically scrolls into view after generation."
+		},
+		{
+			"type": "Feature",
+			"description": "Chat: improve font size and line-height in footer (below prompt input field)"
+		}
+	]
+}

@@ -171,7 +171,9 @@ export class DefaultAWSClientBuilder implements AWSClientBuilder {
 
         service.setupRequestListeners = (request: Request<any, AWSError>) => {
             originalSetup(request)
-            listeners.forEach((l) => l(request as AWS.Request<any, AWSError> & RequestExtras))
+            for (const l of listeners) {
+                l(request as AWS.Request<any, AWSError> & RequestExtras)
+            }
         }
 
         return service

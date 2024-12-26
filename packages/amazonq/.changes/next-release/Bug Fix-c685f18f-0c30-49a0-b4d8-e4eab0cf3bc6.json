@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Reduce frequency of system status poll"
-}

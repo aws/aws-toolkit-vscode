@@ -83,17 +83,17 @@ describe('TelemetryConfig', function () {
     ]
 
     describe('isTelemetryEnabled', function () {
-        scenarios.forEach((scenario) => {
+        for (const scenario of scenarios) {
             it(scenario.desc, async () => {
                 await settings.update(settingKey, scenario.initialSettingValue)
 
                 assert.strictEqual(sut.isEnabled(), scenario.expectedIsEnabledValue)
             })
-        })
+        }
     })
 
     describe('sanitizeTelemetrySetting', function () {
-        scenarios.forEach((scenario) => {
+        for (const scenario of scenarios) {
             it(scenario.desc, () => {
                 const tryConvert = () => {
                     try {
@@ -105,7 +105,7 @@ describe('TelemetryConfig', function () {
 
                 assert.deepStrictEqual(tryConvert(), scenario.expectedSanitizedValue)
             })
-        })
+        }
     })
 })
 

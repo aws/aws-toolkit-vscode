@@ -69,30 +69,8 @@ export default class MessengerUtils {
         }
     }
 
-    static createLanguageUpgradeConfirmationPrompt = (detectedJavaVersions: Array<JDKVersion | undefined>): string => {
-        let javaVersionString = 'Java project'
-        const uniqueJavaOptions = new Set(detectedJavaVersions)
-
-        if (detectedJavaVersions.length > 1) {
-            // this  means there is a Java version whose version we weren't able to determine
-            if (uniqueJavaOptions.has(undefined)) {
-                javaVersionString = 'Java projects'
-            } else {
-                javaVersionString = `Java ${Array.from(uniqueJavaOptions).join(' & ')} projects`
-            }
-        } else if (detectedJavaVersions.length === 1) {
-            if (!uniqueJavaOptions.has(undefined)) {
-                javaVersionString = `Java ${detectedJavaVersions[0]!.toString()} project`
-            }
-        }
-
-        return CodeWhispererConstants.projectPromptChatMessage.replace('JAVA_VERSION_HERE', javaVersionString)
-    }
-
     static createAvailableDependencyVersionString = (versions: DependencyVersions): string => {
-        let message = `I found ${versions.length} other dependency versions that are more recent than the dependency in your code that's causing an error: ${versions.currentVersion}.
-
-`
+        let message = `I found ${versions.length} other dependency versions that are more recent than the dependency in your code that's causing an error: ${versions.currentVersion}.`
 
         if (versions.majorVersions !== undefined && versions.majorVersions.length > 0) {
             message = message.concat(

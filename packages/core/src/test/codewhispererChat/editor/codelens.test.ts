@@ -163,6 +163,7 @@ describe('TryChatCodeLensProvider', () => {
             TryMoreExState.id,
         ]
 
+        // eslint-disable-next-line unicorn/no-array-for-each
         lineAnnotationControllerStates.forEach((id: string) => {
             it(`id - ${id}`, async () => {
                 await globals.globalState.update(inlinehintKey, id)

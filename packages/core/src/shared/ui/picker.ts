@@ -135,7 +135,9 @@ export async function promptUser<T extends vscode.QuickPickItem>({
 
         return response
     } finally {
-        disposables.forEach((d) => d.dispose() as void)
+        for (const d of disposables) {
+            d.dispose() as void
+        }
         picker.hide()
     }
 }

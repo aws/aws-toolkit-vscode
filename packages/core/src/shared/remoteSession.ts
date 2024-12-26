@@ -167,11 +167,11 @@ export async function handleMissingTool(tools: Err<MissingTool[]>) {
         missing
     )
 
-    tools.err().forEach((d) => {
+    for (const d of tools.err()) {
         if (d.reason) {
             getLogger().error(`codecatalyst: failed to get tool "${d.name}": ${d.reason}`)
         }
-    })
+    }
 
     return Result.err(
         new ToolkitError(msg, {

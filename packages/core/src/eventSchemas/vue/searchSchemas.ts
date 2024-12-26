@@ -151,7 +151,9 @@ export async function getRegistryNames(node: RegistryItemNode | SchemasNode, cli
     if (node instanceof SchemasNode) {
         try {
             const registries = await toArrayAsync(listRegistryItems(client))
-            registries.forEach((element) => registryNames.push(element.RegistryName!))
+            for (const element of registries) {
+                registryNames.push(element.RegistryName!)
+            }
         } catch (err) {
             const error = err as Error
             getLogger().error(error)

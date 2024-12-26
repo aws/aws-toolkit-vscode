@@ -179,7 +179,7 @@ describe('ToolkitLogger', function () {
             await checkFile(testLogger, tempLogPath, [loggedVerboseEntry], [nonLoggedVerboseEntry])
         })
 
-        happyLogScenarios.forEach((scenario) => {
+        for (const scenario of happyLogScenarios) {
             it(scenario.name, async () => {
                 const msg = `message for ${scenario.name} arg1 %s, arg2 %O`
                 const args = [42, ['a', 'b']]
@@ -191,7 +191,7 @@ describe('ToolkitLogger', function () {
 
                 await checkFile(testLogger, tempLogPath, [expectedMsg])
             })
-        })
+        }
     })
 
     describe('logs to an OutputChannel', async function () {
@@ -257,7 +257,7 @@ describe('ToolkitLogger', function () {
             assertLogsContain('This is a test message', true, 'verbose')
         })
 
-        happyLogScenarios.forEach((scenario) => {
+        for (const scenario of happyLogScenarios) {
             it(scenario.name, async () => {
                 const message = `message for ${scenario.name}`
                 testLogger = new ToolkitLogger('debug')
@@ -269,7 +269,7 @@ describe('ToolkitLogger', function () {
 
                 assert.ok((await waitForMessage).includes(message), 'Expected error message to be logged')
             })
-        })
+        }
 
         // Logger writes to OutputChannel in async manner.
         async function waitForLoggedTextByCount(entries: number): Promise<string> {
@@ -351,7 +351,9 @@ describe('ToolkitLogger', function () {
             }
 
             await checkFile(testLogger, tempLogPath, expected, unexpected)
-            idMap.forEach((msg, id) => assert.ok(testLogger.getLogById(id, tempLogPath)?.includes(msg)))
+            for (const [id, msg] of idMap.entries()) {
+                assert.ok(testLogger.getLogById(id, tempLogPath)?.includes(msg))
+            }
         })
 
         it('can find log from multiple files', async function () {

@@ -9,7 +9,13 @@ import * as path from 'path'
 import sinon from 'sinon'
 import { waitUntil } from '../../../../shared/utilities/timeoutUtils'
 import { ControllerSetup, createController, createSession, generateVirtualMemoryUri } from '../../utils'
-import { CurrentWsFolders, DeletedFileInfo, NewFileInfo } from '../../../../amazonqFeatureDev/types'
+import {
+    CurrentWsFolders,
+    DeletedFileInfo,
+    MetricDataOperationName,
+    MetricDataResult,
+    NewFileInfo,
+} from '../../../../amazonqFeatureDev/types'
 import { Session } from '../../../../amazonqFeatureDev/session/session'
 import { Prompter } from '../../../../shared/ui/prompter'
 import { assertTelemetry, toFile } from '../../../testUtil'
@@ -36,6 +42,7 @@ import { AuthUtil } from '../../../../codewhisperer'
 import { featureDevScheme, featureName, messageWithConversationId } from '../../../../amazonqFeatureDev'
 import { i18n } from '../../../../shared/i18n-helper'
 import { FollowUpTypes } from '../../../../amazonq/commons/types'
+import { ToolkitError } from '../../../../shared'
 
 let mockGetCodeGeneration: sinon.SinonStub
 describe('Controller', () => {
@@ -395,7 +402,47 @@ describe('Controller', () => {
     })
 
     describe('processUserChatMessage', function () {
-        async function fireChatMessage() {
+        // TODO: fix disablePreviousFileList error
+        const runs = [
+            { name: 'ContentLengthError', error: new ContentLengthError() },
+            {
+                name: 'MonthlyConversationLimitError',
+                error: new MonthlyConversationLimitError('Service Quota Exceeded'),
+            },
+            {
+                name: 'FeatureDevServiceErrorGuardrailsException',
+                error: new FeatureDevServiceError(
+                    i18n('AWS.amazonq.featureDev.error.codeGen.default'),
+                    'GuardrailsException'
+                ),
+            },
+            {
+                name: 'FeatureDevServiceErrorEmptyPatchException',
+                error: new FeatureDevServiceError(
+                    i18n('AWS.amazonq.featureDev.error.throttling'),
+                    'EmptyPatchException'
+                ),
+            },
+            {
+                name: 'FeatureDevServiceErrorThrottlingException',
+                error: new FeatureDevServiceError(
+                    i18n('AWS.amazonq.featureDev.error.codeGen.default'),
+                    'ThrottlingException'
+                ),
+            },
+            { name: 'UploadCodeError', error: new UploadCodeError('403: Forbiden') },
+            { name: 'UserMessageNotFoundError', error: new UserMessageNotFoundError() },
+            { name: 'TabIdNotFoundError', error: new TabIdNotFoundError() },
+            { name: 'PrepareRepoFailedError', error: new PrepareRepoFailedError() },
+            { name: 'PromptRefusalException', error: new PromptRefusalException() },
+            { name: 'ZipFileError', error: new ZipFileError() },
+            { name: 'CodeIterationLimitError', error: new CodeIterationLimitError() },
+            { name: 'UploadURLExpired', error: new UploadURLExpired() },
+            { name: 'NoChangeRequiredException', error: new NoChangeRequiredException() },
+            { name: 'default', error: new ToolkitError('Default', { code: 'Default' }) },
+        ]
+
+        async function fireChatMessage(session: Session) {
             const getSessionStub = sinon.stub(controllerSetup.sessionStorage, 'getSession').resolves(session)
 
             controllerSetup.emitters.processHumanChatMessage.fire({
@@ -410,44 +457,121 @@ describe('Controller', () => {
             }, {})
         }
 
-        describe('processErrorChatMessage', function () {
-            // TODO: fix disablePreviousFileList error
-            const runs = [
-                { name: 'ContentLengthError', error: new ContentLengthError() },
-                {
-                    name: 'MonthlyConversationLimitError',
-                    error: new MonthlyConversationLimitError('Service Quota Exceeded'),
-                },
-                {
-                    name: 'FeatureDevServiceError',
-                    error: new FeatureDevServiceError(
-                        i18n('AWS.amazonq.featureDev.error.codeGen.default'),
-                        'GuardrailsException'
-                    ),
-                },
-                { name: 'UploadCodeError', error: new UploadCodeError('403: Forbiden') },
-                { name: 'UserMessageNotFoundError', error: new UserMessageNotFoundError() },
-                { name: 'TabIdNotFoundError', error: new TabIdNotFoundError() },
-                { name: 'PrepareRepoFailedError', error: new PrepareRepoFailedError() },
-                { name: 'PromptRefusalException', error: new PromptRefusalException() },
-                { name: 'ZipFileError', error: new ZipFileError() },
-                { name: 'CodeIterationLimitError', error: new CodeIterationLimitError() },
-                { name: 'UploadURLExpired', error: new UploadURLExpired() },
-                { name: 'NoChangeRequiredException', error: new NoChangeRequiredException() },
-                { name: 'default', error: new Error() },
-            ]
+        describe('onCodeGeneration', function () {
+            let session: any
+            let sendMetricDataTelemetrySpy: sinon.SinonStub
 
+            const errorResultMapping = new Map([
+                ['EmptyPatchException', MetricDataResult.LlmFailure],
+                [PromptRefusalException.name, MetricDataResult.Error],
+                [NoChangeRequiredException.name, MetricDataResult.Error],
+            ])
+
+            function getMetricResult(error: ToolkitError): MetricDataResult {
+                if (error instanceof FeatureDevServiceError && error.code) {
+                    return errorResultMapping.get(error.code) ?? MetricDataResult.Error
+                }
+                return errorResultMapping.get(error.constructor.name) ?? MetricDataResult.Fault
+            }
+
+            async function createCodeGenState() {
+                mockGetCodeGeneration = sinon.stub().resolves({ codeGenerationStatus: { status: 'Complete' } })
+
+                const workspaceFolders = [controllerSetup.workspaceFolder] as CurrentWsFolders
+                const testConfig = {
+                    conversationId: conversationID,
+                    proxyClient: {
+                        createConversation: () => sinon.stub(),
+                        createUploadUrl: () => sinon.stub(),
+                        generatePlan: () => sinon.stub(),
+                        startCodeGeneration: () => sinon.stub(),
+                        getCodeGeneration: () => mockGetCodeGeneration(),
+                        exportResultArchive: () => sinon.stub(),
+                    } as unknown as FeatureDevClient,
+                    workspaceRoots: [''],
+                    uploadId: uploadID,
+                    workspaceFolders,
+                }
+
+                const codeGenState = new CodeGenState(testConfig, getFilePaths(controllerSetup), [], [], tabID, 0, {})
+                const newSession = await createSession({
+                    messenger: controllerSetup.messenger,
+                    sessionState: codeGenState,
+                    conversationID,
+                    tabID,
+                    uploadID,
+                    scheme: featureDevScheme,
+                })
+                return newSession
+            }
+
+            async function verifyException(error: ToolkitError) {
+                sinon.stub(session, 'send').throws(error)
+
+                await fireChatMessage(session)
+                await verifyMetricsCalled()
+                assert.ok(
+                    sendMetricDataTelemetrySpy.calledWith(
+                        MetricDataOperationName.StartCodeGeneration,
+                        MetricDataResult.Success
+                    )
+                )
+                const metricResult = getMetricResult(error)
+                assert.ok(
+                    sendMetricDataTelemetrySpy.calledWith(MetricDataOperationName.EndCodeGeneration, metricResult)
+                )
+            }
+
+            async function verifyMetricsCalled() {
+                await waitUntil(() => Promise.resolve(sendMetricDataTelemetrySpy.callCount >= 2), {})
+            }
+
+            beforeEach(async () => {
+                session = await createCodeGenState()
+                sinon.stub(session, 'preloader').resolves()
+                sendMetricDataTelemetrySpy = sinon.stub(session, 'sendMetricDataTelemetry')
+            })
+
+            it('sends success operation telemetry', async () => {
+                sinon.stub(session, 'send').resolves()
+                sinon.stub(session, 'sendLinesOfCodeGeneratedTelemetry').resolves() // Avoid sending extra telemetry
+
+                await fireChatMessage(session)
+                await verifyMetricsCalled()
+
+                assert.ok(
+                    sendMetricDataTelemetrySpy.calledWith(
+                        MetricDataOperationName.StartCodeGeneration,
+                        MetricDataResult.Success
+                    )
+                )
+                assert.ok(
+                    sendMetricDataTelemetrySpy.calledWith(
+                        MetricDataOperationName.EndCodeGeneration,
+                        MetricDataResult.Success
+                    )
+                )
+            })
+
+            for (const { name, error } of runs) {
+                it(`sends failure operation telemetry on ${name}`, async () => {
+                    await verifyException(error)
+                })
+            }
+        })
+
+        describe('processErrorChatMessage', function () {
             function createTestErrorMessage(message: string) {
                 return createUserFacingErrorMessage(`${featureName} request failed: ${message}`)
             }
 
-            async function verifyException(error: Error) {
+            async function verifyException(error: ToolkitError) {
                 sinon.stub(session, 'preloader').throws(error)
                 const sendAnswerSpy = sinon.stub(controllerSetup.messenger, 'sendAnswer')
                 const sendErrorMessageSpy = sinon.stub(controllerSetup.messenger, 'sendErrorMessage')
                 const sendMonthlyLimitErrorSpy = sinon.stub(controllerSetup.messenger, 'sendMonthlyLimitError')
 
-                await fireChatMessage()
+                await fireChatMessage(session)
 
                 switch (error.constructor.name) {
                     case ContentLengthError.name:
@@ -515,11 +639,11 @@ describe('Controller', () => {
                 }
             }
 
-            runs.forEach((run) => {
+            for (const run of runs) {
                 it(`should handle ${run.name}`, async function () {
                     await verifyException(run.error)
                 })
-            })
+            }
         })
     })
 

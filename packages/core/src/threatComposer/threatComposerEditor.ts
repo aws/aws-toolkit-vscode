@@ -186,9 +186,9 @@ export class ThreatComposerEditor {
                             this.isPanelDisposed = true
                             contextObject.loaderNotification?.promiseResolve()
                             this.onVisualizationDisposeEmitter.fire()
-                            this.disposables.forEach((disposable) => {
+                            for (const disposable of this.disposables) {
                                 disposable.dispose()
-                            })
+                            }
                             this.onVisualizationDisposeEmitter.dispose()
                         })
                     }

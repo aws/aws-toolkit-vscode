@@ -366,7 +366,7 @@ export class AuthUtil {
     public async notifySessionConfiguration() {
         const suppressId = 'amazonQSessionConfigurationMessage'
         const settings = AmazonQPromptSettings.instance
-        const shouldShow = await settings.isPromptEnabled(suppressId)
+        const shouldShow = settings.isPromptEnabled(suppressId)
         if (!shouldShow) {
             return
         }
@@ -457,7 +457,9 @@ export class AuthUtil {
                 state[Features.codewhispererCore] = AuthStates.connected
             }
             if (isValidAmazonQConnection(conn)) {
-                Object.values(Features).forEach((v) => (state[v as Feature] = AuthStates.connected))
+                for (const v of Object.values(Features)) {
+                    state[v as Feature] = AuthStates.connected
+                }
             }
         }
 

@@ -606,7 +606,7 @@ export enum JDKVersion {
 
 export enum DB {
     ORACLE = 'ORACLE',
-    RDS_POSTGRESQL = 'RDS_POSTGRESQL',
+    RDS_POSTGRESQL = 'POSTGRESQL',
     AURORA_POSTGRESQL = 'AURORA_POSTGRESQL',
     OTHER = 'OTHER',
 }

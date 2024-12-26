@@ -106,13 +106,13 @@ describe('connection exists funcs', function () {
         })
         const allCases = [...anyCases, ...cwIdcCases]
 
-        allCases.forEach((args) => {
+        for (const args of allCases) {
             it(`ssoExists() returns '${args.expected}' when kind '${args.kind}' given [${args.connections
                 .map((c) => c.label)
                 .join(', ')}]`, async function () {
                 assert.strictEqual(await hasSso(args.kind, async () => args.connections), args.expected)
             })
-        })
+        }
     })
 
     describe('builderIdExists()', function () {
@@ -136,13 +136,13 @@ describe('connection exists funcs', function () {
 
         const allCases = [...cwBuilderIdCases, ...ccBuilderIdCases]
 
-        allCases.forEach((args) => {
+        for (const args of allCases) {
             it(`builderIdExists() returns '${args.expected}' when kind '${args.kind}' given [${args.connections
                 .map((c) => c.label)
                 .join(', ')}]`, async function () {
                 assert.strictEqual(await hasBuilderId(args.kind, async () => args.connections), args.expected)
             })
-        })
+        }
     })
 
     describe('credentialExists()', function () {
@@ -153,7 +153,7 @@ describe('connection exists funcs', function () {
             [allConnections.filter((c) => c !== iamConnection), false],
         ]
 
-        cases.forEach((args) => {
+        for (const args of cases) {
             it(`credentialExists() returns '${args[1]}' given [${args[0]
                 .map((c) => c.label)
                 .join(', ')}]`, async function () {
@@ -162,6 +162,6 @@ describe('connection exists funcs', function () {
 
                 assert.strictEqual(await hasIamCredentials(async () => connections), expected)
             })
-        })
+        }
     })
 })

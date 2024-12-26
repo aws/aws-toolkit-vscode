@@ -35,7 +35,9 @@ describe('env', function () {
         const envVars: string[] = []
 
         afterEach(() => {
-            envVars.forEach((v) => delete process.env[v])
+            for (const v of envVars) {
+                delete process.env[v]
+            }
             envVars.length = 0
         })
 

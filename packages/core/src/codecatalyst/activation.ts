@@ -128,7 +128,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
         await showReadmeFileOnFirstLoad(ctx.extensionContext.workspaceState)
 
         const settings = ToolkitPromptSettings.instance
-        if (await settings.isPromptEnabled('remoteConnected')) {
+        if (settings.isPromptEnabled('remoteConnected')) {
             const message = localize(
                 'AWS.codecatalyst.connectedMessage',
                 'Welcome to your Amazon CodeCatalyst Dev Environment. For more options and information, view Dev Environment settings ({0} Extension > CodeCatalyst).',
