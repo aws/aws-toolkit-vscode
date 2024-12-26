@@ -25,6 +25,7 @@ import { createCodeWhispererChatStreamingClient } from '../../shared/clients/cod
 import { getClientId, getOptOutPreference, getOperatingSystem } from '../../shared/telemetry/util'
 import { extensionVersion } from '../../shared/vscode/env'
 import apiConfig = require('./codewhispererruntime-2022-11-11.json')
+import { UserWrittenCodeTracker } from '../../codewhisperer'
 import {
     FeatureDevCodeAcceptanceEvent,
     FeatureDevCodeGenerationEvent,
@@ -260,6 +261,7 @@ export class FeatureDevClient {
                     references?: CodeReference[]
                 }
             }
+            UserWrittenCodeTracker.instance.onQFeatureInvoked()
 
             const newFileContents: { zipFilePath: string; fileContent: string }[] = []
             for (const [filePath, fileContent] of Object.entries(newFiles)) {

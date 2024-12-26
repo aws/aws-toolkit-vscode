@@ -626,7 +626,9 @@
                 "timestamp": { "shape": "Timestamp" },
                 "unmodifiedAcceptedCharacterCount": { "shape": "PrimitiveInteger" },
                 "totalNewCodeCharacterCount": { "shape": "PrimitiveInteger" },
-                "totalNewCodeLineCount": { "shape": "PrimitiveInteger" }
+                "totalNewCodeLineCount": { "shape": "PrimitiveInteger" },
+                "userWrittenCodeCharacterCount": { "shape": "PrimitiveInteger" },
+                "userWrittenCodeLineCount": { "shape": "PrimitiveInteger" }
             }
         },
         "CodeFixAcceptanceEvent": {
