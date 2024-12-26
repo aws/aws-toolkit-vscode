@@ -9,6 +9,7 @@ import * as logger from '../logger'
 import { Timeout, CancellationError, waitUntil } from './timeoutUtils'
 import { PollingSet } from './pollingSet'
 import { getLogger } from '../logger/logger'
+import pidusage from 'pidusage'
 
 export interface RunParameterContext {
     /** Reports an error parsed from the stdin/stdout streams. */
@@ -82,15 +83,21 @@ class ChildProcessTracker extends Map<number, ChildProcess> {
         }
     }
 
-    public monitorProcesses() {
+    public async monitorProcesses() {
         this.cleanUpProcesses()
         getLogger().debug(`Active running processes size: ${this.#processPoller.size}`)
 
         for (const pid of this.#processPoller.values()) {
-            const process = this.get(pid)
-            if (process) {
-                getLogger().debug(`Active running process: ${process.toString()}`)
-            }
+            await this.monitorProcess(pid)
+        }
+    }
+
+    private async monitorProcess(pid: number) {
+        if (this.has(pid)) {
+            const stats = await pidusage(pid)
+            getLogger().debug(`stats for ${pid}: %O`, stats)
+        } else {
+            getLogger().warn(`Missing process with id ${pid}`)
         }
     }
 
