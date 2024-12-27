@@ -66,6 +66,12 @@ export const eof = Symbol('EOF')
 
 class ChildProcessTracker extends Map<number, ChildProcess> {
     static pollingInterval: number = 1000
+    static thresholds: { memory: number; cpu: number; time: number } = {
+        memory: 100 * 1024 * 1024, // 100 MB
+        cpu: 50,
+        time: 30 * 1000, // 30 seconds
+    }
+
     #processPoller: PollingSet<number>
 
     public constructor() {
@@ -96,6 +102,15 @@ class ChildProcessTracker extends Map<number, ChildProcess> {
         if (this.has(pid)) {
             const stats = await pidusage(pid)
             getLogger().debug(`stats for ${pid}: %O`, stats)
+            if (stats.memory > ChildProcessTracker.thresholds.memory) {
+                getLogger().warn(`Process ${pid} exceeded memory threshold: ${stats.memory}`)
+            }
+            if (stats.cpu > ChildProcessTracker.thresholds.cpu) {
+                getLogger().warn(`Process ${pid} exceeded cpu threshold: ${stats.cpu}`)
+            }
+            if (stats.elapsed > ChildProcessTracker.thresholds.time) {
+                getLogger().warn(`Process ${pid} exceeded time threshold: ${stats.elapsed}`)
+            }
         } else {
             getLogger().warn(`Missing process with id ${pid}`)
         }
