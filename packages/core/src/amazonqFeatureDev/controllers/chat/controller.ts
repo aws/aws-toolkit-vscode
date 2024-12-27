@@ -514,7 +514,11 @@ export class FeatureDevController {
                     break
             }
 
-            await session.sendMetricDataTelemetry(MetricDataOperationName.EndCodeGeneration, result, err.stack)
+            await session.sendMetricDataTelemetry(
+                MetricDataOperationName.EndCodeGeneration,
+                result,
+                'stack trace: ' + (err.stack ?? '')
+            )
             throw err
         } finally {
             // Finish processing the event
