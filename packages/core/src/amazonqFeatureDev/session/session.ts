@@ -301,7 +301,7 @@ export class Session {
                     value: result,
                 },
 
-                // The log dimension will not be emitted to CloudWatch
+                // The log dimension will be emitted only to CloudWatch Logs
                 ...(log
                     ? [
                           {
