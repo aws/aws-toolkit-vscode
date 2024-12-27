@@ -526,9 +526,7 @@ describe('Controller', () => {
                     sendMetricDataTelemetrySpy.calledWith(
                         MetricDataOperationName.EndCodeGeneration,
                         metricResult,
-
-                        // Stack trace should include the name of the test framework
-                        sinon.match((str) => typeof str === 'string' && str.includes('Mocha'))
+                        sinon.match((str) => typeof str === 'string' && str.includes('stack trace: '))
                     )
                 )
             }
