@@ -62,45 +62,53 @@ export interface ChildProcessResult {
     signal?: string
 }
 
+interface Tracker<T> {
+    add(item: T): void
+    delete(item: T): void
+    has(item: T): boolean
+    size(): number
+    cleanUp(): void
+    monitor(): void | Promise<void>
+}
+
 export const eof = Symbol('EOF')
 
-class ChildProcessTracker extends Map<number, ChildProcess> {
-    static pollingInterval: number = 1000
+export class ChildProcessTracker implements Tracker<ChildProcess> {
+    static pollingInterval: number = 10000
     static thresholds: { memory: number; cpu: number; time: number } = {
         memory: 100 * 1024 * 1024, // 100 MB
         cpu: 50,
         time: 30 * 1000, // 30 seconds
     }
-
-    #processPoller: PollingSet<number>
+    #processByPid: Map<number, ChildProcess> = new Map<number, ChildProcess>()
+    #pids: PollingSet<number>
 
     public constructor() {
-        super()
-        this.#processPoller = new PollingSet(ChildProcessTracker.pollingInterval, () => this.monitorProcesses())
+        this.#pids = new PollingSet(ChildProcessTracker.pollingInterval, () => this.monitor())
         getLogger().debug(`ChildProcessTracker created with polling interval: ${ChildProcessTracker.pollingInterval}`)
     }
 
-    private cleanUpProcesses() {
-        const terminatedProcesses = Array.from(this.#processPoller.values()).filter(
-            (pid: number) => !this.has(pid) || this.get(pid)?.stopped
+    public cleanUp() {
+        const terminatedProcesses = Array.from(this.#pids.values()).filter(
+            (pid: number) => !this.#pids.has(pid) || this.#processByPid.get(pid)?.stopped
         )
         for (const pid of terminatedProcesses) {
-            this.#processPoller.delete(pid)
+            this.#pids.delete(pid)
         }
     }
 
-    public async monitorProcesses() {
-        this.cleanUpProcesses()
-        getLogger().debug(`Active running processes size: ${this.#processPoller.size}`)
+    public async monitor() {
+        this.cleanUp()
+        getLogger().debug(`Active running processes size: ${this.#pids.size}`)
 
-        for (const pid of this.#processPoller.values()) {
-            await this.monitorProcess(pid)
+        for (const pid of this.#pids.values()) {
+            await this.checkProcessUsage(pid)
         }
     }
 
-    private async monitorProcess(pid: number) {
-        if (this.has(pid)) {
-            const stats = await pidusage(pid)
+    private async checkProcessUsage(pid: number): Promise<void> {
+        if (this.#pids.has(pid)) {
+            const stats = await this.getUsage(pid)
             getLogger().debug(`stats for ${pid}: %O`, stats)
             if (stats.memory > ChildProcessTracker.thresholds.memory) {
                 getLogger().warn(`Process ${pid} exceeded memory threshold: ${stats.memory}`)
@@ -116,20 +124,33 @@ class ChildProcessTracker extends Map<number, ChildProcess> {
         }
     }
 
-    public override set(key: number, value: ChildProcess): this {
-        this.#processPoller.start(key)
-        super.set(key, value)
-        return this
+    public add(childProcess: ChildProcess) {
+        const pid = childProcess.pid()
+        this.#processByPid.set(pid, childProcess)
+        this.#pids.start(pid)
     }
 
-    public override delete(key: number): boolean {
-        this.#processPoller.delete(key)
-        return super.delete(key)
+    public delete(childProcess: ChildProcess) {
+        const pid = childProcess.pid()
+        this.#processByPid.delete(pid)
+        this.#pids.delete(pid)
     }
 
-    public override clear(): void {
-        this.#processPoller.clear()
-        super.clear()
+    public size() {
+        return this.#pids.size
+    }
+
+    public has(childProcess: ChildProcess) {
+        return this.#pids.has(childProcess.pid())
+    }
+
+    private async getUsage(pid: number): Promise<{ memory: number; cpu: number; elapsed: number }> {
+        const stats = await pidusage(pid)
+        return {
+            memory: stats.memory,
+            cpu: stats.cpu,
+            elapsed: stats.elapsed,
+        }
     }
 }
 
@@ -140,7 +161,7 @@ class ChildProcessTracker extends Map<number, ChildProcess> {
  * - call and await run to get the results (pass or fail)
  */
 export class ChildProcess {
-    static #runningProcesses: ChildProcessTracker = new ChildProcessTracker()
+    static #runningProcesses: Tracker<ChildProcess> = new ChildProcessTracker()
     #childProcess: proc.ChildProcess | undefined
     #processErrors: Error[] = []
     #processResult: ChildProcessResult | undefined
@@ -213,7 +234,7 @@ export class ChildProcess {
         const args = this.#args.concat(options.extraArgs ?? [])
 
         const debugDetail = this.#log.logLevelEnabled('debug')
-            ? ` (running processes: ${ChildProcess.#runningProcesses.size})`
+            ? ` (running processes: ${ChildProcess.#runningProcesses.size()})`
             : ''
         this.#log.info(`Command: ${this.toString(options.logging === 'noparams')}${debugDetail}`)
 
@@ -381,7 +402,7 @@ export class ChildProcess {
         if (pid === undefined) {
             return
         }
-        ChildProcess.#runningProcesses.set(pid, this)
+        ChildProcess.#runningProcesses.add(this)
 
         const timeoutListener = options?.timeout?.token.onCancellationRequested(({ agent }) => {
             const message = agent === 'user' ? 'Cancelled: ' : 'Timed out: '
@@ -391,7 +412,7 @@ export class ChildProcess {
 
         const dispose = () => {
             timeoutListener?.dispose()
-            ChildProcess.#runningProcesses.delete(pid)
+            ChildProcess.#runningProcesses.delete(this)
         }
 
         process.on('exit', dispose)

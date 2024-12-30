@@ -7,10 +7,12 @@ import assert from 'assert'
 import * as os from 'os'
 import * as path from 'path'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../../shared/filesystemUtilities'
-import { ChildProcess, eof } from '../../../shared/utilities/processUtils'
+import { ChildProcess, ChildProcessTracker, eof } from '../../../shared/utilities/processUtils'
 import { sleep } from '../../../shared/utilities/timeoutUtils'
 import { Timeout, waitUntil } from '../../../shared/utilities/timeoutUtils'
 import { fs } from '../../../shared'
+import * as FakeTimers from '@sinonjs/fake-timers'
+import { installFakeClock } from '../../testUtil'
 
 describe('ChildProcess', async function () {
     let tempFolder: string
@@ -349,4 +351,23 @@ describe('ChildProcess', async function () {
         echo bye`
         await writeShellFile(filename, file)
     }
+})
+
+describe('ChildProcessTracker', function () {
+    let tracker: ChildProcessTracker
+    let clock: FakeTimers.InstalledClock
+    before(function () {
+        clock = installFakeClock()
+        tracker = new ChildProcessTracker()
+    })
+
+    it('removes stopped processes every X seconds', async function () {
+        const childProcess = new ChildProcess('echo', ['hi'])
+        await childProcess.run()
+        tracker.add(childProcess)
+        childProcess.stop()
+        assert.strictEqual(tracker.has(childProcess), true)
+        await clock.tickAsync(ChildProcessTracker.pollingInterval)
+        assert.strictEqual(tracker.has(childProcess), false)
+    })
 })
