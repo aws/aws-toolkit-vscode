@@ -73,19 +73,23 @@ interface Tracker<T> {
 
 export const eof = Symbol('EOF')
 
+export interface ProcessStats {
+    memory: number
+    cpu: number
+    elapsed: number
+}
 export class ChildProcessTracker implements Tracker<ChildProcess> {
     static pollingInterval: number = 10000
-    static thresholds: { memory: number; cpu: number; time: number } = {
+    static thresholds: ProcessStats = {
         memory: 100 * 1024 * 1024, // 100 MB
         cpu: 50,
-        time: 30 * 1000, // 30 seconds
+        elapsed: 30 * 1000, // 30 seconds
     }
     #processByPid: Map<number, ChildProcess> = new Map<number, ChildProcess>()
     #pids: PollingSet<number>
 
     public constructor() {
         this.#pids = new PollingSet(ChildProcessTracker.pollingInterval, () => this.monitor())
-        getLogger().debug(`ChildProcessTracker created with polling interval: ${ChildProcessTracker.pollingInterval}`)
     }
 
     public cleanUp() {
@@ -116,7 +120,7 @@ export class ChildProcessTracker implements Tracker<ChildProcess> {
             if (stats.cpu > ChildProcessTracker.thresholds.cpu) {
                 getLogger().warn(`Process ${pid} exceeded cpu threshold: ${stats.cpu}`)
             }
-            if (stats.elapsed > ChildProcessTracker.thresholds.time) {
+            if (stats.elapsed > ChildProcessTracker.thresholds.elapsed) {
                 getLogger().warn(`Process ${pid} exceeded time threshold: ${stats.elapsed}`)
             }
         } else {
@@ -144,7 +148,7 @@ export class ChildProcessTracker implements Tracker<ChildProcess> {
         return this.#pids.has(childProcess.pid())
     }
 
-    private async getUsage(pid: number): Promise<{ memory: number; cpu: number; elapsed: number }> {
+    public async getUsage(pid: number): Promise<ProcessStats> {
         const stats = await pidusage(pid)
         return {
             memory: stats.memory,
