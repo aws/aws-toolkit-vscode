@@ -67,8 +67,6 @@ interface Tracker<P, T> {
     delete(id: P): void
     has(item: T): boolean
     size(): number
-    cleanUp(): void
-    monitor(): void | Promise<void>
     clear(): void
 }
 
@@ -79,7 +77,7 @@ export interface ProcessStats {
     cpu: number
     elapsed: number
 }
-export class ChildProcessTracker implements Tracker<number, ChildProcess> {
+export class ChildProcessTracker {
     static readonly pollingInterval: number = 10000
     static readonly thresholds: ProcessStats = {
         memory: 100 * 1024 * 1024, // 100 MB
@@ -93,7 +91,7 @@ export class ChildProcessTracker implements Tracker<number, ChildProcess> {
         this.#pids = new PollingSet(ChildProcessTracker.pollingInterval, () => this.monitor())
     }
 
-    public cleanUp() {
+    private cleanUp() {
         const terminatedProcesses = Array.from(this.#pids.values()).filter(
             (pid: number) => this.#processByPid.get(pid)?.stopped
         )
@@ -102,7 +100,7 @@ export class ChildProcessTracker implements Tracker<number, ChildProcess> {
         }
     }
 
-    public async monitor() {
+    private async monitor() {
         this.cleanUp()
         getLogger().debug(`Active running processes size: ${this.#pids.size}`)
 
@@ -148,6 +146,11 @@ export class ChildProcessTracker implements Tracker<number, ChildProcess> {
         return this.#pids.has(childProcess.pid())
     }
 
+    public clear() {
+        this.#pids.clear()
+        this.#processByPid.clear()
+    }
+
     public async getUsage(pid: number): Promise<ProcessStats> {
         const stats = await pidusage(pid)
         return {
@@ -155,11 +158,6 @@ export class ChildProcessTracker implements Tracker<number, ChildProcess> {
             cpu: stats.cpu,
             elapsed: stats.elapsed,
         }
-    }
-
-    public clear() {
-        this.#pids.clear()
-        this.#processByPid.clear()
     }
 }
 
