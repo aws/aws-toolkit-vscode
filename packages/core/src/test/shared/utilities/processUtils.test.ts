@@ -363,13 +363,17 @@ function getSleepCmd() {
 describe('ChildProcessTracker', function () {
     let tracker: ChildProcessTracker
     let clock: FakeTimers.InstalledClock
+    let usageMock: sinon.SinonStub
+
     before(function () {
         clock = installFakeClock()
         tracker = new ChildProcessTracker()
+        usageMock = sinon.stub(ChildProcessTracker.prototype, 'getUsage')
     })
 
     afterEach(function () {
         tracker.clear()
+        usageMock.reset()
     })
 
     after(function () {
@@ -413,7 +417,6 @@ describe('ChildProcessTracker', function () {
         childProcess.run().catch(() => assert.fail('sleep command threw an error'))
         tracker.add(childProcess)
 
-        const usageMock = sinon.stub(ChildProcessTracker.prototype, 'getUsage')
         const highCpu: ProcessStats = {
             cpu: ChildProcessTracker.thresholds.cpu + 1,
             memory: 0,
@@ -443,7 +446,35 @@ describe('ChildProcessTracker', function () {
         usageMock.resolves(highTime)
         await clock.tickAsync(ChildProcessTracker.pollingInterval)
         assertLogsContain('exceeded time threshold', false, 'warn')
+    })
 
-        sinon.restore()
+    it('includes pid in logs', async function () {
+        const childProcess = new ChildProcess(getSleepCmd(), ['90'])
+        childProcess.run().catch(() => assert.fail('sleep command threw an error'))
+        tracker.add(childProcess)
+
+        usageMock.resolves({
+            cpu: ChildProcessTracker.thresholds.cpu + 1,
+            memory: 0,
+            elapsed: 0,
+        })
+
+        await clock.tickAsync(ChildProcessTracker.pollingInterval)
+        assertLogsContain(childProcess.pid().toString(), false, 'warn')
+    })
+
+    it('does not log for processes within threshold', async function () {
+        const childProcess = new ChildProcess(getSleepCmd(), ['90'])
+        childProcess.run().catch(() => assert.fail('sleep command threw an error'))
+
+        usageMock.resolves({
+            cpu: ChildProcessTracker.thresholds.cpu - 1,
+            memory: ChildProcessTracker.thresholds.memory - 1,
+            elapsed: ChildProcessTracker.thresholds.elapsed - 1,
+        })
+
+        await clock.tickAsync(ChildProcessTracker.pollingInterval)
+
+        assert.throws(() => assertLogsContain(childProcess.pid().toString(), false, 'warn'))
     })
 })
