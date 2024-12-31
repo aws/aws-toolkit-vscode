@@ -365,12 +365,11 @@ export class ProposedTransformationExplorer {
         })
 
         vscode.commands.registerCommand('aws.amazonq.transformationHub.summary.reveal', async () => {
-            if (transformByQState.getSummaryFilePath() !== '') {
+            if (fs.existsSync(transformByQState.getSummaryFilePath())) {
                 await vscode.commands.executeCommand(
                     'markdown.showPreview',
                     vscode.Uri.file(transformByQState.getSummaryFilePath())
                 )
-                telemetry.ui_click.emit({ elementId: 'transformationHub_viewSummary' })
             }
         })
 
