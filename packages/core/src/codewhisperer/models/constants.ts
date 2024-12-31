@@ -570,6 +570,9 @@ export const checkingForProjectsChatMessage = 'Checking for eligible projects...
 export const buildStartedChatMessage =
     'I am building your project. This can take up to 10 minutes, depending on the size of your project.'
 
+export const buildStartedNotification =
+    'Amazon Q is building your project. This can take up to 10 minutes, depending on the size of your project.'
+
 export const buildSucceededChatMessage = 'I was able to build your project and will start transforming your code soon.'
 
 export const buildSucceededNotification =

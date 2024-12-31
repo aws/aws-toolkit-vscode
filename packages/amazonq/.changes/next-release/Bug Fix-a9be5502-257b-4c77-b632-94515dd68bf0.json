@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Amazon Q Code Transformation: respond immediately when entering JAVA_HOME path"
+}
