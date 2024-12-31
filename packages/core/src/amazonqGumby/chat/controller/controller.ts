@@ -383,15 +383,9 @@ export class GumbyController {
                 break
             case ButtonActions.VIEW_TRANSFORMATION_HUB:
                 await vscode.commands.executeCommand(GumbyCommands.FOCUS_TRANSFORMATION_HUB, CancelActionPositions.Chat)
-                this.messenger.sendJobSubmittedMessage(message.tabID)
                 break
             case ButtonActions.VIEW_SUMMARY:
                 await vscode.commands.executeCommand('aws.amazonq.transformationHub.summary.reveal')
-                this.transformationFinished({
-                    message: CodeWhispererConstants.viewProposedChangesChatMessage,
-                    tabID: message.tabID,
-                    includeStartNewTransformationButton: true,
-                })
                 break
             case ButtonActions.STOP_TRANSFORMATION_JOB:
                 await stopTransformByQ(transformByQState.getJobId())

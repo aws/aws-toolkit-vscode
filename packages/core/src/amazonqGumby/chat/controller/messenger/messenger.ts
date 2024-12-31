@@ -376,19 +376,20 @@ export class Messenger {
     ) {
         const buttons: ChatItemButton[] = []
 
+        // don't show these buttons when server build fails
         if (!disableJobActions) {
-            // Note: buttons can only be clicked once.
-            // To get around this, we remove the card after it's clicked and then resubmit the message.
             buttons.push({
                 keepCardAfterClick: true,
                 text: CodeWhispererConstants.openTransformationHubButtonText,
                 id: ButtonActions.VIEW_TRANSFORMATION_HUB,
+                disabled: false, // allow button to be re-clicked
             })
 
             buttons.push({
                 keepCardAfterClick: true,
                 text: CodeWhispererConstants.stopTransformationButtonText,
                 id: ButtonActions.STOP_TRANSFORMATION_JOB,
+                disabled: false,
             })
         }
 
@@ -514,6 +515,7 @@ export class Messenger {
                 keepCardAfterClick: false,
                 text: CodeWhispererConstants.startTransformationButtonText,
                 id: ButtonActions.CONFIRM_START_TRANSFORMATION_FLOW,
+                disabled: false,
             })
         }
 
@@ -522,6 +524,7 @@ export class Messenger {
                 keepCardAfterClick: true,
                 text: CodeWhispererConstants.viewSummaryButtonText,
                 id: ButtonActions.VIEW_SUMMARY,
+                disabled: false,
             })
         }
 
