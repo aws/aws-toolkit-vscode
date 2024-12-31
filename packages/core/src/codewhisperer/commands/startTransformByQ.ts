@@ -8,6 +8,7 @@ import * as fs from 'fs' // eslint-disable-line no-restricted-imports
 import path from 'path'
 import { getLogger } from '../../shared/logger'
 import * as CodeWhispererConstants from '../models/constants'
+import * as localizedText from '../../shared/localizedText'
 import {
     transformByQState,
     StepProgress,
@@ -233,7 +234,7 @@ export async function preTransformationUploadCode() {
     await vscode.commands.executeCommand('aws.amazonq.transformationHub.focus')
 
     void vscode.window.showInformationMessage(CodeWhispererConstants.jobStartedNotification, {
-        title: CodeWhispererConstants.jobStartedTitle,
+        title: localizedText.ok,
     })
 
     let uploadId = ''
@@ -750,7 +751,7 @@ export async function postTransformationJob() {
 
     if (transformByQState.isSucceeded()) {
         void vscode.window.showInformationMessage(CodeWhispererConstants.jobCompletedNotification(diffMessage), {
-            title: CodeWhispererConstants.transformationCompletedTitle,
+            title: localizedText.ok,
         })
     } else if (transformByQState.isPartiallySucceeded()) {
         void vscode.window
