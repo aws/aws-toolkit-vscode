@@ -7,7 +7,12 @@ import assert from 'assert'
 import { qTestingFramework } from './framework/framework'
 import sinon from 'sinon'
 import { Messenger } from './framework/messenger'
-import { JDKVersion, TransformationType, transformByQState } from 'aws-core-vscode/codewhisperer'
+import {
+    CodeWhispererConstants,
+    JDKVersion,
+    TransformationType,
+    transformByQState,
+} from 'aws-core-vscode/codewhisperer'
 import { GumbyController, setMaven, startTransformByQ, TabsStorage } from 'aws-core-vscode/amazonqGumby'
 import { using, registerAuthHook, TestFolder } from 'aws-core-vscode/test'
 import { loginToIdC } from './utils/setup'
@@ -153,6 +158,27 @@ describe('Amazon Q Code Transformation', function () {
             const jdkPathResponse = tab.getChatItems().pop()
             // this 'Sorry' message is OK - just making sure that the UI components are working correctly
             assert.strictEqual(jdkPathResponse?.body?.includes("Sorry, I couldn't locate your Java installation"), true)
+
+            const tmpDir = (await TestFolder.create()).path
+
+            transformByQState.setSummaryFilePath(path.join(tmpDir, 'summary.md'))
+
+            transformByQState
+                .getChatMessenger()
+                ?.sendJobFinishedMessage(tab.tabID, CodeWhispererConstants.viewProposedChangesChatMessage)
+
+            tab.clickCustomFormButton({
+                id: 'gumbyViewSummary',
+                text: 'View summary',
+            })
+
+            await tab.waitForEvent(() => tab.getChatItems().length > 14, {
+                waitTimeoutInMs: 5000,
+                waitIntervalInMs: 1000,
+            })
+
+            const viewSummaryChatItem = tab.getChatItems().pop()
+            assert.strictEqual(viewSummaryChatItem?.body?.includes('view a summary'), true)
         })
 
         it('Can provide metadata file for a SQL conversion', async () => {
