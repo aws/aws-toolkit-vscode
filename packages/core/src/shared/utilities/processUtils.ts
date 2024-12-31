@@ -62,14 +62,6 @@ export interface ChildProcessResult {
     signal?: string
 }
 
-interface Tracker<P, T> {
-    add(item: T): void
-    delete(id: P): void
-    has(item: T): boolean
-    size(): number
-    clear(): void
-}
-
 export const eof = Symbol('EOF')
 
 export interface ProcessStats {
@@ -168,7 +160,7 @@ export class ChildProcessTracker {
  * - call and await run to get the results (pass or fail)
  */
 export class ChildProcess {
-    static #runningProcesses: Tracker<number, ChildProcess> = new ChildProcessTracker()
+    static #runningProcesses = new ChildProcessTracker()
     #childProcess: proc.ChildProcess | undefined
     #processErrors: Error[] = []
     #processResult: ChildProcessResult | undefined
