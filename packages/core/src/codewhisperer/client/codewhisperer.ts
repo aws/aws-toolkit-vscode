@@ -318,7 +318,8 @@ export class DefaultCodeWhispererClient {
     public async codeModernizerGetCodeTransformationPlan(
         request: CodeWhispererUserClient.GetTransformationPlanRequest
     ): Promise<PromiseResult<CodeWhispererUserClient.GetTransformationPlanResponse, AWSError>> {
-        return (await this.createUserSdkClient()).getTransformationPlan(request).promise()
+        // instead of the default of 3 retries, use 8 retries for this API which is polled every 5 seconds
+        return (await this.createUserSdkClient(8)).getTransformationPlan(request).promise()
     }
 
     public async startCodeFixJob(
