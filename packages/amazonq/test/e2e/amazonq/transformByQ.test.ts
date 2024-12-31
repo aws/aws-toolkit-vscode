@@ -7,7 +7,12 @@ import assert from 'assert'
 import { qTestingFramework } from './framework/framework'
 import sinon from 'sinon'
 import { Messenger } from './framework/messenger'
-import { JDKVersion, TransformationType, transformByQState } from 'aws-core-vscode/codewhisperer'
+import {
+    CodeWhispererConstants,
+    JDKVersion,
+    TransformationType,
+    transformByQState,
+} from 'aws-core-vscode/codewhisperer'
 import { GumbyController, setMaven, startTransformByQ, TabsStorage } from 'aws-core-vscode/amazonqGumby'
 import { using, registerAuthHook, TestFolder } from 'aws-core-vscode/test'
 import { loginToIdC } from './utils/setup'
@@ -157,6 +162,10 @@ describe('Amazon Q Code Transformation', function () {
             const tmpDir = (await TestFolder.create()).path
 
             transformByQState.setSummaryFilePath(path.join(tmpDir, 'summary.md'))
+
+            transformByQState
+                .getChatMessenger()
+                ?.sendJobFinishedMessage(tab.tabID, CodeWhispererConstants.viewProposedChangesChatMessage)
 
             tab.clickCustomFormButton({
                 id: 'gumbyViewSummary',
