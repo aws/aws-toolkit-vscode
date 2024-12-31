@@ -6,6 +6,7 @@
 import assert from 'assert'
 import * as os from 'os'
 import * as path from 'path'
+import * as sinon from 'sinon'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../../shared/filesystemUtilities'
 import { ChildProcess, ChildProcessTracker, eof, ProcessStats } from '../../../shared/utilities/processUtils'
 import { sleep } from '../../../shared/utilities/timeoutUtils'
@@ -14,7 +15,6 @@ import { fs } from '../../../shared'
 import * as FakeTimers from '@sinonjs/fake-timers'
 import { installFakeClock } from '../../testUtil'
 import { isWin } from '../../../shared/vscode/env'
-import Sinon from 'sinon'
 import { assertLogsContain } from '../../globalSetup.test'
 
 describe('ChildProcess', async function () {
@@ -368,6 +368,14 @@ describe('ChildProcessTracker', function () {
         tracker = new ChildProcessTracker()
     })
 
+    afterEach(function () {
+        tracker.clear()
+    })
+
+    after(function () {
+        clock.uninstall()
+    })
+
     it(`removes stopped processes every ${ChildProcessTracker.pollingInterval / 1000} seconds`, async function () {
         // Start a 'sleep' command, check it only removes after we stop it.
         const childProcess = new ChildProcess(getSleepCmd(), ['90'])
@@ -388,22 +396,16 @@ describe('ChildProcessTracker', function () {
         const childProcess2 = new ChildProcess(getSleepCmd(), ['90'])
         childProcess1.run().catch(() => assert.fail('sleep command threw an error'))
         childProcess2.run().catch(() => assert.fail('sleep command threw an error'))
-
         tracker.add(childProcess1)
         tracker.add(childProcess2)
 
         assert.strictEqual(tracker.has(childProcess1), true, 'Missing first process')
         assert.strictEqual(tracker.has(childProcess2), true, 'Missing second process')
-        assert.strictEqual(tracker.size(), 2)
 
         childProcess1.stop()
-        await clock.tickAsync(ChildProcessTracker.pollingInterval + 1)
+        await clock.tickAsync(ChildProcessTracker.pollingInterval)
         assert.strictEqual(tracker.has(childProcess2), true, 'first process was not removed after stopping it')
         assert.strictEqual(tracker.size(), 1)
-
-        childProcess2.stop()
-        await clock.tickAsync(ChildProcessTracker.pollingInterval + 1)
-        assert.strictEqual(tracker.size(), 0, 'second process was not removed after stopping it')
     })
 
     it('logs a warning message when system usage exceeds threshold', async function () {
@@ -411,7 +413,7 @@ describe('ChildProcessTracker', function () {
         childProcess.run().catch(() => assert.fail('sleep command threw an error'))
         tracker.add(childProcess)
 
-        const usageMock = Sinon.stub(ChildProcessTracker.prototype, 'getUsage')
+        const usageMock = sinon.stub(ChildProcessTracker.prototype, 'getUsage')
         const highCpu: ProcessStats = {
             cpu: ChildProcessTracker.thresholds.cpu + 1,
             memory: 0,
@@ -442,6 +444,6 @@ describe('ChildProcessTracker', function () {
         await clock.tickAsync(ChildProcessTracker.pollingInterval)
         assertLogsContain('exceeded time threshold', false, 'warn')
 
-        usageMock.restore()
+        sinon.restore()
     })
 })

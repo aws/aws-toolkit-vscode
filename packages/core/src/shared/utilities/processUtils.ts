@@ -62,13 +62,14 @@ export interface ChildProcessResult {
     signal?: string
 }
 
-interface Tracker<T> {
+interface Tracker<P, T> {
     add(item: T): void
-    delete(item: T): void
+    delete(id: P): void
     has(item: T): boolean
     size(): number
     cleanUp(): void
     monitor(): void | Promise<void>
+    clear(): void
 }
 
 export const eof = Symbol('EOF')
@@ -78,9 +79,9 @@ export interface ProcessStats {
     cpu: number
     elapsed: number
 }
-export class ChildProcessTracker implements Tracker<ChildProcess> {
-    static pollingInterval: number = 10000
-    static thresholds: ProcessStats = {
+export class ChildProcessTracker implements Tracker<number, ChildProcess> {
+    static readonly pollingInterval: number = 10000
+    static readonly thresholds: ProcessStats = {
         memory: 100 * 1024 * 1024, // 100 MB
         cpu: 50,
         elapsed: 30 * 1000, // 30 seconds
@@ -94,10 +95,10 @@ export class ChildProcessTracker implements Tracker<ChildProcess> {
 
     public cleanUp() {
         const terminatedProcesses = Array.from(this.#pids.values()).filter(
-            (pid: number) => !this.#pids.has(pid) || this.#processByPid.get(pid)?.stopped
+            (pid: number) => this.#processByPid.get(pid)?.stopped
         )
         for (const pid of terminatedProcesses) {
-            this.#pids.delete(pid)
+            this.delete(pid)
         }
     }
 
@@ -134,10 +135,9 @@ export class ChildProcessTracker implements Tracker<ChildProcess> {
         this.#pids.start(pid)
     }
 
-    public delete(childProcess: ChildProcess) {
-        const pid = childProcess.pid()
-        this.#processByPid.delete(pid)
-        this.#pids.delete(pid)
+    public delete(childProcessId: number) {
+        this.#processByPid.delete(childProcessId)
+        this.#pids.delete(childProcessId)
     }
 
     public size() {
@@ -156,6 +156,11 @@ export class ChildProcessTracker implements Tracker<ChildProcess> {
             elapsed: stats.elapsed,
         }
     }
+
+    public clear() {
+        this.#pids.clear()
+        this.#processByPid.clear()
+    }
 }
 
 /**
@@ -165,7 +170,7 @@ export class ChildProcessTracker implements Tracker<ChildProcess> {
  * - call and await run to get the results (pass or fail)
  */
 export class ChildProcess {
-    static #runningProcesses: Tracker<ChildProcess> = new ChildProcessTracker()
+    static #runningProcesses: Tracker<number, ChildProcess> = new ChildProcessTracker()
     #childProcess: proc.ChildProcess | undefined
     #processErrors: Error[] = []
     #processResult: ChildProcessResult | undefined
@@ -416,7 +421,7 @@ export class ChildProcess {
 
         const dispose = () => {
             timeoutListener?.dispose()
-            ChildProcess.#runningProcesses.delete(this)
+            ChildProcess.#runningProcesses.delete(this.pid())
         }
 
         process.on('exit', dispose)

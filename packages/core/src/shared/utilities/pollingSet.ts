@@ -49,4 +49,9 @@ export class PollingSet<T> extends Set<T> {
         this.add(id)
         this.pollTimer = this.pollTimer ?? globals.clock.setInterval(() => this.poll(), this.interval)
     }
+
+    public override clear(): void {
+        this.pollTimer = undefined
+        super.clear()
+    }
 }
