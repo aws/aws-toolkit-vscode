@@ -346,7 +346,7 @@ export class S3FileViewerManager {
     }
 
     private async showEditNotification(): Promise<void> {
-        if (!(await this.settings.isPromptEnabled(promptOnEditKey))) {
+        if (!this.settings.isPromptEnabled(promptOnEditKey)) {
             return
         }
 

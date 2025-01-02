@@ -188,9 +188,9 @@ export class AslVisualization {
             this.isPanelDisposed = true
             debouncedUpdate.cancel()
             this.onVisualizationDisposeEmitter.fire()
-            this.disposables.forEach((disposable) => {
+            for (const disposable of this.disposables) {
                 disposable.dispose()
-            })
+            }
             this.onVisualizationDisposeEmitter.dispose()
         }
 

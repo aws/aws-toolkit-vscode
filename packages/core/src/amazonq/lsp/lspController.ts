@@ -280,23 +280,25 @@ export class LspController {
     async query(s: string): Promise<RelevantTextDocument[]> {
         const chunks: Chunk[] | undefined = await LspClient.instance.queryVectorIndex(s)
         const resp: RelevantTextDocument[] = []
-        chunks?.forEach((chunk) => {
-            const text = chunk.context ? chunk.context : chunk.content
-            if (chunk.programmingLanguage && chunk.programmingLanguage !== 'unknown') {
-                resp.push({
-                    text: text,
-                    relativeFilePath: chunk.relativePath ? chunk.relativePath : path.basename(chunk.filePath),
-                    programmingLanguage: {
-                        languageName: chunk.programmingLanguage,
-                    },
-                })
-            } else {
-                resp.push({
-                    text: text,
-                    relativeFilePath: chunk.relativePath ? chunk.relativePath : path.basename(chunk.filePath),
-                })
+        if (chunks) {
+            for (const chunk of chunks) {
+                const text = chunk.context ? chunk.context : chunk.content
+                if (chunk.programmingLanguage && chunk.programmingLanguage !== 'unknown') {
+                    resp.push({
+                        text: text,
+                        relativeFilePath: chunk.relativePath ? chunk.relativePath : path.basename(chunk.filePath),
+                        programmingLanguage: {
+                            languageName: chunk.programmingLanguage,
+                        },
+                    })
+                } else {
+                    resp.push({
+                        text: text,
+                        relativeFilePath: chunk.relativePath ? chunk.relativePath : path.basename(chunk.filePath),
+                    })
+                }
             }
-        })
+        }
         return resp
     }
 
@@ -372,9 +374,6 @@ export class LspController {
             })
         } finally {
             this._isIndexingInProgress = false
-            const repomapFile = await LspClient.instance.getRepoMapJSON()
-            // console.log(repomapFile)
-            getLogger().info(`File path ${repomapFile}`)
         }
     }
 

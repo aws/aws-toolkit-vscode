@@ -695,14 +695,14 @@ describe('customChecks', function () {
         fakePolicyChecksWebview.pushCustomCheckDiagnostic(diagnostics, finding, isBlocking)
 
         assert.strictEqual(diagnostics.length, 2) // One diagnostic per reason
-        diagnostics.forEach((diagnostic, index) => {
+        for (const [index, diagnostic] of diagnostics.entries()) {
             assert.deepStrictEqual(diagnostic.range, new vscode.Range(0, 0, 0, 0))
             assert.strictEqual(diagnostic.severity, vscode.DiagnosticSeverity.Error)
             assert.strictEqual(
                 diagnostic.message,
                 `${finding.findingType}: Test message with reference document - Resource name: ${finding.resourceName}, Policy name: ${finding.policyName} - Reason ${index + 1}`
             )
-        })
+        }
         assert(customPolicyDiagnosticSetStub.calledOnce)
     })
 
@@ -722,14 +722,14 @@ describe('customChecks', function () {
         fakePolicyChecksWebview.pushCustomCheckDiagnostic(diagnostics, finding, isBlocking)
 
         assert.strictEqual(diagnostics.length, 2) // One diagnostic per reason
-        diagnostics.forEach((diagnostic, index) => {
+        for (const [index, diagnostic] of diagnostics.entries()) {
             assert.deepStrictEqual(diagnostic.range, new vscode.Range(0, 0, 0, 0))
             assert.strictEqual(diagnostic.severity, vscode.DiagnosticSeverity.Warning)
             assert.strictEqual(
                 diagnostic.message,
                 `WARNING: Another test message - Resource name: ${finding.resourceName}, Policy name: ${finding.policyName} - Reason ${index === 0 ? 'A' : 'B'}`
             )
-        })
+        }
         assert(customPolicyDiagnosticSetStub.calledOnce)
     })
 

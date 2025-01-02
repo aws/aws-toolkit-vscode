@@ -242,22 +242,20 @@ export class TestController {
         this.messenger.sendUpdatePromptProgress(data.tabID, null)
         const session = this.sessionStorage.getSession()
         const isCancel = data.error.message === unitTestGenerationCancelMessage
-        telemetry.amazonq_utgGenerateTests.emit({
-            cwsprChatProgrammingLanguage: session.fileLanguage ?? 'plaintext',
-            jobId: session.listOfTestGenerationJobId[0], // For RIV, UTG does only one StartTestGeneration API call
-            jobGroup: session.testGenerationJobGroupName,
-            requestId: session.startTestGenerationRequestId,
-            hasUserPromptSupplied: session.hasUserPromptSupplied,
-            isCodeBlockSelected: session.isCodeBlockSelected,
-            buildPayloadBytes: session.srcPayloadSize,
-            buildZipFileBytes: session.srcZipFileSize,
-            artifactsUploadDuration: session.artifactsUploadDuration,
-            perfClientLatency: performance.now() - session.testGenerationStartTime,
-            result: isCancel ? 'Cancelled' : 'Failed',
-            reasonDesc: getTelemetryReasonDesc(data.error),
-            isSupportedLanguage: true,
-            credentialStartUrl: AuthUtil.instance.startUrl,
-        })
+
+        TelemetryHelper.instance.sendTestGenerationToolkitEvent(
+            session,
+            true,
+            isCancel ? 'Cancelled' : 'Failed',
+            session.startTestGenerationRequestId,
+            performance.now() - session.testGenerationStartTime,
+            getTelemetryReasonDesc(data.error),
+            session.isCodeBlockSelected,
+            session.artifactsUploadDuration,
+            session.srcPayloadSize,
+            session.srcZipFileSize
+        )
+
         if (session.stopIteration) {
             // Error from Science
             this.messenger.sendMessage(data.error.message.replaceAll('```', ''), data.tabID, 'answer')
@@ -317,7 +315,6 @@ export class TestController {
             case ButtonActions.STOP_TEST_GEN:
                 testGenState.setToCancelling()
                 telemetry.ui_click.emit({ elementId: 'unitTestGeneration_cancelTestGenerationProgress' })
-                await this.sessionCleanUp()
                 break
             case ButtonActions.STOP_BUILD:
                 cancelBuild()
@@ -670,7 +667,7 @@ export class TestController {
         const fileName = path.basename(session.generatedFilePath)
         const time = new Date().toLocaleString()
         // TODO: this is duplicated in basicCommands.ts for scan (codewhisperer). Fix this later.
-        session.references.forEach((reference) => {
+        for (const reference of session.references) {
             getLogger().debug('Processing reference: %O', reference)
             // Log values for debugging
             getLogger().debug('updatedContent: %s', updatedContent)
@@ -705,7 +702,7 @@ export class TestController {
                 '<br>'
             getLogger().debug('Adding reference log: %s', referenceLog)
             ReferenceLogViewProvider.instance.addReferenceLog(referenceLog)
-        })
+        }
 
         // TODO: see if there's a better way to check if active file is a diff
         if (vscode.window.tabGroups.activeTabGroup.activeTab?.label.includes(amazonQTabSuffix)) {
@@ -716,27 +713,25 @@ export class TestController {
         // TODO: send the message once again once build is enabled
         // this.messenger.sendMessage('Accepted', message.tabID, 'prompt')
         telemetry.ui_click.emit({ elementId: 'unitTestGeneration_acceptDiff' })
-        telemetry.amazonq_utgGenerateTests.emit({
-            generatedCount: session.numberOfTestsGenerated,
-            acceptedCount: session.numberOfTestsGenerated,
-            generatedCharactersCount: session.charsOfCodeGenerated,
-            acceptedCharactersCount: session.charsOfCodeAccepted,
-            generatedLinesCount: session.linesOfCodeGenerated,
-            acceptedLinesCount: session.linesOfCodeAccepted,
-            cwsprChatProgrammingLanguage: session.fileLanguage ?? 'plaintext',
-            jobId: session.listOfTestGenerationJobId[0], // For RIV, UTG does only one StartTestGeneration API call so jobId = session.listOfTestGenerationJobId[0]
-            jobGroup: session.testGenerationJobGroupName,
-            requestId: session.startTestGenerationRequestId,
-            buildPayloadBytes: session.srcPayloadSize,
-            buildZipFileBytes: session.srcZipFileSize,
-            artifactsUploadDuration: session.artifactsUploadDuration,
-            hasUserPromptSupplied: session.hasUserPromptSupplied,
-            isCodeBlockSelected: session.isCodeBlockSelected,
-            perfClientLatency: session.latencyOfTestGeneration,
-            isSupportedLanguage: true,
-            credentialStartUrl: AuthUtil.instance.startUrl,
-            result: 'Succeeded',
-        })
+
+        TelemetryHelper.instance.sendTestGenerationToolkitEvent(
+            session,
+            true,
+            'Succeeded',
+            session.startTestGenerationRequestId,
+            session.latencyOfTestGeneration,
+            undefined,
+            session.isCodeBlockSelected,
+            session.artifactsUploadDuration,
+            session.srcPayloadSize,
+            session.srcZipFileSize,
+            session.charsOfCodeAccepted,
+            session.numberOfTestsGenerated,
+            session.linesOfCodeAccepted,
+            session.charsOfCodeGenerated,
+            session.numberOfTestsGenerated,
+            session.linesOfCodeGenerated
+        )
 
         await this.endSession(message, FollowUpTypes.SkipBuildAndFinish)
         await this.sessionCleanUp()
@@ -840,27 +835,25 @@ export class TestController {
     private async endSession(data: any, step: FollowUpTypes) {
         const session = this.sessionStorage.getSession()
         if (step === FollowUpTypes.RejectCode) {
-            telemetry.amazonq_utgGenerateTests.emit({
-                generatedCount: session.numberOfTestsGenerated,
-                acceptedCount: 0,
-                generatedCharactersCount: session.charsOfCodeGenerated,
-                acceptedCharactersCount: 0,
-                generatedLinesCount: session.linesOfCodeGenerated,
-                acceptedLinesCount: 0,
-                cwsprChatProgrammingLanguage: session.fileLanguage ?? 'plaintext',
-                jobId: session.listOfTestGenerationJobId[0], // For RIV, UTG does only one StartTestGeneration API call so jobId = session.listOfTestGenerationJobId[0]
-                jobGroup: session.testGenerationJobGroupName,
-                requestId: session.startTestGenerationRequestId,
-                buildPayloadBytes: session.srcPayloadSize,
-                buildZipFileBytes: session.srcZipFileSize,
-                artifactsUploadDuration: session.artifactsUploadDuration,
-                hasUserPromptSupplied: session.hasUserPromptSupplied,
-                isCodeBlockSelected: session.isCodeBlockSelected,
-                perfClientLatency: session.latencyOfTestGeneration,
-                isSupportedLanguage: true,
-                credentialStartUrl: AuthUtil.instance.startUrl,
-                result: 'Succeeded',
-            })
+            TelemetryHelper.instance.sendTestGenerationToolkitEvent(
+                session,
+                true,
+                'Succeeded',
+                session.startTestGenerationRequestId,
+                session.latencyOfTestGeneration,
+                undefined,
+                session.isCodeBlockSelected,
+                session.artifactsUploadDuration,
+                session.srcPayloadSize,
+                session.srcZipFileSize,
+                0,
+                0,
+                0,
+                session.charsOfCodeGenerated,
+                session.numberOfTestsGenerated,
+                session.linesOfCodeGenerated
+            )
+
             telemetry.ui_click.emit({ elementId: 'unitTestGeneration_rejectDiff' })
         }
 
@@ -1248,7 +1241,7 @@ export class TestController {
             groupName
         )
         if (session.listOfTestGenerationJobId.length && groupName) {
-            session.listOfTestGenerationJobId.forEach((id) => {
+            for (const id of session.listOfTestGenerationJobId) {
                 if (id === session.acceptedJobId) {
                     TelemetryHelper.instance.sendTestGenerationEvent(
                         groupName,
@@ -1274,7 +1267,7 @@ export class TestController {
                         0
                     )
                 }
-            })
+            }
         }
         session.listOfTestGenerationJobId = []
         session.testGenerationJobGroupName = undefined

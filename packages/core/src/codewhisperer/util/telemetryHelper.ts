@@ -27,6 +27,7 @@ import { CodeWhispererSupplementalContext } from '../models/model'
 import { FeatureConfigProvider } from '../../shared/featureConfig'
 import { CodeScanRemediationsEventType } from '../client/codewhispereruserclient'
 import { CodeAnalysisScope as CodeAnalysisScopeClientSide } from '../models/constants'
+import { Session } from '../../amazonqTest/chat/session/session'
 
 export class TelemetryHelper {
     // Some variables for client component latency
@@ -55,6 +56,50 @@ export class TelemetryHelper {
 
     public static get instance() {
         return (this.#instance ??= new this())
+    }
+
+    public sendTestGenerationToolkitEvent(
+        session: Session,
+        isSupportedLanguage: boolean,
+        result: 'Succeeded' | 'Failed' | 'Cancelled',
+        requestId?: string,
+        perfClientLatency?: number,
+        reasonDesc?: string,
+        isCodeBlockSelected?: boolean,
+        artifactsUploadDuration?: number,
+        buildPayloadBytes?: number,
+        buildZipFileBytes?: number,
+        acceptedCharactersCount?: number,
+        acceptedCount?: number,
+        acceptedLinesCount?: number,
+        generatedCharactersCount?: number,
+        generatedCount?: number,
+        generatedLinesCount?: number,
+        reason?: string
+    ) {
+        telemetry.amazonq_utgGenerateTests.emit({
+            cwsprChatProgrammingLanguage: session.fileLanguage ?? 'plaintext',
+            hasUserPromptSupplied: session.hasUserPromptSupplied,
+            isSupportedLanguage: isSupportedLanguage,
+            result: result,
+            artifactsUploadDuration: artifactsUploadDuration,
+            buildPayloadBytes: buildPayloadBytes,
+            buildZipFileBytes: buildZipFileBytes,
+            credentialStartUrl: AuthUtil.instance.startUrl,
+            acceptedCharactersCount: acceptedCharactersCount,
+            acceptedCount: acceptedCount,
+            acceptedLinesCount: acceptedLinesCount,
+            generatedCharactersCount: generatedCharactersCount,
+            generatedCount: generatedCount,
+            generatedLinesCount: generatedLinesCount,
+            isCodeBlockSelected: isCodeBlockSelected,
+            jobGroup: session.testGenerationJobGroupName,
+            jobId: session.listOfTestGenerationJobId[0],
+            perfClientLatency: perfClientLatency,
+            requestId: requestId,
+            reasonDesc: reasonDesc,
+            reason: reason,
+        })
     }
 
     public recordServiceInvocationTelemetry(
@@ -212,7 +257,7 @@ export class TelemetryHelper {
     ) {
         const events: CodewhispererUserDecision[] = []
         // emit user decision telemetry
-        recommendations.forEach((_elem, i) => {
+        for (const [i, _elem] of recommendations.entries()) {
             let uniqueSuggestionReferences: string | undefined = undefined
             const uniqueLicenseSet = LicenseUtil.getUniqueLicenseNames(_elem.references)
             if (uniqueLicenseSet.size > 0) {
@@ -243,7 +288,7 @@ export class TelemetryHelper {
             }
             telemetry.codewhisperer_userDecision.emit(event)
             events.push(event)
-        })
+        }
 
         // aggregate suggestion references count
         const referenceCount = this.getAggregatedSuggestionReferenceCount(events)

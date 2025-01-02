@@ -66,6 +66,7 @@ import { cancel, confirm } from '../../shared'
 import { startCodeFixGeneration } from './startCodeFixGeneration'
 import { DefaultAmazonQAppInitContext } from '../../amazonq/apps/initContext'
 import path from 'path'
+import { parsePatch } from 'diff'
 
 const MessageTimeOut = 5_000
 
@@ -459,12 +460,21 @@ export const applySecurityFix = Commands.declare(
             }
 
             const edit = new vscode.WorkspaceEdit()
-            edit.replace(
-                document.uri,
-                new vscode.Range(document.lineAt(0).range.start, document.lineAt(document.lineCount - 1).range.end),
-                updatedContent
-            )
-            SecurityIssueProvider.instance.disableEventHandler()
+            const diffs = parsePatch(suggestedFix.code)
+            for (const diff of diffs) {
+                for (const hunk of [...diff.hunks].reverse()) {
+                    const startLine = document.lineAt(hunk.oldStart - 1)
+                    const endLine = document.lineAt(hunk.oldStart - 1 + hunk.oldLines - 1)
+                    const range = new vscode.Range(startLine.range.start, endLine.range.end)
+
+                    const newText = updatedContent
+                        .split('\n')
+                        .slice(hunk.newStart - 1, hunk.newStart - 1 + hunk.newLines)
+                        .join('\n')
+
+                    edit.replace(document.uri, range, newText)
+                }
+            }
             const isApplied = await vscode.workspace.applyEdit(edit)
             if (isApplied) {
                 void document.save().then((didSave) => {
@@ -479,42 +489,44 @@ export const applySecurityFix = Commands.declare(
             const fileName = path.basename(targetFilePath)
             const time = new Date().toLocaleString()
             // TODO: this is duplicated in controller.ts for test. Fix this later.
-            suggestedFix.references?.forEach((reference) => {
-                getLogger().debug('Processing reference: %O', reference)
-                // Log values for debugging
-                getLogger().debug('suggested fix code: %s', suggestedFix.code)
-                getLogger().debug('updated content: %s', updatedContent)
-                getLogger().debug(
-                    'start: %d, end: %d',
-                    reference.recommendationContentSpan?.start,
-                    reference.recommendationContentSpan?.end
-                )
-                // given a start and end index, figure out which line number they belong to when splitting a string on /n characters
-                const getLineNumber = (content: string, index: number): number => {
-                    const lines = content.slice(0, index).split('\n')
-                    return lines.length
+            if (suggestedFix.references) {
+                for (const reference of suggestedFix.references) {
+                    getLogger().debug('Processing reference: %O', reference)
+                    // Log values for debugging
+                    getLogger().debug('suggested fix code: %s', suggestedFix.code)
+                    getLogger().debug('updated content: %s', updatedContent)
+                    getLogger().debug(
+                        'start: %d, end: %d',
+                        reference.recommendationContentSpan?.start,
+                        reference.recommendationContentSpan?.end
+                    )
+                    // given a start and end index, figure out which line number they belong to when splitting a string on /n characters
+                    const getLineNumber = (content: string, index: number): number => {
+                        const lines = content.slice(0, index).split('\n')
+                        return lines.length
+                    }
+                    const startLine = getLineNumber(updatedContent, reference.recommendationContentSpan!.start!)
+                    const endLine = getLineNumber(updatedContent, reference.recommendationContentSpan!.end!)
+                    getLogger().debug('startLine: %d, endLine: %d', startLine, endLine)
+                    const code = updatedContent.slice(
+                        reference.recommendationContentSpan?.start,
+                        reference.recommendationContentSpan?.end
+                    )
+                    getLogger().debug('Extracted code slice: %s', code)
+                    const referenceLog =
+                        `[${time}] Accepted recommendation ` +
+                        CodeWhispererConstants.referenceLogText(
+                            `<br><code>${code}</code><br>`,
+                            reference.licenseName!,
+                            reference.repository!,
+                            fileName,
+                            startLine === endLine ? `(line at ${startLine})` : `(lines from ${startLine} to ${endLine})`
+                        ) +
+                        '<br>'
+                    getLogger().debug('Adding reference log: %s', referenceLog)
+                    ReferenceLogViewProvider.instance.addReferenceLog(referenceLog)
                 }
-                const startLine = getLineNumber(updatedContent, reference.recommendationContentSpan!.start!)
-                const endLine = getLineNumber(updatedContent, reference.recommendationContentSpan!.end!)
-                getLogger().debug('startLine: %d, endLine: %d', startLine, endLine)
-                const code = updatedContent.slice(
-                    reference.recommendationContentSpan?.start,
-                    reference.recommendationContentSpan?.end
-                )
-                getLogger().debug('Extracted code slice: %s', code)
-                const referenceLog =
-                    `[${time}] Accepted recommendation ` +
-                    CodeWhispererConstants.referenceLogText(
-                        `<br><code>${code}</code><br>`,
-                        reference.licenseName!,
-                        reference.repository!,
-                        fileName,
-                        startLine === endLine ? `(line at ${startLine})` : `(lines from ${startLine} to ${endLine})`
-                    ) +
-                    '<br>'
-                getLogger().debug('Adding reference log: %s', referenceLog)
-                ReferenceLogViewProvider.instance.addReferenceLog(referenceLog)
-            })
+            }
 
             removeDiagnostic(document.uri, targetIssue)
             SecurityIssueProvider.instance.removeIssue(document.uri, targetIssue)
