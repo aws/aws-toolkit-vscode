@@ -648,6 +648,7 @@ export enum JDKVersion {
     JDK8 = '8',
     JDK11 = '11',
     JDK17 = '17',
+    JDK21 = '21',
     UNSUPPORTED = 'UNSUPPORTED',
 }
 

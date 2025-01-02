@@ -483,6 +483,11 @@ export class GumbyController {
                 message.tabID
             )
 
+            if (fromJDKVersion === JDKVersion.JDK21 && toJDKVersion === JDKVersion.JDK17) {
+                this.messenger.sendUnrecoverableErrorResponse('invalid-from-to-jdk', message.tabID)
+                return
+            }
+
             await processLanguageUpgradeTransformFormInput(pathToProject, fromJDKVersion, toJDKVersion)
             await this.messenger.sendSkipTestsPrompt(message.tabID)
         })

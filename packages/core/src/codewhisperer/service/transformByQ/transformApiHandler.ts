@@ -445,7 +445,7 @@ export async function startJob(uploadId: string) {
             transformationSpec: {
                 transformationType: CodeWhispererConstants.transformationType, // shared b/w language upgrades & sql conversions for now
                 source: { language: sourceLanguageVersion }, // dummy value of JDK8 used for SQL conversions just so that this API can be called
-                target: { language: targetLanguageVersion }, // always JDK17
+                target: { language: targetLanguageVersion }, // JAVA_17 or JAVA_21
             },
         })
         getLogger().info('CodeTransformation: called startJob API successfully')
