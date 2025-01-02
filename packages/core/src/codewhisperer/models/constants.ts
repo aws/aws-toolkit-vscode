@@ -599,6 +599,8 @@ export const invalidMetadataFileErrorParsing =
 export const invalidMetadataFileNoSctFile =
     "An .sct file is required for transformation. Make sure that you've uploaded the .zip file you retrieved from your schema conversion in AWS DMS."
 
+export const invalidFromToJdkChatMessage = 'I cannot transform a project from Java 21 to Java 17.'
+
 export const sqlMetadataFileReceived =
     'I found the following source database, target database, and host based on the schema conversion metadata you provided:'
 
