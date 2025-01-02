@@ -50,7 +50,6 @@ import {
     CodeTransformJavaTargetVersionsAllowed,
     CodeTransformJavaSourceVersionsAllowed,
 } from '../../../shared/telemetry/telemetry'
-import { MetadataResult } from '../../../shared/telemetry/telemetryClient'
 import { CodeTransformTelemetryState } from '../../telemetry/codeTransformTelemetryState'
 import DependencyVersions from '../../models/dependencies'
 import { getStringHash } from '../../../shared/utilities/textUtilities'
@@ -364,15 +363,16 @@ export class GumbyController {
                 await this.handleUserLanguageUpgradeProjectChoice(message)
                 break
             case ButtonActions.CANCEL_TRANSFORMATION_FORM:
-                telemetry.codeTransform_submitSelection.emit({
-                    codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-                    userChoice: 'Cancel',
-                    result: MetadataResult.Pass,
-                })
-                this.transformationFinished({
-                    message: CodeWhispererConstants.jobCancelledChatMessage,
-                    tabID: message.tabID,
-                    includeStartNewTransformationButton: true,
+                telemetry.codeTransform_submitSelection.run(() => {
+                    telemetry.record({
+                        codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
+                        userChoice: 'Cancel',
+                    })
+                    this.transformationFinished({
+                        message: CodeWhispererConstants.jobCancelledChatMessage,
+                        tabID: message.tabID,
+                        includeStartNewTransformationButton: true,
+                    })
                 })
                 break
             case ButtonActions.CONFIRM_SKIP_TESTS_FORM:
