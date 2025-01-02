@@ -181,6 +181,42 @@ describe('Amazon Q Code Transformation', function () {
             assert.strictEqual(viewSummaryChatItem?.body?.includes('view a summary'), true)
         })
 
+        it('CANNOT do a Java 21 to Java 17 transformation', async () => {
+            sinon.stub(startTransformByQ, 'getValidSQLConversionCandidateProjects').resolves([])
+            sinon.stub(GumbyController.prototype, 'validateLanguageUpgradeProjects' as keyof GumbyController).resolves([
+                {
+                    name: 'qct-sample-java-8-app-main',
+                    path: '/Users/alias/Desktop/qct-sample-java-8-app-main',
+                    JDKVersion: JDKVersion.JDK21,
+                },
+            ])
+            tab.addChatMessage({ command: '/transform' })
+            await tab.waitForEvent(() => tab.getChatItems().length > 3, {
+                waitTimeoutInMs: 5000,
+                waitIntervalInMs: 1000,
+            })
+            const projectForm = tab.getChatItems().pop()
+            assert.strictEqual(projectForm?.formItems?.[0]?.id ?? undefined, 'GumbyTransformLanguageUpgradeProjectForm')
+
+            const projectFormItemValues = {
+                GumbyTransformLanguageUpgradeProjectForm: '/Users/alias/Desktop/qct-sample-java-8-app-main',
+                GumbyTransformJdkFromForm: '21',
+                GumbyTransformJdkToForm: '17',
+            }
+            const projectFormValues: Record<string, string> = { ...projectFormItemValues }
+            tab.clickCustomFormButton({
+                id: 'gumbyLanguageUpgradeTransformFormConfirm',
+                text: 'Confirm',
+                formItemValues: projectFormValues,
+            })
+            await tab.waitForEvent(() => tab.getChatItems().length > 4, {
+                waitTimeoutInMs: 5000,
+                waitIntervalInMs: 1000,
+            })
+            const errorMessage = tab.getChatItems().pop()
+            assert.strictEqual(errorMessage?.body, CodeWhispererConstants.invalidFromToJdkChatMessage)
+        })
+
         it('Can provide metadata file for a SQL conversion', async () => {
             sinon.stub(startTransformByQ, 'getValidSQLConversionCandidateProjects').resolves([
                 {
