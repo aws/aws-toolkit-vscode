@@ -178,8 +178,6 @@ export class ZipUtil {
 
         // Recursive function to process directories
         const processDirectory = async (dirPath: string) => {
-            // eslint-disable-next-line aws-toolkits/no-console-log
-            console.log('processDirectory', dirPath)
             const entries = await vscode.workspace.fs.readDirectory(vscode.Uri.file(dirPath))
             addEmptyDirectory(dirPath)
 
