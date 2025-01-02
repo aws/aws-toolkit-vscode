@@ -492,7 +492,7 @@ export class Messenger {
                 break
             case 'invalid-from-to-jdk':
                 // TO-DO: get this String reviewed
-                message = 'I cannot transform a project from Java 21 to Java 17.'
+                message = CodeWhispererConstants.invalidFromToJdkChatMessage
                 break
         }
 
