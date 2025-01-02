@@ -8,9 +8,9 @@ import vscode from 'vscode'
 import sinon from 'sinon'
 import { join } from 'path'
 import { getTestWorkspaceFolder } from 'aws-core-vscode/test'
-import { CodeAnalysisScope, ZipUtil } from 'aws-core-vscode/codewhisperer'
+import { CodeAnalysisScope, CodeWhispererConstants, ZipUtil } from 'aws-core-vscode/codewhisperer'
 import { codeScanTruncDirPrefix } from 'aws-core-vscode/codewhisperer'
-import { ToolkitError } from 'aws-core-vscode/shared'
+import { tempDirPath, ToolkitError } from 'aws-core-vscode/shared'
 import { LspClient } from 'aws-core-vscode/amazonq'
 import { fs } from 'aws-core-vscode/shared'
 import path from 'path'
@@ -142,97 +142,58 @@ describe('zipUtil', function () {
 
     describe('generateZipTestGen', function () {
         let zipUtil: ZipUtil
-        let mockFs: sinon.SinonStubbedInstance<typeof fs>
-        const projectPath = '/test/project'
-        const zipDirPath = '/test/zip'
-        const zipFilePath = '/test/zip/test.zip'
+        let getZipDirPathStub: sinon.SinonStub
+        let testTempDirPath: string
 
         beforeEach(function () {
             zipUtil = new ZipUtil()
-            mockFs = sinon.stub(fs)
-
-            const mockRepoMapPath = '/path/to/repoMapData.json'
-            mockFs.exists.withArgs(mockRepoMapPath).resolves(true)
-            sinon.stub(LspClient, 'instance').get(() => ({
-                getRepoMapJSON: sinon.stub().resolves(mockRepoMapPath),
-            }))
-
-            sinon.stub(zipUtil, 'getZipDirPath').returns(zipDirPath)
-            sinon.stub(zipUtil as any, 'zipProject').resolves(zipFilePath)
+            testTempDirPath = path.join(tempDirPath, CodeWhispererConstants.TestGenerationTruncDirPrefix)
+            getZipDirPathStub = sinon.stub(zipUtil, 'getZipDirPath')
+            getZipDirPathStub.callsFake(() => testTempDirPath)
         })
 
         afterEach(function () {
             sinon.restore()
         })
 
-        it('Should generate zip for test generation successfully', async function () {
-            mockFs.stat.resolves({
-                type: vscode.FileType.File,
-                size: 1000,
-                ctime: Date.now(),
-                mtime: Date.now(),
-            } as vscode.FileStat)
+        it('should generate zip for test generation successfully', async function () {
+            const mkdirSpy = sinon.spy(fs, 'mkdir')
 
-            mockFs.readFileBytes.resolves(Buffer.from('test content'))
+            const result = await zipUtil.generateZipTestGen(appRoot, false)
 
-            // Fix: Create a Set from the array
-            zipUtil['_totalSize'] = 500
-            zipUtil['_totalBuildSize'] = 200
-            zipUtil['_totalLines'] = 100
-            zipUtil['_language'] = 'typescript'
-            zipUtil['_pickedSourceFiles'] = new Set(['file1.ts', 'file2.ts'])
-
-            const result = await zipUtil.generateZipTestGen(projectPath, false)
-
-            assert.ok(mockFs.mkdir.calledWith(path.join(zipDirPath, 'utgRequiredArtifactsDir')))
+            assert.ok(mkdirSpy.calledWith(path.join(testTempDirPath, 'utgRequiredArtifactsDir')))
             assert.ok(
-                mockFs.mkdir.calledWith(path.join(zipDirPath, 'utgRequiredArtifactsDir', 'buildAndExecuteLogDir'))
+                mkdirSpy.calledWith(path.join(testTempDirPath, 'utgRequiredArtifactsDir', 'buildAndExecuteLogDir'))
             )
-            assert.ok(mockFs.mkdir.calledWith(path.join(zipDirPath, 'utgRequiredArtifactsDir', 'repoMapData')))
-            assert.ok(mockFs.mkdir.calledWith(path.join(zipDirPath, 'utgRequiredArtifactsDir', 'testCoverageDir')))
+            assert.ok(mkdirSpy.calledWith(path.join(testTempDirPath, 'utgRequiredArtifactsDir', 'repoMapData')))
+            assert.ok(mkdirSpy.calledWith(path.join(testTempDirPath, 'utgRequiredArtifactsDir', 'testCoverageDir')))
 
-            // assert.ok(
-            //     mockFs.copy.calledWith(
-            //         '/path/to/repoMapData.json',
-            //         path.join(zipDirPath, 'utgRequiredArtifactsDir', 'repoMapData', 'repoMapData.json')
-            //     )
-            // )
-
-            assert.strictEqual(result.rootDir, zipDirPath)
-            assert.strictEqual(result.zipFilePath, zipFilePath)
-            assert.strictEqual(result.srcPayloadSizeInBytes, 500)
-            assert.strictEqual(result.buildPayloadSizeInBytes, 200)
-            assert.strictEqual(result.zipFileSizeInBytes, 1000)
-            assert.strictEqual(result.lines, 100)
-            assert.strictEqual(result.language, 'typescript')
-            assert.deepStrictEqual(Array.from(result.scannedFiles), ['file1.ts', 'file2.ts'])
+            assert.strictEqual(result.rootDir, testTempDirPath)
+            assert.strictEqual(result.zipFilePath, testTempDirPath + CodeWhispererConstants.codeScanZipExt)
+            assert.ok(result.srcPayloadSizeInBytes > 0)
+            assert.strictEqual(result.buildPayloadSizeInBytes, 0)
+            assert.ok(result.zipFileSizeInBytes > 0)
+            assert.strictEqual(result.lines, 150)
+            assert.strictEqual(result.language, 'java')
+            assert.strictEqual(result.scannedFiles.size, 4)
         })
-
-        // it('Should handle LSP client error', async function () {
-        //     // Override the default stub with one that rejects
-        //     sinon.stub(LspClient, 'instance').get(() => ({
-        //         getRepoMapJSON: sinon.stub().rejects(new Error('LSP error')),
-        //     }))
-
-        //     await assert.rejects(() => zipUtil.generateZipTestGen(projectPath), /LSP error/)
-        // })
 
         it('Should handle file system errors during directory creation', async function () {
             sinon.stub(LspClient, 'instance').get(() => ({
                 getRepoMapJSON: sinon.stub().resolves('{"mock": "data"}'),
             }))
-            mockFs.mkdir.rejects(new Error('Directory creation failed'))
+            sinon.stub(fs, 'mkdir').rejects(new Error('Directory creation failed'))
 
-            await assert.rejects(() => zipUtil.generateZipTestGen(projectPath, false), /Directory creation failed/)
+            await assert.rejects(() => zipUtil.generateZipTestGen(appRoot, false), /Directory creation failed/)
         })
 
         it('Should handle zip project errors', async function () {
             sinon.stub(LspClient, 'instance').get(() => ({
                 getRepoMapJSON: sinon.stub().resolves('{"mock": "data"}'),
             }))
-            ;(zipUtil as any).zipProject.rejects(new Error('Zip failed'))
+            sinon.stub(zipUtil, 'zipProject' as keyof ZipUtil).rejects(new Error('Zip failed'))
 
-            await assert.rejects(() => zipUtil.generateZipTestGen(projectPath, false), /Zip failed/)
+            await assert.rejects(() => zipUtil.generateZipTestGen(appRoot, false), /Zip failed/)
         })
 
         it('Should handle file copy to downloads folder error', async function () {
@@ -241,31 +202,15 @@ describe('zipUtil', function () {
                 getRepoMapJSON: sinon.stub().resolves('{"mock": "data"}'),
             }))
 
-            // Mock file operations
-            const mockFs = {
-                mkdir: sinon.stub().resolves(),
-                copy: sinon.stub().rejects(new Error('Copy failed')),
-                exists: sinon.stub().resolves(true),
-                stat: sinon.stub().resolves({
-                    type: vscode.FileType.File,
-                    size: 1000,
-                    ctime: Date.now(),
-                    mtime: Date.now(),
-                } as vscode.FileStat),
-            }
+            const mkdirSpy = sinon.spy(fs, 'mkdir')
+            sinon.stub(fs, 'exists').resolves(true)
+            sinon.stub(fs, 'copy').rejects(new Error('Copy failed'))
 
-            // Since the function now uses Promise.all for directory creation and file operations,
-            // we need to ensure the mkdir succeeds but the copy fails
-            fs.mkdir = mockFs.mkdir
-            fs.copy = mockFs.copy
-            fs.exists = mockFs.exists
-            fs.stat = mockFs.stat
-
-            await assert.rejects(() => zipUtil.generateZipTestGen(projectPath, false), /Copy failed/)
+            await assert.rejects(() => zipUtil.generateZipTestGen(appRoot, false), /Copy failed/)
 
             // Verify mkdir was called for all directories
-            assert(mockFs.mkdir.called, 'mkdir should have been called')
-            assert.strictEqual(mockFs.mkdir.callCount, 4, 'mkdir should have been called 4 times')
+            assert(mkdirSpy.called, 'mkdir should have been called')
+            assert.strictEqual(mkdirSpy.callCount, 4, 'mkdir should have been called 4 times')
         })
     })
 })
