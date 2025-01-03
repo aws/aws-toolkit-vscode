@@ -139,6 +139,9 @@ export class ChildProcessTracker {
     }
 
     public clear() {
+        for (const childProcess of this.#processByPid.values()) {
+            childProcess.stop(true)
+        }
         this.#pids.clear()
         this.#processByPid.clear()
     }

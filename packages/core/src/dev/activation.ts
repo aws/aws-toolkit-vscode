@@ -130,7 +130,7 @@ const menuOptions: () => Record<DevFunction, MenuOption> = () => {
         },
         startChildProcess: {
             label: 'ChildProcess: Start child process',
-            detail: 'start a ChildProcess manually that is invoked through our wrapper',
+            detail: 'Start ChildProcess from our utility wrapper for testing',
             executor: startChildProcess,
         },
     }
