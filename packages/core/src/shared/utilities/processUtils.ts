@@ -9,7 +9,6 @@ import * as logger from '../logger'
 import { Timeout, CancellationError, waitUntil } from './timeoutUtils'
 import { PollingSet } from './pollingSet'
 import { getLogger } from '../logger/logger'
-import { isWin } from '../vscode/env'
 
 export interface RunParameterContext {
     /** Reports an error parsed from the stdin/stdout streams. */
@@ -184,7 +183,8 @@ export class ChildProcessTracker {
             }
         }
         try {
-            return isWin() ? getWindowsUsage() : getUnixUsage()
+            // isWin() leads to circular dependency.
+            return process.platform === 'win32' ? getWindowsUsage() : getUnixUsage()
         } catch (e) {
             ChildProcessTracker.logger.warn(`ChildProcess: Failed to get process stats for ${pid}: ${e}`)
             return { cpu: 0, memory: 0 }
