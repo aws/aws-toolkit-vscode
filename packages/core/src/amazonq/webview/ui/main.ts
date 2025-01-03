@@ -268,7 +268,7 @@ export const createMynahUI = (
                 promptInputDisabledState: tabsStorage.isTabDead(tabID) || !enabled,
             })
         },
-        onUpdatePromptProgress(tabID: string, progressField: ProgressField) {
+        onUpdatePromptProgress(tabID: string, progressField: ProgressField | null) {
             mynahUI.updateStore(tabID, {
                 promptInputProgress: progressField,
             })
@@ -284,7 +284,6 @@ export const createMynahUI = (
                 mynahUI.updateStore(tabID, {
                     loadingChat: true,
                     promptInputDisabledState: true,
-                    cancelButtonWhenLoading: enableStopAction,
                 })
 
                 if (message && messageId) {
@@ -382,7 +381,6 @@ export const createMynahUI = (
             ) {
                 mynahUI.updateStore(tabID, {
                     loadingChat: true,
-                    cancelButtonWhenLoading: false,
                     promptInputDisabledState: true,
                 })
 
@@ -709,11 +707,10 @@ export const createMynahUI = (
                 }
             }
         },
-        onCustomFormAction: (tabId, action, eventId) => {
-            connector.onCustomFormAction(tabId, undefined, action, eventId)
-        },
         onChatPromptProgressActionButtonClicked: (tabID, action) => {
-            connector.onCustomFormAction(tabID, undefined, action)
+            if (action.id === 'cancel-running-task') {
+                connector.onStopChatResponse(tabID);
+            }
         },
         onSendFeedback: (tabId, feedbackPayload) => {
             connector.sendFeedback(tabId, feedbackPayload)

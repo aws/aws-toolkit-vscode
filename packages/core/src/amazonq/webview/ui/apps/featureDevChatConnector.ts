@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ChatItem, ChatItemType, FeedbackPayload } from '@aws/mynah-ui'
+import { ChatItem, ChatItemType, FeedbackPayload, ProgressField } from '@aws/mynah-ui'
 import { TabType } from '../storages/tabsStorage'
 import { getActions } from '../diffTree/actions'
 import { DiffTreeFileInfo } from '../diffTree/types'
@@ -31,6 +31,9 @@ export interface ConnectorProps extends BaseConnectorProps {
     onChatInputEnabled: (tabID: string, enabled: boolean) => void
     onUpdateAuthentication: (featureDevEnabled: boolean, authenticatingTabIDs: string[]) => void
     onNewTab: (tabType: TabType) => void
+    onUpdatePromptProgress: (tabID: string, progressField: ProgressField | null) => void;
+    onCustomFormAction?: (tabID: string, action: any) => void
+
 }
 
 export class Connector extends BaseConnector {
@@ -41,6 +44,8 @@ export class Connector extends BaseConnector {
     private readonly chatInputEnabled
     private readonly onUpdateAuthentication
     private readonly onNewTab
+    private readonly onUpdatePromptProgress
+
 
     override getTabType(): TabType {
         return 'featuredev'
@@ -55,6 +60,12 @@ export class Connector extends BaseConnector {
         this.onUpdateAuthentication = props.onUpdateAuthentication
         this.onNewTab = props.onNewTab
         this.onChatAnswerUpdated = props.onChatAnswerUpdated
+        this.onUpdatePromptProgress = props.onUpdatePromptProgress;
+    }
+    
+    sendProgressUpdate(tabID: string, progressField: ProgressField | null): void {
+        this.onUpdatePromptProgress(tabID, progressField);
+    
     }
 
     onOpenDiff = (tabID: string, filePath: string, deleted: boolean, messageId?: string): void => {
@@ -198,6 +209,10 @@ export class Connector extends BaseConnector {
         if (messageData.type === 'openNewTabMessage') {
             this.onNewTab('featuredev')
             return
+        }
+        if (messageData.type === 'updatePromptProgress') {
+            this.sendProgressUpdate(messageData.tabID, messageData.progressField);
+            return;
         }
 
         // For other message types, call the base class handleMessageReceive
