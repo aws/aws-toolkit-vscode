@@ -44,8 +44,6 @@ export type globalKey =
     | 'aws.toolkit.amazonq.dismissed'
     | 'aws.toolkit.amazonqInstall.dismissed'
     | 'aws.amazonq.workspaceIndexToggleOn'
-    | 'aws.toolkit.separationPromptCommand'
-    | 'aws.toolkit.separationPromptDismissed'
     // Deprecated/legacy names. New keys should start with "aws.".
     | '#sessionCreationDates' // Legacy name from `ssoAccessTokenProvider.ts`.
     | 'CODECATALYST_RECONNECT'
