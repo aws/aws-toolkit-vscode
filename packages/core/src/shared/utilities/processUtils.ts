@@ -7,6 +7,8 @@ import * as proc from 'child_process' // eslint-disable-line no-restricted-impor
 import * as crossSpawn from 'cross-spawn'
 import * as logger from '../logger'
 import { Timeout, CancellationError, waitUntil } from './timeoutUtils'
+import { PollingSet } from './pollingSet'
+import { getLogger } from '../logger/logger'
 
 export interface RunParameterContext {
     /** Reports an error parsed from the stdin/stdout streams. */
@@ -61,6 +63,133 @@ export interface ChildProcessResult {
 
 export const eof = Symbol('EOF')
 
+export interface ProcessStats {
+    memory: number
+    cpu: number
+}
+export class ChildProcessTracker {
+    static readonly pollingInterval: number = 10000
+    static readonly thresholds: ProcessStats = {
+        memory: 100 * 1024 * 1024, // 100 MB
+        cpu: 50,
+    }
+    static readonly logger = getLogger('childProcess')
+    #processByPid: Map<number, ChildProcess> = new Map<number, ChildProcess>()
+    #pids: PollingSet<number>
+
+    public constructor() {
+        this.#pids = new PollingSet(ChildProcessTracker.pollingInterval, () => this.monitor())
+    }
+
+    private cleanUp() {
+        const terminatedProcesses = Array.from(this.#pids.values()).filter(
+            (pid: number) => this.#processByPid.get(pid)?.stopped
+        )
+        for (const pid of terminatedProcesses) {
+            this.delete(pid)
+        }
+    }
+
+    private async monitor() {
+        this.cleanUp()
+        ChildProcessTracker.logger.debug(`Active running processes size: ${this.#pids.size}`)
+
+        for (const pid of this.#pids.values()) {
+            await this.checkProcessUsage(pid)
+        }
+    }
+
+    private async checkProcessUsage(pid: number): Promise<void> {
+        if (!this.#pids.has(pid)) {
+            ChildProcessTracker.logger.warn(`Missing process with id ${pid}`)
+            return
+        }
+        const stats = await this.getUsage(pid)
+        if (stats) {
+            ChildProcessTracker.logger.debug(`stats for ${pid}: %O`, stats)
+            if (stats.memory > ChildProcessTracker.thresholds.memory) {
+                ChildProcessTracker.logger.warn(`Process ${pid} exceeded memory threshold: ${stats.memory}`)
+            }
+            if (stats.cpu > ChildProcessTracker.thresholds.cpu) {
+                ChildProcessTracker.logger.warn(`Process ${pid} exceeded cpu threshold: ${stats.cpu}`)
+            }
+        }
+    }
+
+    public add(childProcess: ChildProcess) {
+        const pid = childProcess.pid()
+        this.#processByPid.set(pid, childProcess)
+        this.#pids.start(pid)
+    }
+
+    public delete(childProcessId: number) {
+        this.#processByPid.delete(childProcessId)
+        this.#pids.delete(childProcessId)
+    }
+
+    public size() {
+        return this.#pids.size
+    }
+
+    public has(childProcess: ChildProcess) {
+        return this.#pids.has(childProcess.pid())
+    }
+
+    public clear() {
+        for (const childProcess of this.#processByPid.values()) {
+            childProcess.stop(true)
+        }
+        this.#pids.clear()
+        this.#processByPid.clear()
+    }
+
+    public async getUsage(pid: number): Promise<ProcessStats> {
+        const getWindowsUsage = () => {
+            const cpuOutput = proc
+                .execFileSync('wmic', [
+                    'path',
+                    'Win32_PerfFormattedData_PerfProc_Process',
+                    'where',
+                    `IDProcess=${pid}`,
+                    'get',
+                    'PercentProcessorTime',
+                ])
+                .toString()
+            const memOutput = proc
+                .execFileSync('wmic', ['process', 'where', `ProcessId=${pid}`, 'get', 'WorkingSetSize'])
+                .toString()
+
+            const cpuPercentage = parseFloat(cpuOutput.split('\n')[1])
+            const memoryBytes = parseInt(memOutput.split('\n')[1]) * 1024
+
+            return {
+                cpu: isNaN(cpuPercentage) ? 0 : cpuPercentage,
+                memory: memoryBytes,
+            }
+        }
+        const getUnixUsage = () => {
+            const cpuMemOutput = proc.execFileSync('ps', ['-p', pid.toString(), '-o', '%cpu,%mem']).toString()
+            const rssOutput = proc.execFileSync('ps', ['-p', pid.toString(), '-o', 'rss']).toString()
+
+            const cpuMemLines = cpuMemOutput.split('\n')[1].trim().split(/\s+/)
+            const cpuPercentage = parseFloat(cpuMemLines[0])
+            const memoryBytes = parseInt(rssOutput.split('\n')[1]) * 1024
+
+            return {
+                cpu: isNaN(cpuPercentage) ? 0 : cpuPercentage,
+                memory: memoryBytes,
+            }
+        }
+        try {
+            // isWin() leads to circular dependency.
+            return process.platform === 'win32' ? getWindowsUsage() : getUnixUsage()
+        } catch (e) {
+            ChildProcessTracker.logger.warn(`Failed to get process stats for ${pid}: ${e}`)
+            return { cpu: 0, memory: 0 }
+        }
+    }
+}
+
 /**
  * Convenience class to manage a child process
  * To use:
@@ -68,7 +197,8 @@ export const eof = Symbol('EOF')
  * - call and await run to get the results (pass or fail)
  */
 export class ChildProcess {
-    static #runningProcesses: Map<number, ChildProcess> = new Map()
+    static #runningProcesses = new ChildProcessTracker()
+    static stopTimeout = 3000
     #childProcess: proc.ChildProcess | undefined
     #processErrors: Error[] = []
     #processResult: ChildProcessResult | undefined
@@ -141,7 +271,7 @@ export class ChildProcess {
         const args = this.#args.concat(options.extraArgs ?? [])
 
         const debugDetail = this.#log.logLevelEnabled('debug')
-            ? ` (running processes: ${ChildProcess.#runningProcesses.size})`
+            ? ` (running processes: ${ChildProcess.#runningProcesses.size()})`
             : ''
         this.#log.info(`Command: ${this.toString(options.logging === 'noparams')}${debugDetail}`)
 
@@ -285,7 +415,7 @@ export class ChildProcess {
             child.kill(signal)
 
             if (force === true) {
-                waitUntil(async () => this.stopped, { timeout: 3000, interval: 200, truthy: true })
+                waitUntil(async () => this.stopped, { timeout: ChildProcess.stopTimeout, interval: 200, truthy: true })
                     .then((stopped) => {
                         if (!stopped) {
                             child.kill('SIGKILL')
@@ -309,7 +439,7 @@ export class ChildProcess {
         if (pid === undefined) {
             return
         }
-        ChildProcess.#runningProcesses.set(pid, this)
+        ChildProcess.#runningProcesses.add(this)
 
         const timeoutListener = options?.timeout?.token.onCancellationRequested(({ agent }) => {
             const message = agent === 'user' ? 'Cancelled: ' : 'Timed out: '
@@ -319,7 +449,7 @@ export class ChildProcess {
 
         const dispose = () => {
             timeoutListener?.dispose()
-            ChildProcess.#runningProcesses.delete(pid)
+            ChildProcess.#runningProcesses.delete(this.pid())
         }
 
         process.on('exit', dispose)

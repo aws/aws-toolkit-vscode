@@ -6,11 +6,16 @@
 import assert from 'assert'
 import * as os from 'os'
 import * as path from 'path'
+import * as sinon from 'sinon'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../../shared/filesystemUtilities'
-import { ChildProcess, eof } from '../../../shared/utilities/processUtils'
+import { ChildProcess, ChildProcessTracker, eof, ProcessStats } from '../../../shared/utilities/processUtils'
 import { sleep } from '../../../shared/utilities/timeoutUtils'
 import { Timeout, waitUntil } from '../../../shared/utilities/timeoutUtils'
 import { fs } from '../../../shared'
+import * as FakeTimers from '@sinonjs/fake-timers'
+import { installFakeClock } from '../../testUtil'
+import { isWin } from '../../../shared/vscode/env'
+import { assertLogsContain } from '../../globalSetup.test'
 
 describe('ChildProcess', async function () {
     let tempFolder: string
@@ -349,4 +354,121 @@ describe('ChildProcess', async function () {
         echo bye`
         await writeShellFile(filename, file)
     }
+})
+
+function getSleepCmd() {
+    return isWin() ? 'timeout' : 'sleep'
+}
+
+// ChildProcess.stop is non-async and doesn't wait for the process to be stopped.
+async function stopAndWait(cp: ChildProcess, clock: FakeTimers.InstalledClock) {
+    cp.stop(true)
+    await clock.tickAsync(ChildProcess.stopTimeout * 2)
+}
+
+function startSleepProcess(timeout: number = 90) {
+    const childProcess = new ChildProcess(getSleepCmd(), [timeout.toString()])
+    childProcess.run().catch(() => assert.fail('sleep command threw an error'))
+    return childProcess
+}
+
+describe('ChildProcessTracker', function () {
+    let tracker: ChildProcessTracker
+    let clock: FakeTimers.InstalledClock
+    let usageMock: sinon.SinonStub
+
+    before(function () {
+        clock = installFakeClock()
+        tracker = new ChildProcessTracker()
+        usageMock = sinon.stub(ChildProcessTracker.prototype, 'getUsage')
+    })
+
+    afterEach(function () {
+        tracker.clear()
+        usageMock.reset()
+    })
+
+    after(function () {
+        clock.uninstall()
+    })
+
+    it(`removes stopped processes every ${ChildProcessTracker.pollingInterval / 1000} seconds`, async function () {
+        // Start a 'sleep' command, check it only removes after we stop it.
+        const childProcess = startSleepProcess()
+        tracker.add(childProcess)
+        assert.strictEqual(tracker.has(childProcess), true, 'failed to add sleep command')
+
+        await clock.tickAsync(ChildProcessTracker.pollingInterval)
+        assert.strictEqual(tracker.has(childProcess), true, 'process was mistakenly removed')
+        await stopAndWait(childProcess, clock)
+
+        await clock.tickAsync(ChildProcessTracker.pollingInterval)
+        assert.strictEqual(tracker.has(childProcess), false, 'process was not removed after stopping')
+    })
+    for (const _ of Array.from({ length: 100 })) {
+        it('multiple processes from same command are tracked seperately', async function () {
+            const childProcess1 = startSleepProcess()
+            const childProcess2 = startSleepProcess()
+            tracker.add(childProcess1)
+            tracker.add(childProcess2)
+
+            assert.strictEqual(tracker.has(childProcess1), true, 'Missing first process')
+            assert.strictEqual(tracker.has(childProcess2), true, 'Missing second process')
+
+            await stopAndWait(childProcess1, clock)
+            await clock.tickAsync(ChildProcessTracker.pollingInterval)
+            assert.strictEqual(tracker.has(childProcess2), true, 'second process was mistakenly removed')
+            assert.strictEqual(tracker.has(childProcess1), false, 'first process was not removed after stopping it')
+        })
+    }
+
+    it('logs a warning message when system usage exceeds threshold', async function () {
+        const childProcess = startSleepProcess()
+        tracker.add(childProcess)
+
+        const highCpu: ProcessStats = {
+            cpu: ChildProcessTracker.thresholds.cpu + 1,
+            memory: 0,
+        }
+        const highMemory: ProcessStats = {
+            cpu: 0,
+            memory: ChildProcessTracker.thresholds.memory + 1,
+        }
+
+        usageMock.resolves(highCpu)
+
+        await clock.tickAsync(ChildProcessTracker.pollingInterval)
+        assertLogsContain('exceeded cpu threshold', false, 'warn')
+
+        usageMock.resolves(highMemory)
+        await clock.tickAsync(ChildProcessTracker.pollingInterval)
+        assertLogsContain('exceeded memory threshold', false, 'warn')
+    })
+
+    it('includes pid in logs', async function () {
+        const childProcess = startSleepProcess()
+        tracker.add(childProcess)
+
+        usageMock.resolves({
+            cpu: ChildProcessTracker.thresholds.cpu + 1,
+            memory: 0,
+        })
+
+        await clock.tickAsync(ChildProcessTracker.pollingInterval)
+        assertLogsContain(childProcess.pid().toString(), false, 'warn')
+    })
+
+    it('does not log for processes within threshold', async function () {
+        const childProcess = new ChildProcess(getSleepCmd(), ['90'])
+        childProcess.run().catch(() => assert.fail('sleep command threw an error'))
+
+        usageMock.resolves({
+            cpu: ChildProcessTracker.thresholds.cpu - 1,
+            memory: ChildProcessTracker.thresholds.memory - 1,
+        })
+
+        await clock.tickAsync(ChildProcessTracker.pollingInterval)
+
+        assert.throws(() => assertLogsContain(childProcess.pid().toString(), false, 'warn'))
+    })
 })
