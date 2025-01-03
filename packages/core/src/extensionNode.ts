@@ -46,12 +46,12 @@ import globals from './shared/extensionGlobals'
 import { Experiments, Settings, showSettingsFailedMsg } from './shared/settings'
 import { isReleaseVersion } from './shared/vscode/env'
 import { AuthStatus, AuthUserState, telemetry } from './shared/telemetry/telemetry'
-import { Auth, SessionSeparationPrompt } from './auth/auth'
+import { Auth } from './auth/auth'
 import { getTelemetryMetadataForConn } from './auth/connection'
 import { registerSubmitFeedback } from './feedback/vue/submitFeedback'
 import { activateCommon, deactivateCommon } from './extension'
 import { learnMoreAmazonQCommand, qExtensionPageCommand, dismissQTree } from './amazonq/explorer/amazonQChildrenNodes'
-import { AuthUtil, codeWhispererCoreScopes } from './codewhisperer/util/authUtil'
+import { codeWhispererCoreScopes } from './codewhisperer/util/authUtil'
 import { installAmazonQExtension } from './codewhisperer/commands/basicCommands'
 import { isExtensionInstalled, VSCODE_EXTENSION_ID } from './shared/utilities'
 import { ExtensionUse, getAuthFormIdsFromConnection, initializeCredentialsProviderManager } from './auth/utils'
@@ -139,16 +139,8 @@ export async function activate(context: vscode.ExtensionContext) {
                             conn.scopes
                         )
                         await Auth.instance.forgetConnection(conn)
-                        await SessionSeparationPrompt.instance.showForCommand('aws.toolkit.auth.manageConnections')
                     }
                 }
-
-                // Display last prompt if connections were forgotten in prior sessions
-                // but the user did not interact or sign in again. Useful in case the user misses it the first time.
-                await SessionSeparationPrompt.instance.showAnyPreviousPrompt()
-
-                // MUST restore CW/Q auth so that we can see if this user is already a Q user.
-                await AuthUtil.instance.restore()
             },
             { emit: false, functionId: { name: 'activate', class: 'ExtensionNodeCore' } }
         )
