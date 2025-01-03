@@ -51,7 +51,7 @@ export class PollingSet<T> extends Set<T> {
     }
 
     public override clear(): void {
-        this.pollTimer = undefined
+        this.clearTimer()
         super.clear()
     }
 }
