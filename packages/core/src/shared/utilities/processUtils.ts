@@ -85,10 +85,12 @@ export class ChildProcessTracker {
     }
 
     private cleanUp() {
+        console.log('in clean up')
         const terminatedProcesses = Array.from(this.#pids.values()).filter(
             (pid: number) => this.#processByPid.get(pid)?.stopped
         )
         for (const pid of terminatedProcesses) {
+            console.log('removing %s', pid)
             this.delete(pid)
         }
     }

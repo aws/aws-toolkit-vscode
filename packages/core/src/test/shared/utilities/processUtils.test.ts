@@ -407,6 +407,7 @@ describe('ChildProcessTracker', function () {
             assert.strictEqual(tracker.has(childProcess2), true, 'Missing second process')
 
             childProcess1.stop()
+            console.log('child process 1 stopped')
             await clock.tickAsync(ChildProcessTracker.pollingInterval)
             assert.strictEqual(tracker.has(childProcess2), true, 'second process was mistakenly removed')
             assert.strictEqual(tracker.has(childProcess1), false, 'first process was not removed after stopping it')
