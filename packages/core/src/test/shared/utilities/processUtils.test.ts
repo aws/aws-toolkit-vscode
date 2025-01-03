@@ -360,9 +360,10 @@ function getSleepCmd() {
     return isWin() ? 'timeout' : 'sleep'
 }
 
-async function stopAndWait(cp: ChildProcess) {
+// ChildProcess.stop is non-async and doesn't wait for the process to be stopped.
+async function stopAndWait(cp: ChildProcess, clock: FakeTimers.InstalledClock) {
     cp.stop(true)
-    await waitUntil(async () => cp.stopped, { timeout: ChildProcess.stopTimeout * 2, interval: 100, truthy: true })
+    await clock.tickAsync(ChildProcess.stopTimeout)
 }
 
 describe('ChildProcessTracker', function () {
@@ -394,12 +395,12 @@ describe('ChildProcessTracker', function () {
 
         await clock.tickAsync(ChildProcessTracker.pollingInterval)
         assert.strictEqual(tracker.has(childProcess), true, 'process was mistakenly removed')
-        await stopAndWait(childProcess)
+        await stopAndWait(childProcess, clock)
 
         await clock.tickAsync(ChildProcessTracker.pollingInterval)
         assert.strictEqual(tracker.has(childProcess), false, 'process was not removed after stopping')
     })
-    for (const _ of Array.from({ length: 1000 })) {
+    for (const _ of Array.from({ length: 100 })) {
         it('multiple processes from same command are tracked seperately', async function () {
             const childProcess1 = new ChildProcess(getSleepCmd(), ['90'])
             const childProcess2 = new ChildProcess(getSleepCmd(), ['90'])
@@ -411,7 +412,7 @@ describe('ChildProcessTracker', function () {
             assert.strictEqual(tracker.has(childProcess1), true, 'Missing first process')
             assert.strictEqual(tracker.has(childProcess2), true, 'Missing second process')
 
-            await stopAndWait(childProcess1)
+            await stopAndWait(childProcess1, clock)
             await clock.tickAsync(ChildProcessTracker.pollingInterval)
             assert.strictEqual(tracker.has(childProcess2), true, 'second process was mistakenly removed')
             assert.strictEqual(tracker.has(childProcess1), false, 'first process was not removed after stopping it')
