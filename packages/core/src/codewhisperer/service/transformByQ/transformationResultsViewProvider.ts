@@ -584,7 +584,7 @@ export class ProposedTransformationExplorer {
         })
 
         vscode.commands.registerCommand('aws.amazonq.transformationHub.reviewChanges.rejectChanges', async () => {
-            telemetry.codeTransform_submitSelection.run(async () => {
+            await telemetry.codeTransform_submitSelection.run(async () => {
                 diffModel.rejectChanges()
                 await reset()
                 telemetry.record({
