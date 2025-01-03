@@ -26,13 +26,13 @@ describe('validateBucketName', function () {
         assert.strictEqual(validateBucketName('v.4.l1d.buc.ket-n4.m3'), undefined)
     })
 
-    invalidErrors.forEach((invalid) => {
+    for (const invalid of invalidErrors) {
         describe(invalid.error, () => {
-            invalid.bucketNames.forEach((bucketName) => {
+            for (const bucketName of invalid.bucketNames) {
                 it(bucketName, () => {
                     assert.strictEqual(validateBucketName(bucketName), invalid.error)
                 })
-            })
+            }
         })
-    })
+    }
 })

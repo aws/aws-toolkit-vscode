@@ -104,7 +104,9 @@ describe('TailLogGroup', function () {
         // registry is asserted to have only one entry, so this is assumed to be the session that was
         // started in this test.
         let sessionUri: vscode.Uri | undefined
-        registry.forEach((session) => (sessionUri = session.uri))
+        for (const [_, session] of registry) {
+            sessionUri = session.uri
+        }
         if (sessionUri === undefined) {
             throw Error
         }
@@ -127,9 +129,9 @@ describe('TailLogGroup', function () {
 
         // Test that closing all tabs the session's document is open in will cause the session to close
         let tabs: vscode.Tab[] = []
-        window.tabGroups.all.forEach((tabGroup) => {
+        for (const tabGroup of window.tabGroups.all) {
             tabs = tabs.concat(getLiveTailSessionTabsFromTabGroup(tabGroup, sessionUri!))
-        })
+        }
         await Promise.all(tabs.map((tab) => window.tabGroups.close(tab)))
 
         // Before the test ends, signal the abort controller, interrupting the mock response stream. This

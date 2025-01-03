@@ -197,13 +197,13 @@ export class Messenger {
         const projectFormOptions: { value: any; label: string }[] = []
         const detectedJavaVersions = new Array<JDKVersion | undefined>()
 
-        projects.forEach((candidateProject) => {
+        for (const candidateProject of projects) {
             projectFormOptions.push({
                 value: candidateProject.path,
                 label: candidateProject.name,
             })
             detectedJavaVersions.push(candidateProject.JDKVersion)
-        })
+        }
 
         const formItems: ChatItemFormItem[] = []
         formItems.push({
@@ -243,8 +243,8 @@ export class Messenger {
             mandatory: true,
             options: [
                 {
-                    value: JDKVersion.JDK17.toString(),
-                    label: JDKVersion.JDK17.toString(),
+                    value: JDKVersion.JDK17,
+                    label: JDKVersion.JDK17,
                 },
             ],
         })
@@ -279,12 +279,12 @@ export class Messenger {
     public async sendSQLConversionProjectPrompt(projects: TransformationCandidateProject[], tabID: string) {
         const projectFormOptions: { value: any; label: string }[] = []
 
-        projects.forEach((candidateProject) => {
+        for (const candidateProject of projects) {
             projectFormOptions.push({
                 value: candidateProject.path,
                 label: candidateProject.name,
             })
-        })
+        }
 
         const formItems: ChatItemFormItem[] = []
         formItems.push({
@@ -376,19 +376,20 @@ export class Messenger {
     ) {
         const buttons: ChatItemButton[] = []
 
+        // don't show these buttons when server build fails
         if (!disableJobActions) {
-            // Note: buttons can only be clicked once.
-            // To get around this, we remove the card after it's clicked and then resubmit the message.
             buttons.push({
                 keepCardAfterClick: true,
                 text: CodeWhispererConstants.openTransformationHubButtonText,
                 id: ButtonActions.VIEW_TRANSFORMATION_HUB,
+                disabled: false, // allow button to be re-clicked
             })
 
             buttons.push({
                 keepCardAfterClick: true,
                 text: CodeWhispererConstants.stopTransformationButtonText,
                 id: ButtonActions.STOP_TRANSFORMATION_JOB,
+                disabled: false,
             })
         }
 
@@ -514,6 +515,16 @@ export class Messenger {
                 keepCardAfterClick: false,
                 text: CodeWhispererConstants.startTransformationButtonText,
                 id: ButtonActions.CONFIRM_START_TRANSFORMATION_FLOW,
+                disabled: false,
+            })
+        }
+
+        if (transformByQState.getSummaryFilePath()) {
+            buttons.push({
+                keepCardAfterClick: true,
+                text: CodeWhispererConstants.viewSummaryButtonText,
+                id: ButtonActions.VIEW_SUMMARY,
+                disabled: false,
             })
         }
 
@@ -661,12 +672,12 @@ ${codeSnippet}
 
         const valueFormOptions: { value: any; label: string }[] = []
 
-        versions.allVersions.forEach((version) => {
+        for (const version of versions.allVersions) {
             valueFormOptions.push({
                 value: version,
                 label: version,
             })
-        })
+        }
 
         const formItems: ChatItemFormItem[] = []
         formItems.push({
