@@ -366,6 +366,12 @@ async function stopAndWait(cp: ChildProcess, clock: FakeTimers.InstalledClock) {
     await clock.tickAsync(ChildProcess.stopTimeout)
 }
 
+function startSleepProcess(timeout: number = 90) {
+    const childProcess = new ChildProcess(getSleepCmd(), [timeout.toString()])
+    childProcess.run().catch(() => assert.fail('sleep command threw an error'))
+    return childProcess
+}
+
 describe('ChildProcessTracker', function () {
     let tracker: ChildProcessTracker
     let clock: FakeTimers.InstalledClock
@@ -388,8 +394,7 @@ describe('ChildProcessTracker', function () {
 
     it(`removes stopped processes every ${ChildProcessTracker.pollingInterval / 1000} seconds`, async function () {
         // Start a 'sleep' command, check it only removes after we stop it.
-        const childProcess = new ChildProcess(getSleepCmd(), ['90'])
-        childProcess.run().catch(() => assert.fail('sleep command threw an error'))
+        const childProcess = startSleepProcess()
         tracker.add(childProcess)
         assert.strictEqual(tracker.has(childProcess), true, 'failed to add sleep command')
 
@@ -402,10 +407,8 @@ describe('ChildProcessTracker', function () {
     })
     for (const _ of Array.from({ length: 100 })) {
         it('multiple processes from same command are tracked seperately', async function () {
-            const childProcess1 = new ChildProcess(getSleepCmd(), ['90'])
-            const childProcess2 = new ChildProcess(getSleepCmd(), ['90'])
-            childProcess1.run().catch(() => assert.fail('sleep command threw an error'))
-            childProcess2.run().catch(() => assert.fail('sleep command threw an error'))
+            const childProcess1 = startSleepProcess()
+            const childProcess2 = startSleepProcess()
             tracker.add(childProcess1)
             tracker.add(childProcess2)
 
@@ -420,8 +423,7 @@ describe('ChildProcessTracker', function () {
     }
 
     it('logs a warning message when system usage exceeds threshold', async function () {
-        const childProcess = new ChildProcess(getSleepCmd(), ['90'])
-        childProcess.run().catch(() => assert.fail('sleep command threw an error'))
+        const childProcess = startSleepProcess()
         tracker.add(childProcess)
 
         const highCpu: ProcessStats = {
@@ -444,14 +446,12 @@ describe('ChildProcessTracker', function () {
     })
 
     it('includes pid in logs', async function () {
-        const childProcess = new ChildProcess(getSleepCmd(), ['90'])
-        childProcess.run().catch(() => assert.fail('sleep command threw an error'))
+        const childProcess = startSleepProcess()
         tracker.add(childProcess)
 
         usageMock.resolves({
             cpu: ChildProcessTracker.thresholds.cpu + 1,
             memory: 0,
-            elapsed: 0,
         })
 
         await clock.tickAsync(ChildProcessTracker.pollingInterval)
