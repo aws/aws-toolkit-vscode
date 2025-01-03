@@ -151,6 +151,7 @@ export class DBGlobalClusterNode extends DBResourceNode {
     }
 
     override refreshTree(): void {
+        getLogger().info(`(DBGlobalClusterNode) Refreshing tree for instance: ${this.arn}`)
         this.refresh()
         this.parent.refresh()
     }

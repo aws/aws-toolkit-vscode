@@ -103,8 +103,9 @@ export class DBInstanceNode extends DBResourceNode {
     }
 
     override refreshTree(): void {
+        getLogger().info(`(DBInstanceNode) Refreshing tree for instance: ${this.arn}`)
         this.refresh()
-        this.parent.refresh()
+        this.parent.refreshTree()
     }
 
     override clearTimer(): void {

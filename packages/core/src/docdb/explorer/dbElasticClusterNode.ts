@@ -101,6 +101,7 @@ export class DBElasticClusterNode extends DBResourceNode {
     }
 
     override refreshTree(): void {
+        getLogger().info(`(DBElasticClusterNode) Refreshing tree for instance: ${this.arn}`)
         this.refresh()
         this.parent.refresh()
     }

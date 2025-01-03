@@ -170,6 +170,7 @@ export class DBClusterNode extends DBResourceNode {
     }
 
     override refreshTree(): void {
+        getLogger().info(`(DBClusterNode) Refreshing tree for instance: ${this.arn}`)
         this.refresh()
         this.parent.refresh()
     }
