@@ -85,12 +85,10 @@ export class ChildProcessTracker {
     }
 
     private cleanUp() {
-        console.log('in clean up')
         const terminatedProcesses = Array.from(this.#pids.values()).filter(
             (pid: number) => this.#processByPid.get(pid)?.stopped
         )
         for (const pid of terminatedProcesses) {
-            console.log('removing %s', pid)
             this.delete(pid)
         }
     }
@@ -173,6 +171,7 @@ export class ChildProcessTracker {
  */
 export class ChildProcess {
     static #runningProcesses = new ChildProcessTracker()
+    static stopTimeout = 3000
     #childProcess: proc.ChildProcess | undefined
     #processErrors: Error[] = []
     #processResult: ChildProcessResult | undefined
@@ -389,7 +388,7 @@ export class ChildProcess {
             child.kill(signal)
 
             if (force === true) {
-                waitUntil(async () => this.stopped, { timeout: 3000, interval: 200, truthy: true })
+                waitUntil(async () => this.stopped, { timeout: ChildProcess.stopTimeout, interval: 200, truthy: true })
                     .then((stopped) => {
                         if (!stopped) {
                             child.kill('SIGKILL')

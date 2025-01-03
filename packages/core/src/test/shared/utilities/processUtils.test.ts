@@ -360,6 +360,11 @@ function getSleepCmd() {
     return isWin() ? 'timeout' : 'sleep'
 }
 
+async function stopAndWait(cp: ChildProcess) {
+    cp.stop(true)
+    await waitUntil(async () => cp.stopped, { timeout: ChildProcess.stopTimeout * 2, interval: 100, truthy: true })
+}
+
 describe('ChildProcessTracker', function () {
     let tracker: ChildProcessTracker
     let clock: FakeTimers.InstalledClock
@@ -389,7 +394,7 @@ describe('ChildProcessTracker', function () {
 
         await clock.tickAsync(ChildProcessTracker.pollingInterval)
         assert.strictEqual(tracker.has(childProcess), true, 'process was mistakenly removed')
-        childProcess.stop(true)
+        await stopAndWait(childProcess)
 
         await clock.tickAsync(ChildProcessTracker.pollingInterval)
         assert.strictEqual(tracker.has(childProcess), false, 'process was not removed after stopping')
@@ -406,8 +411,7 @@ describe('ChildProcessTracker', function () {
             assert.strictEqual(tracker.has(childProcess1), true, 'Missing first process')
             assert.strictEqual(tracker.has(childProcess2), true, 'Missing second process')
 
-            childProcess1.stop()
-            console.log('child process 1 stopped')
+            await stopAndWait(childProcess1)
             await clock.tickAsync(ChildProcessTracker.pollingInterval)
             assert.strictEqual(tracker.has(childProcess2), true, 'second process was mistakenly removed')
             assert.strictEqual(tracker.has(childProcess1), false, 'first process was not removed after stopping it')
