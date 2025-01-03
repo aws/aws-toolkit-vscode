@@ -101,19 +101,17 @@ export class ChildProcessTracker {
 
     private async checkProcessUsage(pid: number): Promise<void> {
         if (!this.#pids.has(pid)) {
-            ChildProcessTracker.logger.warn(`ChildProcess: Missing process with id ${pid}`)
+            ChildProcessTracker.logger.warn(`Missing process with id ${pid}`)
             return
         }
         const stats = await this.getUsage(pid)
         if (stats) {
             ChildProcessTracker.logger.debug(`stats for ${pid}: %O`, stats)
             if (stats.memory > ChildProcessTracker.thresholds.memory) {
-                ChildProcessTracker.logger.warn(
-                    `ChildProcess: Process ${pid} exceeded memory threshold: ${stats.memory}`
-                )
+                ChildProcessTracker.logger.warn(`Process ${pid} exceeded memory threshold: ${stats.memory}`)
             }
             if (stats.cpu > ChildProcessTracker.thresholds.cpu) {
-                ChildProcessTracker.logger.warn(`ChildProcess: Process ${pid} exceeded cpu threshold: ${stats.cpu}`)
+                ChildProcessTracker.logger.warn(`Process ${pid} exceeded cpu threshold: ${stats.cpu}`)
             }
         }
     }
@@ -186,7 +184,7 @@ export class ChildProcessTracker {
             // isWin() leads to circular dependency.
             return process.platform === 'win32' ? getWindowsUsage() : getUnixUsage()
         } catch (e) {
-            ChildProcessTracker.logger.warn(`ChildProcess: Failed to get process stats for ${pid}: ${e}`)
+            ChildProcessTracker.logger.warn(`Failed to get process stats for ${pid}: ${e}`)
             return { cpu: 0, memory: 0 }
         }
     }
