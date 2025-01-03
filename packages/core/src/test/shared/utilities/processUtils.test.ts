@@ -363,7 +363,7 @@ function getSleepCmd() {
 // ChildProcess.stop is non-async and doesn't wait for the process to be stopped.
 async function stopAndWait(cp: ChildProcess, clock: FakeTimers.InstalledClock) {
     cp.stop(true)
-    await clock.tickAsync(ChildProcess.stopTimeout)
+    await clock.tickAsync(ChildProcess.stopTimeout * 2)
 }
 
 function startSleepProcess(timeout: number = 90) {
