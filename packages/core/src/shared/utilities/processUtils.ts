@@ -76,6 +76,7 @@ export class ChildProcessTracker {
         cpu: 50,
         elapsed: 30 * 1000, // 30 seconds
     }
+    static readonly logger = getLogger('childProcess')
     #processByPid: Map<number, ChildProcess> = new Map<number, ChildProcess>()
     #pids: PollingSet<number>
 
@@ -94,7 +95,7 @@ export class ChildProcessTracker {
 
     private async monitor() {
         this.cleanUp()
-        getLogger().debug(`Active running processes size: ${this.#pids.size}`)
+        ChildProcessTracker.logger.debug(`Active running processes size: ${this.#pids.size}`)
 
         for (const pid of this.#pids.values()) {
             await this.checkProcessUsage(pid)
@@ -102,20 +103,26 @@ export class ChildProcessTracker {
     }
 
     private async checkProcessUsage(pid: number): Promise<void> {
-        if (this.#pids.has(pid)) {
-            const stats = await this.getUsage(pid)
-            getLogger().debug(`stats for ${pid}: %O`, stats)
+        if (!this.#pids.has(pid)) {
+            ChildProcessTracker.logger.warn(`ChildProcess: Missing process with id ${pid}`)
+            return
+        }
+        const stats = await this.getUsage(pid)
+        if (stats) {
+            ChildProcessTracker.logger.debug(`stats for ${pid}: %O`, stats)
             if (stats.memory > ChildProcessTracker.thresholds.memory) {
-                getLogger().warn(`Process ${pid} exceeded memory threshold: ${stats.memory}`)
+                ChildProcessTracker.logger.warn(
+                    `ChildProcess: Process ${pid} exceeded memory threshold: ${stats.memory}`
+                )
             }
             if (stats.cpu > ChildProcessTracker.thresholds.cpu) {
-                getLogger().warn(`Process ${pid} exceeded cpu threshold: ${stats.cpu}`)
+                ChildProcessTracker.logger.warn(`ChildProcess: Process ${pid} exceeded cpu threshold: ${stats.cpu}`)
             }
             if (stats.elapsed > ChildProcessTracker.thresholds.elapsed) {
-                getLogger().warn(`Process ${pid} exceeded time threshold: ${stats.elapsed}`)
+                ChildProcessTracker.logger.warn(
+                    `ChildProcess: Process ${pid} exceeded time threshold: ${stats.elapsed}`
+                )
             }
-        } else {
-            getLogger().warn(`Missing process with id ${pid}`)
         }
     }
 
