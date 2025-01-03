@@ -427,18 +427,10 @@ describe('ChildProcessTracker', function () {
         const highCpu: ProcessStats = {
             cpu: ChildProcessTracker.thresholds.cpu + 1,
             memory: 0,
-            elapsed: 0,
         }
         const highMemory: ProcessStats = {
             cpu: 0,
             memory: ChildProcessTracker.thresholds.memory + 1,
-            elapsed: 0,
-        }
-
-        const highTime: ProcessStats = {
-            cpu: 0,
-            memory: 0,
-            elapsed: ChildProcessTracker.thresholds.elapsed + 1,
         }
 
         usageMock.resolves(highCpu)
@@ -449,10 +441,6 @@ describe('ChildProcessTracker', function () {
         usageMock.resolves(highMemory)
         await clock.tickAsync(ChildProcessTracker.pollingInterval)
         assertLogsContain('exceeded memory threshold', false, 'warn')
-
-        usageMock.resolves(highTime)
-        await clock.tickAsync(ChildProcessTracker.pollingInterval)
-        assertLogsContain('exceeded time threshold', false, 'warn')
     })
 
     it('includes pid in logs', async function () {
@@ -477,7 +465,6 @@ describe('ChildProcessTracker', function () {
         usageMock.resolves({
             cpu: ChildProcessTracker.thresholds.cpu - 1,
             memory: ChildProcessTracker.thresholds.memory - 1,
-            elapsed: ChildProcessTracker.thresholds.elapsed - 1,
         })
 
         await clock.tickAsync(ChildProcessTracker.pollingInterval)

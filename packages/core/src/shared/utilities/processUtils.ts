@@ -9,7 +9,7 @@ import * as logger from '../logger'
 import { Timeout, CancellationError, waitUntil } from './timeoutUtils'
 import { PollingSet } from './pollingSet'
 import { getLogger } from '../logger/logger'
-import pidusage from 'pidusage'
+import { isWin } from '../vscode/env'
 
 export interface RunParameterContext {
     /** Reports an error parsed from the stdin/stdout streams. */
@@ -67,14 +67,12 @@ export const eof = Symbol('EOF')
 export interface ProcessStats {
     memory: number
     cpu: number
-    elapsed: number
 }
 export class ChildProcessTracker {
     static readonly pollingInterval: number = 10000
     static readonly thresholds: ProcessStats = {
         memory: 100 * 1024 * 1024, // 100 MB
         cpu: 50,
-        elapsed: 30 * 1000, // 30 seconds
     }
     static readonly logger = getLogger('childProcess')
     #processByPid: Map<number, ChildProcess> = new Map<number, ChildProcess>()
@@ -118,11 +116,6 @@ export class ChildProcessTracker {
             if (stats.cpu > ChildProcessTracker.thresholds.cpu) {
                 ChildProcessTracker.logger.warn(`ChildProcess: Process ${pid} exceeded cpu threshold: ${stats.cpu}`)
             }
-            if (stats.elapsed > ChildProcessTracker.thresholds.elapsed) {
-                ChildProcessTracker.logger.warn(
-                    `ChildProcess: Process ${pid} exceeded time threshold: ${stats.elapsed}`
-                )
-            }
         }
     }
 
@@ -154,11 +147,47 @@ export class ChildProcessTracker {
     }
 
     public async getUsage(pid: number): Promise<ProcessStats> {
-        const stats = await pidusage(pid)
-        return {
-            memory: stats.memory,
-            cpu: stats.cpu,
-            elapsed: stats.elapsed,
+        const getWindowsUsage = () => {
+            const cpuOutput = proc
+                .execFileSync('wmic', [
+                    'path',
+                    'Win32_PerfFormattedData_PerfProc_Process',
+                    'where',
+                    `IDProcess=${pid}`,
+                    'get',
+                    'PercentProcessorTime',
+                ])
+                .toString()
+            const memOutput = proc
+                .execFileSync('wmic', ['process', 'where', `ProcessId=${pid}`, 'get', 'WorkingSetSize'])
+                .toString()
+
+            const cpuPercentage = parseFloat(cpuOutput.split('\n')[1])
+            const memoryBytes = parseInt(memOutput.split('\n')[1]) * 1024
+
+            return {
+                cpu: isNaN(cpuPercentage) ? 0 : cpuPercentage,
+                memory: memoryBytes,
+            }
+        }
+        const getUnixUsage = () => {
+            const cpuMemOutput = proc.execFileSync('ps', ['-p', pid.toString(), '-o', '%cpu,%mem']).toString()
+            const rssOutput = proc.execFileSync('ps', ['-p', pid.toString(), '-o', 'rss']).toString()
+
+            const cpuMemLines = cpuMemOutput.split('\n')[1].trim().split(/\s+/)
+            const cpuPercentage = parseFloat(cpuMemLines[0])
+            const memoryBytes = parseInt(rssOutput.split('\n')[1]) * 1024
+
+            return {
+                cpu: isNaN(cpuPercentage) ? 0 : cpuPercentage,
+                memory: memoryBytes,
+            }
+        }
+        try {
+            return isWin() ? getWindowsUsage() : getUnixUsage()
+        } catch (e) {
+            ChildProcessTracker.logger.warn(`ChildProcess: Failed to get process stats for ${pid}: ${e}`)
+            return { cpu: 0, memory: 0 }
         }
     }
 }
