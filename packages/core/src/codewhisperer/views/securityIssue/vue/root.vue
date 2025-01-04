@@ -48,16 +48,14 @@
         </div>
 
         <div
-            v-if="isFixAvailable || isGenerateFixLoading || isGenerateFixError || isFixDescriptionAvailable"
+            v-if="isFixAvailable || isGenerateFixLoading || generateFixError || isFixDescriptionAvailable"
             ref="codeFixSection"
         >
             <hr />
 
             <h3>Suggested code fix preview</h3>
             <pre v-if="isGenerateFixLoading" class="center"><div class="dot-typing"></div></pre>
-            <pre v-if="isGenerateFixError" class="center error">
-                Something went wrong. <a @click="regenerateFix">Retry</a>
-            </pre>
+            <pre v-if="generateFixError" class="center error">{{ generateFixError }}</pre>
             <div class="code-block">
                 <span v-if="isFixAvailable" v-html="suggestedFixHtml"></span>
                 <div v-if="isFixAvailable" class="code-diff-actions" ref="codeFixAction">
@@ -195,7 +193,7 @@ export default defineComponent({
             endLine: 0,
             relativePath: '',
             isGenerateFixLoading: false,
-            isGenerateFixError: false,
+            generateFixError: undefined as string | null | undefined,
             languageId: 'plaintext',
             fixedCode: '',
             referenceText: '',
@@ -218,8 +216,8 @@ export default defineComponent({
             const relativePath = await client.getRelativePath()
             this.updateRelativePath(relativePath)
             const isGenerateFixLoading = await client.getIsGenerateFixLoading()
-            const isGenerateFixError = await client.getIsGenerateFixError()
-            this.updateGenerateFixState(isGenerateFixLoading, isGenerateFixError)
+            const generateFixError = await client.getGenerateFixError()
+            this.updateGenerateFixState(isGenerateFixLoading, generateFixError)
             const languageId = await client.getLanguageId()
             if (languageId) {
                 this.updateLanguageId(languageId)
@@ -249,16 +247,16 @@ export default defineComponent({
                 this.isGenerateFixLoading = isGenerateFixLoading
                 this.scrollTo('codeFixSection')
             })
-            client.onChangeGenerateFixError((isGenerateFixError) => {
-                this.isGenerateFixError = isGenerateFixError
+            client.onChangeGenerateFixError((generateFixError) => {
+                this.generateFixError = generateFixError
             })
         },
         updateRelativePath(relativePath: string) {
             this.relativePath = relativePath
         },
-        updateGenerateFixState(isGenerateFixLoading: boolean, isGenerateFixError: boolean) {
+        updateGenerateFixState(isGenerateFixLoading: boolean, generateFixError: string | null | undefined) {
             this.isGenerateFixLoading = isGenerateFixLoading
-            this.isGenerateFixError = isGenerateFixError
+            this.generateFixError = generateFixError
         },
         updateLanguageId(languageId: string) {
             this.languageId = languageId

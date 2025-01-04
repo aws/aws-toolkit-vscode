@@ -27,12 +27,12 @@ export class SecurityIssueWebview extends VueWebview {
     public readonly onChangeIssue = new vscode.EventEmitter<CodeScanIssue | undefined>()
     public readonly onChangeFilePath = new vscode.EventEmitter<string | undefined>()
     public readonly onChangeGenerateFixLoading = new vscode.EventEmitter<boolean>()
-    public readonly onChangeGenerateFixError = new vscode.EventEmitter<boolean>()
+    public readonly onChangeGenerateFixError = new vscode.EventEmitter<string | null | undefined>()
 
     private issue: CodeScanIssue | undefined
     private filePath: string | undefined
     private isGenerateFixLoading: boolean = false
-    private isGenerateFixError: boolean = false
+    private generateFixError: string | null | undefined = undefined
 
     public constructor() {
         super(SecurityIssueWebview.sourcePath)
@@ -99,13 +99,13 @@ export class SecurityIssueWebview extends VueWebview {
         this.onChangeGenerateFixLoading.fire(isGenerateFixLoading)
     }
 
-    public getIsGenerateFixError() {
-        return this.isGenerateFixError
+    public getGenerateFixError() {
+        return this.generateFixError
     }
 
-    public setIsGenerateFixError(isGenerateFixError: boolean) {
-        this.isGenerateFixError = isGenerateFixError
-        this.onChangeGenerateFixError.fire(isGenerateFixError)
+    public setGenerateFixError(generateFixError: string | null | undefined) {
+        this.generateFixError = generateFixError
+        this.onChangeGenerateFixError.fire(generateFixError)
     }
 
     public generateFix() {
@@ -201,7 +201,7 @@ export async function showSecurityIssueWebview(ctx: vscode.ExtensionContext, iss
     activePanel.server.setIssue(issue)
     activePanel.server.setFilePath(filePath)
     activePanel.server.setIsGenerateFixLoading(false)
-    activePanel.server.setIsGenerateFixError(false)
+    activePanel.server.setGenerateFixError(undefined)
 
     const webviewPanel = await activePanel.show({
         title: amazonqCodeIssueDetailsTabTitle,
@@ -247,7 +247,7 @@ type WebviewParams = {
     issue?: CodeScanIssue
     filePath?: string
     isGenerateFixLoading?: boolean
-    isGenerateFixError?: boolean
+    generateFixError?: string | null
     shouldRefreshView: boolean
     context: vscode.ExtensionContext
 }
@@ -255,7 +255,7 @@ export async function updateSecurityIssueWebview({
     issue,
     filePath,
     isGenerateFixLoading,
-    isGenerateFixError,
+    generateFixError,
     shouldRefreshView,
     context,
 }: WebviewParams): Promise<void> {
@@ -271,8 +271,8 @@ export async function updateSecurityIssueWebview({
     if (isGenerateFixLoading !== undefined) {
         activePanel.server.setIsGenerateFixLoading(isGenerateFixLoading)
     }
-    if (isGenerateFixError !== undefined) {
-        activePanel.server.setIsGenerateFixError(isGenerateFixError)
+    if (generateFixError !== undefined) {
+        activePanel.server.setGenerateFixError(generateFixError)
     }
     if (shouldRefreshView && filePath && issue) {
         await showSecurityIssueWebview(context, issue, filePath)
