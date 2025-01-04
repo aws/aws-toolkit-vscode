@@ -173,6 +173,7 @@ export const codefileExtensions = new Set([
     '.cljs',
     '.cls',
     '.cmake',
+    '.cmd',
     '.cob',
     '.cobra',
     '.coffee',
@@ -274,6 +275,7 @@ export const codefileExtensions = new Set([
     '.pp',
     '.pro',
     '.prolog',
+    '.properties',
     '.ps1',
     '.psd1',
     '.psm1',
@@ -351,21 +353,10 @@ export const codefileExtensions = new Set([
 ])
 
 // Code file names without an extension
-export const codefileNames = new Set(['Dockerfile', 'Dockerfile.build'])
-
-// To match gradlew, .mvn/*, etc
-export const wellKnownSubnames = new Set(['gradle', 'mvn'])
+export const codefileNames = new Set(['Dockerfile', 'Dockerfile.build', 'gradlew', 'mvnw'])
 
 /** Returns true if `filename` is a code file. */
 export function isCodeFile(filename: string): boolean {
     const ext = path.extname(filename).toLowerCase()
-    if (codefileExtensions.has(ext) || codefileNames.has(path.basename(filename))) {
-        return true
-    }
-    for (const subname of wellKnownSubnames) {
-        if (filename.includes(subname)) {
-            return true
-        }
-    }
-    return false
+    return codefileExtensions.has(ext) || codefileNames.has(path.basename(filename))
 }

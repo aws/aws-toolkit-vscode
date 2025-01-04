@@ -1,4 +1,4 @@
 {
 	"type": "Bug Fix",
-	"description": "Include mvn and gradle files in repo archives"
+	"description": "Amazon Q can update mvn and gradle build files"
 }
