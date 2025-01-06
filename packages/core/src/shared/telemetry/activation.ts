@@ -40,7 +40,6 @@ export async function activate(
     productName: AWSProduct
 ) {
     const config = new TelemetryConfig(settings)
-    await config.initAmazonQSetting() // TODO: Remove after a few releases.
 
     DefaultTelemetryClient.productName = productName
     globals.telemetry = await DefaultTelemetryService.create(awsContext, getComputeRegion())
