@@ -13,14 +13,14 @@ import * as xml2js from 'xml2js'
 async function mergeReports() {
     console.log('Merging test reports')
 
-    const packagesDir = path.join(__dirname, '..', 'packages')
+    const packagesDir = `${__dirname}/../packages`
 
     // Get all packages/* directories
     const packageDirs = fs.readdirSync(packagesDir).map((dir) => path.join(packagesDir, dir))
 
     // Find report.xml files in .test-reports subdirectories
     const testReports = packageDirs
-        .map((dir) => path.join(dir, '.test-reports', 'report.xml'))
+        .map((dir) => `${dir}/.test-reports/report.xml`)
         .filter((file) => fs.existsSync(file))
 
     const mergedReport = {
@@ -51,7 +51,7 @@ async function mergeReports() {
         fs.mkdirSync(reportsDir, { recursive: true })
     }
 
-    fs.writeFileSync(path.join(reportsDir, 'report.xml'), xml)
+    fs.writeFileSync(`${reportsDir}/report.xml`, xml)
 
     const exitCodeArg = process.argv[2]
     if (exitCodeArg) {
