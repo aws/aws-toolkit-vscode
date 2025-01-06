@@ -554,14 +554,14 @@ export const noOngoingJobMessage = 'No ongoing job.'
 
 export const nothingToShowMessage = 'Nothing to show'
 
-export const jobStartedTitle = 'Transformation started'
-
 export const jobStartedNotification =
     'Amazon Q is transforming your code. It can take 10 to 30 minutes to upgrade your code, depending on the size of your project. To monitor progress, go to the Transformation Hub.'
 
 export const openTransformationHubButtonText = 'Open Transformation Hub'
 
 export const startTransformationButtonText = 'Start a new transformation'
+
+export const viewSummaryButtonText = 'View summary'
 
 export const stopTransformationButtonText = 'Stop transformation'
 
@@ -579,7 +579,7 @@ export const absolutePathDetectedMessage = (numPaths: number, buildFile: string,
     `I detected ${numPaths} potential absolute file path(s) in your ${buildFile} file: **${listOfPaths}**. Absolute file paths might cause issues when I build your code. Any errors will show up in the build log.`
 
 export const selectSQLMetadataFileHelpMessage =
-    'Okay, I can convert the embedded SQL code for your Oracle to PostgreSQL transformation. To get started, upload the zipped metadata file from your schema conversion in AWS Data Migration Service (DMS). To retrieve the metadata file:\n1. Open your database migration project in the AWS DMS console.\n2. Open the schema conversion and choose **Convert the embedded SQL in your application**.\n3. Choose the link to Amazon S3 console.\n\nYou can download the metadata file from the {schema-conversion-project}/ directory. For more info, refer to the [documentation](https://docs.aws.amazon.com/dms/latest/userguide/schema-conversion-save-apply.html#schema-conversion-save).'
+    'Okay, I can convert the embedded SQL code for your Oracle to PostgreSQL transformation. To get started, upload the zipped metadata file from your schema conversion in AWS Data Migration Service (DMS). To retrieve the metadata file:\n1. Open your database migration project in the AWS DMS console.\n2. Open the schema conversion and choose **Convert the embedded SQL in your application**.\n3. Once you complete the conversion, close the project and go to the S3 bucket where your project is stored.\n4. Open the folder and find the project folder ("sct-project").\n5. Download the object inside the project folder. This will be a zip file.\n\nFor more info, refer to the [documentation](https://docs.aws.amazon.com/dms/latest/userguide/schema-conversion-embedded-sql.html).'
 
 export const invalidMetadataFileUnsupportedSourceDB =
     'I can only convert SQL for migrations from an Oracle source database. The provided .sct file indicates another source database for this migration.'
@@ -637,8 +637,6 @@ export const jobCancelledChatMessage =
     'I cancelled your transformation. If you want to start another transformation, choose **Start a new transformation**.'
 
 export const jobCancelledNotification = 'You cancelled the transformation.'
-
-export const transformationCompletedTitle = 'Transformation complete'
 
 export const diffMessage = (multipleDiffs: boolean) => {
     return multipleDiffs
@@ -747,7 +745,7 @@ export const cleanInstallErrorNotification = `Amazon Q could not run the Maven c
 export const enterJavaHomeChatMessage = 'Enter the path to JDK '
 
 export const projectPromptChatMessage =
-    'I can upgrade your JAVA_VERSION_HERE. To start the transformation, I need some information from you. Choose the project you want to upgrade and the target code version to upgrade to. Then, choose Confirm.'
+    'I can upgrade your Java project. To start the transformation, I need some information from you. Choose the project you want to upgrade and the target code version to upgrade to. Then, choose Confirm.'
 
 export const windowsJavaHomeHelpChatMessage =
     'To find the JDK path, run the following commands in a new terminal: `cd "C:/Program Files/Java"` and then `dir`. If you see your JDK version, run `cd <version>` and then `cd` to show the path.'

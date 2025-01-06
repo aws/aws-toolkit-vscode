@@ -310,10 +310,10 @@ export class RecommendationHandler {
                 4,
                 true
             ).trimStart()
-            recommendations.forEach((item, index) => {
+            for (const [index, item] of recommendations.entries()) {
                 msg += `\n    ${index.toString().padStart(2, '0')}: ${indent(item.content, 8, true).trim()}`
                 session.requestIdList.push(requestId)
-            })
+            }
             getLogger().debug(msg)
             if (invocationResult === 'Succeeded') {
                 CodeWhispererCodeCoverageTracker.getTracker(session.language)?.incrementServiceInvocationCount()
@@ -370,7 +370,7 @@ export class RecommendationHandler {
             TelemetryHelper.instance.setTypeAheadLength(typedPrefix.length)
             // mark suggestions that does not match typeahead when arrival as Discard
             // these suggestions can be marked as Showed if typeahead can be removed with new inline API
-            recommendations.forEach((r, i) => {
+            for (const [i, r] of recommendations.entries()) {
                 const recommendationIndex = i + session.recommendations.length
                 if (
                     !r.content.startsWith(typedPrefix) &&
@@ -379,7 +379,7 @@ export class RecommendationHandler {
                     session.setSuggestionState(recommendationIndex, 'Discard')
                 }
                 session.setCompletionType(recommendationIndex, r)
-            })
+            }
             session.recommendations = pagination ? session.recommendations.concat(recommendations) : recommendations
             if (isInlineCompletionEnabled() && this.hasAtLeastOneValidSuggestion(typedPrefix)) {
                 this._onDidReceiveRecommendation.fire()
@@ -474,9 +474,9 @@ export class RecommendationHandler {
     }
 
     reportDiscardedUserDecisions() {
-        session.recommendations.forEach((r, i) => {
+        for (const [i, _] of session.recommendations.entries()) {
             session.setSuggestionState(i, 'Discard')
-        })
+        }
         this.reportUserDecisions(-1)
     }
 
@@ -528,9 +528,9 @@ export class RecommendationHandler {
         // do not show recommendation if cursor is before invocation position
         // also mark as Discard
         if (editor.selection.active.isBefore(session.startPos)) {
-            session.recommendations.forEach((r, i) => {
+            for (const [i, _] of session.recommendations.entries()) {
                 session.setSuggestionState(i, 'Discard')
-            })
+            }
             reject()
             return false
         }
@@ -546,9 +546,9 @@ export class RecommendationHandler {
             )
         )
         if (!session.recommendations[0].content.startsWith(typedPrefix.trimStart())) {
-            session.recommendations.forEach((r, i) => {
+            for (const [i, _] of session.recommendations.entries()) {
                 session.setSuggestionState(i, 'Discard')
-            })
+            }
             reject()
             return false
         }
@@ -670,9 +670,9 @@ export class RecommendationHandler {
             editor.selection.active.isBefore(session.startPos) ||
             editor.document.uri.fsPath !== this.documentUri?.fsPath
         ) {
-            session.recommendations.forEach((r, i) => {
+            for (const [i, _] of session.recommendations.entries()) {
                 session.setSuggestionState(i, 'Discard')
-            })
+            }
             this.reportUserDecisions(-1)
         } else if (session.recommendations.length > 0) {
             await this.showRecommendation(0, true)

@@ -72,9 +72,9 @@ export function generateSamconfigData(data: {
     for (const [operation, parameters] of Object.entries(data)) {
         if (parameters && parameters.length > 0) {
             result.push('', `[default.${operation}.parameters]`)
-            parameters.forEach(({ key, value }) => {
+            for (const { key, value } of parameters) {
                 value && result.push(`${key} = "${value}"`)
-            })
+            }
         }
     }
 

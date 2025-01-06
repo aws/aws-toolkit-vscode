@@ -21,7 +21,6 @@ import { ExportResultArchiveStructure, downloadExportResultArchive } from '../..
 import { getLogger } from '../../../shared/logger'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 import { CodeTransformTelemetryState } from '../../../amazonqGumby/telemetry/codeTransformTelemetryState'
-import { MetadataResult } from '../../../shared/telemetry/telemetryClient'
 import * as CodeWhispererConstants from '../../models/constants'
 import { createCodeWhispererChatStreamingClient } from '../../../shared/clients/codewhispererChatClient'
 import { ChatSessionManager } from '../../../amazonqGumby/chat/storages/chatSession'
@@ -146,7 +145,7 @@ export class DiffModel {
     public copyProject(pathToWorkspace: string, changedFiles: ParsedDiff[]) {
         const pathToTmpSrcDir = path.join(os.tmpdir(), `project-copy-${Date.now()}`)
         fs.mkdirSync(pathToTmpSrcDir)
-        changedFiles.forEach((file) => {
+        for (const file of changedFiles) {
             const pathToTmpFile = path.join(pathToTmpSrcDir, file.oldFileName!.substring(2))
             // use mkdirsSync to create parent directories in pathToTmpFile too
             fs.mkdirSync(path.dirname(pathToTmpFile), { recursive: true })
@@ -155,7 +154,7 @@ export class DiffModel {
             if (fs.existsSync(pathToOldFile)) {
                 fs.copyFileSync(pathToOldFile, pathToTmpFile)
             }
-        })
+        }
         return pathToTmpSrcDir
     }
 
@@ -244,11 +243,11 @@ export class DiffModel {
     }
 
     public saveChanges() {
-        this.patchFileNodes.forEach((patchFileNode) => {
-            patchFileNode.children.forEach((changeNode) => {
+        for (const patchFileNode of this.patchFileNodes) {
+            for (const changeNode of patchFileNode.children) {
                 changeNode.saveChange()
-            })
-        })
+            }
+        }
     }
 
     public rejectChanges() {
@@ -326,7 +325,7 @@ export class ProposedTransformationExplorer {
             treeDataProvider: transformDataProvider,
         })
 
-        const patchFiles: string[] = []
+        let patchFiles: string[] = []
         let singlePatchFile: string = ''
         let patchFilesDescriptions: DescriptionContent | undefined = undefined
 
@@ -366,12 +365,11 @@ export class ProposedTransformationExplorer {
         })
 
         vscode.commands.registerCommand('aws.amazonq.transformationHub.summary.reveal', async () => {
-            if (transformByQState.getSummaryFilePath() !== '') {
+            if (fs.existsSync(transformByQState.getSummaryFilePath())) {
                 await vscode.commands.executeCommand(
                     'markdown.showPreview',
                     vscode.Uri.file(transformByQState.getSummaryFilePath())
                 )
-                telemetry.ui_click.emit({ elementId: 'transformationHub_viewSummary' })
             }
         })
 
@@ -432,6 +430,7 @@ export class ProposedTransformationExplorer {
 
             let deserializeErrorMessage = undefined
             let pathContainingArchive = ''
+            patchFiles = [] // reset patchFiles if there was a previous transformation
             try {
                 // Download and deserialize the zip
                 pathContainingArchive = path.dirname(pathToArchive)
@@ -534,12 +533,14 @@ export class ProposedTransformationExplorer {
         })
 
         vscode.commands.registerCommand('aws.amazonq.transformationHub.reviewChanges.acceptChanges', async () => {
-            diffModel.saveChanges()
-            telemetry.codeTransform_submitSelection.emit({
-                codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-                userChoice: `acceptChanges-${patchFilesDescriptions?.content[diffModel.currentPatchIndex].name}`,
+            telemetry.codeTransform_submitSelection.run(() => {
+                diffModel.saveChanges()
+                telemetry.record({
+                    codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
+                    codeTransformJobId: transformByQState.getJobId(),
+                    userChoice: `acceptChanges-${patchFilesDescriptions?.content[diffModel.currentPatchIndex].name}`,
+                })
             })
-            telemetry.ui_click.emit({ elementId: 'transformationHub_acceptChanges' })
             if (transformByQState.getMultipleDiffs()) {
                 void vscode.window.showInformationMessage(
                     CodeWhispererConstants.changesAppliedNotificationMultipleDiffs(
@@ -582,35 +583,20 @@ export class ProposedTransformationExplorer {
                 // All patches have been applied, reset the state
                 await reset()
             }
-
-            telemetry.codeTransform_viewArtifact.emit({
-                codeTransformArtifactType: 'ClientInstructions',
-                codeTransformVCSViewerSrcComponents: 'toastNotification',
-                codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-                codeTransformJobId: transformByQState.getJobId(),
-                codeTransformStatus: transformByQState.getStatus(),
-                userChoice: 'Submit',
-                result: MetadataResult.Pass,
-            })
         })
 
         vscode.commands.registerCommand('aws.amazonq.transformationHub.reviewChanges.rejectChanges', async () => {
-            diffModel.rejectChanges()
-            await reset()
-            telemetry.ui_click.emit({ elementId: 'transformationHub_rejectChanges' })
-
+            await telemetry.codeTransform_submitSelection.run(async () => {
+                diffModel.rejectChanges()
+                await reset()
+                telemetry.record({
+                    codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
+                    codeTransformJobId: transformByQState.getJobId(),
+                    userChoice: 'rejectChanges',
+                })
+            })
             transformByQState.getChatControllers()?.transformationFinished.fire({
                 tabID: ChatSessionManager.Instance.getSession().tabID,
-            })
-
-            telemetry.codeTransform_viewArtifact.emit({
-                codeTransformArtifactType: 'ClientInstructions',
-                codeTransformVCSViewerSrcComponents: 'toastNotification',
-                codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-                codeTransformJobId: transformByQState.getJobId(),
-                codeTransformStatus: transformByQState.getStatus(),
-                userChoice: 'Cancel',
-                result: MetadataResult.Pass,
             })
         })
     }

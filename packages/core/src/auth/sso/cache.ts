@@ -10,7 +10,7 @@ import { getLogger } from '../../shared/logger/logger'
 import fs from '../../shared/fs/fs'
 import { createDiskCache, KeyedCache, mapCache } from '../../shared/utilities/cacheUtils'
 import { stripUndefined } from '../../shared/utilities/collectionUtils'
-import { getMissingProps, hasProps, selectFrom } from '../../shared/utilities/tsUtils'
+import { hasProps, selectFrom } from '../../shared/utilities/tsUtils'
 import { SsoToken, ClientRegistration } from './model'
 import { DevSettings } from '../../shared/settings'
 import { onceChanged } from '../../shared/utilities/functionUtils'
@@ -79,6 +79,11 @@ export function getTokenCache(directory = getCacheDir()): KeyedCache<SsoAccess> 
         }
 
     function read(data: StoredToken): SsoAccess {
+        // Validate data is not missing. Since the input data is passed directly from whatever is on disk.
+        if (!hasProps(data, 'accessToken')) {
+            throw new ToolkitError(`SSO cache data looks malformed`)
+        }
+
         const registration = hasProps(data, 'clientId', 'clientSecret', 'registrationExpiresAt')
             ? {
                   ...selectFrom(data, 'clientId', 'clientSecret', 'scopes', 'startUrl'),
@@ -92,12 +97,6 @@ export function getTokenCache(directory = getCacheDir()): KeyedCache<SsoAccess> 
         }
 
         stripUndefined(token)
-
-        // Validate data is not missing.
-        const missingProps = getMissingProps(token, 'accessToken', 'refreshToken')
-        if (missingProps.length > 0) {
-            throw new ToolkitError(`SSO cache data unexpectedly missing props: ${JSON.stringify(missingProps)}`)
-        }
 
         return {
             token,
@@ -150,7 +149,9 @@ function getRegistrationCacheFile(ssoCacheDir: string, key: RegistrationKey): st
     const hash = (startUrl: string, scopes: string[]) => {
         const shasum = crypto.createHash('sha256')
         shasum.update(startUrl)
-        scopes.forEach((s) => shasum.update(s))
+        for (const s of scopes) {
+            shasum.update(s)
+        }
         return shasum.digest('hex')
     }
 

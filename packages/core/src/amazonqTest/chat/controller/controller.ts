@@ -670,7 +670,7 @@ export class TestController {
         const fileName = path.basename(session.generatedFilePath)
         const time = new Date().toLocaleString()
         // TODO: this is duplicated in basicCommands.ts for scan (codewhisperer). Fix this later.
-        session.references.forEach((reference) => {
+        for (const reference of session.references) {
             getLogger().debug('Processing reference: %O', reference)
             // Log values for debugging
             getLogger().debug('updatedContent: %s', updatedContent)
@@ -705,7 +705,7 @@ export class TestController {
                 '<br>'
             getLogger().debug('Adding reference log: %s', referenceLog)
             ReferenceLogViewProvider.instance.addReferenceLog(referenceLog)
-        })
+        }
 
         // TODO: see if there's a better way to check if active file is a diff
         if (vscode.window.tabGroups.activeTabGroup.activeTab?.label.includes(amazonQTabSuffix)) {
@@ -1245,7 +1245,7 @@ export class TestController {
             groupName
         )
         if (session.listOfTestGenerationJobId.length && groupName) {
-            session.listOfTestGenerationJobId.forEach((id) => {
+            for (const id of session.listOfTestGenerationJobId) {
                 if (id === session.acceptedJobId) {
                     TelemetryHelper.instance.sendTestGenerationEvent(
                         groupName,
@@ -1271,7 +1271,7 @@ export class TestController {
                         0
                     )
                 }
-            })
+            }
         }
         session.listOfTestGenerationJobId = []
         session.testGenerationJobGroupName = undefined
