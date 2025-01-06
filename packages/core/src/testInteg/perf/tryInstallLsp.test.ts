@@ -35,7 +35,7 @@ const fakeNodeContent = {
 
 function createStubs(numberOfFiles: number, fileSize: number): sinon.SinonSpiedInstance<FileSystem> {
     // Avoid making HTTP request or mocking giant manifest, stub what we need directly from request.
-    sinon.stub(LspController.prototype, 'fetchManifest')
+    sinon.stub(LspController.prototype, 'downloadManifest')
     // Directly feed the runtime specifications.
     sinon
         .stub(LspController.prototype, 'getDependency')

@@ -60,7 +60,7 @@ export class LspController extends LspDownloader {
     }
 
     constructor() {
-        super(manifestUrl, supportedLspServerVersions)
+        super(manifestUrl, 'qcontextserver', supportedLspServerVersions)
         this.serverPath = globals.context.asAbsolutePath(path.join('resources', 'qserver'))
         this.nodePath = globals.context.asAbsolutePath(path.join('resources', nodeBinName))
     }
@@ -193,6 +193,10 @@ export class LspController extends LspDownloader {
             getLogger('lsp').info(`Did not find LSP URL for ${process.platform} ${process.arch}`)
             return false
         }
+
+        const current = globals.globalState.tryGet('aws.toolkit.lsp.versions', Object, {})
+        current[this.lsName] = server.serverVersion
+        globals.globalState.tryUpdate('aws.toolkit.lsp.versions', current)
 
         let tempFolder = undefined
 
