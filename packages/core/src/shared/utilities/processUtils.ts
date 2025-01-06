@@ -68,7 +68,7 @@ export interface ProcessStats {
     cpu: number
 }
 export class ChildProcessTracker {
-    static readonly pollingInterval: number = 10000
+    static readonly pollingInterval: number = 10000 // Check usage every 10 seconds
     static readonly thresholds: ProcessStats = {
         memory: 100 * 1024 * 1024, // 100 MB
         cpu: 50,
@@ -106,7 +106,7 @@ export class ChildProcessTracker {
         }
         const stats = await this.getUsage(pid)
         if (stats) {
-            ChildProcessTracker.logger.debug(`stats for ${pid}: %O`, stats)
+            ChildProcessTracker.logger.debug(`Process ${pid} usage: %O`, stats)
             if (stats.memory > ChildProcessTracker.thresholds.memory) {
                 ChildProcessTracker.logger.warn(`Process ${pid} exceeded memory threshold: ${stats.memory}`)
             }
@@ -127,7 +127,7 @@ export class ChildProcessTracker {
         this.#pids.delete(childProcessId)
     }
 
-    public size() {
+    public get size() {
         return this.#pids.size
     }
 
@@ -271,7 +271,7 @@ export class ChildProcess {
         const args = this.#args.concat(options.extraArgs ?? [])
 
         const debugDetail = this.#log.logLevelEnabled('debug')
-            ? ` (running processes: ${ChildProcess.#runningProcesses.size()})`
+            ? ` (running processes: ${ChildProcess.#runningProcesses.size})`
             : ''
         this.#log.info(`Command: ${this.toString(options.logging === 'noparams')}${debugDetail}`)
 

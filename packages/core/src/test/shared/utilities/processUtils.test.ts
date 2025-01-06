@@ -442,7 +442,7 @@ describe('ChildProcessTracker', function () {
             'second process was not removed after stopping it'
         )
 
-        assert.strictEqual(tracker.size(), 0, 'expected tracker to be empty')
+        assert.strictEqual(tracker.size, 0, 'expected tracker to be empty')
     })
 
     it('logs a warning message when system usage exceeds threshold', async function () {
