@@ -415,36 +415,35 @@ describe('ChildProcessTracker', function () {
         await clock.tickAsync(ChildProcessTracker.pollingInterval)
         assert.strictEqual(tracker.has(runningProcess.childProcess), false, 'process was not removed after stopping')
     })
-    for (const _ of Array.from({ length: 1000 })) {
-        it('multiple processes from same command are tracked seperately', async function () {
-            const runningProcess1 = startSleepProcess()
-            const runningProcess2 = startSleepProcess()
-            tracker.add(runningProcess1.childProcess)
-            tracker.add(runningProcess2.childProcess)
 
-            assert.strictEqual(tracker.has(runningProcess1.childProcess), true, 'Missing first process')
-            assert.strictEqual(tracker.has(runningProcess2.childProcess), true, 'Missing second process')
+    it('multiple processes from same command are tracked seperately', async function () {
+        const runningProcess1 = startSleepProcess()
+        const runningProcess2 = startSleepProcess()
+        tracker.add(runningProcess1.childProcess)
+        tracker.add(runningProcess2.childProcess)
 
-            await stopAndWait(runningProcess1)
-            await clock.tickAsync(ChildProcessTracker.pollingInterval)
-            assert.strictEqual(tracker.has(runningProcess2.childProcess), true, 'second process was mistakenly removed')
-            assert.strictEqual(
-                tracker.has(runningProcess1.childProcess),
-                false,
-                'first process was not removed after stopping it'
-            )
+        assert.strictEqual(tracker.has(runningProcess1.childProcess), true, 'Missing first process')
+        assert.strictEqual(tracker.has(runningProcess2.childProcess), true, 'Missing second process')
 
-            await stopAndWait(runningProcess2)
-            await clock.tickAsync(ChildProcessTracker.pollingInterval)
-            assert.strictEqual(
-                tracker.has(runningProcess2.childProcess),
-                false,
-                'second process was not removed after stopping it'
-            )
+        await stopAndWait(runningProcess1)
+        await clock.tickAsync(ChildProcessTracker.pollingInterval)
+        assert.strictEqual(tracker.has(runningProcess2.childProcess), true, 'second process was mistakenly removed')
+        assert.strictEqual(
+            tracker.has(runningProcess1.childProcess),
+            false,
+            'first process was not removed after stopping it'
+        )
 
-            assert.strictEqual(tracker.size(), 0, 'expected tracker to be empty')
-        })
-    }
+        await stopAndWait(runningProcess2)
+        await clock.tickAsync(ChildProcessTracker.pollingInterval)
+        assert.strictEqual(
+            tracker.has(runningProcess2.childProcess),
+            false,
+            'second process was not removed after stopping it'
+        )
+
+        assert.strictEqual(tracker.size(), 0, 'expected tracker to be empty')
+    })
 
     it('logs a warning message when system usage exceeds threshold', async function () {
         const runningProcess = startSleepProcess()
