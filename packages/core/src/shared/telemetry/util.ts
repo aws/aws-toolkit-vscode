@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import { env, version } from 'vscode'
 import * as os from 'os'
 import { getLogger } from '../logger'
-import { fromExtensionManifest, migrateSetting, Settings } from '../settings'
+import { fromExtensionManifest, Settings } from '../settings'
 import { memoize, once } from '../utilities/functionUtils'
 import {
     isInDevEnv,
@@ -64,16 +64,6 @@ export class TelemetryConfig {
 
     public isEnabled(): boolean {
         return (isAmazonQ() ? this.amazonQConfig : this.toolkitConfig).get(`telemetry`, true)
-    }
-
-    public async initAmazonQSetting() {
-        if (!isAmazonQ() || globals.globalState.tryGet('amazonq.telemetry.migrated', Boolean, false)) {
-            return
-        }
-        // aws.telemetry isn't deprecated, we are just initializing amazonQ.telemetry with its value.
-        // This is also why we need to check that we only try this migration once.
-        await migrateSetting({ key: 'aws.telemetry', type: Boolean }, { key: 'amazonQ.telemetry' })
-        await globals.globalState.update('amazonq.telemetry.migrated', true)
     }
 }
 
