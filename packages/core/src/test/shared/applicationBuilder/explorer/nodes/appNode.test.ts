@@ -169,6 +169,7 @@ describe('AppNode', () => {
 
     describe('getTreeItem', () => {
         it('should return a TreeItem with the correct properties', () => {
+            assert.fail('failed')
             const treeItem = appNode.getTreeItem()
             const expextedLabel = path.join('VSCode Example Workspace', 'Project One Root Folder')
 

@@ -25,10 +25,10 @@
         "buildCustomLintPlugin": "npm run build -w plugins/eslint-plugin-aws-toolkits",
         "compile": "npm run compile -w packages/",
         "testCompile": "npm run testCompile -w packages/ --if-present",
-        "test": "npm run test -w packages/ --if-present",
-        "testWeb": "npm run testWeb -w packages/ --if-present",
-        "testE2E": "npm run testE2E -w packages/ --if-present",
-        "testInteg": "npm run testInteg -w packages/ --if-present",
+        "test": "npm run test -w packages/ --if-present; npm run createTestReport",
+        "testWeb": "npm run testWeb -w packages/ --if-present; npm run createTestReport",
+        "testE2E": "npm run testE2E -w packages/ --if-present; npm run createTestReport",
+        "testInteg": "npm run testInteg -w packages/ --if-present; npm run createTestReport",
         "package": "npm run package -w packages/toolkit -w packages/amazonq",
         "newChange": "echo 'Must specify subproject/workspace with -w packages/<subproject>' && false",
         "createRelease": "echo 'Must specify subproject/workspace with -w packages/<subproject>' && false",
@@ -37,7 +37,7 @@
         "clean": "npm run clean -w packages/ -w plugins/",
         "reset": "npm run clean && ts-node ./scripts/clean.ts node_modules && npm install",
         "generateNonCodeFiles": "npm run generateNonCodeFiles -w packages/ --if-present",
-        "mergeReports": "ts-node ./scripts/mergeReports.ts"
+        "createTestReport": "ts-node ./scripts/createTestReport.ts"
     },
     "devDependencies": {
         "@aws-toolkits/telemetry": "^1.0.289",

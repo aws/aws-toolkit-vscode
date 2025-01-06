@@ -27,4 +27,32 @@ describe('package validations', function () {
         )
         assert.deepStrictEqual(packageJson.contributes.icons, corePackageJson.contributes.icons)
     })
+
+    describe('foo', () => {
+        it('bar1', () => {
+            assert.ok(true)
+        })
+        describe('fi', () => {
+            it('bar2', () => {
+                assert.ok(true)
+            })
+            describe('fo234', () => {
+                it('bar3', () => {
+                    throw new Error('foo')
+                })
+            })
+        })
+    })
+
+    describe('package validations', () => {
+        it('wee', () => {
+            assert.ok(true)
+        })
+
+        describe('foo', () => {
+            it('wee 2', () => {
+                assert.ok(true)
+            })
+        })
+    })
 })
