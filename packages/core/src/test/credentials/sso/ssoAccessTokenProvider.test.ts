@@ -156,6 +156,18 @@ describe('SsoAccessTokenProvider', function () {
             assert.strictEqual(cachedToken, undefined)
         })
 
+        it('concurrent calls resolve successfully', async function () {
+            // This test verifies debounced getToken() does not break things.
+            // But this test is not perfect since we are unable to spy _getToken() for some reason.
+            const validToken = createToken(hourInMs)
+            await cache.token.save(startUrl, { region, startUrl, token: validToken })
+
+            const result = await Promise.all([sut.getToken(), sut.getToken(), sut.getToken()])
+            for (const r of result) {
+                assert.deepStrictEqual(r, validToken)
+            }
+        })
+
         describe('Exceptions', function () {
             it('drops expired tokens if failure was a client-fault', async function () {
                 const exception = new UnauthorizedClientException({ message: '', $metadata: {} })
