@@ -14,9 +14,9 @@ import { telemetry } from '../../shared/telemetry'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import globals, { isWeb } from '../../shared/extensionGlobals'
 import { isAmazonInternalOs } from '../../shared/vscode/env'
-import { LspDownloader, Manifest } from '../../shared/fetchLsp'
 import { fs } from '../../shared/fs/fs'
-import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../shared/filesystemUtilities'
+import { tryRemoveFolder } from '../../shared/filesystemUtilities'
+import { LspInstaller, LspResult } from '../../shared/languageServer/types'
 
 export interface Chunk {
     readonly filePath: string
@@ -26,9 +26,9 @@ export interface Chunk {
     readonly programmingLanguage?: string
 }
 
-const manifestUrl = 'https://aws-toolkit-language-servers.amazonaws.com/q-context/manifest.json'
-// this LSP client in Q extension is only going to work with these LSP server versions
-const supportedLspServerVersions = ['0.1.32']
+// const manifestUrl = 'https://aws-toolkit-language-servers.amazonaws.com/q-context/manifest.json'
+// // this LSP client in Q extension is only going to work with these LSP server versions
+// const supportedLspServerVersions = ['0.1.32']
 
 const nodeBinName = process.platform === 'win32' ? 'node.exe' : 'node'
 
@@ -49,7 +49,7 @@ export interface BuildIndexConfig {
  *    Pre-process the input to Index Files API
  *    Post-process the output from Query API
  */
-export class LspController extends LspDownloader {
+export class LspController implements LspInstaller {
     static #instance: LspController
     private _isIndexingInProgress = false
     private serverPath: string
@@ -60,7 +60,6 @@ export class LspController extends LspDownloader {
     }
 
     constructor() {
-        super(manifestUrl, 'qcontextserver', supportedLspServerVersions)
         this.serverPath = globals.context.asAbsolutePath(path.join('resources', 'qserver'))
         this.nodePath = globals.context.asAbsolutePath(path.join('resources', nodeBinName))
     }
@@ -186,40 +185,9 @@ export class LspController extends LspDownloader {
         return true
     }
 
-    async install(manifest: Manifest) {
-        const server = this.getDependency(manifest, 'qserver')
-        const runtime = this.getDependency(manifest, 'node')
-        if (!server || !runtime) {
-            getLogger('lsp').info(`Did not find LSP URL for ${process.platform} ${process.arch}`)
-            return false
-        }
-
-        const current = globals.globalState.tryGet('aws.toolkit.lsp.versions', Object, {})
-        current[this.lsName] = server.serverVersion
-        globals.globalState.tryUpdate('aws.toolkit.lsp.versions', current)
-
-        let tempFolder = undefined
-
-        try {
-            tempFolder = await makeTemporaryToolkitFolder()
-            await this.downloadAndExtractServer({
-                content: server,
-                installLocation: this.serverPath,
-                name: 'qserver',
-                tempFolder,
-                extractToTempFolder: true,
-            })
-
-            const runtimeTempPath = path.join(tempFolder, nodeBinName)
-            await this.installRuntime(runtime, this.nodePath, runtimeTempPath)
-        } finally {
-            // clean up temp folder
-            if (tempFolder) {
-                await tryRemoveFolder(tempFolder)
-            }
-        }
-
-        return true
+    install(): Promise<LspResult> {
+        // TODO
+        throw new Error('Method not implemented.')
     }
 
     async trySetupLsp(context: vscode.ExtensionContext, buildIndexConfig: BuildIndexConfig) {
@@ -229,7 +197,7 @@ export class LspController extends LspDownloader {
             return
         }
         setImmediate(async () => {
-            const ok = await LspController.instance.tryInstallLsp()
+            const ok = await LspController.instance.install()
             if (!ok) {
                 return
             }
