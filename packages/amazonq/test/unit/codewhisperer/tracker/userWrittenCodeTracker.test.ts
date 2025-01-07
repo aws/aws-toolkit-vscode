@@ -10,7 +10,7 @@ import { UserWrittenCodeTracker, TelemetryHelper, AuthUtil } from 'aws-core-vsco
 import { createMockDocument, resetCodeWhispererGlobalVariables } from 'aws-core-vscode/test'
 
 describe('userWrittenCodeTracker', function () {
-    describe('test isActive', function () {
+    describe('isActive()', function () {
         afterEach(async function () {
             await resetCodeWhispererGlobalVariables()
             UserWrittenCodeTracker.instance.reset()
