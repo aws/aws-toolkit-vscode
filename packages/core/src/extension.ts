@@ -52,6 +52,7 @@ import { registerCommands } from './commands'
 import endpoints from '../resources/endpoints.json'
 import { getLogger, maybeShowMinVscodeWarning, setupUninstallHandler } from './shared'
 import { showViewLogsMessage } from './shared/utilities/messages'
+import { ChildProcessTracker } from './shared/utilities/processUtils'
 
 disableAwsSdkWarning()
 
@@ -172,8 +173,9 @@ export async function activateCommon(
     await activateViewsShared(extContext.extensionContext)
 
     context.subscriptions.push(
-        Commands.register(`aws.${contextPrefix}.viewActiveProcesses`, () =>
-            console.log('running viewActiveProcesses command')
+        Commands.register(
+            `aws.${contextPrefix}.viewActiveProcesses`,
+            async () => await ChildProcessTracker.instance.logAllUsage()
         )
     )
     return extContext
