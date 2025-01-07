@@ -19,7 +19,7 @@ import { sleep } from '../../../shared/utilities/timeoutUtils'
 import { Timeout, waitUntil } from '../../../shared/utilities/timeoutUtils'
 import { fs } from '../../../shared'
 import * as FakeTimers from '@sinonjs/fake-timers'
-import { installFakeClock } from '../../testUtil'
+import { assertTelemetry, installFakeClock } from '../../testUtil'
 import { isWin } from '../../../shared/vscode/env'
 import { assertLogsContain } from '../../globalSetup.test'
 
@@ -536,5 +536,21 @@ describe('ChildProcessTracker', function () {
     it('logAllUsage defaults to empty message when empty', async function () {
         await tracker.logAllUsage()
         assertLogsContain('No Active Subprocesses', false, 'info')
+    })
+
+    it('logAllUsage emits telemetry with size equal to number of processes (empty)', async function () {
+        await tracker.logAllUsage()
+        assertTelemetry('ide_logActiveProcesses', { size: 0 })
+    })
+
+    it('logsAllUsage emits telemetry to number of processes (nonempty)', async function () {
+        const size = 10
+        for (const _ of Array.from({ length: size })) {
+            const runningProcess = startSleepProcess()
+            tracker.add(runningProcess.childProcess)
+        }
+
+        await tracker.logAllUsage()
+        assertTelemetry('ide_logActiveProcesses', { size: size })
     })
 })

@@ -1,6 +1,11 @@
 {
     "types": [
         {
+            "name": "size",
+            "type": "int",
+            "description": "A generic size for when units are clear"
+        },
+        {
             "name": "amazonGenerateApproachLatency",
             "type": "double",
             "description": "The time it takes to generate approach response"
@@ -369,6 +374,16 @@
                 {
                     "type": "attempts",
                     "required": false
+                }
+            ]
+        },
+        {
+            "name": "ide_logActiveProcesses",
+            "description": "Emitted when user invokes logActiveProcesses command",
+            "metadata": [
+                {
+                    "type": "size",
+                    "required": true
                 }
             ]
         },

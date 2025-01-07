@@ -8,6 +8,7 @@ import * as logger from '../logger'
 import { Timeout, CancellationError, waitUntil } from './timeoutUtils'
 import { PollingSet } from './pollingSet'
 import { getLogger } from '../logger/logger'
+import { telemetry } from '../telemetry'
 
 export interface RunParameterContext {
     /** Reports an error parsed from the stdin/stdout streams. */
@@ -161,15 +162,18 @@ export class ChildProcessTracker {
     }
 
     public async logAllUsage(): Promise<void> {
-        if (this.size === 0) {
-            this.logger.info('No Active Subprocesses')
-            return
-        }
-        const usage = await this.getAllUsage()
-        const logMsg = Array.from(usage.entries()).reduce((acc, [pid, stats]) => {
-            return acc + `Process ${pid}: ${stats.cpu}% cpu, ${stats.memory} MB of memory\n`
-        }, '')
-        this.logger.info(`Active Subprocesses (${this.size} active)\n${logMsg}`)
+        telemetry.ide_logActiveProcesses.run(async (span) => {
+            span.record({ size: this.size })
+            if (this.size === 0) {
+                this.logger.info('No Active Subprocesses')
+                return
+            }
+            const usage = await this.getAllUsage()
+            const logMsg = Array.from(usage.entries()).reduce((acc, [pid, stats]) => {
+                return acc + `Process ${pid}: ${stats.cpu}% cpu, ${stats.memory} MB of memory\n`
+            }, '')
+            this.logger.info(`Active Subprocesses (${this.size} active)\n${logMsg}`)
+        })
     }
 
     public async getUsage(pid: pid): Promise<ProcessStats> {
