@@ -596,8 +596,8 @@
                 "category": "%AWS.amazonq.title%"
             },
             {
-                "command": "aws.amazonq.viewActiveProcesses",
-                "title": "%AWS.command.viewActiveProcesses%",
+                "command": "aws.amazonq.logActiveProcceses",
+                "title": "%AWS.command.logActiveProcceses%",
                 "category": "%AWS.title%"
             },
             {

@@ -3147,8 +3147,8 @@
                 "category": "%AWS.title%"
             },
             {
-                "command": "aws.toolkit.viewActiveProcesses",
-                "title": "%AWS.command.viewActiveProcesses%",
+                "command": "aws.toolkit.logActiveProcceses",
+                "title": "%AWS.command.logActiveProcceses%",
                 "category": "%AWS.title%"
             },
             {

@@ -174,7 +174,7 @@ export async function activateCommon(
 
     context.subscriptions.push(
         Commands.register(
-            `aws.${contextPrefix}.viewActiveProcesses`,
+            `aws.${contextPrefix}.logActiveProcceses`,
             async () => await ChildProcessTracker.instance.logAllUsage()
         )
     )
