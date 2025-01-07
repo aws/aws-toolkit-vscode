@@ -309,6 +309,7 @@
     "AWS.amazonq.scans.projectScanInProgress": "Workspace review is in progress...",
     "AWS.amazonq.scans.fileScanInProgress": "File review is in progress...",
     "AWS.amazonq.scans.noGitRepo": "Your workspace is not in a git repository. I'll review your project files for security issues, and your in-flight changes for code quality issues.",
+    "AWS.amazonq.codefix.error.monthlyLimitReached": "Maximum code fix count reached for this month.",
     "AWS.amazonq.featureDev.error.conversationIdNotFoundError": "Conversation id must exist before starting code generation",
     "AWS.amazonq.featureDev.error.contentLengthError": "The folder you selected is too large for me to use as context. Please choose a smaller folder to work on. For more information on quotas, see the <a href=\"https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/software-dev.html#quotas\" target=\"_blank\">Amazon Q Developer documentation.</a>",
     "AWS.amazonq.featureDev.error.illegalStateTransition": "Illegal transition between states, restart the conversation",
