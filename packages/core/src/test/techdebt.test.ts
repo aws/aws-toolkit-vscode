@@ -10,6 +10,7 @@ import * as env from '../shared/vscode/env'
 // Checks project config and dependencies, to remind us to remove old things
 // when possible.
 describe('tech debt', function () {
+    // @ts-ignore
     function fixByDate(date: string, msg: string) {
         const now = Date.now()
         const cutoffDate = Date.parse(date)
@@ -37,15 +38,5 @@ describe('tech debt', function () {
         )
         // This is relevant for the use of `fs.cpSync` in the copyFiles scripts.
         assert.ok(semver.lt(minNodejs, '18.0.0'), 'with node18+, we can remove the dependency on @types/node@18')
-    })
-
-    it('remove separate sessions login edge cases', async function () {
-        // src/auth/auth.ts:SessionSeparationPrompt
-        // forgetConnection() function and calls
-
-        // Monitor telemtry to determine removal or snooze
-        // toolkit_showNotification.id = sessionSeparation
-        // auth_modifyConnection.action = deleteProfile OR auth_modifyConnection.source contains CodeCatalyst
-        fixByDate('2025-01-06', 'Remove the edge case code from the commit that this test is a part of.')
     })
 })
