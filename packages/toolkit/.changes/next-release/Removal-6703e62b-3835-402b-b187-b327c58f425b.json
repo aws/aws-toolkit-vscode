@@ -1,0 +1,4 @@
+{
+	"type": "Removal",
+	"description": "Auth: No longer inform users that Amazon Q and Toolkit extensions have separate auth sessions."
+}
