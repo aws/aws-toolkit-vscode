@@ -31,9 +31,9 @@ import { DefaultSchemaClient } from '../shared/clients/schemaClient'
 import { getEcsRootNode } from '../awsService/ecs/model'
 import { compareTreeItems, TreeShim } from '../shared/treeview/utils'
 import { Ec2ParentNode } from '../awsService/ec2/explorer/ec2ParentNode'
-import { DevSettings } from '../shared/settings'
 import { Ec2Client } from '../shared/clients/ec2Client'
 import { isCloud9 } from '../shared/extensionUtilities'
+import { Experiments } from '../shared/settings'
 
 interface ServiceNode {
     allRegions?: boolean
@@ -71,7 +71,7 @@ const serviceCandidates: ServiceNode[] = [
     },
     {
         serviceId: 'ec2',
-        when: () => DevSettings.instance.isDevMode(),
+        when: () => Experiments.instance.isExperimentEnabled('ec2RemoteConnect'),
         createFn: (regionCode: string, partitionId: string) =>
             new Ec2ParentNode(regionCode, partitionId, new Ec2Client(regionCode)),
     },

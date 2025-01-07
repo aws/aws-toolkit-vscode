@@ -31,19 +31,28 @@ import { tryNewMap } from '../../util/functionUtils'
 import { welcomeScreenTabData } from './walkthrough/welcome'
 import { agentWalkthroughDataModel } from './walkthrough/agent'
 import { createClickTelemetry, createOpenAgentTelemetry } from './telemetry/actions'
+import { disclaimerAcknowledgeButtonId, disclaimerCard } from './texts/disclaimer'
+
+/**
+ * The number of welcome chat tabs that can be opened before the NEXT one will become
+ * a regular chat tab.
+ */
+const welcomeCountThreshold = 3
 
 export const createMynahUI = (
     ideApi: any,
     amazonQEnabled: boolean,
     featureConfigsSerialized: [string, FeatureContext][],
-    showWelcomePage: boolean,
+    welcomeCount: number,
+    disclaimerAcknowledged: boolean,
     disabledCommands?: string[]
 ) => {
+    let disclaimerCardActive = !disclaimerAcknowledged
     // eslint-disable-next-line prefer-const
     let mynahUI: MynahUI
     // eslint-disable-next-line prefer-const
     let connector: Connector
-    //Store the mapping between messageId and messageUserIntent for amazonq_interactWithMessage telemetry
+    // Store the mapping between messageId and messageUserIntent for amazonq_interactWithMessage telemetry
     const responseMetadata = new Map<string, string[]>()
 
     window.addEventListener('error', (e) => {
@@ -67,11 +76,23 @@ export const createMynahUI = (
             })
         },
     })
+
+    const showWelcomePage = () => {
+        return welcomeCount < welcomeCountThreshold
+    }
+
+    const updateWelcomeCount = () => {
+        ideApi.postMessage({
+            command: 'update-welcome-count',
+        })
+        welcomeCount += 1
+    }
+
     // Adding the first tab as CWC tab
     tabsStorage.addTab({
         id: 'tab-1',
         status: 'free',
-        type: showWelcomePage ? 'welcome' : 'cwc',
+        type: showWelcomePage() ? 'welcome' : 'cwc',
         isSelected: true,
     })
 
@@ -107,7 +128,7 @@ export const createMynahUI = (
     let featureConfigs: Map<string, FeatureContext> = tryNewMap(featureConfigsSerialized)
 
     function getCodeBlockActions(messageData: any) {
-        //Show ViewDiff and AcceptDiff for allowedCommands in CWC
+        // Show ViewDiff and AcceptDiff for allowedCommands in CWC
         const isEnabled = featureConfigs.get('ViewDiffInChat')?.variation === 'TREATMENT'
         const tab = tabsStorage.getTab(messageData?.tabID || '')
         const allowedCommands = [
@@ -133,13 +154,13 @@ export const createMynahUI = (
                 },
             }
         }
-        //Show only "Copy" option for codeblocks in Q Test Tab
+        // Show only "Copy" option for codeblocks in Q Test Tab
         if (tab?.type === 'testgen') {
             return {
                 'insert-to-cursor': undefined,
             }
         }
-        //Default will show "Copy" and "Insert at cursor" for codeblocks
+        // Default will show "Copy" and "Insert at cursor" for codeblocks
         return {}
     }
 
@@ -538,10 +559,30 @@ export const createMynahUI = (
     mynahUI = new MynahUI({
         onReady: connector.uiReady,
         onTabAdd: (tabID: string) => {
+            /**
+             * If the next tab opening will cross the welcome count threshold then
+             * update the next tabs defaults
+             */
+            if (welcomeCount + 1 >= welcomeCountThreshold) {
+                tabsStorage.updateTabTypeFromUnknown(tabID, 'cwc')
+                mynahUI?.updateTabDefaults({
+                    store: {
+                        ...tabDataGenerator.getTabData('cwc', true),
+                        tabHeaderDetails: void 0,
+                        compactMode: false,
+                        tabBackground: false,
+                    },
+                })
+            } else {
+                // we haven't reached the welcome count limit yet
+                updateWelcomeCount()
+            }
+
             // If featureDev has changed availability inbetween the default store settings and now
             // make sure to show/hide it accordingly
             mynahUI.updateStore(tabID, {
                 quickActionCommands: tabDataGenerator.quickActionsGenerator.generateForTab('unknown'),
+                ...(disclaimerCardActive ? { promptInputStickyCard: disclaimerCard } : {}),
             })
             connector.onTabAdd(tabID)
         },
@@ -609,43 +650,64 @@ export const createMynahUI = (
         },
         onVote: connector.onChatItemVoted,
         onInBodyButtonClicked: (tabId, messageId, action, eventId) => {
-            if (action.id === 'quick-start') {
-                /**
-                 * quick start is the action on the welcome page. When its
-                 * clicked it collapses the view and puts it into regular
-                 * "chat" which is cwc
-                 */
-                tabsStorage.updateTabTypeFromUnknown(tabId, 'cwc')
+            switch (action.id) {
+                case disclaimerAcknowledgeButtonId: {
+                    disclaimerCardActive = false
 
-                // show quick start in the current tab instead of a new one
-                mynahUI.updateStore(tabId, {
-                    tabHeaderDetails: undefined,
-                    compactMode: false,
-                    tabBackground: false,
-                    promptInputText: '/',
-                    promptInputLabel: undefined,
-                    chatItems: [],
-                })
-
-                ideApi.postMessage(createClickTelemetry('amazonq-welcome-quick-start-button'))
-                return
-            }
-
-            if (action.id === 'explore') {
-                const newTabId = mynahUI.updateStore('', agentWalkthroughDataModel)
-                if (newTabId === undefined) {
-                    mynahUI.notify({
-                        content: uiComponentsTexts.noMoreTabsTooltip,
-                        type: NotificationType.WARNING,
+                    // post message to tell VSCode that disclaimer is acknowledged
+                    ideApi.postMessage({
+                        command: 'disclaimer-acknowledged',
                     })
+
+                    // create telemetry
+                    ideApi.postMessage(createClickTelemetry('amazonq-disclaimer-acknowledge-button'))
+
+                    // remove all disclaimer cards from all tabs
+                    for (const storeTabKey of Object.keys(mynahUI.getAllTabs())) {
+                        // eslint-disable-next-line unicorn/no-null
+                        mynahUI.updateStore(storeTabKey, { promptInputStickyCard: null })
+                    }
                     return
                 }
-                tabsStorage.updateTabTypeFromUnknown(newTabId, 'agentWalkthrough')
-                ideApi.postMessage(createClickTelemetry('amazonq-welcome-explore-button'))
-                return
-            }
+                case 'quick-start': {
+                    /**
+                     * quick start is the action on the welcome page. When its
+                     * clicked it collapses the view and puts it into regular
+                     * "chat" which is cwc
+                     */
+                    tabsStorage.updateTabTypeFromUnknown(tabId, 'cwc')
 
-            connector.onCustomFormAction(tabId, messageId, action, eventId)
+                    // show quick start in the current tab instead of a new one
+                    mynahUI.updateStore(tabId, {
+                        tabHeaderDetails: undefined,
+                        compactMode: false,
+                        tabBackground: false,
+                        promptInputText: '/',
+                        promptInputLabel: undefined,
+                        chatItems: [],
+                    })
+
+                    ideApi.postMessage(createClickTelemetry('amazonq-welcome-quick-start-button'))
+                    return
+                }
+                case 'explore': {
+                    const newTabId = mynahUI.updateStore('', agentWalkthroughDataModel)
+                    if (newTabId === undefined) {
+                        mynahUI.notify({
+                            content: uiComponentsTexts.noMoreTabsTooltip,
+                            type: NotificationType.WARNING,
+                        })
+                        return
+                    }
+                    tabsStorage.updateTabTypeFromUnknown(newTabId, 'agentWalkthrough')
+                    ideApi.postMessage(createClickTelemetry('amazonq-welcome-explore-button'))
+                    return
+                }
+                default: {
+                    connector.onCustomFormAction(tabId, messageId, action, eventId)
+                    return
+                }
+            }
         },
         onCustomFormAction: (tabId, action, eventId) => {
             connector.onCustomFormAction(tabId, undefined, action, eventId)
@@ -786,13 +848,18 @@ export const createMynahUI = (
         tabs: {
             'tab-1': {
                 isSelected: true,
-                store: showWelcomePage
-                    ? welcomeScreenTabData(tabDataGenerator).store
-                    : tabDataGenerator.getTabData('cwc', true),
+                store: {
+                    ...(showWelcomePage()
+                        ? welcomeScreenTabData(tabDataGenerator).store
+                        : tabDataGenerator.getTabData('cwc', true)),
+                    ...(disclaimerCardActive ? { promptInputStickyCard: disclaimerCard } : {}),
+                },
             },
         },
         defaults: {
-            store: tabDataGenerator.getTabData('cwc', true),
+            store: showWelcomePage()
+                ? welcomeScreenTabData(tabDataGenerator).store
+                : tabDataGenerator.getTabData('cwc', true),
         },
         config: {
             maxTabs: 10,
@@ -800,6 +867,14 @@ export const createMynahUI = (
             texts: uiComponentsTexts,
         },
     })
+
+    /**
+     * Update the welcome count if we've initially shown
+     * the welcome page
+     */
+    if (showWelcomePage()) {
+        updateWelcomeCount()
+    }
 
     followUpsInteractionHandler = new FollowUpInteractionHandler({
         mynahUI,

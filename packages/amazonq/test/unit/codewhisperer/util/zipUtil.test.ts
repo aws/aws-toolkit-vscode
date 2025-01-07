@@ -14,11 +14,13 @@ import { ToolkitError } from 'aws-core-vscode/shared'
 import { LspClient } from 'aws-core-vscode/amazonq'
 import { fs } from 'aws-core-vscode/shared'
 import path from 'path'
+import JSZip from 'jszip'
 
 describe('zipUtil', function () {
     const workspaceFolder = getTestWorkspaceFolder()
     const appRoot = join(workspaceFolder, 'java11-plain-maven-sam-app')
     const appCodePath = join(appRoot, 'HelloWorldFunction', 'src', 'main', 'java', 'helloworld', 'App.java')
+    const appCodePathWithRepeatedProjectName = join(workspaceFolder, 'workspaceFolder', 'App.java')
 
     describe('getProjectPaths', function () {
         it('Should return the correct project paths', function () {
@@ -111,6 +113,30 @@ describe('zipUtil', function () {
                 CodeAnalysisScope.PROJECT
             )
             assert.equal(zipMetadata2.lines, zipMetadata.lines + 1)
+        })
+
+        it('should handle path with repeated project name for file scan', async function () {
+            const zipMetadata = await zipUtil.generateZip(
+                vscode.Uri.file(appCodePathWithRepeatedProjectName),
+                CodeAnalysisScope.FILE_ON_DEMAND
+            )
+
+            const zipFileData = await fs.readFileBytes(zipMetadata.zipFilePath)
+            const zip = await JSZip.loadAsync(zipFileData)
+            const files = Object.keys(zip.files)
+            assert.ok(files.includes(join('workspaceFolder', 'workspaceFolder', 'App.java')))
+        })
+
+        it('should handle path with repeated project name for project scan', async function () {
+            const zipMetadata = await zipUtil.generateZip(
+                vscode.Uri.file(appCodePathWithRepeatedProjectName),
+                CodeAnalysisScope.PROJECT
+            )
+
+            const zipFileData = await fs.readFileBytes(zipMetadata.zipFilePath)
+            const zip = await JSZip.loadAsync(zipFileData)
+            const files = Object.keys(zip.files)
+            assert.ok(files.includes(join('workspaceFolder', 'workspaceFolder', 'App.java')))
         })
     })
 

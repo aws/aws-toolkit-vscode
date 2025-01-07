@@ -10,6 +10,7 @@ type MessageCommand =
     | 'tab-was-removed'
     | 'tab-was-changed'
     | 'ui-is-ready'
+    | 'disclaimer-acknowledged'
     | 'ui-focus'
     | 'follow-up-was-clicked'
     | 'auth-follow-up-was-clicked'
@@ -40,5 +41,6 @@ type MessageCommand =
     | 'review'
     | 'open-user-guide'
     | 'send-telemetry'
+    | 'update-welcome-count'
 
 export type ExtensionMessage = Record<string, any> & { command: MessageCommand }

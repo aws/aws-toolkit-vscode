@@ -84,6 +84,12 @@ describe('CodeWhisperer-basicCommands', function () {
         sinon.restore()
     })
 
+    after(async function () {
+        // disable auto scan after testrun
+        await CodeScansState.instance.setScansEnabled(false)
+        assert.strictEqual(CodeScansState.instance.isScansEnabled(), false)
+    })
+
     describe('toggleCodeSuggestion', function () {
         class TestCodeSuggestionsState extends CodeSuggestionsState {
             public constructor(initialState?: boolean) {
@@ -664,6 +670,81 @@ describe('CodeWhisperer-basicCommands', function () {
                 result: 'Failed',
                 reason: 'Error',
                 reasonDesc: 'Failed to apply edit to the workspace.',
+            })
+        })
+
+        it('should apply the edit at the correct range', async function () {
+            const fileName = 'sample.py'
+            const textDocumentMock = createMockDocument(
+                `from flask import app
+
+
+@app.route('/')
+def execute_input_noncompliant():
+    from flask import request
+    module_version = request.args.get("module_version")
+    # Noncompliant: executes unsanitized inputs.
+    exec("import urllib%s as urllib" % module_version)
+# {/fact}
+
+
+# {fact rule=code-injection@v1.0 defects=0}
+from flask import app
+
+
+@app.route('/')
+def execute_input_compliant():
+    from flask import request
+    module_version = request.args.get("module_version")
+    # Compliant: executes sanitized inputs.
+    exec("import urllib%d as urllib" % int(module_version))
+# {/fact}`,
+                fileName
+            )
+            openTextDocumentMock.resolves(textDocumentMock)
+            sandbox.stub(vscode.workspace, 'openTextDocument').value(openTextDocumentMock)
+
+            sandbox.stub(vscode.WorkspaceEdit.prototype, 'replace').value(replaceMock)
+            applyEditMock.resolves(true)
+            sandbox.stub(vscode.workspace, 'applyEdit').value(applyEditMock)
+            sandbox.stub(diagnosticsProvider, 'removeDiagnostic').value(removeDiagnosticMock)
+            sandbox.stub(SecurityIssueProvider.instance, 'removeIssue').value(removeIssueMock)
+            sandbox.stub(vscode.window, 'showTextDocument').value(showTextDocumentMock)
+
+            targetCommand = testCommand(applySecurityFix)
+            codeScanIssue.suggestedFixes = [
+                {
+                    code: `@@ -6,4 +6,5 @@
+     from flask import request
+     module_version = request.args.get("module_version")
+     # Noncompliant: executes unsanitized inputs.
+-    exec("import urllib%d as urllib" % int(module_version))
++    __import__("urllib" + module_version)
++#import importlib`,
+                    description: 'dummy',
+                },
+            ]
+            await targetCommand.execute(codeScanIssue, fileName, 'webview')
+            assert.ok(
+                replaceMock.calledOnceWith(
+                    textDocumentMock.uri,
+                    new vscode.Range(5, 0, 8, 54),
+                    `    from flask import request
+    module_version = request.args.get("module_version")
+    # Noncompliant: executes unsanitized inputs.
+    __import__("urllib" + module_version)
+#import importlib`
+                )
+            )
+            assert.ok(applyEditMock.calledOnce)
+            assert.ok(removeDiagnosticMock.calledOnceWith(textDocumentMock.uri, codeScanIssue))
+            assert.ok(removeIssueMock.calledOnce)
+
+            assertTelemetry('codewhisperer_codeScanIssueApplyFix', {
+                detectorId: codeScanIssue.detectorId,
+                findingId: codeScanIssue.findingId,
+                component: 'webview',
+                result: 'Succeeded',
             })
         })
     })

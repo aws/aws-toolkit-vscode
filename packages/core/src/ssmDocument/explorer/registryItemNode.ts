@@ -98,9 +98,9 @@ export class RegistryItemNode extends AWSTreeNodeBase {
         const documents = new Map<string, SSM.Types.DocumentIdentifier>()
 
         const docs = await this.getDocumentByOwner(this.client)
-        docs.forEach((doc) => {
+        for (const doc of docs) {
             documents.set(doc.Name!, doc)
-        })
+        }
 
         if (this.registryName === userRegistryName) {
             updateInPlace(

@@ -22,8 +22,7 @@ import {
 } from '../models/errors'
 import { ZipUseCase } from '../models/constants'
 import { ChildProcess, ChildProcessOptions } from '../../shared/utilities/processUtils'
-import { showOutputMessage } from '../../shared/utilities/messages'
-import { globals, removeAnsi } from '../../shared'
+import { removeAnsi } from '../../shared'
 
 export interface ZipMetadata {
     rootDir: string
@@ -114,18 +113,16 @@ export class ZipUtil {
 
         const workspaceFolder = vscode.workspace.getWorkspaceFolder(uri)
         if (workspaceFolder) {
-            const projectName = workspaceFolder.name
+            // Note: workspaceFolder.name is not the same as the file system folder name,
+            // use the fsPath value instead
+            const projectName = path.basename(workspaceFolder.uri.fsPath)
             const relativePath = vscode.workspace.asRelativePath(uri)
             const zipEntryPath = this.getZipEntryPath(projectName, relativePath)
             zip.addFile(zipEntryPath, Buffer.from(content, 'utf-8'))
 
             if (scope === CodeWhispererConstants.CodeAnalysisScope.FILE_ON_DEMAND) {
-                await this.processCombinedGitDiff(
-                    zip,
-                    [workspaceFolder.uri.fsPath],
-                    uri.fsPath,
-                    CodeWhispererConstants.CodeAnalysisScope.FILE_ON_DEMAND
-                )
+                const gitDiffContent = `+++ b/${path.normalize(zipEntryPath)}` // Sending file path in payload for LLM code review
+                zip.addFile(ZipConstants.codeDiffFilePath, Buffer.from(gitDiffContent, 'utf-8'))
             }
         } else {
             zip.addFile(uri.fsPath, Buffer.from(content, 'utf-8'))
@@ -143,14 +140,8 @@ export class ZipUtil {
         return zipFilePath
     }
 
-    protected getZipEntryPath(projectName: string, relativePath: string, useCase?: ZipUseCase) {
-        // Workspaces with multiple folders have the folder names as the root folder,
-        // but workspaces with only a single folder don't. So prepend the workspace folder name
-        // if it is not present.
-        if (useCase === ZipUseCase.TEST_GENERATION) {
-            return path.join(projectName, relativePath)
-        }
-        return relativePath.split('/').shift() === projectName ? relativePath : path.join(projectName, relativePath)
+    protected getZipEntryPath(projectName: string, relativePath: string) {
+        return path.join(projectName, relativePath)
     }
 
     /**
@@ -305,10 +296,10 @@ export class ZipUtil {
             rejectOnErrorCode: false,
             onStdout: (text) => {
                 diffContent += text
-                showOutputMessage(removeAnsi(text), globals.outputChannel)
+                getLogger().verbose(removeAnsi(text))
             },
             onStderr: (text) => {
-                showOutputMessage(removeAnsi(text), globals.outputChannel)
+                getLogger().error(removeAnsi(text))
             },
             spawnOptions: {
                 cwd: projectPath,
@@ -342,10 +333,10 @@ export class ZipUtil {
             rejectOnErrorCode: true,
             onStdout: (text) => {
                 diffContent += text
-                showOutputMessage(removeAnsi(text), globals.outputChannel)
+                getLogger().verbose(removeAnsi(text))
             },
             onStderr: (text) => {
-                showOutputMessage(removeAnsi(text), globals.outputChannel)
+                getLogger().error(removeAnsi(text))
             },
             spawnOptions: {
                 cwd: projectPath,
@@ -425,7 +416,8 @@ export class ZipUtil {
             this.getProjectScanPayloadSizeLimitInBytes()
         )
         for (const file of sourceFiles) {
-            const zipEntryPath = this.getZipEntryPath(file.workspaceFolder.name, file.relativeFilePath, useCase)
+            const projectName = path.basename(file.workspaceFolder.uri.fsPath)
+            const zipEntryPath = this.getZipEntryPath(projectName, file.relativeFilePath)
 
             if (ZipConstants.knownBinaryFileExts.includes(path.extname(file.fileUri.fsPath))) {
                 if (useCase === ZipUseCase.TEST_GENERATION) {
@@ -441,16 +433,15 @@ export class ZipUtil {
     }
 
     protected processOtherFiles(zip: admZip, languageCount: Map<CodewhispererLanguage, number>) {
-        vscode.workspace.textDocuments
+        for (const document of vscode.workspace.textDocuments
             .filter((document) => document.uri.scheme === 'file')
-            .filter((document) => vscode.workspace.getWorkspaceFolder(document.uri) === undefined)
-            .forEach((document) =>
-                this.processTextFile(zip, document.uri, document.getText(), languageCount, document.uri.fsPath)
-            )
+            .filter((document) => vscode.workspace.getWorkspaceFolder(document.uri) === undefined)) {
+            this.processTextFile(zip, document.uri, document.getText(), languageCount, document.uri.fsPath)
+        }
     }
 
     protected async processTestCoverageFiles(targetPath: string) {
-        //TODO: will be removed post release
+        // TODO: will be removed post release
         const coverageFilePatterns = ['**/coverage.xml', '**/coverage.json', '**/coverage.txt']
         let files: vscode.Uri[] = []
 
@@ -616,7 +607,7 @@ export class ZipUtil {
             throw error
         }
     }
-    //TODO: Refactor this
+    // TODO: Refactor this
     public async removeTmpFiles(zipMetadata: ZipMetadata, scope?: CodeWhispererConstants.CodeAnalysisScope) {
         const logger = getLoggerForScope(scope)
         logger.verbose(`Cleaning up temporary files...`)

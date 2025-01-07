@@ -65,7 +65,7 @@ describe('getInvalidSamMsg', async function () {
         },
     ]
 
-    versionValidationTestScenarios.forEach((test) => {
+    for (const test of versionValidationTestScenarios) {
         it(`handles InvalidSamCliVersionError - ${test.situation}`, async () => {
             const validatorResult: SamCliVersionValidatorResult = {
                 version: '1.2.3',
@@ -92,7 +92,7 @@ describe('getInvalidSamMsg', async function () {
                 }
             )
         })
-    })
+    }
 
     it('handles Unexpected input', async function () {
         getInvalidSamMsg(

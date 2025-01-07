@@ -91,7 +91,7 @@ export class Messenger {
      * @returns count of multi-line code blocks in response.
      */
     public async countTotalNumberOfCodeBlocks(message: string): Promise<number> {
-        //TODO: remove this when moved to server-side.
+        // TODO: remove this when moved to server-side.
         if (message === undefined) {
             return 0
         }

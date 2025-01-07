@@ -86,10 +86,9 @@ export async function activate(context: vscode.ExtensionContext) {
 
         const toolkitEnvDetails = getExtEnvironmentDetails()
         // Splits environment details by new line, filter removes the empty string
-        toolkitEnvDetails
-            .split(/\r?\n/)
-            .filter(Boolean)
-            .forEach((line) => getLogger().info(line))
+        for (const line of toolkitEnvDetails.split(/\r?\n/).filter(Boolean)) {
+            getLogger().info(line)
+        }
 
         globals.awsContextCommands = new AwsContextCommands(globals.regionProvider, Auth.instance)
         globals.schemaService = new SchemaService()
@@ -346,17 +345,23 @@ async function getAuthState(): Promise<Omit<AuthUserState, 'source'>> {
     const enabledScopes: Set<string> = new Set()
     if (Auth.instance.hasConnections) {
         authStatus = 'expired'
-        ;(await Auth.instance.listConnections()).forEach((conn) => {
+        for (const conn of await Auth.instance.listConnections()) {
             const state = Auth.instance.getConnectionState(conn)
             if (state === 'valid') {
                 authStatus = 'connected'
             }
 
-            getAuthFormIdsFromConnection(conn).forEach((id) => enabledConnections.add(id))
-            if (isSsoConnection(conn)) {
-                conn.scopes?.forEach((s) => enabledScopes.add(s))
+            for (const id of getAuthFormIdsFromConnection(conn)) {
+                enabledConnections.add(id)
             }
-        })
+            if (isSsoConnection(conn)) {
+                if (conn.scopes) {
+                    for (const s of conn.scopes) {
+                        enabledScopes.add(s)
+                    }
+                }
+            }
+        }
     }
 
     // There may be other SSO connections in toolkit, but there is no use case for

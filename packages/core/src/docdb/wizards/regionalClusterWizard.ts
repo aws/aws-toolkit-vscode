@@ -180,7 +180,7 @@ async function createInstanceClassPrompter(
         }))
 
     if (items.length === 0) {
-        return new SkipPrompter('db.t3.medium')
+        return new SkipPrompter<string>()
     }
 
     return createQuickPick(items, {

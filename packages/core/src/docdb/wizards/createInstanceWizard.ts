@@ -84,7 +84,7 @@ export class CreateInstanceWizard extends Wizard<CreateInstanceState> {
         })
 
         if (items.length === 0) {
-            return new SkipPrompter('')
+            return new SkipPrompter<string>()
         }
 
         return createQuickPick(items, {

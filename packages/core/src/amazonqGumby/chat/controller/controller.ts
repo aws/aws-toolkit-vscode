@@ -20,18 +20,14 @@ import {
     compileProject,
     finishHumanInTheLoop,
     getValidLanguageUpgradeCandidateProjects,
-    openBuildLogFile,
-    openHilPomFile,
-    parseBuildFile,
     postTransformationJob,
     processLanguageUpgradeTransformFormInput,
     processSQLConversionTransformFormInput,
     startTransformByQ,
     stopTransformByQ,
     validateCanCompileProject,
-    setMaven,
     getValidSQLConversionCandidateProjects,
-    validateSQLMetadataFile,
+    openHilPomFile,
 } from '../../../codewhisperer/commands/startTransformByQ'
 import { JDKVersion, TransformationCandidateProject, transformByQState } from '../../../codewhisperer/models/model'
 import {
@@ -56,12 +52,18 @@ import {
 } from '../../../shared/telemetry/telemetry'
 import { MetadataResult } from '../../../shared/telemetry/telemetryClient'
 import { CodeTransformTelemetryState } from '../../telemetry/codeTransformTelemetryState'
-import { getAuthType } from '../../../codewhisperer/service/transformByQ/transformApiHandler'
 import DependencyVersions from '../../models/dependencies'
 import { getStringHash } from '../../../shared/utilities/textUtilities'
 import { getVersionData } from '../../../codewhisperer/service/transformByQ/transformMavenHandler'
 import AdmZip from 'adm-zip'
 import { AuthError } from '../../../auth/sso/server'
+import {
+    setMaven,
+    openBuildLogFile,
+    parseBuildFile,
+    validateSQLMetadataFile,
+} from '../../../codewhisperer/service/transformByQ/transformFileHandler'
+import { getAuthType } from '../../../auth/utils'
 
 // These events can be interactions within the chat,
 // or elsewhere in the IDE
@@ -267,29 +269,41 @@ export class GumbyController {
     }
 
     private async handleLanguageUpgrade(message: any) {
-        try {
-            await this.beginTransformation(message)
-            const validProjects = await this.validateLanguageUpgradeProjects(message)
-            if (validProjects.length > 0) {
-                this.sessionStorage.getSession().updateCandidateProjects(validProjects)
-                await this.messenger.sendLanguageUpgradeProjectPrompt(validProjects, message.tabID)
-            }
-        } catch (err: any) {
-            getLogger().error(`Error handling language upgrade: ${err}`)
-        }
+        await telemetry.codeTransform_submitSelection
+            .run(async () => {
+                telemetry.record({
+                    codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
+                    userChoice: 'language upgrade',
+                })
+                await this.beginTransformation(message)
+                const validProjects = await this.validateLanguageUpgradeProjects(message)
+                if (validProjects.length > 0) {
+                    this.sessionStorage.getSession().updateCandidateProjects(validProjects)
+                    await this.messenger.sendLanguageUpgradeProjectPrompt(validProjects, message.tabID)
+                }
+            })
+            .catch((err) => {
+                getLogger().error(`Error handling language upgrade: ${err}`)
+            })
     }
 
     private async handleSQLConversion(message: any) {
-        try {
-            await this.beginTransformation(message)
-            const validProjects = await this.validateSQLConversionProjects(message)
-            if (validProjects.length > 0) {
-                this.sessionStorage.getSession().updateCandidateProjects(validProjects)
-                await this.messenger.sendSelectSQLMetadataFileMessage(message.tabID)
-            }
-        } catch (err: any) {
-            getLogger().error(`Error handling SQL conversion: ${err}`)
-        }
+        await telemetry.codeTransform_submitSelection
+            .run(async () => {
+                telemetry.record({
+                    codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
+                    userChoice: 'sql conversion',
+                })
+                await this.beginTransformation(message)
+                const validProjects = await this.validateSQLConversionProjects(message)
+                if (validProjects.length > 0) {
+                    this.sessionStorage.getSession().updateCandidateProjects(validProjects)
+                    await this.messenger.sendSelectSQLMetadataFileMessage(message.tabID)
+                }
+            })
+            .catch((err) => {
+                getLogger().error(`Error handling SQL conversion: ${err}`)
+            })
     }
 
     private async validateLanguageUpgradeProjects(message: any) {
@@ -381,10 +395,12 @@ export class GumbyController {
                 break
             case ButtonActions.VIEW_TRANSFORMATION_HUB:
                 await vscode.commands.executeCommand(GumbyCommands.FOCUS_TRANSFORMATION_HUB, CancelActionPositions.Chat)
-                this.messenger.sendJobSubmittedMessage(message.tabID)
+                break
+            case ButtonActions.VIEW_SUMMARY:
+                await vscode.commands.executeCommand('aws.amazonq.transformationHub.summary.reveal')
                 break
             case ButtonActions.STOP_TRANSFORMATION_JOB:
-                await stopTransformByQ(transformByQState.getJobId(), CancelActionPositions.Chat)
+                await stopTransformByQ(transformByQState.getJobId())
                 await postTransformationJob()
                 await cleanupTransformationJob()
                 break
@@ -411,31 +427,40 @@ export class GumbyController {
     }
 
     private async handleSkipTestsSelection(message: any) {
-        const skipTestsSelection = message.formSelectedValues['GumbyTransformSkipTestsForm']
-        if (skipTestsSelection === CodeWhispererConstants.skipUnitTestsMessage) {
-            transformByQState.setCustomBuildCommand(CodeWhispererConstants.skipUnitTestsBuildCommand)
-        } else {
-            transformByQState.setCustomBuildCommand(CodeWhispererConstants.doNotSkipUnitTestsBuildCommand)
-        }
-        telemetry.codeTransform_submitSelection.emit({
-            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-            userChoice: skipTestsSelection,
-            result: MetadataResult.Pass,
+        await telemetry.codeTransform_submitSelection.run(async () => {
+            const skipTestsSelection = message.formSelectedValues['GumbyTransformSkipTestsForm']
+            if (skipTestsSelection === CodeWhispererConstants.skipUnitTestsMessage) {
+                transformByQState.setCustomBuildCommand(CodeWhispererConstants.skipUnitTestsBuildCommand)
+            } else {
+                transformByQState.setCustomBuildCommand(CodeWhispererConstants.doNotSkipUnitTestsBuildCommand)
+            }
+            telemetry.record({
+                codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
+                userChoice: skipTestsSelection,
+            })
+            this.messenger.sendSkipTestsSelectionMessage(skipTestsSelection, message.tabID)
+            await this.messenger.sendOneOrMultipleDiffsPrompt(message.tabID)
         })
-        this.messenger.sendSkipTestsSelectionMessage(skipTestsSelection, message.tabID)
-        await this.messenger.sendOneOrMultipleDiffsPrompt(message.tabID)
     }
 
     private async handleOneOrMultipleDiffs(message: any) {
-        const oneOrMultipleDiffsSelection = message.formSelectedValues['GumbyTransformOneOrMultipleDiffsForm']
-        if (oneOrMultipleDiffsSelection === CodeWhispererConstants.multipleDiffsMessage) {
-            transformByQState.setMultipleDiffs(true)
-        } else {
-            transformByQState.setMultipleDiffs(false)
-        }
-        this.messenger.sendOneOrMultipleDiffsMessage(oneOrMultipleDiffsSelection, message.tabID)
-        // perform local build
-        await this.validateBuildWithPromptOnError(message)
+        await telemetry.codeTransform_submitSelection.run(async () => {
+            const oneOrMultipleDiffsSelection = message.formSelectedValues['GumbyTransformOneOrMultipleDiffsForm']
+            if (oneOrMultipleDiffsSelection === CodeWhispererConstants.multipleDiffsMessage) {
+                transformByQState.setMultipleDiffs(true)
+            } else {
+                transformByQState.setMultipleDiffs(false)
+            }
+
+            telemetry.record({
+                codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
+                userChoice: oneOrMultipleDiffsSelection,
+            })
+
+            this.messenger.sendOneOrMultipleDiffsMessage(oneOrMultipleDiffsSelection, message.tabID)
+            // perform local build
+            await this.validateBuildWithPromptOnError(message)
+        })
     }
 
     private async handleUserLanguageUpgradeProjectChoice(message: any) {
@@ -466,10 +491,6 @@ export class GumbyController {
                 message.tabID
             )
 
-            if (fromJDKVersion === JDKVersion.UNSUPPORTED) {
-                this.messenger.sendUnrecoverableErrorResponse('unsupported-source-jdk-version', message.tabID)
-                return
-            }
             await processLanguageUpgradeTransformFormInput(pathToProject, fromJDKVersion, toJDKVersion)
             await this.messenger.sendSkipTestsPrompt(message.tabID)
         })
