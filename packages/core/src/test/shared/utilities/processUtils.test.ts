@@ -400,6 +400,7 @@ describe('ChildProcessTracker', function () {
 
     after(function () {
         clock.uninstall()
+        usageMock.restore()
     })
 
     it(`removes stopped processes every ${ChildProcessTracker.pollingInterval / 1000} seconds`, async function () {
@@ -498,5 +499,40 @@ describe('ChildProcessTracker', function () {
         assert.throws(() => assertLogsContain(runningProcess.childProcess.pid().toString(), false, 'warn'))
 
         await stopAndWait(runningProcess)
+    })
+})
+
+describe('ChildProcessTracker.logAllUsage', function () {
+    let tracker: ChildProcessTracker
+
+    before(function () {
+        tracker = ChildProcessTracker.instance
+    })
+
+    afterEach(function () {
+        tracker.clear()
+    })
+
+    it('logAllUsage includes only active processes', async function () {
+        const runningProcess1 = startSleepProcess()
+        const runningProcess2 = startSleepProcess()
+
+        tracker.add(runningProcess1.childProcess)
+        tracker.add(runningProcess2.childProcess)
+
+        assert.ok(tracker.has(runningProcess1.childProcess), 'Missing first process')
+        assert.ok(tracker.has(runningProcess2.childProcess), 'Missing seconds process')
+
+        await stopAndWait(runningProcess1)
+
+        await tracker.logAllUsage()
+
+        assert.throws(() => assertLogsContain(runningProcess1.childProcess.pid().toString(), false, 'info'))
+        assertLogsContain(runningProcess2.childProcess.pid().toString(), false, 'info')
+    })
+
+    it('logAllUsage defaults to empty message when empty', async function () {
+        await tracker.logAllUsage()
+        assertLogsContain('No Active Subprocesses', false, 'info')
     })
 })

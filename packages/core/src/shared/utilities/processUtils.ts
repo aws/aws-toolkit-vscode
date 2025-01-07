@@ -162,7 +162,7 @@ export class ChildProcessTracker {
 
     public async logAllUsage(): Promise<void> {
         if (this.size === 0) {
-            this.logger.info('No active subprocesses')
+            this.logger.info('No Active Subprocesses')
             return
         }
         const usage = await this.getAllUsage()
