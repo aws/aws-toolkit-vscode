@@ -389,7 +389,7 @@ describe('ChildProcessTracker', function () {
 
     before(function () {
         clock = installFakeClock()
-        tracker = new ChildProcessTracker()
+        tracker = ChildProcessTracker.instance
         usageMock = sinon.stub(ChildProcessTracker.prototype, 'getUsage')
     })
 

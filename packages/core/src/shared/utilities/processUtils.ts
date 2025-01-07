@@ -74,10 +74,16 @@ export class ChildProcessTracker {
         cpu: 50,
     }
     static readonly logger = getLogger('childProcess')
+    static #instance: ChildProcessTracker
+
+    static get instance(): ChildProcessTracker {
+        return (this.#instance ??= new ChildProcessTracker())
+    }
+
     #processByPid: Map<number, ChildProcess> = new Map<number, ChildProcess>()
     #pids: PollingSet<number>
 
-    public constructor() {
+    private constructor() {
         this.#pids = new PollingSet(ChildProcessTracker.pollingInterval, () => this.monitor())
     }
 
@@ -197,7 +203,7 @@ export class ChildProcessTracker {
  * - call and await run to get the results (pass or fail)
  */
 export class ChildProcess {
-    static #runningProcesses = new ChildProcessTracker()
+    static #runningProcesses = ChildProcessTracker.instance
     static stopTimeout = 3000
     #childProcess: proc.ChildProcess | undefined
     #processErrors: Error[] = []
