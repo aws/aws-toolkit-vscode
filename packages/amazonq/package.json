@@ -596,6 +596,11 @@
                 "category": "%AWS.amazonq.title%"
             },
             {
+                "command": "aws.amazonq.viewActiveProcesses",
+                "title": "%AWS.command.viewActiveProcesses%",
+                "category": "%AWS.title%"
+            },
+            {
                 "command": "aws.amazonq.github",
                 "title": "%AWS.command.github%",
                 "category": "%AWS.amazonq.title%"

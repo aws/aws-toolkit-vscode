@@ -171,6 +171,11 @@ export async function activateCommon(
 
     await activateViewsShared(extContext.extensionContext)
 
+    context.subscriptions.push(
+        Commands.register(`aws.${contextPrefix}.viewActiveProcesses`, () =>
+            console.log('running viewActiveProcesses command')
+        )
+    )
     return extContext
 }
 
