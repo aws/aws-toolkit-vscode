@@ -472,7 +472,10 @@ describe('ChildProcessTracker', function () {
 
             await clock.tickAsync(ChildProcessTracker.pollingInterval)
             assertLogsContain('exceeded cpu threshold', false, 'warn')
-            assertTelemetry('ide_childProcessWarning', { systemResource: 'cpu' })
+            assertTelemetry('ide_childProcessWarning', {
+                systemResource: 'cpu',
+                childProcess: runningProcess.childProcess.toString(),
+            })
 
             await stopAndWait(runningProcess)
         })
@@ -488,7 +491,10 @@ describe('ChildProcessTracker', function () {
             usageMock.resolves(highMemory)
             await clock.tickAsync(ChildProcessTracker.pollingInterval)
             assertLogsContain('exceeded memory threshold', false, 'warn')
-            assertTelemetry('ide_childProcessWarning', { systemResource: 'memory' })
+            assertTelemetry('ide_childProcessWarning', {
+                systemResource: 'memory',
+                childProcess: runningProcess.childProcess.toString(),
+            })
 
             await stopAndWait(runningProcess)
         })
@@ -525,7 +531,6 @@ describe('ChildProcessTracker', function () {
     })
 
     it('logAllUsage includes only active processes', async function () {
-        console.log('start')
         const runningProcess1 = startSleepProcess()
         const runningProcess2 = startSleepProcess()
 
@@ -541,7 +546,6 @@ describe('ChildProcessTracker', function () {
         console.log('logAllUsage called')
         assert.throws(() => assertLogsContain(runningProcess1.childProcess.pid().toString(), false, 'info'))
         assertLogsContain(runningProcess2.childProcess.pid().toString(), false, 'info')
-        console.log('end')
     })
 
     it('logAllUsage defaults to empty message when empty', async function () {
@@ -563,5 +567,12 @@ describe('ChildProcessTracker', function () {
 
         await tracker.logAllUsage()
         assertTelemetry('ide_logActiveProcesses', { size: size })
+    })
+
+    it('getProcessAsStr logs warning when its missing', async function () {
+        const runningProcess1 = startSleepProcess()
+        tracker.clear()
+        tracker.getProcessAsStr(runningProcess1.childProcess.pid())
+        assertLogsContain(runningProcess1.childProcess.pid().toString(), false, 'warn')
     })
 })

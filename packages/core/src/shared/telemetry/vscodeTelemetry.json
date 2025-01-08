@@ -6,6 +6,11 @@
             "description": "A generic size for when units are clear"
         },
         {
+            "name": "childProcess",
+            "type": "string",
+            "description": "A string representation of a ChildProcess"
+        },
+        {
             "name": "systemResource",
             "type": "string",
             "allowedValues": ["cpu", "memory"],
@@ -399,6 +404,10 @@
             "metadata": [
                 {
                     "type": "systemResource",
+                    "required": true
+                },
+                {
+                    "type": "childProcess",
                     "required": true
                 }
             ]

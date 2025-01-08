@@ -113,24 +113,33 @@ export class ChildProcessTracker {
         }
         const warn = (resource: keyof ProcessStats, value: number) => {
             telemetry.ide_childProcessWarning.run((span) => {
-                this.logger.warn(`Process ${pid} exceeded ${resource} threshold: ${value}`)
-                span.record({ systemResource: resource })
+                this.logger.warn(`Process ${this.getProcessAsStr(pid)} exceeded ${resource} threshold: ${value}`)
+                span.record({ systemResource: resource, childProcess: this.getProcessAsStr(pid) })
             })
         }
 
         if (!this.#pids.has(pid)) {
-            this.logger.warn(`Missing process with id ${pid}`)
+            this.logger.warn(`Missing process with pid ${pid}`)
             return
         }
         const stats = await this.getUsage(pid)
         if (!stats) {
-            this.logger.warn(`Failed to get process stats for ${pid}`)
+            this.logger.warn(`Failed to get process stats for process with pid ${pid}`)
             return
         }
         for (const resource of Object.keys(ChildProcessTracker.thresholds) as (keyof ProcessStats)[]) {
             if (doesExceedThreshold(resource, stats[resource])) {
                 warn(resource as keyof ProcessStats, stats[resource])
             }
+        }
+    }
+
+    public getProcessAsStr(pid: pid): string {
+        try {
+            return this.#processByPid.get(pid)!.toString()
+        } catch (e) {
+            this.logger.warn(`Missing process with pid ${pid}`)
+            return `pid: ${pid}`
         }
     }
 
