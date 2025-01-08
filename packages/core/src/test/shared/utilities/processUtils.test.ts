@@ -387,6 +387,7 @@ describe('ChildProcessTracker', function () {
 
     before(function () {
         tracker = ChildProcessTracker.instance
+        tracker.clear() // Avoid bleed-through of other tests running child processes.
     })
 
     afterEach(function () {
