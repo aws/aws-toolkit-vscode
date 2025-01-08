@@ -6,6 +6,12 @@
             "description": "A generic size for when units are clear"
         },
         {
+            "name": "systemResource",
+            "type": "string",
+            "allowedValues": ["cpu", "memory"],
+            "description": "The type of system resource being measured"
+        },
+        {
             "name": "amazonGenerateApproachLatency",
             "type": "double",
             "description": "The time it takes to generate approach response"
@@ -383,6 +389,16 @@
             "metadata": [
                 {
                     "type": "size",
+                    "required": true
+                }
+            ]
+        },
+        {
+            "name": "ide_childProcessWarning",
+            "description": "Child Process warning due to high system usage",
+            "metadata": [
+                {
+                    "type": "systemResource",
                     "required": true
                 }
             ]

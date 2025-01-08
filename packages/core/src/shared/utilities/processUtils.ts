@@ -106,19 +106,30 @@ export class ChildProcessTracker {
         }
     }
 
-    private async checkProcessUsage(pid: pid): Promise<void> {
+    private async checkProcessUsage(pid: number): Promise<void> {
+        const doesExceedThreshold = (resource: keyof ProcessStats, value: number) => {
+            const threshold = ChildProcessTracker.thresholds[resource]
+            return value > threshold
+        }
+        const warn = (resource: keyof ProcessStats, value: number) => {
+            telemetry.ide_childProcessWarning.run((span) => {
+                this.logger.warn(`Process ${pid} exceeded ${resource} threshold: ${value}`)
+                span.record({ systemResource: resource })
+            })
+        }
+
         if (!this.#pids.has(pid)) {
             this.logger.warn(`Missing process with id ${pid}`)
             return
         }
         const stats = await this.getUsage(pid)
-        if (stats) {
-            this.logger.debug(`Process ${pid} usage: %O`, stats)
-            if (stats.memory > ChildProcessTracker.thresholds.memory) {
-                this.logger.warn(`Process ${pid} exceeded memory threshold: ${stats.memory}`)
-            }
-            if (stats.cpu > ChildProcessTracker.thresholds.cpu) {
-                this.logger.warn(`Process ${pid} exceeded cpu threshold: ${stats.cpu}`)
+        if (!stats) {
+            this.logger.warn(`Failed to get process stats for ${pid}`)
+            return
+        }
+        for (const resource of Object.keys(ChildProcessTracker.thresholds) as (keyof ProcessStats)[]) {
+            if (doesExceedThreshold(resource, stats[resource])) {
+                warn(resource as keyof ProcessStats, stats[resource])
             }
         }
     }
@@ -162,7 +173,7 @@ export class ChildProcessTracker {
     }
 
     public async logAllUsage(): Promise<void> {
-        telemetry.ide_logActiveProcesses.run(async (span) => {
+        await telemetry.ide_logActiveProcesses.run(async (span) => {
             span.record({ size: this.size })
             if (this.size === 0) {
                 this.logger.info('No Active Subprocesses')

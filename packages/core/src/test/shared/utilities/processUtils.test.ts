@@ -459,7 +459,7 @@ describe('ChildProcessTracker', function () {
             assert.strictEqual(tracker.size, 0, 'expected tracker to be empty')
         })
 
-        it('logs a warning message when system usage exceeds threshold', async function () {
+        it('logs a warning message and emits metric when cpu exceeds threshold', async function () {
             const runningProcess = startSleepProcess()
             tracker.add(runningProcess.childProcess)
 
@@ -467,19 +467,28 @@ describe('ChildProcessTracker', function () {
                 cpu: ChildProcessTracker.thresholds.cpu + 1,
                 memory: 0,
             }
-            const highMemory: ProcessStats = {
-                cpu: 0,
-                memory: ChildProcessTracker.thresholds.memory + 1,
-            }
 
             usageMock.resolves(highCpu)
 
             await clock.tickAsync(ChildProcessTracker.pollingInterval)
             assertLogsContain('exceeded cpu threshold', false, 'warn')
+            assertTelemetry('ide_childProcessWarning', { systemResource: 'cpu' })
+
+            await stopAndWait(runningProcess)
+        })
+
+        it('logs a warning message and emits metric when memory exceeds threshold', async function () {
+            const runningProcess = startSleepProcess()
+            tracker.add(runningProcess.childProcess)
+            const highMemory: ProcessStats = {
+                cpu: 0,
+                memory: ChildProcessTracker.thresholds.memory + 1,
+            }
 
             usageMock.resolves(highMemory)
             await clock.tickAsync(ChildProcessTracker.pollingInterval)
             assertLogsContain('exceeded memory threshold', false, 'warn')
+            assertTelemetry('ide_childProcessWarning', { systemResource: 'memory' })
 
             await stopAndWait(runningProcess)
         })
@@ -510,12 +519,13 @@ describe('ChildProcessTracker', function () {
             await clock.tickAsync(ChildProcessTracker.pollingInterval)
 
             assert.throws(() => assertLogsContain(runningProcess.childProcess.pid().toString(), false, 'warn'))
-
+            assert.throws(() => assertTelemetry('ide_childProcessWarning', {}))
             await stopAndWait(runningProcess)
         })
     })
 
     it('logAllUsage includes only active processes', async function () {
+        console.log('start')
         const runningProcess1 = startSleepProcess()
         const runningProcess2 = startSleepProcess()
 
@@ -528,9 +538,10 @@ describe('ChildProcessTracker', function () {
         await stopAndWait(runningProcess1)
 
         await tracker.logAllUsage()
-
+        console.log('logAllUsage called')
         assert.throws(() => assertLogsContain(runningProcess1.childProcess.pid().toString(), false, 'info'))
         assertLogsContain(runningProcess2.childProcess.pid().toString(), false, 'info')
+        console.log('end')
     })
 
     it('logAllUsage defaults to empty message when empty', async function () {
