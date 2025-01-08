@@ -24,6 +24,8 @@ import { keepAliveHeader } from './agent'
 import { getClientId, getOptOutPreference, getOperatingSystem } from '../../shared/telemetry/util'
 import { extensionVersion, getServiceEnvVarConfig } from '../../shared/vscode/env'
 import { DevSettings } from '../../shared/settings'
+import { SageMakerSpaceClient } from '../../shared/sagemaker/client/sagemaker'
+import { isSageMaker } from '../../shared/extensionUtilities'
 
 export interface CodeWhispererConfig {
     readonly region: string
@@ -176,7 +178,14 @@ export class DefaultCodeWhispererClient {
 
     public async listRecommendations(request: ListRecommendationsRequest): Promise<ListRecommendationsResponse> {
         if (this.isBearerTokenAuth()) {
-            return await (await this.createUserSdkClient()).generateCompletions(request).promise()
+            const completionRequest: CodeWhispererUserClient.GenerateCompletionsRequest = { ...request }
+            if (isSageMaker()) {
+                const profileArn = await SageMakerSpaceClient.getInstance().getAmazonQProfileArn()
+                if (profileArn) {
+                    completionRequest.profileArn = profileArn
+                }
+            }
+            return await (await this.createUserSdkClient()).generateCompletions(completionRequest).promise()
         }
         return (await this.createSdkClient()).listRecommendations(request).promise()
     }

@@ -9,6 +9,8 @@ import * as vscode from 'vscode'
 import { ToolkitError } from '../../../../shared/errors'
 import { createCodeWhispererChatStreamingClient } from '../../../../shared/clients/codewhispererChatClient'
 import { createQDeveloperStreamingClient } from '../../../../shared/clients/qDeveloperChatClient'
+import { isSageMaker } from '../../../../shared'
+import { SageMakerSpaceClient } from '../../../../shared/sagemaker/client/sagemaker'
 
 export class ChatSession {
     private sessionId?: string
@@ -56,6 +58,13 @@ export class ChatSession {
 
         if (this.sessionId !== undefined && chatRequest.conversationState !== undefined) {
             chatRequest.conversationState.conversationId = this.sessionId
+        }
+
+        if (isSageMaker()) {
+            const profileArn = await SageMakerSpaceClient.getInstance().getAmazonQProfileArn()
+            if (profileArn) {
+                chatRequest.profileArn = profileArn
+            }
         }
 
         const response = await client.generateAssistantResponse(chatRequest)

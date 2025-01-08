@@ -44,6 +44,7 @@ import { telemetry } from '../../shared/telemetry/telemetry'
 import { asStringifiedStack } from '../../shared/telemetry/spans'
 import { withTelemetryContext } from '../../shared/telemetry/util'
 import { focusAmazonQPanel } from '../../codewhispererChat/commands/registerCommands'
+import { SageMakerSpaceClient } from '../../shared/sagemaker/client/sagemaker'
 
 /** Backwards compatibility for connections w pre-chat scopes */
 export const codeWhispererCoreScopes = [...scopesCodeWhispererCore]
@@ -59,19 +60,27 @@ export const isValidCodeWhispererCoreConnection = (conn?: Connection): conn is C
         return isIamConnection(conn)
     }
 
+    if (isSageMaker()) {
+        return isIamConnection(conn) || isSsoConnection(conn)
+    }
+
     return (
-        (isSageMaker() && isIamConnection(conn)) ||
         (isCloud9('codecatalyst') && isIamConnection(conn)) ||
         (isSsoConnection(conn) && hasScopes(conn, codeWhispererCoreScopes))
     )
 }
 /** Superset that includes all of CodeWhisperer + Amazon Q */
 export const isValidAmazonQConnection = (conn?: Connection): conn is Connection => {
+    if (isSageMaker()) {
+        return (
+            isIamConnection(conn) ||
+            (isSsoConnection(conn) && hasScopes(conn, SageMakerSpaceClient.getQConnectionScopes()))
+        )
+    }
     return (
-        (isSageMaker() && isIamConnection(conn)) ||
-        ((isSsoConnection(conn) || isBuilderIdConnection(conn)) &&
-            isValidCodeWhispererCoreConnection(conn) &&
-            hasScopes(conn, amazonQScopes))
+        (isSsoConnection(conn) || isBuilderIdConnection(conn)) &&
+        isValidCodeWhispererCoreConnection(conn) &&
+        hasScopes(conn, amazonQScopes)
     )
 }
 

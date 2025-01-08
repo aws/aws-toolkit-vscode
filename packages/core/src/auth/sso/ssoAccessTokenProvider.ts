@@ -47,10 +47,24 @@ const deviceGrantType = 'urn:ietf:params:oauth:grant-type:device_code'
 const authorizationGrantType = 'authorization_code'
 const refreshGrantType = 'refresh_token'
 
+export type SsoTokenAccess = {
+    token: SsoToken
+    startUrl: string
+    region: string
+}
+
+export interface SsoTokenProvider {
+    invalidate: (reason: string) => Promise<void>
+    getToken: () => Promise<SsoToken | undefined>
+    createToken: (args?: CreateTokenArgs) => Promise<SsoToken>
+    getClientRegistration: () => Promise<ClientRegistration | undefined>
+    getSessionDuration: () => number | undefined
+}
+
 /**
  * See {@link DeviceFlowAuthorization} or {@link AuthFlowAuthorization} for protocol overview.
  */
-export abstract class SsoAccessTokenProvider {
+export abstract class SsoAccessTokenProvider implements SsoTokenProvider {
     /**
      * Source to pass to aws_loginWithBrowser metric. Due to the complexity of how auth can be called,
      * there is no other easy way to pass this in without signficant refactors.
@@ -280,15 +294,7 @@ export abstract class SsoAccessTokenProvider {
         })
     }
 
-    protected abstract authorize(
-        registration: ClientRegistration,
-        args?: CreateTokenArgs
-    ): Promise<{
-        token: SsoToken
-        registration: ClientRegistration
-        region: string
-        startUrl: string
-    }>
+    protected abstract authorize(registration: ClientRegistration, args?: CreateTokenArgs): Promise<SsoTokenAccess>
 
     /**
      * If the registration already exists locally, it
@@ -408,7 +414,7 @@ async function pollForTokenWithProgress<T extends { requestId?: string }>(
  *
  * @param id Session id
  */
-function getSessionDuration(id: string) {
+export function getSessionDuration(id: string) {
     const creationDate = globals.globalState.getSsoSessionCreationDate(id)
     return creationDate !== undefined ? globals.clock.Date.now() - creationDate : undefined
 }
@@ -462,10 +468,7 @@ export class DeviceFlowAuthorization extends SsoAccessTokenProvider {
         )
     }
 
-    override async authorize(
-        registration: ClientRegistration,
-        args?: CreateTokenArgs
-    ): Promise<{ token: SsoToken; registration: ClientRegistration; region: string; startUrl: string }> {
+    override async authorize(registration: ClientRegistration, args?: CreateTokenArgs): Promise<SsoTokenAccess> {
         // This will NOT throw on expired clientId/Secret, but WILL throw on invalid clientId/Secret
         const authorization = await this.oidc.startDeviceAuthorization({
             startUrl: this.profile.startUrl,
@@ -572,10 +575,7 @@ class AuthFlowAuthorization extends SsoAccessTokenProvider {
         )
     }
 
-    override async authorize(
-        registration: ClientRegistration,
-        args?: CreateTokenArgs
-    ): Promise<{ token: SsoToken; registration: ClientRegistration; region: string; startUrl: string }> {
+    override async authorize(registration: ClientRegistration, args?: CreateTokenArgs): Promise<SsoTokenAccess> {
         const state = randomUUID()
         const authServer = AuthSSOServer.init(state)
 
@@ -682,10 +682,7 @@ class WebAuthorization extends SsoAccessTokenProvider {
         )
     }
 
-    override async authorize(
-        registration: ClientRegistration,
-        args?: CreateTokenArgs
-    ): Promise<{ token: SsoToken; registration: ClientRegistration; region: string; startUrl: string }> {
+    override async authorize(registration: ClientRegistration, args?: CreateTokenArgs): Promise<SsoTokenAccess> {
         const state = randomUUID()
 
         const token = await this.withBrowserLoginTelemetry(async () => {

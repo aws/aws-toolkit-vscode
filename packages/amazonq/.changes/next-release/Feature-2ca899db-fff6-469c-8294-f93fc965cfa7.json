@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "Enable SageMaker SSO user access token & Profile ARN to be used for accessing AmazonQ & CodeWhisperer features"
+}

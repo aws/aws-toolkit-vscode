@@ -27,7 +27,7 @@ import { AsyncCollection } from '../../shared/utilities/asyncCollection'
 import { pageableToCollection, partialClone } from '../../shared/utilities/collectionUtils'
 import { assertHasProps, isNonNullable, RequiredProps, selectFrom } from '../../shared/utilities/tsUtils'
 import { getLogger } from '../../shared/logger'
-import { SsoAccessTokenProvider } from './ssoAccessTokenProvider'
+import { SsoTokenProvider } from './ssoAccessTokenProvider'
 import { AwsClientResponseError, isClientFault } from '../../shared/errors'
 import { DevSettings } from '../../shared/settings'
 import { SdkError } from '@aws-sdk/types'
@@ -158,7 +158,7 @@ export class SsoClient {
 
     public constructor(
         private readonly client: PromisifyClient<SSO>,
-        private readonly provider: SsoAccessTokenProvider
+        private readonly provider: SsoTokenProvider
     ) {}
 
     @withTelemetryContext({ name: 'listAccounts', class: ssoClientClassName })
@@ -236,7 +236,7 @@ export class SsoClient {
         throw error
     }
 
-    public static create(region: string, provider: SsoAccessTokenProvider) {
+    public static create(region: string, provider: SsoTokenProvider) {
         return new this(
             new SSO({
                 region,
