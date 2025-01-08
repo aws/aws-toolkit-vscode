@@ -449,7 +449,7 @@ export class TestController {
                 const unsupportedLanguage = language ? language.charAt(0).toUpperCase() + language.slice(1) : ''
                 if (!workspaceFolder) {
                     // File is outside of workspace
-                    unsupportedMessage = `<span style="color: #EE9D28;">&#9888;<b>External File Detected:</b> ${fileName} is outside of workspace scope.<br></span> However, I can still help you create unit tests for ${fileName} here.`
+                    unsupportedMessage = `<span style="color: #EE9D28;">&#9888;<b>I can't generate tests for because ${fileName} is outside of workspace scope.</b><br></span> I can still provide examples, instructions and code suggestions.`
                 } else {
                     // File is in workspace, check language support
                     if (unsupportedLanguage) {
