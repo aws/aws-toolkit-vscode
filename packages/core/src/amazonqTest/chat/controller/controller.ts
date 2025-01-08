@@ -246,6 +246,7 @@ export class TestController {
         TelemetryHelper.instance.sendTestGenerationToolkitEvent(
             session,
             true,
+            true,
             isCancel ? 'Cancelled' : 'Failed',
             session.startTestGenerationRequestId,
             performance.now() - session.testGenerationStartTime,
@@ -456,7 +457,14 @@ export class TestController {
                     unsupportedMessage = `<span style="color: #EE9D28;">&#9888;<b>I'm sorry, but /test only supports Python and Java</b><br></span> I will still generate a suggestion below.`
                 }
                 this.messenger.sendMessage(unsupportedMessage, tabID, 'answer')
-                await this.onCodeGeneration(session, message.prompt, tabID, fileName, filePath)
+                await this.onCodeGeneration(
+                    session,
+                    message.prompt,
+                    tabID,
+                    fileName,
+                    filePath,
+                    workspaceFolder !== undefined
+                )
             } else {
                 this.messenger.sendCapabilityCard({ tabID })
                 this.messenger.sendMessage(testGenSummaryMessage(fileName), message.tabID, 'answer-part')
@@ -722,6 +730,7 @@ export class TestController {
         TelemetryHelper.instance.sendTestGenerationToolkitEvent(
             session,
             true,
+            true,
             'Succeeded',
             session.startTestGenerationRequestId,
             session.latencyOfTestGeneration,
@@ -799,7 +808,8 @@ export class TestController {
         message: string,
         tabID: string,
         fileName: string,
-        filePath: string
+        filePath: string,
+        fileInWorkspace: boolean
     ) {
         try {
             // TODO: Write this entire gen response to basiccommands and call here.
@@ -827,7 +837,8 @@ export class TestController {
                 tabID,
                 randomUUID.toString(),
                 triggerPayload,
-                fileName
+                fileName,
+                fileInWorkspace
             )
         } finally {
             this.messenger.sendChatInputEnabled(tabID, true)
@@ -842,6 +853,7 @@ export class TestController {
         if (step === FollowUpTypes.RejectCode) {
             TelemetryHelper.instance.sendTestGenerationToolkitEvent(
                 session,
+                true,
                 true,
                 'Succeeded',
                 session.startTestGenerationRequestId,
