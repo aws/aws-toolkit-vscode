@@ -27,7 +27,6 @@ describe('SSO Cache', function () {
     const validToken = {
         accessToken: 'longstringofrandomcharacters',
         expiresAt: new Date(Date.now() + hourInMs),
-        refreshToken: 'dummyRefreshToken',
     } as SsoToken
 
     beforeEach(async function () {

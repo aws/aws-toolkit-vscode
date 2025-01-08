@@ -106,9 +106,6 @@ export async function activate(context: ExtContext): Promise<void> {
     localize = nls.loadMessageBundle()
     const codewhispererSettings = CodeWhispererSettings.instance
 
-    // Import old CodeWhisperer settings into Amazon Q
-    await CodeWhispererSettings.instance.importSettings()
-
     // initialize AuthUtil earlier to make sure it can listen to connection change events.
     const auth = AuthUtil.instance
     auth.initCodeWhispererHooks()
@@ -670,27 +667,28 @@ export async function activate(context: ExtContext): Promise<void> {
     function setSubscriptionsForCodeIssues() {
         context.extensionContext.subscriptions.push(
             vscode.workspace.onDidChangeTextDocument(async (e) => {
-                // verify the document is something with a finding
-                for (const issue of SecurityIssueProvider.instance.issues) {
-                    if (issue.filePath === e.document.uri.fsPath) {
-                        disposeSecurityDiagnostic(e)
-
-                        SecurityIssueProvider.instance.handleDocumentChange(e)
-                        SecurityIssueTreeViewProvider.instance.refresh()
-                        await syncSecurityIssueWebview(context)
-
-                        toggleIssuesVisibility((issue, filePath) =>
-                            filePath !== e.document.uri.fsPath
-                                ? issue.visible
-                                : !detectCommentAboveLine(
-                                      e.document,
-                                      issue.startLine,
-                                      CodeWhispererConstants.amazonqIgnoreNextLine
-                                  )
-                        )
-                        break
-                    }
+                if (e.document.uri.scheme !== 'file') {
+                    return
                 }
+                const diagnostics = securityScanRender.securityDiagnosticCollection?.get(e.document.uri)
+                if (!diagnostics || diagnostics.length === 0) {
+                    return
+                }
+                disposeSecurityDiagnostic(e)
+
+                SecurityIssueProvider.instance.handleDocumentChange(e)
+                SecurityIssueTreeViewProvider.instance.refresh()
+                await syncSecurityIssueWebview(context)
+
+                toggleIssuesVisibility((issue, filePath) =>
+                    filePath !== e.document.uri.fsPath
+                        ? issue.visible
+                        : !detectCommentAboveLine(
+                              e.document,
+                              issue.startLine,
+                              CodeWhispererConstants.amazonqIgnoreNextLine
+                          )
+                )
             })
         )
     }
@@ -720,7 +718,9 @@ function toggleIssuesVisibility(visibleCondition: (issue: CodeScanIssue, filePat
         issues: group.issues.map((issue) => ({ ...issue, visible: visibleCondition(issue, group.filePath) })),
     }))
     securityScanRender.securityDiagnosticCollection?.clear()
-    updatedIssues.forEach((issue) => updateSecurityDiagnosticCollection(issue))
+    for (const issue of updatedIssues) {
+        updateSecurityDiagnosticCollection(issue)
+    }
     SecurityIssueProvider.instance.issues = updatedIssues
     SecurityIssueTreeViewProvider.instance.refresh()
 }

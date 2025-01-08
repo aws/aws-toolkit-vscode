@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as proc from 'child_process'
+import * as proc from 'child_process' // eslint-disable-line no-restricted-imports
 import * as crossSpawn from 'cross-spawn'
 import * as logger from '../logger'
 import { Timeout, CancellationError, waitUntil } from './timeoutUtils'
@@ -99,6 +99,13 @@ export class ChildProcess {
         this.#baseOptions = baseOptions
         // TODO: allow caller to use the various loggers instead of just the single one
         this.#log = baseOptions.logging !== 'no' ? logger.getLogger() : logger.getNullLogger()
+    }
+    public static async run(
+        command: string,
+        args: string[] = [],
+        options?: ChildProcessOptions
+    ): Promise<ChildProcessResult> {
+        return await new ChildProcess(command, args, options).run()
     }
 
     // Inspired by 'got'

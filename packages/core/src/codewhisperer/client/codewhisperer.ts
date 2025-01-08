@@ -132,7 +132,7 @@ export class DefaultCodeWhispererClient {
         )) as CodeWhispererClient
     }
 
-    async createUserSdkClient(): Promise<CodeWhispererUserClient> {
+    async createUserSdkClient(maxRetries?: number): Promise<CodeWhispererUserClient> {
         const isOptedOut = CodeWhispererSettings.instance.isOptoutEnabled()
         session.setFetchCredentialStart()
         const bearerToken = await AuthUtil.instance.getBearerToken()
@@ -144,6 +144,7 @@ export class DefaultCodeWhispererClient {
                 apiConfig: userApiConfig,
                 region: cwsprConfig.region,
                 endpoint: cwsprConfig.endpoint,
+                maxRetries: maxRetries,
                 credentials: new Credentials({ accessKeyId: 'xxx', secretAccessKey: 'xxx' }),
                 onRequestSetup: [
                     (req) => {
@@ -231,14 +232,14 @@ export class DefaultCodeWhispererClient {
             .promise()
             .then((resps) => {
                 let logStr = 'amazonq: listAvailableCustomizations API request:'
-                resps.forEach((resp) => {
+                for (const resp of resps) {
                     const requestId = resp.$response.requestId
                     logStr += `\n${indent('RequestID: ', 4)}${requestId},\n${indent('Customizations:', 4)}`
-                    resp.customizations.forEach((c, index) => {
+                    for (const [index, c] of resp.customizations.entries()) {
                         const entry = `${index.toString().padStart(2, '0')}: ${c.name?.trim()}`
                         logStr += `\n${indent(entry, 8)}`
-                    })
-                })
+                    }
+                }
                 getLogger().debug(logStr)
                 return resps
             })
@@ -293,7 +294,8 @@ export class DefaultCodeWhispererClient {
     public async codeModernizerGetCodeTransformation(
         request: CodeWhispererUserClient.GetTransformationRequest
     ): Promise<PromiseResult<CodeWhispererUserClient.GetTransformationResponse, AWSError>> {
-        return (await this.createUserSdkClient()).getTransformation(request).promise()
+        // instead of the default of 3 retries, use 8 retries for this API which is polled every 5 seconds
+        return (await this.createUserSdkClient(8)).getTransformation(request).promise()
     }
 
     /**
@@ -316,7 +318,8 @@ export class DefaultCodeWhispererClient {
     public async codeModernizerGetCodeTransformationPlan(
         request: CodeWhispererUserClient.GetTransformationPlanRequest
     ): Promise<PromiseResult<CodeWhispererUserClient.GetTransformationPlanResponse, AWSError>> {
-        return (await this.createUserSdkClient()).getTransformationPlan(request).promise()
+        // instead of the default of 3 retries, use 8 retries for this API which is polled every 5 seconds
+        return (await this.createUserSdkClient(8)).getTransformationPlan(request).promise()
     }
 
     public async startCodeFixJob(

@@ -97,10 +97,12 @@ export async function validateSQLMetadataFile(fileContents: string, message: any
         const serverNodeLocations =
             sctData['tree']['instances'][0]['ProjectModel'][0]['relations'][0]['server-node-location']
         const schemaNames = new Set<string>()
+        // eslint-disable-next-line unicorn/no-array-for-each
         serverNodeLocations.forEach((serverNodeLocation: any) => {
             const schemaNodes = serverNodeLocation['FullNameNodeInfoList'][0]['nameParts'][0][
                 'FullNameNodeInfo'
             ].filter((node: any) => node['$']['typeNode'].toLowerCase() === 'schema')
+            // eslint-disable-next-line unicorn/no-array-for-each
             schemaNodes.forEach((node: any) => {
                 schemaNames.add(node['$']['nameNode'].toUpperCase())
             })

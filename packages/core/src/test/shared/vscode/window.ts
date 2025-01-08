@@ -196,6 +196,7 @@ export function createTestWindow(workspace = vscode.workspace): Window & TestWin
         const picker = createQuickPick()
         const onDidSelectItem = options?.onDidSelectItem?.bind(options)
         if (onDidSelectItem) {
+            // eslint-disable-next-line unicorn/no-array-for-each
             picker.onDidChangeSelection((items) => items.forEach(onDidSelectItem))
         }
 

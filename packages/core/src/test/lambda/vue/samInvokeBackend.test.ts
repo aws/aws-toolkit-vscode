@@ -94,7 +94,7 @@ describe('SamInvokeWebview', () => {
             const tempFolder = await makeTemporaryToolkitFolder()
             const testCases = [{ input: vscode.Uri.file(path.join(tempFolder, 'file.txt')), expected: 'file.txt' }]
 
-            testCases.forEach(({ input, expected }) => {
+            for (const { input, expected } of testCases) {
                 const result = samInvokeWebview.getFileName(input.fsPath)
                 assert.strictEqual(result, expected, `getFileName("${input}") should return "${expected}"`)
 
@@ -105,7 +105,7 @@ describe('SamInvokeWebview', () => {
                     nodeResult,
                     `getFileName result should match Node's path.basename for "${input}"`
                 )
-            })
+            }
             await fs.delete(tempFolder, { recursive: true })
         })
     })
@@ -396,7 +396,7 @@ describe('SamInvokeWebview', () => {
             const tempFolder = await makeTemporaryToolkitFolder()
             const testCases = [{ input: vscode.Uri.file(path.join(tempFolder, 'file.txt')), expected: 'file.txt' }]
 
-            testCases.forEach(({ input, expected }) => {
+            for (const { input, expected } of testCases) {
                 const result = samInvokeWebview.getFileName(input.fsPath)
                 assert.strictEqual(result, expected, `getFileName("${input}") should return "${expected}"`)
 
@@ -407,7 +407,7 @@ describe('SamInvokeWebview', () => {
                     nodeResult,
                     `getFileName result should match Node's path.basename for "${input}"`
                 )
-            })
+            }
             await fs.delete(tempFolder, { recursive: true })
         })
         it('prompts the user for a file and returns the selected file', async () => {

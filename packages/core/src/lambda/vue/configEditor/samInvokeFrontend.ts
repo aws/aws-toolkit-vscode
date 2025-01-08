@@ -448,9 +448,9 @@ export default defineComponent({
         },
         clearForm() {
             const init = initData()
-            Object.keys(init).forEach((k) => {
+            for (const k of Object.keys(init)) {
                 ;(this as any)[k] = init[k as keyof typeof init]
-            })
+            }
         },
     },
 })

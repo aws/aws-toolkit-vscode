@@ -1,3 +1,20 @@
+## 1.41.0 2024-12-17
+
+- **Bug Fix** /review: Apply fix removes other issues in the same file.
+- **Bug Fix** Fix(Amazon Q Code Transformation): show correct diff when running consecutive transformations
+- **Bug Fix** Improve when the welcome page is shown in amazon q chat
+- **Bug Fix** Code Review: Cleaned up output logs when running /review
+- **Bug Fix** Code Review: Fixed a bug where applying a fix did not update the positions of other issues in the same file.
+- **Bug Fix** Chat: When navigating to previous prompts, code attachments are sometimes displayed incorrectly
+- **Bug Fix** /review: Diagnostics in the problems panel are mapped to the wrong code
+- **Bug Fix** Fix opentabs context possibly timeout due to race condition of misuse of different timeout functionalities
+- **Bug Fix** Auth: SSO session was bad, but no reauth prompt given
+- **Bug Fix** Reduce frequency of system status poll
+- **Bug Fix** Chat: When writing a prompt without sending it, navigating via up/down arrows sometimes deletes the unsent prompt.
+- **Bug Fix** Code Review: Fixed a bug where projects with repeated path names did not scan properly.
+- **Feature** /review: Code fix automatically scrolls into view after generation.
+- **Feature** Chat: improve font size and line-height in footer (below prompt input field)
+
 ## 1.40.0 2024-12-10
 
 - **Bug Fix** Improved LLM code review for file review.
