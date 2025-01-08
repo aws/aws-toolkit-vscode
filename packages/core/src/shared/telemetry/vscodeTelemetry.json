@@ -350,6 +350,11 @@
             "name": "amazonqMessageDisplayedMs",
             "type": "int",
             "description": "Duration between the partner teams code receiving the message and when the message was finally displayed in ms"
+        },
+        {
+            "name": "executedCount",
+            "type": "int",
+            "description": "The number of executed operations"
         }
     ],
     "metrics": [

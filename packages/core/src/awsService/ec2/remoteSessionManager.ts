@@ -31,6 +31,7 @@ export class Ec2SessionTracker extends Map<EC2.InstanceId, string> implements Di
     }
 
     public async dispose(): Promise<void> {
+        // eslint-disable-next-line unicorn/no-array-for-each
         this.forEach(async (_sessionId, instanceId) => await this.disconnectEnv(instanceId))
     }
 

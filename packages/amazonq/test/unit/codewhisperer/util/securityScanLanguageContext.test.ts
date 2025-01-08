@@ -51,7 +51,7 @@ describe('securityScanLanguageContext', function () {
             await resetCodeWhispererGlobalVariables()
         })
 
-        cases.forEach((tuple) => {
+        for (const tuple of cases) {
             const languageId = tuple[0]
             const expected = tuple[1]
 
@@ -59,7 +59,7 @@ describe('securityScanLanguageContext', function () {
                 const actual = languageContext.isLanguageSupported(languageId)
                 assert.strictEqual(actual, expected)
             })
-        })
+        }
     })
 
     describe('normalizeLanguage', function () {

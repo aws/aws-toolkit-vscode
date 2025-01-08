@@ -255,10 +255,10 @@ export async function makeDotnetDebugConfiguration(
         }
         // we could safely leave this entry in, but might as well give the user full control if they're specifying mappings
         delete config.sourceFileMap['/build']
-        config.lambda.pathMappings.forEach((mapping) => {
+        for (const mapping of config.lambda.pathMappings) {
             // this looks weird because we're mapping the PDB path to the local workspace
             config.sourceFileMap[mapping.remoteRoot] = mapping.localRoot
-        })
+        }
     }
 
     return {

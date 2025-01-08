@@ -22,9 +22,10 @@ interface SetupResult {
 }
 
 async function verifyResult(setup: SetupResult) {
-    assert.ok(setup.clientReqStub.calledTwice)
-    assert.ok(setup.clientReqStub.firstCall.calledWith(BuildIndexRequestType))
-    assert.ok(setup.clientReqStub.secondCall.calledWith(GetUsageRequestType))
+    // A correct run makes 2 requests, but don't want to make it exact to avoid over-sensitivity to implementation. If we make 10+ something is likely wrong.
+    assert.ok(setup.clientReqStub.callCount >= 2 && setup.clientReqStub.callCount <= 10)
+    assert.ok(setup.clientReqStub.calledWith(BuildIndexRequestType))
+    assert.ok(setup.clientReqStub.calledWith(GetUsageRequestType))
 
     assert.strictEqual(getFsCallsUpperBound(setup.fsSpy), 0, 'should not make any fs calls')
     assert.ok(setup.findFilesSpy.callCount <= 2, 'findFiles should not be called more than twice')

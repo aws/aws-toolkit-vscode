@@ -8,7 +8,6 @@ import * as path from 'path'
 import { ConversationNotStartedState, PrepareCodeGenState } from './sessionState'
 import {
     type DeletedFileInfo,
-    FollowUpTypes,
     type Interaction,
     type NewFileInfo,
     type SessionState,
@@ -16,12 +15,10 @@ import {
     UpdateFilesPathsParams,
 } from '../types'
 import { ConversationIdNotFoundError } from '../errors'
-import { referenceLogText } from '../constants'
+import { featureDevChat, referenceLogText, featureDevScheme } from '../constants'
 import fs from '../../shared/fs/fs'
-import { Messenger } from '../controllers/chat/messenger/messenger'
 import { FeatureDevClient } from '../client/featureDev'
 import { codeGenRetryLimit } from '../limits'
-import { SessionConfig } from './sessionConfigFactory'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { ReferenceLogViewProvider } from '../../codewhisperer/service/referenceLogViewProvider'
@@ -29,10 +26,13 @@ import { AuthUtil } from '../../codewhisperer/util/authUtil'
 import { getLogger } from '../../shared'
 import { logWithConversationId } from '../userFacingText'
 import { CodeReference } from '../../amazonq/webview/ui/connector'
-import { UpdateAnswerMessage } from '../views/connector/connector'
 import { MynahIcons } from '@aws/mynah-ui'
 import { i18n } from '../../shared/i18n-helper'
 import { computeDiff } from '../../amazonq/commons/diff'
+import { UpdateAnswerMessage } from '../../amazonq/commons/connector/connectorMessages'
+import { FollowUpTypes } from '../../amazonq/commons/types'
+import { SessionConfig } from '../../amazonq/commons/session/sessionConfigFactory'
+import { Messenger } from '../../amazonq/commons/connector/baseMessenger'
 export class Session {
     private _state?: SessionState | Omit<SessionState, 'uploadId'>
     private task: string = ''
@@ -184,7 +184,8 @@ export class Session {
                         },
                     ],
                 },
-                tabID
+                tabID,
+                featureDevChat
             )
             this.messenger.updateChatAnswer(answer)
         }
@@ -280,8 +281,27 @@ export class Session {
     public async computeFilePathDiff(filePath: NewFileInfo) {
         const leftPath = `${filePath.workspaceFolder.uri.fsPath}/${filePath.relativePath}`
         const rightPath = filePath.virtualMemoryUri.path
-        const diff = await computeDiff(leftPath, rightPath, this.tabID)
+        const diff = await computeDiff(leftPath, rightPath, this.tabID, featureDevScheme)
         return { leftPath, rightPath, ...diff }
+    }
+
+    public async sendMetricDataTelemetry(operationName: string, result: string) {
+        await this.proxyClient.sendMetricData({
+            metricName: 'Operation',
+            metricValue: 1,
+            timestamp: new Date(),
+            product: 'FeatureDev',
+            dimensions: [
+                {
+                    name: 'operationName',
+                    value: operationName,
+                },
+                {
+                    name: 'result',
+                    value: result,
+                },
+            ],
+        })
     }
 
     public async sendLinesOfCodeGeneratedTelemetry() {

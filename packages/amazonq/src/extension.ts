@@ -53,7 +53,7 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
     errors.init(fs.getUsername(), env.isAutomation())
     await initializeComputeRegion()
 
-    globals.contextPrefix = 'amazonq.' //todo: disconnect from above line
+    globals.contextPrefix = 'amazonq.' // todo: disconnect from above line
 
     // Avoid activation if older toolkit is installed
     // Amazon Q is only compatible with AWS Toolkit >= 3.0.0
@@ -97,10 +97,8 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
     globals.manifestPaths.endpoints = context.asAbsolutePath(join('resources', 'endpoints.json'))
     globals.regionProvider = RegionProvider.fromEndpointsProvider(makeEndpointsProvider())
 
-    const qOutputChannel = vscode.window.createOutputChannel('Amazon Q', { log: true })
     const qLogChannel = vscode.window.createOutputChannel('Amazon Q Logs', { log: true })
-    await activateLogger(context, amazonQContextPrefix, qOutputChannel, qLogChannel)
-    globals.outputChannel = qOutputChannel
+    await activateLogger(context, amazonQContextPrefix, qLogChannel)
     globals.logOutputChannel = qLogChannel
     globals.loginManager = new LoginManager(globals.awsContext, new CredentialsStore())
 

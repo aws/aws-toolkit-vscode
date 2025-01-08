@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Fix context menu displaying when typing @, even though input is disallowed"
+}

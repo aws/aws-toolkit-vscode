@@ -11,7 +11,6 @@ import { Commands, placeholder } from '../../shared/vscode/commands2'
 import {
     toggleCodeSuggestions,
     showReferenceLog,
-    showSecurityScan,
     showLearnMore,
     showFreeTierLimit,
     reconnect,
@@ -44,9 +43,9 @@ export function createAutoSuggestions(running: boolean): DataQuickPickItem<'auto
 }
 
 export function createAutoScans(running: boolean): DataQuickPickItem<'autoScans'> {
-    const labelResume = localize('AWS.codewhisperer.resumeCodeWhispererNode.label', 'Resume Auto-Scans')
+    const labelResume = localize('AWS.codewhisperer.resumeCodeWhispererNode.label', 'Resume Auto-Reviews')
     const iconResume = getIcon('vscode-debug-alt')
-    const labelPause = localize('AWS.codewhisperer.pauseCodeWhispererNode.label', 'Pause Auto-Scans')
+    const labelPause = localize('AWS.codewhisperer.pauseCodeWhispererNode.label', 'Pause Auto-Reviews')
     const iconPause = getIcon('vscode-debug-pause')
     const monthlyQuotaExceeded = CodeScansState.instance.isMonthlyQuotaExceeded()
 
@@ -70,14 +69,21 @@ export function createOpenReferenceLog(): DataQuickPickItem<'openReferenceLog'> 
 }
 
 export function createSecurityScan(): DataQuickPickItem<'securityScan'> {
-    const prefix = codeScanState.getPrefixTextForButton()
-    const label = `${prefix} Project Scan`
+    const label = `Full project scan is now /review!`
     const icon = codeScanState.getIconForButton()
+    const description = 'Open in Chat Panel'
 
     return {
         data: 'securityScan',
         label: codicon`${icon} ${label}`,
-        onClick: () => showSecurityScan.execute(placeholder, cwQuickPickSource),
+        description: description,
+        onClick: () =>
+            vscode.commands.executeCommand(
+                'aws.amazonq.security.scan-statusbar',
+                placeholder,
+                'cwQuickPickSource',
+                true
+            ),
     } as DataQuickPickItem<'securityScan'>
 }
 

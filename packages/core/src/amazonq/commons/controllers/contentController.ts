@@ -17,7 +17,7 @@ import {
 } from '../../../shared/utilities/textDocumentUtilities'
 import { extractFileAndCodeSelectionFromMessage, fs, getErrorMsg, ToolkitError } from '../../../shared'
 
-class ContentProvider implements vscode.TextDocumentContentProvider {
+export class ContentProvider implements vscode.TextDocumentContentProvider {
     constructor(private uri: vscode.Uri) {}
 
     provideTextDocumentContent(_uri: vscode.Uri) {
@@ -50,13 +50,13 @@ export class EditorContentController {
                 indent = ' '.repeat(indent.length - indent.trimStart().length)
             }
             let textWithIndent = ''
-            text.split('\n').forEach((line, index) => {
+            for (const [index, line] of text.split('\n').entries()) {
                 if (index === 0) {
                     textWithIndent += line
                 } else {
                     textWithIndent += '\n' + indent + line
                 }
-            })
+            }
             editor
                 .edit((editBuilder) => {
                     editBuilder.insert(cursorStart, textWithIndent)

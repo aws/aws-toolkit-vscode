@@ -60,7 +60,7 @@ describe('makeCoreCLRDebugConfiguration', function () {
             templatePath: '/fake/sam/path',
             samLocalInvokeCommand: new DefaultSamLocalInvokeCommand(),
 
-            //debuggerPath?:
+            // debuggerPath?:
 
             invokeTarget: {
                 target: 'code',

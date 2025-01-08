@@ -15,7 +15,7 @@ import { AwsContext } from '../awsContext'
 import { getIdeProperties, isAmazonQ, isCloud9 } from '../extensionUtilities'
 import { ResourceFetcher } from '../resourcefetcher/resourcefetcher'
 import { isSsoConnection } from '../../auth/connection'
-import { Auth } from '../../auth'
+import { Auth } from '../../auth/auth'
 
 export const defaultRegion = 'us-east-1'
 export const defaultPartition = 'aws'
@@ -128,26 +128,26 @@ export class RegionProvider {
 
     private loadFromEndpoints(endpoints: Endpoints) {
         this.regionData.clear()
-        endpoints.partitions.forEach((partition) => {
-            partition.regions.forEach((region) =>
+        for (const partition of endpoints.partitions) {
+            for (const region of partition.regions) {
                 this.regionData.set(region.id, {
                     dnsSuffix: partition.dnsSuffix,
                     partitionId: partition.id,
                     region: region,
                     serviceIds: [],
                 })
-            )
+            }
 
-            partition.services.forEach((service) => {
-                service.endpoints.forEach((endpoint) => {
+            for (const service of partition.services) {
+                for (const endpoint of service.endpoints) {
                     const regionData = this.regionData.get(endpoint.regionId)
 
                     if (regionData) {
                         regionData.serviceIds.push(service.id)
                     }
-                })
-            })
-        })
+                }
+            }
+        }
         this.onDidChangeEmitter.fire()
     }
 

@@ -13,16 +13,18 @@ import { resolvePath } from '../utilities/pathUtils'
 import fs from '../../shared/fs/fs'
 import { isWeb } from '../extensionGlobals'
 import { getUserAgent } from '../telemetry/util'
-import { isBeta } from '../vscode/env'
+import { isBeta, isDebugInstance } from '../vscode/env'
 
 /**
  * Activate Logger functionality for the extension.
+ *
+ * @param outputChannel optional output channel for less granular logs
  */
 export async function activate(
     extensionContext: vscode.ExtensionContext,
     contextPrefix: string,
-    outputChannel: vscode.LogOutputChannel,
-    logChannel: vscode.LogOutputChannel
+    logChannel: vscode.LogOutputChannel,
+    outputChannel?: vscode.LogOutputChannel
 ): Promise<void> {
     const settings = Settings.instance.getSection('aws')
     const devLogfile = settings.get('dev.logfile', '')
@@ -44,7 +46,10 @@ export async function activate(
         const newLogLevel = fromVscodeLogLevel(logLevel)
         mainLogger.setLogLevel(newLogLevel) // Also logs a message.
     })
-    mainLogger.setLogLevel('debug') // HACK: set to "debug" when debugging the extension.
+
+    if (isDebugInstance()) {
+        mainLogger.setLogLevel('debug') // HACK: set to "debug" when debugging the extension.
+    }
 
     setLogger(mainLogger)
 
@@ -52,13 +57,18 @@ export async function activate(
     setLogger(
         makeLogger({
             logLevel: chanLogLevel,
-            outputChannels: [outputChannel, logChannel],
+            outputChannels: outputChannel ? [outputChannel, logChannel] : [logChannel],
             useConsoleLog: true,
         }),
         'debugConsole'
     )
 
-    getLogger().info('Log level: %s%s', chanLogLevel, logUri ? `, file (always "debug" level): ${logUri.fsPath}` : '')
+    getLogger().info(
+        'Log level: %s, beta=%s%s',
+        chanLogLevel,
+        isBeta(),
+        logUri ? `, file (always "debug" level): ${logUri.fsPath}` : ''
+    )
     getLogger().debug('User agent: %s', getUserAgent({ includePlatform: true, includeClientId: true }))
     if (devLogfile && typeof devLogfile !== 'string') {
         getLogger().error('invalid aws.dev.logfile setting')

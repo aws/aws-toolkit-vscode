@@ -58,7 +58,7 @@ export interface Manifest {
 }
 const manifestUrl = 'https://aws-toolkit-language-servers.amazonaws.com/q-context/manifest.json'
 // this LSP client in Q extension is only going to work with these LSP server versions
-const supportedLspServerVersions = ['0.1.29']
+const supportedLspServerVersions = ['0.1.32']
 
 const nodeBinName = process.platform === 'win32' ? 'node.exe' : 'node'
 
@@ -280,23 +280,25 @@ export class LspController {
     async query(s: string): Promise<RelevantTextDocument[]> {
         const chunks: Chunk[] | undefined = await LspClient.instance.queryVectorIndex(s)
         const resp: RelevantTextDocument[] = []
-        chunks?.forEach((chunk) => {
-            const text = chunk.context ? chunk.context : chunk.content
-            if (chunk.programmingLanguage && chunk.programmingLanguage !== 'unknown') {
-                resp.push({
-                    text: text,
-                    relativeFilePath: chunk.relativePath ? chunk.relativePath : path.basename(chunk.filePath),
-                    programmingLanguage: {
-                        languageName: chunk.programmingLanguage,
-                    },
-                })
-            } else {
-                resp.push({
-                    text: text,
-                    relativeFilePath: chunk.relativePath ? chunk.relativePath : path.basename(chunk.filePath),
-                })
+        if (chunks) {
+            for (const chunk of chunks) {
+                const text = chunk.context ? chunk.context : chunk.content
+                if (chunk.programmingLanguage && chunk.programmingLanguage !== 'unknown') {
+                    resp.push({
+                        text: text,
+                        relativeFilePath: chunk.relativePath ? chunk.relativePath : path.basename(chunk.filePath),
+                        programmingLanguage: {
+                            languageName: chunk.programmingLanguage,
+                        },
+                    })
+                } else {
+                    resp.push({
+                        text: text,
+                        relativeFilePath: chunk.relativePath ? chunk.relativePath : path.basename(chunk.filePath),
+                    })
+                }
             }
-        })
+        }
         return resp
     }
 
@@ -360,7 +362,7 @@ export class LspController {
                 })
             }
         } catch (error) {
-            //TODO: use telemetry.run()
+            // TODO: use telemetry.run()
             getLogger().error(`LspController: Failed to build index of project`)
             telemetry.amazonq_indexWorkspace.emit({
                 duration: performance.now() - start,

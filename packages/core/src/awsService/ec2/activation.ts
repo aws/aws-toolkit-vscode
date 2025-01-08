@@ -83,5 +83,6 @@ export async function activate(ctx: ExtContext): Promise<void> {
 }
 
 export async function deactivate(): Promise<void> {
+    // eslint-disable-next-line unicorn/no-array-for-each
     connectionManagers.forEach(async (manager) => await manager.dispose())
 }
