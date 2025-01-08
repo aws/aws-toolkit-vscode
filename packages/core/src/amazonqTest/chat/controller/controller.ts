@@ -444,12 +444,12 @@ export class TestController {
             /*
                 For Re:Invent 2024 we are supporting only java and python for unit test generation, rest of the languages shows the similar experience as CWC
             */
-            if (!['java', 'python'].includes(language) || workspaceFolder == undefined) {
+            if (!['java', 'python'].includes(language) || workspaceFolder === undefined) {
                 let unsupportedMessage: string
                 const unsupportedLanguage = language ? language.charAt(0).toUpperCase() + language.slice(1) : ''
                 if (!workspaceFolder) {
                     // File is outside of workspace
-                    unsupportedMessage = `<span style="color: #EE9D28;">&#9888;<b>I can't generate tests for because ${fileName} is outside of workspace scope.</b><br></span> I can still provide examples, instructions and code suggestions.`
+                    unsupportedMessage = `<span style="color: #EE9D28;">&#9888;<b>I can't generate tests for ${fileName}</b> because the file is outside of workspace scope.<br></span> I can still provide examples, instructions and code suggestions.`
                 } else if (unsupportedLanguage) {
                     unsupportedMessage = `<span style="color: #EE9D28;">&#9888;<b>I'm sorry, but /test only supports Python and Java</b><br></span> While ${unsupportedLanguage} is not supported, I will generate a suggestion below.`
                 } else {
