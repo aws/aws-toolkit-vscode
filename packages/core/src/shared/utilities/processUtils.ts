@@ -9,6 +9,7 @@ import * as logger from '../logger'
 import { Timeout, CancellationError, waitUntil } from './timeoutUtils'
 import { PollingSet } from './pollingSet'
 import { getLogger } from '../logger/logger'
+import { telemetry } from '../telemetry'
 
 export interface RunParameterContext {
     /** Reports an error parsed from the stdin/stdout streams. */
@@ -100,18 +101,29 @@ export class ChildProcessTracker {
     }
 
     private async checkProcessUsage(pid: number): Promise<void> {
+        const doesExceedThreshold = (resource: keyof ProcessStats, value: number) => {
+            const threshold = ChildProcessTracker.thresholds[resource]
+            return value > threshold
+        }
+        const warn = (resource: keyof ProcessStats, value: number) => {
+            telemetry.ide_childProcessWarning.run((span) => {
+                ChildProcessTracker.logger.warn(`Process ${pid} exceeded ${resource} threshold: ${value}`)
+                span.record({ systemResource: resource })
+            })
+        }
+
         if (!this.#pids.has(pid)) {
             ChildProcessTracker.logger.warn(`Missing process with id ${pid}`)
             return
         }
         const stats = await this.getUsage(pid)
-        if (stats) {
-            ChildProcessTracker.logger.debug(`Process ${pid} usage: %O`, stats)
-            if (stats.memory > ChildProcessTracker.thresholds.memory) {
-                ChildProcessTracker.logger.warn(`Process ${pid} exceeded memory threshold: ${stats.memory}`)
-            }
-            if (stats.cpu > ChildProcessTracker.thresholds.cpu) {
-                ChildProcessTracker.logger.warn(`Process ${pid} exceeded cpu threshold: ${stats.cpu}`)
+        if (!stats) {
+            ChildProcessTracker.logger.warn(`Failed to get process stats for ${pid}`)
+            return
+        }
+        for (const resource of Object.keys(ChildProcessTracker.thresholds) as (keyof ProcessStats)[]) {
+            if (doesExceedThreshold(resource, stats[resource])) {
+                warn(resource as keyof ProcessStats, stats[resource])
             }
         }
     }

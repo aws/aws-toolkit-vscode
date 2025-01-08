@@ -19,7 +19,7 @@ import { sleep } from '../../../shared/utilities/timeoutUtils'
 import { Timeout, waitUntil } from '../../../shared/utilities/timeoutUtils'
 import { fs } from '../../../shared'
 import * as FakeTimers from '@sinonjs/fake-timers'
-import { installFakeClock } from '../../testUtil'
+import { assertTelemetry, installFakeClock } from '../../testUtil'
 import { isWin } from '../../../shared/vscode/env'
 import { assertLogsContain } from '../../globalSetup.test'
 
@@ -445,7 +445,7 @@ describe('ChildProcessTracker', function () {
         assert.strictEqual(tracker.size, 0, 'expected tracker to be empty')
     })
 
-    it('logs a warning message when system usage exceeds threshold', async function () {
+    it('logs a warning message and emits metric when system usage exceeds threshold', async function () {
         const runningProcess = startSleepProcess()
         tracker.add(runningProcess.childProcess)
 
@@ -462,10 +462,12 @@ describe('ChildProcessTracker', function () {
 
         await clock.tickAsync(ChildProcessTracker.pollingInterval)
         assertLogsContain('exceeded cpu threshold', false, 'warn')
+        assertTelemetry('ide_childProcessWarning', { systemResource: 'cpu' })
 
         usageMock.resolves(highMemory)
         await clock.tickAsync(ChildProcessTracker.pollingInterval)
         assertLogsContain('exceeded memory threshold', false, 'warn')
+        assertTelemetry('ide_childProcessWarning', { systemResource: 'memory' })
 
         await stopAndWait(runningProcess)
     })
@@ -485,7 +487,7 @@ describe('ChildProcessTracker', function () {
         await stopAndWait(runningProcess)
     })
 
-    it('does not log for processes within threshold', async function () {
+    it('does not log or emit telemetry for processes within threshold', async function () {
         const runningProcess = startSleepProcess()
 
         usageMock.resolves({
@@ -496,6 +498,7 @@ describe('ChildProcessTracker', function () {
         await clock.tickAsync(ChildProcessTracker.pollingInterval)
 
         assert.throws(() => assertLogsContain(runningProcess.childProcess.pid().toString(), false, 'warn'))
+        assert.throws(() => assertTelemetry('ide_childProcessWarning', {}))
 
         await stopAndWait(runningProcess)
     })
