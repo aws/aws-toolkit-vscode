@@ -6,12 +6,6 @@
 import { CodeWhispererStreaming, ExportResultArchiveCommandInput } from '@amzn/codewhisperer-streaming'
 import { ToolkitError } from '../errors'
 import fs from '../fs/fs'
-import { getUserAgent } from '../telemetry/util'
-import * as crypto from 'crypto'
-
-// TODO @jpinkney-aws remove the dependency on node
-// eslint-disable-next-line no-restricted-imports
-import fetch from 'node-fetch'
 
 /**
  * This class represents the structure of the archive returned by the ExportResultArchive endpoint
@@ -47,33 +41,4 @@ export async function downloadExportResultArchive(
     }
 
     await fs.writeFile(toPath, Buffer.concat(buffer))
-}
-
-// TODO should this just be a resource fetcher?
-
-/**
- * Downloads a file from remoteUrl into memory
- */
-export async function downloadFrom(remoteUrl: string) {
-    const res = await fetch(remoteUrl, {
-        headers: {
-            'User-Agent': getUserAgent({ includePlatform: true, includeClientId: true }),
-        },
-    })
-    if (!res.ok) {
-        throw new ToolkitError(`Failed to download. Error: ${JSON.stringify(res)}`)
-    }
-
-    const hash = crypto.createHash('sha384')
-    const chunks: Buffer[] = []
-    for await (const chunk of res.body) {
-        const bufferChunk = Buffer.from(chunk)
-        chunks.push(bufferChunk)
-        hash.update(bufferChunk)
-    }
-
-    return {
-        data: Buffer.concat(chunks),
-        hash: hash.digest('hex'),
-    }
 }

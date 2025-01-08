@@ -14,9 +14,7 @@ import { telemetry } from '../../shared/telemetry'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import globals, { isWeb } from '../../shared/extensionGlobals'
 import { isAmazonInternalOs } from '../../shared/vscode/env'
-import { fs } from '../../shared/fs/fs'
-import { tryRemoveFolder } from '../../shared/filesystemUtilities'
-import { LspInstaller, LspResult } from '../../shared/languageServer/types'
+import { WorkspaceLSPResolver } from './workspaceInstaller'
 
 export interface Chunk {
     readonly filePath: string
@@ -25,13 +23,6 @@ export interface Chunk {
     readonly relativePath?: string
     readonly programmingLanguage?: string
 }
-
-// const manifestUrl = 'https://aws-toolkit-language-servers.amazonaws.com/q-context/manifest.json'
-// // this LSP client in Q extension is only going to work with these LSP server versions
-// const supportedLspServerVersions = ['0.1.32']
-
-const nodeBinName = process.platform === 'win32' ? 'node.exe' : 'node'
-
 export interface BuildIndexConfig {
     startUrl?: string
     maxIndexSize: number
@@ -49,19 +40,12 @@ export interface BuildIndexConfig {
  *    Pre-process the input to Index Files API
  *    Post-process the output from Query API
  */
-export class LspController implements LspInstaller {
+export class LspController {
     static #instance: LspController
     private _isIndexingInProgress = false
-    private serverPath: string
-    private nodePath: string
 
     public static get instance() {
         return (this.#instance ??= new this())
-    }
-
-    constructor() {
-        this.serverPath = globals.context.asAbsolutePath(path.join('resources', 'qserver'))
-        this.nodePath = globals.context.asAbsolutePath(path.join('resources', nodeBinName))
     }
 
     isIndexingInProgress() {
@@ -169,27 +153,6 @@ export class LspController implements LspInstaller {
         }
     }
 
-    async isLspInstalled(): Promise<boolean> {
-        return (await fs.exists(this.serverPath)) && (await fs.exists(this.nodePath))
-    }
-
-    async cleanup(): Promise<boolean> {
-        if (await fs.exists(this.serverPath)) {
-            await tryRemoveFolder(this.serverPath)
-        }
-
-        if (await fs.exists(this.nodePath)) {
-            await fs.delete(this.nodePath)
-        }
-
-        return true
-    }
-
-    install(): Promise<LspResult> {
-        // TODO
-        throw new Error('Method not implemented.')
-    }
-
     async trySetupLsp(context: vscode.ExtensionContext, buildIndexConfig: BuildIndexConfig) {
         if (isCloud9() || isWeb() || isAmazonInternalOs()) {
             getLogger().warn('LspController: Skipping LSP setup. LSP is not compatible with the current environment. ')
@@ -197,12 +160,9 @@ export class LspController implements LspInstaller {
             return
         }
         setImmediate(async () => {
-            const ok = await LspController.instance.install()
-            if (!ok) {
-                return
-            }
             try {
-                await activateLsp(context)
+                const installResult = await new WorkspaceLSPResolver().resolve()
+                await activateLsp(context, path.join(installResult.assetDirectory, 'resources/qserver/lspServer.js'))
                 getLogger().info('LspController: LSP activated')
                 void LspController.instance.buildIndex(buildIndexConfig)
                 // log the LSP server CPU and Memory usage per 30 minutes.

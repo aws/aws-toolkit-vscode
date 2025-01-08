@@ -4,12 +4,14 @@
  */
 
 import * as vscode from 'vscode'
-import { ManifestManager, LspManager, LspInstaller, LspResult } from 'aws-core-vscode/shared'
+import { Range } from 'semver'
+import { ManifestResolver, LanguageServerResolver, LspResolver, LspResult } from 'aws-core-vscode/shared'
 
 const manifestURL = 'https://aws-toolkit-language-servers.amazonaws.com/codewhisperer/0/manifest.json'
+const supportedLspServerVersions = '^2.3.1'
 
-export class AmazonQLSPInstaller implements LspInstaller {
-    async install(): Promise<LspResult> {
+export class AmazonQLSPResolver implements LspResolver {
+    async resolve(): Promise<LspResult> {
         const overrideLocation = process.env.AWS_LANGUAGE_SERVER_OVERRIDE
         if (overrideLocation) {
             void vscode.window.showInformationMessage(`Using language server override location: ${overrideLocation}`)
@@ -20,13 +22,16 @@ export class AmazonQLSPInstaller implements LspInstaller {
             }
         }
 
-        const manifestManager = new ManifestManager(manifestURL, 'amazonq')
-        const manifest = await manifestManager.getManifest()
-
-        const lspManager = new LspManager(manifest, '', '')
-        const downloadResult = lspManager.download()
+        // "AmazonQ" is shared across toolkits to provide a common access point, don't change it
+        const name = 'AmazonQ'
+        const manifest = await new ManifestResolver(manifestURL, name).resolve()
+        const installationResult = await new LanguageServerResolver(
+            manifest,
+            name,
+            new Range(supportedLspServerVersions)
+        ).resolve()
 
         // TODO Cleanup old versions of language servers
-        return downloadResult
+        return installationResult
     }
 }

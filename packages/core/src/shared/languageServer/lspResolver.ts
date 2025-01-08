@@ -7,44 +7,19 @@ import fs from '../fs/fs'
 import { ToolkitError } from '../errors'
 import * as semver from 'semver'
 import * as path from 'path'
-import { downloadFrom } from '../utilities/download'
 import { FileType } from 'vscode'
 import AdmZip from 'adm-zip'
-import { logger, LspResult } from './types'
+import { TargetContent, logger, LspResult, LspVersion, Manifest } from './types'
+import { getApplicationSupportFolder } from '../vscode/env'
+import { createHash } from '../crypto'
+import request from '../request'
 
-export interface Content {
-    filename: string
-    url: string
-    hashes: string[]
-    bytes: number
-    serverVersion?: string
-}
-
-export interface Target {
-    platform: string
-    arch: string
-    contents: Content[]
-}
-
-interface LspVersion {
-    serverVersion: string
-    isDelisted: boolean
-    targets: Target[]
-}
-
-export interface Manifest {
-    manifestSchemaVersion: string
-    artifactId: string
-    artifactDescription: string
-    isManifestDeprecated: boolean
-    versions: LspVersion[]
-}
-
-export class LspManager {
+export class LanguageServerResolver {
     constructor(
         private readonly manifest: Manifest,
-        private readonly versionRange: string,
-        private readonly downloadParentFolder: string
+        private readonly lsName: string,
+        private readonly versionRange: semver.Range,
+        private readonly _defaultDownloadFolder?: string
     ) {}
 
     /**
@@ -54,7 +29,7 @@ export class LspManager {
      * 3. Fallback version
      * @throws ToolkitError if no compatible version can be found
      */
-    async download() {
+    async resolve() {
         const result: LspResult = {
             location: 'unknown',
             version: '',
@@ -70,20 +45,28 @@ export class LspManager {
             result.version = latestVersion.serverVersion
             result.assetDirectory = cacheDirectory
             return result
+        } else {
+            // Delete the cached directory since it's invalid
+            if (await fs.existsDir(cacheDirectory)) {
+                await fs.delete(cacheDirectory, {
+                    recursive: true,
+                })
+            }
         }
-
-        // Delete the cached directory if invalid
-        await fs.delete(cacheDirectory)
 
         if (await this.downloadRemoteTargetContent(targetContents, latestVersion.serverVersion)) {
             result.location = 'remote'
             result.version = latestVersion.serverVersion
             result.assetDirectory = cacheDirectory
             return result
+        } else {
+            // clean up any leftover content that may have been downloaded
+            if (await fs.existsDir(cacheDirectory)) {
+                await fs.delete(cacheDirectory, {
+                    recursive: true,
+                })
+            }
         }
-
-        // if unable to retrieve / validate from remote location, cleanup download cache
-        await fs.delete(cacheDirectory)
 
         logger.info(
             `Unable to download language server version ${latestVersion.serverVersion}. Attempting to fetch from fallback location`
@@ -120,12 +103,15 @@ export class LspManager {
         const compatibleLspVersions = this.compatibleManifestLspVersion()
 
         // determine all folders containing lsp versions in the fallback parent folder
-        const cachedVersions = (await fs.readdir(this.downloadParentFolder))
+        const cachedVersions = (await fs.readdir(this.defaultDownloadFolder()))
             .filter(([_, filetype]) => filetype === FileType.Directory)
             .map(([pathName, _]) => semver.parse(pathName))
             .filter((ver): ver is semver.SemVer => ver !== null)
 
-        const expectedVersion = semver.parse(version) as semver.SemVer
+        const expectedVersion = semver.parse(version)
+        if (!expectedVersion) {
+            return undefined
+        }
 
         const sortedCachedLspVersions = compatibleLspVersions
             .filter((v) => this.isValidCachedVersion(v, cachedVersions, expectedVersion))
@@ -170,7 +156,7 @@ export class LspManager {
      *  true, if all of the contents were successfully downloaded and unzipped
      *  false, if any of the contents failed to download or unzip
      */
-    private async downloadRemoteTargetContent(contents: Content[], version: string) {
+    private async downloadRemoteTargetContent(contents: TargetContent[], version: string) {
         const downloadDirectory = this.getDownloadDirectory(version)
 
         if (!(await fs.existsDir(downloadDirectory))) {
@@ -178,9 +164,18 @@ export class LspManager {
         }
 
         const downloadTasks = contents.map(async (content) => {
-            const result = await downloadFrom(content.url)
-            if (result.hash === content.hashes[0]) {
-                await fs.writeFile(`${downloadDirectory}/${content.filename}`, result.data)
+            // TODO This should be using the retryable http library but it doesn't seem to support zips right now
+            const res = await request.fetch('GET', content.url).response
+            if (!res.ok || !res.body) {
+                return false
+            }
+
+            const arrBuffer = await res.arrayBuffer()
+            const data = Buffer.from(arrBuffer)
+
+            const hash = createHash('sha384', data)
+            if (hash === content.hashes[0]) {
+                await fs.writeFile(`${downloadDirectory}/${content.filename}`, data)
                 return true
             }
             return false
@@ -200,29 +195,20 @@ export class LspManager {
             return true
         }
 
-        const unzips = zips.map((zip) => {
-            // attempt to unzip
-            try {
-                const zipFile = new AdmZip(zip)
-                const extractPath = `${downloadDirectory}/${zip.replace('.zip', '')}`
-                zipFile.extractAllTo(extractPath)
-            } catch {
-                return false
-            }
-            return true
-        })
-
-        // make sure every one completed successfully
-        return unzips.every((unzip) => unzip === true)
+        return this.copyZipContents(zips)
     }
 
-    private async hasValidLocalCache(localCacheDirectory: string, targetContents: Content[]) {
-        const result = targetContents.every(async (content) => {
-            const path = `${localCacheDirectory}/${content.filename}`
-            return await fs.existsFile(path)
-        })
+    private async hasValidLocalCache(localCacheDirectory: string, targetContents: TargetContent[]) {
+        // check if the zips are still at the present location
+        const results = await Promise.all(
+            targetContents.map((content) => {
+                const path = `${localCacheDirectory}/${content.filename}`
+                return fs.existsFile(path)
+            })
+        )
 
-        return result && this.ensureUnzippedFoldersMatchZip(localCacheDirectory, targetContents)
+        const allFilesExist = results.every((result) => result === true)
+        return allFilesExist && this.ensureUnzippedFoldersMatchZip(localCacheDirectory, targetContents)
     }
 
     /**
@@ -232,7 +218,7 @@ export class LspManager {
      * @returns
      *  false, if any of the unzipped folder don't match zip contents (by name)
      */
-    private ensureUnzippedFoldersMatchZip(localCacheDirectory: string, targetContents: Content[]) {
+    private ensureUnzippedFoldersMatchZip(localCacheDirectory: string, targetContents: TargetContent[]) {
         const zipPaths = targetContents
             .filter((x) => x.filename.endsWith('.zip'))
             .map((y) => `${localCacheDirectory}/${y.filename}`)
@@ -241,13 +227,30 @@ export class LspManager {
             return true
         }
 
-        // TODO copy all unzipped items over
-        // zipPaths.map((zipFile) => {
-        //     const unzippedFolder = `${localCacheDirectory}/${zipFile.replace('.zip', '')}`
-        //     // copy things over
-        // })
+        return this.copyZipContents(zipPaths)
+    }
 
-        return false
+    /**
+     * Copies all the contents from zip into the directory
+     *
+     * @returns
+     *  false, if any of the unzips fails
+     */
+    private copyZipContents(zips: string[]) {
+        const unzips = zips.map((zip) => {
+            try {
+                // attempt to unzip
+                const zipFile = new AdmZip(zip)
+                const extractPath = zip.replace('.zip', '')
+                zipFile.extractAllTo(extractPath, true)
+            } catch (e) {
+                return false
+            }
+            return true
+        })
+
+        // make sure every one completed successfully
+        return unzips.every((unzip) => unzip === true)
     }
 
     /**
@@ -287,7 +290,7 @@ export class LspManager {
         if (latestCompatibleVersion === undefined) {
             // TODO fix these error range names
             throw new ToolkitError(
-                `Unable to find a language server that satifies one or more of these conditions: version in range [${this.versionRange} - ${this.versionRange}], matching system's architecture and platform`
+                `Unable to find a language server that satifies one or more of these conditions: version in range [${this.versionRange.range}], matching system's architecture and platform`
             )
         }
 
@@ -337,7 +340,13 @@ export class LspManager {
         return version.targets.find((x) => x.arch === arch && x.platform === platform)
     }
 
+    private defaultDownloadFolder() {
+        const applicationSupportFolder = getApplicationSupportFolder()
+        return path.join(applicationSupportFolder, `aws/toolkits/language-servers/${this.lsName}`)
+    }
+
     getDownloadDirectory(version: string) {
-        return `${this.downloadParentFolder}/${version}`
+        const directory = this._defaultDownloadFolder ?? this.defaultDownloadFolder()
+        return `${directory}/${version}`
     }
 }

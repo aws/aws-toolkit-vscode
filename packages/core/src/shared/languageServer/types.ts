@@ -15,6 +15,39 @@ export interface LspResult {
     assetDirectory: string
 }
 
-export interface LspInstaller {
-    install(): Promise<LspResult>
+export interface LspResolver {
+    resolve(): Promise<LspResult>
+}
+
+export interface TargetContent {
+    filename: string
+    url: string
+    hashes: string[]
+    bytes: number
+    serverVersion?: string
+}
+
+export interface Target {
+    platform: string
+    arch: string
+    contents: TargetContent[]
+}
+
+export interface LspVersion {
+    serverVersion: string
+    isDelisted: boolean
+    targets: Target[]
+}
+
+export interface Manifest {
+    manifestSchemaVersion: string
+    artifactId: string
+    artifactDescription: string
+    isManifestDeprecated: boolean
+    versions: LspVersion[]
+}
+
+export interface VersionRange {
+    start: number
+    end: number
 }

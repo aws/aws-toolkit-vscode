@@ -5,9 +5,10 @@
 
 import assert from 'assert'
 import * as sinon from 'sinon'
-import { LspManager, Manifest, Target } from '../../../shared/languageServer/lspManager'
-import { fs, makeTemporaryToolkitFolder } from '../../../shared'
-import * as download from '../../../shared/utilities/download'
+import { LanguageServerResolver } from '../../../shared/languageServer/lspResolver'
+import { fs, makeTemporaryToolkitFolder, Manifest, Target } from '../../../shared'
+import { Range } from 'semver'
+import { RetryableResourceFetcher } from '../../../shared/resourcefetcher/httpResourceFetcher'
 
 function createManifest(params?: {
     deprecated?: boolean
@@ -64,8 +65,8 @@ describe('lspManager', () => {
                     },
                 ],
             })
-            const manager = new LspManager(manifest, '2.0.0', tempFolder)
-            const result = await manager.download()
+            const manager = new LanguageServerResolver(manifest, 'test', new Range('2.0.0'), tempFolder)
+            const result = await manager.resolve()
             assert.deepStrictEqual(result, {
                 assetDirectory: manager.getDownloadDirectory('2.0.0'),
                 version: '2.0.0',
@@ -74,9 +75,9 @@ describe('lspManager', () => {
         })
 
         it('uses remote', async () => {
-            sandbox.stub(download, 'downloadFrom').resolves({
-                data: Buffer.from(''),
-                hash: '',
+            sandbox.stub(RetryableResourceFetcher.prototype, 'fetch').resolves({
+                content: '',
+                eTag: '',
             })
 
             const manifest = createManifest({
@@ -102,8 +103,8 @@ describe('lspManager', () => {
                 ],
             })
 
-            const manager = new LspManager(manifest, '2.0.0', tempFolder)
-            const result = await manager.download()
+            const manager = new LanguageServerResolver(manifest, 'test', new Range('2.0.0'), tempFolder)
+            const result = await manager.resolve()
             assert.deepStrictEqual(result, {
                 assetDirectory: manager.getDownloadDirectory('2.0.0'),
                 version: '2.0.0',
@@ -135,8 +136,8 @@ describe('lspManager', () => {
                 ],
             })
 
-            const manager = new LspManager(manifest, '2.0.0', tempFolder)
-            const result = await manager.download()
+            const manager = new LanguageServerResolver(manifest, 'test', new Range('2.0.0'), tempFolder)
+            const result = await manager.resolve()
             assert.deepStrictEqual(result, {
                 assetDirectory: manager.getDownloadDirectory('2.0.0'),
                 version: '2.0.0',

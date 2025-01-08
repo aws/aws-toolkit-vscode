@@ -8,7 +8,7 @@ import { ToolkitError } from '../errors'
 import { RetryableResourceFetcher } from '../resourcefetcher/httpResourceFetcher'
 import { Timeout } from '../utilities/timeoutUtils'
 import globals from '../extensionGlobals'
-import { Manifest } from './lspManager'
+import { Manifest } from './types'
 
 const logger = getLogger('lsp')
 
@@ -22,7 +22,7 @@ type ManifestStorage = Record<string, StorageManifest>
 const manifestStorageKey = 'aws.toolkit.lsp.manifest'
 const manifestTimeoutMs = 15000
 
-export class ManifestManager {
+export class ManifestResolver {
     constructor(
         private readonly manifestURL: string,
         private readonly lsName: string
@@ -31,7 +31,7 @@ export class ManifestManager {
     /**
      * Fetches the latest manifest, falling back to local cache on failure
      */
-    async getManifest(): Promise<Manifest> {
+    async resolve(): Promise<Manifest> {
         try {
             return await this.fetchRemoteManifest()
         } catch (error) {
