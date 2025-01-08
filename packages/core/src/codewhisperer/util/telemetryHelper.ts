@@ -582,12 +582,20 @@ export class TelemetryHelper {
 
     public resetClientComponentLatencyTime() {
         session.invokeSuggestionStartTime = 0
+        session.preprocessEndTime = 0
         session.sdkApiCallStartTime = 0
         this.sdkApiCallEndTime = 0
         session.fetchCredentialStartTime = 0
         session.firstSuggestionShowTime = 0
         this.allPaginationEndTime = 0
         this.firstResponseRequestId = ''
+    }
+
+    public setPreprocessEndTime() {
+        if (session.preprocessEndTime !== 0) {
+            getLogger().warn(`inline completion preprocessEndTime has been set and not reset correctly`)
+        }
+        session.preprocessEndTime = performance.now()
     }
 
     /** This method is assumed to be invoked first at the start of execution **/
@@ -635,7 +643,7 @@ export class TelemetryHelper {
             codewhispererFirstCompletionLatency: this.sdkApiCallEndTime - session.sdkApiCallStartTime,
             codewhispererLanguage: session.language,
             codewhispererPostprocessingLatency: session.firstSuggestionShowTime - this.sdkApiCallEndTime,
-            codewhispererPreprocessingLatency: session.fetchCredentialStartTime - session.invokeSuggestionStartTime,
+            codewhispererPreprocessingLatency: session.preprocessEndTime - session.invokeSuggestionStartTime,
             codewhispererRequestId: this.firstResponseRequestId,
             codewhispererSessionId: session.sessionId,
             codewhispererTriggerType: session.triggerType,
