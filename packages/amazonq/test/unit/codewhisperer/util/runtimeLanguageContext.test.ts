@@ -52,7 +52,7 @@ describe('runtimeLanguageContext', function () {
             await resetCodeWhispererGlobalVariables()
         })
 
-        cases.forEach((tuple) => {
+        for (const tuple of cases) {
             const languageId = tuple[0]
             const expected = tuple[1]
 
@@ -60,7 +60,7 @@ describe('runtimeLanguageContext', function () {
                 const actual = languageContext.isLanguageSupported(languageId)
                 assert.strictEqual(actual, expected)
             })
-        })
+        }
 
         describe('test isLanguageSupported with document as the argument', function () {
             const cases: [string, boolean][] = [
@@ -105,7 +105,7 @@ describe('runtimeLanguageContext', function () {
                 ['helloFoo.foo', false],
             ]
 
-            cases.forEach((tuple) => {
+            for (const tuple of cases) {
                 const fileName = tuple[0]
                 const expected = tuple[1]
 
@@ -114,7 +114,7 @@ describe('runtimeLanguageContext', function () {
                     const actual = languageContext.isLanguageSupported(doc)
                     assert.strictEqual(actual, expected)
                 })
-            })
+            }
         })
     })
 
@@ -148,14 +148,14 @@ describe('runtimeLanguageContext', function () {
             [undefined, 'plaintext'],
         ]
 
-        cases.forEach((tuple) => {
+        for (const tuple of cases) {
             const vscLanguageId = tuple[0]
             const expectedCwsprLanguageId = tuple[1]
             it(`given vscLanguage ${vscLanguageId} should return ${expectedCwsprLanguageId}`, function () {
                 const result = runtimeLanguageContext.getLanguageContext(vscLanguageId)
                 assert.strictEqual(result.language as string, expectedCwsprLanguageId)
             })
-        })
+        }
     })
 
     describe('normalizeLanguage', function () {

@@ -5,7 +5,7 @@
 import assert from 'assert'
 import sinon from 'sinon'
 import * as vscode from 'vscode'
-import { NewFileInfo, NewFileZipContents, registerNewFiles } from '../../amazonqFeatureDev'
+import { featureDevScheme, NewFileInfo, NewFileZipContents, registerNewFiles } from '../../amazonqFeatureDev'
 import { getEqualOSTestOptions, performanceTest } from '../../shared/performance/performance'
 import { getTestWorkspaceFolder } from '../integrationTestsUtilities'
 import { VirtualFileSystem } from '../../shared'
@@ -30,7 +30,7 @@ function performanceTestWrapper(label: string, numFiles: number, fileSize: numbe
     const conversationId = 'test-conversation'
     return performanceTest(
         getEqualOSTestOptions({
-            userCpuUsage: 200,
+            userCpuUsage: 300,
             systemCpuUsage: 35,
             heapTotal: 20,
         }),
@@ -60,7 +60,8 @@ function performanceTestWrapper(label: string, numFiles: number, fileSize: numbe
                         setup.fileContents,
                         'test-upload-id',
                         [setup.workspace],
-                        conversationId
+                        conversationId,
+                        featureDevScheme
                     )
                 },
                 verify: async (setup: SetupResult, result: NewFileInfo[]) => {

@@ -29,10 +29,8 @@ import {
 } from '../../errors'
 import { codeGenRetryLimit, defaultRetryLimit } from '../../limits'
 import { Session } from '../../session/session'
-import { featureName } from '../../constants'
-import { ChatSessionStorage } from '../../storages/chatSession'
-import { DeletedFileInfo, DevPhase, FollowUpTypes, type NewFileInfo } from '../../types'
-import { Messenger } from './messenger/messenger'
+import { featureDevScheme, featureName } from '../../constants'
+import { DeletedFileInfo, DevPhase, MetricDataOperationName, MetricDataResult, type NewFileInfo } from '../../types'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { AuthController } from '../../../amazonq/auth/controller'
 import { getLogger } from '../../../shared/logger'
@@ -47,6 +45,9 @@ import { openDeletedDiff, openDiff } from '../../../amazonq/commons/diff'
 import { i18n } from '../../../shared/i18n-helper'
 import globals from '../../../shared/extensionGlobals'
 import { randomUUID } from '../../../shared'
+import { FollowUpTypes } from '../../../amazonq/commons/types'
+import { Messenger } from '../../../amazonq/commons/connector/baseMessenger'
+import { BaseChatSessionStorage } from '../../../amazonq/commons/baseChatStorage'
 
 export const TotalSteps = 3
 
@@ -88,8 +89,9 @@ type StoreMessageIdMessage = {
 }
 
 export class FeatureDevController {
+    private readonly scheme: string = featureDevScheme
     private readonly messenger: Messenger
-    private readonly sessionStorage: ChatSessionStorage
+    private readonly sessionStorage: BaseChatSessionStorage<Session>
     private isAmazonQVisible: boolean
     private authController: AuthController
     private contentController: EditorContentController
@@ -97,7 +99,7 @@ export class FeatureDevController {
     public constructor(
         private readonly chatControllerMessageListeners: ChatControllerEventEmitters,
         messenger: Messenger,
-        sessionStorage: ChatSessionStorage,
+        sessionStorage: BaseChatSessionStorage<Session>,
         onDidChangeAmazonQVisibility: vscode.Event<boolean>
     ) {
         this.messenger = messenger
@@ -411,6 +413,7 @@ export class FeatureDevController {
                 canBeVoted: true,
             })
             this.messenger.sendUpdatePlaceholder(tabID, i18n('AWS.amazonq.featureDev.pillText.generatingCode'))
+            await session.sendMetricDataTelemetry(MetricDataOperationName.StartCodeGeneration, MetricDataResult.Success)
             await session.send(message)
             const filePaths = session.state.filePaths ?? []
             const deletedFiles = session.state.deletedFiles ?? []
@@ -484,6 +487,31 @@ export class FeatureDevController {
                 await session.sendLinesOfCodeGeneratedTelemetry()
             }
             this.messenger.sendUpdatePlaceholder(tabID, i18n('AWS.amazonq.featureDev.pillText.selectOption'))
+        } catch (err: any) {
+            getLogger().error(`${featureName}: Error during code generation: ${err}`)
+
+            let result: string
+            switch (err.constructor.name) {
+                case FeatureDevServiceError.name:
+                    if (err.code === 'EmptyPatchException') {
+                        result = MetricDataResult.LlmFailure
+                    } else if (err.code === 'GuardrailsException' || err.code === 'ThrottlingException') {
+                        result = MetricDataResult.Error
+                    } else {
+                        result = MetricDataResult.Fault
+                    }
+                    break
+                case PromptRefusalException.name:
+                case NoChangeRequiredException.name:
+                    result = MetricDataResult.Error
+                    break
+                default:
+                    result = MetricDataResult.Fault
+                    break
+            }
+
+            await session.sendMetricDataTelemetry(MetricDataOperationName.EndCodeGeneration, result)
+            throw err
         } finally {
             // Finish processing the event
 
@@ -515,6 +543,7 @@ export class FeatureDevController {
                 }
             }
         }
+        await session.sendMetricDataTelemetry(MetricDataOperationName.EndCodeGeneration, MetricDataResult.Success)
     }
 
     private sendUpdateCodeMessage(tabID: string) {
@@ -818,21 +847,21 @@ export class FeatureDevController {
 
         if (message.deleted) {
             const name = path.basename(pathInfos.relativePath)
-            await openDeletedDiff(pathInfos.absolutePath, name, tabId)
+            await openDeletedDiff(pathInfos.absolutePath, name, tabId, this.scheme)
         } else {
             let uploadId = session.uploadId
             if (session?.state?.uploadHistory && session.state.uploadHistory[codeGenerationId]) {
                 uploadId = session?.state?.uploadHistory[codeGenerationId].uploadId
             }
             const rightPath = path.join(uploadId, zipFilePath)
-            await openDiff(pathInfos.absolutePath, rightPath, tabId)
+            await openDiff(pathInfos.absolutePath, rightPath, tabId, this.scheme)
         }
     }
 
     private async openFile(filePath: NewFileInfo, tabId: string) {
         const leftPath = path.join(filePath.workspaceFolder.uri.fsPath, filePath.relativePath)
         const rightPath = filePath.virtualMemoryUri.path
-        await openDiff(leftPath, rightPath, tabId)
+        await openDiff(leftPath, rightPath, tabId, this.scheme)
     }
 
     private async stopResponse(message: any) {

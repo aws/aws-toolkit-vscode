@@ -76,7 +76,7 @@ export class SchemasDataProvider {
             if (!schemas || schemas.length === 0) {
                 schemas = await toArrayAsync(client.listSchemas(registryName))
                 const singleItem: registrySchemasMap = { registryName: registryName, schemaList: schemas }
-                //wizard setup always calls getRegistries method prior to getSchemas, so this shouldn't be undefined
+                // wizard setup always calls getRegistries method prior to getSchemas, so this shouldn't be undefined
                 if (!registrySchemasMapList) {
                     this.pushRegionDataIntoCache(region, [], [singleItem], credentials)
                 }

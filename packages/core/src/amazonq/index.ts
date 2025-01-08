@@ -22,6 +22,8 @@ export { AmazonQChatViewProvider } from './webview/webView'
 export { init as cwChatAppInit } from '../codewhispererChat/app'
 export { init as featureDevChatAppInit } from '../amazonqFeatureDev/app'
 export { init as gumbyChatAppInit } from '../amazonqGumby/app'
+export { init as testChatAppInit } from '../amazonqTest/app'
+export { init as docChatAppInit } from '../amazonqDoc/app'
 export { activateBadge } from './util/viewBadgeHandler'
 export { amazonQHelpUrl } from '../shared/constants'
 export { listCodeWhispererCommandsWalkthrough } from '../codewhisperer/ui/statusBarMenu'
@@ -35,9 +37,12 @@ export {
     getFileDiffUris,
     computeDiff,
 } from './commons/diff'
+export { AuthFollowUpType, AuthMessageDataMap } from './auth/model'
+export { ChatItemType } from './commons/model'
+export { ExtensionMessage } from '../amazonq/webview/ui/commands'
 export { CodeReference } from '../codewhispererChat/view/connector/connector'
-export { AuthMessageDataMap, AuthFollowUpType } from './auth/model'
 export { extractAuthFollowUp } from './util/authUtils'
+export { Messenger } from './commons/connector/baseMessenger'
 import { FeatureContext } from '../shared'
 
 /**
@@ -50,11 +55,14 @@ export function createMynahUI(
     ideApi: any,
     amazonQEnabled: boolean,
     featureConfigsSerialized: [string, FeatureContext][],
+    welcomeCount: number,
     disabledCommands?: string[]
 ) {
     if (typeof window !== 'undefined') {
         const mynahUI = require('./webview/ui/main')
-        return mynahUI.createMynahUI(ideApi, amazonQEnabled, featureConfigsSerialized, disabledCommands)
+        return mynahUI.createMynahUI(ideApi, amazonQEnabled, featureConfigsSerialized, welcomeCount, disabledCommands)
     }
     throw new Error('Not implemented for node')
 }
+
+export * from './commons/types'

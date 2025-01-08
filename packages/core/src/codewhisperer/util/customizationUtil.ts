@@ -328,11 +328,11 @@ export const selectCustomization = async (customization: Customization) => {
 export const getAvailableCustomizationsList = async () => {
     const items: Customization[] = []
     const response = await codeWhispererClient.listAvailableCustomizations()
-    response
-        .map((listAvailableCustomizationsResponse) => listAvailableCustomizationsResponse.customizations)
-        .forEach((customizations) => {
-            items.push(...customizations)
-        })
+    for (const customizations of response.map(
+        (listAvailableCustomizationsResponse) => listAvailableCustomizationsResponse.customizations
+    )) {
+        items.push(...customizations)
+    }
 
     return items
 }

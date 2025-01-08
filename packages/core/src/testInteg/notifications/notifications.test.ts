@@ -6,19 +6,19 @@
 import { RemoteFetcher } from '../../notifications/controller'
 import { NotificationsController } from '../../notifications/controller'
 import { NotificationsNode } from '../../notifications/panelNode'
-import { RuleEngine } from '../../notifications/rules'
 import { NotificationsState, RuleContext } from '../../notifications/types'
 import globals from '../../shared/extensionGlobals'
 import assert from 'assert'
 import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
 import sinon from 'sinon'
+import { globalKey } from '../../shared/globalState'
 
 describe('Notifications Integration Test', function () {
+    const storageKey = 'aws.notifications.test' as globalKey
     let fetcher: RemoteFetcher
     let panelNode: NotificationsNode
-    let controller: NotificationsController
 
-    function getEngine(activeExtensions: string[], connected: boolean): RuleEngine {
+    function getController(activeExtensions: string[], connected: boolean) {
         const authState = connected ? 'connected' : 'notConnected'
 
         const ruleContext: RuleContext = {
@@ -33,7 +33,7 @@ describe('Notifications Integration Test', function () {
             activeExtensions: activeExtensions,
         }
 
-        return new RuleEngine(ruleContext)
+        return new NotificationsController(panelNode, async () => ruleContext, fetcher, storageKey)
     }
 
     beforeEach(async function () {
@@ -43,19 +43,18 @@ describe('Notifications Integration Test', function () {
             'https://idetoolkits-hostedfiles.amazonaws.com/Notifications/integ/VSCode/startup/1.x.json',
             'https://idetoolkits-hostedfiles.amazonaws.com/Notifications/integ/VSCode/emergency/1.x.json'
         )
-        controller = new NotificationsController(panelNode, fetcher)
     })
 
     // Clear all global states after each test
     afterEach(async function () {
-        await globals.globalState.update(controller.storageKey, undefined)
+        await globals.globalState.update(storageKey, undefined)
     })
 
     it('Receive notifications polling from endpoint', async function () {
-        const engine = getEngine([VSCODE_EXTENSION_ID.amazonq], true)
+        const controller = getController([VSCODE_EXTENSION_ID.amazonq], true)
 
-        await controller.pollForStartUp(engine)
-        await controller.pollForEmergencies(engine)
+        await controller.pollForStartUp()
+        await controller.pollForEmergencies()
 
         // Verify that notifications are stored in the state
         const state = globals.globalState.get<NotificationsState>(controller.storageKey)
@@ -75,8 +74,8 @@ describe('Notifications Integration Test', function () {
     })
 
     it('Display notification according to criterias', async function () {
-        const engine = getEngine([VSCODE_EXTENSION_ID.amazonq], false)
-        await controller.pollForEmergencies(engine)
+        const controller = getController([VSCODE_EXTENSION_ID.amazonq], false)
+        await controller.pollForEmergencies()
 
         // Verify that only the not authed notification is displayed
         const displayedNotifications = panelNode.emergencyNotifications
@@ -89,7 +88,7 @@ describe('Notifications Integration Test', function () {
     })
 
     it('Should trigger onReceive only for newly received notifications', async function () {
-        const engine = getEngine([VSCODE_EXTENSION_ID.amazonq], true)
+        const controller = getController([VSCODE_EXTENSION_ID.amazonq], true)
         const onReceiveSpy = sinon.spy(panelNode, 'onReceiveNotifications')
 
         // Simulate alreadying receving a notification
@@ -101,7 +100,7 @@ describe('Notifications Integration Test', function () {
         }
 
         // Poll for new notification
-        await controller.pollForStartUp(engine)
+        await controller.pollForStartUp()
 
         /**
          * Since we simulated startup1 is already received

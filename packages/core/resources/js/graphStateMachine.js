@@ -108,7 +108,7 @@ zoomoutBtn.addEventListener('click', () => {
 
 // Message passing from extension to webview.
 // Capture state machine definition
-window.addEventListener('message', event => {
+window.addEventListener('message', (event) => {
     // event.data is object passed in from postMessage from vscode
     const message = event.data
     switch (message.command) {

@@ -26,7 +26,6 @@ import { DevEnvActivityStarter } from './devEnv'
 import { learnMoreCommand, onboardCommand, reauth } from './explorer'
 import { isInDevEnv } from '../shared/vscode/env'
 import { hasScopes, scopesCodeWhispererCore, getTelemetryMetadataForConn } from '../auth/connection'
-import { SessionSeparationPrompt } from '../auth/auth'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { asStringifiedStack } from '../shared/telemetry/spans'
 
@@ -64,7 +63,6 @@ export async function activate(ctx: ExtContext): Promise<void> {
                     })
 
                     await authProvider.secondaryAuth.forgetConnection()
-                    await SessionSeparationPrompt.instance.showForCommand('aws.codecatalyst.manageConnections')
                 })
             },
             { emit: false, functionId: { name: 'activate', class: 'CodeCatalyst' } }
@@ -128,7 +126,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
         await showReadmeFileOnFirstLoad(ctx.extensionContext.workspaceState)
 
         const settings = ToolkitPromptSettings.instance
-        if (await settings.isPromptEnabled('remoteConnected')) {
+        if (settings.isPromptEnabled('remoteConnected')) {
             const message = localize(
                 'AWS.codecatalyst.connectedMessage',
                 'Welcome to your Amazon CodeCatalyst Dev Environment. For more options and information, view Dev Environment settings ({0} Extension > CodeCatalyst).',

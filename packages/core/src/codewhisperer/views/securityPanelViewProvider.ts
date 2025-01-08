@@ -88,9 +88,9 @@ export class SecurityPanelViewProvider implements vscode.WebviewViewProvider {
                 this.packageName
             }</span> found <span class="total">${total}</span> issues</p>`
         )
-        this.panelSets.forEach((panelSet, index) => {
+        for (const [index, panelSet] of this.panelSets.entries()) {
             this.addLine(panelSet, index)
-        })
+        }
         this.update()
         if (editor) {
             this.setDecoration(editor, editor.document.uri)
@@ -111,20 +111,20 @@ export class SecurityPanelViewProvider implements vscode.WebviewViewProvider {
         this.dynamicLog.push(
             `<section class="accordion"><input type="checkbox" name="collapse" id="${handleId}" checked="checked"><div class="handle" ><label for="${handleId}">${fileName}</label></div>`
         )
-        panelSet.items.forEach((item) => {
+        for (const item of panelSet.items) {
             if (item.severity === vscode.DiagnosticSeverity.Warning) {
                 this.dynamicLog.push(`${this.addClickableWarningItem(item)}`)
             } else {
                 this.dynamicLog.push(`${this.addClickableInfoItem(item)}`)
             }
-        })
+        }
         this.dynamicLog.push(`</section>`)
     }
 
     private persistLines() {
-        this.panelSets.forEach((panelSet, index) => {
+        for (const [index, panelSet] of this.panelSets.entries()) {
             this.persistLine(panelSet, index)
-        })
+        }
     }
 
     private persistLine(panelSet: SecurityPanelSet, index: number) {
@@ -134,13 +134,13 @@ export class SecurityPanelViewProvider implements vscode.WebviewViewProvider {
         this.persistLog.push(
             `<section class="accordion"><input type="checkbox" name="collapse" id="${handleId}" checked="checked"><div class="handle" ><label for="${handleId}">${fileName}</label></div>`
         )
-        panelSet.items.forEach((item) => {
+        for (const item of panelSet.items) {
             if (item.severity === vscode.DiagnosticSeverity.Warning) {
                 this.persistLog.push(`${this.addUnclickableWarningItem(item)}`)
             } else {
                 this.persistLog.push(`${this.addUnclickableInfoItem(item)}`)
             }
-        })
+        }
         this.persistLog.push(`</section>`)
     }
 
@@ -171,13 +171,13 @@ export class SecurityPanelViewProvider implements vscode.WebviewViewProvider {
     }
 
     private createPanelSets(securityRecommendationCollection: AggregatedCodeScanIssue[]) {
-        securityRecommendationCollection.forEach((securityRecommendation) => {
+        for (const securityRecommendation of securityRecommendationCollection) {
             const panelSet: SecurityPanelSet = {
                 path: securityRecommendation.filePath,
                 uri: vscode.Uri.parse(securityRecommendation.filePath),
                 items: [],
             }
-            securityRecommendation.issues.forEach((issue) => {
+            for (const issue of securityRecommendation.issues) {
                 panelSet.items.push({
                     path: securityRecommendation.filePath,
                     range: new vscode.Range(issue.startLine, 0, issue.endLine, 0),
@@ -189,9 +189,9 @@ export class SecurityPanelViewProvider implements vscode.WebviewViewProvider {
                         hoverMessage: issue.comment,
                     },
                 })
-            })
+            }
             this.panelSets.push(panelSet)
-        })
+        }
     }
 
     private getHtml(webview: vscode.Webview): string {
@@ -214,7 +214,7 @@ export class SecurityPanelViewProvider implements vscode.WebviewViewProvider {
 
     private getHtmlContent(): string {
         if (this.persistLog.length === 0) {
-            return 'No security issues have been detected in the workspace.'
+            return 'No code issues have been detected in the workspace.'
         }
         return this.persistLog.join('') + this.dynamicLog.join('')
     }
@@ -232,15 +232,15 @@ export class SecurityPanelViewProvider implements vscode.WebviewViewProvider {
     public setDecoration(editor: vscode.TextEditor, uri: vscode.Uri) {
         editor.setDecorations(this.getDecorator(), [])
         const rangesToRend: vscode.DecorationOptions[] = []
-        this.panelSets.forEach((panelSet) => {
+        for (const panelSet of this.panelSets) {
             if (panelSet.uri.fsPath === uri.fsPath) {
-                panelSet.items.forEach((item) => {
+                for (const item of panelSet.items) {
                     if (item.severity === vscode.DiagnosticSeverity.Warning) {
                         rangesToRend.push(item.decoration)
                     }
-                })
+                }
             }
-        })
+        }
         if (rangesToRend.length > 0) {
             editor.setDecorations(this.getDecorator(), rangesToRend)
         }
@@ -261,6 +261,7 @@ export class SecurityPanelViewProvider implements vscode.WebviewViewProvider {
         const changedText = event.contentChanges[0].text
         const lineOffset = this.getLineOffset(changedRange, changedText)
 
+        // eslint-disable-next-line unicorn/no-array-for-each
         currentPanelSet.items.forEach((item, index, items) => {
             const intersection = changedRange.intersection(item.range)
             if (
@@ -282,9 +283,9 @@ export class SecurityPanelViewProvider implements vscode.WebviewViewProvider {
         })
         this.panelSets[index] = currentPanelSet
         this.dynamicLog = []
-        this.panelSets.forEach((panelSet, index) => {
+        for (const [index, panelSet] of this.panelSets.entries()) {
             this.addLine(panelSet, index)
-        })
+        }
         this.update()
         if (editor) {
             this.setDecoration(editor, editor.document.uri)

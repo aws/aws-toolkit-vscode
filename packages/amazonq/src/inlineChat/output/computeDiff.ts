@@ -2,7 +2,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { type LinesOptions, diffLines, Change } from 'diff'
+import { type LinesOptions, diffLines } from 'diff'
 import * as vscode from 'vscode'
 import { InlineTask, TextDiff } from '../controller/inlineTask'
 
@@ -24,8 +24,7 @@ export function computeDiff(response: string, inlineTask: InlineTask, isPartialD
 
     const textDiff: TextDiff[] = []
     let startLine = selectedRange.start.line
-
-    diffs.forEach((part: Change) => {
+    for (const part of diffs) {
         const count = part.count ?? 0
         if (part.removed) {
             if (part.value !== '\n') {
@@ -49,7 +48,7 @@ export function computeDiff(response: string, inlineTask: InlineTask, isPartialD
             }
         }
         startLine += count
-    })
+    }
     inlineTask.diff = textDiff
     return textDiff
 }

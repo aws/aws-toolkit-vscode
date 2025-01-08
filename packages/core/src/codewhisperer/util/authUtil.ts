@@ -366,7 +366,7 @@ export class AuthUtil {
     public async notifySessionConfiguration() {
         const suppressId = 'amazonQSessionConfigurationMessage'
         const settings = AmazonQPromptSettings.instance
-        const shouldShow = await settings.isPromptEnabled(suppressId)
+        const shouldShow = settings.isPromptEnabled(suppressId)
         if (!shouldShow) {
             return
         }
@@ -457,7 +457,9 @@ export class AuthUtil {
                 state[Features.codewhispererCore] = AuthStates.connected
             }
             if (isValidAmazonQConnection(conn)) {
-                Object.values(Features).forEach((v) => (state[v as Feature] = AuthStates.connected))
+                for (const v of Object.values(Features)) {
+                    state[v as Feature] = AuthStates.connected
+                }
             }
         }
 
@@ -497,30 +499,6 @@ export class AuthUtil {
             )
         }
     }
-}
-
-/**
- * Returns true if an SSO connection with AmazonQ and CodeWhisperer scopes are found,
- * even if the connection is expired.
- *
- * Note: This function will become irrelevant if/when the Amazon Q view tree is removed
- * from the toolkit.
- */
-export function isPreviousQUser() {
-    const auth = AuthUtil.instance
-
-    if (!auth.isConnected() || !isSsoConnection(auth.conn)) {
-        return false
-    }
-    const missingScopes =
-        (auth.isEnterpriseSsoInUse() && !hasScopes(auth.conn, amazonQScopes)) ||
-        !hasScopes(auth.conn, codeWhispererChatScopes)
-
-    if (missingScopes) {
-        return false
-    }
-
-    return true
 }
 
 export type FeatureAuthState = { [feature in Feature]: AuthState }

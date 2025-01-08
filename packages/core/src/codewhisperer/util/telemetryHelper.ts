@@ -26,6 +26,8 @@ import { session } from './codeWhispererSession'
 import { CodeWhispererSupplementalContext } from '../models/model'
 import { FeatureConfigProvider } from '../../shared/featureConfig'
 import { CodeScanRemediationsEventType } from '../client/codewhispereruserclient'
+import { CodeAnalysisScope as CodeAnalysisScopeClientSide } from '../models/constants'
+import { Session } from '../../amazonqTest/chat/session/session'
 
 export class TelemetryHelper {
     // Some variables for client component latency
@@ -54,6 +56,50 @@ export class TelemetryHelper {
 
     public static get instance() {
         return (this.#instance ??= new this())
+    }
+
+    public sendTestGenerationToolkitEvent(
+        session: Session,
+        isSupportedLanguage: boolean,
+        result: 'Succeeded' | 'Failed' | 'Cancelled',
+        requestId?: string,
+        perfClientLatency?: number,
+        reasonDesc?: string,
+        isCodeBlockSelected?: boolean,
+        artifactsUploadDuration?: number,
+        buildPayloadBytes?: number,
+        buildZipFileBytes?: number,
+        acceptedCharactersCount?: number,
+        acceptedCount?: number,
+        acceptedLinesCount?: number,
+        generatedCharactersCount?: number,
+        generatedCount?: number,
+        generatedLinesCount?: number,
+        reason?: string
+    ) {
+        telemetry.amazonq_utgGenerateTests.emit({
+            cwsprChatProgrammingLanguage: session.fileLanguage ?? 'plaintext',
+            hasUserPromptSupplied: session.hasUserPromptSupplied,
+            isSupportedLanguage: isSupportedLanguage,
+            result: result,
+            artifactsUploadDuration: artifactsUploadDuration,
+            buildPayloadBytes: buildPayloadBytes,
+            buildZipFileBytes: buildZipFileBytes,
+            credentialStartUrl: AuthUtil.instance.startUrl,
+            acceptedCharactersCount: acceptedCharactersCount,
+            acceptedCount: acceptedCount,
+            acceptedLinesCount: acceptedLinesCount,
+            generatedCharactersCount: generatedCharactersCount,
+            generatedCount: generatedCount,
+            generatedLinesCount: generatedLinesCount,
+            isCodeBlockSelected: isCodeBlockSelected,
+            jobGroup: session.testGenerationJobGroupName,
+            jobId: session.listOfTestGenerationJobId[0],
+            perfClientLatency: perfClientLatency,
+            requestId: requestId,
+            reasonDesc: reasonDesc,
+            reason: reason,
+        })
     }
 
     public recordServiceInvocationTelemetry(
@@ -154,6 +200,39 @@ export class TelemetryHelper {
             credentialStartUrl: AuthUtil.instance.startUrl,
             traceId: this.traceId,
         })
+
+        client
+            .sendTelemetryEvent({
+                telemetryEvent: {
+                    userTriggerDecisionEvent: {
+                        sessionId: sessionId,
+                        requestId: requestIdList[0],
+                        customizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
+                        programmingLanguage: {
+                            languageName: runtimeLanguageContext.toRuntimeLanguage(language),
+                        },
+                        completionType: 'LINE',
+                        suggestionState: 'EMPTY',
+                        recommendationLatencyMilliseconds: 0,
+                        triggerToResponseLatencyMilliseconds: session.timeToFirstRecommendation,
+                        perceivedLatencyMilliseconds: session.perceivedLatency,
+                        timestamp: new Date(Date.now()),
+                        suggestionReferenceCount: 0,
+                        generatedLine: 0,
+                        numberOfRecommendations: 0,
+                        acceptedCharacterCount: 0,
+                    },
+                },
+            })
+            .then()
+            .catch((error) => {
+                let requestId: string | undefined
+                if (isAwsError(error)) {
+                    requestId = error.requestId
+                }
+
+                getLogger().error(`Failed to invoke sendTelemetryEvent, requestId: ${requestId ?? ''}`)
+            })
     }
 
     /**
@@ -178,7 +257,7 @@ export class TelemetryHelper {
     ) {
         const events: CodewhispererUserDecision[] = []
         // emit user decision telemetry
-        recommendations.forEach((_elem, i) => {
+        for (const [i, _elem] of recommendations.entries()) {
             let uniqueSuggestionReferences: string | undefined = undefined
             const uniqueLicenseSet = LicenseUtil.getUniqueLicenseNames(_elem.references)
             if (uniqueLicenseSet.size > 0) {
@@ -209,9 +288,9 @@ export class TelemetryHelper {
             }
             telemetry.codewhisperer_userDecision.emit(event)
             events.push(event)
-        })
+        }
 
-        //aggregate suggestion references count
+        // aggregate suggestion references count
         const referenceCount = this.getAggregatedSuggestionReferenceCount(events)
 
         // aggregate user decision events at requestId level
@@ -587,6 +666,188 @@ export class TelemetryHelper {
 
                 getLogger().debug(
                     `Failed to sendCodeScanEvent to CodeWhisperer, requestId: ${requestId ?? ''}, message: ${
+                        error.message
+                    }`
+                )
+            })
+    }
+
+    public sendCodeScanSucceededEvent(
+        language: string,
+        jobId: string,
+        numberOfFindings: number,
+        scope: CodeAnalysisScopeClientSide
+    ) {
+        client
+            .sendTelemetryEvent({
+                telemetryEvent: {
+                    codeScanSucceededEvent: {
+                        programmingLanguage: {
+                            languageName: runtimeLanguageContext.toRuntimeLanguage(language as CodewhispererLanguage),
+                        },
+                        codeScanJobId: jobId,
+                        numberOfFindings: numberOfFindings,
+                        timestamp: new Date(Date.now()),
+                        codeAnalysisScope: scope === CodeAnalysisScopeClientSide.FILE_AUTO ? 'FILE' : 'PROJECT',
+                    },
+                },
+            })
+            .then()
+            .catch((error) => {
+                let requestId: string | undefined
+                if (isAwsError(error)) {
+                    requestId = error.requestId
+                }
+
+                getLogger().debug(
+                    `Failed to sendTelemetryEvent for code scan success, requestId: ${requestId ?? ''}, message: ${
+                        error.message
+                    }`
+                )
+            })
+    }
+
+    public sendCodeScanFailedEvent(language: string, jobId: string, scope: CodeAnalysisScopeClientSide) {
+        client
+            .sendTelemetryEvent({
+                telemetryEvent: {
+                    codeScanFailedEvent: {
+                        programmingLanguage: {
+                            languageName: runtimeLanguageContext.toRuntimeLanguage(language as CodewhispererLanguage),
+                        },
+                        codeScanJobId: jobId,
+                        codeAnalysisScope: scope === CodeAnalysisScopeClientSide.FILE_AUTO ? 'FILE' : 'PROJECT',
+                        timestamp: new Date(Date.now()),
+                    },
+                },
+            })
+            .then()
+            .catch((error) => {
+                let requestId: string | undefined
+                if (isAwsError(error)) {
+                    requestId = error.requestId
+                }
+                getLogger().debug(
+                    `Failed to sendTelemetryEvent for code scan failure, requestId: ${requestId ?? ''}, message: ${
+                        error.message
+                    }`
+                )
+            })
+    }
+
+    public sendCodeFixGenerationEvent(
+        jobId: string,
+        language?: string,
+        ruleId?: string,
+        detectorId?: string,
+        linesOfCodeGenerated?: number,
+        charsOfCodeGenerated?: number
+    ) {
+        client
+            .sendTelemetryEvent({
+                telemetryEvent: {
+                    codeFixGenerationEvent: {
+                        programmingLanguage: {
+                            languageName: runtimeLanguageContext.toRuntimeLanguage(language as CodewhispererLanguage),
+                        },
+                        jobId,
+                        ruleId,
+                        detectorId,
+                        linesOfCodeGenerated,
+                        charsOfCodeGenerated,
+                    },
+                },
+            })
+            .then()
+            .catch((error) => {
+                let requestId: string | undefined
+                if (isAwsError(error)) {
+                    requestId = error.requestId
+                }
+                getLogger().debug(
+                    `Failed to sendTelemetryEvent for code fix generation, requestId: ${requestId ?? ''}, message: ${
+                        error.message
+                    }`
+                )
+            })
+    }
+
+    public sendCodeFixAcceptanceEvent(
+        jobId: string,
+        language?: string,
+        ruleId?: string,
+        detectorId?: string,
+        linesOfCodeAccepted?: number,
+        charsOfCodeAccepted?: number
+    ) {
+        client
+            .sendTelemetryEvent({
+                telemetryEvent: {
+                    codeFixAcceptanceEvent: {
+                        programmingLanguage: {
+                            languageName: runtimeLanguageContext.toRuntimeLanguage(language as CodewhispererLanguage),
+                        },
+                        jobId,
+                        ruleId,
+                        detectorId,
+                        linesOfCodeAccepted,
+                        charsOfCodeAccepted,
+                    },
+                },
+            })
+            .then()
+            .catch((error) => {
+                let requestId: string | undefined
+                if (isAwsError(error)) {
+                    requestId = error.requestId
+                }
+                getLogger().debug(
+                    `Failed to sendTelemetryEvent for code fix acceptance, requestId: ${requestId ?? ''}, message: ${
+                        error.message
+                    }`
+                )
+            })
+    }
+
+    public sendTestGenerationEvent(
+        groupName: string,
+        jobId: string,
+        language?: string,
+        numberOfUnitTestCasesGenerated?: number,
+        numberOfUnitTestCasesAccepted?: number,
+        linesOfCodeGenerated?: number,
+        linesOfCodeAccepted?: number,
+        charsOfCodeGenerated?: number,
+        charsOfCodeAccepted?: number
+    ) {
+        client
+            .sendTelemetryEvent({
+                telemetryEvent: {
+                    testGenerationEvent: {
+                        programmingLanguage: {
+                            languageName: runtimeLanguageContext.toRuntimeLanguage(language as CodewhispererLanguage),
+                        },
+                        jobId,
+                        groupName,
+                        ideCategory: 'VSCODE',
+                        numberOfUnitTestCasesGenerated,
+                        numberOfUnitTestCasesAccepted,
+                        linesOfCodeGenerated,
+                        linesOfCodeAccepted,
+                        charsOfCodeGenerated,
+                        charsOfCodeAccepted,
+                        timestamp: new Date(Date.now()),
+                    },
+                },
+            })
+            .then()
+            .catch((error) => {
+                let requestId: string | undefined
+                if (isAwsError(error)) {
+                    requestId = error.requestId
+                }
+                getLogger().debug(
+                    `Failed to sendTelemetryEvent for test generation, requestId: ${requestId ?? ''}, message: ${
                         error.message
                     }`
                 )

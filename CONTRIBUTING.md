@@ -238,9 +238,12 @@ You can find documentation to create VSCode IDE settings for CodeCatalyst bluepr
 
 Before sending a pull request:
 
+1. Treat all work as PUBLIC. Private `feature/x` branches will _not_ be squash-merged at release time. This has several benefits:
+    - Avoids mistakes (accidental exposure to public)!
+    - Avoids needing to erase (squash-merge) history.
 1. Check that you are working against the latest source on the `master` branch.
-2. Check existing open, and recently merged, pull requests to make sure someone else hasn't addressed the problem already.
-3. Open an issue to discuss any significant work.
+1. Check existing open, and recently merged, pull requests to make sure someone else hasn't addressed the problem already.
+1. Open an issue to discuss any significant work.
 
 To send a pull request:
 
