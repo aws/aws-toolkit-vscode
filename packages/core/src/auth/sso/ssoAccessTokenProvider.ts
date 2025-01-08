@@ -101,9 +101,15 @@ export abstract class SsoAccessTokenProvider {
      * Sometimes we get many calls at once and this
      * can trigger redundant disk reads, or token refreshes.
      * We debounce to avoid this.
+     *
+     * NOTE: The property {@link getTokenDebounced()} does not work with being stubbed for tests, so
+     * this redundant function was created to work around that.
      */
-    public getToken = debounce(this._getToken.bind(this), 100)
-    public async _getToken(): Promise<SsoToken | undefined> {
+    public async getToken(): Promise<SsoToken | undefined> {
+        return this.getTokenDebounced()
+    }
+    private getTokenDebounced = debounce(this._getToken.bind(this), 100)
+    private async _getToken(): Promise<SsoToken | undefined> {
         const data = await this.cache.token.load(this.tokenCacheKey)
         SsoAccessTokenProvider.logIfChanged(
             indent(
