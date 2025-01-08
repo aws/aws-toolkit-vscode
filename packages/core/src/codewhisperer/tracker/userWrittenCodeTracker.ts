@@ -28,7 +28,7 @@ export class UserWrittenCodeTracker {
 
     static #instance: UserWrittenCodeTracker
     static copySnippetThreshold = 50
-    static resetQIsEditingTimeoutMs = 5 * 60 * 1000
+    static resetQIsEditingTimeoutMs = 2 * 60 * 1000
     static defaultCheckPeriodMillis = 5 * 60 * 1000
 
     private constructor() {
