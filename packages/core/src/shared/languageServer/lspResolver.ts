@@ -181,7 +181,7 @@ export class LanguageServerResolver {
             return false
         })
         const downloadResults = await Promise.all(downloadTasks)
-        const downloadResult = downloadResults.every((result) => result === true)
+        const downloadResult = downloadResults.every(Boolean)
         return downloadResult && this.extractZipFilesFromRemote(downloadDirectory)
     }
 
@@ -207,7 +207,7 @@ export class LanguageServerResolver {
             })
         )
 
-        const allFilesExist = results.every((result) => result === true)
+        const allFilesExist = results.every(Boolean)
         return allFilesExist && this.ensureUnzippedFoldersMatchZip(localCacheDirectory, targetContents)
     }
 
@@ -250,7 +250,7 @@ export class LanguageServerResolver {
         })
 
         // make sure every one completed successfully
-        return unzips.every((unzip) => unzip === true)
+        return unzips.every(Boolean)
     }
 
     /**
