@@ -156,13 +156,15 @@ describe('SsoAccessTokenProvider', function () {
             assert.strictEqual(cachedToken, undefined)
         })
 
-        it('concurrent calls resolve successfully', async function () {
-            // This test verifies debounced getToken() does not break things.
-            // But this test is not perfect since we are unable to spy _getToken() for some reason.
+        it('concurrent calls are debounced', async function () {
             const validToken = createToken(hourInMs)
             await cache.token.save(startUrl, { region, startUrl, token: validToken })
+            const actualGetToken = sinon.spy(sut, '_getToken')
 
             const result = await Promise.all([sut.getToken(), sut.getToken(), sut.getToken()])
+
+            // Subsequent other calls were debounced so this was only called once
+            assert.strictEqual(actualGetToken.callCount, 1)
             for (const r of result) {
                 assert.deepStrictEqual(r, validToken)
             }

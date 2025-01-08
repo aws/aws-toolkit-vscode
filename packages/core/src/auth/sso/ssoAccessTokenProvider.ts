@@ -108,8 +108,9 @@ export abstract class SsoAccessTokenProvider {
     public async getToken(): Promise<SsoToken | undefined> {
         return this.getTokenDebounced()
     }
-    private getTokenDebounced = debounce(this._getToken.bind(this), 100)
-    private async _getToken(): Promise<SsoToken | undefined> {
+    private getTokenDebounced = debounce(() => this._getToken(), 50)
+    /** Exposed for testing purposes only */
+    public async _getToken(): Promise<SsoToken | undefined> {
         const data = await this.cache.token.load(this.tokenCacheKey)
         SsoAccessTokenProvider.logIfChanged(
             indent(
