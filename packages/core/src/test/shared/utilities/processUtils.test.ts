@@ -524,39 +524,40 @@ describe('ChildProcessTracker', function () {
         })
     })
 
-    it('logAllUsage includes only active processes', async function () {
-        const runningProcess1 = startSleepProcess()
-        const runningProcess2 = startSleepProcess()
+    describe('logAllUsage', function () {
+        it('includes only active processes', async function () {
+            const runningProcess1 = startSleepProcess()
+            const runningProcess2 = startSleepProcess()
 
-        assert.ok(tracker.has(runningProcess1.childProcess), 'Missing first process')
-        assert.ok(tracker.has(runningProcess2.childProcess), 'Missing seconds process')
+            assert.ok(tracker.has(runningProcess1.childProcess), 'Missing first process')
+            assert.ok(tracker.has(runningProcess2.childProcess), 'Missing seconds process')
 
-        await stopAndWait(runningProcess1)
+            await stopAndWait(runningProcess1)
 
-        await tracker.logAllUsage()
-        console.log('logAllUsage called')
-        assert.throws(() => assertLogsContain(runningProcess1.childProcess.pid().toString(), false, 'info'))
-        assertLogsContain(runningProcess2.childProcess.pid().toString(), false, 'info')
-    })
+            await tracker.logAllUsage()
+            assert.throws(() => assertLogsContain(runningProcess1.childProcess.pid().toString(), false, 'info'))
+            assertLogsContain(runningProcess2.childProcess.pid().toString(), false, 'info')
+        })
 
-    it('logAllUsage defaults to empty message when empty', async function () {
-        await tracker.logAllUsage()
-        assertLogsContain('No Active Subprocesses', false, 'info')
-    })
+        it('defaults to empty message when empty', async function () {
+            await tracker.logAllUsage()
+            assertLogsContain('No Active Subprocesses', false, 'info')
+        })
 
-    it('logAllUsage emits telemetry with size equal to number of processes (empty)', async function () {
-        await tracker.logAllUsage()
-        assertTelemetry('ide_logActiveProcesses', { size: 0 })
-    })
+        it('emits telemetry with size equal to number of processes (empty)', async function () {
+            await tracker.logAllUsage()
+            assertTelemetry('ide_logActiveProcesses', { size: 0 })
+        })
 
-    it('logsAllUsage emits telemetry to number of processes (nonempty)', async function () {
-        const size = 10
-        for (const _ of Array.from({ length: size })) {
-            startSleepProcess()
-        }
+        it('emits telemetry to number of processes (nonempty)', async function () {
+            const size = 10
+            for (const _ of Array.from({ length: size })) {
+                startSleepProcess()
+            }
 
-        await tracker.logAllUsage()
-        assertTelemetry('ide_logActiveProcesses', { size: size })
+            await tracker.logAllUsage()
+            assertTelemetry('ide_logActiveProcesses', { size: size })
+        })
     })
 
     it('getProcessAsStr logs warning when its missing', async function () {
