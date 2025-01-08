@@ -450,13 +450,10 @@ export class TestController {
                 if (!workspaceFolder) {
                     // File is outside of workspace
                     unsupportedMessage = `<span style="color: #EE9D28;">&#9888;<b>I can't generate tests for because ${fileName} is outside of workspace scope.</b><br></span> I can still provide examples, instructions and code suggestions.`
+                } else if (unsupportedLanguage) {
+                    unsupportedMessage = `<span style="color: #EE9D28;">&#9888;<b>I'm sorry, but /test only supports Python and Java</b><br></span> While ${unsupportedLanguage} is not supported, I will generate a suggestion below.`
                 } else {
-                    // File is in workspace, check language support
-                    if (unsupportedLanguage) {
-                        unsupportedMessage = `<span style="color: #EE9D28;">&#9888;<b>I'm sorry, but /test only supports Python and Java</b><br></span> While ${unsupportedLanguage} is not supported, I will generate a suggestion below.`
-                    } else {
-                        unsupportedMessage = `<span style="color: #EE9D28;">&#9888;<b>I'm sorry, but /test only supports Python and Java</b><br></span> I will still generate a suggestion below.`
-                    }
+                    unsupportedMessage = `<span style="color: #EE9D28;">&#9888;<b>I'm sorry, but /test only supports Python and Java</b><br></span> I will still generate a suggestion below.`
                 }
                 this.messenger.sendMessage(unsupportedMessage, tabID, 'answer')
                 await this.onCodeGeneration(session, message.prompt, tabID, fileName, filePath)
