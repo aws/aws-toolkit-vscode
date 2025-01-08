@@ -4,13 +4,17 @@
  */
 
 import vscode from 'vscode'
-import path from 'path'
-import { AmazonQLSPDownloader } from './download'
 import { startLanguageServer } from './client'
+import { AmazonQLSPResolver } from './lspInstaller'
+import { ToolkitError } from 'aws-core-vscode/shared'
+import path from 'path'
 
 export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
-    const serverPath = ctx.asAbsolutePath('resources/qdeveloperserver')
-    const clientPath = ctx.asAbsolutePath('resources/qdeveloperclient')
-    await new AmazonQLSPDownloader(serverPath, clientPath).tryInstallLsp()
-    await startLanguageServer(ctx, path.join(serverPath, 'aws-lsp-codewhisperer.js'))
+    try {
+        const installResult = await new AmazonQLSPResolver().resolve()
+        await startLanguageServer(ctx, path.join(installResult.assetDirectory, 'servers/aws-lsp-codewhisperer.js'))
+    } catch (err) {
+        const e = err as ToolkitError
+        void vscode.window.showInformationMessage(`Unable to launch amazonq language server: ${e.message}`)
+    }
 }

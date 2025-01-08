@@ -16,6 +16,7 @@ import { ResourceFetcher } from './resourcefetcher'
 import { Timeout, CancellationError, CancelEvent } from '../utilities/timeoutUtils'
 import { isCloud9 } from '../extensionUtilities'
 import { Headers } from 'got/dist/source/core'
+import { withRetries } from '../utilities/functionUtils'
 
 // XXX: patched Got module for compatability with older VS Code versions (e.g. Cloud9)
 // `got` has also deprecated `urlToOptions`
@@ -198,6 +199,50 @@ export class HttpResourceFetcher implements ResourceFetcher {
         }
 
         return headers
+    }
+}
+
+export class RetryableResourceFetcher extends HttpResourceFetcher {
+    private readonly retryNumber: number
+    private readonly retryIntervalMs: number
+    private readonly resource: string
+
+    constructor({
+        resource,
+        params: { retryNumber = 5, retryIntervalMs = 3000, showUrl = true, timeout = new Timeout(5000) },
+    }: {
+        resource: string
+        params: {
+            retryNumber?: number
+            retryIntervalMs?: number
+            showUrl?: boolean
+            timeout?: Timeout
+        }
+    }) {
+        super(resource, {
+            showUrl,
+            timeout,
+        })
+        this.retryNumber = retryNumber
+        this.retryIntervalMs = retryIntervalMs
+        this.resource = resource
+    }
+
+    fetch(versionTag?: string) {
+        return withRetries(
+            async () => {
+                try {
+                    return await this.getNewETagContent(versionTag)
+                } catch (err) {
+                    getLogger('lsp').error('Failed to fetch at endpoint: %s, err: %s', this.resource, err)
+                    throw err
+                }
+            },
+            {
+                maxRetries: this.retryNumber,
+                delay: this.retryIntervalMs,
+            }
+        )
     }
 }
 

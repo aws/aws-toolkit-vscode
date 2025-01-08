@@ -172,13 +172,11 @@ export class LspClient {
  * It will create a output channel named Amazon Q Language Server.
  * This function assumes the LSP server has already been downloaded.
  */
-export async function activate(extensionContext: ExtensionContext) {
+export async function activate(extensionContext: ExtensionContext, serverModule: string) {
     LspClient.instance
     const toDispose = extensionContext.subscriptions
 
     let rangeFormatting: Disposable | undefined
-    // The server is implemented in node
-    const serverModule = path.join(extensionContext.extensionPath, 'resources/qserver/lspServer.js')
     // The debug options for the server
     // --inspect=6009: runs the server in Node's Inspector mode so VS Code can attach to the server for debugging
     const debugOptions = { execArgv: ['--nolazy', '--preserve-symlinks', '--stdio'] }
