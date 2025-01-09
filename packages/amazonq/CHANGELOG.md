@@ -1,3 +1,19 @@
+## 1.42.0 2025-01-09
+
+- **Bug Fix** Amazon Q /doc: Improve button text phrasing
+- **Bug Fix** Amazon Q /dev: Fix issue when files are deleted while preparing context
+- **Bug Fix** Amazon Q Code Transformation: allow POSTGRESQL as target DB for SQL conversions
+- **Bug Fix** Fix context menu displaying when typing @, even though input is disallowed
+- **Bug Fix** Amazon Q can update mvn and gradle build files
+- **Bug Fix** /transform: use correct documentation link in SQL conversion help message
+- **Bug Fix** Up/down history navigation only triggering on first/last line of prompt input
+- **Bug Fix** Amazon Q /test: Fix to redirect /test to generate tests in chat for external files out of workspace scope.
+- **Bug Fix** /review: Code block extends beyond page margins in code issue detail view
+- **Bug Fix** Amazon Q Code Transformation: retry project upload up to 3 times
+- **Feature** Amazon Q Code Transformation: add view summary button in chat
+- **Feature** Amazon Q: new code syntax highlighter for improved accuracy
+- **Removal** Settings: No longer migrate old CodeWhisperer settings or initialize telemetry setting from AWS Toolkit.
+
 ## 1.41.0 2024-12-17
 
 - **Bug Fix** /review: Apply fix removes other issues in the same file.
