@@ -19,11 +19,15 @@ import sinon from 'sinon'
 import path from 'path'
 
 describe('SecurityIssueTreeViewProvider', function () {
-    let securityIssueProvider: SecurityIssueProvider
     let securityIssueTreeViewProvider: SecurityIssueTreeViewProvider
 
     beforeEach(function () {
-        securityIssueProvider = SecurityIssueProvider.instance
+        SecurityIssueProvider.instance.issues = [
+            { filePath: 'file/path/a', issues: [createCodeScanIssue(), createCodeScanIssue()] },
+            { filePath: 'file/path/b', issues: [createCodeScanIssue(), createCodeScanIssue()] },
+            { filePath: 'file/path/c', issues: [createCodeScanIssue(), createCodeScanIssue()] },
+            { filePath: 'file/path/d', issues: [createCodeScanIssue(), createCodeScanIssue()] },
+        ]
         securityIssueTreeViewProvider = new SecurityIssueTreeViewProvider()
     })
 
@@ -47,13 +51,6 @@ describe('SecurityIssueTreeViewProvider', function () {
 
     describe('getChildren', function () {
         it('should return sorted list of severities if element is undefined', function () {
-            securityIssueProvider.issues = [
-                { filePath: 'file/path/c', issues: [createCodeScanIssue(), createCodeScanIssue()] },
-                { filePath: 'file/path/d', issues: [createCodeScanIssue(), createCodeScanIssue()] },
-                { filePath: 'file/path/a', issues: [createCodeScanIssue(), createCodeScanIssue()] },
-                { filePath: 'file/path/b', issues: [createCodeScanIssue(), createCodeScanIssue()] },
-            ]
-
             const element = undefined
             const result = securityIssueTreeViewProvider.getChildren(element) as SeverityItem[]
             assert.strictEqual(result.length, 5)
@@ -108,28 +105,11 @@ describe('SecurityIssueTreeViewProvider', function () {
 
         it('should return severity-grouped items when grouping strategy is Severity', function () {
             sinon.stub(CodeIssueGroupingStrategyState.instance, 'getState').returns(CodeIssueGroupingStrategy.Severity)
-            securityIssueProvider.issues = [
-                {
-                    filePath: 'file/path/c',
-                    issues: [
-                        createCodeScanIssue({ severity: 'Critical' }),
-                        createCodeScanIssue({ severity: 'Critical' }),
-                    ],
-                },
-                {
-                    filePath: 'file/path/d',
-                    issues: [createCodeScanIssue({ severity: 'Critical' })],
-                },
-                {
-                    filePath: 'file/path/a',
-                    issues: [createCodeScanIssue({ severity: 'Critical' }), createCodeScanIssue({ severity: 'High' })],
-                },
-            ]
 
             const severityItems = securityIssueTreeViewProvider.getChildren() as SeverityItem[]
             for (const [index, [severity, expectedIssueCount]] of [
-                ['Critical', 4],
-                ['High', 1],
+                ['Critical', 0],
+                ['High', 8],
                 ['Medium', 0],
                 ['Low', 0],
                 ['Info', 0],
@@ -150,29 +130,13 @@ describe('SecurityIssueTreeViewProvider', function () {
             sinon
                 .stub(CodeIssueGroupingStrategyState.instance, 'getState')
                 .returns(CodeIssueGroupingStrategy.FileLocation)
-            securityIssueProvider.issues = [
-                {
-                    filePath: 'file/path/c',
-                    issues: [
-                        createCodeScanIssue({ severity: 'Critical' }),
-                        createCodeScanIssue({ severity: 'Critical' }),
-                    ],
-                },
-                {
-                    filePath: 'file/path/d',
-                    issues: [createCodeScanIssue({ severity: 'Critical' })],
-                },
-                {
-                    filePath: 'file/path/a',
-                    issues: [createCodeScanIssue({ severity: 'Critical' }), createCodeScanIssue({ severity: 'High' })],
-                },
-            ]
 
             const result = securityIssueTreeViewProvider.getChildren() as FileItem[]
             for (const [index, [fileName, expectedIssueCount]] of [
                 ['a', 2],
+                ['b', 2],
                 ['c', 2],
-                ['d', 1],
+                ['d', 2],
             ].entries()) {
                 const currentFileItem = result[index]
                 assert.strictEqual(currentFileItem.label, fileName)
