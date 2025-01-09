@@ -1,4 +1,0 @@
-{
-	"type": "Removal",
-	"description": "Settings: No longer migrate old CodeWhisperer settings or initialize telemetry setting from AWS Toolkit."
-}
