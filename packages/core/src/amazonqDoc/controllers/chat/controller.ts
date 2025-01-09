@@ -307,7 +307,7 @@ export class DocController {
                         message: 'Your changes have been discarded.',
                         followUps: [
                             {
-                                pillText: i18n('AWS.amazonq.featureDev.pillText.newTask'),
+                                pillText: i18n('AWS.amazonq.doc.pillText.newTask'),
                                 type: FollowUpTypes.NewTask,
                                 status: 'info',
                             },
@@ -706,14 +706,12 @@ export class DocController {
                 tabID: message.tabID,
                 followUps: [
                     {
-                        pillText: 'Start a new documentation task',
-                        prompt: 'Start a new documentation task',
+                        pillText: i18n('AWS.amazonq.doc.pillText.newTask'),
                         type: FollowUpTypes.NewTask,
                         status: 'info',
                     },
                     {
-                        pillText: 'End session',
-                        prompt: 'End session',
+                        pillText: i18n('AWS.amazonq.doc.pillText.closeSession'),
                         type: FollowUpTypes.CloseSession,
                         status: 'info',
                     },
