@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Amazon Q Code Transformation: retry project upload up to 3 times"
-}

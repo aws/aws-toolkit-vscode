@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Up/down history navigation only triggering on first/last line of prompt input"
-}
