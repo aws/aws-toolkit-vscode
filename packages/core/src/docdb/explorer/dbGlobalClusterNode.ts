@@ -44,7 +44,7 @@ export class DBGlobalClusterNode extends DBResourceNode {
         this.arn = cluster.GlobalClusterArn ?? ''
         this.name = cluster.GlobalClusterIdentifier ?? ''
         this.contextValue = this.getContext()
-        this.iconPath = new vscode.ThemeIcon('globe') //TODO: determine icon for global cluster
+        this.iconPath = new vscode.ThemeIcon('globe') // TODO: determine icon for global cluster
         this.description = 'Global cluster'
         this.tooltip = `${this.name}\nEngine: ${this.cluster.EngineVersion}\nStatus: ${this.cluster.Status} (read-only)`
         if (this.isStatusRequiringPolling()) {

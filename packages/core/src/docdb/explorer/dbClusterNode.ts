@@ -178,11 +178,11 @@ export class DBClusterNode extends DBResourceNode {
     override clearTimer(): void {
         this.pollingSet.delete(this.arn)
         this.pollingSet.clearTimer()
-        this.childNodes.forEach((node) => {
+        for (const node of this.childNodes) {
             getLogger().info(`(clearTimer) Removing Polling from node: ${node.arn}`)
             node.pollingSet.delete(node.arn)
             node.pollingSet.clearTimer()
-        })
+        }
     }
 
     public override [inspect.custom](): string {

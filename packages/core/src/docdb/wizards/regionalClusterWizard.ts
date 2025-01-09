@@ -189,7 +189,7 @@ async function createInstanceClassPrompter(
     })
 }
 
-//TODO: Make this it's own picker class
+// TODO: Make this it's own picker class
 function instanceCountItems(defaultCount: number, max: number = MaxInstanceCount): DataQuickPickItem<number>[] {
     const items = []
 

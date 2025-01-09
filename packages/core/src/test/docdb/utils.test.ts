@@ -41,18 +41,20 @@ describe('validatePassword', function () {
         assert.strictEqual(validatePassword('passw0rd |~'), undefined)
         assert.strictEqual(validatePassword('1234567'), 'Password must be between 8 and 100 characters long')
         assert.strictEqual(validatePassword('x'.repeat(101)), 'Password must be between 8 and 100 characters long')
-        void ['pass/word', 'p@ssword', '"password"'].forEach((item) =>
+
+        for (const item of ['pass/word', 'p@ssword', '"password"']) {
             assert.strictEqual(
                 validatePassword(item),
                 'Password must only contain printable ASCII characters (except for slash, double quotes and @ symbol)'
             )
-        )
-        void ['password\x19', 'password\u{fe0f}'].forEach((item) =>
+        }
+
+        for (const item of ['password\x19', 'password\u{fe0f}']) {
             assert.strictEqual(
                 validatePassword(item),
                 'Password must only contain printable ASCII characters (except for slash, double quotes and @ symbol)'
             )
-        )
+        }
     })
 })
 
