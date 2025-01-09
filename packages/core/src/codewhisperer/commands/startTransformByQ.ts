@@ -8,6 +8,7 @@ import * as fs from 'fs' // eslint-disable-line no-restricted-imports
 import path from 'path'
 import { getLogger } from '../../shared/logger'
 import * as CodeWhispererConstants from '../models/constants'
+import * as localizedText from '../../shared/localizedText'
 import {
     transformByQState,
     StepProgress,
@@ -233,7 +234,7 @@ export async function preTransformationUploadCode() {
     await vscode.commands.executeCommand('aws.amazonq.transformationHub.focus')
 
     void vscode.window.showInformationMessage(CodeWhispererConstants.jobStartedNotification, {
-        title: CodeWhispererConstants.jobStartedTitle,
+        title: localizedText.ok,
     })
 
     let uploadId = ''
@@ -263,6 +264,7 @@ export async function preTransformationUploadCode() {
 
             transformByQState.setPayloadFilePath(payloadFilePath)
             uploadId = await uploadPayload(payloadFilePath)
+            telemetry.record({ codeTransformJobId: uploadId }) // uploadId is re-used as jobId
         })
     } catch (err) {
         const errorMessage = (err as Error).message
@@ -735,21 +737,21 @@ export async function postTransformationJob() {
         const mavenVersionInfoMessage = `${versionInfo[0]} (${transformByQState.getMavenName()})`
         const javaVersionInfoMessage = `${versionInfo[1]} (${transformByQState.getMavenName()})`
 
-        // Note: IntelliJ implementation of ResultStatusMessage includes additional metadata such as jobId.
         telemetry.codeTransform_totalRunTime.emit({
             buildSystemVersion: mavenVersionInfoMessage,
             codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
+            codeTransformJobId: transformByQState.getJobId(),
             codeTransformResultStatusMessage: resultStatusMessage,
             codeTransformRunTimeLatency: durationInMs,
             codeTransformLocalJavaVersion: javaVersionInfoMessage,
             result: resultStatusMessage === TransformByQStatus.Succeeded ? MetadataResult.Pass : MetadataResult.Fail,
-            reason: resultStatusMessage,
+            reason: `${resultStatusMessage}-${chatMessage}`,
         })
     }
 
     if (transformByQState.isSucceeded()) {
         void vscode.window.showInformationMessage(CodeWhispererConstants.jobCompletedNotification(diffMessage), {
-            title: CodeWhispererConstants.transformationCompletedTitle,
+            title: localizedText.ok,
         })
     } else if (transformByQState.isPartiallySucceeded()) {
         void vscode.window
@@ -825,6 +827,7 @@ export async function stopTransformByQ(jobId: string) {
     await telemetry.codeTransform_jobIsCancelledByUser.run(async () => {
         telemetry.record({
             codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
+            codeTransformJobId: jobId,
         })
         if (transformByQState.isRunning()) {
             getLogger().info('CodeTransformation: User requested to stop transformation. Stopping transformation.')

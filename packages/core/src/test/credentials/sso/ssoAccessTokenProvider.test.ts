@@ -45,7 +45,6 @@ describe('SsoAccessTokenProvider', function () {
         return {
             accessToken: 'dummyAccessToken',
             expiresAt: new clock.Date(clock.Date.now() + timeDelta),
-            refreshToken: 'dummyRefreshToken',
             ...extras,
         }
     }
@@ -227,6 +226,7 @@ describe('SsoAccessTokenProvider', function () {
         // combinations of args for createToken()
         const args: CreateTokenArgs[] = [{ isReAuth: true }, { isReAuth: false }]
 
+        // eslint-disable-next-line unicorn/no-array-for-each
         args.forEach((args) => {
             it(`runs the full SSO flow with args: ${JSON.stringify(args)}`, async function () {
                 const { token, registration } = setupFlow()

@@ -158,6 +158,8 @@ module.exports = {
         'unicorn/prefer-reflect-apply': 'error',
         'unicorn/prefer-string-trim-start-end': 'error',
         'unicorn/prefer-type-error': 'error',
+        // Discourage `.forEach` because it can lead to accidental, incorrect use of async callbacks.
+        'unicorn/no-array-for-each': 'error',
         'security-node/detect-child-process': 'error',
 
         'header/header': [
@@ -198,6 +200,11 @@ module.exports = {
                     {
                         name: 'fs',
                         message: 'Avoid node:fs and use shared/fs/fs.ts when possible.',
+                    },
+                    {
+                        name: 'child_process',
+                        message:
+                            'Avoid child_process, use ChildProcess from `shared/utilities/processUtils.ts` instead.',
                     },
                 ],
             },

@@ -41,5 +41,6 @@ type MessageCommand =
     | 'review'
     | 'open-user-guide'
     | 'send-telemetry'
+    | 'update-welcome-count'
 
 export type ExtensionMessage = Record<string, any> & { command: MessageCommand }

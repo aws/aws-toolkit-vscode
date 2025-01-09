@@ -156,13 +156,13 @@ describe('UserCredentialsUtils', function () {
     async function createCredentialsFile(filename: string, profileNames: string[]): Promise<void> {
         let fileContents = ''
 
-        profileNames.forEach((profileName) => {
+        for (const profileName of profileNames) {
             fileContents += `[${profileName}]
 aws_access_key_id = FAKEKEY
 aws_SecRet_aCCess_key = FAKESECRET
 REGION = us-weast-3
 `
-        })
+        }
 
         await fs.writeFile(filename, fileContents)
     }

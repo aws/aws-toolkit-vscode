@@ -24,7 +24,7 @@ describe('pythonCodeLensProvider', async function () {
                 },
             ]
 
-            testScenarios.forEach((test) => {
+            for (const test of testScenarios) {
                 it(`Returns cased-drive variants for windows platforms: ${test.situation}`, async () => {
                     const variants = getLocalRootVariants(test.inputText)
                     assert.ok(variants)
@@ -32,7 +32,7 @@ describe('pythonCodeLensProvider', async function () {
                     assert.strictEqual(variants[0], test.asLower, 'Unexpected variant text')
                     assert.strictEqual(variants[1], test.asUpper, 'Unexpected variant text')
                 })
-            })
+            }
 
             it('Returns the same string for network location - windows', async function () {
                 const variants = getLocalRootVariants('//share/src/code.js')
@@ -63,14 +63,14 @@ describe('pythonCodeLensProvider', async function () {
                 },
             ]
 
-            testScenarios.forEach((test) => {
+            for (const test of testScenarios) {
                 it(`Returns the same string for non-windows platforms: ${test.situation}`, async () => {
                     const variants = getLocalRootVariants(test.inputText)
                     assert.ok(variants)
                     assert.strictEqual(variants.length, 1, 'Only expected one variant')
                     assert.strictEqual(variants[0], test.inputText, 'Unexpected variant text')
                 })
-            })
+            }
         }
     })
 })

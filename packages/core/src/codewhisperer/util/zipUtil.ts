@@ -433,12 +433,11 @@ export class ZipUtil {
     }
 
     protected processOtherFiles(zip: admZip, languageCount: Map<CodewhispererLanguage, number>) {
-        vscode.workspace.textDocuments
+        for (const document of vscode.workspace.textDocuments
             .filter((document) => document.uri.scheme === 'file')
-            .filter((document) => vscode.workspace.getWorkspaceFolder(document.uri) === undefined)
-            .forEach((document) =>
-                this.processTextFile(zip, document.uri, document.getText(), languageCount, document.uri.fsPath)
-            )
+            .filter((document) => vscode.workspace.getWorkspaceFolder(document.uri) === undefined)) {
+            this.processTextFile(zip, document.uri, document.getText(), languageCount, document.uri.fsPath)
+        }
     }
 
     protected async processTestCoverageFiles(targetPath: string) {

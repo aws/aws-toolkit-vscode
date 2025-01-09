@@ -248,7 +248,9 @@ function acceptItems<T>(picker: DataQuickPick<T>, resolve: (items: DataQuickPick
         return
     }
 
-    picker.selectedItems.forEach((item) => (item.onClick !== undefined ? item.onClick() : undefined))
+    for (const item of picker.selectedItems) {
+        item.onClick !== undefined ? item.onClick() : undefined
+    }
 
     if (picker.selectedItems.some((item) => item.invalidSelection)) {
         return

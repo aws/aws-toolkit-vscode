@@ -10,7 +10,7 @@
 import * as vscode from 'vscode'
 import * as path from 'path'
 import * as nls from 'vscode-nls'
-import * as cp from 'child_process'
+import { spawn } from 'child_process' // eslint-disable-line no-restricted-imports
 import * as crypto from 'crypto'
 import * as jose from 'jose'
 
@@ -197,7 +197,7 @@ export async function activate(extensionContext: ExtensionContext, serverModule:
 
     const nodename = process.platform === 'win32' ? 'node.exe' : 'node'
 
-    const child = cp.spawn(extensionContext.asAbsolutePath(path.join('resources', nodename)), [
+    const child = spawn(extensionContext.asAbsolutePath(path.join('resources', nodename)), [
         serverModule,
         ...debugOptions.execArgv,
     ])

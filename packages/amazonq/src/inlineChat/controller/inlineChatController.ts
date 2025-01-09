@@ -156,7 +156,9 @@ export class InlineChatController {
     }
 
     private async reset() {
-        this.listeners.forEach((listener) => listener.dispose())
+        for (const listener of this.listeners) {
+            listener.dispose()
+        }
         this.listeners = []
 
         this.task = undefined
