@@ -8,7 +8,7 @@ import { Range } from 'semver'
 import { ManifestResolver, LanguageServerResolver, LspResolver, LspResult } from 'aws-core-vscode/shared'
 
 const manifestURL = 'https://aws-toolkit-language-servers.amazonaws.com/codewhisperer/0/manifest.json'
-const supportedLspServerVersions = '^2.3.1'
+export const supportedLspServerVersions = '^2.3.0'
 
 export class AmazonQLSPResolver implements LspResolver {
     async resolve(): Promise<LspResult> {
