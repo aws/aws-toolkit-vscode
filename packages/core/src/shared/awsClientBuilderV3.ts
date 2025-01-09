@@ -27,8 +27,10 @@ import { omitIfPresent } from './utilities/tsUtils'
 
 export type AwsClientConstructor<C> = new (o: AwsClientOptions) => C
 
+// AWS-SDKv3 does not export generic types for clients so we need to build them as needed
+// https://github.com/aws/aws-sdk-js-v3/issues/5856#issuecomment-2096950979
 interface AwsClient {
-    middlewareStack: any // Ideally this would extends MiddlewareStack<Input, Output>, but this causes issues on client construction.
+    middlewareStack: any
 }
 
 interface AwsConfigOptions {
