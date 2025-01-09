@@ -27,6 +27,7 @@ import { ToolkitError } from '../../../shared/errors'
 import * as fs from 'fs' // eslint-disable-line no-restricted-imports
 import * as path from 'path'
 import { Stub, stub } from '../../utilities/stubber'
+import { globals } from '../../../shared'
 
 const hourInMs = 3600000
 
@@ -37,14 +38,14 @@ describe('SsoAccessTokenProvider', function () {
     let oidcClient: Stub<OidcClient>
     let sut: SsoAccessTokenProvider
     let cache: ReturnType<typeof getCache>
-    let clock: FakeTimers.InstalledClock
+    let clock: FakeTimers.InstalledClock | undefined
     let tempDir: string
     let reAuthState: TestReAuthState
 
     function createToken(timeDelta: number, extras: Partial<SsoToken> = {}) {
         return {
             accessToken: 'dummyAccessToken',
-            expiresAt: new clock.Date(clock.Date.now() + timeDelta),
+            expiresAt: new globals.clock.Date(globals.clock.Date.now() + timeDelta),
             ...extras,
         }
     }
@@ -54,7 +55,7 @@ describe('SsoAccessTokenProvider', function () {
             scopes: [],
             clientId: 'dummyClientId',
             clientSecret: 'dummyClientSecret',
-            expiresAt: new clock.Date(clock.Date.now() + timeDelta),
+            expiresAt: new globals.clock.Date(globals.clock.Date.now() + timeDelta),
             startUrl,
             ...extras,
         }
@@ -66,7 +67,7 @@ describe('SsoAccessTokenProvider', function () {
             deviceCode: 'dummyCode',
             userCode: 'dummyUserCode',
             verificationUri: 'dummyLink',
-            expiresAt: new clock.Date(clock.Date.now() + timeDelta),
+            expiresAt: new globals.clock.Date(globals.clock.Date.now() + timeDelta),
         }
     }
 
@@ -76,14 +77,6 @@ describe('SsoAccessTokenProvider', function () {
         fs.mkdirSync(cacheDir, { recursive: true })
         return cacheDir
     }
-
-    before(function () {
-        clock = installFakeClock()
-    })
-
-    after(function () {
-        clock.uninstall()
-    })
 
     beforeEach(async function () {
         oidcClient = stub(OidcClient)
@@ -95,7 +88,7 @@ describe('SsoAccessTokenProvider', function () {
 
     afterEach(async function () {
         sinon.restore()
-        clock.reset()
+        clock?.uninstall()
         await tryRemoveFolder(tempDir)
     })
 
@@ -161,6 +154,20 @@ describe('SsoAccessTokenProvider', function () {
 
             const cachedToken = await cache.token.load(startUrl).then((a) => a?.token)
             assert.strictEqual(cachedToken, undefined)
+        })
+
+        it('concurrent calls are debounced', async function () {
+            const validToken = createToken(hourInMs)
+            await cache.token.save(startUrl, { region, startUrl, token: validToken })
+            const actualGetToken = sinon.spy(sut, '_getToken')
+
+            const result = await Promise.all([sut.getToken(), sut.getToken(), sut.getToken()])
+
+            // Subsequent other calls were debounced so this was only called once
+            assert.strictEqual(actualGetToken.callCount, 1)
+            for (const r of result) {
+                assert.deepStrictEqual(r, validToken)
+            }
         })
 
         describe('Exceptions', function () {
@@ -267,6 +274,7 @@ describe('SsoAccessTokenProvider', function () {
         })
 
         it(`emits session duration between logins of the same startUrl`, async function () {
+            clock = installFakeClock()
             setupFlow()
             stubOpen()
 
@@ -311,6 +319,7 @@ describe('SsoAccessTokenProvider', function () {
         })
 
         it('respects the device authorization expiration time', async function () {
+            clock = installFakeClock()
             setupFlow()
             stubOpen()
             const exception = new AuthorizationPendingException({ message: '', $metadata: {} })
@@ -352,7 +361,7 @@ describe('SsoAccessTokenProvider', function () {
             const registration = {
                 clientId: 'myExpiredClientId',
                 clientSecret: 'myExpiredClientSecret',
-                expiresAt: new clock.Date(clock.Date.now() - 1), // expired date
+                expiresAt: new globals.clock.Date(globals.clock.Date.now() - 1), // expired date
                 startUrl: key.startUrl,
             }
             await cache.registration.save(key, registration)
