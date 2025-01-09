@@ -27,17 +27,17 @@ export class DBInstanceNode extends DBResourceNode {
         readonly instance: DBInstance
     ) {
         super(parent.client, instance.DBInstanceIdentifier ?? '[Instance]', vscode.TreeItemCollapsibleState.None)
-        getLogger().info(`NEW DBInstanceNode: ${instance.DBInstanceArn}`)
+        getLogger().debug(`NEW DBInstanceNode: ${instance.DBInstanceArn}`)
         this.description = this.makeDescription()
         this.contextValue = this.getContext()
         this.iconPath = this.isAvailable || this.isStopped ? undefined : new vscode.ThemeIcon('loading~spin')
         this.tooltip = `${this.name}\nClass: ${this.instance.DBInstanceClass}\nStatus: ${this.status}`
-        getLogger().info(`Parent of ${instance.DBInstanceArn} is ${parent.arn}`)
+        getLogger().debug(`Parent of ${instance.DBInstanceArn} is ${parent.arn}`)
         if (this.isStatusRequiringPolling()) {
-            getLogger().info(`${instance.DBInstanceArn} requires polling.`)
+            getLogger().debug(`${instance.DBInstanceArn} requires polling.`)
             this.trackChanges()
         } else {
-            getLogger().info(`${instance.DBInstanceArn} does NOT require polling.`)
+            getLogger().debug(`${instance.DBInstanceArn} does NOT require polling.`)
         }
     }
 
@@ -46,7 +46,7 @@ export class DBInstanceNode extends DBResourceNode {
         const parentRequiresPolling = this.parent.isStatusRequiringPolling()
         const requiresPolling = instanceRequiresPolling || parentRequiresPolling
 
-        getLogger().info(
+        getLogger().debug(
             `isStatusRequiringPolling (DBInstanceNode): Instance ${this.arn} requires polling: ${instanceRequiresPolling}, Parent ${this.parent.arn} requires polling: ${parentRequiresPolling}, Combined result: ${requiresPolling}`
         )
 
@@ -103,7 +103,7 @@ export class DBInstanceNode extends DBResourceNode {
     }
 
     override refreshTree(): void {
-        getLogger().info(`(DBInstanceNode) Refreshing tree for instance: ${this.arn}`)
+        getLogger().debug(`(DBInstanceNode) Refreshing tree for instance: ${this.arn}`)
         this.refresh()
         this.parent.refreshTree()
     }

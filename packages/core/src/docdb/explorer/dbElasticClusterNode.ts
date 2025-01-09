@@ -34,10 +34,10 @@ export class DBElasticClusterNode extends DBResourceNode {
         this.description = this.getDescription()
         this.tooltip = `${this.name}\nStatus: ${this.status}`
         if (this.isStatusRequiringPolling()) {
-            getLogger().info(`${this.arn} requires polling.`)
+            getLogger().debug(`${this.arn} requires polling.`)
             this.trackChanges()
         } else {
-            getLogger().info(`${this.arn} does NOT require polling.`)
+            getLogger().debug(`${this.arn} does NOT require polling.`)
         }
     }
 
@@ -77,7 +77,7 @@ export class DBElasticClusterNode extends DBResourceNode {
 
     override async getStatus() {
         const cluster = await this.client.getElasticCluster(this.arn)
-        getLogger().info(`Get Status: status ${cluster?.status} for elastic-cluster ${this.arn}`)
+        getLogger().debug(`Get Status: status ${cluster?.status} for elastic-cluster ${this.arn}`)
         this.cluster.status = cluster?.status
         return cluster?.status?.toLowerCase()
     }
@@ -101,7 +101,7 @@ export class DBElasticClusterNode extends DBResourceNode {
     }
 
     override refreshTree(): void {
-        getLogger().info(`(DBElasticClusterNode) Refreshing tree for instance: ${this.arn}`)
+        getLogger().debug(`(DBElasticClusterNode) Refreshing tree for instance: ${this.arn}`)
         this.refresh()
         this.parent.refresh()
     }

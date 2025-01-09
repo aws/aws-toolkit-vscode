@@ -41,7 +41,7 @@ export class DBClusterNode extends DBResourceNode {
         readonly clusterRole: DBClusterRole = 'regional'
     ) {
         super(client, cluster.DBClusterIdentifier ?? '[Cluster]', vscode.TreeItemCollapsibleState.Collapsed)
-        getLogger().info(`NEW DBClusterNode: ${cluster.DBClusterArn}`)
+        getLogger().debug(`NEW DBClusterNode: ${cluster.DBClusterArn}`)
         this.arn = cluster.DBClusterArn ?? ''
         this.name = cluster.DBClusterIdentifier ?? ''
         this.contextValue = this.getContext()
@@ -51,15 +51,15 @@ export class DBClusterNode extends DBResourceNode {
         this.description = this.getDescription()
         this.tooltip = `${this.name}${os.EOL}Engine: ${this.cluster.EngineVersion}${os.EOL}Status: ${this.cluster.Status}`
         if (this.isStatusRequiringPolling()) {
-            getLogger().info(`${this.arn} requires polling.`)
+            getLogger().debug(`${this.arn} requires polling.`)
             this.trackChanges()
         } else {
-            getLogger().info(`${this.arn} does NOT require polling.`)
+            getLogger().debug(`${this.arn} does NOT require polling.`)
         }
     }
 
     public override async getChildren(): Promise<AWSTreeNodeBase[]> {
-        getLogger().info(`DBClusterNode.getChildren() called`)
+        getLogger().debug(`DBClusterNode.getChildren() called`)
         return telemetry.docdb_listInstances.run(async () => {
             return await makeChildrenNodes({
                 getChildNodes: async () => {
@@ -151,7 +151,7 @@ export class DBClusterNode extends DBResourceNode {
             return undefined
         }
 
-        getLogger().info(`Get Status: status ${cluster.Status} for cluster ${this.arn}`)
+        getLogger().debug(`Get Status: status ${cluster.Status} for cluster ${this.arn}`)
         this.cluster.Status = cluster.Status
         return cluster.Status
     }
@@ -170,7 +170,7 @@ export class DBClusterNode extends DBResourceNode {
     }
 
     override refreshTree(): void {
-        getLogger().info(`(DBClusterNode) Refreshing tree for instance: ${this.arn}`)
+        getLogger().debug(`(DBClusterNode) Refreshing tree for instance: ${this.arn}`)
         this.refresh()
         this.parent.refresh()
     }
@@ -179,7 +179,7 @@ export class DBClusterNode extends DBResourceNode {
         this.pollingSet.delete(this.arn)
         this.pollingSet.clearTimer()
         for (const node of this.childNodes) {
-            getLogger().info(`(clearTimer) Removing Polling from node: ${node.arn}`)
+            getLogger().debug(`(clearTimer) Removing Polling from node: ${node.arn}`)
             node.pollingSet.delete(node.arn)
             node.pollingSet.clearTimer()
         }

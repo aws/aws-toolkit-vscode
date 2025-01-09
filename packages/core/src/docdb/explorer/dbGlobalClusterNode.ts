@@ -48,10 +48,10 @@ export class DBGlobalClusterNode extends DBResourceNode {
         this.description = 'Global cluster'
         this.tooltip = `${this.name}\nEngine: ${this.cluster.EngineVersion}\nStatus: ${this.cluster.Status} (read-only)`
         if (this.isStatusRequiringPolling()) {
-            getLogger().info(`${this.arn} requires polling.`)
+            getLogger().debug(`${this.arn} requires polling.`)
             this.trackChanges()
         } else {
-            getLogger().info(`${this.arn} does NOT require polling.`)
+            getLogger().debug(`${this.arn} does NOT require polling.`)
         }
     }
 
@@ -135,7 +135,7 @@ export class DBGlobalClusterNode extends DBResourceNode {
             return undefined
         }
 
-        getLogger().info(`Get Status: status ${cluster.Status} for cluster ${this.arn}`)
+        getLogger().debug(`Get Status: status ${cluster.Status} for cluster ${this.arn}`)
         this.cluster.Status = cluster.Status
         return cluster.Status
     }
@@ -151,7 +151,7 @@ export class DBGlobalClusterNode extends DBResourceNode {
     }
 
     override refreshTree(): void {
-        getLogger().info(`(DBGlobalClusterNode) Refreshing tree for instance: ${this.arn}`)
+        getLogger().debug(`(DBGlobalClusterNode) Refreshing tree for instance: ${this.arn}`)
         this.refresh()
         this.parent.refresh()
     }

@@ -35,13 +35,13 @@ export abstract class DBResourceNode extends AWSTreeNodeBase implements AWSResou
     ) {
         super(label, collapsibleState)
         this.regionCode = client.regionCode
-        getLogger().info(`NEW DBResourceNode`)
+        getLogger().debug(`NEW DBResourceNode`)
     }
 
     public isStatusRequiringPolling(): boolean {
         const currentStatus = this.status?.toLowerCase()
         const isProcessingStatus = currentStatus !== undefined && this.processingStatuses.has(currentStatus)
-        getLogger().info(
+        getLogger().debug(
             `isStatusRequiringPolling (DBResourceNode):: Checking if status "${currentStatus}" for ARN: ${this.arn} requires polling: ${isProcessingStatus}`
         )
         return isProcessingStatus
@@ -69,7 +69,7 @@ export abstract class DBResourceNode extends AWSTreeNodeBase implements AWSResou
 
     public get isPolling(): boolean {
         const isPolling = DBResourceNode.globalPollingArns.has(this.arn)
-        getLogger().info(`isPolling: ARN ${this.arn} is ${isPolling ? '' : 'not '}being polled.`)
+        getLogger().debug(`isPolling: ARN ${this.arn} is ${isPolling ? '' : 'not '}being polled.`)
         return isPolling
     }
 
@@ -101,11 +101,11 @@ export abstract class DBResourceNode extends AWSTreeNodeBase implements AWSResou
                 const status = await this.getStatus()
                 if (checkProcessingStatuses) {
                     const isProcessingStatus = status !== undefined && this.processingStatuses.has(status.toLowerCase())
-                    getLogger().info('docdb: waitUntilStatusChangedToProcessingStatus: %O', isProcessingStatus)
+                    getLogger().debug('docdb: waitUntilStatusChangedToProcessingStatus: %O', isProcessingStatus)
                     return isProcessingStatus
                 } else {
                     const hasStatusChanged = status !== this.status
-                    getLogger().info('docdb: waitUntilStatusChanged (status): %O', hasStatusChanged)
+                    getLogger().debug('docdb: waitUntilStatusChanged (status): %O', hasStatusChanged)
                     return hasStatusChanged
                 }
             },
@@ -116,28 +116,28 @@ export abstract class DBResourceNode extends AWSTreeNodeBase implements AWSResou
     }
 
     public async trackChangesWithWaitProcessingStatus() {
-        getLogger().info(
+        getLogger().debug(
             `Preparing to track changes with waiting a processing status for ARN: ${this.arn}; condition: ${this.isPolling};`
         )
         if (!this.isPolling) {
             this.isPolling = true
             await this.waitUntilStatusChanged(true, 60000, 1000)
-            getLogger().info(`Tracking changes for a processing status wait is over`)
+            getLogger().debug(`Tracking changes for a processing status wait is over`)
             this.pollingSet.start(this.arn)
-            getLogger().info(`Tracking changes for ARN: ${this.arn}; condition: ${this.isPolling};`)
+            getLogger().debug(`Tracking changes for ARN: ${this.arn}; condition: ${this.isPolling};`)
         } else {
-            getLogger().info(`ARN: ${this.arn} already being tracked`)
+            getLogger().debug(`ARN: ${this.arn} already being tracked`)
         }
     }
 
     public trackChanges() {
-        getLogger().info(`Preparing to track immdiately for ARN: ${this.arn}; condition: ${this.isPolling};`)
+        getLogger().debug(`Preparing to track immdiately for ARN: ${this.arn}; condition: ${this.isPolling};`)
         if (!this.isPolling) {
             this.isPolling = true
             this.pollingSet.start(this.arn)
-            getLogger().info(`Tracking changes for ARN: ${this.arn}; condition: ${this.isPolling};`)
+            getLogger().debug(`Tracking changes for ARN: ${this.arn}; condition: ${this.isPolling};`)
         } else {
-            getLogger().info(`ARN: ${this.arn} already being tracked`)
+            getLogger().debug(`ARN: ${this.arn} already being tracked`)
         }
     }
 
@@ -156,16 +156,16 @@ export abstract class DBResourceNode extends AWSTreeNodeBase implements AWSResou
     private async updateNodeStatus() {
         const currentStatus = this.status
         const newStatus = await this.getStatus()
-        getLogger().info(
+        getLogger().debug(
             `docdb: ${this.arn} updateNodeStatus (new status): ${newStatus} (old status): ${currentStatus}`
         )
         if (currentStatus !== newStatus) {
-            getLogger().info(`docdb: ${this.arn} updateNodeStatus - refreshing UI`)
+            getLogger().info(`docdb: ${this.arn} status: ${newStatus}, refreshing UI`)
             this.refreshTree()
         }
         if (!this.isStatusRequiringPolling()) {
-            getLogger().info(`docdb: ${this.arn} updateNodeStatus - refreshing UI`)
-            getLogger().info(`pollingSet delete ${this.arn} updateNodeStatus`)
+            getLogger().info(`docdb: ${this.arn} status: ${newStatus}, refreshing UI`)
+            getLogger().debug(`pollingSet delete ${this.arn} updateNodeStatus`)
             this.pollingSet.delete(this.arn)
             this.pollingSet.clearTimer()
             this.isPolling = false
