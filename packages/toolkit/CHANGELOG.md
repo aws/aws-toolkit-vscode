@@ -1,3 +1,8 @@
+## 3.41.0 2025-01-09
+
+- **Removal** Amazon Q: No longer autoinstall Amazon Q if the user had used CodeWhisperer in old Toolkit versions.
+- **Removal** Auth: No longer inform users that Amazon Q and Toolkit extensions have separate auth sessions.
+
 ## 3.40.0 2024-12-17
 
 - **Bug Fix** Auth: SSO failed to missing refreshToken
