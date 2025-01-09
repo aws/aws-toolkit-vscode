@@ -277,8 +277,14 @@ export function getApplicationSupportFolder() {
         case 'darwin': {
             return path.join(os.homedir(), 'Library/Application Support')
         }
+        case 'win32': {
+            return process.env.APPDATA
+        }
+        case 'linux': {
+            return process.env.XDG_CACHE_HOME || path.join(os.homedir(), '.cache')
+        }
         default: {
-            throw new Error('Only mac is supported right now')
+            throw new Error(`Unsupported platform: ${process.platform}. Expected 'darwin', 'win32', or 'linux'.`)
         }
     }
 }
