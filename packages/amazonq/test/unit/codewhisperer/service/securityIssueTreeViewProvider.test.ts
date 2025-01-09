@@ -10,10 +10,13 @@ import {
     SecurityTreeViewFilterState,
     SecurityIssueProvider,
     SeverityItem,
+    CodeIssueGroupingStrategyState,
+    CodeIssueGroupingStrategy,
 } from 'aws-core-vscode/codewhisperer'
 import { createCodeScanIssue } from 'aws-core-vscode/test'
 import assert from 'assert'
 import sinon from 'sinon'
+import path from 'path'
 
 describe('SecurityIssueTreeViewProvider', function () {
     let securityIssueProvider: SecurityIssueProvider
@@ -101,6 +104,89 @@ describe('SecurityIssueTreeViewProvider', function () {
             ])
             const result = securityIssueTreeViewProvider.getChildren(element) as IssueItem[]
             assert.strictEqual(result.length, 0)
+        })
+
+        it('should return severity-grouped items when grouping strategy is Severity', function () {
+            sinon.stub(CodeIssueGroupingStrategyState.instance, 'getState').returns(CodeIssueGroupingStrategy.Severity)
+            securityIssueProvider.issues = [
+                {
+                    filePath: 'file/path/c',
+                    issues: [
+                        createCodeScanIssue({ severity: 'Critical' }),
+                        createCodeScanIssue({ severity: 'Critical' }),
+                    ],
+                },
+                {
+                    filePath: 'file/path/d',
+                    issues: [createCodeScanIssue({ severity: 'Critical' })],
+                },
+                {
+                    filePath: 'file/path/a',
+                    issues: [createCodeScanIssue({ severity: 'Critical' }), createCodeScanIssue({ severity: 'High' })],
+                },
+            ]
+
+            const severityItems = securityIssueTreeViewProvider.getChildren() as SeverityItem[]
+            for (const [index, [severity, expectedIssueCount]] of [
+                ['Critical', 4],
+                ['High', 1],
+                ['Medium', 0],
+                ['Low', 0],
+                ['Info', 0],
+            ].entries()) {
+                const currentSeverityItem = severityItems[index]
+                assert.strictEqual(currentSeverityItem.label, severity)
+                assert.strictEqual(currentSeverityItem.issues.length, expectedIssueCount)
+
+                const issueItems = securityIssueTreeViewProvider.getChildren(currentSeverityItem) as IssueItem[]
+                assert.ok(issueItems.every((item) => item.iconPath === undefined))
+                assert.ok(
+                    issueItems.every((item) => item.description?.toString().startsWith(path.basename(item.filePath)))
+                )
+            }
+        })
+
+        it('should return file-grouped items when grouping strategy is FileLocation', function () {
+            sinon
+                .stub(CodeIssueGroupingStrategyState.instance, 'getState')
+                .returns(CodeIssueGroupingStrategy.FileLocation)
+            securityIssueProvider.issues = [
+                {
+                    filePath: 'file/path/c',
+                    issues: [
+                        createCodeScanIssue({ severity: 'Critical' }),
+                        createCodeScanIssue({ severity: 'Critical' }),
+                    ],
+                },
+                {
+                    filePath: 'file/path/d',
+                    issues: [createCodeScanIssue({ severity: 'Critical' })],
+                },
+                {
+                    filePath: 'file/path/a',
+                    issues: [createCodeScanIssue({ severity: 'Critical' }), createCodeScanIssue({ severity: 'High' })],
+                },
+            ]
+
+            const result = securityIssueTreeViewProvider.getChildren() as FileItem[]
+            for (const [index, [fileName, expectedIssueCount]] of [
+                ['a', 2],
+                ['c', 2],
+                ['d', 1],
+            ].entries()) {
+                const currentFileItem = result[index]
+                assert.strictEqual(currentFileItem.label, fileName)
+                assert.strictEqual(currentFileItem.issues.length, expectedIssueCount)
+                assert.strictEqual(currentFileItem.description, 'file/path')
+
+                const issueItems = securityIssueTreeViewProvider.getChildren(currentFileItem) as IssueItem[]
+                assert.ok(
+                    issueItems.every((item) =>
+                        item.iconPath?.toString().includes(`${item.issue.severity.toLowerCase()}.svg`)
+                    )
+                )
+                assert.ok(issueItems.every((item) => item.description?.toString().startsWith('[Ln ')))
+            }
         })
     })
 })

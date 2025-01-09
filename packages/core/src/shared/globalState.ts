@@ -32,6 +32,7 @@ export type globalKey =
     | 'aws.amazonq.hasShownWalkthrough'
     | 'aws.amazonq.showTryChatCodeLens'
     | 'aws.amazonq.securityIssueFilters'
+    | 'aws.amazonq.codescan.groupingStrategy'
     | 'aws.amazonq.notifications'
     | 'aws.amazonq.welcomeChatShowCount'
     | 'aws.amazonq.disclaimerAcknowledged'

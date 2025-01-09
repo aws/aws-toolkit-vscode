@@ -13,6 +13,9 @@ import { confirmStopSecurityScan, startSecurityScan } from './startSecurityScan'
 import { SecurityPanelViewProvider } from '../views/securityPanelViewProvider'
 import {
     codeFixState,
+    codeIssueGroupingStrategies,
+    codeIssueGroupingStrategyLabel,
+    CodeIssueGroupingStrategyState,
     CodeScanIssue,
     CodeScansState,
     codeScanState,
@@ -883,6 +886,33 @@ export const showSecurityIssueFilters = Commands.declare({ id: 'aws.amazonq.secu
         })
     }
 })
+
+export const showCodeIssueGroupingQuickPick = Commands.declare(
+    { id: 'aws.amazonq.codescan.showGroupingStrategy' },
+    () => async () => {
+        const quickPick = vscode.window.createQuickPick()
+        quickPick.title = localize('aws.commands.amazonq.groupIssues', 'Group Issues')
+        quickPick.placeholder = localize(
+            'aws.amazonq.codescan.groupIssues.placeholder',
+            'Select how to group code issues'
+        )
+        quickPick.items = codeIssueGroupingStrategies.map((strategy) => ({
+            label: codeIssueGroupingStrategyLabel[strategy],
+        }))
+        const groupingStrategy = CodeIssueGroupingStrategyState.instance.getState()
+        quickPick.activeItems = quickPick.items.filter(
+            (item) => item.label === codeIssueGroupingStrategyLabel[groupingStrategy]
+        )
+        quickPick.show()
+        quickPick.onDidChangeSelection(async (items) => {
+            const [item] = items
+            await CodeIssueGroupingStrategyState.instance.setState(
+                Object.entries(codeIssueGroupingStrategyLabel).find(([, label]) => label === item.label)?.[0]
+            )
+            quickPick.hide()
+        })
+    }
+)
 
 export const focusIssue = Commands.declare(
     { id: 'aws.amazonq.security.focusIssue' },

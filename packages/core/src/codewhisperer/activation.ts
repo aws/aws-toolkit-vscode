@@ -18,6 +18,7 @@ import {
     SecurityTreeViewFilterState,
     AggregatedCodeScanIssue,
     CodeScanIssue,
+    CodeIssueGroupingStrategyState,
 } from './models/model'
 import { invokeRecommendation } from './commands/invokeRecommendation'
 import { acceptSuggestion } from './commands/onInlineAcceptance'
@@ -60,6 +61,7 @@ import {
     ignoreAllIssues,
     focusIssue,
     showExploreAgentsView,
+    showCodeIssueGroupingQuickPick,
 } from './commands/basicCommands'
 import { sleep } from '../shared/utilities/timeoutUtils'
 import { ReferenceLogViewProvider } from './service/referenceLogViewProvider'
@@ -288,12 +290,18 @@ export async function activate(context: ExtContext): Promise<void> {
         listCodeWhispererCommands.register(),
         // quick pick with security issues tree filters
         showSecurityIssueFilters.register(),
+        // quick pick code issue grouping strategy
+        showCodeIssueGroupingQuickPick.register(),
         // reset security issue filters
         clearFilters.register(),
         // handle security issues tree item clicked
         focusIssue.register(),
         // refresh the treeview on every change
         SecurityTreeViewFilterState.instance.onDidChangeState((e) => {
+            SecurityIssueTreeViewProvider.instance.refresh()
+        }),
+        // refresh treeview when grouping strategy changes
+        CodeIssueGroupingStrategyState.instance.onDidChangeState((e) => {
             SecurityIssueTreeViewProvider.instance.refresh()
         }),
         // show a no match state
