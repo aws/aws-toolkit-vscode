@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Amazon Q /test: Fix to redirect /test to generate tests in chat for external files out of workspace scope."
+}
