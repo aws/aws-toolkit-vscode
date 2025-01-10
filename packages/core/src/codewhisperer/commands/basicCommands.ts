@@ -13,9 +13,6 @@ import { confirmStopSecurityScan, startSecurityScan } from './startSecurityScan'
 import { SecurityPanelViewProvider } from '../views/securityPanelViewProvider'
 import {
     codeFixState,
-    codeIssueGroupingStrategies,
-    codeIssueGroupingStrategyLabel,
-    CodeIssueGroupingStrategyState,
     CodeScanIssue,
     CodeScansState,
     codeScanState,
@@ -70,7 +67,6 @@ import { startCodeFixGeneration } from './startCodeFixGeneration'
 import { DefaultAmazonQAppInitContext } from '../../amazonq/apps/initContext'
 import path from 'path'
 import { parsePatch } from 'diff'
-import { createQuickPick } from '../../shared/ui/pickerPrompter'
 import { createCodeIssueGroupingStrategyPrompter } from '../ui/prompters'
 
 const MessageTimeOut = 5_000

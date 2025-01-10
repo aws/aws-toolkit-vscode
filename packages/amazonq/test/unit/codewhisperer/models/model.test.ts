@@ -111,7 +111,7 @@ describe('model', function () {
 
             it('should return stored state when valid', function () {
                 const validStrategy = CodeIssueGroupingStrategy.Severity
-                const tryGetStub = sandbox.stub(globals.globalState, 'tryGet').returns(validStrategy)
+                sandbox.stub(globals.globalState, 'tryGet').returns(validStrategy)
 
                 const result = state.getState()
 
@@ -120,7 +120,7 @@ describe('model', function () {
 
             it('should return fallback when stored state is invalid', function () {
                 const invalidStrategy = 'invalid'
-                const tryGetStub = sandbox.stub(globals.globalState, 'tryGet').returns(invalidStrategy)
+                sandbox.stub(globals.globalState, 'tryGet').returns(invalidStrategy)
 
                 const result = state.getState()
 
