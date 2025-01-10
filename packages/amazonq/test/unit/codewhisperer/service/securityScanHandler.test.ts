@@ -50,7 +50,7 @@ const buildMockListCodeScanFindingsResponse = (
 ): Awaited<Promise<PromiseResult<ListCodeScanFindingsResponse, AWSError>>> => ({
     $response: {
         hasNextPage: () => false,
-        nextPage: () => undefined,
+        nextPage: () => null, // eslint-disable-line unicorn/no-null
         data: undefined,
         error: undefined,
         requestId: '',
