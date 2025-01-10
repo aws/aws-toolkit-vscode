@@ -38,7 +38,7 @@ describe('DefaultDocumentDBClient', function () {
             assert(sdkStub.calledOnce)
         })
 
-        it('throws an Error on failure', async function () {
+        it('throws an Error during listing clusters on failure', async function () {
             const client = createClient()
             client.getClient = sinon.stub().resolves({
                 send: sinon.stub().throws(),
@@ -58,7 +58,7 @@ describe('DefaultDocumentDBClient', function () {
             assert(sdkStub.calledOnce)
         })
 
-        it('throws an Error on failure', async function () {
+        it('throws an Error during listing instances on failure', async function () {
             const client = createClient()
             client.getClient = sinon.stub().resolves({
                 send: sinon.stub().throws(),

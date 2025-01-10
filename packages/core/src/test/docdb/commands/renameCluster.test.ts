@@ -18,10 +18,10 @@ describe('renameClusterCommand', function () {
     const clusterName = 'test-cluster'
     const newClusterName = 'new-cluster-name'
     let docdb: DocumentDBClient
+    let spyExecuteCommand: sinon.SinonSpy
     let cluster: DBCluster
     let node: DBClusterNode
     let sandbox: sinon.SinonSandbox
-    let spyExecuteCommand: sinon.SinonSpy
 
     beforeEach(function () {
         sandbox = sinon.createSandbox()

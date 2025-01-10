@@ -118,13 +118,13 @@ function createShardCapacityPrompter(title: string): Prompter<number> {
 
 function instanceCountItems(defaultCount: number, max: number = 16): DataQuickPickItem<number>[] {
     const items = []
-
-    for (let index = 1; index <= max; index++) {
+    for (let i = 1; i <= max; i++) {
         const item: DataQuickPickItem<number> = {
-            label: index.toString(),
-            data: index,
-            description: index === defaultCount ? '(recommended)' : undefined,
+            label: i.toString(),
+            data: i,
+            description: i === defaultCount ? '(recommended)' : undefined,
         }
+
         items.push(item)
     }
 

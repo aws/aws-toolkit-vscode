@@ -20,15 +20,17 @@ describe('createInstanceCommand', function () {
     let docdb: DocumentDBClient
     let cluster: DBCluster
     let node: DBClusterNode
-    let sandbox: sinon.SinonSandbox
     let spyExecuteCommand: sinon.SinonSpy
+    let sandbox: sinon.SinonSandbox
 
     beforeEach(function () {
         sandbox = sinon.createSandbox()
         spyExecuteCommand = sandbox.spy(vscode.commands, 'executeCommand')
 
         docdb = { regionCode: 'us-east-1' } as DocumentDBClient
+
         docdb.listInstances = sinon.stub().resolves([])
+
         docdb.listInstanceClassOptions = sinon
             .stub()
             .resolves([{ DBInstanceClass: 'db.t3.medium', StorageType: DBStorageType.Standard }])
@@ -42,7 +44,6 @@ describe('createInstanceCommand', function () {
         sandbox.restore()
         getTestWindow().dispose()
     })
-
     function setupWizard() {
         getTestWindow().onDidShowInputBox((input) => {
             input.acceptValue(instanceName)

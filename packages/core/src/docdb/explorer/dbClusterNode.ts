@@ -152,6 +152,7 @@ export class DBClusterNode extends DBResourceNode {
         }
 
         getLogger().debug(`Get Status: status ${cluster.Status} for cluster ${this.arn}`)
+
         this.cluster.Status = cluster.Status
         return cluster.Status
     }

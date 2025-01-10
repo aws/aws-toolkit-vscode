@@ -80,30 +80,33 @@ describe('DBClusterNode', function () {
         trackChangesSpy.restore()
     })
 
-    it('does not start tracking changes when status does not require polling', function () {
-        const clusterStatus = { ...cluster, Status: 'available' }
+    function assertNodeDoesNotPoll(clusterStatus: any, message: string) {
         const trackChangesSpy = sinon.spy(DBClusterNode.prototype, 'trackChanges')
         const node = new DBClusterNode(parentNode, clusterStatus, mockClient)
         const requiresPolling = node.isStatusRequiringPolling()
 
-        assert.strictEqual(requiresPolling, false, 'isStatusRequiringPolling should return false for available status')
-        assert.ok(trackChangesSpy.notCalled, 'trackChanges should not be called when polling is not required')
-        assert.strictEqual(node.isPolling, false, 'Node should not be in polling state')
+        assert.strictEqual(
+            requiresPolling,
+            false,
+            `${message}: isStatusRequiringPolling should return false for available status`
+        )
+        assert.ok(
+            trackChangesSpy.notCalled,
+            `${message}: trackChanges should not be called when polling is not required`
+        )
+        assert.strictEqual(node.isPolling, false, `${message}: Node should not be in polling state`)
 
         trackChangesSpy.restore()
+    }
+
+    it('does not start tracking changes when status does not require polling', function () {
+        const clusterStatus = { ...cluster, Status: 'available' }
+        assertNodeDoesNotPoll(clusterStatus, 'does not start tracking changes')
     })
 
     it('does not poll when status is available', function () {
         const clusterStatus = { ...cluster, Status: 'available' }
-        const trackChangesSpy = sinon.spy(DBClusterNode.prototype, 'trackChanges')
-        const node = new DBClusterNode(parentNode, clusterStatus, mockClient)
-        const requiresPolling = node.isStatusRequiringPolling()
-
-        assert.strictEqual(requiresPolling, false, 'isStatusRequiringPolling should return false for available status')
-        assert.ok(trackChangesSpy.notCalled, 'trackChanges should not be called when polling is not required')
-        assert.strictEqual(node.isPolling, false, 'Node should not be in polling state')
-
-        trackChangesSpy.restore()
+        assertNodeDoesNotPoll(clusterStatus, 'does not poll')
     })
 
     it('has isPolling set to false and getStatus returns available when status is available', async function () {

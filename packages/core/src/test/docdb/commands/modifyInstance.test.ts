@@ -22,13 +22,11 @@ describe('modifyInstanceCommand', function () {
     let cluster: DBCluster
     let instance: DBInstance
     let node: DBInstanceNode
-    let sandbox: sinon.SinonSandbox
     let spyExecuteCommand: sinon.SinonSpy
-
+    let sandbox: sinon.SinonSandbox
     beforeEach(function () {
         sandbox = sinon.createSandbox()
         spyExecuteCommand = sandbox.spy(vscode.commands, 'executeCommand')
-
         docdb = { regionCode: 'us-east-1' } as DocumentDBClient
         docdb.listInstanceClassOptions = sinon
             .stub()

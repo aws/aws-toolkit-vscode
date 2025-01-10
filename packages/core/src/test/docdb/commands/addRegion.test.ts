@@ -25,15 +25,15 @@ describe('addRegionCommand', function () {
         DBClusterMembers: [{ IsClusterWriter: true }],
     }
     let docdb: DocumentDBClient
-    let node: DBClusterNode | DBGlobalClusterNode
-    let sandbox: sinon.SinonSandbox
+    let testNode: DBClusterNode | DBGlobalClusterNode
+    let sinonSandbox: sinon.SinonSandbox
     let spyExecuteCommand: sinon.SinonSpy
 
     beforeEach(function () {
-        sandbox = sinon.createSandbox()
-        spyExecuteCommand = sandbox.spy(vscode.commands, 'executeCommand')
-        sandbox.stub(globals.regionProvider, 'isServiceInRegion').returns(true)
-        sandbox.stub(globals.regionProvider, 'getRegions').returns([
+        sinonSandbox = sinon.createSandbox()
+        spyExecuteCommand = sinonSandbox.spy(vscode.commands, 'executeCommand')
+        sinonSandbox.stub(globals.regionProvider, 'isServiceInRegion').returns(true)
+        sinonSandbox.stub(globals.regionProvider, 'getRegions').returns([
             { id: 'us-test-1', name: 'Test Region 1' },
             { id: 'us-test-2', name: 'Test Region 2' },
         ])
@@ -44,34 +44,34 @@ describe('addRegionCommand', function () {
             .stub()
             .resolves([{ DBInstanceClass: 'db.r5.large', StorageType: DBStorageType.Standard }])
 
-        sandbox.stub(DefaultDocumentDBClient, 'create').returns(docdb)
+        sinonSandbox.stub(DefaultDocumentDBClient, 'create').returns(docdb)
 
         cluster.DBClusterMembers = [{ IsClusterWriter: true }]
         const parentNode = new DocumentDBNode(docdb)
-        node = new DBClusterNode(parentNode, cluster, docdb)
-    })
 
+        testNode = new DBClusterNode(parentNode, cluster, docdb)
+    })
     afterEach(function () {
-        sandbox.restore()
+        sinonSandbox.restore()
         getTestWindow().dispose()
     })
-
     function setupWizard() {
         getTestWindow().onDidShowInputBox((input) => {
-            let value: string
+            let val: string
+
             if (input.prompt?.includes('global')) {
-                value = globalClusterName
+                val = globalClusterName
             } else if (input.prompt?.includes('cluster name')) {
-                value = clusterName
+                val = clusterName
             } else {
-                value = ''
+                val = ''
             }
-            input.acceptValue(value)
+            input.acceptValue(val)
         })
 
-        getTestWindow().onDidShowQuickPick(async (picker) => {
-            await picker.untilReady()
-            picker.acceptItem(picker.items[0])
+        getTestWindow().onDidShowQuickPick(async (testQuickPicker) => {
+            await testQuickPicker.untilReady()
+            testQuickPicker.acceptItem(testQuickPicker.items[0])
         })
     }
 
@@ -83,14 +83,15 @@ describe('addRegionCommand', function () {
         const createClusterStub = sinon.stub().resolves({
             DBClusterIdentifier: clusterName,
         })
-        const createInstanceStub = sinon.stub().resolves()
+        const createInstanceSinonStub = sinon.stub().resolves()
         docdb.createGlobalCluster = createGlobalClusterStub
         docdb.createCluster = createClusterStub
-        docdb.createInstance = createInstanceStub
+        docdb.createInstance = createInstanceSinonStub
+
         setupWizard()
 
         // act
-        await addRegion(node)
+        await addRegion(testNode)
 
         // assert
         getTestWindow().getFirstMessage().assertInfo('Region added')
@@ -110,9 +111,8 @@ describe('addRegionCommand', function () {
                 })
             )
         )
-
         assert(
-            createInstanceStub.calledOnceWith(
+            createInstanceSinonStub.calledOnceWith(
                 sinon.match({
                     Engine: 'docdb',
                     DBClusterIdentifier: clusterName,
@@ -122,7 +122,7 @@ describe('addRegionCommand', function () {
             )
         )
 
-        sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', node.parent)
+        sinonSandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', testNode.parent)
 
         assertTelemetry('docdb_addRegion', { result: 'Succeeded' })
     })
@@ -132,12 +132,12 @@ describe('addRegionCommand', function () {
         const createGlobalClusterStub = sinon.stub().resolves({
             GlobalClusterIdentifier: globalClusterName,
         })
-        const createClusterStub = sinon.stub().resolves({
+        const createClusterSinonStub = sinon.stub().resolves({
             DBClusterIdentifier: clusterName,
         })
         const createInstanceStub = sinon.stub().resolves()
         docdb.createGlobalCluster = createGlobalClusterStub
-        docdb.createCluster = createClusterStub
+        docdb.createCluster = createClusterSinonStub
         docdb.createInstance = createInstanceStub
         setupWizard()
 
@@ -146,10 +146,10 @@ describe('addRegionCommand', function () {
             GlobalClusterMembers: [],
             Status: 'available',
         }
-        node = new DBGlobalClusterNode(new DocumentDBNode(docdb), globalCluster, new Map(), docdb)
+        testNode = new DBGlobalClusterNode(new DocumentDBNode(docdb), globalCluster, new Map(), docdb)
 
         // act
-        await addRegion(node)
+        await addRegion(testNode)
 
         // assert
         getTestWindow().getFirstMessage().assertInfo('Region added')
@@ -157,7 +157,7 @@ describe('addRegionCommand', function () {
         assert(createGlobalClusterStub.notCalled)
 
         assert(
-            createClusterStub.calledOnceWith(
+            createClusterSinonStub.calledOnceWith(
                 sinon.match({
                     DBClusterIdentifier: clusterName,
                     GlobalClusterIdentifier: globalClusterName,
@@ -175,8 +175,7 @@ describe('addRegionCommand', function () {
                 })
             )
         )
-
-        sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', node)
+        sinonSandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', testNode)
 
         assertTelemetry('docdb_addRegion', { result: 'Succeeded' })
     })
@@ -188,7 +187,7 @@ describe('addRegionCommand', function () {
         getTestWindow().onDidShowQuickPick((input) => input.hide())
 
         // act
-        await assert.rejects(addRegion(node))
+        await assert.rejects(addRegion(testNode))
 
         // assert
         assert(stub.notCalled)
@@ -205,7 +204,7 @@ describe('addRegionCommand', function () {
         setupWizard()
 
         // act
-        await assert.rejects(addRegion(node))
+        await assert.rejects(addRegion(testNode))
 
         // assert
         getTestWindow()
@@ -217,12 +216,12 @@ describe('addRegionCommand', function () {
 
     it('shows a warning when the cluster has no instances', async function () {
         // arrange
-        const clusterNode = node as DBClusterNode
+        const clusterNode = testNode as DBClusterNode
         clusterNode.cluster.DBClusterMembers = []
         setupWizard()
 
         // act
-        await assert.rejects(addRegion(node))
+        await assert.rejects(addRegion(testNode))
 
         // assert
         getTestWindow()
@@ -234,12 +233,12 @@ describe('addRegionCommand', function () {
 
     it('shows a warning when the cluster has an unsupported instance class', async function () {
         // arrange
-        const clusterNode = node as DBClusterNode
+        const clusterNode = testNode as DBClusterNode
         clusterNode.instances = [{ DBInstanceClass: 'db.t3.medium' }]
         setupWizard()
 
         // act
-        await assert.rejects(addRegion(node))
+        await assert.rejects(addRegion(testNode))
 
         // assert
         getTestWindow()

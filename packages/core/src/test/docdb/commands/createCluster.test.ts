@@ -14,8 +14,8 @@ import { createCluster } from '../../../docdb/commands/createCluster'
 
 describe('createClusterCommand', function () {
     const clusterName = 'docdb-1234'
-    const username = 'testuser'
-    const password = 'test-password'
+    const testUser = 'testuser'
+    const testPassword = 'test-password'
     let docdb: DocumentDBClient
     let node: DocumentDBNode
     let sandbox: sinon.SinonSandbox
@@ -43,9 +43,9 @@ describe('createClusterCommand', function () {
         getTestWindow().onDidShowInputBox((input) => {
             let value: string
             if (input.prompt?.includes('username')) {
-                value = username
+                value = testUser
             } else if (input.prompt?.includes('password')) {
-                value = password
+                value = testPassword
             } else if (input.prompt?.includes('cluster name')) {
                 value = clusterName
             } else {
@@ -53,7 +53,6 @@ describe('createClusterCommand', function () {
             }
             input.acceptValue(value)
         })
-
         getTestWindow().onDidShowQuickPick(async (picker) => {
             await picker.untilReady()
             picker.acceptItem(picker.items[0])
@@ -85,8 +84,8 @@ describe('createClusterCommand', function () {
                 Engine: 'docdb',
                 EngineVersion: 'test-version',
                 DBClusterIdentifier: clusterName,
-                MasterUsername: username,
-                MasterUserPassword: password,
+                MasterUsername: testUser,
+                MasterUserPassword: testPassword,
                 StorageEncrypted: true,
                 DBInstanceCount: 1,
                 DBInstanceClass: 'db.t3.medium',

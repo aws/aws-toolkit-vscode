@@ -21,15 +21,13 @@ describe('deleteInstanceCommand', function () {
     let instance: DBInstance
     let parentNode: DBClusterNode
     let node: DBInstanceNode
-    let sandbox: sinon.SinonSandbox
     let spyExecuteCommand: sinon.SinonSpy
+    let sandbox: sinon.SinonSandbox
 
     beforeEach(function () {
         sandbox = sinon.createSandbox()
         spyExecuteCommand = sandbox.spy(vscode.commands, 'executeCommand')
-
         docdb = { regionCode: 'us-east-1' } as DocumentDBClient
-
         cluster = { Status: 'available' }
         instance = {
             DBInstanceIdentifier: instanceName,
@@ -39,12 +37,10 @@ describe('deleteInstanceCommand', function () {
         parentNode = new DBClusterNode(undefined!, cluster, docdb)
         node = new DBInstanceNode(parentNode, instance)
     })
-
     afterEach(function () {
         sandbox.restore()
         getTestWindow().dispose()
     })
-
     function setupWizard() {
         getTestWindow().onDidShowInputBox((input) => {
             input.acceptValue(instanceName)

@@ -131,11 +131,11 @@ export class DBGlobalClusterNode extends DBResourceNode {
         const cluster = clusters[0]
 
         if (!cluster) {
-            getLogger().warn(`No cluster found for ARN: ${this.arn}`)
+            getLogger().warn(`No global cluster found for ARN: ${this.arn}`)
             return undefined
         }
 
-        getLogger().debug(`Get Status: status ${cluster.Status} for cluster ${this.arn}`)
+        getLogger().debug(`Get Status: status ${cluster.Status} for global cluster ${this.arn}`)
         this.cluster.Status = cluster.Status
         return cluster.Status
     }

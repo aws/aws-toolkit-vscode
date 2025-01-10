@@ -100,15 +100,15 @@ export class DBElasticClusterNode extends DBResourceNode {
         await copyToClipboard(this.cluster.clusterEndpoint!, this.name)
     }
 
+    override clearTimer(): void {
+        this.pollingSet.delete(this.arn)
+        this.pollingSet.clearTimer()
+    }
+
     override refreshTree(): void {
         getLogger().debug(`(DBElasticClusterNode) Refreshing tree for instance: ${this.arn}`)
         this.refresh()
         this.parent.refresh()
-    }
-
-    override clearTimer(): void {
-        this.pollingSet.delete(this.arn)
-        this.pollingSet.clearTimer()
     }
 
     public override [inspect.custom](): string {
