@@ -5,7 +5,7 @@
 
 import vscode, { env, version } from 'vscode'
 import * as nls from 'vscode-nls'
-import * as cp from 'child_process'
+import * as cp from 'child_process' // eslint-disable-line no-restricted-imports -- language server options expect actual child process
 import * as crypto from 'crypto'
 import { LanguageClient, LanguageClientOptions, ServerOptions, TransportKind } from 'vscode-languageclient'
 import { registerInlineCompletion } from '../inline/completion'
