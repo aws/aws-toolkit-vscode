@@ -20,8 +20,8 @@ export function createCodeIssueGroupingStrategyPrompter(): QuickPickPrompter<Cod
             label: codeIssueGroupingStrategyLabel[strategy],
         })),
         {
-            title: localize('aws.commands.amazonq.groupIssues', 'Group Issues'),
-            placeholder: localize('aws.amazonq.codescan.groupIssues.placeholder', 'Select how to group code issues'),
+            title: localize('AWS.amazonq.scans.groupIssues', 'Group Issues'),
+            placeholder: localize('AWS.amazonq.scans.groupIssues.placeholder', 'Select how to group code issues'),
         }
     )
     prompter.quickPick.activeItems = prompter.quickPick.items.filter((item) => item.data === groupingStrategy)
