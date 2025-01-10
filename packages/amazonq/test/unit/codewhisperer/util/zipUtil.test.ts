@@ -173,7 +173,9 @@ describe('zipUtil', function () {
             assert.ok(result.srcPayloadSizeInBytes > 0)
             assert.strictEqual(result.buildPayloadSizeInBytes, 0)
             assert.ok(result.zipFileSizeInBytes > 0)
+            assert.strictEqual(result.lines, 150)
             assert.strictEqual(result.language, 'java')
+            assert.strictEqual(result.scannedFiles.size, 4)
         })
 
         it('Should handle file system errors during directory creation', async function () {
