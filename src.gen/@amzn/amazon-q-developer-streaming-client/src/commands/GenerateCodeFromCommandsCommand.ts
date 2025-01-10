@@ -11,27 +11,29 @@ import {
   GenerateCodeFromCommandsResponseFilterSensitiveLog,
 } from "../models/models_0";
 import {
-  deserializeAws_json1_0GenerateCodeFromCommandsCommand,
-  serializeAws_json1_0GenerateCodeFromCommandsCommand,
+  de_GenerateCodeFromCommandsCommand,
+  se_GenerateCodeFromCommandsCommand,
 } from "../protocols/Aws_json1_0";
-import { getSerdePlugin } from "@aws-sdk/middleware-serde";
-import {
-  HttpRequest as __HttpRequest,
-  HttpResponse as __HttpResponse,
-} from "@aws-sdk/protocol-http";
-import { Command as $Command } from "@aws-sdk/smithy-client";
-import {
-  FinalizeHandlerArguments,
-  Handler,
-  HandlerExecutionContext,
-  MiddlewareStack,
-  EventStreamSerdeContext as __EventStreamSerdeContext,
-  HttpHandlerOptions as __HttpHandlerOptions,
-  MetadataBearer as __MetadataBearer,
-  SerdeContext as __SerdeContext,
-} from "@aws-sdk/types";
+import { getSerdePlugin } from "@smithy/middleware-serde";
+import { Command as $Command } from "@smithy/smithy-client";
+import { MetadataBearer as __MetadataBearer } from "@smithy/types";
 
+/**
+ * @public
+ */
+export type { __MetadataBearer };
+export { $Command };
+/**
+ * @public
+ *
+ * The input for {@link GenerateCodeFromCommandsCommand}.
+ */
 export interface GenerateCodeFromCommandsCommandInput extends GenerateCodeFromCommandsRequest {}
+/**
+ * @public
+ *
+ * The output of {@link GenerateCodeFromCommandsCommand}.
+ */
 export interface GenerateCodeFromCommandsCommandOutput extends GenerateCodeFromCommandsResponse, __MetadataBearer {}
 
 /**
@@ -42,71 +44,89 @@ export interface GenerateCodeFromCommandsCommandOutput extends GenerateCodeFromC
  * import { QDeveloperStreamingClient, GenerateCodeFromCommandsCommand } from "@amzn/amazon-q-developer-streaming-client"; // ES Modules import
  * // const { QDeveloperStreamingClient, GenerateCodeFromCommandsCommand } = require("@amzn/amazon-q-developer-streaming-client"); // CommonJS import
  * const client = new QDeveloperStreamingClient(config);
+ * const input = { // GenerateCodeFromCommandsRequest
+ *   outputFormat: "typescript/cdk" || "java/cdk" || "python/cdk" || "yaml/cfn" || "json/cfn", // required
+ *   commands: { // CommandInput Union: only one key present
+ *     commandsList: [ // CliCommandsList
+ *       "STRING_VALUE",
+ *     ],
+ *   },
+ * };
  * const command = new GenerateCodeFromCommandsCommand(input);
  * const response = await client.send(command);
+ * // { // GenerateCodeFromCommandsResponse
+ * //   generatedCodeFromCommandsResponse: { // GenerateCodeFromCommandsResponseStream Union: only one key present
+ * //     codeEvent: { // CodeEvent
+ * //       content: "STRING_VALUE", // required
+ * //     },
+ * //     Error: { // InternalServerException
+ * //       message: "STRING_VALUE", // required
+ * //     },
+ * //     QuotaLevelExceededError: { // ServiceQuotaExceededException
+ * //       message: "STRING_VALUE", // required
+ * //     },
+ * //     ValidationError: { // ValidationException
+ * //       message: "STRING_VALUE", // required
+ * //       reason: "INVALID_CONVERSATION_ID" || "CONTENT_LENGTH_EXCEEDS_THRESHOLD" || "INVALID_KMS_GRANT",
+ * //     },
+ * //   },
+ * // };
+ *
  * ```
  *
+ * @param GenerateCodeFromCommandsCommandInput - {@link GenerateCodeFromCommandsCommandInput}
+ * @returns {@link GenerateCodeFromCommandsCommandOutput}
  * @see {@link GenerateCodeFromCommandsCommandInput} for command's `input` shape.
  * @see {@link GenerateCodeFromCommandsCommandOutput} for command's `response` shape.
  * @see {@link QDeveloperStreamingClientResolvedConfig | config} for QDeveloperStreamingClient's `config` shape.
  *
+ * @throws {@link InternalServerException} (server fault)
+ *  This exception is thrown when an unexpected error occurred during the processing of a request.
+ *
+ * @throws {@link ThrottlingException} (client fault)
+ *  This exception is thrown when request was denied due to request throttling.
+ *
+ * @throws {@link ValidationException} (client fault)
+ *  This exception is thrown when the input fails to satisfy the constraints specified by the service.
+ *
+ * @throws {@link AccessDeniedException} (client fault)
+ *  This exception is thrown when the user does not have sufficient access to perform this action.
+ *
+ * @throws {@link QDeveloperStreamingServiceException}
+ * <p>Base exception class for all service exceptions from QDeveloperStreaming service.</p>
+ *
+ * @public
  */
-export class GenerateCodeFromCommandsCommand extends $Command<GenerateCodeFromCommandsCommandInput, GenerateCodeFromCommandsCommandOutput, QDeveloperStreamingClientResolvedConfig> {
-  // Start section: command_properties
-  // End section: command_properties
+export class GenerateCodeFromCommandsCommand extends $Command.classBuilder<GenerateCodeFromCommandsCommandInput, GenerateCodeFromCommandsCommandOutput, QDeveloperStreamingClientResolvedConfig, ServiceInputTypes, ServiceOutputTypes>()
+      .m(function (this: any, Command: any, cs: any, config: QDeveloperStreamingClientResolvedConfig, o: any) {
+          return [
 
-  constructor(readonly input: GenerateCodeFromCommandsCommandInput) {
-    // Start section: command_constructor
-    super();
-    // End section: command_constructor
-  }
+  getSerdePlugin(config, this.serialize, this.deserialize),
+      ];
+  })
+  .s("AmazonQDeveloperStreamingService", "GenerateCodeFromCommands", {
 
-  /**
-   * @internal
-   */
-  resolveMiddleware(
-    clientStack: MiddlewareStack<ServiceInputTypes, ServiceOutputTypes>,
-    configuration: QDeveloperStreamingClientResolvedConfig,
-    options?: __HttpHandlerOptions
-  ): Handler<GenerateCodeFromCommandsCommandInput, GenerateCodeFromCommandsCommandOutput> {
-    this.middlewareStack.use(getSerdePlugin(configuration, this.serialize, this.deserialize));
-
-    const stack = clientStack.concat(this.middlewareStack);
-
-    const { logger } = configuration;
-    const clientName = "QDeveloperStreamingClient";
-    const commandName = "GenerateCodeFromCommandsCommand";
-    const handlerExecutionContext: HandlerExecutionContext = {
-      logger,
-      clientName,
-      commandName,
-      inputFilterSensitiveLog:
-        GenerateCodeFromCommandsRequestFilterSensitiveLog,
-      outputFilterSensitiveLog:
-        GenerateCodeFromCommandsResponseFilterSensitiveLog,
-    }
-    const { requestHandler } = configuration;
-    return stack.resolve(
-      (request: FinalizeHandlerArguments<any>) =>
-        requestHandler.handle(request.request as __HttpRequest, options || {}),
-      handlerExecutionContext
-    );
-  }
-
-  private serialize(
-    input: GenerateCodeFromCommandsCommandInput,
-    context: __SerdeContext
-  ): Promise<__HttpRequest> {
-    return serializeAws_json1_0GenerateCodeFromCommandsCommand(input, context);
-  }
-
-  private deserialize(
-    output: __HttpResponse,
-    context: __SerdeContext & __EventStreamSerdeContext
-  ): Promise<GenerateCodeFromCommandsCommandOutput> {
-    return deserializeAws_json1_0GenerateCodeFromCommandsCommand(output, context);
-  }
-
-  // Start section: command_body_extra
-  // End section: command_body_extra
+    /**
+     * @internal
+     */
+    eventStream: {
+      output: true,
+    },
+  })
+  .n("QDeveloperStreamingClient", "GenerateCodeFromCommandsCommand")
+  .f(GenerateCodeFromCommandsRequestFilterSensitiveLog, GenerateCodeFromCommandsResponseFilterSensitiveLog)
+  .ser(se_GenerateCodeFromCommandsCommand)
+  .de(de_GenerateCodeFromCommandsCommand)
+.build() {
+/** @internal type navigation helper, not in runtime. */
+declare protected static __types: {
+  api: {
+      input: GenerateCodeFromCommandsRequest;
+      output: GenerateCodeFromCommandsResponse;
+  };
+  sdk: {
+      input: GenerateCodeFromCommandsCommandInput;
+      output: GenerateCodeFromCommandsCommandOutput;
+  };
+};
 }

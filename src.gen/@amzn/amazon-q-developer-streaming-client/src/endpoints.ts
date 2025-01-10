@@ -1,13 +1,13 @@
 // smithy-typescript generated code
 import {
-  PartitionHash,
-  RegionHash,
-  getRegionInfo,
-} from "@aws-sdk/config-resolver";
-import {
   RegionInfoProvider,
   RegionInfoProviderOptions,
 } from "@aws-sdk/types";
+import {
+  PartitionHash,
+  RegionHash,
+  getRegionInfo,
+} from "@smithy/config-resolver";
 
 const regionHash: RegionHash = {
 };
@@ -26,7 +26,9 @@ const partitionHash: PartitionHash = {
       "ap-southeast-2",
       "ap-southeast-3",
       "ap-southeast-4",
+      "ap-southeast-5",
       "ca-central-1",
+      "ca-west-1",
       "eu-central-1",
       "eu-central-2",
       "eu-north-1",
@@ -35,6 +37,7 @@ const partitionHash: PartitionHash = {
       "eu-west-1",
       "eu-west-2",
       "eu-west-3",
+      "il-central-1",
       "me-central-1",
       "me-south-1",
       "sa-east-1",
@@ -43,7 +46,7 @@ const partitionHash: PartitionHash = {
       "us-west-1",
       "us-west-2",
     ],
-    regionRegex: "^(us|eu|ap|sa|ca|me|af)\\-\\w+\\-\\d+$",
+    regionRegex: "^(us|eu|ap|sa|ca|me|af|il|mx)\\-\\w+\\-\\d+$",
     variants: [
         {
             "hostname": "amazonqdeveloperstreamingservice.{region}.amazonaws.com",
@@ -133,6 +136,41 @@ const partitionHash: PartitionHash = {
         },
         {
             "hostname": "amazonqdeveloperstreamingservice-fips.{region}.sc2s.sgov.gov",
+            "tags": [
+                "fips"
+            ]
+        }
+    ],
+  },
+  "aws-iso-e": {
+    regions: [
+      "eu-isoe-west-1",
+    ],
+    regionRegex: "^eu\\-isoe\\-\\w+\\-\\d+$",
+    variants: [
+        {
+            "hostname": "amazonqdeveloperstreamingservice.{region}.cloud.adc-e.uk",
+            "tags": []
+        },
+        {
+            "hostname": "amazonqdeveloperstreamingservice-fips.{region}.cloud.adc-e.uk",
+            "tags": [
+                "fips"
+            ]
+        }
+    ],
+  },
+  "aws-iso-f": {
+    regions: [
+    ],
+    regionRegex: "^us\\-isof\\-\\w+\\-\\d+$",
+    variants: [
+        {
+            "hostname": "amazonqdeveloperstreamingservice.{region}.csp.hci.ic.gov",
+            "tags": []
+        },
+        {
+            "hostname": "amazonqdeveloperstreamingservice-fips.{region}.csp.hci.ic.gov",
             "tags": [
                 "fips"
             ]

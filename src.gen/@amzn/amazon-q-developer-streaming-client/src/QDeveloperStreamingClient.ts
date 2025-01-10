@@ -1,5 +1,11 @@
 // smithy-typescript generated code
 import {
+  HttpAuthSchemeInputConfig,
+  HttpAuthSchemeResolvedConfig,
+  defaultQDeveloperStreamingHttpAuthSchemeParametersProvider,
+  resolveHttpAuthSchemeConfig,
+} from "./auth/httpAuthSchemeProvider";
+import {
   GenerateCodeFromCommandsCommandInput,
   GenerateCodeFromCommandsCommandOutput,
 } from "./commands/GenerateCodeFromCommandsCommand";
@@ -9,19 +15,10 @@ import {
 } from "./commands/SendMessageCommand";
 import { getRuntimeConfig as __getRuntimeConfig } from "./runtimeConfig";
 import {
-  EndpointsInputConfig,
-  EndpointsResolvedConfig,
-  RegionInputConfig,
-  RegionResolvedConfig,
-  resolveEndpointsConfig,
-  resolveRegionConfig,
-} from "@aws-sdk/config-resolver";
-import {
-  EventStreamSerdeInputConfig,
-  EventStreamSerdeResolvedConfig,
-  resolveEventStreamSerdeConfig,
-} from "@aws-sdk/eventstream-serde-config-resolver";
-import { getContentLengthPlugin } from "@aws-sdk/middleware-content-length";
+  RuntimeExtension,
+  RuntimeExtensionsConfig,
+  resolveRuntimeExtensions,
+} from "./runtimeExtensions";
 import {
   HostHeaderInputConfig,
   HostHeaderResolvedConfig,
@@ -31,41 +28,53 @@ import {
 import { getLoggerPlugin } from "@aws-sdk/middleware-logger";
 import { getRecursionDetectionPlugin } from "@aws-sdk/middleware-recursion-detection";
 import {
-  RetryInputConfig,
-  RetryResolvedConfig,
-  getRetryPlugin,
-  resolveRetryConfig,
-} from "@aws-sdk/middleware-retry";
-import {
-  AwsAuthInputConfig,
-  AwsAuthResolvedConfig,
-  getAwsAuthPlugin,
-  resolveAwsAuthConfig,
-} from "@aws-sdk/middleware-signing";
-import {
   UserAgentInputConfig,
   UserAgentResolvedConfig,
   getUserAgentPlugin,
   resolveUserAgentConfig,
 } from "@aws-sdk/middleware-user-agent";
-import { HttpHandler as __HttpHandler } from "@aws-sdk/protocol-http";
+import {
+  EndpointsInputConfig,
+  EndpointsResolvedConfig,
+  RegionInputConfig,
+  RegionResolvedConfig,
+  resolveEndpointsConfig,
+  resolveRegionConfig,
+} from "@smithy/config-resolver";
+import {
+  DefaultIdentityProviderConfig,
+  getHttpAuthSchemePlugin,
+  getHttpSigningPlugin,
+} from "@smithy/core";
+import {
+  EventStreamSerdeInputConfig,
+  EventStreamSerdeResolvedConfig,
+  resolveEventStreamSerdeConfig,
+} from "@smithy/eventstream-serde-config-resolver";
+import { getContentLengthPlugin } from "@smithy/middleware-content-length";
+import {
+  RetryInputConfig,
+  RetryResolvedConfig,
+  getRetryPlugin,
+  resolveRetryConfig,
+} from "@smithy/middleware-retry";
+import { HttpHandlerUserInput as __HttpHandlerUserInput } from "@smithy/protocol-http";
 import {
   Client as __Client,
   DefaultsMode as __DefaultsMode,
   SmithyConfiguration as __SmithyConfiguration,
   SmithyResolvedConfiguration as __SmithyResolvedConfiguration,
-} from "@aws-sdk/smithy-client";
+} from "@smithy/smithy-client";
 import {
+  AwsCredentialIdentityProvider,
   Provider,
   RegionInfoProvider,
   BodyLengthCalculator as __BodyLengthCalculator,
-  Checksum as __Checksum,
+  CheckOptionalClientConfig as __CheckOptionalClientConfig,
   ChecksumConstructor as __ChecksumConstructor,
-  Credentials as __Credentials,
   Decoder as __Decoder,
   Encoder as __Encoder,
   EventStreamSerdeProvider as __EventStreamSerdeProvider,
-  Hash as __Hash,
   HashConstructor as __HashConstructor,
   HttpHandlerOptions as __HttpHandlerOptions,
   Logger as __Logger,
@@ -73,25 +82,36 @@ import {
   StreamCollector as __StreamCollector,
   UrlParser as __UrlParser,
   UserAgent as __UserAgent,
-} from "@aws-sdk/types";
+} from "@smithy/types";
 
+export { __Client }
+
+/**
+ * @public
+ */
 export type ServiceInputTypes =
   | GenerateCodeFromCommandsCommandInput
   | SendMessageCommandInput;
 
+/**
+ * @public
+ */
 export type ServiceOutputTypes =
   | GenerateCodeFromCommandsCommandOutput
   | SendMessageCommandOutput;
 
+/**
+ * @public
+ */
 export interface ClientDefaults
-  extends Partial<__SmithyResolvedConfiguration<__HttpHandlerOptions>> {
+  extends Partial<__SmithyConfiguration<__HttpHandlerOptions>> {
   /**
-   * The HTTP handler to use. Fetch in browser and Https in Nodejs.
+   * The HTTP handler to use or its constructor options. Fetch in browser and Https in Nodejs.
    */
-  requestHandler?: __HttpHandler;
+  requestHandler?: __HttpHandlerUserInput;
 
   /**
-   * A constructor for a class implementing the {@link __Checksum} interface
+   * A constructor for a class implementing the {@link @smithy/types#ChecksumConstructor} interface
    * that computes the SHA-256 HMAC or checksum of a string or binary buffer.
    * @internal
    */
@@ -146,25 +166,16 @@ export interface ClientDefaults
   runtime?: string;
 
   /**
-   * Disable dyanamically changing the endpoint of the client based on the hostPrefix
+   * Disable dynamically changing the endpoint of the client based on the hostPrefix
    * trait of an operation.
    */
   disableHostPrefix?: boolean;
 
   /**
-   * Value for how many times a request will be made at most in case of retry.
+   * Unique service identifier.
+   * @internal
    */
-  maxAttempts?: number | __Provider<number>;
-
-  /**
-   * Specifies which retry algorithm to use.
-   */
-  retryMode?: string | __Provider<string>;
-
-  /**
-   * Optional logger for logging debug/info/warn/error.
-   */
-  logger?: __Logger;
+  serviceId?: string;
 
   /**
    * Enables IPv6/IPv4 dualstack endpoint.
@@ -177,21 +188,9 @@ export interface ClientDefaults
   useFipsEndpoint?: boolean | __Provider<boolean>;
 
   /**
-   * Unique service identifier.
-   * @internal
-   */
-  serviceId?: string;
-
-  /**
    * The AWS region to which this client will send requests
    */
   region?: string | __Provider<string>;
-
-  /**
-   * Default credentials provider; Not available in browser runtime.
-   * @internal
-   */
-  credentialDefaultProvider?: (input: any) => __Provider<__Credentials>;
 
   /**
    * Fetch related hostname, signing name or signing region with given region.
@@ -206,45 +205,88 @@ export interface ClientDefaults
   defaultUserAgentProvider?: Provider<__UserAgent>;
 
   /**
+   * Default credentials provider; Not available in browser runtime.
+   * @deprecated
+   * @internal
+   */
+  credentialDefaultProvider?: (input: any) => AwsCredentialIdentityProvider;
+
+  /**
+   * Value for how many times a request will be made at most in case of retry.
+   */
+  maxAttempts?: number | __Provider<number>;
+
+  /**
+   * Specifies which retry algorithm to use.
+   * @see https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-smithy-util-retry/Enum/RETRY_MODES/
+   *
+   */
+  retryMode?: string | __Provider<string>;
+
+  /**
+   * Optional logger for logging debug/info/warn/error.
+   */
+  logger?: __Logger;
+
+  /**
+   * Optional extensions
+   */
+  extensions?: RuntimeExtension[];
+
+  /**
    * The function that provides necessary utilities for generating and parsing event stream
    */
   eventStreamSerdeProvider?: __EventStreamSerdeProvider;
 
   /**
-   * The {@link __DefaultsMode} that will be used to determine how certain default configuration options are resolved in the SDK.
+   * The {@link @smithy/smithy-client#DefaultsMode} that will be used to determine how certain default configuration options are resolved in the SDK.
    */
   defaultsMode?: __DefaultsMode | __Provider<__DefaultsMode>;
 
 }
 
-type QDeveloperStreamingClientConfigType = Partial<__SmithyConfiguration<__HttpHandlerOptions>>
-  & ClientDefaults
-  & RegionInputConfig
-  & EndpointsInputConfig
-  & RetryInputConfig
-  & HostHeaderInputConfig
-  & AwsAuthInputConfig
-  & UserAgentInputConfig
-  & EventStreamSerdeInputConfig
 /**
- * The configuration interface of QDeveloperStreamingClient class constructor that set the region, credentials and other options.
+ * @public
+ */
+export type QDeveloperStreamingClientConfigType = Partial<__SmithyConfiguration<__HttpHandlerOptions>>
+  & ClientDefaults
+  & UserAgentInputConfig
+  & RetryInputConfig
+  & RegionInputConfig
+  & HostHeaderInputConfig
+  & EndpointsInputConfig
+  & EventStreamSerdeInputConfig
+  & HttpAuthSchemeInputConfig
+/**
+ * @public
+ *
+ *  The configuration interface of QDeveloperStreamingClient class constructor that set the region, credentials and other options.
  */
 export interface QDeveloperStreamingClientConfig extends QDeveloperStreamingClientConfigType {}
 
-type QDeveloperStreamingClientResolvedConfigType = __SmithyResolvedConfiguration<__HttpHandlerOptions>
-  & Required<ClientDefaults>
-  & RegionResolvedConfig
-  & EndpointsResolvedConfig
-  & RetryResolvedConfig
-  & HostHeaderResolvedConfig
-  & AwsAuthResolvedConfig
-  & UserAgentResolvedConfig
-  & EventStreamSerdeResolvedConfig
 /**
- * The resolved configuration interface of QDeveloperStreamingClient class. This is resolved and normalized from the {@link QDeveloperStreamingClientConfig | constructor configuration interface}.
+ * @public
+ */
+export type QDeveloperStreamingClientResolvedConfigType = __SmithyResolvedConfiguration<__HttpHandlerOptions>
+  & Required<ClientDefaults>
+  & RuntimeExtensionsConfig
+  & UserAgentResolvedConfig
+  & RetryResolvedConfig
+  & RegionResolvedConfig
+  & HostHeaderResolvedConfig
+  & EndpointsResolvedConfig
+  & EventStreamSerdeResolvedConfig
+  & HttpAuthSchemeResolvedConfig
+/**
+ * @public
+ *
+ *  The resolved configuration interface of QDeveloperStreamingClient class. This is resolved and normalized from the {@link QDeveloperStreamingClientConfig | constructor configuration interface}.
  */
 export interface QDeveloperStreamingClientResolvedConfig extends QDeveloperStreamingClientResolvedConfigType {}
 
+/**
+ * @public
+ */
 export class QDeveloperStreamingClient extends __Client<
   __HttpHandlerOptions,
   ServiceInputTypes,
@@ -256,24 +298,37 @@ export class QDeveloperStreamingClient extends __Client<
    */
   readonly config: QDeveloperStreamingClientResolvedConfig;
 
-  constructor(configuration: QDeveloperStreamingClientConfig) {
-    let _config_0 = __getRuntimeConfig(configuration);
-    let _config_1 = resolveRegionConfig(_config_0);
-    let _config_2 = resolveEndpointsConfig(_config_1);
-    let _config_3 = resolveRetryConfig(_config_2);
+  constructor(...[configuration]: __CheckOptionalClientConfig<QDeveloperStreamingClientConfig>) {
+    let _config_0 = __getRuntimeConfig(configuration || {});
+    let _config_1 = resolveUserAgentConfig(_config_0);
+    let _config_2 = resolveRetryConfig(_config_1);
+    let _config_3 = resolveRegionConfig(_config_2);
     let _config_4 = resolveHostHeaderConfig(_config_3);
-    let _config_5 = resolveAwsAuthConfig(_config_4);
-    let _config_6 = resolveUserAgentConfig(_config_5);
-    let _config_7 = resolveEventStreamSerdeConfig(_config_6);
-    super(_config_7);
-    this.config = _config_7;
-    this.middlewareStack.use(getRetryPlugin(this.config));
-    this.middlewareStack.use(getContentLengthPlugin(this.config));
-    this.middlewareStack.use(getHostHeaderPlugin(this.config));
-    this.middlewareStack.use(getLoggerPlugin(this.config));
-    this.middlewareStack.use(getRecursionDetectionPlugin(this.config));
-    this.middlewareStack.use(getAwsAuthPlugin(this.config));
-    this.middlewareStack.use(getUserAgentPlugin(this.config));
+    let _config_5 = resolveEndpointsConfig(_config_4);
+    let _config_6 = resolveEventStreamSerdeConfig(_config_5);
+    let _config_7 = resolveHttpAuthSchemeConfig(_config_6);
+    let _config_8 = resolveRuntimeExtensions(_config_7, configuration?.extensions || []);
+    super(_config_8);
+    this.config = _config_8;
+    this.middlewareStack.use(getUserAgentPlugin(this.config
+    ));
+    this.middlewareStack.use(getRetryPlugin(this.config
+    ));
+    this.middlewareStack.use(getContentLengthPlugin(this.config
+    ));
+    this.middlewareStack.use(getHostHeaderPlugin(this.config
+    ));
+    this.middlewareStack.use(getLoggerPlugin(this.config
+    ));
+    this.middlewareStack.use(getRecursionDetectionPlugin(this.config
+    ));
+    this.middlewareStack.use(getHttpAuthSchemePlugin(this.config
+      , {
+        httpAuthSchemeParametersProvider: defaultQDeveloperStreamingHttpAuthSchemeParametersProvider,identityProviderConfigProvider: async (config: QDeveloperStreamingClientResolvedConfig) => new DefaultIdentityProviderConfig({
+          "aws.auth#sigv4": config.credentials,}), }
+    ));
+    this.middlewareStack.use(getHttpSigningPlugin(this.config
+    ));
   }
 
   /**
