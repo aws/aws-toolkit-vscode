@@ -4,7 +4,12 @@
  */
 import assert from 'assert'
 import sinon from 'sinon'
-import { SecurityIssueFilters, SecurityTreeViewFilterState } from 'aws-core-vscode/codewhisperer'
+import {
+    CodeIssueGroupingStrategy,
+    CodeIssueGroupingStrategyState,
+    SecurityIssueFilters,
+    SecurityTreeViewFilterState,
+} from 'aws-core-vscode/codewhisperer'
 import { globals } from 'aws-core-vscode/shared'
 
 describe('model', function () {
@@ -68,6 +73,115 @@ describe('model', function () {
             } satisfies SecurityIssueFilters)
             const hiddenSeverities = securityTreeViewFilterState.getHiddenSeverities()
             assert.deepStrictEqual(hiddenSeverities, ['High', 'Low'])
+        })
+    })
+
+    describe('CodeIssueGroupingStrategyState', function () {
+        let sandbox: sinon.SinonSandbox
+        let state: CodeIssueGroupingStrategyState
+
+        beforeEach(function () {
+            sandbox = sinon.createSandbox()
+            // Reset the singleton instance before each test
+            // @ts-ignore - accessing private static for testing
+            CodeIssueGroupingStrategyState['#instance'] = undefined
+            state = CodeIssueGroupingStrategyState.instance
+        })
+
+        afterEach(function () {
+            sandbox.restore()
+        })
+
+        describe('instance', function () {
+            it('should return the same instance when called multiple times', function () {
+                const instance1 = CodeIssueGroupingStrategyState.instance
+                const instance2 = CodeIssueGroupingStrategyState.instance
+                assert.strictEqual(instance1, instance2)
+            })
+        })
+
+        describe('getState', function () {
+            it('should return fallback when no state is stored', function () {
+                const tryGetStub = sandbox.stub(globals.globalState, 'tryGet').returns(undefined)
+                const result = state.getState()
+
+                sinon.assert.calledWith(tryGetStub, 'aws.amazonq.codescan.groupingStrategy', String)
+                assert.equal(result, CodeIssueGroupingStrategy.Severity)
+            })
+
+            it('should return stored state when valid', function () {
+                const validStrategy = CodeIssueGroupingStrategy.Severity
+                const tryGetStub = sandbox.stub(globals.globalState, 'tryGet').returns(validStrategy)
+
+                const result = state.getState()
+
+                assert.equal(result, validStrategy)
+            })
+
+            it('should return fallback when stored state is invalid', function () {
+                const invalidStrategy = 'invalid'
+                const tryGetStub = sandbox.stub(globals.globalState, 'tryGet').returns(invalidStrategy)
+
+                const result = state.getState()
+
+                assert.equal(result, CodeIssueGroupingStrategy.Severity)
+            })
+        })
+
+        describe('setState', function () {
+            it('should update state and fire change event for valid strategy', async function () {
+                const validStrategy = CodeIssueGroupingStrategy.FileLocation
+                const updateStub = sandbox.stub(globals.globalState, 'update').resolves()
+
+                // Create a spy to watch for event emissions
+                const eventSpy = sandbox.spy()
+                state.onDidChangeState(eventSpy)
+
+                await state.setState(validStrategy)
+
+                sinon.assert.calledWith(updateStub, 'aws.amazonq.codescan.groupingStrategy', validStrategy)
+                sinon.assert.calledWith(eventSpy, validStrategy)
+            })
+
+            it('should use fallback and fire change event for invalid strategy', async function () {
+                const invalidStrategy = 'invalid'
+                const updateStub = sandbox.stub(globals.globalState, 'update').resolves()
+
+                // Create a spy to watch for event emissions
+                const eventSpy = sandbox.spy()
+                state.onDidChangeState(eventSpy)
+
+                await state.setState(invalidStrategy)
+
+                sinon.assert.calledWith(
+                    updateStub,
+                    'aws.amazonq.codescan.groupingStrategy',
+                    CodeIssueGroupingStrategy.Severity
+                )
+                sinon.assert.calledWith(eventSpy, CodeIssueGroupingStrategy.Severity)
+            })
+        })
+
+        describe('reset', function () {
+            it('should set state to fallback value', async function () {
+                const setStateStub = sandbox.stub(state, 'setState').resolves()
+
+                await state.reset()
+
+                sinon.assert.calledWith(setStateStub, CodeIssueGroupingStrategy.Severity)
+            })
+        })
+
+        describe('onDidChangeState', function () {
+            it('should allow subscribing to state changes', async function () {
+                const listener = sandbox.spy()
+                const disposable = state.onDidChangeState(listener)
+
+                await state.setState(CodeIssueGroupingStrategy.Severity)
+
+                sinon.assert.calledWith(listener, CodeIssueGroupingStrategy.Severity)
+                disposable.dispose()
+            })
         })
     })
 })

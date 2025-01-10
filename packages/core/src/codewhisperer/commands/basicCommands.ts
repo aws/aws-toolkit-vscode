@@ -70,6 +70,8 @@ import { startCodeFixGeneration } from './startCodeFixGeneration'
 import { DefaultAmazonQAppInitContext } from '../../amazonq/apps/initContext'
 import path from 'path'
 import { parsePatch } from 'diff'
+import { createQuickPick } from '../../shared/ui/pickerPrompter'
+import { createCodeIssueGroupingStrategyPrompter } from '../ui/prompters'
 
 const MessageTimeOut = 5_000
 
@@ -890,27 +892,8 @@ export const showSecurityIssueFilters = Commands.declare({ id: 'aws.amazonq.secu
 export const showCodeIssueGroupingQuickPick = Commands.declare(
     { id: 'aws.amazonq.codescan.showGroupingStrategy' },
     () => async () => {
-        const quickPick = vscode.window.createQuickPick()
-        quickPick.title = localize('aws.commands.amazonq.groupIssues', 'Group Issues')
-        quickPick.placeholder = localize(
-            'aws.amazonq.codescan.groupIssues.placeholder',
-            'Select how to group code issues'
-        )
-        quickPick.items = codeIssueGroupingStrategies.map((strategy) => ({
-            label: codeIssueGroupingStrategyLabel[strategy],
-        }))
-        const groupingStrategy = CodeIssueGroupingStrategyState.instance.getState()
-        quickPick.activeItems = quickPick.items.filter(
-            (item) => item.label === codeIssueGroupingStrategyLabel[groupingStrategy]
-        )
-        quickPick.show()
-        quickPick.onDidChangeSelection(async (items) => {
-            const [item] = items
-            await CodeIssueGroupingStrategyState.instance.setState(
-                Object.entries(codeIssueGroupingStrategyLabel).find(([, label]) => label === item.label)?.[0]
-            )
-            quickPick.hide()
-        })
+        const prompter = createCodeIssueGroupingStrategyPrompter()
+        await prompter.prompt()
     }
 )
 
