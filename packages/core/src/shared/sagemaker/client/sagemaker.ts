@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-// import * as vscode from 'vscode'
+import * as vscode from 'vscode'
 import * as fs from 'fs'
 import { fromContainerMetadata } from '@aws-sdk/credential-provider-imds'
 import { Service } from 'aws-sdk'
@@ -93,8 +93,7 @@ export class SageMakerSpaceClient {
     public async getSageMakerCookies(forceUpdate = false): Promise<SageMakerCookie | undefined> {
         if (forceUpdate || this.cachedCookies == null) {
             try {
-                // const cookiesFilePath = (await vscode.commands.executeCommand('sagemaker.loadCookies')) as string
-                const cookiesFilePath = '/home/sagemaker-user/.aws/sso/cookies.json'
+                const cookiesFilePath = (await vscode.commands.executeCommand('sagemaker.loadCookies')) as string
                 if (cookiesFilePath) {
                     this.cachedCookies = JSON.parse(
                         fs.readFileSync(cookiesFilePath, { encoding: 'utf8' })
