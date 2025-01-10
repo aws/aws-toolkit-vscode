@@ -19,16 +19,16 @@ using your favorite package manager:
 
 The AWS SDK is modulized by clients and commands.
 To send a request, you only need to import the `CodeWhispererStreamingClient` and
-the commands you need, for example `ExportResultArchiveCommand`:
+the commands you need, for example `ConverseStreamCommand`:
 
 ```js
 // ES5 example
-const { CodeWhispererStreamingClient, ExportResultArchiveCommand } = require("@amzn/codewhisperer-streaming");
+const { CodeWhispererStreamingClient, ConverseStreamCommand } = require("@amzn/codewhisperer-streaming");
 ```
 
 ```ts
 // ES6+ example
-import { CodeWhispererStreamingClient, ExportResultArchiveCommand } from "@amzn/codewhisperer-streaming";
+import { CodeWhispererStreamingClient, ConverseStreamCommand } from "@amzn/codewhisperer-streaming";
 ```
 
 ### Usage
@@ -45,7 +45,7 @@ To send a request, you:
 const client = new CodeWhispererStreamingClient({ region: "REGION" });
 
 const params = { /** input parameters */ };
-const command = new ExportResultArchiveCommand(params);
+const command = new ConverseStreamCommand(params);
 ```
 
 #### Async/await
@@ -124,7 +124,7 @@ const client = new AWS.CodeWhispererStreaming({ region: "REGION" });
 
 // async/await.
 try {
-  const data = await client.exportResultArchive(params);
+  const data = await client.converseStream(params);
   // process data.
 } catch (error) {
   // error handling.
@@ -132,7 +132,7 @@ try {
 
 // Promises.
 client
-  .exportResultArchive(params)
+  .converseStream(params)
   .then((data) => {
     // process data.
   })
@@ -141,7 +141,7 @@ client
   });
 
 // callbacks.
-client.exportResultArchive(params, (err, data) => {
+client.converseStream(params, (err, data) => {
   // process err and data.
 });
 ```
@@ -485,20 +485,6 @@ CreateResolution
 </details>
 <details>
 <summary>
-CreateSession
-</summary>
-
-[Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/classes/createsessioncommand.html) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/createsessioncommandinput.html) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/createsessioncommandoutput.html)
-</details>
-<details>
-<summary>
-CreateTroubleshooting
-</summary>
-
-[Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/classes/createtroubleshootingcommand.html) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/createtroubleshootingcommandinput.html) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/createtroubleshootingcommandoutput.html)
-</details>
-<details>
-<summary>
 DeleteAssignment
 </summary>
 
@@ -520,10 +506,10 @@ GetIdentityMetadata
 </details>
 <details>
 <summary>
-GetSession
+GetTroubleshootingResults
 </summary>
 
-[Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/classes/getsessioncommand.html) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/getsessioncommandinput.html) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/getsessioncommandoutput.html)
+[Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/classes/gettroubleshootingresultscommand.html) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/gettroubleshootingresultscommandinput.html) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/gettroubleshootingresultscommandoutput.html)
 </details>
 <details>
 <summary>
@@ -555,8 +541,36 @@ StartConversation
 </details>
 <details>
 <summary>
-UpdateCommandExecutionResult
+StartTroubleshootingAnalysis
 </summary>
 
-[Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/classes/updatecommandexecutionresultcommand.html) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/updatecommandexecutionresultcommandinput.html) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/updatecommandexecutionresultcommandoutput.html)
+[Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/classes/starttroubleshootinganalysiscommand.html) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/starttroubleshootinganalysiscommandinput.html) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/starttroubleshootinganalysiscommandoutput.html)
+</details>
+<details>
+<summary>
+StartTroubleshootingResolutionExplanation
+</summary>
+
+[Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/classes/starttroubleshootingresolutionexplanationcommand.html) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/starttroubleshootingresolutionexplanationcommandinput.html) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/starttroubleshootingresolutionexplanationcommandoutput.html)
+</details>
+<details>
+<summary>
+UpdateTroubleshootingCommandResult
+</summary>
+
+[Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/classes/updatetroubleshootingcommandresultcommand.html) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/updatetroubleshootingcommandresultcommandinput.html) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/updatetroubleshootingcommandresultcommandoutput.html)
+</details>
+<details>
+<summary>
+ConverseStream
+</summary>
+
+[Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/classes/conversestreamcommand.html) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/conversestreamcommandinput.html) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/conversestreamcommandoutput.html)
+</details>
+<details>
+<summary>
+GenerateInfrastructureCode
+</summary>
+
+[Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/classes/generateinfrastructurecodecommand.html) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/generateinfrastructurecodecommandinput.html) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/generateinfrastructurecodecommandoutput.html)
 </details>

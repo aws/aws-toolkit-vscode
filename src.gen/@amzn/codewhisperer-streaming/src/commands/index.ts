@@ -2,3 +2,4 @@
 export * from "./ExportResultArchiveCommand";
 export * from "./GenerateAssistantResponseCommand";
 export * from "./GenerateTaskAssistPlanCommand";
+export * from "./ConverseStreamCommand";
