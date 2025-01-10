@@ -12,7 +12,11 @@ import path from 'path'
 export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
     try {
         const installResult = await new AmazonQLSPResolver().resolve()
-        await startLanguageServer(ctx, path.join(installResult.assetDirectory, 'servers/aws-lsp-codewhisperer.js'))
+        const serverLocation =
+            installResult.location === 'override'
+                ? installResult.assetDirectory
+                : path.join(installResult.assetDirectory, 'servers/aws-lsp-codewhisperer.js')
+        await startLanguageServer(ctx, serverLocation)
     } catch (err) {
         const e = err as ToolkitError
         void vscode.window.showInformationMessage(`Unable to launch amazonq language server: ${e.message}`)
