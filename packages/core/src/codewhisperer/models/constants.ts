@@ -731,11 +731,6 @@ export const linkToDocsHome = 'https://docs.aws.amazon.com/amazonq/latest/aws-bu
 
 export const linkToBillingInfo = 'https://aws.amazon.com/q/developer/pricing/'
 
-export const linkToUploadZipTooLarge =
-    'https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/troubleshooting-code-transformation.html#project-size-limit'
-
-export const linkToDownloadZipTooLarge = ''
-
 export const dependencyFolderName = 'transformation_dependencies_temp_'
 
 export const cleanInstallErrorChatMessage = `Sorry, I couldn\'t run the Maven clean install command to build your project. For more information, see the [Amazon Q documentation](${codeTransformTroubleshootMvnFailure}).`
