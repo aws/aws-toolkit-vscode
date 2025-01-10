@@ -3,32 +3,22 @@ import { QDeveloperStreamingServiceException as __BaseException } from "./QDevel
 import {
   SENSITIVE_STRING,
   ExceptionOptionType as __ExceptionOptionType,
-} from "@smithy/smithy-client";
+} from "@aws-sdk/smithy-client";
 
-/**
- * @public
- * @enum
- */
-export const AccessDeniedExceptionReason = {
-  UNAUTHORIZED_CUSTOMIZATION_RESOURCE_ACCESS: "UNAUTHORIZED_CUSTOMIZATION_RESOURCE_ACCESS",
-} as const
-/**
- * @public
- */
-export type AccessDeniedExceptionReason = typeof AccessDeniedExceptionReason[keyof typeof AccessDeniedExceptionReason]
+export enum AccessDeniedExceptionReason {
+  UNAUTHORIZED_CUSTOMIZATION_RESOURCE_ACCESS = "UNAUTHORIZED_CUSTOMIZATION_RESOURCE_ACCESS",
+}
 
 /**
  * This exception is thrown when the user does not have sufficient access to perform this action.
- * @public
  */
 export class AccessDeniedException extends __BaseException {
   readonly name: "AccessDeniedException" = "AccessDeniedException";
   readonly $fault: "client" = "client";
   /**
    * Reason for AccessDeniedException
-   * @public
    */
-  reason?: AccessDeniedExceptionReason;
+  reason?: AccessDeniedExceptionReason | string;
 
   /**
    * @internal
@@ -46,7 +36,6 @@ export class AccessDeniedException extends __BaseException {
 
 /**
  * This exception is thrown when an unexpected error occurred during the processing of a request.
- * @public
  */
 export class InternalServerException extends __BaseException {
   readonly name: "InternalServerException" = "InternalServerException";
@@ -68,7 +57,6 @@ export class InternalServerException extends __BaseException {
 
 /**
  * This exception is thrown when describing a resource that does not exist.
- * @public
  */
 export class ResourceNotFoundException extends __BaseException {
   readonly name: "ResourceNotFoundException" = "ResourceNotFoundException";
@@ -86,9 +74,12 @@ export class ResourceNotFoundException extends __BaseException {
   }
 }
 
+export enum ThrottlingExceptionReason {
+  MONTHLY_REQUEST_COUNT = "MONTHLY_REQUEST_COUNT",
+}
+
 /**
  * This exception is thrown when request was denied due to request throttling.
- * @public
  */
 export class ThrottlingException extends __BaseException {
   readonly name: "ThrottlingException" = "ThrottlingException";
@@ -96,6 +87,11 @@ export class ThrottlingException extends __BaseException {
   $retryable = {
     throttling: true,
   };
+  /**
+   * Reason for ThrottlingException
+   */
+  reason?: ThrottlingExceptionReason | string;
+
   /**
    * @internal
    */
@@ -106,35 +102,26 @@ export class ThrottlingException extends __BaseException {
       ...opts
     });
     Object.setPrototypeOf(this, ThrottlingException.prototype);
+    this.reason = opts.reason;
   }
 }
 
-/**
- * @public
- * @enum
- */
-export const ValidationExceptionReason = {
-  CONTENT_LENGTH_EXCEEDS_THRESHOLD: "CONTENT_LENGTH_EXCEEDS_THRESHOLD",
-  INVALID_CONVERSATION_ID: "INVALID_CONVERSATION_ID",
-  INVALID_KMS_GRANT: "INVALID_KMS_GRANT",
-} as const
-/**
- * @public
- */
-export type ValidationExceptionReason = typeof ValidationExceptionReason[keyof typeof ValidationExceptionReason]
+export enum ValidationExceptionReason {
+  CONTENT_LENGTH_EXCEEDS_THRESHOLD = "CONTENT_LENGTH_EXCEEDS_THRESHOLD",
+  INVALID_CONVERSATION_ID = "INVALID_CONVERSATION_ID",
+  INVALID_KMS_GRANT = "INVALID_KMS_GRANT",
+}
 
 /**
  * This exception is thrown when the input fails to satisfy the constraints specified by the service.
- * @public
  */
 export class ValidationException extends __BaseException {
   readonly name: "ValidationException" = "ValidationException";
   readonly $fault: "client" = "client";
   /**
    * Reason for ValidationException
-   * @public
    */
-  reason?: ValidationExceptionReason;
+  reason?: ValidationExceptionReason | string;
 
   /**
    * @internal
@@ -152,30 +139,25 @@ export class ValidationException extends __BaseException {
 
 /**
  * Description of a user's context when they are calling Q Chat from AppStudio
- * @public
  */
 export interface AppStudioState {
   /**
    * The namespace of the context. Examples: 'ui.Button', 'ui.Table.DataSource', 'ui.Table.RowActions.Button', 'logic.invokeAWS', 'logic.JavaScript'
-   * @public
    */
   namespace: string | undefined;
 
   /**
    * The name of the property. Examples: 'visibility', 'disability', 'value', 'code'
-   * @public
    */
   propertyName: string | undefined;
 
   /**
    * The value of the property.
-   * @public
    */
   propertyValue?: string;
 
   /**
    * Context about how the property is used
-   * @public
    */
   propertyContext: string | undefined;
 }
@@ -201,12 +183,10 @@ export const AppStudioStateFilterSensitiveLog = (obj: AppStudioState): any => ({
 
 /**
  * Streaming Response Event for Assistant Markdown text message.
- * @public
  */
 export interface AssistantResponseEvent {
   /**
    * The content of the text message in markdown format.
-   * @public
    */
   content: string | undefined;
 }
@@ -221,73 +201,62 @@ export const AssistantResponseEventFilterSensitiveLog = (obj: AssistantResponseE
   }),
 })
 
-/**
- * @public
- * @enum
- */
-export const UserIntent = {
+export enum UserIntent {
   /**
    * Apply Common Best Practices
    */
-  APPLY_COMMON_BEST_PRACTICES: "APPLY_COMMON_BEST_PRACTICES",
+  APPLY_COMMON_BEST_PRACTICES = "APPLY_COMMON_BEST_PRACTICES",
   /**
    * Cite Sources
    */
-  CITE_SOURCES: "CITE_SOURCES",
+  CITE_SOURCES = "CITE_SOURCES",
   /**
    * generate code
    */
-  CODE_GENERATION: "CODE_GENERATION",
+  CODE_GENERATION = "CODE_GENERATION",
   /**
    * Explain Code Selection
    */
-  EXPLAIN_CODE_SELECTION: "EXPLAIN_CODE_SELECTION",
+  EXPLAIN_CODE_SELECTION = "EXPLAIN_CODE_SELECTION",
   /**
    * Explain Code Line By Line
    */
-  EXPLAIN_LINE_BY_LINE: "EXPLAIN_LINE_BY_LINE",
+  EXPLAIN_LINE_BY_LINE = "EXPLAIN_LINE_BY_LINE",
   /**
    * Generate CloudFormation Template
    */
-  GENERATE_CLOUDFORMATION_TEMPLATE: "GENERATE_CLOUDFORMATION_TEMPLATE",
+  GENERATE_CLOUDFORMATION_TEMPLATE = "GENERATE_CLOUDFORMATION_TEMPLATE",
   /**
    * Generate Unit Tests
    */
-  GENERATE_UNIT_TESTS: "GENERATE_UNIT_TESTS",
+  GENERATE_UNIT_TESTS = "GENERATE_UNIT_TESTS",
   /**
    * Improve Code
    */
-  IMPROVE_CODE: "IMPROVE_CODE",
+  IMPROVE_CODE = "IMPROVE_CODE",
   /**
    * Show More Examples
    */
-  SHOW_EXAMPLES: "SHOW_EXAMPLES",
+  SHOW_EXAMPLES = "SHOW_EXAMPLES",
   /**
    * Suggest Alternative Implementation
    */
-  SUGGEST_ALTERNATE_IMPLEMENTATION: "SUGGEST_ALTERNATE_IMPLEMENTATION",
-} as const
-/**
- * @public
- */
-export type UserIntent = typeof UserIntent[keyof typeof UserIntent]
+  SUGGEST_ALTERNATE_IMPLEMENTATION = "SUGGEST_ALTERNATE_IMPLEMENTATION",
+}
 
 /**
  * Followup Prompt for the Assistant Response
- * @public
  */
 export interface FollowupPrompt {
   /**
    * The content of the text message in markdown format.
-   * @public
    */
   content: string | undefined;
 
   /**
    * User Intent
-   * @public
    */
-  userIntent?: UserIntent;
+  userIntent?: UserIntent | string;
 }
 
 /**
@@ -302,7 +271,6 @@ export const FollowupPromptFilterSensitiveLog = (obj: FollowupPrompt): any => ({
 
 /**
  * Represents span in a text
- * @public
  */
 export interface Span {
   start?: number;
@@ -310,55 +278,60 @@ export interface Span {
 }
 
 /**
+ * @internal
+ */
+export const SpanFilterSensitiveLog = (obj: Span): any => ({
+  ...obj,
+})
+
+/**
  * Code Reference / Repository details
- * @public
  */
 export interface Reference {
   /**
    * License name
-   * @public
    */
   licenseName?: string;
 
   /**
    * Code Repsitory for the associated reference
-   * @public
    */
   repository?: string;
 
   /**
    * Respository URL
-   * @public
    */
   url?: string;
 
   /**
    * Span / Range for the Reference
-   * @public
    */
   recommendationContentSpan?: Span;
 }
 
 /**
+ * @internal
+ */
+export const ReferenceFilterSensitiveLog = (obj: Reference): any => ({
+  ...obj,
+})
+
+/**
  * Represents an additional reference link retured with the Chat message
- * @public
  */
 export interface SupplementaryWebLink {
   /**
    * URL of the web reference link
-   * @public
    */
   url: string | undefined;
 
   /**
    * Title of the web reference link
-   * @public
    */
   title: string | undefined;
 
   /**
    * Relevant text snippet from the link
-   * @public
    */
   snippet?: string;
 }
@@ -381,36 +354,30 @@ export const SupplementaryWebLinkFilterSensitiveLog = (obj: SupplementaryWebLink
 
 /**
  * Markdown text message.
- * @public
  */
 export interface AssistantResponseMessage {
   /**
    * Unique identifier for the chat message
-   * @public
    */
   messageId?: string;
 
   /**
    * The content of the text message in markdown format.
-   * @public
    */
   content: string | undefined;
 
   /**
    * Web References
-   * @public
    */
   supplementaryWebLinks?: (SupplementaryWebLink)[];
 
   /**
    * Code References
-   * @public
    */
   references?: (Reference)[];
 
   /**
    * Followup Prompt
-   * @public
    */
   followupPrompt?: FollowupPrompt;
 }
@@ -434,32 +401,22 @@ export const AssistantResponseMessageFilterSensitiveLog = (obj: AssistantRespons
   }),
 })
 
-/**
- * @public
- * @enum
- */
-export const ConflictExceptionReason = {
-  CUSTOMER_KMS_KEY_DISABLED: "CUSTOMER_KMS_KEY_DISABLED",
-  CUSTOMER_KMS_KEY_INVALID_KEY_POLICY: "CUSTOMER_KMS_KEY_INVALID_KEY_POLICY",
-  MISMATCHED_KMS_KEY: "MISMATCHED_KMS_KEY",
-} as const
-/**
- * @public
- */
-export type ConflictExceptionReason = typeof ConflictExceptionReason[keyof typeof ConflictExceptionReason]
+export enum ConflictExceptionReason {
+  CUSTOMER_KMS_KEY_DISABLED = "CUSTOMER_KMS_KEY_DISABLED",
+  CUSTOMER_KMS_KEY_INVALID_KEY_POLICY = "CUSTOMER_KMS_KEY_INVALID_KEY_POLICY",
+  MISMATCHED_KMS_KEY = "MISMATCHED_KMS_KEY",
+}
 
 /**
  * This exception is thrown when the action to perform could not be completed because the resource is in a conflicting state.
- * @public
  */
 export class ConflictException extends __BaseException {
   readonly name: "ConflictException" = "ConflictException";
   readonly $fault: "client" = "client";
   /**
    * Reason for ConflictException
-   * @public
    */
-  reason?: ConflictExceptionReason;
+  reason?: ConflictExceptionReason | string;
 
   /**
    * @internal
@@ -477,15 +434,20 @@ export class ConflictException extends __BaseException {
 
 /**
  * Programming Languages supported by CodeWhisperer
- * @public
  */
 export interface ProgrammingLanguage {
   languageName: string | undefined;
 }
 
 /**
+ * @internal
+ */
+export const ProgrammingLanguageFilterSensitiveLog = (obj: ProgrammingLanguage): any => ({
+  ...obj,
+})
+
+/**
  * Information about the state of the AWS management console page from which the user is calling
- * @public
  */
 export interface ConsoleState {
   region?: string;
@@ -509,41 +471,29 @@ export const ConsoleStateFilterSensitiveLog = (obj: ConsoleState): any => ({
   }),
 })
 
-/**
- * @public
- * @enum
- */
-export const DiagnosticSeverity = {
-  ERROR: "ERROR",
-  HINT: "HINT",
-  INFORMATION: "INFORMATION",
-  WARNING: "WARNING",
-} as const
-/**
- * @public
- */
-export type DiagnosticSeverity = typeof DiagnosticSeverity[keyof typeof DiagnosticSeverity]
+export enum DiagnosticSeverity {
+  ERROR = "ERROR",
+  HINT = "HINT",
+  INFORMATION = "INFORMATION",
+  WARNING = "WARNING",
+}
 
 /**
  * Structure to represent metadata about a Runtime Diagnostics
- * @public
  */
 export interface RuntimeDiagnostic {
   /**
    * A human-readable string describing the source of the diagnostic
-   * @public
    */
   source: string | undefined;
 
   /**
    * Diagnostic Error type
-   * @public
    */
-  severity: DiagnosticSeverity | undefined;
+  severity: DiagnosticSeverity | string | undefined;
 
   /**
    * The diagnostic's message.
-   * @public
    */
   message: string | undefined;
 }
@@ -561,68 +511,56 @@ export const RuntimeDiagnosticFilterSensitiveLog = (obj: RuntimeDiagnostic): any
   }),
 })
 
-/**
- * @public
- * @enum
- */
-export const SymbolType = {
-  DECLARATION: "DECLARATION",
-  USAGE: "USAGE",
-} as const
-/**
- * @public
- */
-export type SymbolType = typeof SymbolType[keyof typeof SymbolType]
+export enum SymbolType {
+  DECLARATION = "DECLARATION",
+  USAGE = "USAGE",
+}
 
-/**
- * @public
- */
 export interface DocumentSymbol {
   /**
    * Name of the Document Symbol
-   * @public
    */
   name: string | undefined;
 
   /**
    * Symbol type - DECLARATION / USAGE
-   * @public
    */
-  type: SymbolType | undefined;
+  type: SymbolType | string | undefined;
 
   /**
    * Symbol package / source for FullyQualified names
-   * @public
    */
   source?: string;
 }
 
 /**
+ * @internal
+ */
+export const DocumentSymbolFilterSensitiveLog = (obj: DocumentSymbol): any => ({
+  ...obj,
+})
+
+/**
  * Represents a Text Document / File
- * @public
  */
 export interface TextDocument {
   /**
    * Filepath relative to the root of the workspace
-   * @public
    */
   relativeFilePath: string | undefined;
 
   /**
    * The text document's language identifier.
-   * @public
    */
   programmingLanguage?: ProgrammingLanguage;
 
   /**
    * Content of the text document
-   * @public
    */
   text?: string;
 
   /**
    * DocumentSymbols parsed from a text document
-   * @public
    */
   documentSymbols?: (DocumentSymbol)[];
 }
@@ -642,72 +580,74 @@ export const TextDocumentFilterSensitiveLog = (obj: TextDocument): any => ({
 
 /**
  * Indicates Cursor postion in a Text Document
- * @public
  */
 export interface Position {
   /**
    * Line position in a document.
-   * @public
    */
   line: number | undefined;
 
   /**
    * Character offset on a line in a document (zero-based)
-   * @public
    */
   character: number | undefined;
 }
 
 /**
+ * @internal
+ */
+export const PositionFilterSensitiveLog = (obj: Position): any => ({
+  ...obj,
+})
+
+/**
  * Indicates Range / Span in a Text Document
- * @public
  */
 export interface Range {
   /**
    * The range's start position.
-   * @public
    */
   start: Position | undefined;
 
   /**
    * The range's end position.
-   * @public
    */
   end: Position | undefined;
 }
 
 /**
+ * @internal
+ */
+export const RangeFilterSensitiveLog = (obj: Range): any => ({
+  ...obj,
+})
+
+/**
  * Structure to represent metadata about a TextDocument Diagnostic
- * @public
  */
 export interface TextDocumentDiagnostic {
   /**
    * Represents a Text Document associated with Diagnostic
-   * @public
    */
   document: TextDocument | undefined;
 
   /**
    * The range at which the message applies.
-   * @public
    */
   range: Range | undefined;
 
   /**
    * A human-readable string describing the source of the diagnostic
-   * @public
    */
   source: string | undefined;
 
   /**
    * Diagnostic Error type
-   * @public
    */
-  severity: DiagnosticSeverity | undefined;
+  severity: DiagnosticSeverity | string | undefined;
 
   /**
    * The diagnostic's message.
-   * @public
    */
   message: string | undefined;
 }
@@ -730,21 +670,16 @@ export const TextDocumentDiagnosticFilterSensitiveLog = (obj: TextDocumentDiagno
 
 /**
  * Represents a Diagnostic message
- * @public
  */
 export type Diagnostic =
   | Diagnostic.RuntimeDiagnosticMember
   | Diagnostic.TextDocumentDiagnosticMember
   | Diagnostic.$UnknownMember
 
-/**
- * @public
- */
 export namespace Diagnostic {
 
   /**
    * Diagnostics originating from a TextDocument
-   * @public
    */
   export interface TextDocumentDiagnosticMember {
     textDocumentDiagnostic: TextDocumentDiagnostic;
@@ -754,7 +689,6 @@ export namespace Diagnostic {
 
   /**
    * Diagnostics originating from a Runtime
-   * @public
    */
   export interface RuntimeDiagnosticMember {
     textDocumentDiagnostic?: never;
@@ -762,9 +696,6 @@ export namespace Diagnostic {
     $unknown?: never;
   }
 
-  /**
-   * @public
-   */
   export interface $UnknownMember {
     textDocumentDiagnostic?: never;
     runtimeDiagnostic?: never;
@@ -802,21 +733,16 @@ export const DiagnosticFilterSensitiveLog = (obj: Diagnostic): any => {
 
 /**
  * Represents the state of the Cursor in an Editor
- * @public
  */
 export type CursorState =
   | CursorState.PositionMember
   | CursorState.RangeMember
   | CursorState.$UnknownMember
 
-/**
- * @public
- */
 export namespace CursorState {
 
   /**
    * Represents a cursor position in a Text Document
-   * @public
    */
   export interface PositionMember {
     position: Position;
@@ -826,7 +752,6 @@ export namespace CursorState {
 
   /**
    * Represents a text selection in a Text Document
-   * @public
    */
   export interface RangeMember {
     position?: never;
@@ -834,9 +759,6 @@ export namespace CursorState {
     $unknown?: never;
   }
 
-  /**
-   * @public
-   */
   export interface $UnknownMember {
     position?: never;
     range?: never;
@@ -859,33 +781,40 @@ export namespace CursorState {
   }
 
 }
+/**
+ * @internal
+ */
+export const CursorStateFilterSensitiveLog = (obj: CursorState): any => {
+  if (obj.position !== undefined) return {position:
+    PositionFilterSensitiveLog(obj.position)
+  };
+  if (obj.range !== undefined) return {range:
+    RangeFilterSensitiveLog(obj.range)
+  };
+  if (obj.$unknown !== undefined) return {[obj.$unknown[0]]: 'UNKNOWN'};
+}
 
 /**
  * Represents an IDE retrieved relevant Text Document / File
- * @public
  */
 export interface RelevantTextDocument {
   /**
    * Filepath relative to the root of the workspace
-   * @public
    */
   relativeFilePath: string | undefined;
 
   /**
    * The text document's language identifier.
-   * @public
    */
   programmingLanguage?: ProgrammingLanguage;
 
   /**
    * Content of the text document
-   * @public
    */
   text?: string;
 
   /**
    * DocumentSymbols parsed from a text document
-   * @public
    */
   documentSymbols?: (DocumentSymbol)[];
 }
@@ -905,30 +834,25 @@ export const RelevantTextDocumentFilterSensitiveLog = (obj: RelevantTextDocument
 
 /**
  * Represents the state of an Editor
- * @public
  */
 export interface EditorState {
   /**
    * Represents currently edited file
-   * @public
    */
   document?: TextDocument;
 
   /**
    * Position of the cursor
-   * @public
    */
   cursorState?: CursorState;
 
   /**
    * Represents IDE provided relevant files
-   * @public
    */
   relevantDocuments?: (RelevantTextDocument)[];
 
   /**
    * Whether service should use relevant document in prompt
-   * @public
    */
   useRelevantDocuments?: boolean;
 }
@@ -942,7 +866,7 @@ export const EditorStateFilterSensitiveLog = (obj: EditorState): any => ({
     TextDocumentFilterSensitiveLog(obj.document)
   }),
   ...(obj.cursorState && { cursorState:
-    obj.cursorState
+    CursorStateFilterSensitiveLog(obj.cursorState)
   }),
   ...(obj.relevantDocuments && { relevantDocuments:
     obj.relevantDocuments.map(
@@ -954,18 +878,15 @@ export const EditorStateFilterSensitiveLog = (obj: EditorState): any => ({
 
 /**
  * An environment variable
- * @public
  */
 export interface EnvironmentVariable {
   /**
    * The key of an environment variable
-   * @public
    */
   key?: string;
 
   /**
    * The value of an environment variable
-   * @public
    */
   value?: string;
 }
@@ -985,26 +906,27 @@ export const EnvironmentVariableFilterSensitiveLog = (obj: EnvironmentVariable):
 
 /**
  * State related to the user's environment
- * @public
  */
 export interface EnvState {
   /**
    * The name of the operating system in use
-   * @public
    */
   operatingSystem?: string;
 
   /**
    * The current working directory of the environment
-   * @public
    */
   currentWorkingDirectory?: string;
 
   /**
    * The environment variables set in the current environment
-   * @public
    */
   environmentVariables?: (EnvironmentVariable)[];
+
+  /**
+   * Local timezone offset of the client. For more information, see documentation https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/getTimezoneOffset
+   */
+  timezoneOffset?: number;
 }
 
 /**
@@ -1025,12 +947,10 @@ export const EnvStateFilterSensitiveLog = (obj: EnvState): any => ({
 
 /**
  * State related to the Git VSC
- * @public
  */
 export interface GitState {
   /**
    * The output of the command `git status --porcelain=v1 -b`
-   * @public
    */
   status?: string;
 }
@@ -1047,36 +967,30 @@ export const GitStateFilterSensitiveLog = (obj: GitState): any => ({
 
 /**
  * An single entry in the shell history
- * @public
  */
 export interface ShellHistoryEntry {
   /**
    * The shell command that was run
-   * @public
    */
   command: string | undefined;
 
   /**
    * The directory the command was ran in
-   * @public
    */
   directory?: string;
 
   /**
    * The exit code of the command after it finished
-   * @public
    */
   exitCode?: number;
 
   /**
    * The stdout from the command
-   * @public
    */
   stdout?: string;
 
   /**
    * The stderr from the command
-   * @public
    */
   stderr?: string;
 }
@@ -1102,18 +1016,15 @@ export const ShellHistoryEntryFilterSensitiveLog = (obj: ShellHistoryEntry): any
 
 /**
  * Represents the state of a shell
- * @public
  */
 export interface ShellState {
   /**
    * The name of the current shell
-   * @public
    */
   shellName: string | undefined;
 
   /**
    * The history previous shell commands for the current shell
-   * @public
    */
   shellHistory?: (ShellHistoryEntry)[];
 }
@@ -1133,62 +1044,59 @@ export const ShellStateFilterSensitiveLog = (obj: ShellState): any => ({
 
 /**
  * Settings information passed by the Q widget
- * @public
  */
 export interface UserSettings {
   hasConsentedToCrossRegionCalls?: boolean;
 }
 
 /**
+ * @internal
+ */
+export const UserSettingsFilterSensitiveLog = (obj: UserSettings): any => ({
+  ...obj,
+})
+
+/**
  * Additional Chat message context associated with the Chat Message
- * @public
  */
 export interface UserInputMessageContext {
   /**
    * Editor state chat message context.
-   * @public
    */
   editorState?: EditorState;
 
   /**
    * Shell state chat message context.
-   * @public
    */
   shellState?: ShellState;
 
   /**
    * Git state chat message context.
-   * @public
    */
   gitState?: GitState;
 
   /**
    * Environment state chat message context.
-   * @public
    */
   envState?: EnvState;
 
   /**
    * The state of a user's AppStudio UI when sending a message.
-   * @public
    */
   appStudioContext?: AppStudioState;
 
   /**
    * Diagnostic chat message context.
-   * @public
    */
   diagnostic?: Diagnostic;
 
   /**
    * Contextual information about the environment from which the user is calling.
-   * @public
    */
   consoleState?: ConsoleState;
 
   /**
    * Settings information, e.g., whether the user has enabled cross-region API calls.
-   * @public
    */
   userSettings?: UserSettings;
 }
@@ -1223,26 +1131,22 @@ export const UserInputMessageContextFilterSensitiveLog = (obj: UserInputMessageC
 
 /**
  * Structure to represent a chat input message from User
- * @public
  */
 export interface UserInputMessage {
   /**
    * The content of the chat message.
-   * @public
    */
   content: string | undefined;
 
   /**
    * Chat message context associated with the Chat Message
-   * @public
    */
   userInputMessageContext?: UserInputMessageContext;
 
   /**
    * User Intent
-   * @public
    */
-  userIntent?: UserIntent;
+  userIntent?: UserIntent | string;
 }
 
 /**
@@ -1258,22 +1162,15 @@ export const UserInputMessageFilterSensitiveLog = (obj: UserInputMessage): any =
   }),
 })
 
-/**
- * @public
- */
 export type ChatMessage =
   | ChatMessage.AssistantResponseMessageMember
   | ChatMessage.UserInputMessageMember
   | ChatMessage.$UnknownMember
 
-/**
- * @public
- */
 export namespace ChatMessage {
 
   /**
    * Structure to represent a chat input message from User
-   * @public
    */
   export interface UserInputMessageMember {
     userInputMessage: UserInputMessage;
@@ -1283,7 +1180,6 @@ export namespace ChatMessage {
 
   /**
    * Markdown text message.
-   * @public
    */
   export interface AssistantResponseMessageMember {
     userInputMessage?: never;
@@ -1291,9 +1187,6 @@ export namespace ChatMessage {
     $unknown?: never;
   }
 
-  /**
-   * @public
-   */
   export interface $UnknownMember {
     userInputMessage?: never;
     assistantResponseMessage?: never;
@@ -1331,12 +1224,10 @@ export const ChatMessageFilterSensitiveLog = (obj: ChatMessage): any => {
 
 /**
  * Streaming response event for generated code text.
- * @public
  */
 export interface CodeEvent {
   /**
    * Generated code snippet.
-   * @public
    */
   content: string | undefined;
 }
@@ -1353,31 +1244,40 @@ export const CodeEventFilterSensitiveLog = (obj: CodeEvent): any => ({
 
 /**
  * Streaming Response Event for CodeReferences
- * @public
  */
 export interface CodeReferenceEvent {
   /**
    * Code References for Assistant Response Message
-   * @public
    */
   references?: (Reference)[];
 }
 
 /**
+ * @internal
+ */
+export const CodeReferenceEventFilterSensitiveLog = (obj: CodeReferenceEvent): any => ({
+  ...obj,
+})
+
+/**
  * Streaming Response Event when DryRun is succeessful
- * @public
  */
 export interface DryRunSucceedEvent {
 }
 
 /**
+ * @internal
+ */
+export const DryRunSucceedEventFilterSensitiveLog = (obj: DryRunSucceedEvent): any => ({
+  ...obj,
+})
+
+/**
  * Streaming Response Event for Followup Prompt.
- * @public
  */
 export interface FollowupPromptEvent {
   /**
    * Followup Prompt for the Assistant Response
-   * @public
    */
   followupPrompt?: FollowupPrompt;
 }
@@ -1392,30 +1292,16 @@ export const FollowupPromptEventFilterSensitiveLog = (obj: FollowupPromptEvent):
   }),
 })
 
-/**
- * @public
- * @enum
- */
-export const IntentType = {
-  GLUE_SENSEI: "GLUE_SENSEI",
-  RESOURCE_DATA: "RESOURCE_DATA",
-  SUPPORT: "SUPPORT",
-} as const
-/**
- * @public
- */
-export type IntentType = typeof IntentType[keyof typeof IntentType]
+export enum IntentType {
+  GLUE_SENSEI = "GLUE_SENSEI",
+  RESOURCE_DATA = "RESOURCE_DATA",
+  SUPPORT = "SUPPORT",
+}
 
-/**
- * @public
- */
 export type IntentDataType =
   | IntentDataType.StringMember
   | IntentDataType.$UnknownMember
 
-/**
- * @public
- */
 export namespace IntentDataType {
 
   export interface StringMember {
@@ -1423,9 +1309,6 @@ export namespace IntentDataType {
     $unknown?: never;
   }
 
-  /**
-   * @public
-   */
   export interface $UnknownMember {
     string?: never;
     $unknown: [string, any];
@@ -1445,17 +1328,24 @@ export namespace IntentDataType {
   }
 
 }
+/**
+ * @internal
+ */
+export const IntentDataTypeFilterSensitiveLog = (obj: IntentDataType): any => {
+  if (obj.string !== undefined) return {string:
+    obj.string
+  };
+  if (obj.$unknown !== undefined) return {[obj.$unknown[0]]: 'UNKNOWN'};
+}
 
 /**
  * Streaming Response Event for Intents
- * @public
  */
 export interface IntentsEvent {
   /**
    * A map of Intent objects
-   * @public
    */
-  intents?: Partial<Record<IntentType, Record<string, IntentDataType>>>;
+  intents?: Record<string, Record<string, IntentDataType>>;
 }
 
 /**
@@ -1469,13 +1359,107 @@ export const IntentsEventFilterSensitiveLog = (obj: IntentsEvent): any => ({
 })
 
 /**
+ * For CloudWatch Troubleshooting Link Module
+ */
+export interface CloudWatchTroubleshootingLink {
+  /**
+   * A label for the link.
+   */
+  label: string | undefined;
+
+  /**
+   * Stringified JSON payload. See spec here https://code.amazon.com/packages/CloudWatchOdysseyModel/blobs/50c0832f0e393e4ab68827eb4f04d832366821c1/--/model/events.smithy#L28 .
+   */
+  investigationPayload: string | undefined;
+
+  /**
+   * Fallback string, if target channel does not support the CloudWatchTroubleshootingLink.
+   */
+  defaultText?: string;
+}
+
+/**
+ * @internal
+ */
+export const CloudWatchTroubleshootingLinkFilterSensitiveLog = (obj: CloudWatchTroubleshootingLink): any => ({
+  ...obj,
+  ...(obj.label && { label:
+    SENSITIVE_STRING
+  }),
+  ...(obj.investigationPayload && { investigationPayload:
+    SENSITIVE_STRING
+  }),
+  ...(obj.defaultText && { defaultText:
+    SENSITIVE_STRING
+  }),
+})
+
+export interface ModuleLink {
+  /**
+   * For CloudWatch Troubleshooting Link Module
+   */
+  cloudWatchTroubleshootingLink?: CloudWatchTroubleshootingLink;
+}
+
+/**
+ * @internal
+ */
+export const ModuleLinkFilterSensitiveLog = (obj: ModuleLink): any => ({
+  ...obj,
+  ...(obj.cloudWatchTroubleshootingLink && { cloudWatchTroubleshootingLink:
+    CloudWatchTroubleshootingLinkFilterSensitiveLog(obj.cloudWatchTroubleshootingLink)
+  }),
+})
+
+export interface WebLink {
+  /**
+   * A label for the link
+   */
+  label: string | undefined;
+
+  /**
+   * URL of the Weblink
+   */
+  url: string | undefined;
+}
+
+/**
+ * @internal
+ */
+export const WebLinkFilterSensitiveLog = (obj: WebLink): any => ({
+  ...obj,
+  ...(obj.label && { label:
+    SENSITIVE_STRING
+  }),
+  ...(obj.url && { url:
+    SENSITIVE_STRING
+  }),
+})
+
+export interface Action {
+  webLink?: WebLink;
+  moduleLink?: ModuleLink;
+}
+
+/**
+ * @internal
+ */
+export const ActionFilterSensitiveLog = (obj: Action): any => ({
+  ...obj,
+  ...(obj.webLink && { webLink:
+    WebLinkFilterSensitiveLog(obj.webLink)
+  }),
+  ...(obj.moduleLink && { moduleLink:
+    ModuleLinkFilterSensitiveLog(obj.moduleLink)
+  }),
+})
+
+/**
  * Structure representing a simple text component with sensitive content, which can include Markdown formatting.
- * @public
  */
 export interface Text {
   /**
    * Contains text content that may include sensitive information and can support Markdown formatting.
-   * @public
    */
   content: string | undefined;
 }
@@ -1490,13 +1474,9 @@ export const TextFilterSensitiveLog = (obj: Text): any => ({
   }),
 })
 
-/**
- * @public
- */
 export interface AlertComponent {
   /**
    * Structure representing a simple text component with sensitive content, which can include Markdown formatting.
-   * @public
    */
   text?: Text;
 }
@@ -1511,43 +1491,32 @@ export const AlertComponentFilterSensitiveLog = (obj: AlertComponent): any => ({
   }),
 })
 
-/**
- * @public
- * @enum
- */
-export const AlertType = {
+export enum AlertType {
   /**
    * Alert indicating an error or failure that requires attention.
    */
-  ERROR: "ERROR",
+  ERROR = "ERROR",
   /**
    * Informational alert providing general information.
    */
-  INFO: "INFO",
+  INFO = "INFO",
   /**
    * Alert indicating a warning or potential issue that should be noted.
    */
-  WARNING: "WARNING",
-} as const
-/**
- * @public
- */
-export type AlertType = typeof AlertType[keyof typeof AlertType]
+  WARNING = "WARNING",
+}
 
 /**
  * Structure representing an alert with a type and content.
- * @public
  */
 export interface Alert {
   /**
    * Enum defining types of alerts that can be issued.
-   * @public
    */
-  type: AlertType | undefined;
+  type: AlertType | string | undefined;
 
   /**
    * Contains the content of the alert, which may include sensitive information.
-   * @public
    */
   content: (AlertComponent)[] | undefined;
 }
@@ -1567,18 +1536,15 @@ export const AlertFilterSensitiveLog = (obj: Alert): any => ({
 
 /**
  * Structure describing a transition between two states in an infrastructure update.
- * @public
  */
 export interface InfrastructureUpdateTransition {
   /**
    * The current state of the infrastructure before the update.
-   * @public
    */
   currentState: string | undefined;
 
   /**
    * The next state of the infrastructure following the update.
-   * @public
    */
   nextState: string | undefined;
 }
@@ -1598,12 +1564,10 @@ export const InfrastructureUpdateTransitionFilterSensitiveLog = (obj: Infrastruc
 
 /**
  * Structure representing different types of infrastructure updates.
- * @public
  */
 export interface InfrastructureUpdate {
   /**
    * Structure describing a transition between two states in an infrastructure update.
-   * @public
    */
   transition?: InfrastructureUpdateTransition;
 }
@@ -1618,13 +1582,9 @@ export const InfrastructureUpdateFilterSensitiveLog = (obj: InfrastructureUpdate
   }),
 })
 
-/**
- * @public
- */
 export interface StepComponent {
   /**
    * Structure representing a simple text component with sensitive content, which can include Markdown formatting.
-   * @public
    */
   text?: Text;
 }
@@ -1639,71 +1599,58 @@ export const StepComponentFilterSensitiveLog = (obj: StepComponent): any => ({
   }),
 })
 
-/**
- * @public
- * @enum
- */
-export const StepState = {
+export enum StepState {
   /**
    * Indicates a failure or issue that needs to be addressed.
    */
-  FAILED: "FAILED",
+  FAILED = "FAILED",
   /**
    * Indicates that the step is currently being processed. This is a non-terminal state, meaning the process is active and ongoing.
    */
-  IN_PROGRESS: "IN_PROGRESS",
+  IN_PROGRESS = "IN_PROGRESS",
   /**
    * Indicates that the step is being loaded or initialized. This is a non-terminal state, meaning the process is in the setup phase.
    */
-  LOADING: "LOADING",
+  LOADING = "LOADING",
   /**
    * Indicates that the step is temporarily halted but can resume. This is a non-terminal state, representing a temporary pause.
    */
-  PAUSED: "PAUSED",
+  PAUSED = "PAUSED",
   /**
    * Indicates that the step is waiting for some condition or input. This is a non-terminal state, meaning the process is paused but not complete.
    */
-  PENDING: "PENDING",
+  PENDING = "PENDING",
   /**
    * Indicates that the step was stopped, either intentionally or unintentionally.
    */
-  STOPPED: "STOPPED",
+  STOPPED = "STOPPED",
   /**
    * Indicates successful completion of the step.
    */
-  SUCCEEDED: "SUCCEEDED",
-} as const
-/**
- * @public
- */
-export type StepState = typeof StepState[keyof typeof StepState]
+  SUCCEEDED = "SUCCEEDED",
+}
 
 /**
  * Structure representing an individual step in a process.
- * @public
  */
 export interface Step {
   /**
    * A unique identifier for the step. It must be a non-negative integer to ensure each step is distinct.
-   * @public
    */
   id: number | undefined;
 
   /**
    * Enum representing all possible step states, combining terminal and non-terminal states.
-   * @public
    */
-  state: StepState | undefined;
+  state: StepState | string | undefined;
 
   /**
    * A label for the step, providing a concise description.
-   * @public
    */
   label: string | undefined;
 
   /**
    * Optional content providing additional details about the step.
-   * @public
    */
   content?: (StepComponent)[];
 }
@@ -1724,13 +1671,9 @@ export const StepFilterSensitiveLog = (obj: Step): any => ({
   }),
 })
 
-/**
- * @public
- */
 export interface ProgressComponent {
   /**
    * Structure representing an individual step in a process.
-   * @public
    */
   step?: Step;
 }
@@ -1747,12 +1690,10 @@ export const ProgressComponentFilterSensitiveLog = (obj: ProgressComponent): any
 
 /**
  * Structure representing a collection of steps in a process.
- * @public
  */
 export interface Progress {
   /**
    * A collection of steps that make up a process. Each step is detailed using the Step structure.
-   * @public
    */
   content: (ProgressComponent)[] | undefined;
 }
@@ -1772,42 +1713,35 @@ export const ProgressFilterSensitiveLog = (obj: Progress): any => ({
 
 /**
  * Structure representing a resource item
- * @public
  */
 export interface Resource {
   /**
    * Card title.
-   * @public
    */
   title: string | undefined;
 
   /**
    * Link for the resource item
-   * @public
    */
   link: string | undefined;
 
   /**
    * Short text about that resource for example Region: us-east-1
-   * @public
    */
   description: string | undefined;
 
   /**
    * Resource type e.g AWS EC2
-   * @public
    */
   type: string | undefined;
 
   /**
    * Amazon resource number e.g arn:aws:aec:.....
-   * @public
    */
   ARN: string | undefined;
 
   /**
    * A stringified object
-   * @public
    */
   resourceJsonString: string | undefined;
 }
@@ -1838,205 +1772,16 @@ export const ResourceFilterSensitiveLog = (obj: Resource): any => ({
 })
 
 /**
- * For CloudWatch Troubleshooting Link Module
- * @public
- */
-export interface CloudWatchTroubleshootingLink {
-  /**
-   * A label for the link.
-   * @public
-   */
-  label: string | undefined;
-
-  /**
-   * Stringified JSON payload. See spec here https://code.amazon.com/packages/CloudWatchOdysseyModel/blobs/50c0832f0e393e4ab68827eb4f04d832366821c1/--/model/events.smithy#L28 .
-   * @public
-   */
-  investigationPayload: string | undefined;
-
-  /**
-   * Fallback string, if target channel does not support the CloudWatchTroubleshootingLink.
-   * @public
-   */
-  defaultText?: string;
-}
-
-/**
- * @internal
- */
-export const CloudWatchTroubleshootingLinkFilterSensitiveLog = (obj: CloudWatchTroubleshootingLink): any => ({
-  ...obj,
-  ...(obj.label && { label:
-    SENSITIVE_STRING
-  }),
-  ...(obj.investigationPayload && { investigationPayload:
-    SENSITIVE_STRING
-  }),
-  ...(obj.defaultText && { defaultText:
-    SENSITIVE_STRING
-  }),
-})
-
-/**
- * @public
- */
-export type ModuleLink =
-  | ModuleLink.CloudWatchTroubleshootingLinkMember
-  | ModuleLink.$UnknownMember
-
-/**
- * @public
- */
-export namespace ModuleLink {
-
-  /**
-   * For CloudWatch Troubleshooting Link Module
-   * @public
-   */
-  export interface CloudWatchTroubleshootingLinkMember {
-    cloudWatchTroubleshootingLink: CloudWatchTroubleshootingLink;
-    $unknown?: never;
-  }
-
-  /**
-   * @public
-   */
-  export interface $UnknownMember {
-    cloudWatchTroubleshootingLink?: never;
-    $unknown: [string, any];
-  }
-
-  export interface Visitor<T> {
-    cloudWatchTroubleshootingLink: (value: CloudWatchTroubleshootingLink) => T;
-    _: (name: string, value: any) => T;
-  }
-
-  export const visit = <T>(
-    value: ModuleLink,
-    visitor: Visitor<T>
-  ): T => {
-    if (value.cloudWatchTroubleshootingLink !== undefined) return visitor.cloudWatchTroubleshootingLink(value.cloudWatchTroubleshootingLink);
-    return visitor._(value.$unknown[0], value.$unknown[1]);
-  }
-
-}
-/**
- * @internal
- */
-export const ModuleLinkFilterSensitiveLog = (obj: ModuleLink): any => {
-  if (obj.cloudWatchTroubleshootingLink !== undefined) return {cloudWatchTroubleshootingLink:
-    CloudWatchTroubleshootingLinkFilterSensitiveLog(obj.cloudWatchTroubleshootingLink)
-  };
-  if (obj.$unknown !== undefined) return {[obj.$unknown[0]]: 'UNKNOWN'};
-}
-
-/**
- * @public
- */
-export interface WebLink {
-  /**
-   * A label for the link
-   * @public
-   */
-  label: string | undefined;
-
-  /**
-   * URL of the Weblink
-   * @public
-   */
-  url: string | undefined;
-}
-
-/**
- * @internal
- */
-export const WebLinkFilterSensitiveLog = (obj: WebLink): any => ({
-  ...obj,
-  ...(obj.label && { label:
-    SENSITIVE_STRING
-  }),
-  ...(obj.url && { url:
-    SENSITIVE_STRING
-  }),
-})
-
-/**
- * @public
- */
-export type Action =
-  | Action.ModuleLinkMember
-  | Action.WebLinkMember
-  | Action.$UnknownMember
-
-/**
- * @public
- */
-export namespace Action {
-
-  export interface WebLinkMember {
-    webLink: WebLink;
-    moduleLink?: never;
-    $unknown?: never;
-  }
-
-  export interface ModuleLinkMember {
-    webLink?: never;
-    moduleLink: ModuleLink;
-    $unknown?: never;
-  }
-
-  /**
-   * @public
-   */
-  export interface $UnknownMember {
-    webLink?: never;
-    moduleLink?: never;
-    $unknown: [string, any];
-  }
-
-  export interface Visitor<T> {
-    webLink: (value: WebLink) => T;
-    moduleLink: (value: ModuleLink) => T;
-    _: (name: string, value: any) => T;
-  }
-
-  export const visit = <T>(
-    value: Action,
-    visitor: Visitor<T>
-  ): T => {
-    if (value.webLink !== undefined) return visitor.webLink(value.webLink);
-    if (value.moduleLink !== undefined) return visitor.moduleLink(value.moduleLink);
-    return visitor._(value.$unknown[0], value.$unknown[1]);
-  }
-
-}
-/**
- * @internal
- */
-export const ActionFilterSensitiveLog = (obj: Action): any => {
-  if (obj.webLink !== undefined) return {webLink:
-    WebLinkFilterSensitiveLog(obj.webLink)
-  };
-  if (obj.moduleLink !== undefined) return {moduleLink:
-    ModuleLinkFilterSensitiveLog(obj.moduleLink)
-  };
-  if (obj.$unknown !== undefined) return {[obj.$unknown[0]]: 'UNKNOWN'};
-}
-
-/**
  * Structure representing a list of Items
- * @public
  */
 export interface ResourceList {
   /**
    * Action associated with the list
-   * @public
    */
   action?: Action;
 
   /**
    * List of resources
-   * @public
    */
   items: (Resource)[] | undefined;
 }
@@ -2057,135 +1802,65 @@ export const ResourceListFilterSensitiveLog = (obj: ResourceList): any => ({
   }),
 })
 
-/**
- * @public
- */
-export type SectionComponent =
-  | SectionComponent.AlertMember
-  | SectionComponent.ResourceMember
-  | SectionComponent.ResourceListMember
-  | SectionComponent.TextMember
-  | SectionComponent.$UnknownMember
-
-/**
- * @public
- */
-export namespace SectionComponent {
-
+export interface SectionComponent {
   /**
    * Structure representing a simple text component with sensitive content, which can include Markdown formatting.
-   * @public
    */
-  export interface TextMember {
-    text: Text;
-    alert?: never;
-    resource?: never;
-    resourceList?: never;
-    $unknown?: never;
-  }
+  text?: Text;
 
   /**
    * Structure representing an alert with a type and content.
-   * @public
    */
-  export interface AlertMember {
-    text?: never;
-    alert: Alert;
-    resource?: never;
-    resourceList?: never;
-    $unknown?: never;
-  }
+  alert?: Alert;
 
   /**
    * Structure representing a resource item
-   * @public
    */
-  export interface ResourceMember {
-    text?: never;
-    alert?: never;
-    resource: Resource;
-    resourceList?: never;
-    $unknown?: never;
-  }
+  resource?: Resource;
 
   /**
    * Structure representing a list of Items
-   * @public
    */
-  export interface ResourceListMember {
-    text?: never;
-    alert?: never;
-    resource?: never;
-    resourceList: ResourceList;
-    $unknown?: never;
-  }
-
-  /**
-   * @public
-   */
-  export interface $UnknownMember {
-    text?: never;
-    alert?: never;
-    resource?: never;
-    resourceList?: never;
-    $unknown: [string, any];
-  }
-
-  export interface Visitor<T> {
-    text: (value: Text) => T;
-    alert: (value: Alert) => T;
-    resource: (value: Resource) => T;
-    resourceList: (value: ResourceList) => T;
-    _: (name: string, value: any) => T;
-  }
-
-  export const visit = <T>(
-    value: SectionComponent,
-    visitor: Visitor<T>
-  ): T => {
-    if (value.text !== undefined) return visitor.text(value.text);
-    if (value.alert !== undefined) return visitor.alert(value.alert);
-    if (value.resource !== undefined) return visitor.resource(value.resource);
-    if (value.resourceList !== undefined) return visitor.resourceList(value.resourceList);
-    return visitor._(value.$unknown[0], value.$unknown[1]);
-  }
-
+  resourceList?: ResourceList;
 }
+
 /**
  * @internal
  */
-export const SectionComponentFilterSensitiveLog = (obj: SectionComponent): any => {
-  if (obj.text !== undefined) return {text:
+export const SectionComponentFilterSensitiveLog = (obj: SectionComponent): any => ({
+  ...obj,
+  ...(obj.text && { text:
     TextFilterSensitiveLog(obj.text)
-  };
-  if (obj.alert !== undefined) return {alert:
+  }),
+  ...(obj.alert && { alert:
     AlertFilterSensitiveLog(obj.alert)
-  };
-  if (obj.resource !== undefined) return {resource:
+  }),
+  ...(obj.resource && { resource:
     ResourceFilterSensitiveLog(obj.resource)
-  };
-  if (obj.resourceList !== undefined) return {resourceList:
+  }),
+  ...(obj.resourceList && { resourceList:
     ResourceListFilterSensitiveLog(obj.resourceList)
-  };
-  if (obj.$unknown !== undefined) return {[obj.$unknown[0]]: 'UNKNOWN'};
-}
+  }),
+})
 
 /**
  * Structure representing a collapsable section
- * @public
  */
 export interface Section {
   /**
    * Contains text content that may include sensitive information and can support Markdown formatting.
-   * @public
    */
   title: string | undefined;
 
   /**
-   * Contains a list of interaction components e.g Text, Alert ,List ...etc
-   * @public
+   * Contains a list of interaction components e.g Text, Alert, List, etc.
    */
   content: (SectionComponent)[] | undefined;
+
+  /**
+   * Action associated with the Section
+   */
+  action?: Action;
 }
 
 /**
@@ -2202,32 +1877,54 @@ export const SectionFilterSensitiveLog = (obj: Section): any => ({
       SectionComponentFilterSensitiveLog(item)
     )
   }),
+  ...(obj.action && { action:
+    ActionFilterSensitiveLog(obj.action)
+  }),
 })
 
 /**
  * Structure representing a suggestion for follow-ups.
- * @public
  */
 export interface Suggestion {
   value: string | undefined;
 }
 
 /**
+ * @internal
+ */
+export const SuggestionFilterSensitiveLog = (obj: Suggestion): any => ({
+  ...obj,
+  ...(obj.value && { value:
+    SENSITIVE_STRING
+  }),
+})
+
+/**
  * Structure containing a list of suggestions.
- * @public
  */
 export interface Suggestions {
   items: (Suggestion)[] | undefined;
 }
 
 /**
+ * @internal
+ */
+export const SuggestionsFilterSensitiveLog = (obj: Suggestions): any => ({
+  ...obj,
+  ...(obj.items && { items:
+    obj.items.map(
+      item =>
+      SuggestionFilterSensitiveLog(item)
+    )
+  }),
+})
+
+/**
  * Structure representing a confirmation message related to a task action.
- * @public
  */
 export interface TaskActionConfirmation {
   /**
    * Confirmation message related to the action note, which may include sensitive information.
-   * @public
    */
   content?: string;
 }
@@ -2242,41 +1939,30 @@ export const TaskActionConfirmationFilterSensitiveLog = (obj: TaskActionConfirma
   }),
 })
 
-/**
- * @public
- * @enum
- */
-export const TaskActionNoteType = {
+export enum TaskActionNoteType {
   /**
    * Information note providing general details.
    */
-  INFO: "INFO",
+  INFO = "INFO",
   /**
    * Warning note indicating a potential issue.
    */
-  WARNING: "WARNING",
-} as const
-/**
- * @public
- */
-export type TaskActionNoteType = typeof TaskActionNoteType[keyof typeof TaskActionNoteType]
+  WARNING = "WARNING",
+}
 
 /**
  * Structure representing a note associated with a task action.
- * @public
  */
 export interface TaskActionNote {
   /**
    * Content of the note, which may include sensitive information.
-   * @public
    */
   content: string | undefined;
 
   /**
    * Enum defining the types of notes that can be associated with a task action.
-   * @public
    */
-  type?: TaskActionNoteType;
+  type?: TaskActionNoteType | string;
 }
 
 /**
@@ -2291,42 +1977,35 @@ export const TaskActionNoteFilterSensitiveLog = (obj: TaskActionNote): any => ({
 
 /**
  * Structure representing an action associated with a task.
- * @public
  */
 export interface TaskAction {
   /**
    * A label for the action.
-   * @public
    */
   label: string | undefined;
 
   /**
    * Structure representing a note associated with a task action.
-   * @public
    */
   note?: TaskActionNote;
 
   /**
    * Indicates whether the action is primary or not.
-   * @public
    */
   primary?: boolean;
 
   /**
    * Indicates whether the action is disabled or not.
-   * @public
    */
   disabled?: boolean;
 
   /**
    * Map representing key-value pairs for the payload of a task action.
-   * @public
    */
   payload: Record<string, string> | undefined;
 
   /**
    * Structure representing a confirmation message related to a task action.
-   * @public
    */
   confirmation?: TaskActionConfirmation;
 }
@@ -2352,30 +2031,25 @@ export const TaskActionFilterSensitiveLog = (obj: TaskAction): any => ({
 
 /**
  * Structure representing different types of components that can be part of a task.
- * @public
  */
 export interface TaskComponent {
   /**
    * Structure representing a simple text component with sensitive content, which can include Markdown formatting.
-   * @public
    */
   text?: Text;
 
   /**
    * Structure representing different types of infrastructure updates.
-   * @public
    */
   infrastructureUpdate?: InfrastructureUpdate;
 
   /**
    * Structure representing an alert with a type and content.
-   * @public
    */
   alert?: Alert;
 
   /**
    * Structure representing a collection of steps in a process.
-   * @public
    */
   progress?: Progress;
 }
@@ -2401,18 +2075,15 @@ export const TaskComponentFilterSensitiveLog = (obj: TaskComponent): any => ({
 
 /**
  * Structure representing an overview of a task, including a label and description.
- * @public
  */
 export interface TaskOverview {
   /**
    * A label for the task overview.
-   * @public
    */
   label: string | undefined;
 
   /**
    * Text description providing details about the task. This field may include sensitive information and supports Markdown formatting.
-   * @public
    */
   description: string | undefined;
 }
@@ -2432,24 +2103,20 @@ export const TaskOverviewFilterSensitiveLog = (obj: TaskOverview): any => ({
 
 /**
  * Structure containing details about a task.
- * @public
  */
 export interface TaskDetails {
   /**
    * Structure representing an overview of a task, including a label and description.
-   * @public
    */
   overview: TaskOverview | undefined;
 
   /**
    * Lists the components that can be used to form the task's content.
-   * @public
    */
   content: (TaskComponent)[] | undefined;
 
   /**
    * Optional list of actions associated with the task.
-   * @public
    */
   actions?: (TaskAction)[];
 }
@@ -2478,86 +2145,81 @@ export const TaskDetailsFilterSensitiveLog = (obj: TaskDetails): any => ({
 
 /**
  * Structure representing a reference to a task.
- * @public
  */
 export interface TaskReference {
   /**
    * Unique identifier for the task.
-   * @public
    */
   taskId: string | undefined;
 }
 
 /**
+ * @internal
+ */
+export const TaskReferenceFilterSensitiveLog = (obj: TaskReference): any => ({
+  ...obj,
+})
+
+/**
  * Structure representing different types of interaction components.
- * @public
  */
 export interface InteractionComponent {
   /**
    * Structure representing a simple text component with sensitive content, which can include Markdown formatting.
-   * @public
    */
   text?: Text;
 
   /**
    * Structure representing an alert with a type and content.
-   * @public
    */
   alert?: Alert;
 
   /**
    * Structure representing different types of infrastructure updates.
-   * @public
    */
   infrastructureUpdate?: InfrastructureUpdate;
 
   /**
    * Structure representing a collection of steps in a process.
-   * @public
    */
   progress?: Progress;
 
   /**
    * Structure representing an individual step in a process.
-   * @public
    */
   step?: Step;
 
   /**
    * Structure containing details about a task.
-   * @public
    */
   taskDetails?: TaskDetails;
 
   /**
    * Structure representing a reference to a task.
-   * @public
    */
   taskReference?: TaskReference;
 
   /**
    * Structure containing a list of suggestions.
-   * @public
    */
   suggestions?: Suggestions;
 
   /**
    * Structure representing a collapsable section
-   * @public
    */
   section?: Section;
 
   /**
    * Structure representing a resource item
-   * @public
    */
   resource?: Resource;
 
   /**
    * Structure representing a list of Items
-   * @public
    */
   resourceList?: ResourceList;
+
+  action?: Action;
 }
 
 /**
@@ -2583,6 +2245,9 @@ export const InteractionComponentFilterSensitiveLog = (obj: InteractionComponent
   ...(obj.taskDetails && { taskDetails:
     TaskDetailsFilterSensitiveLog(obj.taskDetails)
   }),
+  ...(obj.suggestions && { suggestions:
+    SuggestionsFilterSensitiveLog(obj.suggestions)
+  }),
   ...(obj.section && { section:
     SectionFilterSensitiveLog(obj.section)
   }),
@@ -2592,23 +2257,23 @@ export const InteractionComponentFilterSensitiveLog = (obj: InteractionComponent
   ...(obj.resourceList && { resourceList:
     ResourceListFilterSensitiveLog(obj.resourceList)
   }),
+  ...(obj.action && { action:
+    ActionFilterSensitiveLog(obj.action)
+  }),
 })
 
 /**
  * Interaction component with an identifier
- * @public
  */
 export interface InteractionComponentEntry {
   /**
    * Identifier that can uniquely identify the interaction component within
    *         stream response. This field is optional.
-   * @public
    */
   interactionComponentId?: string;
 
   /**
    * Interaction component
-   * @public
    */
   interactionComponent: InteractionComponent | undefined;
 }
@@ -2625,12 +2290,10 @@ export const InteractionComponentEntryFilterSensitiveLog = (obj: InteractionComp
 
 /**
  * Streaming Event for interaction components list
- * @public
  */
 export interface InteractionComponentsEvent {
   /**
    * List of identifiable interaction components
-   * @public
    */
   interactionComponentEntries: (InteractionComponentEntry)[] | undefined;
 }
@@ -2648,58 +2311,57 @@ export const InteractionComponentsEventFilterSensitiveLog = (obj: InteractionCom
   }),
 })
 
-/**
- * @public
- * @enum
- */
-export const InvalidStateReason = {
-  INVALID_TASK_ASSIST_PLAN: "INVALID_TASK_ASSIST_PLAN",
-} as const
-/**
- * @public
- */
-export type InvalidStateReason = typeof InvalidStateReason[keyof typeof InvalidStateReason]
+export enum InvalidStateReason {
+  INVALID_TASK_ASSIST_PLAN = "INVALID_TASK_ASSIST_PLAN",
+}
 
 /**
  * Streaming Response Event when an Invalid State is reached
- * @public
  */
 export interface InvalidStateEvent {
   /**
    * Reasons for Invalid State Event
-   * @public
    */
-  reason: InvalidStateReason | undefined;
+  reason: InvalidStateReason | string | undefined;
 
   message: string | undefined;
 }
 
 /**
+ * @internal
+ */
+export const InvalidStateEventFilterSensitiveLog = (obj: InvalidStateEvent): any => ({
+  ...obj,
+})
+
+/**
  * Streaming Response Event for AssistantResponse Metadata
- * @public
  */
 export interface MessageMetadataEvent {
   /**
    * Unique identifier for the conversation
-   * @public
    */
   conversationId?: string;
 
   /**
    * Unique identifier for the utterance
-   * @public
    */
   utteranceId?: string;
 }
 
 /**
+ * @internal
+ */
+export const MessageMetadataEventFilterSensitiveLog = (obj: MessageMetadataEvent): any => ({
+  ...obj,
+})
+
+/**
  * Streaming Response Event for SupplementaryWebLinks
- * @public
  */
 export interface SupplementaryWebLinksEvent {
   /**
    * Web References for Assistant Response Message
-   * @public
    */
   supplementaryWebLinks?: (SupplementaryWebLink)[];
 }
@@ -2719,7 +2381,6 @@ export const SupplementaryWebLinksEventFilterSensitiveLog = (obj: SupplementaryW
 
 /**
  * Streaming events from UniDirectional Streaming Conversational APIs.
- * @public
  */
 export type ChatResponseStream =
   | ChatResponseStream.AssistantResponseEventMember
@@ -2735,14 +2396,10 @@ export type ChatResponseStream =
   | ChatResponseStream.SupplementaryWebLinksEventMember
   | ChatResponseStream.$UnknownMember
 
-/**
- * @public
- */
 export namespace ChatResponseStream {
 
   /**
    * Message Metadata event
-   * @public
    */
   export interface MessageMetadataEventMember {
     messageMetadataEvent: MessageMetadataEvent;
@@ -2761,7 +2418,6 @@ export namespace ChatResponseStream {
 
   /**
    * Assistant response event - Text / Code snippet
-   * @public
    */
   export interface AssistantResponseEventMember {
     messageMetadataEvent?: never;
@@ -2780,7 +2436,6 @@ export namespace ChatResponseStream {
 
   /**
    * DryRun Succeed Event
-   * @public
    */
   export interface DryRunSucceedEventMember {
     messageMetadataEvent?: never;
@@ -2799,7 +2454,6 @@ export namespace ChatResponseStream {
 
   /**
    * Code References event
-   * @public
    */
   export interface CodeReferenceEventMember {
     messageMetadataEvent?: never;
@@ -2818,7 +2472,6 @@ export namespace ChatResponseStream {
 
   /**
    * Web Reference links event
-   * @public
    */
   export interface SupplementaryWebLinksEventMember {
     messageMetadataEvent?: never;
@@ -2837,7 +2490,6 @@ export namespace ChatResponseStream {
 
   /**
    * Followup prompt event
-   * @public
    */
   export interface FollowupPromptEventMember {
     messageMetadataEvent?: never;
@@ -2856,7 +2508,6 @@ export namespace ChatResponseStream {
 
   /**
    * Code Generated event
-   * @public
    */
   export interface CodeEventMember {
     messageMetadataEvent?: never;
@@ -2875,7 +2526,6 @@ export namespace ChatResponseStream {
 
   /**
    * Intents event
-   * @public
    */
   export interface IntentsEventMember {
     messageMetadataEvent?: never;
@@ -2894,7 +2544,6 @@ export namespace ChatResponseStream {
 
   /**
    * Interactions components event
-   * @public
    */
   export interface InteractionComponentsEventMember {
     messageMetadataEvent?: never;
@@ -2913,7 +2562,6 @@ export namespace ChatResponseStream {
 
   /**
    * Invalid State event
-   * @public
    */
   export interface InvalidStateEventMember {
     messageMetadataEvent?: never;
@@ -2932,7 +2580,6 @@ export namespace ChatResponseStream {
 
   /**
    * Internal Server Exception
-   * @public
    */
   export interface ErrorMember {
     messageMetadataEvent?: never;
@@ -2949,9 +2596,6 @@ export namespace ChatResponseStream {
     $unknown?: never;
   }
 
-  /**
-   * @public
-   */
   export interface $UnknownMember {
     messageMetadataEvent?: never;
     assistantResponseEvent?: never;
@@ -3006,16 +2650,16 @@ export namespace ChatResponseStream {
  */
 export const ChatResponseStreamFilterSensitiveLog = (obj: ChatResponseStream): any => {
   if (obj.messageMetadataEvent !== undefined) return {messageMetadataEvent:
-    obj.messageMetadataEvent
+    MessageMetadataEventFilterSensitiveLog(obj.messageMetadataEvent)
   };
   if (obj.assistantResponseEvent !== undefined) return {assistantResponseEvent:
     AssistantResponseEventFilterSensitiveLog(obj.assistantResponseEvent)
   };
   if (obj.dryRunSucceedEvent !== undefined) return {dryRunSucceedEvent:
-    obj.dryRunSucceedEvent
+    DryRunSucceedEventFilterSensitiveLog(obj.dryRunSucceedEvent)
   };
   if (obj.codeReferenceEvent !== undefined) return {codeReferenceEvent:
-    obj.codeReferenceEvent
+    CodeReferenceEventFilterSensitiveLog(obj.codeReferenceEvent)
   };
   if (obj.supplementaryWebLinksEvent !== undefined) return {supplementaryWebLinksEvent:
     SupplementaryWebLinksEventFilterSensitiveLog(obj.supplementaryWebLinksEvent)
@@ -3033,7 +2677,7 @@ export const ChatResponseStreamFilterSensitiveLog = (obj: ChatResponseStream): a
     InteractionComponentsEventFilterSensitiveLog(obj.interactionComponentsEvent)
   };
   if (obj.invalidStateEvent !== undefined) return {invalidStateEvent:
-    obj.invalidStateEvent
+    InvalidStateEventFilterSensitiveLog(obj.invalidStateEvent)
   };
   if (obj.error !== undefined) return {error:
     obj.error
@@ -3041,54 +2685,38 @@ export const ChatResponseStreamFilterSensitiveLog = (obj: ChatResponseStream): a
   if (obj.$unknown !== undefined) return {[obj.$unknown[0]]: 'UNKNOWN'};
 }
 
-/**
- * @public
- * @enum
- */
-export const ChatTriggerType = {
+export enum ChatTriggerType {
   /**
    * Indicates the Chat was triggered in response to a IDE diagnostic
    */
-  DIAGNOSTIC: "DIAGNOSTIC",
+  DIAGNOSTIC = "DIAGNOSTIC",
   /**
    * Indicates the Chat was triggered in response to an inline chat event
    */
-  INLINE_CHAT: "INLINE_CHAT",
+  INLINE_CHAT = "INLINE_CHAT",
   /**
    * Indicates the Chat was triggered due to an explicit chat request by an end-user
    */
-  MANUAL: "MANUAL",
-} as const
-/**
- * @public
- */
-export type ChatTriggerType = typeof ChatTriggerType[keyof typeof ChatTriggerType]
+  MANUAL = "MANUAL",
+}
 
 /**
  * CommandInput can be extended to either a list of strings or a single string.
- * @public
  */
 export type CommandInput =
   | CommandInput.CommandsListMember
   | CommandInput.$UnknownMember
 
-/**
- * @public
- */
 export namespace CommandInput {
 
   /**
    * The list of context items used to generate output.
-   * @public
    */
   export interface CommandsListMember {
     commandsList: (string)[];
     $unknown?: never;
   }
 
-  /**
-   * @public
-   */
   export interface $UnknownMember {
     commandsList?: never;
     $unknown: [string, any];
@@ -3120,32 +2748,27 @@ export const CommandInputFilterSensitiveLog = (obj: CommandInput): any => {
 
 /**
  * Structure to represent the current state of a chat conversation.
- * @public
  */
 export interface ConversationState {
   /**
    * Unique identifier for the chat conversation stream
-   * @public
    */
   conversationId?: string;
 
   /**
    * Holds the history of chat messages.
-   * @public
    */
   history?: (ChatMessage)[];
 
   /**
    * Holds the current message being processed or displayed.
-   * @public
    */
   currentMessage: ChatMessage | undefined;
 
   /**
    * Trigger Reason for Chat
-   * @public
    */
-  chatTriggerType: ChatTriggerType | undefined;
+  chatTriggerType: ChatTriggerType | string | undefined;
 
   customizationArn?: string;
 }
@@ -3168,7 +2791,6 @@ export const ConversationStateFilterSensitiveLog = (obj: ConversationState): any
 
 /**
  * This exception is translated to a 204 as it succeeded the IAM Auth.
- * @public
  */
 export class DryRunOperationException extends __BaseException {
   readonly name: "DryRunOperationException" = "DryRunOperationException";
@@ -3188,25 +2810,16 @@ export class DryRunOperationException extends __BaseException {
   }
 }
 
-/**
- * @public
- * @enum
- */
-export const OutputFormat = {
-  JAVA_CDK: "java/cdk",
-  JSON_CFN: "json/cfn",
-  PYTHON_CDK: "python/cdk",
-  TYPESCRIPT_CDK: "typescript/cdk",
-  YAML_CFN: "yaml/cfn",
-} as const
-/**
- * @public
- */
-export type OutputFormat = typeof OutputFormat[keyof typeof OutputFormat]
+export enum OutputFormat {
+  JAVA_CDK = "java/cdk",
+  JSON_CFN = "json/cfn",
+  PYTHON_CDK = "python/cdk",
+  TYPESCRIPT_CDK = "typescript/cdk",
+  YAML_CFN = "yaml/cfn",
+}
 
 /**
  * This exception is thrown when request was denied due to caller exceeding their usage limits
- * @public
  */
 export class ServiceQuotaExceededException extends __BaseException {
   readonly name: "ServiceQuotaExceededException" = "ServiceQuotaExceededException";
@@ -3224,74 +2837,67 @@ export class ServiceQuotaExceededException extends __BaseException {
   }
 }
 
-/**
- * @public
- * @enum
- */
-export const Origin = {
+export enum Origin {
   /**
    * AWS Chatbot
    */
-  CHATBOT: "CHATBOT",
+  CHATBOT = "CHATBOT",
   /**
    * AWS Management Console (https://<region>.console.aws.amazon.com)
    */
-  CONSOLE: "CONSOLE",
+  CONSOLE = "CONSOLE",
   /**
    * AWS Documentation Website (https://docs.aws.amazon.com)
    */
-  DOCUMENTATION: "DOCUMENTATION",
+  DOCUMENTATION = "DOCUMENTATION",
   /**
    * Any IDE caller.
    */
-  IDE: "IDE",
+  IDE = "IDE",
   /**
    * AWS Marketing Website (https://aws.amazon.com)
    */
-  MARKETING: "MARKETING",
+  MARKETING = "MARKETING",
   /**
    * MD.
    */
-  MD: "MD",
+  MD = "MD",
   /**
    * AWS Mobile Application (ACMA)
    */
-  MOBILE: "MOBILE",
+  MOBILE = "MOBILE",
+  /**
+   * Amazon SageMaker's Rome Chat.
+   */
+  SAGE_MAKER = "SAGE_MAKER",
   /**
    * Internal Service Traffic (Integ Tests, Canaries, etc.). This is the default when no Origin header present in request.
    */
-  SERVICE_INTERNAL: "SERVICE_INTERNAL",
+  SERVICE_INTERNAL = "SERVICE_INTERNAL",
   /**
    * Unified Search in AWS Management Console (https://<region>.console.aws.amazon.com)
    */
-  UNIFIED_SEARCH: "UNIFIED_SEARCH",
+  UNIFIED_SEARCH = "UNIFIED_SEARCH",
   /**
    * Origin header is not set.
    */
-  UNKNOWN: "UNKNOWN",
-} as const
-/**
- * @public
- */
-export type Origin = typeof Origin[keyof typeof Origin]
+  UNKNOWN = "UNKNOWN",
+}
 
 /**
  * Structure to represent a SendMessage request.
- * @public
  */
 export interface SendMessageRequest {
   /**
    * Structure to represent the current state of a chat conversation.
-   * @public
    */
   conversationState: ConversationState | undefined;
 
   profileArn?: string;
   /**
    * The origin of the caller
-   * @public
    */
-  source?: Origin;
+  source?: Origin | string;
 
   dryRun?: boolean;
 }
@@ -3308,12 +2914,10 @@ export const SendMessageRequestFilterSensitiveLog = (obj: SendMessageRequest): a
 
 /**
  * Structure to represent a SendMessage response.
- * @public
  */
 export interface SendMessageResponse {
   /**
    * Streaming events from UniDirectional Streaming Conversational APIs.
-   * @public
    */
   sendMessageResponse: AsyncIterable<ChatResponseStream> | undefined;
 }
@@ -3328,19 +2932,14 @@ export const SendMessageResponseFilterSensitiveLog = (obj: SendMessageResponse):
   }),
 })
 
-/**
- * @public
- */
 export interface GenerateCodeFromCommandsRequest {
   /**
    * Format of the output - language/format eg. typescript/cdk
-   * @public
    */
-  outputFormat: OutputFormat | undefined;
+  outputFormat: OutputFormat | string | undefined;
 
   /**
    * CommandInput can be extended to either a list of strings or a single string.
-   * @public
    */
   commands: CommandInput | undefined;
 }
@@ -3357,7 +2956,6 @@ export const GenerateCodeFromCommandsRequestFilterSensitiveLog = (obj: GenerateC
 
 /**
  * Streaming events from UniDirectional streaming infrastructure code generation APIs.
- * @public
  */
 export type GenerateCodeFromCommandsResponseStream =
   | GenerateCodeFromCommandsResponseStream.ErrorMember
@@ -3366,14 +2964,10 @@ export type GenerateCodeFromCommandsResponseStream =
   | GenerateCodeFromCommandsResponseStream.CodeEventMember
   | GenerateCodeFromCommandsResponseStream.$UnknownMember
 
-/**
- * @public
- */
 export namespace GenerateCodeFromCommandsResponseStream {
 
   /**
    * Generated code snippet
-   * @public
    */
   export interface CodeEventMember {
     codeEvent: CodeEvent;
@@ -3385,7 +2979,6 @@ export namespace GenerateCodeFromCommandsResponseStream {
 
   /**
    * Internal Server Exception
-   * @public
    */
   export interface ErrorMember {
     codeEvent?: never;
@@ -3397,7 +2990,6 @@ export namespace GenerateCodeFromCommandsResponseStream {
 
   /**
    * Exceptions for quota level exceeded errors
-   * @public
    */
   export interface QuotaLevelExceededErrorMember {
     codeEvent?: never;
@@ -3409,7 +3001,6 @@ export namespace GenerateCodeFromCommandsResponseStream {
 
   /**
    * Validation errors in the ConsoleToCodeService
-   * @public
    */
   export interface ValidationErrorMember {
     codeEvent?: never;
@@ -3419,9 +3010,6 @@ export namespace GenerateCodeFromCommandsResponseStream {
     $unknown?: never;
   }
 
-  /**
-   * @public
-   */
   export interface $UnknownMember {
     codeEvent?: never;
     Error?: never;
@@ -3471,12 +3059,10 @@ export const GenerateCodeFromCommandsResponseStreamFilterSensitiveLog = (obj: Ge
 
 /**
  * Structure to represent generated code response.
- * @public
  */
 export interface GenerateCodeFromCommandsResponse {
   /**
    * Streaming events from UniDirectional streaming infrastructure code generation APIs.
-   * @public
    */
   generatedCodeFromCommandsResponse: AsyncIterable<GenerateCodeFromCommandsResponseStream> | undefined;
 }

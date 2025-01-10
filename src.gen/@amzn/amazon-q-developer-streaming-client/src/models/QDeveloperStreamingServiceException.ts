@@ -2,15 +2,9 @@
 import {
   ServiceException as __ServiceException,
   ServiceExceptionOptions as __ServiceExceptionOptions,
-} from "@smithy/smithy-client";
-
-export type { __ServiceExceptionOptions }
-
-export { __ServiceException }
+} from "@aws-sdk/smithy-client";
 
 /**
- * @public
- *
  * Base exception class for all service exceptions from QDeveloperStreaming service.
  */
 export class QDeveloperStreamingServiceException extends __ServiceException {

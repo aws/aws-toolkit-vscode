@@ -1,9 +1,5 @@
 // smithy-typescript generated code
 import {
-  ConverseStreamCommandInput,
-  ConverseStreamCommandOutput,
-} from "./commands/ConverseStreamCommand";
-import {
   ExportResultArchiveCommandInput,
   ExportResultArchiveCommandOutput,
 } from "./commands/ExportResultArchiveCommand";
@@ -94,7 +90,6 @@ export { __Client }
  * @public
  */
 export type ServiceInputTypes =
-  | ConverseStreamCommandInput
   | ExportResultArchiveCommandInput
   | GenerateAssistantResponseCommandInput
   | GenerateTaskAssistPlanCommandInput;
@@ -103,7 +98,6 @@ export type ServiceInputTypes =
  * @public
  */
 export type ServiceOutputTypes =
-  | ConverseStreamCommandOutput
   | ExportResultArchiveCommandOutput
   | GenerateAssistantResponseCommandOutput
   | GenerateTaskAssistPlanCommandOutput;

@@ -4,11 +4,6 @@ import {
   CodeWhispererStreamingClientConfig,
 } from "./CodeWhispererStreamingClient";
 import {
-  ConverseStreamCommand,
-  ConverseStreamCommandInput,
-  ConverseStreamCommandOutput,
-} from "./commands/ConverseStreamCommand";
-import {
   ExportResultArchiveCommand,
   ExportResultArchiveCommandInput,
   ExportResultArchiveCommandOutput,
@@ -30,7 +25,6 @@ const commands = {
   ExportResultArchiveCommand,
   GenerateAssistantResponseCommand,
   GenerateTaskAssistPlanCommand,
-  ConverseStreamCommand,
 }
 
 export interface CodeWhispererStreaming {
@@ -83,23 +77,6 @@ export interface CodeWhispererStreaming {
     args: GenerateTaskAssistPlanCommandInput,
     options: __HttpHandlerOptions,
     cb: (err: any, data?: GenerateTaskAssistPlanCommandOutput) => void
-  ): void;
-
-  /**
-   * @see {@link ConverseStreamCommand}
-   */
-  converseStream(
-    args: ConverseStreamCommandInput,
-    options?: __HttpHandlerOptions,
-  ): Promise<ConverseStreamCommandOutput>;
-  converseStream(
-    args: ConverseStreamCommandInput,
-    cb: (err: any, data?: ConverseStreamCommandOutput) => void
-  ): void;
-  converseStream(
-    args: ConverseStreamCommandInput,
-    options: __HttpHandlerOptions,
-    cb: (err: any, data?: ConverseStreamCommandOutput) => void
   ): void;
 
 }

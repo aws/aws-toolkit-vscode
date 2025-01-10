@@ -151,55 +151,6 @@ export class ValidationException extends __BaseException {
 
 /**
  * @public
- * Description of a user's context when they are calling Q Chat from AppStudio
- */
-export interface AppStudioState {
-  /**
-   * @public
-   * The namespace of the context. Examples: 'ui.Button', 'ui.Table.DataSource', 'ui.Table.RowActions.Button', 'logic.invokeAWS', 'logic.JavaScript'
-   */
-  namespace: string | undefined;
-
-  /**
-   * @public
-   * The name of the property. Examples: 'visibility', 'disability', 'value', 'code'
-   */
-  propertyName: string | undefined;
-
-  /**
-   * @public
-   * The value of the property.
-   */
-  propertyValue?: string;
-
-  /**
-   * @public
-   * Context about how the property is used
-   */
-  propertyContext: string | undefined;
-}
-
-/**
- * @internal
- */
-export const AppStudioStateFilterSensitiveLog = (obj: AppStudioState): any => ({
-  ...obj,
-  ...(obj.namespace && { namespace:
-    SENSITIVE_STRING
-  }),
-  ...(obj.propertyName && { propertyName:
-    SENSITIVE_STRING
-  }),
-  ...(obj.propertyValue && { propertyValue:
-    SENSITIVE_STRING
-  }),
-  ...(obj.propertyContext && { propertyContext:
-    SENSITIVE_STRING
-  }),
-})
-
-/**
- * @public
  * Streaming Response Event for Assistant Markdown text message.
  */
 export interface AssistantResponseEvent {
@@ -241,14 +192,6 @@ export const UserIntent = {
    * Explain Code Line By Line
    */
   EXPLAIN_LINE_BY_LINE: "EXPLAIN_LINE_BY_LINE",
-  /**
-   * Generate CloudFormation Template
-   */
-  GENERATE_CLOUDFORMATION_TEMPLATE: "GENERATE_CLOUDFORMATION_TEMPLATE",
-  /**
-   * Generate Unit Tests
-   */
-  GENERATE_UNIT_TESTS: "GENERATE_UNIT_TESTS",
   /**
    * Improve Code
    */
@@ -527,14 +470,6 @@ export const BinaryPayloadEventFilterSensitiveLog = (obj: BinaryPayloadEvent): a
     SENSITIVE_STRING
   }),
 })
-
-/**
- * @public
- * Information about the state of the AWS management console page from which the user is calling
- */
-export interface ConsoleState {
-  region?: string;
-}
 
 /**
  * @public
@@ -889,49 +824,6 @@ export namespace CursorState {
 
 /**
  * @public
- * Represents an IDE retrieved relevant Text Document / File
- */
-export interface RelevantTextDocument {
-  /**
-   * @public
-   * Filepath relative to the root of the workspace
-   */
-  relativeFilePath: string | undefined;
-
-  /**
-   * @public
-   * The text document's language identifier.
-   */
-  programmingLanguage?: ProgrammingLanguage;
-
-  /**
-   * @public
-   * Content of the text document
-   */
-  text?: string;
-
-  /**
-   * @public
-   * DocumentSymbols parsed from a text document
-   */
-  documentSymbols?: (DocumentSymbol)[];
-}
-
-/**
- * @internal
- */
-export const RelevantTextDocumentFilterSensitiveLog = (obj: RelevantTextDocument): any => ({
-  ...obj,
-  ...(obj.relativeFilePath && { relativeFilePath:
-    SENSITIVE_STRING
-  }),
-  ...(obj.text && { text:
-    SENSITIVE_STRING
-  }),
-})
-
-/**
- * @public
  * Represents the state of an Editor
  */
 export interface EditorState {
@@ -946,18 +838,6 @@ export interface EditorState {
    * Position of the cursor
    */
   cursorState?: CursorState;
-
-  /**
-   * @public
-   * Represents IDE provided relevant files
-   */
-  relevantDocuments?: (RelevantTextDocument)[];
-
-  /**
-   * @public
-   * Whether service should use relevant document in prompt
-   */
-  useRelevantDocuments?: boolean;
 }
 
 /**
@@ -970,12 +850,6 @@ export const EditorStateFilterSensitiveLog = (obj: EditorState): any => ({
   }),
   ...(obj.cursorState && { cursorState:
     obj.cursorState
-  }),
-  ...(obj.relevantDocuments && { relevantDocuments:
-    obj.relevantDocuments.map(
-      item =>
-      RelevantTextDocumentFilterSensitiveLog(item)
-    )
   }),
 })
 
@@ -1160,14 +1034,6 @@ export const ShellStateFilterSensitiveLog = (obj: ShellState): any => ({
 
 /**
  * @public
- * Settings information passed by the Q widget
- */
-export interface UserSettings {
-  hasConsentedToCrossRegionCalls?: boolean;
-}
-
-/**
- * @public
  * Additional Chat message context associated with the Chat Message
  */
 export interface UserInputMessageContext {
@@ -1191,33 +1057,15 @@ export interface UserInputMessageContext {
 
   /**
    * @public
-   * Environment state chat message context.
+   * Environment state chat messaage context.
    */
   envState?: EnvState;
-
-  /**
-   * @public
-   * The state of a user's AppStudio UI when sending a message.
-   */
-  appStudioContext?: AppStudioState;
 
   /**
    * @public
    * Diagnostic chat message context.
    */
   diagnostic?: Diagnostic;
-
-  /**
-   * @public
-   * Contextual information about the environment from which the user is calling.
-   */
-  consoleState?: ConsoleState;
-
-  /**
-   * @public
-   * Settings information, e.g., whether the user has enabled cross-region API calls.
-   */
-  userSettings?: UserSettings;
 }
 
 /**
@@ -1236,9 +1084,6 @@ export const UserInputMessageContextFilterSensitiveLog = (obj: UserInputMessageC
   }),
   ...(obj.envState && { envState:
     EnvStateFilterSensitiveLog(obj.envState)
-  }),
-  ...(obj.appStudioContext && { appStudioContext:
-    AppStudioStateFilterSensitiveLog(obj.appStudioContext)
   }),
   ...(obj.diagnostic && { diagnostic:
     DiagnosticFilterSensitiveLog(obj.diagnostic)
@@ -1355,28 +1200,6 @@ export const ChatMessageFilterSensitiveLog = (obj: ChatMessage): any => {
 
 /**
  * @public
- * Streaming response event for generated code text.
- */
-export interface CodeEvent {
-  /**
-   * @public
-   * Generated code snippet.
-   */
-  content: string | undefined;
-}
-
-/**
- * @internal
- */
-export const CodeEventFilterSensitiveLog = (obj: CodeEvent): any => ({
-  ...obj,
-  ...(obj.content && { content:
-    SENSITIVE_STRING
-  }),
-})
-
-/**
- * @public
  * Streaming Response Event for CodeReferences
  */
 export interface CodeReferenceEvent {
@@ -1406,82 +1229,6 @@ export const FollowupPromptEventFilterSensitiveLog = (obj: FollowupPromptEvent):
   ...obj,
   ...(obj.followupPrompt && { followupPrompt:
     FollowupPromptFilterSensitiveLog(obj.followupPrompt)
-  }),
-})
-
-/**
- * @public
- * @enum
- */
-export const IntentType = {
-  GLUE_SENSEI: "GLUE_SENSEI",
-  RESOURCE_DATA: "RESOURCE_DATA",
-  SUPPORT: "SUPPORT",
-} as const
-/**
- * @public
- */
-export type IntentType = typeof IntentType[keyof typeof IntentType]
-
-/**
- * @public
- */
-export type IntentDataType =
-  | IntentDataType.StringMember
-  | IntentDataType.$UnknownMember
-
-/**
- * @public
- */
-export namespace IntentDataType {
-
-  export interface StringMember {
-    string: string;
-    $unknown?: never;
-  }
-
-  /**
-   * @public
-   */
-  export interface $UnknownMember {
-    string?: never;
-    $unknown: [string, any];
-  }
-
-  export interface Visitor<T> {
-    string: (value: string) => T;
-    _: (name: string, value: any) => T;
-  }
-
-  export const visit = <T>(
-    value: IntentDataType,
-    visitor: Visitor<T>
-  ): T => {
-    if (value.string !== undefined) return visitor.string(value.string);
-    return visitor._(value.$unknown[0], value.$unknown[1]);
-  }
-
-}
-
-/**
- * @public
- * Streaming Response Event for Intents
- */
-export interface IntentsEvent {
-  /**
-   * @public
-   * A map of Intent objects
-   */
-  intents?: Record<string, Record<string, IntentDataType>>;
-}
-
-/**
- * @internal
- */
-export const IntentsEventFilterSensitiveLog = (obj: IntentsEvent): any => ({
-  ...obj,
-  ...(obj.intents && { intents:
-    SENSITIVE_STRING
   }),
 })
 
@@ -1554,11 +1301,9 @@ export const SupplementaryWebLinksEventFilterSensitiveLog = (obj: SupplementaryW
  */
 export type ChatResponseStream =
   | ChatResponseStream.AssistantResponseEventMember
-  | ChatResponseStream.CodeEventMember
   | ChatResponseStream.CodeReferenceEventMember
   | ChatResponseStream.ErrorMember
   | ChatResponseStream.FollowupPromptEventMember
-  | ChatResponseStream.IntentsEventMember
   | ChatResponseStream.InvalidStateEventMember
   | ChatResponseStream.MessageMetadataEventMember
   | ChatResponseStream.SupplementaryWebLinksEventMember
@@ -1579,8 +1324,6 @@ export namespace ChatResponseStream {
     codeReferenceEvent?: never;
     supplementaryWebLinksEvent?: never;
     followupPromptEvent?: never;
-    codeEvent?: never;
-    intentsEvent?: never;
     invalidStateEvent?: never;
     error?: never;
     $unknown?: never;
@@ -1596,8 +1339,6 @@ export namespace ChatResponseStream {
     codeReferenceEvent?: never;
     supplementaryWebLinksEvent?: never;
     followupPromptEvent?: never;
-    codeEvent?: never;
-    intentsEvent?: never;
     invalidStateEvent?: never;
     error?: never;
     $unknown?: never;
@@ -1613,8 +1354,6 @@ export namespace ChatResponseStream {
     codeReferenceEvent: CodeReferenceEvent;
     supplementaryWebLinksEvent?: never;
     followupPromptEvent?: never;
-    codeEvent?: never;
-    intentsEvent?: never;
     invalidStateEvent?: never;
     error?: never;
     $unknown?: never;
@@ -1630,8 +1369,6 @@ export namespace ChatResponseStream {
     codeReferenceEvent?: never;
     supplementaryWebLinksEvent: SupplementaryWebLinksEvent;
     followupPromptEvent?: never;
-    codeEvent?: never;
-    intentsEvent?: never;
     invalidStateEvent?: never;
     error?: never;
     $unknown?: never;
@@ -1647,42 +1384,6 @@ export namespace ChatResponseStream {
     codeReferenceEvent?: never;
     supplementaryWebLinksEvent?: never;
     followupPromptEvent: FollowupPromptEvent;
-    codeEvent?: never;
-    intentsEvent?: never;
-    invalidStateEvent?: never;
-    error?: never;
-    $unknown?: never;
-  }
-
-  /**
-   * @public
-   * Code Generated event
-   */
-  export interface CodeEventMember {
-    messageMetadataEvent?: never;
-    assistantResponseEvent?: never;
-    codeReferenceEvent?: never;
-    supplementaryWebLinksEvent?: never;
-    followupPromptEvent?: never;
-    codeEvent: CodeEvent;
-    intentsEvent?: never;
-    invalidStateEvent?: never;
-    error?: never;
-    $unknown?: never;
-  }
-
-  /**
-   * @public
-   * Intents event
-   */
-  export interface IntentsEventMember {
-    messageMetadataEvent?: never;
-    assistantResponseEvent?: never;
-    codeReferenceEvent?: never;
-    supplementaryWebLinksEvent?: never;
-    followupPromptEvent?: never;
-    codeEvent?: never;
-    intentsEvent: IntentsEvent;
     invalidStateEvent?: never;
     error?: never;
     $unknown?: never;
@@ -1698,8 +1399,6 @@ export namespace ChatResponseStream {
     codeReferenceEvent?: never;
     supplementaryWebLinksEvent?: never;
     followupPromptEvent?: never;
-    codeEvent?: never;
-    intentsEvent?: never;
     invalidStateEvent: InvalidStateEvent;
     error?: never;
     $unknown?: never;
@@ -1715,8 +1414,6 @@ export namespace ChatResponseStream {
     codeReferenceEvent?: never;
     supplementaryWebLinksEvent?: never;
     followupPromptEvent?: never;
-    codeEvent?: never;
-    intentsEvent?: never;
     invalidStateEvent?: never;
     error: InternalServerException;
     $unknown?: never;
@@ -1731,8 +1428,6 @@ export namespace ChatResponseStream {
     codeReferenceEvent?: never;
     supplementaryWebLinksEvent?: never;
     followupPromptEvent?: never;
-    codeEvent?: never;
-    intentsEvent?: never;
     invalidStateEvent?: never;
     error?: never;
     $unknown: [string, any];
@@ -1744,8 +1439,6 @@ export namespace ChatResponseStream {
     codeReferenceEvent: (value: CodeReferenceEvent) => T;
     supplementaryWebLinksEvent: (value: SupplementaryWebLinksEvent) => T;
     followupPromptEvent: (value: FollowupPromptEvent) => T;
-    codeEvent: (value: CodeEvent) => T;
-    intentsEvent: (value: IntentsEvent) => T;
     invalidStateEvent: (value: InvalidStateEvent) => T;
     error: (value: InternalServerException) => T;
     _: (name: string, value: any) => T;
@@ -1760,8 +1453,6 @@ export namespace ChatResponseStream {
     if (value.codeReferenceEvent !== undefined) return visitor.codeReferenceEvent(value.codeReferenceEvent);
     if (value.supplementaryWebLinksEvent !== undefined) return visitor.supplementaryWebLinksEvent(value.supplementaryWebLinksEvent);
     if (value.followupPromptEvent !== undefined) return visitor.followupPromptEvent(value.followupPromptEvent);
-    if (value.codeEvent !== undefined) return visitor.codeEvent(value.codeEvent);
-    if (value.intentsEvent !== undefined) return visitor.intentsEvent(value.intentsEvent);
     if (value.invalidStateEvent !== undefined) return visitor.invalidStateEvent(value.invalidStateEvent);
     if (value.error !== undefined) return visitor.error(value.error);
     return visitor._(value.$unknown[0], value.$unknown[1]);
@@ -1786,12 +1477,6 @@ export const ChatResponseStreamFilterSensitiveLog = (obj: ChatResponseStream): a
   };
   if (obj.followupPromptEvent !== undefined) return {followupPromptEvent:
     FollowupPromptEventFilterSensitiveLog(obj.followupPromptEvent)
-  };
-  if (obj.codeEvent !== undefined) return {codeEvent:
-    CodeEventFilterSensitiveLog(obj.codeEvent)
-  };
-  if (obj.intentsEvent !== undefined) return {intentsEvent:
-    IntentsEventFilterSensitiveLog(obj.intentsEvent)
   };
   if (obj.invalidStateEvent !== undefined) return {invalidStateEvent:
     obj.invalidStateEvent
@@ -1862,8 +1547,6 @@ export interface ConversationState {
    * Trigger Reason for Chat
    */
   chatTriggerType: ChatTriggerType | string | undefined;
-
-  customizationArn?: string;
 }
 
 /**
@@ -1884,33 +1567,10 @@ export const ConversationStateFilterSensitiveLog = (obj: ConversationState): any
 
 /**
  * @public
- * This exception is translated to a 204 as it succeeded the IAM Auth.
- */
-export class DryRunOperationException extends __BaseException {
-  readonly name: "DryRunOperationException" = "DryRunOperationException";
-  readonly $fault: "client" = "client";
-  responseCode?: number;
-  /**
-   * @internal
-   */
-  constructor(opts: __ExceptionOptionType<DryRunOperationException, __BaseException>) {
-    super({
-      name: "DryRunOperationException",
-      $fault: "client",
-      ...opts
-    });
-    Object.setPrototypeOf(this, DryRunOperationException.prototype);
-    this.responseCode = opts.responseCode;
-  }
-}
-
-/**
- * @public
  * @enum
  */
 export const TransformationDownloadArtifactType = {
   CLIENT_INSTRUCTIONS: "ClientInstructions",
-  LOGS: "Logs",
 } as const
 /**
  * @public
@@ -1928,24 +1588,10 @@ export interface TransformationExportContext {
 
 /**
  * @public
- * Unit test generation export context
- */
-export interface UnitTestGenerationExportContext {
-  /**
-   * @public
-   * Test generation job group name
-   */
-  testGenerationJobGroupName: string | undefined;
-
-  testGenerationJobId?: string;
-}
-
-/**
  * Export Context
  */
 export type ExportContext =
   | ExportContext.TransformationExportContextMember
-  | ExportContext.UnitTestGenerationExportContextMember
   | ExportContext.$UnknownMember
 
 /**
@@ -1959,17 +1605,6 @@ export namespace ExportContext {
    */
   export interface TransformationExportContextMember {
     transformationExportContext: TransformationExportContext;
-    unitTestGenerationExportContext?: never;
-    $unknown?: never;
-  }
-
-  /**
-   * @public
-   * Unit test generation export context
-   */
-  export interface UnitTestGenerationExportContextMember {
-    transformationExportContext?: never;
-    unitTestGenerationExportContext: UnitTestGenerationExportContext;
     $unknown?: never;
   }
 
@@ -1978,13 +1613,11 @@ export namespace ExportContext {
    */
   export interface $UnknownMember {
     transformationExportContext?: never;
-    unitTestGenerationExportContext?: never;
     $unknown: [string, any];
   }
 
   export interface Visitor<T> {
     transformationExportContext: (value: TransformationExportContext) => T;
-    unitTestGenerationExportContext: (value: UnitTestGenerationExportContext) => T;
     _: (name: string, value: any) => T;
   }
 
@@ -1993,7 +1626,6 @@ export namespace ExportContext {
     visitor: Visitor<T>
   ): T => {
     if (value.transformationExportContext !== undefined) return visitor.transformationExportContext(value.transformationExportContext);
-    if (value.unitTestGenerationExportContext !== undefined) return visitor.unitTestGenerationExportContext(value.unitTestGenerationExportContext);
     return visitor._(value.$unknown[0], value.$unknown[1]);
   }
 
@@ -2012,10 +1644,6 @@ export const ExportIntent = {
    * Code Transformation
    */
   TRANSFORMATION: "TRANSFORMATION",
-  /**
-   * Unit Test
-   */
-  UNIT_TESTS: "UNIT_TESTS",
 } as const
 /**
  * @public
@@ -2116,26 +1744,6 @@ export const ResultArchiveStreamFilterSensitiveLog = (obj: ResultArchiveStream):
 
 /**
  * @public
- * This exception is thrown when request was denied due to caller exceeding their usage limits
- */
-export class ServiceQuotaExceededException extends __BaseException {
-  readonly name: "ServiceQuotaExceededException" = "ServiceQuotaExceededException";
-  readonly $fault: "client" = "client";
-  /**
-   * @internal
-   */
-  constructor(opts: __ExceptionOptionType<ServiceQuotaExceededException, __BaseException>) {
-    super({
-      name: "ServiceQuotaExceededException",
-      $fault: "client",
-      ...opts
-    });
-    Object.setPrototypeOf(this, ServiceQuotaExceededException.prototype);
-  }
-}
-
-/**
- * @public
  * Represents a Workspace state uploaded to S3 for Async Code Actions
  */
 export interface WorkspaceState {
@@ -2168,8 +1776,6 @@ export interface GenerateAssistantResponseRequest {
    * Structure to represent the current state of a chat conversation.
    */
   conversationState: ConversationState | undefined;
-
-  profileArn?: string;
 }
 
 /**
@@ -2247,122 +1853,6 @@ export interface ExportResultArchiveResponse {
 export const ExportResultArchiveResponseFilterSensitiveLog = (obj: ExportResultArchiveResponse): any => ({
   ...obj,
   ...(obj.body && { body:
-    'STREAMING_CONTENT'
-  }),
-})
-
-/**
- * @public
- * @enum
- */
-export const Origin = {
-  /**
-   * AWS Chatbot
-   */
-  CHATBOT: "CHATBOT",
-  /**
-   * AWS Management Console (https://<region>.console.aws.amazon.com)
-   */
-  CONSOLE: "CONSOLE",
-  /**
-   * AWS Documentation Website (https://docs.aws.amazon.com)
-   */
-  DOCUMENTATION: "DOCUMENTATION",
-  /**
-   * Any IDE caller.
-   */
-  IDE: "IDE",
-  /**
-   * AWS Marketing Website (https://aws.amazon.com)
-   */
-  MARKETING: "MARKETING",
-  /**
-   * MD.
-   */
-  MD: "MD",
-  /**
-   * AWS Mobile Application (ACMA)
-   */
-  MOBILE: "MOBILE",
-  /**
-   * Internal Service Traffic (Integ Tests, Canaries, etc.). This is the default when no Origin header present in request.
-   */
-  SERVICE_INTERNAL: "SERVICE_INTERNAL",
-  /**
-   * Unified Search in AWS Management Console (https://<region>.console.aws.amazon.com)
-   */
-  UNIFIED_SEARCH: "UNIFIED_SEARCH",
-  /**
-   * Origin header is not set.
-   */
-  UNKNOWN: "UNKNOWN",
-} as const
-/**
- * @public
- */
-export type Origin = typeof Origin[keyof typeof Origin]
-
-/**
- * @public
- * Structure to represent a new generate assistant response request.
- */
-export interface ConverseStreamRequest {
-  /**
-   * @public
-   * Structure to represent the current state of a chat conversation.
-   */
-  conversationState: ConversationState | undefined;
-
-  profileArn?: string;
-  /**
-   * @public
-   * The origin of the caller
-   */
-  source?: Origin | string;
-
-  dryRun?: boolean;
-}
-
-/**
- * @internal
- */
-export const ConverseStreamRequestFilterSensitiveLog = (obj: ConverseStreamRequest): any => ({
-  ...obj,
-  ...(obj.conversationState && { conversationState:
-    ConversationStateFilterSensitiveLog(obj.conversationState)
-  }),
-})
-
-/**
- * @public
- * Structure to represent generate assistant response response.
- */
-export interface ConverseStreamResponse {
-  /**
-   * @public
-   * ID which represents a multi-turn conversation
-   */
-  conversationId: string | undefined;
-
-  /**
-   * @public
-   * UtteranceId
-   */
-  utteranceId?: string;
-
-  /**
-   * @public
-   * Streaming events from UniDirectional Streaming Conversational APIs.
-   */
-  converseStreamResponse: AsyncIterable<ChatResponseStream> | undefined;
-}
-
-/**
- * @internal
- */
-export const ConverseStreamResponseFilterSensitiveLog = (obj: ConverseStreamResponse): any => ({
-  ...obj,
-  ...(obj.converseStreamResponse && { converseStreamResponse:
     'STREAMING_CONTENT'
   }),
 })
