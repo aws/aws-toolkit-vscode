@@ -45,6 +45,7 @@ import {
     PromptTooVagueError,
     PromptUnrelatedError,
     ReadmeTooLargeError,
+    ReadmeUpdateTooLargeError,
     WorkspaceEmptyError,
 } from '../errors'
 import { DocMessenger } from '../messenger'
@@ -148,6 +149,9 @@ abstract class CodeGenBase {
                     switch (true) {
                         case codegenResult.codeGenerationStatusDetail?.includes('README_TOO_LARGE'): {
                             throw new ReadmeTooLargeError()
+                        }
+                        case codegenResult.codeGenerationStatusDetail?.includes('README_UPDATE_TOO_LARGE'): {
+                            throw new ReadmeUpdateTooLargeError()
                         }
                         case codegenResult.codeGenerationStatusDetail?.includes('WORKSPACE_TOO_LARGE'): {
                             throw new ContentLengthError()
