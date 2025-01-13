@@ -1,4 +1,4 @@
 {
 	"type": "Feature",
-	"description": "feat(amazonq): Add error message for README updates that are too large"
+	"description": "feat(amazonq): Add error message for updated README too large"
 }
