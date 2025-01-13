@@ -218,11 +218,6 @@
                     "id": "aws.AmazonQChatView",
                     "name": "%AWS.amazonq.chat%",
                     "when": "!aws.isWebExtHost && !aws.amazonq.showLoginView"
-                },
-                {
-                    "id": "aws.AmazonQNeverShowBadge",
-                    "name": "",
-                    "when": "false"
                 }
             ],
             "aws-codewhisperer-reference-log": [
