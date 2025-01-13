@@ -223,22 +223,23 @@ export function registerAuthHook(secret: string, lambdaId = process.env['AUTH_UT
 
             const openStub = patchObject(vscode.env, 'openExternal', async (target) => {
                 try {
-                    const url = new URL(target.toString(true))
-
-                    // A `#` was added in to the URL path and broke the parsing, so we need to drop the '#'
-                    // Eg: 'https://nkomonen.awsapps.com/start/#/device?user_code=JXZC-NVRK'
-                    const urlWithoutHash = target.toString(true).replace(/\/\#/, '')
-                    const userCode = new URL(urlWithoutHash).searchParams.get('user_code')
-
-                    // TODO: Update this to just be the full URL if the authorizer lambda ever
-                    // supports the verification URI with user code embedded (VerificationUriComplete).
-                    const verificationUri = url.origin
-
-                    await invokeLambda(lambdaId, {
-                        secret,
-                        userCode,
-                        verificationUri,
-                    })
+                    throw new Error(`Auth URL: ${target.toString(true)}`)
+                    //                     const url = new URL(target.toString(true))
+                    //
+                    //                     // A `#` was added in to the URL path and broke the parsing, so we need to drop the '#'
+                    //                     // Eg: 'https://nkomonen.awsapps.com/start/#/device?user_code=JXZC-NVRK'
+                    //                     const urlWithoutHash = target.toString(true).replace(/\/\#/, '')
+                    //                     const userCode = new URL(urlWithoutHash).searchParams.get('user_code')
+                    //
+                    //                     // TODO: Update this to just be the full URL if the authorizer lambda ever
+                    //                     // supports the verification URI with user code embedded (VerificationUriComplete).
+                    //                     const verificationUri = url.origin
+                    //
+                    //                     await invokeLambda(lambdaId, {
+                    //                         secret,
+                    //                         userCode,
+                    //                         verificationUri,
+                    //                     })
                 } finally {
                     openStub.dispose()
                 }
