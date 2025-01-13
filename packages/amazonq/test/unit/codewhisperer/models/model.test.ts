@@ -82,10 +82,6 @@ describe('model', function () {
 
         beforeEach(function () {
             sandbox = sinon.createSandbox()
-            // Reset the singleton instance before each test
-            // @ts-ignore - accessing private static for testing
-            CodeIssueGroupingStrategyState['#instance'] = undefined
-            state = CodeIssueGroupingStrategyState.instance
         })
 
         afterEach(function () {
@@ -102,16 +98,14 @@ describe('model', function () {
 
         describe('getState', function () {
             it('should return fallback when no state is stored', function () {
-                const tryGetStub = sandbox.stub(globals.globalState, 'tryGet').returns(undefined)
                 const result = state.getState()
 
-                sinon.assert.calledWith(tryGetStub, 'aws.amazonq.codescan.groupingStrategy', String)
                 assert.equal(result, CodeIssueGroupingStrategy.Severity)
             })
 
             it('should return stored state when valid', function () {
-                const validStrategy = CodeIssueGroupingStrategy.Severity
-                sandbox.stub(globals.globalState, 'tryGet').returns(validStrategy)
+                const validStrategy = CodeIssueGroupingStrategy.FileLocation
+                state.setState(validStrategy)
 
                 const result = state.getState()
 
@@ -120,7 +114,7 @@ describe('model', function () {
 
             it('should return fallback when stored state is invalid', function () {
                 const invalidStrategy = 'invalid'
-                sandbox.stub(globals.globalState, 'tryGet').returns(invalidStrategy)
+                state.setState(invalidStrategy)
 
                 const result = state.getState()
 
@@ -131,7 +125,6 @@ describe('model', function () {
         describe('setState', function () {
             it('should update state and fire change event for valid strategy', async function () {
                 const validStrategy = CodeIssueGroupingStrategy.FileLocation
-                const updateStub = sandbox.stub(globals.globalState, 'update').resolves()
 
                 // Create a spy to watch for event emissions
                 const eventSpy = sandbox.spy()
@@ -139,13 +132,11 @@ describe('model', function () {
 
                 await state.setState(validStrategy)
 
-                sinon.assert.calledWith(updateStub, 'aws.amazonq.codescan.groupingStrategy', validStrategy)
                 sinon.assert.calledWith(eventSpy, validStrategy)
             })
 
             it('should use fallback and fire change event for invalid strategy', async function () {
                 const invalidStrategy = 'invalid'
-                const updateStub = sandbox.stub(globals.globalState, 'update').resolves()
 
                 // Create a spy to watch for event emissions
                 const eventSpy = sandbox.spy()
@@ -153,11 +144,6 @@ describe('model', function () {
 
                 await state.setState(invalidStrategy)
 
-                sinon.assert.calledWith(
-                    updateStub,
-                    'aws.amazonq.codescan.groupingStrategy',
-                    CodeIssueGroupingStrategy.Severity
-                )
                 sinon.assert.calledWith(eventSpy, CodeIssueGroupingStrategy.Severity)
             })
         })

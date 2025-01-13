@@ -9,9 +9,11 @@ import {
     createCodeIssueGroupingStrategyPrompter,
 } from 'aws-core-vscode/codewhisperer'
 import sinon from 'sinon'
+import assert from 'assert'
+import vscode from 'vscode'
 
-const severity = { label: 'Severity', data: CodeIssueGroupingStrategy.Severity }
-const fileLocation = { label: 'File Location', data: CodeIssueGroupingStrategy.FileLocation }
+const severity = { data: CodeIssueGroupingStrategy.Severity, label: 'Severity' }
+const fileLocation = { data: CodeIssueGroupingStrategy.FileLocation, label: 'File Location' }
 
 describe('createCodeIssueGroupingStrategyPrompter', function () {
     let tester: QuickPickPrompterTester<CodeIssueGroupingStrategy>
@@ -20,16 +22,24 @@ describe('createCodeIssueGroupingStrategyPrompter', function () {
         tester = createQuickPickPrompterTester(createCodeIssueGroupingStrategyPrompter())
     })
 
-    it('should list grouping strategies', function () {
+    afterEach(function () {
+        sinon.restore()
+    })
+
+    it('should list grouping strategies', async function () {
         tester.assertItems([severity, fileLocation])
+        tester.hide()
+        await tester.result()
     })
 
     it('should update state on selection', async function () {
-        const spy = sinon.spy(CodeIssueGroupingStrategyState.instance, 'setState')
+        const originalState = CodeIssueGroupingStrategyState.instance.getState()
+        assert.equal(originalState, CodeIssueGroupingStrategy.Severity)
 
         tester.selectItems(fileLocation)
-        tester.assertSelectedItems(fileLocation)
+        tester.addCallback(() => vscode.commands.executeCommand('workbench.action.acceptSelectedQuickOpenItem'))
 
-        spy.calledWith(CodeIssueGroupingStrategy.FileLocation)
+        await tester.result()
+        assert.equal(CodeIssueGroupingStrategyState.instance.getState(), fileLocation.data)
     })
 })
