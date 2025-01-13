@@ -144,11 +144,12 @@ export async function onInlineAcceptance(acceptanceEntry: OnRecommendationAccept
 
         RecommendationHandler.instance.reportUserDecisions(acceptanceEntry.acceptIndex)
         if (acceptanceEntry.acceptIndex == 0) {
-            // TODO: gate behind A/B group if needed
             const nextSession = CodeWhispererSessionState.instance.getNextSession()
             nextSession.startPos = acceptanceEntry.editor.selection.active
             CodeWhispererSessionState.instance.setSession(nextSession)
-            await RecommendationHandler.instance.showNextRecommendations()
+            if (nextSession.recommendations.length) {
+                await RecommendationHandler.instance.tryShowRecommendation()
+            }
         }
     }
 }

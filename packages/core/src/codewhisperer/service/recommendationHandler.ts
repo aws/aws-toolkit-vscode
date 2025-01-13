@@ -171,7 +171,6 @@ export class RecommendationHandler {
         pagination: boolean = true,
         page: number = 0,
         generate: boolean = isIamConnection(AuthUtil.instance.conn),
-        // currentSession: any = this.session,
         isNextSession: boolean = false
     ): Promise<GetRecommendationsResponse> {
         let invocationResult: 'Succeeded' | 'Failed' = 'Failed'
@@ -335,7 +334,6 @@ export class RecommendationHandler {
                 reason = error ? String(error) : 'unknown'
             }
         } finally {
-            console.log('final session', currentSession)
             const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
 
             let msg = indent(
@@ -399,7 +397,7 @@ export class RecommendationHandler {
             }
         }
 
-        if (this.isCancellationRequested()) {
+        if (!isNextSession && this.isCancellationRequested()) {
             return Promise.resolve<GetRecommendationsResponse>({
                 result: invocationResult,
                 errorMessage: errorMessage,
@@ -456,7 +454,6 @@ export class RecommendationHandler {
                 this.reportUserDecisions(-1)
             }
         }
-        console.log('final session', currentSession)
         return Promise.resolve<GetRecommendationsResponse>({
             result: invocationResult,
             errorMessage: errorMessage,
@@ -718,11 +715,6 @@ export class RecommendationHandler {
 
     isSuggestionVisible(): boolean {
         return this.inlineCompletionProvider?.getActiveItemIndex !== undefined
-    }
-
-    async showNextRecommendations() {
-        getLogger().info('show pre-loaded recommendation')
-        await this.showRecommendation(0, false)
     }
 
     async getConfigEntry(): Promise<ConfigurationEntry> {
