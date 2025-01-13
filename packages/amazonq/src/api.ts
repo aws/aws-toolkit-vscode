@@ -4,7 +4,10 @@
  */
 
 import { SendMessageCommandOutput, SendMessageRequest } from '@amzn/amazon-q-developer-streaming-client'
-import { GenerateAssistantResponseCommandOutput, GenerateAssistantResponseRequest } from '@amzn/codewhisperer-streaming'
+import {
+    GenerateAssistantResponseCommandOutput,
+    GenerateAssistantResponseRequest,
+} from '@amzn/amazon-codewhisperer-streaming'
 import { AuthUtil } from 'aws-core-vscode/codewhisperer'
 import { ChatSession } from 'aws-core-vscode/codewhispererChat'
 import { api } from 'aws-core-vscode/amazonq'

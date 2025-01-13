@@ -18,7 +18,7 @@ import {
     ChatResponseStream as cwChatResponseStream,
     CodeWhispererStreamingServiceException,
     SupplementaryWebLink,
-} from '@amzn/codewhisperer-streaming'
+} from '@amzn/amazon-codewhisperer-streaming'
 import { ChatMessage, ErrorMessage, FollowUp, Suggestion } from '../../../view/connector/connector'
 import { ChatSession } from '../../../clients/chat/v0/chat'
 import { ChatException } from './model'

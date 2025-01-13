@@ -53,7 +53,7 @@ import {
     runBuildCommand,
     startTestGenerationProcess,
 } from '../../../codewhisperer/commands/startTestGeneration'
-import { UserIntent } from '@amzn/codewhisperer-streaming'
+import { UserIntent } from '@amzn/amazon-codewhisperer-streaming'
 import { getSelectedCustomization } from '../../../codewhisperer/util/customizationUtil'
 import { createCodeWhispererChatStreamingClient } from '../../../shared/clients/codewhispererChatClient'
 import { ChatTriggerType } from '../../../codewhispererChat/controllers/chat/model'

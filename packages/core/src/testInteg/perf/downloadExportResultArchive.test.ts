@@ -4,7 +4,7 @@
  */
 import assert from 'assert'
 import { WorkspaceFolder } from 'vscode'
-import { ExportResultArchiveCommandInput } from '@amzn/codewhisperer-streaming'
+import { ExportResultArchiveCommandInput } from '@amzn/amazon-codewhisperer-streaming'
 import * as sinon from 'sinon'
 import path from 'path'
 import { fs, getRandomString } from '../../shared'

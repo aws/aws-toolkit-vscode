@@ -12,7 +12,7 @@ import { CancellationError } from './utilities/timeoutUtils'
 import { hasKey, isNonNullable } from './utilities/tsUtils'
 import type * as nodefs from 'fs' // eslint-disable-line no-restricted-imports
 import type * as os from 'os'
-import { CodeWhispererStreamingServiceException } from '@amzn/codewhisperer-streaming'
+import { CodeWhispererStreamingServiceException } from '@amzn/amazon-codewhisperer-streaming'
 import { driveLetterRegex } from './utilities/pathUtils'
 import { getLogger } from './logger/logger'
 import { crashMonitoringDirName } from './constants'

@@ -9,7 +9,7 @@ import fs from 'fs' // eslint-disable-line no-restricted-imports
 import { parsePatch, applyPatches, ParsedDiff } from 'diff'
 import path from 'path'
 import vscode from 'vscode'
-import { ExportIntent } from '@amzn/codewhisperer-streaming'
+import { ExportIntent } from '@amzn/amazon-codewhisperer-streaming'
 import {
     TransformByQReviewStatus,
     transformByQState,

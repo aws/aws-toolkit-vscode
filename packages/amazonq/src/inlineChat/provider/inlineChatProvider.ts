@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import {
     CodeWhispererStreamingServiceException,
     GenerateAssistantResponseCommandOutput,
-} from '@amzn/codewhisperer-streaming'
+} from '@amzn/amazon-codewhisperer-streaming'
 import { AuthUtil, getSelectedCustomization } from 'aws-core-vscode/codewhisperer'
 import {
     ChatSessionStorage,

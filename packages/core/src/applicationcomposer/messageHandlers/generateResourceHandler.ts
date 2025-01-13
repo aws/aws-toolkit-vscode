@@ -7,7 +7,7 @@ import {
     SupplementaryWebLink,
     Reference,
     UserIntent,
-} from '@amzn/codewhisperer-streaming'
+} from '@amzn/amazon-codewhisperer-streaming'
 
 import {
     GenerateResourceRequestMessage,

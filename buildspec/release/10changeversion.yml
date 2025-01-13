@@ -25,7 +25,7 @@ phases:
                 DATE=$(date)
                 npm version --no-git-tag-version "$VERSION" -w packages/${TARGET_EXTENSION}
                 # 'createRelease' uses ts-node.
-                # Ignore broken "postinstall" script in "src.gen/@amzn/codewhisperer-streaming/package.json".
+                # Ignore broken "postinstall" script in "src.gen/@amzn/amazon-codewhisperer-streaming/package.json".
                 npm install --ignore-scripts ts-node
             - |
                 npm run createRelease -w packages/${TARGET_EXTENSION}

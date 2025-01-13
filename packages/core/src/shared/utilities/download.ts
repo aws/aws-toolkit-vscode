@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { CodeWhispererStreaming, ExportResultArchiveCommandInput } from '@amzn/codewhisperer-streaming'
+import { CodeWhispererStreaming, ExportResultArchiveCommandInput } from '@amzn/amazon-codewhisperer-streaming'
 import { ToolkitError } from '../errors'
 import fs from '../fs/fs'
 

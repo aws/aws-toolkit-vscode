@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { UserIntent } from '@amzn/codewhisperer-streaming'
+import { UserIntent } from '@amzn/amazon-codewhisperer-streaming'
 import { EditorContextCommand } from '../../../commands/registerCommands'
 import { PromptMessage } from '../model'
 import { Auth } from '../../../../auth'

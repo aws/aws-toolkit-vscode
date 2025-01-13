@@ -2,7 +2,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { UserIntent } from '@amzn/codewhisperer-streaming'
+import { UserIntent } from '@amzn/amazon-codewhisperer-streaming'
 import {
     AmazonqAddMessage,
     AmazonqInteractWithMessage,

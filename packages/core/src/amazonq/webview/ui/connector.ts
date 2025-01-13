@@ -25,7 +25,7 @@ import { TabType, TabsStorage } from './storages/tabsStorage'
 import { WelcomeFollowupType } from './apps/amazonqCommonsConnector'
 import { AuthFollowUpType } from './followUps/generator'
 import { DiffTreeFileInfo } from './diffTree/types'
-import { UserIntent } from '@amzn/codewhisperer-streaming'
+import { UserIntent } from '@amzn/amazon-codewhisperer-streaming'
 
 export interface CodeReference {
     licenseName?: string

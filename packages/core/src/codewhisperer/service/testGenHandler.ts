@@ -22,7 +22,7 @@ import { createCodeWhispererChatStreamingClient } from '../../shared/clients/cod
 import { downloadExportResultArchive } from '../../shared/utilities/download'
 import AdmZip from 'adm-zip'
 import path from 'path'
-import { ExportIntent } from '@amzn/codewhisperer-streaming'
+import { ExportIntent } from '@amzn/amazon-codewhisperer-streaming'
 import { glob } from 'glob'
 
 // TODO: Get TestFileName and Framework and to error message

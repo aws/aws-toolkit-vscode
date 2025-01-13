@@ -2,7 +2,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { CodeWhispererStreaming } from '@amzn/codewhisperer-streaming'
+import { CodeWhispererStreaming } from '@amzn/amazon-codewhisperer-streaming'
 import { ConfiguredRetryStrategy } from '@smithy/util-retry'
 import { getCodewhispererConfig } from '../../codewhisperer/client/codewhisperer'
 import { AuthUtil } from '../../codewhisperer/util/authUtil'

@@ -43,7 +43,7 @@ import { JobStoppedError, ZipExceedsSizeLimitError } from '../../../amazonqGumby
 import { writeLogs } from './transformFileHandler'
 import { createCodeWhispererChatStreamingClient } from '../../../shared/clients/codewhispererChatClient'
 import { downloadExportResultArchive } from '../../../shared/utilities/download'
-import { ExportIntent, TransformationDownloadArtifactType } from '@amzn/codewhisperer-streaming'
+import { ExportIntent, TransformationDownloadArtifactType } from '@amzn/amazon-codewhisperer-streaming'
 import fs from '../../../shared/fs/fs'
 import { ChatSessionManager } from '../../../amazonqGumby/chat/storages/chatSession'
 import { encodeHTML } from '../../../shared/utilities/textUtilities'

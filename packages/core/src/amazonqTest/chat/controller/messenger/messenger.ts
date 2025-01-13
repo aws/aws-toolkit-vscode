@@ -30,7 +30,7 @@ import { TriggerPayload } from '../../../../codewhispererChat/controllers/chat/m
 import {
     CodeWhispererStreamingServiceException,
     GenerateAssistantResponseCommandOutput,
-} from '@amzn/codewhisperer-streaming'
+} from '@amzn/amazon-codewhisperer-streaming'
 import { Session } from '../../session/session'
 import { CodeReference } from '../../../../amazonq/webview/ui/apps/amazonqCommonsConnector'
 import { getHttpStatusCode, getRequestId, getTelemetryReasonDesc, ToolkitError } from '../../../../shared/errors'

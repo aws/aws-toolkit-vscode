@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { RelevantTextDocument, UserIntent } from '@amzn/codewhisperer-streaming'
+import { RelevantTextDocument, UserIntent } from '@amzn/amazon-codewhisperer-streaming'
 import { MatchPolicy, CodeQuery } from '../../clients/chat/v0/model'
 import { Selection } from 'vscode'
 import { TabOpenType } from '../../../amazonq/webview/ui/storages/tabsStorage'

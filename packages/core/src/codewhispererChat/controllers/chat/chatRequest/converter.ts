@@ -10,7 +10,7 @@ import {
     RelevantTextDocument,
     SymbolType,
     TextDocument,
-} from '@amzn/codewhisperer-streaming'
+} from '@amzn/amazon-codewhisperer-streaming'
 import { ChatTriggerType, TriggerPayload } from '../model'
 import { undefinedIfEmpty } from '../../../../shared'
 
