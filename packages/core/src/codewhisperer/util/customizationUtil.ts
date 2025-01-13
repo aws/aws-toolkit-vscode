@@ -91,6 +91,12 @@ export const baseCustomization = {
     ),
 }
 
+/**
+ * Gets the customization that should be used for user requests. If a user has manually selected
+ * a customization, always respect that choice. If not, check if the user is part of an AB
+ * group assigned a specific customization. If so, use that customization. If not, use the
+ * base customization.
+ */
 export const getSelectedCustomization = (): Customization => {
     if (
         !AuthUtil.instance.isCustomizationFeatureEnabled ||
@@ -105,21 +111,22 @@ export const getSelectedCustomization = (): Customization => {
         Object,
         {}
     )
-    const result = selectedCustomizationArr[AuthUtil.instance.conn.label] || baseCustomization
+    const selectedCustomization = selectedCustomizationArr[AuthUtil.instance.conn.label]
 
-    // A/B case
-    const customizationFeature = FeatureConfigProvider.getFeature(Features.customizationArnOverride)
-    const arnOverride = customizationFeature?.value.stringValue
-    const customizationOverrideName = customizationFeature?.variation
-    if (arnOverride === undefined || arnOverride === '') {
-        return result
+    if (selectedCustomization && selectedCustomization.name !== baseCustomization.name) {
+        return selectedCustomization
     } else {
-        // A trick to prioritize arn from A/B over user's currently selected(for request and telemetry)
-        // but still shows customization info of user's currently selected.
-        return {
-            arn: arnOverride,
-            name: customizationOverrideName,
-            description: result.description,
+        const customizationFeature = FeatureConfigProvider.getFeature(Features.customizationArnOverride)
+        const arnOverride = customizationFeature?.value.stringValue
+        const customizationOverrideName = customizationFeature?.variation
+        if (arnOverride === undefined) {
+            return baseCustomization
+        } else {
+            return {
+                arn: arnOverride,
+                name: customizationOverrideName,
+                description: baseCustomization.description,
+            }
         }
     }
 }
