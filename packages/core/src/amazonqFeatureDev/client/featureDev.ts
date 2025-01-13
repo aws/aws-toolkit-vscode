@@ -31,6 +31,7 @@ import {
     MetricData,
     TelemetryEvent,
 } from './featuredevproxyclient'
+import { ExportResultArchiveCommandInput } from '@amzn/amazon-codewhisperer-streaming'
 
 // Re-enable once BE is able to handle retries.
 const writeAPIRetryOptions = {
@@ -227,7 +228,7 @@ export class FeatureDevClient {
     public async exportResultArchive(conversationId: string) {
         try {
             const streamingClient = await createCodeWhispererChatStreamingClient()
-            const params = {
+            const params: ExportResultArchiveCommandInput = {
                 exportId: conversationId,
                 exportIntent: 'TASK_ASSIST',
             }
