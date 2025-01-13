@@ -146,11 +146,10 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
         this._ready = !this.init
 
         if (typeof this.init === 'function') {
-            // eslint-disable-next-line @typescript-eslint/unbound-method
-            const _init = this.init
+            const _init = this.init.bind(this)
             this.init = () => {
                 this._ready = true
-                return _init.apply(this)
+                return _init()
             }
         }
     }
