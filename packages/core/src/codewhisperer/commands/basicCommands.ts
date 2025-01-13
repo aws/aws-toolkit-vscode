@@ -50,7 +50,7 @@ import { once } from '../../shared/utilities/functionUtils'
 import { focusAmazonQPanel } from '../../codewhispererChat/commands/registerCommands'
 import { removeDiagnostic } from '../service/diagnosticsProvider'
 import { SsoAccessTokenProvider } from '../../auth/sso/ssoAccessTokenProvider'
-import { ToolkitError, getErrorMsg, getTelemetryReason, getTelemetryReasonDesc } from '../../shared/errors'
+import { ToolkitError, getErrorMsg, getTelemetryReason, getTelemetryReasonDesc, isAwsError } from '../../shared/errors'
 import { isRemoteWorkspace } from '../../shared/vscode/env'
 import { isBuilderIdConnection } from '../../auth/connection'
 import globals from '../../shared/extensionGlobals'
@@ -67,7 +67,6 @@ import { startCodeFixGeneration } from './startCodeFixGeneration'
 import { DefaultAmazonQAppInitContext } from '../../amazonq/apps/initContext'
 import path from 'path'
 import { parsePatch } from 'diff'
-import type { AWSError } from 'aws-sdk'
 
 const MessageTimeOut = 5_000
 
@@ -736,10 +735,11 @@ export const generateFix = Commands.declare(
                     SecurityIssueProvider.instance.updateIssue(updatedIssue, targetFilePath)
                     SecurityIssueTreeViewProvider.instance.refresh()
                 } catch (err) {
+                    const error = isAwsError(err) ? err : new TypeError('Unexpected error')
                     await updateSecurityIssueWebview({
                         issue: targetIssue,
                         isGenerateFixLoading: false,
-                        generateFixError: getErrorMsg(err as AWSError, true),
+                        generateFixError: getErrorMsg(error, true),
                         filePath: targetFilePath,
                         context: context.extensionContext,
                         shouldRefreshView: false,
