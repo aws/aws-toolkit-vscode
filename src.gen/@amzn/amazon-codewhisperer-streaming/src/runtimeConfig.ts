@@ -2,11 +2,19 @@
 // @ts-ignore: package.json will be imported from dist folders
 import packageInfo from "../package.json"; // eslint-disable-line
 
+import { emitWarningIfUnsupportedVersion as awsCheckVersion } from "@aws-sdk/core";
+import {
+  FromSsoInit,
+  nodeProvider,
+} from "@aws-sdk/token-providers";
 import { defaultUserAgent } from "@aws-sdk/util-user-agent-node";
 import {
+  NODE_REGION_CONFIG_FILE_OPTIONS,
+  NODE_REGION_CONFIG_OPTIONS,
   NODE_USE_DUALSTACK_ENDPOINT_CONFIG_OPTIONS,
   NODE_USE_FIPS_ENDPOINT_CONFIG_OPTIONS,
 } from "@smithy/config-resolver";
+import { HttpBearerAuthSigner } from "@smithy/core";
 import { eventStreamSerdeProvider } from "@smithy/eventstream-serde-node";
 import { Hash } from "@smithy/hash-node";
 import {
@@ -18,6 +26,7 @@ import {
   NodeHttpHandler as RequestHandler,
   streamCollector,
 } from "@smithy/node-http-handler";
+import { IdentityProviderConfig } from "@smithy/types";
 import { calculateBodyLength } from "@smithy/util-body-length-node";
 import { DEFAULT_RETRY_MODE } from "@smithy/util-retry";
 import { CodeWhispererStreamingClientConfig } from "./CodeWhispererStreamingClient";
@@ -34,7 +43,7 @@ export const getRuntimeConfig = (config: CodeWhispererStreamingClientConfig) => 
   const defaultsMode = resolveDefaultsModeConfig(config);
   const defaultConfigProvider = () => defaultsMode().then(loadConfigsForDefaultMode);
   const clientSharedValues = getSharedRuntimeConfig(config);
-  return {
+  awsCheckVersion(process.version);return {
     ...clientSharedValues,
     ...config,
     runtime: "node",
@@ -42,8 +51,15 @@ export const getRuntimeConfig = (config: CodeWhispererStreamingClientConfig) => 
     bodyLengthChecker: config?.bodyLengthChecker ?? calculateBodyLength,
     defaultUserAgentProvider: config?.defaultUserAgentProvider ?? defaultUserAgent({serviceId: clientSharedValues.serviceId, clientVersion: packageInfo.version}),
     eventStreamSerdeProvider: config?.eventStreamSerdeProvider ?? eventStreamSerdeProvider,
+    httpAuthSchemes: config?.httpAuthSchemes ?? [{
+          schemeId: "smithy.api#httpBearerAuth",
+          identityProvider: (ipc: IdentityProviderConfig) =>
+            ipc.getIdentityProvider("smithy.api#httpBearerAuth") || (async (idProps) => await nodeProvider(idProps as FromSsoInit)(idProps)),
+          signer: new HttpBearerAuthSigner(),
+        }],
     maxAttempts: config?.maxAttempts ?? loadNodeConfig(NODE_MAX_ATTEMPT_CONFIG_OPTIONS),
-    requestHandler: config?.requestHandler ?? new RequestHandler(defaultConfigProvider),
+    region: config?.region ?? loadNodeConfig(NODE_REGION_CONFIG_OPTIONS, NODE_REGION_CONFIG_FILE_OPTIONS),
+    requestHandler: RequestHandler.create(config?.requestHandler ?? defaultConfigProvider),
     retryMode: config?.retryMode ?? loadNodeConfig({...NODE_RETRY_MODE_CONFIG_OPTIONS,default: async () => (await defaultConfigProvider()).retryMode || DEFAULT_RETRY_MODE,}),
     sha256: config?.sha256 ?? Hash.bind(null, "sha256"),
     streamCollector: config?.streamCollector ?? streamCollector,

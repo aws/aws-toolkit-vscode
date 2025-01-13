@@ -13,6 +13,7 @@ import {
   FetchHttpHandler as RequestHandler,
   streamCollector,
 } from "@smithy/fetch-http-handler";
+import { invalidProvider } from "@smithy/invalid-dependency";
 import { calculateBodyLength } from "@smithy/util-body-length-browser";
 import {
   DEFAULT_MAX_ATTEMPTS,
@@ -39,7 +40,8 @@ export const getRuntimeConfig = (config: CodeWhispererStreamingClientConfig) => 
     defaultUserAgentProvider: config?.defaultUserAgentProvider ?? defaultUserAgent({serviceId: clientSharedValues.serviceId, clientVersion: packageInfo.version}),
     eventStreamSerdeProvider: config?.eventStreamSerdeProvider ?? eventStreamSerdeProvider,
     maxAttempts: config?.maxAttempts ?? DEFAULT_MAX_ATTEMPTS,
-    requestHandler: config?.requestHandler ?? new RequestHandler(defaultConfigProvider),
+    region: config?.region ?? invalidProvider("Region is missing"),
+    requestHandler: RequestHandler.create(config?.requestHandler ?? defaultConfigProvider),
     retryMode: config?.retryMode ?? (async () => (await defaultConfigProvider()).retryMode || DEFAULT_RETRY_MODE),
     sha256: config?.sha256 ?? Sha256,
     streamCollector: config?.streamCollector ?? streamCollector,

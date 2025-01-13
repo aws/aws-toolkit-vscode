@@ -5,60 +5,46 @@ import {
   ServiceOutputTypes,
 } from "../CodeWhispererStreamingClient";
 import {
-  ConverseStreamRequest,
-  ConverseStreamRequestFilterSensitiveLog,
-  ConverseStreamResponse,
-  ConverseStreamResponseFilterSensitiveLog,
+  GenerateTaskAssistPlanRequest,
+  GenerateTaskAssistPlanRequestFilterSensitiveLog,
+  GenerateTaskAssistPlanResponse,
+  GenerateTaskAssistPlanResponseFilterSensitiveLog,
 } from "../models/models_0";
 import {
-  de_ConverseStreamCommand,
-  se_ConverseStreamCommand,
+  de_GenerateTaskAssistPlanCommand,
+  se_GenerateTaskAssistPlanCommand,
 } from "../protocols/Aws_restJson1";
 import { getSerdePlugin } from "@smithy/middleware-serde";
-import {
-  HttpRequest as __HttpRequest,
-  HttpResponse as __HttpResponse,
-} from "@smithy/protocol-http";
 import { Command as $Command } from "@smithy/smithy-client";
-import {
-  FinalizeHandlerArguments,
-  Handler,
-  HandlerExecutionContext,
-  MiddlewareStack,
-  SMITHY_CONTEXT_KEY,
-  EventStreamSerdeContext as __EventStreamSerdeContext,
-  HttpHandlerOptions as __HttpHandlerOptions,
-  MetadataBearer as __MetadataBearer,
-  SerdeContext as __SerdeContext,
-} from "@smithy/types";
+import { MetadataBearer as __MetadataBearer } from "@smithy/types";
 
 /**
  * @public
  */
-export { __MetadataBearer, $Command };
+export type { __MetadataBearer };
+export { $Command };
 /**
  * @public
  *
- * The input for {@link ConverseStreamCommand}.
+ * The input for {@link GenerateTaskAssistPlanCommand}.
  */
-export interface ConverseStreamCommandInput extends ConverseStreamRequest {}
+export interface GenerateTaskAssistPlanCommandInput extends GenerateTaskAssistPlanRequest {}
 /**
  * @public
  *
- * The output of {@link ConverseStreamCommand}.
+ * The output of {@link GenerateTaskAssistPlanCommand}.
  */
-export interface ConverseStreamCommandOutput extends ConverseStreamResponse, __MetadataBearer {}
+export interface GenerateTaskAssistPlanCommandOutput extends GenerateTaskAssistPlanResponse, __MetadataBearer {}
 
 /**
- * @public
- *
+ * API to generate task assist plan.
  * @example
  * Use a bare-bones client and the command you need to make an API call.
  * ```javascript
- * import { CodeWhispererStreamingClient, ConverseStreamCommand } from "@amzn/codewhisperer-streaming"; // ES Modules import
- * // const { CodeWhispererStreamingClient, ConverseStreamCommand } = require("@amzn/codewhisperer-streaming"); // CommonJS import
+ * import { CodeWhispererStreamingClient, GenerateTaskAssistPlanCommand } from "@amzn/amazon-codewhisperer-streaming"; // ES Modules import
+ * // const { CodeWhispererStreamingClient, GenerateTaskAssistPlanCommand } = require("@amzn/amazon-codewhisperer-streaming"); // CommonJS import
  * const client = new CodeWhispererStreamingClient(config);
- * const input = { // ConverseStreamRequest
+ * const input = { // GenerateTaskAssistPlanRequest
  *   conversationState: { // ConversationState
  *     conversationId: "STRING_VALUE",
  *     history: [ // ChatHistory
@@ -139,6 +125,7 @@ export interface ConverseStreamCommandOutput extends ConverseStreamResponse, __M
  *                   value: "STRING_VALUE",
  *                 },
  *               ],
+ *               timezoneOffset: Number("int"),
  *             },
  *             appStudioContext: { // AppStudioState
  *               namespace: "STRING_VALUE", // required
@@ -184,12 +171,17 @@ export interface ConverseStreamCommandOutput extends ConverseStreamResponse, __M
  *             },
  *             consoleState: { // ConsoleState
  *               region: "STRING_VALUE",
+ *               consoleUrl: "STRING_VALUE",
+ *               serviceId: "STRING_VALUE",
+ *               serviceConsolePage: "STRING_VALUE",
+ *               serviceSubconsolePage: "STRING_VALUE",
+ *               taskName: "STRING_VALUE",
  *             },
  *             userSettings: { // UserSettings
  *               hasConsentedToCrossRegionCalls: true || false,
  *             },
  *           },
- *           userIntent: "SUGGEST_ALTERNATE_IMPLEMENTATION" || "APPLY_COMMON_BEST_PRACTICES" || "IMPROVE_CODE" || "SHOW_EXAMPLES" || "CITE_SOURCES" || "EXPLAIN_LINE_BY_LINE" || "EXPLAIN_CODE_SELECTION" || "GENERATE_CLOUDFORMATION_TEMPLATE",
+ *           userIntent: "SUGGEST_ALTERNATE_IMPLEMENTATION" || "APPLY_COMMON_BEST_PRACTICES" || "IMPROVE_CODE" || "SHOW_EXAMPLES" || "CITE_SOURCES" || "EXPLAIN_LINE_BY_LINE" || "EXPLAIN_CODE_SELECTION" || "GENERATE_CLOUDFORMATION_TEMPLATE" || "GENERATE_UNIT_TESTS" || "CODE_GENERATION",
  *         },
  *         assistantResponseMessage: { // AssistantResponseMessage
  *           messageId: "STRING_VALUE",
@@ -214,7 +206,7 @@ export interface ConverseStreamCommandOutput extends ConverseStreamResponse, __M
  *           ],
  *           followupPrompt: { // FollowupPrompt
  *             content: "STRING_VALUE", // required
- *             userIntent: "SUGGEST_ALTERNATE_IMPLEMENTATION" || "APPLY_COMMON_BEST_PRACTICES" || "IMPROVE_CODE" || "SHOW_EXAMPLES" || "CITE_SOURCES" || "EXPLAIN_LINE_BY_LINE" || "EXPLAIN_CODE_SELECTION" || "GENERATE_CLOUDFORMATION_TEMPLATE",
+ *             userIntent: "SUGGEST_ALTERNATE_IMPLEMENTATION" || "APPLY_COMMON_BEST_PRACTICES" || "IMPROVE_CODE" || "SHOW_EXAMPLES" || "CITE_SOURCES" || "EXPLAIN_LINE_BY_LINE" || "EXPLAIN_CODE_SELECTION" || "GENERATE_CLOUDFORMATION_TEMPLATE" || "GENERATE_UNIT_TESTS" || "CODE_GENERATION",
  *           },
  *         },
  *       },
@@ -274,6 +266,7 @@ export interface ConverseStreamCommandOutput extends ConverseStreamResponse, __M
  *                 value: "STRING_VALUE",
  *               },
  *             ],
+ *             timezoneOffset: Number("int"),
  *           },
  *           appStudioContext: {
  *             namespace: "STRING_VALUE", // required
@@ -300,12 +293,17 @@ export interface ConverseStreamCommandOutput extends ConverseStreamResponse, __M
  *           },
  *           consoleState: {
  *             region: "STRING_VALUE",
+ *             consoleUrl: "STRING_VALUE",
+ *             serviceId: "STRING_VALUE",
+ *             serviceConsolePage: "STRING_VALUE",
+ *             serviceSubconsolePage: "STRING_VALUE",
+ *             taskName: "STRING_VALUE",
  *           },
  *           userSettings: {
  *             hasConsentedToCrossRegionCalls: true || false,
  *           },
  *         },
- *         userIntent: "SUGGEST_ALTERNATE_IMPLEMENTATION" || "APPLY_COMMON_BEST_PRACTICES" || "IMPROVE_CODE" || "SHOW_EXAMPLES" || "CITE_SOURCES" || "EXPLAIN_LINE_BY_LINE" || "EXPLAIN_CODE_SELECTION" || "GENERATE_CLOUDFORMATION_TEMPLATE",
+ *         userIntent: "SUGGEST_ALTERNATE_IMPLEMENTATION" || "APPLY_COMMON_BEST_PRACTICES" || "IMPROVE_CODE" || "SHOW_EXAMPLES" || "CITE_SOURCES" || "EXPLAIN_LINE_BY_LINE" || "EXPLAIN_CODE_SELECTION" || "GENERATE_CLOUDFORMATION_TEMPLATE" || "GENERATE_UNIT_TESTS" || "CODE_GENERATION",
  *       },
  *       assistantResponseMessage: {
  *         messageId: "STRING_VALUE",
@@ -330,29 +328,31 @@ export interface ConverseStreamCommandOutput extends ConverseStreamResponse, __M
  *         ],
  *         followupPrompt: {
  *           content: "STRING_VALUE", // required
- *           userIntent: "SUGGEST_ALTERNATE_IMPLEMENTATION" || "APPLY_COMMON_BEST_PRACTICES" || "IMPROVE_CODE" || "SHOW_EXAMPLES" || "CITE_SOURCES" || "EXPLAIN_LINE_BY_LINE" || "EXPLAIN_CODE_SELECTION" || "GENERATE_CLOUDFORMATION_TEMPLATE",
+ *           userIntent: "SUGGEST_ALTERNATE_IMPLEMENTATION" || "APPLY_COMMON_BEST_PRACTICES" || "IMPROVE_CODE" || "SHOW_EXAMPLES" || "CITE_SOURCES" || "EXPLAIN_LINE_BY_LINE" || "EXPLAIN_CODE_SELECTION" || "GENERATE_CLOUDFORMATION_TEMPLATE" || "GENERATE_UNIT_TESTS" || "CODE_GENERATION",
  *         },
  *       },
  *     },
- *     chatTriggerType: "MANUAL" || "DIAGNOSTIC", // required
+ *     chatTriggerType: "MANUAL" || "DIAGNOSTIC" || "INLINE_CHAT", // required
  *     customizationArn: "STRING_VALUE",
  *   },
- *   profileArn: "STRING_VALUE",
- *   source: "STRING_VALUE",
- *   dryRun: true || false,
+ *   workspaceState: { // WorkspaceState
+ *     uploadId: "STRING_VALUE", // required
+ *     programmingLanguage: "<ProgrammingLanguage>", // required
+ *     contextTruncationScheme: "ANALYSIS" || "GUMBY",
+ *   },
  * };
- * const command = new ConverseStreamCommand(input);
+ * const command = new GenerateTaskAssistPlanCommand(input);
  * const response = await client.send(command);
- * // { // ConverseStreamResponse
- * //   conversationId: "STRING_VALUE", // required
- * //   utteranceId: "STRING_VALUE",
- * //   converseStreamResponse: { // ChatResponseStream Union: only one key present
+ * // { // GenerateTaskAssistPlanResponse
+ * //   planningResponseStream: { // ChatResponseStream Union: only one key present
  * //     messageMetadataEvent: { // MessageMetadataEvent
  * //       conversationId: "STRING_VALUE",
+ * //       utteranceId: "STRING_VALUE",
  * //     },
  * //     assistantResponseEvent: { // AssistantResponseEvent
  * //       content: "STRING_VALUE", // required
  * //     },
+ * //     dryRunSucceedEvent: {},
  * //     codeReferenceEvent: { // CodeReferenceEvent
  * //       references: [ // References
  * //         { // Reference
@@ -378,7 +378,7 @@ export interface ConverseStreamCommandOutput extends ConverseStreamResponse, __M
  * //     followupPromptEvent: { // FollowupPromptEvent
  * //       followupPrompt: { // FollowupPrompt
  * //         content: "STRING_VALUE", // required
- * //         userIntent: "SUGGEST_ALTERNATE_IMPLEMENTATION" || "APPLY_COMMON_BEST_PRACTICES" || "IMPROVE_CODE" || "SHOW_EXAMPLES" || "CITE_SOURCES" || "EXPLAIN_LINE_BY_LINE" || "EXPLAIN_CODE_SELECTION" || "GENERATE_CLOUDFORMATION_TEMPLATE",
+ * //         userIntent: "SUGGEST_ALTERNATE_IMPLEMENTATION" || "APPLY_COMMON_BEST_PRACTICES" || "IMPROVE_CODE" || "SHOW_EXAMPLES" || "CITE_SOURCES" || "EXPLAIN_LINE_BY_LINE" || "EXPLAIN_CODE_SELECTION" || "GENERATE_CLOUDFORMATION_TEMPLATE" || "GENERATE_UNIT_TESTS" || "CODE_GENERATION",
  * //       },
  * //     },
  * //     codeEvent: { // CodeEvent
@@ -393,6 +393,201 @@ export interface ConverseStreamCommandOutput extends ConverseStreamResponse, __M
  * //         },
  * //       },
  * //     },
+ * //     interactionComponentsEvent: { // InteractionComponentsEvent
+ * //       interactionComponentEntries: [ // InteractionComponentEntryList // required
+ * //         { // InteractionComponentEntry
+ * //           interactionComponentId: "STRING_VALUE",
+ * //           interactionComponent: { // InteractionComponent
+ * //             text: { // Text
+ * //               content: "STRING_VALUE", // required
+ * //             },
+ * //             alert: { // Alert
+ * //               type: "INFO" || "ERROR" || "WARNING", // required
+ * //               content: [ // AlertComponentList // required
+ * //                 { // AlertComponent
+ * //                   text: {
+ * //                     content: "STRING_VALUE", // required
+ * //                   },
+ * //                 },
+ * //               ],
+ * //             },
+ * //             infrastructureUpdate: { // InfrastructureUpdate
+ * //               transition: { // InfrastructureUpdateTransition
+ * //                 currentState: "STRING_VALUE", // required
+ * //                 nextState: "STRING_VALUE", // required
+ * //               },
+ * //             },
+ * //             progress: { // Progress
+ * //               content: [ // ProgressComponentList // required
+ * //                 { // ProgressComponent
+ * //                   step: { // Step
+ * //                     id: Number("int"), // required
+ * //                     state: "FAILED" || "SUCCEEDED" || "STOPPED" || "PENDING" || "IN_PROGRESS" || "LOADING" || "PAUSED", // required
+ * //                     label: "STRING_VALUE", // required
+ * //                     content: [ // StepComponentList
+ * //                       { // StepComponent
+ * //                         text: "<Text>",
+ * //                       },
+ * //                     ],
+ * //                   },
+ * //                 },
+ * //               ],
+ * //             },
+ * //             step: {
+ * //               id: Number("int"), // required
+ * //               state: "FAILED" || "SUCCEEDED" || "STOPPED" || "PENDING" || "IN_PROGRESS" || "LOADING" || "PAUSED", // required
+ * //               label: "STRING_VALUE", // required
+ * //               content: [
+ * //                 {
+ * //                   text: "<Text>",
+ * //                 },
+ * //               ],
+ * //             },
+ * //             taskDetails: { // TaskDetails
+ * //               overview: { // TaskOverview
+ * //                 label: "STRING_VALUE", // required
+ * //                 description: "STRING_VALUE", // required
+ * //               },
+ * //               content: [ // TaskComponentList // required
+ * //                 { // TaskComponent
+ * //                   text: "<Text>",
+ * //                   infrastructureUpdate: {
+ * //                     transition: {
+ * //                       currentState: "STRING_VALUE", // required
+ * //                       nextState: "STRING_VALUE", // required
+ * //                     },
+ * //                   },
+ * //                   alert: {
+ * //                     type: "INFO" || "ERROR" || "WARNING", // required
+ * //                     content: [ // required
+ * //                       {
+ * //                         text: "<Text>",
+ * //                       },
+ * //                     ],
+ * //                   },
+ * //                   progress: {
+ * //                     content: [ // required
+ * //                       {
+ * //                         step: "<Step>",
+ * //                       },
+ * //                     ],
+ * //                   },
+ * //                 },
+ * //               ],
+ * //               actions: [ // TaskActionList
+ * //                 { // TaskAction
+ * //                   label: "STRING_VALUE", // required
+ * //                   note: { // TaskActionNote
+ * //                     content: "STRING_VALUE", // required
+ * //                     type: "INFO" || "WARNING",
+ * //                   },
+ * //                   primary: true || false,
+ * //                   disabled: true || false,
+ * //                   payload: { // TaskActionPayload // required
+ * //                     "<keys>": "STRING_VALUE",
+ * //                   },
+ * //                   confirmation: { // TaskActionConfirmation
+ * //                     content: "STRING_VALUE",
+ * //                   },
+ * //                 },
+ * //               ],
+ * //             },
+ * //             taskReference: { // TaskReference
+ * //               taskId: "STRING_VALUE", // required
+ * //             },
+ * //             suggestions: { // Suggestions
+ * //               items: [ // SuggestionList // required
+ * //                 { // Suggestion
+ * //                   value: "STRING_VALUE", // required
+ * //                 },
+ * //               ],
+ * //             },
+ * //             section: { // Section
+ * //               title: "STRING_VALUE", // required
+ * //               content: [ // SectionComponentList // required
+ * //                 { // SectionComponent
+ * //                   text: "<Text>",
+ * //                   alert: {
+ * //                     type: "INFO" || "ERROR" || "WARNING", // required
+ * //                     content: [ // required
+ * //                       {
+ * //                         text: "<Text>",
+ * //                       },
+ * //                     ],
+ * //                   },
+ * //                   resource: { // Resource
+ * //                     title: "STRING_VALUE", // required
+ * //                     link: "STRING_VALUE", // required
+ * //                     description: "STRING_VALUE", // required
+ * //                     type: "STRING_VALUE", // required
+ * //                     ARN: "STRING_VALUE", // required
+ * //                     resourceJsonString: "STRING_VALUE", // required
+ * //                   },
+ * //                   resourceList: { // ResourceList
+ * //                     action: { // Action
+ * //                       webLink: { // WebLink
+ * //                         label: "STRING_VALUE", // required
+ * //                         url: "STRING_VALUE", // required
+ * //                       },
+ * //                       moduleLink: { // ModuleLink
+ * //                         cloudWatchTroubleshootingLink: { // CloudWatchTroubleshootingLink
+ * //                           label: "STRING_VALUE", // required
+ * //                           investigationPayload: "STRING_VALUE", // required
+ * //                           defaultText: "STRING_VALUE",
+ * //                         },
+ * //                       },
+ * //                     },
+ * //                     items: [ // Resources // required
+ * //                       {
+ * //                         title: "STRING_VALUE", // required
+ * //                         link: "STRING_VALUE", // required
+ * //                         description: "STRING_VALUE", // required
+ * //                         type: "STRING_VALUE", // required
+ * //                         ARN: "STRING_VALUE", // required
+ * //                         resourceJsonString: "STRING_VALUE", // required
+ * //                       },
+ * //                     ],
+ * //                   },
+ * //                 },
+ * //               ],
+ * //               action: {
+ * //                 webLink: {
+ * //                   label: "STRING_VALUE", // required
+ * //                   url: "STRING_VALUE", // required
+ * //                 },
+ * //                 moduleLink: {
+ * //                   cloudWatchTroubleshootingLink: {
+ * //                     label: "STRING_VALUE", // required
+ * //                     investigationPayload: "STRING_VALUE", // required
+ * //                     defaultText: "STRING_VALUE",
+ * //                   },
+ * //                 },
+ * //               },
+ * //             },
+ * //             resource: "<Resource>",
+ * //             resourceList: {
+ * //               action: {
+ * //                 webLink: {
+ * //                   label: "STRING_VALUE", // required
+ * //                   url: "STRING_VALUE", // required
+ * //                 },
+ * //                 moduleLink: {
+ * //                   cloudWatchTroubleshootingLink: {
+ * //                     label: "STRING_VALUE", // required
+ * //                     investigationPayload: "STRING_VALUE", // required
+ * //                     defaultText: "STRING_VALUE",
+ * //                   },
+ * //                 },
+ * //               },
+ * //               items: [ // required
+ * //                 "<Resource>",
+ * //               ],
+ * //             },
+ * //             action: "<Action>",
+ * //           },
+ * //         },
+ * //       ],
+ * //     },
  * //     invalidStateEvent: { // InvalidStateEvent
  * //       reason: "INVALID_TASK_ASSIST_PLAN", // required
  * //       message: "STRING_VALUE", // required
@@ -405,10 +600,10 @@ export interface ConverseStreamCommandOutput extends ConverseStreamResponse, __M
  *
  * ```
  *
- * @param ConverseStreamCommandInput - {@link ConverseStreamCommandInput}
- * @returns {@link ConverseStreamCommandOutput}
- * @see {@link ConverseStreamCommandInput} for command's `input` shape.
- * @see {@link ConverseStreamCommandOutput} for command's `response` shape.
+ * @param GenerateTaskAssistPlanCommandInput - {@link GenerateTaskAssistPlanCommandInput}
+ * @returns {@link GenerateTaskAssistPlanCommandOutput}
+ * @see {@link GenerateTaskAssistPlanCommandInput} for command's `input` shape.
+ * @see {@link GenerateTaskAssistPlanCommandOutput} for command's `response` shape.
  * @see {@link CodeWhispererStreamingClientResolvedConfig | config} for CodeWhispererStreamingClient's `config` shape.
  *
  * @throws {@link InternalServerException} (server fault)
@@ -416,9 +611,6 @@ export interface ConverseStreamCommandOutput extends ConverseStreamResponse, __M
  *
  * @throws {@link ServiceQuotaExceededException} (client fault)
  *  This exception is thrown when request was denied due to caller exceeding their usage limits
- *
- * @throws {@link DryRunOperationException} (client fault)
- *  This exception is translated to a 204 as it succeeded the IAM Auth.
  *
  * @throws {@link ThrottlingException} (client fault)
  *  This exception is thrown when request was denied due to request throttling.
@@ -438,76 +630,38 @@ export interface ConverseStreamCommandOutput extends ConverseStreamResponse, __M
  * @throws {@link CodeWhispererStreamingServiceException}
  * <p>Base exception class for all service exceptions from CodeWhispererStreaming service.</p>
  *
+ * @public
  */
-export class ConverseStreamCommand extends $Command<ConverseStreamCommandInput, ConverseStreamCommandOutput, CodeWhispererStreamingClientResolvedConfig> {
-  // Start section: command_properties
-  // End section: command_properties
+export class GenerateTaskAssistPlanCommand extends $Command.classBuilder<GenerateTaskAssistPlanCommandInput, GenerateTaskAssistPlanCommandOutput, CodeWhispererStreamingClientResolvedConfig, ServiceInputTypes, ServiceOutputTypes>()
+      .m(function (this: any, Command: any, cs: any, config: CodeWhispererStreamingClientResolvedConfig, o: any) {
+          return [
 
-  /**
-   * @public
-   */
-  constructor(readonly input: ConverseStreamCommandInput) {
-    // Start section: command_constructor
-    super();
-    // End section: command_constructor
-  }
+  getSerdePlugin(config, this.serialize, this.deserialize),
+      ];
+  })
+  .s("AmazonCodeWhispererStreamingService", "GenerateTaskAssistPlan", {
 
-  /**
-   * @internal
-   */
-  resolveMiddleware(
-    clientStack: MiddlewareStack<ServiceInputTypes, ServiceOutputTypes>,
-    configuration: CodeWhispererStreamingClientResolvedConfig,
-    options?: __HttpHandlerOptions
-  ): Handler<ConverseStreamCommandInput, ConverseStreamCommandOutput> {
-    this.middlewareStack.use(getSerdePlugin(configuration, this.serialize, this.deserialize));
-
-    const stack = clientStack.concat(this.middlewareStack);
-
-    const { logger } = configuration;
-    const clientName = "CodeWhispererStreamingClient";
-    const commandName = "ConverseStreamCommand";
-    const handlerExecutionContext: HandlerExecutionContext = {
-      logger,
-      clientName,
-      commandName,
-      inputFilterSensitiveLog:
-        ConverseStreamRequestFilterSensitiveLog,
-      outputFilterSensitiveLog:
-        ConverseStreamResponseFilterSensitiveLog,
-      [SMITHY_CONTEXT_KEY]: {
-        service: "AmazonCodeWhispererStreamingService",
-        operation: "ConverseStream",
-      },
-    }
-    const { requestHandler } = configuration;
-    return stack.resolve(
-      (request: FinalizeHandlerArguments<any>) =>
-        requestHandler.handle(request.request as __HttpRequest, options || {}),
-      handlerExecutionContext
-    );
-  }
-
-  /**
-   * @internal
-   */
-  private serialize(
-    input: ConverseStreamCommandInput,
-    context: __SerdeContext
-  ): Promise<__HttpRequest> {
-    return se_ConverseStreamCommand(input, context);
-  }
-
-  /**
-   * @internal
-   */
-  private deserialize(
-    output: __HttpResponse,
-    context: __SerdeContext & __EventStreamSerdeContext
-  ): Promise<ConverseStreamCommandOutput> {
-    return de_ConverseStreamCommand(output, context);
-  }
-
-  // Start section: command_body_extra
-  // End section: command_body_extra
+    /**
+     * @internal
+     */
+    eventStream: {
+      output: true,
+    },
+  })
+  .n("CodeWhispererStreamingClient", "GenerateTaskAssistPlanCommand")
+  .f(GenerateTaskAssistPlanRequestFilterSensitiveLog, GenerateTaskAssistPlanResponseFilterSensitiveLog)
+  .ser(se_GenerateTaskAssistPlanCommand)
+  .de(de_GenerateTaskAssistPlanCommand)
+.build() {
+/** @internal type navigation helper, not in runtime. */
+declare protected static __types: {
+  api: {
+      input: GenerateTaskAssistPlanRequest;
+      output: GenerateTaskAssistPlanResponse;
+  };
+  sdk: {
+      input: GenerateTaskAssistPlanCommandInput;
+      output: GenerateTaskAssistPlanCommandOutput;
+  };
+};
 }
