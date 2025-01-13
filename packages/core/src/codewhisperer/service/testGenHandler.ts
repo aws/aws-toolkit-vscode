@@ -222,6 +222,8 @@ export async function exportResultsArchive(
     await fs.mkdir(pathToArchiveDir)
 
     let downloadErrorMessage = undefined
+
+    const session = ChatSessionManager.Instance.getSession()
     try {
         const pathToArchive = path.join(pathToArchiveDir, 'QTestGeneration.zip')
         // Download and deserialize the zip
@@ -248,6 +250,7 @@ export async function exportResultsArchive(
             })
         }
     } catch (e) {
+        session.numberOfTestsGenerated = 0
         downloadErrorMessage = (e as Error).message
         getLogger().error(`Unit Test Generation: ExportResultArchive error = ${downloadErrorMessage}`)
         throw new Error('Error downloading test generation result artifacts: ' + downloadErrorMessage)
