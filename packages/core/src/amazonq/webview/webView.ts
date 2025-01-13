@@ -19,8 +19,6 @@ import { dispatchAppsMessagesToWebView, dispatchWebViewMessagesToApps } from './
 import { MessageListener } from '../messages/messageListener'
 import { MessagePublisher } from '../messages/messagePublisher'
 import { TabType } from './ui/storages/tabsStorage'
-import { deactivateInitialViewBadge, shouldShowBadge } from '../util/viewBadgeHandler'
-import { telemetry } from '../../shared/telemetry/telemetry'
 import { amazonqMark } from '../../shared/performance/marks'
 
 export class AmazonQChatViewProvider implements WebviewViewProvider {
@@ -66,19 +64,5 @@ export class AmazonQChatViewProvider implements WebviewViewProvider {
         )
 
         performance.mark(amazonqMark.open)
-
-        // badge is shown, emit telemetry for first time an existing, unscoped user tries Q
-        // note: this will fire on any not-properly-scoped Q entry.
-        // this means we can't tie it directly to the badge although it is hinted at
-        if (await shouldShowBadge()) {
-            telemetry.ui_click.emit({
-                elementId: 'amazonq_tryAmazonQ',
-                passive: false,
-            })
-        }
-        // if a user EVER enters Q, we should never show the badge again.
-        // the webview view only loads if the user clicks the view container,
-        // so we can essentially use this as a guarantee that a user has entered Q.
-        deactivateInitialViewBadge()
     }
 }
