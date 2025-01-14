@@ -3,17 +3,20 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { LspResolver, LspResult } from '../../shared/languageServer/types'
+import path from 'path'
+import { LspResolution, LspResolver } from '../../shared/languageServer/types'
 import { ManifestResolver } from '../../shared/languageServer/manifestResolver'
 import { LanguageServerResolver } from '../../shared/languageServer/lspResolver'
 import { Range } from 'semver'
+import { getNodeExecutableName } from '../../shared/languageServer/utils/platform'
+import { fs } from '../../shared/fs/fs'
 
 const manifestUrl = 'https://aws-toolkit-language-servers.amazonaws.com/q-context/manifest.json'
 // this LSP client in Q extension is only going to work with these LSP server versions
 const supportedLspServerVersions = '0.1.32'
 
 export class WorkspaceLSPResolver implements LspResolver {
-    async resolve(): Promise<LspResult> {
+    async resolve(): Promise<LspResolution> {
         const name = 'AmazonQ-Workspace'
         const manifest = await new ManifestResolver(manifestUrl, name).resolve()
         const installationResult = await new LanguageServerResolver(
@@ -22,7 +25,21 @@ export class WorkspaceLSPResolver implements LspResolver {
             new Range(supportedLspServerVersions)
         ).resolve()
 
+        const nodeName =
+            process.platform === 'win32' ? getNodeExecutableName() : `node-${process.platform}-${process.arch}`
+        const nodePath = path.join(installationResult.assetDirectory, nodeName)
+        await fs.chmod(nodePath, 0o755)
+
         // TODO Cleanup old versions of language servers
-        return installationResult
+        return {
+            ...installationResult,
+            executablePaths: {
+                lsp: path.join(
+                    installationResult.assetDirectory,
+                    `qserver-${process.platform}-${process.arch}/qserver/lspServer.js`
+                ),
+                node: nodePath,
+            },
+        }
     }
 }

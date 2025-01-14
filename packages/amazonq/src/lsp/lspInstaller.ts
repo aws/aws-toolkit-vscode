@@ -5,13 +5,21 @@
 
 import * as vscode from 'vscode'
 import { Range } from 'semver'
-import { ManifestResolver, LanguageServerResolver, LspResolver, LspResult } from 'aws-core-vscode/shared'
+import {
+    ManifestResolver,
+    LanguageServerResolver,
+    LspResolver,
+    fs,
+    LspResolution,
+    getNodeExecutableName,
+} from 'aws-core-vscode/shared'
+import path from 'path'
 
 const manifestURL = 'https://aws-toolkit-language-servers.amazonaws.com/codewhisperer/0/manifest.json'
 export const supportedLspServerVersions = '^2.3.0'
 
 export class AmazonQLSPResolver implements LspResolver {
-    async resolve(): Promise<LspResult> {
+    async resolve(): Promise<LspResolution> {
         const overrideLocation = process.env.AWS_LANGUAGE_SERVER_OVERRIDE
         if (overrideLocation) {
             void vscode.window.showInformationMessage(`Using language server override location: ${overrideLocation}`)
@@ -19,6 +27,10 @@ export class AmazonQLSPResolver implements LspResolver {
                 assetDirectory: overrideLocation,
                 location: 'override',
                 version: '0.0.0',
+                executablePaths: {
+                    lsp: overrideLocation,
+                    node: getNodeExecutableName(),
+                },
             }
         }
 
@@ -31,7 +43,16 @@ export class AmazonQLSPResolver implements LspResolver {
             new Range(supportedLspServerVersions)
         ).resolve()
 
+        const nodePath = path.join(installationResult.assetDirectory, `servers/${getNodeExecutableName()}`)
+        await fs.chmod(nodePath, 0o755)
+
         // TODO Cleanup old versions of language servers
-        return installationResult
+        return {
+            ...installationResult,
+            executablePaths: {
+                lsp: path.join(installationResult.assetDirectory, 'servers/aws-lsp-codewhisperer.js'),
+                node: nodePath,
+            },
+        }
     }
 }
