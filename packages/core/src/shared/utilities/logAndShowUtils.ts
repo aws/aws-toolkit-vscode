@@ -32,11 +32,18 @@ export async function logAndShowError(
         return
     }
     const logsItem = localize('AWS.generic.message.viewLogs', 'View Logs...')
+    const viewInTerminalItem = localize('AWS.generic.message.viewInTerminal', 'View Logs In Terminal')
     const logId = getLogger().error(`${topic}: %s`, error)
     const message = resolveErrorMessageToDisplay(error, defaultMessage)
 
     if (error instanceof ToolkitError && error.documentationUri) {
         await showMessageWithUrl(message, error.documentationUri, 'View Documentation', 'error')
+    } else if (error instanceof ToolkitError && (error.details?.['terminal'] as unknown as vscode.Terminal)) {
+        await vscode.window.showErrorMessage(message, viewInTerminalItem).then(async (resp) => {
+            if (resp === viewInTerminalItem) {
+                ;(error.details?.['terminal'] as unknown as vscode.Terminal).show()
+            }
+        })
     } else {
         await vscode.window.showErrorMessage(message, logsItem).then(async (resp) => {
             if (resp === logsItem) {
@@ -52,6 +59,8 @@ export async function logAndShowError(
  * @param err The error that was thrown in the backend
  * @param webviewId Arbitrary value that identifies which webview had the error
  * @param command The high level command/function that was run which triggered the error
+ *
+ * @returns user-facing error
  */
 export function logAndShowWebviewError(localize: nls.LocalizeFunc, err: unknown, webviewId: string, command: string) {
     // HACK: The following implementation is a hack, influenced by the implementation of handleError().
@@ -62,4 +71,6 @@ export function logAndShowWebviewError(localize: nls.LocalizeFunc, err: unknown,
     logAndShowError(localize, userFacingError, `webviewId="${webviewId}"`, 'Webview error').catch((e) => {
         getLogger().error('logAndShowError failed: %s', (e as Error).message)
     })
+
+    return userFacingError
 }

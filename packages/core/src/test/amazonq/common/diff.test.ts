@@ -11,9 +11,18 @@
 import assert from 'assert'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import fs from 'fs'
 import sinon from 'sinon'
-import { createAmazonQUri, getFileDiffUris, getOriginalFileUri, openDeletedDiff, openDiff } from '../../../amazonq'
+import { FileSystem } from '../../../shared/fs/fs'
+import { featureDevScheme } from '../../../amazonqFeatureDev'
+import {
+    createAmazonQUri,
+    getFileDiffUris,
+    getOriginalFileUri,
+    openDeletedDiff,
+    openDiff,
+    computeDiff,
+} from '../../../amazonq'
+import { TextDocument } from 'vscode'
 
 describe('diff', () => {
     const filePath = path.join('/', 'foo', 'fi')
@@ -35,20 +44,20 @@ describe('diff', () => {
 
     describe('openDiff', () => {
         it('file exists locally', async () => {
-            sandbox.stub(fs, 'existsSync').returns(true)
-            await openDiff(filePath, rightPath, tabId)
+            sandbox.stub(FileSystem.prototype, 'exists').resolves(true)
+            await openDiff(filePath, rightPath, tabId, featureDevScheme)
 
             const leftExpected = vscode.Uri.file(filePath)
-            const rightExpected = createAmazonQUri(rightPath, tabId)
+            const rightExpected = createAmazonQUri(rightPath, tabId, featureDevScheme)
             assert.ok(executeCommandSpy.calledWith('vscode.diff', leftExpected, rightExpected))
         })
 
         it('file does not exists locally', async () => {
-            sandbox.stub(fs, 'existsSync').returns(false)
-            await openDiff(filePath, rightPath, tabId)
+            sandbox.stub(FileSystem.prototype, 'exists').resolves(false)
+            await openDiff(filePath, rightPath, tabId, featureDevScheme)
 
-            const leftExpected = getOriginalFileUri(filePath, tabId)
-            const rightExpected = createAmazonQUri(rightPath, tabId)
+            const leftExpected = await getOriginalFileUri(filePath, tabId, featureDevScheme)
+            const rightExpected = createAmazonQUri(rightPath, tabId, featureDevScheme)
             assert.ok(executeCommandSpy.calledWith('vscode.diff', leftExpected, rightExpected))
         })
     })
@@ -57,57 +66,415 @@ describe('diff', () => {
         const name = 'foo'
 
         it('file exists locally', async () => {
-            sandbox.stub(fs, 'existsSync').returns(true)
-            await openDeletedDiff(filePath, name, tabId)
+            sandbox.stub(FileSystem.prototype, 'exists').resolves(true)
+            await openDeletedDiff(filePath, name, tabId, featureDevScheme)
 
-            const expectedPath = vscode.Uri.file(filePath)
-            assert.ok(executeCommandSpy.calledWith('vscode.open', expectedPath, {}, `${name} (Deleted)`))
+            const leftExpected = vscode.Uri.file(filePath)
+            const rightExpected = createAmazonQUri('empty', tabId, featureDevScheme)
+            assert.ok(executeCommandSpy.calledWith('vscode.diff', leftExpected, rightExpected, `${name} (Deleted)`))
         })
 
         it('file does not exists locally', async () => {
-            sandbox.stub(fs, 'existsSync').returns(false)
-            await openDeletedDiff(filePath, name, tabId)
+            sandbox.stub(FileSystem.prototype, 'exists').resolves(false)
+            await openDeletedDiff(filePath, name, tabId, featureDevScheme)
 
-            const expectedPath = createAmazonQUri('empty', tabId)
-            assert.ok(executeCommandSpy.calledWith('vscode.open', expectedPath, {}, `${name} (Deleted)`))
+            const leftExpected = createAmazonQUri('empty', tabId, featureDevScheme)
+            const rightExpected = createAmazonQUri('empty', tabId, featureDevScheme)
+            assert.ok(executeCommandSpy.calledWith('vscode.diff', leftExpected, rightExpected, `${name} (Deleted)`))
         })
     })
 
     describe('getOriginalFileUri', () => {
-        it('file exists locally', () => {
-            sandbox.stub(fs, 'existsSync').returns(true)
-            assert.deepStrictEqual(getOriginalFileUri(filePath, tabId).fsPath, filePath)
+        it('file exists locally', async () => {
+            sandbox.stub(FileSystem.prototype, 'exists').resolves(true)
+            assert.deepStrictEqual((await getOriginalFileUri(filePath, tabId, featureDevScheme)).fsPath, filePath)
         })
 
-        it('file does not exists locally', () => {
-            sandbox.stub(fs, 'existsSync').returns(false)
-            const expected = createAmazonQUri('empty', tabId)
-            assert.deepStrictEqual(getOriginalFileUri(filePath, tabId), expected)
+        it('file does not exists locally', async () => {
+            sandbox.stub(FileSystem.prototype, 'exists').resolves(false)
+            const expected = createAmazonQUri('empty', tabId, featureDevScheme)
+            assert.deepStrictEqual(await getOriginalFileUri(filePath, tabId, featureDevScheme), expected)
         })
     })
 
     describe('getFileDiffUris', () => {
-        it('file exists locally', () => {
-            sandbox.stub(fs, 'existsSync').returns(true)
+        it('file exists locally', async () => {
+            sandbox.stub(FileSystem.prototype, 'exists').resolves(true)
 
-            const { left, right } = getFileDiffUris(filePath, rightPath, tabId)
+            const { left, right } = await getFileDiffUris(filePath, rightPath, tabId, featureDevScheme)
 
             const leftExpected = vscode.Uri.file(filePath)
             assert.deepStrictEqual(left, leftExpected)
 
-            const rightExpected = createAmazonQUri(rightPath, tabId)
+            const rightExpected = createAmazonQUri(rightPath, tabId, featureDevScheme)
             assert.deepStrictEqual(right, rightExpected)
         })
 
-        it('file does not exists locally', () => {
-            sandbox.stub(fs, 'existsSync').returns(false)
-            const { left, right } = getFileDiffUris(filePath, rightPath, tabId)
+        it('file does not exists locally', async () => {
+            sandbox.stub(FileSystem.prototype, 'exists').resolves(false)
+            const { left, right } = await getFileDiffUris(filePath, rightPath, tabId, featureDevScheme)
 
-            const leftExpected = getOriginalFileUri(filePath, tabId)
+            const leftExpected = await getOriginalFileUri(filePath, tabId, featureDevScheme)
             assert.deepStrictEqual(left, leftExpected)
 
-            const rightExpected = createAmazonQUri(rightPath, tabId)
+            const rightExpected = createAmazonQUri(rightPath, tabId, featureDevScheme)
             assert.deepStrictEqual(right, rightExpected)
+        })
+    })
+
+    describe('computeDiff', () => {
+        const mockOriginalDocument = {
+            getText: () => 'line1\nline2\nline3\n',
+            uri: vscode.Uri.file('test.txt'),
+            fileName: 'test.txt',
+        }
+
+        it('returns no addition or removal for the same file', async () => {
+            sandbox.stub(FileSystem.prototype, 'exists').resolves(true)
+            sandbox.stub(vscode.workspace, 'openTextDocument').resolves(mockOriginalDocument as unknown as TextDocument)
+
+            const { changes, charsAdded, linesAdded, charsRemoved, linesRemoved } = await computeDiff(
+                filePath,
+                filePath,
+                tabId,
+                featureDevScheme
+            )
+
+            const expectedChanges = [
+                {
+                    count: 3,
+                    value: 'line1\nline2\nline3\n',
+                },
+            ]
+
+            assert.deepEqual(changes, expectedChanges)
+            assert.equal(charsAdded, 0)
+            assert.equal(linesAdded, 0)
+            assert.equal(charsRemoved, 0)
+            assert.equal(linesRemoved, 0)
+        })
+
+        it('counts insertion of new line', async () => {
+            const mockInsertionDocument = {
+                getText: () => 'line1\ninserted\nline2\nline3\n',
+                uri: vscode.Uri.file('test.txt'),
+                fileName: 'test.txt',
+            }
+            sandbox.stub(FileSystem.prototype, 'exists').resolves(true)
+            sandbox
+                .stub(vscode.workspace, 'openTextDocument')
+                .onFirstCall()
+                .resolves(mockOriginalDocument as unknown as TextDocument)
+                .onSecondCall()
+                .resolves(mockInsertionDocument as unknown as TextDocument)
+
+            const { changes, charsAdded, linesAdded, charsRemoved, linesRemoved } = await computeDiff(
+                filePath,
+                rightPath,
+                tabId,
+                featureDevScheme
+            )
+
+            const expectedChanges = [
+                {
+                    count: 1,
+                    value: 'line1\n',
+                },
+                {
+                    added: true,
+                    count: 1,
+                    removed: undefined,
+                    value: 'inserted\n',
+                },
+                {
+                    count: 2,
+                    value: 'line2\nline3\n',
+                },
+            ]
+
+            assert.deepEqual(changes, expectedChanges)
+            assert.equal(charsAdded, 8)
+            assert.equal(linesAdded, 1)
+            assert.equal(charsRemoved, 0)
+            assert.equal(linesRemoved, 0)
+        })
+
+        it('counts insertion of multiple lines', async () => {
+            const mockMultipleInsertionDocument = {
+                getText: () => 'line1\ninserted1\ninserted2\nline2\nline3\ninserted3\n',
+                uri: vscode.Uri.file('test.txt'),
+                fileName: 'test.txt',
+            }
+            sandbox.stub(FileSystem.prototype, 'exists').resolves(true)
+            sandbox
+                .stub(vscode.workspace, 'openTextDocument')
+                .onFirstCall()
+                .resolves(mockOriginalDocument as unknown as TextDocument)
+                .onSecondCall()
+                .resolves(mockMultipleInsertionDocument as unknown as TextDocument)
+
+            const { changes, charsAdded, linesAdded, charsRemoved, linesRemoved } = await computeDiff(
+                filePath,
+                rightPath,
+                tabId,
+                featureDevScheme
+            )
+
+            const expectedChanges = [
+                {
+                    count: 1,
+                    value: 'line1\n',
+                },
+                {
+                    added: true,
+                    count: 2,
+                    removed: undefined,
+                    value: 'inserted1\ninserted2\n',
+                },
+                {
+                    count: 2,
+                    value: 'line2\nline3\n',
+                },
+                {
+                    added: true,
+                    count: 1,
+                    removed: undefined,
+                    value: 'inserted3\n',
+                },
+            ]
+
+            assert.deepEqual(changes, expectedChanges)
+            assert.equal(charsAdded, 27)
+            assert.equal(linesAdded, 3)
+            assert.equal(charsRemoved, 0)
+            assert.equal(linesRemoved, 0)
+        })
+
+        it('counts modification of existing line', async () => {
+            const mockModificationDocument = {
+                getText: () => 'line1\nmodified\nline3\n',
+                uri: vscode.Uri.file('test.txt'),
+                fileName: 'test.txt',
+            }
+            sandbox.stub(FileSystem.prototype, 'exists').resolves(true)
+            sandbox
+                .stub(vscode.workspace, 'openTextDocument')
+                .onFirstCall()
+                .resolves(mockOriginalDocument as unknown as TextDocument)
+                .onSecondCall()
+                .resolves(mockModificationDocument as unknown as TextDocument)
+
+            const { changes, charsAdded, linesAdded, charsRemoved, linesRemoved } = await computeDiff(
+                filePath,
+                rightPath,
+                tabId,
+                featureDevScheme
+            )
+
+            const expectedChanges = [
+                {
+                    count: 1,
+                    value: 'line1\n',
+                },
+                {
+                    added: undefined,
+                    count: 1,
+                    removed: true,
+                    value: 'line2\n',
+                },
+                {
+                    added: true,
+                    count: 1,
+                    removed: undefined,
+                    value: 'modified\n',
+                },
+                {
+                    count: 1,
+                    value: 'line3\n',
+                },
+            ]
+
+            assert.deepEqual(changes, expectedChanges)
+            assert.equal(charsAdded, 8)
+            assert.equal(linesAdded, 1)
+            assert.equal(charsRemoved, 5)
+            assert.equal(linesRemoved, 1)
+        })
+
+        it('counts deletion of existing line', async () => {
+            const mockDeletionDocument = {
+                getText: () => 'line1\nline3\n',
+                uri: vscode.Uri.file('test.txt'),
+                fileName: 'test.txt',
+            }
+            sandbox.stub(FileSystem.prototype, 'exists').resolves(true)
+            sandbox
+                .stub(vscode.workspace, 'openTextDocument')
+                .onFirstCall()
+                .resolves(mockOriginalDocument as unknown as TextDocument)
+                .onSecondCall()
+                .resolves(mockDeletionDocument as unknown as TextDocument)
+
+            const { changes, charsAdded, linesAdded, charsRemoved, linesRemoved } = await computeDiff(
+                filePath,
+                rightPath,
+                tabId,
+                featureDevScheme
+            )
+
+            const expectedChanges = [
+                {
+                    count: 1,
+                    value: 'line1\n',
+                },
+                {
+                    added: undefined,
+                    count: 1,
+                    removed: true,
+                    value: 'line2\n',
+                },
+                {
+                    count: 1,
+                    value: 'line3\n',
+                },
+            ]
+
+            assert.deepEqual(changes, expectedChanges)
+            assert.equal(charsAdded, 0)
+            assert.equal(linesAdded, 0)
+            assert.equal(charsRemoved, 5)
+            assert.equal(linesRemoved, 1)
+        })
+
+        it('counts deletion of existing line and then adding a new line', async () => {
+            const mockDeletionAndAdditionDocument = {
+                getText: () => 'line1\nline3\nline4\n',
+                uri: vscode.Uri.file('test.txt'),
+                fileName: 'test.txt',
+            }
+            sandbox.stub(FileSystem.prototype, 'exists').resolves(true)
+            sandbox
+                .stub(vscode.workspace, 'openTextDocument')
+                .onFirstCall()
+                .resolves(mockOriginalDocument as unknown as TextDocument)
+                .onSecondCall()
+                .resolves(mockDeletionAndAdditionDocument as unknown as TextDocument)
+
+            const { changes, charsAdded, linesAdded, charsRemoved, linesRemoved } = await computeDiff(
+                filePath,
+                rightPath,
+                tabId,
+                featureDevScheme
+            )
+
+            const expectedChanges = [
+                {
+                    count: 1,
+                    value: 'line1\n',
+                },
+                {
+                    added: undefined,
+                    count: 1,
+                    removed: true,
+                    value: 'line2\n',
+                },
+                {
+                    count: 1,
+                    value: 'line3\n',
+                },
+                {
+                    added: true,
+                    count: 1,
+                    removed: undefined,
+                    value: 'line4\n',
+                },
+            ]
+
+            assert.deepEqual(changes, expectedChanges)
+            assert.equal(charsAdded, 5)
+            assert.equal(linesAdded, 1)
+            assert.equal(charsRemoved, 5)
+            assert.equal(linesRemoved, 1)
+        })
+
+        it('counts a new empty line', async () => {
+            const mockEmptyLineDocument = {
+                getText: () => 'line1\nline2\n\nline3\n',
+                uri: vscode.Uri.file('test.txt'),
+                fileName: 'test.txt',
+            }
+            sandbox.stub(FileSystem.prototype, 'exists').resolves(true)
+            sandbox
+                .stub(vscode.workspace, 'openTextDocument')
+                .onFirstCall()
+                .resolves(mockOriginalDocument as unknown as TextDocument)
+                .onSecondCall()
+                .resolves(mockEmptyLineDocument as unknown as TextDocument)
+
+            const { changes, charsAdded, linesAdded, charsRemoved, linesRemoved } = await computeDiff(
+                filePath,
+                rightPath,
+                tabId,
+                featureDevScheme
+            )
+
+            const expectedChanges = [
+                {
+                    count: 2,
+                    value: 'line1\nline2\n',
+                },
+                {
+                    added: true,
+                    count: 1,
+                    removed: undefined,
+                    value: '\n',
+                },
+                {
+                    count: 1,
+                    value: 'line3\n',
+                },
+            ]
+
+            assert.deepEqual(changes, expectedChanges)
+            assert.equal(charsAdded, 0)
+            assert.equal(linesAdded, 1)
+            assert.equal(charsRemoved, 0)
+            assert.equal(linesRemoved, 0)
+        })
+
+        it('ignores leading and trailing whitespaces', async () => {
+            const mockWhitespaceDocument = {
+                getText: () => '   line1   \n   line2   \n   line3   \n',
+                uri: vscode.Uri.file('test.txt'),
+                fileName: 'test.txt',
+            }
+            sandbox.stub(FileSystem.prototype, 'exists').resolves(true)
+            sandbox
+                .stub(vscode.workspace, 'openTextDocument')
+                .onFirstCall()
+                .resolves(mockOriginalDocument as unknown as TextDocument)
+                .onSecondCall()
+                .resolves(mockWhitespaceDocument as unknown as TextDocument)
+
+            const { changes, charsAdded, linesAdded, charsRemoved, linesRemoved } = await computeDiff(
+                filePath,
+                rightPath,
+                tabId,
+                featureDevScheme
+            )
+
+            const expectedChanges = [
+                {
+                    count: 3,
+                    value: 'line1\nline2\nline3\n',
+                },
+            ]
+
+            assert.deepEqual(changes, expectedChanges)
+            assert.equal(charsAdded, 0)
+            assert.equal(linesAdded, 0)
+            assert.equal(charsRemoved, 0)
+            assert.equal(linesRemoved, 0)
         })
     })
 })

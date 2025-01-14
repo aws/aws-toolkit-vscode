@@ -4,7 +4,7 @@
  */
 
 import * as logger from '../../logger'
-import { ChildProcess, ChildProcessResult } from '../../utilities/childProcess'
+import { ChildProcess, ChildProcessResult } from '../../utilities/processUtils'
 import {
     addTelemetryEnvVar,
     makeRequiredSamCliProcessInvokeOptions,
@@ -36,6 +36,7 @@ export class DefaultSamCliProcessInvoker implements SamCliProcessInvoker {
         const invokeOptions = makeRequiredSamCliProcessInvokeOptions(options)
         const logging = options?.logging !== false
         const getLogger = logging ? logger.getLogger : logger.getNullLogger
+        const getDebugConsoleLogger = logging ? logger.getDebugConsoleLogger : logger.getNullLogger
         const log = getLogger()
 
         const sam = await this.context.getOrDetectSamCli()
@@ -51,16 +52,16 @@ export class DefaultSamCliProcessInvoker implements SamCliProcessInvoker {
             spawnOptions: await addTelemetryEnvVar(options?.spawnOptions),
         })
 
-        getLogger('channel').info(localize('AWS.running.command', 'Command: {0}', `${this.childProcess}`))
+        getLogger().info(localize('AWS.running.command', 'Command: {0}', `${this.childProcess}`))
         log.verbose(`running: ${this.childProcess}`)
         return await this.childProcess.run({
             onStdout: (text, context) => {
-                getLogger('debugConsole').info(text)
+                getDebugConsoleLogger().info(text)
                 log.verbose(`stdout: ${text}`)
                 options?.onStdout?.(text, context)
             },
             onStderr: (text, context) => {
-                getLogger('debugConsole').info(text)
+                getDebugConsoleLogger().info(text)
                 log.verbose(`stderr: ${text}`)
                 options?.onStderr?.(text, context)
             },

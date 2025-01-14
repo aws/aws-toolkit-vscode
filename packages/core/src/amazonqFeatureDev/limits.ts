@@ -3,9 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-// Max number of times a user can attempt to retry an approach request if it fails
-export const approachRetryLimit = 3
-
 // Max number of times a user can attempt to retry a codegen request if it fails
 export const codeGenRetryLimit = 3
 

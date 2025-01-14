@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { CLOUDWATCH_LOGS_SCHEME } from '../../shared/constants'
+import { cloudwatchLogsLiveTailScheme, CLOUDWATCH_LOGS_SCHEME } from '../../shared/constants'
 import { Settings } from '../../shared/settings'
 import { addLogEvents } from './commands/addLogEvents'
 import { copyLogResource } from './commands/copyLogResource'
@@ -19,12 +19,22 @@ import { searchLogGroup } from './commands/searchLogGroup'
 import { changeLogSearchParams } from './changeLogSearch'
 import { CloudWatchLogsNode } from './explorer/cloudWatchLogsNode'
 import { loadAndOpenInitialLogStreamFile, LogStreamCodeLensProvider } from './document/logStreamsCodeLensProvider'
+import { clearDocument, closeSession, tailLogGroup } from './commands/tailLogGroup'
+import { LiveTailDocumentProvider } from './document/liveTailDocumentProvider'
+import { LiveTailSessionRegistry } from './registry/liveTailSessionRegistry'
+import { DeployedResourceNode } from '../appBuilder/explorer/nodes/deployedNode'
+import { isTreeNode } from '../../shared/treeview/resourceTreeDataProvider'
+import { getLogger } from '../../shared/logger/logger'
+import { ToolkitError } from '../../shared'
+import { LiveTailCodeLensProvider } from './document/liveTailCodeLensProvider'
 
 export async function activate(context: vscode.ExtensionContext, configuration: Settings): Promise<void> {
     const registry = LogDataRegistry.instance
+    const liveTailRegistry = LiveTailSessionRegistry.instance
 
     const documentProvider = new LogDataDocumentProvider(registry)
-
+    const liveTailDocumentProvider = new LiveTailDocumentProvider()
+    const liveTailCodeLensProvider = new LiveTailCodeLensProvider(liveTailRegistry)
     context.subscriptions.push(
         vscode.languages.registerCodeLensProvider(
             {
@@ -37,6 +47,20 @@ export async function activate(context: vscode.ExtensionContext, configuration: 
 
     context.subscriptions.push(
         vscode.workspace.registerTextDocumentContentProvider(CLOUDWATCH_LOGS_SCHEME, documentProvider)
+    )
+
+    context.subscriptions.push(
+        vscode.languages.registerCodeLensProvider(
+            {
+                language: 'log',
+                scheme: cloudwatchLogsLiveTailScheme,
+            },
+            liveTailCodeLensProvider
+        )
+    )
+
+    context.subscriptions.push(
+        vscode.workspace.registerTextDocumentContentProvider(cloudwatchLogsLiveTailScheme, liveTailDocumentProvider)
     )
 
     context.subscriptions.push(
@@ -89,6 +113,44 @@ export async function activate(context: vscode.ExtensionContext, configuration: 
 
         Commands.register('aws.cwl.changeFilterPattern', async () => changeLogSearchParams(registry, 'filterPattern')),
 
-        Commands.register('aws.cwl.changeTimeFilter', async () => changeLogSearchParams(registry, 'timeFilter'))
+        Commands.register('aws.cwl.changeTimeFilter', async () => changeLogSearchParams(registry, 'timeFilter')),
+
+        Commands.register('aws.cwl.tailLogGroup', async (node: LogGroupNode | CloudWatchLogsNode) => {
+            const logGroupInfo =
+                node instanceof LogGroupNode
+                    ? { regionName: node.regionCode, groupName: node.logGroup.logGroupName! }
+                    : undefined
+            const source = node ? (logGroupInfo ? 'ExplorerLogGroupNode' : 'ExplorerServiceNode') : 'Command'
+            await tailLogGroup(liveTailRegistry, source, liveTailCodeLensProvider, logGroupInfo)
+        }),
+
+        Commands.register('aws.cwl.stopTailingLogGroup', async (document: vscode.TextDocument, source: string) => {
+            closeSession(document.uri, liveTailRegistry, source, liveTailCodeLensProvider)
+        }),
+
+        Commands.register('aws.cwl.clearDocument', async (document: vscode.TextDocument) => {
+            await clearDocument(document)
+        }),
+
+        Commands.register('aws.appBuilder.searchLogs', async (node: DeployedResourceNode) => {
+            try {
+                const logGroupInfo = isTreeNode(node)
+                    ? {
+                          regionName: node.resource.regionCode,
+                          groupName: getFunctionLogGroupName(node.resource.explorerNode.configuration),
+                      }
+                    : undefined
+                const source: string = logGroupInfo ? 'AppBuilderSearchLogs' : 'CommandPaletteSearchLogs'
+                await searchLogGroup(registry, source, logGroupInfo)
+            } catch (err) {
+                getLogger().error('Failed to search logs: %s', err)
+                throw ToolkitError.chain(err, 'Failed to search logs')
+            }
+        })
     )
+}
+
+function getFunctionLogGroupName(configuration: any) {
+    const logGroupPrefix = '/aws/lambda/'
+    return configuration.logGroupName || logGroupPrefix + configuration.FunctionName
 }

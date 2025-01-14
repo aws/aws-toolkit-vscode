@@ -36,10 +36,13 @@ export const toolkitSettings = {
         "createCredentialsProfile": {},
         "samcliConfirmDevStack": {},
         "remoteConnected": {},
-        "codeCatalystConnectionExpired": {}
+        "codeCatalystConnectionExpired": {},
+        "minIdeVersion": {},
+        "ssoCacheError": {}
     },
     "aws.experiments": {
-        "jsonResourceModification": {}
+        "jsonResourceModification": {},
+        "ec2RemoteConnect": {}
     },
     "aws.resources.enabledResources": {},
     "aws.lambda.recentlyUploaded": {},

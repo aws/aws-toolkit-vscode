@@ -4,11 +4,11 @@
  */
 
 import * as vscode from 'vscode'
-import * as fs from 'fs-extra'
 import { getLogger } from '../../../shared/logger'
 import { localize } from '../../../shared/utilities/vsCodeUtils'
 import { showViewLogsMessage } from '../../../shared/utilities/messages'
 import { IotPolicyFolderNode } from '../explorer/iotPolicyFolderNode'
+import { fs } from '../../../shared'
 
 /**
  * Creates a policy from a policy document.
@@ -33,7 +33,7 @@ export async function createPolicyCommand(node: IotPolicyFolderNode, getPolicyDo
     }
 
     try {
-        //Parse to ensure this is a valid JSON
+        // Parse to ensure this is a valid JSON
         const policyJSON = JSON.parse(data.toString())
         await node.iot.createPolicy({ policyName, policyDocument: JSON.stringify(policyJSON) })
         void vscode.window.showInformationMessage(
@@ -45,11 +45,11 @@ export async function createPolicyCommand(node: IotPolicyFolderNode, getPolicyDo
         return
     }
 
-    //Refresh the Policy Folder node
+    // Refresh the Policy Folder node
     await node.refreshNode()
 }
 
-export async function getPolicyDocument(): Promise<Buffer | undefined> {
+export async function getPolicyDocument(): Promise<Uint8Array | undefined> {
     const fileLocation = await vscode.window.showOpenDialog({
         canSelectFolders: false,
         canSelectFiles: true,
@@ -64,9 +64,9 @@ export async function getPolicyDocument(): Promise<Buffer | undefined> {
 
     const policyLocation = fileLocation[0]
 
-    let data: Buffer
+    let data: Uint8Array
     try {
-        data = await fs.readFile(policyLocation.fsPath)
+        data = await fs.readFileBytes(policyLocation.fsPath)
     } catch (e) {
         getLogger().error('Failed to read policy document: %s', e)
         void showViewLogsMessage(localize('AWS.iot.createPolicy.error', 'Failed to read policy document'))

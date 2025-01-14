@@ -4,7 +4,7 @@
  */
 
 import assert from 'assert'
-import { ToolkitError } from '../../../shared/errors'
+import { getErrorId, ToolkitError } from '../../../shared/errors'
 import { asStringifiedStack, FunctionEntry, TelemetrySpan, TelemetryTracer } from '../../../shared/telemetry/spans'
 import { MetricName, MetricShapes, telemetry } from '../../../shared/telemetry/telemetry'
 import { assertTelemetry, getMetrics, installFakeClock } from '../../testUtil'
@@ -14,7 +14,7 @@ import { sleep } from '../../../shared'
 import { withTelemetryContext } from '../../../shared/telemetry/util'
 import { SinonSandbox } from 'sinon'
 import sinon from 'sinon'
-import { stubPerformance } from '../../utilities/performance'
+import * as crypto from '../../../shared/crypto'
 
 describe('TelemetrySpan', function () {
     let clock: ReturnType<typeof installFakeClock>
@@ -75,23 +75,6 @@ describe('TelemetrySpan', function () {
             { result: 'Failed', reason: 'bar' },
             { result: 'Succeeded', duration: 100 },
         ])
-    })
-
-    it('records performance', function () {
-        const { expectedUserCpuUsage, expectedSystemCpuUsage, expectedHeapTotal } = stubPerformance(sandbox)
-        const span = new TelemetrySpan('function_call', {
-            emit: true,
-        })
-        span.start()
-        clock.tick(90)
-        span.stop()
-        assertTelemetry('function_call', {
-            userCpuUsage: expectedUserCpuUsage,
-            systemCpuUsage: expectedSystemCpuUsage,
-            heapTotal: expectedHeapTotal,
-            duration: 90,
-            result: 'Succeeded',
-        })
     })
 })
 
@@ -190,7 +173,7 @@ describe('TelemetryTracer', function () {
 
         it('does not change the active span when using a different span', function () {
             tracer.run(metricName, (span) => {
-                tracer.vscode_executeCommand.record({ command: 'foo', debounceCount: 1 })
+                tracer.vscode_executeCommand.emit({ command: 'foo', debounceCount: 1 })
                 assert.strictEqual(tracer.activeSpan, span)
             })
 
@@ -258,7 +241,7 @@ describe('TelemetryTracer', function () {
             assertTelemetry('aws_loginWithBrowser', {
                 result: 'Failed',
                 reason: 'InvalidRequestException',
-                reasonDesc: 'Invalid client ID provided',
+                reasonDesc: 'InvalidRequestException: Invalid client ID provided',
                 httpStatusCode: '400',
             })
             const metric = getMetrics('aws_loginWithBrowser')[0]
@@ -268,30 +251,18 @@ describe('TelemetryTracer', function () {
             assert.match(metric.requestId ?? '', /[a-z0-9-]+/)
         })
 
-        it('records performance', function () {
-            clock = installFakeClock()
-            const { expectedUserCpuUsage, expectedSystemCpuUsage, expectedHeapTotal } = stubPerformance(sandbox)
-            tracer.run(
-                'function_call',
-                () => {
-                    clock?.tick(90)
-                },
-                {
-                    emit: true,
-                }
-            )
-
-            assertTelemetry('function_call', {
-                userCpuUsage: expectedUserCpuUsage,
-                systemCpuUsage: expectedSystemCpuUsage,
-                heapTotal: expectedHeapTotal,
-                duration: 90,
-                result: 'Succeeded',
-            })
-        })
-
         describe('nested run()', function () {
+            let uuidStub: sinon.SinonStub
             const nestedName = 'nested_metric' as MetricName
+            const testId = 'foo-foo-foo-foo-foo'
+            const flowName = 'testTraceFlow'
+
+            beforeEach(() => {
+                uuidStub = sandbox.stub(crypto, 'randomUUID')
+
+                // in the first call we set the trace id in subsequent calls we get the span ids
+                uuidStub.returns(testId)
+            })
 
             it('can record metadata in nested spans', function () {
                 tracer.run(metricName, (span1) => {
@@ -310,18 +281,18 @@ describe('TelemetryTracer', function () {
             it('removes spans when exiting an execution context', function () {
                 tracer.run(metricName, () => {
                     tracer.run(nestedName, () => {
-                        assert.strictEqual(tracer.spans.length, 2)
+                        assert.strictEqual(tracer.spans.length, 3)
                     })
 
-                    assert.strictEqual(tracer.spans.length, 1)
+                    assert.strictEqual(tracer.spans.length, 2)
                 })
             })
 
             it('adds spans during a nested execution, closing them when after', function () {
                 tracer.run(metricName, () => {
-                    tracer.run(nestedName, () => assert.strictEqual(tracer.spans.length, 2))
-                    tracer.run(nestedName, () => assert.strictEqual(tracer.spans.length, 2))
-                    assert.strictEqual(tracer.spans.length, 1)
+                    tracer.run(nestedName, () => assert.strictEqual(tracer.spans.length, 3))
+                    tracer.run(nestedName, () => assert.strictEqual(tracer.spans.length, 3))
+                    assert.strictEqual(tracer.spans.length, 2)
                 })
 
                 assert.strictEqual(tracer.spans.length, 0)
@@ -330,16 +301,102 @@ describe('TelemetryTracer', function () {
             it('supports nesting the same event name', function () {
                 tracer.run(metricName, () => {
                     tracer.run(metricName, () => {
-                        assert.strictEqual(tracer.spans.length, 2)
-                        assert.ok(tracer.spans.every((s) => s.name === metricName))
+                        assert.strictEqual(tracer.spans.length, 3)
+                        assert.ok(tracer.spans.filter((m) => m.name !== 'root').every((s) => s.name === metricName))
                     })
                 })
             })
 
-            it('attaches the parent event name to the child span', function () {
+            it('attaches the parent id to the child span', function () {
                 tracer.run(metricName, () => tracer.run(nestedName, () => {}))
                 assertTelemetry(metricName, { result: 'Succeeded' })
-                assertTelemetry(nestedName, { result: 'Succeeded', parentMetric: metricName } as any)
+                assertTelemetry(nestedName, { result: 'Succeeded', parentId: testId } as any)
+            })
+
+            it('should set trace id', function () {
+                telemetry.trace_event.run((span) => {
+                    span.record({ name: flowName })
+                    assert.deepStrictEqual(telemetry.activeSpan?.getMetricId(), testId)
+                })
+                const event = getMetrics('trace_event')
+                assert.deepStrictEqual(event[0].traceId, testId)
+                assert.deepStrictEqual(event[0].name, 'testTraceFlow')
+            })
+
+            it('trace id is propogated to children', function () {
+                const metricsIds = {
+                    trace_event: {
+                        metricId: 'traceEvent',
+                        traceId: testId,
+                        parentId: undefined,
+                    },
+                    amazonq_startConversation: {
+                        metricId: 'amazonq_startConversation',
+                        traceId: testId,
+                        parentId: 'traceEvent',
+                    },
+                    amazonq_addMessage: {
+                        metricId: 'amazonq_addMessage',
+                        traceId: testId,
+                        parentId: 'amazonq_startConversation',
+                    },
+                    vscode_executeCommand: {
+                        metricId: 'vscode_executeCommand',
+                        traceId: testId,
+                        parentId: 'traceEvent',
+                    },
+                    amazonq_enterFocusConversation: {
+                        metricId: 'amazonq_enterFocusConversation',
+                        traceId: testId,
+                        parentId: 'vscode_executeCommand',
+                    },
+                    amazonq_exitFocusConversation: {
+                        metricId: 'amazonq_exitFocusConversation',
+                        traceId: testId,
+                        parentId: 'amazonq_enterFocusConversation',
+                    },
+                    amazonq_closeChat: {
+                        metricId: 'amazonq_closeChat',
+                        traceId: testId,
+                        parentId: 'traceEvent',
+                    },
+                }
+
+                /**
+                 * randomUUID calls:
+                 * The first is called on the root event that never gets emitted
+                 * The second is called when generating the traceId
+                 * The rest are called when generating the spanIds
+                 */
+                uuidStub.onCall(1).returns(testId)
+                let index = 2
+                for (const v of Object.values(metricsIds)) {
+                    uuidStub.onCall(index).returns(v.metricId)
+                    index++
+                }
+
+                telemetry.trace_event.run(() => {
+                    telemetry.amazonq_startConversation.run(() => {
+                        telemetry.amazonq_addMessage.run(() => {})
+                    })
+                    telemetry.vscode_executeCommand.run(() => {
+                        telemetry.amazonq_enterFocusConversation.run(() => {
+                            telemetry.amazonq_exitFocusConversation.run(() => {})
+                        })
+                    })
+                    telemetry.amazonq_closeChat.emit({
+                        result: 'Succeeded',
+                    })
+                })
+
+                const spanEntries = Object.entries(metricsIds)
+                for (let x = 0; x < spanEntries.length; x++) {
+                    const [metricName, { metricId, traceId, parentId }] = spanEntries[x]
+                    const metric = getMetrics(metricName as keyof MetricShapes)[0] as any
+                    assert.deepStrictEqual(metric.traceId, traceId)
+                    assert.deepStrictEqual(metric.metricId, metricId)
+                    assert.deepStrictEqual(metric.parentId, parentId)
+                }
             })
         })
 
@@ -518,19 +575,164 @@ describe('TelemetryTracer', function () {
                     'A#a1,a2:B#b1,b2'
                 )
             })
+        })
+    })
 
-            class TestEmit {
-                @withTelemetryContext({ name: 'doesNotEmit', class: 'TestEmit' })
-                doesNotEmit() {
-                    return
-                }
+    describe('withTelemetryContext', async function () {
+        class TestEmit {
+            @withTelemetryContext({ name: 'doesNotEmit', class: 'TestEmit' })
+            doesNotEmit() {
+                return
             }
 
-            it(`withTelemetryContext does not emit an event on its own`, function () {
-                const inst = new TestEmit()
-                inst.doesNotEmit()
-                assertTelemetry('function_call', [])
+            @withTelemetryContext({ name: 'doesEmit', class: 'TestEmit', emit: false })
+            doesEmit() {
+                return this.doesEmitNested()
+            }
+
+            @withTelemetryContext({ name: 'doesEmitNested', class: 'TestEmit', emit: true })
+            doesEmitNested() {
+                return
+            }
+        }
+
+        it(`does NOT emit an event if not explicitly set`, function () {
+            const inst = new TestEmit()
+            inst.doesNotEmit()
+            assertTelemetry('function_call', [])
+        })
+
+        it(`does emit an event on its own when explicitly set`, function () {
+            const inst = new TestEmit()
+            inst.doesEmit()
+            assertTelemetry('function_call', [
+                {
+                    functionName: 'doesEmitNested',
+                    className: 'TestEmit',
+                    source: 'TestEmit#doesEmit,doesEmitNested',
+                },
+            ])
+        })
+
+        class TestThrows {
+            @withTelemetryContext({ name: 'throwsError', class: 'TestThrows', errorCtx: true })
+            throwsError() {
+                throw arbitraryError
+            }
+
+            @withTelemetryContext({ name: 'throwsError', errorCtx: true })
+            throwsErrorButNoClass() {
+                throw arbitraryError
+            }
+
+            @withTelemetryContext({ name: 'throwsError', errorCtx: true })
+            async throwsAsyncError() {
+                throw arbitraryError
+            }
+
+            @withTelemetryContext({ name: 'throwsErrorButNoCtx', class: 'TestThrows' })
+            throwsErrorButNoCtx() {
+                throw arbitraryError
+            }
+        }
+        const arbitraryError = new Error('arbitrary error')
+
+        it(`wraps errors with function id context`, async function () {
+            const inst = new TestThrows()
+            assert.throws(
+                () => inst.throwsError(),
+                (e) => {
+                    return (
+                        e instanceof ToolkitError &&
+                        getErrorId(e) === 'TestThrows' &&
+                        e.message === 'ctx: throwsError' &&
+                        e.cause === arbitraryError
+                    )
+                }
+            )
+            assert.throws(
+                () => inst.throwsErrorButNoClass(),
+                (e) => {
+                    return (
+                        e instanceof ToolkitError &&
+                        getErrorId(e) === 'Error' &&
+                        e.message === 'ctx: throwsError' &&
+                        e.cause === arbitraryError
+                    )
+                }
+            )
+            await assert.rejects(
+                () => inst.throwsAsyncError(),
+                (e) => {
+                    return (
+                        e instanceof ToolkitError &&
+                        getErrorId(e) === 'Error' &&
+                        e.message === 'ctx: throwsError' &&
+                        e.cause === arbitraryError
+                    )
+                }
+            )
+        })
+
+        it('does not add error context by default', async function () {
+            const inst = new TestThrows()
+
+            assert.throws(
+                () => inst.throwsErrorButNoCtx(),
+                (e) => e === arbitraryError
+            )
+        })
+    })
+
+    describe('withTraceId()', function () {
+        const expectedId = 'foo-foo-foo-foo-foo'
+
+        beforeEach(() => {
+            sandbox.stub(crypto, 'randomUUID').returns(expectedId)
+        })
+
+        it('uses trace id', function () {
+            telemetry.withTraceId(() => {
+                telemetry.vscode_viewLogs.emit({
+                    result: 'Succeeded',
+                })
+            }, expectedId)
+
+            const viewLogsEvent = getMetrics('vscode_viewLogs')[0]
+            assert.deepStrictEqual(viewLogsEvent.traceId, expectedId)
+        })
+
+        it('does not use traceId when in a span', function () {
+            telemetry.vscode_executeCommand.run(() => {
+                telemetry.withTraceId(() => {
+                    telemetry.vscode_viewLogs.emit({
+                        result: 'Succeeded',
+                    })
+                }, 'testTraceId')
             })
+
+            const executeCommandEvent = getMetrics('vscode_executeCommand')[0]
+            assert.deepStrictEqual(executeCommandEvent.traceId, expectedId)
+
+            const viewLogsEvent = getMetrics('vscode_viewLogs')[0]
+            assert.deepStrictEqual(viewLogsEvent.traceId, expectedId)
+        })
+
+        it('passes traceId through regular functions', function () {
+            telemetry.withTraceId(() => {
+                function foo() {
+                    function fi() {
+                        telemetry.vscode_viewLogs.emit({
+                            result: 'Succeeded',
+                        })
+                    }
+                    fi()
+                }
+                foo()
+            }, expectedId)
+
+            const viewLogsEvent = getMetrics('vscode_viewLogs')[0]
+            assert.deepStrictEqual(viewLogsEvent.traceId, expectedId)
         })
     })
 })

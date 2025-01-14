@@ -23,7 +23,11 @@
             "envFile": "${workspaceFolder}/.local.env",
             "outFiles": ["${workspaceFolder}/dist/**/*.js", "${workspaceFolder}/../core/dist/**/*.js"],
             "preLaunchTask": "extensionInit",
-            "postDebugTask": "extensionTerminate"
+            "postDebugTask": "extensionTerminate",
+            "presentation": {
+                "group": "1_Extension",
+                "order": 1
+            }
         },
         {
             /** Handles the entire process of building and running the toolkit extension in the browser. **/
@@ -44,7 +48,121 @@
             **/
             "resolveSourceMapLocations": ["!**/node_modules/**", "!**/vs/**", "!**/extensions/**"],
             "preLaunchTask": "webRun",
-            "postDebugTask": "webRunTerminate"
+            "postDebugTask": "webRunTerminate",
+            "presentation": {
+                "group": "1_Extension",
+                "order": 3
+            }
+        },
+        {
+            "name": "Extension Tests",
+            "type": "extensionHost",
+            "request": "launch",
+            "runtimeExecutable": "${execPath}",
+            "args": [
+                "--disable-extensions",
+                "--extensionDevelopmentPath=${workspaceFolder}",
+                "--extensionTestsPath=${workspaceFolder}/dist/test/unit/index",
+                "${workspaceFolder}/../core/dist/src/testFixtures/workspaceFolder"
+            ],
+            "env": {
+                "DEVELOPMENT_PATH": "${workspaceFolder}",
+                "AWS_TOOLKIT_AUTOMATION": "local"
+            },
+            "outFiles": ["${workspaceFolder}/dist/**/*.js", "${workspaceFolder}/../core/dist/**/*.js"],
+            "preLaunchTask": "watch",
+            "presentation": {
+                "group": "3_ExtensionTests",
+                "order": 2
+            }
+        },
+        {
+            "name": "Extension Tests (current file)",
+            "type": "extensionHost",
+            "request": "launch",
+            "runtimeExecutable": "${execPath}",
+            "args": [
+                "--disable-extensions",
+                "--extensionDevelopmentPath=${workspaceFolder}",
+                "--extensionTestsPath=${workspaceFolder}/dist/test/unit/index",
+                "${workspaceFolder}/../core/dist/src/testFixtures/workspaceFolder"
+            ],
+            "env": {
+                "TEST_FILE": "${relativeFile}",
+                "DEVELOPMENT_PATH": "${workspaceFolder}",
+                "AWS_TOOLKIT_AUTOMATION": "local"
+            },
+            "outFiles": ["${workspaceFolder}/dist/**/*.js", "${workspaceFolder}/../core/dist/**/*.js"],
+            "preLaunchTask": "watch",
+            "presentation": {
+                "group": "2_ExtensionTestsCurrentFile",
+                "order": 2
+            }
+        },
+        {
+            "name": "Integration Tests",
+            "type": "extensionHost",
+            "request": "launch",
+            "runtimeExecutable": "${execPath}",
+            "args": [
+                "${workspaceFolder}/../core/dist/src/testFixtures/workspaceFolder",
+                "--extensionDevelopmentPath=${workspaceFolder}",
+                "--extensionTestsPath=${workspaceFolder}/dist/test/integ/index.js"
+            ],
+            "env": {
+                "DEVELOPMENT_PATH": "${workspaceFolder}",
+                "AWS_TOOLKIT_AUTOMATION": "local"
+            },
+            "outFiles": ["${workspaceFolder}/dist/**/*.js", "${workspaceFolder}/../core/dist/**/*.js"],
+            "preLaunchTask": "extensionInit",
+            "presentation": {
+                "group": "6_IntegrationTests",
+                "order": 1
+            }
+        },
+        {
+            "name": "Integration Tests (current file)",
+            "type": "extensionHost",
+            "request": "launch",
+            "runtimeExecutable": "${execPath}",
+            "args": [
+                "${workspaceFolder}/../core/dist/src/testFixtures/workspaceFolder",
+                "--extensionDevelopmentPath=${workspaceFolder}",
+                "--extensionTestsPath=${workspaceFolder}/dist/test/integ/index.js"
+            ],
+            "env": {
+                "TEST_FILE": "${relativeFile}",
+                "DEVELOPMENT_PATH": "${workspaceFolder}",
+                "AWS_TOOLKIT_AUTOMATION": "local"
+            },
+            "outFiles": ["${workspaceFolder}/dist/**/*.js", "${workspaceFolder}/../core/dist/**/*.js"],
+            "preLaunchTask": "extensionInit",
+            "presentation": {
+                "group": "5_IntegrationTestsCurrentFile",
+                "order": 1
+            }
+        },
+        {
+            "name": "E2E Test (current file)",
+            "type": "extensionHost",
+            "request": "launch",
+            "runtimeExecutable": "${execPath}",
+            "args": [
+                "${workspaceFolder}/../core/dist/src/testFixtures/workspaceFolder",
+                "--extensionDevelopmentPath=${workspaceFolder}",
+                "--extensionTestsPath=${workspaceFolder}/dist/test/e2e/index.js"
+            ],
+            "env": {
+                "TEST_FILE": "${relativeFile}",
+                "DEVELOPMENT_PATH": "${workspaceFolder}",
+                "AWS_TOOLKIT_AUTOMATION": "local"
+            },
+            "outFiles": ["${workspaceFolder}/dist/**/*.js", "${workspaceFolder}/../core/dist/**/*.js"],
+            "preLaunchTask": "watch",
+            "presentation": {
+                "group": "4_E2ETestCurrentFile",
+                "order": 2
+            }
         },
         {
             "name": "Test Lint",
@@ -52,7 +170,11 @@
             "request": "launch",
             "program": "${workspaceFolder}/scripts/lint/testLint.ts",
             "outFiles": ["${workspaceFolder}/dist/**/*.js"],
-            "preLaunchTask": "${defaultBuildTask}"
+            "preLaunchTask": "${defaultBuildTask}",
+            "presentation": {
+                "group": "7_TestLint",
+                "order": 3
+            }
         }
         // ---- We do not need the following currently, and we want to reduce clutter. Re-enable if necessary ----
         // {

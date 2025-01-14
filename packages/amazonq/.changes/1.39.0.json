@@ -1,0 +1,34 @@
+{
+	"date": "2024-12-03",
+	"version": "1.39.0",
+	"entries": [
+		{
+			"type": "Feature",
+			"description": "Added a getting started page for exploring amazon q agents"
+		},
+		{
+			"type": "Feature",
+			"description": "`/test` in Q chat to generate unit tests for java and python"
+		},
+		{
+			"type": "Feature",
+			"description": "`/doc` in Q chat to generate and update documentation for your project"
+		},
+		{
+			"type": "Feature",
+			"description": "Amazon Q Code Scan is now Amazon Q Code Review"
+		},
+		{
+			"type": "Feature",
+			"description": "`/review` in Q chat to scan your code for vulnerabilities and quality issues, and generate fixes"
+		},
+		{
+			"type": "Feature",
+			"description": "Security Scan: New TreeView to display security scan issues and vulnerabilities detected in your project. The TreeView provides an organized and hierarchical view of the scan results, making it easier to navigate and prioritize the issues that need to be addressed."
+		},
+		{
+			"type": "Feature",
+			"description": "Security Scan: Added ability to suppress or ignore security issues"
+		}
+	]
+}

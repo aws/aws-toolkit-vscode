@@ -6,14 +6,10 @@ import * as vscode from 'vscode'
 import { FolderInfo, transformByQState } from '../../models/model'
 import { getLogger } from '../../../shared/logger'
 import * as CodeWhispererConstants from '../../models/constants'
-import { spawnSync } from 'child_process' // Consider using ChildProcess once we finalize all spawnSync calls
-import {
-    CodeTransformBuildCommand,
-    CodeTransformMavenBuildCommand,
-    telemetry,
-} from '../../../shared/telemetry/telemetry'
+// Consider using ChildProcess once we finalize all spawnSync calls
+import { spawnSync } from 'child_process' // eslint-disable-line no-restricted-imports
+import { CodeTransformBuildCommand, telemetry } from '../../../shared/telemetry/telemetry'
 import { CodeTransformTelemetryState } from '../../../amazonqGumby/telemetry/codeTransformTelemetryState'
-import { MetadataResult } from '../../../shared/telemetry/telemetryClient'
 import { ToolkitError } from '../../../shared/errors'
 import { writeLogs } from './transformFileHandler'
 import { throwIfCancelled } from './transformApiHandler'
@@ -63,35 +59,6 @@ function installProjectDependencies(dependenciesFolder: FolderInfo, modulePath: 
             getLogger().error(
                 `CodeTransformation: Error in running Maven ${argString} command ${baseCommand} = ${errorLog}`
             )
-            let errorReason = ''
-            if (spawnResult.stdout) {
-                errorReason = `Maven ${argString}: InstallationExecutionError`
-                /*
-                 * adding this check here because these mvn commands sometimes generate a lot of output.
-                 * rarely, a buffer overflow has resulted when these mvn commands are run with -X, -e flags
-                 * which are not being used here (for now), but still keeping this just in case.
-                 */
-                if (Buffer.byteLength(spawnResult.stdout, 'utf-8') > CodeWhispererConstants.maxBufferSize) {
-                    errorReason += '-BufferOverflow'
-                }
-            } else {
-                errorReason = `Maven ${argString}: InstallationSpawnError`
-            }
-            if (spawnResult.error) {
-                const errorCode = (spawnResult.error as any).code ?? 'UNKNOWN'
-                errorReason += `-${errorCode}`
-            }
-            // TODO: remove deprecated metric once BI started using new metrics
-            telemetry.codeTransform_mvnBuildFailed.emit({
-                codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-                codeTransformMavenBuildCommand: mavenBuildCommand as CodeTransformMavenBuildCommand,
-                result: MetadataResult.Fail,
-                reason: errorReason,
-            })
-
-            // Explicitly set metric as failed since no exception was caught
-            telemetry.record({ result: MetadataResult.Fail, reason: errorReason })
-
             throw new ToolkitError(`Maven ${argString} error`, { code: 'MavenExecutionError' })
         } else {
             transformByQState.appendToErrorLog(`${baseCommand} ${argString} succeeded`)
@@ -113,11 +80,12 @@ function copyProjectDependencies(dependenciesFolder: FolderInfo, modulePath: str
         '-Dmdep.addParentPoms=true',
         '-q',
     ]
+
     let environment = process.env
-    // if JAVA_HOME not found or not matching project JDK, get user input for it and set here
     if (transformByQState.getJavaHome() !== undefined) {
         environment = { ...process.env, JAVA_HOME: transformByQState.getJavaHome() }
     }
+
     const spawnResult = spawnSync(baseCommand, args, {
         cwd: modulePath,
         shell: true,
@@ -133,33 +101,6 @@ function copyProjectDependencies(dependenciesFolder: FolderInfo, modulePath: str
         getLogger().info(
             `CodeTransformation: Maven copy-dependencies command ${baseCommand} failed, but still continuing with transformation: ${errorLog}`
         )
-        let errorReason = ''
-        if (spawnResult.stdout) {
-            errorReason = 'Maven Copy: CopyDependenciesExecutionError'
-            if (Buffer.byteLength(spawnResult.stdout, 'utf-8') > CodeWhispererConstants.maxBufferSize) {
-                errorReason += '-BufferOverflow'
-            }
-        } else {
-            errorReason = 'Maven Copy: CopyDependenciesSpawnError'
-        }
-        if (spawnResult.error) {
-            const errorCode = (spawnResult.error as any).code ?? 'UNKNOWN'
-            errorReason += `-${errorCode}`
-        }
-        let mavenBuildCommand = transformByQState.getMavenName()
-        // slashes not allowed in telemetry
-        if (mavenBuildCommand === './mvnw') {
-            mavenBuildCommand = 'mvnw'
-        } else if (mavenBuildCommand === '.\\mvnw.cmd') {
-            mavenBuildCommand = 'mvnw.cmd'
-        }
-        // TODO: remove deprecated metric once BI started using new metrics
-        telemetry.codeTransform_mvnBuildFailed.emit({
-            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-            codeTransformMavenBuildCommand: mavenBuildCommand as CodeTransformMavenBuildCommand,
-            result: MetadataResult.Fail,
-            reason: errorReason,
-        })
         throw new Error('Maven copy-deps error')
     } else {
         transformByQState.appendToErrorLog(`${baseCommand} copy-dependencies succeeded`)

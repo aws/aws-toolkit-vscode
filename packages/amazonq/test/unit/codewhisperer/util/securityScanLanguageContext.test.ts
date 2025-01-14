@@ -17,20 +17,20 @@ describe('securityScanLanguageContext', function () {
             ['javascript', true],
             ['typescript', true],
             ['jsx', false],
-            ['javascriptreact', false],
-            ['typescriptreact', false],
+            ['javascriptreact', true],
+            ['typescriptreact', true],
             ['tsx', false],
             ['csharp', true],
             ['python', true],
             ['c', true],
             ['cpp', true],
             ['go', true],
-            ['kotlin', false],
+            ['kotlin', true],
             ['php', true],
             ['ruby', true],
             ['rust', false],
-            ['scala', false],
-            ['shellscript', false],
+            ['scala', true],
+            ['shellscript', true],
             ['sql', false],
             ['json', true],
             ['yaml', true],
@@ -51,7 +51,7 @@ describe('securityScanLanguageContext', function () {
             await resetCodeWhispererGlobalVariables()
         })
 
-        cases.forEach((tuple) => {
+        for (const tuple of cases) {
             const languageId = tuple[0]
             const expected = tuple[1]
 
@@ -59,7 +59,7 @@ describe('securityScanLanguageContext', function () {
                 const actual = languageContext.isLanguageSupported(languageId)
                 assert.strictEqual(actual, expected)
             })
-        })
+        }
     })
 
     describe('normalizeLanguage', function () {
@@ -92,7 +92,9 @@ describe('securityScanLanguageContext', function () {
             ['java', 'java'],
             ['python', 'python'],
             ['javascript', 'javascript'],
+            ['javascriptreact', 'javascript'],
             ['typescript', 'typescript'],
+            ['typescriptreact', 'typescript'],
             ['csharp', 'csharp'],
             ['go', 'go'],
             ['ruby', 'ruby'],
@@ -112,6 +114,9 @@ describe('securityScanLanguageContext', function () {
             ['java-properties', 'plaintext'],
             ['go.mod', 'plaintext'],
             ['go.sum', 'plaintext'],
+            ['kotlin', 'kotlin'],
+            ['scala', 'scala'],
+            ['shellscript', 'shell'],
         ]
 
         for (const [securityScanLanguageId, expectedCwsprLanguageId] of securityScanLanguageIds) {

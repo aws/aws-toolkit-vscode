@@ -3,13 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { existsSync, PathLike, readFileSync } from 'fs'
-import { writeFileSync } from 'fs-extra'
+import { existsSync, PathLike, readFileSync } from 'fs' // eslint-disable-line no-restricted-imports
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { isImageLambdaConfig, NodejsDebugConfiguration } from '../../../lambda/local/debugConfiguration'
 import { RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
-import { ChildProcess } from '../../../shared/utilities/childProcess'
+import { ChildProcess } from '../../utilities/processUtils'
 import * as pathutil from '../../../shared/utilities/pathUtils'
 import { ExtContext } from '../../extensions'
 import { getLogger } from '../../logger'
@@ -18,6 +17,7 @@ import { DefaultSamLocalInvokeCommand, waitForDebuggerMessages } from '../cli/sa
 import { runLambdaFunction, waitForPort } from '../localLambdaRunner'
 import { SamLaunchRequestArgs } from './awsSamDebugger'
 import { findTypescriptCompiler } from '../../utilities/pathFind'
+import fs from '../../fs/fs'
 
 const tsConfigFile = 'aws-toolkit-tsconfig.json'
 
@@ -161,10 +161,10 @@ async function compileTypeScript(config: SamLaunchRequestArgs): Promise<void> {
 
         try {
             const tsConfig = JSON.parse(readFileSync(tsConfigPath).toString())
-            getLogger('channel').info(`Using base TypeScript config: ${tsConfigPath}`)
+            getLogger().info(`Using base TypeScript config: ${tsConfigPath}`)
             return tsConfig
         } catch (err) {
-            getLogger('channel').error(`Unable to use TypeScript base: ${tsConfigPath}`)
+            getLogger().error(`Unable to use TypeScript base: ${tsConfigPath}`)
         }
 
         return undefined
@@ -176,7 +176,7 @@ async function compileTypeScript(config: SamLaunchRequestArgs): Promise<void> {
         loadBaseConfig(tsConfigPath) ?? loadBaseConfig(path.join(config.codeRoot, tsConfigInitialBaseFile)) ?? {}
 
     if (tsConfig.compilerOptions === undefined) {
-        getLogger('channel').info('Creating TypeScript config')
+        getLogger().info('Creating TypeScript config')
         tsConfig.compilerOptions = {
             target: 'es6',
             module: 'commonjs',
@@ -202,12 +202,12 @@ async function compileTypeScript(config: SamLaunchRequestArgs): Promise<void> {
     types.push('node')
     compilerOptions.types = [...new Set(types)]
 
-    writeFileSync(tsConfigPath, JSON.stringify(tsConfig, undefined, 4))
+    await fs.writeFile(tsConfigPath, JSON.stringify(tsConfig, undefined, 4))
 
     // resolve ts lambda handler to point into build directory relative to codeRoot
     const tsLambdaHandler = path.relative(config.codeRoot, path.join(tsBuildDir, config.invokeTarget.lambdaHandler))
     config.invokeTarget.lambdaHandler = pathutil.normalizeSeparator(tsLambdaHandler)
-    getLogger('channel').info(`Resolved compiled lambda handler to ${tsLambdaHandler}`)
+    getLogger().info(`Resolved compiled lambda handler to ${tsLambdaHandler}`)
 
     const tsc = await findTypescriptCompiler()
     if (!tsc) {
@@ -215,10 +215,10 @@ async function compileTypeScript(config: SamLaunchRequestArgs): Promise<void> {
     }
 
     try {
-        getLogger('channel').info(`Compiling TypeScript app with: "${tsc}"`)
+        getLogger().info(`Compiling TypeScript app with: "${tsc}"`)
         await new ChildProcess(tsc, ['--project', tsConfigPath]).run()
     } catch (error) {
-        getLogger('channel').error(`TypeScript compile error: ${error}`)
+        getLogger().error(`TypeScript compile error: ${error}`)
         throw Error('Failed to compile TypeScript app')
     }
 }

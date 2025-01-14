@@ -11,11 +11,10 @@ import {
     vsCodeState,
     TelemetryHelper,
     AuthUtil,
-    UserGroup,
-    CodeWhispererUserGroupSettings,
+    getUnmodifiedAcceptedTokens,
 } from 'aws-core-vscode/codewhisperer'
 import { createMockDocument, createMockTextEditor, resetCodeWhispererGlobalVariables } from 'aws-core-vscode/test'
-import { globals, extensionVersion } from 'aws-core-vscode/shared'
+import { globals } from 'aws-core-vscode/shared'
 import { assertTelemetryCurried } from 'aws-core-vscode/test'
 
 describe('codewhispererCodecoverageTracker', function () {
@@ -29,7 +28,6 @@ describe('codewhispererCodecoverageTracker', function () {
 
         it('unsupported language', function () {
             assert.strictEqual(CodeWhispererCodeCoverageTracker.getTracker('vb'), undefined)
-            assert.strictEqual(CodeWhispererCodeCoverageTracker.getTracker('r'), undefined)
             assert.strictEqual(CodeWhispererCodeCoverageTracker.getTracker('ipynb'), undefined)
         })
 
@@ -158,14 +156,13 @@ describe('codewhispererCodecoverageTracker', function () {
         })
 
         it('Should return correct unmodified accepted tokens count', function () {
-            const tracker = CodeWhispererCodeCoverageTracker.getTracker(language)
-            assert.strictEqual(tracker?.getUnmodifiedAcceptedTokens('foo', 'fou'), 2)
-            assert.strictEqual(tracker?.getUnmodifiedAcceptedTokens('foo', 'f11111oo'), 3)
-            assert.strictEqual(tracker?.getUnmodifiedAcceptedTokens('foo', 'fo'), 2)
-            assert.strictEqual(tracker?.getUnmodifiedAcceptedTokens('helloworld', 'HelloWorld'), 8)
-            assert.strictEqual(tracker?.getUnmodifiedAcceptedTokens('helloworld', 'World'), 4)
-            assert.strictEqual(tracker?.getUnmodifiedAcceptedTokens('CodeWhisperer', 'CODE'), 1)
-            assert.strictEqual(tracker?.getUnmodifiedAcceptedTokens('CodeWhisperer', 'CodeWhispererGood'), 13)
+            assert.strictEqual(getUnmodifiedAcceptedTokens('foo', 'fou'), 2)
+            assert.strictEqual(getUnmodifiedAcceptedTokens('foo', 'f11111oo'), 3)
+            assert.strictEqual(getUnmodifiedAcceptedTokens('foo', 'fo'), 2)
+            assert.strictEqual(getUnmodifiedAcceptedTokens('helloworld', 'HelloWorld'), 8)
+            assert.strictEqual(getUnmodifiedAcceptedTokens('helloworld', 'World'), 4)
+            assert.strictEqual(getUnmodifiedAcceptedTokens('CodeWhisperer', 'CODE'), 1)
+            assert.strictEqual(getUnmodifiedAcceptedTokens('CodeWhisperer', 'CodeWhispererGood'), 13)
         })
     })
 
@@ -512,21 +509,14 @@ describe('codewhispererCodecoverageTracker', function () {
             if (tracker) {
                 sinon.stub(tracker, 'isActive').returns(true)
             }
-            CodeWhispererUserGroupSettings.instance.reset()
         })
 
         afterEach(function () {
             sinon.restore()
             CodeWhispererCodeCoverageTracker.instances.clear()
-            CodeWhispererUserGroupSettings.instance.reset()
         })
 
         it('should emit correct code coverage telemetry in python file', async function () {
-            await globals.globalState.update('CODEWHISPERER_USER_GROUP', {
-                group: UserGroup.Control,
-                version: extensionVersion,
-            })
-
             const tracker = CodeWhispererCodeCoverageTracker.getTracker(language)
 
             const assertTelemetry = assertTelemetryCurried('codewhisperer_codePercentage')
@@ -541,16 +531,10 @@ describe('codewhispererCodecoverageTracker', function () {
                 codewhispererSuggestedTokens: 7,
                 codewhispererPercentage: 7,
                 successCount: 1,
-                codewhispererUserGroup: 'Control',
             })
         })
 
         it('should emit correct code coverage telemetry when success count = 0', async function () {
-            await globals.globalState.update('CODEWHISPERER_USER_GROUP', {
-                group: UserGroup.Control,
-                version: extensionVersion,
-            })
-
             const tracker = CodeWhispererCodeCoverageTracker.getTracker('java')
 
             const assertTelemetry = assertTelemetryCurried('codewhisperer_codePercentage')
@@ -570,7 +554,6 @@ describe('codewhispererCodecoverageTracker', function () {
                 codewhispererSuggestedTokens: 18,
                 codewhispererPercentage: 60,
                 successCount: 2,
-                codewhispererUserGroup: 'Control',
             })
         })
     })

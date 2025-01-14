@@ -8,15 +8,14 @@ import { getLogger } from '../../shared/logger/logger'
 import * as CodeWhispererConstants from '../models/constants'
 import globals from '../../shared/extensionGlobals'
 import { vsCodeState } from '../models/model'
-import { distance } from 'fastest-levenshtein'
 import { CodewhispererLanguage, telemetry } from '../../shared/telemetry/telemetry'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { AuthUtil } from '../util/authUtil'
-import { CodeWhispererUserGroupSettings } from '../util/userGroupUtil'
 import { getSelectedCustomization } from '../util/customizationUtil'
 import { codeWhispererClient as client } from '../client/codewhisperer'
 import { isAwsError } from '../../shared/errors'
+import { getUnmodifiedAcceptedTokens } from '../util/commonUtil'
 
 interface CodeWhispererToken {
     range: vscode.Range
@@ -87,17 +86,9 @@ export class CodeWhispererCodeCoverageTracker {
             for (let i = 0; i < this._acceptedTokens[filename].length; i++) {
                 const oldText = this._acceptedTokens[filename][i].text
                 const newText = editor.document.getText(this._acceptedTokens[filename][i].range)
-                this._acceptedTokens[filename][i].accepted = this.getUnmodifiedAcceptedTokens(oldText, newText)
+                this._acceptedTokens[filename][i].accepted = getUnmodifiedAcceptedTokens(oldText, newText)
             }
         }
-    }
-    // With edit distance, complicate usermodification can be considered as simple edit(add, delete, replace),
-    // and thus the unmodified part of recommendation length can be deducted/approximated
-    // ex. (modified > original): originalRecom: foo -> modifiedRecom: fobarbarbaro, distance = 9, delta = 12 - 9 = 3
-    // ex. (modified == original): originalRecom: helloworld -> modifiedRecom: HelloWorld, distance = 2, delta = 10 - 2 = 8
-    // ex. (modified < original): originalRecom: CodeWhisperer -> modifiedRecom: CODE, distance = 12, delta = 13 - 12 = 1
-    public getUnmodifiedAcceptedTokens(origin: string, after: string) {
-        return Math.max(origin.length, after.length) - distance(origin, after)
     }
 
     public emitCodeWhispererCodeContribution() {
@@ -113,14 +104,14 @@ export class CodeWhispererCodeCoverageTracker {
         // the accepted characters after calculating user modification
         let unmodifiedAcceptedTokens = 0
         for (const filename in this._acceptedTokens) {
-            this._acceptedTokens[filename].forEach((v) => {
+            for (const v of this._acceptedTokens[filename]) {
                 if (filename in this._totalTokens && this._totalTokens[filename] >= v.accepted) {
                     unmodifiedAcceptedTokens += v.accepted
                     acceptedTokens += v.text.length
                 }
-            })
+            }
         }
-        const percentCount = ((unmodifiedAcceptedTokens / totalTokens) * 100).toFixed(2)
+        const percentCount = ((acceptedTokens / totalTokens) * 100).toFixed(2)
         const percentage = Math.round(parseInt(percentCount))
         const selectedCustomization = getSelectedCustomization()
         if (this._serviceInvocationCount <= 0) {
@@ -134,7 +125,6 @@ export class CodeWhispererCodeCoverageTracker {
             codewhispererSuggestedTokens: acceptedTokens,
             codewhispererPercentage: percentage ? percentage : 0,
             successCount: this._serviceInvocationCount,
-            codewhispererUserGroup: CodeWhispererUserGroupSettings.getUserGroup().toString(),
             codewhispererCustomizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
             credentialStartUrl: AuthUtil.instance.startUrl,
         })

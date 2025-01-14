@@ -9,11 +9,13 @@ import { telemetry } from 'aws-core-vscode/telemetry'
 import { AuthUtil, CodeWhispererSettings } from 'aws-core-vscode/codewhisperer'
 import { Commands, placeholder, funcUtil } from 'aws-core-vscode/shared'
 import * as amazonq from 'aws-core-vscode/amazonq'
+import { scanChatAppInit } from '../amazonqScan'
+import { init as inlineChatInit } from '../../inlineChat/app'
 
 export async function activate(context: ExtensionContext) {
     const appInitContext = amazonq.DefaultAmazonQAppInitContext.instance
 
-    registerApps(appInitContext)
+    registerApps(appInitContext, context)
 
     const provider = new amazonq.AmazonQChatViewProvider(
         context,
@@ -25,7 +27,11 @@ export async function activate(context: ExtensionContext) {
     await amazonq.TryChatCodeLensProvider.register(appInitContext.onDidChangeAmazonQVisibility.event)
 
     const setupLsp = funcUtil.debounce(async () => {
-        void amazonq.LspController.instance.trySetupLsp(context)
+        void amazonq.LspController.instance.trySetupLsp(context, {
+            startUrl: AuthUtil.instance.startUrl,
+            maxIndexSize: CodeWhispererSettings.instance.getMaxIndexSize(),
+            isVectorIndexEnabled: CodeWhispererSettings.instance.isLocalIndexEnabled(),
+        })
     }, 5000)
 
     context.subscriptions.push(
@@ -55,15 +61,18 @@ export async function activate(context: ExtensionContext) {
         void vscode.env.openExternal(vscode.Uri.parse(amazonq.amazonQHelpUrl))
     })
 
-    await amazonq.activateBadge()
     void setupLsp()
     void setupAuthNotification()
 }
 
-function registerApps(appInitContext: amazonq.AmazonQAppInitContext) {
+function registerApps(appInitContext: amazonq.AmazonQAppInitContext, context: ExtensionContext) {
     amazonq.cwChatAppInit(appInitContext)
     amazonq.featureDevChatAppInit(appInitContext)
     amazonq.gumbyChatAppInit(appInitContext)
+    amazonq.testChatAppInit(appInitContext)
+    scanChatAppInit(appInitContext)
+    amazonq.docChatAppInit(appInitContext)
+    inlineChatInit(context)
 }
 
 /**

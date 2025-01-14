@@ -8,7 +8,7 @@
  */
 import vscode from 'vscode'
 import { getLogger } from '../shared/logger'
-import { WinstonToolkitLogger } from '../shared/logger/winstonToolkitLogger'
+import { ToolkitLogger } from '../shared/logger/toolkitLogger'
 import { mapTestErrors, normalizeError, patchObject, setRunnableTimeout } from '../test/setupUtil'
 import { getTestWindow, resetTestWindow } from '../test/shared/vscode/window'
 import * as sinon from 'sinon'
@@ -45,8 +45,8 @@ export async function mochaGlobalSetup(extensionId: string) {
 
         // Log as much as possible, useful for debugging integration tests.
         getLogger().setLogLevel('debug')
-        if (getLogger() instanceof WinstonToolkitLogger) {
-            ;(getLogger() as WinstonToolkitLogger).logToConsole()
+        if (getLogger() instanceof ToolkitLogger) {
+            ;(getLogger() as ToolkitLogger).logToConsole()
         }
     }
 }

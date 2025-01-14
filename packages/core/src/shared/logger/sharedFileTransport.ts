@@ -8,12 +8,12 @@ import fs from '../fs/fs'
 import * as vscode from 'vscode'
 import globals from '../extensionGlobals'
 import { MESSAGE } from './consoleLogTransport'
-import { WinstonToolkitLogger } from './winstonToolkitLogger'
+import { ToolkitLogger } from './toolkitLogger'
 
 interface LogEntry {
     level: string
     message: string
-    /** This is the formatted message from {@link WinstonToolkitLogger} in the winston.createLogger() call */
+    /** This is the formatted message from {@link ToolkitLogger} in the winston.createLogger() call */
     [MESSAGE]: string
 }
 
@@ -101,7 +101,7 @@ export class SharedFileTransport extends TransportStream {
 
         // Remove the logs that were written to the file from the buffer.
         // But we have to keep in mind new logs may have been
-        //asynchronously added to the buffer, so we only remove what we have flushed.
+        // asynchronously added to the buffer, so we only remove what we have flushed.
         this.bufferedLogEntries = this.bufferedLogEntries.slice(latestLogIndex + 1)
 
         const newText = logMessages.join('\n') + '\n'

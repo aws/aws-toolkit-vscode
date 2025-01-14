@@ -107,12 +107,12 @@ export class AppRunnerServiceNode extends CloudWatchLogsBase implements AWSResou
         }
 
         if (this._info.Status === 'OPERATION_IN_PROGRESS') {
-            this.parent.startPolling(this._info.ServiceArn)
+            this.parent.startPollingNode(this._info.ServiceArn)
         } else if (this.currentOperation.Type !== undefined) {
             this.currentOperation.Id = undefined
             this.currentOperation.Type = undefined
             this.setLabel()
-            this.parent.stopPolling(this._info.ServiceArn)
+            this.parent.stopPollingNode(this._info.ServiceArn)
         }
     }
 

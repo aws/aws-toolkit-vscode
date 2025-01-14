@@ -164,6 +164,7 @@ export class KeyStrokeHandler {
         if (!editor) {
             return
         }
+
         // RecommendationHandler.instance.reportUserDecisionOfRecommendation(editor, -1)
         await RecommendationService.instance.generateRecommendation(
             client,

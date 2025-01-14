@@ -9,6 +9,7 @@ import { createBuilderIdProfile, createTestAuth } from './testUtil'
 import { Connection, createSsoProfile, hasScopes, isSsoConnection } from '../../auth/connection'
 import assert from 'assert'
 import globals from '../../shared/extensionGlobals'
+import { waitUntil } from '../../shared/utilities/timeoutUtils'
 
 describe('SecondaryAuth', function () {
     let auth: ReturnType<typeof createTestAuth>
@@ -100,8 +101,13 @@ describe('SecondaryAuth', function () {
         // delete SecondaryAuth
         await auth.deleteConnection(conn)
 
+        // currently both Auth onDidChangeConnectionState and onDidDeleteConnection trigger
+        // and we need to wait for both of the callbacks defined through them in SecondaryAuth to complete.
+        // We know they all completed when SecondaryAuth.onDidChangeActiveConnection has been called twice
+        await waitUntil(async () => onDidChangeActiveConnection.callCount === 2, { interval: 10, timeout: 10000 })
+
         // we fallback to the PrimaryAuth connection
-        assert.strictEqual(onDidChangeActiveConnection.called, true)
+        assert.strictEqual(onDidChangeActiveConnection.callCount, 2)
         assert.deepStrictEqual(
             {
                 id: secondaryAuth.activeConnection?.id,

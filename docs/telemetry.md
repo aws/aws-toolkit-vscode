@@ -142,20 +142,23 @@ Finally, if `setupStep2()` was the thing that failed we would see a metric like:
 
 ## Adding a "Stack Trace" to your metric
 
-### Problem
+When errors are thrown we do not attach the stack trace in telemetry. We only know about the error itself, but
+not the path it took to get there. We sometimes need this stack trace to debug, and only have telemetry to get insight on what happened since we do not have access to logs.
+
+### Scenario
 
 Common example: _"I have a function, `thisFailsSometimes()` that is called in multiple places. The function sometimes fails, I know from telemetry, but I do not know if it is failing when it is a specific caller. If I knew the call stack/trace that it took to call my function that would help me debug."_
 
 ```typescript
-function outerA() {
+function runsSuccessfully() {
     thisFailsSometimes(1) // this succeeds
 }
 
-function outerB() {
+function thisThrows() {
     thisFailsSometimes(0) // this fails
 }
 
-function thisFailsSometimes(num: number) {
+function failsDependingOnInput(num: number) {
     return telemetry.my_Metric.run(() => {
         if (number === 0) {
             throw Error('Cannot be 0')
@@ -167,31 +170,61 @@ function thisFailsSometimes(num: number) {
 
 ### Solution
 
-Add a value to `function` in the options of a `run()`. This will result in a stack of functions identifiers that were previously called
-before `thisFailsSometimes()` was run. You can then retrieve the stack in the `run()` of your final metric using `getFunctionStack()`.
+On class methods, use the `@withTelemetryContext()` decorator to add context to the execution. Depending on the args set, it provides features like emitting the result, or adding it's context to errors.
+
+> NOTE: Decorators are currently only supported for methods and not functions
 
 ```typescript
-function outerA() {
-    telemetry.my_Metric.run(() => thisFailsSometimes(1), { functionId: { name: 'outerA' }})
+class MyClass {
+    @withTelemetryContext({ name: 'runsSuccessfully', class: 'MyClass' })
+    public runsSuccessfully() {
+        failsDependingOnInput(1)
+    }
+
+    @withTelemetryContext({ name: 'thisThrows', class: 'MyClass', errorCtx: true })
+    public thisThrows() {
+        failsDependingOnInput(0)
+    }
+
+    @withTelemetryContext({ name: 'failsDependingOnInput' class: 'MyClass', emit: true, errorCtx: true})
+    private failsDependingOnInput(num: number) {
+        if (number === 0) {
+            throw Error('Cannot be 0')
+        }
+        ...
+    }
 }
 
-function outerB() {
-    telemetry.my_Metric.run(() => thisFailsSometimes(0), { functionId: { source: 'outerB' }})
+// Results in a metric: { source: 'MyClass#thisThrows,failsDependingOnInput', result: 'Failed' }
+// Results in an error that has context about the methods that lead up to it.
+new MyClass().thisThrows()
+```
+
+Separately if you must use a function, add a value to `function` in the options of a `run()`. This will result in a stack of functions identifiers that were previously called
+before `failsDependingOnInput()` was run. You can then retrieve the stack in the `run()` of your final metric using `getFunctionStack()`.
+
+```typescript
+function runsSuccessfully() {
+    telemetry.my_Metric.run(() => failsDependingOnInput(1), { functionId: { name: 'runsSuccessfully' }})
 }
 
-function thisFailsSometimes(num: number) {
+function thisThrows() {
+    telemetry.my_Metric.run(() => failsDependingOnInput(0), { functionId: { source: 'thisThrows' }})
+}
+
+function failsDependingOnInput(num: number) {
     return telemetry.my_Metric.run(() => {
         telemetry.record({ theCallStack: asStringifiedStack(telemetry.getFunctionStack())})
         if (number === 0) {
             throw Error('Cannot be 0')
         }
         ...
-    }, { functionId: { name: 'thisFailsSometimes' }})
+    }, { functionId: { name: 'failsDependingOnInput' }})
 }
 
-// Results in a metric: { theCallStack: 'outerB:thisFailsSometimes', result: 'Failed' }
-// { theCallStack: 'outerB:thisFailsSometimes' } implies 'outerB' was run first, then 'thisFailsSometimes'. See docstrings for more info.
-outerB()
+// Results in a metric: { theCallStack: 'thisThrows:failsDependingOnInput', result: 'Failed' }
+// { theCallStack: 'thisThrows:failsDependingOnInput' } implies 'thisThrows' was run first, then 'failsDependingOnInput'. See docstrings for more info.
+thisThrows()
 ```
 
 ### Important Notes
@@ -214,25 +247,6 @@ outerB()
     }
 
     c() // result: 'a:c', note that 'b' is not included
-    ```
-
--   If you are using `run()` with a class method, you can also add the class to the entry for more context
-
-    ```typescript
-    class A {
-        a() {
-            return telemetry.my_Metric.run(() => this.b(), { functionId: { name: 'a', class: 'A' } })
-        }
-
-        b() {
-            return telemetry.my_Metric.run(() => asStringifiedStack(telemetry.getFunctionStack()), {
-                functionId: { name: 'b', class: 'A' },
-            })
-        }
-    }
-
-    const inst = new A()
-    inst.a() // 'A#a,b'
     ```
 
 -   If you do not want your `run()` to emit telemetry, set `emit: false` in the options
@@ -260,3 +274,71 @@ outerB()
         return telemetry.my_Metric.run(() => b(), { functionId: { name: 'aButMoreUnique' } })
     }
     ```
+
+## Tracing Telemetry Events
+
+All telemetry events include a traceId in addition to other attributes. Traceids allow for improved tracking and correlation of related events across a single operation or user flow.
+
+### What is a traceId?
+
+A traceId is a unique identifier that is generated for the top-level telemetry event in a flow and then propagated to all subsequent related events. This allows us to group and analyze all events associated with a particular operation.
+
+### How it works
+
+1. When a top-level telemetry event is created (e.g., `vscode_executeCommand`), a new traceId is generated.
+2. This traceId is then attached to all subsequent related telemetry events that occur as part of the same operation or flow.
+3. The traceId remains consistent for all events within the same flow
+
+### Example
+
+Consider a flow where `vscode_executeCommand` triggers `amazonq_enterFocusChat` and `amazonq_openChat`. The resulting telemetry events would look like this:
+
+```
+vscode_executeCommand:
+traceId: 'aaaaa-aaaaa-aaaaa-aaaaa-aaaaa'
+
+amazonq_enterFocusChat
+traceId: 'aaaaa-aaaaa-aaaaa-aaaaa-aaaaa'
+
+amazonq_openChat
+traceId: 'aaaaa-aaaaa-aaaaa-aaaaa-aaaaa'
+```
+
+allowing us to look up `traceId=aaaaa-aaaaa-aaaaa-aaaaa-aaaaa` in our telemetry instance and find all the related events.
+
+For more information visit the OpenTelemetry documentation on traces: https://opentelemetry.io/docs/concepts/signals/traces/
+
+### Manual Trace ID Instrumentation
+
+In certain scenarios you may need to manually instrument disjoint flows to track how a `traceId` propagates through them. e.g.
+
+1. Measuring the time it takes for a message to travel from Amazon Q chat, through VS Code, and back to the customer.
+2. Determining the duration for Amazon Q inline to display a message to the user.
+
+In these cases, where there isn't a direct hierarchy of function calls, manual instrumentation of the `traceId` is necessary.
+
+#### Implementation Options
+
+#### 1. When not currently running in a span
+
+If you're not within an active span and you know the `traceId` you want to use:
+
+```javascript
+telemetry.withTraceId(() => {
+    // Code to be executed within this trace
+}, 'myTraceId')
+```
+
+This method wraps the provided function with the specified traceId
+
+#### 2. When currently running in a span
+
+If you're already executing within a span (e.g., vscode_executeCommand) and you know the traceId you want to use:
+
+```javascript
+telemetry.record({
+    traceId: 'myTraceId',
+})
+```
+
+This approach records the traceId for the current span and all future spans within the same execution context.

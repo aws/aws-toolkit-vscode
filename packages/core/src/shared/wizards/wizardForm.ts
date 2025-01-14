@@ -25,7 +25,7 @@ interface ContextOptions<TState, TProp> {
      * in a single resolution step then they will be added in the order in which they were
      * bound.
      */
-    showWhen?: (state: WizardState<TState>) => boolean
+    showWhen?: (state: WizardState<TState>) => boolean | Promise<boolean>
     /**
      * Sets a default value to the target property. This default is applied to the current state
      * as long as the property has not been set.
@@ -110,7 +110,7 @@ export class WizardForm<TState extends Partial<Record<keyof TState, unknown>>> {
     public applyDefaults(state: TState): TState {
         const defaultState = _.cloneDeep(state)
 
-        this.formData.forEach((opt, targetProp) => {
+        for (const [targetProp, opt] of this.formData.entries()) {
             const current = _.get(state, targetProp)
 
             if (!isAssigned(current) && opt.setDefault !== undefined && !checkParent(targetProp, state, opt)) {
@@ -119,7 +119,7 @@ export class WizardForm<TState extends Partial<Record<keyof TState, unknown>>> {
                     _.set(defaultState, targetProp, defaultValue)
                 }
             }
-        })
+        }
 
         return defaultState
     }
@@ -135,7 +135,11 @@ export class WizardForm<TState extends Partial<Record<keyof TState, unknown>>> {
         this.formData.set(key, { ...this.formData.get(key), ...element })
     }
 
-    public canShowProperty(prop: string, state: TState, defaultState: TState = this.applyDefaults(state)): boolean {
+    public canShowProperty(
+        prop: string,
+        state: TState,
+        defaultState: TState = this.applyDefaults(state)
+    ): boolean | Promise<boolean> {
         const current = _.get(state, prop)
         const options = this.formData.get(prop) ?? {}
 
@@ -143,8 +147,18 @@ export class WizardForm<TState extends Partial<Record<keyof TState, unknown>>> {
             return false
         }
 
-        if (options.showWhen !== undefined && !options.showWhen(defaultState as WizardState<TState>)) {
-            return false
+        if (options.showWhen !== undefined) {
+            const showStatus = options.showWhen(defaultState as WizardState<TState>)
+            if (showStatus instanceof Promise) {
+                return showStatus
+                    .then((result) => {
+                        return result
+                    })
+                    .catch(() => {
+                        return false // Default to not showing if there's an error
+                    })
+            }
+            return showStatus
         }
 
         return options.provider !== undefined
@@ -198,10 +212,10 @@ export class WizardForm<TState extends Partial<Record<keyof TState, unknown>>> {
 
     private createApplyFormMethod<TProp extends Record<string, any>>(prop: string): ApplyBoundForm<TProp, TState> {
         return (form: WizardForm<TProp>, options?: ContextOptions<TState, TProp>) => {
-            form.formData.forEach((element, key) => {
+            for (const [key, element] of form.formData.entries()) {
                 // TODO: use an assert here to ensure that no elements are rewritten
                 this.applyElement(`${prop}.${key}`, this.convertElement(prop, element, options))
-            })
+            }
         }
     }
 

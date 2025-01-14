@@ -5,7 +5,7 @@
 
 import assert from 'assert'
 import { Runtime } from 'aws-sdk/clients/lambda'
-import { mkdirpSync, mkdtemp } from 'fs-extra'
+import { mkdtempSync } from 'fs' // eslint-disable-line no-restricted-imports
 import * as path from 'path'
 import * as semver from 'semver'
 import * as vscode from 'vscode'
@@ -25,8 +25,15 @@ import { AwsSamDebuggerConfiguration } from '../shared/sam/debugger/awsSamDebugC
 import { AwsSamTargetType } from '../shared/sam/debugger/awsSamDebugConfiguration'
 import { insertTextIntoFile } from '../shared/utilities/textUtilities'
 import globals from '../shared/extensionGlobals'
-import { closeAllEditors } from '../test/testUtil'
+import { closeAllEditors, getWorkspaceFolder } from '../test/testUtil'
 import { ToolkitError } from '../shared/errors'
+import { SamAppLocation } from '../awsService/appBuilder/explorer/samProject'
+import { AppNode } from '../awsService/appBuilder/explorer/nodes/appNode'
+import sinon from 'sinon'
+import { getTestWindow } from '../test/shared/vscode/window'
+import { ParamsSource, runBuild } from '../shared/sam/build'
+import { DataQuickPickItem } from '../shared/ui/pickerPrompter'
+import fs from '../shared/fs/fs'
 
 const projectFolder = testUtils.getTestWorkspaceFolder()
 
@@ -39,10 +46,7 @@ const noDebugSessionInterval: number = 100
 /** Go can't handle API tests yet */
 const skipLanguagesOnApi = ['go']
 
-interface TestScenario {
-    displayName: string
-    runtime: Runtime
-    baseImage?: string
+interface TestScenarioDefaults {
     path: string
     debugSessionType: string
     language: Language
@@ -50,211 +54,103 @@ interface TestScenario {
     /** Minimum vscode version required by the relevant third-party extension. */
     vscodeMinimum: string
 }
+type TestScenario = {
+    displayName: string
+    runtime: Runtime
+    baseImage?: string
+} & TestScenarioDefaults
 
+const nodeDefaults = {
+    path: 'hello-world/app.mjs',
+    debugSessionType: 'pwa-node',
+    dependencyManager: 'npm' as DependencyManager,
+    language: 'javascript' as Language,
+    vscodeMinimum: '1.50.0',
+}
+// https://github.com/microsoft/vscode-python/blob/main/package.json
+const pythonDefaults = {
+    path: 'hello_world/app.py',
+    debugSessionType: 'python',
+    dependencyManager: 'pip' as DependencyManager,
+    language: 'python' as Language,
+    vscodeMinimum: '1.77.0',
+}
+
+const javaDefaults = {
+    path: 'HelloWorldFunction/src/main/java/helloworld/App.java',
+    debugSessionType: 'java',
+    dependencyManager: 'gradle' as DependencyManager,
+    language: 'java' as Language,
+    vscodeMinimum: '1.50.0',
+}
+
+const dotnetDefaults = {
+    path: 'src/HelloWorld/Function.cs',
+    debugSessionType: 'coreclr',
+    language: 'csharp' as Language,
+    dependencyManager: 'cli-package' as DependencyManager,
+    vscodeMinimum: '1.80.0',
+}
+
+const defaults: Record<Runtime, TestScenarioDefaults> = {
+    nodejs: nodeDefaults,
+    java: javaDefaults,
+    python: pythonDefaults,
+    dotnet: dotnetDefaults,
+}
+
+function generateScenario(
+    runtime: Runtime,
+    version: string,
+    options: Partial<TestScenario & { sourceTag: string }> = {},
+    fromImage: boolean = false
+): TestScenario {
+    if (fromImage && !options.baseImage) {
+        throw new Error('baseImage property must be specified when testing from image')
+    }
+    const { sourceTag, ...defaultOverride } = options
+    const source = `(${options.sourceTag ? `${options.sourceTag} ` : ''}${fromImage ? 'Image' : 'ZIP'})`
+    const fullName = `${runtime}${version}`
+    return {
+        runtime: fullName,
+        displayName: `${fullName} ${source}`,
+        ...defaults[runtime],
+        ...defaultOverride,
+    }
+}
 // When testing additional runtimes, consider pulling the docker container in buildspec\linuxIntegrationTests.yml
 // to reduce the chance of automated tests timing out.
+
 const scenarios: TestScenario[] = [
     // zips
-    {
-        runtime: 'nodejs18.x',
-        displayName: 'nodejs18.x (ZIP)',
-        path: 'hello-world/app.mjs',
-        debugSessionType: 'pwa-node',
-        language: 'javascript',
-        dependencyManager: 'npm',
-        vscodeMinimum: '1.50.0',
-    },
-    {
-        runtime: 'nodejs20.x',
-        displayName: 'nodejs20.x (ZIP)',
-        path: 'hello-world/app.mjs',
-        debugSessionType: 'pwa-node',
-        language: 'javascript',
-        dependencyManager: 'npm',
-        vscodeMinimum: '1.50.0',
-    },
-    {
-        runtime: 'python3.10',
-        displayName: 'python 3.10 (ZIP)',
-        path: 'hello_world/app.py',
-        debugSessionType: 'python',
-        language: 'python',
-        dependencyManager: 'pip',
-        // https://github.com/microsoft/vscode-python/blob/main/package.json
-        vscodeMinimum: '1.77.0',
-    },
-    {
-        runtime: 'python3.11',
-        displayName: 'python 3.11 (ZIP)',
-        path: 'hello_world/app.py',
-        debugSessionType: 'python',
-        language: 'python',
-        dependencyManager: 'pip',
-        // https://github.com/microsoft/vscode-python/blob/main/package.json
-        vscodeMinimum: '1.78.0',
-    },
-    {
-        runtime: 'python3.12',
-        displayName: 'python 3.12 (ZIP)',
-        path: 'hello_world/app.py',
-        debugSessionType: 'python',
-        language: 'python',
-        dependencyManager: 'pip',
-        // https://github.com/microsoft/vscode-python/blob/main/package.json
-        vscodeMinimum: '1.78.0',
-    },
-    {
-        runtime: 'dotnet6',
-        displayName: 'dotnet6 (ZIP)',
-        path: 'src/HelloWorld/Function.cs',
-        debugSessionType: 'coreclr',
-        language: 'csharp',
-        dependencyManager: 'cli-package',
-        vscodeMinimum: '1.80.0',
-    },
-    {
-        runtime: 'java8.al2',
-        displayName: 'java8.al2 (Maven ZIP)',
-        path: 'HelloWorldFunction/src/main/java/helloworld/App.java',
-        debugSessionType: 'java',
-        language: 'java',
-        dependencyManager: 'maven',
-        vscodeMinimum: '1.50.0',
-    },
-    {
-        runtime: 'java11',
-        displayName: 'java11 (Gradle ZIP)',
-        path: 'HelloWorldFunction/src/main/java/helloworld/App.java',
-        debugSessionType: 'java',
-        language: 'java',
-        dependencyManager: 'gradle',
-        vscodeMinimum: '1.50.0',
-    },
-    {
-        runtime: 'java17',
-        displayName: 'java11 (Gradle ZIP)',
-        path: 'HelloWorldFunction/src/main/java/helloworld/App.java',
-        debugSessionType: 'java',
-        language: 'java',
-        dependencyManager: 'gradle',
-        vscodeMinimum: '1.50.0',
-    },
-    // {
-    //     runtime: 'go1.x',
-    //     displayName: 'go1.x (ZIP)',
-    //     path: 'hello-world/main.go',
-    //     debugSessionType: 'delve',
-    //     language: 'go',
-    //     dependencyManager: 'mod',
-    //     // https://github.com/golang/vscode-go/blob/master/package.json
-    //     vscodeMinimum: '1.67.0',
-    // },
-
+    generateScenario('nodejs', '18.x'),
+    generateScenario('nodejs', '20.x'),
+    generateScenario('nodejs', '22.x', { vscodeMinimum: '1.78.0' }),
+    generateScenario('python', '3.10'),
+    generateScenario('python', '3.11', { vscodeMinimum: '1.78.0' }),
+    generateScenario('python', '3.12', { vscodeMinimum: '1.78.0' }),
+    generateScenario('python', '3.13', { vscodeMinimum: '1.78.0' }),
+    generateScenario('dotnet', '6'),
+    generateScenario('java', '8.al2', { sourceTag: 'Maven', dependencyManager: 'maven' }),
+    generateScenario('java', '11', { sourceTag: 'Gradle' }),
+    generateScenario('java', '17', { sourceTag: 'Gradle' }),
     // images
-    {
-        runtime: 'nodejs18.x',
-        displayName: 'nodejs18.x (Image)',
-        baseImage: 'amazon/nodejs18.x-base',
-        path: 'hello-world/app.mjs',
-        debugSessionType: 'pwa-node',
-        language: 'javascript',
-        dependencyManager: 'npm',
-        vscodeMinimum: '1.50.0',
-    },
-    {
-        runtime: 'nodejs20.x',
-        displayName: 'nodejs20.x (Image)',
-        baseImage: 'amazon/nodejs20.x-base',
-        path: 'hello-world/app.mjs',
-        debugSessionType: 'pwa-node',
-        language: 'javascript',
-        dependencyManager: 'npm',
-        vscodeMinimum: '1.50.0',
-    },
-    {
-        runtime: 'python3.10',
-        displayName: 'python 3.10 (ZIP)',
-        baseImage: 'amazon/python3.10-base',
-        path: 'hello_world/app.py',
-        debugSessionType: 'python',
-        language: 'python',
-        dependencyManager: 'pip',
-        // https://github.com/microsoft/vscode-python/blob/main/package.json
-        vscodeMinimum: '1.77.0',
-    },
-    {
-        runtime: 'python3.11',
-        displayName: 'python 3.11 (ZIP)',
-        baseImage: 'amazon/python3.11-base',
-        path: 'hello_world/app.py',
-        debugSessionType: 'python',
-        language: 'python',
-        dependencyManager: 'pip',
-        // https://github.com/microsoft/vscode-python/blob/main/package.json
-        vscodeMinimum: '1.78.0',
-    },
-    {
-        runtime: 'python3.12',
-        displayName: 'python 3.12 (ZIP)',
-        baseImage: 'amazon/python3.12-base',
-        path: 'hello_world/app.py',
-        debugSessionType: 'python',
-        language: 'python',
-        dependencyManager: 'pip',
-        // https://github.com/microsoft/vscode-python/blob/main/package.json
-        vscodeMinimum: '1.78.0',
-    },
-    // {
-    //     runtime: 'go1.x',
-    //     displayName: 'go1.x (Image)',
-    //     baseImage: 'amazon/go1.x-base',
-    //     path: 'hello-world/main.go',
-    //     debugSessionType: 'delve',
-    //     language: 'go',
-    //     dependencyManager: 'mod',
-    //     // https://github.com/golang/vscode-go/blob/master/package.json
-    //     vscodeMinimum: '1.67.0',
-    // },
-    {
-        runtime: 'java8.al2',
-        displayName: 'java8.al2 (Gradle Image)',
-        path: 'HelloWorldFunction/src/main/java/helloworld/App.java',
-        baseImage: 'amazon/java8.al2-base',
-        debugSessionType: 'java',
-        language: 'java',
-        dependencyManager: 'gradle',
-        vscodeMinimum: '1.50.0',
-    },
-    {
-        runtime: 'java11',
-        displayName: 'java11 (Maven Image)',
-        path: 'HelloWorldFunction/src/main/java/helloworld/App.java',
-        baseImage: 'amazon/java11-base',
-        debugSessionType: 'java',
-        language: 'java',
-        dependencyManager: 'maven',
-        vscodeMinimum: '1.50.0',
-    },
-    {
-        runtime: 'java17',
-        displayName: 'java17 (Maven Image)',
-        path: 'HelloWorldFunction/src/main/java/helloworld/App.java',
-        baseImage: 'amazon/java17-base',
-        debugSessionType: 'java',
-        language: 'java',
-        dependencyManager: 'maven',
-        vscodeMinimum: '1.50.0',
-    },
-    {
-        runtime: 'dotnet6',
-        displayName: 'dotnet6 (Image)',
-        path: 'src/HelloWorld/Function.cs',
-        baseImage: 'amazon/dotnet6-base',
-        debugSessionType: 'coreclr',
-        language: 'csharp',
-        dependencyManager: 'cli-package',
-        vscodeMinimum: '1.80.0',
-    },
+    generateScenario('nodejs', '18.x', { baseImage: 'amazon/nodejs18.x-base' }, true),
+    generateScenario('nodejs', '20.x', { baseImage: 'amazon/nodejs20.x-base' }, true),
+    generateScenario('nodejs', '22.x', { baseImage: 'amazon/nodejs22.x-base', vscodeMinimum: '1.78.0' }, true),
+    generateScenario('python', '3.10', { baseImage: 'amazon/python3.10-base' }, true),
+    generateScenario('python', '3.11', { baseImage: 'amazon/python3.11-base', vscodeMinimum: '1.78.0' }, true),
+    generateScenario('python', '3.12', { baseImage: 'amazon/python3.12-base', vscodeMinimum: '1.78.0' }, true),
+    generateScenario('python', '3.13', { baseImage: 'amazon/python3.13-base', vscodeMinimum: '1.78.0' }, true),
+    generateScenario('dotnet', '6', { baseImage: 'amazon/dotnet6-base' }, true),
+    generateScenario(
+        'java',
+        '.al2',
+        { baseImage: 'amazon/java8.al2-base', sourceTag: 'Maven', dependencyManager: 'maven' },
+        true
+    ),
+    generateScenario('java', '11', { baseImage: 'amazon/java11-base', sourceTag: 'Gradle' }, true),
+    generateScenario('java', '17', { baseImage: 'amazon/java17-base', sourceTag: 'Gradle' }, true),
 ]
 
 async function openSamAppFile(applicationPath: string): Promise<vscode.Uri> {
@@ -393,9 +289,9 @@ describe('SAM Integration Tests', async function () {
         await testUtils.configureAwsToolkitExtension()
         // await testUtils.configureGoExtension()
 
-        testSuiteRoot = await mkdtemp(path.join(projectFolder, 'inttest'))
+        testSuiteRoot = mkdtempSync(path.join(projectFolder, 'inttest'))
         console.log('testSuiteRoot: ', testSuiteRoot)
-        mkdirpSync(testSuiteRoot)
+        await fs.mkdir(testSuiteRoot)
     })
 
     after(async function () {
@@ -417,7 +313,7 @@ describe('SAM Integration Tests', async function () {
             randomTestScenario = scenarios[0]
 
             runtimeTestRoot = path.join(testSuiteRoot, 'randomScenario')
-            mkdirpSync(runtimeTestRoot)
+            await fs.mkdir(runtimeTestRoot)
         })
 
         after(async function () {
@@ -453,7 +349,7 @@ describe('SAM Integration Tests', async function () {
             before(async function () {
                 runtimeTestRoot = path.join(testSuiteRoot, scenario.runtime)
                 console.log('runtimeTestRoot: ', runtimeTestRoot)
-                mkdirpSync(runtimeTestRoot)
+                await fs.mkdir(runtimeTestRoot)
             })
 
             after(async function () {
@@ -480,7 +376,7 @@ describe('SAM Integration Tests', async function () {
                 let cfnTemplatePath: string
 
                 before(async function () {
-                    testDir = await mkdtemp(path.join(runtimeTestRoot, 'samapp-'))
+                    testDir = mkdtempSync(path.join(runtimeTestRoot, 'samapp-'))
                     log(`testDir: ${testDir}`)
 
                     await createSamApplication(testDir, scenario)
@@ -500,7 +396,9 @@ describe('SAM Integration Tests', async function () {
                 })
 
                 afterEach(async function () {
-                    testDisposables.forEach((d) => d.dispose())
+                    for (const d of testDisposables) {
+                        d.dispose()
+                    }
                     await stopDebugger(undefined)
                 })
 
@@ -649,6 +547,82 @@ describe('SAM Integration Tests', async function () {
             })
         })
     }
+
+    describe('SAM Build', async function () {
+        let workspaceFolder: vscode.WorkspaceFolder
+        // We're testing only one case (python 3.10 (ZIP)) on the integration tests. More niche cases are handled as unit tests.
+        const scenarioIndex = 2
+        const scenario = scenarios[scenarioIndex]
+        let testRoot: string
+        let sandbox: sinon.SinonSandbox
+        let testDir: string
+        let cfnTemplatePath: string
+
+        before(async function () {
+            workspaceFolder = getWorkspaceFolder(testSuiteRoot)
+            testRoot = path.join(testSuiteRoot, scenario.runtime)
+            await fs.mkdir(testRoot)
+
+            testDir = mkdtempSync(path.join(testRoot, 'samapp-'))
+            console.log(`testDir: ${testDir}`)
+
+            await createSamApplication(testDir, scenario)
+
+            cfnTemplatePath = path.join(testDir, samApplicationName, 'template.yaml')
+        })
+
+        after(async function () {
+            await tryRemoveFolder(testSuiteRoot)
+            // don't clean up after java tests so the java language server doesn't freak out
+            if (scenario.language !== 'java') {
+                await tryRemoveFolder(testRoot)
+            }
+        })
+
+        beforeEach(async function () {
+            sandbox = sinon.createSandbox()
+            await closeAllEditors()
+        })
+
+        afterEach(async function () {
+            sandbox.restore()
+        })
+
+        it('can build a SAM Template', async function () {
+            // Instantiate AppNode
+            const samAppLocation = {
+                samTemplateUri: vscode.Uri.file(cfnTemplatePath),
+                workspaceFolder: workspaceFolder,
+            } as SamAppLocation
+            const appNode = new AppNode(samAppLocation)
+
+            getTestWindow().onDidShowQuickPick((input) => {
+                if (input.title?.includes('Specify parameter source for build')) {
+                    input.acceptItem(input.items[0])
+                    const item = input.items[0] as DataQuickPickItem<ParamsSource>
+                    assert.deepStrictEqual(item.data as ParamsSource, ParamsSource.Specify)
+                } else if (input.title?.includes('Select build flags')) {
+                    const item1 = input.items[2] as DataQuickPickItem<string>
+                    const item2 = input.items[4] as DataQuickPickItem<string>
+                    const item3 = input.items[7] as DataQuickPickItem<string>
+                    input.acceptItems(item1, item2, item3) // --cached, --parallel, --use-container
+
+                    assert.strictEqual(item1.data as string, '--cached')
+                    assert.strictEqual(item2.data as string, '--parallel')
+                    assert.strictEqual(item3.data as string, '--use-container')
+                }
+            })
+
+            const response = await runBuild(appNode)
+
+            assert.deepStrictEqual(response, {
+                isSuccess: true,
+            })
+
+            const builtTemplatePath = path.join(testDir, samApplicationName, '.aws-sam', 'build', 'template.yaml')
+            assert.ok(await fs.existsFile(builtTemplatePath))
+        })
+    })
 
     async function createSamApplication(location: string, scenario: TestScenario): Promise<void> {
         const initArguments: SamCliInitArgs = {

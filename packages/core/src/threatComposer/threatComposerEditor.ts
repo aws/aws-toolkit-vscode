@@ -57,10 +57,6 @@ export class ThreatComposerEditor {
         this.defaultTemplateName = path.basename(this.defaultTemplatePath)
         this.fileId = fileId
 
-        telemetry.threatComposer_opened.record({
-            id: this.fileId,
-        })
-
         this.setupWebviewPanel(textDocument, context)
     }
 
@@ -190,9 +186,9 @@ export class ThreatComposerEditor {
                             this.isPanelDisposed = true
                             contextObject.loaderNotification?.promiseResolve()
                             this.onVisualizationDisposeEmitter.fire()
-                            this.disposables.forEach((disposable) => {
+                            for (const disposable of this.disposables) {
                                 disposable.dispose()
-                            })
+                            }
                             this.onVisualizationDisposeEmitter.dispose()
                         })
                     }

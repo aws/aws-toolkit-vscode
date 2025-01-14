@@ -16,7 +16,6 @@ import {
     AwsConnection,
     Connection,
     hasScopes,
-    isSsoConnection,
     scopesCodeCatalyst,
     scopesCodeWhispererChat,
     scopesSsoAccountAccess,
@@ -189,9 +188,8 @@ export abstract class CommonAuthWebview extends VueWebview {
 
     abstract signout(): Promise<void>
 
-    async listSsoConnections(): Promise<SsoConnection[]> {
-        return (await Auth.instance.listConnections()).filter((conn) => isSsoConnection(conn)) as SsoConnection[]
-    }
+    /** List current connections known by the extension for the purpose of preventing duplicates. */
+    abstract listSsoConnections(): Promise<SsoConnection[]>
 
     /**
      * Emit stored metric metadata. Does not reset the stored metric metadata, because it

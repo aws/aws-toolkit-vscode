@@ -13,14 +13,12 @@ import {
     resetCodeWhispererGlobalVariables,
 } from 'aws-core-vscode/test'
 import * as EditorContext from 'aws-core-vscode/codewhisperer'
-import * as CodeWhispererConstants from 'aws-core-vscode/codewhisperer'
 import {
     ConfigurationEntry,
     DocumentChangedSource,
     KeyStrokeHandler,
     DefaultDocumentChangedType,
     RecommendationService,
-    CodeWhispererUserGroupSettings,
     ClassifierTrigger,
     isInlineCompletionEnabled,
     RecommendationHandler,
@@ -52,7 +50,6 @@ describe('keyStrokeHandler', function () {
         })
         afterEach(function () {
             sinon.restore()
-            CodeWhispererUserGroupSettings.instance.reset()
         })
 
         it('Whatever the input is, should skip when automatic trigger is turned off, should not call invokeAutomatedTrigger', async function () {
@@ -145,19 +142,13 @@ describe('keyStrokeHandler', function () {
             }
         })
 
-        async function testShouldInvoke(
-            input: string,
-            shouldTrigger: boolean,
-            rightContext: string = '',
-            userGroup: CodeWhispererConstants.UserGroup = CodeWhispererConstants.UserGroup.Control
-        ) {
+        async function testShouldInvoke(input: string, shouldTrigger: boolean, rightContext: string = '') {
             const mockEditor = createMockTextEditor(rightContext, 'test.js', 'javascript', 0, 0)
             const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
                 mockEditor.document,
                 new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
                 input
             )
-            CodeWhispererUserGroupSettings.instance.userGroup = userGroup
             await KeyStrokeHandler.instance.processKeyStroke(mockEvent, mockEditor, mockClient, config)
             assert.strictEqual(
                 invokeSpy.called,
@@ -221,7 +212,7 @@ describe('keyStrokeHandler', function () {
             ['function suggestedByIntelliSense():', DocumentChangedSource.Unknown],
         ]
 
-        cases.forEach((tuple) => {
+        for (const tuple of cases) {
             const input = tuple[0]
             const expected = tuple[1]
             it(`test input ${input} should return ${expected}`, function () {
@@ -230,7 +221,7 @@ describe('keyStrokeHandler', function () {
                 ).checkChangeSource()
                 assert.strictEqual(actual, expected)
             })
-        })
+        }
 
         function createFakeDocumentChangeEvent(str: string): ReadonlyArray<vscode.TextDocumentContentChangeEvent> {
             return [

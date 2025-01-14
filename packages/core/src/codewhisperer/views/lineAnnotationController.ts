@@ -20,6 +20,7 @@ import { session } from '../util/codeWhispererSession'
 import { RecommendationHandler } from '../service/recommendationHandler'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { setContext } from '../../shared'
+import { TelemetryHelper } from '../util/telemetryHelper'
 
 const case3TimeWindow = 30000 // 30 seconds
 
@@ -37,6 +38,8 @@ function fromId(id: string | undefined): AnnotationState | undefined {
             return new TryMoreExState()
         case EndState.id:
             return new EndState()
+        case InlineChatState.id:
+            return new InlineChatState()
         default:
             return undefined
     }
@@ -45,6 +48,7 @@ function fromId(id: string | undefined): AnnotationState | undefined {
 interface AnnotationState {
     id: string
     suppressWhileRunning: boolean
+    decorationRenderOptions?: vscode.ThemableDecorationAttachmentRenderOptions
 
     text: () => string
     updateState(changeSource: AnnotationChangeSource, force: boolean): AnnotationState | undefined
@@ -198,6 +202,25 @@ export class EndState implements AnnotationState {
     }
 }
 
+export class InlineChatState implements AnnotationState {
+    static id = 'amazonq_annotation_inline_chat'
+    id = InlineChatState.id
+    suppressWhileRunning = false
+
+    text = () => {
+        if (os.platform() === 'darwin') {
+            return 'Amazon Q: Edit \u2318I'
+        }
+        return 'Amazon Q: Edit (Ctrl+I)'
+    }
+    updateState(_changeSource: AnnotationChangeSource, _force: boolean): AnnotationState {
+        return this
+    }
+    isNextState(_state: AnnotationState | undefined): boolean {
+        return false
+    }
+}
+
 /**
  * There are
  * - existing users
@@ -246,24 +269,26 @@ export class LineAnnotationController implements vscode.Disposable {
                 await this.onReady()
             }),
             RecommendationService.instance.suggestionActionEvent(async (e) => {
-                if (!this._isReady) {
-                    return
-                }
-
-                if (this._currentState instanceof ManualtriggerState) {
-                    if (e.triggerType === 'OnDemand' && this._currentState.hasManualTrigger === false) {
-                        this._currentState.hasManualTrigger = true
+                await telemetry.withTraceId(async () => {
+                    if (!this._isReady) {
+                        return
                     }
-                    if (
-                        e.response?.recommendationCount !== undefined &&
-                        e.response?.recommendationCount > 0 &&
-                        this._currentState.hasValidResponse === false
-                    ) {
-                        this._currentState.hasValidResponse = true
-                    }
-                }
 
-                await this.refresh(e.editor, 'codewhisperer')
+                    if (this._currentState instanceof ManualtriggerState) {
+                        if (e.triggerType === 'OnDemand' && this._currentState.hasManualTrigger === false) {
+                            this._currentState.hasManualTrigger = true
+                        }
+                        if (
+                            e.response?.recommendationCount !== undefined &&
+                            e.response?.recommendationCount > 0 &&
+                            this._currentState.hasValidResponse === false
+                        ) {
+                            this._currentState.hasValidResponse = true
+                        }
+                    }
+
+                    await this.refresh(e.editor, 'codewhisperer')
+                }, TelemetryHelper.instance.traceId)
             }),
             this.container.lineTracker.onDidChangeActiveLines(async (e) => {
                 await this.onActiveLinesChanged(e)
@@ -305,10 +330,34 @@ export class LineAnnotationController implements vscode.Disposable {
         return this._currentState.id === new EndState().id
     }
 
+    isInlineChatHint(): boolean {
+        return this._currentState.id === new InlineChatState().id
+    }
+
     async dismissTutorial() {
         this._currentState = new EndState()
         await setContext('aws.codewhisperer.tutorial.workInProgress', false)
         await globals.globalState.update(inlinehintKey, this._currentState.id)
+    }
+
+    /**
+     * Trys to show the inline hint, if the tutorial is not finished it will not be shown
+     */
+    async tryShowInlineHint(): Promise<boolean> {
+        if (this.isTutorialDone()) {
+            this._isReady = true
+            this._currentState = new InlineChatState()
+            return true
+        }
+        return false
+    }
+
+    async tryHideInlineHint(): Promise<boolean> {
+        if (this._currentState instanceof InlineChatState) {
+            this._currentState = new EndState()
+            return true
+        }
+        return false
     }
 
     private async onActiveLinesChanged(e: LinesChangeEvent) {
@@ -381,7 +430,7 @@ export class LineAnnotationController implements vscode.Disposable {
         }
 
         // Disable Tips when language is not supported by Amazon Q.
-        if (!runtimeLanguageContext.isLanguageSupported(editor.document.languageId)) {
+        if (!runtimeLanguageContext.isLanguageSupported(editor.document)) {
             return
         }
 
@@ -423,7 +472,9 @@ export class LineAnnotationController implements vscode.Disposable {
         decorationOptions.range = range
 
         await globals.globalState.update(inlinehintKey, this._currentState.id)
-        await setContext('aws.codewhisperer.tutorial.workInProgress', true)
+        if (!this.isInlineChatHint()) {
+            await setContext('aws.codewhisperer.tutorial.workInProgress', true)
+        }
         editor.setDecorations(this.cwLineHintDecoration, [decorationOptions])
     }
 
@@ -435,7 +486,7 @@ export class LineAnnotationController implements vscode.Disposable {
     ): Partial<vscode.DecorationOptions> | undefined {
         const isCWRunning = RecommendationService.instance.isRunning
 
-        const textOptions = {
+        const textOptions: vscode.ThemableDecorationAttachmentRenderOptions = {
             contentText: '',
             fontWeight: 'normal',
             fontStyle: 'normal',

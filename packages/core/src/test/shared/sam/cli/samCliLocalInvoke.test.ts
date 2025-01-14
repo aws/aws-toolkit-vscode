@@ -4,7 +4,6 @@
  */
 
 import assert from 'assert'
-import { writeFile, remove } from 'fs-extra'
 import * as path from 'path'
 import { makeTemporaryToolkitFolder } from '../../../../shared/filesystemUtilities'
 import {
@@ -12,8 +11,11 @@ import {
     SamLocalInvokeCommand,
     SamLocalInvokeCommandArgs,
 } from '../../../../shared/sam/cli/samCliLocalInvoke'
-import { ChildProcess } from '../../../../shared/utilities/childProcess'
+import { ChildProcess } from '../../../../shared/utilities/processUtils'
 import { assertArgIsPresent, assertArgNotPresent, assertArgsContainArgument } from './samCliTestUtils'
+import { fs } from '../../../../shared'
+import { SamCliSettings } from '../../../../shared/sam/cli/samCliSettings'
+import { isWin } from '../../../../shared/vscode/env'
 
 describe('SamCliLocalInvokeInvocation', async function () {
     class TestSamLocalInvokeCommand implements SamLocalInvokeCommand {
@@ -30,16 +32,25 @@ describe('SamCliLocalInvokeInvocation', async function () {
     let placeholderEventFile: string
     const nonRelevantArg = 'arg is not of interest to this test'
 
+    before(async function () {
+        // File system search on windows can take a while.
+        if (isWin()) {
+            this.retries(3)
+        }
+        // This will place the result in the cache allowing all tests to run under same conditions.
+        await SamCliSettings.instance.getOrDetectSamCli()
+    })
+
     beforeEach(async function () {
         tempFolder = await makeTemporaryToolkitFolder()
         placeholderTemplateFile = path.join(tempFolder, 'template.yaml')
         placeholderEventFile = path.join(tempFolder, 'event.json')
-        await writeFile(placeholderTemplateFile, '')
-        await writeFile(placeholderEventFile, '')
+        await fs.writeFile(placeholderTemplateFile, '')
+        await fs.writeFile(placeholderEventFile, '')
     })
 
     afterEach(async function () {
-        await remove(tempFolder)
+        await fs.delete(tempFolder, { recursive: true })
     })
 
     it('invokes `sam local` with args', async function () {

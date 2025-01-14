@@ -38,15 +38,15 @@ import {
     makeSampleYamlResource,
     makeSampleYamlParameters,
 } from '../../cloudformation/cloudformationTestUtils'
-import { readFileSync } from 'fs-extra'
 import { CredentialsStore } from '../../../../auth/credentials/store'
 import { CredentialsProviderManager } from '../../../../auth/providers/credentialsProviderManager'
 import { Credentials } from '@aws-sdk/types'
 import { ExtContext } from '../../../../shared/extensions'
-import { mkdir, remove } from 'fs-extra'
 import { getLogger } from '../../../../shared/logger/logger'
 import { CredentialsProvider } from '../../../../auth/providers/credentials'
 import globals from '../../../../shared/extensionGlobals'
+import { isCI } from '../../../../shared/vscode/env'
+import { fs } from '../../../../shared'
 
 /**
  * Asserts the contents of a "launch config" (the result of `makeConfig()` or
@@ -163,9 +163,9 @@ describe('SamDebugConfigurationProvider', async function () {
     })
 
     afterEach(async function () {
-        await remove(tempFolder)
+        await fs.delete(tempFolder, { recursive: true })
         if (tempFolderSimilarName) {
-            await remove(tempFolderSimilarName)
+            await fs.delete(tempFolderSimilarName, { recursive: true })
         }
         ;(await globals.templateRegistry).reset()
         sandbox.restore()
@@ -230,8 +230,8 @@ describe('SamDebugConfigurationProvider', async function () {
             tempFolderSimilarName = tempFolder + 'SimilarName'
             const similarNameYaml = vscode.Uri.file(path.join(tempFolderSimilarName, 'test.yaml'))
 
-            await mkdir(nestedDir)
-            await mkdir(tempFolderSimilarName)
+            await fs.mkdir(nestedDir)
+            await fs.mkdir(tempFolderSimilarName)
 
             await testutil.toFile(makeSampleSamTemplateYaml(true, { resourceName: resources[0] }), tempFile.fsPath)
             await testutil.toFile(makeSampleSamTemplateYaml(true, { resourceName: resources[1] }), nestedYaml.fsPath)
@@ -510,8 +510,8 @@ describe('SamDebugConfigurationProvider', async function () {
                     target: TEMPLATE_TARGET_TYPE,
                     templatePath: relPath,
                     logicalId: 'TestResource',
-                    //lambdaHandler: 'sick handles',
-                    //projectRoot: 'root as in beer'
+                    // lambdaHandler: 'sick handles',
+                    // projectRoot: 'root as in beer'
                 },
             })
             assert.strictEqual(resolved!.name, name)
@@ -586,6 +586,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 port: actual.debugPort,
                 preLaunchTask: undefined,
                 protocol: 'inspector',
+                region: 'us-west-2',
                 remoteRoot: '/var/task',
                 skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js'],
                 continueOnAttach: true,
@@ -673,6 +674,16 @@ describe('SamDebugConfigurationProvider', async function () {
         })
 
         it('target=code: typescript', async function () {
+            /**
+             * When executing the test on macOS in CI the tests fail with the following error:
+             *  'Error: TypeScript compiler "tsc" not found in node_modules/ or the system
+             *
+             * See: https://github.com/aws/aws-toolkit-vscode/issues/5587
+             */
+            if (isCI() && os.platform() === 'darwin') {
+                this.skip()
+            }
+
             const appDir = pathutil.normalize(
                 path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/ts-plain-sam-app/')
             )
@@ -743,6 +754,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 port: actual.debugPort,
                 preLaunchTask: undefined,
                 protocol: 'inspector',
+                region: 'us-west-2',
                 remoteRoot: '/var/task',
                 skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js'],
                 continueOnAttach: true,
@@ -900,6 +912,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 port: actual.debugPort,
                 preLaunchTask: undefined,
                 protocol: 'inspector',
+                region: 'us-west-2',
                 remoteRoot: '/var/task',
                 skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js'],
                 continueOnAttach: true,
@@ -1032,6 +1045,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 port: actual.debugPort,
                 preLaunchTask: undefined,
                 protocol: 'inspector',
+                region: 'us-west-2',
                 remoteRoot: '/var/task',
                 skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js'],
                 continueOnAttach: true,
@@ -1166,6 +1180,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 port: actual.debugPort,
                 preLaunchTask: undefined,
                 protocol: 'inspector',
+                region: 'us-west-2',
                 remoteRoot: '/var/task',
                 skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js'],
                 continueOnAttach: true,
@@ -1239,6 +1254,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 templatePath: pathutil.normalize(path.join(actual.baseBuildDir!, 'app___vsctk___template.yaml')),
                 parameterOverrides: undefined,
                 architecture: undefined,
+                region: 'us-west-2',
             }
 
             const expectedDebug = {
@@ -1341,6 +1357,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 templatePath: pathutil.normalize(path.join(actual.baseBuildDir!, 'app___vsctk___template.yaml')),
                 parameterOverrides: undefined,
                 architecture: undefined,
+                region: 'us-west-2',
             }
 
             const expectedDebug = {
@@ -1450,6 +1467,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 templatePath: pathutil.normalize(path.join(path.dirname(templatePath.fsPath), 'template.yaml')),
                 parameterOverrides: undefined,
                 architecture: 'x86_64',
+                region: 'us-west-2',
             }
 
             const expectedDebug = {
@@ -1552,6 +1570,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 templatePath: pathutil.normalize(path.join(path.dirname(templatePath.fsPath), 'template.yaml')),
                 parameterOverrides: undefined,
                 architecture: 'x86_64',
+                region: 'us-west-2',
             }
 
             const expectedDebug = {
@@ -1647,6 +1666,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 templatePath: pathutil.normalize(path.join(actual.baseBuildDir!, 'app___vsctk___template.yaml')),
                 parameterOverrides: undefined,
                 architecture: undefined,
+                region: 'us-west-2',
 
                 //
                 // Csharp-related fields
@@ -1813,6 +1833,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 architecture: 'x86_64',
                 templatePath: pathutil.normalize(path.join(path.dirname(templatePath.fsPath), 'template.yaml')),
                 mountWith: 'write',
+                region: 'us-west-2',
 
                 //
                 // Csharp-related fields
@@ -1970,6 +1991,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 templatePath: pathutil.normalize(path.join(path.dirname(templatePath.fsPath), 'template.yaml')),
                 parameterOverrides: undefined,
                 architecture: undefined,
+                region: 'us-west-2',
 
                 //
                 // Csharp-related fields
@@ -2138,6 +2160,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 redirectOutput: false,
                 parameterOverrides: undefined,
                 architecture: undefined,
+                region: 'us-west-2',
 
                 //
                 // Python-related fields
@@ -2162,7 +2185,7 @@ describe('SamDebugConfigurationProvider', async function () {
             }
 
             assertEqualLaunchConfigs(actual, expected)
-            assert.strictEqual(readFileSync(actual.eventPayloadFile!, 'utf-8'), readFileSync(absPayloadPath, 'utf-8'))
+            assert.strictEqual(await fs.readFileText(actual.eventPayloadFile!), await fs.readFileText(absPayloadPath))
             await assertFileText(
                 expected.templatePath,
                 `Resources:
@@ -2282,6 +2305,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 redirectOutput: false,
                 parameterOverrides: undefined,
                 architecture: undefined,
+                region: 'us-west-2',
 
                 //
                 // Python-related fields
@@ -2409,6 +2433,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 port: actual.debugPort,
                 redirectOutput: false,
                 architecture: undefined,
+                region: 'us-west-2',
 
                 //
                 // Python-related fields
@@ -2498,6 +2523,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 port: actual.debugPort,
                 redirectOutput: false,
                 architecture: undefined,
+                region: 'us-west-2',
 
                 //
                 // Python-related fields
@@ -2673,6 +2699,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 templatePath: pathutil.normalize(path.join(actual.baseBuildDir!, 'app___vsctk___template.yaml')),
                 parameterOverrides: undefined,
                 architecture: undefined,
+                region: 'us-west-2',
 
                 //
                 // Python-ikpdb fields
@@ -2685,8 +2712,8 @@ describe('SamDebugConfigurationProvider', async function () {
 
             assertEqualLaunchConfigs(actual, expected)
             assert.strictEqual(
-                readFileSync(actual.eventPayloadFile!, 'utf-8'),
-                readFileSync(input.lambda.payload.path, 'utf-8')
+                await fs.readFileText(actual.eventPayloadFile!),
+                await fs.readFileText(input.lambda.payload.path)
             )
             await assertFileText(
                 expected.templatePath,
@@ -2777,6 +2804,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 templatePath: pathutil.normalize(path.join(path.dirname(templatePath.fsPath), 'template.yaml')),
                 parameterOverrides: undefined,
                 architecture: undefined,
+                region: 'us-west-2',
 
                 //
                 // Python-ikpdb fields
@@ -2886,6 +2914,7 @@ describe('SamDebugConfigurationProvider', async function () {
             const tempDir = path.dirname(actual.codeRoot)
 
             const expected: SamLaunchRequestArgs = {
+                // The `aws.credentials` field in debug config, overrides default toolkit credentials.
                 awsCredentials: configCredentials,
                 ...awsSection,
                 type: AWS_SAM_DEBUG_TYPE,
@@ -2921,6 +2950,8 @@ describe('SamDebugConfigurationProvider', async function () {
                 templatePath: pathutil.normalize(path.join(actual.baseBuildDir!, 'app___vsctk___template.yaml')),
                 parameterOverrides: undefined,
                 architecture: 'x86_64',
+                // The `aws.region` field in debug config, overrides default toolkit region.
+                region: 'us-weast-9',
 
                 //
                 // Node-related fields
@@ -3001,6 +3032,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 templatePath: pathutil.normalize(path.join(actual.baseBuildDir!, 'app___vsctk___template.yaml')),
                 parameterOverrides: undefined,
                 architecture: undefined,
+                region: 'us-west-2',
 
                 //
                 // Go-related fields
@@ -3292,7 +3324,7 @@ describe('debugConfiguration', function () {
     })
 
     afterEach(async function () {
-        await remove(tempFolder)
+        await fs.delete(tempFolder, { recursive: true })
         const r = await globals.templateRegistry
         r.reset()
     })

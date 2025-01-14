@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Add getFeature and isEnabled utility methods to FeatureConfigProvider"
-}

@@ -8,7 +8,7 @@ import { toTitleCase } from '../utilities/textUtilities'
 import { getLogger, NullLogger } from '../logger/logger'
 import { FunctionKeys, Functions, getFunctions } from '../utilities/classUtils'
 import { TreeItemContent, TreeNode } from '../treeview/resourceTreeDataProvider'
-import { telemetry, MetricName, VscodeExecuteCommand, Metric } from '../telemetry/telemetry'
+import { telemetry, MetricName, VscodeExecuteCommand, Metric, Span } from '../telemetry/telemetry'
 import globals from '../extensionGlobals'
 import { ToolkitError } from '../errors'
 import crypto from 'crypto'
@@ -498,7 +498,7 @@ function getInstrumenter(
     return <T extends Callback>(fn: T, ...args: Parameters<T>) =>
         span.run(
             (span) => {
-                ;(span as Metric<VscodeExecuteCommand>).record({
+                ;(span as Span<VscodeExecuteCommand>).record({
                     command: id.id,
                     debounceCount,
                     ...fields,
@@ -523,7 +523,7 @@ function handleBadCompositeKey(data: { id: string; args: any[]; compositeKey: Co
         return // nothing to do since no key
     }
 
-    Object.entries(compositeKey).forEach(([index, field]) => {
+    for (const [index, field] of Object.entries(compositeKey)) {
         const indexAsInt = parseInt(index)
         const arg = args[indexAsInt]
         if (field === 'source' && arg === undefined) {
@@ -540,7 +540,7 @@ function handleBadCompositeKey(data: { id: string; args: any[]; compositeKey: Co
             getLogger().error('Commands/Telemetry: "%s" executed with invalid "source" type: "%O"', id, args)
             args[indexAsInt] = unsetSource
         }
-    })
+    }
 }
 
 /**
@@ -555,11 +555,11 @@ function findFieldsToAddToMetric(args: any[], compositeKey: CompositeKey): { [fi
     const sortedIndexesWithValue = indexesWithValue.sort((a, b) => a - b)
 
     const result: { [field in MetricField]?: any } = {}
-    sortedIndexesWithValue.forEach((i) => {
+    for (const i of sortedIndexesWithValue) {
         const fieldName: MetricField = compositeKey[i]
         const fieldValue = args[i]
         result[fieldName] = fieldValue
-    })
+    }
     return result
 }
 
@@ -639,7 +639,9 @@ export class TelemetryDebounceInfo {
         })
 
         const hasher = crypto.createHash('sha256')
-        hashableObjects.forEach((o) => hasher.update(o))
+        for (const o of hashableObjects) {
+            hasher.update(o)
+        }
         return hasher.digest('hex')
     }
 }
@@ -656,7 +658,7 @@ async function runCommand<T extends Callback>(fn: T, info: CommandInfo<T>): Prom
 
     logger.debug(
         `command: running ${label} with arguments: %O`,
-        partialClone(args, 3, ['clientSecret', 'accessToken', 'refreshToken'], '[omitted]')
+        partialClone(args, 3, ['clientSecret', 'accessToken', 'refreshToken', 'tooltip'], '[omitted]')
     )
 
     try {

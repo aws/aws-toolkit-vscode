@@ -5,23 +5,27 @@
 
 import AdmZip from 'adm-zip'
 import os from 'os'
-import fs from 'fs'
+import fs from 'fs' // eslint-disable-line no-restricted-imports
 import { parsePatch, applyPatches, ParsedDiff } from 'diff'
 import path from 'path'
 import vscode from 'vscode'
 import { ExportIntent } from '@amzn/codewhisperer-streaming'
-import { TransformByQReviewStatus, transformByQState } from '../../models/model'
+import {
+    TransformByQReviewStatus,
+    transformByQState,
+    PatchInfo,
+    DescriptionContent,
+    TransformationType,
+} from '../../models/model'
 import { ExportResultArchiveStructure, downloadExportResultArchive } from '../../../shared/utilities/download'
 import { getLogger } from '../../../shared/logger'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 import { CodeTransformTelemetryState } from '../../../amazonqGumby/telemetry/codeTransformTelemetryState'
-import { calculateTotalLatency } from '../../../amazonqGumby/telemetry/codeTransformTelemetry'
-import { MetadataResult } from '../../../shared/telemetry/telemetryClient'
 import * as CodeWhispererConstants from '../../models/constants'
 import { createCodeWhispererChatStreamingClient } from '../../../shared/clients/codewhispererChatClient'
 import { ChatSessionManager } from '../../../amazonqGumby/chat/storages/chatSession'
 import { setContext } from '../../../shared/vscode/setContext'
-import globals from '../../../shared/extensionGlobals'
+import * as codeWhisperer from '../../client/codewhisperer'
 
 export abstract class ProposedChangeNode {
     abstract readonly resourcePath: string
@@ -34,7 +38,7 @@ export abstract class ProposedChangeNode {
         try {
             this.saveFile()
         } catch (err) {
-            //to do: file system-related error handling
+            // to do: file system-related error handling
             if (err instanceof Error) {
                 getLogger().error(err.message)
             }
@@ -108,6 +112,19 @@ export class AddedChangeNode extends ProposedChangeNode {
     }
 }
 
+export class PatchFileNode {
+    label: string
+    readonly patchFilePath: string
+    children: ProposedChangeNode[] = []
+
+    constructor(description: PatchInfo | undefined = undefined, patchFilePath: string) {
+        this.patchFilePath = patchFilePath
+        this.label = description
+            ? `${description.name} (${description.isSuccessful ? 'Success' : 'Failure'})`
+            : path.basename(patchFilePath)
+    }
+}
+
 enum ReviewState {
     ToReview,
     Reviewed_Accepted,
@@ -115,7 +132,8 @@ enum ReviewState {
 }
 
 export class DiffModel {
-    changes: ProposedChangeNode[] = []
+    patchFileNodes: PatchFileNode[] = []
+    currentPatchIndex: number = 0
 
     /**
      * This function creates a copy of the changed files of the user's project so that the diff.patch can be applied to them
@@ -126,7 +144,7 @@ export class DiffModel {
     public copyProject(pathToWorkspace: string, changedFiles: ParsedDiff[]) {
         const pathToTmpSrcDir = path.join(os.tmpdir(), `project-copy-${Date.now()}`)
         fs.mkdirSync(pathToTmpSrcDir)
-        changedFiles.forEach((file) => {
+        for (const file of changedFiles) {
             const pathToTmpFile = path.join(pathToTmpSrcDir, file.oldFileName!.substring(2))
             // use mkdirsSync to create parent directories in pathToTmpFile too
             fs.mkdirSync(path.dirname(pathToTmpFile), { recursive: true })
@@ -135,7 +153,7 @@ export class DiffModel {
             if (fs.existsSync(pathToOldFile)) {
                 fs.copyFileSync(pathToOldFile, pathToTmpFile)
             }
-        })
+        }
         return pathToTmpSrcDir
     }
 
@@ -144,8 +162,20 @@ export class DiffModel {
      * @param pathToWorkspace Path to the project that was transformed
      * @returns List of nodes containing the paths of files that were modified, added, or removed
      */
-    public parseDiff(pathToDiff: string, pathToWorkspace: string): ProposedChangeNode[] {
+    public parseDiff(
+        pathToDiff: string,
+        pathToWorkspace: string,
+        diffDescription: PatchInfo | undefined,
+        totalDiffPatches: number
+    ): PatchFileNode {
+        this.patchFileNodes = []
         const diffContents = fs.readFileSync(pathToDiff, 'utf8')
+
+        if (!diffContents.trim()) {
+            getLogger().error(`CodeTransformation: diff.patch file is empty`)
+            throw new Error(CodeWhispererConstants.noChangesMadeMessage)
+        }
+
         const changedFiles = parsePatch(diffContents)
         // path to the directory containing copy of the changed files in the transformed project
         const pathToTmpSrcDir = this.copyProject(pathToWorkspace, changedFiles)
@@ -179,7 +209,9 @@ export class DiffModel {
                 }
             },
         })
-        this.changes = changedFiles.flatMap((file) => {
+        const patchFileNode = new PatchFileNode(diffDescription, pathToDiff)
+        patchFileNode.label = `Patch ${this.currentPatchIndex + 1} of ${totalDiffPatches}: ${patchFileNode.label}`
+        patchFileNode.children = changedFiles.flatMap((file) => {
             /* ex. file.oldFileName = 'a/src/java/com/project/component/MyFile.java'
              * ex. file.newFileName = 'b/src/java/com/project/component/MyFile.java'
              * use substring(2) to ignore the 'a/' and 'b/'
@@ -197,24 +229,24 @@ export class DiffModel {
             }
             return []
         })
-
-        return this.changes
+        this.patchFileNodes.push(patchFileNode)
+        return patchFileNode
     }
 
     public getChanges() {
-        return this.changes
+        return this.patchFileNodes.flatMap((patchFileNode) => patchFileNode.children)
     }
 
     public getRoot() {
-        return this.changes[0]
+        return this.patchFileNodes.length > 0 ? this.patchFileNodes[0] : undefined
     }
 
     public saveChanges() {
-        this.changes.forEach((file) => {
-            file.saveChange()
-        })
-
-        this.clearChanges()
+        for (const patchFileNode of this.patchFileNodes) {
+            for (const changeNode of patchFileNode.children) {
+                changeNode.saveChange()
+            }
+        }
     }
 
     public rejectChanges() {
@@ -222,11 +254,12 @@ export class DiffModel {
     }
 
     public clearChanges() {
-        this.changes = []
+        this.patchFileNodes = []
+        this.currentPatchIndex = 0
     }
 }
 
-export class TransformationResultsProvider implements vscode.TreeDataProvider<ProposedChangeNode> {
+export class TransformationResultsProvider implements vscode.TreeDataProvider<ProposedChangeNode | PatchFileNode> {
     public static readonly viewType = 'aws.amazonq.transformationProposedChangesTree'
 
     private _onDidChangeTreeData: vscode.EventEmitter<any> = new vscode.EventEmitter<any>()
@@ -238,26 +271,49 @@ export class TransformationResultsProvider implements vscode.TreeDataProvider<Pr
         this._onDidChangeTreeData.fire(undefined)
     }
 
-    public getTreeItem(element: ProposedChangeNode): vscode.TreeItem {
-        const treeItem = {
-            resourceUri: vscode.Uri.file(element.resourcePath),
-            command: element.generateCommand(),
-            description: element.generateDescription(),
+    public getTreeItem(element: ProposedChangeNode | PatchFileNode): vscode.TreeItem {
+        if (element instanceof PatchFileNode) {
+            return {
+                label: element.label,
+                collapsibleState: vscode.TreeItemCollapsibleState.Expanded,
+            }
+        } else {
+            return {
+                resourceUri: vscode.Uri.file(element.resourcePath),
+                command: element.generateCommand(),
+                description: element.generateDescription(),
+            }
         }
-        return treeItem
     }
 
-    public getChildren(element?: ProposedChangeNode): ProposedChangeNode[] | Thenable<ProposedChangeNode[]> {
-        return element ? Promise.resolve([]) : this.model.getChanges()
+    /*
+    Here we check if the element is a PatchFileNode instance. If it is, we return its 
+    children array, which contains ProposedChangeNode instances. This ensures that when the user expands a 
+    PatchFileNode (representing a diff.patch file), its children (proposed change nodes) are displayed as indented nodes under it.
+    */
+    public getChildren(
+        element?: ProposedChangeNode | PatchFileNode
+    ): (ProposedChangeNode | PatchFileNode)[] | Thenable<(ProposedChangeNode | PatchFileNode)[]> {
+        if (!element) {
+            return this.model.patchFileNodes
+        } else if (element instanceof PatchFileNode) {
+            return element.children
+        } else {
+            return Promise.resolve([])
+        }
     }
 
-    public getParent(element: ProposedChangeNode): ProposedChangeNode | undefined {
+    public getParent(element: ProposedChangeNode | PatchFileNode): PatchFileNode | undefined {
+        if (element instanceof ProposedChangeNode) {
+            const patchFileNode = this.model.patchFileNodes.find((p) => p.children.includes(element))
+            return patchFileNode
+        }
         return undefined
     }
 }
 
 export class ProposedTransformationExplorer {
-    private changeViewer: vscode.TreeView<ProposedChangeNode>
+    private changeViewer: vscode.TreeView<PatchFileNode>
 
     public static TmpDir = os.tmpdir()
 
@@ -267,6 +323,10 @@ export class ProposedTransformationExplorer {
         this.changeViewer = vscode.window.createTreeView(TransformationResultsProvider.viewType, {
             treeDataProvider: transformDataProvider,
         })
+
+        let patchFiles: string[] = []
+        let singlePatchFile: string = ''
+        let patchFilesDescriptions: DescriptionContent | undefined = undefined
 
         const reset = async () => {
             await setContext('gumby.transformationProposalReviewInProgress', false)
@@ -304,12 +364,11 @@ export class ProposedTransformationExplorer {
         })
 
         vscode.commands.registerCommand('aws.amazonq.transformationHub.summary.reveal', async () => {
-            if (transformByQState.getSummaryFilePath() !== '') {
+            if (fs.existsSync(transformByQState.getSummaryFilePath())) {
                 await vscode.commands.executeCommand(
                     'markdown.showPreview',
                     vscode.Uri.file(transformByQState.getSummaryFilePath())
                 )
-                telemetry.ui_click.emit({ elementId: 'transformationHub_viewSummary' })
             }
         })
 
@@ -364,30 +423,58 @@ export class ProposedTransformationExplorer {
                 getLogger().error(`CodeTransformation: ExportResultArchive error = ${downloadErrorMessage}`)
                 throw new Error('Error downloading diff')
             } finally {
-                // This metric is emitted when user clicks Download Proposed Changes button
-                // TODO: remove deprecated metric once BI started using new metrics
-                telemetry.codeTransform_vcsViewerClicked.emit({
-                    codeTransformVCSViewerSrcComponents: 'toastNotification',
-                    codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-                    codeTransformJobId: transformByQState.getJobId(),
-                    result: downloadErrorMessage ? MetadataResult.Fail : MetadataResult.Pass,
-                    reason: downloadErrorMessage,
-                })
                 cwStreamingClient.destroy()
             }
 
             let deserializeErrorMessage = undefined
-            const deserializeArchiveStartTime = globals.clock.Date.now()
             let pathContainingArchive = ''
+            patchFiles = [] // reset patchFiles if there was a previous transformation
             try {
                 // Download and deserialize the zip
                 pathContainingArchive = path.dirname(pathToArchive)
                 const zip = new AdmZip(pathToArchive)
                 zip.extractAllTo(pathContainingArchive)
+                const files = fs.readdirSync(path.join(pathContainingArchive, ExportResultArchiveStructure.PathToPatch))
+                if (files.length === 1) {
+                    singlePatchFile = path.join(
+                        pathContainingArchive,
+                        ExportResultArchiveStructure.PathToPatch,
+                        files[0]
+                    )
+                } else {
+                    const jsonFile = files.find((file) => file.endsWith('.json'))
+                    if (!jsonFile) {
+                        throw new Error('Expected JSON file not found')
+                    }
+                    const filePath = path.join(
+                        pathContainingArchive,
+                        ExportResultArchiveStructure.PathToPatch,
+                        jsonFile
+                    )
+                    const jsonData = fs.readFileSync(filePath, 'utf-8')
+                    patchFilesDescriptions = JSON.parse(jsonData)
+                }
+                if (patchFilesDescriptions !== undefined) {
+                    for (const patchInfo of patchFilesDescriptions.content) {
+                        patchFiles.push(
+                            path.join(
+                                pathContainingArchive,
+                                ExportResultArchiveStructure.PathToPatch,
+                                patchInfo.filename
+                            )
+                        )
+                    }
+                } else {
+                    patchFiles.push(singlePatchFile)
+                }
+                // Because multiple patches are returned once the ZIP is downloaded, we want to show the first one to start
                 diffModel.parseDiff(
-                    path.join(pathContainingArchive, ExportResultArchiveStructure.PathToDiffPatch),
-                    transformByQState.getProjectPath()
+                    patchFiles[0],
+                    transformByQState.getProjectPath(),
+                    patchFilesDescriptions ? patchFilesDescriptions.content[0] : undefined,
+                    patchFiles.length
                 )
+
                 await setContext('gumby.reviewState', TransformByQReviewStatus.InReview)
                 transformDataProvider.refresh()
                 transformByQState.setSummaryFilePath(
@@ -395,14 +482,6 @@ export class ProposedTransformationExplorer {
                 )
                 transformByQState.setResultArchiveFilePath(pathContainingArchive)
                 await setContext('gumby.isSummaryAvailable', true)
-
-                // This metric is only emitted when placed before showInformationMessage
-                // TODO: remove deprecated metric once BI started using new metrics
-                telemetry.codeTransform_vcsDiffViewerVisible.emit({
-                    codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-                    codeTransformJobId: transformByQState.getJobId(),
-                    result: MetadataResult.Pass,
-                })
 
                 // Do not await this so that the summary reveals without user needing to close this notification
                 void vscode.window.showInformationMessage(CodeWhispererConstants.viewProposedChangesNotification)
@@ -421,72 +500,101 @@ export class ProposedTransformationExplorer {
                 void vscode.window.showErrorMessage(
                     `${CodeWhispererConstants.errorDeserializingDiffNotification} ${deserializeErrorMessage}`
                 )
-            } finally {
-                // TODO: remove deprecated metric once BI started using new metrics
-                telemetry.codeTransform_jobArtifactDownloadAndDeserializeTime.emit({
-                    codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-                    codeTransformJobId: transformByQState.getJobId(),
-                    codeTransformRunTimeLatency: calculateTotalLatency(deserializeArchiveStartTime),
-                    codeTransformTotalByteSize: exportResultsArchiveSize,
-                    codeTransformRuntimeError: deserializeErrorMessage,
-                    result: deserializeErrorMessage ? MetadataResult.Fail : MetadataResult.Pass,
-                    reason: deserializeErrorMessage ? 'DeserializationFailed' : undefined,
+            }
+
+            try {
+                const metricsPath = path.join(pathContainingArchive, ExportResultArchiveStructure.PathToMetrics)
+                const metricsData = JSON.parse(fs.readFileSync(metricsPath, 'utf8'))
+
+                await codeWhisperer.codeWhispererClient.sendTelemetryEvent({
+                    telemetryEvent: {
+                        transformEvent: {
+                            jobId: transformByQState.getJobId(),
+                            timestamp: new Date(),
+                            ideCategory: 'VSCODE',
+                            programmingLanguage: {
+                                languageName:
+                                    transformByQState.getTransformationType() === TransformationType.LANGUAGE_UPGRADE
+                                        ? 'java'
+                                        : 'sql',
+                            },
+                            linesOfCodeChanged: metricsData.linesOfCodeChanged,
+                            charsOfCodeChanged: metricsData.charactersOfCodeChanged,
+                            linesOfCodeSubmitted: transformByQState.getLinesOfCodeSubmitted(), // currently unavailable for SQL conversions
+                        },
+                    },
                 })
+            } catch (err: any) {
+                // log error, but continue to show user diff.patch with results
+                getLogger().error(`CodeTransformation: SendTelemetryEvent error = ${err.message}`)
             }
         })
 
         vscode.commands.registerCommand('aws.amazonq.transformationHub.reviewChanges.acceptChanges', async () => {
-            diffModel.saveChanges()
-            telemetry.ui_click.emit({ elementId: 'transformationHub_acceptChanges' })
-            void vscode.window.showInformationMessage(CodeWhispererConstants.changesAppliedNotification)
+            telemetry.codeTransform_submitSelection.run(() => {
+                diffModel.saveChanges()
+                telemetry.record({
+                    codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
+                    codeTransformJobId: transformByQState.getJobId(),
+                    userChoice: `acceptChanges-${patchFilesDescriptions?.content[diffModel.currentPatchIndex].name}`,
+                })
+            })
+            if (transformByQState.getMultipleDiffs()) {
+                void vscode.window.showInformationMessage(
+                    CodeWhispererConstants.changesAppliedNotificationMultipleDiffs(
+                        diffModel.currentPatchIndex,
+                        patchFiles.length
+                    )
+                )
+            } else {
+                void vscode.window.showInformationMessage(CodeWhispererConstants.changesAppliedNotificationOneDiff)
+            }
+
+            // We do this to ensure that the changesAppliedChatMessage is only sent to user when they accept the first diff.patch
             transformByQState.getChatControllers()?.transformationFinished.fire({
-                message: CodeWhispererConstants.changesAppliedChatMessage,
+                message: CodeWhispererConstants.changesAppliedChatMessageMultipleDiffs(
+                    diffModel.currentPatchIndex,
+                    patchFiles.length,
+                    patchFilesDescriptions
+                        ? patchFilesDescriptions.content[diffModel.currentPatchIndex].name
+                        : undefined
+                ),
                 tabID: ChatSessionManager.Instance.getSession().tabID,
-            })
-            await reset()
-
-            telemetry.codeTransform_viewArtifact.emit({
-                codeTransformArtifactType: 'ClientInstructions',
-                codeTransformVCSViewerSrcComponents: 'toastNotification',
-                codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-                codeTransformJobId: transformByQState.getJobId(),
-                codeTransformStatus: transformByQState.getStatus(),
-                userChoice: 'Submit',
-                result: MetadataResult.Pass,
+                includeStartNewTransformationButton: diffModel.currentPatchIndex === patchFiles.length - 1,
             })
 
-            // TODO: remove deprecated metric once BI started using new metrics
-            telemetry.codeTransform_vcsViewerSubmitted.emit({
-                codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-                codeTransformJobId: transformByQState.getJobId(),
-                codeTransformStatus: transformByQState.getStatus(),
-                result: MetadataResult.Pass,
-            })
+            // Load the next patch file
+            diffModel.currentPatchIndex++
+            if (diffModel.currentPatchIndex < patchFiles.length) {
+                const nextPatchFile = patchFiles[diffModel.currentPatchIndex]
+                const nextPatchFileDescription = patchFilesDescriptions
+                    ? patchFilesDescriptions.content[diffModel.currentPatchIndex]
+                    : undefined
+                diffModel.parseDiff(
+                    nextPatchFile,
+                    transformByQState.getProjectPath(),
+                    nextPatchFileDescription,
+                    patchFiles.length
+                )
+                transformDataProvider.refresh()
+            } else {
+                // All patches have been applied, reset the state
+                await reset()
+            }
         })
 
         vscode.commands.registerCommand('aws.amazonq.transformationHub.reviewChanges.rejectChanges', async () => {
-            diffModel.rejectChanges()
-            await reset()
-            telemetry.ui_click.emit({ elementId: 'transformationHub_rejectChanges' })
-
-            telemetry.codeTransform_viewArtifact.emit({
-                codeTransformArtifactType: 'ClientInstructions',
-                codeTransformVCSViewerSrcComponents: 'toastNotification',
-                codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-                codeTransformJobId: transformByQState.getJobId(),
-                codeTransformStatus: transformByQState.getStatus(),
-                userChoice: 'Cancel',
-                result: MetadataResult.Pass,
+            await telemetry.codeTransform_submitSelection.run(async () => {
+                diffModel.rejectChanges()
+                await reset()
+                telemetry.record({
+                    codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
+                    codeTransformJobId: transformByQState.getJobId(),
+                    userChoice: 'rejectChanges',
+                })
             })
-
-            // TODO: remove deprecated metric once BI started using new metrics
-            telemetry.codeTransform_vcsViewerCanceled.emit({
-                // eslint-disable-next-line id-length
-                codeTransformPatchViewerCancelSrcComponents: 'cancelButton',
-                codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-                codeTransformJobId: transformByQState.getJobId(),
-                codeTransformStatus: transformByQState.getStatus(),
-                result: MetadataResult.Pass,
+            transformByQState.getChatControllers()?.transformationFinished.fire({
+                tabID: ChatSessionManager.Instance.getSession().tabID,
             })
         })
     }

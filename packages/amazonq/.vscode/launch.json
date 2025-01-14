@@ -23,7 +23,11 @@
             "envFile": "${workspaceFolder}/.local.env",
             "outFiles": ["${workspaceFolder}/dist/**/*.js", "${workspaceFolder}/../core/dist/**/*.js"],
             "preLaunchTask": "watch",
-            "postDebugTask": "terminate"
+            "postDebugTask": "terminate",
+            "presentation": {
+                "group": "1_Extension",
+                "order": 2
+            }
         },
         {
             /** Handles the entire process of building and running the toolkit extension in the browser. **/
@@ -44,7 +48,11 @@
             **/
             "resolveSourceMapLocations": ["!**/node_modules/**", "!**/vs/**", "!**/extensions/**"],
             "preLaunchTask": "webRun",
-            "postDebugTask": "webRunTerminate"
+            "postDebugTask": "webRunTerminate",
+            "presentation": {
+                "group": "1_Extension",
+                "order": 4
+            }
         },
         {
             "name": "Extension Tests",
@@ -62,7 +70,11 @@
                 "AWS_TOOLKIT_AUTOMATION": "local"
             },
             "outFiles": ["${workspaceFolder}/dist/**/*.js", "${workspaceFolder}/../core/dist/**/*.js"],
-            "preLaunchTask": "watch"
+            "preLaunchTask": "watch",
+            "presentation": {
+                "group": "3_ExtensionTests",
+                "order": 2
+            }
         },
         {
             "name": "Extension Tests (current file)",
@@ -81,7 +93,30 @@
                 "AWS_TOOLKIT_AUTOMATION": "local"
             },
             "outFiles": ["${workspaceFolder}/dist/**/*.js", "${workspaceFolder}/../core/dist/**/*.js"],
-            "preLaunchTask": "watch"
+            "preLaunchTask": "watch",
+            "presentation": {
+                "group": "2_ExtensionTestsCurrentFile",
+                "order": 2
+            }
+        },
+        {
+            "name": "Extension Tests (web)",
+            "type": "extensionHost",
+            "debugWebWorkerHost": true,
+            "request": "launch",
+            "args": [
+                "--disable-extension=amazonwebservices.aws-toolkit-vscode",
+                "--extensionDevelopmentPath=${workspaceFolder}",
+                "--extensionDevelopmentKind=web",
+                "--extensionTestsPath=${workspaceFolder}/dist/test/web/testRunnerWebCore",
+                "${workspaceFolder}/../core/dist/src/testFixtures/workspaceFolder"
+            ],
+            "outFiles": ["${workspaceFolder}/dist/**/*.js", "${workspaceFolder}/../core/dist/**/*.js"],
+            "preLaunchTask": "webRun",
+            "presentation": {
+                "group": "3_ExtensionTests",
+                "order": 3
+            }
         },
         {
             "name": "E2E Test (current file)",
@@ -100,7 +135,11 @@
                 "AWS_TOOLKIT_AUTOMATION": "local"
             },
             "outFiles": ["${workspaceFolder}/dist/**/*.js", "${workspaceFolder}/../core/dist/**/*.js"],
-            "preLaunchTask": "watch"
+            "preLaunchTask": "watch",
+            "presentation": {
+                "group": "4_E2ETestCurrentFile",
+                "order": 2
+            }
         }
     ]
 }

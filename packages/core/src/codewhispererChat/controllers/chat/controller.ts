@@ -5,7 +5,7 @@
 import { Event as VSCodeEvent, Uri } from 'vscode'
 import { EditorContextExtractor } from '../../editor/context/extractor'
 import { ChatSessionStorage } from '../../storages/chatSession'
-import { Messenger, StaticTextResponseType } from './messenger/messenger'
+import { Messenger, MessengerResponseType, StaticTextResponseType } from './messenger/messenger'
 import {
     PromptMessage,
     ChatTriggerType,
@@ -24,6 +24,8 @@ import {
     ResponseBodyLinkClickMessage,
     ChatPromptCommandType,
     FooterInfoLinkClick,
+    ViewDiff,
+    AcceptDiff,
 } from './model'
 import { AppToWebViewMessageDispatcher } from '../../view/connector/connector'
 import { MessagePublisher } from '../../../amazonq/messages/messagePublisher'
@@ -32,10 +34,8 @@ import { EditorContentController } from '../../../amazonq/commons/controllers/co
 import { EditorContextCommand } from '../../commands/registerCommands'
 import { PromptsGenerator } from './prompts/promptsGenerator'
 import { TriggerEventsStorage } from '../../storages/triggerEvents'
-import {
-    CodeWhispererStreamingServiceException,
-    GenerateAssistantResponseCommandOutput,
-} from '@amzn/codewhisperer-streaming'
+import { SendMessageRequest } from '@amzn/amazon-q-developer-streaming-client'
+import { CodeWhispererStreamingServiceException } from '@amzn/codewhisperer-streaming'
 import { UserIntentRecognizer } from './userIntent/userIntentRecognizer'
 import { CWCTelemetryHelper, recordTelemetryChatRunCommand } from './telemetryHelper'
 import { CodeWhispererTracker } from '../../../codewhisperer/tracker/codewhispererTracker'
@@ -47,8 +47,13 @@ import { randomUUID } from '../../../shared/crypto'
 import { LspController } from '../../../amazonq/lsp/lspController'
 import { CodeWhispererSettings } from '../../../codewhisperer/util/codewhispererSettings'
 import { getSelectedCustomization } from '../../../codewhisperer/util/customizationUtil'
-import { FeatureConfigProvider } from '../../../shared/featureConfig'
 import { getHttpStatusCode, AwsClientResponseError } from '../../../shared/errors'
+import { uiEventRecorder } from '../../../amazonq/util/eventRecorder'
+import { globals, waitUntil } from '../../../shared'
+import { telemetry } from '../../../shared/telemetry'
+import { isSsoConnection } from '../../../auth/connection'
+import { inspect } from '../../../shared/utilities/collectionUtils'
+import { DefaultAmazonQAppInitContext } from '../../../amazonq/apps/initContext'
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
@@ -56,6 +61,8 @@ export interface ChatControllerMessagePublishers {
     readonly processTabClosedMessage: MessagePublisher<TabClosedMessage>
     readonly processTabChangedMessage: MessagePublisher<TabChangedMessage>
     readonly processInsertCodeAtCursorPosition: MessagePublisher<InsertCodeAtCursorPosition>
+    readonly processAcceptDiff: MessagePublisher<AcceptDiff>
+    readonly processViewDiff: MessagePublisher<ViewDiff>
     readonly processCopyCodeToClipboard: MessagePublisher<CopyCodeToClipboard>
     readonly processContextMenuCommand: MessagePublisher<EditorContextCommand>
     readonly processTriggerTabIDReceived: MessagePublisher<TriggerTabIDReceived>
@@ -74,6 +81,8 @@ export interface ChatControllerMessageListeners {
     readonly processTabClosedMessage: MessageListener<TabClosedMessage>
     readonly processTabChangedMessage: MessageListener<TabChangedMessage>
     readonly processInsertCodeAtCursorPosition: MessageListener<InsertCodeAtCursorPosition>
+    readonly processAcceptDiff: MessageListener<AcceptDiff>
+    readonly processViewDiff: MessageListener<ViewDiff>
     readonly processCopyCodeToClipboard: MessageListener<CopyCodeToClipboard>
     readonly processContextMenuCommand: MessageListener<EditorContextCommand>
     readonly processTriggerTabIDReceived: MessageListener<TriggerTabIDReceived>
@@ -103,7 +112,7 @@ export class ChatController {
     ) {
         this.sessionStorage = new ChatSessionStorage()
         this.triggerEventsStorage = new TriggerEventsStorage()
-        this.telemetryHelper = new CWCTelemetryHelper(this.sessionStorage, this.triggerEventsStorage)
+        this.telemetryHelper = CWCTelemetryHelper.init(this.sessionStorage, this.triggerEventsStorage)
         this.messenger = new Messenger(
             new AppToWebViewMessageDispatcher(appsToWebViewMessagePublisher),
             this.telemetryHelper
@@ -122,7 +131,22 @@ export class ChatController {
         })
 
         this.chatControllerMessageListeners.processPromptChatMessage.onMessage((data) => {
-            return this.processPromptChatMessage(data)
+            const uiEvents = uiEventRecorder.get(data.tabID)
+            if (uiEvents) {
+                uiEventRecorder.set(data.tabID, {
+                    events: {
+                        featureReceivedMessage: globals.clock.Date.now(),
+                    },
+                })
+            }
+            /**
+             * traceId is only instrumented for chat-prompt but not for things
+             * like follow-up-was-clicked. In those cases we fallback to a different
+             * uuid
+             **/
+            return telemetry.withTraceId(() => {
+                return this.processPromptChatMessage(data)
+            }, uiEvents?.traceId ?? randomUUID())
         })
 
         this.chatControllerMessageListeners.processTabCreatedMessage.onMessage((data) => {
@@ -139,6 +163,14 @@ export class ChatController {
 
         this.chatControllerMessageListeners.processInsertCodeAtCursorPosition.onMessage((data) => {
             return this.processInsertCodeAtCursorPosition(data)
+        })
+
+        this.chatControllerMessageListeners.processAcceptDiff.onMessage((data) => {
+            return this.processAcceptDiff(data)
+        })
+
+        this.chatControllerMessageListeners.processViewDiff.onMessage((data) => {
+            return this.processViewDiff(data)
         })
 
         this.chatControllerMessageListeners.processCopyCodeToClipboard.onMessage((data) => {
@@ -249,6 +281,7 @@ export class ChatController {
             CodeWhispererTracker.getTracker().enqueue({
                 conversationID: this.telemetryHelper.getConversationId(message.tabID) ?? '',
                 messageID: message.messageId,
+                userIntent: message.userIntent,
                 time: new Date(),
                 fileUrl: editor.document.uri,
                 startPosition: cursorStart,
@@ -257,6 +290,30 @@ export class ChatController {
             })
         })
         this.telemetryHelper.recordInteractWithMessage(message)
+    }
+
+    private async processAcceptDiff(message: AcceptDiff) {
+        const context = this.triggerEventsStorage.getTriggerEvent((message.data as any)?.triggerID) || ''
+        this.editorContentController
+            .acceptDiff({ ...message, ...context })
+            .then(() => {
+                this.telemetryHelper.recordInteractWithMessage(message)
+            })
+            .catch((error) => {
+                this.telemetryHelper.recordInteractWithMessage(message, { result: 'Failed' })
+            })
+    }
+
+    private async processViewDiff(message: ViewDiff) {
+        const context = this.triggerEventsStorage.getTriggerEvent((message.data as any)?.triggerID) || ''
+        this.editorContentController
+            .viewDiff({ ...message, ...context })
+            .then(() => {
+                this.telemetryHelper.recordInteractWithMessage(message)
+            })
+            .catch((error) => {
+                this.telemetryHelper.recordInteractWithMessage(message, { result: 'Failed' })
+            })
     }
 
     private async processCopyCodeToClipboard(message: CopyCodeToClipboard) {
@@ -321,11 +378,20 @@ export class ChatController {
 
         this.editorContextExtractor
             .extractContextForTrigger('ContextMenu')
-            .then((context) => {
+            .then(async (context) => {
                 const triggerID = randomUUID()
+                if (command.type === 'aws.amazonq.generateUnitTests') {
+                    DefaultAmazonQAppInitContext.instance.getAppsToWebViewMessagePublisher().publish({
+                        sender: 'testChat',
+                        command: 'test',
+                        type: 'chatMessage',
+                    })
+                    // For non-supported languages, we'll just open the standard chat.
+                    return
+                }
 
                 if (context?.focusAreaContext?.codeBlock === undefined) {
-                    throw 'Sorry, we cannot help with the selected language code snippet'
+                    throw 'Sorry, I cannot help with the selected language code snippet'
                 }
 
                 const prompt = this.promptGenerator.generateForContextMenuCommand(command)
@@ -566,28 +632,30 @@ export class ChatController {
                 if (CodeWhispererSettings.instance.isLocalIndexEnabled()) {
                     const start = performance.now()
                     triggerPayload.relevantTextDocuments = await LspController.instance.query(triggerPayload.message)
-                    triggerPayload.relevantTextDocuments.forEach((doc) => {
+                    for (const doc of triggerPayload.relevantTextDocuments) {
                         getLogger().info(
                             `amazonq: Using workspace files ${doc.relativeFilePath}, content(partial): ${doc.text?.substring(0, 200)}`
                         )
-                    })
+                    }
                     triggerPayload.projectContextQueryLatencyMs = performance.now() - start
                 } else {
                     this.messenger.sendOpenSettingsMessage(triggerID, tabID)
                     return
                 }
-            }
-            // if user does not have @workspace in the prompt, but user is in the data collection group
-            // If the user is in the data collection group but turned off local index to opt-out, do not collect data.
-            // TODO: Remove this entire block of code in one month as requested
-            else if (
-                FeatureConfigProvider.instance.isAmznDataCollectionGroup() &&
+            } else if (
                 !LspController.instance.isIndexingInProgress() &&
                 CodeWhispererSettings.instance.isLocalIndexEnabled()
             ) {
-                getLogger().info(`amazonq: User is in data collection group`)
                 const start = performance.now()
-                triggerPayload.relevantTextDocuments = await LspController.instance.query(triggerPayload.message)
+                triggerPayload.relevantTextDocuments = await waitUntil(
+                    async function () {
+                        if (triggerPayload.message) {
+                            return await LspController.instance.query(triggerPayload.message)
+                        }
+                        return []
+                    },
+                    { timeout: 500, interval: 200, truthy: false }
+                )
                 triggerPayload.projectContextQueryLatencyMs = performance.now() - start
             }
         }
@@ -595,22 +663,35 @@ export class ChatController {
         const request = triggerPayloadToChatRequest(triggerPayload)
         const session = this.sessionStorage.getSession(tabID)
         getLogger().info(
-            `request from tab: ${tabID} conversationID: ${session.sessionIdentifier} request: ${JSON.stringify(
-                request
-            )}`
+            `request from tab: ${tabID} conversationID: ${session.sessionIdentifier} request: ${inspect(request, {
+                depth: 12,
+            })}`
         )
-        let response: GenerateAssistantResponseCommandOutput | undefined = undefined
+        let response: MessengerResponseType | undefined = undefined
         session.createNewTokenSource()
         try {
             this.messenger.sendInitalStream(tabID, triggerID)
-            response = await session.chat(request)
+            this.telemetryHelper.setConversationStreamStartTime(tabID)
+            if (isSsoConnection(AuthUtil.instance.conn)) {
+                const { $metadata, generateAssistantResponseResponse } = await session.chatSso(request)
+                response = {
+                    $metadata: $metadata,
+                    message: generateAssistantResponseResponse,
+                }
+            } else {
+                const { $metadata, sendMessageResponse } = await session.chatIam(request as SendMessageRequest)
+                response = {
+                    $metadata: $metadata,
+                    message: sendMessageResponse,
+                }
+            }
             this.telemetryHelper.recordEnterFocusConversation(triggerEvent.tabID)
             this.telemetryHelper.recordStartConversation(triggerEvent, triggerPayload)
 
             getLogger().info(
                 `response to tab: ${tabID} conversationID: ${session.sessionIdentifier} requestID: ${
                     response.$metadata.requestId
-                } metadata: ${JSON.stringify(response.$metadata)}`
+                } metadata: ${inspect(response.$metadata, { depth: 12 })}`
             )
             await this.messenger.sendAIResponse(response, session, tabID, triggerID, triggerPayload)
         } catch (e: any) {

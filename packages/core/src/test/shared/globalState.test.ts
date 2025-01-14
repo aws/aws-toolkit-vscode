@@ -33,24 +33,24 @@ describe('GlobalState', function () {
     ]
 
     describe('get()', function () {
-        scenarios.forEach((scenario) => {
+        for (const scenario of scenarios) {
             it(scenario.desc, async () => {
                 await globalState.update(testKey, scenario.testValue)
 
                 const actualValue = globalState.get(testKey)
                 assert.deepStrictEqual(actualValue, scenario.testValue)
             })
-        })
+        }
     })
 
     describe('update()', function () {
-        scenarios.forEach((scenario) => {
+        for (const scenario of scenarios) {
             it(scenario.desc, async () => {
                 await globalState.update(testKey, scenario.testValue)
                 const savedValue = globalState.get(testKey)
                 assert.deepStrictEqual(savedValue, scenario.testValue)
             })
-        })
+        }
     })
 
     it('getStrict()', async () => {
@@ -104,10 +104,11 @@ describe('GlobalState', function () {
         await globalState.update(keys[2] as any, 'val3')
         assert.deepStrictEqual(globalState.keys(), keys)
         assert.deepStrictEqual(globalState.values(), ['val1', 'val2', 'val3'])
+
         await globalState.clear()
-        // XXX: no way to actually delete the key?
-        assert.deepStrictEqual(globalState.keys(), keys)
-        assert.deepStrictEqual(globalState.values(), [undefined, undefined, undefined])
+
+        assert.deepStrictEqual(globalState.keys(), [])
+        assert.deepStrictEqual(globalState.values(), [])
     })
 
     describe('redshift state', function () {

@@ -15,6 +15,10 @@ export interface MessageControllerProps {
     tabsStorage: TabsStorage
     isFeatureDevEnabled: boolean
     isGumbyEnabled: boolean
+    isScanEnabled: boolean
+    isTestEnabled: boolean
+    isDocEnabled: boolean
+    disabledCommands?: string[]
 }
 
 export class MessageController {
@@ -30,12 +34,20 @@ export class MessageController {
         this.tabDataGenerator = new TabDataGenerator({
             isFeatureDevEnabled: props.isFeatureDevEnabled,
             isGumbyEnabled: props.isGumbyEnabled,
+            isScanEnabled: props.isScanEnabled,
+            isTestEnabled: props.isTestEnabled,
+            isDocEnabled: props.isDocEnabled,
+            disabledCommands: props.disabledCommands,
         })
     }
 
-    public sendSelectedCodeToTab(message: ChatItem): string | undefined {
+    public sendSelectedCodeToTab(message: ChatItem, command: string = ''): string | undefined {
         const selectedTab = { ...this.tabsStorage.getSelectedTab() }
-        if (selectedTab?.id === undefined || selectedTab?.type === 'featuredev') {
+        if (
+            selectedTab?.id === undefined ||
+            selectedTab?.type === undefined ||
+            ['featuredev', 'gumby', 'review', 'testgen', 'doc'].includes(selectedTab.type)
+        ) {
             // Create a new tab if there's none
             const newTabID: string | undefined = this.mynahUI.updateStore(
                 '',
@@ -53,6 +65,7 @@ export class MessageController {
                 type: 'cwc',
                 status: 'free',
                 isSelected: true,
+                lastCommand: command,
             })
             selectedTab.id = newTabID
         }
@@ -61,7 +74,7 @@ export class MessageController {
         return selectedTab.id
     }
 
-    public sendMessageToTab(message: ChatItem, tabType: TabType): string | undefined {
+    public sendMessageToTab(message: ChatItem, tabType: TabType, command: string = ''): string | undefined {
         const selectedTab = this.tabsStorage.getSelectedTab()
 
         if (
@@ -71,9 +84,11 @@ export class MessageController {
         ) {
             this.tabsStorage.updateTabStatus(selectedTab.id, 'busy')
             this.tabsStorage.updateTabTypeFromUnknown(selectedTab.id, tabType)
+            this.tabsStorage.updateTabLastCommand(selectedTab.id, command)
 
             this.mynahUI.updateStore(selectedTab.id, {
                 loadingChat: true,
+                cancelButtonWhenLoading: false,
                 promptInputDisabledState: true,
             })
             this.mynahUI.addChatItem(selectedTab.id, message)
@@ -96,6 +111,7 @@ export class MessageController {
             })
             return undefined
         } else {
+            this.tabsStorage.updateTabLastCommand(newTabID, command)
             this.mynahUI.addChatItem(newTabID, message)
             this.mynahUI.addChatItem(newTabID, {
                 type: ChatItemType.ANSWER_STREAM,
@@ -104,6 +120,7 @@ export class MessageController {
 
             this.mynahUI.updateStore(newTabID, {
                 loadingChat: true,
+                cancelButtonWhenLoading: false,
                 promptInputDisabledState: true,
             })
 
@@ -114,6 +131,7 @@ export class MessageController {
                 status: 'busy',
                 isSelected: true,
                 openInteractionType: 'contextMenu',
+                lastCommand: command,
             })
 
             this.tabsStorage.updateTabTypeFromUnknown(newTabID, 'cwc')

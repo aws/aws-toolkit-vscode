@@ -26,9 +26,10 @@ import {
     isIdcSsoConnection,
     hasExactScopes,
     getTelemetryMetadataForConn,
+    ProfileNotFoundError,
 } from '../../auth/connection'
 import { getLogger } from '../../shared/logger'
-import { Commands } from '../../shared/vscode/commands2'
+import { Commands, placeholder } from '../../shared/vscode/commands2'
 import { vsCodeState } from '../models/model'
 import { onceChanged, once } from '../../shared/utilities/functionUtils'
 import { indent } from '../../shared/utilities/textUtilities'
@@ -42,6 +43,7 @@ const localize = nls.loadMessageBundle()
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { asStringifiedStack } from '../../shared/telemetry/spans'
 import { withTelemetryContext } from '../../shared/telemetry/util'
+import { focusAmazonQPanel } from '../../codewhispererChat/commands/registerCommands'
 
 /** Backwards compatibility for connections w pre-chat scopes */
 export const codeWhispererCoreScopes = [...scopesCodeWhispererCore]
@@ -57,11 +59,8 @@ export const isValidCodeWhispererCoreConnection = (conn?: Connection): conn is C
         return isIamConnection(conn)
     }
 
-    if (isSageMaker()) {
-        return isIamConnection(conn)
-    }
-
     return (
+        (isSageMaker() && isIamConnection(conn)) ||
         (isCloud9('codecatalyst') && isIamConnection(conn)) ||
         (isSsoConnection(conn) && hasScopes(conn, codeWhispererCoreScopes))
     )
@@ -69,9 +68,10 @@ export const isValidCodeWhispererCoreConnection = (conn?: Connection): conn is C
 /** Superset that includes all of CodeWhisperer + Amazon Q */
 export const isValidAmazonQConnection = (conn?: Connection): conn is Connection => {
     return (
-        (isSsoConnection(conn) || isBuilderIdConnection(conn)) &&
-        isValidCodeWhispererCoreConnection(conn) &&
-        hasScopes(conn, amazonQScopes)
+        (isSageMaker() && isIamConnection(conn)) ||
+        ((isSsoConnection(conn) || isBuilderIdConnection(conn)) &&
+            isValidCodeWhispererCoreConnection(conn) &&
+            hasScopes(conn, amazonQScopes))
     )
 }
 
@@ -134,14 +134,12 @@ export class AuthUtil {
                 Commands.tryExecute('aws.amazonq.updateReferenceLog'),
             ])
 
-            await setContext('aws.codewhisperer.connected', this.isConnected())
+            await this.setVscodeContextProps()
 
             // To check valid connection
             if (this.isValidEnterpriseSsoInUse() || (this.isBuilderIdInUse() && !this.isConnectionExpired())) {
-                // start the feature config polling job
                 await showAmazonQWalkthroughOnce()
             }
-            await this.setVscodeContextProps()
         })
     })
 
@@ -254,8 +252,16 @@ export class AuthUtil {
             throw new ToolkitError('Connection is not an SSO connection', { code: 'BadConnectionType' })
         }
 
-        const bearerToken = await this.conn.getToken()
-        return bearerToken.accessToken
+        try {
+            const bearerToken = await this.conn.getToken()
+            return bearerToken.accessToken
+        } catch (err) {
+            if (err instanceof ProfileNotFoundError) {
+                // Expected that connection would be deleted by conn.getToken()
+                void focusAmazonQPanel.execute(placeholder, 'profileNotFoundSignout')
+            }
+            throw err
+        }
     }
 
     @withTelemetryContext({ name: 'getCredentials', class: authClassName })
@@ -360,7 +366,7 @@ export class AuthUtil {
     public async notifySessionConfiguration() {
         const suppressId = 'amazonQSessionConfigurationMessage'
         const settings = AmazonQPromptSettings.instance
-        const shouldShow = await settings.isPromptEnabled(suppressId)
+        const shouldShow = settings.isPromptEnabled(suppressId)
         if (!shouldShow) {
             return
         }
@@ -434,7 +440,8 @@ export class AuthUtil {
         if (conn === undefined) {
             return buildFeatureAuthState(AuthStates.disconnected)
         }
-        if (!isSsoConnection(conn)) {
+
+        if (!isSsoConnection(conn) && !isSageMaker()) {
             throw new ToolkitError(`Connection "${conn.id}" is not a valid type: ${conn.type}`)
         }
 
@@ -445,12 +452,14 @@ export class AuthUtil {
             return state
         }
 
-        if (isBuilderIdConnection(conn) || isIdcSsoConnection(conn)) {
+        if (isBuilderIdConnection(conn) || isIdcSsoConnection(conn) || isSageMaker()) {
             if (isValidCodeWhispererCoreConnection(conn)) {
                 state[Features.codewhispererCore] = AuthStates.connected
             }
             if (isValidAmazonQConnection(conn)) {
-                Object.values(Features).forEach((v) => (state[v as Feature] = AuthStates.connected))
+                for (const v of Object.values(Features)) {
+                    state[v as Feature] = AuthStates.connected
+                }
             }
         }
 
@@ -490,30 +499,6 @@ export class AuthUtil {
             )
         }
     }
-}
-
-/**
- * Returns true if an SSO connection with AmazonQ and CodeWhisperer scopes are found,
- * even if the connection is expired.
- *
- * Note: This function will become irrelevant if/when the Amazon Q view tree is removed
- * from the toolkit.
- */
-export function isPreviousQUser() {
-    const auth = AuthUtil.instance
-
-    if (!auth.isConnected() || !isSsoConnection(auth.conn)) {
-        return false
-    }
-    const missingScopes =
-        (auth.isEnterpriseSsoInUse() && !hasScopes(auth.conn, amazonQScopes)) ||
-        !hasScopes(auth.conn, codeWhispererChatScopes)
-
-    if (missingScopes) {
-        return false
-    }
-
-    return true
 }
 
 export type FeatureAuthState = { [feature in Feature]: AuthState }

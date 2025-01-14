@@ -5,31 +5,77 @@
 
 import * as vscode from 'vscode'
 
+export type LogTopic = 'crashMonitoring' | 'dev/beta' | 'notifications' | 'test' | 'unknown'
+
+class ErrorLog {
+    constructor(
+        public topic: string,
+        public error: Error
+    ) {}
+}
+
 const toolkitLoggers: {
     main: Logger | undefined
-    channel: Logger | undefined
     debugConsole: Logger | undefined
-} = { main: undefined, channel: undefined, debugConsole: undefined }
+} = { main: undefined, debugConsole: undefined }
 
 export interface Logger {
-    debug(message: string, ...meta: any[]): number
-    debug(error: Error, ...meta: any[]): number
-    verbose(message: string, ...meta: any[]): number
-    verbose(error: Error, ...meta: any[]): number
-    info(message: string, ...meta: any[]): number
-    info(error: Error, ...meta: any[]): number
-    warn(message: string, ...meta: any[]): number
-    warn(error: Error, ...meta: any[]): number
-    error(message: string, ...meta: any[]): number
-    error(error: Error, ...meta: any[]): number
-    log(logLevel: LogLevel, message: string, ...meta: any[]): number
-    log(logLevel: LogLevel, error: Error, ...meta: any[]): number
+    /**
+     * Developer-only: Optional log file, which gets all log messages (regardless of the configured
+     * log-level).
+     */
+    logFile?: vscode.Uri
+    debug(message: string | Error, ...meta: any[]): number
+    verbose(message: string | Error, ...meta: any[]): number
+    info(message: string | Error, ...meta: any[]): number
+    warn(message: string | Error, ...meta: any[]): number
+    error(message: string | Error, ...meta: any[]): number
+    log(logLevel: LogLevel, message: string | Error, ...meta: any[]): number
     setLogLevel(logLevel: LogLevel): void
     /** Returns true if the given log level is being logged.  */
     logLevelEnabled(logLevel: LogLevel): boolean
     getLogById(logID: number, file: vscode.Uri): string | undefined
     /** HACK: Enables logging to vscode Debug Console. */
     enableDebugConsole(): void
+    sendToLog(
+        logLevel: 'debug' | 'verbose' | 'info' | 'warn' | 'error',
+        message: string | Error,
+        ...meta: any[]
+    ): number
+}
+
+export abstract class BaseLogger implements Logger {
+    logFile?: vscode.Uri
+    topic: LogTopic = 'unknown'
+
+    debug(message: string | Error, ...meta: any[]): number {
+        return this.sendToLog('debug', message, ...meta)
+    }
+    verbose(message: string | Error, ...meta: any[]): number {
+        return this.sendToLog('verbose', message, ...meta)
+    }
+    info(message: string | Error, ...meta: any[]): number {
+        return this.sendToLog('info', message, ...meta)
+    }
+    warn(message: string | Error, ...meta: any[]): number {
+        return this.sendToLog('warn', message, ...meta)
+    }
+    error(message: string | Error, ...meta: any[]): number {
+        return this.sendToLog('error', message, ...meta)
+    }
+    log(logLevel: LogLevel, message: string | Error, ...meta: any[]): number {
+        return this.sendToLog(logLevel, message, ...meta)
+    }
+    abstract sendToLog(
+        logLevel: 'debug' | 'verbose' | 'info' | 'warn' | 'error',
+        message: string | Error,
+        ...meta: any[]
+    ): number
+    abstract setLogLevel(logLevel: LogLevel): void
+    abstract logLevelEnabled(logLevel: LogLevel): boolean
+    abstract getLogById(logID: number, file: vscode.Uri): string | undefined
+    /** HACK: Enables logging to vscode Debug Console. */
+    abstract enableDebugConsole(): void
 }
 
 /**
@@ -82,119 +128,146 @@ export function compareLogLevel(l1: LogLevel, l2: LogLevel): number {
     return logLevels.get(l1)! - logLevels.get(l2)!
 }
 
-/**
- * Gets the logger if it has been initialized
- * @param type Gets the logger type:
- * * `'main'` or `undefined`: Main logger; default impl: logs to log file and log output channel
- * * `'channel'`: Channel Logger; default impl: logs to the `main` channels and the `AWS Toolkit` output channel
- * * `'debug'`: Debug Console Logger; default impl: logs to the `channel` channels and the currently-active VS Code Debug Console pane.
- */
-export function getLogger(type?: keyof typeof toolkitLoggers): Logger {
-    const logger = toolkitLoggers[type ?? 'main']
-    if (!logger) {
-        return new ConsoleLogger()
+/* Format the message with topic header */
+function prependTopic(topic: string, message: string | Error): string | ErrorLog {
+    if (typeof message === 'string') {
+        // TODO: remove this after all calls are migrated and topic is a required param.
+        if (topic === 'unknown') {
+            return message
+        }
+        return `${topic}: ` + message
+    } else if (message instanceof Error) {
+        return new ErrorLog(topic, message)
     }
-
-    return logger
+    return message
 }
 
-export class NullLogger implements Logger {
+/**
+ * Gets the global default logger.
+ *
+ * @param topic: topic to be appended in front of the message.
+ */
+export function getLogger(topic?: LogTopic): Logger {
+    // `TopicLogger` will lazy-load the "main" logger when it becomes available.
+    return new TopicLogger(topic ?? 'unknown', 'main')
+}
+
+export function getDebugConsoleLogger(topic?: LogTopic): Logger {
+    // `TopicLogger` will lazy-load the "debugConsole" logger when it becomes available.
+    return new TopicLogger(topic ?? 'unknown', 'debugConsole')
+}
+
+// jscpd:ignore-start
+export class NullLogger extends BaseLogger {
     public setLogLevel(logLevel: LogLevel) {}
     public logLevelEnabled(logLevel: LogLevel): boolean {
         return false
-    }
-    public log(logLevel: LogLevel, message: string | Error, ...meta: any[]): number {
-        return 0
-    }
-    public debug(message: string | Error, ...meta: any[]): number {
-        return 0
-    }
-    public verbose(message: string | Error, ...meta: any[]): number {
-        return 0
-    }
-    public info(message: string | Error, ...meta: any[]): number {
-        return 0
-    }
-    public warn(message: string | Error, ...meta: any[]): number {
-        return 0
-    }
-    public error(message: string | Error, ...meta: any[]): number {
-        return 0
     }
     public getLogById(logID: number, file: vscode.Uri): string | undefined {
         return undefined
     }
     public enableDebugConsole(): void {}
+    override sendToLog(
+        logLevel: 'error' | 'warn' | 'info' | 'verbose' | 'debug',
+        message: string | Error,
+        ...meta: any[]
+    ): number {
+        void logLevel
+        void message
+        void meta
+        return 0
+    }
 }
 
 /**
  * Fallback used if {@link getLogger()} is requested before logging is fully initialized.
  */
-export class ConsoleLogger implements Logger {
+export class ConsoleLogger extends BaseLogger {
     public setLogLevel(logLevel: LogLevel) {}
     public logLevelEnabled(logLevel: LogLevel): boolean {
         return false
-    }
-    public log(logLevel: LogLevel, message: string | Error, ...meta: any[]): number {
-        switch (logLevel) {
-            case 'error':
-                this.error(message, ...meta)
-                return 0
-            case 'warn':
-                this.warn(message, ...meta)
-                return 0
-            case 'verbose':
-                this.verbose(message, ...meta)
-                return 0
-            case 'debug':
-                this.debug(message, ...meta)
-                return 0
-            case 'info':
-            default:
-                this.info(message, ...meta)
-                return 0
-        }
-    }
-    public debug(message: string | Error, ...meta: any[]): number {
-        // eslint-disable-next-line aws-toolkits/no-console-log
-        console.debug(message, ...meta)
-        return 0
-    }
-    public verbose(message: string | Error, ...meta: any[]): number {
-        // eslint-disable-next-line aws-toolkits/no-console-log
-        console.debug(message, ...meta)
-        return 0
-    }
-    public info(message: string | Error, ...meta: any[]): number {
-        // eslint-disable-next-line aws-toolkits/no-console-log
-        console.info(message, ...meta)
-        return 0
-    }
-    public warn(message: string | Error, ...meta: any[]): number {
-        // eslint-disable-next-line aws-toolkits/no-console-log
-        console.warn(message, ...meta)
-        return 0
-    }
-    /** Note: In nodejs this prints to `stderr` (see {@link Console.error}). */
-    public error(message: string | Error, ...meta: any[]): number {
-        // eslint-disable-next-line aws-toolkits/no-console-log
-        console.error(message, ...meta)
-        return 0
     }
     public getLogById(logID: number, file: vscode.Uri): string | undefined {
         return undefined
     }
     public enableDebugConsole(): void {}
+    override sendToLog(
+        logLevel: 'error' | 'warn' | 'info' | 'verbose' | 'debug',
+        message: string | Error,
+        ...meta: any[]
+    ): number {
+        // TODO: we alias "verbose" to "debug" currently. Will be revisited: IDE-14839
+        if (logLevel === 'verbose') {
+            // eslint-disable-next-line aws-toolkits/no-console-log
+            console.debug(message, ...meta)
+        } else {
+            // eslint-disable-next-line aws-toolkits/no-console-log
+            console[logLevel](message, ...meta)
+        }
+        return 0
+    }
 }
 
-export function getNullLogger(type?: 'channel' | 'debugConsole' | 'main'): Logger {
+/**
+ * Wraps the specified `ToolkitLogger` and defers to it for everything except `topic`.
+ *
+ * Falls back to `ConsoleLogger` when the logger isn't available yet (during startup).
+ */
+export class TopicLogger extends BaseLogger implements vscode.Disposable {
+    // HACK: crude form of "lazy initialization", to support module-scope assignment of
+    // `getLogger()` without being sensitive to module-load ordering. So even if logging isn't ready
+    // at the time of the `getLogger` call, it will recover later. (This is a bit hacky, because it
+    // arguably doesn't belong in `TopicLogger`.)
+    public get logger() {
+        return toolkitLoggers[this.loggerKey] ?? new ConsoleLogger()
+    }
+
+    /**
+     * Wraps a `ToolkitLogger` and defers to it for everything except `topic`.
+     */
+    public constructor(
+        public override topic: LogTopic,
+        public readonly loggerKey: keyof typeof toolkitLoggers
+    ) {
+        super()
+    }
+
+    override setLogLevel(logLevel: LogLevel): void {
+        this.logger.setLogLevel(logLevel)
+    }
+
+    override logLevelEnabled(logLevel: LogLevel): boolean {
+        return this.logger.logLevelEnabled(logLevel)
+    }
+
+    override getLogById(logID: number, file: vscode.Uri): string | undefined {
+        return this.logger.getLogById(logID, file)
+    }
+
+    override enableDebugConsole(): void {
+        this.logger.enableDebugConsole()
+    }
+
+    override sendToLog(level: LogLevel, message: string | Error, ...meta: any[]): number {
+        if (typeof message === 'string') {
+            message = prependTopic(this.topic, message) as string
+        }
+        return this.logger.sendToLog(level, message, ...meta)
+    }
+
+    public async dispose(): Promise<void> {}
+}
+// jscpd:ignore-end
+
+export function getNullLogger(type?: 'debugConsole' | 'main'): Logger {
     return new NullLogger()
 }
+
 /**
  * Sets (or clears) the logger that is accessible to code.
  * The Extension is expected to call this only once per log type.
  * Tests should call this to set up a logger prior to executing code that accesses a logger.
  */
-export function setLogger(logger: Logger | undefined, type?: 'channel' | 'debugConsole' | 'main') {
+export function setLogger(logger: Logger | undefined, type?: 'debugConsole' | 'main') {
     toolkitLoggers[type ?? 'main'] = logger
 }

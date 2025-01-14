@@ -176,7 +176,7 @@ export function mergeAndValidateSections(data: BaseSection[]): ParseResult {
 export function parseIni(iniData: string, source: vscode.Uri): BaseSection[] {
     const sections = [] as BaseSection[]
     const lines = iniData.split(/\r?\n/).map((l) => l.split(/(^|\s)[;#]/)[0]) // remove comments
-    lines.forEach((line, lineNumber) => {
+    for (const [lineNumber, line] of lines.entries()) {
         const section = line.match(/^\s*\[([^\[\]]+)]\s*$/)
         const currentSection: BaseSection | undefined = sections[sections.length - 1]
         if (section) {
@@ -195,7 +195,7 @@ export function parseIni(iniData: string, source: vscode.Uri): BaseSection[] {
                 })
             }
         }
-    })
+    }
 
     return sections
 }
@@ -230,7 +230,7 @@ async function loadConfigFile(configUri?: vscode.Uri): Promise<ReturnType<typeof
         return []
     }
 
-    return parseIni(await fs.readFileAsString(configUri), configUri)
+    return parseIni(await fs.readFileText(configUri), configUri)
 }
 
 async function loadCredentialsFile(credentialsUri?: vscode.Uri): Promise<ReturnType<typeof parseIni>> {
@@ -238,7 +238,7 @@ async function loadCredentialsFile(credentialsUri?: vscode.Uri): Promise<ReturnT
         return []
     }
 
-    return parseIni(await fs.readFileAsString(credentialsUri), credentialsUri)
+    return parseIni(await fs.readFileText(credentialsUri), credentialsUri)
 }
 
 /**

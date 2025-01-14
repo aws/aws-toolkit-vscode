@@ -5,7 +5,7 @@
 import * as vscode from 'vscode'
 import { Credentials } from '@aws-sdk/types'
 import { Mutable } from '../shared/utilities/tsUtils'
-import { builderIdStartUrl, ClientRegistration, SsoToken, truncateStartUrl } from './sso/model'
+import { ClientRegistration, SsoToken, truncateStartUrl } from './sso/model'
 import { SsoClient } from './sso/clients'
 import { CredentialsProviderManager } from './providers/credentialsProviderManager'
 import { fromString } from './providers/credentials'
@@ -17,12 +17,14 @@ import { withTelemetryContext } from '../shared/telemetry/util'
 import { AuthModifyConnection, telemetry } from '../shared/telemetry/telemetry'
 import { asStringifiedStack } from '../shared/telemetry/spans'
 import { getTelemetryReason, getTelemetryReasonDesc } from '../shared/errors'
+import { builderIdStartUrl } from './sso/constants'
 
 /** Shows a warning message unless it is the same as the last one shown. */
 const warnOnce = onceChanged((s: string, url: string) => {
     void showMessageWithUrl(s, url, undefined, 'warn')
 })
 
+// TODO: Refactor all scopes to a central file with minimal dependencies.
 export const scopesCodeCatalyst = ['codecatalyst:read_write']
 export const scopesSsoAccountAccess = ['sso:account:access']
 /** These are the non-chat scopes for CW. */
@@ -37,6 +39,11 @@ type SsoType =
     | 'any' // any type of sso
     | 'idc' // AWS Identity Center
     | 'builderId'
+
+// TODO: This type is not centralized and there are many routines in the codebase that use some
+// variation for these for validation, telemetry, UX, etc. A refactor is needed to align these
+// string types.
+export type AuthType = 'credentials' | 'builderId' | 'identityCenter' | 'unknown'
 
 export const isIamConnection = (conn?: Connection): conn is IamConnection => conn?.type === 'iam'
 export const isSsoConnection = (conn?: Connection, type: SsoType = 'any'): conn is SsoConnection => {
@@ -73,7 +80,7 @@ export function hasScopes(target: SsoConnection | SsoProfile | string[], scopes:
  * Not optimized, but the set of possible scopes is currently very small (< 8)
  */
 export function hasExactScopes(target: SsoConnection | SsoProfile | string[], scopes: string[]): boolean {
-    const targetScopes = Array.isArray(target) ? target : target.scopes ?? []
+    const targetScopes = Array.isArray(target) ? target : (target.scopes ?? [])
     return scopes.length === targetScopes.length && scopes.every((s) => targetScopes.includes(s))
 }
 
@@ -201,6 +208,12 @@ export interface ProfileMetadata {
 
 export type StoredProfile<T extends Profile = Profile> = T & { readonly metadata: ProfileMetadata }
 
+export class ProfileNotFoundError extends Error {
+    public constructor(id: string) {
+        super(`Profile does not exist: ${id}`)
+    }
+}
+
 function getTelemetryForProfile(profile: StoredProfile<Profile> | undefined) {
     if (!profile) {
         return {}
@@ -245,7 +258,7 @@ export class ProfileStore {
         try {
             profile = this.getProfile(id)
             if (profile === undefined) {
-                throw new Error(`Profile does not exist: ${id}`)
+                throw new ProfileNotFoundError(id)
             }
         } catch (err) {
             // Always emit failures

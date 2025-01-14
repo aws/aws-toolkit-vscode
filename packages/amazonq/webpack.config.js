@@ -18,6 +18,7 @@ module.exports = (env, argv) => {
         ...baseWebConfigsFactory(env, argv),
         entry: {
             'src/extensionWeb': './src/extensionWeb.ts',
+            'test/web/testRunnerWebCore': './test/web/testRunner.ts',
         },
     }
 

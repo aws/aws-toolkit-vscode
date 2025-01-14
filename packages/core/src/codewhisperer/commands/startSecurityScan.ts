@@ -24,22 +24,33 @@ import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import {
     AggregatedCodeScanIssue,
     CodeScansState,
+    CodeScanState,
     codeScanState,
     CodeScanStoppedError,
     CodeScanTelemetryEntry,
+    onDemandFileScanState,
+    OnDemandFileScanState,
 } from '../models/model'
 import { cancel, ok } from '../../shared/localizedText'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { ToolkitError, getTelemetryReasonDesc, isAwsError } from '../../shared/errors'
-import { openUrl } from '../../shared/utilities/vsCodeUtils'
 import { AuthUtil } from '../util/authUtil'
 import path from 'path'
 import { ZipMetadata, ZipUtil } from '../util/zipUtil'
 import { debounce } from 'lodash'
 import { once } from '../../shared/utilities/functionUtils'
 import { randomUUID } from '../../shared/crypto'
-import { CodeAnalysisScope, ProjectSizeExceededErrorMessage } from '../models/constants'
-import { CodeScanJobFailedError, CreateCodeScanFailedError, SecurityScanError } from '../models/errors'
+import { CodeAnalysisScope, ProjectSizeExceededErrorMessage, SecurityScanStep } from '../models/constants'
+import {
+    CodeScanJobFailedError,
+    CreateCodeScanFailedError,
+    MaximumFileScanReachedError,
+    MaximumProjectScanReachedError,
+    SecurityScanError,
+} from '../models/errors'
+import { SecurityIssuesTree } from '../service/securityIssueTreeViewProvider'
+import { ChatSessionManager } from '../../amazonqScan/chat/storages/chatSession'
+import { TelemetryHelper } from '../util/telemetryHelper'
 
 const localize = nls.loadMessageBundle()
 export const stopScanButton = localize('aws.codewhisperer.stopscan', 'Stop Scan')
@@ -62,23 +73,23 @@ const getLogOutputChan = once(() => {
 
 export function startSecurityScanWithProgress(
     securityPanelViewProvider: SecurityPanelViewProvider,
+    editor: vscode.TextEditor | undefined,
     client: DefaultCodeWhispererClient,
-    context: vscode.ExtensionContext
+    context: vscode.ExtensionContext,
+    scope: CodeWhispererConstants.CodeAnalysisScope,
+    initiatedByChat: boolean
 ) {
     return vscode.window.withProgress(
         {
             location: vscode.ProgressLocation.Notification,
-            title: CodeWhispererConstants.runningSecurityScan,
+            title:
+                scope === CodeWhispererConstants.CodeAnalysisScope.PROJECT
+                    ? CodeWhispererConstants.runningSecurityScan
+                    : CodeWhispererConstants.runningFileScan,
             cancellable: false,
         },
         async () => {
-            await startSecurityScan(
-                securityPanelViewProvider,
-                undefined,
-                client,
-                context,
-                CodeWhispererConstants.CodeAnalysisScope.PROJECT
-            )
+            await startSecurityScan(securityPanelViewProvider, editor, client, context, scope, initiatedByChat)
         }
     )
 }
@@ -93,14 +104,17 @@ export async function startSecurityScan(
     editor: vscode.TextEditor | undefined,
     client: DefaultCodeWhispererClient,
     context: vscode.ExtensionContext,
-    scope: CodeWhispererConstants.CodeAnalysisScope
+    scope: CodeWhispererConstants.CodeAnalysisScope,
+    initiatedByChat: boolean,
+    zipUtil: ZipUtil = new ZipUtil(),
+    scanUuid?: string
 ) {
     const logger = getLoggerForScope(scope)
     /**
      * Step 0: Initial Code Scan telemetry
      */
     const codeScanStartTime = performance.now()
-    if (scope === CodeAnalysisScope.FILE) {
+    if (scope === CodeAnalysisScope.FILE_AUTO) {
         CodeScansState.instance.setLatestScanTime(codeScanStartTime)
     }
     let serviceInvocationStartTime = 0
@@ -123,14 +137,25 @@ export async function startSecurityScan(
         codewhispererCodeScanIssuesWithFixes: 0,
         credentialStartUrl: AuthUtil.instance.startUrl,
         codewhispererCodeScanScope: scope,
+        source: initiatedByChat ? 'chat' : 'menu',
     }
+    const fileName = editor?.document.fileName
+    const scanState = scope === CodeAnalysisScope.PROJECT ? codeScanState : onDemandFileScanState
     try {
         logger.verbose(`Starting security scan `)
         /**
          * Step 1: Generate zip
          */
         throwIfCancelled(scope, codeScanStartTime)
-        const zipUtil = new ZipUtil()
+        if (initiatedByChat) {
+            scanState.getChatControllers()?.scanProgress.fire({
+                tabID: ChatSessionManager.Instance.getSession().tabID,
+                step: SecurityScanStep.GENERATE_ZIP,
+                scope,
+                fileName,
+                scanUuid,
+            })
+        }
         const zipMetadata = await zipUtil.generateZip(editor?.document.uri, scope)
         const projectPaths = zipUtil.getProjectPaths()
 
@@ -148,7 +173,17 @@ export async function startSecurityScan(
         /**
          * Step 2: Get presigned Url, upload and clean up
          */
+
         throwIfCancelled(scope, codeScanStartTime)
+        if (initiatedByChat) {
+            scanState.getChatControllers()?.scanProgress.fire({
+                tabID: ChatSessionManager.Instance.getSession().tabID,
+                step: SecurityScanStep.UPLOAD_TO_S3,
+                scope,
+                fileName,
+                scanUuid,
+            })
+        }
         let artifactMap: ArtifactMap = {}
         const uploadStartTime = performance.now()
         const scanName = randomUUID()
@@ -163,6 +198,15 @@ export async function startSecurityScan(
          * Step 3:  Create scan job
          */
         throwIfCancelled(scope, codeScanStartTime)
+        if (initiatedByChat) {
+            scanState.getChatControllers()?.scanProgress.fire({
+                tabID: ChatSessionManager.Instance.getSession().tabID,
+                step: SecurityScanStep.CREATE_SCAN_JOB,
+                scope,
+                fileName,
+                scanUuid,
+            })
+        }
         serviceInvocationStartTime = performance.now()
         const scanJob = await createScanJob(
             client,
@@ -183,6 +227,15 @@ export async function startSecurityScan(
          * Step 4:  Polling mechanism on scan job status
          */
         throwIfCancelled(scope, codeScanStartTime)
+        if (initiatedByChat) {
+            scanState.getChatControllers()?.scanProgress.fire({
+                tabID: ChatSessionManager.Instance.getSession().tabID,
+                step: SecurityScanStep.POLL_SCAN_STATUS,
+                scope,
+                fileName,
+                scanUuid,
+            })
+        }
         const jobStatus = await pollScanJobStatus(client, scanJob.jobId, scope, codeScanStartTime)
         if (jobStatus === 'Failed') {
             logger.verbose(`Security scan failed.`)
@@ -193,6 +246,15 @@ export async function startSecurityScan(
          * Step 5: Process and render scan results
          */
         throwIfCancelled(scope, codeScanStartTime)
+        if (initiatedByChat) {
+            scanState.getChatControllers()?.scanProgress.fire({
+                tabID: ChatSessionManager.Instance.getSession().tabID,
+                step: SecurityScanStep.PROCESS_SCAN_RESULTS,
+                scope,
+                fileName,
+                scanUuid,
+            })
+        }
         logger.verbose(`Security scan job succeeded and start processing result.`)
         const securityRecommendationCollection = await listScanResults(
             client,
@@ -213,53 +275,114 @@ export async function startSecurityScan(
         codeScanTelemetryEntry.codewhispererCodeScanIssuesWithFixes = withFixes
         throwIfCancelled(scope, codeScanStartTime)
         logger.verbose(`Security scan totally found ${total} issues. ${withFixes} of them have fixes.`)
-        showSecurityScanResults(
-            securityPanelViewProvider,
-            securityRecommendationCollection,
-            editor,
-            context,
-            scope,
-            zipMetadata,
-            total
+        /**
+         * initiatedByChat is true for PROJECT and FILE_ON_DEMAND scopes,
+         * initiatedByChat is false for PROJECT and FILE_AUTO scopes
+         */
+        if (initiatedByChat) {
+            showScanResultsInChat(
+                securityPanelViewProvider,
+                securityRecommendationCollection,
+                editor,
+                context,
+                scope,
+                zipMetadata,
+                total,
+                scanUuid
+            )
+        } else {
+            showSecurityScanResults(
+                securityPanelViewProvider,
+                securityRecommendationCollection,
+                editor,
+                context,
+                scope,
+                zipMetadata,
+                total,
+                scanUuid
+            )
+        }
+        TelemetryHelper.instance.sendCodeScanSucceededEvent(
+            codeScanTelemetryEntry.codewhispererLanguage,
+            scanJob.jobId,
+            total,
+            scope
         )
 
         logger.verbose(`Security scan completed.`)
     } catch (error) {
-        getLogger().error('Security scan failed.', error)
+        getLogger().error('Security scan failed. %O', error)
         if (error instanceof CodeScanStoppedError) {
+            codeScanState.getChatControllers()?.scanCancelled.fire({
+                tabID: ChatSessionManager.Instance.getSession().tabID,
+                scanUuid,
+            })
             codeScanTelemetryEntry.result = 'Cancelled'
-        } else {
-            errorPromptHelper(error as SecurityScanError, scope)
+        } else if (isAwsError(error) && error.code === 'ThrottlingException') {
             codeScanTelemetryEntry.result = 'Failed'
-        }
-
-        if (isAwsError(error) && error.code === 'ThrottlingException') {
             if (
                 scope === CodeAnalysisScope.PROJECT &&
-                error.message.includes(CodeWhispererConstants.projectScansThrottlingMessage)
+                error.message.includes(CodeWhispererConstants.scansLimitReachedErrorMessage)
             ) {
-                getLogger().error(CodeWhispererConstants.projectScansLimitReached)
-                void vscode.window.showErrorMessage(CodeWhispererConstants.projectScansLimitReached)
+                const maximumProjectScanReachedError = new MaximumProjectScanReachedError()
+                getLogger().error(maximumProjectScanReachedError.customerFacingMessage)
+                errorPromptHelper(maximumProjectScanReachedError, scope, initiatedByChat, fileName, scanUuid)
                 // TODO: Should we set a graphical state?
                 // We shouldn't set vsCodeState.isFreeTierLimitReached here because it will hide CW and Q chat options.
-            } else if (
-                scope === CodeAnalysisScope.FILE &&
-                error.message.includes(CodeWhispererConstants.fileScansThrottlingMessage)
-            ) {
-                getLogger().error(CodeWhispererConstants.fileScansLimitReached)
+            } else if (scope === CodeAnalysisScope.PROJECT) {
+                getLogger().error(error.message)
+                errorPromptHelper(
+                    new SecurityScanError(
+                        error.code,
+                        (error as any).statusCode?.toString() ?? '',
+                        'Too many requests, please wait before trying again.'
+                    ),
+                    scope,
+                    initiatedByChat,
+                    fileName,
+                    scanUuid
+                )
+            } else {
+                const maximumFileScanReachedError = new MaximumFileScanReachedError()
+                getLogger().error(maximumFileScanReachedError.customerFacingMessage)
+                errorPromptHelper(maximumFileScanReachedError, scope, initiatedByChat, fileName, scanUuid)
                 CodeScansState.instance.setMonthlyQuotaExceeded()
             }
+        } else {
+            codeScanTelemetryEntry.result = 'Failed'
+            errorPromptHelper(
+                new SecurityScanError(
+                    (error as any).code ?? 'unknown error',
+                    (error as any).statusCode?.toString() ?? '',
+                    'Encountered an unexpected error when processing the request, please try again'
+                ),
+                scope,
+                initiatedByChat,
+                fileName
+            )
         }
         codeScanTelemetryEntry.reasonDesc =
             (error as ToolkitError)?.code === 'ContentLengthError'
                 ? 'Payload size limit reached'
                 : getTelemetryReasonDesc(error)
         codeScanTelemetryEntry.reason = (error as ToolkitError)?.code ?? 'DefaultError'
+        if (codeScanTelemetryEntry.codewhispererCodeScanJobId) {
+            TelemetryHelper.instance.sendCodeScanFailedEvent(
+                codeScanTelemetryEntry.codewhispererLanguage,
+                codeScanTelemetryEntry.codewhispererCodeScanJobId,
+                scope
+            )
+        }
     } finally {
-        codeScanState.setToNotStarted()
+        const scanState = scope === CodeAnalysisScope.PROJECT ? codeScanState : onDemandFileScanState
+        scanState.setToNotStarted()
+        scanState.getChatControllers()?.scanStopped.fire({
+            tabID: ChatSessionManager.Instance.getSession().tabID,
+            scanUuid,
+        })
         codeScanTelemetryEntry.duration = performance.now() - codeScanStartTime
         codeScanTelemetryEntry.codeScanServiceInvocationsDuration = performance.now() - serviceInvocationStartTime
-        await emitCodeScanTelemetry(codeScanTelemetryEntry, scope)
+        await emitCodeScanTelemetry(codeScanTelemetryEntry)
     }
 }
 
@@ -270,39 +393,114 @@ export function showSecurityScanResults(
     context: vscode.ExtensionContext,
     scope: CodeWhispererConstants.CodeAnalysisScope,
     zipMetadata: ZipMetadata,
-    totalIssues: number
+    totalIssues: number,
+    scanUuid: string | undefined
 ) {
     if (isCloud9()) {
         securityPanelViewProvider.addLines(securityRecommendationCollection, editor)
         void vscode.commands.executeCommand('workbench.view.extension.aws-codewhisperer-security-panel')
     } else {
         initSecurityScanRender(securityRecommendationCollection, context, editor, scope)
-        if (scope === CodeWhispererConstants.CodeAnalysisScope.PROJECT) {
-            void vscode.commands.executeCommand('workbench.action.problems.focus')
+        if (
+            totalIssues > 0 &&
+            (scope === CodeWhispererConstants.CodeAnalysisScope.PROJECT ||
+                scope === CodeWhispererConstants.CodeAnalysisScope.FILE_ON_DEMAND)
+        ) {
+            SecurityIssuesTree.instance.focus()
         }
     }
     if (scope === CodeWhispererConstants.CodeAnalysisScope.PROJECT) {
         populateCodeScanLogStream(zipMetadata.scannedFiles)
+    }
+}
+
+export function showScanResultsInChat(
+    securityPanelViewProvider: SecurityPanelViewProvider,
+    securityRecommendationCollection: AggregatedCodeScanIssue[],
+    editor: vscode.TextEditor | undefined,
+    context: vscode.ExtensionContext,
+    scope: CodeWhispererConstants.CodeAnalysisScope,
+    zipMetadata: ZipMetadata,
+    totalIssues: number,
+    scanUuid: string | undefined
+) {
+    if (isCloud9()) {
+        securityPanelViewProvider.addLines(securityRecommendationCollection, editor)
+        void vscode.commands.executeCommand('workbench.view.extension.aws-codewhisperer-security-panel')
+    } else {
+        const tabID = ChatSessionManager.Instance.getSession().tabID
+        const eventData = {
+            message: 'Show Findings in the Chat panel',
+            totalIssues,
+            securityRecommendationCollection,
+            fileName: scope === CodeAnalysisScope.FILE_ON_DEMAND ? [...zipMetadata.scannedFiles][0] : undefined,
+            tabID,
+            scope,
+            scanUuid,
+        }
+        switch (scope) {
+            case CodeAnalysisScope.PROJECT:
+                codeScanState.getChatControllers()?.showSecurityScan.fire(eventData)
+                break
+            case CodeAnalysisScope.FILE_ON_DEMAND:
+                onDemandFileScanState.getChatControllers()?.showSecurityScan.fire(eventData)
+                break
+            default:
+                break
+        }
+        initSecurityScanRender(securityRecommendationCollection, context, editor, scope)
+        if (totalIssues > 0) {
+            SecurityIssuesTree.instance.focus()
+        }
+    }
+    populateCodeScanLogStream(zipMetadata.scannedFiles)
+    if (scope === CodeAnalysisScope.PROJECT) {
         showScanCompletedNotification(totalIssues, zipMetadata.scannedFiles)
     }
 }
 
-export async function emitCodeScanTelemetry(
-    codeScanTelemetryEntry: CodeScanTelemetryEntry,
-    scope: CodeWhispererConstants.CodeAnalysisScope
-) {
+export async function emitCodeScanTelemetry(codeScanTelemetryEntry: CodeScanTelemetryEntry) {
     codeScanTelemetryEntry.codewhispererCodeScanProjectBytes = 0
     telemetry.codewhisperer_securityScan.emit({
         ...codeScanTelemetryEntry,
-        passive: codeScanTelemetryEntry.codewhispererCodeScanScope === CodeAnalysisScope.FILE,
+        passive: codeScanTelemetryEntry.codewhispererCodeScanScope === CodeAnalysisScope.FILE_AUTO,
     })
 }
 
-export function errorPromptHelper(error: SecurityScanError, scope: CodeAnalysisScope) {
-    if (scope === CodeAnalysisScope.PROJECT) {
-        const message =
-            error.code === 'ContentLengthError' ? ProjectSizeExceededErrorMessage : error.customerFacingMessage
-        void vscode.window.showWarningMessage(message, ok)
+export function errorPromptHelper(
+    error: SecurityScanError,
+    scope: CodeAnalysisScope,
+    initiatedByChat: boolean,
+    fileName?: string,
+    scanUuid?: string
+) {
+    if (scope === CodeAnalysisScope.FILE_AUTO) {
+        return
+    }
+    if (initiatedByChat) {
+        const state = scope === CodeAnalysisScope.PROJECT ? codeScanState : onDemandFileScanState
+        state.getChatControllers()?.errorThrown.fire({
+            error,
+            tabID: ChatSessionManager.Instance.getSession().tabID,
+            scope,
+            fileName,
+            scanUuid,
+        })
+    }
+    if (error.code !== 'NoSourceFilesError') {
+        void vscode.window.showWarningMessage(getErrorMessage(error), ok)
+    }
+}
+
+function getErrorMessage(error: any): string {
+    switch (error.code) {
+        case 'ContentLengthError':
+            return ProjectSizeExceededErrorMessage
+        case 'MaximumProjectScanReachedError':
+        case 'MaximumFileScanReachedError':
+            return CodeWhispererConstants.monthlyLimitReachedNotification
+        default:
+            return error.customerFacingMessage
     }
 }
 
@@ -323,28 +521,36 @@ function populateCodeScanLogStream(scannedFiles: Set<string>) {
     }
 }
 
-export async function confirmStopSecurityScan() {
+export async function confirmStopSecurityScan(
+    state: CodeScanState | OnDemandFileScanState,
+    initiatedByChat: boolean,
+    scope: CodeWhispererConstants.CodeAnalysisScope,
+    fileName: string | undefined,
+    scanUuid?: string
+) {
     // Confirm if user wants to stop security scan
     const resp = await vscode.window.showWarningMessage(CodeWhispererConstants.stopScanMessage, stopScanButton, cancel)
-    if (resp === stopScanButton && codeScanState.isRunning()) {
+    if (resp === stopScanButton && state.isRunning()) {
         getLogger().verbose('User requested to stop security scan. Stopping security scan.')
-        codeScanState.setToCancelling()
+        state.setToCancelling()
+        if (initiatedByChat) {
+            const scanState = scope === CodeAnalysisScope.PROJECT ? codeScanState : onDemandFileScanState
+            const scopeText = scope === CodeAnalysisScope.PROJECT ? 'Project' : 'File'
+            scanState.getChatControllers()?.errorThrown.fire({
+                error: scopeText + CodeWhispererConstants.stopScanMessageInChat,
+                tabID: ChatSessionManager.Instance.getSession().tabID,
+                scope,
+                fileName,
+            })
+        }
     }
 }
 
 function showScanCompletedNotification(total: number, scannedFiles: Set<string>) {
-    const totalFiles = `${scannedFiles.size} ${scannedFiles.size === 1 ? 'file' : 'files'}`
-    const totalIssues = `${total} ${total === 1 ? 'issue was' : 'issues were'}`
-    const learnMore = 'Learn More'
     const items = [CodeWhispererConstants.showScannedFilesMessage]
-    void vscode.window
-        .showInformationMessage(`Security scan completed for ${totalFiles}. ${totalIssues} found.`, ...items)
-        .then((value) => {
-            if (value === CodeWhispererConstants.showScannedFilesMessage) {
-                const [, codeScanOutpuChan] = getLogOutputChan()
-                codeScanOutpuChan.show()
-            } else if (value === learnMore) {
-                void openUrl(vscode.Uri.parse(CodeWhispererConstants.securityScanLearnMoreUri))
-            }
-        })
+    void vscode.window.showInformationMessage(`Code Review Completed`, ...items).then((value) => {
+        if (total > 0 && value === CodeWhispererConstants.showScannedFilesMessage) {
+            SecurityIssuesTree.instance.focus()
+        }
+    })
 }

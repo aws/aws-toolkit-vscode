@@ -44,11 +44,27 @@ export class FollowUpGenerator {
         switch (tabType) {
             case 'featuredev':
                 return {
-                    text: 'Would you like to follow up with',
+                    text: 'Ask a follow up question',
                     options: [
                         {
                             pillText: 'What are some examples of tasks?',
                             type: 'DevExamples',
+                        },
+                    ],
+                }
+            case 'doc':
+                return {
+                    text: 'Select one of the following...',
+                    options: [
+                        {
+                            pillText: 'Create a README',
+                            prompt: 'Create a README',
+                            type: 'CreateDocumentation',
+                        },
+                        {
+                            pillText: 'Update an existing README',
+                            prompt: 'Update an existing README',
+                            type: 'UpdateDocumentation',
                         },
                     ],
                 }

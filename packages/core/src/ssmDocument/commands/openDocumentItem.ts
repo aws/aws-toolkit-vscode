@@ -44,7 +44,7 @@ export async function openDocumentItem(node: DocumentItemNode, awsContext: AwsCo
     } catch (err) {
         result = 'Failed'
         const error = err as Error
-        logger.error('Error on opening document: %0', error)
+        logger.error('Error on opening document: %O', error)
         void showViewLogsMessage(
             localize(
                 'AWS.message.error.ssmDocument.openDocument.could_not_open',
@@ -68,14 +68,14 @@ export async function openDocumentItemYaml(node: DocumentItemNode, awsContext: A
 async function promptUserforDocumentVersion(versions: SSM.Types.DocumentVersionInfo[]): Promise<string | undefined> {
     // Prompt user to pick document version
     const quickPickItems: vscode.QuickPickItem[] = []
-    versions.forEach((version) => {
+    for (const version of versions) {
         if (version.DocumentVersion) {
             quickPickItems.push({
                 label: version.DocumentVersion,
                 description: `${version.IsDefaultVersion ? 'Default' : ''}`,
             })
         }
-    })
+    }
 
     if (quickPickItems.length > 1) {
         const versionPick = picker.createQuickPick({

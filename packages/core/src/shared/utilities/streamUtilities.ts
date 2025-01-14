@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as fs from 'fs'
+import * as fs from 'fs' // eslint-disable-line no-restricted-imports
 import { Readable, Writable, pipeline } from 'stream'
 import * as vscode from 'vscode'
 
@@ -44,7 +44,9 @@ class BufferWriter {
     public write(chunk: Buffer) {
         const buffer = this.buffer
         if (Buffer.isBuffer(buffer)) {
-            chunk.forEach((byte) => (this.offset = buffer.writeUInt8(byte, this.offset)))
+            for (const byte of chunk) {
+                this.offset = buffer.writeUInt8(byte, this.offset)
+            }
         } else {
             buffer.push(...chunk)
             this.offset += chunk.length

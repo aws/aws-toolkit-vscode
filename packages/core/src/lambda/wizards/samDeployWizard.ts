@@ -10,7 +10,6 @@ const localize = nls.loadMessageBundle()
 
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { samDeployDocUrl } from '../../shared/constants'
 import * as localizedText from '../../shared/localizedText'
 import { getLogger } from '../../shared/logger'
 import { createHelpButton } from '../../shared/ui/buttons'
@@ -35,7 +34,7 @@ import { minSamCliVersionForImageSupport } from '../../shared/sam/cli/samCliVali
 import { ExtContext } from '../../shared/extensions'
 import { validateBucketName } from '../../awsService/s3/util'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
-import { getIdeProperties, isCloud9 } from '../../shared/extensionUtilities'
+import { getIdeProperties, getSamDeployDocUrl, isCloud9 } from '../../shared/extensionUtilities'
 import { recentlyUsed } from '../../shared/localizedText'
 import globals from '../../shared/extensionGlobals'
 import { SamCliSettings } from '../../shared/sam/cli/samCliSettings'
@@ -252,7 +251,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                 if (button === vscode.QuickInputButtons.Back) {
                     resolve(undefined)
                 } else if (button === this.helpButton) {
-                    void openUrl(vscode.Uri.parse(samDeployDocUrl))
+                    void openUrl(getSamDeployDocUrl())
                 }
             },
         })
@@ -292,7 +291,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                         if (button === vscode.QuickInputButtons.Back) {
                             resolve(undefined)
                         } else if (button === this.helpButton) {
-                            void openUrl(vscode.Uri.parse(samDeployDocUrl))
+                            void openUrl(getSamDeployDocUrl())
                         }
                     },
                 })
@@ -336,7 +335,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                         if (button === vscode.QuickInputButtons.Back) {
                             resolve(undefined)
                         } else if (button === this.helpButton) {
-                            void openUrl(vscode.Uri.parse(samDeployDocUrl))
+                            void openUrl(getSamDeployDocUrl())
                         }
                     },
                 })
@@ -385,7 +384,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                 if (button === vscode.QuickInputButtons.Back) {
                     resolve(undefined)
                 } else if (button === this.helpButton) {
-                    void openUrl(vscode.Uri.parse(samDeployDocUrl))
+                    void openUrl(getSamDeployDocUrl())
                 }
             },
         })
@@ -459,7 +458,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                 if (button === vscode.QuickInputButtons.Back) {
                     resolve(undefined)
                 } else if (button === this.helpButton) {
-                    void openUrl(vscode.Uri.parse(samDeployDocUrl))
+                    void openUrl(getSamDeployDocUrl())
                 } else if (button === createBucket) {
                     resolve([{ label: CREATE_NEW_BUCKET }])
                 } else if (button === enterBucket) {
@@ -515,7 +514,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                 if (button === vscode.QuickInputButtons.Back) {
                     resolve(undefined)
                 } else if (button === this.helpButton) {
-                    void openUrl(vscode.Uri.parse(samDeployDocUrl))
+                    void openUrl(getSamDeployDocUrl())
                 } else if (bucketProps.buttonHandler) {
                     bucketProps.buttonHandler(button, inputBox, resolve, reject)
                 }
@@ -559,7 +558,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                 if (button === vscode.QuickInputButtons.Back) {
                     resolve(undefined)
                 } else if (button === this.helpButton) {
-                    void openUrl(vscode.Uri.parse(samDeployDocUrl))
+                    void openUrl(getSamDeployDocUrl())
                 }
             },
         })
@@ -612,7 +611,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                 if (button === vscode.QuickInputButtons.Back) {
                     resolve(undefined)
                 } else if (button === this.helpButton) {
-                    void openUrl(vscode.Uri.parse(samDeployDocUrl))
+                    void openUrl(getSamDeployDocUrl())
                 }
             },
         })
@@ -947,11 +946,11 @@ async function getTemplateChoices(...workspaceFolders: vscode.Uri[]): Promise<Sa
     const uriToLabel: Map<vscode.Uri, string> = new Map<vscode.Uri, string>()
     const labelCounts: Map<string, number> = new Map()
 
-    templateUris.forEach((uri) => {
+    for (const uri of templateUris) {
         const label = SamTemplateQuickPickItem.getLabel(uri)
         uriToLabel.set(uri, label)
         labelCounts.set(label, 1 + (labelCounts.get(label) || 0))
-    })
+    }
 
     return Array.from(uriToLabel, ([uri, label]) => {
         const showWorkspaceFolderDetails: boolean = (labelCounts.get(label) || 0) > 1
@@ -993,7 +992,7 @@ async function populateS3QuickPick(
                 })
             }
         } catch (e) {
-            getLogger().error('Recent bucket JSON not parseable.', e)
+            getLogger().error('Recent bucket JSON not parseable: %O', e)
         }
 
         if (isCloud9() && recent !== cloud9Bucket) {

@@ -5,10 +5,10 @@
 
 import assert from 'assert'
 import * as path from 'path'
-import * as fs from 'fs-extra'
 import { EnvironmentVariables } from '../../shared/environmentVariables'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { getCredentialsFilename, getConfigFilename } from '../../auth/credentials/sharedCredentialsFile'
+import { fs } from '../../shared'
 
 describe('sharedCredentials', function () {
     let tempFolder: string
@@ -26,7 +26,7 @@ describe('sharedCredentials', function () {
     })
 
     after(async function () {
-        await fs.remove(tempFolder)
+        await fs.delete(tempFolder, { recursive: true })
     })
 
     describe('getCredentialsFilename', function () {

@@ -18,7 +18,7 @@ export interface CdkAppLocation {
 }
 
 export async function getApp(location: CdkAppLocation): Promise<CdkApp> {
-    const constructTree = JSON.parse(await fs.readFileAsString(location.treeUri)) as ConstructTree
+    const constructTree = JSON.parse(await fs.readFileText(location.treeUri)) as ConstructTree
 
     return { location, constructTree }
 }

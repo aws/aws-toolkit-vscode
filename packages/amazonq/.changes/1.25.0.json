@@ -1,0 +1,22 @@
+{
+	"date": "2024-09-12",
+	"version": "1.25.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q Chat: Fixed inline code blocks are not vertically aligned with texts"
+		},
+		{
+			"type": "Feature",
+			"description": "Record telemetry event when AWS Toolkits extension is uninstalled."
+		},
+		{
+			"type": "Feature",
+			"description": "Improve workspace indexing by only index files that are changed since last indexing"
+		},
+		{
+			"type": "Removal",
+			"description": "Amazon Q Feature dev: Remove approach generation flow"
+		}
+	]
+}

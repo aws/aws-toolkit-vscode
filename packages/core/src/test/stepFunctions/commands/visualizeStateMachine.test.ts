@@ -215,7 +215,7 @@ describe('StepFunctions VisualizeStateMachine', async function () {
         }
 
         assert.ok(postMessage.calledOnce)
-        assert.deepEqual(postMessage.firstCall.args, [message])
+        assert.deepStrictEqual(postMessage.firstCall.args, [message])
     })
 
     it('Test AslVisualisation sendUpdateMessage posts a correct update message for invalid YAML files', async function () {
@@ -238,7 +238,7 @@ describe('StepFunctions VisualizeStateMachine', async function () {
         }
 
         assert.ok(postMessage.calledOnce)
-        assert.deepEqual(postMessage.firstCall.args, [message])
+        assert.deepStrictEqual(postMessage.firstCall.args, [message])
     })
 
     it('Test AslVisualisation sendUpdateMessage posts a correct update message for ASL files', async function () {
@@ -261,7 +261,7 @@ describe('StepFunctions VisualizeStateMachine', async function () {
         }
 
         assert.ok(postMessage.calledOnce)
-        assert.deepEqual(postMessage.firstCall.args, [message])
+        assert.deepStrictEqual(postMessage.firstCall.args, [message])
     })
 })
 

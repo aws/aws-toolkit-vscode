@@ -23,7 +23,7 @@ describe('package validations', function () {
      */
     it('has synced contributes.icons with core/package.json', async function () {
         const corePackageJson = JSON.parse(
-            await fs.readFileAsString(path.resolve(__dirname, '../../../../core/package.json'))
+            await fs.readFileText(path.resolve(__dirname, '../../../../core/package.json'))
         )
         assert.deepStrictEqual(packageJson.contributes.icons, corePackageJson.contributes.icons)
     })

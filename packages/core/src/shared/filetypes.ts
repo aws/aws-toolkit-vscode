@@ -161,6 +161,7 @@ export const codefileExtensions = new Set([
     '.bash',
     '.bat',
     '.boo',
+    '.bms',
     '.c',
     '.cbl',
     '.cc',
@@ -172,6 +173,7 @@ export const codefileExtensions = new Set([
     '.cljs',
     '.cls',
     '.cmake',
+    '.cmd',
     '.cob',
     '.cobra',
     '.coffee',
@@ -185,6 +187,7 @@ export const codefileExtensions = new Set([
     '.d',
     '.dart',
     '.dfm',
+    '.dockerfile',
     '.dpr',
     '.e',
     '.el',
@@ -206,6 +209,7 @@ export const codefileExtensions = new Set([
     '.gd',
     '.go',
     '.gql',
+    '.gradle',
     '.graphql',
     '.groovy',
     '.gs',
@@ -265,11 +269,13 @@ export const codefileExtensions = new Set([
     '.pike',
     '.pir',
     '.pl',
+    '.pli',
     '.pm',
     '.pmod',
     '.pp',
     '.pro',
     '.prolog',
+    '.properties',
     '.ps1',
     '.psd1',
     '.psm1',
@@ -346,8 +352,11 @@ export const codefileExtensions = new Set([
     '.zig',
 ])
 
+// Code file names without an extension
+export const codefileNames = new Set(['Dockerfile', 'Dockerfile.build', 'gradlew', 'mvnw'])
+
 /** Returns true if `filename` is a code file. */
 export function isCodeFile(filename: string): boolean {
     const ext = path.extname(filename).toLowerCase()
-    return codefileExtensions.has(ext)
+    return codefileExtensions.has(ext) || codefileNames.has(path.basename(filename))
 }

@@ -13,6 +13,7 @@ import {
     MetricDefinition,
     MetricName,
     MetricShapes,
+    Span,
     TelemetryBase,
 } from './telemetry.gen'
 import {
@@ -23,7 +24,7 @@ import {
     getTelemetryResult,
 } from '../errors'
 import { entries, NumericKeys } from '../utilities/tsUtils'
-import { PerformanceTracker } from '../performance/performance'
+import { randomUUID } from '../crypto'
 
 const AsyncLocalStorage: typeof AsyncLocalStorageClass =
     require('async_hooks').AsyncLocalStorage ??
@@ -132,12 +133,9 @@ export type SpanOptions = {
  *
  * See also: docs/telemetry.md
  */
-export class TelemetrySpan<T extends MetricBase = MetricBase> {
+export class TelemetrySpan<T extends MetricBase = MetricBase> implements Span<T> {
     #startTime?: Date
-    #options: SpanOptions & {
-        trackPerformance: boolean
-    }
-    #performance?: PerformanceTracker
+    #options: SpanOptions
 
     private readonly state: Partial<T> = {}
     private readonly definition = definitions[this.name] ?? {
@@ -145,6 +143,7 @@ export class TelemetrySpan<T extends MetricBase = MetricBase> {
         passive: true,
         requiredMetadata: [],
     }
+    private readonly metricId: string
 
     /**
      * These fields appear on the base metric instead of the 'metadata' and
@@ -161,11 +160,11 @@ export class TelemetrySpan<T extends MetricBase = MetricBase> {
             // do emit by default
             emit: options?.emit === undefined ? true : options.emit,
             functionId: options?.functionId,
-            trackPerformance: PerformanceTracker.enabled(
-                this.name,
-                this.definition.trackPerformance && (options?.emit ?? false) // only track the performance if we are also emitting
-            ),
         }
+
+        this.metricId = randomUUID()
+        // forced to cast to any since apparently even though <T extends MetricBase>, Partial<T> doesn't guarentee that metricId is available
+        this.record({ metricId: this.metricId } as any)
     }
 
     public get startTime(): Date | undefined {
@@ -203,10 +202,6 @@ export class TelemetrySpan<T extends MetricBase = MetricBase> {
      */
     public start(): this {
         this.#startTime = new globals.clock.Date()
-        if (this.#options.trackPerformance) {
-            ;(this.#performance ??= new PerformanceTracker(this.name)).start()
-        }
-
         return this
     }
 
@@ -217,21 +212,6 @@ export class TelemetrySpan<T extends MetricBase = MetricBase> {
      */
     public stop(err?: unknown): void {
         const duration = this.startTime !== undefined ? globals.clock.Date.now() - this.startTime.getTime() : undefined
-
-        if (this.#options.trackPerformance) {
-            // TODO add these to the global metrics, right now it just forces them in the telemetry and ignores the type
-            // if someone enables this action
-            const performanceMetrics = this.#performance?.stop()
-            if (performanceMetrics) {
-                this.record({
-                    userCpuUsage: performanceMetrics.userCpuUsage,
-                    systemCpuUsage: performanceMetrics.systemCpuUsage,
-                    heapTotal: performanceMetrics.heapTotal,
-                    functionName: this.#options.functionId?.name ?? this.name,
-                    architecture: process.arch,
-                } as any)
-            }
-        }
 
         if (this.#options.emit) {
             this.emit({
@@ -259,6 +239,10 @@ export class TelemetrySpan<T extends MetricBase = MetricBase> {
                 ;(this.state as Record<typeof k, number>)[k] = ((this.state[k] as number) ?? 0) + v
             }
         }
+    }
+
+    getMetricId() {
+        return this.metricId
     }
 
     /**
@@ -333,35 +317,69 @@ export class TelemetryTracer extends TelemetryBase {
      *
      * All changes made to {@link attributes} (via {@link record}) during the execution are
      * reverted after the execution completes.
+     *
+     * Runs can be nested within each other. This allows for creating hierarchical spans,
+     * where child spans inherit the context of their parent spans.
+     *
+     * This method automatically handles traceId generation and propagation:
+     * - If no traceId exists in the current context, a new one is generated.
+     * - The traceId is attached to all telemetry events created within this span.
+     * - Child spans created within this execution will inherit the same traceId.
+     * - Related concepts: https://opentelemetry.io/docs/concepts/signals/traces/
+     *
+     * See docs/telemetry.md
      */
-    public run<T, U extends MetricName>(name: U, fn: (span: Metric<MetricShapes[U]>) => T, options?: SpanOptions): T {
-        const span = this.createSpan(name, options).start()
-        const frame = this.switchContext(span)
+    public run<T, U extends MetricName>(name: U, fn: (span: Span<MetricShapes[U]>) => T, options?: SpanOptions): T {
+        return this.withTraceId(() => {
+            const span = this.createSpan(name, options).start()
+            const frame = this.switchContext(span)
 
-        try {
-            //
-            // TODO: Since updating to `@types/node@16`, typescript flags this code with error:
-            //
-            //      Error: npm ERR! src/shared/telemetry/spans.ts(255,57): error TS2345: Argument of type
-            //      'TelemetrySpan<MetricBase>' is not assignable to parameter of type 'Metric<MetricShapes[U]>'.
-            //
-            const result = this.#context.run(frame, fn, span as any)
+            try {
+                const result = this.#context.run(frame, fn, span)
 
-            if (result instanceof Promise) {
+                if (result instanceof Promise) {
+                    return result
+                        .then((v) => (span.stop(), v))
+                        .catch((e) => {
+                            span.stop(e)
+                            throw e
+                        }) as unknown as T
+                }
+
+                span.stop()
                 return result
-                    .then((v) => (span.stop(), v))
-                    .catch((e) => {
-                        span.stop(e)
-                        throw e
-                    }) as unknown as T
+            } catch (e) {
+                span.stop(e)
+                throw e
             }
+        }, this.attributes?.traceId ?? randomUUID())
+    }
 
-            span.stop()
-            return result
-        } catch (e) {
-            span.stop(e)
-            throw e
+    /**
+     * **Use {@link run} for most scenarios. Only use this method when you have a specific, pre-existing trace ID that you need to instrument.**
+     *
+     * Associates a known trace ID with subsequent telemetry events in the provided callback,
+     * enabling correlation of events from multiple disjoint sources (e.g., webview, VSCode, partner team code).
+     *
+     * The difference between this and using telemetry.record({traceId: 'foo'}) directly is that this will create an active
+     * span if one doesn't already exist. If you already know you're operating in a span (like vscode_executeCommand) then use
+     * telemetry.record directly.
+     *
+     * Records traceId iff this metric is not already associated with a trace
+     */
+    withTraceId<T>(callback: () => T, traceId: string): T {
+        /**
+         * Generate a new traceId if one doesn't exist.
+         * This ensures the traceId is created before the span,
+         * allowing it to propagate to all child telemetry metrics.
+         */
+        if (!this.attributes?.traceId) {
+            return this.runRoot(() => {
+                this.record({ traceId })
+                return callback()
+            })
         }
+        return callback()
     }
 
     /**
@@ -424,9 +442,7 @@ export class TelemetryTracer extends TelemetryBase {
         return {
             name,
             emit: (data) => getSpan().emit(data),
-            record: (data) => getSpan().record(data),
             run: (fn, options?: SpanOptions) => this.run(name as MetricName, fn, options),
-            increment: (data) => getSpan().increment(data),
         }
     }
 
@@ -437,7 +453,7 @@ export class TelemetryTracer extends TelemetryBase {
     private createSpan(name: string, options?: SpanOptions): TelemetrySpan {
         const span = new TelemetrySpan(name, options).record(this.attributes ?? {})
         if (this.activeSpan && this.activeSpan.name !== rootSpanName) {
-            return span.record({ parentMetric: this.activeSpan.name } satisfies { parentMetric: string } as any)
+            return span.record({ parentId: this.activeSpan.getMetricId() })
         }
 
         return span

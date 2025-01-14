@@ -27,4 +27,6 @@ export function registerToolView(viewNode: ToolView, context: vscode.ExtensionCo
             telemetry.cdk_appExpanded.emit()
         }
     })
+
+    return toolView
 }

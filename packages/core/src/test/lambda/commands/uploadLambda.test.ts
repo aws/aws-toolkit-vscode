@@ -4,11 +4,11 @@
  */
 import * as vscode from 'vscode'
 import assert from 'assert'
-import * as fs from 'fs-extra'
 import * as path from 'path'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { findApplicationJsonFile, getFunctionNames } from '../../../lambda/commands/uploadLambda'
 import { assertEqualPaths, toFile } from '../../testUtil'
+import { fs } from '../../../shared'
 
 describe('uploadLambda', async function () {
     let tempFolder: string
@@ -34,7 +34,7 @@ describe('uploadLambda', async function () {
         folderUri = vscode.Uri.file(tempFolder)
     })
     afterEach(async function () {
-        await fs.remove(tempFolder)
+        await fs.delete(tempFolder, { recursive: true })
     })
 
     it('finds application.json file from dir path - flat', async function () {

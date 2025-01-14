@@ -10,17 +10,29 @@
 import * as vscode from 'vscode'
 import * as path from 'path'
 import * as nls from 'vscode-nls'
-import * as cp from 'child_process'
+import { spawn } from 'child_process' // eslint-disable-line no-restricted-imports
 import * as crypto from 'crypto'
 import * as jose from 'jose'
 
 import { Disposable, ExtensionContext } from 'vscode'
 
 import { LanguageClient, LanguageClientOptions, ServerOptions, TransportKind } from 'vscode-languageclient'
-import { GetUsageRequestType, IndexRequestType, QueryRequestType, UpdateIndexRequestType, Usage } from './types'
+import {
+    BuildIndexRequestPayload,
+    BuildIndexRequestType,
+    GetUsageRequestType,
+    IndexConfig,
+    QueryInlineProjectContextRequestType,
+    QueryVectorIndexRequestType,
+    UpdateIndexV2RequestPayload,
+    UpdateIndexV2RequestType,
+    QueryRepomapIndexRequestType,
+    GetRepomapIndexJSONRequestType,
+    Usage,
+} from './types'
 import { Writable } from 'stream'
 import { CodeWhispererSettings } from '../../codewhisperer/util/codewhispererSettings'
-import { getLogger } from '../../shared'
+import { fs, getLogger, globals } from '../../shared'
 
 const localize = nls.loadMessageBundle()
 
@@ -61,35 +73,51 @@ export class LspClient {
             .encrypt(key)
     }
 
-    async indexFiles(request: string[], rootPath: string, refresh: boolean) {
+    async buildIndex(paths: string[], rootPath: string, config: IndexConfig) {
+        const payload: BuildIndexRequestPayload = {
+            filePaths: paths,
+            projectRoot: rootPath,
+            config: config,
+            language: '',
+        }
         try {
-            const encryptedRequest = await this.encrypt(
-                JSON.stringify({
-                    filePaths: request,
-                    rootPath: rootPath,
-                    refresh: refresh,
-                })
-            )
-            const resp = await this.client?.sendRequest(IndexRequestType, encryptedRequest)
+            const encryptedRequest = await this.encrypt(JSON.stringify(payload))
+            const resp = await this.client?.sendRequest(BuildIndexRequestType, encryptedRequest)
             return resp
         } catch (e) {
-            getLogger().error(`LspClient: indexFiles error: ${e}`)
+            getLogger().error(`LspClient: buildIndex error: ${e}`)
             return undefined
         }
     }
 
-    async query(request: string) {
+    async queryVectorIndex(request: string) {
         try {
             const encryptedRequest = await this.encrypt(
                 JSON.stringify({
                     query: request,
                 })
             )
-            const resp = await this.client?.sendRequest(QueryRequestType, encryptedRequest)
+            const resp = await this.client?.sendRequest(QueryVectorIndexRequestType, encryptedRequest)
             return resp
         } catch (e) {
-            getLogger().error(`LspClient: query error: ${e}`)
+            getLogger().error(`LspClient: queryVectorIndex error: ${e}`)
             return []
+        }
+    }
+
+    async queryInlineProjectContext(query: string, path: string, target: 'default' | 'codemap' | 'bm25') {
+        try {
+            const request = JSON.stringify({
+                query: query,
+                filePath: path,
+                target,
+            })
+            const encrypted = await this.encrypt(request)
+            const resp: any = await this.client?.sendRequest(QueryInlineProjectContextRequestType, encrypted)
+            return resp
+        } catch (e) {
+            getLogger().error(`LspClient: queryInlineProjectContext error: ${e}`)
+            throw e
         }
     }
 
@@ -99,18 +127,43 @@ export class LspClient {
         }
     }
 
-    async updateIndex(filePath: string) {
+    async updateIndex(filePath: string[], mode: 'update' | 'remove' | 'add') {
+        const payload: UpdateIndexV2RequestPayload = {
+            filePaths: filePath,
+            updateMode: mode,
+        }
         try {
-            const encryptedRequest = await this.encrypt(
-                JSON.stringify({
-                    filePath: filePath,
-                })
-            )
-            const resp = await this.client?.sendRequest(UpdateIndexRequestType, encryptedRequest)
+            const encryptedRequest = await this.encrypt(JSON.stringify(payload))
+            const resp = await this.client?.sendRequest(UpdateIndexV2RequestType, encryptedRequest)
             return resp
         } catch (e) {
             getLogger().error(`LspClient: updateIndex error: ${e}`)
             return undefined
+        }
+    }
+    async queryRepomapIndex(filePaths: string[]) {
+        try {
+            const request = JSON.stringify({
+                filePaths: filePaths,
+            })
+            const resp: any = await this.client?.sendRequest(QueryRepomapIndexRequestType, await this.encrypt(request))
+            return resp
+        } catch (e) {
+            getLogger().error(`LspClient: QueryRepomapIndex error: ${e}`)
+            throw e
+        }
+    }
+    async getRepoMapJSON() {
+        try {
+            const request = JSON.stringify({})
+            const resp: any = await this.client?.sendRequest(
+                GetRepomapIndexJSONRequestType,
+                await this.encrypt(request)
+            )
+            return resp
+        } catch (e) {
+            getLogger().error(`LspClient: queryInlineProjectContext error: ${e}`)
+            throw e
         }
     }
 }
@@ -146,7 +199,7 @@ export async function activate(extensionContext: ExtensionContext) {
 
     const nodename = process.platform === 'win32' ? 'node.exe' : 'node'
 
-    const child = cp.spawn(extensionContext.asAbsolutePath(path.join('resources', nodename)), [
+    const child = spawn(extensionContext.asAbsolutePath(path.join('resources', nodename)), [
         serverModule,
         ...debugOptions.execArgv,
     ])
@@ -172,8 +225,12 @@ export async function activate(extensionContext: ExtensionContext) {
         initializationOptions: {
             handledSchemaProtocols: ['file', 'untitled'], // language server only loads file-URI. Fetching schemas with other protocols ('http'...) are made on the client.
             provideFormatter: false, // tell the server to not provide formatting capability and ignore the `aws.stepfunctions.asl.format.enable` setting.
-            extensionPath: extensionContext.extensionPath,
+            // this is used by LSP to determine index cache path, move to this folder so that when extension updates index is not deleted.
+            extensionPath: path.join(fs.getUserHomeDir(), '.aws', 'amazonq', 'cache'),
         },
+        // Log to the Amazon Q Logs so everything is in a single channel
+        // TODO: Add prefix to the language server logs so it is easier to search
+        outputChannel: globals.logOutputChannel,
     }
 
     // Create the language client and start the client.
@@ -196,15 +253,26 @@ export async function activate(extensionContext: ExtensionContext) {
                 return
             }
             savedDocument = document.uri
-        })
-    )
-    toDispose.push(
+        }),
         vscode.window.onDidChangeActiveTextEditor((editor) => {
             if (savedDocument && editor && editor.document.uri.fsPath !== savedDocument.fsPath) {
-                void LspClient.instance.updateIndex(savedDocument.fsPath)
+                void LspClient.instance.updateIndex([savedDocument.fsPath], 'update')
             }
+        }),
+        vscode.workspace.onDidCreateFiles((e) => {
+            void LspClient.instance.updateIndex(
+                e.files.map((f) => f.fsPath),
+                'add'
+            )
+        }),
+        vscode.workspace.onDidDeleteFiles((e) => {
+            void LspClient.instance.updateIndex(
+                e.files.map((f) => f.fsPath),
+                'remove'
+            )
         })
     )
+
     return LspClient.instance.client.onReady().then(() => {
         const disposableFunc = { dispose: () => rangeFormatting?.dispose() as void }
         toDispose.push(disposableFunc)

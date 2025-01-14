@@ -9,6 +9,7 @@ import {
     ListFeatureEvaluationsRequest,
     ListFeatureEvaluationsResponse,
 } from '../codewhisperer/client/codewhispereruserclient'
+import * as vscode from 'vscode'
 import { codeWhispererClient as client } from '../codewhisperer/client/codewhisperer'
 import { AuthUtil } from '../codewhisperer/util/authUtil'
 import { getLogger } from './logger'
@@ -18,6 +19,7 @@ import globals from './extensionGlobals'
 import { getClientId, getOperatingSystem } from './telemetry/util'
 import { extensionVersion } from './vscode/env'
 import { telemetry } from './telemetry'
+import { Auth } from '../auth'
 
 export class FeatureContext {
     constructor(
@@ -32,6 +34,7 @@ const featureConfigPollIntervalInMs = 30 * 60 * 1000 // 30 mins
 export const Features = {
     customizationArnOverride: 'customizationArnOverride',
     dataCollectionFeature: 'IDEProjectContextDataCollection',
+    projectContextFeature: 'ProjectContextV2',
     test: 'testFeature',
 } as const
 
@@ -50,8 +53,6 @@ export class FeatureConfigProvider {
 
     static #instance: FeatureConfigProvider
 
-    private _isDataCollectionGroup = false
-
     constructor() {
         this.fetchFeatureConfigs().catch((e) => {
             getLogger().error('fetchFeatureConfigs failed: %s', (e as Error).message)
@@ -64,8 +65,22 @@ export class FeatureConfigProvider {
         return (this.#instance ??= new this())
     }
 
-    isAmznDataCollectionGroup(): boolean {
-        return this._isDataCollectionGroup
+    getProjectContextGroup(): 'control' | 't1' | 't2' {
+        const variation = this.featureConfigs.get(Features.projectContextFeature)?.variation
+
+        switch (variation) {
+            case 'CONTROL':
+                return 'control'
+
+            case 'TREATMENT_1':
+                return 't1'
+
+            case 'TREATMENT_2':
+                return 't2'
+
+            default:
+                return 'control'
+        }
     }
 
     public async listFeatureEvaluations(): Promise<ListFeatureEvaluationsResponse> {
@@ -91,7 +106,7 @@ export class FeatureConfigProvider {
             const response = await this.listFeatureEvaluations()
 
             // Overwrite feature configs from server response
-            response.featureEvaluations.forEach((evaluation) => {
+            for (const evaluation of response.featureEvaluations) {
                 this.featureConfigs.set(
                     evaluation.feature,
                     new FeatureContext(evaluation.feature, evaluation.variation, evaluation.value)
@@ -104,8 +119,8 @@ export class FeatureConfigProvider {
                         featureValue: JSON.stringify(evaluation.value),
                     })
                 })
-            })
-            getLogger().info('AB Testing Cohort Assignments %s', JSON.stringify(response.featureEvaluations))
+            }
+            getLogger().info('AB Testing Cohort Assignments %O', response.featureEvaluations)
 
             const customizationArnOverride = this.featureConfigs.get(Features.customizationArnOverride)?.value
                 ?.stringValue
@@ -118,14 +133,11 @@ export class FeatureConfigProvider {
                     try {
                         const items: Customization[] = []
                         const response = await client.listAvailableCustomizations()
-                        response
-                            .map(
-                                (listAvailableCustomizationsResponse) =>
-                                    listAvailableCustomizationsResponse.customizations
-                            )
-                            .forEach((customizations) => {
-                                items.push(...customizations)
-                            })
+                        for (const customizations of response.map(
+                            (listAvailableCustomizationsResponse) => listAvailableCustomizationsResponse.customizations
+                        )) {
+                            items.push(...customizations)
+                        }
                         availableCustomizations = items.map((c) => c.arn)
                     } catch (e) {
                         getLogger().debug('amazonq: Failed to list available customizations')
@@ -138,13 +150,12 @@ export class FeatureConfigProvider {
                         )
                         this.featureConfigs.delete(Features.customizationArnOverride)
                     }
+
+                    await vscode.commands.executeCommand('aws.amazonq.refreshStatusBar')
                 }
             }
-
-            const dataCollectionValue = this.featureConfigs.get(Features.dataCollectionFeature)?.value.stringValue
-            if (dataCollectionValue === 'data-collection') {
-                this._isDataCollectionGroup = true
-                // Enable local workspace index by default, for Amzn users.
+            if (Auth.instance.isInternalAmazonUser()) {
+                // Enable local workspace index by default only once, for Amzn users.
                 const isSet = globals.globalState.get<boolean>('aws.amazonq.workspaceIndexToggleOn') || false
                 if (!isSet) {
                     await CodeWhispererSettings.instance.enableLocalIndex()

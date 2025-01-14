@@ -8,7 +8,7 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import { Settings } from '../shared/settings'
-import { showMessageWithCancel } from './utilities/messages'
+import { showConfirmationMessage, showMessageWithCancel } from './utilities/messages'
 import { CancellationError, Timeout } from './utilities/timeoutUtils'
 import { isExtensionInstalled, showInstallExtensionMsg } from './utilities/vsCodeUtils'
 import { VSCODE_EXTENSION_ID, vscodeExtensionMinVersion } from './extensions'
@@ -17,13 +17,28 @@ import { ToolkitError, UnknownError } from './errors'
 import { getLogger } from './logger/logger'
 import { getOrInstallCli } from './utilities/cliUtils'
 import { pushIf } from './utilities/collectionUtils'
-import { ChildProcess } from './utilities/childProcess'
+import { ChildProcess } from './utilities/processUtils'
 import { findSshPath, getVscodeCliPath } from './utilities/pathFind'
+import { IamClient } from './clients/iamClient'
+import { IAM } from 'aws-sdk'
+import { getIdeProperties } from './extensionUtilities'
+
+const policyAttachDelay = 5000
 
 export interface MissingTool {
     readonly name: 'code' | 'ssm' | 'ssh'
     readonly reason?: string
 }
+
+export const minimumSsmActions = [
+    'ssmmessages:CreateControlChannel',
+    'ssmmessages:CreateDataChannel',
+    'ssmmessages:OpenControlChannel',
+    'ssmmessages:OpenDataChannel',
+    'ssm:DescribeAssociation',
+    'ssm:ListAssociations',
+    'ssm:UpdateInstanceInformation',
+]
 
 export async function openRemoteTerminal(options: vscode.TerminalOptions, onClose: () => void) {
     const timeout = new Timeout(60000)
@@ -62,7 +77,7 @@ interface DependencyPaths {
     readonly ssh: string
 }
 
-type EnvProvider = () => Promise<NodeJS.ProcessEnv>
+export type EnvProvider = () => Promise<NodeJS.ProcessEnv>
 
 export interface VscodeRemoteConnection {
     readonly sshPath: string
@@ -152,11 +167,11 @@ export async function handleMissingTool(tools: Err<MissingTool[]>) {
         missing
     )
 
-    tools.err().forEach((d) => {
+    for (const d of tools.err()) {
         if (d.reason) {
             getLogger().error(`codecatalyst: failed to get tool "${d.name}": ${d.reason}`)
         }
-    })
+    }
 
     return Result.err(
         new ToolkitError(msg, {
@@ -164,4 +179,95 @@ export async function handleMissingTool(tools: Err<MissingTool[]>) {
             details: { missing },
         })
     )
+}
+
+function getFormattedSsmActions() {
+    const formattedActions = minimumSsmActions.map((action) => `"${action}",\n`).reduce((l, r) => l + r)
+
+    return formattedActions.slice(0, formattedActions.length - 2)
+}
+
+/**
+ * Shows a progress message for adding inline policy to the role, then adds the policy.
+ * Importantly, it keeps the progress bar up for `policyAttachDelay` additional ms to allow permissions to propagate.
+ * If user cancels, it throws a CancellationError and stops the process from subsequently opening a connection.
+ * @param client IamClient to be use to add the permissions.
+ * @param roleArn Arn of the role the inline policy should be added to.
+ */
+async function addInlinePolicyWithDelay(client: IamClient, roleArn: string) {
+    const timeout = new Timeout(policyAttachDelay)
+    const message = `Adding Inline Policy to ${roleArn}`
+    await showMessageWithCancel(message, timeout)
+    await addSsmActionsToInlinePolicy(client, roleArn)
+
+    function delay(ms: number) {
+        return new Promise((resolve) => setTimeout(resolve, ms))
+    }
+
+    await delay(policyAttachDelay)
+    if (timeout.elapsedTime < policyAttachDelay) {
+        throw new CancellationError('user')
+    }
+    timeout.cancel()
+}
+
+export async function promptToAddInlinePolicy(client: IamClient, roleArn: string): Promise<boolean> {
+    const promptText = `${
+        getIdeProperties().company
+    } Toolkit will add required actions to role ${roleArn}:\n${getFormattedSsmActions()}`
+    const confirmation = await showConfirmationMessage({ prompt: promptText, confirm: 'Approve' })
+
+    if (confirmation) {
+        await addInlinePolicyWithDelay(client, roleArn)
+    }
+
+    return confirmation
+}
+
+async function addSsmActionsToInlinePolicy(client: IamClient, roleArn: string) {
+    const policyName = 'AWSVSCodeRemoteConnect'
+    const policyDocument = getSsmPolicyDocument()
+    await client.putRolePolicy(roleArn, policyName, policyDocument)
+}
+
+function getSsmPolicyDocument() {
+    return `{
+            "Version": "2012-10-17",
+            "Statement": {
+                "Effect": "Allow",
+                "Action": [
+                    ${getFormattedSsmActions()}
+                ],
+                "Resource": "*"
+                }
+            }`
+}
+
+export async function getDeniedSsmActions(client: IamClient, roleArn: string): Promise<IAM.EvaluationResult[]> {
+    const deniedActions = await client.getDeniedActions({
+        PolicySourceArn: roleArn,
+        ActionNames: minimumSsmActions,
+    })
+
+    return deniedActions
+}
+
+/**
+ * Creates a new {@link ChildProcess} class bound to a specific remote environment. All instances of this
+ * derived class will have SSM session information injected as environment variables as-needed.
+ */
+export function createBoundProcess(envProvider: EnvProvider): typeof ChildProcess {
+    type Run = ChildProcess['run']
+    return class SessionBoundProcess extends ChildProcess {
+        public override async run(...args: Parameters<Run>): ReturnType<Run> {
+            const options = args[0]
+            const envVars = await envProvider()
+            const spawnOptions = {
+                ...options?.spawnOptions,
+                env: { ...envVars, ...options?.spawnOptions?.env },
+            }
+
+            return super.run({ ...options, spawnOptions })
+        }
+    }
 }

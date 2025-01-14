@@ -600,7 +600,7 @@ export function fromExtensionManifest<T extends TypeDescriptor & Partial<Section
  *
  * ### Usage:
  * ```
- * if (await settings.isPromptEnabled('myPromptName')) {
+ * if (settings.isPromptEnabled('myPromptName')) {
  *     // Show some sort of prompt
  *     const userResponse = await promptUser()
  *
@@ -620,23 +620,26 @@ export function fromExtensionManifest<T extends TypeDescriptor & Partial<Section
  */
 export const toolkitPrompts = settingsProps['aws.suppressPrompts']
 type toolkitPromptName = keyof typeof toolkitPrompts
-export class ToolkitPromptSettings extends Settings.define(
-    'aws.suppressPrompts',
-    toRecord(keys(toolkitPrompts), () => Boolean)
-) {
-    public async isPromptEnabled(promptName: toolkitPromptName): Promise<boolean> {
+export class ToolkitPromptSettings
+    extends Settings.define(
+        'aws.suppressPrompts',
+        toRecord(keys(toolkitPrompts), () => Boolean)
+    )
+    implements PromptSettings
+{
+    public isPromptEnabled(promptName: toolkitPromptName): boolean {
         try {
             return !this._getOrThrow(promptName, false)
         } catch (e) {
             this._log('prompt check for "%s" failed: %s', promptName, (e as Error).message)
-            await this.reset()
+            this.reset().catch((e) => getLogger().error(`failed to reset prompt settings: %O`, (e as Error).message))
 
             return true
         }
     }
 
     public async disablePrompt(promptName: toolkitPromptName): Promise<void> {
-        if (await this.isPromptEnabled(promptName)) {
+        if (this.isPromptEnabled(promptName)) {
             await this.update(promptName, true)
         }
     }
@@ -650,23 +653,26 @@ export class ToolkitPromptSettings extends Settings.define(
 
 export const amazonQPrompts = settingsProps['amazonQ.suppressPrompts']
 type amazonQPromptName = keyof typeof amazonQPrompts
-export class AmazonQPromptSettings extends Settings.define(
-    'amazonQ.suppressPrompts',
-    toRecord(keys(amazonQPrompts), () => Boolean)
-) {
-    public async isPromptEnabled(promptName: amazonQPromptName): Promise<boolean> {
+export class AmazonQPromptSettings
+    extends Settings.define(
+        'amazonQ.suppressPrompts',
+        toRecord(keys(amazonQPrompts), () => Boolean)
+    )
+    implements PromptSettings
+{
+    public isPromptEnabled(promptName: amazonQPromptName): boolean {
         try {
             return !this._getOrThrow(promptName, false)
         } catch (e) {
             this._log('prompt check for "%s" failed: %s', promptName, (e as Error).message)
-            await this.reset()
+            this.reset().catch((e) => getLogger().error(`isPromptEnabled: reset() failed: %O`, (e as Error).message))
 
             return true
         }
     }
 
     public async disablePrompt(promptName: amazonQPromptName): Promise<void> {
-        if (await this.isPromptEnabled(promptName)) {
+        if (this.isPromptEnabled(promptName)) {
             await this.update(promptName, true)
         }
     }
@@ -676,6 +682,18 @@ export class AmazonQPromptSettings extends Settings.define(
     public static get instance() {
         return (this.#instance ??= new this())
     }
+}
+
+/**
+ * Use cautiously as this is misleading. Ideally we create a type
+ * which is the intersection of the types (only the values that occur
+ * in each are selected), but idk how to do that.
+ */
+type AllPromptNames = amazonQPromptName | toolkitPromptName
+
+export interface PromptSettings {
+    isPromptEnabled(promptName: AllPromptNames): boolean
+    disablePrompt(promptName: AllPromptNames): Promise<void>
 }
 
 const experiments = settingsProps['aws.experiments']
@@ -708,12 +726,12 @@ export class Experiments extends Settings.define(
     'aws.experiments',
     toRecord(keys(experiments), () => Boolean)
 ) {
-    public async isExperimentEnabled(name: ExperimentName): Promise<boolean> {
+    public isExperimentEnabled(name: ExperimentName): boolean {
         try {
             return this._getOrThrow(name, false)
         } catch (error) {
             this._log(`experiment check for ${name} failed: %s`, error)
-            await this.reset()
+            this.reset().catch((e) => getLogger().error(`failed to reset experiment settings: %O`, e))
 
             return false
         }
@@ -727,10 +745,12 @@ export class Experiments extends Settings.define(
 }
 
 const devSettings = {
+    crashCheckInterval: Number,
     logfile: String,
     forceCloud9: Boolean,
     forceDevMode: Boolean,
     forceInstallTools: Boolean,
+    forceResolveEnv: Boolean,
     telemetryEndpoint: String,
     telemetryUserPool: String,
     renderDebugDetails: Boolean,
@@ -741,6 +761,7 @@ const devSettings = {
     ssoCacheDirectory: String,
     autofillStartUrl: String,
     webAuth: Boolean,
+    notificationsPollInterval: Number,
 }
 type ResolvedDevSettings = FromDescriptor<typeof devSettings>
 type AwsDevSetting = keyof ResolvedDevSettings

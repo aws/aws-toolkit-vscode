@@ -8,10 +8,12 @@ import { injectJSDOM } from './jsdomInjector'
 // This needs to be ran before all other imports so that mynah ui gets loaded inside of jsdom
 injectJSDOM()
 
+import assert from 'assert'
 import * as vscode from 'vscode'
 import { MynahUI, MynahUIProps } from '@aws/mynah-ui'
 import { DefaultAmazonQAppInitContext, TabType, createMynahUI } from 'aws-core-vscode/amazonq'
 import { Messenger, MessengerOptions } from './messenger'
+import { FeatureContext } from 'aws-core-vscode/shared'
 
 /**
  * Abstraction over Amazon Q to make e2e testing easier
@@ -23,7 +25,12 @@ export class qTestingFramework {
 
     lastEventId: string = ''
 
-    constructor(featureName: TabType, amazonQEnabled: boolean) {
+    constructor(
+        featureName: TabType,
+        amazonQEnabled: boolean,
+        featureConfigsSerialized: [string, FeatureContext][],
+        welcomeCount = 0
+    ) {
         /**
          * Instantiate the UI and override the postMessage to publish using the app message
          * publishers directly.
@@ -42,7 +49,9 @@ export class qTestingFramework {
                     appMessagePublisher.publish(message)
                 },
             },
-            amazonQEnabled
+            amazonQEnabled,
+            featureConfigsSerialized,
+            welcomeCount
         )
         this.mynahUI = ui.mynahUI
         this.mynahUIProps = (this.mynahUI as any).props
@@ -77,11 +86,27 @@ export class qTestingFramework {
      * functionality against a specific tab
      */
     public createTab(options?: MessengerOptions) {
-        const newTabID = this.mynahUI.updateStore('', {})
+        const oldTabs = Object.keys(this.mynahUI.getAllTabs())
+
+        // simulate pressing the new tab button
+        ;(document.querySelectorAll('.mynah-nav-tabs-wrapper > button.mynah-button')[0] as HTMLButtonElement).click()
+        const newTabs = Object.keys(this.mynahUI.getAllTabs())
+
+        const newTabID = newTabs.find((tab) => !oldTabs.includes(tab))
         if (!newTabID) {
-            throw new Error('Could not create tab id')
+            assert.fail('Could not find new tab')
         }
+
         return new Messenger(newTabID, this.mynahUIProps, this.mynahUI, options)
+    }
+
+    public getTabs() {
+        const tabs = this.mynahUI.getAllTabs()
+        return Object.entries(tabs).map(([tabId]) => new Messenger(tabId, this.mynahUIProps, this.mynahUI))
+    }
+
+    public findTab(title: string) {
+        return Object.values(this.getTabs()).find((tab) => tab.getStore().tabTitle === title)
     }
 
     public removeTab(tabId: string) {
@@ -90,5 +115,6 @@ export class qTestingFramework {
 
     public dispose() {
         vscode.Disposable.from(...this.disposables).dispose()
+        this.mynahUI.destroy()
     }
 }

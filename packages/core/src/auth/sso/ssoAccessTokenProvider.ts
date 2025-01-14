@@ -6,21 +6,14 @@
 import * as vscode from 'vscode'
 import globals from '../../shared/extensionGlobals'
 import { AuthorizationPendingException, SSOOIDCServiceException, SlowDownException } from '@aws-sdk/client-sso-oidc'
-import {
-    SsoToken,
-    ClientRegistration,
-    isExpired,
-    SsoProfile,
-    builderIdStartUrl,
-    openSsoPortalLink,
-    isDeprecatedAuth,
-} from './model'
+import { SsoToken, ClientRegistration, isExpired, SsoProfile, openSsoPortalLink, isDeprecatedAuth } from './model'
 import { getCache } from './cache'
 import { hasProps, hasStringProps, RequiredProps, selectFrom } from '../../shared/utilities/tsUtils'
 import { OidcClient } from './clients'
-import { loadOr } from '../../shared/utilities/cacheUtils'
+import { DiskCacheError, loadOr } from '../../shared/utilities/cacheUtils'
 import {
     ToolkitError,
+    getErrorMsg,
     getRequestId,
     getTelemetryReason,
     getTelemetryReasonDesc,
@@ -33,16 +26,19 @@ import { AwsLoginWithBrowser, AwsRefreshCredentials, telemetry } from '../../sha
 import { indent, toBase64URL } from '../../shared/utilities/textUtilities'
 import { AuthSSOServer } from './server'
 import { CancellationError, sleep } from '../../shared/utilities/timeoutUtils'
-import { getIdeProperties, isCloud9 } from '../../shared/extensionUtilities'
+import { getIdeProperties, isAmazonQ, isCloud9 } from '../../shared/extensionUtilities'
 import { randomBytes, createHash } from 'crypto'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { randomUUID } from '../../shared/crypto'
-import { isRemoteWorkspace, isWebWorkspace } from '../../shared/vscode/env'
+import { getExtRuntimeContext } from '../../shared/vscode/env'
 import { showInputBox } from '../../shared/ui/inputPrompter'
-import { DevSettings } from '../../shared/settings'
-import { onceChanged } from '../../shared/utilities/functionUtils'
+import { AmazonQPromptSettings, DevSettings, PromptSettings, ToolkitPromptSettings } from '../../shared/settings'
+import { debounce, onceChanged } from '../../shared/utilities/functionUtils'
 import { NestedMap } from '../../shared/utilities/map'
 import { asStringifiedStack } from '../../shared/telemetry/spans'
+import { showViewLogsMessage } from '../../shared/utilities/messages'
+import _ from 'lodash'
+import { builderIdStartUrl } from './constants'
 
 export const authenticationPath = 'sso/authenticated'
 
@@ -101,7 +97,20 @@ export abstract class SsoAccessTokenProvider {
         this.reAuthState.set(this.profile, { reAuthReason: `invalidate():${reason}` })
     }
 
+    /**
+     * Sometimes we get many calls at once and this
+     * can trigger redundant disk reads, or token refreshes.
+     * We debounce to avoid this.
+     *
+     * NOTE: The property {@link getTokenDebounced()} does not work with being stubbed for tests, so
+     * this redundant function was created to work around that.
+     */
     public async getToken(): Promise<SsoToken | undefined> {
+        return this.getTokenDebounced()
+    }
+    private getTokenDebounced = debounce(() => this._getToken(), 50)
+    /** Exposed for testing purposes only */
+    public async _getToken(): Promise<SsoToken | undefined> {
         const data = await this.cache.token.load(this.tokenCacheKey)
         SsoAccessTokenProvider.logIfChanged(
             indent(
@@ -188,7 +197,21 @@ export abstract class SsoAccessTokenProvider {
 
             return refreshed
         } catch (err) {
-            if (!isNetworkError(err)) {
+            if (err instanceof DiskCacheError) {
+                /**
+                 * Background:
+                 * - During token refresh the cache sometimes fails due to a file system error.
+                 * - When these errors ocurr it will cause the token refresh process to fail, and the users SSO
+                 *   connection to become invalid.
+                 * - Because these cache errors do not indicate the SSO session is actually stale,
+                 *   we want to catch these errors and not invalidate the users SSO connection since a
+                 *   subsequent attempt to refresh may succeed.
+                 * - To give the user a chance to resolve their filesystem related issue, we want to point them
+                 *   to the logs where the error was logged. Hopefully they can use this information to fix the issue,
+                 *   or at least hint for them to provide the logs in a bug report.
+                 */
+                void DiskCacheErrorMessage.instance.showMessageThrottled(err)
+            } else if (!isNetworkError(err)) {
                 const reason = getTelemetryReason(err)
                 telemetry.aws_refreshCredentials.emit({
                     result: getTelemetryResult(err),
@@ -246,6 +269,7 @@ export abstract class SsoAccessTokenProvider {
                 awsRegion: this.profile.region,
                 ssoRegistrationExpiresAt: args?.registrationExpiresAt,
                 ssoRegistrationClientId: args?.registrationClientId,
+                sessionDuration: getSessionDuration(this.tokenCacheKey),
             })
 
             // Reset source in case there is a case where browser login was called but we forgot to set the source.
@@ -287,10 +311,10 @@ export abstract class SsoAccessTokenProvider {
              *
              * Since we are unable to serve the final authorization page
              */
-            return isRemoteWorkspace() || isWebWorkspace()
+            return getExtRuntimeContext().extensionHost === 'remote'
         }
     ) {
-        if (DevSettings.instance.get('webAuth', false) && isWebWorkspace()) {
+        if (DevSettings.instance.get('webAuth', false) && getExtRuntimeContext().extensionHost === 'webworker') {
             return new WebAuthorization(profile, cache, oidc, reAuthState)
         }
         if (useDeviceFlow()) {
@@ -386,7 +410,7 @@ async function pollForTokenWithProgress<T extends { requestId?: string }>(
  */
 function getSessionDuration(id: string) {
     const creationDate = globals.globalState.getSsoSessionCreationDate(id)
-    return creationDate !== undefined ? Date.now() - creationDate : undefined
+    return creationDate !== undefined ? globals.clock.Date.now() - creationDate : undefined
 }
 
 /**
@@ -760,4 +784,56 @@ type ReAuthStateKey = Pick<SsoProfile, 'identifier' | 'startUrl'>
 type ReAuthStateValue = {
     // the latest reason for why the connection was moved in to a "needs reauth" state
     reAuthReason?: string
+}
+
+/**
+ * Singleton class that manages showing the user a message during {@link DiskCacheError} errors.
+ *
+ * Background:
+ * - We need this {@link DiskCacheErrorMessage} specifically as a singleton since we want to ensure
+ *   that only 1 instance of this message appears at a time. The current implementation creates a new
+ *   {@link SsoAccessTokenProvider} instance each time a token is requested, and this can happen multiple
+ *   times in rapid succession.
+ */
+class DiskCacheErrorMessage {
+    static #instance: DiskCacheErrorMessage
+    static get instance() {
+        return (this.#instance ??= new DiskCacheErrorMessage())
+    }
+
+    /**
+     * Show a `"don't show again"`-able message which tells the user about a file system related error
+     * with the sso cache.
+     *
+     * This message is throttled so we do not spam the user every time something requests a token.
+     */
+    public showMessageThrottled(error: Error) {
+        return this._showMessageThrottled(error)
+    }
+    private _showMessageThrottled = _.throttle(async (error: Error) => this._showMessage(error), 60_000, {
+        leading: true,
+    })
+    private async _showMessage(error: Error) {
+        const dontShow = 'Never warn again'
+
+        const promptSettings: PromptSettings = isAmazonQ()
+            ? AmazonQPromptSettings.instance
+            : ToolkitPromptSettings.instance
+
+        // We know 'ssoCacheError' is in all extension prompt settings
+        if (promptSettings.isPromptEnabled('ssoCacheError')) {
+            const result = await showMessage()
+            if (result === dontShow) {
+                await promptSettings.disablePrompt('ssoCacheError')
+            }
+        }
+
+        function showMessage() {
+            return showViewLogsMessage(
+                `Features using SSO will not work due to:\n"${getErrorMsg(error, true)}"`,
+                'error',
+                [dontShow]
+            )
+        }
+    }
 }

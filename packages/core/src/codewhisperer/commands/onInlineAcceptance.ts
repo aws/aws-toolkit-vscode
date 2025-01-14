@@ -30,6 +30,8 @@ import { session } from '../util/codeWhispererSession'
 import path from 'path'
 import { RecommendationService } from '../service/recommendationService'
 import { Container } from '../service/serviceContainer'
+import { telemetry } from '../../shared/telemetry'
+import { TelemetryHelper } from '../util/telemetryHelper'
 
 export const acceptSuggestion = Commands.declare(
     'aws.amazonq.accept',
@@ -46,6 +48,10 @@ export const acceptSuggestion = Commands.declare(
             language: CodewhispererLanguage,
             references: codewhispererClient.References
         ) => {
+            telemetry.record({
+                traceId: TelemetryHelper.instance.traceId,
+            })
+
             RecommendationService.instance.incrementAcceptedCount()
             const editor = vscode.window.activeTextEditor
             await Container.instance.lineAnnotationController.refresh(editor, 'codewhisperer')

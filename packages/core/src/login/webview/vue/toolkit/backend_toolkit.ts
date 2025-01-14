@@ -10,15 +10,17 @@ import { CommonAuthWebview } from '../backend'
 import {
     AwsConnection,
     Connection,
+    SsoConnection,
     TelemetryMetadata,
     createSsoProfile,
     getTelemetryMetadataForConn,
+    isSsoConnection,
 } from '../../../../auth/connection'
 import { Auth } from '../../../../auth/auth'
 import { CodeCatalystAuthenticationProvider } from '../../../../codecatalyst/auth'
 import { AuthError, AuthFlowState } from '../types'
-import { builderIdStartUrl } from '../../../../auth/sso/model'
 import { setContext } from '../../../../shared'
+import { builderIdStartUrl } from '../../../../auth/sso/constants'
 
 export class ToolkitLoginWebview extends CommonAuthWebview {
     public override id: string = 'aws.toolkit.AmazonCommonAuth'
@@ -94,7 +96,7 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
                 await setContext('aws.explorer.showAuthView', false)
                 await this.showResourceExplorer()
             } catch (e) {
-                getLogger().error('Failed submitting credentials', e)
+                getLogger().error('Failed submitting credentials %O', e)
                 return { id: this.id, text: e as string }
             }
         }
@@ -132,7 +134,7 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
      */
     async fetchConnections(): Promise<AwsConnection[] | undefined> {
         const connections: AwsConnection[] = []
-        Auth.instance.declaredConnections.forEach((conn) => {
+        for (const conn of Auth.instance.declaredConnections) {
             // No need to display Builder ID as an existing connection,
             // users can just select the Builder ID login option and it would have the same effect.
             if (conn.startUrl !== builderIdStartUrl) {
@@ -141,8 +143,12 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
                     startUrl: conn.startUrl,
                 } as AwsConnection)
             }
-        })
+        }
         return connections
+    }
+
+    async listSsoConnections(): Promise<SsoConnection[]> {
+        return (await Auth.instance.listConnections()).filter((conn) => isSsoConnection(conn)) as SsoConnection[]
     }
 
     override reauthenticateConnection(): Promise<undefined> {

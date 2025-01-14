@@ -7,8 +7,7 @@ import '@cspotcode/source-map-support/register'
 import * as path from 'path'
 import Mocha from 'mocha'
 import { glob } from 'glob'
-import * as fs from 'fs-extra'
-import { VSCODE_EXTENSION_ID } from '../shared/utilities'
+import { fs } from '../shared'
 
 // Set explicit timezone to ensure that tests run locally do not use the user's actual timezone, otherwise
 // the test can pass on one persons machine but not anothers.
@@ -20,10 +19,10 @@ process.env.TZ = 'US/Pacific'
  * @param initTests List of relative paths to test files containing root hooks: https://mochajs.org/#available-root-hooks
  */
 export async function runTests(
-    testFolder: string,
+    testFolder: string | string[],
+    extensionId: string,
     initTests: string[] = [],
-    extensionId: string = VSCODE_EXTENSION_ID.awstoolkitcore,
-    testFiles?: string[]
+    options?: { testFiles?: string[] }
 ): Promise<void> {
     if (!process.env['AWS_TOOLKIT_AUTOMATION']) {
         throw new Error('Expected the "AWS_TOOLKIT_AUTOMATION" environment variable to be set for tests.')
@@ -36,6 +35,9 @@ export async function runTests(
         }
 
         /**
+         * Tests are not run for core at the moment, but leaving this here because it may be useful in the future.
+         * It might also explain why `import { global } ...` works in web tests but `import global ...` does not.
+         *
          * Node's `require` caches modules by case-sensitive paths, regardless of the underlying
          * file system. This is normally not a problem, but VS Code also happens to normalize paths
          * on Windows to use lowercase drive letters when using its bootstrap loader. This means
@@ -59,16 +61,12 @@ export async function runTests(
          * lower case module ids (since the tests live inside of core itself)
          */
         const [drive, ...rest] = abs.split(':')
-        return rest.length === 0
-            ? abs
-            : [
-                  extensionId === VSCODE_EXTENSION_ID.awstoolkitcore ? drive.toLowerCase() : drive.toUpperCase(),
-                  ...rest,
-              ].join(':')
+        return rest.length === 0 ? abs : [drive.toUpperCase(), ...rest].join(':')
     }
 
     const root = getRoot()
-    const outputFile = path.resolve(root, '../../', '.test-reports', 'report.xml')
+    // output the report to the individual package
+    const outputFile = path.resolve(root, '.test-reports', 'report.xml')
     const colorOutput = !process.env['AWS_TOOLKIT_TEST_NO_COLOR']
 
     // Create the mocha test
@@ -87,17 +85,22 @@ export async function runTests(
 
     const dist = path.resolve(root, 'dist')
     const testFile = process.env['TEST_FILE']?.replace('.ts', '.js')
-    const testFilePath = testFile ? path.resolve(dist, testFile) : undefined
+    let testFilePath: string | undefined
+    if (testFile?.includes('../core/')) {
+        testFilePath = path.resolve(root, testFile.replace('../core/', '../core/dist/'))
+    } else {
+        testFilePath = testFile ? path.resolve(dist, testFile) : undefined
+    }
 
-    if (testFile && testFiles) {
+    if (testFile && options?.testFiles) {
         throw new Error('Individual file and list of files given to run tests on. One must be chosen.')
     }
 
     // The `require` option for Mocha isn't working for some reason (maybe user error?)
     // So instead we are loading the modules ourselves and registering the relevant hooks
-    initTests.forEach((relativePath) => {
+    for (const relativePath of initTests) {
         const fullPath = path.join(dist, relativePath).replace('.ts', '.js')
-        if (!fs.pathExistsSync(fullPath)) {
+        if (!fs.exists(fullPath)) {
             console.error(`error: missing ${fullPath}`)
             throw Error(`missing ${fullPath}`)
         }
@@ -112,10 +115,12 @@ export async function runTests(
         if (pluginFile.mochaHooks) {
             mocha.rootHooks(pluginFile.mochaHooks)
         }
-    })
+    }
 
     function runMocha(files: string[]): Promise<void> {
-        files.forEach((f) => mocha.addFile(path.resolve(dist, f)))
+        for (const f of files) {
+            mocha.addFile(path.resolve(dist, f))
+        }
         return new Promise<void>((resolve, reject) => {
             mocha.run((failures) => {
                 if (failures > 0) {
@@ -133,13 +138,21 @@ export async function runTests(
         if (coverage) {
             const dst = path.resolve(root, '.nyc_output', 'out.json')
             console.log(`Writing test coverage to "${dst}"`)
-            await fs.ensureDir(path.dirname(dst))
+            await fs.mkdir(path.dirname(dst))
             await fs.writeFile(dst, JSON.stringify(coverage))
         } else {
             console.log('No test coverage found')
         }
     }
-    const files = testFiles ?? (await glob(testFilePath ?? `**/${testFolder}/**/**.test.js`, { cwd: dist }))
+
+    let files: string[] = []
+    if (options?.testFiles) {
+        files = options.testFiles
+    } else {
+        for (const f of Array.isArray(testFolder) ? testFolder : [testFolder]) {
+            files = [...files, ...(await glob(testFilePath ?? `**/${f}/**/**.test.js`, { cwd: dist }))]
+        }
+    }
 
     await runMocha(files)
     await writeCoverage()

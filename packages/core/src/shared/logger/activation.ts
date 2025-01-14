@@ -6,22 +6,25 @@
 import * as vscode from 'vscode'
 import { Logger, LogLevel, getLogger } from '.'
 import { fromVscodeLogLevel, setLogger } from './logger'
-import { WinstonToolkitLogger } from './winstonToolkitLogger'
+import { ToolkitLogger } from './toolkitLogger'
 import { Settings } from '../settings'
 import { Logging } from './commands'
 import { resolvePath } from '../utilities/pathUtils'
 import fs from '../../shared/fs/fs'
 import { isWeb } from '../extensionGlobals'
 import { getUserAgent } from '../telemetry/util'
+import { isBeta, isDebugInstance } from '../vscode/env'
 
 /**
  * Activate Logger functionality for the extension.
+ *
+ * @param outputChannel optional output channel for less granular logs
  */
 export async function activate(
     extensionContext: vscode.ExtensionContext,
     contextPrefix: string,
-    outputChannel: vscode.LogOutputChannel,
-    logChannel: vscode.LogOutputChannel
+    logChannel: vscode.LogOutputChannel,
+    outputChannel?: vscode.LogOutputChannel
 ): Promise<void> {
     const settings = Settings.instance.getSection('aws')
     const devLogfile = settings.get('dev.logfile', '')
@@ -35,7 +38,7 @@ export async function activate(
 
     const mainLogger = makeLogger({
         logLevel: chanLogLevel,
-        logPaths: logUri ? [logUri] : undefined,
+        logFile: logUri,
         outputChannels: [logChannel],
         useConsoleLog: isWeb(),
     })
@@ -44,29 +47,28 @@ export async function activate(
         mainLogger.setLogLevel(newLogLevel) // Also logs a message.
     })
 
-    setLogger(mainLogger)
+    if (isDebugInstance()) {
+        mainLogger.setLogLevel('debug') // HACK: set to "debug" when debugging the extension.
+    }
 
-    // Logs to "AWS Toolkit" output channel.
-    setLogger(
-        makeLogger({
-            logLevel: chanLogLevel,
-            logPaths: logUri ? [logUri] : undefined,
-            outputChannels: [outputChannel, logChannel],
-        }),
-        'channel'
-    )
+    setLogger(mainLogger)
 
     // Logs to vscode Debug Console.
     setLogger(
         makeLogger({
             logLevel: chanLogLevel,
-            outputChannels: [outputChannel, logChannel],
-            useDebugConsole: true,
+            outputChannels: outputChannel ? [outputChannel, logChannel] : [logChannel],
+            useConsoleLog: true,
         }),
         'debugConsole'
     )
 
-    getLogger().info('Log level: %s%s', chanLogLevel, logUri ? `, file: ${logUri.fsPath}` : '')
+    getLogger().info(
+        'Log level: %s, beta=%s%s',
+        chanLogLevel,
+        isBeta(),
+        logUri ? `, file (always "debug" level): ${logUri.fsPath}` : ''
+    )
     getLogger().debug('User agent: %s', getUserAgent({ includePlatform: true, includeClientId: true }))
     if (devLogfile && typeof devLogfile !== 'string') {
         getLogger().error('invalid aws.dev.logfile setting')
@@ -79,29 +81,26 @@ export async function activate(
 /**
  * Creates a logger off of specified params
  * @param opts.logLevel Log messages at or above this level
- * @param opts.logPaths Array of paths to output log entries to
+ * @param opts.logFile See {@link Logger.logFile}
  * @param opts.outputChannels Array of output channels to log entries to
- * @param opts.useDebugConsole If true, outputs log entries to `vscode.debug.activeDebugConsole`
  * @param opts.useConsoleLog If true, outputs log entries to the nodejs or browser devtools console.
  */
 export function makeLogger(opts: {
     logLevel: LogLevel
-    logPaths?: vscode.Uri[]
+    logFile?: vscode.Uri
     outputChannels?: vscode.OutputChannel[]
-    useDebugConsole?: boolean
     useConsoleLog?: boolean
 }): Logger {
-    const logger = new WinstonToolkitLogger(opts.logLevel)
-    // debug console can show ANSI colors, output channels can not
-    const stripAnsi = opts.useDebugConsole ?? false
-    for (const logPath of opts.logPaths ?? []) {
-        logger.logToFile(logPath)
+    const logger = new ToolkitLogger(opts.logLevel, isBeta())
+    if (opts.logFile) {
+        logger.logToFile(opts.logFile)
+        logger.logFile = opts.logFile
+        // XXX: `vscode.LogOutputChannel` does not support programmatically setting the log-level,
+        // so this has no effect there. But this at least enables sinking to `SharedFileTransport`.
+        logger.setLogLevel('debug')
     }
     for (const outputChannel of opts.outputChannels ?? []) {
-        logger.logToOutputChannel(outputChannel, stripAnsi)
-    }
-    if (opts.useDebugConsole) {
-        logger.logToDebugConsole()
+        logger.logToOutputChannel(outputChannel)
     }
     if (opts.useConsoleLog) {
         logger.logToConsole()

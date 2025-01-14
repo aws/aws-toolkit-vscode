@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import assert from 'assert'
 import { handleExtraBrackets } from 'aws-core-vscode/codewhisperer'
-import { openATextEditorWithText } from 'aws-core-vscode/test'
+import { toTextEditor } from 'aws-core-vscode/test'
 
 describe('closingBracketUtil', function () {
     /**
@@ -20,7 +20,7 @@ describe('closingBracketUtil', function () {
             recommendation: string,
             expected: string
         ) {
-            const editor = await openATextEditorWithText(leftContext + recommendation + rightContext, 'test.txt')
+            const editor = await toTextEditor(leftContext + recommendation + rightContext, 'test.txt')
             const document = editor.document
 
             const startStart = document.positionAt(0)

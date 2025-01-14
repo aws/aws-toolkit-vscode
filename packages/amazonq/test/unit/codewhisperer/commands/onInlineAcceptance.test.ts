@@ -8,14 +8,7 @@ import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import { resetCodeWhispererGlobalVariables, createMockTextEditor } from 'aws-core-vscode/test'
 import { assertTelemetryCurried } from 'aws-core-vscode/test'
-import {
-    onInlineAcceptance,
-    RecommendationHandler,
-    AuthUtil,
-    session,
-    CodeWhispererUserGroupSettings,
-    UserGroup,
-} from 'aws-core-vscode/codewhisperer'
+import { onInlineAcceptance, RecommendationHandler, AuthUtil, session } from 'aws-core-vscode/codewhisperer'
 import { globals } from 'aws-core-vscode/shared'
 import { extensionVersion } from 'aws-core-vscode/shared'
 
@@ -29,7 +22,6 @@ describe('onInlineAcceptance', function () {
         afterEach(function () {
             sinon.restore()
             session.reset()
-            CodeWhispererUserGroupSettings.instance.reset()
         })
 
         it('Should dispose inline completion provider', async function () {
@@ -53,7 +45,6 @@ describe('onInlineAcceptance', function () {
 
         it('Should report telemetry that records this user decision event', async function () {
             await globals.globalState.update('CODEWHISPERER_USER_GROUP', {
-                group: UserGroup.Classifier,
                 version: extensionVersion,
             })
 
@@ -95,7 +86,6 @@ describe('onInlineAcceptance', function () {
                 codewhispererCompletionType: 'Line',
                 codewhispererLanguage: 'python',
                 credentialStartUrl: testStartUrl,
-                codewhispererUserGroup: 'Classifier',
             })
         })
     })

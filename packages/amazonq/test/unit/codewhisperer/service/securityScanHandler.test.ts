@@ -17,35 +17,37 @@ import {
 import assert from 'assert'
 import sinon from 'sinon'
 import * as vscode from 'vscode'
-import fs from 'fs'
+import fs from 'fs' // eslint-disable-line no-restricted-imports
 
-const mockCodeScanFindings = JSON.stringify([
-    {
-        filePath: 'workspaceFolder/python3.7-plain-sam-app/hello_world/app.py',
-        startLine: 1,
-        endLine: 1,
-        title: 'title',
-        description: {
+const buildRawCodeScanIssue = (params?: Partial<RawCodeScanIssue>): RawCodeScanIssue => ({
+    filePath: 'workspaceFolder/python3.7-plain-sam-app/hello_world/app.py',
+    startLine: 1,
+    endLine: 1,
+    title: 'title',
+    description: {
+        text: 'text',
+        markdown: 'markdown',
+    },
+    detectorId: 'detectorId',
+    detectorName: 'detectorName',
+    findingId: 'findingId',
+    relatedVulnerabilities: [],
+    severity: 'High',
+    remediation: {
+        recommendation: {
             text: 'text',
-            markdown: 'markdown',
+            url: 'url',
         },
-        detectorId: 'detectorId',
-        detectorName: 'detectorName',
-        findingId: 'findingId',
-        relatedVulnerabilities: [],
-        severity: 'High',
-        remediation: {
-            recommendation: {
-                text: 'text',
-                url: 'url',
-            },
-            suggestedFixes: [],
-        },
-        codeSnippet: [],
-    } satisfies RawCodeScanIssue,
-])
+        suggestedFixes: [],
+    },
+    codeSnippet: [],
+    ...params,
+})
 
-const mockListCodeScanFindingsResponse: Awaited<Promise<PromiseResult<ListCodeScanFindingsResponse, AWSError>>> = {
+const buildMockListCodeScanFindingsResponse = (
+    codeScanFindings: string = JSON.stringify([buildRawCodeScanIssue()]),
+    nextToken?: boolean
+): Awaited<Promise<PromiseResult<ListCodeScanFindingsResponse, AWSError>>> => ({
     $response: {
         hasNextPage: () => false,
         nextPage: () => undefined,
@@ -56,16 +58,9 @@ const mockListCodeScanFindingsResponse: Awaited<Promise<PromiseResult<ListCodeSc
         retryCount: 0,
         httpResponse: new HttpResponse(),
     },
-    codeScanFindings: mockCodeScanFindings,
-}
-
-// eslint-disable-next-line id-length
-const mockListCodeScanFindingsPaginatedResponse: Awaited<
-    Promise<PromiseResult<ListCodeScanFindingsResponse, AWSError>>
-> = {
-    ...mockListCodeScanFindingsResponse,
-    nextToken: 'nextToken',
-}
+    codeScanFindings,
+    nextToken: nextToken ? 'nextToken' : undefined,
+})
 
 describe('securityScanHandler', function () {
     describe('listScanResults', function () {
@@ -81,7 +76,7 @@ describe('securityScanHandler', function () {
         })
 
         it('should make ListCodeScanFindings request and aggregate findings by file path', async function () {
-            mockClient.listCodeScanFindings.resolves(mockListCodeScanFindingsResponse)
+            mockClient.listCodeScanFindings.resolves(buildMockListCodeScanFindingsResponse())
 
             const aggregatedCodeScanIssueList = await listScanResults(
                 mockClient,
@@ -100,11 +95,26 @@ describe('securityScanHandler', function () {
         it('should handle ListCodeScanFindings request with paginated response', async function () {
             mockClient.listCodeScanFindings
                 .onFirstCall()
-                .resolves(mockListCodeScanFindingsPaginatedResponse)
+                .resolves(
+                    buildMockListCodeScanFindingsResponse(
+                        JSON.stringify([buildRawCodeScanIssue({ title: 'title1' })]),
+                        true
+                    )
+                )
                 .onSecondCall()
-                .resolves(mockListCodeScanFindingsPaginatedResponse)
+                .resolves(
+                    buildMockListCodeScanFindingsResponse(
+                        JSON.stringify([buildRawCodeScanIssue({ title: 'title2' })]),
+                        true
+                    )
+                )
                 .onThirdCall()
-                .resolves(mockListCodeScanFindingsResponse)
+                .resolves(
+                    buildMockListCodeScanFindingsResponse(
+                        JSON.stringify([buildRawCodeScanIssue({ title: 'title3' })]),
+                        false
+                    )
+                )
 
             const aggregatedCodeScanIssueList = await listScanResults(
                 mockClient,
@@ -154,7 +164,7 @@ describe('securityScanHandler', function () {
                 { filePath: 'file2.ts', startLine: 1, endLine: 1, codeSnippet: [{ number: 1, content: 'line 1' }] },
             ])
 
-            mapToAggregatedList(codeScanIssueMap, json, editor, CodeAnalysisScope.FILE)
+            mapToAggregatedList(codeScanIssueMap, json, editor, CodeAnalysisScope.FILE_AUTO)
 
             assert.equal(codeScanIssueMap.size, 2)
             assert.equal(codeScanIssueMap.get('file1.ts')?.length, 1)
@@ -175,10 +185,58 @@ describe('securityScanHandler', function () {
                 { filePath: 'file1.ts', startLine: 3, endLine: 3, codeSnippet: [{ number: 3, content: 'line 3' }] },
             ])
 
-            mapToAggregatedList(codeScanIssueMap, json, editor, CodeAnalysisScope.FILE)
+            mapToAggregatedList(codeScanIssueMap, json, editor, CodeAnalysisScope.FILE_AUTO)
 
             assert.equal(codeScanIssueMap.size, 1)
             assert.equal(codeScanIssueMap.get('file1.ts')?.length, 2)
+        })
+
+        it('should handle issue filtering with redacted code', () => {
+            const json = JSON.stringify([
+                {
+                    filePath: 'file1.ts',
+                    startLine: 1,
+                    endLine: 2,
+                    codeSnippet: [
+                        { number: 1, content: '**** *' },
+                        { number: 2, content: '**** *' },
+                    ],
+                },
+                { filePath: 'file1.ts', startLine: 3, endLine: 3, codeSnippet: [{ number: 3, content: '**** **' }] },
+            ])
+
+            mapToAggregatedList(codeScanIssueMap, json, editor, CodeAnalysisScope.FILE_AUTO)
+            assert.strictEqual(codeScanIssueMap.size, 1)
+            assert.strictEqual(codeScanIssueMap.get('file1.ts')?.length, 1)
+        })
+
+        it('should handle duplicate issues', function () {
+            const json = JSON.stringify([
+                {
+                    filePath: 'file1.ts',
+                    startLine: 1,
+                    endLine: 2,
+                    title: 'duplicate issue',
+                    codeSnippet: [
+                        { number: 1, content: 'line 1' },
+                        { number: 2, content: 'line 2' },
+                    ],
+                },
+                {
+                    filePath: 'file1.ts',
+                    startLine: 1,
+                    endLine: 2,
+                    title: 'duplicate issue',
+                    codeSnippet: [
+                        { number: 1, content: 'line 1' },
+                        { number: 2, content: 'line 2' },
+                    ],
+                },
+            ])
+
+            mapToAggregatedList(codeScanIssueMap, json, editor, CodeAnalysisScope.FILE_AUTO)
+            assert.strictEqual(codeScanIssueMap.size, 1)
+            assert.strictEqual(codeScanIssueMap.get('file1.ts')?.length, 1)
         })
     })
 })

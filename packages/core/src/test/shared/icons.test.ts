@@ -4,11 +4,11 @@
  */
 
 import assert from 'assert'
-import * as fs from 'fs-extra'
 import * as path from 'path'
 import { Uri, ThemeIcon } from 'vscode'
 import { codicon, getIcon } from '../../shared/icons'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../shared/filesystemUtilities'
+import { fs } from '../../shared'
 
 describe('getIcon', function () {
     it('returns a ThemeIcon for `vscode` codicons', function () {
@@ -68,7 +68,7 @@ describe('getIcon', function () {
 
         try {
             for (const p of paths) {
-                await fs.mkdirp(path.dirname(p))
+                await fs.mkdir(path.dirname(p))
                 await fs.writeFile(p, '<svg></svg>')
             }
 
@@ -87,7 +87,7 @@ describe('getIcon', function () {
         const logoPath = path.join(tempDir, 'aws', 'cdk', 'logo.svg')
 
         try {
-            await fs.mkdirp(path.dirname(logoPath))
+            await fs.mkdir(path.dirname(logoPath))
             await fs.writeFile(logoPath, '<svg></svg>')
 
             const icon = getIcon('aws-cdk-logo', false, tempDir)

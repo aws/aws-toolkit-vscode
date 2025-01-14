@@ -4,7 +4,6 @@
  */
 
 import assert from 'assert'
-import * as fs from 'fs-extra'
 import * as os from 'os'
 import * as path from 'path'
 import * as vscode from 'vscode'
@@ -17,6 +16,7 @@ import {
 } from '../../../shared/codelens/javaCodeLensProvider'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import * as SampleJavaSamProgram from './sampleJavaSamProgram'
+import { fs } from '../../../shared'
 
 const fakeRange = new vscode.Range(0, 0, 0, 0)
 
@@ -30,7 +30,7 @@ describe('javaCodeLensProvider', () => {
         })
 
         afterEach(async () => {
-            await fs.remove(tempFolder)
+            await fs.delete(tempFolder, { recursive: true })
         })
 
         it('Detects a public function symbol', async function () {
@@ -210,7 +210,7 @@ describe('javaCodeLensProvider', () => {
             },
         ]
 
-        validPublicMethodTests.forEach((test) => {
+        for (const test of validPublicMethodTests) {
             const sampleMethodSymbol: vscode.DocumentSymbol = new vscode.DocumentSymbol(
                 'FunctionHandler(APIGatewayProxyRequest apigProxyEvent, ILambdaContext context)',
                 '',
@@ -236,7 +236,7 @@ describe('javaCodeLensProvider', () => {
                 const isValid = isValidLambdaHandler(doc, sampleMethodSymbol)
                 assert.strictEqual(isValid, true, 'Expected symbol to be a valid method')
             })
-        })
+        }
 
         it('returns false for a symbol that is not a method', async function () {
             const symbol = new vscode.DocumentSymbol(

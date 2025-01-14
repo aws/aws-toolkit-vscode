@@ -10,12 +10,14 @@ import {
     Ec2InstanceRunningContext,
     Ec2InstanceStoppedContext,
 } from '../../../../awsService/ec2/explorer/ec2InstanceNode'
-import { Ec2Client, Ec2Instance, getNameOfInstance } from '../../../../shared/clients/ec2Client'
+import { Ec2Client, SafeEc2Instance, getNameOfInstance } from '../../../../shared/clients/ec2Client'
 import { Ec2ParentNode } from '../../../../awsService/ec2/explorer/ec2ParentNode'
+import * as sinon from 'sinon'
+import { PollingSet } from '../../../../shared/utilities/pollingSet'
 
 describe('ec2InstanceNode', function () {
     let testNode: Ec2InstanceNode
-    let testInstance: Ec2Instance
+    let testInstance: SafeEc2Instance
     const testRegion = 'testRegion'
     const testPartition = 'testPartition'
 
@@ -28,14 +30,18 @@ describe('ec2InstanceNode', function () {
                     Value: 'testName',
                 },
             ],
-            status: 'running',
+            LastSeenStatus: 'running',
         }
+        sinon.stub(Ec2InstanceNode.prototype, 'updateStatus')
+        // Don't want to be polling here, that is tested in ../ec2ParentNode.test.ts
+        // disabled here for convenience (avoiding race conditions with timeout)
+        sinon.stub(PollingSet.prototype, 'start')
         const testClient = new Ec2Client('')
         const testParentNode = new Ec2ParentNode(testRegion, testPartition, testClient)
         testNode = new Ec2InstanceNode(testParentNode, testClient, 'testRegion', 'testPartition', testInstance)
     })
 
-    this.beforeEach(function () {
+    beforeEach(function () {
         testNode.updateInstance(testInstance)
     })
 
@@ -48,7 +54,10 @@ describe('ec2InstanceNode', function () {
     })
 
     it('initializes the label', async function () {
-        assert.strictEqual(testNode.label, `${getNameOfInstance(testInstance)} (${testInstance.InstanceId})`)
+        assert.strictEqual(
+            testNode.label,
+            `${getNameOfInstance(testInstance)} (${testInstance.InstanceId}) ${testInstance.LastSeenStatus.toUpperCase()}`
+        )
     })
 
     it('initializes the functionName', async function () {
@@ -70,22 +79,23 @@ describe('ec2InstanceNode', function () {
     })
 
     it('sets context value based on status', async function () {
-        const stoppedInstance = { ...testInstance, status: 'stopped' }
+        const stoppedInstance = { ...testInstance, LastSeenStatus: 'stopped' }
         testNode.updateInstance(stoppedInstance)
         assert.strictEqual(testNode.contextValue, Ec2InstanceStoppedContext)
 
-        const runningInstance = { ...testInstance, status: 'running' }
+        const runningInstance = { ...testInstance, LastSeenStatus: 'running' }
         testNode.updateInstance(runningInstance)
         assert.strictEqual(testNode.contextValue, Ec2InstanceRunningContext)
 
-        const pendingInstance = { ...testInstance, status: 'pending' }
+        const pendingInstance = { ...testInstance, LastSeenStatus: 'pending' }
         testNode.updateInstance(pendingInstance)
         assert.strictEqual(testNode.contextValue, Ec2InstancePendingContext)
     })
 
-    it('updates label with new instance', async function () {
-        const newIdInstance = { ...testInstance, InstanceId: 'testId2' }
+    it('updates status with new instance', async function () {
+        const newStatus = 'pending'
+        const newIdInstance = { ...testInstance, InstanceId: 'testId2', LastSeenStatus: newStatus }
         testNode.updateInstance(newIdInstance)
-        assert.strictEqual(testNode.label, `${getNameOfInstance(newIdInstance)} (${newIdInstance.InstanceId})`)
+        assert.strictEqual(testNode.getStatus(), newStatus)
     })
 })
