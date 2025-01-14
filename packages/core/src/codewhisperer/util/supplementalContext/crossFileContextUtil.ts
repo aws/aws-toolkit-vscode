@@ -88,13 +88,13 @@ export async function fetchSupplementalContextForSrc(
         const supContext = (await opentabsContextPromise) ?? []
         return {
             supplementalContextItems: supContext,
-            strategy: supContext.length === 0 ? 'Empty' : 'opentabs',
+            strategy: supContext.length === 0 ? 'empty' : 'opentabs',
         }
     }
 
     // codemap will use opentabs context plus repomap if it's present
     if (supplementalContextConfig === 'codemap') {
-        let strategy: SupplementalContextStrategy = 'Empty'
+        let strategy: SupplementalContextStrategy = 'empty'
         let hasCodemap: boolean = false
         let hasOpentabs: boolean = false
         const opentabsContextAndCodemap = await waitUntil(
@@ -132,7 +132,7 @@ export async function fetchSupplementalContextForSrc(
         } else if (hasOpentabs) {
             strategy = 'opentabs'
         } else {
-            strategy = 'Empty'
+            strategy = 'empty'
         }
 
         return {
@@ -161,7 +161,7 @@ export async function fetchSupplementalContextForSrc(
         const supContext = opentabsContext ?? []
         return {
             supplementalContextItems: supContext,
-            strategy: supContext.length === 0 ? 'Empty' : 'opentabs',
+            strategy: supContext.length === 0 ? 'empty' : 'opentabs',
         }
     }
 
