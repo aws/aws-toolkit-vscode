@@ -7,7 +7,11 @@ import * as vscode from 'vscode'
 import { FeatureConfigProvider, fs } from '../../../shared'
 import path = require('path')
 import { BM25Document, BM25Okapi } from './rankBm25'
-import { crossFileContextConfig, supplementalContextTimeoutInMs } from '../../models/constants'
+import {
+    crossFileContextConfig,
+    supplementalContextTimeoutInMs,
+    supplementalContextMaxTotalLength,
+} from '../../models/constants'
 import { isTestFile } from './codeParsingUtil'
 import { getFileDistance } from '../../../shared/filesystemUtilities'
 import { getOpenFilesInWindow } from '../../../shared/utilities/editorUtilities'
@@ -99,13 +103,22 @@ export async function fetchSupplementalContextForSrc(
                 const opentabsContext = await fetchOpentabsContext(editor, cancellationToken)
                 const codemap = await fetchProjectContext(editor, 'codemap')
 
+                function addToResult(items: CodeWhispererSupplementalContextItem[]) {
+                    for (const item of items) {
+                        const curLen = result.reduce((acc, i) => acc + i.content.length, 0)
+                        if (curLen + item.content.length < supplementalContextMaxTotalLength) {
+                            result.push(item)
+                        }
+                    }
+                }
+
                 if (codemap && codemap.length > 0) {
-                    result.push(...codemap)
+                    addToResult(codemap)
                     hasCodemap = true
                 }
 
                 if (opentabsContext && opentabsContext.length > 0) {
-                    result.push(...opentabsContext)
+                    addToResult(opentabsContext)
                     hasOpentabs = true
                 }
 
