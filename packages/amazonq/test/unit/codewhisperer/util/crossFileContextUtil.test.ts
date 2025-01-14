@@ -8,7 +8,12 @@ import * as FakeTimers from '@sinonjs/fake-timers'
 import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import * as crossFile from 'aws-core-vscode/codewhisperer'
-import { aStringWithLineCount, createMockTextEditor, installFakeClock } from 'aws-core-vscode/test'
+import {
+    aLongStringWithLineCount,
+    aStringWithLineCount,
+    createMockTextEditor,
+    installFakeClock,
+} from 'aws-core-vscode/test'
 import { FeatureConfigProvider, crossFileContextConfig } from 'aws-core-vscode/codewhisperer'
 import {
     assertTabCount,
@@ -71,8 +76,8 @@ describe('crossFileContextUtil', function () {
             assert.strictEqual(actual.supplementalContextItems[2].content.split('\n').length, 50)
         })
 
-        it('for t1 group, should return repomap + opentabs context', async function () {
-            await toTextEditor(aStringWithLineCount(200), 'CrossFile.java', tempFolder, { preview: false })
+        it('for t1 group, should return repomap + opentabs context, should not exceed 20k total length', async function () {
+            await toTextEditor(aLongStringWithLineCount(200), 'CrossFile.java', tempFolder, { preview: false })
             const myCurrentEditor = await toTextEditor('', 'TargetFile.java', tempFolder, {
                 preview: false,
             })
@@ -85,7 +90,7 @@ describe('crossFileContextUtil', function () {
                 .withArgs(sinon.match.any, sinon.match.any, 'codemap')
                 .resolves([
                     {
-                        content: 'foo',
+                        content: 'foo'.repeat(3000),
                         score: 0,
                         filePath: 'q-inline',
                     },
@@ -93,17 +98,15 @@ describe('crossFileContextUtil', function () {
 
             const actual = await crossFile.fetchSupplementalContextForSrc(myCurrentEditor, fakeCancellationToken)
             assert.ok(actual)
-            assert.strictEqual(actual.supplementalContextItems.length, 4)
+            assert.strictEqual(actual.supplementalContextItems.length, 3)
             assert.strictEqual(actual?.strategy, 'codemap')
             assert.deepEqual(actual?.supplementalContextItems[0], {
-                content: 'foo',
+                content: 'foo'.repeat(3000),
                 score: 0,
                 filePath: 'q-inline',
             })
-
             assert.strictEqual(actual.supplementalContextItems[1].content.split('\n').length, 50)
             assert.strictEqual(actual.supplementalContextItems[2].content.split('\n').length, 50)
-            assert.strictEqual(actual.supplementalContextItems[3].content.split('\n').length, 50)
         })
 
         it.skip('for t2 group, should return global bm25 context and no repomap', async function () {
