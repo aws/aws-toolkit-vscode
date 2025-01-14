@@ -82,6 +82,7 @@ describe('model', function () {
 
         beforeEach(function () {
             sandbox = sinon.createSandbox()
+            state = CodeIssueGroupingStrategyState.instance
         })
 
         afterEach(function () {
@@ -103,18 +104,18 @@ describe('model', function () {
                 assert.equal(result, CodeIssueGroupingStrategy.Severity)
             })
 
-            it('should return stored state when valid', function () {
+            it('should return stored state when valid', async function () {
                 const validStrategy = CodeIssueGroupingStrategy.FileLocation
-                state.setState(validStrategy)
+                await state.setState(validStrategy)
 
                 const result = state.getState()
 
                 assert.equal(result, validStrategy)
             })
 
-            it('should return fallback when stored state is invalid', function () {
+            it('should return fallback when stored state is invalid', async function () {
                 const invalidStrategy = 'invalid'
-                state.setState(invalidStrategy)
+                await state.setState(invalidStrategy)
 
                 const result = state.getState()
 
