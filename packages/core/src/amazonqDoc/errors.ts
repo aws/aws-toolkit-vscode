@@ -20,6 +20,14 @@ export class ReadmeTooLargeError extends ToolkitError {
     }
 }
 
+export class ReadmeUpdateTooLargeError extends ToolkitError {
+    constructor() {
+        super(i18n('AWS.amazonq.doc.error.readmeUpdateTooLarge'), {
+            code: ReadmeUpdateTooLargeError.name,
+        })
+    }
+}
+
 export class WorkspaceEmptyError extends ToolkitError {
     constructor() {
         super(i18n('AWS.amazonq.doc.error.workspaceEmpty'), {
