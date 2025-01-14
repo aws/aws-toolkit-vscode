@@ -111,17 +111,17 @@ describe('sessionState', () => {
         it('transitions to PrepareCodeGenState when codeGenerationStatus ready ', async () => {
             mockGetCodeGeneration = sinon.stub().resolves({
                 codeGenerationStatus: { status: 'Complete' },
-                codeGenerationRemainingIterationCount: 9,
-                codeGenerationTotalIterationCount: 10,
+                codeGenerationRemainingIterationCount: 2,
+                codeGenerationTotalIterationCount: 3,
             })
 
             mockExportResultArchive = sinon.stub().resolves({ newFileContents: [], deletedFiles: [], references: [] })
 
             const testAction = mockSessionStateAction()
-            const state = new CodeGenState(testConfig, [], [], [], tabId, 0, {}, 9, 10)
+            const state = new CodeGenState(testConfig, [], [], [], tabId, 0, {}, 2, 3)
             const result = await state.interact(testAction)
 
-            const nextState = new PrepareCodeGenState(testConfig, [], [], [], tabId, 1, 9, 10, undefined)
+            const nextState = new PrepareCodeGenState(testConfig, [], [], [], tabId, 1, 2, 3, undefined)
 
             assert.deepStrictEqual(result.nextState?.deletedFiles, nextState.deletedFiles)
             assert.deepStrictEqual(result.nextState?.filePaths, result.nextState?.filePaths)

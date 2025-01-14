@@ -460,12 +460,17 @@ export class FeatureDevController {
 
             if (remainingIterations !== undefined && totalIterations !== undefined) {
                 this.messenger.sendAnswer({
-                    type: 'answer',
+                    type: 'answer' as const,
                     tabID: tabID,
-                    message:
-                        remainingIterations > 2 || remainingIterations <= 0
-                            ? 'Would you like me to add this code to your project?'
-                            : `Would you like me to add this code to your project, or provide feedback for new code? You have ${remainingIterations} out of ${totalIterations} code generations left.`,
+                    message: (() => {
+                        if (remainingIterations > 2) {
+                            return 'Would you like me to add this code to your project, or provide feedback for new code?'
+                        } else if (remainingIterations > 0) {
+                            return `Would you like me to add this code to your project, or provide feedback for new code? You have ${remainingIterations} out of ${totalIterations} code generations left.`
+                        } else {
+                            return 'Would you like me to add this code to your project?'
+                        }
+                    })(),
                 })
             }
 

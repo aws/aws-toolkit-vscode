@@ -586,10 +586,15 @@ describe('Controller', () => {
             for (let remainingIterations = 0; remainingIterations <= 3; remainingIterations++) {
                 it(`verifies add code messages for remaining iterations at ${remainingIterations}`, async () => {
                     const totalIterations = 10
-                    const expectedMessage =
-                        remainingIterations > 2 || remainingIterations <= 0
-                            ? 'Would you like me to add this code to your project?'
-                            : `Would you like me to add this code to your project, or provide feedback for new code? You have ${remainingIterations} out of ${totalIterations} code generations left.`
+                    const expectedMessage = (() => {
+                        if (remainingIterations > 2) {
+                            return 'Would you like me to add this code to your project, or provide feedback for new code?'
+                        } else if (remainingIterations > 0) {
+                            return `Would you like me to add this code to your project, or provide feedback for new code? You have ${remainingIterations} out of ${totalIterations} code generations left.`
+                        } else {
+                            return 'Would you like me to add this code to your project?'
+                        }
+                    })()
                     await verifyAddCodeMessage(remainingIterations, totalIterations, expectedMessage)
                 })
             }
