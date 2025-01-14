@@ -13,6 +13,8 @@ import {
     DeserializeHandlerOptions,
     DeserializeMiddleware,
     HandlerExecutionContext,
+    MetadataBearer,
+    MiddlewareStack,
     Provider,
     RetryStrategy,
     UserAgent,
@@ -30,7 +32,9 @@ export type AwsClientConstructor<C> = new (o: AwsClientOptions) => C
 // AWS-SDKv3 does not export generic types for clients so we need to build them as needed
 // https://github.com/aws/aws-sdk-js-v3/issues/5856#issuecomment-2096950979
 interface AwsClient {
-    middlewareStack: any
+    middlewareStack: {
+        add: MiddlewareStack<any, MetadataBearer>['add']
+    }
 }
 
 interface AwsConfigOptions {
