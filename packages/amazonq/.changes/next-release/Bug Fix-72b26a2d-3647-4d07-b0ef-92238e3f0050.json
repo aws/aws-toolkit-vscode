@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Fix inline completion supplementalContext length exceeding maximum in certain cases"
+}
