@@ -17,6 +17,7 @@ import {
     MiddlewareStack,
     Provider,
     RequestHandlerMetadata,
+    RequestHandlerOutput,
     RetryStrategy,
     UserAgent,
 } from '@aws-sdk/types'
@@ -36,7 +37,7 @@ export interface AwsClient {
     middlewareStack: {
         add: MiddlewareStack<any, MetadataBearer>['add']
     }
-    send: any
+    send: (command: any, options: any) => Promise<any>
     destroy: () => void
 }
 
@@ -46,7 +47,7 @@ interface AwsClientOptions {
     customUserAgent: UserAgent
     requestHandler: {
         metadata?: RequestHandlerMetadata
-        handle: any
+        handle: (req: any, options?: any) => Promise<RequestHandlerOutput<any>>
         destroy?: () => void
     }
     apiVersion: string
