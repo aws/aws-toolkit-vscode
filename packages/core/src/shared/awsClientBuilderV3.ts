@@ -40,7 +40,7 @@ export interface AwsClient {
     destroy: () => void
 }
 
-interface AwsConfigOptions {
+interface AwsClientOptions {
     credentials: AwsCredentialIdentityProvider
     region: string | Provider<string>
     customUserAgent: UserAgent
@@ -53,7 +53,6 @@ interface AwsConfigOptions {
     endpoint: string
     retryStrategy: RetryStrategy | RetryStrategyV2
 }
-export type AwsClientOptions = AwsConfigOptions
 
 export class AWSClientBuilderV3 {
     public constructor(private readonly context: AwsContext) {}
