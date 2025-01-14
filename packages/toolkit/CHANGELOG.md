@@ -1,3 +1,20 @@
+## 3.41.0 2025-01-09
+
+- **Removal** Amazon Q: No longer autoinstall Amazon Q if the user had used CodeWhisperer in old Toolkit versions.
+- **Removal** Auth: No longer inform users that Amazon Q and Toolkit extensions have separate auth sessions.
+
+## 3.40.0 2024-12-17
+
+- **Bug Fix** Auth: SSO failed to missing refreshToken
+- **Bug Fix** AppBuilder : Support template parameters override for SAM deploy and sync for all entry points
+
+## 3.39.0 2024-12-12
+
+- **Bug Fix** EC2: avoid overwriting authorized_keys file on remote
+- **Bug Fix** Auth: SSO session was bad, but no reauth prompt given
+- **Feature** Enable the EC2 experiment (setting id: `aws.experiments`) in VSCode settings to try the new EC2 features of AWS Toolkit! Remote Connect and Open Terminal to EC2 instances, list EC2 instances and view their status in AWS Explorer. 
+- **Feature** CloudWatch Logs: Added support for Live Tailing LogGroups. Start using LiveTail by: selecting 'Tail Log Group' in the command palette, or, right clicking/pressing the 'Play' icon on a Log Group in the Explorer menu. See [Troubleshoot with CloudWatch Logs Live Tail](https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/CloudWatchLogs_LiveTail.html) for more information. LiveTail is a paid feature - for more information about pricing, see the Logs tab at [Amazon CloudWatch Pricing](https://aws.amazon.com/cloudwatch/pricing/).
+
 ## 3.38.0 2024-12-10
 
 - **Feature** Step Functions: Upgrade amazon-states-language-service to 1.13. This new version adds support for [JSONata and Variables](https://aws.amazon.com/blogs/compute/simplifying-developer-experience-with-variables-and-jsonata-in-aws-step-functions/).

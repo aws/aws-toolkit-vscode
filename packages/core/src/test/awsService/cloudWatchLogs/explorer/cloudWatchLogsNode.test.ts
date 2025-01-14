@@ -49,19 +49,21 @@ describe('CloudWatchLogsNode', function () {
 
         assert.strictEqual(childNodes.length, logGroupNames.length, 'Unexpected child count')
 
-        childNodes.forEach((node) => assert.ok(node instanceof LogGroupNode, 'Expected child node to be LogGroupNode'))
+        for (const node of childNodes) {
+            assert.ok(node instanceof LogGroupNode, 'Expected child node to be LogGroupNode')
+        }
     })
 
     it('has child nodes with CloudWatch Log contextValue', async function () {
         const childNodes = await testNode.getChildren()
 
-        childNodes.forEach((node) =>
+        for (const node of childNodes) {
             assert.strictEqual(
                 node.contextValue,
                 contextValueCloudwatchLog,
                 'expected the node to have a CloudWatch Log contextValue'
             )
-        )
+        }
     })
 
     it('sorts child nodes', async function () {

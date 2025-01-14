@@ -36,11 +36,11 @@ export async function getOpenFilesInWindow(
 
     try {
         const tabArrays = vscode.window.tabGroups.all
-        tabArrays.forEach((tabArray) => {
-            tabArray.tabs.forEach((tab) => {
+        for (const tabArray of tabArrays) {
+            for (const tab of tabArray.tabs) {
                 filesOpenedInEditor.push((tab.input as any).uri.fsPath)
-            })
-        })
+            }
+        }
     } catch (e) {
         // Older versions of VSC do not have the tab API
     }

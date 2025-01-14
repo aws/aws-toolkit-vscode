@@ -176,7 +176,7 @@ export function mergeAndValidateSections(data: BaseSection[]): ParseResult {
 export function parseIni(iniData: string, source: vscode.Uri): BaseSection[] {
     const sections = [] as BaseSection[]
     const lines = iniData.split(/\r?\n/).map((l) => l.split(/(^|\s)[;#]/)[0]) // remove comments
-    lines.forEach((line, lineNumber) => {
+    for (const [lineNumber, line] of lines.entries()) {
         const section = line.match(/^\s*\[([^\[\]]+)]\s*$/)
         const currentSection: BaseSection | undefined = sections[sections.length - 1]
         if (section) {
@@ -195,7 +195,7 @@ export function parseIni(iniData: string, source: vscode.Uri): BaseSection[] {
                 })
             }
         }
-    })
+    }
 
     return sections
 }

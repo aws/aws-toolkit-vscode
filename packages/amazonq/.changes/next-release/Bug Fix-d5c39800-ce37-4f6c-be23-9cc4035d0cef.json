@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Code Review: Fixed a bug where projects with repeated path names did not scan properly."
-}

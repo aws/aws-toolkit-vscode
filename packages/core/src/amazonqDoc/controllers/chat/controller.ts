@@ -20,7 +20,6 @@ import { getLogger } from '../../../shared/logger'
 
 import { Session } from '../../session/session'
 import { i18n } from '../../../shared/i18n-helper'
-import { telemetry } from '../../../shared/telemetry'
 import path from 'path'
 import { createSingleFileDialog } from '../../../shared/ui/common/openDialog'
 import { MynahIcons } from '@aws/mynah-ui'
@@ -187,12 +186,6 @@ export class DocController {
         const codeGenerationId: string = message.messageId
         const zipFilePath: string = message.filePath
         const session = await this.sessionStorage.getSession(tabId)
-        telemetry.amazonq_isReviewedChanges.emit({
-            amazonqConversationId: session.conversationId,
-            enabled: true,
-            result: 'Succeeded',
-            credentialStartUrl: AuthUtil.instance.startUrl,
-        })
 
         const workspacePrefixMapping = getWorkspaceFoldersByPrefixes(session.config.workspaceFolders)
         const pathInfos = getPathsFromZipFilePath(zipFilePath, workspacePrefixMapping, session.config.workspaceFolders)
@@ -307,7 +300,7 @@ export class DocController {
                         message: 'Your changes have been discarded.',
                         followUps: [
                             {
-                                pillText: i18n('AWS.amazonq.featureDev.pillText.newTask'),
+                                pillText: i18n('AWS.amazonq.doc.pillText.newTask'),
                                 type: FollowUpTypes.NewTask,
                                 status: 'info',
                             },
@@ -357,7 +350,6 @@ export class DocController {
     }
 
     private async fileClicked(message: any) {
-        // TODO: add Telemetry here
         const tabId: string = message.tabID
         const messageId = message.messageId
         const filePathToUpdate: string = message.filePath
@@ -397,12 +389,6 @@ export class DocController {
     private async newTask(message: any) {
         // Old session for the tab is ending, delete it so we can create a new one for the message id
         this.docGenerationTask = new DocGenerationTask()
-        const session = await this.sessionStorage.getSession(message.tabID)
-        telemetry.amazonq_endChat.emit({
-            amazonqConversationId: session.conversationId,
-            amazonqEndOfTheConversationLatency: performance.now() - session.telemetry.sessionStartTime,
-            result: 'Succeeded',
-        })
         this.sessionStorage.deleteSession(message.tabID)
 
         // Re-run the opening flow, where we check auth + create a session
@@ -419,14 +405,7 @@ export class DocController {
         this.messenger.sendUpdatePlaceholder(message.tabID, i18n('AWS.amazonq.featureDev.placeholder.sessionClosed'))
         this.messenger.sendChatInputEnabled(message.tabID, false)
 
-        const session = await this.sessionStorage.getSession(message.tabID)
         this.docGenerationTask.reset()
-
-        telemetry.amazonq_endChat.emit({
-            amazonqConversationId: session.conversationId,
-            amazonqEndOfTheConversationLatency: performance.now() - session.telemetry.sessionStartTime,
-            result: 'Succeeded',
-        })
     }
 
     private processErrorChatMessage = (err: any, message: any, session: Session | undefined) => {
@@ -492,7 +471,6 @@ export class DocController {
     }
 
     private async stopResponse(message: any) {
-        telemetry.ui_click.emit({ elementId: 'amazonq_stopCodeGeneration' })
         this.messenger.sendAnswer({
             message: i18n('AWS.amazonq.featureDev.pillText.stoppingCodeGeneration'),
             type: 'answer-part',
@@ -679,18 +657,6 @@ export class DocController {
         try {
             session = await this.sessionStorage.getSession(message.tabID)
 
-            const acceptedFiles = (paths?: { rejected: boolean }[]) => (paths || []).filter((i) => !i.rejected).length
-
-            const amazonqNumberOfFilesAccepted =
-                acceptedFiles(session.state.filePaths) + acceptedFiles(session.state.deletedFiles)
-
-            telemetry.amazonq_isAcceptedCodeChanges.emit({
-                credentialStartUrl: AuthUtil.instance.startUrl,
-                amazonqConversationId: session.conversationId,
-                amazonqNumberOfFilesAccepted,
-                enabled: true,
-                result: 'Succeeded',
-            })
             await session.insertChanges()
 
             const readmePath = findReadmePath(session.state.filePaths)
@@ -706,14 +672,12 @@ export class DocController {
                 tabID: message.tabID,
                 followUps: [
                     {
-                        pillText: 'Start a new documentation task',
-                        prompt: 'Start a new documentation task',
+                        pillText: i18n('AWS.amazonq.doc.pillText.newTask'),
                         type: FollowUpTypes.NewTask,
                         status: 'info',
                     },
                     {
-                        pillText: 'End session',
-                        prompt: 'End session',
+                        pillText: i18n('AWS.amazonq.doc.pillText.closeSession'),
                         type: FollowUpTypes.CloseSession,
                         status: 'info',
                     },

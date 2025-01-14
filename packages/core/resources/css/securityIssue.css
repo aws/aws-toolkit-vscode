@@ -586,11 +586,6 @@ pre.error {
     }
 }
 
-.code-block {
-    max-width: fit-content;
-    min-width: 500px;
-}
-
 .code-block pre {
     border-radius: 3px 3px 0 0;
 }

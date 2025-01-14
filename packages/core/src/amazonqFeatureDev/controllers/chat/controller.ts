@@ -30,7 +30,7 @@ import {
 import { codeGenRetryLimit, defaultRetryLimit } from '../../limits'
 import { Session } from '../../session/session'
 import { featureDevScheme, featureName } from '../../constants'
-import { DeletedFileInfo, DevPhase, type NewFileInfo } from '../../types'
+import { DeletedFileInfo, DevPhase, MetricDataOperationName, MetricDataResult, type NewFileInfo } from '../../types'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { AuthController } from '../../../amazonq/auth/controller'
 import { getLogger } from '../../../shared/logger'
@@ -413,6 +413,7 @@ export class FeatureDevController {
                 canBeVoted: true,
             })
             this.messenger.sendUpdatePlaceholder(tabID, i18n('AWS.amazonq.featureDev.pillText.generatingCode'))
+            await session.sendMetricDataTelemetry(MetricDataOperationName.StartCodeGeneration, MetricDataResult.Success)
             await session.send(message)
             const filePaths = session.state.filePaths ?? []
             const deletedFiles = session.state.deletedFiles ?? []
@@ -486,6 +487,31 @@ export class FeatureDevController {
                 await session.sendLinesOfCodeGeneratedTelemetry()
             }
             this.messenger.sendUpdatePlaceholder(tabID, i18n('AWS.amazonq.featureDev.pillText.selectOption'))
+        } catch (err: any) {
+            getLogger().error(`${featureName}: Error during code generation: ${err}`)
+
+            let result: string
+            switch (err.constructor.name) {
+                case FeatureDevServiceError.name:
+                    if (err.code === 'EmptyPatchException') {
+                        result = MetricDataResult.LlmFailure
+                    } else if (err.code === 'GuardrailsException' || err.code === 'ThrottlingException') {
+                        result = MetricDataResult.Error
+                    } else {
+                        result = MetricDataResult.Fault
+                    }
+                    break
+                case PromptRefusalException.name:
+                case NoChangeRequiredException.name:
+                    result = MetricDataResult.Error
+                    break
+                default:
+                    result = MetricDataResult.Fault
+                    break
+            }
+
+            await session.sendMetricDataTelemetry(MetricDataOperationName.EndCodeGeneration, result)
+            throw err
         } finally {
             // Finish processing the event
 
@@ -517,6 +543,7 @@ export class FeatureDevController {
                 }
             }
         }
+        await session.sendMetricDataTelemetry(MetricDataOperationName.EndCodeGeneration, MetricDataResult.Success)
     }
 
     private sendUpdateCodeMessage(tabID: string) {

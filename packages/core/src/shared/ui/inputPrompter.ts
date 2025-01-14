@@ -115,7 +115,9 @@ export class InputBoxPrompter extends Prompter<string> {
      * @param validate Validator function.
      */
     public setValidation(validate: ValidateFn): void {
-        this.validateEvents.forEach((d) => d.dispose())
+        for (const d of this.validateEvents) {
+            d.dispose()
+        }
         this.validateEvents = []
 
         this.inputBox.onDidChangeValue(

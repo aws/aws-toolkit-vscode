@@ -10,7 +10,7 @@ import * as GitTypes from '../../../../types/git'
 import { GitExtension, Repository } from '../../../shared/extensions/git'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { realpathSync } from 'fs' // eslint-disable-line no-restricted-imports
-import { execFileSync } from 'child_process'
+import { execFileSync } from 'child_process' // eslint-disable-line no-restricted-imports
 import { sleep } from '../../../shared/utilities/timeoutUtils'
 import { getLogger } from '../../../shared/logger/logger'
 import { getMinVscodeVersion } from '../../../shared/vscode/env'

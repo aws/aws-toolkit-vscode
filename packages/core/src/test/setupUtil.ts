@@ -223,12 +223,16 @@ export function registerAuthHook(secret: string, lambdaId = process.env['AUTH_UT
 
             const openStub = patchObject(vscode.env, 'openExternal', async (target) => {
                 try {
-                    const url = new URL(target.toString(true))
-                    const userCode = url.searchParams.get('user_code')
+                    // Latest eg: 'https://nkomonen.awsapps.com/start/#/device?user_code=JXZC-NVRK'
+                    const urlString = target.toString(true)
 
-                    // TODO: Update this to just be the full URL if the authorizer lambda ever
-                    // supports the verification URI with user code embedded (VerificationUriComplete).
-                    const verificationUri = url.origin
+                    // Drop the user_code parameter since the auth lambda does not support it yet, and keeping it
+                    // would trigger a slightly different UI flow which breaks the automation.
+                    // TODO: If the auth lambda supports user_code in the parameters then we can skip this step
+                    const verificationUri = urlString.split('?')[0]
+
+                    const params = urlString.split('?')[1]
+                    const userCode = new URLSearchParams(params).get('user_code')
 
                     await invokeLambda(lambdaId, {
                         secret,

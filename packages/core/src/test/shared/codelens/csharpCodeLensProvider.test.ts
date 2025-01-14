@@ -145,7 +145,7 @@ describe('isPublicMethodSymbol', async function () {
         },
     ]
 
-    validPublicMethodTests.forEach((test) => {
+    for (const test of validPublicMethodTests) {
         const sampleMethodSymbol: vscode.DocumentSymbol = new vscode.DocumentSymbol(
             'FunctionHandler(APIGatewayProxyRequest apigProxyEvent, ILambdaContext context)',
             '',
@@ -164,7 +164,7 @@ describe('isPublicMethodSymbol', async function () {
             const isPublic = isValidLambdaHandler(doc, sampleMethodSymbol)
             assert.strictEqual(isPublic, true, 'Expected symbol to be a public method')
         })
-    })
+    }
 
     it('returns false for a symbol that is not a method', async function () {
         const symbol = new vscode.DocumentSymbol(

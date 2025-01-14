@@ -24,7 +24,6 @@ export { init as featureDevChatAppInit } from '../amazonqFeatureDev/app'
 export { init as gumbyChatAppInit } from '../amazonqGumby/app'
 export { init as testChatAppInit } from '../amazonqTest/app'
 export { init as docChatAppInit } from '../amazonqDoc/app'
-export { activateBadge } from './util/viewBadgeHandler'
 export { amazonQHelpUrl } from '../shared/constants'
 export { listCodeWhispererCommandsWalkthrough } from '../codewhisperer/ui/statusBarMenu'
 export { focusAmazonQPanel, focusAmazonQPanelKeybinding } from '../codewhispererChat/commands/registerCommands'
@@ -55,11 +54,12 @@ export function createMynahUI(
     ideApi: any,
     amazonQEnabled: boolean,
     featureConfigsSerialized: [string, FeatureContext][],
+    welcomeCount: number,
     disabledCommands?: string[]
 ) {
     if (typeof window !== 'undefined') {
         const mynahUI = require('./webview/ui/main')
-        return mynahUI.createMynahUI(ideApi, amazonQEnabled, featureConfigsSerialized, true, disabledCommands)
+        return mynahUI.createMynahUI(ideApi, amazonQEnabled, featureConfigsSerialized, welcomeCount, disabledCommands)
     }
     throw new Error('Not implemented for node')
 }
