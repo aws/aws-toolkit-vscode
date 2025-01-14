@@ -105,7 +105,7 @@ export async function fetchSupplementalContextForSrc(
 
                 function addToResult(items: CodeWhispererSupplementalContextItem[]) {
                     for (const item of items) {
-                        let curLen = result.reduce((acc, i) => acc + i.content.length, 0)
+                        const curLen = result.reduce((acc, i) => acc + i.content.length, 0)
                         if (curLen + item.content.length < supplementalContextMaxTotalLength) {
                             result.push(item)
                         }
