@@ -231,7 +231,6 @@ export async function exportResultsArchive(
         const zip = new AdmZip(pathToArchive)
         zip.extractAllTo(pathToArchiveDir, true)
 
-        const session = ChatSessionManager.Instance.getSession()
         const testFilePathFromResponse = session?.shortAnswer?.testFilePath
         const testFilePath = testFilePathFromResponse
             ? testFilePathFromResponse.split('/').slice(1).join('/') // remove the project name
