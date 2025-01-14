@@ -16,6 +16,7 @@ import {
     MetadataBearer,
     MiddlewareStack,
     Provider,
+    RequestHandlerMetadata,
     RetryStrategy,
     UserAgent,
 } from '@aws-sdk/types'
@@ -43,7 +44,11 @@ interface AwsConfigOptions {
     credentials: AwsCredentialIdentityProvider
     region: string | Provider<string>
     customUserAgent: UserAgent
-    requestHandler: any
+    requestHandler: {
+        metadata?: RequestHandlerMetadata
+        handle: any
+        destroy?: () => void
+    }
     apiVersion: string
     endpoint: string
     retryStrategy: RetryStrategy | RetryStrategyV2

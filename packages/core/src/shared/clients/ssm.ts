@@ -4,7 +4,6 @@
  */
 
 import {
-    SSM,
     SSMClient,
     Session,
     StartSessionCommand,
@@ -24,7 +23,7 @@ import { WaiterState } from '@smithy/util-waiter'
 import { ToolkitError } from '../errors'
 import { ClientWrapper } from './wrapper'
 
-export class SSMWrapper extends ClientWrapper<SSM> {
+export class SSMWrapper extends ClientWrapper<SSMClient> {
     public constructor(public override readonly regionCode: string) {
         super(regionCode, SSMClient)
     }
