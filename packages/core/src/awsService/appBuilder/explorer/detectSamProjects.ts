@@ -57,7 +57,7 @@ export async function getFiles(
 
         return await vscode.workspace.findFiles(globPattern, excludePattern)
     } catch (error) {
-        getLogger().error(`Failed to get files with pattern ${pattern}:`, error)
+        getLogger().error(`Failed to find files with pattern ${pattern}:`, error)
         return []
     }
 }
