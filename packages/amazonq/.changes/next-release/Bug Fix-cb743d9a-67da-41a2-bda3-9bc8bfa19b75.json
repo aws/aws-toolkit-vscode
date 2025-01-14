@@ -1,4 +1,4 @@
 {
 	"type": "Bug Fix",
-	"description": "Amazon Q: fix for test generation unsupported languages query"
+	"description": "Amazon Q: test generation for unsupported was sometimes unreliable"
 }
