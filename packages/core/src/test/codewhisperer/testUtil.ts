@@ -329,3 +329,12 @@ export function aStringWithLineCount(lineCount: number, start: number = 0): stri
 
     return s.trimEnd()
 }
+
+export function aLongStringWithLineCount(lineCount: number, start: number = 0): string {
+    let s = ''
+    for (let i = start; i < start + lineCount; i++) {
+        s += `a`.repeat(100) + `line${i}\n`
+    }
+
+    return s.trimEnd()
+}
