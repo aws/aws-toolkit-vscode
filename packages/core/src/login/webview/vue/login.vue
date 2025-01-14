@@ -193,6 +193,7 @@
                     @keydown.enter="handleContinueClick()"
                 />
                 <h4 class="start-url-error">{{ startUrlError }}</h4>
+                <h4 class="start-url-warning">{{ startUrlWarning }}</h4>
                 <div class="title topMargin">Region</div>
                 <div class="hint">AWS Region that hosts identity directory</div>
                 <select
@@ -340,6 +341,7 @@ export default defineComponent({
             stage: 'START' as Stage,
             regions: [] as Region[],
             startUrlError: '',
+            startUrlWarning: '',
             selectedRegion: 'us-east-1',
             startUrl: '',
             app: this.app,
@@ -365,7 +367,7 @@ export default defineComponent({
 
         // Pre-select the first available login option
         await this.preselectLoginOption()
-        this.handleUrlInput() // validate the default startUrl
+        await this.handleUrlInput() // validate the default startUrl
     },
     methods: {
         toggleItemSelection(itemId: number) {
@@ -475,17 +477,47 @@ export default defineComponent({
                 this.stage = 'CONNECTED'
             }
         },
-        handleUrlInput() {
-            if (this.startUrl && !ssoUrlFormatRegex.test(this.startUrl)) {
-                this.startUrlError = ssoUrlFormatMessage
-            } else if (this.startUrl && this.existingStartUrls.some((url) => url === this.startUrl)) {
-                this.startUrlError =
-                    'A connection for this start URL already exists. Sign out before creating a new one.'
-            } else {
-                this.startUrlError = ''
+        async handleUrlInput() {
+            const messages = await resolveStartUrlMessages(this.startUrl, this.existingStartUrls)
+            this.startUrlError = messages.error
+            this.startUrlWarning = messages.warning
+
+            if (!messages.error && !messages.warning) {
                 void client.storeMetricMetadata({
                     credentialStartUrl: this.startUrl,
                 })
+            }
+
+            async function resolveStartUrlMessages(
+                startUrl: string | undefined,
+                existingStartUrls: string[]
+            ): Promise<{ warning: string; error: string }> {
+                // No URL
+                if (!startUrl) {
+                    return { error: '', warning: '' }
+                }
+
+                // Validate URL format
+                if (!ssoUrlFormatRegex.test(startUrl)) {
+                    console.log('Before Validate')
+                    if (await client.validateUrl(startUrl)) {
+                        console.log('After Validate')
+                        return { error: '', warning: ssoUrlFormatMessage }
+                    } else {
+                        return { error: 'URL format invalid. Must follow eg: https://xxxxx.com/yyyy', warning: '' }
+                    }
+                }
+
+                // Ensure that URL does not exist yet
+                if (existingStartUrls.some((url) => url === startUrl)) {
+                    return {
+                        error: 'A connection for this start URL already exists. Sign out before creating a new one.',
+                        warning: '',
+                    }
+                }
+
+                // URL is valid
+                return { error: '', warning: '' }
             }
         },
         handleRegionInput(event: any) {
@@ -741,6 +773,10 @@ body.vscode-high-contrast:not(body.vscode-high-contrast-light) .regionSelect {
 }
 .start-url-error {
     color: #ff0000;
+    font-size: var(--font-size-sm);
+}
+.start-url-warning {
+    color: #dfe216;
     font-size: var(--font-size-sm);
 }
 #logo {
