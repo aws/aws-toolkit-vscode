@@ -77,9 +77,9 @@ export class LanguageServerResolver {
             throw new ToolkitError('Unable to find a compatible version of the Language Server')
         }
 
-        const version = path.basename(cacheDirectory)
+        const version = path.basename(fallbackDirectory)
         logger.info(
-            `Unable to install language server ${latestVersion.serverVersion}. Launching a previous version from ${fallbackDirectory}`
+            `Unable to install ${this.lsName} language server v${latestVersion.serverVersion}. Launching a previous version from ${fallbackDirectory}`
         )
 
         result.location = 'fallback'
@@ -107,6 +107,7 @@ export class LanguageServerResolver {
             .filter(([_, filetype]) => filetype === FileType.Directory)
             .map(([pathName, _]) => semver.parse(pathName))
             .filter((ver): ver is semver.SemVer => ver !== null)
+            .map((x) => x.version)
 
         const expectedVersion = semver.parse(version)
         if (!expectedVersion) {
@@ -115,7 +116,7 @@ export class LanguageServerResolver {
 
         const sortedCachedLspVersions = compatibleLspVersions
             .filter((v) => this.isValidCachedVersion(v, cachedVersions, expectedVersion))
-            .sort((a, b) => semver.compare(a.serverVersion, b.serverVersion))
+            .sort((a, b) => semver.compare(b.serverVersion, a.serverVersion))
 
         const fallbackDir = (
             await Promise.all(sortedCachedLspVersions.map((ver) => this.getValidLocalCacheDirectory(ver)))
@@ -144,9 +145,9 @@ export class LanguageServerResolver {
      * A version is considered valid if it exists in the cache and is less than
      * or equal to the expected version.
      */
-    private isValidCachedVersion(version: LspVersion, cachedVersions: semver.SemVer[], expectedVersion: semver.SemVer) {
+    private isValidCachedVersion(version: LspVersion, cachedVersions: string[], expectedVersion: semver.SemVer) {
         const serverVersion = semver.parse(version.serverVersion) as semver.SemVer
-        return cachedVersions.find((x) => x === serverVersion) && serverVersion <= expectedVersion
+        return cachedVersions.includes(serverVersion.version) && semver.lte(serverVersion, expectedVersion)
     }
 
     /**
@@ -283,9 +284,7 @@ export class LanguageServerResolver {
         const latestCompatibleVersion =
             this.manifest.versions
                 .filter((ver) => this.isCompatibleVersion(ver) && this.hasRequiredTargetContent(ver))
-                .sort((a, b) => {
-                    return a.serverVersion.localeCompare(b.serverVersion)
-                })[0] ?? undefined
+                .sort((a, b) => semver.compare(b.serverVersion, a.serverVersion))[0] ?? undefined
 
         if (latestCompatibleVersion === undefined) {
             // TODO fix these error range names
@@ -340,12 +339,12 @@ export class LanguageServerResolver {
         return version.targets.find((x) => x.arch === arch && x.platform === platform)
     }
 
-    private defaultDownloadFolder() {
+    defaultDownloadFolder() {
         const applicationSupportFolder = getApplicationSupportFolder()
         return path.join(applicationSupportFolder, `aws/toolkits/language-servers/${this.lsName}`)
     }
 
-    getDownloadDirectory(version: string) {
+    private getDownloadDirectory(version: string) {
         const directory = this._defaultDownloadFolder ?? this.defaultDownloadFolder()
         return `${directory}/${version}`
     }
