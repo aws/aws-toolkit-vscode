@@ -717,9 +717,6 @@ export class TestController {
         await vscode.window.showTextDocument(document)
         // TODO: send the message once again once build is enabled
         // this.messenger.sendMessage('Accepted', message.tabID, 'prompt')
-
-        this.messenger.sendMessage('Unit test generation completed', message.tabID, 'answer')
-
         telemetry.ui_click.emit({ elementId: 'unitTestGeneration_acceptDiff' })
 
         TelemetryHelper.instance.sendTestGenerationToolkitEvent(
@@ -841,10 +838,10 @@ export class TestController {
 
     // TODO: Check if there are more cases to endSession if yes create a enum or type for step
     private async endSession(data: any, step: FollowUpTypes) {
+        this.messenger.sendMessage('Unit test generation completed.', data.tabID, 'answer')
+
         const session = this.sessionStorage.getSession()
         if (step === FollowUpTypes.RejectCode) {
-            this.messenger.sendMessage('Unit test generation completed.', data.tabID, 'answer')
-
             TelemetryHelper.instance.sendTestGenerationToolkitEvent(
                 session,
                 true,
