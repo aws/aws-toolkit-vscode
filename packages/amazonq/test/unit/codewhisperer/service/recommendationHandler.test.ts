@@ -125,7 +125,7 @@ describe('recommendationHandler', function () {
                 supplementalContextItems: [],
                 contentsLength: 100,
                 latency: 0,
-                strategy: 'Empty',
+                strategy: 'empty',
             })
             sinon.stub(performance, 'now').returns(0.0)
             session.startPos = new vscode.Position(1, 0)

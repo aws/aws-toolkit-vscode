@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit",
     "description": "Including CodeCatalyst, Infrastructure Composer, and support for Lambda, S3, CloudWatch Logs, CloudFormation, and many other services.",
-    "version": "3.41.0-SNAPSHOT",
+    "version": "3.42.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
