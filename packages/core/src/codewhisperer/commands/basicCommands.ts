@@ -735,7 +735,7 @@ export const generateFix = Commands.declare(
                     SecurityIssueProvider.instance.updateIssue(updatedIssue, targetFilePath)
                     SecurityIssueTreeViewProvider.instance.refresh()
                 } catch (err) {
-                    const error = isAwsError(err) ? err : new TypeError('Unexpected error')
+                    const error = err instanceof Error ? err : new TypeError('Unexpected error')
                     await updateSecurityIssueWebview({
                         issue: targetIssue,
                         isGenerateFixLoading: false,
