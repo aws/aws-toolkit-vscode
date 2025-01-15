@@ -1,4 +1,4 @@
 {
 	"type": "Bug Fix",
-	"description": "Amazon Q: /test for unsupported languages was sometimes unreliable"
+	"description": "/test: for unsupported languages was sometimes unreliable"
 }
