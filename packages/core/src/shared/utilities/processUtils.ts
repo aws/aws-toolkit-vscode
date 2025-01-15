@@ -104,7 +104,7 @@ export class ChildProcessTracker {
             ChildProcessTracker.logger.warn(`Missing process with id ${pid}`)
             return
         }
-        const stats = await this.getUsage(pid)
+        const stats = this.getUsage(pid)
         if (stats) {
             ChildProcessTracker.logger.debug(`Process ${pid} usage: %O`, stats)
             if (stats.memory > ChildProcessTracker.thresholds.memory) {
@@ -143,8 +143,16 @@ export class ChildProcessTracker {
         this.#processByPid.clear()
     }
 
-    public async getUsage(pid: number): Promise<ProcessStats> {
-        const getWindowsUsage = () => {
+    public getUsage(pid: number): ProcessStats {
+        try {
+            // isWin() leads to circular dependency.
+            return process.platform === 'win32' ? getWindowsUsage() : getUnixUsage()
+        } catch (e) {
+            ChildProcessTracker.logger.warn(`Failed to get process stats for ${pid}: ${e}`)
+            return { cpu: 0, memory: 0 }
+        }
+
+        function getWindowsUsage() {
             const cpuOutput = proc
                 .execFileSync('wmic', [
                     'path',
@@ -167,7 +175,8 @@ export class ChildProcessTracker {
                 memory: memoryBytes,
             }
         }
-        const getUnixUsage = () => {
+
+        function getUnixUsage() {
             const cpuMemOutput = proc.execFileSync('ps', ['-p', pid.toString(), '-o', '%cpu,%mem']).toString()
             const rssOutput = proc.execFileSync('ps', ['-p', pid.toString(), '-o', 'rss']).toString()
 
@@ -179,13 +188,6 @@ export class ChildProcessTracker {
                 cpu: isNaN(cpuPercentage) ? 0 : cpuPercentage,
                 memory: memoryBytes,
             }
-        }
-        try {
-            // isWin() leads to circular dependency.
-            return process.platform === 'win32' ? getWindowsUsage() : getUnixUsage()
-        } catch (e) {
-            ChildProcessTracker.logger.warn(`Failed to get process stats for ${pid}: ${e}`)
-            return { cpu: 0, memory: 0 }
         }
     }
 }

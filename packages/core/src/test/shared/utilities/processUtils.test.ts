@@ -458,12 +458,12 @@ describe('ChildProcessTracker', function () {
             memory: ChildProcessTracker.thresholds.memory + 1,
         }
 
-        usageMock.resolves(highCpu)
+        usageMock.returns(highCpu)
 
         await clock.tickAsync(ChildProcessTracker.pollingInterval)
         assertLogsContain('exceeded cpu threshold', false, 'warn')
 
-        usageMock.resolves(highMemory)
+        usageMock.returns(highMemory)
         await clock.tickAsync(ChildProcessTracker.pollingInterval)
         assertLogsContain('exceeded memory threshold', false, 'warn')
 
@@ -474,7 +474,7 @@ describe('ChildProcessTracker', function () {
         const runningProcess = startSleepProcess()
         tracker.add(runningProcess.childProcess)
 
-        usageMock.resolves({
+        usageMock.returns({
             cpu: ChildProcessTracker.thresholds.cpu + 1,
             memory: 0,
         })
@@ -488,7 +488,7 @@ describe('ChildProcessTracker', function () {
     it('does not log for processes within threshold', async function () {
         const runningProcess = startSleepProcess()
 
-        usageMock.resolves({
+        usageMock.returns({
             cpu: ChildProcessTracker.thresholds.cpu - 1,
             memory: ChildProcessTracker.thresholds.memory - 1,
         })
