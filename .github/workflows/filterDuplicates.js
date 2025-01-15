@@ -84,22 +84,25 @@ function filterDuplicates(report, changes) {
     return duplicates
 }
 
-function formatDuplicates(duplicates) {
+function formatDuplicates(duplicates, commitHash, repoName) {
+    const baseUrl = `https://github.com/${repoName}`
     return duplicates.map((dupe) => {
         return {
-            firstFile: dupe.firstFile.name,
-            firstStart: dupe.firstFile.start,
-            firstEnd: dupe.firstFile.end,
-            secondFile: dupe.secondFile.name,
-            secondStart: dupe.secondFile.start,
-            secondEnd: dupe.secondFile.end,
+            first: formUrl(dupe.firstFile, commitHash),
+            second: formUrl(dupe.secondFile, commitHash),
+            numberOfLines: dupe.lines,
         }
     })
+    function formUrl(file, commitHash) {
+        return `${baseUrl}blob/${commitHash}/${file.name}#L${file.start}-L${file.end}`
+    }
 }
 
 async function run() {
     const rawDiffPath = process.argv[3]
     const jscpdReportPath = process.argv[4]
+    const commitHash = process.argv[5]
+    const repoName = process.argv[6]
     const changes = await parseDiff(rawDiffPath)
     const jscpdReport = JSON.parse(await fs.readFile(jscpdReportPath, 'utf8'))
     const filteredDuplicates = filterDuplicates(jscpdReport, changes)
@@ -107,7 +110,7 @@ async function run() {
     console.log('%s files changes', changes.size)
     console.log('%s duplicates found', filteredDuplicates.length)
     if (filteredDuplicates.length > 0) {
-        console.log(formatDuplicates(filteredDuplicates))
+        console.log(formatDuplicates(filteredDuplicates, commitHash, repoName))
         process.exit(1)
     }
 }
