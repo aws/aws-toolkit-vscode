@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Amazon q /dev: Remove hard-coded limits and instead rely server-side data to communicate number of code generations remaining"
+}

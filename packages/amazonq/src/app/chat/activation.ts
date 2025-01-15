@@ -61,7 +61,6 @@ export async function activate(context: ExtensionContext) {
         void vscode.env.openExternal(vscode.Uri.parse(amazonq.amazonQHelpUrl))
     })
 
-    await amazonq.activateBadge()
     void setupLsp()
     void setupAuthNotification()
 }

@@ -654,14 +654,14 @@ export async function getValidSQLConversionCandidateProjects() {
         let resultLog = ''
         for (const project of javaProjects) {
             // as long as at least one of these strings is found, project contains embedded SQL statements
-            const searchStrings = ['oracle.jdbc.OracleDriver', 'jdbc:oracle:thin:@', 'jdbc:oracle:oci:@', 'jdbc:odbc:']
+            const searchStrings = ['oracle.jdbc.', 'jdbc:oracle:', 'jdbc:odbc:']
             for (const str of searchStrings) {
                 const spawnResult = await findStringInDirectory(str, project.path)
                 // just for telemetry purposes
                 if (spawnResult.error || spawnResult.stderr) {
-                    resultLog += `search failed: ${JSON.stringify(spawnResult)}`
+                    resultLog += `search error: ${JSON.stringify(spawnResult)}--`
                 } else {
-                    resultLog += `search succeeded: ${spawnResult.exitCode}`
+                    resultLog += `search complete (exit code: ${spawnResult.exitCode})--`
                 }
                 getLogger().info(`CodeTransformation: searching for ${str} in ${project.path}, result = ${resultLog}`)
                 if (spawnResult.exitCode === 0) {

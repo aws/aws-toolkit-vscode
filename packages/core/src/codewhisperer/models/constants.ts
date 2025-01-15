@@ -84,6 +84,7 @@ export const lineBreakWin = '\r\n'
 
 export const supplementalContextTimeoutInMs = 100
 
+export const supplementalContextMaxTotalLength = 20480
 /**
  * Ux of recommendations
  */
@@ -501,7 +502,7 @@ export const codeTransformLocThreshold = 100000
 export const jobStartedChatMessage =
     'I am starting to transform your code. It can take 10 to 30 minutes to upgrade your code, depending on the size of your project. To monitor progress, go to the Transformation Hub. If I run into any issues, I might pause the transformation to get input from you on how to proceed.'
 
-export const chooseTransformationObjective = `I can help you with the following tasks:\n- Upgrade your Java 8 and Java 11 codebases to Java 17, or upgrade Java 17 code with up to date libraries and other dependencies.\n- Convert embedded SQL code for Oracle to PostgreSQL database migrations in AWS DMS.\n\nWhat would you like to do? You can enter "language upgrade" or "sql conversion".`
+export const chooseTransformationObjective = `I can help you with the following tasks:\n- Upgrade your Java 8 and Java 11 codebases to Java 17, or upgrade Java 17 code with up to date libraries and other dependencies.\n- Convert embedded SQL code for Oracle to PostgreSQL database migrations in AWS DMS. [Learn more](https://docs.aws.amazon.com/dms/latest/userguide/schema-conversion-embedded-sql.html).\n\nWhat would you like to do? You can enter "language upgrade" or "sql conversion".`
 
 export const chooseTransformationObjectivePlaceholder = 'Enter "language upgrade" or "sql conversion"'
 

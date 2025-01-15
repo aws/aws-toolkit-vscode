@@ -58,7 +58,6 @@ export type globalKey =
     | 'dev.beta'
     | 'globalsMostRecentVersion'
     | 'gumby.wasQCodeTransformationUsed'
-    | 'hasAlreadyOpenedAmazonQ'
     | 'isExtensionFirstUse'
     | 'lastExtensionVersion'
     | 'lastSelectedRegion'

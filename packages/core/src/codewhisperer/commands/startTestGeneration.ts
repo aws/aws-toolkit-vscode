@@ -120,6 +120,7 @@ export async function startTestGenerationProcess(
         )
         // TODO: Send status to test summary
         if (jobStatus === TestGenerationJobStatus.FAILED) {
+            session.numberOfTestsGenerated = 0
             logger.verbose(`Test generation failed.`)
             throw new TestGenFailedError()
         }
