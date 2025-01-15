@@ -10,7 +10,7 @@
 
 import * as crypto from 'crypto'
 import { DevSettings } from '../settings'
-import { getLogger } from '..'
+import { getLogger } from '../logger/logger'
 import { ToolkitError } from '../errors'
 import { userInfo } from 'os'
 import path from 'path'
