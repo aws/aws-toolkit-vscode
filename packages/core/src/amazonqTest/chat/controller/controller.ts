@@ -247,6 +247,7 @@ export class TestController {
         TelemetryHelper.instance.sendTestGenerationToolkitEvent(
             session,
             true,
+            true,
             isCancel ? 'Cancelled' : 'Failed',
             session.startTestGenerationRequestId,
             performance.now() - session.testGenerationStartTime,
@@ -457,7 +458,14 @@ export class TestController {
                     unsupportedMessage = `<span style="color: #EE9D28;">&#9888;<b>I'm sorry, but /test only supports Python and Java</b><br></span> I will still generate a suggestion below.`
                 }
                 this.messenger.sendMessage(unsupportedMessage, tabID, 'answer')
-                await this.onCodeGeneration(session, message.prompt, tabID, fileName, filePath)
+                await this.onCodeGeneration(
+                    session,
+                    message.prompt,
+                    tabID,
+                    fileName,
+                    filePath,
+                    workspaceFolder !== undefined
+                )
             } else {
                 this.messenger.sendCapabilityCard({ tabID })
                 this.messenger.sendMessage(testGenSummaryMessage(fileName), message.tabID, 'answer-part')
@@ -725,6 +733,7 @@ export class TestController {
         TelemetryHelper.instance.sendTestGenerationToolkitEvent(
             session,
             true,
+            true,
             'Succeeded',
             session.startTestGenerationRequestId,
             session.latencyOfTestGeneration,
@@ -802,20 +811,21 @@ export class TestController {
         message: string,
         tabID: string,
         fileName: string,
-        filePath: string
+        filePath: string,
+        fileInWorkspace: boolean
     ) {
         try {
             // TODO: Write this entire gen response to basiccommands and call here.
             const editorText = await fs.readFileText(filePath)
 
             const triggerPayload = {
-                query: `Generate unit tests for the following part of my code: ${message}`,
+                query: `Generate unit tests for the following part of my code: ${message?.trim() || fileName}`,
                 codeSelection: undefined,
                 trigger: ChatTriggerType.ChatMessage,
                 fileText: editorText,
                 fileLanguage: session.fileLanguage,
                 filePath: filePath,
-                message: `Generate unit tests for the following part of my code: ${message}`,
+                message: `Generate unit tests for the following part of my code: ${message?.trim() || fileName}`,
                 matchPolicy: undefined,
                 codeQuery: undefined,
                 userIntent: UserIntent.GENERATE_UNIT_TESTS,
@@ -831,7 +841,8 @@ export class TestController {
                 tabID,
                 randomUUID.toString(),
                 triggerPayload,
-                fileName
+                fileName,
+                fileInWorkspace
             )
         } finally {
             this.messenger.sendChatInputEnabled(tabID, true)
@@ -842,10 +853,13 @@ export class TestController {
 
     // TODO: Check if there are more cases to endSession if yes create a enum or type for step
     private async endSession(data: any, step: FollowUpTypes) {
+        this.messenger.sendMessage('Unit test generation completed.', data.tabID, 'answer')
+
         const session = this.sessionStorage.getSession()
         if (step === FollowUpTypes.RejectCode) {
             TelemetryHelper.instance.sendTestGenerationToolkitEvent(
                 session,
+                true,
                 true,
                 'Succeeded',
                 session.startTestGenerationRequestId,

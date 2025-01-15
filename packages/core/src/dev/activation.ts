@@ -334,7 +334,7 @@ class ObjectEditor {
                 return this.openState(targetContext.secrets, key)
             case 'auth':
                 // Auth memento is determined in a different way
-                return this.openState(getEnvironmentSpecificMemento(), key)
+                return this.openState(getEnvironmentSpecificMemento(globalState), key)
         }
     }
 

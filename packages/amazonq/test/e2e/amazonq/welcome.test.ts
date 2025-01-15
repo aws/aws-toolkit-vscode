@@ -8,8 +8,8 @@ import { qTestingFramework } from './framework/framework'
 import sinon from 'sinon'
 import { Messenger } from './framework/messenger'
 import { MynahUIDataModel } from '@aws/mynah-ui'
-import { assertQuickActions } from './assert'
 import { FeatureContext } from 'aws-core-vscode/shared'
+import { assertContextCommands, assertQuickActions } from './assert'
 
 describe('Amazon Q Welcome page', function () {
     let framework: qTestingFramework
@@ -42,13 +42,7 @@ describe('Amazon Q Welcome page', function () {
     })
 
     it('Shows context commands', async () => {
-        assert.deepStrictEqual(
-            store.contextCommands
-                ?.map((x) => x.commands)
-                .flat()
-                .map((x) => x.command),
-            ['@workspace', '@highlight']
-        )
+        assertContextCommands(tab, ['@workspace', '@highlight'])
     })
 
     describe('shows 3 times', async () => {

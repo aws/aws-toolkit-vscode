@@ -4,7 +4,7 @@
  */
 
 import assert from 'assert'
-import { fromQueryToParameters } from '../../../shared/utilities/uriUtils'
+import { fromQueryToParameters, isValidUrl } from '../../../shared/utilities/uriUtils'
 
 describe('uriUtils', function () {
     it('returns empty when no query parameters are present', function () {
@@ -32,5 +32,17 @@ describe('uriUtils', function () {
                 ['param3', 'value3'],
             ])
         )
+    })
+
+    it('isValidUrl()', function () {
+        assert.strictEqual(isValidUrl(''), false)
+        assert.strictEqual(isValidUrl('test.com'), false)
+        assert.strictEqual(isValidUrl('https://test'), false)
+        assert.strictEqual(isValidUrl('http://test.'), false)
+        assert.strictEqual(isValidUrl('https://test.com http://test2.com'), false)
+
+        assert.strictEqual(isValidUrl('https://test.com'), true)
+        assert.strictEqual(isValidUrl('http://test.com'), true)
+        assert.strictEqual(isValidUrl('http://test.com/path'), true)
     })
 })
