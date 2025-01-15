@@ -16,7 +16,7 @@ import CodeWhispererUserClient, {
 import { CreateUploadUrlError, InvalidSourceZipError, TestGenFailedError, TestGenTimedOutError } from '../models/errors'
 import { getMd5, uploadArtifactToS3 } from './securityScanHandler'
 import { fs, randomUUID, sleep, tempDirPath } from '../../shared'
-import { ShortAnswer, testGenState, UserWrittenCodeTracker } from '..'
+import { ShortAnswer, testGenState } from '../models/model'
 import { ChatSessionManager } from '../../amazonqTest/chat/storages/chatSession'
 import { createCodeWhispererChatStreamingClient } from '../../shared/clients/codewhispererChatClient'
 import { downloadExportResultArchive } from '../../shared/utilities/download'
@@ -24,6 +24,7 @@ import AdmZip from 'adm-zip'
 import path from 'path'
 import { ExportIntent } from '@amzn/codewhisperer-streaming'
 import { glob } from 'glob'
+import { UserWrittenCodeTracker } from '../tracker/userWrittenCodeTracker'
 
 // TODO: Get TestFileName and Framework and to error message
 export function throwIfCancelled() {
