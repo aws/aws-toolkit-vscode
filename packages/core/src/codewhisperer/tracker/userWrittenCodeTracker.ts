@@ -6,12 +6,11 @@
 import * as vscode from 'vscode'
 import { getLogger } from '../../shared/logger/logger'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
-import { TelemetryHelper } from '../util/telemetryHelper'
 import { AuthUtil } from '../util/authUtil'
 import { getSelectedCustomization } from '../util/customizationUtil'
 import { codeWhispererClient as client } from '../client/codewhisperer'
 import { isAwsError } from '../../shared/errors'
-import { CodewhispererLanguage } from '../../shared'
+import { CodewhispererLanguage, globals, undefinedIfEmpty } from '../../shared'
 
 /**
  * This singleton class is mainly used for calculating the user written code
@@ -27,9 +26,9 @@ export class UserWrittenCodeTracker {
     private _lastQInvocationTime: number
 
     static #instance: UserWrittenCodeTracker
-    static copySnippetThreshold = 50
-    static resetQIsEditingTimeoutMs = 2 * 60 * 1000
-    static defaultCheckPeriodMillis = 5 * 60 * 1000
+    private static copySnippetThreshold = 50
+    private static resetQIsEditingTimeoutMs = 2 * 60 * 1000
+    private static defaultCheckPeriodMillis = 5 * 60 * 1000
 
     private constructor() {
         this._userWrittenNewCodeLineCount = new Map<CodewhispererLanguage, number>()
@@ -45,7 +44,7 @@ export class UserWrittenCodeTracker {
     }
 
     public isActive(): boolean {
-        return TelemetryHelper.instance.isTelemetryEnabled() && AuthUtil.instance.isConnected()
+        return globals.telemetry.telemetryEnabled && AuthUtil.instance.isConnected()
     }
 
     // this should be invoked whenever there is a successful Q feature invocation
@@ -87,14 +86,13 @@ export class UserWrittenCodeTracker {
         const selectedCustomization = getSelectedCustomization()
 
         for (const [language, charCount] of this._userWrittenNewCodeCharacterCount) {
-            const lineCount = this._userWrittenNewCodeLineCount.get(language) || 0
+            const lineCount = this.getUserWrittenLines(language)
             if (charCount > 0) {
                 client
                     .sendTelemetryEvent({
                         telemetryEvent: {
                             codeCoverageEvent: {
-                                customizationArn:
-                                    selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
+                                customizationArn: undefinedIfEmpty(selectedCustomization.arn),
                                 programmingLanguage: {
                                     languageName: runtimeLanguageContext.toRuntimeLanguage(language),
                                 },
@@ -185,9 +183,9 @@ export class UserWrittenCodeTracker {
         }
         const language = runtimeLanguageContext.normalizeLanguage(e.document.languageId)
         if (language) {
-            const charCount = this._userWrittenNewCodeCharacterCount.get(language) || 0
+            const charCount = this.getUserWrittenCharacters(language)
             this._userWrittenNewCodeCharacterCount.set(language, charCount + contentChange.text.length)
-            const lineCount = this._userWrittenNewCodeLineCount.get(language) || 0
+            const lineCount = this.getUserWrittenLines(language)
             this._userWrittenNewCodeLineCount.set(language, lineCount + this.countNewLines(contentChange.text))
             // start 5 min data reporting once valid user input is detected
             this.tryStartTimer()
