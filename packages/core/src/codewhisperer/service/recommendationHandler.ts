@@ -207,6 +207,8 @@ export class RecommendationHandler {
             session.requestContext = await EditorContext.buildGenerateRecommendationRequest(editor as vscode.TextEditor)
         }
         const request = session.requestContext.request
+        // record preprocessing end time
+        TelemetryHelper.instance.setPreprocessEndTime()
 
         // set start pos for non pagination call or first pagination call
         if (!pagination || (pagination && page === 0)) {
