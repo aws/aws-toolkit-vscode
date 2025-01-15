@@ -4,7 +4,7 @@
  * the program exits with an error and logs the filtered report to console.
  *
  * Usage:
- *      node filterDuplicates.js run [path_to_git_diff] [path_to_jscpd_report]
+ *      node filterDuplicates.js run [path_to_git_diff] [path_to_jscpd_report] [commit_hash] [repo_name]
  *
  * Tests:
  *      node filterDuplicates.js test
