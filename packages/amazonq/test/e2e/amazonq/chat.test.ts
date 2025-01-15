@@ -18,7 +18,7 @@ describe('Amazon Q Chat', function () {
     let tab: Messenger
     let store: MynahUIDataModel
 
-    const availableCommands: string[] = []
+    const availableCommands: string[] = ['/dev', '/test', '/review', '/doc', '/transform']
 
     before(async function () {
         /**
@@ -60,7 +60,7 @@ describe('Amazon Q Chat', function () {
         assert.deepStrictEqual(store.promptInputPlaceholder, 'Ask a question or enter "/" for quick actions')
     })
 
-    it('sends message', async () => {
+    it('Sends message', async () => {
         tab.addChatMessage({
             prompt: 'What is a lambda',
         })
@@ -70,8 +70,8 @@ describe('Amazon Q Chat', function () {
         assert.deepStrictEqual(chatItems[4].type, 'answer')
     })
 
-    describe('clicks examples', () => {
-        it('click help', async () => {
+    describe('Clicks examples', () => {
+        it('Click help', async () => {
             tab.clickButton('help')
             await tab.waitForText(webviewConstants.helpMessage)
             const chatItems = tab.getChatItems()
