@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import globals from '../extensionGlobals'
+import globals from '../../shared/extensionGlobals'
 
 /**
  * A useful abstraction that does the following:

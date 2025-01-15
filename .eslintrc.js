@@ -206,6 +206,11 @@ module.exports = {
                         message:
                             'Avoid child_process, use ChildProcess from `shared/utilities/processUtils.ts` instead.',
                     },
+                    {
+                        name: '..',
+                        message:
+                            'Avoid importing from index.ts files as it can lead to circular dependencies. Import from the module directly instead.',
+                    },
                 ],
             },
         ],
