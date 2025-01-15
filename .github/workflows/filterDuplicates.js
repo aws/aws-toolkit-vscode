@@ -94,7 +94,7 @@ function formatDuplicates(duplicates, commitHash, repoName) {
         }
     })
     function formUrl(file, commitHash) {
-        return `${baseUrl}blob/${commitHash}/${file.name}#L${file.start}-L${file.end}`
+        return `${baseUrl}/blob/${commitHash}/${file.name}#L${file.start}-L${file.end}`
     }
 }
 
