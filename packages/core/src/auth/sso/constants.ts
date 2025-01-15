@@ -22,3 +22,4 @@ export const ssoUrlFormatRegex =
  * below, so this message is only a warning.
  */
 export const ssoUrlFormatMessage = 'URL possibly invalid. Expected format: https://xxxxxxxxxx.awsapps.com/start'
+export const urlInvalidFormatMessage = 'URL format invalid. Expected format: https://xxxxxxxxxx.com/yyyy'

@@ -279,7 +279,7 @@ import { LoginOption } from './types'
 import { CommonAuthWebview } from './backend'
 import { WebviewClientFactory } from '../../../webviews/client'
 import { Region } from '../../../shared/regions/endpoints'
-import { ssoUrlFormatRegex, ssoUrlFormatMessage } from '../../../auth/sso/constants'
+import { ssoUrlFormatRegex, ssoUrlFormatMessage, urlInvalidFormatMessage } from '../../../auth/sso/constants'
 
 const client = WebviewClientFactory.create<CommonAuthWebview>()
 
@@ -504,7 +504,7 @@ export default defineComponent({
                         console.log('After Validate')
                         return { error: '', warning: ssoUrlFormatMessage }
                     } else {
-                        return { error: 'URL format invalid. Must follow eg: https://xxxxx.com/yyyy', warning: '' }
+                        return { error: urlInvalidFormatMessage, warning: '' }
                     }
                 }
 
