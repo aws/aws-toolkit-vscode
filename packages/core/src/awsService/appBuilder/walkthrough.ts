@@ -148,7 +148,7 @@ export async function getTutorial(
     const appSelected = appMap.get(project + runtime)
     telemetry.record({ action: project + runtime, source: source ?? 'AppBuilderWalkthrough' })
     if (!appSelected) {
-        throw new ToolkitError(`Template '${project}+${runtime}' does not exist, please choose another template.`)
+        throw new ToolkitError(`Template '${project}+${runtime}' does not exist, choose another template.`)
     }
 
     try {
@@ -258,7 +258,7 @@ export async function initWalkthroughProjectCommand() {
         if (!walkthroughSelected || !(typeof walkthroughSelected === 'string')) {
             getLogger().info('No walkthrough selected - exiting')
             void vscode.window.showErrorMessage(
-                localize('AWS.toolkit.lambda.walkthroughNotSelected', 'Please select a template in the walkthrough.')
+                localize('AWS.toolkit.lambda.walkthroughNotSelected', 'Select a template in the walkthrough.')
             )
             return
         }

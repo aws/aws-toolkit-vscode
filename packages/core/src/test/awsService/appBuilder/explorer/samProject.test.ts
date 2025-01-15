@@ -71,7 +71,11 @@ describe('samProject', () => {
 
             const result = await wrapperCall(undefined)
             assert.deepStrictEqual(result, {})
-            assertLogsContain('Error parsing stack name and/or region information: No project folder found', false, 'warn')
+            assertLogsContain(
+                'Error parsing stack name and/or region information: No project folder found',
+                false,
+                'warn'
+            )
         })
 
         it('returns empty object given no samconfig file found', async () => {

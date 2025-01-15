@@ -107,7 +107,7 @@ export async function generateDeployedNode(
                         createPlaceholderItem(
                             localize(
                                 'AWS.appBuilder.explorerNode.unavailableDeployedResource',
-                                '[Failed to retrive deployed resource. Please ensure your AWS account is connected.]'
+                                '[Failed to retrive deployed resource. Ensure your AWS account is connected.]'
                             )
                         ),
                     ]
@@ -156,7 +156,10 @@ export async function generateDeployedNode(
                 getLogger().info('Details are missing or are incomplete for: %O', deployedResource)
                 return [
                     createPlaceholderItem(
-                        localize('AWS.appBuilder.explorerNode.noApps', '[This resource is not yet supported in AppBuilder.]')
+                        localize(
+                            'AWS.appBuilder.explorerNode.noApps',
+                            '[This resource is not yet supported in AppBuilder.]'
+                        )
                     ),
                 ]
         }
@@ -166,7 +169,7 @@ export async function generateDeployedNode(
             createPlaceholderItem(
                 localize(
                     'AWS.appBuilder.explorerNode.unavailableDeployedResource',
-                    '[Failed to retrieve deployed resource. Please ensure stack name, region, and account credentials are correct.]'
+                    '[Failed to retrieve deployed resource. Ensure correct stack name and region are in the samconfig.toml, and that your account is connected.]'
                 )
             ),
         ]

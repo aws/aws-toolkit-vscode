@@ -56,9 +56,12 @@ export async function runOpenHandler(arg: ResourceNode): Promise<void> {
         arg.resource.resource.Runtime
     )
     if (!handlerFile) {
-        throw new ToolkitError(`No handler file found with name "${arg.resource.resource.Handler}". Please ensure the file exists in the expected location."`, {
-            code: 'NoHandlerFound',
-        })
+        throw new ToolkitError(
+            `No handler file found with name "${arg.resource.resource.Handler}". Ensure the file exists in the expected location."`,
+            {
+                code: 'NoHandlerFound',
+            }
+        )
     }
     await vscode.workspace.openTextDocument(handlerFile).then(async (doc) => await vscode.window.showTextDocument(doc))
 }

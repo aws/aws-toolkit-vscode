@@ -45,7 +45,10 @@ export async function getStackName(projectRoot: vscode.Uri): Promise<any> {
                 getLogger().info('Stack name and/or region information not found in samconfig.toml: %O', error)
                 break
             case SamConfigErrorCode.samConfigParseError:
-                getLogger().error(`Error parsing stack name and/or region information from samconfig.toml: ${error.message}. Please ensure the information is correct.`, error)
+                getLogger().error(
+                    `Error parsing stack name and/or region information from samconfig.toml: ${error.message}. Ensure the information is correct.`,
+                    error
+                )
                 void showViewLogsMessage('Encountered an issue reading samconfig.toml')
                 break
             default:
