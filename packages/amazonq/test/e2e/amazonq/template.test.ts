@@ -64,4 +64,4 @@ describe.skip('Amazon Q Test Template', function () {
     describe('sends message', async () => {})
 })
 
-/* jscpd:ignore-end */
+// jscpd:ignore-end

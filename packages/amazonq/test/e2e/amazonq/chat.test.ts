@@ -30,6 +30,7 @@ describe('Amazon Q Chat', function () {
         })
     })
 
+    // jscpd:ignore-start
     beforeEach(() => {
         // Make sure you're logged in before every test
         registerAuthHook('amazonq-test-account')
@@ -51,6 +52,8 @@ describe('Amazon Q Chat', function () {
     it('Shows @workspace', () => {
         assertContextCommands(tab, ['@workspace'])
     })
+
+    // jscpd:ignore-end
 
     it('Shows title', () => {
         assert.deepStrictEqual(store.tabTitle, 'Chat')
