@@ -4,11 +4,11 @@
  */
 
 import path from 'path'
-import { LspResolution, LspResolver } from '../../shared/languageServer/types'
-import { ManifestResolver } from '../../shared/languageServer/manifestResolver'
-import { LanguageServerResolver } from '../../shared/languageServer/lspResolver'
+import { LspResolution, LspResolver } from '../../shared/lsp/types'
+import { ManifestResolver } from '../../shared/lsp/manifestResolver'
+import { LanguageServerResolver } from '../../shared/lsp/lspResolver'
 import { Range } from 'semver'
-import { getNodeExecutableName } from '../../shared/languageServer/utils/platform'
+import { getNodeExecutableName } from '../../shared/lsp/utils/platform'
 import { fs } from '../../shared/fs/fs'
 
 const manifestUrl = 'https://aws-toolkit-language-servers.amazonaws.com/q-context/manifest.json'
