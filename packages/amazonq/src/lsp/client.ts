@@ -12,10 +12,11 @@ import { registerInlineCompletion } from '../inline/completion'
 import { AmazonQLspAuth, notificationTypes, writeEncryptionInit } from './auth'
 import { AuthUtil } from 'aws-core-vscode/codewhisperer'
 import { ConnectionMetadata } from '@aws/language-server-runtimes/protocol'
+import { ResourcePaths } from 'aws-core-vscode/shared'
 
 const localize = nls.loadMessageBundle()
 
-export function startLanguageServer(extensionContext: vscode.ExtensionContext, serverPath: string) {
+export function startLanguageServer(extensionContext: vscode.ExtensionContext, resourcePaths: ResourcePaths) {
     const toDispose = extensionContext.subscriptions
 
     // The debug options for the server
@@ -30,6 +31,8 @@ export function startLanguageServer(extensionContext: vscode.ExtensionContext, s
         ],
     }
 
+    const serverPath = resourcePaths.lsp
+
     // If the extension is launch in debug mode the debug server options are use
     // Otherwise the run options are used
     let serverOptions: ServerOptions = {
@@ -37,7 +40,7 @@ export function startLanguageServer(extensionContext: vscode.ExtensionContext, s
         debug: { module: serverPath, transport: TransportKind.ipc, options: debugOptions },
     }
 
-    const child = cp.spawn('node', [serverPath, ...debugOptions.execArgv])
+    const child = cp.spawn(resourcePaths.node, [serverPath, ...debugOptions.execArgv])
     writeEncryptionInit(child.stdin)
 
     serverOptions = () => Promise.resolve(child)

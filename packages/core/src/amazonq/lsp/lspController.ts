@@ -161,7 +161,7 @@ export class LspController {
         setImmediate(async () => {
             try {
                 const installResult = await new WorkspaceLSPResolver().resolve()
-                await activateLsp(context, path.join(installResult.assetDirectory, 'resources/qserver/lspServer.js'))
+                await activateLsp(context, installResult.resourcePaths)
                 getLogger().info('LspController: LSP activated')
                 void LspController.instance.buildIndex(buildIndexConfig)
                 // log the LSP server CPU and Memory usage per 30 minutes.

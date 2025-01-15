@@ -15,8 +15,16 @@ export interface LspResult {
     assetDirectory: string
 }
 
+export interface ResourcePaths {
+    lsp: string
+    node: string
+}
+export interface LspResolution extends LspResult {
+    resourcePaths: ResourcePaths
+}
+
 export interface LspResolver {
-    resolve(): Promise<LspResult>
+    resolve(): Promise<LspResolution>
 }
 
 export interface TargetContent {
