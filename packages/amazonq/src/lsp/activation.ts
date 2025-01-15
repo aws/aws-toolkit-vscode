@@ -11,7 +11,7 @@ import { ToolkitError } from 'aws-core-vscode/shared'
 export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
     try {
         const installResult = await new AmazonQLSPResolver().resolve()
-        await startLanguageServer(ctx, installResult.executablePaths)
+        await startLanguageServer(ctx, installResult.resourcePaths)
     } catch (err) {
         const e = err as ToolkitError
         void vscode.window.showInformationMessage(`Unable to launch amazonq language server: ${e.message}`)

@@ -33,7 +33,7 @@ export class WorkspaceLSPResolver implements LspResolver {
         // TODO Cleanup old versions of language servers
         return {
             ...installationResult,
-            executablePaths: {
+            resourcePaths: {
                 lsp: path.join(
                     installationResult.assetDirectory,
                     `qserver-${process.platform}-${process.arch}/qserver/lspServer.js`

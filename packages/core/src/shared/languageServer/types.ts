@@ -15,12 +15,12 @@ export interface LspResult {
     assetDirectory: string
 }
 
-export interface ExecutablePaths {
+export interface ResourcePaths {
     lsp: string
     node: string
 }
 export interface LspResolution extends LspResult {
-    executablePaths: ExecutablePaths
+    resourcePaths: ResourcePaths
 }
 
 export interface LspResolver {

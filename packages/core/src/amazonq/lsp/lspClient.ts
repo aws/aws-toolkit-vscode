@@ -32,7 +32,7 @@ import {
 } from './types'
 import { Writable } from 'stream'
 import { CodeWhispererSettings } from '../../codewhisperer/util/codewhispererSettings'
-import { ExecutablePaths, fs, getLogger, globals } from '../../shared'
+import { ResourcePaths, fs, getLogger, globals } from '../../shared'
 
 const localize = nls.loadMessageBundle()
 
@@ -172,7 +172,7 @@ export class LspClient {
  * It will create a output channel named Amazon Q Language Server.
  * This function assumes the LSP server has already been downloaded.
  */
-export async function activate(extensionContext: ExtensionContext, executablePaths: ExecutablePaths) {
+export async function activate(extensionContext: ExtensionContext, resourcePaths: ResourcePaths) {
     LspClient.instance
     const toDispose = extensionContext.subscriptions
 
@@ -195,9 +195,9 @@ export async function activate(extensionContext: ExtensionContext, executablePat
         delete process.env.Q_WORKER_THREADS
     }
 
-    const serverModule = executablePaths.lsp
+    const serverModule = resourcePaths.lsp
 
-    const child = spawn(executablePaths.node, [serverModule, ...debugOptions.execArgv])
+    const child = spawn(resourcePaths.node, [serverModule, ...debugOptions.execArgv])
     // share an encryption key using stdin
     // follow same practice of DEXP LSP server
     writeEncryptionInit(child.stdin)

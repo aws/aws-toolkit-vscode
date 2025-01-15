@@ -27,7 +27,7 @@ export class AmazonQLSPResolver implements LspResolver {
                 assetDirectory: overrideLocation,
                 location: 'override',
                 version: '0.0.0',
-                executablePaths: {
+                resourcePaths: {
                     lsp: overrideLocation,
                     node: getNodeExecutableName(),
                 },
@@ -49,7 +49,7 @@ export class AmazonQLSPResolver implements LspResolver {
         // TODO Cleanup old versions of language servers
         return {
             ...installationResult,
-            executablePaths: {
+            resourcePaths: {
                 lsp: path.join(installationResult.assetDirectory, 'servers/aws-lsp-codewhisperer.js'),
                 node: nodePath,
             },
