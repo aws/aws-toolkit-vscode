@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+// jscpd:ignore-start
 import assert from 'assert'
 import { qTestingFramework } from './framework/framework'
 import sinon from 'sinon'
@@ -62,3 +63,5 @@ describe.skip('Amazon Q Test Template', function () {
 
     describe('sends message', async () => {})
 })
+
+/* jscpd:ignore-end */
