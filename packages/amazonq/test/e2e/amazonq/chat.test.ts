@@ -11,7 +11,7 @@ import { MynahUIDataModel } from '@aws/mynah-ui'
 import { assertContextCommands, assertQuickActions } from './assert'
 import { registerAuthHook, using } from 'aws-core-vscode/test'
 import { loginToIdC } from './utils/setup'
-import { helpMessage } from 'aws-core-vscode/amazonq'
+import { webviewConstants } from 'aws-core-vscode/amazonq'
 
 describe('Amazon Q Chat', function () {
     let framework: qTestingFramework
@@ -73,10 +73,10 @@ describe('Amazon Q Chat', function () {
     describe('clicks examples', () => {
         it('click help', async () => {
             tab.clickButton('help')
-            await tab.waitForText(helpMessage)
+            await tab.waitForText(webviewConstants.helpMessage)
             const chatItems = tab.getChatItems()
             assert.deepStrictEqual(chatItems[4].type, 'answer')
-            assert.deepStrictEqual(chatItems[4].body, helpMessage)
+            assert.deepStrictEqual(chatItems[4].body, webviewConstants.helpMessage)
         })
     })
 })
