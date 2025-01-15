@@ -153,8 +153,6 @@ export class InputBoxPrompter extends Prompter<string> {
             })
             this.inputBox.show()
         }).finally(() => {
-            // TODO: remove the .hide() call when Cloud9 implements dispose
-            this.inputBox.hide()
             this.inputBox.dispose()
         })
 

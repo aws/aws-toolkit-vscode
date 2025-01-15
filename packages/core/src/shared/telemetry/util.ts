@@ -245,7 +245,6 @@ export function getUserAgent(
  */
 export type EnvType =
     | 'cloud9'
-    | 'cloud9-codecatalyst'
     | 'cloudDesktop-amzn'
     | 'codecatalyst'
     | 'local'
@@ -260,10 +259,8 @@ export type EnvType =
  * Returns the identifier for the environment that the extension is running in.
  */
 export async function getComputeEnvType(): Promise<EnvType> {
-    if (isCloud9('classic')) {
+    if (isCloud9()) {
         return 'cloud9'
-    } else if (isCloud9('codecatalyst')) {
-        return 'cloud9-codecatalyst'
     } else if (isInDevEnv()) {
         return 'codecatalyst'
     } else if (isSageMaker()) {

@@ -4,7 +4,6 @@
  */
 
 import * as vscode from 'vscode'
-import { isCloud9 } from '../../shared/extensionUtilities'
 import { Recommendation } from '../client/codewhisperer'
 import { CodeWhispererSettings } from '../util/codewhispererSettings'
 import { findLineToInsertImportStatement } from '../util/importAdderUtil'
@@ -74,8 +73,7 @@ export class ImportAdderProvider implements vscode.CodeLensProvider {
     private isNotEnabled(languageId: string): boolean {
         return (
             !this.supportedLanguages.includes(languageId) ||
-            !CodeWhispererSettings.instance.isImportRecommendationEnabled() ||
-            isCloud9()
+            !CodeWhispererSettings.instance.isImportRecommendationEnabled()
         )
     }
 

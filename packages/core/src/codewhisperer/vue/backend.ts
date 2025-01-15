@@ -8,7 +8,6 @@ import * as os from 'os'
 import * as vscode from 'vscode'
 import * as path from 'path'
 import { VueWebview } from '../../webviews/main'
-import { isCloud9 } from '../../shared/extensionUtilities'
 import globals from '../../shared/extensionGlobals'
 import { telemetry, CodewhispererLanguage, CodewhispererGettingStartedTask } from '../../shared/telemetry/telemetry'
 import { fs } from '../../shared'
@@ -148,7 +147,7 @@ export async function showCodeWhispererWebview(
     }
     const webview = await activePanel!.show({
         title: localize('AWS.view.gettingStartedPage.title', `Learn Amazon Q`),
-        viewColumn: isCloud9() ? vscode.ViewColumn.One : vscode.ViewColumn.Active,
+        viewColumn: vscode.ViewColumn.Active,
     })
 
     if (!subscriptions) {
