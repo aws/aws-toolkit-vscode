@@ -226,8 +226,8 @@ export class TelemetryHelper {
                         completionType: 'LINE',
                         suggestionState: 'EMPTY',
                         recommendationLatencyMilliseconds: 0,
-                        triggerToResponseLatencyMilliseconds: session.timeToFirstRecommendation,
-                        perceivedLatencyMilliseconds: session.perceivedLatency,
+                        triggerToResponseLatencyMilliseconds: this.session.timeToFirstRecommendation,
+                        perceivedLatencyMilliseconds: this.session.perceivedLatency,
                         timestamp: new Date(Date.now()),
                         suggestionReferenceCount: 0,
                         generatedLine: 0,
@@ -388,44 +388,44 @@ export class TelemetryHelper {
             .map((e) => e.codewhispererSuggestionCount)
             .reduce((a, b) => a + b, 0)
 
-            const aggregated: CodewhispererUserTriggerDecision = {
-                codewhispererAutomatedTriggerType: autoTriggerType,
-                codewhispererCharactersAccepted: acceptedRecommendationContent.length,
-                codewhispererClassifierResult: this.classifierResult,
-                codewhispererClassifierThreshold: this.classifierThreshold,
-                codewhispererCompletionType: aggregatedCompletionType,
-                codewhispererCursorOffset: this.sessionDecisions[0].codewhispererCursorOffset,
-                codewhispererCustomizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
-                codewhispererFeatureEvaluations: FeatureConfigProvider.instance.getFeatureConfigsTelemetry(),
-                codewhispererFirstRequestId: this.sessionDecisions[0].codewhispererFirstRequestId,
-                codewhispererGettingStartedTask: this.session.taskType,
-                codewhispererLanguage: language,
-                codewhispererLineNumber: this.sessionDecisions[0].codewhispererLineNumber,
-                codewhispererPreviousSuggestionState: this.prevTriggerDecision,
-                codewhispererSessionId: this.sessionDecisions[0].codewhispererSessionId,
-                codewhispererSuggestionCount: suggestionCount,
-                codewhispererSuggestionImportCount: this.sessionDecisions
-                    .map((e) => e.codewhispererSuggestionImportCount || 0)
-                    .reduce((a, b) => a + b, 0),
-                codewhispererSuggestionState: aggregatedSuggestionState,
-                codewhispererSupplementalContextIsUtg: supplementalContextMetadata?.isUtg,
-                codewhispererSupplementalContextLength: supplementalContextMetadata?.contentsLength,
-                // eslint-disable-next-line id-length
-                codewhispererSupplementalContextStrategyId: supplementalContextMetadata?.strategy,
-                codewhispererSupplementalContextTimeout: supplementalContextMetadata?.isProcessTimeout,
-                codewhispererTimeSinceLastDocumentChange: this.timeSinceLastModification
-                    ? this.timeSinceLastModification
-                    : undefined,
-                codewhispererTimeSinceLastUserDecision: this.lastTriggerDecisionTime
-                    ? performance.now() - this.lastTriggerDecisionTime
-                    : undefined,
-                codewhispererTimeToFirstRecommendation: this.session.timeToFirstRecommendation,
-                codewhispererTriggerCharacter: autoTriggerType === 'SpecialCharacters' ? this.triggerChar : undefined,
-                codewhispererTriggerType: this.sessionDecisions[0].codewhispererTriggerType,
-                codewhispererTypeaheadLength: this.typeAheadLength,
-                credentialStartUrl: this.sessionDecisions[0].credentialStartUrl,
-                traceId: this.traceId,
-            }
+        const aggregated: CodewhispererUserTriggerDecision = {
+            codewhispererAutomatedTriggerType: autoTriggerType,
+            codewhispererCharactersAccepted: acceptedRecommendationContent.length,
+            codewhispererClassifierResult: this.classifierResult,
+            codewhispererClassifierThreshold: this.classifierThreshold,
+            codewhispererCompletionType: aggregatedCompletionType,
+            codewhispererCursorOffset: this.sessionDecisions[0].codewhispererCursorOffset,
+            codewhispererCustomizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
+            codewhispererFeatureEvaluations: FeatureConfigProvider.instance.getFeatureConfigsTelemetry(),
+            codewhispererFirstRequestId: this.sessionDecisions[0].codewhispererFirstRequestId,
+            codewhispererGettingStartedTask: this.session.taskType,
+            codewhispererLanguage: language,
+            codewhispererLineNumber: this.sessionDecisions[0].codewhispererLineNumber,
+            codewhispererPreviousSuggestionState: this.prevTriggerDecision,
+            codewhispererSessionId: this.sessionDecisions[0].codewhispererSessionId,
+            codewhispererSuggestionCount: suggestionCount,
+            codewhispererSuggestionImportCount: this.sessionDecisions
+                .map((e) => e.codewhispererSuggestionImportCount || 0)
+                .reduce((a, b) => a + b, 0),
+            codewhispererSuggestionState: aggregatedSuggestionState,
+            codewhispererSupplementalContextIsUtg: supplementalContextMetadata?.isUtg,
+            codewhispererSupplementalContextLength: supplementalContextMetadata?.contentsLength,
+            // eslint-disable-next-line id-length
+            codewhispererSupplementalContextStrategyId: supplementalContextMetadata?.strategy,
+            codewhispererSupplementalContextTimeout: supplementalContextMetadata?.isProcessTimeout,
+            codewhispererTimeSinceLastDocumentChange: this.timeSinceLastModification
+                ? this.timeSinceLastModification
+                : undefined,
+            codewhispererTimeSinceLastUserDecision: this.lastTriggerDecisionTime
+                ? performance.now() - this.lastTriggerDecisionTime
+                : undefined,
+            codewhispererTimeToFirstRecommendation: this.session.timeToFirstRecommendation,
+            codewhispererTriggerCharacter: autoTriggerType === 'SpecialCharacters' ? this.triggerChar : undefined,
+            codewhispererTriggerType: this.sessionDecisions[0].codewhispererTriggerType,
+            codewhispererTypeaheadLength: this.typeAheadLength,
+            credentialStartUrl: this.sessionDecisions[0].credentialStartUrl,
+            traceId: this.traceId,
+        }
         telemetry.codewhisperer_userTriggerDecision.emit(aggregated)
         this.prevTriggerDecision = this.getAggregatedSuggestionState(this.sessionDecisions)
         this.lastTriggerDecisionTime = performance.now()
@@ -649,7 +649,8 @@ export class TelemetryHelper {
         telemetry.codewhisperer_clientComponentLatency.emit({
             codewhispererAllCompletionsLatency: this._allPaginationEndTime - this.session.sdkApiCallStartTime,
             codewhispererCompletionType: 'Line',
-            codewhispererCredentialFetchingLatency: this.session.sdkApiCallStartTime - this.session.fetchCredentialStartTime,
+            codewhispererCredentialFetchingLatency:
+                this.session.sdkApiCallStartTime - this.session.fetchCredentialStartTime,
             codewhispererCustomizationArn: getSelectedCustomization().arn,
             codewhispererEndToEndLatency: this.session.firstSuggestionShowTime - this.session.invokeSuggestionStartTime,
             codewhispererFirstCompletionLatency: this._sdkApiCallEndTime - this.session.sdkApiCallStartTime,
