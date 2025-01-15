@@ -21,5 +21,4 @@ export const ssoUrlFormatRegex =
  * It is possible for a start url to be a completely custom url that redirects to something that matches the format
  * below, so this message is only a warning.
  */
-export const ssoUrlFormatMessage =
-    'URL possibly invalid. It typically follows the pattern: https://xxxxxxxxxx.awsapps.com/start'
+export const ssoUrlFormatMessage = 'URL possibly invalid. Expected format: https://xxxxxxxxxx.awsapps.com/start'
