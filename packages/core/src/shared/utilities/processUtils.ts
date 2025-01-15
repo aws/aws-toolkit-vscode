@@ -257,6 +257,10 @@ export class ChildProcess {
         return this.#processResult
     }
 
+    public proc(): proc.ChildProcess | undefined {
+        return this.#childProcess
+    }
+
     public pid(): number {
         return this.#childProcess?.pid ?? -1
     }

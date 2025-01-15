@@ -10,7 +10,6 @@
 import * as vscode from 'vscode'
 import * as path from 'path'
 import * as nls from 'vscode-nls'
-import { spawn } from 'child_process' // eslint-disable-line no-restricted-imports
 import * as crypto from 'crypto'
 import * as jose from 'jose'
 
@@ -30,27 +29,13 @@ import {
     GetRepomapIndexJSONRequestType,
     Usage,
 } from './types'
-import { Writable } from 'stream'
 import { CodeWhispererSettings } from '../../codewhisperer/util/codewhispererSettings'
-import { ResourcePaths, fs, getLogger, globals } from '../../shared'
+import { ResourcePaths, createServerOptions, fs, getLogger, globals } from '../../shared'
 
 const localize = nls.loadMessageBundle()
 
 const key = crypto.randomBytes(32)
 
-/**
- * Sends a json payload to the language server, who is waiting to know what the encryption key is.
- * Code reference: https://github.com/aws/language-servers/blob/7da212185a5da75a72ce49a1a7982983f438651a/client/vscode/src/credentialsActivation.ts#L77
- */
-export function writeEncryptionInit(stream: Writable): void {
-    const request = {
-        version: '1.0',
-        mode: 'JWT',
-        key: key.toString('base64'),
-    }
-    stream.write(JSON.stringify(request))
-    stream.write('\n')
-}
 /**
  * LspClient manages the API call between VS Code extension and LSP server
  * It encryptes the payload of API call.
@@ -197,11 +182,6 @@ export async function activate(extensionContext: ExtensionContext, resourcePaths
 
     const serverModule = resourcePaths.lsp
 
-    const child = spawn(resourcePaths.node, [serverModule, ...debugOptions.execArgv])
-    // share an encryption key using stdin
-    // follow same practice of DEXP LSP server
-    writeEncryptionInit(child.stdin)
-
     // If the extension is launch in debug mode the debug server options are use
     // Otherwise the run options are used
     let serverOptions: ServerOptions = {
@@ -209,7 +189,12 @@ export async function activate(extensionContext: ExtensionContext, resourcePaths
         debug: { module: serverModule, transport: TransportKind.ipc, options: debugOptions },
     }
 
-    serverOptions = () => Promise.resolve(child!)
+    serverOptions = createServerOptions({
+        encryptionKey: key,
+        executable: resourcePaths.node,
+        serverModule,
+        execArgv: debugOptions.execArgv,
+    })
 
     const documentSelector = [{ scheme: 'file', language: '*' }]
 
