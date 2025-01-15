@@ -183,7 +183,8 @@ export class Messenger {
         tabID: string,
         triggerID: string,
         triggerPayload: TriggerPayload,
-        fileName: string
+        fileName: string,
+        fileInWorkspace: boolean
     ) {
         let message = ''
         let messageId = response.$metadata.requestId ?? ''
@@ -277,6 +278,7 @@ export class Messenger {
                     TelemetryHelper.instance.sendTestGenerationToolkitEvent(
                         session,
                         false,
+                        fileInWorkspace,
                         'Cancelled',
                         messageId,
                         performance.now() - session.testGenerationStartTime,
@@ -291,6 +293,7 @@ export class Messenger {
                     TelemetryHelper.instance.sendTestGenerationToolkitEvent(
                         session,
                         false,
+                        fileInWorkspace,
                         'Succeeded',
                         messageId,
                         performance.now() - session.testGenerationStartTime
