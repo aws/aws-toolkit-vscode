@@ -838,6 +838,8 @@ export class TestController {
 
     // TODO: Check if there are more cases to endSession if yes create a enum or type for step
     private async endSession(data: any, step: FollowUpTypes) {
+        this.messenger.sendMessage('Unit test generation completed.', data.tabID, 'answer')
+
         const session = this.sessionStorage.getSession()
         if (step === FollowUpTypes.RejectCode) {
             TelemetryHelper.instance.sendTestGenerationToolkitEvent(
