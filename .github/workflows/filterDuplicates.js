@@ -84,6 +84,19 @@ function filterDuplicates(report, changes) {
     return duplicates
 }
 
+function formatDuplicates(duplicates) {
+    return duplicates.map((dupe) => {
+        return {
+            firstFile: dupe.firstFile.name,
+            firstStart: dupe.firstFile.start,
+            firstEnd: dupe.firstFile.end,
+            secondFile: dupe.secondFile.name,
+            secondStart: dupe.secondFile.start,
+            secondEnd: dupe.secondFile.end,
+        }
+    })
+}
+
 async function run() {
     const rawDiffPath = process.argv[3]
     const jscpdReportPath = process.argv[4]
@@ -94,7 +107,7 @@ async function run() {
     console.log('%s files changes', changes.size)
     console.log('%s duplicates found', filteredDuplicates.length)
     if (filteredDuplicates.length > 0) {
-        console.log(filteredDuplicates)
+        console.log(formatDuplicates(filteredDuplicates))
         process.exit(1)
     }
 }
@@ -102,7 +115,6 @@ async function run() {
 /**
  * Mini-test Suite
  */
-console.log(__dirname)
 const testDiffFile = path.resolve(__dirname, 'test/test_diff.txt')
 let testCounter = 0
 function assertEqual(actual, expected) {
