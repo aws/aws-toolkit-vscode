@@ -11,10 +11,10 @@ const localize = nls.loadMessageBundle()
 import * as vscode from 'vscode'
 import * as localizedText from '../shared/localizedText'
 import { Credentials } from '@aws-sdk/types'
-import { SsoAccessTokenProvider } from './sso/ssoAccessTokenProvider'
+import { SsoAccessTokenProvider, SsoTokenProvider } from './sso/ssoAccessTokenProvider'
 import { Timeout } from '../shared/utilities/timeoutUtils'
 import { errorCode, isAwsError, isNetworkError, ToolkitError, UnknownError } from '../shared/errors'
-import { getCache, getCacheFileWatcher } from './sso/cache'
+import { getCache, getCacheFileWatcher, SsoCache } from './sso/cache'
 import { isNonNullable, Mutable } from '../shared/utilities/tsUtils'
 import { SsoToken, truncateStartUrl } from './sso/model'
 import { SsoClient } from './sso/clients'
@@ -69,6 +69,7 @@ import { withTelemetryContext } from '../shared/telemetry/util'
 import { DiskCacheError } from '../shared/utilities/cacheUtils'
 import { setContext } from '../shared/vscode/setContext'
 import { builderIdStartUrl, internalStartUrl } from './sso/constants'
+import { SageMakerSsoTokenProvider } from './sso/sageMakerAccessTokenProvider'
 
 interface AuthService {
     /**
@@ -121,6 +122,10 @@ function keyedDebounce<T, U extends any[], K extends string = string>(
     }
 }
 
+export function useSageMakerSsoProfile() {
+    return isSageMaker() && isAmazonQ()
+}
+
 export interface ConnectionStateChangeEvent {
     readonly id: Connection['id']
     readonly state: ProfileMetadata['connectionState']
@@ -141,17 +146,29 @@ export class Auth implements AuthService, ConnectionManager {
     readonly #onDidChangeConnectionState = new vscode.EventEmitter<ConnectionStateChangeEvent>()
     readonly #onDidUpdateConnection = new vscode.EventEmitter<StatefulConnection>()
     readonly #onDidDeleteConnection = new vscode.EventEmitter<DeletedConnection>()
+    readonly #onDidPrecreateActiveConnection = new vscode.EventEmitter<StatefulConnection>()
     public readonly onDidChangeActiveConnection = this.#onDidChangeActiveConnection.event
     public readonly onDidChangeConnectionState = this.#onDidChangeConnectionState.event
     public readonly onDidUpdateConnection = this.#onDidUpdateConnection.event
     /** Fired when a connection and its metadata has been completely deleted */
     public readonly onDidDeleteConnection = this.#onDidDeleteConnection.event
+    public readonly onDidPrecreateActiveConnection = this.#onDidPrecreateActiveConnection.event
 
     public constructor(
         private readonly store: ProfileStore,
         private readonly iamProfileProvider = CredentialsProviderManager.getInstance(),
         private readonly createSsoClient = SsoClient.create.bind(SsoClient),
-        private readonly createSsoTokenProvider = SsoAccessTokenProvider.create.bind(SsoAccessTokenProvider)
+        private readonly createSsoTokenProvider: (
+            profile: {
+                readonly startUrl: string
+                readonly region: string
+                readonly identifier?: string
+                readonly scopes: string[]
+            },
+            cache?: SsoCache
+        ) => SsoTokenProvider = useSageMakerSsoProfile()
+            ? SageMakerSsoTokenProvider.create.bind(SageMakerSsoTokenProvider)
+            : SsoAccessTokenProvider.create.bind(SsoAccessTokenProvider)
     ) {}
 
     #activeConnection: Mutable<StatefulConnection> | undefined
@@ -322,6 +339,29 @@ export class Auth implements AuthService, ConnectionManager {
         }
 
         return toCollection(load.bind(this))
+    }
+
+    private async createSageMakerSsoConnection(): Promise<StatefulConnection | undefined> {
+        if (!useSageMakerSsoProfile) {
+            return undefined
+        }
+        const id = SageMakerSsoTokenProvider.sagemakerConectionId
+        const { startUrl, region, scopes } = SageMakerSsoTokenProvider.getSagemakerProfile()
+        const profile = createSsoProfile(startUrl, region, scopes)
+        const tokenProvider = this.getSsoTokenProvider(id, {
+            ...profile,
+            metadata: { connectionState: 'unauthenticated' },
+        })
+
+        const token = await tokenProvider.getToken()
+        if (!token) {
+            return undefined
+        }
+
+        const storedProfile = await this.store.addProfile(id, profile)
+        await this.updateConnectionState(id, 'valid')
+        const connection = this.getSsoConnection(id, storedProfile)
+        return connection
     }
 
     public async createConnection(profile: SsoProfile): Promise<SsoConnection>
@@ -786,7 +826,7 @@ export class Auth implements AuthService, ConnectionManager {
             {
                 identifier: tokenIdentifier,
                 startUrl: profile.startUrl,
-                scopes: profile.scopes,
+                scopes: profile.scopes ?? [],
                 region: profile.ssoRegion,
             },
             this.#ssoCache
@@ -859,7 +899,7 @@ export class Auth implements AuthService, ConnectionManager {
 
     private readonly getToken = keyedDebounce(this._getToken.bind(this))
     @withTelemetryContext({ name: '_getToken', class: authClassName })
-    private async _getToken(id: Connection['id'], provider: SsoAccessTokenProvider): Promise<SsoToken> {
+    private async _getToken(id: Connection['id'], provider: SsoTokenProvider): Promise<SsoToken> {
         const token = await provider.getToken().catch((err) => {
             this.throwOnRecoverableError(err)
 
@@ -961,6 +1001,20 @@ export class Auth implements AuthService, ConnectionManager {
         }
 
         return this.authenticate(id, refresh)
+    }
+
+    public async tryAutoConnectSageMaker(): Promise<StatefulConnection | undefined> {
+        try {
+            const sagemakerConnection = await this.createSageMakerSsoConnection()
+            if (!sagemakerConnection) {
+                return undefined
+            }
+
+            await this.useConnection({ id: SageMakerSsoTokenProvider.sagemakerConectionId })
+            return sagemakerConnection
+        } catch (err) {
+            getLogger().warn(`auth: failed to connect using SageMaker auth token: %s`, err)
+        }
     }
 
     public readonly tryAutoConnect = once(async () => this._tryAutoConnect())

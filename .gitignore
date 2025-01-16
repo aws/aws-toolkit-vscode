@@ -31,6 +31,7 @@ src.gen/*
 **/src/shared/telemetry/clienttelemetry.d.ts
 **/src/codewhisperer/client/codewhispererclient.d.ts
 **/src/codewhisperer/client/codewhispereruserclient.d.ts
+**/src/shared/sagemaker/client/sagemakerclient.d.ts
 **/src/amazonqFeatureDev/client/featuredevproxyclient.d.ts
 **/src/auth/sso/oidcclientpkce.d.ts
 

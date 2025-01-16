@@ -3,31 +3,21 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
 import { Auth } from './auth'
 import { LoginManager } from './deprecated/loginManager'
 import { fromString } from './providers/credentials'
 import { getLogger } from '../shared/logger'
 import { ExtensionUse, initializeCredentialsProviderManager } from './utils'
-import { isAmazonQ, isCloud9, isSageMaker } from '../shared/extensionUtilities'
+import { isCloud9, isSageMaker } from '../shared/extensionUtilities'
 import { isInDevEnv } from '../shared/vscode/env'
 import { isWeb } from '../shared/extensionGlobals'
 
-interface SagemakerCookie {
-    authMode?: 'Sso' | 'Iam'
-}
-
 export async function initialize(loginManager: LoginManager): Promise<void> {
-    if (isAmazonQ() && isSageMaker()) {
-        // The command `sagemaker.parseCookies` is registered in VS Code Sagemaker environment.
-        const result = (await vscode.commands.executeCommand('sagemaker.parseCookies')) as SagemakerCookie
-        if (result.authMode !== 'Sso') {
-            initializeCredentialsProviderManager()
-        }
-    }
+    await initializeCredentialsProviderManager()
+
     Auth.instance.onDidChangeActiveConnection(async (conn) => {
         // This logic needs to be moved to `Auth.useConnection` to correctly record `passive`
-        if (conn?.type === 'iam' && conn.state === 'valid') {
+        if (conn?.state === 'valid' && (isSageMaker() || conn?.type === 'iam')) {
             await loginManager.login({ passive: true, providerId: fromString(conn.id) })
         } else {
             await loginManager.logout()

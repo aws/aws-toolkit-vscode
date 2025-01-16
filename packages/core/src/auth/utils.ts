@@ -20,7 +20,7 @@ import { TreeNode } from '../shared/treeview/resourceTreeDataProvider'
 import { createInputBox } from '../shared/ui/inputPrompter'
 import { CredentialSourceId, telemetry } from '../shared/telemetry/telemetry'
 import { createCommonButtons, createExitButton, createHelpButton, createRefreshButton } from '../shared/ui/buttons'
-import { getIdeProperties, isAmazonQ, isCloud9 } from '../shared/extensionUtilities'
+import { getIdeProperties, isAmazonQ, isCloud9, isSageMaker } from '../shared/extensionUtilities'
 import { addScopes, getDependentAuths } from './secondaryAuth'
 import { DevSettings } from '../shared/settings'
 import { createRegionPrompter } from '../shared/ui/common/region'
@@ -60,6 +60,7 @@ import { EnvVarsCredentialsProvider } from './providers/envVarsCredentialsProvid
 import { showMessageWithUrl } from '../shared/utilities/messages'
 import { credentialHelpUrl } from '../shared/constants'
 import { ExtStartUpSource } from '../shared/telemetry/util'
+import { SageMakerSpaceClient } from '../shared/sagemaker/client/sagemaker'
 
 // iam-only excludes Builder ID and IAM Identity Center from the list of valid connections
 // TODO: Understand if "iam" should include these from the list at all
@@ -793,10 +794,22 @@ export function getAuthFormIdsFromConnection(conn?: Connection): AuthFormId[] {
     return authIds
 }
 
-export function initializeCredentialsProviderManager() {
-    const manager = CredentialsProviderManager.getInstance()
-    manager.addProviderFactory(new SharedCredentialsProviderFactory())
-    manager.addProviders(new Ec2CredentialsProvider(), new EcsCredentialsProvider(), new EnvVarsCredentialsProvider())
+export async function initializeCredentialsProviderManager() {
+    let useDefaultCredentials = true
+
+    if (isSageMaker() && isAmazonQ()) {
+        useDefaultCredentials = !(await SageMakerSpaceClient.getInstance().getAmazonQProfileArn())
+    }
+
+    if (useDefaultCredentials) {
+        const manager = CredentialsProviderManager.getInstance()
+        manager.addProviderFactory(new SharedCredentialsProviderFactory())
+        manager.addProviders(
+            new Ec2CredentialsProvider(),
+            new EcsCredentialsProvider(),
+            new EnvVarsCredentialsProvider()
+        )
+    }
 }
 
 export async function getAuthType() {

@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import { getLogger } from '../shared/logger'
 import { cast, Optional } from '../shared/utilities/typeConstructors'
-import { Auth } from './auth'
+import { Auth, useSageMakerSsoProfile } from './auth'
 import { onceChanged } from '../shared/utilities/functionUtils'
 import { isNonNullable } from '../shared/utilities/tsUtils'
 import { ToolIdStateKey } from '../shared/globalState'
@@ -24,7 +24,7 @@ let currentConn: Auth['activeConnection']
 const auths = new Map<string, SecondaryAuth>()
 const multiConnectionListeners = new WeakMap<Auth, vscode.Disposable>()
 const registerAuthListener = (auth: Auth) => {
-    return auth.onDidChangeActiveConnection(async (newConn) => {
+    const activeConnectionChangeListener = auth.onDidChangeActiveConnection(async (newConn) => {
         // When we change the active connection, there may be
         // secondary auths that were dependent on the previous active connection.
         // To ensure secondary auths still work, when we change to a new active connection,
@@ -38,6 +38,21 @@ const registerAuthListener = (auth: Auth) => {
         }
         currentConn = newConn
     })
+
+    const precreatedConnectionCreatedListener = auth.onDidPrecreateActiveConnection(async (newConn) => {
+        await Promise.all(
+            Array.from(auths.values())
+                .filter((a) => !a.hasSavedConnection && a.isUsable(newConn))
+                .map((a) => a.saveConnection(newConn))
+        )
+    })
+
+    return {
+        dispose: () => {
+            activeConnectionChangeListener.dispose()
+            precreatedConnectionCreatedListener.dispose()
+        },
+    }
 }
 
 export function getSecondaryAuth<T extends Connection>(
@@ -306,6 +321,12 @@ export class SecondaryAuth<T extends Connection = Connection> {
                     id: 'undefined',
                     connectionState: 'undefined',
                 })
+                if (useSageMakerSsoProfile()) {
+                    const connection = await this.auth.tryAutoConnectSageMaker()
+                    if (connection) {
+                        this.saveConnection(connection as unknown as T)
+                    }
+                }
                 await this.auth.tryAutoConnect()
                 this.#savedConnection = await this._loadSavedConnection(span)
                 this.#onDidChangeActiveConnection.fire(this.activeConnection)

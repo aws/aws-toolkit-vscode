@@ -8,13 +8,13 @@ import { CredentialType } from '../../shared/telemetry/telemetry.gen'
 import { getStringHash } from '../../shared/utilities/textUtilities'
 import { CredentialsId, CredentialsProvider, CredentialsProviderType } from './credentials'
 import { SsoClient } from '../sso/clients'
-import { SsoAccessTokenProvider } from '../sso/ssoAccessTokenProvider'
+import { SsoTokenProvider } from '../sso/ssoAccessTokenProvider'
 
 export class SsoCredentialsProvider implements CredentialsProvider {
     public constructor(
         private readonly id: CredentialsId,
         private readonly client: SsoClient,
-        private readonly tokenProvider: SsoAccessTokenProvider,
+        private readonly tokenProvider: SsoTokenProvider,
         private readonly accountId: string,
         private readonly roleName: string
     ) {}
