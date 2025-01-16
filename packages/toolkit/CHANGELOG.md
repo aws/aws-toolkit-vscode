@@ -1,3 +1,7 @@
+## 3.42.0 2025-01-15
+
+- **Bug Fix** Auth: Valid StartURL not accepted at login
+
 ## 3.41.0 2025-01-09
 
 - **Removal** Amazon Q: No longer autoinstall Amazon Q if the user had used CodeWhisperer in old Toolkit versions.
