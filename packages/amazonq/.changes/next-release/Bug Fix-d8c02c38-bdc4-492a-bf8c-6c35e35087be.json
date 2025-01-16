@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "User-selected customizations are sometimes not being persisted."
-}
