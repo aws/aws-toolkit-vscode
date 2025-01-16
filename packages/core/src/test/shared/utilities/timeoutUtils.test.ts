@@ -7,7 +7,7 @@ import assert from 'assert'
 import * as FakeTimers from '@sinonjs/fake-timers'
 import * as timeoutUtils from '../../../shared/utilities/timeoutUtils'
 import { installFakeClock, tickPromise } from '../../../test/testUtil'
-import { sleep } from '../../../shared/utilities/timeoutUtils'
+import { sleep, waitUntil } from '../../../shared/utilities/timeoutUtils'
 import { SinonStub, SinonSandbox, createSandbox } from 'sinon'
 
 // We export this describe() so it can be used in the web tests as well
@@ -303,6 +303,17 @@ export const timeoutUtilsDescribe = describe('timeoutUtils', async function () {
             assert.strictEqual(returnValue, testSettings.callGoal)
         })
 
+        it('returns value after multiple function calls WITH backoff', async function () {
+            testSettings.callGoal = 4
+            const returnValue: number | undefined = await timeoutUtils.waitUntil(testFunction, {
+                timeout: 10000,
+                interval: 10,
+                truthy: false,
+                backoff: 2,
+            })
+            assert.strictEqual(returnValue, testSettings.callGoal)
+        })
+
         it('timeout before function returns defined value', async function () {
             testSettings.callGoal = 7
             const returnValue: number | undefined = await timeoutUtils.waitUntil(testFunction, {
@@ -373,6 +384,85 @@ export const timeoutUtilsDescribe = describe('timeoutUtils', async function () {
                 truthy: true,
             })
             assert.strictEqual(result, undefined)
+        })
+    })
+
+    describe('waitUntil w/ retries', function () {
+        let fn: SinonStub
+
+        beforeEach(function () {
+            fn = sandbox.stub()
+        })
+
+        it('retries the function until it succeeds', async function () {
+            fn.onCall(0).throws()
+            fn.onCall(1).throws()
+            fn.onCall(2).resolves('success')
+
+            const res = waitUntil(fn, { retryOnFail: true })
+
+            await clock.tickAsync(timeoutUtils.waitUntilDefaultInterval)
+            assert.strictEqual(fn.callCount, 2)
+            await clock.tickAsync(timeoutUtils.waitUntilDefaultInterval)
+            assert.strictEqual(fn.callCount, 3)
+            assert.strictEqual(await res, 'success')
+        })
+
+        it('retryOnFail ignores truthiness', async function () {
+            fn.resolves(false)
+            const res = waitUntil(fn, { retryOnFail: true, truthy: true })
+            assert.strictEqual(await res, false)
+        })
+
+        // This test causes the following error, cannot figure out why:
+        // `rejected promise not handled within 1 second: Error: last`
+        it('throws the last error if the function always fails, using defaults', async function () {
+            fn.onCall(0).throws() // 0
+            fn.onCall(1).throws() // 500
+            fn.onCall(2).throws(new Error('second last')) // 1000
+            fn.onCall(3).throws(new Error('last')) // 1500
+            fn.onCall(4).resolves('this is not hit')
+
+            const res = waitUntil(fn, { retryOnFail: true })
+
+            await clock.tickAsync(timeoutUtils.waitUntilDefaultInterval) // 500
+            assert.strictEqual(fn.callCount, 2)
+            await clock.tickAsync(timeoutUtils.waitUntilDefaultInterval) // 1000
+            assert.strictEqual(fn.callCount, 3)
+            await clock.tickAsync(timeoutUtils.waitUntilDefaultInterval) // 1500
+            assert.strictEqual(fn.callCount, 4)
+
+            await assert.rejects(res, (e) => e instanceof Error && e.message === 'last')
+        })
+
+        it('honors retry delay + backoff multiplier', async function () {
+            fn.onCall(0).throws(Error('0')) // 0ms
+            fn.onCall(1).throws(Error('1')) // 100ms
+            fn.onCall(2).throws(Error('2')) // 200ms
+            fn.onCall(3).resolves('success') // 400ms
+
+            // Note 701 instead of 700 for timeout. The 1 millisecond allows the final call to execute
+            // since the timeout condition is >= instead of >
+            const res = waitUntil(fn, { timeout: 701, interval: 100, backoff: 2, retryOnFail: true })
+
+            // Check the call count after each iteration, ensuring the function is called
+            // after the correct delay between retries.
+            await clock.tickAsync(99)
+            assert.strictEqual(fn.callCount, 1)
+            await clock.tickAsync(1)
+            assert.strictEqual(fn.callCount, 2)
+
+            await clock.tickAsync(199)
+            assert.strictEqual(fn.callCount, 2)
+            await clock.tickAsync(1)
+            assert.strictEqual(fn.callCount, 3)
+
+            await clock.tickAsync(399)
+            assert.strictEqual(fn.callCount, 3)
+            await clock.tickAsync(1)
+            assert.strictEqual(fn.callCount, 4)
+
+            assert.strictEqual(await res, 'success')
         })
     })
 
