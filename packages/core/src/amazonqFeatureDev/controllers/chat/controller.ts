@@ -566,7 +566,7 @@ export class FeatureDevController {
         if (isStoppedGeneration) {
             this.messenger.sendAnswer({
                 message: ((remainingIterations) => {
-                    if (remainingIterations && totalIterations) {
+                    if (totalIterations !== undefined) {
                         if (remainingIterations <= 0) {
                             return "I stopped generating your code. You don't have more iterations left, however, you can start a new session."
                         } else if (remainingIterations <= 2) {
