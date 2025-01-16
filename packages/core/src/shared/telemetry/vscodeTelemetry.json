@@ -1,6 +1,18 @@
 {
     "types": [
         {
+            "name": "lspSetupStage",
+            "type": "string",
+            "allowedValues": ["fetchManifest", "serverCall", "validate", "activate", "final"],
+            "description": "The stage of the LSP setup process"
+        },
+        {
+            "name": "lspSetupLocation",
+            "type": "string",
+            "allowedValues": ["cache", "remote", "fallback", "override"],
+            "description": "The location of the LSP server"
+        },
+        {
             "name": "amazonGenerateApproachLatency",
             "type": "double",
             "description": "The time it takes to generate approach response"
@@ -358,6 +370,28 @@
         }
     ],
     "metrics": [
+        {
+            "name": "lsp_setup",
+            "description": "LSP setup event",
+            "metadata": [
+                {
+                    "type": "lspSetupStage",
+                    "required": true
+                },
+                {
+                    "type": "lspSetupLocation",
+                    "required": false
+                },
+                {
+                    "type": "duration",
+                    "required": true
+                },
+                {
+                    "type": "result",
+                    "required": true
+                }
+            ]
+        },
         {
             "name": "ide_fileSystem",
             "description": "File System event on execution",
