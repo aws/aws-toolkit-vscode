@@ -177,6 +177,7 @@ export class DiffModel {
         }
 
         const changedFiles = parsePatch(diffContents)
+        getLogger().info('CodeTransformation: parsed patch file successfully')
         // path to the directory containing copy of the changed files in the transformed project
         const pathToTmpSrcDir = this.copyProject(pathToWorkspace, changedFiles)
         transformByQState.setProjectCopyFilePath(pathToTmpSrcDir)
@@ -401,6 +402,7 @@ export class ProposedTransformationExplorer {
                         pathToArchive
                     )
 
+                    getLogger().info('CodeTransformation: downloaded results successfully')
                     // Update downloaded artifact size
                     exportResultsArchiveSize = (await fs.promises.stat(pathToArchive)).size
 
@@ -532,6 +534,7 @@ export class ProposedTransformationExplorer {
 
         vscode.commands.registerCommand('aws.amazonq.transformationHub.reviewChanges.acceptChanges', async () => {
             telemetry.codeTransform_submitSelection.run(() => {
+                getLogger().info('CodeTransformation: accepted changes')
                 diffModel.saveChanges()
                 telemetry.record({
                     codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
@@ -585,6 +588,7 @@ export class ProposedTransformationExplorer {
 
         vscode.commands.registerCommand('aws.amazonq.transformationHub.reviewChanges.rejectChanges', async () => {
             await telemetry.codeTransform_submitSelection.run(async () => {
+                getLogger().info('CodeTransformation: rejected changes')
                 diffModel.rejectChanges()
                 await reset()
                 telemetry.record({
