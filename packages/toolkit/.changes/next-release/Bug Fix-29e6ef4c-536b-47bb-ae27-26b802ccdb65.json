@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Auth: Valid StartURL not accepted at login"
-}
