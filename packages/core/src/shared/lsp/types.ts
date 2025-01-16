@@ -53,6 +53,7 @@ export interface Manifest {
     artifactDescription: string
     isManifestDeprecated: boolean
     versions: LspVersion[]
+    location?: Location
 }
 
 export interface VersionRange {

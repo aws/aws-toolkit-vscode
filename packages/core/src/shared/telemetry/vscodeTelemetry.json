@@ -9,7 +9,7 @@
         {
             "name": "lspSetupLocation",
             "type": "string",
-            "allowedValues": ["cache", "remote", "fallback", "override"],
+            "allowedValues": ["cache", "remote", "fallback", "override", "unknown"],
             "description": "The location of the LSP server"
         },
         {
