@@ -1,3 +1,15 @@
+## 1.43.0 2025-01-15
+
+- **Bug Fix** Auth: Valid StartURL not accepted at login
+- **Bug Fix** Fix inline completion supplementalContext length exceeding maximum in certain cases
+- **Bug Fix** Amazon Q /test: Unit test generation completed message shows after accept/reject action
+- **Bug Fix** /test: for unsupported languages was sometimes unreliable
+- **Bug Fix** User-selected customizations are sometimes not being persisted.
+- **Bug Fix** Amazon q /dev: Remove hard-coded limits and instead rely server-side data to communicate number of code generations remaining
+- **Feature** Adds capability to send new context commands to AB groups
+- **Feature** feat(amazonq): Add error message for updated README too large
+- **Feature** Enhance Q inline completion context fetching for better suggestion quality
+
 ## 1.42.0 2025-01-09
 
 - **Bug Fix** Amazon Q /doc: Improve button text phrasing
