@@ -15,6 +15,7 @@ import { ToolkitError } from '../../shared/errors'
 import { WorkflowStudioEditor } from './workflowStudioEditor'
 import { i18n } from '../../shared/i18n-helper'
 import { isInvalidJsonFile } from '../utils'
+import { ExtContext } from '../../shared'
 
 const isLocalDev = false
 const localhost = 'http://127.0.0.1:3002'
@@ -35,7 +36,7 @@ export class WorkflowStudioEditorProvider implements vscode.CustomTextEditorProv
      * @remarks This should only be called once per extension.
      * @param context The extension context
      */
-    public static register(context: vscode.ExtensionContext): vscode.Disposable {
+    public static register(context: ExtContext): vscode.Disposable {
         const provider = new WorkflowStudioEditorProvider(context)
         return vscode.window.registerCustomEditorProvider(WorkflowStudioEditorProvider.viewType, provider, {
             webviewOptions: {
@@ -45,12 +46,12 @@ export class WorkflowStudioEditorProvider implements vscode.CustomTextEditorProv
         })
     }
 
-    protected extensionContext: vscode.ExtensionContext
+    protected extensionContext: ExtContext
     protected webviewHtml: string
     protected readonly managedVisualizations = new Map<string, WorkflowStudioEditor>()
     protected readonly logger = getLogger()
 
-    constructor(context: vscode.ExtensionContext) {
+    constructor(context: ExtContext) {
         this.extensionContext = context
         this.webviewHtml = ''
     }
@@ -98,7 +99,12 @@ export class WorkflowStudioEditorProvider implements vscode.CustomTextEditorProv
         htmlFileSplit = html.split('<body>')
 
         const script = await fs.readFileText(
-            vscode.Uri.joinPath(this.extensionContext.extensionUri, 'resources', 'js', 'vsCodeExtensionInterface.js')
+            vscode.Uri.joinPath(
+                this.extensionContext.extensionContext.extensionUri,
+                'resources',
+                'js',
+                'vsCodeExtensionInterface.js'
+            )
         )
 
         return `${htmlFileSplit[0]} <body> <script nonce='${nonce}'>${script}</script> ${htmlFileSplit[1]}`
@@ -171,6 +177,6 @@ export class WorkflowStudioEditorProvider implements vscode.CustomTextEditorProv
         const visualizationDisposable = visualization.onVisualizationDisposeEvent(() => {
             this.managedVisualizations.delete(key)
         })
-        this.extensionContext.subscriptions.push(visualizationDisposable)
+        this.extensionContext.extensionContext.subscriptions.push(visualizationDisposable)
     }
 }

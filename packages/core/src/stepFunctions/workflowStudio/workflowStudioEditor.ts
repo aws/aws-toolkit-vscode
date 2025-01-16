@@ -13,6 +13,7 @@ import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { handleMessage } from './handleMessage'
 import { isInvalidJsonFile } from '../utils'
 import { setContext } from '../../shared/vscode/setContext'
+import { ExtContext } from '../../shared'
 
 /**
  * The main class for Workflow Studio Editor. This class handles the creation and management
@@ -37,7 +38,7 @@ export class WorkflowStudioEditor {
     public constructor(
         textDocument: vscode.TextDocument,
         webviewPanel: vscode.WebviewPanel,
-        context: vscode.ExtensionContext,
+        context: ExtContext,
         fileId: string,
         getWebviewContent: () => Promise<string>
     ) {
@@ -70,7 +71,7 @@ export class WorkflowStudioEditor {
         this.getPanel()?.reveal()
     }
 
-    public async refreshPanel(context: vscode.ExtensionContext) {
+    public async refreshPanel(context: ExtContext) {
         if (!this.isPanelDisposed) {
             this.webviewPanel.dispose()
             const document = await vscode.workspace.openTextDocument(this.documentUri)
@@ -90,7 +91,7 @@ export class WorkflowStudioEditor {
      * @param context The extension context.
      * @private
      */
-    private setupWebviewPanel(textDocument: vscode.TextDocument, context: vscode.ExtensionContext) {
+    private setupWebviewPanel(textDocument: vscode.TextDocument, context: ExtContext) {
         const documentUri = textDocument.uri
 
         const contextObject: WebviewContext = {
@@ -131,7 +132,7 @@ export class WorkflowStudioEditor {
                     // Initialise webview panel for Workflow Studio and set up initial content
                     this.webviewPanel.webview.options = {
                         enableScripts: true,
-                        localResourceRoots: [context.extensionUri],
+                        localResourceRoots: [context.extensionContext.extensionUri],
                     }
 
                     // Set the initial html for the webpage
@@ -156,7 +157,7 @@ export class WorkflowStudioEditor {
                     // Handle messages from the webview
                     this.disposables.push(
                         this.webviewPanel.webview.onDidReceiveMessage(async (message) => {
-                            await handleMessage(message, contextObject)
+                            await handleMessage(message, contextObject, context)
                         })
                     )
 

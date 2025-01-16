@@ -6,6 +6,7 @@
 import { StepFunctions } from 'aws-sdk'
 import globals from '../extensionGlobals'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
+import { telemetry } from '../telemetry'
 
 export type StepFunctionsClient = ClassToInterfaceType<DefaultStepFunctionsClient>
 export class DefaultStepFunctionsClient {
@@ -65,6 +66,14 @@ export class DefaultStepFunctionsClient {
         const client = await this.createSdkClient()
 
         return client.updateStateMachine(params).promise()
+    }
+
+    public async testState(params: StepFunctions.TestStateInput): Promise<StepFunctions.TestStateOutput> {
+        return telemetry.stepfunctions_testState.run(async () => {
+            const client = await this.createSdkClient()
+
+            return await client.testState(params).promise()
+        })
     }
 
     private async createSdkClient(): Promise<StepFunctions> {

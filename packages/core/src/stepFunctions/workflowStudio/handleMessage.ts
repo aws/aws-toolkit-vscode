@@ -13,6 +13,7 @@ import {
     FileChangedMessage,
     FileChangeEventTrigger,
     SyncFileRequestMessage,
+    ApiCallRequestMessage,
 } from './types'
 import { submitFeedback } from '../../feedback/vue/submitFeedback'
 import { placeholder } from '../../shared/vscode/commands2'
@@ -20,6 +21,8 @@ import * as nls from 'vscode-nls'
 import vscode from 'vscode'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { ToolkitError } from '../../shared/errors'
+import { WorkflowStudioClient } from './workflowStudioClient'
+import { ExtContext } from '../../shared'
 const localize = nls.loadMessageBundle()
 
 /**
@@ -27,8 +30,9 @@ const localize = nls.loadMessageBundle()
  * calls the appropriate handler function
  * @param message The message received from the webview
  * @param context The context object containing information about the webview environment
+ * @param extensionContext The extension context
  */
-export async function handleMessage(message: Message, context: WebviewContext) {
+export async function handleMessage(message: Message, context: WebviewContext, extensionContext: ExtContext) {
     const { command, messageType } = message
 
     if (messageType === MessageType.REQUEST) {
@@ -47,6 +51,9 @@ export async function handleMessage(message: Message, context: WebviewContext) {
                 break
             case Command.OPEN_FEEDBACK:
                 void submitFeedback(placeholder, 'Workflow Studio')
+                break
+            case Command.API_CALL:
+                void apiCallMessageHandler(message as ApiCallRequestMessage, context, extensionContext)
                 break
         }
     } else if (messageType === MessageType.BROADCAST) {
@@ -182,4 +189,19 @@ async function autoSyncFileMessageHandler(request: SyncFileRequestMessage, conte
             throw ToolkitError.chain(err, 'Could not autosave asl file.', { code: 'AutoSaveFailed' })
         }
     })
+}
+
+/**
+ * Handler for making API calls from the webview and returning the response.
+ * @param request The request message containing the API to call and the parameters
+ * @param context The webview context used for returning the API response to the webview
+ * @param extensionContext The extension context
+ */
+async function apiCallMessageHandler(
+    request: ApiCallRequestMessage,
+    context: WebviewContext,
+    extensionContext: ExtContext
+) {
+    const client = new WorkflowStudioClient(extensionContext.regionProvider.defaultRegionId, context)
+    await client.performApiCall(request)
 }
