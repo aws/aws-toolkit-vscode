@@ -109,9 +109,7 @@ function copyProjectDependencies(dependenciesFolder: FolderInfo, modulePath: str
 
 export async function prepareProjectDependencies(dependenciesFolder: FolderInfo, rootPomPath: string) {
     await setMaven()
-    getLogger().info(
-        `CodeTransformation: about to build project locally with Maven ${transformByQState.getMavenName()}`
-    )
+    getLogger().info('CodeTransformation: running Maven copy-dependencies')
     try {
         copyProjectDependencies(dependenciesFolder, rootPomPath)
     } catch (err) {
@@ -121,6 +119,7 @@ export async function prepareProjectDependencies(dependenciesFolder: FolderInfo,
         )
     }
 
+    getLogger().info('CodeTransformation: running Maven install')
     try {
         installProjectDependencies(dependenciesFolder, rootPomPath)
     } catch (err) {
