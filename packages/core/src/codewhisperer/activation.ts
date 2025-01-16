@@ -99,6 +99,7 @@ import { SecurityIssueTreeViewProvider } from './service/securityIssueTreeViewPr
 import { setContext } from '../shared/vscode/setContext'
 import { syncSecurityIssueWebview } from './views/securityIssue/securityIssueWebview'
 import { detectCommentAboveLine } from '../shared/utilities/commentUtils'
+import { UserWrittenCodeTracker } from './tracker/userWrittenCodeTracker'
 
 let localize: nls.LocalizeFunc
 
@@ -552,7 +553,7 @@ export async function activate(context: ExtContext): Promise<void> {
                 }
 
                 CodeWhispererCodeCoverageTracker.getTracker(e.document.languageId)?.countTotalTokens(e)
-
+                UserWrittenCodeTracker.instance.onTextDocumentChange(e)
                 /**
                  * Handle this keystroke event only when
                  * 1. It is not a backspace

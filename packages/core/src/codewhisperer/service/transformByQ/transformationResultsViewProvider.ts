@@ -26,6 +26,7 @@ import { createCodeWhispererChatStreamingClient } from '../../../shared/clients/
 import { ChatSessionManager } from '../../../amazonqGumby/chat/storages/chatSession'
 import { setContext } from '../../../shared/vscode/setContext'
 import * as codeWhisperer from '../../client/codewhisperer'
+import { UserWrittenCodeTracker } from '../../tracker/userWrittenCodeTracker'
 
 export abstract class ProposedChangeNode {
     abstract readonly resourcePath: string
@@ -424,6 +425,7 @@ export class ProposedTransformationExplorer {
                 throw new Error('Error downloading diff')
             } finally {
                 cwStreamingClient.destroy()
+                UserWrittenCodeTracker.instance.onQFeatureInvoked()
             }
 
             let deserializeErrorMessage = undefined
