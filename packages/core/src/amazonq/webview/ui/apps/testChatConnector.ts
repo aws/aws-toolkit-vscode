@@ -36,7 +36,6 @@ export interface MessageData {
 }
 // TODO: Refactor testChatConnector, scanChatConnector and other apps connector files post RIV
 export class Connector extends BaseConnector {
-    connector: any
     override getTabType(): TabType {
         return 'testgen'
     }
@@ -109,6 +108,9 @@ export class Connector extends BaseConnector {
     }
 
     onFileDiff = (tabID: string, filePath: string, deleted: boolean, messageId?: string): void => {
+        if (this.onChatAnswerReceived === undefined) {
+            return
+        }
         // Open diff view
         this.sendMessageToExtension({
             command: 'open-diff',
@@ -118,7 +120,7 @@ export class Connector extends BaseConnector {
             messageId,
             tabType: 'testgen',
         })
-        this.onChatAnswerReceived?.(
+        this.onChatAnswerReceived(
             tabID,
             {
                 type: ChatItemType.ANSWER,
