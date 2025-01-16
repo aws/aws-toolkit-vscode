@@ -24,6 +24,7 @@ import AdmZip from 'adm-zip'
 import path from 'path'
 import { ExportIntent } from '@amzn/codewhisperer-streaming'
 import { glob } from 'glob'
+import { UserWrittenCodeTracker } from '../tracker/userWrittenCodeTracker'
 
 // TODO: Get TestFileName and Framework and to error message
 export function throwIfCancelled() {
@@ -294,5 +295,6 @@ export async function downloadResultArchive(
         throw e
     } finally {
         cwStreamingClient.destroy()
+        UserWrittenCodeTracker.instance.onQFeatureInvoked()
     }
 }

@@ -66,6 +66,7 @@ import { cancel, confirm } from '../../shared'
 import { startCodeFixGeneration } from './startCodeFixGeneration'
 import { DefaultAmazonQAppInitContext } from '../../amazonq/apps/initContext'
 import path from 'path'
+import { UserWrittenCodeTracker } from '../tracker/userWrittenCodeTracker'
 import { parsePatch } from 'diff'
 
 const MessageTimeOut = 5_000
@@ -451,6 +452,7 @@ export const applySecurityFix = Commands.declare(
         }
         let languageId = undefined
         try {
+            UserWrittenCodeTracker.instance.onQStartsMakingEdits()
             const document = await vscode.workspace.openTextDocument(targetFilePath)
             languageId = document.languageId
             const updatedContent = await getPatchedCode(targetFilePath, suggestedFix.code)
@@ -565,6 +567,7 @@ export const applySecurityFix = Commands.declare(
                 applyFixTelemetryEntry.result,
                 !!targetIssue.suggestedFixes.length
             )
+            UserWrittenCodeTracker.instance.onQFinishesEdits()
         }
     }
 )

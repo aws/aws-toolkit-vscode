@@ -21,6 +21,7 @@ import {
     TestGenerationBuildStep,
     testGenState,
     unitTestGenerationCancelMessage,
+    UserWrittenCodeTracker,
 } from '../../../codewhisperer'
 import {
     fs,
@@ -664,12 +665,14 @@ export class TestController {
             acceptedLines = acceptedLines < 0 ? 0 : acceptedLines
             acceptedChars -= originalContent.length
             acceptedChars = acceptedChars < 0 ? 0 : acceptedChars
+            UserWrittenCodeTracker.instance.onQStartsMakingEdits()
             const document = await vscode.workspace.openTextDocument(absolutePath)
             await applyChanges(
                 document,
                 new vscode.Range(document.lineAt(0).range.start, document.lineAt(document.lineCount - 1).range.end),
                 updatedContent
             )
+            UserWrittenCodeTracker.instance.onQFinishesEdits()
         } else {
             await fs.writeFile(absolutePath, updatedContent)
         }
@@ -831,6 +834,7 @@ export class TestController {
             const chatRequest = triggerPayloadToChatRequest(triggerPayload)
             const client = await createCodeWhispererChatStreamingClient()
             const response = await client.generateAssistantResponse(chatRequest)
+            UserWrittenCodeTracker.instance.onQFeatureInvoked()
             await this.messenger.sendAIResponse(
                 response,
                 session,
