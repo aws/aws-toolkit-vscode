@@ -160,9 +160,14 @@ export class LspController {
         }
         setImmediate(async () => {
             try {
-                const installResult = await new WorkspaceLSPResolver().resolve()
-                await activateLsp(context, installResult.resourcePaths)
-                getLogger().info('LspController: LSP activated')
+                await telemetry.lsp_setup.run(async (span) => {
+                    const startTime = performance.now()
+                    span.record({ lspSetupStage: 'final' })
+                    const installResult = await new WorkspaceLSPResolver().resolve()
+                    await activateLsp(context, installResult.resourcePaths)
+                    getLogger().info('LspController: LSP activated')
+                    span.record({ duration: performance.now() - startTime })
+                })
                 void LspController.instance.buildIndex(buildIndexConfig)
                 // log the LSP server CPU and Memory usage per 30 minutes.
                 globals.clock.setInterval(
