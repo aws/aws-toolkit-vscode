@@ -9,6 +9,7 @@ import { RetryableResourceFetcher } from '../resourcefetcher/httpResourceFetcher
 import { Timeout } from '../utilities/timeoutUtils'
 import globals from '../extensionGlobals'
 import { Manifest } from './types'
+import { telemetry } from '../telemetry'
 
 const logger = getLogger('lsp')
 
@@ -32,11 +33,22 @@ export class ManifestResolver {
      * Fetches the latest manifest, falling back to local cache on failure
      */
     async resolve(): Promise<Manifest> {
-        try {
-            return await this.fetchRemoteManifest()
-        } catch (error) {
-            return await this.getLocalManifest()
-        }
+        return await telemetry.lsp_setup.run(async (span) => {
+            span.record({ lspSetupStage: 'fetchManifest' })
+            const startTime = performance.now()
+
+            try {
+                const result = await this.fetchRemoteManifest()
+                span.record({ lspSetupLocation: 'remote' })
+                return result
+            } catch (error) {
+                span.record({ lspSetupLocation: 'cache' })
+                const result = await this.getLocalManifest()
+                return result
+            } finally {
+                span.record({ duration: performance.now() - startTime })
+            }
+        })
     }
 
     private async fetchRemoteManifest(): Promise<Manifest> {
@@ -55,7 +67,6 @@ export class ManifestResolver {
         const manifest = this.parseManifest(resp.content)
         await this.saveManifest(resp.eTag, resp.content)
         this.checkDeprecation(manifest)
-
         return manifest
     }
 
