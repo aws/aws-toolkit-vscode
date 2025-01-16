@@ -2606,7 +2606,7 @@
         },
         "TransformationJavaRuntimeEnv": {
             "type": "string",
-            "enum": ["JVM_8", "JVM_11", "JVM_17"]
+            "enum": ["JVM_8", "JVM_11", "JVM_17", "JVM_21"]
         },
         "TransformationJob": {
             "type": "structure",
