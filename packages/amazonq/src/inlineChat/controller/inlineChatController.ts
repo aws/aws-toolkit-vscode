@@ -13,6 +13,7 @@ import { computeDecorations } from '../decorations/computeDecorations'
 import { CodelensProvider } from '../codeLenses/codeLenseProvider'
 import { PromptMessage, ReferenceLogController } from 'aws-core-vscode/codewhispererChat'
 import { CodeWhispererSettings } from 'aws-core-vscode/codewhisperer'
+import { UserWrittenCodeTracker } from 'aws-core-vscode/codewhisperer'
 import {
     codicon,
     getIcon,
@@ -84,6 +85,7 @@ export class InlineChatController {
         await this.updateTaskAndLenses(task)
         this.referenceLogController.addReferenceLog(task.codeReferences, task.replacement ? task.replacement : '')
         await this.reset()
+        UserWrittenCodeTracker.instance.onQFinishesEdits()
     }
 
     public async rejectAllChanges(task = this.task, userInvoked: boolean): Promise<void> {
@@ -199,7 +201,7 @@ export class InlineChatController {
                     getLogger().info('inlineQuickPick query is empty')
                     return
                 }
-
+                UserWrittenCodeTracker.instance.onQStartsMakingEdits()
                 this.userQuery = query
                 await textDocumentUtil.addEofNewline(editor)
                 this.task = await this.createTask(query, editor.document, editor.selection)

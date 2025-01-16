@@ -2,7 +2,7 @@
     "name": "amazon-q-vscode",
     "displayName": "Amazon Q",
     "description": "The most capable generative AI-powered assistant for building, operating, and transforming software, with advanced capabilities for managing data and AI",
-    "version": "1.44.0-SNAPSHOT",
+    "version": "1.45.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -198,7 +198,7 @@
                 {
                     "id": "aws.amazonq.notifications",
                     "name": "%AWS.notifications.title%",
-                    "when": "!isCloud9 && !aws.isSageMaker && aws.amazonq.notifications.show"
+                    "when": "!(isCloud9 || aws.isSageMaker) && aws.amazonq.notifications.show"
                 },
                 {
                     "type": "webview",
@@ -314,16 +314,14 @@
                     "group": "navigation@3"
                 },
                 {
-                    "command": "aws.amazonq.transformationHub.summary.reveal",
-                    "when": "view == aws.amazonq.transformationHub"
-                },
-                {
-                    "command": "aws.amazonq.transformationHub.reviewChanges.reveal",
-                    "when": "view == aws.amazonq.transformationHub"
-                },
-                {
                     "command": "aws.amazonq.showTransformationPlanInHub",
-                    "when": "view == aws.amazonq.transformationHub"
+                    "when": "view == aws.amazonq.transformationHub",
+                    "group": "navigation@4"
+                },
+                {
+                    "command": "aws.amazonq.transformationHub.summary.reveal",
+                    "when": "view == aws.amazonq.transformationHub",
+                    "group": "navigation@5"
                 },
                 {
                     "command": "aws.amazonq.transformationHub.reviewChanges.acceptChanges",
@@ -366,9 +364,14 @@
                     "group": "y_toolkitMeta@2"
                 },
                 {
+                    "command": "aws.amazonq.codescan.showGroupingStrategy",
+                    "when": "view == aws.amazonq.SecurityIssuesTree",
+                    "group": "navigation@1"
+                },
+                {
                     "command": "aws.amazonq.security.showFilters",
                     "when": "view == aws.amazonq.SecurityIssuesTree",
-                    "group": "navigation"
+                    "group": "navigation@2"
                 }
             ],
             "view/item/context": [
@@ -493,7 +496,7 @@
                 "command": "_aws.amazonq.notifications.dismiss",
                 "title": "%AWS.generic.dismiss%",
                 "category": "%AWS.amazonq.title%",
-                "enablement": "isCloud9 || !aws.isWebExtHost",
+                "enablement": "view == aws.amazonq.notifications",
                 "icon": "$(remove-close)"
             },
             {
@@ -562,11 +565,6 @@
                 "command": "aws.amazonq.transformationHub.summary.reveal",
                 "title": "%AWS.command.q.transform.showChangeSummary%",
                 "enablement": "gumby.isSummaryAvailable"
-            },
-            {
-                "command": "aws.amazonq.transformationHub.reviewChanges.reveal",
-                "title": "%AWS.command.q.transform.showChanges%",
-                "enablement": "gumby.reviewState == InReview"
             },
             {
                 "command": "aws.amazonq.showTransformationPlanInHub",
@@ -638,19 +636,16 @@
             },
             {
                 "command": "aws.amazonq.stopTransformationInHub",
-                "title": "Stop Transformation",
-                "icon": "$(stop)",
+                "title": "%AWS.command.q.transform.stopJobInHub%",
                 "enablement": "gumby.isStopButtonAvailable"
             },
             {
                 "command": "aws.amazonq.showPlanProgressInHub",
-                "title": "Show Transformation Status",
-                "icon": "$(checklist)"
+                "title": "%AWS.command.q.transform.viewJobProgress%"
             },
             {
                 "command": "aws.amazonq.showHistoryInHub",
-                "title": "Show Job Status",
-                "icon": "$(history)"
+                "title": "%AWS.command.q.transform.viewJobStatus%"
             },
             {
                 "command": "aws.amazonq.selectCustomization",
@@ -724,6 +719,12 @@
             {
                 "command": "aws.amazonq.security.showFilters",
                 "title": "%AWS.command.amazonq.filterIssues%",
+                "icon": "$(filter)",
+                "enablement": "view == aws.amazonq.SecurityIssuesTree"
+            },
+            {
+                "command": "aws.amazonq.codescan.showGroupingStrategy",
+                "title": "%AWS.command.amazonq.groupIssues%",
                 "icon": "$(list-filter)",
                 "enablement": "view == aws.amazonq.SecurityIssuesTree"
             },

@@ -21,6 +21,7 @@ import { FakeExtensionContext } from '../../../fakeExtensionContext'
 import * as samCliRemoteTestEvent from '../../../../shared/sam/cli/samCliRemoteTestEvent'
 import { TestEventsOperation, SamCliRemoteTestEventsParameters } from '../../../../shared/sam/cli/samCliRemoteTestEvent'
 import { assertLogsContain } from '../../../globalSetup.test'
+import { createResponse } from '../../../testUtil'
 
 describe('RemoteInvokeWebview', () => {
     let outputChannel: vscode.OutputChannel
@@ -394,7 +395,7 @@ describe('RemoteInvokeWebview', () => {
             createQuickPickStub.returns({})
             promptUserStub.resolves([{ label: 'testEvent', filename: 'testEvent.json' }])
             verifySinglePickerOutputStub.returns({ label: 'testEvent', filename: 'testEvent.json' })
-            httpFetcherStub.resolves(mockSampleContent)
+            httpFetcherStub.resolves(createResponse(mockSampleContent))
 
             const result = await remoteInvokeWebview.getSamplePayload()
 

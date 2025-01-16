@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit",
     "description": "Including CodeCatalyst, Infrastructure Composer, and support for Lambda, S3, CloudWatch Logs, CloudFormation, and many other services.",
-    "version": "3.43.0-SNAPSHOT",
+    "version": "3.44.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -732,7 +732,7 @@
                 {
                     "id": "aws.toolkit.notifications",
                     "name": "%AWS.notifications.title%",
-                    "when": "!isCloud9 && !aws.isSageMaker && aws.toolkit.notifications.show"
+                    "when": "!(isCloud9 || aws.isSageMaker) && aws.toolkit.notifications.show"
                 },
                 {
                     "id": "aws.amazonq.codewhisperer",
@@ -2231,7 +2231,7 @@
                 "command": "_aws.toolkit.notifications.dismiss",
                 "title": "%AWS.generic.dismiss%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !aws.isWebExtHost",
+                "enablement": "view == aws.toolkit.notifications",
                 "icon": "$(remove-close)"
             },
             {

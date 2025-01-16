@@ -1,3 +1,9 @@
+## 3.43.0 2025-01-23
+
+- **Bug Fix** AppBuilder: Update error messaging to make more legible and actionable
+- **Bug Fix** Notifications: 'Dismiss' command visible in command palette.
+- **Removal** Cloud9: remove special-case logic.
+
 ## 3.42.0 2025-01-15
 
 - **Bug Fix** Auth: Valid StartURL not accepted at login
