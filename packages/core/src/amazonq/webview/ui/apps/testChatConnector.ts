@@ -13,6 +13,7 @@ import { TabsStorage, TabType } from '../storages/tabsStorage'
 import { TestMessageType } from '../../../../amazonqTest/chat/views/connector/connector'
 import { ChatPayload } from '../connector'
 import { BaseConnector, BaseConnectorProps } from './baseConnector'
+import { FollowUpTypes } from '../../../commons/types'
 
 export interface ConnectorProps extends BaseConnectorProps {
     sendMessageToExtension: (message: ExtensionMessage) => void
@@ -35,6 +36,7 @@ export interface MessageData {
 }
 // TODO: Refactor testChatConnector, scanChatConnector and other apps connector files post RIV
 export class Connector extends BaseConnector {
+    connector: any
     override getTabType(): TabType {
         return 'testgen'
     }
@@ -107,15 +109,40 @@ export class Connector extends BaseConnector {
     }
 
     onFileDiff = (tabID: string, filePath: string, deleted: boolean, messageId?: string): void => {
-        // TODO: add this back once we can advance flow from here
-        // this.sendMessageToExtension({
-        //     command: 'open-diff',
-        //     tabID,
-        //     filePath,
-        //     deleted,
-        //     messageId,
-        //     tabType: 'testgen',
-        // })
+        // Open diff view
+        this.sendMessageToExtension({
+            command: 'open-diff',
+            tabID,
+            filePath,
+            deleted,
+            messageId,
+            tabType: 'testgen',
+        })
+        this.onChatAnswerReceived?.(
+            tabID,
+            {
+                type: ChatItemType.ANSWER,
+                messageId: messageId,
+                followUp: {
+                    text: ' ',
+                    options: [
+                        {
+                            type: FollowUpTypes.AcceptCode,
+                            pillText: 'Accept',
+                            status: 'success',
+                            icon: MynahIcons.OK,
+                        },
+                        {
+                            type: FollowUpTypes.RejectCode,
+                            pillText: 'Reject',
+                            status: 'error',
+                            icon: MynahIcons.REVERT,
+                        },
+                    ],
+                },
+            },
+            {}
+        )
     }
 
     private processChatMessage = async (messageData: any): Promise<void> => {
