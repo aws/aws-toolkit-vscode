@@ -50,7 +50,7 @@ import { once } from '../../shared/utilities/functionUtils'
 import { focusAmazonQPanel } from '../../codewhispererChat/commands/registerCommands'
 import { removeDiagnostic } from '../service/diagnosticsProvider'
 import { SsoAccessTokenProvider } from '../../auth/sso/ssoAccessTokenProvider'
-import { ToolkitError, getTelemetryReason, getTelemetryReasonDesc } from '../../shared/errors'
+import { ToolkitError, getErrorMsg, getTelemetryReason, getTelemetryReasonDesc } from '../../shared/errors'
 import { isRemoteWorkspace } from '../../shared/vscode/env'
 import { isBuilderIdConnection } from '../../auth/connection'
 import globals from '../../shared/extensionGlobals'
@@ -681,7 +681,8 @@ export const generateFix = Commands.declare(
                         })
                     await updateSecurityIssueWebview({
                         isGenerateFixLoading: true,
-                        isGenerateFixError: false,
+                        // eslint-disable-next-line unicorn/no-null
+                        generateFixError: null,
                         context: context.extensionContext,
                         filePath: targetFilePath,
                         shouldRefreshView: false,
@@ -738,25 +739,27 @@ export const generateFix = Commands.declare(
                     SecurityIssueProvider.instance.updateIssue(updatedIssue, targetFilePath)
                     SecurityIssueTreeViewProvider.instance.refresh()
                 } catch (err) {
+                    const error = err instanceof Error ? err : new TypeError('Unexpected error')
                     await updateSecurityIssueWebview({
                         issue: targetIssue,
                         isGenerateFixLoading: false,
-                        isGenerateFixError: true,
+                        generateFixError: getErrorMsg(error, true),
                         filePath: targetFilePath,
                         context: context.extensionContext,
-                        shouldRefreshView: true,
+                        shouldRefreshView: false,
                     })
                     SecurityIssueProvider.instance.updateIssue(targetIssue, targetFilePath)
                     SecurityIssueTreeViewProvider.instance.refresh()
                     throw err
+                } finally {
+                    telemetry.record({
+                        component: targetSource,
+                        detectorId: targetIssue.detectorId,
+                        findingId: targetIssue.findingId,
+                        ruleId: targetIssue.ruleId,
+                        variant: refresh ? 'refresh' : undefined,
+                    })
                 }
-                telemetry.record({
-                    component: targetSource,
-                    detectorId: targetIssue.detectorId,
-                    findingId: targetIssue.findingId,
-                    ruleId: targetIssue.ruleId,
-                    variant: refresh ? 'refresh' : undefined,
-                })
             })
         }
 )

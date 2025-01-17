@@ -6,13 +6,14 @@
 import { CodeWhispererUserClient } from '../indexNode'
 import * as CodeWhispererConstants from '../models/constants'
 import { codeFixState } from '../models/model'
-import { getLogger, sleep } from '../../shared'
+import { getLogger, isAwsError, sleep } from '../../shared'
 import { ArtifactMap, CreateUploadUrlRequest, DefaultCodeWhispererClient } from '../client/codewhisperer'
 import {
     CodeFixJobStoppedError,
     CodeFixJobTimedOutError,
     CreateCodeFixError,
     CreateUploadUrlError,
+    MonthlyCodeFixLimitError,
 } from '../models/errors'
 import { uploadArtifactToS3 } from './securityScanHandler'
 
@@ -28,8 +29,8 @@ export async function getPresignedUrlAndUpload(
     }
     getLogger().verbose(`Prepare for uploading src context...`)
     const srcResp = await client.createUploadUrl(srcReq).catch((err) => {
-        getLogger().error(`Failed getting presigned url for uploading src context. Request id: ${err.requestId}`)
-        throw new CreateUploadUrlError(err)
+        getLogger().error('Failed getting presigned url for uploading src context. %O', err)
+        throw new CreateUploadUrlError(err.message)
     })
     getLogger().verbose(`CreateUploadUrlRequest requestId: ${srcResp.$response.requestId}`)
     getLogger().verbose(`Complete Getting presigned Url for uploading src context.`)
@@ -60,7 +61,10 @@ export async function createCodeFixJob(
     }
 
     const resp = await client.startCodeFixJob(req).catch((err) => {
-        getLogger().error(`Failed creating code fix job. Request id: ${err.requestId}`)
+        getLogger().error('Failed creating code fix job. %O', err)
+        if (isAwsError(err) && err.code === 'ThrottlingException' && err.message.includes('reached for this month')) {
+            throw new MonthlyCodeFixLimitError()
+        }
         throw new CreateCodeFixError()
     })
     getLogger().info(`AmazonQ generate fix Request id: ${resp.$response.requestId}`)
