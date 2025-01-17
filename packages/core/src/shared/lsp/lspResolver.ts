@@ -164,26 +164,43 @@ export class LanguageServerResolver {
             await fs.mkdir(downloadDirectory)
         }
 
-        const downloadTasks = contents.map(async (content) => {
-            // TODO This should be using the retryable http library but it doesn't seem to support zips right now
-            const res = await request.fetch('GET', content.url).response
-            if (!res.ok || !res.body) {
-                return false
-            }
+        const fetchResults = await Promise.all(
+            contents.map(async (content) => {
+                return {
+                    res: await request.fetch('GET', content.url).response,
+                    hash: content.hashes[0],
+                    filename: content.filename,
+                }
+            })
+        )
+        const filesToDownload = (
+            await Promise.all(
+                fetchResults.flatMap(async (fetchResult) => {
+                    if (!fetchResult.res.ok || !fetchResult.res.body) {
+                        return []
+                    }
 
-            const arrBuffer = await res.arrayBuffer()
-            const data = Buffer.from(arrBuffer)
+                    const arrBuffer = await fetchResult.res.arrayBuffer()
+                    const data = Buffer.from(arrBuffer)
 
-            const hash = createHash('sha384', data)
-            if (hash === content.hashes[0]) {
-                await fs.writeFile(`${downloadDirectory}/${content.filename}`, data)
-                return true
-            }
+                    const hash = createHash('sha384', data)
+                    if (hash === fetchResult.hash) {
+                        return [{ filename: fetchResult.filename, data }]
+                    }
+                    return []
+                })
+            )
+        ).flat()
+
+        if (filesToDownload.length !== contents.length) {
             return false
-        })
-        const downloadResults = await Promise.all(downloadTasks)
-        const downloadResult = downloadResults.every(Boolean)
-        return downloadResult && this.extractZipFilesFromRemote(downloadDirectory)
+        }
+
+        for (const file of filesToDownload) {
+            await fs.writeFile(`${downloadDirectory}/${file.filename}`, file.data)
+        }
+
+        return this.extractZipFilesFromRemote(downloadDirectory)
     }
 
     private async extractZipFilesFromRemote(downloadDirectory: string) {
