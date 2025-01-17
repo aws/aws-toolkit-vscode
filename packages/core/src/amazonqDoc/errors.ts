@@ -7,16 +7,16 @@ import { ToolkitError } from '../shared/errors'
 import { i18n } from '../shared/i18n-helper'
 
 export class DocServiceError extends ToolkitError {
-    remainingIterations: number
-    constructor(message: string, code: string, remainingIterations: number) {
+    remainingIterations?: number
+    constructor(message: string, code: string, remainingIterations?: number) {
         super(message, { code })
         this.remainingIterations = remainingIterations
     }
 }
 
 export class ReadmeTooLargeError extends DocServiceError {
-    constructor(remainingIterations: number) {
-        super(i18n('AWS.amazonq.doc.error.readmeTooLarge'), ReadmeTooLargeError.name, remainingIterations)
+    constructor() {
+        super(i18n('AWS.amazonq.doc.error.readmeTooLarge'), ReadmeTooLargeError.name)
     }
 }
 
@@ -27,18 +27,14 @@ export class ReadmeUpdateTooLargeError extends DocServiceError {
 }
 
 export class WorkspaceEmptyError extends DocServiceError {
-    constructor(remainingIterations: number) {
-        super(i18n('AWS.amazonq.doc.error.workspaceEmpty'), WorkspaceEmptyError.name, remainingIterations)
+    constructor() {
+        super(i18n('AWS.amazonq.doc.error.workspaceEmpty'), WorkspaceEmptyError.name)
     }
 }
 
 export class NoChangeRequiredException extends DocServiceError {
-    constructor(remainingIterations: number) {
-        super(
-            i18n('AWS.amazonq.doc.error.noChangeRequiredException'),
-            NoChangeRequiredException.name,
-            remainingIterations
-        )
+    constructor() {
+        super(i18n('AWS.amazonq.doc.error.noChangeRequiredException'), NoChangeRequiredException.name)
     }
 }
 
@@ -49,8 +45,8 @@ export class PromptRefusalException extends DocServiceError {
 }
 
 export class ContentLengthError extends DocServiceError {
-    constructor(remainingIterations: number) {
-        super(i18n('AWS.amazonq.doc.error.contentLengthError'), ContentLengthError.name, remainingIterations)
+    constructor() {
+        super(i18n('AWS.amazonq.doc.error.contentLengthError'), ContentLengthError.name)
     }
 }
 

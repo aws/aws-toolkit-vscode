@@ -148,16 +148,16 @@ abstract class CodeGenBase {
                     messenger.sendUpdatePromptProgress(this.tabID, null)
                     switch (true) {
                         case codegenResult.codeGenerationStatusDetail?.includes('README_TOO_LARGE'): {
-                            throw new ReadmeTooLargeError(codeGenerationRemainingIterationCount)
+                            throw new ReadmeTooLargeError()
                         }
                         case codegenResult.codeGenerationStatusDetail?.includes('README_UPDATE_TOO_LARGE'): {
                             throw new ReadmeUpdateTooLargeError(codeGenerationRemainingIterationCount)
                         }
                         case codegenResult.codeGenerationStatusDetail?.includes('WORKSPACE_TOO_LARGE'): {
-                            throw new ContentLengthError(codeGenerationRemainingIterationCount)
+                            throw new ContentLengthError()
                         }
                         case codegenResult.codeGenerationStatusDetail?.includes('WORKSPACE_EMPTY'): {
-                            throw new WorkspaceEmptyError(codeGenerationRemainingIterationCount)
+                            throw new WorkspaceEmptyError()
                         }
                         case codegenResult.codeGenerationStatusDetail?.includes('PROMPT_UNRELATED'): {
                             throw new PromptUnrelatedError(codeGenerationRemainingIterationCount)
@@ -177,12 +177,11 @@ abstract class CodeGenBase {
                         }
                         case codegenResult.codeGenerationStatusDetail?.includes('EmptyPatch'): {
                             if (codegenResult.codeGenerationStatusDetail?.includes('NO_CHANGE_REQUIRED')) {
-                                throw new NoChangeRequiredException(codeGenerationRemainingIterationCount)
+                                throw new NoChangeRequiredException()
                             }
                             throw new DocServiceError(
                                 i18n('AWS.amazonq.doc.error.docGen.default'),
-                                'EmptyPatchException',
-                                codeGenerationRemainingIterationCount
+                                'EmptyPatchException'
                             )
                         }
                         case codegenResult.codeGenerationStatusDetail?.includes('Throttling'): {
