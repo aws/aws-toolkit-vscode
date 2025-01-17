@@ -1,4 +1,4 @@
 {
 	"type": "Bug Fix",
-	"description": "Enabled users to view diffs by clicking files in the file tree, aligning the behavior with the 'View Diff' button."
+	"description": "`/test`: view diffs by clicking files in the file tree, aligning the behavior with the 'View Diff' button."
 }
