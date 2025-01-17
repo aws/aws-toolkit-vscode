@@ -33,7 +33,6 @@ import {
 import { Writable } from 'stream'
 import { CodeWhispererSettings } from '../../codewhisperer/util/codewhispererSettings'
 import { ResourcePaths, fs, getLogger, globals } from '../../shared'
-import { telemetry } from '../../shared/telemetry'
 
 const localize = nls.loadMessageBundle()
 
@@ -174,108 +173,103 @@ export class LspClient {
  * This function assumes the LSP server has already been downloaded.
  */
 export async function activate(extensionContext: ExtensionContext, resourcePaths: ResourcePaths) {
-    return await telemetry.languageServer_setup.run(async (span) => {
-        span.record({ languageServerSetupStage: 'launch' })
-        const startTime = performance.now()
-        LspClient.instance
-        const toDispose = extensionContext.subscriptions
+    LspClient.instance
+    const toDispose = extensionContext.subscriptions
 
-        let rangeFormatting: Disposable | undefined
-        // The debug options for the server
-        // --inspect=6009: runs the server in Node's Inspector mode so VS Code can attach to the server for debugging
-        const debugOptions = { execArgv: ['--nolazy', '--preserve-symlinks', '--stdio'] }
+    let rangeFormatting: Disposable | undefined
+    // The debug options for the server
+    // --inspect=6009: runs the server in Node's Inspector mode so VS Code can attach to the server for debugging
+    const debugOptions = { execArgv: ['--nolazy', '--preserve-symlinks', '--stdio'] }
 
-        const workerThreads = CodeWhispererSettings.instance.getIndexWorkerThreads()
-        const gpu = CodeWhispererSettings.instance.isLocalIndexGPUEnabled()
+    const workerThreads = CodeWhispererSettings.instance.getIndexWorkerThreads()
+    const gpu = CodeWhispererSettings.instance.isLocalIndexGPUEnabled()
 
-        if (gpu) {
-            process.env.Q_ENABLE_GPU = 'true'
-        } else {
-            delete process.env.Q_ENABLE_GPU
-        }
-        if (workerThreads > 0 && workerThreads < 100) {
-            process.env.Q_WORKER_THREADS = workerThreads.toString()
-        } else {
-            delete process.env.Q_WORKER_THREADS
-        }
+    if (gpu) {
+        process.env.Q_ENABLE_GPU = 'true'
+    } else {
+        delete process.env.Q_ENABLE_GPU
+    }
+    if (workerThreads > 0 && workerThreads < 100) {
+        process.env.Q_WORKER_THREADS = workerThreads.toString()
+    } else {
+        delete process.env.Q_WORKER_THREADS
+    }
 
-        const serverModule = resourcePaths.lsp
+    const serverModule = resourcePaths.lsp
 
-        const child = spawn(resourcePaths.node, [serverModule, ...debugOptions.execArgv])
-        // share an encryption key using stdin
-        // follow same practice of DEXP LSP server
-        writeEncryptionInit(child.stdin)
+    const child = spawn(resourcePaths.node, [serverModule, ...debugOptions.execArgv])
+    // share an encryption key using stdin
+    // follow same practice of DEXP LSP server
+    writeEncryptionInit(child.stdin)
 
-        // If the extension is launch in debug mode the debug server options are use
-        // Otherwise the run options are used
-        let serverOptions: ServerOptions = {
-            run: { module: serverModule, transport: TransportKind.ipc },
-            debug: { module: serverModule, transport: TransportKind.ipc, options: debugOptions },
-        }
+    // If the extension is launch in debug mode the debug server options are use
+    // Otherwise the run options are used
+    let serverOptions: ServerOptions = {
+        run: { module: serverModule, transport: TransportKind.ipc },
+        debug: { module: serverModule, transport: TransportKind.ipc, options: debugOptions },
+    }
 
-        serverOptions = () => Promise.resolve(child!)
+    serverOptions = () => Promise.resolve(child!)
 
-        const documentSelector = [{ scheme: 'file', language: '*' }]
+    const documentSelector = [{ scheme: 'file', language: '*' }]
 
-        // Options to control the language client
-        const clientOptions: LanguageClientOptions = {
-            // Register the server for json documents
-            documentSelector,
-            initializationOptions: {
-                handledSchemaProtocols: ['file', 'untitled'], // language server only loads file-URI. Fetching schemas with other protocols ('http'...) are made on the client.
-                provideFormatter: false, // tell the server to not provide formatting capability and ignore the `aws.stepfunctions.asl.format.enable` setting.
-                // this is used by LSP to determine index cache path, move to this folder so that when extension updates index is not deleted.
-                extensionPath: path.join(fs.getUserHomeDir(), '.aws', 'amazonq', 'cache'),
-            },
-            // Log to the Amazon Q Logs so everything is in a single channel
-            // TODO: Add prefix to the language server logs so it is easier to search
-            outputChannel: globals.logOutputChannel,
-        }
+    // Options to control the language client
+    const clientOptions: LanguageClientOptions = {
+        // Register the server for json documents
+        documentSelector,
+        initializationOptions: {
+            handledSchemaProtocols: ['file', 'untitled'], // language server only loads file-URI. Fetching schemas with other protocols ('http'...) are made on the client.
+            provideFormatter: false, // tell the server to not provide formatting capability and ignore the `aws.stepfunctions.asl.format.enable` setting.
+            // this is used by LSP to determine index cache path, move to this folder so that when extension updates index is not deleted.
+            extensionPath: path.join(fs.getUserHomeDir(), '.aws', 'amazonq', 'cache'),
+        },
+        // Log to the Amazon Q Logs so everything is in a single channel
+        // TODO: Add prefix to the language server logs so it is easier to search
+        outputChannel: globals.logOutputChannel,
+    }
 
-        // Create the language client and start the client.
-        LspClient.instance.client = new LanguageClient(
-            'amazonq',
-            localize('amazonq.server.name', 'Amazon Q Language Server'),
-            serverOptions,
-            clientOptions
-        )
-        LspClient.instance.client.registerProposedFeatures()
+    // Create the language client and start the client.
+    LspClient.instance.client = new LanguageClient(
+        'amazonq',
+        localize('amazonq.server.name', 'Amazon Q Language Server'),
+        serverOptions,
+        clientOptions
+    )
+    LspClient.instance.client.registerProposedFeatures()
 
-        const disposable = LspClient.instance.client.start()
-        toDispose.push(disposable)
+    const disposable = LspClient.instance.client.start()
+    toDispose.push(disposable)
 
-        let savedDocument: vscode.Uri | undefined = undefined
+    let savedDocument: vscode.Uri | undefined = undefined
 
-        toDispose.push(
-            vscode.workspace.onDidSaveTextDocument((document) => {
-                if (document.uri.scheme !== 'file') {
-                    return
-                }
-                savedDocument = document.uri
-            }),
-            vscode.window.onDidChangeActiveTextEditor((editor) => {
-                if (savedDocument && editor && editor.document.uri.fsPath !== savedDocument.fsPath) {
-                    void LspClient.instance.updateIndex([savedDocument.fsPath], 'update')
-                }
-            }),
-            vscode.workspace.onDidCreateFiles((e) => {
-                void LspClient.instance.updateIndex(
-                    e.files.map((f) => f.fsPath),
-                    'add'
-                )
-            }),
-            vscode.workspace.onDidDeleteFiles((e) => {
-                void LspClient.instance.updateIndex(
-                    e.files.map((f) => f.fsPath),
-                    'remove'
-                )
-            })
-        )
-        void LspClient.instance.client.onReady().then(() => {
-            const disposableFunc = { dispose: () => rangeFormatting?.dispose() as void }
-            toDispose.push(disposableFunc)
+    toDispose.push(
+        vscode.workspace.onDidSaveTextDocument((document) => {
+            if (document.uri.scheme !== 'file') {
+                return
+            }
+            savedDocument = document.uri
+        }),
+        vscode.window.onDidChangeActiveTextEditor((editor) => {
+            if (savedDocument && editor && editor.document.uri.fsPath !== savedDocument.fsPath) {
+                void LspClient.instance.updateIndex([savedDocument.fsPath], 'update')
+            }
+        }),
+        vscode.workspace.onDidCreateFiles((e) => {
+            void LspClient.instance.updateIndex(
+                e.files.map((f) => f.fsPath),
+                'add'
+            )
+        }),
+        vscode.workspace.onDidDeleteFiles((e) => {
+            void LspClient.instance.updateIndex(
+                e.files.map((f) => f.fsPath),
+                'remove'
+            )
         })
-        span.record({ duration: performance.now() - startTime })
+    )
+    void LspClient.instance.client.onReady().then(() => {
+        const disposableFunc = { dispose: () => rangeFormatting?.dispose() as void }
+        toDispose.push(disposableFunc)
     })
 }
 

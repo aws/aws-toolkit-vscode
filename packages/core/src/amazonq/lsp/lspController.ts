@@ -15,6 +15,7 @@ import { isCloud9 } from '../../shared/extensionUtilities'
 import globals, { isWeb } from '../../shared/extensionGlobals'
 import { isAmazonInternalOs } from '../../shared/vscode/env'
 import { WorkspaceLSPResolver } from './workspaceInstaller'
+import { lspSetupStage } from './util'
 
 export interface Chunk {
     readonly filePath: string
@@ -160,13 +161,10 @@ export class LspController {
         }
         setImmediate(async () => {
             try {
-                await telemetry.languageServer_setup.run(async (span) => {
-                    const startTime = performance.now()
-                    span.record({ languageServerSetupStage: 'final' })
+                await lspSetupStage('final', async () => {
                     const installResult = await new WorkspaceLSPResolver().resolve()
-                    await activateLsp(context, installResult.resourcePaths)
+                    await lspSetupStage('launch', async () => activateLsp(context, installResult.resourcePaths))
                     getLogger().info('LspController: LSP activated')
-                    span.record({ duration: performance.now() - startTime })
                 })
                 void LspController.instance.buildIndex(buildIndexConfig)
                 // log the LSP server CPU and Memory usage per 30 minutes.

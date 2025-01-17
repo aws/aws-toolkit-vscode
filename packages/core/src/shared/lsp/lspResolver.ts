@@ -13,7 +13,7 @@ import { TargetContent, logger, LspResult, LspVersion, Manifest } from './types'
 import { getApplicationSupportFolder } from '../vscode/env'
 import { createHash } from '../crypto'
 import request from '../request'
-import { telemetry } from '../telemetry'
+import { lspSetupStage } from '../../amazonq/lsp/util'
 
 export class LanguageServerResolver {
     constructor(
@@ -187,13 +187,7 @@ export class LanguageServerResolver {
             }
             return []
         })
-        const filesToDownload = await telemetry.languageServer_setup.run(async (span) => {
-            span.record({ languageServerSetupStage: 'validate' })
-            const startTime = performance.now()
-            const result = (await Promise.all(verifyTasks)).flat()
-            span.record({ duration: performance.now() - startTime })
-            return result
-        })
+        const filesToDownload = await lspSetupStage('validate', async () => (await Promise.all(verifyTasks)).flat())
 
         if (filesToDownload.length !== contents.length) {
             return false

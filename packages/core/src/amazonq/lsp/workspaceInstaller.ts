@@ -11,6 +11,7 @@ import { Range } from 'semver'
 import { getNodeExecutableName } from '../../shared/lsp/utils/platform'
 import { fs } from '../../shared/fs/fs'
 import { telemetry } from '../../shared/telemetry'
+import { lspSetupStage } from './util'
 
 const manifestUrl = 'https://aws-toolkit-language-servers.amazonaws.com/q-context/manifest.json'
 // this LSP client in Q extension is only going to work with these LSP server versions
@@ -19,32 +20,25 @@ const supportedLspServerVersions = '0.1.32'
 export class WorkspaceLSPResolver implements LspResolver {
     async resolve(): Promise<LspResolution> {
         const name = 'AmazonQ-Workspace'
-        const manifest = await telemetry.languageServer_setup.run(async (span) => {
-            const startTime = performance.now()
-            span.record({ languageServerSetupStage: 'getManifest' })
+        const manifest = await lspSetupStage('getManifest', async () => {
             const result = await new ManifestResolver(manifestUrl, name).resolve()
-            span.record({
-                languageServerResourceLocation: result.location ?? 'unknown',
+            telemetry.record({
                 manifestVersion: result.manifestSchemaVersion,
-                duration: performance.now() - startTime,
+                languageServerResourceLocation: result.location ?? 'unknown',
             })
             return result
         })
         telemetry.record({
             manifestVersion: manifest.manifestSchemaVersion,
         })
-
-        const installationResult = await telemetry.languageServer_setup.run(async (span) => {
-            const startTime = performance.now()
-            span.record({ languageServerSetupStage: 'getServer' })
+        const installationResult = await lspSetupStage('getServer', async () => {
             const result = await new LanguageServerResolver(
                 manifest,
                 name,
                 new Range(supportedLspServerVersions)
             ).resolve()
-            span.record({
+            telemetry.record({
                 languageServerResourceLocation: result.location ?? 'unknown',
-                duration: performance.now() - startTime,
             })
             return result
         })
