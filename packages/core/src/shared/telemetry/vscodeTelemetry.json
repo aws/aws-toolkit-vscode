@@ -389,8 +389,8 @@
             ]
         },
         {
-            "name": "ide_logActiveProcesses",
-            "description": "Emitted when user invokes logActiveProcesses command",
+            "name": "ide_reportPerformance",
+            "description": "Emitted when user invokes reportPerformance command",
             "metadata": [
                 {
                     "type": "size",

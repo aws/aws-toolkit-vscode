@@ -1,4 +1,0 @@
-{
-	"type": "Feature",
-	"description": "Subprocesses are now tracked and visible by \"Log All Active Subprocesses\" in command palette"
-}

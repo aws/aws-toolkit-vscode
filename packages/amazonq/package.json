@@ -596,8 +596,8 @@
                 "category": "%AWS.amazonq.title%"
             },
             {
-                "command": "aws.amazonq.logActiveProcceses",
-                "title": "%AWS.command.logActiveProcceses%",
+                "command": "aws.amazonq.showExtStats",
+                "title": "%AWS.command.showExtStats%",
                 "category": "%AWS.title%"
             },
             {
