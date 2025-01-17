@@ -44,6 +44,7 @@ import { openUrl } from '../../shared/utilities/vsCodeUtils'
 import { indent } from '../../shared/utilities/textUtilities'
 import path from 'path'
 import { isIamConnection } from '../../auth/connection'
+import { UserWrittenCodeTracker } from '../tracker/userWrittenCodeTracker'
 
 /**
  * This class is for getRecommendation/listRecommendation API calls and its states
@@ -207,6 +208,8 @@ export class RecommendationHandler {
             session.requestContext = await EditorContext.buildGenerateRecommendationRequest(editor as vscode.TextEditor)
         }
         const request = session.requestContext.request
+        // record preprocessing end time
+        TelemetryHelper.instance.setPreprocessEndTime()
 
         // set start pos for non pagination call or first pagination call
         if (!pagination || (pagination && page === 0)) {
@@ -316,6 +319,7 @@ export class RecommendationHandler {
             getLogger().debug(msg)
             if (invocationResult === 'Succeeded') {
                 CodeWhispererCodeCoverageTracker.getTracker(session.language)?.incrementServiceInvocationCount()
+                UserWrittenCodeTracker.instance.onQFeatureInvoked()
             } else {
                 if (
                     (errorMessage?.includes(invalidCustomizationMessage) && errorCode === 'AccessDeniedException') ||

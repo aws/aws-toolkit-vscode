@@ -3,38 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as fs from 'fs' // eslint-disable-line no-restricted-imports
-import * as http from 'http'
-import * as https from 'https'
-import * as stream from 'stream'
-import got, { Response, RequestError, CancelError } from 'got'
-import urlToOptions from 'got/dist/source/core/utils/url-to-options'
-import Request from 'got/dist/source/core'
 import { VSCODE_EXTENSION_ID } from '../extensions'
 import { getLogger, Logger } from '../logger'
 import { ResourceFetcher } from './resourcefetcher'
-import { Timeout, CancellationError, CancelEvent } from '../utilities/timeoutUtils'
-import { isCloud9 } from '../extensionUtilities'
-import { Headers } from 'got/dist/source/core'
-
-// XXX: patched Got module for compatability with older VS Code versions (e.g. Cloud9)
-// `got` has also deprecated `urlToOptions`
-const patchedGot = got.extend({
-    request: (url, options, callback) => {
-        if (url.protocol === 'https:') {
-            return https.request({ ...options, ...urlToOptions(url) }, callback)
-        }
-        return http.request({ ...options, ...urlToOptions(url) }, callback)
-    },
-})
-
-/** Promise that resolves/rejects when all streams close. Can also access streams directly. */
-type FetcherResult = Promise<void> & {
-    /** Download stream piped to `fsStream`. */
-    requestStream: Request // `got` doesn't add the correct types to 'on' for some reason
-    /** Stream writing to the file system. */
-    fsStream: fs.WriteStream
-}
+import { Timeout, CancelEvent } from '../utilities/timeoutUtils'
+import request, { RequestError } from '../request'
 
 type RequestHeaders = { eTag?: string; gZip?: boolean }
 
@@ -65,20 +38,8 @@ export class HttpResourceFetcher implements ResourceFetcher {
      *
      * @param pipeLocation Optionally pipe the download to a file system location
      */
-    public get(): Promise<string | undefined>
-    public get(pipeLocation: string): FetcherResult
-    public get(pipeLocation?: string): Promise<string | undefined> | FetcherResult {
+    public get(): Promise<string | undefined> {
         this.logger.verbose(`downloading: ${this.logText()}`)
-
-        if (pipeLocation) {
-            const result = this.pipeGetRequest(pipeLocation, this.params.timeout)
-            result.fsStream.on('exit', () => {
-                this.logger.verbose(`downloaded: ${this.logText()}`)
-            })
-
-            return result
-        }
-
         return this.downloadRequest()
     }
 
@@ -94,15 +55,15 @@ export class HttpResourceFetcher implements ResourceFetcher {
     public async getNewETagContent(eTag?: string): Promise<{ content?: string; eTag: string }> {
         const response = await this.getResponseFromGetRequest(this.params.timeout, { eTag, gZip: true })
 
-        const eTagResponse = response.headers.etag
+        const eTagResponse = response.headers.get('etag')
         if (!eTagResponse) {
             throw new Error(`This URL does not support E-Tags. Cannot use this function for: ${this.url.toString()}`)
         }
 
         // NOTE: Even with use of `gzip` encoding header, the response content is uncompressed.
         // Most likely due to the http request library uncompressing it for us.
-        let contents: string | undefined = response.body.toString()
-        if (response.statusCode === 304) {
+        let contents: string | undefined = await response.text()
+        if (response.status === 304) {
             // Explanation: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/If-None-Match
             contents = undefined
             this.logger.verbose(`E-Tag, ${eTagResponse}, matched. No content downloaded from: ${this.url}`)
@@ -119,7 +80,8 @@ export class HttpResourceFetcher implements ResourceFetcher {
     private async downloadRequest(): Promise<string | undefined> {
         try {
             // HACK(?): receiving JSON as a string without `toString` makes it so we can't deserialize later
-            const contents = (await this.getResponseFromGetRequest(this.params.timeout)).body.toString()
+            const resp = await this.getResponseFromGetRequest(this.params.timeout)
+            const contents = (await resp.text()).toString()
             if (this.params.onSuccess) {
                 this.params.onSuccess(contents)
             }
@@ -128,10 +90,10 @@ export class HttpResourceFetcher implements ResourceFetcher {
 
             return contents
         } catch (err) {
-            const error = err as CancelError | RequestError
+            const error = err as RequestError
             this.logger.verbose(
                 `Error downloading ${this.logText()}: %s`,
-                error.message ?? error.code ?? error.response?.statusMessage ?? error.response?.statusCode
+                error.message ?? error.code ?? error.response.statusText ?? error.response.status
             )
             return undefined
         }
@@ -145,56 +107,30 @@ export class HttpResourceFetcher implements ResourceFetcher {
         getLogger().debug(`Download for "${this.logText()}" ${event.agent === 'user' ? 'cancelled' : 'timed out'}`)
     }
 
-    // TODO: make pipeLocation a vscode.Uri
-    private pipeGetRequest(pipeLocation: string, timeout?: Timeout): FetcherResult {
-        const requester = isCloud9() ? patchedGot : got
-        const requestStream = requester.stream(this.url, { headers: this.buildRequestHeaders() })
-        const fsStream = fs.createWriteStream(pipeLocation)
-
-        const done = new Promise<void>((resolve, reject) => {
-            const pipe = stream.pipeline(requestStream, fsStream, (err) => {
-                if (err instanceof RequestError) {
-                    return reject(Object.assign(new Error('Failed to download file'), { code: err.code }))
-                }
-                err ? reject(err) : resolve()
-            })
-
-            const cancelListener = timeout?.token.onCancellationRequested((event) => {
-                this.logCancellation(event)
-                pipe.destroy(new CancellationError(event.agent))
-            })
-
-            pipe.on('close', () => cancelListener?.dispose())
-        })
-
-        return Object.assign(done, { requestStream, fsStream })
-    }
-
-    private async getResponseFromGetRequest(timeout?: Timeout, headers?: RequestHeaders): Promise<Response<string>> {
-        const requester = isCloud9() ? patchedGot : got
-        const promise = requester(this.url, {
+    private async getResponseFromGetRequest(timeout?: Timeout, headers?: RequestHeaders): Promise<Response> {
+        const req = request.fetch('GET', this.url, {
             headers: this.buildRequestHeaders(headers),
         })
 
         const cancelListener = timeout?.token.onCancellationRequested((event) => {
             this.logCancellation(event)
-            promise.cancel(new CancellationError(event.agent).message)
+            req.cancel()
         })
 
-        return promise.finally(() => cancelListener?.dispose())
+        return req.response.finally(() => cancelListener?.dispose())
     }
 
     private buildRequestHeaders(requestHeaders?: RequestHeaders): Headers {
-        const headers: Headers = {}
+        const headers = new Headers()
 
-        headers['User-Agent'] = VSCODE_EXTENSION_ID.awstoolkit
+        headers.set('User-Agent', VSCODE_EXTENSION_ID.awstoolkit)
 
         if (requestHeaders?.eTag !== undefined) {
-            headers['If-None-Match'] = requestHeaders.eTag
+            headers.set('If-None-Match', requestHeaders.eTag)
         }
 
         if (requestHeaders?.gZip) {
-            headers['Accept-Encoding'] = 'gzip'
+            headers.set('Accept-Encoding', 'gzip')
         }
 
         return headers

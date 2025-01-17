@@ -41,6 +41,7 @@ class CodeWhispererSession {
     fetchCredentialStartTime = 0
     sdkApiCallStartTime = 0
     invokeSuggestionStartTime = 0
+    preprocessEndTime = 0
     timeToFirstRecommendation = 0
     firstSuggestionShowTime = 0
     perceivedLatency = 0

@@ -2,7 +2,7 @@
     "name": "amazon-q-vscode",
     "displayName": "Amazon Q",
     "description": "The most capable generative AI-powered assistant for building, operating, and transforming software, with advanced capabilities for managing data and AI",
-    "version": "1.42.0-SNAPSHOT",
+    "version": "1.44.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -218,11 +218,6 @@
                     "id": "aws.AmazonQChatView",
                     "name": "%AWS.amazonq.chat%",
                     "when": "!aws.isWebExtHost && !aws.amazonq.showLoginView"
-                },
-                {
-                    "id": "aws.AmazonQNeverShowBadge",
-                    "name": "",
-                    "when": "false"
                 }
             ],
             "aws-codewhisperer-reference-log": [
@@ -371,9 +366,14 @@
                     "group": "y_toolkitMeta@2"
                 },
                 {
+                    "command": "aws.amazonq.codescan.showGroupingStrategy",
+                    "when": "view == aws.amazonq.SecurityIssuesTree",
+                    "group": "navigation@1"
+                },
+                {
                     "command": "aws.amazonq.security.showFilters",
                     "when": "view == aws.amazonq.SecurityIssuesTree",
-                    "group": "navigation"
+                    "group": "navigation@2"
                 }
             ],
             "view/item/context": [
@@ -729,6 +729,12 @@
             {
                 "command": "aws.amazonq.security.showFilters",
                 "title": "%AWS.command.amazonq.filterIssues%",
+                "icon": "$(filter)",
+                "enablement": "view == aws.amazonq.SecurityIssuesTree"
+            },
+            {
+                "command": "aws.amazonq.codescan.showGroupingStrategy",
+                "title": "%AWS.command.amazonq.groupIssues%",
                 "icon": "$(list-filter)",
                 "enablement": "view == aws.amazonq.SecurityIssuesTree"
             },

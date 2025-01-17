@@ -35,7 +35,7 @@ export async function getPresignedUrlAndUpload(
     getLogger().verbose(`CreateUploadUrlRequest requestId: ${srcResp.$response.requestId}`)
     getLogger().verbose(`Complete Getting presigned Url for uploading src context.`)
     getLogger().verbose(`Uploading src context...`)
-    await uploadArtifactToS3(zipFilePath, srcResp)
+    await uploadArtifactToS3(zipFilePath, srcResp, CodeWhispererConstants.FeatureUseCase.CODE_SCAN)
     getLogger().verbose(`Complete uploading src context.`)
     const artifactMap: ArtifactMap = {
         SourceCode: srcResp.uploadId,

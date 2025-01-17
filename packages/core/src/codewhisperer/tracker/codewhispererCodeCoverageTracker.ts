@@ -27,6 +27,8 @@ const autoClosingKeystrokeInputs = ['[]', '{}', '()', '""', "''"]
 
 /**
  * This singleton class is mainly used for calculating the code written by codeWhisperer
+ * TODO: Remove this tracker, uses user written code tracker instead.
+ * This is kept in codebase for server side backward compatibility until service fully switch to user written code
  */
 export class CodeWhispererCodeCoverageTracker {
     private _acceptedTokens: { [key: string]: CodeWhispererToken[] }

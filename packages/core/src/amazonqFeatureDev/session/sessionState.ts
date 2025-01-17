@@ -175,14 +175,16 @@ abstract class CodeGenBase {
         codeGenerationRemainingIterationCount?: number
         codeGenerationTotalIterationCount?: number
     }> {
+        let codeGenerationRemainingIterationCount = undefined
+        let codeGenerationTotalIterationCount = undefined
         for (
             let pollingIteration = 0;
             pollingIteration < this.pollCount && !this.isCancellationRequested;
             ++pollingIteration
         ) {
             const codegenResult = await this.config.proxyClient.getCodeGeneration(this.conversationId, codeGenerationId)
-            const codeGenerationRemainingIterationCount = codegenResult.codeGenerationRemainingIterationCount
-            const codeGenerationTotalIterationCount = codegenResult.codeGenerationTotalIterationCount
+            codeGenerationRemainingIterationCount = codegenResult.codeGenerationRemainingIterationCount
+            codeGenerationTotalIterationCount = codegenResult.codeGenerationTotalIterationCount
 
             getLogger().debug(`Codegen response: %O`, codegenResult)
             telemetry.setCodeGenerationResult(codegenResult.codeGenerationStatus.status)
@@ -272,6 +274,8 @@ abstract class CodeGenBase {
             newFiles: [],
             deletedFiles: [],
             references: [],
+            codeGenerationRemainingIterationCount: codeGenerationRemainingIterationCount,
+            codeGenerationTotalIterationCount: codeGenerationTotalIterationCount,
         }
     }
 }
@@ -345,8 +349,13 @@ export class CodeGenState extends CodeGenBase implements SessionState {
                 this.filePaths = codeGeneration.newFiles
                 this.deletedFiles = codeGeneration.deletedFiles
                 this.references = codeGeneration.references
+
                 this.codeGenerationRemainingIterationCount = codeGeneration.codeGenerationRemainingIterationCount
                 this.codeGenerationTotalIterationCount = codeGeneration.codeGenerationTotalIterationCount
+                this.currentIteration =
+                    this.codeGenerationRemainingIterationCount && this.codeGenerationTotalIterationCount
+                        ? this.codeGenerationTotalIterationCount - this.codeGenerationRemainingIterationCount
+                        : this.currentIteration + 1
 
                 if (action.uploadHistory && !action.uploadHistory[codeGenerationId] && codeGenerationId) {
                     action.uploadHistory[codeGenerationId] = {
@@ -366,7 +375,7 @@ export class CodeGenState extends CodeGenBase implements SessionState {
                     this.deletedFiles,
                     this.references,
                     this.tabID,
-                    this.currentIteration + 1,
+                    this.currentIteration,
                     this.codeGenerationRemainingIterationCount,
                     this.codeGenerationTotalIterationCount,
                     action.uploadHistory,

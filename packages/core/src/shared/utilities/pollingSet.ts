@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { globals } from '..'
+import globals from '../../shared/extensionGlobals'
 
 /**
  * A useful abstraction that does the following:
@@ -44,9 +44,14 @@ export class PollingSet<T> extends Set<T> {
             this.clearTimer()
         }
     }
-
+    // TODO(hkobew): Overwrite the add method instead of adding seperate method. If we add item to set, timer should always start.
     public start(id: T): void {
         this.add(id)
         this.pollTimer = this.pollTimer ?? globals.clock.setInterval(() => this.poll(), this.interval)
+    }
+
+    public override clear(): void {
+        this.clearTimer()
+        super.clear()
     }
 }
