@@ -19,27 +19,31 @@ const supportedLspServerVersions = '0.1.32'
 export class WorkspaceLSPResolver implements LspResolver {
     async resolve(): Promise<LspResolution> {
         const name = 'AmazonQ-Workspace'
-        const manifest = await telemetry.lsp_setup.run(async (span) => {
+        const manifest = await telemetry.languageServer_setup.run(async (span) => {
             const startTime = performance.now()
-            span.record({ lspSetupStage: 'fetchManifest' })
+            span.record({ languageServerSetupStage: 'getManifest' })
             const result = await new ManifestResolver(manifestUrl, name).resolve()
             span.record({
-                lspSetupLocation: result.location ?? 'unknown',
+                languageServerResourceLocation: result.location ?? 'unknown',
+                manifestVersion: result.manifestSchemaVersion,
                 duration: performance.now() - startTime,
             })
             return result
         })
+        telemetry.record({
+            manifestVersion: manifest.manifestSchemaVersion,
+        })
 
-        const installationResult = await telemetry.lsp_setup.run(async (span) => {
+        const installationResult = await telemetry.languageServer_setup.run(async (span) => {
             const startTime = performance.now()
-            span.record({ lspSetupStage: 'serverCall' })
+            span.record({ languageServerSetupStage: 'getServer' })
             const result = await new LanguageServerResolver(
                 manifest,
                 name,
                 new Range(supportedLspServerVersions)
             ).resolve()
             span.record({
-                lspSetupLocation: result.location ?? 'unknown',
+                languageServerResourceLocation: result.location ?? 'unknown',
                 duration: performance.now() - startTime,
             })
             return result

@@ -174,8 +174,8 @@ export class LspClient {
  * This function assumes the LSP server has already been downloaded.
  */
 export async function activate(extensionContext: ExtensionContext, resourcePaths: ResourcePaths) {
-    return await telemetry.lsp_setup.run(async (span) => {
-        span.record({ lspSetupStage: 'activate' })
+    return await telemetry.languageServer_setup.run(async (span) => {
+        span.record({ languageServerSetupStage: 'launch' })
         const startTime = performance.now()
         LspClient.instance
         const toDispose = extensionContext.subscriptions

@@ -187,8 +187,8 @@ export class LanguageServerResolver {
             }
             return []
         })
-        const filesToDownload = await telemetry.lsp_setup.run(async (span) => {
-            span.record({ lspSetupStage: 'validate' })
+        const filesToDownload = await telemetry.languageServer_setup.run(async (span) => {
+            span.record({ languageServerSetupStage: 'validate' })
             const startTime = performance.now()
             const result = (await Promise.all(verifyTasks)).flat()
             span.record({ duration: performance.now() - startTime })

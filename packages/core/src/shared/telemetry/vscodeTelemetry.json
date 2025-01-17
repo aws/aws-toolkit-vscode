@@ -1,16 +1,21 @@
 {
     "types": [
         {
-            "name": "lspSetupStage",
+            "name": "languageServerSetupStage",
             "type": "string",
-            "allowedValues": ["fetchManifest", "serverCall", "validate", "activate", "final"],
+            "allowedValues": ["getManifest", "getServer", "validate", "launch", "final"],
             "description": "The stage of the LSP setup process"
         },
         {
-            "name": "lspSetupLocation",
+            "name": "languageServerResourceLocation",
             "type": "string",
             "allowedValues": ["cache", "remote", "fallback", "override", "unknown"],
-            "description": "The location of the LSP server"
+            "description": "The location of the LSP resource"
+        },
+        {
+            "name": "manifestVersion",
+            "type": "string",
+            "description": "The version of the manifest file"
         },
         {
             "name": "amazonGenerateApproachLatency",
@@ -371,24 +376,20 @@
     ],
     "metrics": [
         {
-            "name": "lsp_setup",
+            "name": "languageServer_setup",
             "description": "LSP setup event",
             "metadata": [
                 {
-                    "type": "lspSetupStage",
+                    "type": "languageServerSetupStage",
                     "required": true
                 },
                 {
-                    "type": "lspSetupLocation",
+                    "type": "languageServerResourceLocation",
                     "required": false
                 },
                 {
-                    "type": "duration",
-                    "required": true
-                },
-                {
-                    "type": "result",
-                    "required": true
+                    "type": "manifestVersion",
+                    "required": false
                 }
             ]
         },

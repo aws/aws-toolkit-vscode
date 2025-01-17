@@ -160,9 +160,9 @@ export class LspController {
         }
         setImmediate(async () => {
             try {
-                await telemetry.lsp_setup.run(async (span) => {
+                await telemetry.languageServer_setup.run(async (span) => {
                     const startTime = performance.now()
-                    span.record({ lspSetupStage: 'final' })
+                    span.record({ languageServerSetupStage: 'final' })
                     const installResult = await new WorkspaceLSPResolver().resolve()
                     await activateLsp(context, installResult.resourcePaths)
                     getLogger().info('LspController: LSP activated')
