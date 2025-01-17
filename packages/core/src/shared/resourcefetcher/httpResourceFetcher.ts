@@ -12,7 +12,7 @@ import { withRetries } from '../utilities/functionUtils'
 
 type RequestHeaders = { eTag?: string; gZip?: boolean }
 
-export class HttpResourceFetcher implements ResourceFetcher {
+export class HttpResourceFetcher implements ResourceFetcher<Response> {
     private readonly logger: Logger = getLogger()
 
     /**
@@ -21,27 +21,27 @@ export class HttpResourceFetcher implements ResourceFetcher {
      * @param params Additional params for the fetcher
      * @param {boolean} params.showUrl Whether or not to the URL in log statements.
      * @param {string} params.friendlyName If URL is not shown, replaces the URL with this text.
-     * @param {function} params.onSuccess Function to execute on successful request. No effect if piping to a location.
      * @param {Timeout} params.timeout Timeout token to abort/cancel the request. Similar to `AbortSignal`.
+     * @param {number} params.retries The number of retries a get request should make if one fails
      */
     public constructor(
         private readonly url: string,
         private readonly params: {
             showUrl: boolean
             friendlyName?: string
-            onSuccess?(contents: string): void
             timeout?: Timeout
+            retries?: number
         }
     ) {}
 
     /**
-     * Returns the contents of the resource, or undefined if the resource could not be retrieved.
-     *
-     * @param pipeLocation Optionally pipe the download to a file system location
+     * Returns the response of the resource, or undefined if the response failed could not be retrieved.
      */
-    public get(): Promise<string | undefined> {
+    public get(): Promise<Response | undefined> {
         this.logger.verbose(`downloading: ${this.logText()}`)
-        return this.downloadRequest()
+        return withRetries(() => this.downloadRequest(), {
+            maxRetries: this.params.retries ?? 1,
+        })
     }
 
     /**
@@ -70,26 +70,16 @@ export class HttpResourceFetcher implements ResourceFetcher {
             this.logger.verbose(`E-Tag, ${eTagResponse}, matched. No content downloaded from: ${this.url}`)
         } else {
             this.logger.verbose(`No E-Tag match. Downloaded content from: ${this.logText()}`)
-            if (this.params.onSuccess) {
-                this.params.onSuccess(contents)
-            }
         }
 
         return { content: contents, eTag: eTagResponse }
     }
 
-    private async downloadRequest(): Promise<string | undefined> {
+    private async downloadRequest(): Promise<Response | undefined> {
         try {
-            // HACK(?): receiving JSON as a string without `toString` makes it so we can't deserialize later
             const resp = await this.getResponseFromGetRequest(this.params.timeout)
-            const contents = (await resp.text()).toString()
-            if (this.params.onSuccess) {
-                this.params.onSuccess(contents)
-            }
-
             this.logger.verbose(`downloaded: ${this.logText()}`)
-
-            return contents
+            return resp
         } catch (err) {
             const error = err as RequestError
             this.logger.verbose(
@@ -195,7 +185,8 @@ export async function getPropertyFromJsonUrl(
     fetcher?: HttpResourceFetcher
 ): Promise<any | undefined> {
     const resourceFetcher = fetcher ?? new HttpResourceFetcher(url, { showUrl: true })
-    const result = await resourceFetcher.get()
+    const resp = await resourceFetcher.get()
+    const result = await resp?.text()
     if (result) {
         try {
             const json = JSON.parse(result)
