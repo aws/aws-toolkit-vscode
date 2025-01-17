@@ -23,7 +23,7 @@ import { getTestWindow } from '../../shared/vscode/window'
 import { AwsClis, installCli } from '../../../shared/utilities/cliUtils'
 import { ChildProcess } from '../../../shared/utilities/processUtils'
 import { assertTelemetryCurried } from '../../testUtil'
-import { HttpResourceFetcher } from '../../../shared/resourcefetcher/httpResourceFetcher'
+import { HttpResourceFetcher } from '../../../shared/resourcefetcher/node/httpResourceFetcher'
 import { SamCliInfoInvocation } from '../../../shared/sam/cli/samCliInfo'
 import { CodeScansState } from '../../../codewhisperer'
 
