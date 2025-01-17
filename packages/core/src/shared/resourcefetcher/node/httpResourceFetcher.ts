@@ -39,7 +39,7 @@ type RequestHeaders = { eTag?: string; gZip?: boolean }
 
 /**
  * Legacy HTTP Resource Fetcher used specifically for streaming information.
- * If you do not need streaming or want multi platform support use
+ * Only kept around until web streams are compatible with node streams
  */
 export class HttpResourceFetcher {
     private readonly logger: Logger = getLogger()
