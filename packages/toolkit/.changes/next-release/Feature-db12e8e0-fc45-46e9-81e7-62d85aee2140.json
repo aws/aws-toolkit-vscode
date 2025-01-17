@@ -1,4 +1,4 @@
 {
 	"type": "Feature",
-	"description": "New command \"Show Extension Stats\" to see some runtime performance stats."
+	"description": "New command \"Log Extension Stats\" to see some runtime performance stats."
 }
