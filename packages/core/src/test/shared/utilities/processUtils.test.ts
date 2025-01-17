@@ -546,7 +546,7 @@ describe('ChildProcessTracker', function () {
 
         it('emits telemetry with size equal to number of processes (empty)', async function () {
             await tracker.logAllUsage()
-            assertTelemetry('ide_logActiveProcesses', { size: 0 })
+            assertTelemetry('ide_showExtStats', { numChildProcesses: 0 })
         })
 
         it('emits telemetry to number of processes (nonempty)', async function () {
@@ -556,7 +556,7 @@ describe('ChildProcessTracker', function () {
             }
 
             await tracker.logAllUsage()
-            assertTelemetry('ide_logActiveProcesses', { size: size })
+            assertTelemetry('ide_showExtStats', { numChildProcesses: size })
         })
     })
 

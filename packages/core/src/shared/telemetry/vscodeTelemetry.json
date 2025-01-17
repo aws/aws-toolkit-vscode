@@ -1,9 +1,9 @@
 {
     "types": [
         {
-            "name": "size",
+            "name": "numChildProcesses",
             "type": "int",
-            "description": "A generic size for when units are clear"
+            "description": "number of child processes actively running"
         },
         {
             "name": "childProcess",
@@ -389,11 +389,11 @@
             ]
         },
         {
-            "name": "ide_reportPerformance",
-            "description": "Emitted when user invokes reportPerformance command",
+            "name": "ide_showExtStats",
+            "description": "Emitted when user invokes show extensions stats command",
             "metadata": [
                 {
-                    "type": "size",
+                    "type": "numChildProcesses",
                     "required": true
                 }
             ]

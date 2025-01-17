@@ -187,8 +187,8 @@ export class ChildProcessTracker {
     }
 
     public async logAllUsage(): Promise<void> {
-        await telemetry.ide_logActiveProcesses.run(async (span) => {
-            span.record({ size: this.size })
+        await telemetry.ide_showExtStats.run(async (span) => {
+            span.record({ numChildProcesses: this.size })
             if (this.size === 0) {
                 this.logger.info('No Active Subprocesses')
                 return
