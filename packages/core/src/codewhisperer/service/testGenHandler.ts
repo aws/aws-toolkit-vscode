@@ -16,7 +16,7 @@ import CodeWhispererUserClient, {
 import { CreateUploadUrlError, InvalidSourceZipError, TestGenFailedError, TestGenTimedOutError } from '../models/errors'
 import { getMd5, uploadArtifactToS3 } from './securityScanHandler'
 import { fs, randomUUID, sleep, tempDirPath } from '../../shared'
-import { ShortAnswer, TestGenerationJobStatus, testGenState } from '..'
+import { ShortAnswer, testGenState } from '../models/model'
 import { ChatSessionManager } from '../../amazonqTest/chat/storages/chatSession'
 import { createCodeWhispererChatStreamingClient } from '../../shared/clients/codewhispererChatClient'
 import { downloadExportResultArchive } from '../../shared/utilities/download'
@@ -182,9 +182,9 @@ export async function pollTestJobStatus(
             }
             ChatSessionManager.Instance.getSession().shortAnswer = shortAnswer
         }
-        if (resp.testGenerationJob?.status !== TestGenerationJobStatus.IN_PROGRESS) {
+        if (resp.testGenerationJob?.status !== CodeWhispererConstants.TestGenerationJobStatus.IN_PROGRESS) {
             // This can be FAILED or COMPLETED
-            status = resp.testGenerationJob?.status as TestGenerationJobStatus
+            status = resp.testGenerationJob?.status as CodeWhispererConstants.TestGenerationJobStatus
             logger.verbose(`testgen job status: ${status}`)
             logger.verbose(`Complete polling test job status.`)
             break
@@ -222,6 +222,8 @@ export async function exportResultsArchive(
     await fs.mkdir(pathToArchiveDir)
 
     let downloadErrorMessage = undefined
+
+    const session = ChatSessionManager.Instance.getSession()
     try {
         const pathToArchive = path.join(pathToArchiveDir, 'QTestGeneration.zip')
         // Download and deserialize the zip
@@ -229,7 +231,6 @@ export async function exportResultsArchive(
         const zip = new AdmZip(pathToArchive)
         zip.extractAllTo(pathToArchiveDir, true)
 
-        const session = ChatSessionManager.Instance.getSession()
         const testFilePathFromResponse = session?.shortAnswer?.testFilePath
         const testFilePath = testFilePathFromResponse
             ? testFilePathFromResponse.split('/').slice(1).join('/') // remove the project name
@@ -248,6 +249,7 @@ export async function exportResultsArchive(
             })
         }
     } catch (e) {
+        session.numberOfTestsGenerated = 0
         downloadErrorMessage = (e as Error).message
         getLogger().error(`Unit Test Generation: ExportResultArchive error = ${downloadErrorMessage}`)
         throw new Error('Error downloading test generation result artifacts: ' + downloadErrorMessage)

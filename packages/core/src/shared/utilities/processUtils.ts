@@ -122,7 +122,7 @@ export class ChildProcessTracker {
             this.logger.warn(`Missing process with pid ${pid}`)
             return
         }
-        const stats = await this.getUsage(pid)
+        const stats = this.getUsage(pid)
         if (!stats) {
             this.logger.warn(`Failed to get process stats for process with pid ${pid}`)
             return
@@ -174,7 +174,7 @@ export class ChildProcessTracker {
         return new Map(
             await Promise.all(
                 Array.from(this.#pids).map(async (pid: pid) => {
-                    const stats = await this.getUsage(pid)
+                    const stats = this.getUsage(pid)
                     return [pid, stats] as const
                 })
             )
@@ -196,8 +196,16 @@ export class ChildProcessTracker {
         })
     }
 
-    public async getUsage(pid: pid): Promise<ProcessStats> {
-        const getWindowsUsage = () => {
+    public getUsage(pid: number): ProcessStats {
+        try {
+            // isWin() leads to circular dependency.
+            return process.platform === 'win32' ? getWindowsUsage() : getUnixUsage()
+        } catch (e) {
+            this.logger.warn(`Failed to get process stats for ${pid}: ${e}`)
+            return { cpu: 0, memory: 0 }
+        }
+
+        function getWindowsUsage() {
             const cpuOutput = proc
                 .execFileSync('wmic', [
                     'path',
@@ -220,7 +228,8 @@ export class ChildProcessTracker {
                 memory: memoryBytes / (1024 * 1024),
             }
         }
-        const getUnixUsage = () => {
+
+        function getUnixUsage() {
             const cpuMemOutput = proc.execFileSync('ps', ['-p', pid.toString(), '-o', '%cpu,%mem']).toString()
             const rssOutput = proc.execFileSync('ps', ['-p', pid.toString(), '-o', 'rss']).toString()
 
@@ -232,13 +241,6 @@ export class ChildProcessTracker {
                 cpu: isNaN(cpuPercentage) ? 0 : cpuPercentage,
                 memory: memoryBytes / (1024 * 1024),
             }
-        }
-        try {
-            // isWin() leads to circular dependency.
-            return process.platform === 'win32' ? getWindowsUsage() : getUnixUsage()
-        } catch (e) {
-            this.logger.warn(`Failed to get process stats for ${pid}: ${e}`)
-            return { cpu: 0, memory: 0 }
         }
     }
 }

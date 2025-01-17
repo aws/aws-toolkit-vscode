@@ -46,12 +46,12 @@ import globals from './shared/extensionGlobals'
 import { Experiments, Settings, showSettingsFailedMsg } from './shared/settings'
 import { isReleaseVersion } from './shared/vscode/env'
 import { AuthStatus, AuthUserState, telemetry } from './shared/telemetry/telemetry'
-import { Auth, SessionSeparationPrompt } from './auth/auth'
+import { Auth } from './auth/auth'
 import { getTelemetryMetadataForConn } from './auth/connection'
 import { registerSubmitFeedback } from './feedback/vue/submitFeedback'
 import { activateCommon, deactivateCommon } from './extension'
 import { learnMoreAmazonQCommand, qExtensionPageCommand, dismissQTree } from './amazonq/explorer/amazonQChildrenNodes'
-import { AuthUtil, codeWhispererCoreScopes, isPreviousQUser } from './codewhisperer/util/authUtil'
+import { codeWhispererCoreScopes } from './codewhisperer/util/authUtil'
 import { installAmazonQExtension } from './codewhisperer/commands/basicCommands'
 import { isExtensionInstalled, VSCODE_EXTENSION_ID } from './shared/utilities'
 import { ExtensionUse, getAuthFormIdsFromConnection, initializeCredentialsProviderManager } from './auth/utils'
@@ -139,16 +139,8 @@ export async function activate(context: vscode.ExtensionContext) {
                             conn.scopes
                         )
                         await Auth.instance.forgetConnection(conn)
-                        await SessionSeparationPrompt.instance.showForCommand('aws.toolkit.auth.manageConnections')
                     }
                 }
-
-                // Display last prompt if connections were forgotten in prior sessions
-                // but the user did not interact or sign in again. Useful in case the user misses it the first time.
-                await SessionSeparationPrompt.instance.showAnyPreviousPrompt()
-
-                // MUST restore CW/Q auth so that we can see if this user is already a Q user.
-                await AuthUtil.instance.restore()
             },
             { emit: false, functionId: { name: 'activate', class: 'ExtensionNodeCore' } }
         )
@@ -272,52 +264,47 @@ export async function deactivate() {
 
 async function handleAmazonQInstall() {
     const dismissedInstall = globals.globalState.get<boolean>('aws.toolkit.amazonqInstall.dismissed')
-    if (isExtensionInstalled(VSCODE_EXTENSION_ID.amazonq) || dismissedInstall) {
+    if (dismissedInstall) {
+        return
+    }
+
+    if (isExtensionInstalled(VSCODE_EXTENSION_ID.amazonq)) {
+        await globals.globalState.update('aws.toolkit.amazonqInstall.dismissed', true)
         return
     }
 
     await telemetry.toolkit_showNotification.run(async () => {
-        if (isPreviousQUser()) {
-            await installAmazonQExtension.execute()
-            telemetry.record({ id: 'amazonQStandaloneInstalled' })
-            void vscode.window.showInformationMessage(
-                "Amazon Q is now its own extension.\n\nWe've auto-installed it for you with all the same features and settings from CodeWhisperer and Amazon Q chat."
+        telemetry.record({ id: 'amazonQStandaloneChange' })
+        void vscode.window
+            .showInformationMessage(
+                'Try Amazon Q, a generative AI assistant, with chat and code suggestions.',
+                'Install',
+                'Learn More'
             )
-            await globals.globalState.update('aws.toolkit.amazonqInstall.dismissed', true)
-        } else {
-            telemetry.record({ id: 'amazonQStandaloneChange' })
-            void vscode.window
-                .showInformationMessage(
-                    'Amazon Q has moved to its own extension.' +
-                        '\nInstall it to use Amazon Q, a generative AI assistant, with chat and code suggestions.',
-                    'Install',
-                    'Learn More'
-                )
-                .then(async (resp) => {
-                    await telemetry.toolkit_invokeAction.run(async () => {
-                        telemetry.record({
-                            source: ExtensionUse.instance.isFirstUse()
-                                ? ExtStartUpSources.firstStartUp
-                                : ExtStartUpSources.none,
-                        })
-
-                        if (resp === 'Learn More') {
-                            // Clicking learn more will open the q extension page
-                            telemetry.record({ action: 'learnMore' })
-                            await qExtensionPageCommand.execute()
-                            return
-                        }
-
-                        if (resp === 'Install') {
-                            telemetry.record({ action: 'installAmazonQ' })
-                            await installAmazonQExtension.execute()
-                        } else {
-                            telemetry.record({ action: 'dismissQNotification' })
-                        }
-                        await globals.globalState.update('aws.toolkit.amazonqInstall.dismissed', true)
+            .then(async (resp) => {
+                await telemetry.toolkit_invokeAction.run(async () => {
+                    telemetry.record({
+                        source: ExtensionUse.instance.isFirstUse()
+                            ? ExtStartUpSources.firstStartUp
+                            : ExtStartUpSources.none,
                     })
+
+                    if (resp === 'Learn More') {
+                        // Clicking learn more will open the q extension page
+                        telemetry.record({ action: 'learnMore' })
+                        await qExtensionPageCommand.execute()
+                        return
+                    }
+
+                    if (resp === 'Install') {
+                        telemetry.record({ action: 'installAmazonQ' })
+                        await installAmazonQExtension.execute()
+                    } else {
+                        telemetry.record({ action: 'dismissQNotification' })
+                    }
+                    await globals.globalState.update('aws.toolkit.amazonqInstall.dismissed', true)
                 })
-        }
+            })
     })
 }
 

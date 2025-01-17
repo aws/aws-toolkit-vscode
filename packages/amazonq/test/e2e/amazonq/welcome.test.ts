@@ -9,6 +9,7 @@ import sinon from 'sinon'
 import { Messenger } from './framework/messenger'
 import { MynahUIDataModel } from '@aws/mynah-ui'
 import { assertQuickActions } from './assert'
+import { FeatureContext } from 'aws-core-vscode/shared'
 
 describe('Amazon Q Welcome page', function () {
     let framework: qTestingFramework
@@ -17,8 +18,15 @@ describe('Amazon Q Welcome page', function () {
 
     const availableCommands = ['/dev', '/test', '/review', '/doc', '/transform']
 
+    const highlightCommand: FeatureContext = {
+        name: 'highlightCommand',
+        value: {
+            stringValue: '@highlight',
+        },
+        variation: 'highlight command desc',
+    }
     beforeEach(() => {
-        framework = new qTestingFramework('welcome', true, [], 0)
+        framework = new qTestingFramework('welcome', true, [['highlightCommand', highlightCommand]], 0)
         tab = framework.getTabs()[0] // use the default tab that gets created
         store = tab.getStore()
     })
@@ -33,13 +41,13 @@ describe('Amazon Q Welcome page', function () {
         assertQuickActions(tab, availableCommands)
     })
 
-    it('Shows @workspace', async () => {
+    it('Shows context commands', async () => {
         assert.deepStrictEqual(
             store.contextCommands
                 ?.map((x) => x.commands)
                 .flat()
                 .map((x) => x.command),
-            ['@workspace']
+            ['@workspace', '@highlight']
         )
     })
 

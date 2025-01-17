@@ -13,7 +13,7 @@ import { getLogger } from '../../shared/logger/logger'
 import { maxFileSizeBytes } from '../limits'
 import { createHash } from 'crypto'
 import { CurrentWsFolders } from '../types'
-import { ToolkitError } from '../../shared/errors'
+import { hasCode, ToolkitError } from '../../shared/errors'
 import { AmazonqCreateUpload, Span, telemetry as amznTelemetry } from '../../shared/telemetry/telemetry'
 import { TelemetryHelper } from './telemetryHelper'
 import { maxRepoSizeBytes } from '../constants'
@@ -39,7 +39,16 @@ export async function prepareRepoData(
         const ignoredExtensionMap = new Map<string, number>()
 
         for (const file of files) {
-            const fileSize = (await fs.stat(file.fileUri)).size
+            let fileSize
+            try {
+                fileSize = (await fs.stat(file.fileUri)).size
+            } catch (error) {
+                if (hasCode(error) && error.code === 'ENOENT') {
+                    // No-op: Skip if file does not exist
+                    continue
+                }
+                throw error
+            }
             const isCodeFile_ = isCodeFile(file.relativeFilePath)
 
             if (fileSize >= maxFileSizeBytes || !isCodeFile_) {
@@ -58,7 +67,17 @@ export async function prepareRepoData(
             totalBytes += fileSize
 
             const zipFolderPath = path.dirname(file.zipFilePath)
-            zip.addLocalFile(file.fileUri.fsPath, zipFolderPath)
+
+            try {
+                zip.addLocalFile(file.fileUri.fsPath, zipFolderPath)
+            } catch (error) {
+                if (error instanceof Error && error.message.includes('File not found')) {
+                    // No-op: Skip if file was deleted or does not exist
+                    // Reference: https://github.com/cthackers/adm-zip/blob/1cd32f7e0ad3c540142a76609bb538a5cda2292f/adm-zip.js#L296-L321
+                    continue
+                }
+                throw error
+            }
         }
 
         const iterator = ignoredExtensionMap.entries()
