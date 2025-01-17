@@ -448,6 +448,7 @@ export async function startJob(uploadId: string) {
                 target: { language: targetLanguageVersion }, // always JDK17
             },
         })
+        getLogger().info('CodeTransformation: called startJob API successfully')
         if (response.$response.requestId) {
             transformByQState.setJobFailureMetadata(` (request ID: ${response.$response.requestId})`)
         }
@@ -671,6 +672,7 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
                 })
             }
             transformByQState.setPolledJobStatus(status)
+            getLogger().info(`CodeTransformation: polled job status = ${status}`)
 
             const errorMessage = response.transformationJob.reason
             if (errorMessage !== undefined) {
