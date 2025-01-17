@@ -21,6 +21,7 @@ import {
     TestGenerationBuildStep,
     testGenState,
     unitTestGenerationCancelMessage,
+    UserWrittenCodeTracker,
 } from '../../../codewhisperer'
 import {
     fs,
@@ -246,6 +247,7 @@ export class TestController {
         TelemetryHelper.instance.sendTestGenerationToolkitEvent(
             session,
             true,
+            true,
             isCancel ? 'Cancelled' : 'Failed',
             session.startTestGenerationRequestId,
             performance.now() - session.testGenerationStartTime,
@@ -439,19 +441,31 @@ export class TestController {
 
             const language = await this.getLanguageForFilePath(filePath)
             session.fileLanguage = language
+            const workspaceFolder = vscode.workspace.getWorkspaceFolder(fileEditorToTest.document.uri)
 
             /*
                 For Re:Invent 2024 we are supporting only java and python for unit test generation, rest of the languages shows the similar experience as CWC
             */
-            if (language !== 'java' && language !== 'python') {
-                const unsupportedLanguage = language.charAt(0).toUpperCase() + language.slice(1)
-                let unsupportedMessage = `<span style="color: #EE9D28;">&#9888;<b>I'm sorry, but /test only supports Python and Java</b><br></span> While ${unsupportedLanguage} is not supported, I will generate a suggestion below. `
-                // handle the case when language is undefined
-                if (!unsupportedLanguage) {
-                    unsupportedMessage = `<span style="color: #EE9D28;">&#9888;<b>I'm sorry, but /test only supports Python and Java</b><br></span> I will still generate a suggestion below. `
+            if (!['java', 'python'].includes(language) || workspaceFolder === undefined) {
+                let unsupportedMessage: string
+                const unsupportedLanguage = language ? language.charAt(0).toUpperCase() + language.slice(1) : ''
+                if (!workspaceFolder) {
+                    // File is outside of workspace
+                    unsupportedMessage = `<span style="color: #EE9D28;">&#9888;<b>I can't generate tests for ${fileName}</b> because the file is outside of workspace scope.<br></span> I can still provide examples, instructions and code suggestions.`
+                } else if (unsupportedLanguage) {
+                    unsupportedMessage = `<span style="color: #EE9D28;">&#9888;<b>I'm sorry, but /test only supports Python and Java</b><br></span> While ${unsupportedLanguage} is not supported, I will generate a suggestion below.`
+                } else {
+                    unsupportedMessage = `<span style="color: #EE9D28;">&#9888;<b>I'm sorry, but /test only supports Python and Java</b><br></span> I will still generate a suggestion below.`
                 }
                 this.messenger.sendMessage(unsupportedMessage, tabID, 'answer')
-                await this.onCodeGeneration(session, message.prompt, tabID, fileName, filePath)
+                await this.onCodeGeneration(
+                    session,
+                    message.prompt,
+                    tabID,
+                    fileName,
+                    filePath,
+                    workspaceFolder !== undefined
+                )
             } else {
                 this.messenger.sendCapabilityCard({ tabID })
                 this.messenger.sendMessage(testGenSummaryMessage(fileName), message.tabID, 'answer-part')
@@ -651,12 +665,14 @@ export class TestController {
             acceptedLines = acceptedLines < 0 ? 0 : acceptedLines
             acceptedChars -= originalContent.length
             acceptedChars = acceptedChars < 0 ? 0 : acceptedChars
+            UserWrittenCodeTracker.instance.onQStartsMakingEdits()
             const document = await vscode.workspace.openTextDocument(absolutePath)
             await applyChanges(
                 document,
                 new vscode.Range(document.lineAt(0).range.start, document.lineAt(document.lineCount - 1).range.end),
                 updatedContent
             )
+            UserWrittenCodeTracker.instance.onQFinishesEdits()
         } else {
             await fs.writeFile(absolutePath, updatedContent)
         }
@@ -716,6 +732,7 @@ export class TestController {
 
         TelemetryHelper.instance.sendTestGenerationToolkitEvent(
             session,
+            true,
             true,
             'Succeeded',
             session.startTestGenerationRequestId,
@@ -794,20 +811,21 @@ export class TestController {
         message: string,
         tabID: string,
         fileName: string,
-        filePath: string
+        filePath: string,
+        fileInWorkspace: boolean
     ) {
         try {
             // TODO: Write this entire gen response to basiccommands and call here.
             const editorText = await fs.readFileText(filePath)
 
             const triggerPayload = {
-                query: `Generate unit tests for the following part of my code: ${message}`,
+                query: `Generate unit tests for the following part of my code: ${message?.trim() || fileName}`,
                 codeSelection: undefined,
                 trigger: ChatTriggerType.ChatMessage,
                 fileText: editorText,
                 fileLanguage: session.fileLanguage,
                 filePath: filePath,
-                message: `Generate unit tests for the following part of my code: ${message}`,
+                message: `Generate unit tests for the following part of my code: ${message?.trim() || fileName}`,
                 matchPolicy: undefined,
                 codeQuery: undefined,
                 userIntent: UserIntent.GENERATE_UNIT_TESTS,
@@ -816,13 +834,15 @@ export class TestController {
             const chatRequest = triggerPayloadToChatRequest(triggerPayload)
             const client = await createCodeWhispererChatStreamingClient()
             const response = await client.generateAssistantResponse(chatRequest)
+            UserWrittenCodeTracker.instance.onQFeatureInvoked()
             await this.messenger.sendAIResponse(
                 response,
                 session,
                 tabID,
                 randomUUID.toString(),
                 triggerPayload,
-                fileName
+                fileName,
+                fileInWorkspace
             )
         } finally {
             this.messenger.sendChatInputEnabled(tabID, true)
@@ -833,10 +853,13 @@ export class TestController {
 
     // TODO: Check if there are more cases to endSession if yes create a enum or type for step
     private async endSession(data: any, step: FollowUpTypes) {
+        this.messenger.sendMessage('Unit test generation completed.', data.tabID, 'answer')
+
         const session = this.sessionStorage.getSession()
         if (step === FollowUpTypes.RejectCode) {
             TelemetryHelper.instance.sendTestGenerationToolkitEvent(
                 session,
+                true,
                 true,
                 'Succeeded',
                 session.startTestGenerationRequestId,

@@ -84,7 +84,8 @@ export async function runTests(
     })
 
     const dist = path.resolve(root, 'dist')
-    const testFile = process.env['TEST_FILE']?.replace('.ts', '.js')
+    const rawTestFile = process.env['TEST_FILE']
+    const testFile = rawTestFile?.replace(/\\/g, '/').replace('.ts', '.js')
     let testFilePath: string | undefined
     if (testFile?.includes('../core/')) {
         testFilePath = path.resolve(root, testFile.replace('../core/', '../core/dist/'))

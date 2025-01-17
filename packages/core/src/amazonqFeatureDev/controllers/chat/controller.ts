@@ -49,8 +49,6 @@ import { FollowUpTypes } from '../../../amazonq/commons/types'
 import { Messenger } from '../../../amazonq/commons/connector/baseMessenger'
 import { BaseChatSessionStorage } from '../../../amazonq/commons/baseChatStorage'
 
-export const TotalSteps = 3
-
 export interface ChatControllerEventEmitters {
     readonly processHumanChatMessage: EventEmitter<any>
     readonly followUpClicked: EventEmitter<any>
@@ -462,12 +460,17 @@ export class FeatureDevController {
 
             if (remainingIterations !== undefined && totalIterations !== undefined) {
                 this.messenger.sendAnswer({
-                    type: 'answer',
+                    type: 'answer' as const,
                     tabID: tabID,
-                    message:
-                        remainingIterations === 0
-                            ? 'Would you like me to add this code to your project?'
-                            : `Would you like me to add this code to your project, or provide feedback for new code? You have ${remainingIterations} out of ${totalIterations} code generations left.`,
+                    message: (() => {
+                        if (remainingIterations > 2) {
+                            return 'Would you like me to add this code to your project, or provide feedback for new code?'
+                        } else if (remainingIterations > 0) {
+                            return `Would you like me to add this code to your project, or provide feedback for new code? You have ${remainingIterations} out of ${totalIterations} code generations left.`
+                        } else {
+                            return 'Would you like me to add this code to your project?'
+                        }
+                    })(),
                 })
             }
 
@@ -518,9 +521,8 @@ export class FeatureDevController {
             if (session?.state?.tokenSource?.token.isCancellationRequested) {
                 this.workOnNewTask(
                     session.tabID,
-                    session.state.codeGenerationRemainingIterationCount ||
-                        TotalSteps - (session.state?.currentIteration || 0),
-                    session.state.codeGenerationTotalIterationCount || TotalSteps,
+                    session.state.codeGenerationRemainingIterationCount,
+                    session.state.codeGenerationTotalIterationCount,
                     session?.state?.tokenSource?.token.isCancellationRequested
                 )
                 this.disposeToken(session)
@@ -563,10 +565,16 @@ export class FeatureDevController {
     ) {
         if (isStoppedGeneration) {
             this.messenger.sendAnswer({
-                message:
-                    (remainingIterations ?? 0) <= 0
-                        ? "I stopped generating your code. You don't have more iterations left, however, you can start a new session."
-                        : `I stopped generating your code. If you want to continue working on this task, provide another description. You have ${remainingIterations} out of ${totalIterations} code generations left.`,
+                message: ((remainingIterations) => {
+                    if (remainingIterations && totalIterations) {
+                        if (remainingIterations <= 0) {
+                            return "I stopped generating your code. You don't have more iterations left, however, you can start a new session."
+                        } else if (remainingIterations <= 2) {
+                            return `I stopped generating your code. If you want to continue working on this task, provide another description. You have ${remainingIterations} out of ${totalIterations} code generations left.`
+                        }
+                    }
+                    return 'I stopped generating your code. If you want to continue working on this task, provide another description.'
+                })(remainingIterations),
                 type: 'answer-part',
                 tabID,
             })

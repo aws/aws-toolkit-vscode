@@ -15,7 +15,7 @@ import {
     throwIfCancelled,
 } from '../service/testGenHandler'
 import path from 'path'
-import { testGenState } from '..'
+import { testGenState } from '../models/model'
 import { ChatSessionManager } from '../../amazonqTest/chat/storages/chatSession'
 import { ChildProcess, spawn } from 'child_process' // eslint-disable-line no-restricted-imports
 import { BuildStatus } from '../../amazonqTest/chat/session/session'
@@ -120,6 +120,7 @@ export async function startTestGenerationProcess(
         )
         // TODO: Send status to test summary
         if (jobStatus === TestGenerationJobStatus.FAILED) {
+            session.numberOfTestsGenerated = 0
             logger.verbose(`Test generation failed.`)
             throw new TestGenFailedError()
         }

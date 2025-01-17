@@ -28,3 +28,14 @@ export function assertQuickActions(tab: Messenger, commands: string[]) {
         assert.fail(`Could not find commands: ${missingCommands.join(', ')} for ${tab.tabID}`)
     }
 }
+
+export function assertContextCommands(tab: Messenger, contextCommands: string[]) {
+    assert.deepStrictEqual(
+        tab
+            .getStore()
+            .contextCommands?.map((x) => x.commands)
+            .flat()
+            .map((x) => x.command),
+        contextCommands
+    )
+}

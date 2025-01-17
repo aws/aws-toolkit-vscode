@@ -49,6 +49,7 @@ import { ChatSessionManager } from '../../../amazonqGumby/chat/storages/chatSess
 import { encodeHTML } from '../../../shared/utilities/textUtilities'
 import { convertToTimeString } from '../../../shared/datetime'
 import { getAuthType } from '../../../auth/utils'
+import { UserWrittenCodeTracker } from '../../tracker/userWrittenCodeTracker'
 
 export function getSha256(buffer: Buffer) {
     const hasher = crypto.createHash('sha256')
@@ -767,6 +768,7 @@ export async function downloadResultArchive(
         throw e
     } finally {
         cwStreamingClient.destroy()
+        UserWrittenCodeTracker.instance.onQFeatureInvoked()
     }
 }
 
