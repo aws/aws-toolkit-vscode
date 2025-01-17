@@ -68,6 +68,7 @@ import { DefaultAmazonQAppInitContext } from '../../amazonq/apps/initContext'
 import path from 'path'
 import { UserWrittenCodeTracker } from '../tracker/userWrittenCodeTracker'
 import { parsePatch } from 'diff'
+import { createCodeIssueGroupingStrategyPrompter } from '../ui/prompters'
 
 const MessageTimeOut = 5_000
 
@@ -886,6 +887,14 @@ export const showSecurityIssueFilters = Commands.declare({ id: 'aws.amazonq.secu
         })
     }
 })
+
+export const showCodeIssueGroupingQuickPick = Commands.declare(
+    { id: 'aws.amazonq.codescan.showGroupingStrategy' },
+    () => async () => {
+        const prompter = createCodeIssueGroupingStrategyPrompter()
+        await prompter.prompt()
+    }
+)
 
 export const focusIssue = Commands.declare(
     { id: 'aws.amazonq.security.focusIssue' },
