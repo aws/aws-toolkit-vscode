@@ -111,10 +111,6 @@ export class ChildProcessTracker {
     }
 
     private async checkProcessUsage(pid: number): Promise<void> {
-        const doesExceedThreshold = (resource: keyof ProcessStats, value: number) => {
-            const threshold = ChildProcessTracker.thresholds[resource]
-            return value > threshold
-        }
         const warn = (resource: SystemResource, value: number) => {
             telemetry.ide_childProcessWarning.run((span) => {
                 this.logger.warn(`Process ${this.getProcessAsStr(pid)} exceeded ${resource} threshold: ${value}`)
@@ -135,6 +131,11 @@ export class ChildProcessTracker {
             if (doesExceedThreshold(processStat, stats[processStat])) {
                 warn(toTelemetryResource(processStat), stats[processStat])
             }
+        }
+
+        function doesExceedThreshold(resource: keyof ProcessStats, value: number) {
+            const threshold = ChildProcessTracker.thresholds[resource]
+            return value > threshold
         }
     }
 
