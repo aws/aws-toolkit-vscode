@@ -5,7 +5,7 @@
 
 import request, { RequestError } from '../../shared/request'
 import { getLogger } from '../../shared/logger/logger'
-import { featureName } from '../constants'
+import { featureName } from '../../amazonqFeatureDev/constants'
 
 import { UploadCodeError, UploadURLExpired } from '../errors'
 import { ToolkitError } from '../../shared/errors'

@@ -6,11 +6,11 @@
 import * as vscode from 'vscode'
 import { VirtualFileSystem } from '../shared/virtualFilesystem'
 import type { CancellationTokenSource } from 'vscode'
-import { FeatureDevClient } from './client/featureDev'
-import { TelemetryHelper } from './util/telemetryHelper'
 import { CodeReference, UploadHistory } from '../amazonq/webview/ui/connector'
 import { DiffTreeFileInfo } from '../amazonq/webview/ui/diffTree/types'
 import { Messenger } from '../amazonq/commons/connector/baseMessenger'
+import { Client } from './client/client'
+import { TelemetryHelper } from './util/telemetryHelper'
 
 export type Interaction = {
     // content to be sent back to the chat UI
@@ -70,7 +70,7 @@ export interface SessionStateConfig {
     workspaceRoots: string[]
     workspaceFolders: CurrentWsFolders
     conversationId: string
-    proxyClient: FeatureDevClient
+    proxyClient: Client
     uploadId: string
     currentCodeGenerationId?: string
 }

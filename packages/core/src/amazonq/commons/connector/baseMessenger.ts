@@ -26,7 +26,7 @@ import {
 } from './connectorMessages'
 import { FollowUpTypes } from '../types'
 import { messageWithConversationId } from '../../../amazonqFeatureDev/userFacingText'
-import { DeletedFileInfo, NewFileInfo } from '../../../amazonqFeatureDev/types'
+import { DeletedFileInfo, NewFileInfo } from '../../../amazonqFeatureCommon/types'
 import { FeatureAuthState } from '../../../codewhisperer/util/authUtil'
 
 export class Messenger {

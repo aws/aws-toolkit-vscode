@@ -41,7 +41,7 @@ import {
     getWorkspaceRelativePath,
     isMultiRootWorkspace,
 } from '../../../shared/utilities/workspaceUtils'
-import { getPathsFromZipFilePath } from '../../../amazonqFeatureDev/util/files'
+import { getPathsFromZipFilePath } from '../../../amazonqFeatureCommon/util/files'
 import { FollowUpTypes } from '../../../amazonq/commons/types'
 import { DocGenerationTask } from '../docGenerationTask'
 import { DevPhase } from '../../types'

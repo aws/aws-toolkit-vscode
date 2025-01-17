@@ -5,10 +5,11 @@
 import assert from 'assert'
 import sinon from 'sinon'
 import * as vscode from 'vscode'
-import { featureDevScheme, NewFileInfo, NewFileZipContents, registerNewFiles } from '../../amazonqFeatureDev'
+import { featureDevScheme, NewFileInfo, NewFileZipContents } from '../../amazonqFeatureDev'
 import { getEqualOSTestOptions, performanceTest } from '../../shared/performance/performance'
 import { getTestWorkspaceFolder } from '../integrationTestsUtilities'
 import { VirtualFileSystem } from '../../shared'
+import { registerNewFiles } from '../../amazonqFeatureCommon/util/files'
 
 interface SetupResult {
     workspace: vscode.WorkspaceFolder

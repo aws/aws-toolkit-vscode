@@ -6,14 +6,18 @@
 import * as vscode from 'vscode'
 import assert from 'assert'
 import sinon from 'sinon'
-import { MockCodeGenState, CodeGenState, PrepareCodeGenState } from '../../../amazonqFeatureDev/session/sessionState'
+import {
+    MockCodeGenState,
+    FeatureDevPrepareCodeGenState,
+    FeatureDevCodeGenState,
+} from '../../../amazonqFeatureDev/session/sessionState'
 import { VirtualFileSystem } from '../../../shared/virtualFilesystem'
-import { SessionStateConfig, SessionStateAction } from '../../../amazonqFeatureDev/types'
+import { SessionStateConfig, SessionStateAction } from '../../../amazonqFeatureCommon/types'
 import { MessagePublisher } from '../../../amazonq/messages/messagePublisher'
 import { FeatureDevClient } from '../../../amazonqFeatureDev/client/featureDev'
 import { ToolkitError } from '../../../shared/errors'
 import * as crypto from '../../../shared/crypto'
-import { TelemetryHelper } from '../../../amazonqFeatureDev/util/telemetryHelper'
+import { TelemetryHelper } from '../../../amazonqFeatureCommon/util/telemetryHelper'
 import { createTestWorkspaceFolder } from '../../testUtil'
 import { Messenger } from '../../../amazonq/commons/connector/baseMessenger'
 import { AppToWebViewMessageDispatcher } from '../../../amazonq/commons/connector/connectorMessages'
@@ -95,20 +99,20 @@ describe('sessionState', () => {
         })
     })
 
-    describe('PrepareCodeGenState', () => {
+    describe('FeatureDevPrepareCodeGenState', () => {
         it('error when failing to prepare repo information', async () => {
             sinon.stub(vscode.workspace, 'findFiles').throws()
             mockCreateUploadUrl = sinon.stub().resolves({ uploadId: '', uploadUrl: '' })
             const testAction = mockSessionStateAction()
 
             await assert.rejects(() => {
-                return new PrepareCodeGenState(testConfig, [], [], [], tabId, 0).interact(testAction)
+                return new FeatureDevPrepareCodeGenState(testConfig, [], [], [], tabId, 0).interact(testAction)
             })
         })
     })
 
-    describe('CodeGenState', () => {
-        it('transitions to PrepareCodeGenState when codeGenerationStatus ready ', async () => {
+    describe('FeatureDevCodeGenState', () => {
+        it('transitions to FeatureDevPrepareCodeGenState when codeGenerationStatus ready ', async () => {
             mockGetCodeGeneration = sinon.stub().resolves({
                 codeGenerationStatus: { status: 'Complete' },
                 codeGenerationRemainingIterationCount: 2,
@@ -118,10 +122,10 @@ describe('sessionState', () => {
             mockExportResultArchive = sinon.stub().resolves({ newFileContents: [], deletedFiles: [], references: [] })
 
             const testAction = mockSessionStateAction()
-            const state = new CodeGenState(testConfig, [], [], [], tabId, 0, {}, 2, 3)
+            const state = new FeatureDevCodeGenState(testConfig, [], [], [], tabId, 0, {}, 2, 3)
             const result = await state.interact(testAction)
 
-            const nextState = new PrepareCodeGenState(testConfig, [], [], [], tabId, 1, 2, 3, undefined)
+            const nextState = new FeatureDevPrepareCodeGenState(testConfig, [], [], [], tabId, 1, 2, 3, undefined)
 
             assert.deepStrictEqual(result.nextState?.deletedFiles, nextState.deletedFiles)
             assert.deepStrictEqual(result.nextState?.filePaths, result.nextState?.filePaths)
@@ -131,7 +135,7 @@ describe('sessionState', () => {
         it('fails when codeGenerationStatus failed ', async () => {
             mockGetCodeGeneration = sinon.stub().rejects(new ToolkitError('Code generation failed'))
             const testAction = mockSessionStateAction()
-            const state = new CodeGenState(testConfig, [], [], [], tabId, 0, {})
+            const state = new FeatureDevCodeGenState(testConfig, [], [], [], tabId, 0, {})
             try {
                 await state.interact(testAction)
                 assert.fail('failed code generations should throw an error')

@@ -15,7 +15,7 @@ import {
     MetricDataOperationName,
     MetricDataResult,
     NewFileInfo,
-} from '../../../../amazonqFeatureDev/types'
+} from '../../../../amazonqFeatureCommon/types'
 import { Session } from '../../../../amazonqFeatureDev/session/session'
 import { Prompter } from '../../../../shared/ui/prompter'
 import { assertTelemetry, toFile } from '../../../testUtil'
@@ -35,7 +35,10 @@ import {
     UserMessageNotFoundError,
     ZipFileError,
 } from '../../../../amazonqFeatureDev/errors'
-import { CodeGenState, PrepareCodeGenState } from '../../../../amazonqFeatureDev/session/sessionState'
+import {
+    FeatureDevCodeGenState,
+    FeatureDevPrepareCodeGenState,
+} from '../../../../amazonqFeatureDev/session/sessionState'
 import { FeatureDevClient } from '../../../../amazonqFeatureDev/client/featureDev'
 import { createAmazonQUri } from '../../../../amazonq/commons/diff'
 import { AuthUtil } from '../../../../codewhisperer'
@@ -295,7 +298,15 @@ describe('Controller', () => {
                 workspaceFolders,
             }
 
-            const codeGenState = new CodeGenState(testConfig, getFilePaths(controllerSetup), [], [], tabID, 0, {})
+            const codeGenState = new FeatureDevCodeGenState(
+                testConfig,
+                getFilePaths(controllerSetup),
+                [],
+                [],
+                tabID,
+                0,
+                {}
+            )
             const newSession = await createSession({
                 messenger: controllerSetup.messenger,
                 sessionState: codeGenState,
@@ -352,7 +363,7 @@ describe('Controller', () => {
     describe('insertCode', () => {
         it('sets the number of files accepted counting also deleted files', async () => {
             async function insertCode() {
-                const initialState = new PrepareCodeGenState(
+                const initialState = new FeatureDevPrepareCodeGenState(
                     {
                         conversationId: conversationID,
                         proxyClient: new FeatureDevClient(),
@@ -499,7 +510,15 @@ describe('Controller', () => {
                     workspaceFolders,
                 }
 
-                const codeGenState = new CodeGenState(testConfig, getFilePaths(controllerSetup), [], [], tabID, 0, {})
+                const codeGenState = new FeatureDevCodeGenState(
+                    testConfig,
+                    getFilePaths(controllerSetup),
+                    [],
+                    [],
+                    tabID,
+                    0,
+                    {}
+                )
                 const newSession = await createSession({
                     messenger: controllerSetup.messenger,
                     sessionState: codeGenState,

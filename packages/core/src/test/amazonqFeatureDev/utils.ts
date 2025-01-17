@@ -10,7 +10,7 @@ import { ChatControllerEventEmitters, FeatureDevController } from '../../amazonq
 import { FeatureDevChatSessionStorage } from '../../amazonqFeatureDev/storages/chatSession'
 import { createTestWorkspaceFolder } from '../testUtil'
 import { Session } from '../../amazonqFeatureDev/session/session'
-import { SessionState } from '../../amazonqFeatureDev/types'
+import { SessionState } from '../../amazonqFeatureCommon/types'
 import { FeatureDevClient } from '../../amazonqFeatureDev/client/featureDev'
 import { VirtualMemoryFile } from '../../shared/virtualMemoryFile'
 import path from 'path'
