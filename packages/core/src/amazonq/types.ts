@@ -6,10 +6,10 @@
 import * as vscode from 'vscode'
 import { VirtualFileSystem } from '../shared/virtualFilesystem'
 import type { CancellationTokenSource } from 'vscode'
-import { CodeReference, UploadHistory } from '../amazonq/webview/ui/connector'
-import { DiffTreeFileInfo } from '../amazonq/webview/ui/diffTree/types'
-import { Messenger } from '../amazonq/commons/connector/baseMessenger'
-import { Client } from './client/client'
+import { CodeReference, UploadHistory } from './webview/ui/connector'
+import { DiffTreeFileInfo } from './webview/ui/diffTree/types'
+import { Messenger } from './commons/connector/baseMessenger'
+import { FeatureClient } from './client/client'
 import { TelemetryHelper } from './util/telemetryHelper'
 
 export type Interaction = {
@@ -70,7 +70,7 @@ export interface SessionStateConfig {
     workspaceRoots: string[]
     workspaceFolders: CurrentWsFolders
     conversationId: string
-    proxyClient: Client
+    proxyClient: FeatureClient
     uploadId: string
     currentCodeGenerationId?: string
 }

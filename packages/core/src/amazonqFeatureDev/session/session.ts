@@ -13,14 +13,14 @@ import {
     type SessionState,
     type SessionStateConfig,
     UpdateFilesPathsParams,
-} from '../../amazonqFeatureCommon/types'
+} from '../../amazonq/types'
 import { ConversationIdNotFoundError } from '../errors'
 import { featureDevChat, referenceLogText, featureDevScheme } from '../constants'
 import fs from '../../shared/fs/fs'
 import { FeatureDevClient } from '../client/featureDev'
 import { codeGenRetryLimit } from '../limits'
 import { telemetry } from '../../shared/telemetry/telemetry'
-import { TelemetryHelper } from '../../amazonqFeatureCommon/util/telemetryHelper'
+import { TelemetryHelper } from '../../amazonq/util/telemetryHelper'
 import { ReferenceLogViewProvider } from '../../codewhisperer/service/referenceLogViewProvider'
 import { AuthUtil } from '../../codewhisperer/util/authUtil'
 import { getLogger } from '../../shared/logger/logger'

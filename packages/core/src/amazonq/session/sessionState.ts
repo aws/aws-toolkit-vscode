@@ -9,7 +9,7 @@ import globals from '../../shared/extensionGlobals'
 import { getLogger } from '../../shared/logger'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { VirtualFileSystem } from '../../shared/virtualFilesystem'
-import { CodeReference, UploadHistory } from '../../amazonq/webview/ui/connector'
+import { CodeReference, UploadHistory } from '../webview/ui/connector'
 import { AuthUtil } from '../../codewhisperer/util/authUtil'
 import { randomUUID } from '../../shared/crypto'
 import { i18n } from '../../shared/i18n-helper'
@@ -185,7 +185,30 @@ export abstract class BasePrepareCodeGenState implements SessionState {
         this.config.workspaceRoots = [workspaceRoot]
     }
 
-    protected abstract createNextState(config: SessionStateConfig): SessionState
+    protected createNextState(
+        config: SessionStateConfig,
+        StateClass?: new (
+            config: SessionStateConfig,
+            filePaths: NewFileInfo[],
+            deletedFiles: DeletedFileInfo[],
+            references: CodeReference[],
+            tabID: string,
+            currentIteration: number,
+            uploadHistory: UploadHistory,
+            codeGenerationRemainingIterationCount?: number,
+            codeGenerationTotalIterationCount?: number
+        ) => SessionState
+    ): SessionState {
+        return new StateClass!(
+            config,
+            this.filePaths,
+            this.deletedFiles,
+            this.references,
+            this.tabID,
+            this.currentIteration,
+            this.uploadHistory
+        )
+    }
 
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
         const uploadId = await telemetry.amazonq_createUpload.run(async (span) => {
@@ -226,6 +249,19 @@ export interface CodeGenerationParams {
     workspaceFolders: CurrentWsFolders
 }
 
+export interface CreateNextStateParams {
+    filePaths: NewFileInfo[]
+    deletedFiles: DeletedFileInfo[]
+    references: CodeReference[]
+    currentIteration: number
+    remainingIterations?: number
+    totalIterations?: number
+    uploadHistory: UploadHistory
+    tokenSource: vscode.CancellationTokenSource
+    currentCodeGenerationId?: string
+    codeGenerationId?: string
+}
+
 export abstract class BaseCodeGenState extends CodeGenBase implements SessionState {
     constructor(
         config: SessionStateConfig,
@@ -241,21 +277,39 @@ export abstract class BaseCodeGenState extends CodeGenBase implements SessionSta
         super(config, tabID)
     }
 
-    protected abstract createNextState(
+    protected createNextState(
         config: SessionStateConfig,
-        params: {
-            filePaths: NewFileInfo[]
-            deletedFiles: DeletedFileInfo[]
-            references: CodeReference[]
-            currentIteration: number
-            remainingIterations?: number
-            totalIterations?: number
-            uploadHistory: UploadHistory
-            tokenSource: vscode.CancellationTokenSource
-            currentCodeGenerationId?: string
+        params: CreateNextStateParams,
+        StateClass?: new (
+            config: SessionStateConfig,
+            filePaths: NewFileInfo[],
+            deletedFiles: DeletedFileInfo[],
+            references: CodeReference[],
+            tabID: string,
+            currentIteration: number,
+            remainingIterations?: number,
+            totalIterations?: number,
+            uploadHistory?: UploadHistory,
+            tokenSource?: vscode.CancellationTokenSource,
+            currentCodeGenerationId?: string,
             codeGenerationId?: string
-        }
-    ): SessionState
+        ) => SessionState
+    ): SessionState {
+        return new StateClass!(
+            config,
+            params.filePaths,
+            params.deletedFiles,
+            params.references,
+            this.tabID,
+            params.currentIteration,
+            params.remainingIterations,
+            params.totalIterations,
+            params.uploadHistory,
+            params.tokenSource,
+            params.currentCodeGenerationId,
+            params.codeGenerationId
+        )
+    }
 
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
         return telemetry.amazonq_codeGenerationInvoke.run(async (span) => {

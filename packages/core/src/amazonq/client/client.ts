@@ -5,7 +5,7 @@
 
 import { ServiceOptions } from '../../shared'
 
-export abstract class Client {
+export abstract class FeatureClient {
     public abstract getClient(options?: Partial<ServiceOptions>): Promise<any>
 
     public abstract createConversation(): Promise<string>

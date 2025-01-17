@@ -9,7 +9,7 @@ import { featureDevScheme, NewFileInfo, NewFileZipContents } from '../../amazonq
 import { getEqualOSTestOptions, performanceTest } from '../../shared/performance/performance'
 import { getTestWorkspaceFolder } from '../integrationTestsUtilities'
 import { VirtualFileSystem } from '../../shared'
-import { registerNewFiles } from '../../amazonqFeatureCommon/util/files'
+import { registerNewFiles } from '../../amazonq/util/files'
 
 interface SetupResult {
     workspace: vscode.WorkspaceFolder

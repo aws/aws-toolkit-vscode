@@ -11,7 +11,7 @@ import { ContentLengthError, PrepareRepoFailedError } from '../../amazonqFeature
 import { getLogger } from '../../shared/logger/logger'
 import { maxFileSizeBytes } from '../../amazonqFeatureDev/limits'
 import { createHash } from 'crypto'
-import { CurrentWsFolders, DeletedFileInfo, NewFileInfo, NewFileZipContents } from '../../amazonqFeatureCommon/types'
+import { CurrentWsFolders, DeletedFileInfo, NewFileInfo, NewFileZipContents } from '../types'
 import { hasCode, ToolkitError } from '../../shared/errors'
 import { AmazonqCreateUpload, Span, telemetry as amznTelemetry, telemetry } from '../../shared/telemetry/telemetry'
 import { TelemetryHelper } from './telemetryHelper'

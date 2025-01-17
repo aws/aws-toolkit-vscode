@@ -24,9 +24,8 @@ import {
     SessionStateAction,
     SessionStateConfig,
     SessionStateInteraction,
-} from '../../amazonqFeatureCommon/types'
-import { registerNewFiles } from '../../amazonqFeatureCommon/util/files'
-import { CodeReference, UploadHistory } from '../../amazonq/webview/ui/connector'
+} from '../../amazonq/types'
+import { registerNewFiles } from '../../amazonq/util/files'
 import { randomUUID } from '../../shared/crypto'
 import { collectFiles } from '../../shared/utilities/workspaceUtils'
 import { i18n } from '../../shared/i18n-helper'
@@ -36,7 +35,8 @@ import {
     BaseCodeGenState,
     BaseMessenger,
     BasePrepareCodeGenState,
-} from '../../amazonqFeatureCommon/session/sessionState'
+    CreateNextStateParams,
+} from '../../amazonq/session/sessionState'
 
 export const EmptyCodeGenID = 'EMPTY_CURRENT_CODE_GENERATION_ID'
 
@@ -221,48 +221,13 @@ export class FeatureDevCodeGenState extends BaseCodeGenState {
         }
     }
 
-    protected createNextState(
-        config: SessionStateConfig,
-        params: {
-            filePaths: NewFileInfo[]
-            deletedFiles: DeletedFileInfo[]
-            references: CodeReference[]
-            currentIteration: number
-            remainingIterations?: number
-            totalIterations?: number
-            uploadHistory: UploadHistory
-            tokenSource: vscode.CancellationTokenSource
-            currentCodeGenerationId?: string
-            codeGenerationId?: string
-        }
-    ): SessionState {
-        return new FeatureDevPrepareCodeGenState(
-            config,
-            params.filePaths,
-            params.deletedFiles,
-            params.references,
-            this.tabID,
-            params.currentIteration,
-            params.remainingIterations,
-            params.totalIterations,
-            params.uploadHistory,
-            params.tokenSource,
-            params.currentCodeGenerationId,
-            params.codeGenerationId
-        )
+    protected override createNextState(config: SessionStateConfig, params: CreateNextStateParams): SessionState {
+        return super.createNextState(config, params, FeatureDevPrepareCodeGenState)
     }
 }
 
 export class FeatureDevPrepareCodeGenState extends BasePrepareCodeGenState {
-    protected createNextState(config: SessionStateConfig): SessionState {
-        return new FeatureDevCodeGenState(
-            config,
-            this.filePaths,
-            this.deletedFiles,
-            this.references,
-            this.tabID,
-            this.currentIteration,
-            this.uploadHistory
-        )
+    protected override createNextState(config: SessionStateConfig): SessionState {
+        return super.createNextState(config, FeatureDevCodeGenState)
     }
 }

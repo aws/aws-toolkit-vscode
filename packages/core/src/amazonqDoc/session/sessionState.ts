@@ -3,14 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
 import { ToolkitError } from '../../shared/errors'
 import { DocGenerationStep, docScheme, getFileSummaryPercentage, Mode } from '../constants'
 
-import { CodeReference, UploadHistory } from '../../amazonq/webview/ui/connector'
 import { i18n } from '../../shared/i18n-helper'
 
-import { DeletedFileInfo, NewFileInfo, SessionState, SessionStateAction, SessionStateConfig } from '../types'
+import { NewFileInfo, SessionState, SessionStateAction, SessionStateConfig } from '../types'
 import { Intent } from '../../amazonqFeatureDev'
 import {
     ContentLengthError,
@@ -24,7 +22,7 @@ import {
     WorkspaceEmptyError,
 } from '../errors'
 import { DocMessenger } from '../messenger'
-import { BaseCodeGenState, BasePrepareCodeGenState } from '../../amazonqFeatureCommon/session/sessionState'
+import { BaseCodeGenState, BasePrepareCodeGenState, CreateNextStateParams } from '../../amazonq/session/sessionState'
 
 export class DocCodeGenState extends BaseCodeGenState {
     protected handleProgress(messenger: DocMessenger, detail?: string): void {
@@ -112,48 +110,13 @@ export class DocCodeGenState extends BaseCodeGenState {
         )
     }
 
-    protected createNextState(
-        config: SessionStateConfig,
-        params: {
-            filePaths: NewFileInfo[]
-            deletedFiles: DeletedFileInfo[]
-            references: CodeReference[]
-            currentIteration: number
-            remainingIterations?: number
-            totalIterations?: number
-            uploadHistory: UploadHistory
-            tokenSource: vscode.CancellationTokenSource
-            currentCodeGenerationId?: string
-            codeGenerationId?: string
-        }
-    ): SessionState {
-        return new DocPrepareCodeGenState(
-            config,
-            params.filePaths,
-            params.deletedFiles,
-            params.references,
-            this.tabID,
-            params.currentIteration,
-            params.remainingIterations,
-            params.totalIterations,
-            params.uploadHistory,
-            params.tokenSource,
-            params.currentCodeGenerationId,
-            params.codeGenerationId
-        )
+    protected override createNextState(config: SessionStateConfig, params: CreateNextStateParams): SessionState {
+        return super.createNextState(config, params, DocPrepareCodeGenState)
     }
 }
 
 export class DocPrepareCodeGenState extends BasePrepareCodeGenState {
-    protected createNextState(config: SessionStateConfig): SessionState {
-        return new DocCodeGenState(
-            config,
-            this.filePaths,
-            this.deletedFiles,
-            this.references,
-            this.tabID,
-            this.currentIteration,
-            this.uploadHistory
-        )
+    protected override createNextState(config: SessionStateConfig): SessionState {
+        return super.createNextState(config, DocCodeGenState)
     }
 }
