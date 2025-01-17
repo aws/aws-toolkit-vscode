@@ -366,9 +366,14 @@
                     "group": "y_toolkitMeta@2"
                 },
                 {
+                    "command": "aws.amazonq.codescan.showGroupingStrategy",
+                    "when": "view == aws.amazonq.SecurityIssuesTree",
+                    "group": "navigation@1"
+                },
+                {
                     "command": "aws.amazonq.security.showFilters",
                     "when": "view == aws.amazonq.SecurityIssuesTree",
-                    "group": "navigation"
+                    "group": "navigation@2"
                 }
             ],
             "view/item/context": [
@@ -724,6 +729,12 @@
             {
                 "command": "aws.amazonq.security.showFilters",
                 "title": "%AWS.command.amazonq.filterIssues%",
+                "icon": "$(filter)",
+                "enablement": "view == aws.amazonq.SecurityIssuesTree"
+            },
+            {
+                "command": "aws.amazonq.codescan.showGroupingStrategy",
+                "title": "%AWS.command.amazonq.groupIssues%",
                 "icon": "$(list-filter)",
                 "enablement": "view == aws.amazonq.SecurityIssuesTree"
             },
