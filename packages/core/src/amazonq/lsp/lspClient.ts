@@ -267,7 +267,8 @@ export async function activate(extensionContext: ExtensionContext, resourcePaths
             )
         })
     )
-    void LspClient.instance.client.onReady().then(() => {
+
+    return LspClient.instance.client.onReady().then(() => {
         const disposableFunc = { dispose: () => rangeFormatting?.dispose() as void }
         toDispose.push(disposableFunc)
     })
