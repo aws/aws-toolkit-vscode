@@ -13,6 +13,7 @@ import { TargetContent, logger, LspResult, LspVersion, Manifest } from './types'
 import { getApplicationSupportFolder } from '../vscode/env'
 import { createHash } from '../crypto'
 import request from '../request'
+import { telemetry } from '../telemetry'
 
 export class LanguageServerResolver {
     constructor(
@@ -164,33 +165,35 @@ export class LanguageServerResolver {
             await fs.mkdir(downloadDirectory)
         }
 
-        const fetchResults = await Promise.all(
-            contents.map(async (content) => {
-                return {
-                    res: await request.fetch('GET', content.url).response,
-                    hash: content.hashes[0],
-                    filename: content.filename,
-                }
-            })
-        )
-        const filesToDownload = (
-            await Promise.all(
-                fetchResults.flatMap(async (fetchResult) => {
-                    if (!fetchResult.res.ok || !fetchResult.res.body) {
-                        return []
-                    }
+        const fetchTasks = contents.map(async (content) => {
+            return {
+                res: await request.fetch('GET', content.url).response,
+                hash: content.hashes[0],
+                filename: content.filename,
+            }
+        })
+        const fetchResults = await Promise.all(fetchTasks)
+        const verifyTasks = fetchResults.flatMap(async (fetchResult) => {
+            if (!fetchResult.res.ok || !fetchResult.res.body) {
+                return []
+            }
 
-                    const arrBuffer = await fetchResult.res.arrayBuffer()
-                    const data = Buffer.from(arrBuffer)
+            const arrBuffer = await fetchResult.res.arrayBuffer()
+            const data = Buffer.from(arrBuffer)
 
-                    const hash = createHash('sha384', data)
-                    if (hash === fetchResult.hash) {
-                        return [{ filename: fetchResult.filename, data }]
-                    }
-                    return []
-                })
-            )
-        ).flat()
+            const hash = createHash('sha384', data)
+            if (hash === fetchResult.hash) {
+                return [{ filename: fetchResult.filename, data }]
+            }
+            return []
+        })
+        const filesToDownload = await telemetry.lsp_setup.run(async (span) => {
+            span.record({ lspSetupStage: 'validate' })
+            const startTime = performance.now()
+            const result = (await Promise.all(verifyTasks)).flat()
+            span.record({ duration: performance.now() - startTime })
+            return result
+        })
 
         if (filesToDownload.length !== contents.length) {
             return false
