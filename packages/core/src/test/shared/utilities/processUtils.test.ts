@@ -460,8 +460,8 @@ describe('ChildProcessTracker', function () {
             const runningProcess = startSleepProcess()
 
             const highCpu: ProcessStats = {
-                cpu: ChildProcessTracker.thresholds.cpu + 1,
-                memory: 0,
+                cpuPercent: ChildProcessTracker.thresholds.cpuPercent + 1,
+                memoryBytes: 0,
             }
 
             usageMock.resolves(highCpu)
@@ -479,8 +479,8 @@ describe('ChildProcessTracker', function () {
         it('logs a warning message and emits metric when memory exceeds threshold', async function () {
             const runningProcess = startSleepProcess()
             const highMemory: ProcessStats = {
-                cpu: 0,
-                memory: ChildProcessTracker.thresholds.memory + 1,
+                cpuPercent: 0,
+                memoryBytes: ChildProcessTracker.thresholds.memoryBytes + 1,
             }
 
             usageMock.resolves(highMemory)
@@ -498,7 +498,7 @@ describe('ChildProcessTracker', function () {
             const runningProcess = startSleepProcess()
 
             usageMock.resolves({
-                cpu: ChildProcessTracker.thresholds.cpu + 1,
+                cpu: ChildProcessTracker.thresholds.cpuPercent + 1,
                 memory: 0,
             })
 
@@ -512,8 +512,8 @@ describe('ChildProcessTracker', function () {
             const runningProcess = startSleepProcess()
 
             usageMock.resolves({
-                cpu: ChildProcessTracker.thresholds.cpu - 1,
-                memory: ChildProcessTracker.thresholds.memory - 1,
+                cpu: ChildProcessTracker.thresholds.cpuPercent - 1,
+                memory: ChildProcessTracker.thresholds.memoryBytes - 1,
             })
 
             await clock.tickAsync(ChildProcessTracker.pollingInterval)

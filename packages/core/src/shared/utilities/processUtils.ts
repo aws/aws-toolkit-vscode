@@ -8,7 +8,7 @@ import * as logger from '../logger'
 import { Timeout, CancellationError, waitUntil } from './timeoutUtils'
 import { PollingSet } from './pollingSet'
 import { getLogger } from '../logger/logger'
-import { telemetry } from '../telemetry'
+import { SystemResource, telemetry } from '../telemetry'
 
 export interface RunParameterContext {
     /** Reports an error parsed from the stdin/stdout streams. */
@@ -64,14 +64,18 @@ export interface ChildProcessResult {
 export const eof = Symbol('EOF')
 type pid = number
 export interface ProcessStats {
-    memory: number
-    cpu: number
+    memoryBytes: number
+    cpuPercent: number
+}
+
+function toTelemetryResource(k: keyof ProcessStats): SystemResource {
+    return k === 'cpuPercent' ? 'cpu' : 'memory'
 }
 export class ChildProcessTracker {
     static readonly pollingInterval: number = 10000 // Check usage every 10 seconds
     static readonly thresholds: ProcessStats = {
-        memory: 100, // 100 MB
-        cpu: 50,
+        memoryBytes: 100 * 1024 * 1024, // 100 MB
+        cpuPercent: 50,
     }
     readonly logger: logger.Logger
     static #instance: ChildProcessTracker
@@ -111,7 +115,7 @@ export class ChildProcessTracker {
             const threshold = ChildProcessTracker.thresholds[resource]
             return value > threshold
         }
-        const warn = (resource: keyof ProcessStats, value: number) => {
+        const warn = (resource: SystemResource, value: number) => {
             telemetry.ide_childProcessWarning.run((span) => {
                 this.logger.warn(`Process ${this.getProcessAsStr(pid)} exceeded ${resource} threshold: ${value}`)
                 span.record({ systemResource: resource, childProcess: this.getProcessAsStr(pid) })
@@ -127,9 +131,9 @@ export class ChildProcessTracker {
             this.logger.warn(`Failed to get process stats for process with pid ${pid}`)
             return
         }
-        for (const resource of Object.keys(ChildProcessTracker.thresholds) as (keyof ProcessStats)[]) {
-            if (doesExceedThreshold(resource, stats[resource])) {
-                warn(resource as keyof ProcessStats, stats[resource])
+        for (const processStat of Object.keys(ChildProcessTracker.thresholds) as (keyof ProcessStats)[]) {
+            if (doesExceedThreshold(processStat, stats[processStat])) {
+                warn(toTelemetryResource(processStat), stats[processStat])
             }
         }
     }
@@ -190,7 +194,7 @@ export class ChildProcessTracker {
             }
             const usage = await this.getAllUsage()
             const logMsg = Array.from(usage.entries()).reduce((acc, [pid, stats]) => {
-                return acc + `Process ${pid}: ${stats.cpu}% cpu, ${stats.memory} MB of memory\n`
+                return acc + `Process ${pid}: ${stats.cpuPercent}% cpu, ${stats.memoryBytes} B of memory\n`
             }, '')
             this.logger.info(`Active Subprocesses (${this.size} active)\n${logMsg}`)
         })
@@ -202,10 +206,10 @@ export class ChildProcessTracker {
             return process.platform === 'win32' ? getWindowsUsage() : getUnixUsage()
         } catch (e) {
             this.logger.warn(`Failed to get process stats for ${pid}: ${e}`)
-            return { cpu: 0, memory: 0 }
+            return { cpuPercent: 0, memoryBytes: 0 }
         }
 
-        function getWindowsUsage() {
+        function getWindowsUsage(): ProcessStats {
             const cpuOutput = proc
                 .execFileSync('wmic', [
                     'path',
@@ -224,12 +228,12 @@ export class ChildProcessTracker {
             const memoryBytes = parseInt(memOutput.split('\n')[1]) * 1024
 
             return {
-                cpu: isNaN(cpuPercentage) ? 0 : cpuPercentage,
-                memory: memoryBytes / (1024 * 1024),
+                cpuPercent: isNaN(cpuPercentage) ? 0 : cpuPercentage,
+                memoryBytes,
             }
         }
 
-        function getUnixUsage() {
+        function getUnixUsage(): ProcessStats {
             const cpuMemOutput = proc.execFileSync('ps', ['-p', pid.toString(), '-o', '%cpu,%mem']).toString()
             const rssOutput = proc.execFileSync('ps', ['-p', pid.toString(), '-o', 'rss']).toString()
 
@@ -238,16 +242,16 @@ export class ChildProcessTracker {
             const memoryBytes = parseInt(rssOutput.split('\n')[1]) * 1024
 
             return {
-                cpu: isNaN(cpuPercentage) ? 0 : cpuPercentage,
-                memory: memoryBytes / (1024 * 1024),
+                cpuPercent: isNaN(cpuPercentage) ? 0 : cpuPercentage,
+                memoryBytes,
             }
         }
     }
 }
 
 export interface ProcessStats {
-    memory: number
-    cpu: number
+    memoryBytes: number
+    cpuPercent: number
 }
 export class ChildProcess {
     static #runningProcesses = ChildProcessTracker.instance
