@@ -8,7 +8,7 @@ import * as logger from '../logger'
 import { Timeout, CancellationError, waitUntil } from './timeoutUtils'
 import { PollingSet } from './pollingSet'
 import { getLogger } from '../logger/logger'
-import { SystemResource, telemetry } from '../telemetry'
+import { SystemResource, telemetry } from '../telemetry/telemetry'
 
 export interface RunParameterContext {
     /** Reports an error parsed from the stdin/stdout streams. */
