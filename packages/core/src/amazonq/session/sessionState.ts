@@ -24,7 +24,7 @@ import {
     SessionStateConfig,
     SessionStateInteraction,
     SessionStatePhase,
-} from '../types'
+} from '../commons/types'
 import { prepareRepoData, getDeletedFileInfos, registerNewFiles } from '../util/files'
 import { uploadCode } from '../util/upload'
 

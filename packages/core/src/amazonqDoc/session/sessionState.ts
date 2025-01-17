@@ -9,7 +9,6 @@ import { DocGenerationStep, docScheme, getFileSummaryPercentage, Mode } from '..
 import { i18n } from '../../shared/i18n-helper'
 
 import { NewFileInfo, SessionState, SessionStateAction, SessionStateConfig } from '../types'
-import { Intent } from '../../amazonqFeatureDev'
 import {
     ContentLengthError,
     DocServiceError,
@@ -23,6 +22,7 @@ import {
 } from '../errors'
 import { DocMessenger } from '../messenger'
 import { BaseCodeGenState, BasePrepareCodeGenState, CreateNextStateParams } from '../../amazonq/session/sessionState'
+import { Intent } from '../../amazonq/commons/types'
 
 export class DocCodeGenState extends BaseCodeGenState {
     protected handleProgress(messenger: DocMessenger, detail?: string): void {

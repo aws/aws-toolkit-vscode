@@ -20,7 +20,7 @@ import {
     SessionState as FeatureDevSessionState,
     SessionStateAction as FeatureDevSessionStateAction,
     SessionStateInteraction as FeatureDevSessionStateInteraction,
-} from '../amazonq/types'
+} from '../amazonq/commons/types'
 
 import { Mode } from './constants'
 import { DocMessenger } from './messenger'

@@ -9,8 +9,8 @@ import sinon from 'sinon'
 import { DocPrepareCodeGenState, SessionStateConfig } from '../../../amazonqDoc'
 import { createMockSessionStateAction } from '../../amazonq/utils'
 
-import { TestSessionMocks, createMockSessionStateConfig, createBasicTestConfig } from '../../amazonq/utils'
-import { createSessionTestSetup } from '../../amazonq/session/testSetup'
+import { TestSessionMocks } from '../../amazonq/utils'
+import { beforeEachFunc, createSessionTestSetup } from '../../amazonq/session/testSetup'
 
 let testMocks: TestSessionMocks
 
@@ -19,13 +19,8 @@ describe('sessionStateDoc', () => {
     let testConfig: SessionStateConfig
 
     beforeEach(async () => {
-        testMocks = {
-            getCodeGeneration: sinon.stub(),
-            exportResultArchive: sinon.stub(),
-            createUploadUrl: sinon.stub(),
-        }
-        const basicConfig = await createBasicTestConfig(conversationId, uploadId, currentCodeGenerationId)
-        testConfig = createMockSessionStateConfig(basicConfig, testMocks)
+        testMocks = {}
+        testConfig = await beforeEachFunc(testMocks, conversationId, uploadId, currentCodeGenerationId)
     })
 
     afterEach(() => {
@@ -35,7 +30,7 @@ describe('sessionStateDoc', () => {
     describe('DocPrepareCodeGenState', () => {
         it('error when failing to prepare repo information', async () => {
             sinon.stub(vscode.workspace, 'findFiles').throws()
-            testMocks.createUploadUrl.resolves({ uploadId: '', uploadUrl: '' })
+            testMocks.createUploadUrl!.resolves({ uploadId: '', uploadUrl: '' })
             const testAction = createMockSessionStateAction()
 
             await assert.rejects(() => {

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export * from '../amazonq/types'
+// export * from '../amazonq/commons/types'
 export * from './userFacingText'
 export * from './errors'
 export * from './session/sessionState'

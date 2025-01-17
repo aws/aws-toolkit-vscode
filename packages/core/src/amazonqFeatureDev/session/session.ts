@@ -13,7 +13,7 @@ import {
     type SessionState,
     type SessionStateConfig,
     UpdateFilesPathsParams,
-} from '../../amazonq/types'
+} from '../../amazonq/commons/types'
 import { ConversationIdNotFoundError } from '../errors'
 import { featureDevChat, referenceLogText, featureDevScheme } from '../constants'
 import fs from '../../shared/fs/fs'

@@ -11,13 +11,13 @@ import {
     FeatureDevPrepareCodeGenState,
     FeatureDevCodeGenState,
 } from '../../../amazonqFeatureDev/session/sessionState'
-import { SessionStateConfig } from '../../../amazonq/types'
+import { SessionStateConfig } from '../../../amazonq/commons/types'
 import { ToolkitError } from '../../../shared/errors'
 import * as crypto from '../../../shared/crypto'
 import { createMockSessionStateAction } from '../../amazonq/utils'
 
-import { TestSessionMocks, createMockSessionStateConfig, createBasicTestConfig } from '../../amazonq/utils'
-import { createSessionTestSetup } from '../../amazonq/session/testSetup'
+import { TestSessionMocks } from '../../amazonq/utils'
+import { beforeEachFunc, createSessionTestSetup } from '../../amazonq/session/testSetup'
 
 let testMocks: TestSessionMocks
 
@@ -26,13 +26,8 @@ describe('sessionStateFeatureDev', () => {
     let testConfig: SessionStateConfig
 
     beforeEach(async () => {
-        testMocks = {
-            getCodeGeneration: sinon.stub(),
-            exportResultArchive: sinon.stub(),
-            createUploadUrl: sinon.stub(),
-        }
-        const basicConfig = await createBasicTestConfig(conversationId, uploadId, currentCodeGenerationId)
-        testConfig = createMockSessionStateConfig(basicConfig, testMocks)
+        testMocks = {}
+        testConfig = await beforeEachFunc(testMocks, conversationId, uploadId, currentCodeGenerationId)
     })
 
     afterEach(() => {
@@ -56,7 +51,7 @@ describe('sessionStateFeatureDev', () => {
     describe('FeatureDevPrepareCodeGenState', () => {
         it('error when failing to prepare repo information', async () => {
             sinon.stub(vscode.workspace, 'findFiles').throws()
-            testMocks.createUploadUrl.resolves({ uploadId: '', uploadUrl: '' })
+            testMocks.createUploadUrl!.resolves({ uploadId: '', uploadUrl: '' })
             const testAction = createMockSessionStateAction()
 
             await assert.rejects(() => {
@@ -67,13 +62,13 @@ describe('sessionStateFeatureDev', () => {
 
     describe('FeatureDevCodeGenState', () => {
         it('transitions to FeatureDevPrepareCodeGenState when codeGenerationStatus ready ', async () => {
-            testMocks.getCodeGeneration.resolves({
+            testMocks.getCodeGeneration!.resolves({
                 codeGenerationStatus: { status: 'Complete' },
                 codeGenerationRemainingIterationCount: 2,
                 codeGenerationTotalIterationCount: 3,
             })
 
-            testMocks.exportResultArchive.resolves({ newFileContents: [], deletedFiles: [], references: [] })
+            testMocks.exportResultArchive!.resolves({ newFileContents: [], deletedFiles: [], references: [] })
 
             const testAction = createMockSessionStateAction()
             const state = new FeatureDevCodeGenState(testConfig, [], [], [], tabId, 0, {}, 2, 3)
@@ -87,7 +82,7 @@ describe('sessionStateFeatureDev', () => {
         })
 
         it('fails when codeGenerationStatus failed ', async () => {
-            testMocks.getCodeGeneration.rejects(new ToolkitError('Code generation failed'))
+            testMocks.getCodeGeneration!.rejects(new ToolkitError('Code generation failed'))
             const testAction = createMockSessionStateAction()
             const state = new FeatureDevCodeGenState(testConfig, [], [], [], tabId, 0, {})
             try {

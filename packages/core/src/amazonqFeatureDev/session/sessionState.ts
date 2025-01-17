@@ -24,7 +24,7 @@ import {
     SessionStateAction,
     SessionStateConfig,
     SessionStateInteraction,
-} from '../../amazonq/types'
+} from '../../amazonq/commons/types'
 import { registerNewFiles } from '../../amazonq/util/files'
 import { randomUUID } from '../../shared/crypto'
 import { collectFiles } from '../../shared/utilities/workspaceUtils'
@@ -37,8 +37,6 @@ import {
     BasePrepareCodeGenState,
     CreateNextStateParams,
 } from '../../amazonq/session/sessionState'
-
-export const EmptyCodeGenID = 'EMPTY_CURRENT_CODE_GENERATION_ID'
 
 export class ConversationNotStartedState implements Omit<SessionState, 'uploadId'> {
     public tokenSource: vscode.CancellationTokenSource

@@ -10,7 +10,7 @@ import { ChatControllerEventEmitters, FeatureDevController } from '../../amazonq
 import { FeatureDevChatSessionStorage } from '../../amazonqFeatureDev/storages/chatSession'
 import { createTestWorkspaceFolder } from '../testUtil'
 import { Session } from '../../amazonqFeatureDev/session/session'
-import { SessionState, SessionStateAction, SessionStateConfig } from '../../amazonq/types'
+import { SessionState, SessionStateAction, SessionStateConfig } from '../../amazonq/commons/types'
 import { FeatureDevClient } from '../../amazonqFeatureDev/client/featureDev'
 import { VirtualMemoryFile } from '../../shared/virtualMemoryFile'
 import path from 'path'
@@ -139,9 +139,9 @@ export function createMockSessionStateAction(msg?: string): SessionStateAction {
 }
 
 export interface TestSessionMocks {
-    getCodeGeneration: sinon.SinonStub
-    exportResultArchive: sinon.SinonStub
-    createUploadUrl: sinon.SinonStub
+    getCodeGeneration?: sinon.SinonStub
+    exportResultArchive?: sinon.SinonStub
+    createUploadUrl?: sinon.SinonStub
 }
 
 export interface SessionTestConfig {
@@ -158,10 +158,10 @@ export function createMockSessionStateConfig(config: SessionTestConfig, mocks: T
         conversationId: config.conversationId,
         proxyClient: {
             createConversation: () => sinon.stub(),
-            createUploadUrl: () => mocks.createUploadUrl(),
+            createUploadUrl: () => mocks.createUploadUrl!(),
             startCodeGeneration: () => sinon.stub(),
-            getCodeGeneration: () => mocks.getCodeGeneration(),
-            exportResultArchive: () => mocks.exportResultArchive(),
+            getCodeGeneration: () => mocks.getCodeGeneration!(),
+            exportResultArchive: () => mocks.exportResultArchive!(),
         } as unknown as FeatureClient,
         uploadId: config.uploadId,
         currentCodeGenerationId: config.currentCodeGenerationId,

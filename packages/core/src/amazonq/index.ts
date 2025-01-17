@@ -66,5 +66,3 @@ export function createMynahUI(
 }
 
 export * from './commons/types'
-export * from './types'
-export * from './constants'

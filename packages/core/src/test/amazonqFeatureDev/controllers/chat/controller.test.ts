@@ -15,7 +15,7 @@ import {
     MetricDataOperationName,
     MetricDataResult,
     NewFileInfo,
-} from '../../../../amazonq/types'
+} from '../../../../amazonq/commons/types'
 import { Session } from '../../../../amazonqFeatureDev/session/session'
 import { Prompter } from '../../../../shared/ui/prompter'
 import { assertTelemetry, toFile } from '../../../testUtil'

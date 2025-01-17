@@ -36,7 +36,7 @@ import {
     MetricDataOperationName,
     MetricDataResult,
     type NewFileInfo,
-} from '../../../amazonq'
+} from '../../../amazonq/commons/types'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { AuthController } from '../../../amazonq/auth/controller'
 import { getLogger } from '../../../shared/logger/logger'
