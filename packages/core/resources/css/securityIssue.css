@@ -524,6 +524,13 @@ pre.center {
 
 pre.error {
     color: var(--vscode-diffEditorOverview-removedForeground);
+    background-color: var(--vscode-diffEditor-removedTextBackground);
+    white-space: initial;
+}
+
+a.cursor {
+    cursor: pointer;
+    text-decoration: none;
 }
 
 .dot-typing {
