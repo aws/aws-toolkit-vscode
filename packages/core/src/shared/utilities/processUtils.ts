@@ -245,12 +245,10 @@ export class ChildProcessTracker {
     }
 }
 
-/**
- * Convenience class to manage a child process
- * To use:
- * - instantiate
- * - call and await run to get the results (pass or fail)
- */
+export interface ProcessStats {
+    memory: number
+    cpu: number
+}
 export class ChildProcess {
     static #runningProcesses = ChildProcessTracker.instance
     static stopTimeout = 3000

@@ -66,7 +66,9 @@ import { cancel, confirm } from '../../shared'
 import { startCodeFixGeneration } from './startCodeFixGeneration'
 import { DefaultAmazonQAppInitContext } from '../../amazonq/apps/initContext'
 import path from 'path'
+import { UserWrittenCodeTracker } from '../tracker/userWrittenCodeTracker'
 import { parsePatch } from 'diff'
+import { createCodeIssueGroupingStrategyPrompter } from '../ui/prompters'
 
 const MessageTimeOut = 5_000
 
@@ -451,6 +453,7 @@ export const applySecurityFix = Commands.declare(
         }
         let languageId = undefined
         try {
+            UserWrittenCodeTracker.instance.onQStartsMakingEdits()
             const document = await vscode.workspace.openTextDocument(targetFilePath)
             languageId = document.languageId
             const updatedContent = await getPatchedCode(targetFilePath, suggestedFix.code)
@@ -565,6 +568,7 @@ export const applySecurityFix = Commands.declare(
                 applyFixTelemetryEntry.result,
                 !!targetIssue.suggestedFixes.length
             )
+            UserWrittenCodeTracker.instance.onQFinishesEdits()
         }
     }
 )
@@ -883,6 +887,14 @@ export const showSecurityIssueFilters = Commands.declare({ id: 'aws.amazonq.secu
         })
     }
 })
+
+export const showCodeIssueGroupingQuickPick = Commands.declare(
+    { id: 'aws.amazonq.codescan.showGroupingStrategy' },
+    () => async () => {
+        const prompter = createCodeIssueGroupingStrategyPrompter()
+        await prompter.prompt()
+    }
+)
 
 export const focusIssue = Commands.declare(
     { id: 'aws.amazonq.security.focusIssue' },

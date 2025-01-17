@@ -58,3 +58,15 @@ export function toUri(path: string | vscode.Uri): vscode.Uri {
     }
     return vscode.Uri.file(path)
 }
+
+export function isValidUrl(string: string): boolean {
+    try {
+        const url = new URL(string)
+        // handle case where, eg: 'https://test', would be considered valid. At a minimum
+        // we'll require a top-level domain, eg: 'https://test.com'.
+        const hostParts = url.hostname.split('.').filter((part) => !!part)
+        return hostParts.length > 1
+    } catch (err) {
+        return false
+    }
+}

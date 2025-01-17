@@ -83,7 +83,7 @@ describe('getFiles', () => {
 
         const templateFiles = await getFiles(workspaceFolder, '**/template.{yml,yaml}', '**/.aws-sam/**')
         assert.strictEqual(templateFiles.length, 0)
-        assertLogsContain('Failed to get files with pattern', false, 'error')
+        assertLogsContain('Failed to find files with pattern', false, 'error')
         sandbox.restore()
     })
 })
