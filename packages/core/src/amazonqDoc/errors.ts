@@ -7,69 +7,57 @@ import { ToolkitError } from '../shared/errors'
 import { i18n } from '../shared/i18n-helper'
 
 export class DocServiceError extends ToolkitError {
-    constructor(message: string, code: string) {
+    remainingIterations?: number
+    constructor(message: string, code: string, remainingIterations?: number) {
         super(message, { code })
+        this.remainingIterations = remainingIterations
     }
 }
 
-export class ReadmeTooLargeError extends ToolkitError {
+export class ReadmeTooLargeError extends DocServiceError {
     constructor() {
-        super(i18n('AWS.amazonq.doc.error.readmeTooLarge'), {
-            code: ReadmeTooLargeError.name,
-        })
+        super(i18n('AWS.amazonq.doc.error.readmeTooLarge'), ReadmeTooLargeError.name)
     }
 }
 
-export class ReadmeUpdateTooLargeError extends ToolkitError {
-    constructor() {
-        super(i18n('AWS.amazonq.doc.error.readmeUpdateTooLarge'), {
-            code: ReadmeUpdateTooLargeError.name,
-        })
+export class ReadmeUpdateTooLargeError extends DocServiceError {
+    constructor(remainingIterations: number) {
+        super(i18n('AWS.amazonq.doc.error.readmeUpdateTooLarge'), ReadmeUpdateTooLargeError.name, remainingIterations)
     }
 }
 
-export class WorkspaceEmptyError extends ToolkitError {
+export class WorkspaceEmptyError extends DocServiceError {
     constructor() {
-        super(i18n('AWS.amazonq.doc.error.workspaceEmpty'), {
-            code: WorkspaceEmptyError.name,
-        })
+        super(i18n('AWS.amazonq.doc.error.workspaceEmpty'), WorkspaceEmptyError.name)
     }
 }
 
-export class NoChangeRequiredException extends ToolkitError {
+export class NoChangeRequiredException extends DocServiceError {
     constructor() {
-        super(i18n('AWS.amazonq.doc.error.noChangeRequiredException'), {
-            code: NoChangeRequiredException.name,
-        })
+        super(i18n('AWS.amazonq.doc.error.noChangeRequiredException'), NoChangeRequiredException.name)
     }
 }
 
-export class PromptRefusalException extends ToolkitError {
-    constructor() {
-        super(i18n('AWS.amazonq.doc.error.promptRefusal'), {
-            code: PromptRefusalException.name,
-        })
+export class PromptRefusalException extends DocServiceError {
+    constructor(remainingIterations: number) {
+        super(i18n('AWS.amazonq.doc.error.promptRefusal'), PromptRefusalException.name, remainingIterations)
     }
 }
 
-export class ContentLengthError extends ToolkitError {
+export class ContentLengthError extends DocServiceError {
     constructor() {
-        super(i18n('AWS.amazonq.doc.error.contentLengthError'), { code: ContentLengthError.name })
+        super(i18n('AWS.amazonq.doc.error.contentLengthError'), ContentLengthError.name)
     }
 }
 
-export class PromptTooVagueError extends ToolkitError {
-    constructor() {
-        super(i18n('AWS.amazonq.doc.error.promptTooVague'), {
-            code: PromptTooVagueError.name,
-        })
+export class PromptTooVagueError extends DocServiceError {
+    constructor(remainingIterations: number) {
+        super(i18n('AWS.amazonq.doc.error.promptTooVague'), PromptTooVagueError.name, remainingIterations)
     }
 }
 
-export class PromptUnrelatedError extends ToolkitError {
-    constructor() {
-        super(i18n('AWS.amazonq.doc.error.promptUnrelated'), {
-            code: PromptUnrelatedError.name,
-        })
+export class PromptUnrelatedError extends DocServiceError {
+    constructor(remainingIterations: number) {
+        super(i18n('AWS.amazonq.doc.error.promptUnrelated'), PromptUnrelatedError.name, remainingIterations)
     }
 }
