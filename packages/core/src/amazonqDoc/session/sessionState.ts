@@ -97,7 +97,7 @@ abstract class CodeGenBase {
             ++pollingIteration
         ) {
             const codegenResult = await this.config.proxyClient.getCodeGeneration(this.conversationId, codeGenerationId)
-            const codeGenerationRemainingIterationCount = codegenResult.codeGenerationRemainingIterationCount
+            const codeGenerationRemainingIterationCount = codegenResult.codeGenerationRemainingIterationCount || 0
             const codeGenerationTotalIterationCount = codegenResult.codeGenerationTotalIterationCount
 
             getLogger().debug(`Codegen response: %O`, codegenResult)
@@ -151,7 +151,7 @@ abstract class CodeGenBase {
                             throw new ReadmeTooLargeError()
                         }
                         case codegenResult.codeGenerationStatusDetail?.includes('README_UPDATE_TOO_LARGE'): {
-                            throw new ReadmeUpdateTooLargeError()
+                            throw new ReadmeUpdateTooLargeError(codeGenerationRemainingIterationCount)
                         }
                         case codegenResult.codeGenerationStatusDetail?.includes('WORKSPACE_TOO_LARGE'): {
                             throw new ContentLengthError()
@@ -160,18 +160,19 @@ abstract class CodeGenBase {
                             throw new WorkspaceEmptyError()
                         }
                         case codegenResult.codeGenerationStatusDetail?.includes('PROMPT_UNRELATED'): {
-                            throw new PromptUnrelatedError()
+                            throw new PromptUnrelatedError(codeGenerationRemainingIterationCount)
                         }
                         case codegenResult.codeGenerationStatusDetail?.includes('PROMPT_TOO_VAGUE'): {
-                            throw new PromptTooVagueError()
+                            throw new PromptTooVagueError(codeGenerationRemainingIterationCount)
                         }
                         case codegenResult.codeGenerationStatusDetail?.includes('PROMPT_REFUSAL'): {
-                            throw new PromptRefusalException()
+                            throw new PromptRefusalException(codeGenerationRemainingIterationCount)
                         }
                         case codegenResult.codeGenerationStatusDetail?.includes('Guardrails'): {
                             throw new DocServiceError(
                                 i18n('AWS.amazonq.doc.error.docGen.default'),
-                                'GuardrailsException'
+                                'GuardrailsException',
+                                codeGenerationRemainingIterationCount
                             )
                         }
                         case codegenResult.codeGenerationStatusDetail?.includes('EmptyPatch'): {
@@ -186,7 +187,8 @@ abstract class CodeGenBase {
                         case codegenResult.codeGenerationStatusDetail?.includes('Throttling'): {
                             throw new DocServiceError(
                                 i18n('AWS.amazonq.featureDev.error.throttling'),
-                                'ThrottlingException'
+                                'ThrottlingException',
+                                codeGenerationRemainingIterationCount
                             )
                         }
                         default: {
