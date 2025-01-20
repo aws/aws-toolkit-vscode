@@ -258,9 +258,9 @@ export const codeScanZipExt = '.zip'
 
 export const contextTruncationTimeoutSeconds = 10
 
-export const codeScanJobTimeoutSeconds = 60 * 10 // 10 minutes
+export const standardScanTimeoutMs = 600_000 // 10 minutes
 
-export const codeFileScanJobTimeoutSeconds = 60 * 10 // 10 minutes
+export const expressScanTimeoutMs = 60_000
 
 export const codeFixJobTimeoutMs = 60_000
 
