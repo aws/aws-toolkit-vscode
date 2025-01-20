@@ -403,10 +403,7 @@ function getPollingDelayMsForScope(scope: CodeWhispererConstants.CodeAnalysisSco
 }
 
 function getPollingTimeoutMsForScope(scope: CodeWhispererConstants.CodeAnalysisScope) {
-    return (
-        (scope === CodeWhispererConstants.CodeAnalysisScope.FILE_AUTO ||
-        scope === CodeWhispererConstants.CodeAnalysisScope.FILE_ON_DEMAND
-            ? CodeWhispererConstants.codeFileScanJobTimeoutSeconds
-            : CodeWhispererConstants.codeScanJobTimeoutSeconds) * 1000
-    )
+    return scope === CodeWhispererConstants.CodeAnalysisScope.FILE_AUTO
+        ? CodeWhispererConstants.expressScanTimeoutMs
+        : CodeWhispererConstants.standardScanTimeoutMs
 }
