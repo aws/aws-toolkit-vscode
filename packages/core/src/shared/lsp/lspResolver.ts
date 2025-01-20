@@ -12,7 +12,9 @@ import AdmZip from 'adm-zip'
 import { TargetContent, logger, LspResult, LspVersion, Manifest } from './types'
 import { getApplicationSupportFolder } from '../vscode/env'
 import { createHash } from '../crypto'
-import request from '../request'
+import { HttpResourceFetcher } from '../resourcefetcher/httpResourceFetcher'
+
+const lspFetchRetries = 3
 
 export class LanguageServerResolver {
     constructor(
@@ -165,9 +167,8 @@ export class LanguageServerResolver {
         }
 
         const downloadTasks = contents.map(async (content) => {
-            // TODO This should be using the retryable http library but it doesn't seem to support zips right now
-            const res = await request.fetch('GET', content.url).response
-            if (!res.ok || !res.body) {
+            const res = await new HttpResourceFetcher(content.url, { showUrl: true, retries: lspFetchRetries }).get()
+            if (!res || !res.ok || !res.body) {
                 return false
             }
 

@@ -5,10 +5,10 @@
 
 import { getLogger } from '../logger/logger'
 import { ToolkitError } from '../errors'
-import { RetryableResourceFetcher } from '../resourcefetcher/httpResourceFetcher'
 import { Timeout } from '../utilities/timeoutUtils'
 import globals from '../extensionGlobals'
 import { Manifest } from './types'
+import { HttpResourceFetcher } from '../resourcefetcher/httpResourceFetcher'
 
 const logger = getLogger('lsp')
 
@@ -21,6 +21,7 @@ type ManifestStorage = Record<string, StorageManifest>
 
 const manifestStorageKey = 'aws.toolkit.lsp.manifest'
 const manifestTimeoutMs = 15000
+const manifestFetchRetries = 3
 
 export class ManifestResolver {
     constructor(
@@ -40,14 +41,12 @@ export class ManifestResolver {
     }
 
     private async fetchRemoteManifest(): Promise<Manifest> {
-        const resourceFetcher = new RetryableResourceFetcher({
-            resource: this.manifestURL,
-            params: {
-                timeout: new Timeout(manifestTimeoutMs),
-            },
-        })
+        const resp = await new HttpResourceFetcher(this.manifestURL, {
+            showUrl: true,
+            timeout: new Timeout(manifestTimeoutMs),
+            retries: manifestFetchRetries,
+        }).getNewETagContent(this.getEtag())
 
-        const resp = await resourceFetcher.getNewETagContent(this.getEtag())
         if (!resp.content) {
             throw new ToolkitError('New content was not downloaded; fallback to the locally stored manifest')
         }
