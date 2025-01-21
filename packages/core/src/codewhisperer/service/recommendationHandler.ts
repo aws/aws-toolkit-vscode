@@ -10,7 +10,6 @@ import {
     DefaultCodeWhispererClient,
     CognitoCredentialsError,
     ListRecommendationsRequest,
-    GenerateRecommendationsRequest,
 } from '../client/codewhisperer'
 import * as EditorContext from '../util/editorContext'
 import * as CodeWhispererConstants from '../models/constants'
@@ -93,8 +92,6 @@ export class RecommendationHandler {
     private prev: vscode.Disposable
     private _timer?: NodeJS.Timer
     documentUri: vscode.Uri | undefined = undefined
-    // private session: CodeWhispererSession
-    // private nextSession: CodeWhispererSession
 
     constructor() {
         this.requestId = ''
@@ -104,8 +101,6 @@ export class RecommendationHandler {
         this.prev = new vscode.Disposable(() => {})
         this.next = new vscode.Disposable(() => {})
         this.reject = new vscode.Disposable(() => {})
-        // this.session = CodeWhispererSessionState.instance.getSession()
-        // this.nextSession = CodeWhispererSessionState.instance.getNextSession()
     }
 
     static #instance: RecommendationHandler
@@ -178,7 +173,7 @@ export class RecommendationHandler {
         let errorCode: string | undefined = undefined
         let currentSession = CodeWhispererSessionState.instance.getSession()
         if (isNextSession) {
-            getLogger().info('pre-fetching next recommendation for model routing')
+            getLogger().debug('pre-fetching next recommendation for model routing')
             currentSession = new CodeWhispererSession()
             CodeWhispererSessionState.instance.setNextSession(currentSession)
         }
@@ -205,7 +200,6 @@ export class RecommendationHandler {
         currentSession.taskType = await this.getTaskTypeFromEditorFileName(editor.document.fileName)
 
         if (pagination && !generate) {
-            //  else {
             if (page === 0) {
                 if (isNextSession) {
                     const session = CodeWhispererSessionState.instance.getSession()
@@ -234,7 +228,7 @@ export class RecommendationHandler {
                         ...currentSession.requestContext.request,
                         // Putting nextToken assignment in the end so it overwrites the existing nextToken
                         nextToken: this.nextToken,
-                    } as ListRecommendationsRequest,
+                    },
                     supplementalMetadata: currentSession.requestContext.supplementalMetadata,
                 }
             }
@@ -244,10 +238,7 @@ export class RecommendationHandler {
                 editor as vscode.TextEditor
             )
         }
-        const request = generate
-            ? (currentSession.requestContext.request as GenerateRecommendationsRequest)
-            : (currentSession.requestContext.request as ListRecommendationsRequest)
-        getLogger().info(`request to inline recommendation : \n${JSON.stringify(request)}`)
+        const request = currentSession.requestContext.request
         TelemetryHelper.instance.setPreprocessEndTime()
 
         // set start pos for non pagination call or first pagination call
@@ -295,7 +286,6 @@ export class RecommendationHandler {
             requestId = resp?.$response && resp?.$response?.requestId
             nextToken = resp?.nextToken ? resp?.nextToken : ''
             sessionId = resp?.$response?.httpResponse?.headers['x-amzn-sessionid']
-            getLogger().info(`response from inline recommendation : \n${JSON.stringify(resp)}`)
             TelemetryHelper.instance.setFirstResponseRequestId(requestId)
             if (page === 0) {
                 currentSession.setTimeToFirstRecommendation(performance.now())
@@ -422,7 +412,9 @@ export class RecommendationHandler {
                 }
                 currentSession.setCompletionType(recommendationIndex, r)
             }
-            currentSession.recommendations = pagination ? currentSession.recommendations.concat(recommendations) : recommendations
+            currentSession.recommendations = pagination
+                ? currentSession.recommendations.concat(recommendations)
+                : recommendations
             if (isInlineCompletionEnabled() && this.hasAtLeastOneValidSuggestion(typedPrefix, currentSession)) {
                 this._onDidReceiveRecommendation.fire()
             }
@@ -430,7 +422,9 @@ export class RecommendationHandler {
 
         this.requestId = requestId
         currentSession.sessionId = sessionId
-        this.nextToken = nextToken
+        if (!isNextSession) {
+            this.nextToken = nextToken
+        }
 
         // send Empty userDecision event if user receives no recommendations in this session at all.
         if (invocationResult === 'Succeeded' && nextToken === '') {
@@ -490,22 +484,12 @@ export class RecommendationHandler {
         const session = CodeWhispererSessionState.instance.getSession()
         session.requestIdList = []
         session.recommendations = []
-        // session.nextRecommendations = []
         session.suggestionStates = new Map<number, string>()
         session.completionTypes = new Map<number, CodewhispererCompletionType>()
         this.requestId = ''
         session.sessionId = ''
         this.nextToken = ''
         session.requestContext.supplementalMetadata = undefined
-        // nextSession.requestIdList = []
-        // nextSession.recommendations = []
-        // // nextSession.nextRecommendations = []
-        // nextSession.suggestionStates = new Map<number, string>()
-        // nextSession.completionTypes = new Map<number, CodewhispererCompletionType>()
-        // this.requestId = ''
-        // nextSession.sessionId = ''
-        // this.nextToken = ''
-        // nextSession.requestContext.supplementalMetadata = undefined
     }
 
     async clearInlineCompletionStates() {
@@ -653,7 +637,6 @@ export class RecommendationHandler {
         const session = CodeWhispererSessionState.instance.getSession()
 
         if (!indexShift && session.recommendations.length) {
-            // TODO: gate behind A/B group if needed
             await this.fetchNextRecommendations()
         }
         await lock.acquire(updateInlineLockKey, async () => {
@@ -725,7 +708,6 @@ export class RecommendationHandler {
         const isManualTriggerEnabled: boolean = true
         const isSuggestionsWithCodeReferencesEnabled = codewhispererSettings.isSuggestionsWithCodeReferencesEnabled()
 
-        // TODO:remove isManualTriggerEnabled
         return {
             isShowMethodsEnabled,
             isManualTriggerEnabled,
@@ -738,9 +720,11 @@ export class RecommendationHandler {
         const session = CodeWhispererSessionState.instance.getSession()
         const client = new codewhispererClient.DefaultCodeWhispererClient()
         const editor = vscode.window.activeTextEditor
-        if (!editor) return
+        if (!editor) {
+            return
+        }
 
-        this.getRecommendations(
+        await this.getRecommendations(
             client,
             editor,
             session.triggerType,

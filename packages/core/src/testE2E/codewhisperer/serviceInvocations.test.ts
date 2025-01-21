@@ -44,7 +44,7 @@ describe('CodeWhisperer service invocation', async function () {
     })
 
     it('manual trigger returns valid recommendation response', async function () {
-        //check that handler is empty before invocation
+        // check that handler is empty before invocation
         const requestIdBefore = RecommendationHandler.instance.requestId
         const sessionIdBefore = session.sessionId
         const validRecsBefore = RecommendationHandler.instance.isValidResponse()
@@ -66,7 +66,7 @@ describe('CodeWhisperer service invocation', async function () {
     })
 
     it('auto trigger returns valid recommendation response', async function () {
-        //check that handler is empty before invocation
+        // check that handler is empty before invocation
         const requestIdBefore = RecommendationHandler.instance.requestId
         const sessionIdBefore = session.sessionId
         const validRecsBefore = RecommendationHandler.instance.isValidResponse()
@@ -103,7 +103,6 @@ describe('CodeWhisperer service invocation', async function () {
 
         // check that handler is empty before invocation
         const requestIdBefore = RecommendationHandler.instance.requestId
-        const session = CodeWhispererSessionState.instance.getSession()
         const sessionIdBefore = session.sessionId
         const validRecsBefore = RecommendationHandler.instance.isValidResponse()
 

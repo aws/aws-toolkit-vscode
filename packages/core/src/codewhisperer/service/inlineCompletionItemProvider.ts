@@ -153,21 +153,18 @@ export class CWInlineCompletionItemProvider implements vscode.InlineCompletionIt
         // valid one. Otherwise, inline completion which utilizes this position will function
         // improperly.
         const start = document.validatePosition(this.startPos)
-        console.log('start pos', start)
         const end = position
         const iteratingIndexes = this.getIteratingIndexes()
         const prefix = document.getText(new vscode.Range(start, end)).replace(/\r\n/g, '\n')
         const matchedCount = this.session.recommendations.filter(
-            (r: any) => r.content.length > 0 && r.content.startsWith(prefix) && r.content !== prefix
+            (r) => r.content.length > 0 && r.content.startsWith(prefix) && r.content !== prefix
         ).length
         for (const i of iteratingIndexes) {
             const r = this.recommendations[i]
-            console.log('in show', r)
             const item = this.getInlineCompletionItem(document, r, start, end, i, prefix)
             if (item === undefined) {
                 continue
             }
-            console.log('item', item)
             this.activeItemIndex = i
             this.session.setSuggestionState(i, 'Showed')
             ReferenceInlineProvider.instance.setInlineReference(this.startPos.line, r.content, r.references)

@@ -45,14 +45,13 @@ export class CodeWhispererSessionState {
 }
 
 export class CodeWhispererSession {
-    // static #instance: CodeWhispererSession
     sessionId: string
     requestIdList: string[]
     startPos: Position
     startCursorOffset: number
     leftContextOfCurrentLine: string
     requestContext: {
-        request: ListRecommendationsRequest | GenerateRecommendationsRequest | undefined
+        request: ListRecommendationsRequest | GenerateRecommendationsRequest
         supplementalMetadata: CodeWhispererSupplementalContext | undefined
     }
     language: CodewhispererLanguage
@@ -77,7 +76,7 @@ export class CodeWhispererSession {
         this.startPos = new Position(0, 0)
         this.startCursorOffset = 0
         this.leftContextOfCurrentLine = ''
-        this.requestContext = { request: undefined, supplementalMetadata: undefined }
+        this.requestContext = { request: {} as any, supplementalMetadata: undefined }
         this.language = 'python'
         this.taskType = undefined
         this.triggerType = 'OnDemand'

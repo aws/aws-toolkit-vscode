@@ -143,7 +143,7 @@ export async function onInlineAcceptance(acceptanceEntry: OnRecommendationAccept
         }
 
         RecommendationHandler.instance.reportUserDecisions(acceptanceEntry.acceptIndex)
-        if (acceptanceEntry.acceptIndex == 0) {
+        if (acceptanceEntry.acceptIndex === 0) {
             const nextSession = CodeWhispererSessionState.instance.getNextSession()
             nextSession.startPos = acceptanceEntry.editor.selection.active
             CodeWhispererSessionState.instance.setSession(nextSession)

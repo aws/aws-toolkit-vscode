@@ -47,6 +47,7 @@ describe('CodeWhisperer service invocation', async function () {
         isAutomatedTriggerEnabled: true,
         isSuggestionsWithCodeReferencesEnabled: false,
     }
+    const session = CodeWhispererSessionState.instance.getSession()
 
     before(async function () {
         validConnection = await setValidConnection()
@@ -62,8 +63,7 @@ describe('CodeWhisperer service invocation', async function () {
     })
 
     it('trigger known to return recs with references returns rec with reference', async function () {
-        //check that handler is empty before invocation
-        const session = CodeWhispererSessionState.instance.getSession()
+        // check that handler is empty before invocation
         const requestIdBefore = RecommendationHandler.instance.requestId
         const sessionIdBefore = session.sessionId
         const validRecsBefore = RecommendationHandler.instance.isValidResponse()
@@ -98,7 +98,6 @@ describe('CodeWhisperer service invocation', async function () {
     it('trigger known to return rec with references does not return rec with references when reference tracker setting is off', async function () {
         // check that handler is empty before invocation
         const requestIdBefore = RecommendationHandler.instance.requestId
-        const session = CodeWhispererSessionState.instance.getSession()
         const sessionIdBefore = session.sessionId
         const validRecsBefore = RecommendationHandler.instance.isValidResponse()
 
