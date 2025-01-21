@@ -39,9 +39,7 @@ export class HttpResourceFetcher implements ResourceFetcher<Response> {
      */
     public get(): Promise<Response | undefined> {
         this.logger.verbose(`downloading: ${this.logText()}`)
-        return withRetries(() => this.downloadRequest(), {
-            maxRetries: this.params.retries ?? 1,
-        })
+        return this.downloadRequest()
     }
 
     /**
@@ -99,16 +97,23 @@ export class HttpResourceFetcher implements ResourceFetcher<Response> {
     }
 
     private async getResponseFromGetRequest(timeout?: Timeout, headers?: RequestHeaders): Promise<Response> {
-        const req = request.fetch('GET', this.url, {
-            headers: this.buildRequestHeaders(headers),
-        })
+        return withRetries(
+            () => {
+                const req = request.fetch('GET', this.url, {
+                    headers: this.buildRequestHeaders(headers),
+                })
 
-        const cancelListener = timeout?.token.onCancellationRequested((event) => {
-            this.logCancellation(event)
-            req.cancel()
-        })
+                const cancelListener = timeout?.token.onCancellationRequested((event) => {
+                    this.logCancellation(event)
+                    req.cancel()
+                })
 
-        return req.response.finally(() => cancelListener?.dispose())
+                return req.response.finally(() => cancelListener?.dispose())
+            },
+            {
+                maxRetries: this.params.retries ?? 1,
+            }
+        )
     }
 
     private buildRequestHeaders(requestHeaders?: RequestHeaders): Headers {
