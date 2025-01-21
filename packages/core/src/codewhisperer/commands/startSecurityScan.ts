@@ -6,7 +6,6 @@
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { ArtifactMap, DefaultCodeWhispererClient } from '../client/codewhisperer'
-import { isCloud9 } from '../../shared/extensionUtilities'
 import { initSecurityScanRender } from '../service/diagnosticsProvider'
 import { SecurityPanelViewProvider } from '../views/securityPanelViewProvider'
 import { getLogger } from '../../shared/logger'
@@ -291,16 +290,7 @@ export async function startSecurityScan(
                 scanUuid
             )
         } else {
-            showSecurityScanResults(
-                securityPanelViewProvider,
-                securityRecommendationCollection,
-                editor,
-                context,
-                scope,
-                zipMetadata,
-                total,
-                scanUuid
-            )
+            showSecurityScanResults(securityRecommendationCollection, editor, context, scope, zipMetadata, total)
         }
         TelemetryHelper.instance.sendCodeScanSucceededEvent(
             codeScanTelemetryEntry.codewhispererLanguage,
@@ -387,28 +377,22 @@ export async function startSecurityScan(
 }
 
 export function showSecurityScanResults(
-    securityPanelViewProvider: SecurityPanelViewProvider,
     securityRecommendationCollection: AggregatedCodeScanIssue[],
     editor: vscode.TextEditor | undefined,
     context: vscode.ExtensionContext,
     scope: CodeWhispererConstants.CodeAnalysisScope,
     zipMetadata: ZipMetadata,
-    totalIssues: number,
-    scanUuid: string | undefined
+    totalIssues: number
 ) {
-    if (isCloud9()) {
-        securityPanelViewProvider.addLines(securityRecommendationCollection, editor)
-        void vscode.commands.executeCommand('workbench.view.extension.aws-codewhisperer-security-panel')
-    } else {
-        initSecurityScanRender(securityRecommendationCollection, context, editor, scope)
-        if (
-            totalIssues > 0 &&
-            (scope === CodeWhispererConstants.CodeAnalysisScope.PROJECT ||
-                scope === CodeWhispererConstants.CodeAnalysisScope.FILE_ON_DEMAND)
-        ) {
-            SecurityIssuesTree.instance.focus()
-        }
+    initSecurityScanRender(securityRecommendationCollection, context, editor, scope)
+    if (
+        totalIssues > 0 &&
+        (scope === CodeWhispererConstants.CodeAnalysisScope.PROJECT ||
+            scope === CodeWhispererConstants.CodeAnalysisScope.FILE_ON_DEMAND)
+    ) {
+        SecurityIssuesTree.instance.focus()
     }
+
     if (scope === CodeWhispererConstants.CodeAnalysisScope.PROJECT) {
         populateCodeScanLogStream(zipMetadata.scannedFiles)
     }
@@ -424,35 +408,32 @@ export function showScanResultsInChat(
     totalIssues: number,
     scanUuid: string | undefined
 ) {
-    if (isCloud9()) {
-        securityPanelViewProvider.addLines(securityRecommendationCollection, editor)
-        void vscode.commands.executeCommand('workbench.view.extension.aws-codewhisperer-security-panel')
-    } else {
-        const tabID = ChatSessionManager.Instance.getSession().tabID
-        const eventData = {
-            message: 'Show Findings in the Chat panel',
-            totalIssues,
-            securityRecommendationCollection,
-            fileName: scope === CodeAnalysisScope.FILE_ON_DEMAND ? [...zipMetadata.scannedFiles][0] : undefined,
-            tabID,
-            scope,
-            scanUuid,
-        }
-        switch (scope) {
-            case CodeAnalysisScope.PROJECT:
-                codeScanState.getChatControllers()?.showSecurityScan.fire(eventData)
-                break
-            case CodeAnalysisScope.FILE_ON_DEMAND:
-                onDemandFileScanState.getChatControllers()?.showSecurityScan.fire(eventData)
-                break
-            default:
-                break
-        }
-        initSecurityScanRender(securityRecommendationCollection, context, editor, scope)
-        if (totalIssues > 0) {
-            SecurityIssuesTree.instance.focus()
-        }
+    const tabID = ChatSessionManager.Instance.getSession().tabID
+    const eventData = {
+        message: 'Show Findings in the Chat panel',
+        totalIssues,
+        securityRecommendationCollection,
+        fileName: scope === CodeAnalysisScope.FILE_ON_DEMAND ? [...zipMetadata.scannedFiles][0] : undefined,
+        tabID,
+        scope,
+        scanUuid,
     }
+    switch (scope) {
+        case CodeAnalysisScope.PROJECT:
+            codeScanState.getChatControllers()?.showSecurityScan.fire(eventData)
+            break
+        case CodeAnalysisScope.FILE_ON_DEMAND:
+            onDemandFileScanState.getChatControllers()?.showSecurityScan.fire(eventData)
+            break
+        default:
+            break
+    }
+
+    initSecurityScanRender(securityRecommendationCollection, context, editor, scope)
+    if (totalIssues > 0) {
+        SecurityIssuesTree.instance.focus()
+    }
+
     populateCodeScanLogStream(zipMetadata.scannedFiles)
     if (scope === CodeAnalysisScope.PROJECT) {
         showScanCompletedNotification(totalIssues, zipMetadata.scannedFiles)

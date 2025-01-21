@@ -5,8 +5,6 @@
 
 import * as vscode from 'vscode'
 import { ResourceTreeDataProvider, TreeNode } from '../shared/treeview/resourceTreeDataProvider'
-import { isCloud9 } from '../shared/extensionUtilities'
-import { debounce } from '../shared/utilities/functionUtils'
 
 export interface ToolView {
     nodes: TreeNode[]
@@ -26,20 +24,8 @@ export function createToolView(viewNode: ToolView): vscode.TreeView<TreeNode> {
     for (const refreshCommand of viewNode.refreshCommands ?? []) {
         refreshCommand(treeDataProvider)
     }
-    const view = vscode.window.createTreeView(viewNode.view, { treeDataProvider })
 
-    // Cloud9 will only refresh when refreshing the entire tree
-    if (isCloud9()) {
-        for (const node of viewNode.nodes) {
-            // Refreshes are delayed to guard against excessive calls to `getTreeItem` and `getChildren`
-            // The 10ms delay is arbitrary. A single event loop may be good enough in many scenarios.
-            const refresh = debounce(() => treeDataProvider.refresh(node), 10)
-            node.onDidChangeTreeItem?.(() => refresh())
-            node.onDidChangeChildren?.(() => refresh())
-        }
-    }
-
-    return view
+    return vscode.window.createTreeView(viewNode.view, { treeDataProvider })
 }
 
 async function getChildren(roots: TreeNode[]) {
