@@ -98,6 +98,7 @@ export const completionDetail = 'Amazon Q'
 export const codewhisperer = 'Amazon Q'
 
 // use vscode languageId here / Supported languages
+// TODO: Dropped Cloud9 support - do we need Cloud9-commented entries here?
 export const platformLanguageIds = [
     'java',
     'python',
@@ -305,7 +306,9 @@ export const securityScanLanguageIds = [
     'csharp',
     'go',
     'ruby',
-    'golang', // Cloud9 reports Go files with this language-id
+    // Cloud9 reports Go files with this language-id
+    // TODO: Dropped Cloud9 support - is this still needed?
+    'golang',
     'json',
     'yaml',
     'tf',

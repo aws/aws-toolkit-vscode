@@ -16,7 +16,7 @@ import { DevEnvClient } from '../shared/clients/devenvClient'
 import { watchRestartingDevEnvs } from './reconnect'
 import { ToolkitPromptSettings } from '../shared/settings'
 import { dontShow } from '../shared/localizedText'
-import { getIdeProperties, isCloud9 } from '../shared/extensionUtilities'
+import { getIdeProperties } from '../shared/extensionUtilities'
 import { Commands } from '../shared/vscode/commands2'
 import { getCodeCatalystConfig } from '../shared/clients/codecatalystClient'
 import { isDevenvVscode } from './utils'
@@ -78,23 +78,21 @@ export async function activate(ctx: ExtContext): Promise<void> {
         })
     )
 
-    if (!isCloud9()) {
-        await GitExtension.instance.registerRemoteSourceProvider(remoteSourceProvider).then((disposable) => {
-            ctx.extensionContext.subscriptions.push(disposable)
+    await GitExtension.instance.registerRemoteSourceProvider(remoteSourceProvider).then((disposable) => {
+        ctx.extensionContext.subscriptions.push(disposable)
+    })
+
+    await GitExtension.instance
+        .registerCredentialsProvider({
+            getCredentials(uri: vscode.Uri) {
+                if (uri.authority.endsWith(getCodeCatalystConfig().gitHostname)) {
+                    return commands.withClient((client) => authProvider.getCredentialsForGit(client))
+                }
+            },
         })
+        .then((disposable) => ctx.extensionContext.subscriptions.push(disposable))
 
-        await GitExtension.instance
-            .registerCredentialsProvider({
-                getCredentials(uri: vscode.Uri) {
-                    if (uri.authority.endsWith(getCodeCatalystConfig().gitHostname)) {
-                        return commands.withClient((client) => authProvider.getCredentialsForGit(client))
-                    }
-                },
-            })
-            .then((disposable) => ctx.extensionContext.subscriptions.push(disposable))
-
-        watchRestartingDevEnvs(ctx, authProvider)
-    }
+    watchRestartingDevEnvs(ctx, authProvider)
 
     const thisDevenv = (await getThisDevEnv(authProvider))?.unwrapOrElse((err) => {
         getLogger().error('codecatalyst: failed to get current Dev Enviroment: %s', err)
@@ -116,9 +114,10 @@ export async function activate(ctx: ExtContext): Promise<void> {
         const timeoutMin = thisDevenv.summary.inactivityTimeoutMinutes
         const timeout = timeoutMin === 0 ? 'never' : `${timeoutMin} min`
         getLogger().info('codecatalyst: Dev Environment timeout=%s, ides=%O', timeout, thisDevenv.summary.ides)
-        if (!isCloud9() && thisDevenv && !isDevenvVscode(thisDevenv.summary.ides)) {
+        if (thisDevenv && !isDevenvVscode(thisDevenv.summary.ides)) {
             // Prevent Toolkit from reconnecting to a "non-vscode" devenv by actively closing it.
             // Can happen if devenv is switched to ides="cloud9", etc.
+            // TODO: Is this needed without cloud9 check?
             void vscode.commands.executeCommand('workbench.action.remote.close')
             return
         }
@@ -148,10 +147,6 @@ export async function activate(ctx: ExtContext): Promise<void> {
 }
 
 async function showReadmeFileOnFirstLoad(workspaceState: vscode.ExtensionContext['workspaceState']): Promise<void> {
-    if (isCloud9()) {
-        return
-    }
-
     getLogger().debug('codecatalyst: showReadmeFileOnFirstLoad()')
     // Check dev env state to see if this is the first time the user has connected to a dev env
     const isFirstLoad = workspaceState.get('aws.codecatalyst.devEnv.isFirstLoad', true)

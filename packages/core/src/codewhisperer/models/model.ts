@@ -1152,12 +1152,6 @@ export class TransformByQStoppedError extends ToolkitError {
     }
 }
 
-export enum Cloud9AccessState {
-    NoAccess,
-    RequestedAccess,
-    HasAccess,
-}
-
 export interface TransformationCandidateProject {
     name: string
     path: string

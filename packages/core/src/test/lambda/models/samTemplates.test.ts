@@ -16,7 +16,6 @@ import {
     eventBridgeStarterAppTemplate,
     stepFunctionsSampleApp,
     typeScriptBackendTemplate,
-    lazyLoadSamTemplateStrings,
 } from '../../../lambda/models/samTemplates'
 import { Set } from 'immutable'
 
@@ -29,8 +28,6 @@ let validGoTemplateOptions: Set<SamTemplate>
 let defaultTemplateOptions: Set<SamTemplate>
 
 before(function () {
-    lazyLoadSamTemplateStrings()
-
     validTemplateOptions = Set([
         helloWorldTemplate,
         eventBridgeHelloWorldTemplate,

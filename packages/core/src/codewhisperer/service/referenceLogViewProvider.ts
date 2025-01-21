@@ -9,7 +9,6 @@ import { LicenseUtil } from '../util/licenseUtil'
 import * as CodeWhispererConstants from '../models/constants'
 import { CodeWhispererSettings } from '../util/codewhispererSettings'
 import globals from '../../shared/extensionGlobals'
-import { isCloud9 } from '../../shared/extensionUtilities'
 import { AuthUtil } from '../util/authUtil'
 import { session } from '../util/codeWhispererSession'
 
@@ -127,22 +126,9 @@ export class ReferenceLogViewProvider implements vscode.WebviewViewProvider {
             }
         }
 
-        let csp = ''
-        if (isCloud9()) {
-            csp = `<meta
-            http-equiv="Content-Security-Policy"
-            content=
-                "default-src 'none';
-                img-src https: data:;
-                script-src 'self' 'unsafe-inline';
-                style-src 'self' 'unsafe-inline' ${webview.cspSource};
-                font-src 'self' data:;"
-            >`
-        }
         return `<!DOCTYPE html>
             <html lang="en">
             <head>
-				${csp}
                 <link rel="stylesheet" href="${styleVSCodeUri}">
             </head>
             <body>

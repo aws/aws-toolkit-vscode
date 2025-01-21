@@ -12,7 +12,6 @@ import { VSCODE_EXTENSION_ID, extensionAlphaVersion } from './extensions'
 import { Ec2MetadataClient } from './clients/ec2MetadataClient'
 import { DefaultEc2MetadataClient } from './clients/ec2MetadataClient'
 import { extensionVersion, getCodeCatalystDevEnvId } from './vscode/env'
-import { DevSettings } from './settings'
 import globals from './extensionGlobals'
 import { once } from './utilities/functionUtils'
 import {
@@ -61,12 +60,7 @@ export function commandsPrefix(): string {
 let computeRegion: string | undefined = notInitialized
 
 export function getIdeType(): 'vscode' | 'cloud9' | 'sagemaker' | 'unknown' {
-    const settings = DevSettings.instance
-    if (
-        vscode.env.appName === cloud9Appname ||
-        vscode.env.appName === cloud9CnAppname ||
-        settings.get('forceCloud9', false)
-    ) {
+    if (vscode.env.appName === cloud9Appname || vscode.env.appName === cloud9CnAppname) {
         return 'cloud9'
     }
 
