@@ -14,7 +14,6 @@ import { AWSError } from 'aws-sdk'
 import { isAwsError } from '../../shared/errors'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { getLogger } from '../../shared/logger'
-import { isCloud9 } from '../../shared/extensionUtilities'
 import { hasVendedIamCredentials } from '../../auth/auth'
 import {
     asyncCallWithTimeout,
@@ -64,9 +63,7 @@ const rejectCommand = Commands.declare('aws.amazonq.rejectCodeSuggestion', () =>
         traceId: TelemetryHelper.instance.traceId,
     })
 
-    if (!isCloud9('any')) {
-        await vscode.commands.executeCommand('editor.action.inlineSuggest.hide')
-    }
+    await vscode.commands.executeCommand('editor.action.inlineSuggest.hide')
     RecommendationHandler.instance.reportUserDecisions(-1)
     await Commands.tryExecute('aws.amazonq.refreshAnnotation')
 })
@@ -499,9 +496,7 @@ export class RecommendationHandler {
             session.suggestionStates,
             session.requestContext.supplementalMetadata
         )
-        if (isCloud9('any')) {
-            this.clearRecommendations()
-        } else if (isInlineCompletionEnabled()) {
+        if (isInlineCompletionEnabled()) {
             this.clearInlineCompletionStates().catch((e) => {
                 getLogger().error('clearInlineCompletionStates failed: %s', (e as Error).message)
             })
