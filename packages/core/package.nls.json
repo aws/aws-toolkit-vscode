@@ -392,7 +392,7 @@
     "AWS.amazonq.doc.error.promptUnrelated": "These changes don't seem related to documentation. Try describing your changes again, using the following best practices:\n- Changes should relate to how project functionality is reflected in the README\n- Content you refer to should be available in your codebase\n\n For more information on prompt best practices, see the <a href=\"https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/doc-generation.html\" target=\"_blank\">Amazon Q Developer documentation.</a>",
     "AWS.amazonq.doc.error.docGen.default": "I'm sorry, I ran into an issue while trying to generate your documentation. Please try again.",
     "AWS.amazonq.doc.error.noChangeRequiredException": "I couldn't find any code changes to update in the README. Try another documentation task.",
-    "AWS.amazonq.doc.error.promptRefusal": "I'm sorry, I can't generate documentation for this folder. Please make sure your message and code files comply with the Please make sure your message and code files comply with the <a href=\"https://aws.amazon.com/machine-learning/responsible-ai/policy/\">AWS Responsible AI Policy.</a>",
+    "AWS.amazonq.doc.error.promptRefusal": "I'm sorry, I can't generate documentation for this folder. Please make sure your message and code files comply with the <a href=\"https://aws.amazon.com/machine-learning/responsible-ai/policy/\">AWS Responsible AI Policy.</a>",
     "AWS.amazonq.doc.placeholder.editReadme": "Describe documentation changes",
     "AWS.amazonq.doc.pillText.closeSession": "End session",
     "AWS.amazonq.doc.pillText.newTask": "Start a new documentation task",
