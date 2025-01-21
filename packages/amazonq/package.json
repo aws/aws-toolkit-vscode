@@ -198,7 +198,7 @@
                 {
                     "id": "aws.amazonq.notifications",
                     "name": "%AWS.notifications.title%",
-                    "when": "!isCloud9 && !aws.isSageMaker && aws.amazonq.notifications.show"
+                    "when": "!(isCloud9 || aws.isSageMaker) && aws.amazonq.notifications.show"
                 },
                 {
                     "type": "webview",
@@ -493,7 +493,7 @@
                 "command": "_aws.amazonq.notifications.dismiss",
                 "title": "%AWS.generic.dismiss%",
                 "category": "%AWS.amazonq.title%",
-                "enablement": "isCloud9 || !aws.isWebExtHost",
+                "enablement": "view == aws.amazonq.notifications",
                 "icon": "$(remove-close)"
             },
             {
