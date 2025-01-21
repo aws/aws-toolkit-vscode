@@ -747,7 +747,6 @@ export class Experiments extends Settings.define(
 const devSettings = {
     crashCheckInterval: Number,
     logfile: String,
-    forceCloud9: Boolean,
     forceDevMode: Boolean,
     forceInstallTools: Boolean,
     forceResolveEnv: Boolean,

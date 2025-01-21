@@ -27,7 +27,6 @@ import { connectToEnterpriseSso, getStartUrl } from '../util/getStartUrl'
 import { showCodeWhispererConnectionPrompt } from '../util/showSsoPrompt'
 import { ReferenceLogViewProvider } from '../service/referenceLogViewProvider'
 import { AuthUtil } from '../util/authUtil'
-import { isCloud9 } from '../../shared/extensionUtilities'
 import { getLogger } from '../../shared/logger'
 import { isExtensionActive, isExtensionInstalled, localize, openUrl } from '../../shared/utilities/vsCodeUtils'
 import {
@@ -107,9 +106,7 @@ export const enableCodeSuggestions = Commands.declare(
             await setContext('aws.codewhisperer.connected', true)
             await setContext('aws.codewhisperer.connectionExpired', false)
             vsCodeState.isFreeTierLimitReached = false
-            if (!isCloud9()) {
-                await vscode.commands.executeCommand('aws.amazonq.refreshStatusBar')
-            }
+            await vscode.commands.executeCommand('aws.amazonq.refreshStatusBar')
         }
 )
 

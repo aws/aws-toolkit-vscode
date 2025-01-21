@@ -18,7 +18,7 @@ const iconSources = [
     // Paths relative to packages/toolkit
     `resources/icons/**/*.svg`,
     `../../node_modules/@vscode/codicons/src/icons/**/*.svg`,
-    '!**/{cloud9,dark,light}/**',
+    '!**/{dark,light}/**',
 ]
 
 interface PackageIcon {
@@ -71,27 +71,6 @@ async function updatePackage(fontPath: string, icons: [id: string, icon: Package
     const newPackage = `${JSON.stringify(packageJson, undefined, 4)}\n`
     nodefs.writeFileSync(path.join(projectDir, 'package.json'), newPackage)
     console.log('Updated package.json')
-}
-
-const themes = {
-    dark: '#C5C5C5',
-    light: '#424242',
-}
-
-async function generateCloud9Icons(targets: { name: string; path: string }[], destination: string): Promise<void> {
-    console.log('Generating icons for Cloud9')
-
-    function replaceColor(file: string, color: string, dst: string): void {
-        const contents = nodefs.readFileSync(file, 'utf-8')
-        const replaced = contents.replace(/currentColor/g, color)
-        nodefs.writeFileSync(dst, replaced)
-    }
-
-    for (const [theme, color] of Object.entries(themes)) {
-        const themeDest = path.join(destination, theme)
-        nodefs.mkdirSync(themeDest, { recursive: true })
-        await Promise.all(targets.map((t) => replaceColor(t.path, color, path.join(themeDest, `${t.name}.svg`))))
-    }
 }
 
 async function generate(mappings: Record<string, number | undefined> = {}) {
@@ -166,7 +145,6 @@ ${result.template}
 `.trim()
 
     const stylesheetPath = path.join(stylesheetsDir, 'icons.css')
-    const cloud9Dest = path.join(iconsDir, 'cloud9', 'generated')
     const isValidIcon = (i: (typeof icons)[number]): i is Required<typeof i> => i.data !== undefined
 
     nodefs.mkdirSync(fontsDir, { recursive: true })
@@ -178,11 +156,9 @@ ${result.template}
         `./${relativeDest}`,
         icons.filter(isValidIcon).map((i) => [i.name, i.data])
     )
-    await generateCloud9Icons(icons, cloud9Dest)
 
     generated.addEntry(dest)
     generated.addEntry(stylesheetPath)
-    generated.addEntry(cloud9Dest)
 
     generated.emit(path.join(projectDir, 'dist'))
 }
