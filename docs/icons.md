@@ -4,7 +4,6 @@ All icons that are used in the extensions can be found in `resources/icons`.
 
 A [build script](../scripts/generateIcons.ts) generates extension artifacts in [core/](../packages/core/):
 
--   `resources/icons/cloud9/generated`
 -   `resources/fonts/aws-toolkit-icons.woff`
 -   `resources/css/icons.css`
 -   `contributes.icons` in [amazonq package.json](../packages/amazonq/package.json) and [toolkit package.json](../packages/toolkit/package.json)
@@ -31,7 +30,7 @@ If your desired icon does not work well as a font, see [Theme Overrides](#theme-
 
 ## Identifiers
 
-Icons (except those in `cloud9`) can be referenced within the Toolkit by concatenating the icon path with hyphens, omitting the 'theme' if applicable.
+Icons can be referenced within the Toolkit by concatenating the icon path with hyphens, omitting the 'theme' if applicable.
 
 Examples:
 
@@ -49,11 +48,6 @@ For example, if I wanted to use a special App Runner service icon, then I need t
 
 -   `resources/icons/aws/dark/apprunner-service.svg`
 -   `resources/icons/aws/light/apprunner-service.svg`
-
-A similar format is used for overriding icons only on Cloud9:
-
--   `resources/icons/cloud9/dark/aws-apprunner-service.svg`
--   `resources/icons/cloud9/light/aws-apprunner-service.svg`
 
 These icons will **not** be usuable as Codicons or as font icons.
 

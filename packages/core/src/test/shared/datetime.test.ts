@@ -11,8 +11,7 @@ import { globals } from '../../shared'
 describe('simple tests', () => {
     it('formatLocalized()', async function () {
         const d = new globals.clock.Date(globals.clock.Date.UTC(2013, 11, 17, 3, 24, 0))
-        assert.deepStrictEqual(formatLocalized(d, false), 'Dec 16, 2013 7:24:00 PM GMT-8')
-        assert.deepStrictEqual(formatLocalized(d, true), 'Dec 16, 2013 7:24:00 PM PST')
+        assert.deepStrictEqual(formatLocalized(d), 'Dec 16, 2013 7:24:00 PM GMT-8')
     })
 
     it('formatDateTimestamp()', async function () {
