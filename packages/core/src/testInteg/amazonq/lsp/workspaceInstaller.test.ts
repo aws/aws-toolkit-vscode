@@ -35,6 +35,9 @@ describe('workspaceInstaller', function () {
     before(async function () {
         // TODO: remove this when non-mac support is added.
         onMac = process.platform === 'darwin'
+        if (!onMac) {
+            this.skip()
+        }
         await fs.delete(LanguageServerResolver.defaultDir, { force: true, recursive: true })
         const manifest = await new ManifestResolver(lspManifestUrl, lspWorkspaceName).resolve()
         testVersions = sort(
