@@ -94,6 +94,15 @@ export function createFactoryFunction<T extends new (...args: any[]) => any>(cto
     return (...args) => new ctor(...args)
 }
 
+export function partition<T>(lst: T[], pred: (arg: T) => boolean): [T[], T[]] {
+    return lst.reduce(
+        ([leftAcc, rightAcc], item) => {
+            return pred(item) ? [[...leftAcc, item], rightAcc] : [leftAcc, [...rightAcc, item]]
+        },
+        [[], []] as [T[], T[]]
+    )
+}
+
 type NoSymbols<T> = { [Property in keyof T]: Property extends symbol ? never : Property }[keyof T]
 export type InterfaceNoSymbol<T> = Pick<T, NoSymbols<T>>
 /**
