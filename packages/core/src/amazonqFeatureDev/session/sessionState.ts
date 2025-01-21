@@ -165,19 +165,19 @@ export class FeatureDevCodeGenState extends BaseCodeGenState {
         // No special handling needed for feature dev
     }
 
-    protected handleError(messenger: BaseMessenger, detail?: string): Error {
+    protected handleError(messenger: BaseMessenger, codegenResult: any): Error {
         switch (true) {
-            case detail?.includes('Guardrails'): {
+            case codegenResult.codeGenerationStatusDetail?.includes('Guardrails'): {
                 return new FeatureDevServiceError(
                     i18n('AWS.amazonq.featureDev.error.codeGen.default'),
                     'GuardrailsException'
                 )
             }
-            case detail?.includes('PromptRefusal'): {
+            case codegenResult.codeGenerationStatusDetail?.includes('PromptRefusal'): {
                 return new PromptRefusalException()
             }
-            case detail?.includes('EmptyPatch'): {
-                if (detail?.includes('NO_CHANGE_REQUIRED')) {
+            case codegenResult.codeGenerationStatusDetail?.includes('EmptyPatch'): {
+                if (codegenResult.codeGenerationStatusDetail?.includes('NO_CHANGE_REQUIRED')) {
                     return new NoChangeRequiredException()
                 }
                 return new FeatureDevServiceError(
@@ -185,7 +185,7 @@ export class FeatureDevCodeGenState extends BaseCodeGenState {
                     'EmptyPatchException'
                 )
             }
-            case detail?.includes('Throttling'): {
+            case codegenResult.codeGenerationStatusDetail?.includes('Throttling'): {
                 return new FeatureDevServiceError(
                     i18n('AWS.amazonq.featureDev.error.throttling'),
                     'ThrottlingException'

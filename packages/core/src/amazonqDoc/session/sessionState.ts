@@ -45,42 +45,42 @@ export class DocCodeGenState extends BaseCodeGenState {
         messenger.sendDocProgress(this.tabID, DocGenerationStep.GENERATING_ARTIFACTS + 1, 100, (messenger as any).mode)
     }
 
-    protected handleError(messenger: DocMessenger, detail?: string): Error {
+    protected handleError(messenger: DocMessenger, codegenResult: any): Error {
         // eslint-disable-next-line unicorn/no-null
         messenger.sendUpdatePromptProgress(this.tabID, null)
 
         switch (true) {
-            case detail?.includes('README_TOO_LARGE'): {
+            case codegenResult.codeGenerationStatusDetail?.includes('README_TOO_LARGE'): {
                 return new ReadmeTooLargeError()
             }
-            case detail?.includes('README_UPDATE_TOO_LARGE'): {
-                return new ReadmeUpdateTooLargeError(this.codeGenerationRemainingIterationCount || 0)
+            case codegenResult.codeGenerationStatusDetail?.includes('README_UPDATE_TOO_LARGE'): {
+                return new ReadmeUpdateTooLargeError(codegenResult.codeGenerationRemainingIterationCount || 0)
             }
-            case detail?.includes('WORKSPACE_TOO_LARGE'): {
+            case codegenResult.codeGenerationStatusDetail?.includes('WORKSPACE_TOO_LARGE'): {
                 return new ContentLengthError()
             }
-            case detail?.includes('WORKSPACE_EMPTY'): {
+            case codegenResult.codeGenerationStatusDetail?.includes('WORKSPACE_EMPTY'): {
                 return new WorkspaceEmptyError()
             }
-            case detail?.includes('PROMPT_UNRELATED'): {
-                return new PromptUnrelatedError(this.codeGenerationRemainingIterationCount || 0)
+            case codegenResult.codeGenerationStatusDetail?.includes('PROMPT_UNRELATED'): {
+                return new PromptUnrelatedError(codegenResult.codeGenerationRemainingIterationCount || 0)
             }
-            case detail?.includes('PROMPT_TOO_VAGUE'): {
-                return new PromptTooVagueError(this.codeGenerationRemainingIterationCount || 0)
+            case codegenResult.codeGenerationStatusDetail?.includes('PROMPT_TOO_VAGUE'): {
+                return new PromptTooVagueError(codegenResult.codeGenerationRemainingIterationCount || 0)
             }
-            case detail?.includes('PROMPT_REFUSAL'): {
-                return new PromptRefusalException(this.codeGenerationRemainingIterationCount || 0)
+            case codegenResult.codeGenerationStatusDetail?.includes('PROMPT_REFUSAL'): {
+                return new PromptRefusalException(codegenResult.codeGenerationRemainingIterationCount || 0)
             }
-            case detail?.includes('Guardrails'): {
+            case codegenResult.codeGenerationStatusDetail?.includes('Guardrails'): {
                 return new DocServiceError(i18n('AWS.amazonq.doc.error.docGen.default'), 'GuardrailsException')
             }
-            case detail?.includes('EmptyPatch'): {
-                if (detail?.includes('NO_CHANGE_REQUIRED')) {
+            case codegenResult.codeGenerationStatusDetail?.includes('EmptyPatch'): {
+                if (codegenResult.codeGenerationStatusDetail?.includes('NO_CHANGE_REQUIRED')) {
                     return new NoChangeRequiredException()
                 }
                 return new DocServiceError(i18n('AWS.amazonq.doc.error.docGen.default'), 'EmptyPatchException')
             }
-            case detail?.includes('Throttling'): {
+            case codegenResult.codeGenerationStatusDetail?.includes('Throttling'): {
                 return new DocServiceError(i18n('AWS.amazonq.featureDev.error.throttling'), 'ThrottlingException')
             }
             default: {

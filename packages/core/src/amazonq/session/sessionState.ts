@@ -127,7 +127,7 @@ export abstract class CodeGenBase {
                 case CodeGenerationStatus.PREDICT_FAILED:
                 case CodeGenerationStatus.DEBATE_FAILED:
                 case CodeGenerationStatus.FAILED: {
-                    throw this.handleError(messenger, codegenResult.codeGenerationStatusDetail)
+                    throw this.handleError(messenger, codegenResult)
                 }
                 default: {
                     const errorMessage = `Unknown status: ${codegenResult.codeGenerationStatus.status}\n`
@@ -150,7 +150,7 @@ export abstract class CodeGenBase {
         }
     }
 
-    protected abstract handleError(messenger: BaseMessenger, detail?: string): Error
+    protected abstract handleError(messenger: BaseMessenger, codegenResult: any): Error
 }
 
 export abstract class BasePrepareCodeGenState implements SessionState {
