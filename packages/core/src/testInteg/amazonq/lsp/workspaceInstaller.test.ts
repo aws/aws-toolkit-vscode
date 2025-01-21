@@ -3,13 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Range } from 'semver'
+import { Range, sort } from 'semver'
 import assert from 'assert'
-import { WorkspaceLSPResolver } from '../../../amazonq/lsp/workspaceInstaller'
+import { lspWorkspaceName, lspManifestUrl, WorkspaceLSPResolver } from '../../../amazonq/lsp/workspaceInstaller'
 import { fs } from '../../../shared/fs/fs'
 import path from 'path'
 import * as sinon from 'sinon'
 import { langugeServerDefaultDir } from '../../../shared/lsp/lspResolver'
+import { ManifestResolver } from '../../../shared'
 
 async function installVersion(version: string, cleanUp: boolean = false) {
     const resolver = new WorkspaceLSPResolver({ versionRange: new Range(version), cleanUp: cleanUp })
@@ -30,32 +31,37 @@ async function testInstallVersions(versions: string[]) {
 }
 
 describe('workspaceInstaller', function () {
+    let testVersions: string[]
     before(async function () {
         await fs.delete(langugeServerDefaultDir, { force: true, recursive: true })
+        const manifest = await new ManifestResolver(lspManifestUrl, lspWorkspaceName).resolve()
+        testVersions = sort(
+            manifest.versions
+                .filter((v) => !v.isDelisted)
+                .slice(0, 4)
+                .map((v) => v.serverVersion)
+        )
     })
 
     it('removes all but the latest two versions', async function () {
-        const versionsToInstall = ['0.1.25', '0.1.26', '0.1.27', '0.1.28']
-        const versionsDownloaded = await testInstallVersions(versionsToInstall)
+        const versionsDownloaded = await testInstallVersions(testVersions)
 
         assert.strictEqual(versionsDownloaded.length, 2)
-        assert.ok(versionsDownloaded.includes('0.1.28'))
-        assert.ok(versionsDownloaded.includes('0.1.29'))
+        assert.ok(versionsDownloaded.includes(testVersions[testVersions.length - 1]))
+        assert.ok(versionsDownloaded.includes(testVersions[testVersions.length - 2]))
     })
 
     it('removes delisted versions then keeps 2 remaining most recent', async function () {
         const isDelisted = sinon.stub(WorkspaceLSPResolver.prototype, 'isDelisted' as any)
         isDelisted.callsFake((_manifestVersions, version) => {
-            return version === '0.1.27' || version === '0.1.29'
+            return version === testVersions[testVersions.length - 2]
         })
 
-        const versionsToInstall = ['0.1.25', '0.1.26', '0.1.27', '0.1.28']
-        const versionsDownloaded = await testInstallVersions(versionsToInstall)
+        const versionsDownloaded = await testInstallVersions(testVersions)
 
-        console.log(versionsDownloaded)
         assert.strictEqual(versionsDownloaded.length, 2)
-        assert.ok(versionsDownloaded.includes('0.1.28'))
-        assert.ok(versionsDownloaded.includes('0.1.26'))
+        assert.ok(versionsDownloaded.includes(testVersions[testVersions.length - 1]))
+        assert.ok(versionsDownloaded.includes(testVersions[testVersions.length - 3]))
         isDelisted.restore()
     })
 })
