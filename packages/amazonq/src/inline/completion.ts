@@ -16,7 +16,6 @@ import {
 } from 'vscode'
 import { LanguageClient } from 'vscode-languageclient'
 import {
-    InlineCompletionItemWithReferences,
     InlineCompletionListWithReferences,
     InlineCompletionWithReferencesParams,
     inlineCompletionWithReferencesRequestType,
@@ -104,13 +103,13 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
         const firstCompletionDisplayLatency = Date.now() - requestStartTime
 
         // Add completion session tracking and attach onAcceptance command to each item to record used decision
-        list.items.forEach((item: InlineCompletionItemWithReferences) => {
+        for (const item of list.items) {
             item.command = {
                 command: 'aws.sample-vscode-ext-amazonq.accept',
                 title: 'On acceptance',
                 arguments: [list.sessionId, item.itemId, requestStartTime, firstCompletionDisplayLatency],
             }
-        })
+        }
 
         return list as InlineCompletionList
     }
