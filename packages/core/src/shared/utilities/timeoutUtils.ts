@@ -222,9 +222,9 @@ interface WaitUntilOptions {
     /** A backoff multiplier for how long the next interval will be (default: None, i.e 1) */
     readonly backoff?: number
     /**
-     * Only retries when an error is thrown, otherwise returning the result regardless of truthiness.
-     * - Ignores 'truthy' arg
-     * - If the timeout is reached it will throw the last error
+     * Only retries when an error is thrown, otherwise returning the immediate result.
+     * - 'truthy' arg is ignored
+     * - If the timeout is reached it throws the last error
      * - default: false
      */
     readonly retryOnFail?: boolean
@@ -234,14 +234,13 @@ export const waitUntilDefaultTimeout = 2000
 export const waitUntilDefaultInterval = 500
 
 /**
- * Invokes `fn()` until it returns a truthy value (or non-undefined if `truthy:false`).
- *
- * Also look at {@link withRetries} to be able to retry on failures.
+ * Invokes `fn()` on an interval based on the given arguments. This can be used for retries, or until
+ * an expected result is given. Read {@link WaitUntilOptions} carefully.
  *
  * @param fn  Function whose result is checked
  * @param options  See {@link WaitUntilOptions}
  *
- * @returns Result of `fn()`, or `undefined` if timeout was reached.
+ * @returns Result of `fn()`, or possibly `undefined` depending on the arguments.
  */
 export async function waitUntil<T>(fn: () => Promise<T>, options: WaitUntilOptions & { retryOnFail: true }): Promise<T>
 export async function waitUntil<T>(
@@ -308,7 +307,7 @@ export async function waitUntil<T>(fn: () => Promise<T>, options: WaitUntilOptio
             throw lastError
         }
 
-        // when testing, this saves the need to progress the stubbed clock
+        // when testing, this avoids the need to progress the stubbed clock
         if (interval > 0) {
             await sleep(interval)
         }

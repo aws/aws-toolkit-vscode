@@ -388,7 +388,7 @@ export const timeoutUtilsDescribe = describe('timeoutUtils', async function () {
     })
 
     describe('waitUntil w/ retries', function () {
-        let fn: SinonStub
+        let fn: SinonStub<[], Promise<string | boolean>>
 
         beforeEach(function () {
             fn = sandbox.stub()
