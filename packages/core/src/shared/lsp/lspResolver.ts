@@ -14,7 +14,6 @@ import { getApplicationSupportFolder } from '../vscode/env'
 import { createHash } from '../crypto'
 import request from '../request'
 
-export const langugeServerDefaultDir = path.join(getApplicationSupportFolder(), `aws/toolkits/language-servers`)
 export class LanguageServerResolver {
     constructor(
         private readonly manifest: Manifest,
@@ -340,8 +339,13 @@ export class LanguageServerResolver {
         return version.targets.find((x) => x.arch === arch && x.platform === platform)
     }
 
+    // lazy calls to `getApplicationSupportFolder()` to avoid failure on windows.
+    public static get defaultDir() {
+        return path.join(getApplicationSupportFolder(), `aws/toolkits/language-servers`)
+    }
+
     defaultDownloadFolder() {
-        return path.join(langugeServerDefaultDir, `${this.lsName}`)
+        return path.join(LanguageServerResolver.defaultDir, `${this.lsName}`)
     }
 
     private getDownloadDirectory(version: string) {

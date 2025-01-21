@@ -9,8 +9,7 @@ import { lspWorkspaceName, lspManifestUrl, WorkspaceLSPResolver } from '../../..
 import { fs } from '../../../shared/fs/fs'
 import path from 'path'
 import * as sinon from 'sinon'
-import { langugeServerDefaultDir } from '../../../shared/lsp/lspResolver'
-import { ManifestResolver } from '../../../shared'
+import { LanguageServerResolver, ManifestResolver } from '../../../shared'
 
 async function installVersion(version: string, cleanUp: boolean = false) {
     const resolver = new WorkspaceLSPResolver({ versionRange: new Range(version), cleanUp: cleanUp })
@@ -32,8 +31,11 @@ async function testInstallVersions(versions: string[]) {
 
 describe('workspaceInstaller', function () {
     let testVersions: string[]
+    let onMac: boolean
     before(async function () {
-        await fs.delete(langugeServerDefaultDir, { force: true, recursive: true })
+        // TODO: remove this when non-mac support is added.
+        onMac = process.platform === 'darwin'
+        await fs.delete(LanguageServerResolver.defaultDir, { force: true, recursive: true })
         const manifest = await new ManifestResolver(lspManifestUrl, lspWorkspaceName).resolve()
         testVersions = sort(
             manifest.versions
@@ -44,6 +46,9 @@ describe('workspaceInstaller', function () {
     })
 
     it('removes all but the latest two versions', async function () {
+        if (!onMac) {
+            this.skip()
+        }
         const versionsDownloaded = await testInstallVersions(testVersions)
 
         assert.strictEqual(versionsDownloaded.length, 2)
@@ -52,6 +57,9 @@ describe('workspaceInstaller', function () {
     })
 
     it('removes delisted versions then keeps 2 remaining most recent', async function () {
+        if (!onMac) {
+            this.skip()
+        }
         const isDelisted = sinon.stub(WorkspaceLSPResolver.prototype, 'isDelisted' as any)
         isDelisted.callsFake((_manifestVersions, version) => {
             return version === testVersions[testVersions.length - 2]
