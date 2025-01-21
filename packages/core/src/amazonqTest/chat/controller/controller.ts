@@ -20,7 +20,9 @@ import {
     TelemetryHelper,
     TestGenerationBuildStep,
     testGenState,
+    tooManyRequestErrorMessage,
     unitTestGenerationCancelMessage,
+    UserWrittenCodeTracker,
 } from '../../../codewhisperer'
 import {
     fs,
@@ -241,8 +243,11 @@ export class TestController {
         // eslint-disable-next-line unicorn/no-null
         this.messenger.sendUpdatePromptProgress(data.tabID, null)
         const session = this.sessionStorage.getSession()
-        const isCancel = data.error.message === unitTestGenerationCancelMessage
-
+        const isCancel = data.error.uiMessage === unitTestGenerationCancelMessage
+        let telemetryErrorMessage = getTelemetryReasonDesc(data.error)
+        if (session.stopIteration) {
+            telemetryErrorMessage = getTelemetryReasonDesc(data.error.uiMessage.replaceAll('```', ''))
+        }
         TelemetryHelper.instance.sendTestGenerationToolkitEvent(
             session,
             true,
@@ -250,63 +255,64 @@ export class TestController {
             isCancel ? 'Cancelled' : 'Failed',
             session.startTestGenerationRequestId,
             performance.now() - session.testGenerationStartTime,
-            getTelemetryReasonDesc(data.error),
+            telemetryErrorMessage,
             session.isCodeBlockSelected,
             session.artifactsUploadDuration,
             session.srcPayloadSize,
             session.srcZipFileSize
         )
-
         if (session.stopIteration) {
             // Error from Science
-            this.messenger.sendMessage(data.error.message.replaceAll('```', ''), data.tabID, 'answer')
+            this.messenger.sendMessage(data.error.uiMessage.replaceAll('```', ''), data.tabID, 'answer')
         } else {
             isCancel
-                ? this.messenger.sendMessage(data.error.message, data.tabID, 'answer')
+                ? this.messenger.sendMessage(data.error.uiMessage, data.tabID, 'answer')
                 : this.sendErrorMessage(data)
         }
         await this.sessionCleanUp()
         return
     }
     // Client side error messages
-    private sendErrorMessage(data: { tabID: string; error: { code: string; message: string } }) {
+    private sendErrorMessage(data: {
+        tabID: string
+        error: { uiMessage: string; message: string; code: string; statusCode: string }
+    }) {
         const { error, tabID } = data
 
-        if (isAwsError(error)) {
-            if (error.code === 'ThrottlingException') {
-                // TODO: use the explicitly modeled exception reason for quota vs throttle
-                if (error.message.includes(CodeWhispererConstants.utgLimitReached)) {
-                    getLogger().error('Monthly quota reached for QSDA actions.')
-                    return this.messenger.sendMessage(
-                        i18n('AWS.amazonq.featureDev.error.monthlyLimitReached'),
-                        tabID,
-                        'answer'
-                    )
-                } else {
-                    getLogger().error('Too many requests.')
-                    // TODO: move to constants file
-                    this.messenger.sendErrorMessage('Too many requests. Please wait before retrying.', tabID)
-                }
-            } else {
-                // other service errors:
-                // AccessDeniedException - should not happen because access is validated before this point in the client
-                // ValidationException - shouldn't happen because client should not send malformed requests
-                // ConflictException - should not happen because the client will maintain proper state
-                // InternalServerException - shouldn't happen but needs to be caught
-                getLogger().error('Other error message: %s', error.message)
-                this.messenger.sendErrorMessage(
-                    'Encountered an unexpected error when generating tests. Please try again',
-                    tabID
+        // If user reached monthly limit for builderId
+        if (error.code === 'CreateTestJobError') {
+            if (error.message.includes(CodeWhispererConstants.utgLimitReached)) {
+                getLogger().error('Monthly quota reached for QSDA actions.')
+                return this.messenger.sendMessage(
+                    i18n('AWS.amazonq.featureDev.error.monthlyLimitReached'),
+                    tabID,
+                    'answer'
                 )
             }
-        } else {
-            // other unexpected errors (TODO enumerate all other failure cases)
-            getLogger().error('Other error message: %s', error.message)
-            this.messenger.sendErrorMessage(
-                'Encountered an unexpected error when generating tests. Please try again',
-                tabID
-            )
+            if (error.message.includes('Too many requests')) {
+                getLogger().error(error.message)
+                return this.messenger.sendErrorMessage(tooManyRequestErrorMessage, tabID)
+            }
         }
+        if (isAwsError(error)) {
+            if (error.code === 'ThrottlingException') {
+                // TODO: use the explicitly modeled exception reason for quota vs throttle{
+                getLogger().error(error.message)
+                this.messenger.sendErrorMessage(tooManyRequestErrorMessage, tabID)
+                return
+            }
+            // other service errors:
+            // AccessDeniedException - should not happen because access is validated before this point in the client
+            // ValidationException - shouldn't happen because client should not send malformed requests
+            // ConflictException - should not happen because the client will maintain proper state
+            // InternalServerException - shouldn't happen but needs to be caught
+            getLogger().error('Other error message: %s', error.message)
+            this.messenger.sendErrorMessage('', tabID)
+            return
+        }
+        // other unexpected errors (TODO enumerate all other failure cases)
+        getLogger().error('Other error message: %s', error.uiMessage)
+        this.messenger.sendErrorMessage('', tabID)
     }
 
     // This function handles actions if user clicked on any Button one of these cases will be executed
@@ -664,12 +670,14 @@ export class TestController {
             acceptedLines = acceptedLines < 0 ? 0 : acceptedLines
             acceptedChars -= originalContent.length
             acceptedChars = acceptedChars < 0 ? 0 : acceptedChars
+            UserWrittenCodeTracker.instance.onQStartsMakingEdits()
             const document = await vscode.workspace.openTextDocument(absolutePath)
             await applyChanges(
                 document,
                 new vscode.Range(document.lineAt(0).range.start, document.lineAt(document.lineCount - 1).range.end),
                 updatedContent
             )
+            UserWrittenCodeTracker.instance.onQFinishesEdits()
         } else {
             await fs.writeFile(absolutePath, updatedContent)
         }
@@ -727,6 +735,9 @@ export class TestController {
         // this.messenger.sendMessage('Accepted', message.tabID, 'prompt')
         telemetry.ui_click.emit({ elementId: 'unitTestGeneration_acceptDiff' })
 
+        getLogger().info(
+            `Generated unit tests are accepted for ${session.fileLanguage ?? 'plaintext'} language with jobId: ${session.listOfTestGenerationJobId[0]}, jobGroupName: ${session.testGenerationJobGroupName}, result: Succeeded`
+        )
         TelemetryHelper.instance.sendTestGenerationToolkitEvent(
             session,
             true,
@@ -748,7 +759,6 @@ export class TestController {
         )
 
         await this.endSession(message, FollowUpTypes.SkipBuildAndFinish)
-        await this.sessionCleanUp()
         return
 
         if (session.listOfTestGenerationJobId.length === 1) {
@@ -831,6 +841,7 @@ export class TestController {
             const chatRequest = triggerPayloadToChatRequest(triggerPayload)
             const client = await createCodeWhispererChatStreamingClient()
             const response = await client.generateAssistantResponse(chatRequest)
+            UserWrittenCodeTracker.instance.onQFeatureInvoked()
             await this.messenger.sendAIResponse(
                 response,
                 session,
@@ -872,16 +883,12 @@ export class TestController {
                 session.numberOfTestsGenerated,
                 session.linesOfCodeGenerated
             )
-
             telemetry.ui_click.emit({ elementId: 'unitTestGeneration_rejectDiff' })
         }
 
         await this.sessionCleanUp()
-        // TODO: revert 'Accepted' to 'Skip build and finish' once supported
-        const message = step === FollowUpTypes.RejectCode ? 'Rejected' : 'Accepted'
 
-        this.messenger.sendMessage(message, data.tabID, 'prompt')
-        this.messenger.sendMessage(`Unit test generation workflow is completed.`, data.tabID, 'answer')
+        // this.messenger.sendMessage(`Unit test generation workflow is completed.`, data.tabID, 'answer')
         this.messenger.sendChatInputEnabled(data.tabID, true)
         return
     }
@@ -1316,8 +1323,18 @@ export class TestController {
             'Deleting output.log and temp result directory. testGenerationLogsDir: %s',
             testGenerationLogsDir
         )
-        await fs.delete(path.join(testGenerationLogsDir, 'output.log'))
-        await fs.delete(this.tempResultDirPath, { recursive: true })
+        const outputLogPath = path.join(testGenerationLogsDir, 'output.log')
+        if (await fs.existsFile(outputLogPath)) {
+            await fs.delete(outputLogPath)
+        }
+        if (
+            await fs
+                .stat(this.tempResultDirPath)
+                .then(() => true)
+                .catch(() => false)
+        ) {
+            await fs.delete(this.tempResultDirPath, { recursive: true })
+        }
     }
 
     // TODO: return build command when product approves

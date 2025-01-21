@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 
-export type LogTopic = 'crashMonitoring' | 'dev/beta' | 'notifications' | 'test' | 'unknown' | 'lsp'
+export type LogTopic = 'crashMonitoring' | 'dev/beta' | 'notifications' | 'test' | 'childProcess' | 'lsp' | 'unknown'
 
 class ErrorLog {
     constructor(

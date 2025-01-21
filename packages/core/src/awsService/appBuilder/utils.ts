@@ -24,14 +24,14 @@ const localize = nls.loadMessageBundle()
 export async function runOpenTemplate(arg?: TreeNode) {
     const templateUri = arg ? (arg.resource as SamAppLocation).samTemplateUri : await promptUserForTemplate()
     if (!templateUri || !(await fs.exists(templateUri))) {
-        throw new ToolkitError('No template provided', { code: 'NoTemplateProvided' })
+        throw new ToolkitError('SAM Template not found, cannot open template', { code: 'NoTemplateProvided' })
     }
     const document = await vscode.workspace.openTextDocument(templateUri)
     await vscode.window.showTextDocument(document)
 }
 
 /**
- * Find and open the lambda handler with given ResoruceNode
+ * Find and open the lambda handler with given ResourceNode
  * If not found, a NoHandlerFound error will be raised
  * @param arg ResourceNode
  */
@@ -56,9 +56,12 @@ export async function runOpenHandler(arg: ResourceNode): Promise<void> {
         arg.resource.resource.Runtime
     )
     if (!handlerFile) {
-        throw new ToolkitError(`No handler file found with name "${arg.resource.resource.Handler}"`, {
-            code: 'NoHandlerFound',
-        })
+        throw new ToolkitError(
+            `No handler file found with name "${arg.resource.resource.Handler}". Ensure the file exists in the expected location."`,
+            {
+                code: 'NoHandlerFound',
+            }
+        )
     }
     await vscode.workspace.openTextDocument(handlerFile).then(async (doc) => await vscode.window.showTextDocument(doc))
 }
@@ -90,7 +93,7 @@ export async function getLambdaHandlerFile(
 ): Promise<vscode.Uri | undefined> {
     const family = getFamily(runtime)
     if (!supportedRuntimeForHandler.has(family)) {
-        throw new ToolkitError(`Runtime ${runtime} is not supported for open handler button`, {
+        throw new ToolkitError(`Runtime ${runtime} is not supported for the 'Open handler' button`, {
             code: 'RuntimeNotSupported',
         })
     }

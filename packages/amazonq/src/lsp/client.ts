@@ -5,18 +5,17 @@
 
 import vscode, { env, version } from 'vscode'
 import * as nls from 'vscode-nls'
-import * as cp from 'child_process' // eslint-disable-line no-restricted-imports -- language server options expect actual child process
 import * as crypto from 'crypto'
 import { LanguageClient, LanguageClientOptions, ServerOptions, TransportKind } from 'vscode-languageclient'
 import { registerInlineCompletion } from '../inline/completion'
-import { AmazonQLspAuth, notificationTypes, writeEncryptionInit } from './auth'
+import { AmazonQLspAuth, encryptionKey, notificationTypes } from './auth'
 import { AuthUtil } from 'aws-core-vscode/codewhisperer'
 import { ConnectionMetadata } from '@aws/language-server-runtimes/protocol'
-import { ResourcePaths } from 'aws-core-vscode/shared'
+import { ResourcePaths, createServerOptions } from 'aws-core-vscode/shared'
 
 const localize = nls.loadMessageBundle()
 
-export function startLanguageServer(extensionContext: vscode.ExtensionContext, resourcePaths: ResourcePaths) {
+export async function startLanguageServer(extensionContext: vscode.ExtensionContext, resourcePaths: ResourcePaths) {
     const toDispose = extensionContext.subscriptions
 
     // The debug options for the server
@@ -31,19 +30,21 @@ export function startLanguageServer(extensionContext: vscode.ExtensionContext, r
         ],
     }
 
-    const serverPath = resourcePaths.lsp
+    const serverModule = resourcePaths.lsp
 
     // If the extension is launch in debug mode the debug server options are use
     // Otherwise the run options are used
     let serverOptions: ServerOptions = {
-        run: { module: serverPath, transport: TransportKind.ipc },
-        debug: { module: serverPath, transport: TransportKind.ipc, options: debugOptions },
+        run: { module: serverModule, transport: TransportKind.ipc },
+        debug: { module: serverModule, transport: TransportKind.ipc, options: debugOptions },
     }
 
-    const child = cp.spawn(resourcePaths.node, [serverPath, ...debugOptions.execArgv])
-    writeEncryptionInit(child.stdin)
-
-    serverOptions = () => Promise.resolve(child)
+    serverOptions = createServerOptions({
+        encryptionKey,
+        executable: resourcePaths.node,
+        serverModule,
+        execArgv: debugOptions.execArgv,
+    })
 
     const documentSelector = [{ scheme: 'file', language: '*' }]
 
