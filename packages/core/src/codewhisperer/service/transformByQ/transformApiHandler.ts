@@ -49,6 +49,7 @@ import { ChatSessionManager } from '../../../amazonqGumby/chat/storages/chatSess
 import { encodeHTML } from '../../../shared/utilities/textUtilities'
 import { convertToTimeString } from '../../../shared/datetime'
 import { getAuthType } from '../../../auth/utils'
+import { UserWrittenCodeTracker } from '../../tracker/userWrittenCodeTracker'
 
 export function getSha256(buffer: Buffer) {
     const hasher = crypto.createHash('sha256')
@@ -447,6 +448,7 @@ export async function startJob(uploadId: string) {
                 target: { language: targetLanguageVersion }, // always JDK17
             },
         })
+        getLogger().info('CodeTransformation: called startJob API successfully')
         if (response.$response.requestId) {
             transformByQState.setJobFailureMetadata(` (request ID: ${response.$response.requestId})`)
         }
@@ -670,6 +672,7 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
                 })
             }
             transformByQState.setPolledJobStatus(status)
+            getLogger().info(`CodeTransformation: polled job status = ${status}`)
 
             const errorMessage = response.transformationJob.reason
             if (errorMessage !== undefined) {
@@ -767,6 +770,7 @@ export async function downloadResultArchive(
         throw e
     } finally {
         cwStreamingClient.destroy()
+        UserWrittenCodeTracker.instance.onQFeatureInvoked()
     }
 }
 

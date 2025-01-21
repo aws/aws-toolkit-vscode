@@ -28,6 +28,7 @@ import { SamDebugConfigProvider } from '../../../shared/sam/debugger/awsSamDebug
 import sinon from 'sinon'
 import * as nls from 'vscode-nls'
 import { assertLogsContain } from '../../../test/globalSetup.test'
+import { createResponse } from '../../testUtil'
 
 const localize = nls.loadMessageBundle()
 
@@ -166,7 +167,7 @@ describe('SamInvokeWebview', () => {
             createQuickPickStub.returns({})
             promptUserStub.resolves([{ label: 'testEvent', filename: 'testEvent.json' }])
             verifySinglePickerOutputStub.returns({ label: 'testEvent', filename: 'testEvent.json' })
-            httpFetcherStub.resolves(mockSampleContent)
+            httpFetcherStub.resolves(createResponse(mockSampleContent))
 
             const result = await samInvokeWebview.getSamplePayload()
 

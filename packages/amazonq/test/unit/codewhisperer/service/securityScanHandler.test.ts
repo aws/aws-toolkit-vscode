@@ -13,7 +13,10 @@ import {
     mapToAggregatedList,
     DefaultCodeWhispererClient,
     ListCodeScanFindingsResponse,
+    pollScanJobStatus,
+    SecurityScanTimedOutError,
 } from 'aws-core-vscode/codewhisperer'
+import { timeoutUtils } from 'aws-core-vscode/shared'
 import assert from 'assert'
 import sinon from 'sinon'
 import * as vscode from 'vscode'
@@ -237,6 +240,59 @@ describe('securityScanHandler', function () {
             mapToAggregatedList(codeScanIssueMap, json, editor, CodeAnalysisScope.FILE_AUTO)
             assert.strictEqual(codeScanIssueMap.size, 1)
             assert.strictEqual(codeScanIssueMap.get('file1.ts')?.length, 1)
+        })
+    })
+
+    describe('pollScanJobStatus', function () {
+        let mockClient: Stub<DefaultCodeWhispererClient>
+        let clock: sinon.SinonFakeTimers
+        const mockJobId = 'test-job-id'
+        const mockStartTime = Date.now()
+
+        beforeEach(function () {
+            mockClient = stub(DefaultCodeWhispererClient)
+            clock = sinon.useFakeTimers({
+                shouldAdvanceTime: true,
+            })
+            sinon.stub(timeoutUtils, 'sleep').resolves()
+        })
+
+        afterEach(function () {
+            sinon.restore()
+            clock.restore()
+        })
+
+        it('should return status when scan completes successfully', async function () {
+            mockClient.getCodeScan
+                .onFirstCall()
+                .resolves({ status: 'Pending', $response: { requestId: 'req1' } })
+                .onSecondCall()
+                .resolves({ status: 'Completed', $response: { requestId: 'req2' } })
+
+            const result = await pollScanJobStatus(mockClient, mockJobId, CodeAnalysisScope.FILE_AUTO, mockStartTime)
+            assert.strictEqual(result, 'Completed')
+        })
+
+        it('should throw SecurityScanTimedOutError when polling exceeds timeout for express scans', async function () {
+            mockClient.getCodeScan.resolves({ status: 'Pending', $response: { requestId: 'req1' } })
+
+            const pollPromise = pollScanJobStatus(mockClient, mockJobId, CodeAnalysisScope.FILE_AUTO, mockStartTime)
+
+            const expectedTimeoutMs = 60_000
+            clock.tick(expectedTimeoutMs + 1000)
+
+            await assert.rejects(() => pollPromise, SecurityScanTimedOutError)
+        })
+
+        it('should throw SecurityScanTimedOutError when polling exceeds timeout for standard scans', async function () {
+            mockClient.getCodeScan.resolves({ status: 'Pending', $response: { requestId: 'req1' } })
+
+            const pollPromise = pollScanJobStatus(mockClient, mockJobId, CodeAnalysisScope.PROJECT, mockStartTime)
+
+            const expectedTimeoutMs = 600_000
+            clock.tick(expectedTimeoutMs + 1000)
+
+            await assert.rejects(() => pollPromise, SecurityScanTimedOutError)
         })
     })
 })

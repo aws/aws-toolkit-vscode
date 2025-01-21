@@ -43,6 +43,7 @@ import { featureDevScheme, featureName, messageWithConversationId } from '../../
 import { i18n } from '../../../../shared/i18n-helper'
 import { FollowUpTypes } from '../../../../amazonq/commons/types'
 import { ToolkitError } from '../../../../shared'
+import { MessengerTypes } from '../../../../amazonqFeatureDev/controllers/chat/messenger/constants'
 
 let mockGetCodeGeneration: sinon.SinonStub
 describe('Controller', () => {
@@ -526,10 +527,11 @@ describe('Controller', () => {
                 await waitUntil(() => Promise.resolve(sendMetricDataTelemetrySpy.callCount >= 2), {})
             }
 
-            async function verifyAddCodeMessage(
-                remainingIterations: number,
-                totalIterations: number,
-                expectedMessage: string
+            async function verifyMessage(
+                expectedMessage: string,
+                type: MessengerTypes,
+                remainingIterations?: number,
+                totalIterations?: number
             ) {
                 sinon.stub(session, 'send').resolves()
                 sinon.stub(session, 'sendLinesOfCodeGeneratedTelemetry').resolves() // Avoid sending extra telemetry
@@ -542,7 +544,7 @@ describe('Controller', () => {
 
                 assert.ok(
                     sendAnswerSpy.calledWith({
-                        type: 'answer',
+                        type,
                         tabID,
                         message: expectedMessage,
                     })
@@ -595,7 +597,33 @@ describe('Controller', () => {
                             return 'Would you like me to add this code to your project?'
                         }
                     })()
-                    await verifyAddCodeMessage(remainingIterations, totalIterations, expectedMessage)
+                    await verifyMessage(expectedMessage, 'answer', remainingIterations, totalIterations)
+                })
+            }
+
+            for (let remainingIterations = -1; remainingIterations <= 3; remainingIterations++) {
+                let remaining: number | undefined = remainingIterations
+                if (remainingIterations < 0) {
+                    remaining = undefined
+                }
+                it(`verifies messages after cancellation for remaining iterations at ${remaining !== undefined ? remaining : 'undefined'}`, async () => {
+                    const totalIterations = 10
+                    const expectedMessage = (() => {
+                        if (remaining === undefined || remaining > 2) {
+                            return 'I stopped generating your code. If you want to continue working on this task, provide another description.'
+                        } else if (remaining > 0) {
+                            return `I stopped generating your code. If you want to continue working on this task, provide another description. You have ${remaining} out of ${totalIterations} code generations left.`
+                        } else {
+                            return "I stopped generating your code. You don't have more iterations left, however, you can start a new session."
+                        }
+                    })()
+                    session.state.tokenSource.cancel()
+                    await verifyMessage(
+                        expectedMessage,
+                        'answer-part',
+                        remaining,
+                        remaining === undefined ? undefined : totalIterations
+                    )
                 })
             }
         })
