@@ -19,7 +19,7 @@ describe('ec2 activation', function () {
         const testPartition = 'test-partition'
         // Don't want to be polling here, that is tested in ../ec2ParentNode.test.ts
         // disabled here for convenience (avoiding race conditions with timeout)
-        sinon.stub(PollingSet.prototype, 'start')
+        sinon.stub(PollingSet.prototype, 'add')
         const testClient = new Ec2Client(testRegion)
         const parentNode = new Ec2ParentNode(testRegion, testPartition, new Ec2Client(testRegion))
         testNode = new Ec2InstanceNode(parentNode, testClient, testRegion, testPartition, {
