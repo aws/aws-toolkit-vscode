@@ -99,6 +99,7 @@ export class DocCodeGenState extends BaseCodeGenState {
             0,
             action.mode as Mode
         )
+     }
 
         await this.config.proxyClient.startCodeGeneration(
             this.config.conversationId,
