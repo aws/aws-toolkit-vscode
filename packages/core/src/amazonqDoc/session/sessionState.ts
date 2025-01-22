@@ -25,14 +25,14 @@ import { BaseCodeGenState, BasePrepareCodeGenState, CreateNextStateParams } from
 import { Intent } from '../../amazonq/commons/types'
 
 export class DocCodeGenState extends BaseCodeGenState {
-    protected handleProgress(messenger: DocMessenger, detail?: string): void {
+    protected handleProgress(messenger: DocMessenger, action: SessionStateAction, detail?: string): void {
         if (detail) {
             const progress = getFileSummaryPercentage(detail)
             messenger.sendDocProgress(
                 this.tabID,
                 progress === 100 ? DocGenerationStep.GENERATING_ARTIFACTS : DocGenerationStep.SUMMARIZING_FILES,
                 progress,
-                (messenger as any).mode
+                action.mode
             )
         }
     }
@@ -41,8 +41,16 @@ export class DocCodeGenState extends BaseCodeGenState {
         return docScheme
     }
 
-    protected handleGenerationComplete(messenger: DocMessenger, newFileInfo: NewFileInfo[]): void {
-        messenger.sendDocProgress(this.tabID, DocGenerationStep.GENERATING_ARTIFACTS + 1, 100, (messenger as any).mode)
+    protected getTimeoutErrorCode(): string {
+        return 'DocGenerationTimeout'
+    }
+
+    protected handleGenerationComplete(
+        messenger: DocMessenger,
+        newFileInfo: NewFileInfo[],
+        action: SessionStateAction
+    ): void {
+        messenger.sendDocProgress(this.tabID, DocGenerationStep.GENERATING_ARTIFACTS + 1, 100, action.mode)
     }
 
     protected handleError(messenger: DocMessenger, codegenResult: any): Error {
@@ -118,6 +126,14 @@ export class DocCodeGenState extends BaseCodeGenState {
 }
 
 export class DocPrepareCodeGenState extends BasePrepareCodeGenState {
+    protected preUpload(action: SessionStateAction): void {
+        // Do nothing
+    }
+
+    protected postUpload(action: SessionStateAction): void {
+        // Do nothing
+    }
+
     protected override createNextState(config: SessionStateConfig): SessionState {
         return super.createNextState(config, DocCodeGenState)
     }

@@ -147,7 +147,7 @@ export class MockCodeGenState implements SessionState {
 }
 
 export class FeatureDevCodeGenState extends BaseCodeGenState {
-    protected handleProgress(messenger: Messenger, detail?: string): void {
+    protected handleProgress(messenger: Messenger, action: SessionStateAction, detail?: string): void {
         if (detail) {
             messenger.sendAnswer({
                 message: i18n('AWS.amazonq.featureDev.pillText.generatingCode') + `\n\n${detail}`,
@@ -161,7 +161,15 @@ export class FeatureDevCodeGenState extends BaseCodeGenState {
         return featureDevScheme
     }
 
-    protected handleGenerationComplete(_messenger: Messenger, _newFileInfo: NewFileInfo[]): void {
+    protected getTimeoutErrorCode(): string {
+        return 'CodeGenTimeout'
+    }
+
+    protected handleGenerationComplete(
+        _messenger: Messenger,
+        _newFileInfo: NewFileInfo[],
+        action: SessionStateAction
+    ): void {
         // No special handling needed for feature dev
     }
 
@@ -220,11 +228,40 @@ export class FeatureDevCodeGenState extends BaseCodeGenState {
     }
 
     protected override createNextState(config: SessionStateConfig, params: CreateNextStateParams): SessionState {
-        return super.createNextState(config, params, FeatureDevPrepareCodeGenState)
+        return super.createNextState(
+            { ...config, currentCodeGenerationId: this.currentCodeGenerationId },
+            params,
+            FeatureDevPrepareCodeGenState
+        )
     }
 }
 
 export class FeatureDevPrepareCodeGenState extends BasePrepareCodeGenState {
+    protected preUpload(action: SessionStateAction): void {
+        action.messenger.sendAnswer({
+            message: i18n('AWS.amazonq.featureDev.pillText.uploadingCode'),
+            type: 'answer-part',
+            tabID: this.tabID,
+        })
+
+        action.messenger.sendUpdatePlaceholder(this.tabID, i18n('AWS.amazonq.featureDev.pillText.uploadingCode'))
+    }
+
+    protected postUpload(action: SessionStateAction): void {
+        if (!action.tokenSource?.token.isCancellationRequested) {
+            action.messenger.sendAnswer({
+                message: i18n('AWS.amazonq.featureDev.pillText.contextGatheringCompleted'),
+                type: 'answer-part',
+                tabID: this.tabID,
+            })
+
+            action.messenger.sendUpdatePlaceholder(
+                this.tabID,
+                i18n('AWS.amazonq.featureDev.pillText.contextGatheringCompleted')
+            )
+        }
+    }
+
     protected override createNextState(config: SessionStateConfig): SessionState {
         return super.createNextState(config, FeatureDevCodeGenState)
     }

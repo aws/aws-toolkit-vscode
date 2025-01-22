@@ -55,9 +55,14 @@ export abstract class CodeGenBase {
         this.currentCodeGenerationId = config.currentCodeGenerationId || EmptyCodeGenID
     }
 
-    protected abstract handleProgress(messenger: BaseMessenger, detail?: string): void
+    protected abstract handleProgress(messenger: BaseMessenger, action: SessionStateAction, detail?: string): void
     protected abstract getScheme(): string
-    protected abstract handleGenerationComplete(messenger: BaseMessenger, newFileInfo: NewFileInfo[]): void
+    protected abstract getTimeoutErrorCode(): string
+    protected abstract handleGenerationComplete(
+        messenger: BaseMessenger,
+        newFileInfo: NewFileInfo[],
+        action: SessionStateAction
+    ): void
 
     async generateCode({
         messenger,
@@ -65,12 +70,14 @@ export abstract class CodeGenBase {
         codeGenerationId,
         telemetry: telemetry,
         workspaceFolders,
+        action,
     }: {
         messenger: BaseMessenger
         fs: VirtualFileSystem
         codeGenerationId: string
         telemetry: any
         workspaceFolders: CurrentWsFolders
+        action: SessionStateAction
     }): Promise<{
         newFiles: NewFileInfo[]
         deletedFiles: DeletedFileInfo[]
@@ -106,7 +113,7 @@ export abstract class CodeGenBase {
                     )
                     telemetry.setNumberOfFilesGenerated(newFileInfo.length)
 
-                    this.handleGenerationComplete(messenger, newFileInfo)
+                    this.handleGenerationComplete(messenger, newFileInfo, action)
 
                     return {
                         newFiles: newFileInfo,
@@ -119,7 +126,7 @@ export abstract class CodeGenBase {
                 case CodeGenerationStatus.PREDICT_READY:
                 case CodeGenerationStatus.IN_PROGRESS: {
                     if (codegenResult.codeGenerationStatusDetail) {
-                        this.handleProgress(messenger, codegenResult.codeGenerationStatusDetail)
+                        this.handleProgress(messenger, action, codegenResult.codeGenerationStatusDetail)
                     }
                     await new Promise((f) => globals.clock.setTimeout(f, this.requestDelay))
                     break
@@ -138,7 +145,7 @@ export abstract class CodeGenBase {
 
         if (!this.isCancellationRequested) {
             const errorMessage = i18n('AWS.amazonq.featureDev.error.codeGen.timeout')
-            throw new ToolkitError(errorMessage, { code: 'CodeGenTimeout' })
+            throw new ToolkitError(errorMessage, { code: this.getTimeoutErrorCode() })
         }
 
         return {
@@ -210,7 +217,11 @@ export abstract class BasePrepareCodeGenState implements SessionState {
         )
     }
 
+    protected abstract preUpload(action: SessionStateAction): void
+    protected abstract postUpload(action: SessionStateAction): void
+
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
+        this.preUpload(action)
         const uploadId = await telemetry.amazonq_createUpload.run(async (span) => {
             span.record({
                 amazonqConversationId: this.config.conversationId,
@@ -231,6 +242,7 @@ export abstract class BasePrepareCodeGenState implements SessionState {
             )
 
             await uploadCode(uploadUrl, zipFileBuffer, zipFileChecksum, kmsKeyArn)
+            this.postUpload(action)
 
             return uploadId
         })
@@ -338,6 +350,7 @@ export abstract class BaseCodeGenState extends CodeGenBase implements SessionSta
                     codeGenerationId,
                     telemetry: action.telemetry,
                     workspaceFolders: this.config.workspaceFolders,
+                    action,
                 })
 
                 if (codeGeneration && !action.tokenSource?.token.isCancellationRequested) {
