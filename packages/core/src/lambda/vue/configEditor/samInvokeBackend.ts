@@ -46,6 +46,9 @@ export interface ResourceData {
     runtime: string
     stackName: string
     source: string
+    environment?: {
+        Variables: Record<string, any>
+    }
 }
 
 export type AwsSamDebuggerConfigurationLoose = AwsSamDebuggerConfiguration & {
@@ -441,6 +444,7 @@ export async function registerSamDebugInvokeVueCommand(
         runtime: resource.resource.Runtime!,
         arn: resource.functionArn ?? '',
         stackName: resource.stackName ?? '',
+        environment: resource.resource.Environment ?? undefined,
         source: source,
     })
     await telemetry.sam_openConfigUi.run(async (span) => {

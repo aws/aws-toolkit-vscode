@@ -30,6 +30,9 @@ export interface ResourceTreeEntity {
     Events?: ResourceTreeEntity[]
     Path?: string
     Method?: string
+    Environment?: {
+        Variables: Record<string, any>
+    }
 }
 
 export async function getStackName(projectRoot: vscode.Uri): Promise<any> {
@@ -81,10 +84,12 @@ function getResourceEntity(template: any): ResourceTreeEntity[] {
             Handler: resource.Properties?.Handler ?? template?.Globals?.Function?.Handler,
             Events: resource.Properties?.Events ? getEvents(resource.Properties.Events) : undefined,
             CodeUri: resource.Properties?.CodeUri ?? template?.Globals?.Function?.CodeUri,
+            Environment: resource.Properties?.Environment
+                ? resource.Properties?.Environment
+                : template?.Globals?.Function?.Environment,
         }
         resourceTree.push(resourceEntity)
     }
-
     return resourceTree
 }
 
