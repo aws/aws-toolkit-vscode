@@ -19,24 +19,12 @@ export const supportedLspServerVersions = '0.1.32'
 export const lspWorkspaceName = 'AmazonQ-Workspace'
 
 export class WorkspaceLSPResolver implements LspResolver {
-    private readonly versionRange: Range
-    private readonly shouldCleanUp: boolean
-    public constructor(
-        options?: Partial<{
-            versionRange: Range
-            cleanUp: boolean
-        }>
-    ) {
-        this.versionRange = options?.versionRange ?? new Range(supportedLspServerVersions)
-        this.shouldCleanUp = options?.cleanUp ?? true
-    }
-
     async resolve(): Promise<LspResolution> {
         const manifest = await new ManifestResolver(lspManifestUrl, lspWorkspaceName).resolve()
         const installationResult = await new LanguageServerResolver(
             manifest,
             lspWorkspaceName,
-            this.versionRange
+            new Range(supportedLspServerVersions)
         ).resolve()
 
         const nodeName =
@@ -44,9 +32,7 @@ export class WorkspaceLSPResolver implements LspResolver {
         const nodePath = path.join(installationResult.assetDirectory, nodeName)
         await fs.chmod(nodePath, 0o755)
 
-        if (this.shouldCleanUp) {
-            await this.cleanUp(manifest.versions, path.dirname(installationResult.assetDirectory))
-        }
+        await this.cleanUp(manifest.versions, path.dirname(installationResult.assetDirectory))
         return {
             ...installationResult,
             resourcePaths: {
