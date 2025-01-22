@@ -44,10 +44,11 @@ export class PollingSet<T> extends Set<T> {
             this.clearTimer()
         }
     }
-    // TODO(hkobew): Overwrite the add method instead of adding seperate method. If we add item to set, timer should always start.
-    public start(id: T): void {
-        this.add(id)
+
+    public override add(id: T) {
+        super.add(id)
         this.pollTimer = this.pollTimer ?? globals.clock.setInterval(() => this.poll(), this.interval)
+        return this
     }
 
     public override clear(): void {
