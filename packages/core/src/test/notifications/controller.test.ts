@@ -535,7 +535,9 @@ describe('RemoteFetcher', function () {
         httpStub.throws(new Error('network error'))
 
         // Start function under test
-        const fetcher = new RemoteFetcher().fetch('startUp', 'any').then(() => assert.fail('Did not throw exception.'))
+        const fetcher = assert.rejects(new RemoteFetcher().fetch('startUp', 'any'), (e) => {
+            return e instanceof Error && e.message === 'last error'
+        })
 
         // Progresses the clock, allowing the fetcher logic to break out of sleep for each iteration of withRetries()
         assert.strictEqual(httpStub.callCount, 1) // 0
@@ -550,9 +552,7 @@ describe('RemoteFetcher', function () {
         assert.strictEqual(httpStub.callCount, 5) // 150_000
 
         // We hit timeout so the last error will be thrown
-        await assert.rejects(fetcher, (e) => {
-            return e instanceof Error && e.message === 'last error'
-        })
+        await fetcher
     })
 })
 
