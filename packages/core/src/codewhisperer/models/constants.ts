@@ -22,9 +22,12 @@ export const AWSTemplateKeyWords = ['AWSTemplateFormatVersion', 'Resources', 'AW
 
 export const AWSTemplateCaseInsensitiveKeyWords = ['cloudformation', 'cfn', 'template', 'description']
 
+// TO-DO: make sure all Strings look good for Java 21
 const patchDescriptions: { [key: string]: string } = {
     'Prepare minimal upgrade to Java 17':
-        'This diff patch covers the set of upgrades for Springboot, JUnit, and PowerMockito frameworks.',
+        'This diff patch covers the set of upgrades for Springboot, JUnit, and PowerMockito frameworks in Java 17.',
+    'Prepare minimal upgrade to Java 21':
+        'This diff patch covers the set of upgrades for Springboot, JUnit, and PowerMockito frameworks in Java 21.',
     'Popular Enterprise Specifications and Application Frameworks upgrade':
         'This diff patch covers the set of upgrades for Jakarta EE 10, Hibernate 6.2, and Micronaut 3.',
     'HTTP Client Utilities, Apache Commons Utilities, and Web Frameworks':
@@ -505,14 +508,14 @@ export const codeTransformLocThreshold = 100000
 export const jobStartedChatMessage =
     'I am starting to transform your code. It can take 10 to 30 minutes to upgrade your code, depending on the size of your project. To monitor progress, go to the Transformation Hub. If I run into any issues, I might pause the transformation to get input from you on how to proceed.'
 
-export const chooseTransformationObjective = `I can help you with the following tasks:\n- Upgrade your Java 8 and Java 11 codebases to Java 17, or upgrade Java 17 code with up to date libraries and other dependencies.\n- Convert embedded SQL code for Oracle to PostgreSQL database migrations in AWS DMS. [Learn more](https://docs.aws.amazon.com/dms/latest/userguide/schema-conversion-embedded-sql.html).\n\nWhat would you like to do? You can enter "language upgrade" or "sql conversion".`
+export const chooseTransformationObjective = `I can help you with the following tasks:\n- Upgrade your Java 8, Java 11, and Java 17 codebases to Java 17 or Java 21.\n- Upgrade Java 17 or Java 21 code with up-to-date libraries and other dependencies.\n- Convert embedded SQL code for Oracle to PostgreSQL database migrations in AWS DMS. [Learn more](https://docs.aws.amazon.com/dms/latest/userguide/schema-conversion-embedded-sql.html).\n\nWhat would you like to do? You can enter "language upgrade" or "sql conversion".`
 
 export const chooseTransformationObjectivePlaceholder = 'Enter "language upgrade" or "sql conversion"'
 
-export const userPatchDescriptionChatMessage = `
+export const userPatchDescriptionChatMessage = (version: string) => `
 If you'd like to update and test your code with fewer changes at a time, I can divide the transformation results into separate diff patches. If applicable to your application, I can split up the diffs up into the following groups of upgrades. Here are the upgrades included in each diff:
 
-• Minimal Compatible Library Upgrade to Java 17: Dependencies to the minimum compatible versions in Java 17, including Springboot, JUnit, and PowerMockito.
+• Minimal Compatible Library Upgrade to Java ${version}: Dependencies to the minimum compatible versions in Java ${version}, including Springboot, JUnit, and PowerMockito.
 
 • Popular Enterprise Specifications Application Frameworks: Popular enterprise and application frameworks like Jakarta EE, Hibernate, and Micronaut 3.
 
@@ -596,6 +599,9 @@ export const invalidMetadataFileErrorParsing =
 
 export const invalidMetadataFileNoSctFile =
     "An .sct file is required for transformation. Make sure that you've uploaded the .zip file you retrieved from your schema conversion in AWS DMS."
+
+export const invalidFromToJdkChatMessage =
+    "I can't transform a project from Java 21 to Java 17, but I can upgrade Java 21 code with up to date libraries and other dependencies. Try again with a supported language upgrade."
 
 export const sqlMetadataFileReceived =
     'I found the following source database, target database, and host based on the schema conversion metadata you provided:'

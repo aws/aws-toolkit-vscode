@@ -648,6 +648,7 @@ export enum JDKVersion {
     JDK8 = '8',
     JDK11 = '11',
     JDK17 = '17',
+    JDK21 = '21',
     UNSUPPORTED = 'UNSUPPORTED',
 }
 
@@ -739,7 +740,7 @@ export class TransformByQState {
 
     private sourceJDKVersion: JDKVersion | undefined = undefined
 
-    private targetJDKVersion: JDKVersion = JDKVersion.JDK17
+    private targetJDKVersion: JDKVersion | undefined = undefined
 
     private produceMultipleDiffs: boolean = false
 
@@ -1131,7 +1132,7 @@ export class TransformByQState {
         this.payloadFilePath = ''
         this.metadataPathSQL = ''
         this.sourceJDKVersion = undefined
-        this.targetJDKVersion = JDKVersion.JDK17
+        this.targetJDKVersion = undefined
         this.sourceDB = undefined
         this.targetDB = undefined
         this.sourceServerName = ''
