@@ -736,7 +736,7 @@
                 {
                     "id": "aws.toolkit.notifications",
                     "name": "%AWS.notifications.title%",
-                    "when": "!isCloud9 && !aws.isSageMaker && aws.toolkit.notifications.show"
+                    "when": "!(isCloud9 || aws.isSageMaker) && aws.toolkit.notifications.show"
                 },
                 {
                     "id": "aws.amazonq.codewhisperer",
@@ -2235,7 +2235,7 @@
                 "command": "_aws.toolkit.notifications.dismiss",
                 "title": "%AWS.generic.dismiss%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !aws.isWebExtHost",
+                "enablement": "view == aws.toolkit.notifications",
                 "icon": "$(remove-close)"
             },
             {
