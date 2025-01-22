@@ -423,7 +423,12 @@ export const timeoutUtilsDescribe = describe('timeoutUtils', async function () {
             fn.onCall(3).throws(new Error('last')) // 1500
             fn.onCall(4).resolves('this is not hit')
 
-            const res = waitUntil(fn, { retryOnFail: true })
+            // We must wrap w/ assert.rejects() here instead of at the end, otherwise Mocha raise a
+            // `rejected promise not handled within 1 second: Error: last`
+            const res = assert.rejects(
+                waitUntil(fn, { retryOnFail: true }),
+                (e) => e instanceof Error && e.message === 'last'
+            )
 
             await clock.tickAsync(timeoutUtils.waitUntilDefaultInterval) // 500
             assert.strictEqual(fn.callCount, 2)
@@ -432,7 +437,7 @@ export const timeoutUtilsDescribe = describe('timeoutUtils', async function () {
             await clock.tickAsync(timeoutUtils.waitUntilDefaultInterval) // 1500
             assert.strictEqual(fn.callCount, 4)
 
-            await assert.rejects(res, (e) => e instanceof Error && e.message === 'last')
+            await res
         })
 
         it('honors retry delay + backoff multiplier', async function () {
