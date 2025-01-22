@@ -77,6 +77,10 @@ export class WorkspaceLSPResolver implements LspResolver {
             await fs.delete(path.join(downloadDirectory, v), { force: true, recursive: true })
         }
 
+        if (remainingVersions.length <= 2) {
+            return
+        }
+
         for (const v of sort(remainingVersions).slice(0, -2)) {
             await fs.delete(path.join(downloadDirectory, v), { force: true, recursive: true })
         }

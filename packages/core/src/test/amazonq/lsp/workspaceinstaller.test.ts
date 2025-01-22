@@ -19,15 +19,15 @@ async function fakeInstallVersion(version: string, installationDir: string): Pro
 describe('workspaceInstaller', function () {
     describe('cleanUp', function () {
         let installationDir: Uri
-        let versions: string[]
+        let lspVersions: string[]
 
         before(async function () {
             installationDir = (await createTestWorkspaceFolder()).uri
-            versions = ['1.0.0', '1.0.1', '1.1.1', '2.1.1']
+            lspVersions = ['1.0.0', '1.0.1', '1.1.1', '2.1.1']
         })
 
         beforeEach(async function () {
-            for (const v of versions) {
+            for (const v of lspVersions) {
                 await fakeInstallVersion(v, installationDir.fsPath)
             }
         })
@@ -52,6 +52,22 @@ describe('workspaceInstaller', function () {
             const result = (await fs.readdir(installationDir.fsPath)).map(([filename, _filetype], _index) => filename)
             assert.strictEqual(result.length, 2)
             assert.ok(result.includes('2.1.1'))
+            assert.ok(result.includes('1.0.1'))
+        })
+
+        it('handles case where less than 2 versions are not delisted', async function () {
+            const wsr = new WorkspaceLSPResolver()
+            await wsr.cleanUp(
+                [
+                    { serverVersion: '1.1.1', isDelisted: true, targets: [] },
+                    { serverVersion: '2.1.1', isDelisted: true, targets: [] },
+                    { serverVersion: '1.0.0', isDelisted: true, targets: [] },
+                ],
+                installationDir.fsPath
+            )
+
+            const result = (await fs.readdir(installationDir.fsPath)).map(([filename, _filetype], _index) => filename)
+            assert.strictEqual(result.length, 1)
             assert.ok(result.includes('1.0.1'))
         })
     })
