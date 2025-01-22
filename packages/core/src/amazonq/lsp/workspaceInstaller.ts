@@ -11,6 +11,7 @@ import { Range, sort } from 'semver'
 import { getNodeExecutableName } from '../../shared/lsp/utils/platform'
 import { fs } from '../../shared/fs/fs'
 import { partition } from '../../shared/utilities/tsUtils'
+import { getDownloadedVersions } from './util'
 
 export const lspManifestUrl = 'https://aws-toolkit-language-servers.amazonaws.com/q-context/manifest.json'
 // this LSP client in Q extension is only going to work with these LSP server versions
@@ -58,10 +59,6 @@ export class WorkspaceLSPResolver implements LspResolver {
         }
     }
 
-    private async getDownloadedVersions(downloadDirectory: string): Promise<string[]> {
-        return (await fs.readdir(downloadDirectory)).map(([f, _], __) => f)
-    }
-
     private isDelisted(manifestVersions: LspVersion[], targetVersion: string): boolean {
         return manifestVersions.find((v) => v.serverVersion === targetVersion)?.isDelisted ?? false
     }
@@ -72,7 +69,7 @@ export class WorkspaceLSPResolver implements LspResolver {
      * @param downloadDirectory
      */
     async cleanUp(manifestVersions: LspVersion[], downloadDirectory: string): Promise<void> {
-        const downloadedVersions = await this.getDownloadedVersions(downloadDirectory)
+        const downloadedVersions = await getDownloadedVersions(downloadDirectory)
         const [delistedVersions, remainingVersions] = partition(downloadedVersions, (v: string) =>
             this.isDelisted(manifestVersions, v)
         )
