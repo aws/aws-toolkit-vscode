@@ -92,6 +92,7 @@ export class DocCodeGenState extends BaseCodeGenState {
     }
 
     protected async startCodeGeneration(action: SessionStateAction, codeGenerationId: string): Promise<void> {
+         if (!action.tokenSource?.token.isCancellationRequested) {
         ;(action.messenger as DocMessenger).sendDocProgress(
             this.tabID,
             DocGenerationStep.SUMMARIZING_FILES,
