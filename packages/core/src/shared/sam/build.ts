@@ -237,6 +237,7 @@ export async function runBuild(arg?: TreeNode): Promise<SamBuildResult> {
     try {
         await vscode.window.withProgress(
             {
+                cancellable: true,
                 location: vscode.ProgressLocation.Notification,
             },
             async (progress) => {
