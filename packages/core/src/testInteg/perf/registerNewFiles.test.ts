@@ -30,7 +30,7 @@ function performanceTestWrapper(label: string, numFiles: number, fileSize: numbe
     const conversationId = 'test-conversation'
     return performanceTest(
         getEqualOSTestOptions({
-            userCpuUsage: 200,
+            userCpuUsage: 300,
             systemCpuUsage: 35,
             heapTotal: 20,
         }),

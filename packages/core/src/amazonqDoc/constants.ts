@@ -92,16 +92,53 @@ export const FolderSelectorFollowUps = [
     },
 ]
 
+export const CodeChangeFollowUps = [
+    {
+        pillText: i18n('AWS.amazonq.doc.pillText.accept'),
+        prompt: i18n('AWS.amazonq.doc.pillText.accept'),
+        type: FollowUpTypes.AcceptChanges,
+        icon: 'ok' as MynahIcons,
+        status: 'success' as Status,
+    },
+    {
+        pillText: i18n('AWS.amazonq.doc.pillText.makeChanges'),
+        prompt: i18n('AWS.amazonq.doc.pillText.makeChanges'),
+        type: FollowUpTypes.MakeChanges,
+        icon: 'refresh' as MynahIcons,
+        status: 'info' as Status,
+    },
+    {
+        pillText: i18n('AWS.amazonq.doc.pillText.reject'),
+        prompt: i18n('AWS.amazonq.doc.pillText.reject'),
+        type: FollowUpTypes.RejectChanges,
+        icon: 'cancel' as MynahIcons,
+        status: 'error' as Status,
+    },
+]
+
+export const NewSessionFollowUps = [
+    {
+        pillText: i18n('AWS.amazonq.doc.pillText.newTask'),
+        type: FollowUpTypes.NewTask,
+        status: 'info' as Status,
+    },
+    {
+        pillText: i18n('AWS.amazonq.doc.pillText.closeSession'),
+        type: FollowUpTypes.CloseSession,
+        status: 'info' as Status,
+    },
+]
+
 export const SynchronizeDocumentation = {
-    pillText: 'Update README with recent code changes',
-    prompt: 'Update README with recent code changes',
-    type: 'SynchronizeDocumentation',
+    pillText: i18n('AWS.amazonq.doc.pillText.update'),
+    prompt: i18n('AWS.amazonq.doc.pillText.update'),
+    type: FollowUpTypes.SynchronizeDocumentation,
 }
 
 export const EditDocumentation = {
-    pillText: 'Make a specific change',
-    prompt: 'Make a specific change',
-    type: 'EditDocumentation',
+    pillText: i18n('AWS.amazonq.doc.pillText.makeChange'),
+    prompt: i18n('AWS.amazonq.doc.pillText.makeChange'),
+    type: FollowUpTypes.EditDocumentation,
 }
 
 export enum Mode {

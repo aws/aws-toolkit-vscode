@@ -41,11 +41,11 @@ export class FileContextExtractor {
 
         if (languageId !== undefined) {
             const imports = await readImports(file.getText(), languageId)
-            imports
-                .filter(function (elem, index, self) {
-                    return index === self.indexOf(elem) && elem !== languageId
-                })
-                .forEach((importKey) => should.add(importKey))
+            for (const importKey of imports.filter(function (elem, index, self) {
+                return index === self.indexOf(elem) && elem !== languageId
+            })) {
+                should.add(importKey)
+            }
         }
 
         return {

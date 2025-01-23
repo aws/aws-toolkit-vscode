@@ -36,9 +36,8 @@ import { CodeReference } from '../../../../amazonq/webview/ui/apps/amazonqCommon
 import { getHttpStatusCode, getRequestId, getTelemetryReasonDesc, ToolkitError } from '../../../../shared/errors'
 import { sleep, waitUntil } from '../../../../shared/utilities/timeoutUtils'
 import { keys } from '../../../../shared/utilities/tsUtils'
-import { AuthUtil, testGenState } from '../../../../codewhisperer'
+import { TelemetryHelper, testGenState } from '../../../../codewhisperer'
 import { cancellingProgressField, testGenCompletedField } from '../../../models/constants'
-import { telemetry } from '../../../../shared/telemetry/telemetry'
 
 export type UnrecoverableErrorType = 'no-project-found' | 'no-open-file-found' | 'invalid-file-type'
 
@@ -177,17 +176,18 @@ export class Messenger {
         )
     }
 
-    //To show the response of unsupported languages to the user in the Q-Test tab
+    // To show the response of unsupported languages to the user in the Q-Test tab
     public async sendAIResponse(
         response: GenerateAssistantResponseCommandOutput,
         session: Session,
         tabID: string,
         triggerID: string,
         triggerPayload: TriggerPayload,
-        fileName: string
+        fileName: string,
+        fileInWorkspace: boolean
     ) {
         let message = ''
-        const messageId = response.$metadata.requestId ?? ''
+        let messageId = response.$metadata.requestId ?? ''
         let codeReference: CodeReference[] = []
 
         if (response.generateAssistantResponseResponse === undefined) {
@@ -267,6 +267,7 @@ export class Messenger {
                 }
 
                 if (requestID !== undefined) {
+                    messageId = requestID
                     message += `\n\nRequest ID: ${requestID}`
                 }
                 this.sendMessage(message.trim(), tabID, 'answer')
@@ -274,29 +275,42 @@ export class Messenger {
             .finally(async () => {
                 if (testGenState.isCancelling()) {
                     this.sendMessage(CodeWhispererConstants.unitTestGenerationCancelMessage, tabID, 'answer')
-                    telemetry.amazonq_utgGenerateTests.emit({
-                        cwsprChatProgrammingLanguage: session.fileLanguage ?? 'plaintext',
-                        hasUserPromptSupplied: session.hasUserPromptSupplied,
-                        perfClientLatency: performance.now() - session.testGenerationStartTime,
-                        result: 'Cancelled',
-                        reasonDesc: getTelemetryReasonDesc(CodeWhispererConstants.unitTestGenerationCancelMessage),
-                        isSupportedLanguage: false,
-                        credentialStartUrl: AuthUtil.instance.startUrl,
-                    })
-
+                    TelemetryHelper.instance.sendTestGenerationToolkitEvent(
+                        session,
+                        false,
+                        fileInWorkspace,
+                        'Cancelled',
+                        messageId,
+                        performance.now() - session.testGenerationStartTime,
+                        getTelemetryReasonDesc(
+                            `TestGenCancelled: ${CodeWhispererConstants.unitTestGenerationCancelMessage}`
+                        ),
+                        undefined,
+                        undefined,
+                        undefined,
+                        undefined,
+                        undefined,
+                        undefined,
+                        undefined,
+                        undefined,
+                        undefined,
+                        undefined,
+                        'TestGenCancelled'
+                    )
                     this.dispatcher.sendUpdatePromptProgress(
                         new UpdatePromptProgressMessage(tabID, cancellingProgressField)
                     )
                     await sleep(500)
                 } else {
-                    telemetry.amazonq_utgGenerateTests.emit({
-                        cwsprChatProgrammingLanguage: session.fileLanguage ?? 'plaintext',
-                        hasUserPromptSupplied: session.hasUserPromptSupplied,
-                        perfClientLatency: performance.now() - session.testGenerationStartTime,
-                        result: 'Succeeded',
-                        isSupportedLanguage: false,
-                        credentialStartUrl: AuthUtil.instance.startUrl,
-                    })
+                    TelemetryHelper.instance.sendTestGenerationToolkitEvent(
+                        session,
+                        false,
+                        fileInWorkspace,
+                        'Succeeded',
+                        messageId,
+                        performance.now() - session.testGenerationStartTime,
+                        undefined
+                    )
                     this.dispatcher.sendUpdatePromptProgress(
                         new UpdatePromptProgressMessage(tabID, testGenCompletedField)
                     )
@@ -308,7 +322,7 @@ export class Messenger {
             })
     }
 
-    //To show the Build progress in the chat
+    // To show the Build progress in the chat
     public sendBuildProgressMessage(params: SendBuildProgressMessageParams) {
         const {
             tabID,

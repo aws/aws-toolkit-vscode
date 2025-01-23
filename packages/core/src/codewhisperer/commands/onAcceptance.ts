@@ -9,7 +9,6 @@ import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { CodeWhispererTracker } from '../tracker/codewhispererTracker'
 import { CodeWhispererCodeCoverageTracker } from '../tracker/codewhispererCodeCoverageTracker'
 import { getLogger } from '../../shared/logger/logger'
-import { isCloud9 } from '../../shared/extensionUtilities'
 import { handleExtraBrackets } from '../util/closingBracketUtil'
 import { RecommendationHandler } from '../service/recommendationHandler'
 import { ReferenceLogViewProvider } from '../service/referenceLogViewProvider'
@@ -30,7 +29,7 @@ export async function onAcceptance(acceptanceEntry: OnRecommendationAcceptanceEn
             path.extname(acceptanceEntry.editor.document.fileName)
         )
         const start = acceptanceEntry.range.start
-        const end = isCloud9() ? acceptanceEntry.editor.selection.active : acceptanceEntry.range.end
+        const end = acceptanceEntry.range.end
 
         // codewhisperer will be doing editing while formatting.
         // formatting should not trigger consoals auto trigger
@@ -45,13 +44,8 @@ export async function onAcceptance(acceptanceEntry: OnRecommendationAcceptanceEn
         }
         // move cursor to end of suggestion before doing code format
         // after formatting, the end position will still be editor.selection.active
-        if (!isCloud9()) {
-            acceptanceEntry.editor.selection = new vscode.Selection(end, end)
-        }
+        acceptanceEntry.editor.selection = new vscode.Selection(end, end)
 
-        if (isCloud9()) {
-            vsCodeState.isIntelliSenseActive = false
-        }
         vsCodeState.isCodeWhispererEditing = false
         CodeWhispererTracker.getTracker().enqueue({
             time: new Date(),

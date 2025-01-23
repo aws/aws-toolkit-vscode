@@ -9,7 +9,6 @@ import type * as packageJson from '../../package.json'
 import * as fs from 'fs' // eslint-disable-line no-restricted-imports
 import * as path from 'path'
 import { Uri, ThemeIcon, ThemeColor } from 'vscode'
-import { isCloud9 } from './extensionUtilities'
 import { memoize } from './utilities/functionUtils'
 import { getLogger } from './logger/logger'
 
@@ -45,7 +44,7 @@ export const getIcon = memoize(resolveIconId)
  * ```
  */
 export function codicon(parts: TemplateStringsArray, ...components: (string | IconPath)[]): string {
-    const canUse = (sub: string | IconPath) => typeof sub === 'string' || (!isCloud9() && sub instanceof Icon)
+    const canUse = (sub: string | IconPath) => typeof sub === 'string' || sub instanceof Icon
     const resolved = components.map((i) => (canUse(i) ? i : '')).map(String)
 
     return parts
@@ -80,7 +79,7 @@ export class Icon extends ThemeIcon {
  * {@link https://code.visualstudio.com/api/references/contribution-points#contributes.colors here}
  */
 export function addColor(icon: IconPath, color: string | ThemeColor): IconPath {
-    if (isCloud9() || !(icon instanceof Icon)) {
+    if (!(icon instanceof Icon)) {
         return icon
     }
 
@@ -89,32 +88,20 @@ export function addColor(icon: IconPath, color: string | ThemeColor): IconPath {
 
 function resolveIconId(
     id: IconId,
-    shouldUseCloud9 = isCloud9(),
     iconsPath = globals.context.asAbsolutePath(path.join('resources', 'icons'))
 ): IconPath {
     const [namespace, ...rest] = id.split('-')
     const name = rest.join('-')
 
-    // This 'override' logic is to support legacy use-cases, though ideally we wouldn't need it at all
-    const cloud9Override = shouldUseCloud9 ? resolvePathsSync(path.join(iconsPath, 'cloud9'), id) : undefined
-    const override = cloud9Override ?? resolvePathsSync(path.join(iconsPath, namespace), name)
+    const override = resolvePathsSync(path.join(iconsPath, namespace), name)
     if (override) {
         getLogger().verbose(`icons: using override for "${id}"`)
         return override
     }
 
-    // TODO: remove when they support codicons + the contribution point
-    if (shouldUseCloud9) {
-        const generated = resolvePathsSync(path.join(iconsPath, 'cloud9', 'generated'), id)
-
-        if (generated) {
-            return generated
-        }
-    }
-
     // TODO: potentially embed the icon source in `package.json` to avoid this messy mapping
     // of course, doing that implies we must always bundle both the original icon files and the font file
-    const source = !['cloud9', 'vscode'].includes(namespace)
+    const source = !['vscode'].includes(namespace)
         ? Uri.joinPath(Uri.file(iconsPath), namespace, rest[0], `${rest.slice(1).join('-')}.svg`)
         : undefined
 

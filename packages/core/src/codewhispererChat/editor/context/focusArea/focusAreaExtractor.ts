@@ -7,7 +7,7 @@ import { TextEditor, Selection, TextDocument, Range } from 'vscode'
 
 import { FocusAreaContext, FullyQualifiedName } from './model'
 
-const focusAreaCharLimit = 9_000
+const focusAreaCharLimit = 40_000
 
 export class FocusAreaContextExtractor {
     public isCodeBlockSelected(editor: TextEditor): boolean {

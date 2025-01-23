@@ -20,7 +20,7 @@
 		},
 		{
 			"type": "Feature",
-			"description": "Enable Free Tier Chat for IAM users"
+			"description": "Amazon SageMaker Studio: Enable Free Tier Chat for IAM users"
 		}
 	]
 }

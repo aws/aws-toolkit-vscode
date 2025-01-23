@@ -30,6 +30,7 @@ export class TriggerEventsStorage {
 
     public removeTabEvents(tabID: string) {
         const events = this.triggerEventsByTabID.get(tabID) ?? []
+        // eslint-disable-next-line unicorn/no-array-for-each
         events.forEach((event: TriggerEvent) => {
             this.triggerEvents.delete(event.id)
         })

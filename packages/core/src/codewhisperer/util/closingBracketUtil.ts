@@ -4,8 +4,6 @@
  */
 
 import * as vscode from 'vscode'
-import { workspace, WorkspaceEdit } from 'vscode'
-import { isCloud9 } from '../../shared/extensionUtilities'
 import * as CodeWhispererConstants from '../models/constants'
 
 interface bracketMapType {
@@ -97,31 +95,18 @@ const removeBracketsFromRightContext = async (
 ) => {
     const offset = editor.document.offsetAt(endPosition)
 
-    if (isCloud9()) {
-        const edits = idxToRemove.map((idx) => ({
-            range: new vscode.Range(
-                editor.document.positionAt(offset + idx),
-                editor.document.positionAt(offset + idx + 1)
-            ),
-            newText: '',
-        }))
-        const wEdit = new WorkspaceEdit()
-        wEdit.set(editor.document.uri, [...edits])
-        await workspace.applyEdit(wEdit)
-    } else {
-        await editor.edit(
-            (editBuilder) => {
-                idxToRemove.forEach((idx) => {
-                    const range = new vscode.Range(
-                        editor.document.positionAt(offset + idx),
-                        editor.document.positionAt(offset + idx + 1)
-                    )
-                    editBuilder.delete(range)
-                })
-            },
-            { undoStopAfter: false, undoStopBefore: false }
-        )
-    }
+    await editor.edit(
+        (editBuilder) => {
+            for (const idx of idxToRemove) {
+                const range = new vscode.Range(
+                    editor.document.positionAt(offset + idx),
+                    editor.document.positionAt(offset + idx + 1)
+                )
+                editBuilder.delete(range)
+            }
+        },
+        { undoStopAfter: false, undoStopBefore: false }
+    )
 }
 
 function getBracketsToRemove(

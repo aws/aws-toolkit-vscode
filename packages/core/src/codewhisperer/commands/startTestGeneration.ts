@@ -15,13 +15,13 @@ import {
     throwIfCancelled,
 } from '../service/testGenHandler'
 import path from 'path'
-import { testGenState } from '..'
+import { testGenState } from '../models/model'
 import { ChatSessionManager } from '../../amazonqTest/chat/storages/chatSession'
-import { ChildProcess, spawn } from 'child_process'
+import { ChildProcess, spawn } from 'child_process' // eslint-disable-line no-restricted-imports
 import { BuildStatus } from '../../amazonqTest/chat/session/session'
 import { fs } from '../../shared/fs/fs'
 import { TestGenerationJobStatus } from '../models/constants'
-import { TestGenFailedError } from '../models/errors'
+import { TestGenFailedError } from '../../amazonqTest/error'
 import { Range } from '../client/codewhispereruserclient'
 
 // eslint-disable-next-line unicorn/no-null
@@ -37,7 +37,7 @@ export async function startTestGenerationProcess(
 ) {
     const logger = getLogger()
     const session = ChatSessionManager.Instance.getSession()
-    //TODO: Step 0: Initial Test Gen telemetry
+    // TODO: Step 0: Initial Test Gen telemetry
     try {
         logger.verbose(`Starting Test Generation `)
         logger.verbose(`Tab ID: ${tabID} !== ${session.tabID}`)
@@ -75,8 +75,9 @@ export async function startTestGenerationProcess(
         try {
             artifactMap = await getPresignedUrlAndUploadTestGen(zipMetadata)
         } finally {
-            if (await fs.existsFile(path.join(testGenerationLogsDir, 'output.log'))) {
-                await fs.delete(path.join(testGenerationLogsDir, 'output.log'))
+            const outputLogPath = path.join(testGenerationLogsDir, 'output.log')
+            if (await fs.existsFile(outputLogPath)) {
+                await fs.delete(outputLogPath)
             }
             await zipUtil.removeTmpFiles(zipMetadata)
             session.artifactsUploadDuration = performance.now() - uploadStartTime
@@ -118,8 +119,9 @@ export async function startTestGenerationProcess(
             fileName,
             initialExecution
         )
-        //TODO: Send status to test summary
+        // TODO: Send status to test summary
         if (jobStatus === TestGenerationJobStatus.FAILED) {
+            session.numberOfTestsGenerated = 0
             logger.verbose(`Test generation failed.`)
             throw new TestGenFailedError()
         }
@@ -130,7 +132,7 @@ export async function startTestGenerationProcess(
         /**
          * Step 5: Process and show the view diff by getting the results from exportResultsArchive
          */
-        //https://github.com/aws/aws-toolkit-vscode/blob/0164d4145e58ae036ddf3815455ea12a159d491d/packages/core/src/codewhisperer/service/transformByQ/transformationResultsViewProvider.ts#L314-L405
+        // https://github.com/aws/aws-toolkit-vscode/blob/0164d4145e58ae036ddf3815455ea12a159d491d/packages/core/src/codewhisperer/service/transformByQ/transformationResultsViewProvider.ts#L314-L405
         await exportResultsArchive(
             artifactMap.SourceCode,
             testJob.testGenerationJob.testGenerationJobGroupName,
@@ -141,7 +143,7 @@ export async function startTestGenerationProcess(
         )
     } catch (error) {
         logger.error(`startTestGenerationProcess failed: %O`, error)
-        //TODO: Send error message to Chat
+        // TODO: Send error message to Chat
         testGenState.getChatControllers()?.errorThrown.fire({
             tabID: session.tabID,
             error: error,

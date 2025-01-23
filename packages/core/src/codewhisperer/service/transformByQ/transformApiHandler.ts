@@ -34,14 +34,13 @@ import {
 import { sleep } from '../../../shared/utilities/timeoutUtils'
 import AdmZip from 'adm-zip'
 import globals from '../../../shared/extensionGlobals'
-import { CredentialSourceId, telemetry } from '../../../shared/telemetry/telemetry'
+import { telemetry } from '../../../shared/telemetry/telemetry'
 import { CodeTransformTelemetryState } from '../../../amazonqGumby/telemetry/codeTransformTelemetryState'
 import { calculateTotalLatency } from '../../../amazonqGumby/telemetry/codeTransformTelemetry'
 import { MetadataResult } from '../../../shared/telemetry/telemetryClient'
 import request from '../../../shared/request'
 import { JobStoppedError, ZipExceedsSizeLimitError } from '../../../amazonqGumby/errors'
 import { writeLogs } from './transformFileHandler'
-import { AuthUtil } from '../../util/authUtil'
 import { createCodeWhispererChatStreamingClient } from '../../../shared/clients/codewhispererChatClient'
 import { downloadExportResultArchive } from '../../../shared/utilities/download'
 import { ExportIntent, TransformationDownloadArtifactType } from '@amzn/codewhisperer-streaming'
@@ -49,21 +48,13 @@ import fs from '../../../shared/fs/fs'
 import { ChatSessionManager } from '../../../amazonqGumby/chat/storages/chatSession'
 import { encodeHTML } from '../../../shared/utilities/textUtilities'
 import { convertToTimeString } from '../../../shared/datetime'
+import { getAuthType } from '../../../auth/utils'
+import { UserWrittenCodeTracker } from '../../tracker/userWrittenCodeTracker'
 
 export function getSha256(buffer: Buffer) {
     const hasher = crypto.createHash('sha256')
     hasher.update(buffer)
     return hasher.digest('base64')
-}
-
-export async function getAuthType() {
-    let authType: CredentialSourceId | undefined = undefined
-    if (AuthUtil.instance.isEnterpriseSsoInUse() && AuthUtil.instance.isConnectionValid()) {
-        authType = 'iamIdentityCenter'
-    } else if (AuthUtil.instance.isBuilderIdInUse() && AuthUtil.instance.isConnectionValid()) {
-        authType = 'awsId'
-    }
-    return authType
 }
 
 export function throwIfCancelled() {
@@ -113,18 +104,45 @@ export async function uploadArtifactToS3(
     try {
         const uploadFileByteSize = (await nodefs.promises.stat(fileName)).size
         getLogger().info(
-            `Uploading project artifact at %s with checksum %s using uploadId: %s and size %s kB`,
+            `CodeTransformation: Uploading project artifact at %s with checksum %s using uploadId: %s and size %s kB`,
             fileName,
             sha256,
             resp.uploadId,
             Math.round(uploadFileByteSize / 1000)
         )
 
-        const response = await request.fetch('PUT', resp.uploadUrl, {
-            body: buffer,
-            headers: getHeadersObj(sha256, resp.kmsKeyArn),
-        }).response
-        getLogger().info(`CodeTransformation: Status from S3 Upload = ${response.status}`)
+        let response = undefined
+        /* The existing S3 client has built-in retries but it requires the bucket name, so until
+         * CreateUploadUrl can be modified to return the S3 bucket name, manually implement retries.
+         * Alternatively, when waitUntil supports a fixed number of retries and retriableCodes, use that.
+         */
+        const retriableCodes = [408, 429, 500, 502, 503, 504]
+        for (let i = 0; i < 4; i++) {
+            try {
+                response = await request.fetch('PUT', resp.uploadUrl, {
+                    body: buffer,
+                    headers: getHeadersObj(sha256, resp.kmsKeyArn),
+                }).response
+                getLogger().info(`CodeTransformation: upload to S3 status on attempt ${i + 1}/4 = ${response.status}`)
+                if (response.status === 200) {
+                    break
+                }
+                throw new Error('Upload failed')
+            } catch (e: any) {
+                if (response && !retriableCodes.includes(response.status)) {
+                    throw new Error(`Upload failed with status code = ${response.status}; did not automatically retry`)
+                }
+                if (i !== 3) {
+                    await sleep(1000 * Math.pow(2, i))
+                }
+            }
+        }
+        if (!response || response.status !== 200) {
+            const uploadFailedError = `Upload failed after up to 4 attempts with status code = ${response?.status ?? 'unavailable'}`
+            getLogger().error(`CodeTransformation: ${uploadFailedError}`)
+            throw new Error(uploadFailedError)
+        }
+        getLogger().info('CodeTransformation: Upload to S3 succeeded')
     } catch (e: any) {
         let errorMessage = `The upload failed due to: ${(e as Error).message}. For more information, see the [Amazon Q documentation](${CodeWhispererConstants.codeTransformTroubleshootUploadError})`
         if (errorMessage.includes('Request has expired')) {
@@ -342,9 +360,9 @@ export async function zipCode(
                 },
             }
             // TO-DO: later consider making this add to path.join(zipManifest.dependenciesRoot, 'qct-sct-metadata', entry.entryName) so that it's more organized
-            metadataZip
-                .getEntries()
-                .forEach((entry) => zip.addFile(path.join(zipManifest.dependenciesRoot, entry.name), entry.getData()))
+            for (const entry of metadataZip.getEntries()) {
+                zip.addFile(path.join(zipManifest.dependenciesRoot, entry.name), entry.getData())
+            }
             const sqlMetadataSize = (await nodefs.promises.stat(transformByQState.getMetadataPathSQL())).size
             getLogger().info(`CodeTransformation: SQL metadata file size = ${sqlMetadataSize}`)
         }
@@ -430,6 +448,7 @@ export async function startJob(uploadId: string) {
                 target: { language: targetLanguageVersion }, // always JDK17
             },
         })
+        getLogger().info('CodeTransformation: called startJob API successfully')
         if (response.$response.requestId) {
             transformByQState.setJobFailureMetadata(` (request ID: ${response.$response.requestId})`)
         }
@@ -497,15 +516,19 @@ export function addTableMarkdown(plan: string, stepId: string, tableMapping: { [
     const table = JSON.parse(tableObj)
     plan += `\n\n\n${table.name}\n|`
     const columns = table.columnNames
+    // eslint-disable-next-line unicorn/no-array-for-each
     columns.forEach((columnName: string) => {
         plan += ` ${getFormattedString(columnName)} |`
     })
     plan += '\n|'
+    // eslint-disable-next-line unicorn/no-array-for-each
     columns.forEach((_: any) => {
         plan += '-----|'
     })
+    // eslint-disable-next-line unicorn/no-array-for-each
     table.rows.forEach((row: any) => {
         plan += '\n|'
+        // eslint-disable-next-line unicorn/no-array-for-each
         columns.forEach((columnName: string) => {
             if (columnName === 'relativePath') {
                 plan += ` [${row[columnName]}](${row[columnName]}) |` // add MD link only for files
@@ -520,11 +543,11 @@ export function addTableMarkdown(plan: string, stepId: string, tableMapping: { [
 
 export function getTableMapping(stepZeroProgressUpdates: ProgressUpdates) {
     const map: { [key: string]: string } = {}
-    stepZeroProgressUpdates.forEach((update) => {
+    for (const update of stepZeroProgressUpdates) {
         // description should never be undefined since even if no data we show an empty table
         // but just in case, empty string allows us to skip this table without errors when rendering
         map[update.name] = update.description ?? ''
-    })
+    }
     return map
 }
 
@@ -534,6 +557,7 @@ export function getJobStatisticsHtml(jobStatistics: any) {
         return htmlString
     }
     htmlString += `<div style="flex: 1; margin-left: 20px; border: 1px solid #424750; border-radius: 8px; padding: 10px;">`
+    // eslint-disable-next-line unicorn/no-array-for-each
     jobStatistics.forEach((stat: { name: string; value: string }) => {
         htmlString += `<p style="margin-bottom: 4px"><img src="${getTransformationIcon(
             stat.name
@@ -583,11 +607,11 @@ export async function getTransformationPlan(jobId: string) {
             CodeWhispererConstants.planIntroductionMessage
         }</p></div>${getJobStatisticsHtml(jobStatistics)}</div>`
         plan += `<div style="margin-top: 32px; border: 1px solid #424750; border-radius: 8px; padding: 10px;"><p style="font-size: 18px; margin-bottom: 4px;"><b>${CodeWhispererConstants.planHeaderMessage}</b></p><i>${CodeWhispererConstants.planDisclaimerMessage} <a href="https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/code-transformation.html">Read more.</a></i><br><br>`
-        response.transformationPlan.transformationSteps.slice(1).forEach((step) => {
+        for (const step of response.transformationPlan.transformationSteps.slice(1)) {
             plan += `<div style="border: 1px solid #424750; border-radius: 8px; padding: 20px;"><div style="display:flex; justify-content:space-between; align-items:center;"><p style="font-size: 16px; margin-bottom: 4px;">${step.name}</p><a href="#top">Scroll to top <img src="${arrowIcon}" style="vertical-align: middle"></a></div><p>${step.description}</p>`
             plan = addTableMarkdown(plan, step.id, tableMapping)
             plan += `</div><br>`
-        })
+        }
         plan += `</div><br>`
         plan += `<p style="font-size: 18px; margin-bottom: 4px;"><b>Appendix</b><br><a href="#top" style="float: right; font-size: 14px;">Scroll to top <img src="${arrowIcon}" style="vertical-align: middle;"></a></p><br>`
         plan = addTableMarkdown(plan, '-1', tableMapping) // ID of '-1' reserved for appendix table
@@ -648,6 +672,7 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
                 })
             }
             transformByQState.setPolledJobStatus(status)
+            getLogger().info(`CodeTransformation: polled job status = ${status}`)
 
             const errorMessage = response.transformationJob.reason
             if (errorMessage !== undefined) {
@@ -745,6 +770,7 @@ export async function downloadResultArchive(
         throw e
     } finally {
         cwStreamingClient.destroy()
+        UserWrittenCodeTracker.instance.onQFeatureInvoked()
     }
 }
 

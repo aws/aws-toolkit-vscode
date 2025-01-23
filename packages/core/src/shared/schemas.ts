@@ -225,7 +225,8 @@ export async function updateSchemaFromRemote(params: {
 
     try {
         const httpFetcher = new HttpResourceFetcher(params.url, { showUrl: true })
-        const content = await httpFetcher.get()
+        const resp = await httpFetcher.get()
+        const content = await resp?.text()
 
         if (!content) {
             throw new Error(`failed to resolve schema: ${params.destination}`)
