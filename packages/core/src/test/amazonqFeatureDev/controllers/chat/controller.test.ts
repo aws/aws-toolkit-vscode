@@ -526,7 +526,12 @@ describe('Controller', () => {
                     sendMetricDataTelemetrySpy.calledWith(
                         MetricDataOperationName.EndCodeGeneration,
                         metricResult,
-                        sinon.match((str) => typeof str === 'string' && str.includes('stack trace: '))
+                        sinon.match(
+                            (str) =>
+                                typeof str === 'string' &&
+                                str.includes('stack trace: ' + error.constructor.name) &&
+                                str.includes('at ')
+                        )
                     )
                 )
             }

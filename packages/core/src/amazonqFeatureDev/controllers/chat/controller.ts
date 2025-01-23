@@ -1020,14 +1020,15 @@ export class FeatureDevController {
         }
     }
 
-    // Should include error messages only for whitelisted exceptions
+    // Should include error messages only for safe exceptions
     // i.e. exceptions with deterministic error messages and do not include sensitive data
     private getStackTraceForError(error: Error): string {
+        const recursionLimit = 3
         const seenExceptions = new Set<Error>()
         const lines: string[] = []
 
-        function printExceptionDetails(err: Error, prefix: string = '') {
-            if (seenExceptions.has(err)) {
+        function printExceptionDetails(err: Error, depth: number, prefix: string = '') {
+            if (depth >= recursionLimit || seenExceptions.has(err)) {
                 return
             }
             seenExceptions.add(err)
@@ -1063,11 +1064,11 @@ export class FeatureDevController {
             const cause = (err as any).cause
             if (cause instanceof Error) {
                 lines.push(`${prefix}\tCaused by: `)
-                printExceptionDetails(cause, `${prefix}\t`)
+                printExceptionDetails(cause, depth + 1, `${prefix}\t`)
             }
         }
 
-        printExceptionDetails(error)
+        printExceptionDetails(error, 0)
         return lines.join('\n')
     }
 }
