@@ -70,7 +70,7 @@ export class ManifestResolver {
 
         const manifest = this.parseManifest(manifestData.content)
         this.checkDeprecation(manifest)
-        manifest.location = 'fallback'
+        manifest.location = 'cache'
         return manifest
     }
 
