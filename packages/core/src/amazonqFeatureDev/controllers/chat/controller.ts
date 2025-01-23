@@ -1040,7 +1040,7 @@ export class FeatureDevController {
                 err instanceof UserMessageNotFoundError ||
                 err instanceof SelectedFolderNotInWorkspaceFolderError ||
                 err instanceof PromptRefusalException ||
-                // err instanceof NoChangeRequiredException ||
+                err instanceof NoChangeRequiredException ||
                 err instanceof PrepareRepoFailedError ||
                 err instanceof UploadCodeError ||
                 err instanceof UploadURLExpired ||
@@ -1055,7 +1055,8 @@ export class FeatureDevController {
             }
 
             if (err.stack) {
-                const callStack = err.stack.substring(err.stack.indexOf(err.message) + err.message.length + 1)
+                const startStr = err.stack.substring('Error: '.length)
+                const callStack = startStr.substring(startStr.indexOf(err.message) + err.message.length + 1)
                 lines.push(`${prefix}${callStack}`)
             }
 
