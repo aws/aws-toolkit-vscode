@@ -58,7 +58,6 @@ export class TelemetryHelper {
 
     // use this to distinguish DocumentChangeEvent from CWSPR or from other sources
     public lastSuggestionInDisplay = ''
-    private session = CodeWhispererSessionState.instance.getSession()
 
     constructor() {}
 
@@ -125,22 +124,23 @@ export class TelemetryHelper {
         reason: string,
         supplementalContextMetadata?: CodeWhispererSupplementalContext | undefined
     ) {
+        const session = CodeWhispererSessionState.instance.getSession()
         const event = {
-            codewhispererAutomatedTriggerType: this.session.autoTriggerType,
-            codewhispererCursorOffset: this.session.startCursorOffset,
+            codewhispererAutomatedTriggerType: session.autoTriggerType,
+            codewhispererCursorOffset: session.startCursorOffset,
             codewhispererCustomizationArn: getSelectedCustomization().arn,
             CodewhispererGettingStartedTask: taskType,
             codewhispererImportRecommendationEnabled: CodeWhispererSettings.instance.isImportRecommendationEnabled(),
             codewhispererLastSuggestionIndex: lastSuggestionIndex,
             codewhispererLanguage: language,
-            codewhispererLineNumber: this.session.startPos.line,
+            codewhispererLineNumber: session.startPos.line,
             codewhispererRequestId: requestId ? requestId : undefined,
             codewhispererSessionId: sessionId ? sessionId : undefined,
             codewhispererSupplementalContextIsUtg: supplementalContextMetadata?.isUtg,
             codewhispererSupplementalContextLatency: supplementalContextMetadata?.latency,
             codewhispererSupplementalContextLength: supplementalContextMetadata?.contentsLength,
             codewhispererSupplementalContextTimeout: supplementalContextMetadata?.isProcessTimeout,
-            codewhispererTriggerType: this.session.triggerType,
+            codewhispererTriggerType: session.triggerType,
             credentialStartUrl: AuthUtil.instance.startUrl,
             duration: duration || 0,
             reason: reason ? reason.substring(0, 200) : undefined,
@@ -158,10 +158,11 @@ export class TelemetryHelper {
         supplementalContextMetadata?: CodeWhispererSupplementalContext | undefined
     ) {
         const selectedCustomization = getSelectedCustomization()
+        const session = CodeWhispererSessionState.instance.getSession()
 
         telemetry.codewhisperer_userDecision.emit({
             codewhispererCompletionType: 'Line',
-            codewhispererGettingStartedTask: this.session.taskType,
+            codewhispererGettingStartedTask: session.taskType,
             codewhispererLanguage: language,
             codewhispererPaginationProgress: paginationIndex,
             codewhispererRequestId: requestIdList[0],
@@ -173,23 +174,23 @@ export class TelemetryHelper {
             codewhispererSupplementalContextIsUtg: supplementalContextMetadata?.isUtg,
             codewhispererSupplementalContextLength: supplementalContextMetadata?.contentsLength,
             codewhispererSupplementalContextTimeout: supplementalContextMetadata?.isProcessTimeout,
-            codewhispererTriggerType: this.session.triggerType,
+            codewhispererTriggerType: session.triggerType,
             credentialStartUrl: AuthUtil.instance.startUrl,
             traceId: this.traceId,
         })
 
         telemetry.codewhisperer_userTriggerDecision.emit({
-            codewhispererAutomatedTriggerType: this.session.autoTriggerType,
+            codewhispererAutomatedTriggerType: session.autoTriggerType,
             codewhispererClassifierResult: this.classifierResult,
             codewhispererClassifierThreshold: this.classifierThreshold,
             codewhispererCompletionType: 'Line',
-            codewhispererCursorOffset: this.session.startCursorOffset,
+            codewhispererCursorOffset: session.startCursorOffset,
             codewhispererCustomizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
             codewhispererFeatureEvaluations: FeatureConfigProvider.instance.getFeatureConfigsTelemetry(),
             codewhispererFirstRequestId: requestIdList[0],
-            codewhispererGettingStartedTask: this.session.taskType,
+            codewhispererGettingStartedTask: session.taskType,
             codewhispererLanguage: language,
-            codewhispererLineNumber: this.session.startPos.line,
+            codewhispererLineNumber: session.startPos.line,
             codewhispererPreviousSuggestionState: this.prevTriggerDecision,
             codewhispererSessionId: sessionId,
             codewhispererSuggestionCount: 0,
@@ -206,8 +207,8 @@ export class TelemetryHelper {
             codewhispererTimeSinceLastUserDecision: this.lastTriggerDecisionTime
                 ? performance.now() - this.lastTriggerDecisionTime
                 : undefined,
-            codewhispererTimeToFirstRecommendation: this.session.timeToFirstRecommendation,
-            codewhispererTriggerType: this.session.triggerType,
+            codewhispererTimeToFirstRecommendation: session.timeToFirstRecommendation,
+            codewhispererTriggerType: session.triggerType,
             codewhispererTypeaheadLength: this.typeAheadLength,
             credentialStartUrl: AuthUtil.instance.startUrl,
             traceId: this.traceId,
@@ -226,8 +227,8 @@ export class TelemetryHelper {
                         completionType: 'LINE',
                         suggestionState: 'EMPTY',
                         recommendationLatencyMilliseconds: 0,
-                        triggerToResponseLatencyMilliseconds: this.session.timeToFirstRecommendation,
-                        perceivedLatencyMilliseconds: this.session.perceivedLatency,
+                        triggerToResponseLatencyMilliseconds: session.timeToFirstRecommendation,
+                        perceivedLatencyMilliseconds: session.perceivedLatency,
                         timestamp: new Date(Date.now()),
                         suggestionReferenceCount: 0,
                         generatedLine: 0,
@@ -278,11 +279,12 @@ export class TelemetryHelper {
             if (_elem.content.length === 0) {
                 recommendationSuggestionState?.set(i, 'Empty')
             }
+            const session = CodeWhispererSessionState.instance.getSession()
             const event: CodewhispererUserDecision = {
                 // TODO: maintain a list of RecommendationContexts with both recommendation and requestId in it, instead of two separate list items.
                 codewhispererCompletionType: this.getCompletionType(i, completionTypes),
-                codewhispererGettingStartedTask: this.session.taskType,
-                codewhispererLanguage: this.session.language,
+                codewhispererGettingStartedTask: session.taskType,
+                codewhispererLanguage: session.language,
                 codewhispererPaginationProgress: paginationIndex,
                 codewhispererRequestId: requestIdList[i],
                 codewhispererSessionId: sessionId ? sessionId : undefined,
@@ -294,7 +296,7 @@ export class TelemetryHelper {
                 codewhispererSupplementalContextIsUtg: supplementalContextMetadata?.isUtg,
                 codewhispererSupplementalContextLength: supplementalContextMetadata?.contentsLength,
                 codewhispererSupplementalContextTimeout: supplementalContextMetadata?.isProcessTimeout,
-                codewhispererTriggerType: this.session.triggerType,
+                codewhispererTriggerType: session.triggerType,
                 credentialStartUrl: AuthUtil.instance.startUrl,
                 traceId: this.traceId,
             }
@@ -339,14 +341,15 @@ export class TelemetryHelper {
         if (!events.length) {
             return
         }
+        const session = CodeWhispererSessionState.instance.getSession()
         const aggregated: CodewhispererUserTriggerDecision = {
-            codewhispererAutomatedTriggerType: this.session.autoTriggerType,
+            codewhispererAutomatedTriggerType: session.autoTriggerType,
             codewhispererCompletionType: events[0].codewhispererCompletionType,
-            codewhispererCursorOffset: this.session.startCursorOffset,
+            codewhispererCursorOffset: session.startCursorOffset,
             codewhispererFirstRequestId: requestId,
-            codewhispererGettingStartedTask: this.session.taskType,
+            codewhispererGettingStartedTask: session.taskType,
             codewhispererLanguage: events[0].codewhispererLanguage,
-            codewhispererLineNumber: this.session.startPos.line,
+            codewhispererLineNumber: session.startPos.line,
             codewhispererSessionId: sessionId,
             codewhispererSuggestionCount: events.length,
             codewhispererSuggestionImportCount: events
@@ -388,6 +391,7 @@ export class TelemetryHelper {
             .map((e) => e.codewhispererSuggestionCount)
             .reduce((a, b) => a + b, 0)
 
+        const session = CodeWhispererSessionState.instance.getSession()
         const aggregated: CodewhispererUserTriggerDecision = {
             codewhispererAutomatedTriggerType: autoTriggerType,
             codewhispererCharactersAccepted: acceptedRecommendationContent.length,
@@ -398,7 +402,7 @@ export class TelemetryHelper {
             codewhispererCustomizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
             codewhispererFeatureEvaluations: FeatureConfigProvider.instance.getFeatureConfigsTelemetry(),
             codewhispererFirstRequestId: this.sessionDecisions[0].codewhispererFirstRequestId,
-            codewhispererGettingStartedTask: this.session.taskType,
+            codewhispererGettingStartedTask: session.taskType,
             codewhispererLanguage: language,
             codewhispererLineNumber: this.sessionDecisions[0].codewhispererLineNumber,
             codewhispererPreviousSuggestionState: this.prevTriggerDecision,
@@ -419,7 +423,7 @@ export class TelemetryHelper {
             codewhispererTimeSinceLastUserDecision: this.lastTriggerDecisionTime
                 ? performance.now() - this.lastTriggerDecisionTime
                 : undefined,
-            codewhispererTimeToFirstRecommendation: this.session.timeToFirstRecommendation,
+            codewhispererTimeToFirstRecommendation: session.timeToFirstRecommendation,
             codewhispererTriggerCharacter: autoTriggerType === 'SpecialCharacters' ? this.triggerChar : undefined,
             codewhispererTriggerType: this.sessionDecisions[0].codewhispererTriggerType,
             codewhispererTypeaheadLength: this.typeAheadLength,
@@ -432,7 +436,7 @@ export class TelemetryHelper {
 
         // When we send a userTriggerDecision for neither Accept nor Reject, service side should not use this value
         // and client side will set this value to 0.0.
-        let e2eLatency = this.session.firstSuggestionShowTime - this.session.invokeSuggestionStartTime
+        let e2eLatency = session.firstSuggestionShowTime - session.invokeSuggestionStartTime
         if (aggregatedSuggestionState !== 'Reject' && aggregatedSuggestionState !== 'Accept') {
             e2eLatency = 0.0
         }
@@ -452,8 +456,8 @@ export class TelemetryHelper {
                         completionType: this.getSendTelemetryCompletionType(aggregatedCompletionType),
                         suggestionState: this.getSendTelemetrySuggestionState(aggregatedSuggestionState),
                         recommendationLatencyMilliseconds: e2eLatency,
-                        triggerToResponseLatencyMilliseconds: this.session.timeToFirstRecommendation,
-                        perceivedLatencyMilliseconds: this.session.perceivedLatency,
+                        triggerToResponseLatencyMilliseconds: session.timeToFirstRecommendation,
+                        perceivedLatencyMilliseconds: session.perceivedLatency,
                         timestamp: new Date(Date.now()),
                         suggestionReferenceCount: referenceCount,
                         generatedLine: generatedLines,
@@ -509,12 +513,13 @@ export class TelemetryHelper {
     }
 
     private resetUserTriggerDecisionTelemetry() {
+        const session = CodeWhispererSessionState.instance.getSession()
         this.sessionDecisions = []
         this.triggerChar = ''
         this.typeAheadLength = 0
         this.timeSinceLastModification = 0
-        this.session.timeToFirstRecommendation = 0
-        this.session.perceivedLatency = 0
+        session.timeToFirstRecommendation = 0
+        session.perceivedLatency = 0
         this.classifierResult = undefined
         this.classifierThreshold = undefined
     }
@@ -593,31 +598,35 @@ export class TelemetryHelper {
     }
 
     public resetClientComponentLatencyTime() {
-        this.session.invokeSuggestionStartTime = 0
-        this.session.preprocessEndTime = 0
-        this.session.sdkApiCallStartTime = 0
+        const session = CodeWhispererSessionState.instance.getSession()
+        session.invokeSuggestionStartTime = 0
+        session.preprocessEndTime = 0
+        session.sdkApiCallStartTime = 0
         this._sdkApiCallEndTime = 0
-        this.session.fetchCredentialStartTime = 0
-        this.session.firstSuggestionShowTime = 0
+        session.fetchCredentialStartTime = 0
+        session.firstSuggestionShowTime = 0
         this._allPaginationEndTime = 0
         this._firstResponseRequestId = ''
     }
 
     public setPreprocessEndTime() {
-        if (this.session.preprocessEndTime !== 0) {
+        const session = CodeWhispererSessionState.instance.getSession()
+        if (session.preprocessEndTime !== 0) {
             getLogger().warn(`inline completion preprocessEndTime has been set and not reset correctly`)
         }
-        this.session.preprocessEndTime = performance.now()
+        session.preprocessEndTime = performance.now()
     }
 
     /** This method is assumed to be invoked first at the start of execution **/
     public setInvokeSuggestionStartTime() {
+        const session = CodeWhispererSessionState.instance.getSession()
         this.resetClientComponentLatencyTime()
-        this.session.invokeSuggestionStartTime = performance.now()
+        session.invokeSuggestionStartTime = performance.now()
     }
 
     public setSdkApiCallEndTime() {
-        if (this._sdkApiCallEndTime === 0 && this.session.sdkApiCallStartTime !== 0) {
+        const session = CodeWhispererSessionState.instance.getSession()
+        if (this._sdkApiCallEndTime === 0 && session.sdkApiCallStartTime !== 0) {
             this._sdkApiCallEndTime = performance.now()
         }
     }
@@ -629,8 +638,9 @@ export class TelemetryHelper {
     }
 
     public setFirstSuggestionShowTime() {
-        if (this.session.firstSuggestionShowTime === 0 && this._sdkApiCallEndTime !== 0) {
-            this.session.firstSuggestionShowTime = performance.now()
+        const session = CodeWhispererSessionState.instance.getSession()
+        if (session.firstSuggestionShowTime === 0 && this._sdkApiCallEndTime !== 0) {
+            session.firstSuggestionShowTime = performance.now()
         }
     }
 
@@ -643,23 +653,23 @@ export class TelemetryHelper {
     // report client component latency after all pagination call finish
     // and at least one suggestion is shown to the user
     public tryRecordClientComponentLatency() {
-        if (this.session.firstSuggestionShowTime === 0 || this._allPaginationEndTime === 0) {
+        const session = CodeWhispererSessionState.instance.getSession()
+        if (session.firstSuggestionShowTime === 0 || this._allPaginationEndTime === 0) {
             return
         }
         telemetry.codewhisperer_clientComponentLatency.emit({
-            codewhispererAllCompletionsLatency: this._allPaginationEndTime - this.session.sdkApiCallStartTime,
+            codewhispererAllCompletionsLatency: this._allPaginationEndTime - session.sdkApiCallStartTime,
             codewhispererCompletionType: 'Line',
-            codewhispererCredentialFetchingLatency:
-                this.session.sdkApiCallStartTime - this.session.fetchCredentialStartTime,
+            codewhispererCredentialFetchingLatency: session.sdkApiCallStartTime - session.fetchCredentialStartTime,
             codewhispererCustomizationArn: getSelectedCustomization().arn,
-            codewhispererEndToEndLatency: this.session.firstSuggestionShowTime - this.session.invokeSuggestionStartTime,
-            codewhispererFirstCompletionLatency: this._sdkApiCallEndTime - this.session.sdkApiCallStartTime,
-            codewhispererLanguage: this.session.language,
-            codewhispererPostprocessingLatency: this.session.firstSuggestionShowTime - this._sdkApiCallEndTime,
-            codewhispererPreprocessingLatency: this.session.preprocessEndTime - this.session.invokeSuggestionStartTime,
+            codewhispererEndToEndLatency: session.firstSuggestionShowTime - session.invokeSuggestionStartTime,
+            codewhispererFirstCompletionLatency: this._sdkApiCallEndTime - session.sdkApiCallStartTime,
+            codewhispererLanguage: session.language,
+            codewhispererPostprocessingLatency: session.firstSuggestionShowTime - this._sdkApiCallEndTime,
+            codewhispererPreprocessingLatency: session.preprocessEndTime - session.invokeSuggestionStartTime,
             codewhispererRequestId: this._firstResponseRequestId,
-            codewhispererSessionId: this.session.sessionId,
-            codewhispererTriggerType: this.session.triggerType,
+            codewhispererSessionId: session.sessionId,
+            codewhispererTriggerType: session.triggerType,
             credentialStartUrl: AuthUtil.instance.startUrl,
         })
     }

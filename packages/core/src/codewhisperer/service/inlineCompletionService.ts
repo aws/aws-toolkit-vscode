@@ -128,6 +128,7 @@ export class InlineCompletionService {
                     editor,
                     triggerType,
                     config,
+                    session,
                     autoTriggerType,
                     true,
                     page

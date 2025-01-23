@@ -35,8 +35,6 @@ export async function resetCodeWhispererGlobalVariables() {
     globals.telemetry.logger.clear()
     const session = CodeWhispererSessionState.instance.getSession()
     session.reset()
-    const nextSession = CodeWhispererSessionState.instance.nextSession
-    nextSession.reset()
     await globals.globalState.clear()
     await CodeSuggestionsState.instance.setSuggestionsEnabled(true)
     await RecommendationHandler.instance.clearInlineCompletionStates()

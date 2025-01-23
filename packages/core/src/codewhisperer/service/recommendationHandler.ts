@@ -162,6 +162,7 @@ export class RecommendationHandler {
         editor: vscode.TextEditor,
         triggerType: CodewhispererTriggerType,
         config: ConfigurationEntry,
+        session: CodeWhispererSession,
         autoTriggerType?: CodewhispererAutomatedTriggerType,
         pagination: boolean = true,
         page: number = 0,
@@ -171,7 +172,7 @@ export class RecommendationHandler {
         let invocationResult: 'Succeeded' | 'Failed' = 'Failed'
         let errorMessage: string | undefined = undefined
         let errorCode: string | undefined = undefined
-        let currentSession = CodeWhispererSessionState.instance.getSession()
+        let currentSession = session
         if (isNextSession) {
             getLogger().debug('pre-fetching next recommendation for model routing')
             currentSession = new CodeWhispererSession()
@@ -202,7 +203,6 @@ export class RecommendationHandler {
         if (pagination && !generate) {
             if (page === 0) {
                 if (isNextSession) {
-                    const session = CodeWhispererSessionState.instance.getSession()
                     const request = session.requestContext.request as ListRecommendationsRequest
                     currentSession.requestContext = {
                         request: {
@@ -364,6 +364,7 @@ export class RecommendationHandler {
                         editor,
                         triggerType,
                         config,
+                        currentSession,
                         autoTriggerType,
                         pagination,
                         page,
@@ -729,6 +730,7 @@ export class RecommendationHandler {
             editor,
             session.triggerType,
             await this.getConfigEntry(),
+            session,
             session.autoTriggerType,
             true,
             0,

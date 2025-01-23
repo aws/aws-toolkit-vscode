@@ -143,13 +143,17 @@ export async function onInlineAcceptance(acceptanceEntry: OnRecommendationAccept
         }
 
         RecommendationHandler.instance.reportUserDecisions(acceptanceEntry.acceptIndex)
-        if (acceptanceEntry.acceptIndex === 0) {
-            const nextSession = CodeWhispererSessionState.instance.getNextSession()
-            nextSession.startPos = acceptanceEntry.editor.selection.active
-            CodeWhispererSessionState.instance.setSession(nextSession)
-            if (nextSession.recommendations.length) {
-                await RecommendationHandler.instance.tryShowRecommendation()
-            }
+        await promoteNextSessionIfAvailable(acceptanceEntry)
+    }
+}
+
+async function promoteNextSessionIfAvailable(acceptanceEntry: OnRecommendationAcceptanceEntry) {
+    if (acceptanceEntry.acceptIndex === 0 && acceptanceEntry.editor) {
+        const nextSession = CodeWhispererSessionState.instance.getNextSession()
+        nextSession.startPos = acceptanceEntry.editor.selection.active
+        CodeWhispererSessionState.instance.setSession(nextSession)
+        if (nextSession.recommendations.length) {
+            await RecommendationHandler.instance.tryShowRecommendation()
         }
     }
 }
