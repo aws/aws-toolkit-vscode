@@ -9,6 +9,7 @@ import { RetryableResourceFetcher } from '../resourcefetcher/httpResourceFetcher
 import { Timeout } from '../utilities/timeoutUtils'
 import globals from '../extensionGlobals'
 import { Manifest } from './types'
+import { lspSetupStage, tryFunctions } from '../../amazonq/lsp/util'
 
 const logger = getLogger('lsp')
 
@@ -32,10 +33,17 @@ export class ManifestResolver {
      * Fetches the latest manifest, falling back to local cache on failure
      */
     async resolve(): Promise<Manifest> {
-        try {
-            return await this.fetchRemoteManifest()
-        } catch (error) {
-            return await this.getLocalManifest()
+        return await tryFunctions([
+            async () => await resolveManifestWith(async () => await this.fetchRemoteManifest()),
+            async () => await resolveManifestWith(async () => await this.getLocalManifest()),
+        ])
+
+        async function resolveManifestWith(resolver: () => Promise<Manifest>) {
+            return await lspSetupStage('getManifest', async () => await resolver(), extractVersionFromResult)
+        }
+
+        function extractVersionFromResult(r: Manifest) {
+            return { manifestSchemaVersion: r.manifestSchemaVersion }
         }
     }
 

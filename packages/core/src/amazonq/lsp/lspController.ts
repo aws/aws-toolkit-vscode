@@ -161,11 +161,7 @@ export class LspController {
         }
         setImmediate(async () => {
             try {
-                await lspSetupStage('final', async () => {
-                    const installResult = await new WorkspaceLSPResolver().resolve()
-                    await lspSetupStage('launch', async () => activateLsp(context, installResult.resourcePaths))
-                    getLogger().info('LspController: LSP activated')
-                })
+                await this.setupLsp(context)
                 void LspController.instance.buildIndex(buildIndexConfig)
                 // log the LSP server CPU and Memory usage per 30 minutes.
                 globals.clock.setInterval(
@@ -184,6 +180,14 @@ export class LspController {
             } catch (e) {
                 getLogger().error(`LspController: LSP failed to activate ${e}`)
             }
+        })
+    }
+
+    private async setupLsp(context: vscode.ExtensionContext) {
+        await lspSetupStage('all', async () => {
+            const installResult = await new WorkspaceLSPResolver().resolve()
+            await lspSetupStage('launch', async () => activateLsp(context, installResult.resourcePaths))
+            getLogger().info('LspController: LSP activated')
         })
     }
 }
