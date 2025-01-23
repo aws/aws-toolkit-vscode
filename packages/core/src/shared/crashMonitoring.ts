@@ -17,8 +17,8 @@ import fs from './fs/fs'
 import { getLogger } from './logger/logger'
 import { crashMonitoringDirName } from './constants'
 import { throwOnUnstableFileSystem } from './filesystemUtilities'
-import { withRetries } from './utilities/functionUtils'
 import { truncateUuid } from './crypto'
+import { waitUntil } from './utilities/timeoutUtils'
 
 const className = 'CrashMonitoring'
 
@@ -489,7 +489,12 @@ export class FileSystemState {
                 this.deps.devLogger?.debug(`HEARTBEAT sent for ${truncateUuid(this.ext.sessionId)}`)
             }
             const funcWithCtx = () => withFailCtx('sendHeartbeatState', func)
-            const funcWithRetries = withRetries(funcWithCtx, { maxRetries: 6, delay: 100, backoff: 2 })
+            const funcWithRetries = waitUntil(funcWithCtx, {
+                timeout: 15_000,
+                interval: 100,
+                backoff: 2,
+                retryOnFail: true,
+            })
 
             return funcWithRetries
         } catch (e) {
@@ -542,7 +547,12 @@ export class FileSystemState {
             await nodeFs.rm(filePath, { force: true })
         }
         const funcWithCtx = () => withFailCtx(ctx, func)
-        const funcWithRetries = withRetries(funcWithCtx, { maxRetries: 6, delay: 100, backoff: 2 })
+        const funcWithRetries = waitUntil(funcWithCtx, {
+            timeout: 15_000,
+            interval: 100,
+            backoff: 2,
+            retryOnFail: true,
+        })
         await funcWithRetries
     }
 
@@ -609,7 +619,7 @@ export class FileSystemState {
                 }
                 const funcWithIgnoreBadFile = () => ignoreBadFileError(loadExtFromDisk)
                 const funcWithRetries = () =>
-                    withRetries(funcWithIgnoreBadFile, { maxRetries: 6, delay: 100, backoff: 2 })
+                    waitUntil(funcWithIgnoreBadFile, { timeout: 15_000, interval: 100, backoff: 2, retryOnFail: true })
                 const funcWithCtx = () => withFailCtx('parseRunningExtFile', funcWithRetries)
                 const ext: ExtInstanceHeartbeat | undefined = await funcWithCtx()
 
