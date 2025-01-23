@@ -4,7 +4,7 @@
  */
 
 import assert from 'assert'
-import { SpawnOptions } from 'child_process'
+import { SpawnOptions } from 'child_process' // eslint-disable-line no-restricted-imports
 
 import { isError } from 'lodash'
 import {
@@ -103,7 +103,7 @@ export async function assertLogContainsBadExitInformation(
         .getLoggedEntries()
         .filter((x) => !isError(x))
         .join('\n')
-    expectedTexts.forEach((expectedText) => {
+    for (const expectedText of expectedTexts) {
         assert.ok(logText.includes(expectedText.text), expectedText.verifyMessage)
-    })
+    }
 }

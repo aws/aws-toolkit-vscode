@@ -5,40 +5,25 @@
 import * as vscode from 'vscode'
 
 import { ToolkitError, UnknownError } from '../errors'
-import globals from '../extensionGlobals'
-import { isCloud9 } from '../extensionUtilities'
 import { ChildProcess, ChildProcessResult } from '../utilities/processUtils'
 import { CancellationError } from '../utilities/timeoutUtils'
 import { getLogger } from '../logger'
-import { removeAnsi } from '../utilities/textUtilities'
 import { isAutomation } from '../vscode/env'
 import { throwIfErrorMatches } from './utils'
 
 let oldTerminal: ProcessTerminal | undefined
 export async function runInTerminal(proc: ChildProcess, cmd: string) {
-    const handleResult = (result?: ChildProcessResult) => {
+    const handleResult = (result?: ChildProcessResult, terminal?: vscode.Terminal) => {
         if (result && result.exitCode !== 0) {
-            throwIfErrorMatches(result)
+            throwIfErrorMatches(result, terminal)
 
             // If no specific error matched, throw the default non-zero exit code error.
             const defaultMessage = `sam ${cmd} exited with a non-zero exit code: ${result.exitCode}`
             throw ToolkitError.chain(result.error, defaultMessage, {
                 code: 'NonZeroExitCode',
+                details: { terminal: terminal },
             })
         }
-    }
-
-    // `createTerminal` doesn't work on C9 so we use the output channel instead
-    if (isCloud9()) {
-        globals.outputChannel.show()
-
-        const result = proc.run({
-            onStdout: (text) => globals.outputChannel.append(removeAnsi(text)),
-            onStderr: (text) => globals.outputChannel.append(removeAnsi(text)),
-        })
-        await proc.send('\n')
-
-        return handleResult(await result)
     }
 
     // The most recent terminal won't get garbage collected until the next run
@@ -56,7 +41,7 @@ export async function runInTerminal(proc: ChildProcess, cmd: string) {
             ? ToolkitError.chain(result.error, 'SAM CLI was cancelled before exiting', { cancelled: true })
             : new CancellationError('user')
     } else {
-        return handleResult(result)
+        return handleResult(result, terminal)
     }
 }
 

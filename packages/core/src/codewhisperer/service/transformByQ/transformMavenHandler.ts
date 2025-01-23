@@ -6,11 +6,12 @@ import * as vscode from 'vscode'
 import { FolderInfo, transformByQState } from '../../models/model'
 import { getLogger } from '../../../shared/logger'
 import * as CodeWhispererConstants from '../../models/constants'
-import { spawnSync } from 'child_process' // Consider using ChildProcess once we finalize all spawnSync calls
+// Consider using ChildProcess once we finalize all spawnSync calls
+import { spawnSync } from 'child_process' // eslint-disable-line no-restricted-imports
 import { CodeTransformBuildCommand, telemetry } from '../../../shared/telemetry/telemetry'
 import { CodeTransformTelemetryState } from '../../../amazonqGumby/telemetry/codeTransformTelemetryState'
 import { ToolkitError } from '../../../shared/errors'
-import { writeLogs } from './transformFileHandler'
+import { setMaven, writeLogs } from './transformFileHandler'
 import { throwIfCancelled } from './transformApiHandler'
 
 // run 'install' with either 'mvnw.cmd', './mvnw', or 'mvn' (if wrapper exists, we use that, otherwise we use regular 'mvn')
@@ -107,6 +108,8 @@ function copyProjectDependencies(dependenciesFolder: FolderInfo, modulePath: str
 }
 
 export async function prepareProjectDependencies(dependenciesFolder: FolderInfo, rootPomPath: string) {
+    await setMaven()
+    getLogger().info('CodeTransformation: running Maven copy-dependencies')
     try {
         copyProjectDependencies(dependenciesFolder, rootPomPath)
     } catch (err) {
@@ -116,6 +119,7 @@ export async function prepareProjectDependencies(dependenciesFolder: FolderInfo,
         )
     }
 
+    getLogger().info('CodeTransformation: running Maven install')
     try {
         installProjectDependencies(dependenciesFolder, rootPomPath)
     } catch (err) {
@@ -133,9 +137,9 @@ export async function prepareProjectDependencies(dependenciesFolder: FolderInfo,
 
 export async function getVersionData() {
     const baseCommand = transformByQState.getMavenName() // will be one of: 'mvnw.cmd', './mvnw', 'mvn'
-    const modulePath = transformByQState.getProjectPath()
+    const projectPath = transformByQState.getProjectPath()
     const args = ['-v']
-    const spawnResult = spawnSync(baseCommand, args, { cwd: modulePath, shell: true, encoding: 'utf-8' })
+    const spawnResult = spawnSync(baseCommand, args, { cwd: projectPath, shell: true, encoding: 'utf-8' })
 
     let localMavenVersion: string | undefined = ''
     let localJavaVersion: string | undefined = ''

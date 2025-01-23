@@ -1,3 +1,110 @@
+## 1.44.0 2025-01-23
+
+- **Bug Fix** Amazon Q: word duplication when pressing tab on context selector fixed
+- **Bug Fix** Amazon Q /doc: Prevent users from requesting changes if no iterations remain
+- **Bug Fix** `/test`: view diffs by clicking files in the file tree, aligning the behavior with the 'View Diff' button.
+- **Bug Fix** /review: Improved error handling for code fix operations
+- **Bug Fix** Amazon Q: cursor no longer jumps after navigating prompt history
+- **Bug Fix** Improve the text description of workspace index settings
+- **Bug Fix** Notifications: 'Dismiss' command visible in command palette.
+- **Bug Fix** /transform: replace icons in Transformation Hub with text
+- **Bug Fix** Amazon Q /doc: Ask for user prompt if error occurs while updating documentation
+- **Feature** Amazon Q: increase chat current active file context char limit to 40k
+- **Feature** /review: Code issues can be grouped by file location or severity
+
+## 1.43.0 2025-01-15
+
+- **Bug Fix** Auth: Valid StartURL not accepted at login
+- **Bug Fix** Fix inline completion supplementalContext length exceeding maximum in certain cases
+- **Bug Fix** Amazon Q /test: Unit test generation completed message shows after accept/reject action
+- **Bug Fix** /test: for unsupported languages was sometimes unreliable
+- **Bug Fix** User-selected customizations are sometimes not being persisted.
+- **Bug Fix** Amazon q /dev: Remove hard-coded limits and instead rely server-side data to communicate number of code generations remaining
+- **Feature** Adds capability to send new context commands to AB groups
+- **Feature** feat(amazonq): Add error message for updated README too large
+- **Feature** Enhance Q inline completion context fetching for better suggestion quality
+
+## 1.42.0 2025-01-09
+
+- **Bug Fix** Amazon Q /doc: Improve button text phrasing
+- **Bug Fix** Amazon Q /dev: Fix issue when files are deleted while preparing context
+- **Bug Fix** Amazon Q Code Transformation: allow POSTGRESQL as target DB for SQL conversions
+- **Bug Fix** Fix context menu displaying when typing @, even though input is disallowed
+- **Bug Fix** Amazon Q can update mvn and gradle build files
+- **Bug Fix** /transform: use correct documentation link in SQL conversion help message
+- **Bug Fix** Up/down history navigation only triggering on first/last line of prompt input
+- **Bug Fix** Amazon Q /test: Fix to redirect /test to generate tests in chat for external files out of workspace scope.
+- **Bug Fix** /review: Code block extends beyond page margins in code issue detail view
+- **Bug Fix** Amazon Q Code Transformation: retry project upload up to 3 times
+- **Feature** Amazon Q Code Transformation: add view summary button in chat
+- **Feature** Amazon Q: new code syntax highlighter for improved accuracy
+- **Removal** Settings: No longer migrate old CodeWhisperer settings or initialize telemetry setting from AWS Toolkit.
+
+## 1.41.0 2024-12-17
+
+- **Bug Fix** /review: Apply fix removes other issues in the same file.
+- **Bug Fix** Fix(Amazon Q Code Transformation): show correct diff when running consecutive transformations
+- **Bug Fix** Improve when the welcome page is shown in amazon q chat
+- **Bug Fix** Code Review: Cleaned up output logs when running /review
+- **Bug Fix** Code Review: Fixed a bug where applying a fix did not update the positions of other issues in the same file.
+- **Bug Fix** Chat: When navigating to previous prompts, code attachments are sometimes displayed incorrectly
+- **Bug Fix** /review: Diagnostics in the problems panel are mapped to the wrong code
+- **Bug Fix** Fix opentabs context possibly timeout due to race condition of misuse of different timeout functionalities
+- **Bug Fix** Auth: SSO session was bad, but no reauth prompt given
+- **Bug Fix** Reduce frequency of system status poll
+- **Bug Fix** Chat: When writing a prompt without sending it, navigating via up/down arrows sometimes deletes the unsent prompt.
+- **Bug Fix** Code Review: Fixed a bug where projects with repeated path names did not scan properly.
+- **Feature** /review: Code fix automatically scrolls into view after generation.
+- **Feature** Chat: improve font size and line-height in footer (below prompt input field)
+
+## 1.40.0 2024-12-10
+
+- **Bug Fix** Improved LLM code review for file review.
+- **Bug Fix** @workspace is missing from the welcome to q chat tab
+- **Bug Fix** Fix chat syntax highlighting when using several different themes
+- **Bug Fix** Amazon Q /doc: progress bar persists after cancelling README creation
+- **Bug Fix** Code Review: Fixed a bug where some issues are missing from the code issues view for workspaces with custom names
+- **Bug Fix** Amazon Q /doc: Prompt user to choose a folder in chat
+- **Bug Fix** Amazon Q /dev not adding Dockerfiles in nested folders
+- **Bug Fix** Improved Code Fix generation for code review issues
+- **Bug Fix** Fix the quick start buttons on the explore page to show amazon q colours on hover
+- **Feature** Q feature dev: recognize .bms, .pli code files
+- **Feature** Amazon Q Code Transformation: show job ID in Transformation Hub
+- **Feature** UI improvements to Amazon Q Chat: New splash loader animation, initial streaming card animation, improved button colours
+- **Feature** Add acknowledgement button for amazon q chat disclaimer
+- **Feature** Navigate through prompt history by using the up/down arrows
+- **Feature** Amazon Q: Simplify log channel
+
+## 1.39.0 2024-12-03
+
+- **Feature** Added a getting started page for exploring amazon q agents
+- **Feature** `/test` in Q chat to generate unit tests for java and python
+- **Feature** `/doc` in Q chat to generate and update documentation for your project
+- **Feature** Amazon Q Code Scan is now Amazon Q Code Review
+- **Feature** `/review` in Q chat to scan your code for vulnerabilities and quality issues, and generate fixes
+- **Feature** Security Scan: New TreeView to display security scan issues and vulnerabilities detected in your project. The TreeView provides an organized and hierarchical view of the scan results, making it easier to navigate and prioritize the issues that need to be addressed.
+- **Feature** Security Scan: Added ability to suppress or ignore security issues
+
+## 1.38.0 2024-11-27
+
+- **Feature** Amazon Q /dev: support `Dockerfile` files
+- **Feature** Introduce @workspace command to enhance context fetching for Chat
+- **Feature** Feature(Amazon Q Code Transformation): allow users to view results in 5 smaller diffs
+
+## 1.37.0 2024-11-22
+
+- **Bug Fix** Amazon Q Feature Dev: display limit reached error message
+- **Bug Fix** Amazon Q chat: `@workspace` command shown in all tab types
+- **Bug Fix** Chat container exceeds width of container
+- **Bug Fix** amazon q inline: skip indexing when no workspace folders are found
+- **Bug Fix** file details and name unneccessary cropping
+- **Bug Fix** Amazon Q /dev: update diff window behavior after a change is accepted
+- **Feature** Amazon Q /dev: support `.gradle` files
+- **Feature** Code Transform: Enable support for Java 17 projects.
+- **Feature** Notifications: Support for delivering critical alerts and product updates
+- **Feature** Retrieve and display a customization name when a customization is overridden in an AB test
+- **Feature** Feature(Amazon Q Code Transformation): support conversions of embedded SQL from Oracle to PostgreSQL
+
 ## 1.36.0 2024-11-14
 
 - **Bug Fix** Fix broken inline suggestion auto-trigger on Systemverfilog files if users dont have systemverilog extension installed and enabled
@@ -28,7 +135,7 @@
 - **Bug Fix** Use Sagemaker environment IAM Credentials for Code Completion when they're available
 - **Bug Fix** Inline: Code completion not working for Sagemaker Pro Tier users.
 - **Bug Fix** Disable /transform and /dev commands for sagemaker users as they're not supported
-- **Feature** Enable Free Tier Chat for IAM users
+- **Feature** Amazon SageMaker Studio: Enable Free Tier Chat for IAM users
 
 ## 1.31.0 2024-10-29
 

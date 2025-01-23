@@ -31,8 +31,13 @@ export type globalKey =
     | 'aws.amazonq.codewhisperer.newCustomizations'
     | 'aws.amazonq.hasShownWalkthrough'
     | 'aws.amazonq.showTryChatCodeLens'
+    | 'aws.amazonq.securityIssueFilters'
+    | 'aws.amazonq.codescan.groupingStrategy'
     | 'aws.amazonq.notifications'
+    | 'aws.amazonq.welcomeChatShowCount'
+    | 'aws.amazonq.disclaimerAcknowledged'
     | 'aws.notifications'
+    | 'aws.notifications.dev' // keys to store notifications for testing
     | 'aws.downloadPath'
     | 'aws.lastTouchedS3Folder'
     | 'aws.lastUploadedToS3Folder'
@@ -40,8 +45,6 @@ export type globalKey =
     | 'aws.toolkit.amazonq.dismissed'
     | 'aws.toolkit.amazonqInstall.dismissed'
     | 'aws.amazonq.workspaceIndexToggleOn'
-    | 'aws.toolkit.separationPromptCommand'
-    | 'aws.toolkit.separationPromptDismissed'
     // Deprecated/legacy names. New keys should start with "aws.".
     | '#sessionCreationDates' // Legacy name from `ssoAccessTokenProvider.ts`.
     | 'CODECATALYST_RECONNECT'
@@ -56,7 +59,6 @@ export type globalKey =
     | 'dev.beta'
     | 'globalsMostRecentVersion'
     | 'gumby.wasQCodeTransformationUsed'
-    | 'hasAlreadyOpenedAmazonQ'
     | 'isExtensionFirstUse'
     | 'lastExtensionVersion'
     | 'lastSelectedRegion'

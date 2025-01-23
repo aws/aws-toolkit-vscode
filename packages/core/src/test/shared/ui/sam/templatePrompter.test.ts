@@ -13,6 +13,7 @@ import { WatchedItem } from '../../../../shared/fs/watchedFiles'
 import * as SamUtilsModule from '../../../../shared/sam/utils'
 import { createTemplatePrompter } from '../../../../shared/ui/sam/templatePrompter'
 import { assertEqualPaths } from '../../../testUtil'
+import { samDeployUrl } from '../../../../shared/constants'
 
 describe('createTemplatePrompter', () => {
     let registry: CloudFormationTemplateRegistry
@@ -21,7 +22,7 @@ describe('createTemplatePrompter', () => {
 
     beforeEach(() => {
         sandbox = sinon.createSandbox()
-        //Create a mock instance of CloudFormationTemplateRegistry
+        // Create a mock instance of CloudFormationTemplateRegistry
         registry = {
             items: [
                 { path: '/path/to/template1.yaml', item: {} } as WatchedItem<Cfn.Template>,
@@ -41,7 +42,7 @@ describe('createTemplatePrompter', () => {
         const workspaceFolder = vscode.workspace.workspaceFolders?.[0]
         assert.ok(workspaceFolder)
 
-        const prompter = createTemplatePrompter(registry, mementoRootKey)
+        const prompter = createTemplatePrompter(registry, mementoRootKey, samDeployUrl)
 
         assert.strictEqual(prompter.quickPick.items.length, 2)
         assertEqualPaths(prompter.quickPick.items[0].label, '/path/to/template1.yaml')

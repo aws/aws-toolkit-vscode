@@ -25,7 +25,7 @@ describe('submitFeedbackListener', function () {
         { productName: 'Amazon Q', expectedError: 'Expected failure' },
         { productName: 'AWS Toolkit', expectedError: 'Expected failure' },
     ]
-    testCases.forEach(({ productName, expectedError }) => {
+    for (const { productName, expectedError } of testCases) {
         it(`submits ${productName} feedback, disposes, and shows message on success`, async function () {
             const postStub = sinon.stub()
             mockTelemetry.postFeedback = postStub
@@ -47,5 +47,5 @@ describe('submitFeedbackListener', function () {
             const result = await webview.submit(message)
             assert.strictEqual(result, expectedError)
         })
-    })
+    }
 })

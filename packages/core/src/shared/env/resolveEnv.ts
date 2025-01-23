@@ -3,14 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-/*---------------------------------------------------------------------------------------------
+/* ---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as crypto from 'crypto'
 import { DevSettings } from '../settings'
-import { getLogger } from '..'
+import { getLogger } from '../logger/logger'
 import { ToolkitError } from '../errors'
 import { userInfo } from 'os'
 import path from 'path'

@@ -11,6 +11,7 @@ import * as SamUtilsModule from '../../../../shared/sam/utils'
 import { createBucketNamePrompter } from '../../../../shared/ui/sam/bucketPrompter'
 import { AsyncCollection } from '../../../../shared/utilities/asyncCollection'
 import { RequiredProps } from '../../../../shared/utilities/tsUtils'
+import { samDeployUrl } from '../../../../shared/constants'
 
 describe('createBucketNamePrompter', () => {
     let sandbox: sinon.SinonSandbox
@@ -39,7 +40,7 @@ describe('createBucketNamePrompter', () => {
         sandbox.stub(SamUtilsModule, 'getRecentResponse').returns(undefined) // Mock recent bucket
 
         // Act
-        const prompter = createBucketNamePrompter(s3Client, mementoRootKey)
+        const prompter = createBucketNamePrompter(s3Client, mementoRootKey, samDeployUrl)
 
         // Assert
         assert.ok(stub.calledOnce)
@@ -63,7 +64,7 @@ describe('createBucketNamePrompter', () => {
         sandbox.stub(SamUtilsModule, 'getRecentResponse').returns(undefined) // Mock recent bucket
 
         // Act
-        const prompter = createBucketNamePrompter(s3Client, mementoRootKey)
+        const prompter = createBucketNamePrompter(s3Client, mementoRootKey, samDeployUrl)
 
         // Assert
         assert.ok(stub.calledOnce)

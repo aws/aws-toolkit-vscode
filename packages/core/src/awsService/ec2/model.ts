@@ -13,6 +13,7 @@ import { SsmClient } from '../../shared/clients/ssmClient'
 import { Ec2Client } from '../../shared/clients/ec2Client'
 import {
     VscodeRemoteConnection,
+    createBoundProcess,
     ensureDependencies,
     getDeniedSsmActions,
     openRemoteTerminal,
@@ -20,8 +21,13 @@ import {
 } from '../../shared/remoteSession'
 import { DefaultIamClient } from '../../shared/clients/iamClient'
 import { ErrorInformation } from '../../shared/errors'
-import { sshAgentSocketVariable, startSshAgent, startVscodeRemote } from '../../shared/extensions/ssh'
-import { createBoundProcess } from '../../codecatalyst/model'
+import {
+    sshAgentSocketVariable,
+    SshError,
+    startSshAgent,
+    startVscodeRemote,
+    testSshConnection,
+} from '../../shared/extensions/ssh'
 import { getLogger } from '../../shared/logger/logger'
 import { CancellationError, Timeout } from '../../shared/utilities/timeoutUtils'
 import { showMessageWithCancel } from '../../shared/utilities/messages'
@@ -36,6 +42,12 @@ export interface Ec2RemoteEnv extends VscodeRemoteConnection {
     selection: Ec2Selection
     keyPair: SshKeyPair
     ssmSession: SSM.StartSessionResponse
+}
+
+export type Ec2OS = 'Amazon Linux' | 'Ubuntu' | 'macOS'
+interface RemoteUser {
+    os: Ec2OS
+    name: string
 }
 
 export class Ec2Connecter implements vscode.Disposable {
@@ -149,13 +161,6 @@ export class Ec2Connecter implements vscode.Disposable {
         }
     }
 
-    public throwGeneralConnectionError(selection: Ec2Selection, error: Error) {
-        this.throwConnectionError('Unable to connect to target instance. ', selection, {
-            code: 'EC2SSMConnect',
-            cause: error,
-        })
-    }
-
     public async checkForStartSessionError(selection: Ec2Selection): Promise<void> {
         await this.checkForInstanceStatusError(selection)
 
@@ -184,7 +189,7 @@ export class Ec2Connecter implements vscode.Disposable {
             const response = await this.ssmClient.startSession(selection.instanceId)
             await this.openSessionInTerminal(response, selection)
         } catch (err: unknown) {
-            this.throwGeneralConnectionError(selection, err as Error)
+            this.throwConnectionError('', selection, err as Error)
         }
     }
 
@@ -193,27 +198,53 @@ export class Ec2Connecter implements vscode.Disposable {
 
         const remoteUser = await this.getRemoteUser(selection.instanceId)
         const remoteEnv = await this.prepareEc2RemoteEnvWithProgress(selection, remoteUser)
-
+        const testSession = await this.ssmClient.startSession(selection.instanceId, 'AWS-StartSSHSession')
         try {
-            await startVscodeRemote(remoteEnv.SessionProcess, remoteEnv.hostname, '/', remoteEnv.vscPath, remoteUser)
+            await testSshConnection(
+                remoteEnv.SessionProcess,
+                remoteEnv.hostname,
+                remoteEnv.sshPath,
+                remoteUser.name,
+                testSession
+            )
+            await startVscodeRemote(
+                remoteEnv.SessionProcess,
+                remoteEnv.hostname,
+                '/',
+                remoteEnv.vscPath,
+                remoteUser.name
+            )
         } catch (err) {
-            this.throwGeneralConnectionError(selection, err as Error)
+            const message = err instanceof SshError ? 'Testing SSH connection to instance failed' : ''
+            this.throwConnectionError(message, selection, err as Error)
+        } finally {
+            await this.ssmClient.terminateSession(testSession)
         }
     }
 
-    public async prepareEc2RemoteEnvWithProgress(selection: Ec2Selection, remoteUser: string): Promise<Ec2RemoteEnv> {
+    public async prepareEc2RemoteEnvWithProgress(
+        selection: Ec2Selection,
+        remoteUser: RemoteUser
+    ): Promise<Ec2RemoteEnv> {
         const timeout = new Timeout(60000)
         await showMessageWithCancel('AWS: Opening remote connection...', timeout)
         const remoteEnv = await this.prepareEc2RemoteEnv(selection, remoteUser).finally(() => timeout.cancel())
         return remoteEnv
     }
 
-    public async prepareEc2RemoteEnv(selection: Ec2Selection, remoteUser: string): Promise<Ec2RemoteEnv> {
+    private async startSSMSession(instanceId: string): Promise<SSM.StartSessionResponse> {
+        const ssmSession = await this.ssmClient.startSession(instanceId, 'AWS-StartSSHSession')
+        await this.addActiveSession(instanceId, ssmSession.SessionId!)
+        return ssmSession
+    }
+
+    public async prepareEc2RemoteEnv(selection: Ec2Selection, remoteUser: RemoteUser): Promise<Ec2RemoteEnv> {
         const logger = this.configureRemoteConnectionLogger(selection.instanceId)
         const { ssm, vsc, ssh } = (await ensureDependencies()).unwrap()
         const keyPair = await this.configureSshKeys(selection, remoteUser)
-        const hostNamePrefix = 'aws-ec2-'
-        const sshConfig = new SshConfig(ssh, hostNamePrefix, 'ec2_connect', keyPair.getPrivateKeyPath())
+        const hostnamePrefix = 'aws-ec2-'
+        const hostname = `${hostnamePrefix}${selection.instanceId}`
+        const sshConfig = new SshConfig(ssh, hostnamePrefix, 'ec2_connect', keyPair.getPrivateKeyPath())
 
         const config = await sshConfig.ensureValid()
         if (config.isErr()) {
@@ -222,10 +253,12 @@ export class Ec2Connecter implements vscode.Disposable {
 
             throw err
         }
-        const ssmSession = await this.ssmClient.startSession(selection.instanceId, 'AWS-StartSSHSession')
-        await this.addActiveSession(selection.instanceId, ssmSession.SessionId!)
+
+        const ssmSession = await this.startSSMSession(selection.instanceId)
 
         const vars = getEc2SsmEnv(selection, ssm, ssmSession)
+        getLogger().debug(`ec2: connect script logs at ${vars.LOG_FILE_LOCATION}`)
+
         const envProvider = async () => {
             return { [sshAgentSocketVariable]: await startSshAgent(), ...vars }
         }
@@ -236,7 +269,7 @@ export class Ec2Connecter implements vscode.Disposable {
         })
 
         return {
-            hostname: `${hostNamePrefix}${selection.instanceId}`,
+            hostname,
             envProvider,
             sshPath: ssh,
             vscPath: vsc,
@@ -253,38 +286,78 @@ export class Ec2Connecter implements vscode.Disposable {
         return logger
     }
 
-    public async configureSshKeys(selection: Ec2Selection, remoteUser: string): Promise<SshKeyPair> {
+    public async configureSshKeys(selection: Ec2Selection, remoteUser: RemoteUser): Promise<SshKeyPair> {
         const keyPair = await SshKeyPair.getSshKeyPair(`aws-ec2-key`, 30000)
         await this.sendSshKeyToInstance(selection, keyPair, remoteUser)
         return keyPair
     }
 
-    public async sendSshKeyToInstance(
-        selection: Ec2Selection,
-        sshKeyPair: SshKeyPair,
-        remoteUser: string
-    ): Promise<void> {
-        const sshPubKey = await sshKeyPair.getPublicKey()
+    /** Removes old key(s) that we added to the remote ~/.ssh/authorized_keys file. */
+    public async tryCleanKeys(
+        instanceId: string,
+        hintComment: string,
+        hostOS: Ec2OS,
+        remoteAuthorizedKeysPath: string
+    ) {
+        try {
+            const deleteExistingKeyCommand = getRemoveLinesCommand(hintComment, hostOS, remoteAuthorizedKeysPath)
+            await this.sendCommandAndWait(instanceId, deleteExistingKeyCommand)
+        } catch (e) {
+            getLogger().warn(`ec2: failed to clean keys: %O`, e)
+        }
+    }
 
-        const remoteAuthorizedKeysPaths = `/home/${remoteUser}/.ssh/authorized_keys`
-        const command = `echo "${sshPubKey}" > ${remoteAuthorizedKeysPaths}`
-        const documentName = 'AWS-RunShellScript'
-
-        await this.ssmClient.sendCommandAndWait(selection.instanceId, documentName, {
+    private async sendCommandAndWait(instanceId: string, command: string) {
+        return await this.ssmClient.sendCommandAndWait(instanceId, 'AWS-RunShellScript', {
             commands: [command],
         })
     }
 
-    public async getRemoteUser(instanceId: string) {
-        const osName = await this.ssmClient.getTargetPlatformName(instanceId)
-        if (osName === 'Amazon Linux') {
-            return 'ec2-user'
-        }
+    public async sendSshKeyToInstance(
+        selection: Ec2Selection,
+        sshKeyPair: SshKeyPair,
+        remoteUser: RemoteUser
+    ): Promise<void> {
+        const sshPubKey = await sshKeyPair.getPublicKey()
+        const hintComment = '#AWSToolkitForVSCode'
 
-        if (osName === 'Ubuntu') {
-            return 'ubuntu'
-        }
+        const remoteAuthorizedKeysPath = `/home/${remoteUser.name}/.ssh/authorized_keys`
 
-        throw new ToolkitError(`Unrecognized OS name ${osName} on instance ${instanceId}`, { code: 'UnknownEc2OS' })
+        const appendStr = (s: string) => `echo "${s}" >> ${remoteAuthorizedKeysPath}`
+        const writeKeyCommand = appendStr([sshPubKey.replace('\n', ''), hintComment].join(' '))
+
+        await this.tryCleanKeys(selection.instanceId, hintComment, remoteUser.os, remoteAuthorizedKeysPath)
+        await this.sendCommandAndWait(selection.instanceId, writeKeyCommand)
     }
+
+    public async getRemoteUser(instanceId: string): Promise<RemoteUser> {
+        const os = await this.ssmClient.getTargetPlatformName(instanceId)
+        if (os === 'Amazon Linux') {
+            return { name: 'ec2-user', os }
+        }
+
+        if (os === 'Ubuntu') {
+            return { name: 'ubuntu', os }
+        }
+
+        throw new ToolkitError(`Unrecognized OS name ${os} on instance ${instanceId}`, { code: 'UnknownEc2OS' })
+    }
+}
+
+/**
+ * Generate bash command (as string) to remove lines containing `pattern`.
+ * @param pattern pattern for deleted lines.
+ * @param filepath filepath (as string) to target with the command.
+ * @returns bash command to remove lines from file.
+ */
+export function getRemoveLinesCommand(pattern: string, hostOS: Ec2OS, filepath: string): string {
+    if (pattern.includes('/')) {
+        throw new ToolkitError(`ec2: cannot match pattern containing '/', given: ${pattern}`)
+    }
+    // Linux allows not passing extension to -i, whereas macOS requires zero length extension.
+    return `sed -i${isLinux(hostOS) ? '' : " ''"} /${pattern}/d ${filepath}`
+}
+
+function isLinux(os: Ec2OS): boolean {
+    return os === 'Amazon Linux' || os === 'Ubuntu'
 }

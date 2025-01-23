@@ -27,7 +27,7 @@ describe('compareSamLambdaRuntime', async function () {
         { lowerRuntime: 'nodejs14.x (Image)', higherRuntime: 'nodejs16.x' },
     ]
 
-    scenarios.forEach((scenario) => {
+    for (const scenario of scenarios) {
         it(`${scenario.lowerRuntime} < ${scenario.higherRuntime}`, () => {
             assert.ok(compareSamLambdaRuntime(scenario.lowerRuntime, scenario.higherRuntime) < 0)
         })
@@ -35,14 +35,14 @@ describe('compareSamLambdaRuntime', async function () {
         it(`${scenario.higherRuntime} > ${scenario.lowerRuntime}`, () => {
             assert.ok(compareSamLambdaRuntime(scenario.higherRuntime, scenario.lowerRuntime) > 0)
         })
-    })
+    }
 })
 
 describe('getDependencyManager', function () {
     it('all runtimes are handled', function () {
-        samZipLambdaRuntimes.forEach((runtime) => {
+        for (const runtime of samZipLambdaRuntimes) {
             assert.ok(getDependencyManager(runtime))
-        })
+        }
     })
     it('throws on deprecated runtimes', function () {
         assert.throws(() => getDependencyManager('nodejs'))
@@ -57,9 +57,9 @@ describe('getFamily', function () {
         assert.strictEqual(getFamily('foo'), RuntimeFamily.Unknown)
     })
     it('handles all known runtimes', function () {
-        samZipLambdaRuntimes.forEach((runtime) => {
+        for (const runtime of samZipLambdaRuntimes) {
             assert.notStrictEqual(getFamily(runtime), RuntimeFamily.Unknown)
-        })
+        }
     })
     it('throws on deprecated runtimes', function () {
         assert.throws(() => getFamily('nodejs'))
@@ -73,9 +73,11 @@ describe('runtimes', function () {
             'nodejs16.x',
             'nodejs18.x',
             'nodejs20.x',
+            'nodejs22.x',
             'python3.10',
             'python3.11',
             'python3.12',
+            'python3.13',
             'python3.7',
             'python3.8',
             'python3.9',
@@ -85,9 +87,11 @@ describe('runtimes', function () {
             'nodejs16.x',
             'nodejs18.x',
             'nodejs20.x',
+            'nodejs22.x',
             'python3.10',
             'python3.11',
             'python3.12',
+            'python3.13',
             'python3.7',
             'python3.8',
             'python3.9',
@@ -107,9 +111,11 @@ describe('runtimes', function () {
             'nodejs16.x',
             'nodejs18.x',
             'nodejs20.x',
+            'nodejs22.x',
             'python3.10',
             'python3.11',
             'python3.12',
+            'python3.13',
             'python3.7',
             'python3.8',
             'python3.9',
@@ -128,9 +134,11 @@ describe('runtimes', function () {
             'nodejs16.x',
             'nodejs18.x',
             'nodejs20.x',
+            'nodejs22.x',
             'python3.10',
             'python3.11',
             'python3.12',
+            'python3.13',
             'python3.7',
             'python3.8',
             'python3.9',
@@ -150,12 +158,12 @@ describe('getNodeMajorVersion()', () => {
     })
 
     describe('extracts a version from existing runtimes', function () {
-        nodeJsRuntimes.forEach((versionString) => {
+        for (const versionString of nodeJsRuntimes) {
             it(`extracts from runtime: "${versionString}"`, () => {
                 const version = getNodeMajorVersion(versionString)
                 assert(version !== undefined)
                 assert(0 < version && version < 999)
             })
-        })
+        }
     })
 })

@@ -10,6 +10,3 @@ export const betaUrl = {
     amazonq: '',
     toolkit: '',
 }
-
-//feature flag for Selective Transformation
-export const isSelectiveTransformationReady = false

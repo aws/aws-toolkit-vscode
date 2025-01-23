@@ -27,6 +27,9 @@ const codeScanIssue: CodeScanIssue[] = [
         severity: 'low',
         recommendation: { text: 'foo', url: 'foo' },
         suggestedFixes: [],
+        visible: true,
+        language: 'python',
+        scanJobId: 'scanJob',
     },
 ]
 

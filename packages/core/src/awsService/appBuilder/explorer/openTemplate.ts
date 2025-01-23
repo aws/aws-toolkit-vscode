@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { samSyncUrl } from '../../../shared/constants'
 import { CloudFormationTemplateRegistry } from '../../../shared/fs/templateRegistry'
 import { syncMementoRootKey } from '../../../shared/sam/sync'
 
@@ -17,6 +18,6 @@ export interface OpenTemplateParams {
 export class OpenTemplateWizard extends Wizard<OpenTemplateParams> {
     public constructor(state: Partial<OpenTemplateParams>, registry: CloudFormationTemplateRegistry) {
         super({ initState: state, exitPrompterProvider: createExitPrompter })
-        this.form.template.bindPrompter(() => createTemplatePrompter(registry, syncMementoRootKey))
+        this.form.template.bindPrompter(() => createTemplatePrompter(registry, syncMementoRootKey, samSyncUrl))
     }
 }

@@ -238,9 +238,12 @@ You can find documentation to create VSCode IDE settings for CodeCatalyst bluepr
 
 Before sending a pull request:
 
+1. Treat all work as PUBLIC. Private `feature/x` branches will _not_ be squash-merged at release time. This has several benefits:
+    - Avoids mistakes (accidental exposure to public)!
+    - Avoids needing to erase (squash-merge) history.
 1. Check that you are working against the latest source on the `master` branch.
-2. Check existing open, and recently merged, pull requests to make sure someone else hasn't addressed the problem already.
-3. Open an issue to discuss any significant work.
+1. Check existing open, and recently merged, pull requests to make sure someone else hasn't addressed the problem already.
+1. Open an issue to discuss any significant work.
 
 To send a pull request:
 
@@ -630,7 +633,7 @@ If you are contribuing visual assets from other open source repos, the source re
 ## Using new vscode APIs
 
 The minimum required vscode version specified in [package.json](https://github.com/aws/aws-toolkit-vscode/blob/07119655109bb06105a3f53bbcd86b812b32cdbe/package.json#L16)
-is decided by the version of vscode running in Cloud9 and other vscode-compatible targets.
+is decided by the version of vscode running in other supported vscode-compatible targets (e.g. web).
 
 But you can still use the latest vscode APIs, by checking the current running vscode version. For example, to use a vscode 1.64 API:
 

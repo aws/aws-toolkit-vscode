@@ -31,12 +31,12 @@ describe('createQuickPick', function () {
         const prompter = createQuickPick([])
         const picker = prompter.quickPick
 
-        Object.keys(picker).forEach((key) => {
+        for (const key of Object.keys(picker)) {
             const defaultValue = (defaultQuickpickOptions as Record<string, any>)[key]
             if (defaultValue !== undefined) {
                 assert.strictEqual(picker[key as keyof vscode.QuickPick<any>], defaultValue)
             }
-        })
+        }
     })
 
     it('creates a new prompter with options', async function () {

@@ -8,7 +8,7 @@ import * as localizedText from '../../shared/localizedText'
 import { Auth } from '../../auth/auth'
 import { ToolkitError, isNetworkError, tryRun } from '../../shared/errors'
 import { getSecondaryAuth, setScopes } from '../../auth/secondaryAuth'
-import { isCloud9, isSageMaker } from '../../shared/extensionUtilities'
+import { isSageMaker } from '../../shared/extensionUtilities'
 import { AmazonQPromptSettings } from '../../shared/settings'
 import {
     scopesCodeWhispererCore,
@@ -55,14 +55,8 @@ export const amazonQScopes = [...codeWhispererChatScopes, ...scopesGumby, ...sco
  * for Amazon Q.
  */
 export const isValidCodeWhispererCoreConnection = (conn?: Connection): conn is Connection => {
-    if (isCloud9('classic')) {
-        return isIamConnection(conn)
-    }
-
     return (
-        (isSageMaker() && isIamConnection(conn)) ||
-        (isCloud9('codecatalyst') && isIamConnection(conn)) ||
-        (isSsoConnection(conn) && hasScopes(conn, codeWhispererCoreScopes))
+        (isSageMaker() && isIamConnection(conn)) || (isSsoConnection(conn) && hasScopes(conn, codeWhispererCoreScopes))
     )
 }
 /** Superset that includes all of CodeWhisperer + Amazon Q */
@@ -144,10 +138,6 @@ export class AuthUtil {
     })
 
     public async setVscodeContextProps() {
-        if (isCloud9()) {
-            return
-        }
-
         await setContext('aws.codewhisperer.connected', this.isConnected())
         const doShowAmazonQLoginView = !this.isConnected() || this.isConnectionExpired()
         await setContext('aws.amazonq.showLoginView', doShowAmazonQLoginView)
@@ -366,7 +356,7 @@ export class AuthUtil {
     public async notifySessionConfiguration() {
         const suppressId = 'amazonQSessionConfigurationMessage'
         const settings = AmazonQPromptSettings.instance
-        const shouldShow = await settings.isPromptEnabled(suppressId)
+        const shouldShow = settings.isPromptEnabled(suppressId)
         if (!shouldShow) {
             return
         }
@@ -457,7 +447,9 @@ export class AuthUtil {
                 state[Features.codewhispererCore] = AuthStates.connected
             }
             if (isValidAmazonQConnection(conn)) {
-                Object.values(Features).forEach((v) => (state[v as Feature] = AuthStates.connected))
+                for (const v of Object.values(Features)) {
+                    state[v as Feature] = AuthStates.connected
+                }
             }
         }
 
@@ -497,30 +489,6 @@ export class AuthUtil {
             )
         }
     }
-}
-
-/**
- * Returns true if an SSO connection with AmazonQ and CodeWhisperer scopes are found,
- * even if the connection is expired.
- *
- * Note: This function will become irrelevant if/when the Amazon Q view tree is removed
- * from the toolkit.
- */
-export function isPreviousQUser() {
-    const auth = AuthUtil.instance
-
-    if (!auth.isConnected() || !isSsoConnection(auth.conn)) {
-        return false
-    }
-    const missingScopes =
-        (auth.isEnterpriseSsoInUse() && !hasScopes(auth.conn, amazonQScopes)) ||
-        !hasScopes(auth.conn, codeWhispererChatScopes)
-
-    if (missingScopes) {
-        return false
-    }
-
-    return true
 }
 
 export type FeatureAuthState = { [feature in Feature]: AuthState }

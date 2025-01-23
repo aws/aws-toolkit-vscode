@@ -1,3 +1,50 @@
+## 3.43.0 2025-01-23
+
+- **Bug Fix** AppBuilder: Update error messaging to make more legible and actionable
+- **Bug Fix** Notifications: 'Dismiss' command visible in command palette.
+- **Removal** Cloud9: remove special-case logic.
+
+## 3.42.0 2025-01-15
+
+- **Bug Fix** Auth: Valid StartURL not accepted at login
+
+## 3.41.0 2025-01-09
+
+- **Removal** Amazon Q: No longer autoinstall Amazon Q if the user had used CodeWhisperer in old Toolkit versions.
+- **Removal** Auth: No longer inform users that Amazon Q and Toolkit extensions have separate auth sessions.
+
+## 3.40.0 2024-12-17
+
+- **Bug Fix** Auth: SSO failed to missing refreshToken
+- **Bug Fix** AppBuilder : Support template parameters override for SAM deploy and sync for all entry points
+
+## 3.39.0 2024-12-12
+
+- **Bug Fix** EC2: avoid overwriting authorized_keys file on remote
+- **Bug Fix** Auth: SSO session was bad, but no reauth prompt given
+- **Feature** Enable the EC2 experiment (setting id: `aws.experiments`) in VSCode settings to try the new EC2 features of AWS Toolkit! Remote Connect and Open Terminal to EC2 instances, list EC2 instances and view their status in AWS Explorer. 
+- **Feature** CloudWatch Logs: Added support for Live Tailing LogGroups. Start using LiveTail by: selecting 'Tail Log Group' in the command palette, or, right clicking/pressing the 'Play' icon on a Log Group in the Explorer menu. See [Troubleshoot with CloudWatch Logs Live Tail](https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/CloudWatchLogs_LiveTail.html) for more information. LiveTail is a paid feature - for more information about pricing, see the Logs tab at [Amazon CloudWatch Pricing](https://aws.amazon.com/cloudwatch/pricing/).
+
+## 3.38.0 2024-12-10
+
+- **Feature** Step Functions: Upgrade amazon-states-language-service to 1.13. This new version adds support for [JSONata and Variables](https://aws.amazon.com/blogs/compute/simplifying-developer-experience-with-variables-and-jsonata-in-aws-step-functions/).
+
+## 3.36.0 2024-11-27
+
+- **Bug Fix** appBuilder refresh feature doesnt work during sync --watch
+- **Bug Fix** 'View Logs...' action redirects to output channel instead of Terminal
+
+## 3.35.0 2024-11-22
+
+- **Bug Fix** SAM: Update Sync and Deploy prompter titles for parameter source
+- **Bug Fix** SAM: Add artifact bucket source prompter for SAM sync command
+- **Bug Fix** SAM: Update Sync prompter title for sync parameters
+- **Bug Fix** SAM: Fix prompter button URLs for build, deploy and sync commands
+- **Bug Fix** EC2: terminated instances no longer show pending icon
+- **Feature** python 3.13 support for SAM and lambda
+- **Feature** nodejs22.x support for SAM and lambda
+- **Feature** Notifications: Support for delivering critical alerts and product updates
+
 ## 3.34.0 2024-11-14
 
 - **Bug Fix** SAM debugging: misleading 'IaC' message/placeholder

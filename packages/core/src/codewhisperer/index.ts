@@ -26,6 +26,7 @@ export type {
     SendTelemetryEventResponse,
     TelemetryEvent,
     InlineChatEvent,
+    Customization,
 } from './client/codewhispereruserclient.d.ts'
 export type { default as CodeWhispererUserClient } from './client/codewhispereruserclient.d.ts'
 export { SecurityPanelViewProvider } from './views/securityPanelViewProvider'
@@ -45,6 +46,14 @@ export { listCodeWhispererCommands, listCodeWhispererCommandsId } from './ui/sta
 export { refreshStatusBar, CodeWhispererStatusBar, InlineCompletionService } from './service/inlineCompletionService'
 export { SecurityIssueHoverProvider } from './service/securityIssueHoverProvider'
 export { SecurityIssueCodeActionProvider } from './service/securityIssueCodeActionProvider'
+export {
+    SecurityIssueTreeViewProvider,
+    SecurityViewTreeItem,
+    SecurityIssuesTree,
+    FileItem,
+    IssueItem,
+    SeverityItem,
+} from './service/securityIssueTreeViewProvider'
 export { invokeRecommendation } from './commands/invokeRecommendation'
 export { onAcceptance } from './commands/onAcceptance'
 export { CodeWhispererTracker } from './tracker/codewhispererTracker'
@@ -64,7 +73,7 @@ export { DocumentChangedSource, KeyStrokeHandler, DefaultDocumentChangedType } f
 export { ReferenceLogViewProvider } from './service/referenceLogViewProvider'
 export { LicenseUtil } from './util/licenseUtil'
 export { SecurityIssueProvider } from './service/securityIssueProvider'
-export { listScanResults, mapToAggregatedList } from './service/securityScanHandler'
+export { listScanResults, mapToAggregatedList, pollScanJobStatus } from './service/securityScanHandler'
 export { CodeWhispererCodeCoverageTracker } from './tracker/codewhispererCodeCoverageTracker'
 export { TelemetryHelper } from './util/telemetryHelper'
 export { LineSelection, LineTracker } from './tracker/lineTracker'
@@ -88,5 +97,10 @@ export * as supplementalContextUtil from './util/supplementalContext/supplementa
 export * from './service/diagnosticsProvider'
 export * as diagnosticsProvider from './service/diagnosticsProvider'
 export * from './ui/codeWhispererNodes'
-export { getSelectedCustomization } from './util/customizationUtil'
+export { SecurityScanError, SecurityScanTimedOutError } from '../codewhisperer/models/errors'
+export * as CodeWhispererConstants from '../codewhisperer/models/constants'
+export { getSelectedCustomization, setSelectedCustomization, baseCustomization } from './util/customizationUtil'
 export { Container } from './service/serviceContainer'
+export * from './util/gitUtil'
+export * from './ui/prompters'
+export { UserWrittenCodeTracker } from './tracker/userWrittenCodeTracker'

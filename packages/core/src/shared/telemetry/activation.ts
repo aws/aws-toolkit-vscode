@@ -12,7 +12,7 @@ import * as vscode from 'vscode'
 import { AwsContext } from '../awsContext'
 import { DefaultTelemetryService } from './telemetryService'
 import { getLogger } from '../logger'
-import { getComputeRegion, isAmazonQ, isCloud9, productName } from '../extensionUtilities'
+import { getComputeRegion, isAmazonQ, productName } from '../extensionUtilities'
 import { openSettingsId, Settings } from '../settings'
 import { getSessionId, TelemetryConfig } from './util'
 import { isAutomation, isReleaseVersion } from '../vscode/env'
@@ -40,7 +40,6 @@ export async function activate(
     productName: AWSProduct
 ) {
     const config = new TelemetryConfig(settings)
-    await config.initAmazonQSetting() // TODO: Remove after a few releases.
 
     DefaultTelemetryClient.productName = productName
     globals.telemetry = await DefaultTelemetryService.create(awsContext, getComputeRegion())
@@ -71,7 +70,7 @@ export async function activate(
         )
 
         // Prompt user about telemetry if they haven't been
-        if (!isCloud9() && !hasUserSeenTelemetryNotice()) {
+        if (!hasUserSeenTelemetryNotice()) {
             showTelemetryNotice()
         }
 

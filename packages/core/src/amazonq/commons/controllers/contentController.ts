@@ -16,8 +16,9 @@ import {
     getSelectionFromRange,
 } from '../../../shared/utilities/textDocumentUtilities'
 import { extractFileAndCodeSelectionFromMessage, fs, getErrorMsg, ToolkitError } from '../../../shared'
+import { UserWrittenCodeTracker } from '../../../codewhisperer/tracker/userWrittenCodeTracker'
 
-class ContentProvider implements vscode.TextDocumentContentProvider {
+export class ContentProvider implements vscode.TextDocumentContentProvider {
     constructor(private uri: vscode.Uri) {}
 
     provideTextDocumentContent(_uri: vscode.Uri) {
@@ -41,6 +42,7 @@ export class EditorContentController {
     ) {
         const editor = window.activeTextEditor
         if (editor) {
+            UserWrittenCodeTracker.instance.onQStartsMakingEdits()
             const cursorStart = editor.selection.active
             const indentRange = new vscode.Range(new vscode.Position(cursorStart.line, 0), cursorStart)
             // use the user editor intent if the position to the left of cursor is just space or tab
@@ -50,13 +52,13 @@ export class EditorContentController {
                 indent = ' '.repeat(indent.length - indent.trimStart().length)
             }
             let textWithIndent = ''
-            text.split('\n').forEach((line, index) => {
+            for (const [index, line] of text.split('\n').entries()) {
                 if (index === 0) {
                     textWithIndent += line
                 } else {
                     textWithIndent += '\n' + indent + line
                 }
-            })
+            }
             editor
                 .edit((editBuilder) => {
                     editBuilder.insert(cursorStart, textWithIndent)
@@ -66,9 +68,11 @@ export class EditorContentController {
                         if (appliedEdits) {
                             trackCodeEdit(editor, cursorStart)
                         }
+                        UserWrittenCodeTracker.instance.onQFinishesEdits()
                     },
                     (e) => {
                         getLogger().error('TextEditor.edit failed: %s', (e as Error).message)
+                        UserWrittenCodeTracker.instance.onQFinishesEdits()
                     }
                 )
         }
@@ -97,6 +101,7 @@ export class EditorContentController {
 
         if (filePath && message?.code?.trim().length > 0 && selection) {
             try {
+                UserWrittenCodeTracker.instance.onQStartsMakingEdits()
                 const doc = await vscode.workspace.openTextDocument(filePath)
 
                 const code = getIndentedCode(message, doc, selection)
@@ -130,6 +135,8 @@ export class EditorContentController {
                 const wrappedError = ChatDiffError.chain(error, `Failed to Accept Diff`, { code: chatDiffCode })
                 getLogger().error('%s: Failed to open diff view %s', chatDiffCode, getErrorMsg(wrappedError, true))
                 throw wrappedError
+            } finally {
+                UserWrittenCodeTracker.instance.onQFinishesEdits()
             }
         }
     }

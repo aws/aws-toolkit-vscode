@@ -74,6 +74,11 @@ export function hasWorkspace() {
     return wsFolders !== undefined && wsFolders.length > 0
 }
 
+export function isMultiRootWorkspace() {
+    const wsFolders = vscode.workspace.workspaceFolders
+    return wsFolders !== undefined && wsFolders.length > 1
+}
+
 /**
  * Resolves `relPath` against parent `workspaceFolder`, or returns `relPath` if
  * already absolute or the operation fails.

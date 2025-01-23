@@ -18,7 +18,7 @@ import { showMessageWithUrl } from '../../shared/utilities/messages'
 import { parse } from '@aws-sdk/util-arn-parser'
 import { Commands } from '../../shared/vscode/commands2'
 import { vsCodeState } from '../models/model'
-import { FeatureConfigProvider } from '../../shared/featureConfig'
+import { FeatureConfigProvider, Features } from '../../shared/featureConfig'
 
 /**
  *
@@ -91,6 +91,12 @@ export const baseCustomization = {
     ),
 }
 
+/**
+ * Gets the customization that should be used for user requests. If a user has manually selected
+ * a customization, always respect that choice. If not, check if the user is part of an AB
+ * group assigned a specific customization. If so, use that customization. If not, use the
+ * base customization.
+ */
 export const getSelectedCustomization = (): Customization => {
     if (
         !AuthUtil.instance.isCustomizationFeatureEnabled ||
@@ -105,19 +111,22 @@ export const getSelectedCustomization = (): Customization => {
         Object,
         {}
     )
-    const result = selectedCustomizationArr[AuthUtil.instance.conn.label] || baseCustomization
+    const selectedCustomization = selectedCustomizationArr[AuthUtil.instance.conn.label]
 
-    // A/B case
-    const arnOverride = FeatureConfigProvider.instance.getCustomizationArnOverride()
-    if (arnOverride === undefined || arnOverride === '') {
-        return result
+    if (selectedCustomization && selectedCustomization.name !== baseCustomization.name) {
+        return selectedCustomization
     } else {
-        // A trick to prioritize arn from A/B over user's currently selected(for request and telemetry)
-        // but still shows customization info of user's currently selected.
-        return {
-            arn: arnOverride,
-            name: result.name,
-            description: result.description,
+        const customizationFeature = FeatureConfigProvider.getFeature(Features.customizationArnOverride)
+        const arnOverride = customizationFeature?.value.stringValue
+        const customizationOverrideName = customizationFeature?.variation
+        if (arnOverride === undefined) {
+            return baseCustomization
+        } else {
+            return {
+                arn: arnOverride,
+                name: customizationOverrideName,
+                description: baseCustomization.description,
+            }
         }
     }
 }
@@ -326,11 +335,11 @@ export const selectCustomization = async (customization: Customization) => {
 export const getAvailableCustomizationsList = async () => {
     const items: Customization[] = []
     const response = await codeWhispererClient.listAvailableCustomizations()
-    response
-        .map((listAvailableCustomizationsResponse) => listAvailableCustomizationsResponse.customizations)
-        .forEach((customizations) => {
-            items.push(...customizations)
-        })
+    for (const customizations of response.map(
+        (listAvailableCustomizationsResponse) => listAvailableCustomizationsResponse.customizations
+    )) {
+        items.push(...customizations)
+    }
 
     return items
 }
