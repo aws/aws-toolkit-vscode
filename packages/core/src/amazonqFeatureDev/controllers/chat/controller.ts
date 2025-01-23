@@ -30,7 +30,7 @@ import {
 import { codeGenRetryLimit, defaultRetryLimit } from '../../limits'
 import { Session } from '../../session/session'
 import { featureDevScheme, featureName, generateDevFilePrompt } from '../../constants'
-import { DeletedFileInfo, DevPhase, type NewFileInfo } from '../../types'
+import { DeletedFileInfo, DevPhase, MetricDataOperationName, MetricDataResult, type NewFileInfo } from '../../types'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { AuthController } from '../../../amazonq/auth/controller'
 import { getLogger } from '../../../shared/logger'
@@ -49,8 +49,6 @@ import { randomUUID } from '../../../shared'
 import { FollowUpTypes } from '../../../amazonq/commons/types'
 import { Messenger } from '../../../amazonq/commons/connector/baseMessenger'
 import { BaseChatSessionStorage } from '../../../amazonq/commons/baseChatStorage'
-
-export const TotalSteps = 3
 
 export interface ChatControllerEventEmitters {
     readonly processHumanChatMessage: EventEmitter<any>
@@ -464,6 +462,7 @@ export class FeatureDevController {
                 canBeVoted: true,
             })
             this.messenger.sendUpdatePlaceholder(tabID, i18n('AWS.amazonq.featureDev.pillText.generatingCode'))
+            await session.sendMetricDataTelemetry(MetricDataOperationName.StartCodeGeneration, MetricDataResult.Success)
             await session.send(message)
             const filePaths = session.state.filePaths ?? []
             const deletedFiles = session.state.deletedFiles ?? []
@@ -512,12 +511,17 @@ export class FeatureDevController {
 
             if (remainingIterations !== undefined && totalIterations !== undefined) {
                 this.messenger.sendAnswer({
-                    type: 'answer',
+                    type: 'answer' as const,
                     tabID: tabID,
-                    message:
-                        remainingIterations === 0
-                            ? 'Would you like to add this code to your project?'
-                            : `Would you like to add this code to your project, or provide feedback for new code? You have ${remainingIterations} out of ${totalIterations} code generations left.`,
+                    message: (() => {
+                        if (remainingIterations > 2) {
+                            return 'Would you like me to add this code to your project, or provide feedback for new code?'
+                        } else if (remainingIterations > 0) {
+                            return `Would you like me to add this code to your project, or provide feedback for new code? You have ${remainingIterations} out of ${totalIterations} code generations left.`
+                        } else {
+                            return 'Would you like me to add this code to your project?'
+                        }
+                    })(),
                 })
             }
 
@@ -537,15 +541,39 @@ export class FeatureDevController {
                 await session.sendLinesOfCodeGeneratedTelemetry()
             }
             this.messenger.sendUpdatePlaceholder(tabID, i18n('AWS.amazonq.featureDev.pillText.selectOption'))
+        } catch (err: any) {
+            getLogger().error(`${featureName}: Error during code generation: ${err}`)
+
+            let result: string
+            switch (err.constructor.name) {
+                case FeatureDevServiceError.name:
+                    if (err.code === 'EmptyPatchException') {
+                        result = MetricDataResult.LlmFailure
+                    } else if (err.code === 'GuardrailsException' || err.code === 'ThrottlingException') {
+                        result = MetricDataResult.Error
+                    } else {
+                        result = MetricDataResult.Fault
+                    }
+                    break
+                case PromptRefusalException.name:
+                case NoChangeRequiredException.name:
+                    result = MetricDataResult.Error
+                    break
+                default:
+                    result = MetricDataResult.Fault
+                    break
+            }
+
+            await session.sendMetricDataTelemetry(MetricDataOperationName.EndCodeGeneration, result)
+            throw err
         } finally {
             // Finish processing the event
 
             if (session?.state?.tokenSource?.token.isCancellationRequested) {
                 await this.workOnNewTask(
                     session.tabID,
-                    session.state.codeGenerationRemainingIterationCount ||
-                        TotalSteps - (session.state?.currentIteration || 0),
-                    session.state.codeGenerationTotalIterationCount || TotalSteps,
+                    session.state.codeGenerationRemainingIterationCount,
+                    session.state.codeGenerationTotalIterationCount,
                     session?.state?.tokenSource?.token.isCancellationRequested
                 )
                 this.disposeToken(session)
@@ -568,6 +596,7 @@ export class FeatureDevController {
                 }
             }
         }
+        await session.sendMetricDataTelemetry(MetricDataOperationName.EndCodeGeneration, MetricDataResult.Success)
     }
 
     private sendUpdateCodeMessage(tabID: string) {
@@ -589,10 +618,16 @@ export class FeatureDevController {
 
         if (isStoppedGeneration) {
             this.messenger.sendAnswer({
-                message:
-                    (remainingIterations ?? 0) <= 0
-                        ? "I stopped generating your code. You don't have more iterations left, however, you can start a new session."
-                        : `I stopped generating your code. If you want to continue working on this task, provide another description. You have ${remainingIterations} out of ${totalIterations} code generations left.`,
+                message: ((remainingIterations) => {
+                    if (totalIterations !== undefined) {
+                        if (remainingIterations <= 0) {
+                            return "I stopped generating your code. You don't have more iterations left, however, you can start a new session."
+                        } else if (remainingIterations <= 2) {
+                            return `I stopped generating your code. If you want to continue working on this task, provide another description. You have ${remainingIterations} out of ${totalIterations} code generations left.`
+                        }
+                    }
+                    return 'I stopped generating your code. If you want to continue working on this task, provide another description.'
+                })(remainingIterations),
                 type: 'answer-part',
                 tabID,
             })

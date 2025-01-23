@@ -46,7 +46,7 @@ export async function computeDiff(leftPath: string, rightPath: string, tabId: st
     let charsRemoved = 0
     let linesAdded = 0
     let linesRemoved = 0
-    changes.forEach((change) => {
+    for (const change of changes) {
         const lines = change.value.split('\n')
         const charCount = lines.reduce((sum, line) => sum + line.length, 0)
         const lineCount = change.count ?? lines.length - 1 // ignoring end-of-file empty line
@@ -57,6 +57,6 @@ export async function computeDiff(leftPath: string, rightPath: string, tabId: st
             charsRemoved += charCount
             linesRemoved += lineCount
         }
-    })
+    }
     return { changes, charsAdded, linesAdded, charsRemoved, linesRemoved }
 }

@@ -23,8 +23,9 @@ import { getTestWindow } from '../../shared/vscode/window'
 import { AwsClis, installCli } from '../../../shared/utilities/cliUtils'
 import { ChildProcess } from '../../../shared/utilities/processUtils'
 import { assertTelemetryCurried } from '../../testUtil'
-import { HttpResourceFetcher } from '../../../shared/resourcefetcher/httpResourceFetcher'
+import { HttpResourceFetcher } from '../../../shared/resourcefetcher/node/httpResourceFetcher'
 import { SamCliInfoInvocation } from '../../../shared/sam/cli/samCliInfo'
+import { CodeScansState } from '../../../codewhisperer'
 
 interface TestScenario {
     toolID: AwsClis
@@ -81,6 +82,12 @@ const scenarios: TestScenario[] = [
 ]
 
 describe('AppBuilder Walkthrough', function () {
+    before(async function () {
+        // ensure auto scan is disabled before testrun
+        await CodeScansState.instance.setScansEnabled(false)
+        assert.strictEqual(CodeScansState.instance.isScansEnabled(), false)
+    })
+
     describe('Reopen template after reload', function () {
         let sandbox: sinon.SinonSandbox
         let spyExecuteCommand: sinon.SinonSpy
@@ -199,9 +206,9 @@ describe('AppBuilder Walkthrough', function () {
             try {
                 // When
                 await genWalkthroughProject('Visual', workspaceUri, undefined)
-                assert.fail('template.yaml already exist')
+                assert.fail('A file named template.yaml already exists in this path.')
             } catch (e) {
-                assert.equal((e as Error).message, 'template.yaml already exist')
+                assert.equal((e as Error).message, 'A file named template.yaml already exists in this path.')
             }
             // Then
             assert.equal(await fs.readFileText(vscode.Uri.joinPath(workspaceUri, 'template.yaml')), prevInfo)
@@ -229,9 +236,9 @@ describe('AppBuilder Walkthrough', function () {
             try {
                 // When
                 await genWalkthroughProject('S3', workspaceUri, 'python')
-                assert.fail('template.yaml already exist')
+                assert.fail('A file named template.yaml already exists in this path.')
             } catch (e) {
-                assert.equal((e as Error).message, 'template.yaml already exist')
+                assert.equal((e as Error).message, 'A file named template.yaml already exists in this path.')
             }
             // Then no overwrite happens
             assert.equal(await fs.readFileText(vscode.Uri.joinPath(workspaceUri, 'template.yaml')), prevInfo)

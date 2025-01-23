@@ -13,10 +13,18 @@ import CodeWhispererUserClient, {
     CreateUploadUrlRequest,
     TargetCode,
 } from '../client/codewhispereruserclient'
-import { CreateUploadUrlError, InvalidSourceZipError, TestGenFailedError, TestGenTimedOutError } from '../models/errors'
+import {
+    CreateTestJobError,
+    CreateUploadUrlError,
+    ExportResultsArchiveError,
+    InvalidSourceZipError,
+    TestGenFailedError,
+    TestGenStoppedError,
+    TestGenTimedOutError,
+} from '../../amazonqTest/error'
 import { getMd5, uploadArtifactToS3 } from './securityScanHandler'
 import { fs, randomUUID, sleep, tempDirPath } from '../../shared'
-import { ShortAnswer, TestGenerationJobStatus, testGenState } from '..'
+import { ShortAnswer, testGenState } from '../models/model'
 import { ChatSessionManager } from '../../amazonqTest/chat/storages/chatSession'
 import { createCodeWhispererChatStreamingClient } from '../../shared/clients/codewhispererChatClient'
 import { downloadExportResultArchive } from '../../shared/utilities/download'
@@ -24,12 +32,13 @@ import AdmZip from 'adm-zip'
 import path from 'path'
 import { ExportIntent } from '@amzn/codewhisperer-streaming'
 import { glob } from 'glob'
+import { UserWrittenCodeTracker } from '../tracker/userWrittenCodeTracker'
 
-//TODO: Get TestFileName and Framework and to error message
+// TODO: Get TestFileName and Framework and to error message
 export function throwIfCancelled() {
-    //TODO: fileName will be '' if user gives propt without opening
+    // TODO: fileName will be '' if user gives propt without opening
     if (testGenState.isCancelling()) {
-        throw Error(CodeWhispererConstants.unitTestGenerationCancelMessage)
+        throw new TestGenStoppedError()
     }
 }
 
@@ -47,12 +56,12 @@ export async function getPresignedUrlAndUploadTestGen(zipMetadata: ZipMetadata) 
     logger.verbose(`Prepare for uploading src context...`)
     const srcResp = await codeWhisperer.codeWhispererClient.createUploadUrl(srcReq).catch((err) => {
         getLogger().error(`Failed getting presigned url for uploading src context. Request id: ${err.requestId}`)
-        throw new CreateUploadUrlError(err)
+        throw new CreateUploadUrlError(err.message)
     })
     logger.verbose(`CreateUploadUrlRequest requestId: ${srcResp.$response.requestId}`)
     logger.verbose(`Complete Getting presigned Url for uploading src context.`)
     logger.verbose(`Uploading src context...`)
-    await uploadArtifactToS3(zipMetadata.zipFilePath, srcResp)
+    await uploadArtifactToS3(zipMetadata.zipFilePath, srcResp, CodeWhispererConstants.FeatureUseCase.TEST_GENERATION)
     logger.verbose(`Complete uploading src context.`)
     const artifactMap: ArtifactMap = {
         SourceCode: srcResp.uploadId,
@@ -94,11 +103,13 @@ export async function createTestJob(
     logger.debug('target line range end: %O', firstTargetLineRangeList?.end)
 
     const resp = await codewhispererClient.codeWhispererClient.startTestGeneration(req).catch((err) => {
+        ChatSessionManager.Instance.getSession().startTestGenerationRequestId = err.requestId
         logger.error(`Failed creating test job. Request id: ${err.requestId}`)
-        throw err
+        throw new CreateTestJobError(err.message)
     })
     logger.info('Unit test generation request id: %s', resp.$response.requestId)
     logger.debug('Unit test generation data: %O', resp.$response.data)
+    ChatSessionManager.Instance.getSession().startTestGenerationRequestId = resp.$response.requestId
     if (resp.$response.error) {
         logger.error('Unit test generation error: %O', resp.$response.error)
     }
@@ -146,7 +157,7 @@ export async function pollTestJobStatus(
         if (shortAnswerString) {
             const parsedShortAnswer = JSON.parse(shortAnswerString)
             const shortAnswer: ShortAnswer = JSON.parse(parsedShortAnswer)
-            //Stop the Unit test generation workflow if IDE receive stopIteration = true
+            // Stop the Unit test generation workflow if IDE receive stopIteration = true
             if (shortAnswer.stopIteration === 'true') {
                 session.stopIteration = true
                 throw new TestGenFailedError(shortAnswer.planSummary)
@@ -180,9 +191,9 @@ export async function pollTestJobStatus(
             }
             ChatSessionManager.Instance.getSession().shortAnswer = shortAnswer
         }
-        if (resp.testGenerationJob?.status !== TestGenerationJobStatus.IN_PROGRESS) {
-            //This can be FAILED or COMPLETED
-            status = resp.testGenerationJob?.status as TestGenerationJobStatus
+        if (resp.testGenerationJob?.status !== CodeWhispererConstants.TestGenerationJobStatus.IN_PROGRESS) {
+            // This can be FAILED or COMPLETED
+            status = resp.testGenerationJob?.status as CodeWhispererConstants.TestGenerationJobStatus
             logger.verbose(`testgen job status: ${status}`)
             logger.verbose(`Complete polling test job status.`)
             break
@@ -210,7 +221,7 @@ export async function exportResultsArchive(
     projectPath: string,
     initialExecution: boolean
 ) {
-    //TODO: Make a common Temp folder
+    // TODO: Make a common Temp folder
     const pathToArchiveDir = path.join(tempDirPath, 'q-testgen')
 
     const archivePathExists = await fs.existsDir(pathToArchiveDir)
@@ -220,6 +231,8 @@ export async function exportResultsArchive(
     await fs.mkdir(pathToArchiveDir)
 
     let downloadErrorMessage = undefined
+
+    const session = ChatSessionManager.Instance.getSession()
     try {
         const pathToArchive = path.join(pathToArchiveDir, 'QTestGeneration.zip')
         // Download and deserialize the zip
@@ -227,7 +240,6 @@ export async function exportResultsArchive(
         const zip = new AdmZip(pathToArchive)
         zip.extractAllTo(pathToArchiveDir, true)
 
-        const session = ChatSessionManager.Instance.getSession()
         const testFilePathFromResponse = session?.shortAnswer?.testFilePath
         const testFilePath = testFilePathFromResponse
             ? testFilePathFromResponse.split('/').slice(1).join('/') // remove the project name
@@ -239,16 +251,17 @@ export async function exportResultsArchive(
                 projectName,
             })
 
-            //If User accepts the diff
+            // If User accepts the diff
             testGenState.getChatControllers()?.sendUpdatePromptProgress.fire({
                 tabID: ChatSessionManager.Instance.getSession().tabID,
                 status: 'Completed',
             })
         }
     } catch (e) {
+        session.numberOfTestsGenerated = 0
         downloadErrorMessage = (e as Error).message
         getLogger().error(`Unit Test Generation: ExportResultArchive error = ${downloadErrorMessage}`)
-        throw new Error('Error downloading test generation result artifacts: ' + downloadErrorMessage)
+        throw new ExportResultsArchiveError(downloadErrorMessage)
     }
 }
 
@@ -287,8 +300,9 @@ export async function downloadResultArchive(
     } catch (e: any) {
         downloadErrorMessage = (e as Error).message
         getLogger().error(`Unit Test Generation: ExportResultArchive error = ${downloadErrorMessage}`)
-        throw e
+        throw new ExportResultsArchiveError(downloadErrorMessage)
     } finally {
         cwStreamingClient.destroy()
+        UserWrittenCodeTracker.instance.onQFeatureInvoked()
     }
 }

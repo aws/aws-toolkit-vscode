@@ -12,7 +12,7 @@ module.exports = {
         mocha: true,
         es2024: true,
     },
-    plugins: ['@typescript-eslint', 'unicorn', 'header', 'security-node', 'aws-toolkits'],
+    plugins: ['@typescript-eslint', '@stylistic', 'unicorn', 'header', 'security-node', 'aws-toolkits'],
     extends: [
         'eslint:recommended',
         'plugin:@typescript-eslint/eslint-recommended',
@@ -113,6 +113,20 @@ module.exports = {
         'no-constant-condition': ['error', { checkLoops: false }],
         'no-empty': 'off',
 
+        // https://eslint.style/rules/default/spaced-comment
+        // Require space after // comment.
+        '@stylistic/spaced-comment': [
+            'error',
+            'always',
+            {
+                block: {
+                    markers: ['!'], // Allow the /*!…*/ license header.
+                    // exceptions: ['*'],
+                    // balanced: true
+                },
+            },
+        ],
+
         // Rules from https://github.com/sindresorhus/eslint-plugin-unicorn
         // TODO: 'unicorn/no-useless-promise-resolve-reject': 'error',
         // TODO: 'unicorn/prefer-at': 'error',
@@ -144,6 +158,8 @@ module.exports = {
         'unicorn/prefer-reflect-apply': 'error',
         'unicorn/prefer-string-trim-start-end': 'error',
         'unicorn/prefer-type-error': 'error',
+        // Discourage `.forEach` because it can lead to accidental, incorrect use of async callbacks.
+        'unicorn/no-array-for-each': 'error',
         'security-node/detect-child-process': 'error',
 
         'header/header': [
@@ -185,8 +201,20 @@ module.exports = {
                         name: 'fs',
                         message: 'Avoid node:fs and use shared/fs/fs.ts when possible.',
                     },
+                    {
+                        name: 'child_process',
+                        message:
+                            'Avoid child_process, use ChildProcess from `shared/utilities/processUtils.ts` instead.',
+                    },
+                    {
+                        name: '..',
+                        message:
+                            'Avoid importing from index.ts files as it can lead to circular dependencies. Import from the module directly instead.',
+                    },
                 ],
             },
         ],
+
+        'prettier/prettier': ['error', { endOfLine: 'auto' }],
     },
 }

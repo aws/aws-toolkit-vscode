@@ -210,7 +210,7 @@ describe('javaCodeLensProvider', () => {
             },
         ]
 
-        validPublicMethodTests.forEach((test) => {
+        for (const test of validPublicMethodTests) {
             const sampleMethodSymbol: vscode.DocumentSymbol = new vscode.DocumentSymbol(
                 'FunctionHandler(APIGatewayProxyRequest apigProxyEvent, ILambdaContext context)',
                 '',
@@ -236,7 +236,7 @@ describe('javaCodeLensProvider', () => {
                 const isValid = isValidLambdaHandler(doc, sampleMethodSymbol)
                 assert.strictEqual(isValid, true, 'Expected symbol to be a valid method')
             })
-        })
+        }
 
         it('returns false for a symbol that is not a method', async function () {
             const symbol = new vscode.DocumentSymbol(

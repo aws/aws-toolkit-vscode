@@ -30,7 +30,7 @@ import { testCommand } from '../../shared/vscode/testUtils'
 import { Command, placeholder } from '../../../shared/vscode/commands2'
 import { SecurityPanelViewProvider } from '../../../codewhisperer/views/securityPanelViewProvider'
 import { DefaultCodeWhispererClient } from '../../../codewhisperer/client/codewhisperer'
-import { stub } from '../../utilities/stubber'
+import { Stub, stub } from '../../utilities/stubber'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { getTestWindow } from '../../shared/vscode/window'
 import { ExtContext } from '../../../shared/extensions'
@@ -67,6 +67,7 @@ import { SecurityIssueProvider } from '../../../codewhisperer/service/securityIs
 import { CodeWhispererSettings } from '../../../codewhisperer/util/codewhispererSettings'
 import { confirm } from '../../../shared'
 import * as commentUtils from '../../../shared/utilities/commentUtils'
+import * as startCodeFixGeneration from '../../../codewhisperer/commands/startCodeFixGeneration'
 
 describe('CodeWhisperer-basicCommands', function () {
     let targetCommand: Command<any> & vscode.Disposable
@@ -82,6 +83,12 @@ describe('CodeWhisperer-basicCommands', function () {
     afterEach(function () {
         targetCommand?.dispose()
         sinon.restore()
+    })
+
+    after(async function () {
+        // disable auto scan after testrun
+        await CodeScansState.instance.setScansEnabled(false)
+        assert.strictEqual(CodeScansState.instance.isScansEnabled(), false)
     })
 
     describe('toggleCodeSuggestion', function () {
@@ -666,158 +673,236 @@ describe('CodeWhisperer-basicCommands', function () {
                 reasonDesc: 'Failed to apply edit to the workspace.',
             })
         })
+
+        it('should apply the edit at the correct range', async function () {
+            const fileName = 'sample.py'
+            const textDocumentMock = createMockDocument(
+                `from flask import app
+
+
+@app.route('/')
+def execute_input_noncompliant():
+    from flask import request
+    module_version = request.args.get("module_version")
+    # Noncompliant: executes unsanitized inputs.
+    exec("import urllib%s as urllib" % module_version)
+# {/fact}
+
+
+# {fact rule=code-injection@v1.0 defects=0}
+from flask import app
+
+
+@app.route('/')
+def execute_input_compliant():
+    from flask import request
+    module_version = request.args.get("module_version")
+    # Compliant: executes sanitized inputs.
+    exec("import urllib%d as urllib" % int(module_version))
+# {/fact}`,
+                fileName
+            )
+            openTextDocumentMock.resolves(textDocumentMock)
+            sandbox.stub(vscode.workspace, 'openTextDocument').value(openTextDocumentMock)
+
+            sandbox.stub(vscode.WorkspaceEdit.prototype, 'replace').value(replaceMock)
+            applyEditMock.resolves(true)
+            sandbox.stub(vscode.workspace, 'applyEdit').value(applyEditMock)
+            sandbox.stub(diagnosticsProvider, 'removeDiagnostic').value(removeDiagnosticMock)
+            sandbox.stub(SecurityIssueProvider.instance, 'removeIssue').value(removeIssueMock)
+            sandbox.stub(vscode.window, 'showTextDocument').value(showTextDocumentMock)
+
+            targetCommand = testCommand(applySecurityFix)
+            codeScanIssue.suggestedFixes = [
+                {
+                    code: `@@ -6,4 +6,5 @@
+     from flask import request
+     module_version = request.args.get("module_version")
+     # Noncompliant: executes unsanitized inputs.
+-    exec("import urllib%d as urllib" % int(module_version))
++    __import__("urllib" + module_version)
++#import importlib`,
+                    description: 'dummy',
+                },
+            ]
+            await targetCommand.execute(codeScanIssue, fileName, 'webview')
+            assert.ok(
+                replaceMock.calledOnceWith(
+                    textDocumentMock.uri,
+                    new vscode.Range(5, 0, 8, 54),
+                    `    from flask import request
+    module_version = request.args.get("module_version")
+    # Noncompliant: executes unsanitized inputs.
+    __import__("urllib" + module_version)
+#import importlib`
+                )
+            )
+            assert.ok(applyEditMock.calledOnce)
+            assert.ok(removeDiagnosticMock.calledOnceWith(textDocumentMock.uri, codeScanIssue))
+            assert.ok(removeIssueMock.calledOnce)
+
+            assertTelemetry('codewhisperer_codeScanIssueApplyFix', {
+                detectorId: codeScanIssue.detectorId,
+                findingId: codeScanIssue.findingId,
+                component: 'webview',
+                result: 'Succeeded',
+            })
+        })
     })
 
-    // describe('generateFix', function () {
-    //     let sandbox: sinon.SinonSandbox
-    //     let mockClient: Stub<DefaultCodeWhispererClient>
-    //     let filePath: string
-    //     let codeScanIssue: CodeScanIssue
-    //     let issueItem: IssueItem
-    //     let updateSecurityIssueWebviewMock: sinon.SinonStub
-    //     let updateIssueMock: sinon.SinonStub
-    //     let refreshTreeViewMock: sinon.SinonStub
-    //     let mockDocument: vscode.TextDocument
+    describe('generateFix', function () {
+        let sandbox: sinon.SinonSandbox
+        let mockClient: Stub<DefaultCodeWhispererClient>
+        let startCodeFixGenerationStub: sinon.SinonStub
+        let filePath: string
+        let codeScanIssue: CodeScanIssue
+        let issueItem: IssueItem
+        let updateSecurityIssueWebviewMock: sinon.SinonStub
+        let updateIssueMock: sinon.SinonStub
+        let refreshTreeViewMock: sinon.SinonStub
+        let mockExtContext: ExtContext
 
-    //     beforeEach(function () {
-    //         sandbox = sinon.createSandbox()
-    //         mockClient = stub(DefaultCodeWhispererClient)
-    //         mockClient.generateCodeFix.resolves({
-    //             // TODO: Clean this up
-    //             $response: {} as PromiseResult<any, any>['$response'],
-    //             suggestedRemediationDiff: 'diff',
-    //             suggestedRemediationDescription: 'description',
-    //             references: [],
-    //         })
-    //         filePath = 'dummy/file.py'
-    //         codeScanIssue = createCodeScanIssue({
-    //             findingId: randomUUID(),
-    //             ruleId: 'dummy-rule-id',
-    //         })
-    //         issueItem = new IssueItem(filePath, codeScanIssue)
-    //         updateSecurityIssueWebviewMock = sinon.stub()
-    //         updateIssueMock = sinon.stub()
-    //         refreshTreeViewMock = sinon.stub()
-    //         mockDocument = createMockDocument('dummy input')
-    //     })
+        beforeEach(async function () {
+            sandbox = sinon.createSandbox()
+            mockClient = stub(DefaultCodeWhispererClient)
+            startCodeFixGenerationStub = sinon.stub(startCodeFixGeneration, 'startCodeFixGeneration')
+            filePath = 'dummy/file.py'
+            codeScanIssue = createCodeScanIssue({
+                findingId: randomUUID(),
+                ruleId: 'dummy-rule-id',
+            })
+            issueItem = new IssueItem(filePath, codeScanIssue)
+            updateSecurityIssueWebviewMock = sinon.stub(securityIssueWebview, 'updateSecurityIssueWebview')
+            updateIssueMock = sinon.stub(SecurityIssueProvider.instance, 'updateIssue')
+            refreshTreeViewMock = sinon.stub(SecurityIssueTreeViewProvider.instance, 'refresh')
+            mockExtContext = await FakeExtensionContext.getFakeExtContext()
+        })
 
-    //     afterEach(function () {
-    //         sandbox.restore()
-    //     })
+        afterEach(function () {
+            sandbox.restore()
+        })
 
-    //     it('should call generateFix command successfully', async function () {
-    //         sinon.stub(securityIssueWebview, 'updateSecurityIssueWebview').value(updateSecurityIssueWebviewMock)
-    //         sinon.stub(SecurityIssueProvider.instance, 'updateIssue').value(updateIssueMock)
-    //         sinon.stub(SecurityIssueTreeViewProvider.instance, 'refresh').value(refreshTreeViewMock)
-    //         sinon.stub(vscode.workspace, 'openTextDocument').resolves(mockDocument)
-    //         targetCommand = testCommand(generateFix, mockClient)
-    //         await targetCommand.execute(codeScanIssue, filePath, 'webview')
-    //         assert.ok(updateSecurityIssueWebviewMock.calledWith({ isGenerateFixLoading: true }))
-    //         assert.ok(
-    //             mockClient.generateCodeFix.calledWith({
-    //                 sourceCode: 'dummy input',
-    //                 ruleId: codeScanIssue.ruleId,
-    //                 startLine: codeScanIssue.startLine,
-    //                 endLine: codeScanIssue.endLine,
-    //                 findingDescription: codeScanIssue.description.text,
-    //             })
-    //         )
+        it('should call generateFix command successfully', async function () {
+            startCodeFixGenerationStub.resolves({
+                suggestedFix: {
+                    codeDiff: 'codeDiff',
+                    description: 'description',
+                    references: [],
+                },
+                jobId: 'jobId',
+            })
 
-    //         const expectedUpdatedIssue = {
-    //             ...codeScanIssue,
-    //             suggestedFixes: [{ code: 'diff', description: 'description', references: [] }],
-    //         }
-    //         assert.ok(
-    //             updateSecurityIssueWebviewMock.calledWith({ issue: expectedUpdatedIssue, isGenerateFixLoading: false })
-    //         )
-    //         assert.ok(updateIssueMock.calledWith(expectedUpdatedIssue, filePath))
-    //         assert.ok(refreshTreeViewMock.calledOnce)
+            targetCommand = testCommand(generateFix, mockClient, mockExtContext)
+            await targetCommand.execute(codeScanIssue, filePath, 'webview')
 
-    //         assertTelemetry('codewhisperer_codeScanIssueGenerateFix', {
-    //             detectorId: codeScanIssue.detectorId,
-    //             findingId: codeScanIssue.findingId,
-    //             ruleId: codeScanIssue.ruleId,
-    //             component: 'webview',
-    //             result: 'Succeeded',
-    //         })
-    //     })
+            assert.ok(updateSecurityIssueWebviewMock.calledWith(sinon.match({ isGenerateFixLoading: true })))
+            assert.ok(
+                startCodeFixGenerationStub.calledWith(mockClient, codeScanIssue, filePath, codeScanIssue.findingId)
+            )
 
-    //     it('should call generateFix from tree view item', async function () {
-    //         sinon.stub(securityIssueWebview, 'updateSecurityIssueWebview').value(updateSecurityIssueWebviewMock)
-    //         sinon.stub(SecurityIssueProvider.instance, 'updateIssue').value(updateIssueMock)
-    //         sinon.stub(SecurityIssueTreeViewProvider.instance, 'refresh').value(refreshTreeViewMock)
-    //         sinon.stub(vscode.workspace, 'openTextDocument').resolves(mockDocument)
-    //         const filePath = 'dummy/file.py'
-    //         targetCommand = testCommand(generateFix, mockClient)
-    //         await targetCommand.execute(issueItem, filePath, 'tree')
-    //         assert.ok(updateSecurityIssueWebviewMock.calledWith({ isGenerateFixLoading: true }))
-    //         assert.ok(
-    //             mockClient.generateCodeFix.calledWith({
-    //                 sourceCode: 'dummy input',
-    //                 ruleId: codeScanIssue.ruleId,
-    //                 startLine: codeScanIssue.startLine,
-    //                 endLine: codeScanIssue.endLine,
-    //                 findingDescription: codeScanIssue.description.text,
-    //             })
-    //         )
+            const expectedUpdatedIssue = {
+                ...codeScanIssue,
+                fixJobId: 'jobId',
+                suggestedFixes: [{ code: 'codeDiff', description: 'description', references: [] }],
+            }
+            assert.ok(
+                updateSecurityIssueWebviewMock.calledWith(
+                    sinon.match({
+                        issue: expectedUpdatedIssue,
+                        isGenerateFixLoading: false,
+                        filePath: filePath,
+                        shouldRefreshView: true,
+                    })
+                )
+            )
+            assert.ok(updateIssueMock.calledWith(expectedUpdatedIssue, filePath))
+            assert.ok(refreshTreeViewMock.calledOnce)
 
-    //         const expectedUpdatedIssue = {
-    //             ...codeScanIssue,
-    //             suggestedFixes: [{ code: 'diff', description: 'description', references: [] }],
-    //         }
-    //         assert.ok(
-    //             updateSecurityIssueWebviewMock.calledWith({ issue: expectedUpdatedIssue, isGenerateFixLoading: false })
-    //         )
-    //         assert.ok(updateIssueMock.calledWith(expectedUpdatedIssue, filePath))
-    //         assert.ok(refreshTreeViewMock.calledOnce)
+            assertTelemetry('codewhisperer_codeScanIssueGenerateFix', {
+                detectorId: codeScanIssue.detectorId,
+                findingId: codeScanIssue.findingId,
+                ruleId: codeScanIssue.ruleId,
+                component: 'webview',
+                result: 'Succeeded',
+            })
+        })
 
-    //         assertTelemetry('codewhisperer_codeScanIssueGenerateFix', {
-    //             detectorId: codeScanIssue.detectorId,
-    //             findingId: codeScanIssue.findingId,
-    //             ruleId: codeScanIssue.ruleId,
-    //             component: 'tree',
-    //             result: 'Succeeded',
-    //         })
-    //     })
+        it('should call generateFix from tree view item', async function () {
+            startCodeFixGenerationStub.resolves({
+                suggestedFix: {
+                    codeDiff: 'codeDiff',
+                    description: 'description',
+                    references: [],
+                },
+                jobId: 'jobId',
+            })
 
-    //     it('should call generateFix with refresh=true to indicate fix regenerated', async function () {
-    //         sinon.stub(securityIssueWebview, 'updateSecurityIssueWebview').value(updateSecurityIssueWebviewMock)
-    //         sinon.stub(SecurityIssueProvider.instance, 'updateIssue').value(updateIssueMock)
-    //         sinon.stub(SecurityIssueTreeViewProvider.instance, 'refresh').value(refreshTreeViewMock)
-    //         sinon.stub(vscode.workspace, 'openTextDocument').resolves(mockDocument)
-    //         targetCommand = testCommand(generateFix, mockClient)
-    //         await targetCommand.execute(codeScanIssue, filePath, 'webview', true)
-    //         assert.ok(updateSecurityIssueWebviewMock.calledWith({ isGenerateFixLoading: true }))
-    //         assert.ok(
-    //             mockClient.generateCodeFix.calledWith({
-    //                 sourceCode: 'dummy input',
-    //                 ruleId: codeScanIssue.ruleId,
-    //                 startLine: codeScanIssue.startLine,
-    //                 endLine: codeScanIssue.endLine,
-    //                 findingDescription: codeScanIssue.description.text,
-    //             })
-    //         )
+            targetCommand = testCommand(generateFix, mockClient, mockExtContext)
+            await targetCommand.execute(issueItem, filePath, 'tree')
 
-    //         const expectedUpdatedIssue = {
-    //             ...codeScanIssue,
-    //             suggestedFixes: [{ code: 'diff', description: 'description', references: [] }],
-    //         }
-    //         assert.ok(
-    //             updateSecurityIssueWebviewMock.calledWith({ issue: expectedUpdatedIssue, isGenerateFixLoading: false })
-    //         )
-    //         assert.ok(updateIssueMock.calledWith(expectedUpdatedIssue, filePath))
-    //         assert.ok(refreshTreeViewMock.calledOnce)
+            assertTelemetry('codewhisperer_codeScanIssueGenerateFix', {
+                detectorId: codeScanIssue.detectorId,
+                findingId: codeScanIssue.findingId,
+                ruleId: codeScanIssue.ruleId,
+                component: 'tree',
+                result: 'Succeeded',
+            })
+        })
 
-    //         assertTelemetry('codewhisperer_codeScanIssueGenerateFix', {
-    //             detectorId: codeScanIssue.detectorId,
-    //             findingId: codeScanIssue.findingId,
-    //             ruleId: codeScanIssue.ruleId,
-    //             component: 'webview',
-    //             variant: 'refresh',
-    //             result: 'Succeeded',
-    //         })
-    //     })
-    // })
+        it('should call generateFix with refresh=true to indicate fix regenerated', async function () {
+            startCodeFixGenerationStub.resolves({
+                suggestedFix: {
+                    codeDiff: 'codeDiff',
+                    description: 'description',
+                    references: [],
+                },
+                jobId: 'jobId',
+            })
+
+            targetCommand = testCommand(generateFix, mockClient, mockExtContext)
+            await targetCommand.execute(codeScanIssue, filePath, 'webview', true)
+
+            assertTelemetry('codewhisperer_codeScanIssueGenerateFix', {
+                detectorId: codeScanIssue.detectorId,
+                findingId: codeScanIssue.findingId,
+                ruleId: codeScanIssue.ruleId,
+                component: 'webview',
+                result: 'Succeeded',
+                variant: 'refresh',
+            })
+        })
+
+        it('should handle generateFix error', async function () {
+            startCodeFixGenerationStub.throws(new Error('Unexpected error'))
+
+            targetCommand = testCommand(generateFix, mockClient, mockExtContext)
+            await targetCommand.execute(codeScanIssue, filePath, 'webview')
+
+            assert.ok(updateSecurityIssueWebviewMock.calledWith(sinon.match({ isGenerateFixLoading: true })))
+            assert.ok(
+                updateSecurityIssueWebviewMock.calledWith(
+                    sinon.match({
+                        issue: codeScanIssue,
+                        isGenerateFixLoading: false,
+                        generateFixError: 'Unexpected error',
+                        shouldRefreshView: false,
+                    })
+                )
+            )
+            assert.ok(updateIssueMock.calledWith(codeScanIssue, filePath))
+            assert.ok(refreshTreeViewMock.calledOnce)
+
+            assertTelemetry('codewhisperer_codeScanIssueGenerateFix', {
+                detectorId: codeScanIssue.detectorId,
+                findingId: codeScanIssue.findingId,
+                ruleId: codeScanIssue.ruleId,
+                component: 'webview',
+                result: 'Failed',
+                reason: 'Error',
+                reasonDesc: 'Unexpected error',
+            })
+        })
+    })
 
     describe('rejectFix', function () {
         let mockExtensionContext: vscode.ExtensionContext

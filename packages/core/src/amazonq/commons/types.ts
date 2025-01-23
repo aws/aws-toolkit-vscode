@@ -4,7 +4,7 @@
  */
 
 export enum FollowUpTypes {
-    //UnitTestGeneration
+    // UnitTestGeneration
     ViewDiff = 'ViewDiff',
     AcceptCode = 'AcceptCode',
     RejectCode = 'RejectCode',
@@ -14,7 +14,7 @@ export enum FollowUpTypes {
     InstallDependenciesAndContinue = 'InstallDependenciesAndContinue',
     ContinueBuildAndExecute = 'ContinueBuildAndExecute',
     ViewCodeDiffAfterIteration = 'ViewCodeDiffAfterIteration',
-    //FeatureDev
+    // FeatureDev
     GenerateCode = 'GenerateCode',
     InsertCode = 'InsertCode',
     ProvideFeedbackAndRegenerateCode = 'ProvideFeedbackAndRegenerateCode',

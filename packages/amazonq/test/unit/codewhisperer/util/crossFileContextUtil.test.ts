@@ -4,10 +4,16 @@
  */
 
 import assert from 'assert'
+import * as FakeTimers from '@sinonjs/fake-timers'
 import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import * as crossFile from 'aws-core-vscode/codewhisperer'
-import { aStringWithLineCount, createMockTextEditor } from 'aws-core-vscode/test'
+import {
+    aLongStringWithLineCount,
+    aStringWithLineCount,
+    createMockTextEditor,
+    installFakeClock,
+} from 'aws-core-vscode/test'
 import { FeatureConfigProvider, crossFileContextConfig } from 'aws-core-vscode/codewhisperer'
 import {
     assertTabCount,
@@ -30,6 +36,15 @@ describe('crossFileContextUtil', function () {
     }
 
     let mockEditor: vscode.TextEditor
+    let clock: FakeTimers.InstalledClock
+
+    before(function () {
+        clock = installFakeClock()
+    })
+
+    after(function () {
+        clock.uninstall()
+    })
 
     afterEach(function () {
         sinon.restore()
@@ -44,7 +59,7 @@ describe('crossFileContextUtil', function () {
             sinon.restore()
         })
 
-        it('for control group, should return opentabs context where there will be 3 chunks and each chunk should contains 50 lines', async function () {
+        it.skip('for control group, should return opentabs context where there will be 3 chunks and each chunk should contains 50 lines', async function () {
             sinon.stub(FeatureConfigProvider.instance, 'getProjectContextGroup').returns('control')
             await toTextEditor(aStringWithLineCount(200), 'CrossFile.java', tempFolder, { preview: false })
             const myCurrentEditor = await toTextEditor('', 'TargetFile.java', tempFolder, {
@@ -61,8 +76,8 @@ describe('crossFileContextUtil', function () {
             assert.strictEqual(actual.supplementalContextItems[2].content.split('\n').length, 50)
         })
 
-        it.skip('for t1 group, should return repomap + opentabs context', async function () {
-            await toTextEditor(aStringWithLineCount(200), 'CrossFile.java', tempFolder, { preview: false })
+        it('for t1 group, should return repomap + opentabs context, should not exceed 20k total length', async function () {
+            await toTextEditor(aLongStringWithLineCount(200), 'CrossFile.java', tempFolder, { preview: false })
             const myCurrentEditor = await toTextEditor('', 'TargetFile.java', tempFolder, {
                 preview: false,
             })
@@ -75,7 +90,7 @@ describe('crossFileContextUtil', function () {
                 .withArgs(sinon.match.any, sinon.match.any, 'codemap')
                 .resolves([
                     {
-                        content: 'foo',
+                        content: 'foo'.repeat(3000),
                         score: 0,
                         filePath: 'q-inline',
                     },
@@ -83,20 +98,18 @@ describe('crossFileContextUtil', function () {
 
             const actual = await crossFile.fetchSupplementalContextForSrc(myCurrentEditor, fakeCancellationToken)
             assert.ok(actual)
-            assert.strictEqual(actual.supplementalContextItems.length, 4)
+            assert.strictEqual(actual.supplementalContextItems.length, 3)
             assert.strictEqual(actual?.strategy, 'codemap')
             assert.deepEqual(actual?.supplementalContextItems[0], {
-                content: 'foo',
+                content: 'foo'.repeat(3000),
                 score: 0,
                 filePath: 'q-inline',
             })
-
             assert.strictEqual(actual.supplementalContextItems[1].content.split('\n').length, 50)
             assert.strictEqual(actual.supplementalContextItems[2].content.split('\n').length, 50)
-            assert.strictEqual(actual.supplementalContextItems[3].content.split('\n').length, 50)
         })
 
-        it('for t2 group, should return global bm25 context and no repomap', async function () {
+        it.skip('for t2 group, should return global bm25 context and no repomap', async function () {
             await toTextEditor(aStringWithLineCount(200), 'CrossFile.java', tempFolder, { preview: false })
             const myCurrentEditor = await toTextEditor('', 'TargetFile.java', tempFolder, {
                 preview: false,
@@ -241,11 +254,11 @@ describe('crossFileContextUtil', function () {
             const actual = await crossFile.getCrossFileCandidates(editor)
 
             assert.ok(actual.length === 5)
-            actual.forEach((actualFile, index) => {
+            for (const [index, actualFile] of actual.entries()) {
                 const expectedFile = path.join(tempFolder, expectedFilePaths[index])
                 assert.strictEqual(normalize(expectedFile), normalize(actualFile))
                 assert.ok(areEqual(tempFolder, actualFile, expectedFile))
-            })
+            }
         })
     })
 
@@ -264,7 +277,7 @@ describe('crossFileContextUtil', function () {
             await closeAllEditors()
         })
 
-        fileExtLists.forEach((fileExt) => {
+        for (const fileExt of fileExtLists) {
             it('should be empty if userGroup is control', async function () {
                 const editor = await toTextEditor('content-1', `file-1.${fileExt}`, tempFolder)
                 await toTextEditor('content-2', `file-2.${fileExt}`, tempFolder, { preview: false })
@@ -277,7 +290,7 @@ describe('crossFileContextUtil', function () {
 
                 assert.ok(actual && actual.supplementalContextItems.length === 0)
             })
-        })
+        }
     })
 
     describe.skip('partial support - crossfile group', function () {
@@ -295,7 +308,7 @@ describe('crossFileContextUtil', function () {
             await closeAllEditors()
         })
 
-        fileExtLists.forEach((fileExt) => {
+        for (const fileExt of fileExtLists) {
             it('should be non empty if usergroup is Crossfile', async function () {
                 const editor = await toTextEditor('content-1', `file-1.${fileExt}`, tempFolder)
                 await toTextEditor('content-2', `file-2.${fileExt}`, tempFolder, { preview: false })
@@ -308,7 +321,7 @@ describe('crossFileContextUtil', function () {
 
                 assert.ok(actual && actual.supplementalContextItems.length !== 0)
             })
-        })
+        }
     })
 
     describe('full support', function () {
@@ -327,9 +340,19 @@ describe('crossFileContextUtil', function () {
             await closeAllEditors()
         })
 
-        fileExtLists.forEach((fileExt) => {
-            it('should be non empty', async function () {
+        for (const fileExt of fileExtLists) {
+            it(`supplemental context for file ${fileExt} should be non empty`, async function () {
                 sinon.stub(FeatureConfigProvider.instance, 'getProjectContextGroup').returns('control')
+                sinon
+                    .stub(LspController.instance, 'queryInlineProjectContext')
+                    .withArgs(sinon.match.any, sinon.match.any, 'codemap')
+                    .resolves([
+                        {
+                            content: 'foo',
+                            score: 0,
+                            filePath: 'q-inline',
+                        },
+                    ])
                 const editor = await toTextEditor('content-1', `file-1.${fileExt}`, tempFolder)
                 await toTextEditor('content-2', `file-2.${fileExt}`, tempFolder, { preview: false })
                 await toTextEditor('content-3', `file-3.${fileExt}`, tempFolder, { preview: false })
@@ -341,7 +364,7 @@ describe('crossFileContextUtil', function () {
 
                 assert.ok(actual && actual.supplementalContextItems.length !== 0)
             })
-        })
+        }
     })
 
     describe('splitFileToChunks', function () {

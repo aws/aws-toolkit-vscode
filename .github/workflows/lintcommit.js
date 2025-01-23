@@ -130,6 +130,7 @@ Invalid pull request title: \`${title}\`
     * scope: lowercase, <30 chars
     * subject: must be <100 chars
     * documentation: https://github.com/aws/aws-toolkit-vscode/blob/master/CONTRIBUTING.md#pull-request-title
+* Hint: *close and re-open the PR* to re-trigger CI (after fixing the PR title).
 `
         : `Pull request title matches the [expected format](https://github.com/aws/aws-toolkit-vscode/blob/master/CONTRIBUTING.md#pull-request-title).`
 

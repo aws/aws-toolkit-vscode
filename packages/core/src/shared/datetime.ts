@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { isCloud9 } from './extensionUtilities'
-
 // constants for working with milliseconds
 export const oneSecond = 1000
 export const oneMinute = oneSecond * 60
@@ -119,7 +117,7 @@ export function getRelativeDate(from: Date, now: Date = new Date()): string {
  * US: Jan 5, 2020 5:30:20 PM GMT-0700
  * GB: 5 Jan 2020 17:30:20 GMT+0100
  */
-export function formatLocalized(d: Date = new Date(), cloud9 = isCloud9()): string {
+export function formatLocalized(d: Date = new Date()): string {
     const dateFormat = new Intl.DateTimeFormat('en-US', {
         year: 'numeric',
         month: 'short',
@@ -129,7 +127,7 @@ export function formatLocalized(d: Date = new Date(), cloud9 = isCloud9()): stri
         hour: 'numeric',
         minute: 'numeric',
         second: 'numeric',
-        timeZoneName: cloud9 ? 'short' : 'shortOffset',
+        timeZoneName: 'shortOffset',
     })
 
     return `${dateFormat.format(d)} ${timeFormat.format(d)}`
