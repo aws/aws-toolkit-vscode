@@ -12,9 +12,11 @@ import { createSingleFileDialog } from '../../../shared/ui/common/openDialog'
 import {
     CodeIterationLimitError,
     ContentLengthError,
+    ConversationIdNotFoundError,
     createUserFacingErrorMessage,
     denyListedErrors,
     FeatureDevServiceError,
+    IllegalStateTransition,
     MonthlyConversationLimitError,
     NoChangeRequiredException,
     PrepareRepoFailedError,
@@ -520,7 +522,7 @@ export class FeatureDevController {
             await session.sendMetricDataTelemetry(
                 MetricDataOperationName.EndCodeGeneration,
                 result,
-                'stack trace: ' + (err.stack ?? '')
+                'stack trace: ' + this.getStackTraceForError(err)
             )
             throw err
         } finally {
@@ -1016,5 +1018,55 @@ export class FeatureDevController {
                 result: 'Succeeded',
             })
         }
+    }
+
+    // Should include error messages only for whitelisted exceptions
+    // i.e. exceptions with deterministic error messages and do not include sensitive data
+    private getStackTraceForError(error: Error): string {
+        const seenExceptions = new Set<Error>()
+        const lines: string[] = []
+
+        function printExceptionDetails(err: Error, prefix: string = '') {
+            if (seenExceptions.has(err)) {
+                return
+            }
+            seenExceptions.add(err)
+
+            if (
+                err instanceof FeatureDevServiceError ||
+                err instanceof ConversationIdNotFoundError ||
+                err instanceof TabIdNotFoundError ||
+                err instanceof WorkspaceFolderNotFoundError ||
+                err instanceof UserMessageNotFoundError ||
+                err instanceof SelectedFolderNotInWorkspaceFolderError ||
+                err instanceof PromptRefusalException ||
+                // err instanceof NoChangeRequiredException ||
+                err instanceof PrepareRepoFailedError ||
+                err instanceof UploadCodeError ||
+                err instanceof UploadURLExpired ||
+                err instanceof IllegalStateTransition ||
+                err instanceof ContentLengthError ||
+                err instanceof ZipFileError ||
+                err instanceof CodeIterationLimitError
+            ) {
+                lines.push(`${prefix}${err.constructor.name}: ${err.message}`)
+            } else {
+                lines.push(`${prefix}${err.constructor.name}`)
+            }
+
+            if (err.stack) {
+                const callStack = err.stack.substring(err.stack.indexOf(err.message) + err.message.length + 1)
+                lines.push(`${prefix}${callStack}`)
+            }
+
+            const cause = (err as any).cause
+            if (cause instanceof Error) {
+                lines.push(`${prefix}\tCaused by: `)
+                printExceptionDetails(cause, `${prefix}\t`)
+            }
+        }
+
+        printExceptionDetails(error)
+        return lines.join('\n')
     }
 }
