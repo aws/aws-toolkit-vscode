@@ -101,12 +101,7 @@ export class DocCodeGenState extends BaseCodeGenState {
 
     protected async startCodeGeneration(action: SessionStateAction, codeGenerationId: string): Promise<void> {
         if (!action.tokenSource?.token.isCancellationRequested) {
-            ;(action.messenger as DocMessenger).sendDocProgress(
-                this.tabID,
-                DocGenerationStep.SUMMARIZING_FILES,
-                0,
-                action.mode as Mode
-            )
+            action.messenger.sendDocProgress(this.tabID, DocGenerationStep.SUMMARIZING_FILES, 0, action.mode as Mode)
         }
 
         await this.config.proxyClient.startCodeGeneration(
