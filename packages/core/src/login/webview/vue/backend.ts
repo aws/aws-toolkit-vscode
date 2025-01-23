@@ -31,6 +31,7 @@ import { AuthEnabledFeatures, AuthError, AuthFlowState, AuthUiClick, userCancell
 import { DevSettings } from '../../../shared/settings'
 import { AuthSSOServer } from '../../../auth/sso/server'
 import { getLogger } from '../../../shared/logger/logger'
+import { isValidUrl } from '../../../shared/utilities/uriUtils'
 
 export abstract class CommonAuthWebview extends VueWebview {
     private readonly className = 'CommonAuthWebview'
@@ -275,5 +276,9 @@ export abstract class CommonAuthWebview extends VueWebview {
 
     cancelAuthFlow() {
         AuthSSOServer.lastInstance?.cancelCurrentFlow()
+    }
+
+    validateUrl(url: string) {
+        return isValidUrl(url)
     }
 }

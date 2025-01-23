@@ -27,6 +27,8 @@ const autoClosingKeystrokeInputs = ['[]', '{}', '()', '""', "''"]
 
 /**
  * This singleton class is mainly used for calculating the code written by codeWhisperer
+ * TODO: Remove this tracker, uses user written code tracker instead.
+ * This is kept in codebase for server side backward compatibility until service fully switch to user written code
  */
 export class CodeWhispererCodeCoverageTracker {
     private _acceptedTokens: { [key: string]: CodeWhispererToken[] }
@@ -104,12 +106,12 @@ export class CodeWhispererCodeCoverageTracker {
         // the accepted characters after calculating user modification
         let unmodifiedAcceptedTokens = 0
         for (const filename in this._acceptedTokens) {
-            this._acceptedTokens[filename].forEach((v) => {
+            for (const v of this._acceptedTokens[filename]) {
                 if (filename in this._totalTokens && this._totalTokens[filename] >= v.accepted) {
                     unmodifiedAcceptedTokens += v.accepted
                     acceptedTokens += v.text.length
                 }
-            })
+            }
         }
         const percentCount = ((acceptedTokens / totalTokens) * 100).toFixed(2)
         const percentage = Math.round(parseInt(percentCount))

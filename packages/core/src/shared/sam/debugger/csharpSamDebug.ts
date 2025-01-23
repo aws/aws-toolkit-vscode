@@ -196,8 +196,8 @@ async function downloadInstallScript(debuggerPath: string): Promise<string> {
         installScriptPath = path.join(debuggerPath, 'installVsdbgScript.sh')
     }
 
-    const installScriptFetcher = new HttpResourceFetcher(installScriptUrl, { showUrl: true })
-    const installScript = await installScriptFetcher.get()
+    const installScriptFetcher = await new HttpResourceFetcher(installScriptUrl, { showUrl: true }).get()
+    const installScript = await installScriptFetcher?.text()
     if (!installScript) {
         throw Error(`Failed to download ${installScriptUrl}`)
     }
@@ -255,10 +255,10 @@ export async function makeDotnetDebugConfiguration(
         }
         // we could safely leave this entry in, but might as well give the user full control if they're specifying mappings
         delete config.sourceFileMap['/build']
-        config.lambda.pathMappings.forEach((mapping) => {
+        for (const mapping of config.lambda.pathMappings) {
             // this looks weird because we're mapping the PDB path to the local workspace
             config.sourceFileMap[mapping.remoteRoot] = mapping.localRoot
-        })
+        }
     }
 
     return {

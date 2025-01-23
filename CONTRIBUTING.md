@@ -633,7 +633,7 @@ If you are contribuing visual assets from other open source repos, the source re
 ## Using new vscode APIs
 
 The minimum required vscode version specified in [package.json](https://github.com/aws/aws-toolkit-vscode/blob/07119655109bb06105a3f53bbcd86b812b32cdbe/package.json#L16)
-is decided by the version of vscode running in Cloud9 and other vscode-compatible targets.
+is decided by the version of vscode running in other supported vscode-compatible targets (e.g. web).
 
 But you can still use the latest vscode APIs, by checking the current running vscode version. For example, to use a vscode 1.64 API:
 

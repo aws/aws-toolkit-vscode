@@ -45,7 +45,7 @@ export class Ec2ParentNode extends AWSTreeNodeBase {
         if (!this.ec2InstanceNodes.has(instanceId)) {
             throw new Error(`Attempt to track ec2 node ${instanceId} that isn't a child`)
         }
-        this.pollingSet.start(instanceId)
+        this.pollingSet.add(instanceId)
     }
 
     public async updateChildren(): Promise<void> {

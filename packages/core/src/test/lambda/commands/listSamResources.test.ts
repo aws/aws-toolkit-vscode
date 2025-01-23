@@ -62,6 +62,7 @@ describe('listSamResources', () => {
             { name: 'stringify array', value: '[]' },
             { name: 'array object', value: [] },
         ]
+        // eslint-disable-next-line unicorn/no-array-for-each
         testcases.forEach(async ({ name, value }) => {
             it(`returns empty array given SAM CLI return ${name} given any issue`, async () => {
                 runSamCliListResourceStub.resolves(value)

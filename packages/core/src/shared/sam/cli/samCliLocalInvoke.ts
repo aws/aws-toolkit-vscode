@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as proc from 'child_process'
+import { SpawnOptions } from 'child_process' // eslint-disable-line no-restricted-imports
 import { pushIf } from '../../utilities/collectionUtils'
 import * as nls from 'vscode-nls'
 import { getLogger, getDebugConsoleLogger, Logger } from '../../logger'
@@ -20,7 +20,6 @@ const localize = nls.loadMessageBundle()
 
 export const waitForDebuggerMessages = {
     PYTHON: 'Debugger waiting for client...',
-    PYTHON_IKPDB: 'IKP3db listening on',
     NODEJS: 'Debugger listening on',
     DOTNET: 'Waiting for the debugger to attach...',
     GO_DELVE: 'launching process with args', // Comes from https://github.com/go-delve/delve/blob/f5d2e132bca763d222680815ace98601c2396517/service/debugger/debugger.go#L187
@@ -30,7 +29,7 @@ export const waitForDebuggerMessages = {
 export interface SamLocalInvokeCommandArgs {
     command: string
     args: string[]
-    options?: proc.SpawnOptions
+    options?: SpawnOptions
     /** Wait until strings specified in `debuggerAttachCues` appear in the process output.  */
     waitForCues: boolean
     timeout?: Timeout

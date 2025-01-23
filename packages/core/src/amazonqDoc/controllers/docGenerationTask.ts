@@ -20,7 +20,7 @@ export class DocGenerationTask {
     public interactionType?: DocGenerationInteractionType
     public userIdentity?: string
     public numberOfNavigation = 0
-    public folderLevel?: DocGenerationFolderLevel
+    public folderLevel: DocGenerationFolderLevel = 'ENTIRE_WORKSPACE'
 
     constructor(conversationId?: string) {
         this.conversationId = conversationId
@@ -57,6 +57,6 @@ export class DocGenerationTask {
         this.interactionType = undefined
         this.userIdentity = undefined
         this.numberOfNavigation = 0
-        this.folderLevel = undefined
+        this.folderLevel = 'ENTIRE_WORKSPACE'
     }
 }

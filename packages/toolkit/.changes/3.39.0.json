@@ -1,0 +1,22 @@
+{
+	"date": "2024-12-12",
+	"version": "3.39.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "EC2: avoid overwriting authorized_keys file on remote"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Auth: SSO session was bad, but no reauth prompt given"
+		},
+		{
+			"type": "Feature",
+			"description": "Enable the EC2 experiment (setting id: `aws.experiments`) in VSCode settings to try the new EC2 features of AWS Toolkit! Remote Connect and Open Terminal to EC2 instances, list EC2 instances and view their status in AWS Explorer. "
+		},
+		{
+			"type": "Feature",
+			"description": "CloudWatch Logs: Added support for Live Tailing LogGroups. Start using LiveTail by: selecting 'Tail Log Group' in the command palette, or, right clicking/pressing the 'Play' icon on a Log Group in the Explorer menu. See [Troubleshoot with CloudWatch Logs Live Tail](https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/CloudWatchLogs_LiveTail.html) for more information. LiveTail is a paid feature - for more information about pricing, see the Logs tab at [Amazon CloudWatch Pricing](https://aws.amazon.com/cloudwatch/pricing/)."
+		}
+	]
+}

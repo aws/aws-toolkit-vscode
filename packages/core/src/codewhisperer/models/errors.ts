@@ -172,3 +172,13 @@ export class CodeFixJobStoppedError extends CodeFixError {
         super('Code fix generation stopped by user.', 'CodeFixCancelled', defaultCodeFixErrorMessage)
     }
 }
+
+export class MonthlyCodeFixLimitError extends CodeFixError {
+    constructor() {
+        super(
+            i18n('AWS.amazonq.codefix.error.monthlyLimitReached'),
+            MonthlyCodeFixLimitError.name,
+            defaultCodeFixErrorMessage
+        )
+    }
+}

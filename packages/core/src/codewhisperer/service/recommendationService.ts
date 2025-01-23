@@ -3,17 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
-import { ConfigurationEntry, GetRecommendationsResponse, vsCodeState } from '../models/model'
-import { isCloud9 } from '../../shared/extensionUtilities'
+import { ConfigurationEntry, GetRecommendationsResponse } from '../models/model'
 import { isInlineCompletionEnabled } from '../util/commonUtil'
 import {
     CodewhispererAutomatedTriggerType,
     CodewhispererTriggerType,
     telemetry,
 } from '../../shared/telemetry/telemetry'
-import { AuthUtil } from '../util/authUtil'
-import { isIamConnection } from '../../auth/connection'
-import { RecommendationHandler } from '../service/recommendationHandler'
 import { InlineCompletionService } from '../service/inlineCompletionService'
 import { ClassifierTrigger } from './classifierTrigger'
 import { DefaultCodeWhispererClient } from '../client/codewhisperer'
@@ -81,67 +77,7 @@ export class RecommendationService {
         const traceId = telemetry.attributes?.traceId ?? randomUUID()
         TelemetryHelper.instance.setTraceId(traceId)
         await telemetry.withTraceId(async () => {
-            if (isCloud9('any')) {
-                // C9 manual trigger key alt/option + C is ALWAYS enabled because the VSC version C9 is on doesn't support setContextKey which is used for CODEWHISPERER_ENABLED
-                // therefore we need a connection check if there is ANY connection(regardless of the connection's state) connected to CodeWhisperer on C9
-                if (triggerType === 'OnDemand' && !AuthUtil.instance.isConnected()) {
-                    return
-                }
-
-                RecommendationHandler.instance.checkAndResetCancellationTokens()
-                vsCodeState.isIntelliSenseActive = false
-                this._isRunning = true
-                let response: GetRecommendationsResponse = {
-                    result: 'Failed',
-                    errorMessage: undefined,
-                    recommendationCount: 0,
-                }
-
-                try {
-                    this._onSuggestionActionEvent.fire({
-                        editor: editor,
-                        isRunning: true,
-                        triggerType: triggerType,
-                        response: undefined,
-                    })
-
-                    if (isCloud9('classic') || isIamConnection(AuthUtil.instance.conn)) {
-                        response = await RecommendationHandler.instance.getRecommendations(
-                            client,
-                            editor,
-                            triggerType,
-                            config,
-                            autoTriggerType,
-                            false
-                        )
-                    } else {
-                        if (AuthUtil.instance.isConnectionExpired()) {
-                            await AuthUtil.instance.showReauthenticatePrompt()
-                        }
-                        response = await RecommendationHandler.instance.getRecommendations(
-                            client,
-                            editor,
-                            triggerType,
-                            config,
-                            autoTriggerType,
-                            true
-                        )
-                    }
-                    if (RecommendationHandler.instance.canShowRecommendationInIntelliSense(editor, true, response)) {
-                        await vscode.commands.executeCommand('editor.action.triggerSuggest').then(() => {
-                            vsCodeState.isIntelliSenseActive = true
-                        })
-                    }
-                } finally {
-                    this._isRunning = false
-                    this._onSuggestionActionEvent.fire({
-                        editor: editor,
-                        isRunning: false,
-                        triggerType: triggerType,
-                        response: response,
-                    })
-                }
-            } else if (isInlineCompletionEnabled()) {
+            if (isInlineCompletionEnabled()) {
                 if (triggerType === 'OnDemand') {
                     ClassifierTrigger.instance.recordClassifierResultForManualTrigger(editor)
                 }

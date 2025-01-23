@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as child_process from 'child_process'
+import * as child_process from 'child_process' // eslint-disable-line no-restricted-imports
 import * as nodefs from 'fs' // eslint-disable-line no-restricted-imports
 import { marked } from 'marked'
 import * as path from 'path'
@@ -63,8 +63,6 @@ function generateFileHash(root: string) {
 
 try {
     translateReadmeToHtml(projectRoot, 'README.md', 'quickStartVscode.html', true)
-    translateReadmeToHtml(projectRoot, 'README.quickstart.cloud9.md', 'quickStartCloud9.html', false)
-    translateReadmeToHtml(projectRoot, 'README.quickstart.cloud9.md', 'quickStartCloud9-cn.html', false, true)
     generateFileHash(projectRoot)
 } catch (error) {
     console.error(error)

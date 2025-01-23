@@ -96,7 +96,7 @@ export async function generateDeployedNode(
                         .Configuration as Lambda.FunctionConfiguration
                     newDeployedResource = new LambdaFunctionNode(lambdaNode, regionCode, configuration)
                 } catch (error: any) {
-                    getLogger().error('Error getting Lambda configuration %O', error)
+                    getLogger().error('Error getting Lambda configuration: %O', error)
                     throw ToolkitError.chain(error, 'Error getting Lambda configuration', {
                         code: 'lambdaClientError',
                     })
@@ -107,7 +107,7 @@ export async function generateDeployedNode(
                         createPlaceholderItem(
                             localize(
                                 'AWS.appBuilder.explorerNode.unavailableDeployedResource',
-                                '[Failed to retrive deployed resource.]'
+                                '[Failed to retrive deployed resource. Ensure your AWS account is connected.]'
                             )
                         ),
                     ]
@@ -119,8 +119,8 @@ export async function generateDeployedNode(
                 try {
                     v3configuration = (await v3Client.send(v3command)).Configuration as FunctionConfiguration
                     logGroupName = v3configuration.LoggingConfig?.LogGroup
-                } catch {
-                    getLogger().error('Error getting Lambda V3 configuration')
+                } catch (error: any) {
+                    getLogger().error('Error getting Lambda V3 configuration: %O', error)
                 }
                 newDeployedResource.configuration = {
                     ...newDeployedResource.configuration,
@@ -156,7 +156,10 @@ export async function generateDeployedNode(
                 getLogger().info('Details are missing or are incomplete for: %O', deployedResource)
                 return [
                     createPlaceholderItem(
-                        localize('AWS.appBuilder.explorerNode.noApps', '[This resource is not yet supported.]')
+                        localize(
+                            'AWS.appBuilder.explorerNode.noApps',
+                            '[This resource is not yet supported in AppBuilder.]'
+                        )
                     ),
                 ]
         }
@@ -166,7 +169,7 @@ export async function generateDeployedNode(
             createPlaceholderItem(
                 localize(
                     'AWS.appBuilder.explorerNode.unavailableDeployedResource',
-                    '[Failed to retrive deployed resource.]'
+                    '[Failed to retrieve deployed resource. Ensure correct stack name and region are in the samconfig.toml, and that your account is connected.]'
                 )
             ),
         ]

@@ -11,6 +11,7 @@ import {
     CodewhispererSuggestionState,
     CodewhispererUserDecision,
 } from 'aws-core-vscode/shared'
+import sinon from 'sinon'
 
 // TODO: improve and move the following test utils to codewhisperer/testUtils.ts
 function aUserDecision(
@@ -38,6 +39,47 @@ function aCompletion(): Completion {
 }
 
 describe('telemetryHelper', function () {
+    describe('clientComponentLatency', function () {
+        let sut: TelemetryHelper
+
+        beforeEach(function () {
+            sut = new TelemetryHelper()
+        })
+
+        afterEach(function () {
+            sinon.restore()
+        })
+
+        it('resetClientComponentLatencyTime should reset state variables', function () {
+            session.invokeSuggestionStartTime = 100
+            session.preprocessEndTime = 200
+            session.sdkApiCallStartTime = 300
+            session.fetchCredentialStartTime = 400
+            session.firstSuggestionShowTime = 500
+
+            sut.setSdkApiCallEndTime()
+            sut.setAllPaginationEndTime()
+            sut.setFirstResponseRequestId('aFakeRequestId')
+
+            sut.resetClientComponentLatencyTime()
+
+            assert.strictEqual(session.invokeSuggestionStartTime, 0)
+            assert.strictEqual(session.preprocessEndTime, 0)
+            assert.strictEqual(session.sdkApiCallStartTime, 0)
+            assert.strictEqual(session.fetchCredentialStartTime, 0)
+            assert.strictEqual(session.firstSuggestionShowTime, 0)
+            assert.strictEqual(sut.sdkApiCallEndTime, 0)
+            assert.strictEqual(sut.allPaginationEndTime, 0)
+            assert.strictEqual(sut.firstResponseRequestId, '')
+        })
+
+        it('setInvocationSuggestionStartTime should call resetClientComponentLatencyTime', function () {
+            const resetStub = sinon.stub(sut, 'resetClientComponentLatencyTime')
+            sut.setInvokeSuggestionStartTime()
+            assert.ok(resetStub.calledOnce)
+        })
+    })
+
     describe('aggregateUserDecisionByRequest', function () {
         let sut: TelemetryHelper
 

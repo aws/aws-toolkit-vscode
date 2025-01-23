@@ -33,24 +33,24 @@ describe('GlobalState', function () {
     ]
 
     describe('get()', function () {
-        scenarios.forEach((scenario) => {
+        for (const scenario of scenarios) {
             it(scenario.desc, async () => {
                 await globalState.update(testKey, scenario.testValue)
 
                 const actualValue = globalState.get(testKey)
                 assert.deepStrictEqual(actualValue, scenario.testValue)
             })
-        })
+        }
     })
 
     describe('update()', function () {
-        scenarios.forEach((scenario) => {
+        for (const scenario of scenarios) {
             it(scenario.desc, async () => {
                 await globalState.update(testKey, scenario.testValue)
                 const savedValue = globalState.get(testKey)
                 assert.deepStrictEqual(savedValue, scenario.testValue)
             })
-        })
+        }
     })
 
     it('getStrict()', async () => {

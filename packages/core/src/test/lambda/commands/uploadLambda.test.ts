@@ -43,11 +43,6 @@ describe('uploadLambda', async function () {
             (await findApplicationJsonFile(folderUri))?.fsPath ?? '',
             path.join(tempFolder, '.application.json')
         )
-        // Also test Cloud9 temporary workaround.
-        assertEqualPaths(
-            (await findApplicationJsonFile(folderUri, true))?.fsPath ?? '',
-            path.join(tempFolder, '.application.json')
-        )
     })
 
     it('finds application.json file from dir path - nested', async function () {
@@ -56,8 +51,6 @@ describe('uploadLambda', async function () {
         await toFile('top secret data', appjsonPath)
 
         assertEqualPaths((await findApplicationJsonFile(folderUri))?.fsPath ?? '', appjsonPath)
-        // Also test Cloud9 temporary workaround.
-        assertEqualPaths((await findApplicationJsonFile(folderUri, true))?.fsPath ?? '', appjsonPath)
     })
 
     it('finds application.json file from template file path', async function () {
@@ -67,8 +60,6 @@ describe('uploadLambda', async function () {
         await toFile('top secret data', appjsonPath)
 
         assertEqualPaths((await findApplicationJsonFile(templateUri))?.fsPath ?? '', appjsonPath)
-        // Also test Cloud9 temporary workaround.
-        assertEqualPaths((await findApplicationJsonFile(templateUri, true))?.fsPath ?? '', appjsonPath)
     })
 
     it('lists functions from .application.json', async function () {

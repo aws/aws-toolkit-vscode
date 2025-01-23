@@ -16,7 +16,6 @@ import {
     eventBridgeStarterAppTemplate,
     stepFunctionsSampleApp,
     typeScriptBackendTemplate,
-    lazyLoadSamTemplateStrings,
 } from '../../../lambda/models/samTemplates'
 import { Set } from 'immutable'
 
@@ -29,8 +28,6 @@ let validGoTemplateOptions: Set<SamTemplate>
 let defaultTemplateOptions: Set<SamTemplate>
 
 before(function () {
-    lazyLoadSamTemplateStrings()
-
     validTemplateOptions = Set([
         helloWorldTemplate,
         eventBridgeHelloWorldTemplate,
@@ -128,9 +125,9 @@ describe('getSamCliTemplateParameter', function () {
 
 describe('getTemplateDescription', async function () {
     it('all templates are handled', async function () {
-        validTemplateOptions.forEach((template) => {
+        for (const template of validTemplateOptions) {
             // Checking that call does not throw
             getTemplateDescription(template)
-        })
+        }
     })
 })

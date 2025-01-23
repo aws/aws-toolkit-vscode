@@ -74,6 +74,11 @@ export function dispatchWebViewMessagesToApps(
                 globals.globalState.tryUpdate('aws.amazonq.disclaimerAcknowledged', true)
                 return
             }
+            case 'update-welcome-count': {
+                const currentLoadCount = globals.globalState.tryGet('aws.amazonq.welcomeChatShowCount', Number, 0)
+                void globals.globalState.tryUpdate('aws.amazonq.welcomeChatShowCount', currentLoadCount + 1)
+                return
+            }
         }
 
         if (msg.type === 'error') {

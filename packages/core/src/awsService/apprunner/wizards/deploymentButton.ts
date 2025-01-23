@@ -32,7 +32,7 @@ function makeDeployButtons() {
 async function showDeploymentCostNotification(): Promise<void> {
     const settings = ToolkitPromptSettings.instance
 
-    if (await settings.isPromptEnabled('apprunnerNotifyPricing')) {
+    if (settings.isPromptEnabled('apprunnerNotifyPricing')) {
         const notice = localize(
             'aws.apprunner.createService.priceNotice.message',
             'App Runner automatic deployments incur an additional cost.'

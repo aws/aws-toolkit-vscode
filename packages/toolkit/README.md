@@ -71,6 +71,7 @@ Unified software development service to quickly build and deliver applications o
 
 ## More features
 
+-   **EC2** - `Connect VS Code` or `Open Terminal` to EC2 instances
 -   **Redshift** - view database objects and run SQL queries in a notebook interface
 -   **Step Functions** - work with asl files and render state machine visuals
 -   **CloudFormation** - view CloudFormation stacks

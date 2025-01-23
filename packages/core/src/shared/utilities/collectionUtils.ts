@@ -346,13 +346,13 @@ export function inspect(obj: any, opt?: { depth: number }): string {
 export function stripUndefined<T extends Record<string, any>>(
     obj: T
 ): asserts obj is { [P in keyof T]-?: NonNullable<T[P]> } {
-    Object.keys(obj).forEach((key) => {
+    for (const key of Object.keys(obj)) {
         if (obj[key] === undefined) {
             delete obj[key]
         } else if (typeof obj[key] === 'object') {
             stripUndefined(obj[key])
         }
-    })
+    }
 }
 
 export function isAsyncIterable(obj: any): obj is AsyncIterable<unknown> {

@@ -1,0 +1,50 @@
+{
+	"date": "2025-01-23",
+	"version": "1.44.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q: word duplication when pressing tab on context selector fixed"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q /doc: Prevent users from requesting changes if no iterations remain"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "`/test`: view diffs by clicking files in the file tree, aligning the behavior with the 'View Diff' button."
+		},
+		{
+			"type": "Bug Fix",
+			"description": "/review: Improved error handling for code fix operations"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q: cursor no longer jumps after navigating prompt history"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Improve the text description of workspace index settings"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Notifications: 'Dismiss' command visible in command palette."
+		},
+		{
+			"type": "Bug Fix",
+			"description": "/transform: replace icons in Transformation Hub with text"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q /doc: Ask for user prompt if error occurs while updating documentation"
+		},
+		{
+			"type": "Feature",
+			"description": "Amazon Q: increase chat current active file context char limit to 40k"
+		},
+		{
+			"type": "Feature",
+			"description": "/review: Code issues can be grouped by file location or severity"
+		}
+	]
+}

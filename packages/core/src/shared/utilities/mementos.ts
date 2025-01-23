@@ -37,19 +37,19 @@ export function partition(memento: vscode.Memento, key: string): vscode.Memento 
  *   with the local globalState. We want certain functionality to be isolated to
  *   the remote instance.
  */
-export function getEnvironmentSpecificMemento(): vscode.Memento {
+export function getEnvironmentSpecificMemento(globalState?: vscode.Memento): vscode.Memento {
     if (!vscode.env.remoteName) {
         // local compute: no further partitioning
-        return globals.globalState
+        return globalState ?? globals.globalState
     }
 
     const devEnvId = getCodeCatalystDevEnvId()
 
     if (devEnvId !== undefined) {
         // dev env: partition to dev env ID (compute backend might not always be the same)
-        return partition(globals.globalState, devEnvId)
+        return partition(globalState ?? globals.globalState, devEnvId)
     }
 
     // remote env: keeps a shared "global state" for all workspaces that report the same machine ID
-    return partition(globals.globalState, globals.machineId)
+    return partition(globalState ?? globals.globalState, globals.machineId)
 }

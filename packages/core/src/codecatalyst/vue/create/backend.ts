@@ -29,7 +29,6 @@ import {
     isThirdPartyRepo,
 } from '../../../shared/clients/codecatalystClient'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
-import { isCloud9 } from '../../../shared/extensionUtilities'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 import { isNonNullable } from '../../../shared/utilities/tsUtils'
 import { createOrgPrompter, createProjectPrompter } from '../../wizards/selectResource'
@@ -267,7 +266,7 @@ export async function showCreateDevEnv(
 
     const webview = await activePanel!.show({
         title: localize('AWS.view.createDevEnv.title', 'Create a CodeCatalyst Dev Environment'),
-        viewColumn: isCloud9() ? vscode.ViewColumn.One : vscode.ViewColumn.Active,
+        viewColumn: vscode.ViewColumn.Active,
     })
 
     if (!subscriptions) {

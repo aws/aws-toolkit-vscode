@@ -86,7 +86,7 @@ export class QuickActionGenerator {
                         ? [
                               {
                                   command: '/transform',
-                                  description: 'Transform your Java 8, 11, or 17 Maven projects',
+                                  description: 'Transform your Java project',
                                   icon: MynahIcons.TRANSFORM,
                               },
                           ]

@@ -99,7 +99,11 @@ class FetchRequest {
     }
 
     async #throwIfBadResponse(request: RequestParams, response: Response, url: string) {
-        if (response.ok) {
+        /**
+         * response.ok only returns true for 200-299.
+         * We need to explicitly allow 304 since it means the cached version is still valid
+         */
+        if (response.ok || response.status === 304) {
             return
         }
 

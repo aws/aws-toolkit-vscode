@@ -39,7 +39,6 @@ export async function getDirSize(dirPath: string, startTime: number, duration: n
             return getDirSize(filePath, startTime, duration)
         }
         if (type === vscode.FileType.File) {
-            // TODO: This is SLOW on Cloud9.
             const stat = await fs.stat(filePath)
             return stat.size
         }

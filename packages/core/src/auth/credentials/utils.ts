@@ -10,7 +10,6 @@ import * as vscode from 'vscode'
 import { Credentials } from '@aws-sdk/types'
 import { authHelpUrl } from '../../shared/constants'
 import globals from '../../shared/extensionGlobals'
-import { isCloud9 } from '../../shared/extensionUtilities'
 import { messages, showMessageWithCancel, showViewLogsMessage } from '../../shared/utilities/messages'
 import { Timeout, waitTimeout } from '../../shared/utilities/timeoutUtils'
 import { fromExtensionManifest } from '../../shared/settings'
@@ -37,8 +36,8 @@ export function asEnvironmentVariables(credentials: Credentials): NodeJS.Process
 export function showLoginFailedMessage(credentialsId: string, errMsg: string): void {
     const getHelp = localize('AWS.generic.message.getHelp', 'Get Help...')
     const editCreds = messages.editCredentials(false)
-    // TODO: getHelp page for Cloud9.
-    const buttons = isCloud9() ? [editCreds] : [editCreds, getHelp]
+    // TODO: Any work towards web/another cloud9 -esqe IDE may need different getHelp docs:
+    const buttons = [editCreds, getHelp]
 
     void showViewLogsMessage(
         localize('AWS.message.credentials.invalid', 'Credentials "{0}" failed to connect: {1}', credentialsId, errMsg),

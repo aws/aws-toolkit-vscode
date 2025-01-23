@@ -33,11 +33,17 @@ import { agentWalkthroughDataModel } from './walkthrough/agent'
 import { createClickTelemetry, createOpenAgentTelemetry } from './telemetry/actions'
 import { disclaimerAcknowledgeButtonId, disclaimerCard } from './texts/disclaimer'
 
+/**
+ * The number of welcome chat tabs that can be opened before the NEXT one will become
+ * a regular chat tab.
+ */
+const welcomeCountThreshold = 3
+
 export const createMynahUI = (
     ideApi: any,
     amazonQEnabled: boolean,
     featureConfigsSerialized: [string, FeatureContext][],
-    showWelcomePage: boolean,
+    welcomeCount: number,
     disclaimerAcknowledged: boolean,
     disabledCommands?: string[]
 ) => {
@@ -70,11 +76,23 @@ export const createMynahUI = (
             })
         },
     })
+
+    const showWelcomePage = () => {
+        return welcomeCount < welcomeCountThreshold
+    }
+
+    const updateWelcomeCount = () => {
+        ideApi.postMessage({
+            command: 'update-welcome-count',
+        })
+        welcomeCount += 1
+    }
+
     // Adding the first tab as CWC tab
     tabsStorage.addTab({
         id: 'tab-1',
         status: 'free',
-        type: showWelcomePage ? 'welcome' : 'cwc',
+        type: showWelcomePage() ? 'welcome' : 'cwc',
         isSelected: true,
     })
 
@@ -88,6 +106,10 @@ export const createMynahUI = (
 
     let isDocEnabled = amazonQEnabled
 
+    let featureConfigs: Map<string, FeatureContext> = tryNewMap(featureConfigsSerialized)
+
+    const highlightCommand = featureConfigs.get('highlightCommand')
+
     let tabDataGenerator = new TabDataGenerator({
         isFeatureDevEnabled,
         isGumbyEnabled,
@@ -95,6 +117,7 @@ export const createMynahUI = (
         isTestEnabled,
         isDocEnabled,
         disabledCommands,
+        commandHighlight: highlightCommand,
     })
 
     // eslint-disable-next-line prefer-const
@@ -105,9 +128,6 @@ export const createMynahUI = (
     let textMessageHandler: TextMessageHandler
     // eslint-disable-next-line prefer-const
     let messageController: MessageController
-
-    // @ts-ignore
-    let featureConfigs: Map<string, FeatureContext> = tryNewMap(featureConfigsSerialized)
 
     function getCodeBlockActions(messageData: any) {
         // Show ViewDiff and AcceptDiff for allowedCommands in CWC
@@ -181,6 +201,7 @@ export const createMynahUI = (
                 isTestEnabled,
                 isDocEnabled,
                 disabledCommands,
+                commandHighlight: highlightCommand,
             })
 
             featureConfigs = tryNewMap(featureConfigsSerialized)
@@ -541,6 +562,25 @@ export const createMynahUI = (
     mynahUI = new MynahUI({
         onReady: connector.uiReady,
         onTabAdd: (tabID: string) => {
+            /**
+             * If the next tab opening will cross the welcome count threshold then
+             * update the next tabs defaults
+             */
+            if (welcomeCount + 1 >= welcomeCountThreshold) {
+                tabsStorage.updateTabTypeFromUnknown(tabID, 'cwc')
+                mynahUI?.updateTabDefaults({
+                    store: {
+                        ...tabDataGenerator.getTabData('cwc', true),
+                        tabHeaderDetails: void 0,
+                        compactMode: false,
+                        tabBackground: false,
+                    },
+                })
+            } else {
+                // we haven't reached the welcome count limit yet
+                updateWelcomeCount()
+            }
+
             // If featureDev has changed availability inbetween the default store settings and now
             // make sure to show/hide it accordingly
             mynahUI.updateStore(tabID, {
@@ -626,10 +666,10 @@ export const createMynahUI = (
                     ideApi.postMessage(createClickTelemetry('amazonq-disclaimer-acknowledge-button'))
 
                     // remove all disclaimer cards from all tabs
-                    Object.keys(mynahUI.getAllTabs()).forEach((storeTabKey) => {
+                    for (const storeTabKey of Object.keys(mynahUI.getAllTabs())) {
                         // eslint-disable-next-line unicorn/no-null
                         mynahUI.updateStore(storeTabKey, { promptInputStickyCard: null })
-                    })
+                    }
                     return
                 }
                 case 'quick-start': {
@@ -812,7 +852,7 @@ export const createMynahUI = (
             'tab-1': {
                 isSelected: true,
                 store: {
-                    ...(showWelcomePage
+                    ...(showWelcomePage()
                         ? welcomeScreenTabData(tabDataGenerator).store
                         : tabDataGenerator.getTabData('cwc', true)),
                     ...(disclaimerCardActive ? { promptInputStickyCard: disclaimerCard } : {}),
@@ -820,7 +860,9 @@ export const createMynahUI = (
             },
         },
         defaults: {
-            store: tabDataGenerator.getTabData('cwc', true),
+            store: showWelcomePage()
+                ? welcomeScreenTabData(tabDataGenerator).store
+                : tabDataGenerator.getTabData('cwc', true),
         },
         config: {
             maxTabs: 10,
@@ -828,6 +870,14 @@ export const createMynahUI = (
             texts: uiComponentsTexts,
         },
     })
+
+    /**
+     * Update the welcome count if we've initially shown
+     * the welcome page
+     */
+    if (showWelcomePage()) {
+        updateWelcomeCount()
+    }
 
     followUpsInteractionHandler = new FollowUpInteractionHandler({
         mynahUI,

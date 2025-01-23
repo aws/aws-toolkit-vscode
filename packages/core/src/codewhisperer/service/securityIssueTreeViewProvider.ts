@@ -4,7 +4,14 @@
  */
 import * as vscode from 'vscode'
 import path from 'path'
-import { CodeScanIssue, SecurityTreeViewFilterState, severities, Severity } from '../models/model'
+import {
+    CodeIssueGroupingStrategy,
+    CodeIssueGroupingStrategyState,
+    CodeScanIssue,
+    SecurityTreeViewFilterState,
+    severities,
+    Severity,
+} from '../models/model'
 import globals from '../../shared/extensionGlobals'
 import { getLogger } from '../../shared/logger'
 import { SecurityIssueProvider } from './securityIssueProvider'
@@ -34,6 +41,17 @@ export class SecurityIssueTreeViewProvider implements vscode.TreeDataProvider<Se
     }
 
     public getChildren(element?: SecurityViewTreeItem | undefined): vscode.ProviderResult<SecurityViewTreeItem[]> {
+        const groupingStrategy = CodeIssueGroupingStrategyState.instance.getState()
+        switch (groupingStrategy) {
+            case CodeIssueGroupingStrategy.FileLocation:
+                return this.getChildrenGroupedByFileLocation(element)
+            case CodeIssueGroupingStrategy.Severity:
+            default:
+                return this.getChildrenGroupedBySeverity(element)
+        }
+    }
+
+    private getChildrenGroupedBySeverity(element: SecurityViewTreeItem | undefined) {
         const filterHiddenSeverities = (severity: Severity) =>
             !SecurityTreeViewFilterState.instance.getHiddenSeverities().includes(severity)
 
@@ -60,6 +78,27 @@ export class SecurityIssueTreeViewProvider implements vscode.TreeDataProvider<Se
                 )
         )
 
+        this._onDidChangeTreeData.fire(result)
+        return result
+    }
+
+    private getChildrenGroupedByFileLocation(element: SecurityViewTreeItem | undefined) {
+        const filterHiddenSeverities = (issue: CodeScanIssue) =>
+            !SecurityTreeViewFilterState.instance.getHiddenSeverities().includes(issue.severity)
+
+        if (element instanceof FileItem) {
+            return element.issues
+                .filter(filterHiddenSeverities)
+                .filter((issue) => issue.visible)
+                .sort((a, b) => a.startLine - b.startLine)
+                .map((issue) => new IssueItem(element.filePath, issue))
+        }
+
+        const result = this.issueProvider.issues
+            .filter((group) => group.issues.some(filterHiddenSeverities))
+            .filter((group) => group.issues.some((issue) => issue.visible))
+            .sort((a, b) => a.filePath.localeCompare(b.filePath))
+            .map((group) => new FileItem(group.filePath, group.issues.filter(filterHiddenSeverities)))
         this._onDidChangeTreeData.fire(result)
         return result
     }
@@ -118,7 +157,8 @@ export class IssueItem extends vscode.TreeItem {
         public readonly issue: CodeScanIssue
     ) {
         super(issue.title, vscode.TreeItemCollapsibleState.None)
-        this.description = `${path.basename(this.filePath)} [Ln ${this.issue.startLine + 1}, Col 1]`
+        this.description = this.getDescription()
+        this.iconPath = this.getSeverityIcon()
         this.tooltip = this.getTooltipMarkdown()
         this.command = {
             title: 'Focus Issue',
@@ -130,6 +170,22 @@ export class IssueItem extends vscode.TreeItem {
 
     private getSeverityImage() {
         return globals.context.asAbsolutePath(`resources/images/severity-${this.issue.severity.toLowerCase()}.svg`)
+    }
+
+    private getSeverityIcon() {
+        const iconPath = globals.context.asAbsolutePath(
+            `resources/icons/aws/amazonq/severity-${this.issue.severity.toLowerCase()}.svg`
+        )
+        const groupingStrategy = CodeIssueGroupingStrategyState.instance.getState()
+        return groupingStrategy !== CodeIssueGroupingStrategy.Severity ? iconPath : undefined
+    }
+
+    private getDescription() {
+        const positionStr = `[Ln ${this.issue.startLine + 1}, Col 1]`
+        const groupingStrategy = CodeIssueGroupingStrategyState.instance.getState()
+        return groupingStrategy !== CodeIssueGroupingStrategy.FileLocation
+            ? `${path.basename(this.filePath)} ${positionStr}`
+            : positionStr
     }
 
     private getContextValue() {

@@ -20,7 +20,7 @@ import { TreeNode } from '../shared/treeview/resourceTreeDataProvider'
 import { createInputBox } from '../shared/ui/inputPrompter'
 import { CredentialSourceId, telemetry } from '../shared/telemetry/telemetry'
 import { createCommonButtons, createExitButton, createHelpButton, createRefreshButton } from '../shared/ui/buttons'
-import { getIdeProperties, isAmazonQ, isCloud9 } from '../shared/extensionUtilities'
+import { getIdeProperties, isAmazonQ } from '../shared/extensionUtilities'
 import { addScopes, getDependentAuths } from './secondaryAuth'
 import { DevSettings } from '../shared/settings'
 import { createRegionPrompter } from '../shared/ui/common/region'
@@ -562,9 +562,9 @@ export class AuthNode implements TreeNode<Auth> {
         if (conn !== undefined && conn.state !== 'valid') {
             item.iconPath = getIcon('vscode-error')
             if (conn.state === 'authenticating') {
-                this.setDescription(item, 'authenticating...')
+                item.description = 'authenticating...'
             } else {
-                this.setDescription(item, 'expired or invalid, click to authenticate')
+                item.description = 'expired or invalid, click to authenticate'
                 item.command = {
                     title: 'Reauthenticate',
                     command: '_aws.toolkit.auth.reauthenticate',
@@ -577,14 +577,6 @@ export class AuthNode implements TreeNode<Auth> {
         }
 
         return item
-    }
-
-    private setDescription(item: vscode.TreeItem, text: string) {
-        if (isCloud9()) {
-            item.tooltip = item.tooltip ?? text
-        } else {
-            item.description = text
-        }
     }
 }
 

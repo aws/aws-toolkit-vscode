@@ -14,15 +14,12 @@ import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { ToolkitError } from '../../shared/errors'
 import { createCommonButtons } from '../../shared/ui/buttons'
 import { telemetry } from '../../shared/telemetry/telemetry'
-import { isCloud9 } from '../../shared/extensionUtilities'
 import { createBuilderIdItem, createSsoItem, createIamItem } from '../../auth/utils'
 import { Commands } from '../../shared/vscode/commands2'
 import { vsCodeState } from '../models/model'
 
 export const showCodeWhispererConnectionPrompt = async () => {
-    const items = isCloud9('classic')
-        ? [createSsoItem(), createCodeWhispererIamItem()]
-        : [createBuilderIdItem(), createSsoItem(), createCodeWhispererIamItem()]
+    const items = [createBuilderIdItem(), createSsoItem(), createCodeWhispererIamItem()]
 
     const resp = await showQuickPick(items, {
         title: 'Amazon Q: Add Connection to AWS',

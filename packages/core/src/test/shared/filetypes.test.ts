@@ -13,6 +13,7 @@ import * as workspaceUtils from '../../shared/utilities/workspaceUtils'
 import { toArrayAsync } from '../../shared/utilities/collectionUtils'
 import { waitUntil } from '../../shared/utilities/timeoutUtils'
 import { mapMetadata } from '../../shared/telemetry/telemetryLogger'
+import { isCodeFile } from '../../shared/filetypes'
 
 async function getMetrics(n: number, metricName: string, timeout = 1000) {
     return await waitUntil(
@@ -146,5 +147,29 @@ describe('file_editAwsFile telemetry', function () {
         // Should not emit the "same" metric.
         assert.strictEqual(r, undefined, 'emitted duplicate file_editAwsFile metric')
         // assert.strictEqual(r?.length, 1, 'emitted file_editAwsFile too many times')
+    })
+})
+
+describe('isCodeFile', () => {
+    it('returns true for code files', function () {
+        const codeFiles = [
+            'test.py',
+            'test.js',
+            'Dockerfile',
+            'gradlew',
+            'mvnw',
+            'build.gradle',
+            'gradle/wrapper/gradle-wrapper.properties',
+        ]
+        for (const codeFilePath of codeFiles) {
+            assert.strictEqual(isCodeFile(codeFilePath), true)
+        }
+    })
+
+    it('returns false for other files', function () {
+        const codeFiles = ['compiled.exe', 'random_file']
+        for (const filePath of codeFiles) {
+            assert.strictEqual(isCodeFile(filePath), false)
+        }
     })
 })

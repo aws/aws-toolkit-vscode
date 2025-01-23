@@ -50,7 +50,9 @@ export function getInstanceDescription(type: InstanceType): InstanceDescription 
 
 export function getAllInstanceDescriptions(): { [key: string]: InstanceDescription } {
     const desc: { [key: string]: InstanceDescription } = {}
-    entries(devenvOptions.instanceType).forEach(([k]) => (desc[k] = getInstanceDescription(k)))
+    for (const [k] of entries(devenvOptions.instanceType)) {
+        desc[k] = getInstanceDescription(k)
+    }
     return desc
 }
 

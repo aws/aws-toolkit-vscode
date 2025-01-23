@@ -36,7 +36,7 @@ import { CommonAuthWebview } from './login/webview'
 import { AuthSource, AuthSources } from './login/webview/util'
 import { ServiceItemId, isServiceItemId } from './login/webview/vue/types'
 import { authHelpUrl } from './shared/constants'
-import { isCloud9, getIdeProperties } from './shared/extensionUtilities'
+import { getIdeProperties } from './shared/extensionUtilities'
 import { telemetry } from './shared/telemetry/telemetry'
 import { createCommonButtons } from './shared/ui/buttons'
 import { showQuickPick } from './shared/ui/pickerPrompter'
@@ -66,12 +66,7 @@ export function registerCommands(context: vscode.ExtensionContext) {
     const addConnection = Commands.register(
         { id: 'aws.toolkit.auth.addConnection', telemetryThrottleMs: false },
         async () => {
-            const c9IamItem = createIamItem()
-            c9IamItem.detail =
-                'Activates working with resources in the Explorer. Requires an access key ID and secret access key.'
-            const items = isCloud9()
-                ? [createSsoItem(), c9IamItem]
-                : [createBuilderIdItem(), createSsoItem(), createIamItem()]
+            const items = [createBuilderIdItem(), createSsoItem(), createIamItem()]
 
             const resp = await showQuickPick(items, {
                 title: localize('aws.auth.addConnection.title', 'Add a Connection to {0}', getIdeProperties().company),
@@ -113,9 +108,7 @@ export function registerCommands(context: vscode.ExtensionContext) {
                 source = AuthSources.vscodeComponent
             }
 
-            // The auth webview page does not make sense to use in C9,
-            // so show the auth quick pick instead.
-            if (isCloud9('any') || isWeb()) {
+            if (isWeb()) {
                 // TODO: CW no longer exists in toolkit. This should be moved to Amazon Q
                 if (source.toLowerCase().includes('codewhisperer')) {
                     // Show CW specific quick pick for CW connections

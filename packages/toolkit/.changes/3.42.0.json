@@ -1,0 +1,10 @@
+{
+	"date": "2025-01-15",
+	"version": "3.42.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Auth: Valid StartURL not accepted at login"
+		}
+	]
+}

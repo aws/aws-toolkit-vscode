@@ -15,6 +15,7 @@ import { SsoToken, ClientRegistration } from './model'
 import { DevSettings } from '../../shared/settings'
 import { onceChanged } from '../../shared/utilities/functionUtils'
 import globals from '../../shared/extensionGlobals'
+import { ToolkitError } from '../../shared/errors'
 
 interface RegistrationKey {
     readonly startUrl: string
@@ -78,6 +79,11 @@ export function getTokenCache(directory = getCacheDir()): KeyedCache<SsoAccess> 
         }
 
     function read(data: StoredToken): SsoAccess {
+        // Validate data is not missing. Since the input data is passed directly from whatever is on disk.
+        if (!hasProps(data, 'accessToken')) {
+            throw new ToolkitError(`SSO cache data looks malformed`)
+        }
+
         const registration = hasProps(data, 'clientId', 'clientSecret', 'registrationExpiresAt')
             ? {
                   ...selectFrom(data, 'clientId', 'clientSecret', 'scopes', 'startUrl'),
@@ -143,7 +149,9 @@ function getRegistrationCacheFile(ssoCacheDir: string, key: RegistrationKey): st
     const hash = (startUrl: string, scopes: string[]) => {
         const shasum = crypto.createHash('sha256')
         shasum.update(startUrl)
-        scopes.forEach((s) => shasum.update(s))
+        for (const s of scopes) {
+            shasum.update(s)
+        }
         return shasum.digest('hex')
     }
 

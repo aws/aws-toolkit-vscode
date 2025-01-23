@@ -48,7 +48,7 @@ describe('samProject', () => {
             assert.strictEqual(region, expectedRegion)
         })
 
-        it('returns undefined give no stack name or region in samconfig file', async () => {
+        it('returns undefined given no stack name or region in samconfig file', async () => {
             await testFolder.write(
                 'samconfig.toml',
                 generateSamconfigData({
@@ -71,24 +71,28 @@ describe('samProject', () => {
 
             const result = await wrapperCall(undefined)
             assert.deepStrictEqual(result, {})
-            assertLogsContain('Error getting stack name or region information: No project folder found', false, 'warn')
+            assertLogsContain(
+                'Error parsing stack name and/or region information: No project folder found',
+                false,
+                'warn'
+            )
         })
 
-        it('returns empty object give no samconfig file found', async () => {
+        it('returns empty object given no samconfig file found', async () => {
             // simulate error when no samconfig.toml file in directory
             const result = await getStackName(projectRoot)
             assert.deepStrictEqual(result, {})
-            assertLogsContain('No stack name or region information available in samconfig.toml', false, 'info')
+            assertLogsContain('Stack name and/or region information not found in samconfig.toml', false, 'info')
         })
 
-        it('returns empty object give error parsing samconfig file', async () => {
+        it('returns empty object given error parsing samconfig file', async () => {
             // simulate error when parsinf samconfig.toml: missing quote or empty value
             await testFolder.write('samconfig.toml', samconfigInvalidData)
 
             const result = await getStackName(projectRoot)
             assert.deepStrictEqual(result, {})
 
-            assertLogsContain('Error getting stack name or region information:', false, 'error')
+            assertLogsContain('Error parsing stack name and/or region information from samconfig.toml:', false, 'error')
             getTestWindow().getFirstMessage().assertError('Encountered an issue reading samconfig.toml')
         })
     })
@@ -149,17 +153,6 @@ describe('samProject', () => {
                 () => getApp(mockSamAppLocation),
                 new ToolkitError(`Template at ${mockSamAppLocation.samTemplateUri.fsPath} is not valid`)
             )
-            // try {
-            //     await getApp(mockSamAppLocation)
-            //     assert.fail('Test should not reach here. Expect ToolkitError thrown')
-            // } catch (error) {
-            //     assert(cloudformationTryLoadSpy.calledOnce)
-            //     assert(error instanceof ToolkitError)
-            //     assert.strictEqual(
-            //         error.message,
-            //         `Template at ${mockSamAppLocation.samTemplateUri.fsPath} is not valid`
-            //     )
-            // }
         })
     })
 })

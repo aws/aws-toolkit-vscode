@@ -81,11 +81,6 @@ coverage:
                 target: 80
                 threshold: 5
                 only_pulls: true
-            tests:
-                # Most code in test/ should always be "covered"!
-                target: 95
-                paths:
-                    - '**/test/**'
         patch:
             default:
                 # Note: `default` measures the entire project.

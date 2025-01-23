@@ -219,7 +219,8 @@ export class RemoteInvokeWebview extends VueWebview {
                 return
             }
             const sampleUrl = `${sampleRequestPath}${pickerResponse.filename}`
-            const sample = (await new HttpResourceFetcher(sampleUrl, { showUrl: true }).get()) ?? ''
+            const resp = await new HttpResourceFetcher(sampleUrl, { showUrl: true }).get()
+            const sample = (await resp?.text()) ?? ''
 
             return sample
         } catch (err) {

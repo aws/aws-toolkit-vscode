@@ -98,7 +98,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
             </style>
             </head>
             <body>
-            <p><b>Job Status</b></p>
+            <p><b>Transformation Status</b></p>
             ${
                 Object.keys(sessionJobHistory).length === 0
                     ? `<p>${CodeWhispererConstants.nothingToShowMessage}</p>`

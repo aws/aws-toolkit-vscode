@@ -69,7 +69,7 @@ describe('DefaultSamCliValidator', async function () {
     ] as const
 
     describe('detectValidSamCli', async function () {
-        scenarios.forEach((test) => {
+        for (const test of scenarios) {
             it(`found SAM CLI, ${test.situation}`, async () => {
                 const validatorContext = new TestSamCliValidatorContext(test.version)
                 validatorContext.mockSamLocation = 'somesamclipath'
@@ -80,7 +80,7 @@ describe('DefaultSamCliValidator', async function () {
                 assert.strictEqual(actual.versionValidation?.version, test.version)
                 assert.strictEqual(actual.versionValidation?.validation, test.expected)
             })
-        })
+        }
 
         it('SAM CLI not found', async function () {
             const validatorContext = new TestSamCliValidatorContext('')
@@ -93,7 +93,7 @@ describe('DefaultSamCliValidator', async function () {
     })
 
     describe('getVersionValidatorResult', async function () {
-        scenarios.forEach((test) => {
+        for (const test of scenarios) {
             it(test.situation, async () => {
                 const validatorContext = new TestSamCliValidatorContext(test.version)
                 const samCliValidator = new DefaultSamCliValidator(validatorContext)
@@ -102,15 +102,15 @@ describe('DefaultSamCliValidator', async function () {
                 assert.strictEqual(actual.version, test.version)
                 assert.strictEqual(actual.validation, test.expected)
             })
-        })
+        }
     })
 
     describe('validateSamCliVersion', async function () {
-        scenarios.forEach((test) => {
+        for (const test of scenarios) {
             it(test.situation, async () => {
                 const validation = DefaultSamCliValidator.validateSamCliVersion(test.version)
                 assert.strictEqual(validation, test.expected)
             })
-        })
+        }
     })
 })

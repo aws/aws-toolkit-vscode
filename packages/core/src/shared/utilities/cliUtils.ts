@@ -11,7 +11,7 @@ import * as vscode from 'vscode'
 import { getIdeProperties } from '../extensionUtilities'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../filesystemUtilities'
 import { getLogger } from '../logger'
-import { HttpResourceFetcher } from '../resourcefetcher/httpResourceFetcher'
+import { HttpResourceFetcher } from '../resourcefetcher/node/httpResourceFetcher'
 import { ChildProcess } from './processUtils'
 
 import * as nls from 'vscode-nls'

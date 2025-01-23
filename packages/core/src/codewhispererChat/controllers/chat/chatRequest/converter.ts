@@ -43,22 +43,24 @@ export function triggerPayloadToChatRequest(triggerPayload: TriggerPayload): { c
 
     if (triggerPayload.filePath !== undefined && triggerPayload.filePath !== '') {
         const documentSymbolFqns: DocumentSymbol[] = []
-        triggerPayload.codeQuery?.fullyQualifiedNames?.used?.forEach((fqn) => {
-            const elem = {
-                name: fqn.symbol?.join('.') ?? '',
-                type: SymbolType.USAGE,
-                source: fqn.source?.join('.'),
-            }
+        if (triggerPayload.codeQuery?.fullyQualifiedNames?.used) {
+            for (const fqn of triggerPayload.codeQuery.fullyQualifiedNames.used) {
+                const elem = {
+                    name: fqn.symbol?.join('.') ?? '',
+                    type: SymbolType.USAGE,
+                    source: fqn.source?.join('.'),
+                }
 
-            if (
-                elem.name.length >= fqnNameSizeDownLimit &&
-                elem.name.length < fqnNameSizeUpLimit &&
-                (elem.source === undefined ||
-                    (elem.source.length >= fqnNameSizeDownLimit && elem.source.length < fqnNameSizeUpLimit))
-            ) {
-                documentSymbolFqns.push(elem)
+                if (
+                    elem.name.length >= fqnNameSizeDownLimit &&
+                    elem.name.length < fqnNameSizeUpLimit &&
+                    (elem.source === undefined ||
+                        (elem.source.length >= fqnNameSizeDownLimit && elem.source.length < fqnNameSizeUpLimit))
+                ) {
+                    documentSymbolFqns.push(elem)
+                }
             }
-        })
+        }
 
         let programmingLanguage
         if (

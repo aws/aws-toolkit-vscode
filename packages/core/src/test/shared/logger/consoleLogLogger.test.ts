@@ -20,7 +20,7 @@ describe('ConsoleLogTransport', async function () {
     })
 
     const allLevels = Object.keys(Levels) as Level[]
-    allLevels.forEach((level) => {
+    for (const level of allLevels) {
         it(`logs to console with level: '${level}'`, async function () {
             const untilLogged = instance.log({ level, message: 'myMessage', [MESSAGE]: 'myMessageFormatted' }, next)
             await untilLogged
@@ -28,7 +28,7 @@ describe('ConsoleLogTransport', async function () {
             assert.strictEqual(fakeConsole[level].getCall(0).args[0], 'myMessageFormatted')
             assert.strictEqual(next.callCount, 1)
         })
-    })
+    }
 
     it(`logs to the default if non-supported log level provided`, async function () {
         const untilLogged = instance.log(

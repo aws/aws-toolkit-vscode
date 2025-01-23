@@ -185,7 +185,7 @@ export class DefaultCredentialSelectionDataProvider implements CredentialSelecti
         const orderedProfiles: ProfileEntry[] = this.getOrderedProfiles()
 
         const selectionList: vscode.QuickPickItem[] = []
-        orderedProfiles.forEach((profile) => {
+        for (const profile of orderedProfiles) {
             const selectionItem: vscode.QuickPickItem = { label: profile.profileName }
 
             if (profile.isRecentlyUsed) {
@@ -193,7 +193,7 @@ export class DefaultCredentialSelectionDataProvider implements CredentialSelecti
             }
 
             selectionList.push(selectionItem)
-        })
+        }
 
         return selectionList
     }
@@ -209,10 +209,10 @@ export class DefaultCredentialSelectionDataProvider implements CredentialSelecti
         const orderedNames = new Set()
 
         // Add MRU entries first
-        mostRecentProfileNames.forEach((profileName) => {
+        for (const profileName of mostRecentProfileNames) {
             orderedProfiles.push({ profileName: profileName, isRecentlyUsed: true })
             orderedNames.add(profileName)
-        })
+        }
 
         // Add default if it hasn't been, and is an existing profile name
         const defaultProfileName = DefaultCredentialSelectionDataProvider.defaultCredentialsProfileName

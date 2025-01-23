@@ -524,6 +524,13 @@ pre.center {
 
 pre.error {
     color: var(--vscode-diffEditorOverview-removedForeground);
+    background-color: var(--vscode-diffEditor-removedTextBackground);
+    white-space: initial;
+}
+
+a.cursor {
+    cursor: pointer;
+    text-decoration: none;
 }
 
 .dot-typing {
@@ -584,11 +591,6 @@ pre.error {
             9999px 0 0 0 var(--vscode-editor-foreground),
             10014px 0 0 0 var(--vscode-editor-foreground);
     }
-}
-
-.code-block {
-    max-width: fit-content;
-    min-width: 500px;
 }
 
 .code-block pre {

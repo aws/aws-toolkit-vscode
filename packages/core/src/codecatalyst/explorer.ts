@@ -5,7 +5,6 @@
 
 import * as vscode from 'vscode'
 import { DevEnvironment } from '../shared/clients/codecatalystClient'
-import { isCloud9 } from '../shared/extensionUtilities'
 import { addColor, getIcon } from '../shared/icons'
 import { TreeNode } from '../shared/treeview/resourceTreeDataProvider'
 import { Commands } from '../shared/vscode/commands2'
@@ -21,7 +20,6 @@ export const learnMoreCommand = Commands.declare('aws.learnMore', () => async (d
     return openUrl(docsUrl)
 })
 
-// Only used in rare cases on C9
 export const reauth = Commands.declare(
     '_aws.codecatalyst.reauthenticate',
     () => async (conn: SsoConnection, authProvider: CodeCatalystAuthenticationProvider) => {
@@ -37,7 +35,7 @@ export const onboardCommand = Commands.declare(
 )
 
 async function getLocalCommands(auth: CodeCatalystAuthenticationProvider) {
-    const docsUrl = isCloud9() ? codecatalyst.docs.cloud9.overview : codecatalyst.docs.vscode.overview
+    const docsUrl = codecatalyst.docs.overview
     const learnMoreNode = learnMoreCommand.build(docsUrl).asTreeNode({
         label: 'Learn more about CodeCatalyst',
         iconPath: getIcon('vscode-question'),
@@ -73,15 +71,6 @@ async function getLocalCommands(auth: CodeCatalystAuthenticationProvider) {
             }),
             learnMoreNode,
         ]
-    }
-
-    if (isCloud9()) {
-        const item = reauth.build(auth.activeConnection, auth).asTreeNode({
-            label: 'Failed to get the current Dev Environment. Click to try again.',
-            iconPath: addColor(getIcon(`vscode-error`), 'notificationsErrorIcon.foreground'),
-        })
-
-        return [item]
     }
 
     return [
@@ -141,7 +130,9 @@ export class CodeCatalystRootNode implements TreeNode {
         this.addRefreshEmitter(() => this.onDidChangeEmitter.fire())
 
         this.authProvider.onDidChange(() => {
-            this.refreshEmitters.forEach((fire) => fire())
+            for (const fire of this.refreshEmitters) {
+                fire()
+            }
         })
     }
 

@@ -20,7 +20,7 @@ interface SetupResult {
 function performanceTestWrapper(label: string, fileSize: number) {
     return performanceTest(
         getEqualOSTestOptions({
-            userCpuUsage: 400,
+            userCpuUsage: 500,
             systemCpuUsage: 35,
             heapTotal: 4,
         }),

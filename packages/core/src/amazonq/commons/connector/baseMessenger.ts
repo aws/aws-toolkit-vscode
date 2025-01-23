@@ -85,6 +85,7 @@ export class Messenger {
             type: 'answer',
             tabID: tabID,
             message: i18n('AWS.amazonq.featureDev.error.monthlyLimitReached'),
+            disableChatInput: true,
         })
         this.sendUpdatePlaceholder(tabID, i18n('AWS.amazonq.featureDev.placeholder.chatInputDisabled'))
     }

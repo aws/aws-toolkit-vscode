@@ -344,9 +344,9 @@ describe('Test how this codebase uses the CodeCatalyst API', function () {
             if (remainingDevEnvs.length > 0) {
                 // Dev Envs may still be returned if they are still in the process of being deleted.
                 // Just ensure they are in the process or fully deleted.
-                remainingDevEnvs.forEach((devEnv) => {
+                for (const devEnv of remainingDevEnvs) {
                     assert.ok(['DELETING', 'DELETED'].includes(devEnv.status), 'Dev Env was not successfully deleted')
-                })
+                }
             }
         })
 

@@ -17,7 +17,7 @@ import globals, { initialize, isWeb } from './shared/extensionGlobals'
 import { join } from 'path'
 import { Commands } from './shared/vscode/commands2'
 import { endpointsFileUrl, githubCreateIssueUrl, githubUrl } from './shared/constants'
-import { getIdeProperties, aboutExtension, isCloud9, getDocUrl } from './shared/extensionUtilities'
+import { getIdeProperties, aboutExtension, getDocUrl } from './shared/extensionUtilities'
 import { logAndShowError, logAndShowWebviewError } from './shared/utilities/logAndShowUtils'
 import { telemetry } from './shared/telemetry/telemetry'
 import { openUrl } from './shared/utilities/vsCodeUtils'
@@ -38,7 +38,6 @@ import { RegionProvider, getEndpointsFromFetcher } from './shared/regions/region
 import { getMachineId, isAutomation } from './shared/vscode/env'
 import { registerCommandErrorHandler } from './shared/vscode/commands2'
 import { registerWebviewErrorHandler } from './webviews/server'
-import { showQuickStartWebview } from './shared/extensionStartup'
 import { ExtContext, VSCODE_EXTENSION_ID } from './shared/extensions'
 import { getSamCliContext } from './shared/sam/cli/samCliContext'
 import { UriHandler } from './shared/vscode/uriHandler'
@@ -98,19 +97,6 @@ export async function activateCommon(
     }
 
     void maybeShowMinVscodeWarning('1.83.0')
-
-    if (isCloud9()) {
-        vscode.window.withProgress = wrapWithProgressForCloud9(globals.outputChannel)
-        context.subscriptions.push(
-            Commands.register('aws.quickStart', async () => {
-                try {
-                    await showQuickStartWebview(context)
-                } finally {
-                    telemetry.aws_helpQuickstart.emit({ result: 'Succeeded' })
-                }
-            })
-        )
-    }
 
     // setup globals
     globals.machineId = await getMachineId()
@@ -204,12 +190,12 @@ export function registerGenericCommands(extensionContext: vscode.ExtensionContex
  * https://docs.aws.amazon.com/general/latest/gr/rande.html
  */
 export function makeEndpointsProvider() {
-    let localManifestFetcher: ResourceFetcher
-    let remoteManifestFetcher: ResourceFetcher
+    let localManifestFetcher: ResourceFetcher<string>
+    let remoteManifestFetcher: ResourceFetcher<Response>
     if (isWeb()) {
         localManifestFetcher = { get: async () => JSON.stringify(endpoints) }
         // Cannot use HttpResourceFetcher due to web mode breaking on import
-        remoteManifestFetcher = { get: async () => (await fetch(endpointsFileUrl)).text() }
+        remoteManifestFetcher = { get: async () => await fetch(endpointsFileUrl) }
     } else {
         localManifestFetcher = new FileResourceFetcher(globals.manifestPaths.endpoints)
         // HACK: HttpResourceFetcher breaks web mode when imported, so we use webpack.IgnorePlugin()
@@ -222,34 +208,5 @@ export function makeEndpointsProvider() {
     return {
         local: () => getEndpointsFromFetcher(localManifestFetcher),
         remote: () => getEndpointsFromFetcher(remoteManifestFetcher),
-    }
-}
-
-/**
- * Wraps the `vscode.window.withProgress` functionality with functionality that also writes to the output channel.
- *
- * Cloud9 does not show a progress notification.
- */
-function wrapWithProgressForCloud9(channel: vscode.OutputChannel): (typeof vscode.window)['withProgress'] {
-    const withProgress = vscode.window.withProgress.bind(vscode.window)
-
-    return (options, task) => {
-        if (options.title) {
-            channel.appendLine(options.title)
-        }
-
-        return withProgress(options, (progress, token) => {
-            const newProgress: typeof progress = {
-                ...progress,
-                report: (value) => {
-                    if (value.message) {
-                        channel.appendLine(value.message)
-                    }
-                    progress.report(value)
-                },
-            }
-
-            return task(newProgress, token)
-        })
     }
 }

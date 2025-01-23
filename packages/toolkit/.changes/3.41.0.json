@@ -1,0 +1,14 @@
+{
+	"date": "2025-01-09",
+	"version": "3.41.0",
+	"entries": [
+		{
+			"type": "Removal",
+			"description": "Amazon Q: No longer autoinstall Amazon Q if the user had used CodeWhisperer in old Toolkit versions."
+		},
+		{
+			"type": "Removal",
+			"description": "Auth: No longer inform users that Amazon Q and Toolkit extensions have separate auth sessions."
+		}
+	]
+}

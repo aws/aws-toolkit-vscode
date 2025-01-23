@@ -157,7 +157,7 @@ describe('AppNode', () => {
             assert.strictEqual(resourceNode.id, 'placeholder')
             assert.strictEqual(
                 resourceNode.resource,
-                '[Unable to load Resource tree for this App. Update SAM template]'
+                '[Unable to load resource tree for this app. Ensure SAM template is correct.]'
             )
             assert(getAppStub.calledOnce)
             assert(getStackNameStub.notCalled)

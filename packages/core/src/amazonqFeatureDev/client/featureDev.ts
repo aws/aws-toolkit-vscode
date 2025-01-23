@@ -25,7 +25,13 @@ import { createCodeWhispererChatStreamingClient } from '../../shared/clients/cod
 import { getClientId, getOptOutPreference, getOperatingSystem } from '../../shared/telemetry/util'
 import { extensionVersion } from '../../shared/vscode/env'
 import apiConfig = require('./codewhispererruntime-2022-11-11.json')
-import { FeatureDevCodeAcceptanceEvent, FeatureDevCodeGenerationEvent, TelemetryEvent } from './featuredevproxyclient'
+import { UserWrittenCodeTracker } from '../../codewhisperer'
+import {
+    FeatureDevCodeAcceptanceEvent,
+    FeatureDevCodeGenerationEvent,
+    MetricData,
+    TelemetryEvent,
+} from './featuredevproxyclient'
 
 // Re-enable once BE is able to handle retries.
 const writeAPIRetryOptions = {
@@ -255,6 +261,7 @@ export class FeatureDevClient {
                     references?: CodeReference[]
                 }
             }
+            UserWrittenCodeTracker.instance.onQFeatureInvoked()
 
             const newFileContents: { zipFilePath: string; fileContent: string }[] = []
             for (const [filePath, fileContent] of Object.entries(newFiles)) {
@@ -297,6 +304,11 @@ export class FeatureDevClient {
             `featureDevCodeAcceptanceEvent: conversationId: ${event.conversationId} charactersOfCodeAccepted: ${event.charactersOfCodeAccepted} linesOfCodeAccepted: ${event.linesOfCodeAccepted}`
         )
         await this.sendFeatureDevEvent('featureDevCodeAcceptanceEvent', event)
+    }
+
+    public async sendMetricData(event: MetricData) {
+        getLogger().debug(`featureDevCodeGenerationMetricData: dimensions: ${event.dimensions}`)
+        await this.sendFeatureDevEvent('metricData', event)
     }
 
     public async sendFeatureDevEvent<T extends keyof TelemetryEvent>(

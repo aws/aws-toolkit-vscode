@@ -6,7 +6,6 @@ import vscode from 'vscode'
 import os from 'os'
 import { promises as nodefs, constants as nodeConstants, WriteFileOptions } from 'fs' // eslint-disable-line no-restricted-imports
 import { chmod } from 'fs/promises'
-import { isCloud9 } from '../extensionUtilities'
 import _path from 'path'
 import {
     PermissionsError,
@@ -93,15 +92,6 @@ export class FileSystem {
         const uri = toUri(path)
         const errHandler = createPermissionsErrorHandler(this.isWeb, vscode.Uri.joinPath(uri, '..'), '*wx')
 
-        // Certain URIs are not supported with vscode.workspace.fs in Cloud9
-        // so revert to using `fs` which works.
-        if (isCloud9()) {
-            return nodefs
-                .mkdir(uri.fsPath, { recursive: true })
-                .then(() => {})
-                .catch(errHandler)
-        }
-
         return vfs.createDirectory(uri).then(undefined, errHandler)
     }
 
@@ -114,12 +104,9 @@ export class FileSystem {
         const uri = toUri(path)
         const errHandler = createPermissionsErrorHandler(this.isWeb, uri, 'r**')
 
-        if (isCloud9()) {
-            return await nodefs.readFile(uri.fsPath).catch(errHandler)
-        }
-
         return vfs.readFile(uri).then(undefined, errHandler)
     }
+
     /**
      * Read file and convert the resulting bytes to a string.
      * @param path uri or path to file.
@@ -169,22 +156,6 @@ export class FileSystem {
         }
         // Note: comparison is bitwise (&) because `FileType` enum is bitwise.
         const anyKind = fileType === undefined || fileType & vscode.FileType.Unknown
-
-        if (isCloud9()) {
-            // vscode.workspace.fs.stat() is SLOW. Avoid it on Cloud9.
-            try {
-                const stat = await nodefs.stat(uri.fsPath)
-                if (anyKind) {
-                    return true
-                } else if (fileType & vscode.FileType.Directory) {
-                    return stat.isDirectory()
-                } else if (fileType & vscode.FileType.File) {
-                    return stat.isFile()
-                }
-            } catch {
-                return false
-            }
-        }
 
         const r = await this.stat(uri).then(
             (r) => r,
@@ -240,16 +211,7 @@ export class FileSystem {
         // Node writeFile is the only way to set `writeOpts`, such as the `mode`, on a file .
         // When not in web we will use Node's writeFile() for all other scenarios.
         // It also has better error messages than VS Code's writeFile().
-        let write = (u: Uri) => nodefs.writeFile(u.fsPath, content, opts).then(undefined, errHandler)
-
-        if (isCloud9()) {
-            // In Cloud9 vscode.workspace.writeFile has limited functionality, e.g. cannot write outside
-            // of open workspace.
-            //
-            // This is future proofing in the scenario we switch the initial implementation of `write()`
-            // to something else, C9 will still use node fs.
-            write = (u: Uri) => nodefs.writeFile(u.fsPath, content, opts).then(undefined, errHandler)
-        }
+        const write = (u: Uri) => nodefs.writeFile(u.fsPath, content, opts).then(undefined, errHandler)
 
         // Node writeFile does NOT create parent folders by default, unlike VS Code FS writeFile()
         await fs.mkdir(_path.dirname(uri.fsPath))
@@ -316,10 +278,6 @@ export class FileSystem {
         const oldUri = toUri(oldPath)
         const newUri = toUri(newPath)
         const errHandler = createPermissionsErrorHandler(this.isWeb, oldUri, 'rw*')
-
-        if (isCloud9()) {
-            return nodefs.rename(oldUri.fsPath, newUri.fsPath).catch(errHandler)
-        }
 
         /**
          * We were seeing 'FileNotFound' errors during renames, even though we did a `writeFile()` right before the rename.
@@ -411,12 +369,6 @@ export class FileSystem {
         const parent = vscode.Uri.joinPath(uri, '..')
         const errHandler = createPermissionsErrorHandler(this.isWeb, parent, '*wx')
 
-        if (isCloud9()) {
-            // Cloud9 does not support vscode.workspace.fs.delete.
-            opt.force = !!opt.recursive
-            return nodefs.rm(uri.fsPath, opt).catch(errHandler)
-        }
-
         if (opt.recursive) {
             // Error messages may be misleading if using the `recursive` option.
             // Need to implement our own recursive delete if we want detailed info.
@@ -464,18 +416,9 @@ export class FileSystem {
     }
 
     async readdir(uri: vscode.Uri | string): Promise<[string, vscode.FileType][]> {
-        const path = toUri(uri)
-
-        // readdir is not a supported vscode API in Cloud9
-        if (isCloud9()) {
-            return (await nodefs.readdir(path.fsPath, { withFileTypes: true })).map((e) => [
-                e.name,
-                e.isDirectory() ? vscode.FileType.Directory : vscode.FileType.File,
-            ])
-        }
-
-        return await vfs.readDirectory(path)
+        return await vfs.readDirectory(toUri(uri))
     }
+
     /**
      * Copy target file or directory
      * @param source

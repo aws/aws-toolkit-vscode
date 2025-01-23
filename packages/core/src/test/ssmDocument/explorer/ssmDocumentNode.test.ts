@@ -16,9 +16,9 @@ describe('SsmDocumentNode', function () {
 
         assert.strictEqual(childNodes.length, expectedChildNodeNames.length, 'Unexpected child node length')
 
-        childNodes.forEach((node, index) => {
+        for (const [index, node] of childNodes.entries()) {
             assert.ok(node instanceof DocumentTypeNode, 'Expected child node to be RegistryItemNode')
             assert.strictEqual(node.label, expectedChildNodeNames[index])
-        })
+        }
     })
 })

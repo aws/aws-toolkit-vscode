@@ -58,7 +58,7 @@ export async function fetchSupplementalContext(
                     supplementalContextItems: [],
                     contentsLength: 0,
                     latency: performance.now() - timesBeforeFetching,
-                    strategy: 'Empty',
+                    strategy: 'empty',
                 }
             } else {
                 getLogger().error(

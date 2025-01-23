@@ -4,7 +4,6 @@
  */
 
 import * as vscode from 'vscode'
-import { isCloud9 } from '../shared/extensionUtilities'
 import { Protocol, registerWebviewServer } from './server'
 import { getIdeProperties } from '../shared/extensionUtilities'
 import { getFunctions } from '../shared/utilities/classUtils'
@@ -345,11 +344,7 @@ export type ClassToProtocol<T extends VueWebview> = FilterUnknown<Commands<T> & 
  * Creates a brand new webview panel, setting some basic initial parameters and updating the webview.
  */
 function createWebviewPanel(ctx: vscode.ExtensionContext, params: WebviewPanelParams): vscode.WebviewPanel {
-    // C9 doesn't support 'Beside'. The next best thing is always using the second column.
-    const viewColumn =
-        isCloud9() && params.viewColumn === vscode.ViewColumn.Beside
-            ? vscode.ViewColumn.Two
-            : (params.viewColumn ?? vscode.ViewColumn.Active)
+    const viewColumn = params.viewColumn ?? vscode.ViewColumn.Active
 
     const panel = vscode.window.createWebviewPanel(
         params.id,
@@ -358,9 +353,10 @@ function createWebviewPanel(ctx: vscode.ExtensionContext, params: WebviewPanelPa
         {
             // The redundancy here is to correct a bug with Cloud9's Webview implementation
             // We need to assign certain things on instantiation, otherwise they'll never be applied to the view
+            // TODO: Comment is old, no cloud9 support anymore. Is this needed?
             enableScripts: true,
             enableCommandUris: true,
-            retainContextWhenHidden: isCloud9() || params.retainContextWhenHidden,
+            retainContextWhenHidden: params.retainContextWhenHidden,
         }
     )
     updateWebview(ctx, panel.webview, params)
@@ -392,7 +388,7 @@ function updateWebview(ctx: vscode.ExtensionContext, webview: vscode.Webview, pa
     ])
 
     const css = resolveRelative(webview, vscode.Uri.joinPath(resources, 'css'), [
-        isCloud9() ? 'base-cloud9.css' : 'base.css',
+        'base.css',
         ...(params.cssFiles ?? []),
     ])
 
@@ -403,7 +399,7 @@ function updateWebview(ctx: vscode.ExtensionContext, webview: vscode.Webview, pa
         stylesheets: css.map((p) => `<link rel="stylesheet" href="${p}">\n`).join('\n'),
         main: mainScript,
         webviewJs: params.webviewJs,
-        cspSource: updateCspSource(webview.cspSource),
+        cspSource: webview.cspSource,
     })
 
     return webview
@@ -454,13 +450,4 @@ function resolveWebviewHtml(params: {
         <script src="${resolvedParams.main}"></script>
     </body>
 </html>`
-}
-
-/**
- * Updates the CSP source for webviews with an allowed source for AWS endpoints when running in
- * Cloud9 environments. Possible this can be further scoped to specific C9 CDNs or removed entirely
- * if C9 injects this.
- */
-export function updateCspSource(baseSource: string) {
-    return isCloud9() ? `https://*.amazonaws.com ${baseSource}` : baseSource
 }

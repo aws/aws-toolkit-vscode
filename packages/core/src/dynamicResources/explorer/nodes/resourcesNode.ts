@@ -14,7 +14,6 @@ import { ResourceTypeNode } from './resourceTypeNode'
 import { CloudFormation } from 'aws-sdk'
 import { CloudControlClient, DefaultCloudControlClient } from '../../../shared/clients/cloudControlClient'
 import { memoizedGetResourceTypes, ResourceTypeMetadata } from '../../model/resources'
-import { isCloud9 } from '../../../shared/extensionUtilities'
 import { ResourcesSettings } from '../../commands/configure'
 
 const localize = nls.loadMessageBundle()
@@ -57,8 +56,7 @@ export class ResourcesNode extends AWSTreeNodeBase {
 
     public async updateChildren(): Promise<void> {
         const resourceTypes = memoizedGetResourceTypes()
-        const defaultResources = isCloud9() ? Array.from(resourceTypes.keys()) : []
-        const enabledResources = this.settings.get('enabledResources', defaultResources)
+        const enabledResources = this.settings.get('enabledResources', [])
 
         // Use the most recently update type definition per-type
         const types = await toArrayAsync(this.cloudFormation.listTypes())

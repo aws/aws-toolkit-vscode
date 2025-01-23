@@ -4,10 +4,10 @@
  */
 
 // TODO: this is just a "thunk". Replace it with something more generic.
-export interface ResourceFetcher {
+export interface ResourceFetcher<T = string> {
     /**
      * Returns the contents of the resource, or undefined if the resource could not be retrieved.
      * Implementations are expected to handle Errors.
      */
-    get(): Promise<string | undefined>
+    get(): Promise<T | undefined>
 }

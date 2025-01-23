@@ -28,7 +28,7 @@ type setupResult = {
 function performanceTestWrapper(numFiles: number, fileSize: number) {
     return performanceTest(
         getEqualOSTestOptions({
-            userCpuUsage: 150,
+            userCpuUsage: 200,
             systemCpuUsage: 35,
             heapTotal: 4,
         }),

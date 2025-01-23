@@ -35,7 +35,7 @@ describe('stepFunctions ASL LSP', async function () {
         )) as vscode.CompletionList
         assert.deepStrictEqual(
             result.items.map((item) => item.label),
-            ['Comment', 'StartAt', 'States', 'TimeoutSeconds', 'Version']
+            ['Comment', 'QueryLanguage', 'StartAt', 'States', 'TimeoutSeconds', 'Version']
         )
     })
 })
