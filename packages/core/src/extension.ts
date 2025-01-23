@@ -190,12 +190,12 @@ export function registerGenericCommands(extensionContext: vscode.ExtensionContex
  * https://docs.aws.amazon.com/general/latest/gr/rande.html
  */
 export function makeEndpointsProvider() {
-    let localManifestFetcher: ResourceFetcher
-    let remoteManifestFetcher: ResourceFetcher
+    let localManifestFetcher: ResourceFetcher<string>
+    let remoteManifestFetcher: ResourceFetcher<Response>
     if (isWeb()) {
         localManifestFetcher = { get: async () => JSON.stringify(endpoints) }
         // Cannot use HttpResourceFetcher due to web mode breaking on import
-        remoteManifestFetcher = { get: async () => (await fetch(endpointsFileUrl)).text() }
+        remoteManifestFetcher = { get: async () => await fetch(endpointsFileUrl) }
     } else {
         localManifestFetcher = new FileResourceFetcher(globals.manifestPaths.endpoints)
         // HACK: HttpResourceFetcher breaks web mode when imported, so we use webpack.IgnorePlugin()
