@@ -25,7 +25,6 @@ import { TemplateItem, createTemplatePrompter } from '../ui/sam/templatePrompter
 import { createDeployParamsSourcePrompter, ParamsSource } from '../ui/sam/paramsSourcePrompter'
 import { getErrorCode, getProjectRoot, getSamCliPathAndVersion, getSource, updateRecentResponse } from './utils'
 import { runInTerminal } from './processTerminal'
-import { deployMementoRootKey } from './constants'
 import {
     TemplateParametersForm,
     TemplateParametersWizard,
@@ -44,10 +43,6 @@ export interface DeployParams {
     readonly projectRoot: vscode.Uri
 
     [key: string]: any
-}
-
-function getRecentDeployParams(identifier: string, key: string): string | undefined {
-    return getRecentResponse(deployMementoRootKey, identifier, key)
 }
 
 export enum SamDeployEntryPoints {
