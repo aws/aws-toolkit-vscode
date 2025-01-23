@@ -196,8 +196,11 @@ export class RegionProvider {
     }
 }
 
-export async function getEndpointsFromFetcher(fetcher: ResourceFetcher): Promise<Endpoints> {
-    const endpointsJson = await fetcher.get()
+export async function getEndpointsFromFetcher(
+    fetcher: ResourceFetcher<string> | ResourceFetcher<Response>
+): Promise<Endpoints> {
+    const contents = await fetcher.get()
+    const endpointsJson = typeof contents === 'string' ? contents : await contents?.text()
     if (!endpointsJson) {
         throw new Error('Failed to get resource')
     }
