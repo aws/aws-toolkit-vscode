@@ -566,7 +566,20 @@ describe('SAM runBuild', () => {
 })
 
 async function runInParallel(samLocation: SamAppLocation): Promise<[SamBuildResult, SamBuildResult]> {
-    return Promise.all([runBuild(new AppNode(samLocation)), runBuild(new AppNode(samLocation))])
+    return Promise.all([runBuild(new AppNode(samLocation)), delayedRunBuild(samLocation)])
+}
+
+// We add a small delay to avoid the unlikely but possible race condition.
+async function delayedRunBuild(samLocation: SamAppLocation): Promise<SamBuildResult> {
+    return new Promise(async (resolve, reject) => {
+        // Add a small delay before returning the build promise
+        setTimeout(() => {
+            // Do nothing, just let the delay pass
+        }, 20)
+
+        const buildPromise = runBuild(new AppNode(samLocation))
+        buildPromise.then(resolve).catch(reject)
+    })
 }
 
 function getPrompterTester() {

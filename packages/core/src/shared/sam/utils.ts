@@ -115,7 +115,11 @@ export async function updateRecentResponse(
  * @Param templatePath The path to the template.yaml file
  */
 function isBuildInProgress(templatePath: string): boolean {
-    return getRecentResponse(buildProcessMementoRootKey, globalIdentifier, templatePath) !== undefined
+    const expirationDate = getRecentResponse(buildProcessMementoRootKey, globalIdentifier, templatePath)
+    if (expirationDate) {
+        return Date.now() < parseInt(expirationDate)
+    }
+    return false
 }
 
 /**
@@ -129,7 +133,8 @@ export function throwIfTemplateIsBeingBuilt(templatePath: string) {
 }
 
 export async function registerTemplateBuild(templatePath: string) {
-    await updateRecentResponse(buildProcessMementoRootKey, globalIdentifier, templatePath, 'true')
+    const expirationDate = Date.now() + 5 * 60 * 1000 // five minutes
+    await updateRecentResponse(buildProcessMementoRootKey, globalIdentifier, templatePath, expirationDate.toString())
 }
 
 export async function unregisterTemplateBuild(templatePath: string) {
