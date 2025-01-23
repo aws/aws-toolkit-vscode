@@ -444,7 +444,7 @@ export async function registerSamDebugInvokeVueCommand(
         runtime: resource.resource.Runtime!,
         arn: resource.functionArn ?? '',
         stackName: resource.stackName ?? '',
-        environment: resource.resource.Environment ?? undefined,
+        environment: resource.resource.Environment,
         source: source,
     })
     await telemetry.sam_openConfigUi.run(async (span) => {
