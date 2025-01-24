@@ -12,10 +12,10 @@ import { getNodeExecutableName } from '../../shared/lsp/utils/platform'
 import { fs } from '../../shared/fs/fs'
 import { cleanUpLSPDownloads } from './util'
 
-export const lspManifestUrl = 'https://aws-toolkit-language-servers.amazonaws.com/q-context/manifest.json'
+const lspManifestUrl = 'https://aws-toolkit-language-servers.amazonaws.com/q-context/manifest.json'
 // this LSP client in Q extension is only going to work with these LSP server versions
-export const supportedLspServerVersions = '0.1.32'
-export const lspWorkspaceName = 'AmazonQ-Workspace'
+const supportedLspServerVersions = '0.1.32'
+const lspWorkspaceName = 'AmazonQ-Workspace'
 
 export class WorkspaceLSPResolver implements LspResolver {
     async resolve(): Promise<LspResolution> {
