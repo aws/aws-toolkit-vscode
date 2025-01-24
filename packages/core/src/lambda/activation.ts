@@ -72,10 +72,10 @@ export async function activate(context: ExtContext): Promise<void> {
             await copyLambdaUrl(sourceNode, new DefaultLambdaClient(sourceNode.regionCode))
         }),
 
-        registerSamInvokeVueCommand(context),
+        registerSamInvokeVueCommand(context.extensionContext),
 
         Commands.register('aws.launchDebugConfigForm', async (node: ResourceNode) =>
-            registerSamDebugInvokeVueCommand(context, { resource: node })
+            registerSamDebugInvokeVueCommand(context.extensionContext, { resource: node })
         )
     )
 }

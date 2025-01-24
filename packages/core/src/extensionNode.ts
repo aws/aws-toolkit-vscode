@@ -17,7 +17,6 @@ import { AwsContextCommands } from './shared/awsContextCommands'
 import {
     getIdeProperties,
     getExtEnvironmentDetails,
-    isCloud9,
     isSageMaker,
     showWelcomeMessage,
 } from './shared/extensionUtilities'
@@ -183,19 +182,17 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await activateSchemas(extContext)
 
-        if (!isCloud9()) {
-            if (!isSageMaker()) {
-                // Amazon Q/CodeWhisperer Tree setup.
-                learnMoreAmazonQCommand.register()
-                qExtensionPageCommand.register()
-                dismissQTree.register()
-                installAmazonQExtension.register()
+        if (!isSageMaker()) {
+            // Amazon Q Tree setup.
+            learnMoreAmazonQCommand.register()
+            qExtensionPageCommand.register()
+            dismissQTree.register()
+            installAmazonQExtension.register()
 
-                await handleAmazonQInstall()
-            }
-            await activateApplicationComposer(context)
-            await activateThreatComposerEditor(context)
+            await handleAmazonQInstall()
         }
+        await activateApplicationComposer(context)
+        await activateThreatComposerEditor(context)
 
         await activateStepFunctions(context, globals.awsContext, globals.outputChannel)
 

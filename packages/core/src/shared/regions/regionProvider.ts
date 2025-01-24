@@ -12,7 +12,7 @@ import * as vscode from 'vscode'
 import { getLogger } from '../logger'
 import { Endpoints, loadEndpoints, Region } from './endpoints'
 import { AwsContext } from '../awsContext'
-import { getIdeProperties, isAmazonQ, isCloud9 } from '../extensionUtilities'
+import { getIdeProperties, isAmazonQ } from '../extensionUtilities'
 import { ResourceFetcher } from '../resourcefetcher/resourcefetcher'
 import { isSsoConnection } from '../../auth/connection'
 import { Auth } from '../../auth/auth'
@@ -185,17 +185,10 @@ export class RegionProvider {
                     'AWS.error.endpoint.load.failure',
                     'The {0} Toolkit was unable to load endpoints data.',
                     getIdeProperties().company
-                )} ${
-                    isCloud9()
-                        ? localize(
-                              'AWS.error.impactedFunctionalityReset.cloud9',
-                              'Toolkit functionality may be impacted until the Cloud9 browser tab is refreshed.'
-                          )
-                        : localize(
-                              'AWS.error.impactedFunctionalityReset.vscode',
-                              'Toolkit functionality may be impacted until VS Code is restarted.'
-                          )
-                }`
+                )} ${localize(
+                    'AWS.error.impactedFunctionalityReset.vscode',
+                    'Toolkit functionality may be impacted until VS Code is restarted.'
+                )}`
             )
         })
 
@@ -203,8 +196,11 @@ export class RegionProvider {
     }
 }
 
-export async function getEndpointsFromFetcher(fetcher: ResourceFetcher): Promise<Endpoints> {
-    const endpointsJson = await fetcher.get()
+export async function getEndpointsFromFetcher(
+    fetcher: ResourceFetcher<string> | ResourceFetcher<Response>
+): Promise<Endpoints> {
+    const contents = await fetcher.get()
+    const endpointsJson = typeof contents === 'string' ? contents : await contents?.text()
     if (!endpointsJson) {
         throw new Error('Failed to get resource')
     }

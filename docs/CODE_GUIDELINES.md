@@ -81,13 +81,10 @@ that is a net cost.
 -   Telemetry: "active" vs "passive"
     -   Active (`passive:false`) metrics are those intended to appear in DAU count.
 -   Icons:
-    -   Where possible, use IDE-specific standard icons (e.g. standard VSCode
-        standard icons in VSCode, and Cloud9 standard icons in Cloud9). The typical
-        (maintainable) way to do this is to use _named_ icons (what VSCode calls
+    -   Where possible, use standard VSCode icons. The typical (maintainable)
+        way to do this is to use _named_ icons (what VSCode calls
         [codicons](https://microsoft.github.io/vscode-codicons/)) as opposed to
         icons shipped with the Toolkit build and referenced by _path_.
-    -   For cases where icons must be statically defined (package.json), if Cloud9
-        does not support the VSCode standard icon, use the Cloud9 icon.
 -   Changelog guidelines
     -   Prefer active voice: "You can do X" instead of "X can be done"
 -   Avoid unnecessary use of `lodash` (which we may remove in the future).
@@ -240,11 +237,11 @@ _See also [arch_develop.md](./arch_develop.md#exceptions)._
 
     -   PREFER:
         ```ts
-        things.filter(o => o.isFoo)
+        things.filter((o) => o.isFoo)
         ```
     -   INSTEAD OF:
         ```ts
-        things.filter(thing => thing.isFoo)
+        things.filter((thing) => thing.isFoo)
         ```
 
 ## User settings
