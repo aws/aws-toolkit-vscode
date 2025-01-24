@@ -20,7 +20,7 @@
     "AWS.configuration.description.suppressPrompts": "Prompts which ask for confirmation. Checking an item suppresses the prompt.",
     "AWS.configuration.enableCodeLenses": "Enable SAM hints in source code and template.yaml files",
     "AWS.configuration.description.resources.enabledResources": "AWS resources to display in the 'Resources' portion of the explorer.",
-    "AWS.configuration.description.experiments": "Try experimental features and give feedback. Note that experimental features may be removed at any time.\n * `jsonResourceModification` - Enables basic create, update, and delete support for cloud resources via the JSON Resources explorer component.\n * `ec2RemoteConnect` - Allows interfacing with EC2 instances with options to start, stop, and establish remote connections. Remote connections are done over SSM and can be through a terminal or a remote VSCode window.",
+    "AWS.configuration.description.experiments": "Try experimental features and give feedback. Note that experimental features may be removed at any time.\n * `jsonResourceModification` - Enables basic create, update, and delete support for cloud resources via the JSON Resources explorer component.",
     "AWS.stepFunctions.asl.format.enable.desc": "Enables the default formatter used with Amazon States Language files",
     "AWS.stepFunctions.asl.maxItemsComputed.desc": "The maximum number of outline symbols and folding regions computed (limited for performance reasons).",
     "AWS.configuration.description.awssam.debug.api": "API Gateway configuration",
