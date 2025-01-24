@@ -483,6 +483,7 @@ export class GumbyController {
                 message.tabID
             )
 
+            // do not allow downgrades
             if (fromJDKVersion === JDKVersion.JDK21 && toJDKVersion === JDKVersion.JDK17) {
                 this.messenger.sendUnrecoverableErrorResponse('invalid-from-to-jdk', message.tabID)
                 return

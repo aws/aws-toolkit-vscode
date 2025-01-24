@@ -22,7 +22,6 @@ export const AWSTemplateKeyWords = ['AWSTemplateFormatVersion', 'Resources', 'AW
 
 export const AWSTemplateCaseInsensitiveKeyWords = ['cloudformation', 'cfn', 'template', 'description']
 
-// TO-DO: make sure all Strings look good for Java 21
 const patchDescriptions: { [key: string]: string } = {
     'Prepare minimal upgrade to Java 17':
         'This diff patch covers the set of upgrades for Springboot, JUnit, and PowerMockito frameworks in Java 17.',
