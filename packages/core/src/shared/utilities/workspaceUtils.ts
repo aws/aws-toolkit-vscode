@@ -268,7 +268,7 @@ export function checkUnsavedChanges(): boolean {
     return vscode.workspace.textDocuments.some((doc) => doc.isDirty)
 }
 
-export function getExcludePattern(additionalPatterns: string[] = [], nonGlobalExtraPatterns: boolean = true) {
+export function getExcludePattern(defaultExcludePatterns: boolean = true) {
     const globAlwaysExcludedDirs = getGlobDirExcludedPatterns().map((pattern) => `**/${pattern}/*`)
     const extraPatterns = [
         '**/package-lock.json',
@@ -290,11 +290,7 @@ export function getExcludePattern(additionalPatterns: string[] = [], nonGlobalEx
         '**/License.md',
         '**/LICENSE.md',
     ]
-    const allPatterns = [
-        ...globAlwaysExcludedDirs,
-        ...(nonGlobalExtraPatterns ? extraPatterns : []),
-        ...additionalPatterns,
-    ]
+    const allPatterns = [...globAlwaysExcludedDirs, ...(defaultExcludePatterns ? extraPatterns : [])]
     return `{${allPatterns.join(',')}}`
 }
 
@@ -307,11 +303,11 @@ export function getExcludePattern(additionalPatterns: string[] = [], nonGlobalEx
 async function filterOutGitignoredFiles(
     rootPath: string,
     files: vscode.Uri[],
-    addExtraPatterns: boolean = true
+    defaultExcludePatterns: boolean = true
 ): Promise<vscode.Uri[]> {
     const gitIgnoreFiles = await vscode.workspace.findFiles(
         new vscode.RelativePattern(rootPath, '**/.gitignore'),
-        getExcludePattern([], addExtraPatterns)
+        getExcludePattern(defaultExcludePatterns)
     )
     const gitIgnoreFilter = await GitIgnoreFilter.build(gitIgnoreFiles)
     return gitIgnoreFilter.filterFiles(files)
@@ -330,7 +326,7 @@ export async function collectFiles(
     workspaceFolders: CurrentWsFolders,
     respectGitIgnore: boolean = true,
     maxSize = 200 * 1024 * 1024, // 200 MB
-    addExtraIgnorePatterns: boolean = true
+    defaultExcludePatterns: boolean = true
 ): Promise<
     {
         workspaceFolder: vscode.WorkspaceFolder
@@ -367,11 +363,11 @@ export async function collectFiles(
     for (const rootPath of sourcePaths) {
         const allFiles = await vscode.workspace.findFiles(
             new vscode.RelativePattern(rootPath, '**'),
-            getExcludePattern([], addExtraIgnorePatterns)
+            getExcludePattern(defaultExcludePatterns)
         )
 
         const files = respectGitIgnore
-            ? await filterOutGitignoredFiles(rootPath, allFiles, addExtraIgnorePatterns)
+            ? await filterOutGitignoredFiles(rootPath, allFiles, defaultExcludePatterns)
             : allFiles
 
         for (const file of files) {

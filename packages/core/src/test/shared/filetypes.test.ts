@@ -160,7 +160,6 @@ describe('isCodeFile', () => {
             'mvnw',
             'build.gradle',
             'gradle/wrapper/gradle-wrapper.properties',
-            'gradle/wrapper/gradle-wrapper.jar',
         ]
         for (const codeFilePath of codeFiles) {
             assert.strictEqual(isCodeFile(codeFilePath), true)

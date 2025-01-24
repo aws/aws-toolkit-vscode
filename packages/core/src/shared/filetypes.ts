@@ -363,15 +363,8 @@ export const codefileExtensions = new Set([
 // Code file names without an extension
 export const codefileNames = new Set(['Dockerfile', 'Dockerfile.build', 'gradlew', 'mvnw', '.gitignore'])
 
-// Build file names
-export const buildfileNames = new Set(['gradle/wrapper/gradle-wrapper.jar'])
-
 /** Returns true if `filename` is a code file. */
 export function isCodeFile(filename: string): boolean {
     const ext = path.extname(filename).toLowerCase()
-    return (
-        codefileExtensions.has(ext) ||
-        codefileNames.has(path.basename(filename)) ||
-        buildfileNames.has(path.basename(filename))
-    )
+    return codefileExtensions.has(ext) || codefileNames.has(path.basename(filename))
 }
