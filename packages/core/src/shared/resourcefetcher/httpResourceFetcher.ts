@@ -135,7 +135,7 @@ export class HttpResourceFetcher implements ResourceFetcher<Response> {
 }
 
 export class RetryableResourceFetcher extends HttpResourceFetcher {
-    private readonly retryNumber: number
+    private readonly requestTimeoutMs: number
     private readonly retryIntervalMs: number
     private readonly resource: string
 
@@ -155,13 +155,13 @@ export class RetryableResourceFetcher extends HttpResourceFetcher {
             showUrl,
             timeout,
         })
-        this.retryNumber = retryNumber
+        this.requestTimeoutMs = retryNumber * retryIntervalMs
         this.retryIntervalMs = retryIntervalMs
         this.resource = resource
     }
 
     fetch(versionTag?: string) {
-        return withRetries(
+        return waitUntil(
             async () => {
                 try {
                     return await this.getNewETagContent(versionTag)
@@ -171,8 +171,9 @@ export class RetryableResourceFetcher extends HttpResourceFetcher {
                 }
             },
             {
-                maxRetries: this.retryNumber,
-                delay: this.retryIntervalMs,
+                timeout: this.requestTimeoutMs,
+                interval: this.retryIntervalMs,
+                retryOnFail: true,
             }
         )
     }

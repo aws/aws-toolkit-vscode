@@ -4,8 +4,8 @@
  */
 
 import { Uri } from 'vscode'
-import { cleanLspDownloads, fs } from '../../../shared'
-import { createTestWorkspaceFolder } from '../../testUtil'
+import { cleanLspDownloads, fs } from '../../../../shared'
+import { createTestWorkspaceFolder } from '../../../testUtil'
 import path from 'path'
 import assert from 'assert'
 
