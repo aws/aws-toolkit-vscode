@@ -33,17 +33,22 @@ export class ManifestResolver {
      * Fetches the latest manifest, falling back to local cache on failure
      */
     async resolve(): Promise<Manifest> {
-        return await tryFunctions([
-            async () => await resolveManifestWith(async () => await this.fetchRemoteManifest()),
-            async () => await resolveManifestWith(async () => await this.getLocalManifest()),
-        ])
+        const resolvers = [async () => await this.fetchRemoteManifest(), async () => await this.getLocalManifest()].map(
+            (resolver) => async () => await resolveManifestWith(resolver)
+        )
+        return await tryFunctions(resolvers)
 
         async function resolveManifestWith(resolver: () => Promise<Manifest>) {
-            return await lspSetupStage('getManifest', async () => await resolver(), extractVersionFromResult)
-        }
-
-        function extractVersionFromResult(r: Manifest) {
-            return { manifestSchemaVersion: r.manifestSchemaVersion }
+            return await lspSetupStage(
+                'getManifest',
+                async () => await resolver(),
+                (result) => {
+                    return {
+                        manifestSchemaVersion: result.manifestSchemaVersion,
+                        manifestLocation: result.location,
+                    }
+                }
+            )
         }
     }
 

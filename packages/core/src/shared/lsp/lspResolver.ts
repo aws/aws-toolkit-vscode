@@ -13,7 +13,7 @@ import { TargetContent, logger, LspResult, LspVersion, Manifest } from './types'
 import { getApplicationSupportFolder } from '../vscode/env'
 import { createHash } from '../crypto'
 import request from '../request'
-import { lspSetupStage } from '../../amazonq/lsp/util'
+import { lspSetupStage, tryFunctions } from '../../amazonq/lsp/util'
 
 export class LanguageServerResolver {
     constructor(
@@ -31,51 +31,38 @@ export class LanguageServerResolver {
      * @throws ToolkitError if no compatible version can be found
      */
     async resolve() {
-        const result: LspResult = {
-            location: 'unknown',
-            version: '',
-            assetDirectory: '',
-        }
-
         const latestVersion = this.latestCompatibleLspVersion()
         const targetContents = this.getLSPTargetContents(latestVersion)
         const cacheDirectory = this.getDownloadDirectory(latestVersion.serverVersion)
 
-        if (await this.hasValidLocalCache(cacheDirectory, targetContents)) {
-            result.location = 'cache'
-            result.version = latestVersion.serverVersion
-            result.assetDirectory = cacheDirectory
-            return result
-        } else {
-            // Delete the cached directory since it's invalid
-            if (await fs.existsDir(cacheDirectory)) {
-                await fs.delete(cacheDirectory, {
-                    recursive: true,
-                })
-            }
+        const serverResolvers = [
+            async () => await this.getLocalServer(cacheDirectory, latestVersion, targetContents),
+            async () => await this.fetchRemoteServer(cacheDirectory, latestVersion, targetContents),
+            async () => await this.getFallbackServer(latestVersion),
+        ].map((resolver) => async () => await resolveServerWith(resolver))
+
+        return await tryFunctions(serverResolvers)
+
+        async function resolveServerWith(resolver: () => Promise<LspResult>) {
+            return await lspSetupStage(
+                'getServer',
+                async () => await resolver(),
+                (result) => {
+                    return {
+                        languageServerLocation: result.location,
+                        languageServerVersion: result.version,
+                    }
+                }
+            )
         }
+    }
 
-        if (await this.downloadRemoteTargetContent(targetContents, latestVersion.serverVersion)) {
-            result.location = 'remote'
-            result.version = latestVersion.serverVersion
-            result.assetDirectory = cacheDirectory
-            return result
-        } else {
-            // clean up any leftover content that may have been downloaded
-            if (await fs.existsDir(cacheDirectory)) {
-                await fs.delete(cacheDirectory, {
-                    recursive: true,
-                })
-            }
-        }
-
-        logger.info(
-            `Unable to download language server version ${latestVersion.serverVersion}. Attempting to fetch from fallback location`
-        )
-
+    async getFallbackServer(latestVersion: LspVersion): Promise<LspResult> {
         const fallbackDirectory = await this.getFallbackDir(latestVersion.serverVersion)
         if (!fallbackDirectory) {
-            throw new ToolkitError('Unable to find a compatible version of the Language Server')
+            throw new ToolkitError('Unable to find a compatible version of the Language Server', {
+                code: 'IncompatibleVersion',
+            })
         }
 
         const version = path.basename(fallbackDirectory)
@@ -83,11 +70,49 @@ export class LanguageServerResolver {
             `Unable to install ${this.lsName} language server v${latestVersion.serverVersion}. Launching a previous version from ${fallbackDirectory}`
         )
 
-        result.location = 'fallback'
-        result.version = version
-        result.assetDirectory = fallbackDirectory
+        return {
+            location: 'fallback',
+            version: version,
+            assetDirectory: fallbackDirectory,
+        }
+    }
 
-        return result
+    async fetchRemoteServer(
+        cacheDirectory: string,
+        latestVersion: LspVersion,
+        targetContents: TargetContent[]
+    ): Promise<LspResult> {
+        if (await this.downloadRemoteTargetContent(targetContents, latestVersion.serverVersion)) {
+            return {
+                location: 'remote',
+                version: latestVersion.serverVersion,
+                assetDirectory: cacheDirectory,
+            }
+        } else {
+            throw new ToolkitError('Failed to download server from remote', { code: 'RemoteDownloadFailed' })
+        }
+    }
+
+    async getLocalServer(
+        cacheDirectory: string,
+        latestVersion: LspVersion,
+        targetContents: TargetContent[]
+    ): Promise<LspResult> {
+        if (await this.hasValidLocalCache(cacheDirectory, targetContents)) {
+            return {
+                location: 'cache',
+                version: latestVersion.serverVersion,
+                assetDirectory: cacheDirectory,
+            }
+        } else {
+            // Delete the cached directory since it's invalid
+            if (await fs.existsDir(cacheDirectory)) {
+                await fs.delete(cacheDirectory, {
+                    recursive: true,
+                })
+            }
+            throw new ToolkitError('Failed to retrieve server from cache', { code: 'InvalidCache' })
+        }
     }
 
     /**
