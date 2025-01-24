@@ -180,7 +180,6 @@ export class FeatureConfigProvider {
                     await CodeWhispererSettings.instance.enableLocalIndex()
                     globals.globalState.tryUpdate('aws.amazonq.workspaceIndexToggleOn', true)
 
-                    // todo: finalize string
                     await vscode.window
                         .showInformationMessage(
                             localize(
@@ -191,7 +190,7 @@ export class FeatureConfigProvider {
                         )
                         .then((r) => {
                             if (r === 'Open settings') {
-                                Commands.tryExecute('aws.amazonq.configure')
+                                void Commands.tryExecute('aws.amazonq.configure').then()
                             }
                         })
                 }
