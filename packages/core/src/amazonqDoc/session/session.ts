@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { featureName, Mode } from '../constants'
+import { docScheme, featureName, Mode } from '../constants'
 import { DeletedFileInfo, Interaction, NewFileInfo, SessionState, SessionStateConfig } from '../types'
 import { PrepareCodeGenState } from './sessionState'
 import { telemetry } from '../../shared/telemetry/telemetry'
@@ -19,13 +19,14 @@ import { logWithConversationId } from '../../amazonqFeatureDev/userFacingText'
 import { ConversationIdNotFoundError } from '../../amazonqFeatureDev/errors'
 import { referenceLogText } from '../../amazonqFeatureDev/constants'
 import {
-    DocGenerationEvent,
-    DocGenerationInteractionType,
+    DocInteractionType,
+    DocV2AcceptanceEvent,
+    DocV2GenerationEvent,
     SendTelemetryEventRequest,
 } from '../../codewhisperer/client/codewhispereruserclient'
-import { getDiffCharsAndLines } from '../../shared/utilities/diffUtils'
 import { getClientId, getOperatingSystem, getOptOutPreference } from '../../shared/telemetry/util'
 import { DocMessenger } from '../messenger'
+import { computeDiff } from '../../amazonq/commons/diff'
 
 export class Session {
     private _state?: SessionState | Omit<SessionState, 'uploadId'>
@@ -38,6 +39,7 @@ export class Session {
 
     // Used to keep track of whether or not the current session is currently authenticating/needs authenticating
     public isAuthenticating: boolean
+    private _reportedDocChanges: string | undefined = undefined
 
     constructor(
         public readonly config: SessionConfig,
@@ -177,41 +179,80 @@ export class Session {
         }
     }
 
-    public async countAddedContent(interactionType?: DocGenerationInteractionType) {
+    public async countGeneratedContent(interactionType?: DocInteractionType) {
+        let totalGeneratedChars = 0
+        let totalGeneratedLines = 0
+        let totalGeneratedFiles = 0
+        const filePaths = this.state.filePaths ?? []
+
+        for (const filePath of filePaths) {
+            if (interactionType === 'GENERATE_README') {
+                if (this._reportedDocChanges) {
+                    const { charsAdded, linesAdded } = await this.computeFilePathDiff(
+                        filePath,
+                        this._reportedDocChanges
+                    )
+                    totalGeneratedChars += charsAdded
+                    totalGeneratedLines += linesAdded
+                } else {
+                    const fileContent = filePath.fileContent
+                    totalGeneratedChars += fileContent.length
+                    totalGeneratedLines += fileContent.split('\n').length
+                }
+            } else {
+                const { charsAdded, linesAdded } = await this.computeFilePathDiff(filePath, this._reportedDocChanges)
+                totalGeneratedChars += charsAdded
+                totalGeneratedLines += linesAdded
+            }
+            this._reportedDocChanges = filePath.fileContent
+            totalGeneratedFiles += 1
+        }
+        return {
+            totalGeneratedChars,
+            totalGeneratedLines,
+            totalGeneratedFiles,
+        }
+    }
+
+    public async countAddedContent(interactionType?: DocInteractionType) {
         let totalAddedChars = 0
         let totalAddedLines = 0
         let totalAddedFiles = 0
+        const newFilePaths =
+            this.state.filePaths?.filter((filePath) => !filePath.rejected && !filePath.changeApplied) ?? []
 
-        for (const filePath of this.state.filePaths?.filter((i) => !i.rejected) ?? []) {
-            const absolutePath = path.join(filePath.workspaceFolder.uri.fsPath, filePath.relativePath)
-            const uri = filePath.virtualMemoryUri
-            const content = await this.config.fs.readFile(uri)
-            const decodedContent = new TextDecoder().decode(content)
-            totalAddedFiles += 1
-
-            if ((await fs.exists(absolutePath)) && interactionType === 'UPDATE_README') {
-                const existingContent = await fs.readFileText(absolutePath)
-                const { addedChars, addedLines } = getDiffCharsAndLines(existingContent, decodedContent)
-                totalAddedChars += addedChars
-                totalAddedLines += addedLines
+        for (const filePath of newFilePaths) {
+            if (interactionType === 'GENERATE_README') {
+                const fileContent = filePath.fileContent
+                totalAddedChars += fileContent.length
+                totalAddedLines += fileContent.split('\n').length
             } else {
-                totalAddedChars += decodedContent.length
-                totalAddedLines += decodedContent.split('\n').length
+                const { charsAdded, linesAdded } = await this.computeFilePathDiff(filePath)
+                totalAddedChars += charsAdded
+                totalAddedLines += linesAdded
             }
+            totalAddedFiles += 1
         }
-
         return {
             totalAddedChars,
             totalAddedLines,
             totalAddedFiles,
         }
     }
-    public async sendDocGenerationTelemetryEvent(docGenerationEvent: DocGenerationEvent) {
+
+    public async computeFilePathDiff(filePath: NewFileInfo, reportedChanges?: string) {
+        const leftPath = `${filePath.workspaceFolder.uri.fsPath}/${filePath.relativePath}`
+        const rightPath = filePath.virtualMemoryUri.path
+        const diff = await computeDiff(leftPath, rightPath, this.tabID, docScheme, reportedChanges)
+        return { leftPath, rightPath, ...diff }
+    }
+
+    public async sendDocGenerationTelemetryEvent(docV2GenerationEvent: DocV2GenerationEvent) {
         const client = await this.proxyClient.getClient()
         try {
             const params: SendTelemetryEventRequest = {
                 telemetryEvent: {
-                    docGenerationEvent,
+                    docV2GenerationEvent,
                 },
                 optOutPreference: getOptOutPreference(),
                 userContext: {
@@ -224,7 +265,36 @@ export class Session {
             }
             const response = await client.sendTelemetryEvent(params).promise()
             getLogger().debug(
-                `${featureName}: successfully sent docGenerationEvent: ConversationId: ${docGenerationEvent.conversationId} RequestId: ${response.$response.requestId}`
+                `${featureName}: successfully sent docV2GenerationEvent: ConversationId: ${docV2GenerationEvent.conversationId} RequestId: ${response.$response.requestId}`
+            )
+        } catch (e) {
+            getLogger().error(
+                `${featureName}: failed to send doc generation telemetry: ${(e as Error).name}: ${
+                    (e as Error).message
+                } RequestId: ${(e as any).requestId}`
+            )
+        }
+    }
+
+    public async sendDocAcceptanceTelemetryEvent(docV2AcceptanceEvent: DocV2AcceptanceEvent) {
+        const client = await this.proxyClient.getClient()
+        try {
+            const params: SendTelemetryEventRequest = {
+                telemetryEvent: {
+                    docV2AcceptanceEvent,
+                },
+                optOutPreference: getOptOutPreference(),
+                userContext: {
+                    ideCategory: 'VSCODE',
+                    operatingSystem: getOperatingSystem(),
+                    product: 'DocGeneration', // Should be the same as in JetBrains
+                    clientId: getClientId(globals.globalState),
+                    ideVersion: extensionVersion,
+                },
+            }
+            const response = await client.sendTelemetryEvent(params).promise()
+            getLogger().debug(
+                `${featureName}: successfully sent docV2AcceptanceEvent: ConversationId: ${docV2AcceptanceEvent.conversationId} RequestId: ${response.$response.requestId}`
             )
         } catch (e) {
             getLogger().error(
