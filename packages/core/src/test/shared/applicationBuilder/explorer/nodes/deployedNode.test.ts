@@ -220,7 +220,10 @@ describe('generateDeployedNode', () => {
             // Check placeholder propertries
             const deployedResourceNode = deployedResourceNodes[0] as DeployedResourceNode
             assert.strictEqual(deployedResourceNode.id, 'placeholder')
-            assert.strictEqual(deployedResourceNode.resource, '[Failed to retrive deployed resource.]')
+            assert.strictEqual(
+                deployedResourceNode.resource,
+                '[Failed to retrieve deployed resource. Ensure correct stack name and region are in the samconfig.toml, and that your account is connected.]'
+            )
         })
     })
 
@@ -298,9 +301,9 @@ describe('generateDeployedNode', () => {
                 name?: string
                 description?: string
             }
-            Object.entries(options).forEach(([key, value]) => {
+            for (const [key, value] of Object.entries(options)) {
                 value !== undefined && Object.defineProperty(mockNode, key, { value, writable: true })
-            })
+            }
             return mockNode
         }
 
@@ -374,7 +377,7 @@ describe('generateDeployedNode', () => {
             // Check placeholder propertries
             const deployedResourceNode = deployedResourceNodes[0] as DeployedResourceNode
             assert.strictEqual(deployedResourceNode.id, 'placeholder')
-            assert.strictEqual(deployedResourceNode.resource, '[This resource is not yet supported.]')
+            assert.strictEqual(deployedResourceNode.resource, '[This resource is not yet supported in AppBuilder.]')
         })
     })
 })

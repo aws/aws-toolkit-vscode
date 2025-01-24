@@ -79,14 +79,14 @@ describe('Settings', function () {
             settings = vscode.workspace.getConfiguration()
         })
 
-        scenarios.forEach((scenario) => {
+        for (const scenario of scenarios) {
             it(scenario.desc, async () => {
                 await settings.update(settingKey, scenario.testValue, settingsTarget)
 
                 const actualValue = sut.get(settingKey)
                 assert.deepStrictEqual(actualValue, scenario.testValue)
             })
-        })
+        }
 
         it('failure modes', async () => {
             //
@@ -112,7 +112,7 @@ describe('Settings', function () {
     })
 
     describe('update', function () {
-        scenarios.forEach((scenario) => {
+        for (const scenario of scenarios) {
             it(scenario.desc, async () => {
                 await sut.update(settingKey, scenario.testValue)
 
@@ -122,7 +122,7 @@ describe('Settings', function () {
 
                 assert.deepStrictEqual(savedValue, scenario.testValue)
             })
-        })
+        }
 
         it('shows message on failure', async () => {
             // TODO: could avoid sinon if we can force vscode to use a dummy settings.json file.
@@ -276,7 +276,7 @@ describe('Settings', function () {
 })
 
 describe('DevSetting', function () {
-    const testSetting = 'forceCloud9'
+    const testSetting = 'renderDebugDetails'
 
     let settings: ClassToInterfaceType<Settings>
     let sut: DevSettings
@@ -452,7 +452,7 @@ describe('PromptSetting', function () {
                 desc: 'suppresses prompt',
             },
         ]
-        scenarios.forEach((scenario) => {
+        for (const scenario of scenarios) {
             it(scenario.desc, async () => {
                 const defaultSetting = settings.get(promptSettingKey, Object)
                 await settings.update(promptSettingKey, scenario.testValue)
@@ -461,7 +461,7 @@ describe('PromptSetting', function () {
                 const expected = { ...defaultSetting, ...scenario.expected }
                 assert.deepStrictEqual(actual, expected)
             })
-        })
+        }
     })
 
     describe('isPromptEnabled', async function () {
@@ -494,11 +494,11 @@ describe('PromptSetting', function () {
             },
         ]
 
-        scenarios.forEach((scenario) => {
+        for (const scenario of scenarios) {
             it(scenario.desc, async () => {
                 await settings.update(promptSettingKey, scenario.testValue)
                 const before = settings.get(promptSettingKey, Object, {})
-                const result = await sut.isPromptEnabled(promptName)
+                const result = sut.isPromptEnabled(promptName)
 
                 assert.deepStrictEqual(result, scenario.expected)
                 assert.deepStrictEqual(
@@ -506,7 +506,7 @@ describe('PromptSetting', function () {
                     { ...before, ...scenario.promptAfter }
                 )
             })
-        })
+        }
     })
 })
 

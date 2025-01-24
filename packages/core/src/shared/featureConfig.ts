@@ -125,7 +125,7 @@ export class FeatureConfigProvider {
             const response = await this.listFeatureEvaluations()
 
             // Overwrite feature configs from server response
-            response.featureEvaluations.forEach((evaluation) => {
+            for (const evaluation of response.featureEvaluations) {
                 this.featureConfigs.set(
                     evaluation.feature,
                     new FeatureContext(evaluation.feature, evaluation.variation, evaluation.value)
@@ -138,7 +138,7 @@ export class FeatureConfigProvider {
                         featureValue: JSON.stringify(evaluation.value),
                     })
                 })
-            })
+            }
             getLogger().info('AB Testing Cohort Assignments %O', response.featureEvaluations)
 
             const customizationArnOverride = this.featureConfigs.get(Features.customizationArnOverride)?.value
@@ -152,14 +152,11 @@ export class FeatureConfigProvider {
                     try {
                         const items: Customization[] = []
                         const response = await client.listAvailableCustomizations()
-                        response
-                            .map(
-                                (listAvailableCustomizationsResponse) =>
-                                    listAvailableCustomizationsResponse.customizations
-                            )
-                            .forEach((customizations) => {
-                                items.push(...customizations)
-                            })
+                        for (const customizations of response.map(
+                            (listAvailableCustomizationsResponse) => listAvailableCustomizationsResponse.customizations
+                        )) {
+                            items.push(...customizations)
+                        }
                         availableCustomizations = items.map((c) => c.arn)
                     } catch (e) {
                         getLogger().debug('amazonq: Failed to list available customizations')

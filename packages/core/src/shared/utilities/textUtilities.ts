@@ -7,7 +7,6 @@ import * as vscode from 'vscode'
 import * as crypto from 'crypto'
 import * as fs from 'fs' // eslint-disable-line no-restricted-imports
 import { default as stripAnsi } from 'strip-ansi'
-import { isCloud9 } from '../extensionUtilities'
 import { getLogger } from '../logger'
 
 /**
@@ -120,10 +119,10 @@ export function getStringHash(text: string | Buffer): string {
 }
 
 /**
- * Temporary util while Cloud9 does not have codicon support
+ * Previously used to add Cloud9 support (no icons). Might be useful in the future, so let's leave it here.
  */
 export function addCodiconToString(codiconName: string, text: string): string {
-    return isCloud9() ? text : `$(${codiconName}) ${text}`
+    return `$(${codiconName}) ${text}`
 }
 
 /**

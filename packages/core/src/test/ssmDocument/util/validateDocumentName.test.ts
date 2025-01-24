@@ -26,13 +26,13 @@ describe('validateDocumenttName', function () {
         assert.strictEqual(validateDocumentName('Aaaaa'), undefined)
     })
 
-    invalidErrors.forEach((invalid) => {
+    for (const invalid of invalidErrors) {
         describe(invalid.error, () => {
-            invalid.documentNames.forEach((documentName) => {
+            for (const documentName of invalid.documentNames) {
                 it(documentName, () => {
                     assert.strictEqual(validateDocumentName(documentName), invalid.error)
                 })
-            })
+            }
         })
-    })
+    }
 })

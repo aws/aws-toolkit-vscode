@@ -4,6 +4,7 @@
  */
 
 import assert from 'assert'
+import * as vscode from 'vscode'
 import { TestInputBox, TestQuickPick } from '../vscode/quickInput'
 import { getTestWindow, TestWindow } from '../vscode/window'
 import { waitUntil } from '../../../shared/utilities/timeoutUtils'
@@ -131,4 +132,48 @@ export class PrompterTester {
         input.dispose()
         throw assert.fail(`Unexpected prompter titled: "${input.title}"`)
     }
+}
+
+export function createPromptHandler<T>(config: {
+    default: (input: T) => Promise<void>
+    numbered?: Array<{
+        order: number[]
+        handler: (input: T) => Promise<void>
+    }>
+}) {
+    const generator = (function* () {
+        let currentIteration = 0
+        const handlersMap = new Map()
+
+        // Setup handlers map
+        if (config.numbered) {
+            for (const item of config.numbered) {
+                for (const orderNum of item.order) {
+                    handlersMap.set(orderNum, item.handler)
+                }
+            }
+        }
+
+        while (true) {
+            currentIteration++
+            const handler = handlersMap.get(currentIteration)
+
+            if (handler) {
+                yield handler
+            } else {
+                yield config.default
+            }
+        }
+    })()
+
+    // Return a function that advances the generator and executes the handler
+    return (picker: T) => {
+        const next = generator.next().value
+        return next(picker)
+    }
+}
+
+export async function clickBackButton(input: TestQuickPick | TestInputBox) {
+    await input.untilReady()
+    input.pressButton(vscode.QuickInputButtons.Back)
 }

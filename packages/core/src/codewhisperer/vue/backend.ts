@@ -8,7 +8,6 @@ import * as os from 'os'
 import * as vscode from 'vscode'
 import * as path from 'path'
 import { VueWebview } from '../../webviews/main'
-import { isCloud9 } from '../../shared/extensionUtilities'
 import globals from '../../shared/extensionGlobals'
 import { telemetry, CodewhispererLanguage, CodewhispererGettingStartedTask } from '../../shared/telemetry/telemetry'
 import { fs } from '../../shared'
@@ -148,7 +147,7 @@ export async function showCodeWhispererWebview(
     }
     const webview = await activePanel!.show({
         title: localize('AWS.view.gettingStartedPage.title', `Learn Amazon Q`),
-        viewColumn: isCloud9() ? vscode.ViewColumn.One : vscode.ViewColumn.Active,
+        viewColumn: vscode.ViewColumn.Active,
     })
 
     if (!subscriptions) {
@@ -161,7 +160,7 @@ export async function showCodeWhispererWebview(
         ]
         const prompts = AmazonQPromptSettings.instance
         // To check the condition If the user has already seen the welcome message
-        if (await prompts.isPromptEnabled('codeWhispererNewWelcomeMessage')) {
+        if (prompts.isPromptEnabled('codeWhispererNewWelcomeMessage')) {
             telemetry.ui_click.emit({ elementId: 'codewhisperer_Learn_PageOpen', passive: true })
         } else {
             telemetry.ui_click.emit({ elementId: 'codewhisperer_Learn_PageOpen', passive: false })

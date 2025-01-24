@@ -43,6 +43,8 @@ import { getTelemetryReasonDesc } from '../../shared/errors'
 import { CodeWhispererSettings } from '../util/codewhispererSettings'
 import { detectCommentAboveLine } from '../../shared/utilities/commentUtils'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
+import { FeatureUseCase } from '../models/constants'
+import { UploadTestArtifactToS3Error } from '../../amazonqTest/error'
 
 export async function listScanResults(
     client: DefaultCodeWhispererClient,
@@ -68,13 +70,13 @@ export async function listScanResults(
             return resp.codeAnalysisFindings
         })
         .promise()
-    issues.forEach((issue) => {
+    for (const issue of issues) {
         mapToAggregatedList(codeScanIssueMap, issue, editor, scope)
-    })
-    codeScanIssueMap.forEach((issues, key) => {
+    }
+    for (const [key, issues] of codeScanIssueMap.entries()) {
         // Project path example: /Users/username/project
         // Key example: project/src/main/java/com/example/App.java
-        projectPaths.forEach((projectPath) => {
+        for (const projectPath of projectPaths) {
             // We need to remove the project path from the key to get the absolute path to the file
             // Do not use .. in between because there could be multiple project paths in the same parent dir.
             const filePath = path.join(projectPath, key.split('/').slice(1).join('/'))
@@ -85,7 +87,7 @@ export async function listScanResults(
                 }
                 aggregatedCodeScanIssueList.push(aggregatedCodeScanIssue)
             }
-        })
+        }
         const maybeAbsolutePath = `/${key}`
         if (existsSync(maybeAbsolutePath) && statSync(maybeAbsolutePath).isFile()) {
             const aggregatedCodeScanIssue: AggregatedCodeScanIssue = {
@@ -94,7 +96,7 @@ export async function listScanResults(
             }
             aggregatedCodeScanIssueList.push(aggregatedCodeScanIssue)
         }
-    })
+    }
     return aggregatedCodeScanIssueList
 }
 
@@ -158,7 +160,7 @@ export function mapToAggregatedList(
         return true
     })
 
-    filteredIssues.forEach((issue) => {
+    for (const issue of filteredIssues) {
         const filePath = issue.filePath
         if (codeScanIssueMap.has(filePath)) {
             if (!isExistingIssue(issue, codeScanIssueMap)) {
@@ -169,7 +171,7 @@ export function mapToAggregatedList(
         } else {
             codeScanIssueMap.set(filePath, [issue])
         }
-    })
+    }
 }
 
 function isDuplicateIssue(issueA: RawCodeScanIssue, issueB: RawCodeScanIssue) {
@@ -287,7 +289,7 @@ export async function getPresignedUrlAndUpload(
     logger.verbose(`CreateUploadUrlRequest request id: ${srcResp.$response.requestId}`)
     logger.verbose(`Complete Getting presigned Url for uploading src context.`)
     logger.verbose(`Uploading src context...`)
-    await uploadArtifactToS3(zipMetadata.zipFilePath, srcResp, scope)
+    await uploadArtifactToS3(zipMetadata.zipFilePath, srcResp, FeatureUseCase.CODE_SCAN, scope)
     logger.verbose(`Complete uploading src context.`)
     const artifactMap: ArtifactMap = {
         SourceCode: srcResp.uploadId,
@@ -343,6 +345,7 @@ export function throwIfCancelled(scope: CodeWhispererConstants.CodeAnalysisScope
 export async function uploadArtifactToS3(
     fileName: string,
     resp: CreateUploadUrlResponse,
+    featureUseCase: FeatureUseCase,
     scope?: CodeWhispererConstants.CodeAnalysisScope
 ) {
     const logger = getLoggerForScope(scope)
@@ -365,14 +368,23 @@ export async function uploadArtifactToS3(
         }).response
         logger.debug(`StatusCode: ${response.status}, Text: ${response.statusText}`)
     } catch (error) {
+        let errorMessage = ''
+        const isCodeScan = featureUseCase === FeatureUseCase.CODE_SCAN
+        const featureType = isCodeScan ? 'security scans' : 'unit test generation'
+        const defaultMessage = isCodeScan ? 'Security scan failed.' : 'Test generation failed.'
         getLogger().error(
-            `Amazon Q is unable to upload workspace artifacts to Amazon S3 for security scans. For more information, see the Amazon Q documentation or contact your network or organization administrator.`
+            `Amazon Q is unable to upload workspace artifacts to Amazon S3 for ${featureType}. ` +
+                'For more information, see the Amazon Q documentation or contact your network or organization administrator.'
         )
-        const errorMessage = getTelemetryReasonDesc(error)?.includes(`"PUT" request failed with code "403"`)
-            ? `"PUT" request failed with code "403"`
-            : (getTelemetryReasonDesc(error) ?? 'Security scan failed.')
-
-        throw new UploadArtifactToS3Error(errorMessage)
+        const errorDesc = getTelemetryReasonDesc(error)
+        if (errorDesc?.includes('"PUT" request failed with code "403"')) {
+            errorMessage = '"PUT" request failed with code "403"'
+        } else if (errorDesc?.includes('"PUT" request failed with code "503"')) {
+            errorMessage = '"PUT" request failed with code "503"'
+        } else {
+            errorMessage = errorDesc ?? defaultMessage
+        }
+        throw isCodeScan ? new UploadArtifactToS3Error(errorMessage) : new UploadTestArtifactToS3Error(errorMessage)
     }
 }
 
@@ -391,10 +403,7 @@ function getPollingDelayMsForScope(scope: CodeWhispererConstants.CodeAnalysisSco
 }
 
 function getPollingTimeoutMsForScope(scope: CodeWhispererConstants.CodeAnalysisScope) {
-    return (
-        (scope === CodeWhispererConstants.CodeAnalysisScope.FILE_AUTO ||
-        scope === CodeWhispererConstants.CodeAnalysisScope.FILE_ON_DEMAND
-            ? CodeWhispererConstants.codeFileScanJobTimeoutSeconds
-            : CodeWhispererConstants.codeScanJobTimeoutSeconds) * 1000
-    )
+    return scope === CodeWhispererConstants.CodeAnalysisScope.FILE_AUTO
+        ? CodeWhispererConstants.expressScanTimeoutMs
+        : CodeWhispererConstants.standardScanTimeoutMs
 }

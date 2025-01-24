@@ -115,3 +115,15 @@ export interface UpdateFilesPathsParams {
     messageId: string
     disableFileActions?: boolean
 }
+
+export enum MetricDataOperationName {
+    StartCodeGeneration = 'StartCodeGeneration',
+    EndCodeGeneration = 'EndCodeGeneration',
+}
+
+export enum MetricDataResult {
+    Success = 'Success',
+    Fault = 'Fault',
+    Error = 'Error',
+    LlmFailure = 'LLMFailure',
+}

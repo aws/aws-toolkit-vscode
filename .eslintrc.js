@@ -158,6 +158,8 @@ module.exports = {
         'unicorn/prefer-reflect-apply': 'error',
         'unicorn/prefer-string-trim-start-end': 'error',
         'unicorn/prefer-type-error': 'error',
+        // Discourage `.forEach` because it can lead to accidental, incorrect use of async callbacks.
+        'unicorn/no-array-for-each': 'error',
         'security-node/detect-child-process': 'error',
 
         'header/header': [
@@ -204,8 +206,15 @@ module.exports = {
                         message:
                             'Avoid child_process, use ChildProcess from `shared/utilities/processUtils.ts` instead.',
                     },
+                    {
+                        name: '..',
+                        message:
+                            'Avoid importing from index.ts files as it can lead to circular dependencies. Import from the module directly instead.',
+                    },
                 ],
             },
         ],
+
+        'prettier/prettier': ['error', { endOfLine: 'auto' }],
     },
 }

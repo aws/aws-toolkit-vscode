@@ -14,7 +14,7 @@ import { LaunchConfiguration, getReferencedHandlerPaths } from '../../shared/deb
 import { makeTemporaryToolkitFolder, fileExists, tryRemoveFolder } from '../../shared/filesystemUtilities'
 import * as localizedText from '../../shared/localizedText'
 import { getLogger } from '../../shared/logger'
-import { HttpResourceFetcher } from '../../shared/resourcefetcher/httpResourceFetcher'
+import { HttpResourceFetcher } from '../../shared/resourcefetcher/node/httpResourceFetcher'
 import { createCodeAwsSamDebugConfig } from '../../shared/sam/debugger/awsSamDebugConfiguration'
 import * as pathutils from '../../shared/utilities/pathUtils'
 import { localize } from '../../shared/utilities/vsCodeUtils'
