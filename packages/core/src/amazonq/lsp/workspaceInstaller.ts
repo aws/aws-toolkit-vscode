@@ -4,14 +4,13 @@
  */
 
 import path from 'path'
-import { LspResolution, LspResolver, LspVersion } from '../../shared/lsp/types'
+import { LspResolution, LspResolver } from '../../shared/lsp/types'
 import { ManifestResolver } from '../../shared/lsp/manifestResolver'
 import { LanguageServerResolver } from '../../shared/lsp/lspResolver'
-import { Range, sort } from 'semver'
+import { Range } from 'semver'
 import { getNodeExecutableName } from '../../shared/lsp/utils/platform'
 import { fs } from '../../shared/fs/fs'
-import { partition } from '../../shared/utilities/tsUtils'
-import { getDownloadedVersions } from './util'
+import { cleanUpLSPDownloads } from './util'
 
 export const lspManifestUrl = 'https://aws-toolkit-language-servers.amazonaws.com/q-context/manifest.json'
 // this LSP client in Q extension is only going to work with these LSP server versions
@@ -32,7 +31,7 @@ export class WorkspaceLSPResolver implements LspResolver {
         const nodePath = path.join(installationResult.assetDirectory, nodeName)
         await fs.chmod(nodePath, 0o755)
 
-        await this.cleanUp(manifest.versions, path.dirname(installationResult.assetDirectory))
+        await cleanUpLSPDownloads(manifest.versions, path.dirname(installationResult.assetDirectory))
         return {
             ...installationResult,
             resourcePaths: {
@@ -42,33 +41,6 @@ export class WorkspaceLSPResolver implements LspResolver {
                 ),
                 node: nodePath,
             },
-        }
-    }
-
-    private isDelisted(manifestVersions: LspVersion[], targetVersion: string): boolean {
-        return manifestVersions.find((v) => v.serverVersion === targetVersion)?.isDelisted ?? false
-    }
-
-    /**
-     * Delete all delisted versions and keep the two newest versions that remain
-     * @param manifest
-     * @param downloadDirectory
-     */
-    async cleanUp(manifestVersions: LspVersion[], downloadDirectory: string): Promise<void> {
-        const downloadedVersions = await getDownloadedVersions(downloadDirectory)
-        const [delistedVersions, remainingVersions] = partition(downloadedVersions, (v: string) =>
-            this.isDelisted(manifestVersions, v)
-        )
-        for (const v of delistedVersions) {
-            await fs.delete(path.join(downloadDirectory, v), { force: true, recursive: true })
-        }
-
-        if (remainingVersions.length <= 2) {
-            return
-        }
-
-        for (const v of sort(remainingVersions).slice(0, -2)) {
-            await fs.delete(path.join(downloadDirectory, v), { force: true, recursive: true })
         }
     }
 }

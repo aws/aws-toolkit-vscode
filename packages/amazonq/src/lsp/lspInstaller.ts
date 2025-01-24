@@ -14,6 +14,7 @@ import {
     getNodeExecutableName,
 } from 'aws-core-vscode/shared'
 import path from 'path'
+import { cleanUpLSPDownloads } from 'aws-core-vscode/amazonq'
 
 const manifestURL = 'https://aws-toolkit-language-servers.amazonaws.com/codewhisperer/0/manifest.json'
 export const supportedLspServerVersions = '^2.3.0'
@@ -46,7 +47,7 @@ export class AmazonQLSPResolver implements LspResolver {
         const nodePath = path.join(installationResult.assetDirectory, `servers/${getNodeExecutableName()}`)
         await fs.chmod(nodePath, 0o755)
 
-        // TODO Cleanup old versions of language servers
+        await cleanUpLSPDownloads(manifest.versions, path.dirname(installationResult.assetDirectory))
         return {
             ...installationResult,
             resourcePaths: {
