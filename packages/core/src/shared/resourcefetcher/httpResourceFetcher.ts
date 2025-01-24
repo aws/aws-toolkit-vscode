@@ -6,9 +6,8 @@
 import { VSCODE_EXTENSION_ID } from '../extensions'
 import { getLogger, Logger } from '../logger'
 import { ResourceFetcher } from './resourcefetcher'
-import { Timeout, CancelEvent } from '../utilities/timeoutUtils'
+import { Timeout, CancelEvent, waitUntil } from '../utilities/timeoutUtils'
 import request, { RequestError } from '../request'
-import { withRetries } from '../utilities/functionUtils'
 
 type RequestHeaders = { eTag?: string; gZip?: boolean }
 
@@ -30,7 +29,6 @@ export class HttpResourceFetcher implements ResourceFetcher<Response> {
             showUrl: boolean
             friendlyName?: string
             timeout?: Timeout
-            retries?: number
         }
     ) {}
 
@@ -97,7 +95,7 @@ export class HttpResourceFetcher implements ResourceFetcher<Response> {
     }
 
     private async getResponseFromGetRequest(timeout?: Timeout, headers?: RequestHeaders): Promise<Response> {
-        return withRetries(
+        return waitUntil(
             () => {
                 const req = request.fetch('GET', this.url, {
                     headers: this.buildRequestHeaders(headers),
@@ -111,7 +109,10 @@ export class HttpResourceFetcher implements ResourceFetcher<Response> {
                 return req.response.finally(() => cancelListener?.dispose())
             },
             {
-                maxRetries: this.params.retries ?? 1,
+                timeout: 3000,
+                interval: 100,
+                backoff: 2,
+                retryOnFail: true,
             }
         )
     }

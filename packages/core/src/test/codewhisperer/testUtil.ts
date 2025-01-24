@@ -226,7 +226,7 @@ export const mockGetCodeScanResponse = {
         requestId: 'requestId',
         hasNextPage: () => false,
         error: undefined,
-        nextPage: () => undefined,
+        nextPage: () => null, // eslint-disable-line unicorn/no-null
         redirectCount: 0,
         retryCount: 0,
         httpResponse: new HttpResponse(),
@@ -246,7 +246,7 @@ export function createClient() {
             requestId: 'requestId',
             hasNextPage: () => false,
             error: undefined,
-            nextPage: () => undefined,
+            nextPage: () => null, // eslint-disable-line unicorn/no-null
             redirectCount: 0,
             retryCount: 0,
             httpResponse: new HttpResponse(),
@@ -263,7 +263,7 @@ export function createClient() {
             requestId: 'requestId',
             hasNextPage: () => false,
             error: undefined,
-            nextPage: () => undefined,
+            nextPage: () => null, // eslint-disable-line unicorn/no-null
             redirectCount: 0,
             retryCount: 0,
             httpResponse: new HttpResponse(),
@@ -306,7 +306,7 @@ export function createClient() {
             requestId: 'requestId',
             hasNextPage: () => false,
             error: undefined,
-            nextPage: () => undefined,
+            nextPage: () => null, // eslint-disable-line unicorn/no-null
             redirectCount: 0,
             retryCount: 0,
             httpResponse: new HttpResponse(),

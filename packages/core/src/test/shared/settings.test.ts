@@ -276,7 +276,7 @@ describe('Settings', function () {
 })
 
 describe('DevSetting', function () {
-    const testSetting = 'forceCloud9'
+    const testSetting = 'renderDebugDetails'
 
     let settings: ClassToInterfaceType<Settings>
     let sut: DevSettings

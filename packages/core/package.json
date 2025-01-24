@@ -523,7 +523,7 @@
         "adm-zip": "^0.5.10",
         "amazon-states-language-service": "^1.13.0",
         "async-lock": "^1.4.0",
-        "aws-sdk": "^2.1384.0",
+        "aws-sdk": "^2.1692.0",
         "aws-ssm-document-language-service": "^1.0.0",
         "bytes": "^3.1.2",
         "cross-fetch": "^4.0.0",
