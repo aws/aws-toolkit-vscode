@@ -13,7 +13,8 @@ import { TargetContent, logger, LspResult, LspVersion, Manifest } from './types'
 import { getApplicationSupportFolder } from '../vscode/env'
 import { createHash } from '../crypto'
 import request from '../request'
-import { lspSetupStage, tryFunctions } from '../../amazonq/lsp/util'
+import { lspSetupStage } from '../../amazonq/lsp/util'
+import { tryFunctions } from '../utilities/tsUtils'
 
 export class LanguageServerResolver {
     constructor(

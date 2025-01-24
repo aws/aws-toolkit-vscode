@@ -9,7 +9,8 @@ import { RetryableResourceFetcher } from '../resourcefetcher/httpResourceFetcher
 import { Timeout } from '../utilities/timeoutUtils'
 import globals from '../extensionGlobals'
 import { Manifest } from './types'
-import { lspSetupStage, tryFunctions } from '../../amazonq/lsp/util'
+import { lspSetupStage } from '../../amazonq/lsp/util'
+import { tryFunctions } from '../utilities/tsUtils'
 
 const logger = getLogger('lsp')
 

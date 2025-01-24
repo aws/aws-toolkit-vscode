@@ -94,6 +94,23 @@ export function createFactoryFunction<T extends new (...args: any[]) => any>(cto
     return (...args) => new ctor(...args)
 }
 
+/**
+ * Try Functions in the order presented and return the first returned result. If none return, throw the final error.
+ * @param functions non-empty list of functions to try.
+ * @returns
+ */
+export async function tryFunctions<Result>(functions: (() => Promise<Result>)[]): Promise<Result> {
+    let currentError: Error = new Error('No functions provided')
+    for (const func of functions) {
+        try {
+            return await func()
+        } catch (e) {
+            currentError = e as Error
+        }
+    }
+    throw currentError
+}
+
 type NoSymbols<T> = { [Property in keyof T]: Property extends symbol ? never : Property }[keyof T]
 export type InterfaceNoSymbol<T> = Pick<T, NoSymbols<T>>
 /**
