@@ -15,7 +15,6 @@ import { Messenger } from './framework/messenger'
 import { FollowUpTypes } from 'aws-core-vscode/amazonq'
 import { registerAuthHook, using } from 'aws-core-vscode/test'
 import { loginToIdC } from './utils/setup'
-import { openDocument } from './utils/workspaceUtils'
 import { globals } from 'aws-core-vscode/shared'
 
 describe('Amazon Q Test Generation', function () {
@@ -93,7 +92,13 @@ describe('Amazon Q Test Generation', function () {
         const { language, filePath } = unsupportedLanguages[0]
 
         beforeEach(async () => {
-            const document = await openDocument(filePath)
+            const found = await vscode.workspace.findFiles(filePath)
+            if (found.length === 0) {
+                assert.fail(`Failed to find ${language} file`)
+            }
+
+            await vscode.commands.executeCommand('vscode.open', found[0])
+            const document = vscode.workspace.textDocuments.find((o) => o.uri.fsPath.includes(found[0].fsPath))
             if (!document) {
                 assert.fail(`Failed to open ${language} file`)
             }
@@ -179,8 +184,14 @@ describe('Amazon Q Test Generation', function () {
         describe(`Test Generation for ${language}`, () => {
             beforeEach(async () => {
                 // retry mechanism as loading active document can be sometimes flaky
-                for (let attempt = 1; attempt < 3; attempt++) {
-                    const document = await openDocument(filePath)
+                for (let attempt = 1; attempt <= 3; attempt++) {
+                    const found = await vscode.workspace.findFiles(filePath)
+                    if (found.length === 0) {
+                        assert.fail(`Failed to find ${language} file`)
+                    }
+
+                    await vscode.commands.executeCommand('vscode.open', found[0])
+                    const document = vscode.workspace.textDocuments.find((o) => o.uri.fsPath.includes(found[0].fsPath))
                     if (!document) {
                         if (attempt === 3) {
                             assert.fail(`Failed to open ${language} file`)
