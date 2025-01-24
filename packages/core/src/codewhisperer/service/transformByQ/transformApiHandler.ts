@@ -436,9 +436,6 @@ export async function zipCode(
 export async function startJob(uploadId: string) {
     const sourceLanguageVersion = `JAVA_${transformByQState.getSourceJDKVersion()}`
     const targetLanguageVersion = `JAVA_${transformByQState.getTargetJDKVersion()}`
-    // TO-DO: remove these logs statements
-    console.log('sourceLanguageVersion', sourceLanguageVersion)
-    console.log('targetLanguageVersion', targetLanguageVersion)
     try {
         const response = await codeWhisperer.codeWhispererClient.codeModernizerStartCodeTransformation({
             workspaceState: {
