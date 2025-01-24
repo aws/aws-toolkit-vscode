@@ -162,13 +162,20 @@ export class RegionProvider {
         remote: () => Endpoints | Promise<Endpoints>
     }): RegionProvider {
         const instance = new this()
+        void instance.init(endpointsProvider)
+        return instance
+    }
 
-        async function load() {
+    async init(endpointsProvider: {
+        local: () => Endpoints | Promise<Endpoints>
+        remote: () => Endpoints | Promise<Endpoints>
+    }) {
+        const load = async () => {
             getLogger().info('endpoints: retrieving AWS endpoints data')
-            instance.loadFromEndpoints(await endpointsProvider.local())
+            this.loadFromEndpoints(await endpointsProvider.local())
 
             try {
-                instance.loadFromEndpoints(await endpointsProvider.remote())
+                this.loadFromEndpoints(await endpointsProvider.remote())
             } catch (err) {
                 getLogger().warn(
                     `endpoints: failed to load from remote source, region data may appear outdated: %s`,
@@ -177,7 +184,7 @@ export class RegionProvider {
             }
         }
 
-        load().catch((err) => {
+        return load().catch((err) => {
             getLogger().error('Failure while loading Endpoints Manifest: %s', err)
 
             return vscode.window.showErrorMessage(
@@ -191,8 +198,6 @@ export class RegionProvider {
                 )}`
             )
         })
-
-        return instance
     }
 }
 
