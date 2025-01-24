@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+// jscpd:ignore-start
 import assert from 'assert'
 import vscode from 'vscode'
 import os from 'os'
@@ -266,3 +267,5 @@ describe('Amazon Q Test Generation', function () {
         })
     }
 })
+
+// jscpd:ignore-end
