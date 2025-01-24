@@ -9,7 +9,6 @@ import { getTabSizeSetting } from '../shared/utilities/editorUtilities'
 import { KeyStrokeHandler } from './service/keyStrokeHandler'
 import * as EditorContext from './util/editorContext'
 import * as CodeWhispererConstants from './models/constants'
-import { getCompletionItems } from './service/completionProvider'
 import {
     vsCodeState,
     ConfigurationEntry,
@@ -22,15 +21,12 @@ import {
 } from './models/model'
 import { invokeRecommendation } from './commands/invokeRecommendation'
 import { acceptSuggestion } from './commands/onInlineAcceptance'
-import { resetIntelliSenseState } from './util/globalStateUtil'
 import { CodeWhispererSettings } from './util/codewhispererSettings'
 import { ExtContext } from '../shared/extensions'
-import { TextEditorSelectionChangeKind } from 'vscode'
 import { CodeWhispererTracker } from './tracker/codewhispererTracker'
 import * as codewhispererClient from './client/codewhisperer'
 import { runtimeLanguageContext } from './util/runtimeLanguageContext'
 import { getLogger } from '../shared/logger'
-import { isCloud9 } from '../shared/extensionUtilities'
 import {
     enableCodeSuggestions,
     toggleCodeSuggestions,
@@ -113,14 +109,6 @@ export async function activate(context: ExtContext): Promise<void> {
     const auth = AuthUtil.instance
     auth.initCodeWhispererHooks()
 
-    /**
-     * Enable essential intellisense default settings for AWS C9 IDE
-     */
-
-    if (isCloud9()) {
-        await enableDefaultConfigCloud9()
-    }
-
     // TODO: is this indirection useful?
     registerDeclaredCommands(
         context.extensionContext.subscriptions,
@@ -132,7 +120,9 @@ export async function activate(context: ExtContext): Promise<void> {
      * CodeWhisperer security panel
      */
     const securityPanelViewProvider = new SecurityPanelViewProvider(context.extensionContext)
-    activateSecurityScan()
+    context.extensionContext.subscriptions.push(
+        vscode.window.registerWebviewViewProvider(SecurityPanelViewProvider.viewType, securityPanelViewProvider)
+    )
 
     // TODO: this is already done in packages/core/src/extensionCommon.ts, why doesn't amazonq use that?
     registerCommandErrorHandler((info, error) => {
@@ -490,22 +480,6 @@ export async function activate(context: ExtContext): Promise<void> {
         })
     }
 
-    function activateSecurityScan() {
-        context.extensionContext.subscriptions.push(
-            vscode.window.registerWebviewViewProvider(SecurityPanelViewProvider.viewType, securityPanelViewProvider)
-        )
-
-        context.extensionContext.subscriptions.push(
-            vscode.window.onDidChangeActiveTextEditor((editor) => {
-                if (isCloud9()) {
-                    if (editor) {
-                        securityPanelViewProvider.setDecoration(editor, editor.document.uri)
-                    }
-                }
-            })
-        )
-    }
-
     function getAutoTriggerStatus(): boolean {
         return CodeSuggestionsState.instance.isSuggestionsEnabled()
     }
@@ -526,9 +500,7 @@ export async function activate(context: ExtContext): Promise<void> {
         }
     }
 
-    if (isCloud9()) {
-        setSubscriptionsforCloud9()
-    } else if (isInlineCompletionEnabled()) {
+    if (isInlineCompletionEnabled()) {
         await setSubscriptionsforInlineCompletion()
         await AuthUtil.instance.setVscodeContextProps()
     }
@@ -592,80 +564,6 @@ export async function activate(context: ExtContext): Promise<void> {
         )
     }
 
-    function setSubscriptionsforCloud9() {
-        /**
-         * Manual trigger
-         */
-        context.extensionContext.subscriptions.push(
-            vscode.languages.registerCompletionItemProvider([...CodeWhispererConstants.platformLanguageIds], {
-                async provideCompletionItems(
-                    document: vscode.TextDocument,
-                    position: vscode.Position,
-                    token: vscode.CancellationToken,
-                    context: vscode.CompletionContext
-                ) {
-                    const completionList = new vscode.CompletionList(getCompletionItems(document, position), false)
-                    return completionList
-                },
-            }),
-            /**
-             * Automated trigger
-             */
-            vscode.workspace.onDidChangeTextDocument(async (e) => {
-                const editor = vscode.window.activeTextEditor
-                if (!editor) {
-                    return
-                }
-                if (e.document !== editor.document) {
-                    return
-                }
-                if (!runtimeLanguageContext.isLanguageSupported(e.document)) {
-                    return
-                }
-                /**
-                 * CodeWhisperer security panel dynamic handling
-                 */
-                securityPanelViewProvider.disposeSecurityPanelItem(e, editor)
-                CodeWhispererCodeCoverageTracker.getTracker(e.document.languageId)?.countTotalTokens(e)
-
-                if (e.contentChanges.length === 0 || vsCodeState.isCodeWhispererEditing) {
-                    return
-                }
-                /**
-                 * Important:  Doing this sleep(10) is to make sure
-                 * 1. this event is processed by vs code first
-                 * 2. editor.selection.active has been successfully updated by VS Code
-                 * Then this event can be processed by our code.
-                 */
-                await sleep(CodeWhispererConstants.vsCodeCursorUpdateDelay)
-                await KeyStrokeHandler.instance.processKeyStroke(e, editor, client, await getConfigEntry())
-            }),
-
-            /**
-             * On intelliSense recommendation rejection, reset set intelli sense is active state
-             * Maintaining this variable because VS Code does not expose official intelliSense isActive API
-             */
-            vscode.window.onDidChangeVisibleTextEditors(async (e) => {
-                resetIntelliSenseState(true, getAutoTriggerStatus(), RecommendationHandler.instance.isValidResponse())
-            }),
-            vscode.window.onDidChangeActiveTextEditor(async (e) => {
-                resetIntelliSenseState(true, getAutoTriggerStatus(), RecommendationHandler.instance.isValidResponse())
-            }),
-            vscode.window.onDidChangeTextEditorSelection(async (e) => {
-                if (e.kind === TextEditorSelectionChangeKind.Mouse) {
-                    resetIntelliSenseState(
-                        true,
-                        getAutoTriggerStatus(),
-                        RecommendationHandler.instance.isValidResponse()
-                    )
-                }
-            }),
-            vscode.workspace.onDidSaveTextDocument(async (e) => {
-                resetIntelliSenseState(true, getAutoTriggerStatus(), RecommendationHandler.instance.isValidResponse())
-            })
-        )
-    }
-
     void FeatureConfigProvider.instance.fetchFeatureConfigs().catch((error) => {
         getLogger().error('Failed to fetch feature configs - %s', error)
     })
@@ -706,19 +604,6 @@ export async function activate(context: ExtContext): Promise<void> {
 export async function shutdown() {
     RecommendationHandler.instance.reportUserDecisions(-1)
     await CodeWhispererTracker.getTracker().shutdown()
-}
-
-export async function enableDefaultConfigCloud9() {
-    const editorSettings = vscode.workspace.getConfiguration('editor')
-    try {
-        await editorSettings.update('suggest.showMethods', true, vscode.ConfigurationTarget.Global)
-        // suggest.preview is available in vsc 1.57+
-        await editorSettings.update('suggest.preview', true, vscode.ConfigurationTarget.Global)
-        await editorSettings.update('acceptSuggestionOnEnter', 'on', vscode.ConfigurationTarget.Global)
-        await editorSettings.update('snippetSuggestions', 'top', vscode.ConfigurationTarget.Global)
-    } catch (error) {
-        getLogger().error('amazonq: Failed to update user settings %O', error)
-    }
 }
 
 function toggleIssuesVisibility(visibleCondition: (issue: CodeScanIssue, filePath: string) => boolean) {

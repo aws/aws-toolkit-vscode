@@ -119,7 +119,7 @@ export class ChildProcessTracker {
     public add(childProcess: ChildProcess) {
         const pid = childProcess.pid()
         this.#processByPid.set(pid, childProcess)
-        this.#pids.start(pid)
+        this.#pids.add(pid)
     }
 
     public delete(childProcessId: number) {
