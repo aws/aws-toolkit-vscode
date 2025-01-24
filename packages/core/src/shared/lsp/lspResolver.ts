@@ -14,8 +14,6 @@ import { getApplicationSupportFolder } from '../vscode/env'
 import { createHash } from '../crypto'
 import { HttpResourceFetcher } from '../resourcefetcher/httpResourceFetcher'
 
-const lspFetchRetries = 3
-
 export class LanguageServerResolver {
     constructor(
         private readonly manifest: Manifest,
@@ -167,7 +165,7 @@ export class LanguageServerResolver {
         }
 
         const downloadTasks = contents.map(async (content) => {
-            const res = await new HttpResourceFetcher(content.url, { showUrl: true, retries: lspFetchRetries }).get()
+            const res = await new HttpResourceFetcher(content.url, { showUrl: true }).get()
             if (!res || !res.ok || !res.body) {
                 return false
             }

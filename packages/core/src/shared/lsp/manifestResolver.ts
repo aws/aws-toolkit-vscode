@@ -21,7 +21,6 @@ type ManifestStorage = Record<string, StorageManifest>
 
 const manifestStorageKey = 'aws.toolkit.lsp.manifest'
 const manifestTimeoutMs = 15000
-const manifestFetchRetries = 3
 
 export class ManifestResolver {
     constructor(
@@ -44,7 +43,6 @@ export class ManifestResolver {
         const resp = await new HttpResourceFetcher(this.manifestURL, {
             showUrl: true,
             timeout: new Timeout(manifestTimeoutMs),
-            retries: manifestFetchRetries,
         }).getNewETagContent(this.getEtag())
 
         if (!resp.content) {
