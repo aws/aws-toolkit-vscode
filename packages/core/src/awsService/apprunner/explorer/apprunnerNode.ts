@@ -93,7 +93,7 @@ export class AppRunnerNode extends AWSTreeNodeBase {
     }
 
     public startPollingNode(id: string): void {
-        this.pollingSet.start(id)
+        this.pollingSet.add(id)
     }
 
     public stopPollingNode(id: string): void {

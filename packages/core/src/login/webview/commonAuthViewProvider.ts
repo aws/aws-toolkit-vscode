@@ -11,7 +11,7 @@
 "type": "webview",
 "id": "aws.AmazonCommonAuth",
 "name": "%AWS.amazonq.login%",
-"when": "!isCloud9 && !aws.isSageMaker && !aws.amazonq.showView"
+"when": "!aws.isSageMaker && !aws.amazonq.showView"
 },
 
 * 2. Assign when clause context to this view. Manage the state of when clause context.

@@ -1,3 +1,29 @@
+## 1.44.0 2025-01-23
+
+- **Bug Fix** Amazon Q: word duplication when pressing tab on context selector fixed
+- **Bug Fix** Amazon Q /doc: Prevent users from requesting changes if no iterations remain
+- **Bug Fix** `/test`: view diffs by clicking files in the file tree, aligning the behavior with the 'View Diff' button.
+- **Bug Fix** /review: Improved error handling for code fix operations
+- **Bug Fix** Amazon Q: cursor no longer jumps after navigating prompt history
+- **Bug Fix** Improve the text description of workspace index settings
+- **Bug Fix** Notifications: 'Dismiss' command visible in command palette.
+- **Bug Fix** /transform: replace icons in Transformation Hub with text
+- **Bug Fix** Amazon Q /doc: Ask for user prompt if error occurs while updating documentation
+- **Feature** Amazon Q: increase chat current active file context char limit to 40k
+- **Feature** /review: Code issues can be grouped by file location or severity
+
+## 1.43.0 2025-01-15
+
+- **Bug Fix** Auth: Valid StartURL not accepted at login
+- **Bug Fix** Fix inline completion supplementalContext length exceeding maximum in certain cases
+- **Bug Fix** Amazon Q /test: Unit test generation completed message shows after accept/reject action
+- **Bug Fix** /test: for unsupported languages was sometimes unreliable
+- **Bug Fix** User-selected customizations are sometimes not being persisted.
+- **Bug Fix** Amazon q /dev: Remove hard-coded limits and instead rely server-side data to communicate number of code generations remaining
+- **Feature** Adds capability to send new context commands to AB groups
+- **Feature** feat(amazonq): Add error message for updated README too large
+- **Feature** Enhance Q inline completion context fetching for better suggestion quality
+
 ## 1.42.0 2025-01-09
 
 - **Bug Fix** Amazon Q /doc: Improve button text phrasing

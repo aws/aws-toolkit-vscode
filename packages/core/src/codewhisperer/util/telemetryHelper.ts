@@ -70,6 +70,7 @@ export class TelemetryHelper {
     public sendTestGenerationToolkitEvent(
         session: Session,
         isSupportedLanguage: boolean,
+        isFileInWorkspace: boolean,
         result: 'Succeeded' | 'Failed' | 'Cancelled',
         requestId?: string,
         perfClientLatency?: number,
@@ -90,6 +91,7 @@ export class TelemetryHelper {
             cwsprChatProgrammingLanguage: session.fileLanguage ?? 'plaintext',
             hasUserPromptSupplied: session.hasUserPromptSupplied,
             isSupportedLanguage: isSupportedLanguage,
+            isFileInWorkspace: isFileInWorkspace,
             result: result,
             artifactsUploadDuration: artifactsUploadDuration,
             buildPayloadBytes: buildPayloadBytes,
