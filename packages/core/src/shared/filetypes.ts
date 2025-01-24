@@ -233,7 +233,6 @@ export const codefileExtensions = new Set([
     '.idl',
     '.ini',
     '.io',
-    '.jar',
     '.java',
     '.jl',
     '.js',
@@ -362,7 +361,7 @@ export const codefileExtensions = new Set([
 ])
 
 // Code file names without an extension
-export const codefileNames = new Set(['Dockerfile', 'Dockerfile.build', 'gradlew', 'mvnw'])
+export const codefileNames = new Set(['Dockerfile', 'Dockerfile.build', 'gradlew', 'mvnw', '.gitignore'])
 
 // Build file names
 export const buildfileNames = new Set(['gradle/wrapper/gradle-wrapper.jar'])

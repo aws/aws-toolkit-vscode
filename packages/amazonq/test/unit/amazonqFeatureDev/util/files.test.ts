@@ -16,23 +16,45 @@ import { MetricName, Span } from 'aws-core-vscode/telemetry'
 import sinon from 'sinon'
 import { CodeWhispererSettings } from 'aws-core-vscode/codewhisperer'
 
-const testDevfilePrepareRepo = async (expectedRepoSize: number, devfileEnabled: boolean) => {
+import AdmZip from 'adm-zip'
+
+const testDevfilePrepareRepo = async (devfileEnabled: boolean) => {
+    const files: Record<string, string> = {
+        'file.md': 'test content',
+        // only include when execution is enabled
+        'devfile.yaml': 'test',
+        // .git folder is always dropped (because of vscode global exclude rules)
+        '.git/ref': '####',
+        // .gitignore should always be included
+        '.gitignore': 'node_models/*',
+        // non code files only when dev execution is enabled
+        'abc.jar': 'jar-content',
+        'data/logo.ico': 'binary-content',
+    }
     const folder = await TestFolder.create()
-    await folder.write('devfile.yaml', 'test')
-    await folder.write('file.md', 'test content')
+
+    for (const [fileName, content] of Object.entries(files)) {
+        await folder.write(fileName, content)
+    }
+
+    const expectedFiles = !devfileEnabled
+        ? ['./file.md', './.gitignore']
+        : ['./devfile.yaml', './file.md', './.gitignore', './abc.jar', 'data/logo.ico']
+
     const workspace = getWorkspaceFolder(folder.path)
     sinon
         .stub(CodeWhispererSettings.instance, 'getDevCommandWorkspaceConfigurations')
         .returns(devfileEnabled ? { [workspace.uri.fsPath]: true } : {})
 
-    await testPrepareRepoData(workspace, expectedRepoSize)
+    await testPrepareRepoData(workspace, expectedFiles)
 }
 
 const testPrepareRepoData = async (
     workspace: vscode.WorkspaceFolder,
-    expectedRepoSize: number,
+    expectedFiles: string[],
     expectedTelemetryMetrics?: Array<{ metricName: MetricName; value: any }>
 ) => {
+    expectedFiles.sort((a, b) => a.localeCompare(b))
     const telemetry = new TelemetryHelper()
     const result = await prepareRepoData([workspace.uri.fsPath], [workspace], telemetry, {
         record: () => {},
@@ -41,13 +63,18 @@ const testPrepareRepoData = async (
     assert.strictEqual(Buffer.isBuffer(result.zipFileBuffer), true)
     // checksum is not the same across different test executions because some unique random folder names are generated
     assert.strictEqual(result.zipFileChecksum.length, 44)
-    assert.strictEqual(telemetry.repositorySize, expectedRepoSize)
 
     if (expectedTelemetryMetrics) {
-        expectedTelemetryMetrics.forEach((metric) => {
+        for (const metric of expectedTelemetryMetrics) {
             assertTelemetry(metric.metricName, metric.value)
-        })
+        }
     }
+
+    // Unzip the buffer and compare the entry names
+    const zip = new AdmZip(result.zipFileBuffer)
+    const actualZipEntries = zip.getEntries().map((entry) => entry.entryName)
+    actualZipEntries.sort((a, b) => a.localeCompare(b))
+    assert.deepStrictEqual(actualZipEntries, expectedFiles)
 }
 
 describe('file utils', () => {
@@ -62,7 +89,7 @@ describe('file utils', () => {
             await folder.write('file2.md', 'test content')
             const workspace = getWorkspaceFolder(folder.path)
 
-            await testPrepareRepoData(workspace, 24)
+            await testPrepareRepoData(workspace, ['./file1.md', './file2.md'])
         })
 
         it('prepareRepoData ignores denied file extensions', async function () {
@@ -70,17 +97,19 @@ describe('file utils', () => {
             await folder.write('file.mp4', 'test content')
             const workspace = getWorkspaceFolder(folder.path)
 
-            await testPrepareRepoData(workspace, 0, [
-                { metricName: 'amazonq_bundleExtensionIgnored', value: { filenameExt: 'mp4', count: 1 } },
-            ])
+            await testPrepareRepoData(
+                workspace,
+                [],
+                [{ metricName: 'amazonq_bundleExtensionIgnored', value: { filenameExt: 'mp4', count: 1 } }]
+            )
         })
 
         it('should ignore devfile.yaml when setting is disabled', async function () {
-            await testDevfilePrepareRepo(12, false)
+            await testDevfilePrepareRepo(false)
         })
 
         it('should include devfile.yaml when setting is enabled', async function () {
-            await testDevfilePrepareRepo(16, true)
+            await testDevfilePrepareRepo(true)
         })
 
         // Test the logic that allows the customer to modify root source folder
