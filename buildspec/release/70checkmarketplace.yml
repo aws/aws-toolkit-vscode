@@ -1,0 +1,48 @@
+version: 0.2
+
+phases:
+    install:
+        runtime-versions:
+            nodejs: 16
+
+        commands:
+            - apt update
+            - apt install -y wget gpg
+            - wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg
+            - install -o root -g root -m 644 packages.microsoft.gpg /etc/apt/trusted.gpg.d/
+            - sh -c 'echo "deb [arch=amd64] https://packages.microsoft.com/repos/vscode stable main" > /etc/apt/sources.list.d/vscode.list'
+            - apt update
+            - apt install -y code
+
+    pre_build:
+        commands:
+            # Check for implicit env vars passed from the release pipeline.x
+            - test -n "${TARGET_EXTENSION}"
+
+    build:
+        commands:
+            - VERSION=$(node -e "console.log(require('./packages/${TARGET_EXTENSION}/package.json').version);")
+            # get extension name
+            - |
+                if [ "${TARGET_EXTENSION}" = "amazonq" ]; then
+                  extension_name="amazonwebservices.amazon-q-vscode"
+                elif [ "${TARGET_EXTENSION}" = "toolkit" ]; then
+                  extension_name="amazonwebservices.aws-toolkit-vscode"
+                else
+                  echo "Unknown TARGET_EXTENSION: ${TARGET_EXTENSION}"
+                  exit 1
+                fi
+            # keep reinstalling the extension until the desired version is updated. Otherwise fail on codebuild timeout (1 hour).
+            - |
+                while true; do
+                  code --uninstall-extension ${extension_name} --no-sandbox --user-data-dir /tmp/vscode
+                  code --install-extension ${extension_name} --no-sandbox --user-data-dir /tmp/vscode
+                  cur_version=$(code --list-extensions --show-versions --no-sandbox --user-data-dir /tmp/vscode | grep ${extension_name} | cut -d'@' -f2)
+                  if [ "${cur_version}" = "${VERSION}" ]; then
+                    echo "Extension ${extension_name} is updated to version ${cur_version}."
+                    break
+                  else
+                    echo "Current version ${cur_version} does not match expected version ${VERSION}. Retrying..."
+                  fi
+                  sleep 120 # Wait for 2 minutes before retrying
+                done
