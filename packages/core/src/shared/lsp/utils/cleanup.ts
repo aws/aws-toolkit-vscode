@@ -4,12 +4,12 @@
  */
 
 import path from 'path'
-import { LspVersion } from '../../shared'
-import { fs } from '../../shared/fs/fs'
-import { partition } from '../../shared/utilities/tsUtils'
+import { LspVersion } from '../types'
+import { fs } from '../../../shared/fs/fs'
+import { partition } from '../../../shared/utilities/tsUtils'
 import { sort } from 'semver'
 
-export async function getDownloadedVersions(installLocation: string) {
+async function getDownloadedVersions(installLocation: string) {
     return (await fs.readdir(installLocation)).map(([f, _], __) => f)
 }
 

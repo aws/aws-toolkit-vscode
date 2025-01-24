@@ -12,9 +12,9 @@ import {
     fs,
     LspResolution,
     getNodeExecutableName,
+    cleanUpLSPDownloads,
 } from 'aws-core-vscode/shared'
 import path from 'path'
-import { cleanUpLSPDownloads } from 'aws-core-vscode/amazonq'
 
 const manifestURL = 'https://aws-toolkit-language-servers.amazonaws.com/codewhisperer/0/manifest.json'
 export const supportedLspServerVersions = '^2.3.0'

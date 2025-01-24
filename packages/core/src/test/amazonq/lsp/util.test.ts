@@ -4,11 +4,10 @@
  */
 
 import { Uri } from 'vscode'
-import { fs } from '../../../shared'
+import { cleanUpLSPDownloads, fs } from '../../../shared'
 import { createTestWorkspaceFolder } from '../../testUtil'
 import path from 'path'
 import assert from 'assert'
-import { cleanUpLSPDownloads } from '../../../amazonq/lsp/util'
 
 async function fakeInstallVersion(version: string, installationDir: string): Promise<void> {
     const versionDir = path.join(installationDir, version)

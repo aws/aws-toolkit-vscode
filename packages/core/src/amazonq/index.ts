@@ -17,7 +17,6 @@ export {
 } from './onboardingPage/walkthrough'
 export { LspController } from './lsp/lspController'
 export { LspClient } from './lsp/lspClient'
-export { cleanUpLSPDownloads } from './lsp/util'
 export { api } from './extApi'
 export { AmazonQChatViewProvider } from './webview/webView'
 export { init as cwChatAppInit } from '../codewhispererChat/app'
