@@ -567,10 +567,6 @@
             ]
         },
         {
-            "name": "stepfunctions_testState",
-            "description": "Called when the Step Functions TestState API is called"
-        },
-        {
             "name": "vscode_activeRegions",
             "description": "Record the number of active regions at startup and when regions are added/removed",
             "unit": "Count",

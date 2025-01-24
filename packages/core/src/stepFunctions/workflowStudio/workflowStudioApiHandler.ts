@@ -7,8 +7,9 @@ import { IAM, StepFunctions } from 'aws-sdk'
 import { DefaultIamClient } from '../../shared/clients/iamClient'
 import { DefaultStepFunctionsClient } from '../../shared/clients/stepFunctionsClient'
 import { ApiAction, ApiCallRequestMessage, Command, MessageType, WebviewContext } from './types'
+import { telemetry } from '../../shared/telemetry'
 
-export class WorkflowStudioClient {
+export class WorkflowStudioApiHandler {
     public constructor(
         region: string,
         private readonly context: WebviewContext,
@@ -65,6 +66,9 @@ export class WorkflowStudioClient {
     }
 
     public async testState(params: StepFunctions.TestStateInput): Promise<StepFunctions.TestStateOutput> {
+        telemetry.ui_click.emit({
+            elementId: 'stepfunctions_testState',
+        })
         return this.clients.sfn.testState(params)
     }
 

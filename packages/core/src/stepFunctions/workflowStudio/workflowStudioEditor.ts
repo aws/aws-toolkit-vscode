@@ -13,7 +13,7 @@ import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { handleMessage } from './handleMessage'
 import { isInvalidJsonFile } from '../utils'
 import { setContext } from '../../shared/vscode/setContext'
-import { ExtContext } from '../../shared'
+import { globals } from '../../shared'
 
 /**
  * The main class for Workflow Studio Editor. This class handles the creation and management
@@ -38,7 +38,6 @@ export class WorkflowStudioEditor {
     public constructor(
         textDocument: vscode.TextDocument,
         webviewPanel: vscode.WebviewPanel,
-        context: ExtContext,
         fileId: string,
         getWebviewContent: () => Promise<string>
     ) {
@@ -55,7 +54,7 @@ export class WorkflowStudioEditor {
             id: this.fileId,
         })
 
-        this.setupWebviewPanel(textDocument, context)
+        this.setupWebviewPanel(textDocument)
     }
 
     public get onVisualizationDisposeEvent(): vscode.Event<void> {
@@ -71,11 +70,11 @@ export class WorkflowStudioEditor {
         this.getPanel()?.reveal()
     }
 
-    public async refreshPanel(context: ExtContext) {
+    public async refreshPanel() {
         if (!this.isPanelDisposed) {
             this.webviewPanel.dispose()
             const document = await vscode.workspace.openTextDocument(this.documentUri)
-            this.setupWebviewPanel(document, context)
+            this.setupWebviewPanel(document)
         }
     }
 
@@ -88,10 +87,9 @@ export class WorkflowStudioEditor {
      * panel, setting up the webview content, and handling the communication between the webview
      * and the extension context.
      * @param textDocument The text document to be displayed in the webview panel.
-     * @param context The extension context.
      * @private
      */
-    private setupWebviewPanel(textDocument: vscode.TextDocument, context: ExtContext) {
+    private setupWebviewPanel(textDocument: vscode.TextDocument) {
         const documentUri = textDocument.uri
 
         const contextObject: WebviewContext = {
@@ -132,7 +130,7 @@ export class WorkflowStudioEditor {
                     // Initialise webview panel for Workflow Studio and set up initial content
                     this.webviewPanel.webview.options = {
                         enableScripts: true,
-                        localResourceRoots: [context.extensionContext.extensionUri],
+                        localResourceRoots: [globals.context.extensionUri],
                     }
 
                     // Set the initial html for the webpage
@@ -157,7 +155,7 @@ export class WorkflowStudioEditor {
                     // Handle messages from the webview
                     this.disposables.push(
                         this.webviewPanel.webview.onDidReceiveMessage(async (message) => {
-                            await handleMessage(message, contextObject, context)
+                            await handleMessage(message, contextObject)
                         })
                     )
 

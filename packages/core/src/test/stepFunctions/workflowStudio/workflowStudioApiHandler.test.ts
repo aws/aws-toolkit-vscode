@@ -5,12 +5,12 @@
 
 import assert from 'assert'
 import sinon from 'sinon'
-import { WorkflowStudioClient } from '../../../stepFunctions/workflowStudio/workflowStudioClient'
+import { WorkflowStudioApiHandler } from '../../../stepFunctions/workflowStudio/workflowStudioApiHandler'
 import { MockDocument } from '../../fake/fakeDocument'
 import { ApiAction, Command, MessageType, WebviewContext } from '../../../stepFunctions/workflowStudio/types'
 import * as vscode from 'vscode'
 
-describe('WorkflowStudioClient', function () {
+describe('WorkflowStudioApiHandler', function () {
     it('should handle request and response for success', async function () {
         const panel = vscode.window.createWebviewPanel('WorkflowStudioMock', 'WorkflowStudioMockTitle', {
             viewColumn: vscode.ViewColumn.Active,
@@ -31,15 +31,15 @@ describe('WorkflowStudioClient', function () {
             fileId: '',
         }
 
-        const client = new WorkflowStudioClient('us-east-1', context)
+        const apiHandler = new WorkflowStudioApiHandler('us-east-1', context)
 
-        sinon.stub(client, 'testState').returns(
+        sinon.stub(apiHandler, 'testState').returns(
             Promise.resolve({
                 output: 'Test state output',
             })
         )
 
-        await client.performApiCall({
+        await apiHandler.performApiCall({
             apiName: ApiAction.SFNTestState,
             params: {
                 definition: '',
@@ -84,11 +84,11 @@ describe('WorkflowStudioClient', function () {
             fileId: '',
         }
 
-        const client = new WorkflowStudioClient('us-east-1', context)
+        const apiHandler = new WorkflowStudioApiHandler('us-east-1', context)
 
-        sinon.stub(client, 'testState').returns(Promise.reject(new Error('Error testing state')))
+        sinon.stub(apiHandler, 'testState').returns(Promise.reject(new Error('Error testing state')))
 
-        await client.performApiCall({
+        await apiHandler.performApiCall({
             apiName: ApiAction.SFNTestState,
             params: {
                 definition: '',

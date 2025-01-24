@@ -196,7 +196,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await activateStepFunctions(context, globals.awsContext, globals.outputChannel)
 
-        await activateStepFunctionsWorkflowStudio(extContext)
+        await activateStepFunctionsWorkflowStudio()
 
         await activateRedshift(extContext)
 
