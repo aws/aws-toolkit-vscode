@@ -9,8 +9,7 @@ import { RetryableResourceFetcher } from '../resourcefetcher/httpResourceFetcher
 import { Timeout } from '../utilities/timeoutUtils'
 import globals from '../extensionGlobals'
 import { Manifest } from './types'
-import { lspSetupStage } from '../../amazonq/lsp/util'
-import { tryFunctions } from '../utilities/tsUtils'
+import { StageResolver, tryResolvers } from '../../amazonq/lsp/util'
 
 const logger = getLogger('lsp')
 
@@ -34,22 +33,23 @@ export class ManifestResolver {
      * Fetches the latest manifest, falling back to local cache on failure
      */
     async resolve(): Promise<Manifest> {
-        const resolvers = [async () => await this.fetchRemoteManifest(), async () => await this.getLocalManifest()].map(
-            (resolver) => async () => await resolveManifestWith(resolver)
-        )
-        return await tryFunctions(resolvers)
+        const resolvers: StageResolver<Manifest>[] = [
+            {
+                resolve: async () => await this.fetchRemoteManifest(),
+                telemetryMetadata: { id: this.lsName, manifestLocation: 'remote' },
+            },
+            {
+                resolve: async () => await this.getLocalManifest(),
+                telemetryMetadata: { id: this.lsName, manifestLocation: 'cache' },
+            },
+        ]
 
-        async function resolveManifestWith(resolver: () => Promise<Manifest>) {
-            return await lspSetupStage(
-                'getManifest',
-                async () => await resolver(),
-                (result) => {
-                    return {
-                        manifestSchemaVersion: result.manifestSchemaVersion,
-                        manifestLocation: result.location,
-                    }
-                }
-            )
+        return await tryResolvers('getManifest', resolvers, extractMetadata)
+
+        function extractMetadata(r: Manifest) {
+            return {
+                manifestSchemaVersion: r.manifestSchemaVersion,
+            }
         }
     }
 
