@@ -27,7 +27,14 @@ export async function lspSetupStage<T>(
         return result
     })
 }
-
+/**
+ * Tries to resolve the result of a stage using the resolvers provided in order. The first one to succceed
+ * has its result succeeded, but all intermediate will emit telemetry.
+ * @param stageName name of stage to resolve.
+ * @param resolvers stage resolvers to try IN ORDER
+ * @param getMetadata function to be applied to result to extract necessary metadata for telemetry.
+ * @returns result of the first succesful resolver.
+ */
 export async function tryResolvers<Result>(
     stageName: LanguageServerSetupStage,
     resolvers: StageResolver<Result>[],
@@ -48,6 +55,9 @@ export async function tryResolvers<Result>(
     return await tryFunctions(fs)
 }
 
+/**
+ * A method that returns the result of a stage along with the default telemetry metadata to attach to the stage metric.
+ */
 export interface StageResolver<Result> {
     resolve: () => Promise<Result>
     telemetryMetadata: Partial<LanguageServerSetup>

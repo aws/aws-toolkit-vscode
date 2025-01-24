@@ -13,8 +13,7 @@ import { TargetContent, logger, LspResult, LspVersion, Manifest } from './types'
 import { getApplicationSupportFolder } from '../vscode/env'
 import { createHash } from '../crypto'
 import request from '../request'
-import { lspSetupStage } from '../../amazonq/lsp/util'
-import { tryFunctions } from '../utilities/tsUtils'
+import { lspSetupStage, StageResolver, tryResolvers } from '../../amazonq/lsp/util'
 
 export class LanguageServerResolver {
     constructor(
@@ -36,25 +35,27 @@ export class LanguageServerResolver {
         const targetContents = this.getLSPTargetContents(latestVersion)
         const cacheDirectory = this.getDownloadDirectory(latestVersion.serverVersion)
 
-        const serverResolvers = [
-            async () => await this.getLocalServer(cacheDirectory, latestVersion, targetContents),
-            async () => await this.fetchRemoteServer(cacheDirectory, latestVersion, targetContents),
-            async () => await this.getFallbackServer(latestVersion),
-        ].map((resolver) => async () => await resolveServerWith(resolver))
+        const serverResolvers: StageResolver<LspResult>[] = [
+            {
+                resolve: async () => await this.getLocalServer(cacheDirectory, latestVersion, targetContents),
+                telemetryMetadata: { id: this.lsName, languageServerLocation: 'cache' },
+            },
+            {
+                resolve: async () => await this.fetchRemoteServer(cacheDirectory, latestVersion, targetContents),
+                telemetryMetadata: { id: this.lsName, languageServerLocation: 'remote' },
+            },
+            {
+                resolve: async () => await this.getFallbackServer(latestVersion),
+                telemetryMetadata: { id: this.lsName, languageServerLocation: 'fallback' },
+            },
+        ]
 
-        return await tryFunctions(serverResolvers)
+        return await tryResolvers('getServer', serverResolvers, getServerVersion)
 
-        async function resolveServerWith(resolver: () => Promise<LspResult>) {
-            return await lspSetupStage(
-                'getServer',
-                async () => await resolver(),
-                (result) => {
-                    return {
-                        languageServerLocation: result.location,
-                        languageServerVersion: result.version,
-                    }
-                }
-            )
+        function getServerVersion(result: LspResult) {
+            return {
+                languageServerVersion: result.version,
+            }
         }
     }
 
