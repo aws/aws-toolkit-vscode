@@ -22,7 +22,7 @@ function isDelisted(manifestVersions: LspVersion[], targetVersion: string): bool
  * @param manifest
  * @param downloadDirectory
  */
-export async function cleanUpLSPDownloads(manifestVersions: LspVersion[], downloadDirectory: string): Promise<void> {
+export async function cleanLspDownloads(manifestVersions: LspVersion[], downloadDirectory: string): Promise<void> {
     const downloadedVersions = await getDownloadedVersions(downloadDirectory)
     const [delistedVersions, remainingVersions] = partition(downloadedVersions, (v: string) =>
         isDelisted(manifestVersions, v)

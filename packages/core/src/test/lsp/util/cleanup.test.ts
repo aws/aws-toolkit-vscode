@@ -4,7 +4,7 @@
  */
 
 import { Uri } from 'vscode'
-import { cleanUpLSPDownloads, fs } from '../../../shared'
+import { cleanLspDownloads, fs } from '../../../shared'
 import { createTestWorkspaceFolder } from '../../testUtil'
 import path from 'path'
 import assert from 'assert'
@@ -21,7 +21,7 @@ async function fakeInstallVersions(versions: string[], installationDir: string):
     }
 }
 
-describe('cleanUpLSPDownloads', function () {
+describe('cleanLSPDownloads', function () {
     let installationDir: Uri
 
     before(async function () {
@@ -41,7 +41,7 @@ describe('cleanUpLSPDownloads', function () {
 
     it('keeps two newest versions', async function () {
         await fakeInstallVersions(['1.0.0', '1.0.1', '1.1.1', '2.1.1'], installationDir.fsPath)
-        await cleanUpLSPDownloads([], installationDir.fsPath)
+        await cleanLspDownloads([], installationDir.fsPath)
 
         const result = (await fs.readdir(installationDir.fsPath)).map(([filename, _filetype], _index) => filename)
         assert.strictEqual(result.length, 2)
@@ -51,7 +51,7 @@ describe('cleanUpLSPDownloads', function () {
 
     it('deletes delisted versions', async function () {
         await fakeInstallVersions(['1.0.0', '1.0.1', '1.1.1', '2.1.1'], installationDir.fsPath)
-        await cleanUpLSPDownloads([{ serverVersion: '1.1.1', isDelisted: true, targets: [] }], installationDir.fsPath)
+        await cleanLspDownloads([{ serverVersion: '1.1.1', isDelisted: true, targets: [] }], installationDir.fsPath)
 
         const result = (await fs.readdir(installationDir.fsPath)).map(([filename, _filetype], _index) => filename)
         assert.strictEqual(result.length, 2)
@@ -61,7 +61,7 @@ describe('cleanUpLSPDownloads', function () {
 
     it('handles case where less than 2 versions are not delisted', async function () {
         await fakeInstallVersions(['1.0.0', '1.0.1', '1.1.1', '2.1.1'], installationDir.fsPath)
-        await cleanUpLSPDownloads(
+        await cleanLspDownloads(
             [
                 { serverVersion: '1.1.1', isDelisted: true, targets: [] },
                 { serverVersion: '2.1.1', isDelisted: true, targets: [] },
@@ -77,7 +77,7 @@ describe('cleanUpLSPDownloads', function () {
 
     it('handles case where less than 2 versions exist', async function () {
         await fakeInstallVersions(['1.0.0'], installationDir.fsPath)
-        await cleanUpLSPDownloads([], installationDir.fsPath)
+        await cleanLspDownloads([], installationDir.fsPath)
 
         const result = (await fs.readdir(installationDir.fsPath)).map(([filename, _filetype], _index) => filename)
         assert.strictEqual(result.length, 1)
@@ -85,7 +85,7 @@ describe('cleanUpLSPDownloads', function () {
 
     it('does not install delisted version when no other option exists', async function () {
         await fakeInstallVersions(['1.0.0'], installationDir.fsPath)
-        await cleanUpLSPDownloads([{ serverVersion: '1.0.0', isDelisted: true, targets: [] }], installationDir.fsPath)
+        await cleanLspDownloads([{ serverVersion: '1.0.0', isDelisted: true, targets: [] }], installationDir.fsPath)
 
         const result = (await fs.readdir(installationDir.fsPath)).map(([filename, _filetype], _index) => filename)
         assert.strictEqual(result.length, 0)
