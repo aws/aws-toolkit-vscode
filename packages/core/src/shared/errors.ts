@@ -368,6 +368,53 @@ export function getTelemetryResult(error: unknown | undefined): Result {
     return 'Failed'
 }
 
+export class SafeMessageError extends Error {}
+
+/**
+ * This function constructs a string similar to error.printStackTrace() for telemetry,
+ * but include error messages only for safe exceptions,
+ * i.e. exceptions with deterministic error messages and do not include sensitive data.
+ *
+ * @param error The error to get stack trace string from
+ */
+export function getStackTraceForError(error: Error): string {
+    const recursionLimit = 3
+    const seenExceptions = new Set<Error>()
+    const lines: string[] = []
+
+    function printExceptionDetails(err: Error, depth: number, prefix: string = '') {
+        if (depth >= recursionLimit || seenExceptions.has(err)) {
+            return
+        }
+        seenExceptions.add(err)
+
+        if (error instanceof SafeMessageError) {
+            lines.push(`${prefix}${err.constructor.name}: ${err.message}`)
+        } else {
+            lines.push(`${prefix}${err.constructor.name}`)
+        }
+
+        if (err.stack) {
+            const startStr = err.stack.substring('Error: '.length)
+            const callStack = startStr.substring(startStr.indexOf(err.message) + err.message.length + 1)
+            for (const line of callStack.split('\n')) {
+                const scrubbed = scrubNames(line, _username)
+                lines.push(`${prefix}\t${scrubbed}`)
+            }
+        }
+
+        const cause = (err as any).cause
+        if (cause instanceof Error) {
+            lines.push(`${prefix}\tCaused by: `)
+            printExceptionDetails(cause, depth + 1, `${prefix}\t`)
+        }
+    }
+
+    printExceptionDetails(error, 0)
+    getLogger().info(lines.join('\n'))
+    return lines.join('\n')
+}
+
 /**
  * Removes potential PII from a string, for logging/telemetry.
  *
