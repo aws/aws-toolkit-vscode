@@ -9,7 +9,7 @@ import { RetryableResourceFetcher } from '../resourcefetcher/httpResourceFetcher
 import { Timeout } from '../utilities/timeoutUtils'
 import globals from '../extensionGlobals'
 import { Manifest } from './types'
-import { StageResolver, tryResolvers } from '../../amazonq/lsp/util'
+import { StageResolver, tryStageResolvers } from './utils/stage'
 
 const logger = getLogger('lsp')
 
@@ -44,7 +44,7 @@ export class ManifestResolver {
             },
         ]
 
-        return await tryResolvers('getManifest', resolvers, extractMetadata)
+        return await tryStageResolvers('getManifest', resolvers, extractMetadata)
 
         function extractMetadata(r: Manifest) {
             return {
