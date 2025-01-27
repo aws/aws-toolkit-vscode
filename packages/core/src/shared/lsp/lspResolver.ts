@@ -12,8 +12,8 @@ import AdmZip from 'adm-zip'
 import { TargetContent, logger, LspResult, LspVersion, Manifest } from './types'
 import { getApplicationSupportFolder } from '../vscode/env'
 import { createHash } from '../crypto'
-import request from '../request'
 import { lspSetupStage, StageResolver, tryStageResolvers } from './utils/stage'
+import { HttpResourceFetcher } from '../resourcefetcher/httpResourceFetcher'
 
 export class LanguageServerResolver {
     constructor(
@@ -194,14 +194,14 @@ export class LanguageServerResolver {
 
         const fetchTasks = contents.map(async (content) => {
             return {
-                res: await request.fetch('GET', content.url).response,
+                res: await new HttpResourceFetcher(content.url, { showUrl: true }).get(),
                 hash: content.hashes[0],
                 filename: content.filename,
             }
         })
         const fetchResults = await Promise.all(fetchTasks)
         const verifyTasks = fetchResults.flatMap(async (fetchResult) => {
-            if (!fetchResult.res.ok || !fetchResult.res.body) {
+            if (!(fetchResult.res && fetchResult.res.ok && fetchResult.res.body)) {
                 return []
             }
 

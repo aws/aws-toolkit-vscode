@@ -134,51 +134,6 @@ export class HttpResourceFetcher implements ResourceFetcher<Response> {
     }
 }
 
-export class RetryableResourceFetcher extends HttpResourceFetcher {
-    private readonly requestTimeoutMs: number
-    private readonly retryIntervalMs: number
-    private readonly resource: string
-
-    constructor({
-        resource,
-        params: { retryNumber = 5, retryIntervalMs = 3000, showUrl = true, timeout = new Timeout(5000) },
-    }: {
-        resource: string
-        params: {
-            retryNumber?: number
-            retryIntervalMs?: number
-            showUrl?: boolean
-            timeout?: Timeout
-        }
-    }) {
-        super(resource, {
-            showUrl,
-            timeout,
-        })
-        this.requestTimeoutMs = retryNumber * retryIntervalMs
-        this.retryIntervalMs = retryIntervalMs
-        this.resource = resource
-    }
-
-    fetch(versionTag?: string) {
-        return waitUntil(
-            async () => {
-                try {
-                    return await this.getNewETagContent(versionTag)
-                } catch (err) {
-                    getLogger('lsp').error('Failed to fetch at endpoint: %s, err: %s', this.resource, err)
-                    throw err
-                }
-            },
-            {
-                timeout: this.requestTimeoutMs,
-                interval: this.retryIntervalMs,
-                retryOnFail: true,
-            }
-        )
-    }
-}
-
 /**
  * Retrieves JSON property value from a remote resource
  * @param property property to retrieve
