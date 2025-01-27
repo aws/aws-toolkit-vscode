@@ -13,7 +13,7 @@ import { TargetContent, logger, LspResult, LspVersion, Manifest } from './types'
 import { getApplicationSupportFolder } from '../vscode/env'
 import { createHash } from '../crypto'
 import request from '../request'
-import { lspSetupStage, StageResolver, tryResolvers } from '../../amazonq/lsp/util'
+import { lspSetupStage, StageResolver, tryStageResolvers } from './utils/stage'
 
 export class LanguageServerResolver {
     constructor(
@@ -50,7 +50,7 @@ export class LanguageServerResolver {
             },
         ]
 
-        return await tryResolvers('getServer', serverResolvers, getServerVersion)
+        return await tryStageResolvers('getServer', serverResolvers, getServerVersion)
 
         function getServerVersion(result: LspResult) {
             return {

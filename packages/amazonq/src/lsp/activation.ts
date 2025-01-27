@@ -7,7 +7,7 @@ import vscode from 'vscode'
 import { startLanguageServer } from './client'
 import { AmazonQLSPResolver } from './lspInstaller'
 import { ToolkitError } from 'aws-core-vscode/shared'
-import { lspSetupStage } from 'aws-core-vscode/amazonq'
+import { lspSetupStage } from 'aws-core-vscode/shared'
 
 export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
     try {

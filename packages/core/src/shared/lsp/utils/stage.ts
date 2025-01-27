@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { LanguageServerSetup, LanguageServerSetupStage, telemetry } from '../../shared/telemetry'
-import { tryFunctions } from '../../shared/utilities/tsUtils'
+import { LanguageServerSetup, LanguageServerSetupStage, telemetry } from '../../../shared/telemetry'
+import { tryFunctions } from '../../../shared/utilities/tsUtils'
 
 /**
  * Runs the designated stage within a telemetry span and optionally uses the getMetadata extractor to record metadata from the result of the stage.
@@ -13,10 +13,10 @@ import { tryFunctions } from '../../shared/utilities/tsUtils'
  * @param getMetadata metadata extracter to be applied to result.
  * @returns result of stage
  */
-export async function lspSetupStage<T>(
+export async function lspSetupStage<Result>(
     stageName: LanguageServerSetupStage,
-    runStage: () => Promise<T>,
-    getMetadata?: MetadataExtracter<T>
+    runStage: () => Promise<Result>,
+    getMetadata?: MetadataExtracter<Result>
 ) {
     return await telemetry.languageServer_setup.run(async (span) => {
         span.record({ languageServerSetupStage: stageName })
@@ -29,13 +29,13 @@ export async function lspSetupStage<T>(
 }
 /**
  * Tries to resolve the result of a stage using the resolvers provided in order. The first one to succceed
- * has its result succeeded, but all intermediate will emit telemetry.
+ * has its result returned, but all intermediate will emit telemetry.
  * @param stageName name of stage to resolve.
  * @param resolvers stage resolvers to try IN ORDER
  * @param getMetadata function to be applied to result to extract necessary metadata for telemetry.
  * @returns result of the first succesful resolver.
  */
-export async function tryResolvers<Result>(
+export async function tryStageResolvers<Result>(
     stageName: LanguageServerSetupStage,
     resolvers: StageResolver<Result>[],
     getMetadata: MetadataExtracter<Result>
