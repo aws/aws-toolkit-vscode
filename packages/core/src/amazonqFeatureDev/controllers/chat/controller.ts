@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { MynahIcons } from '@aws/mynah-ui'
+import { MynahIcons, ProgressField } from '@aws/mynah-ui'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { EventEmitter } from 'vscode'
@@ -63,6 +63,8 @@ export interface ChatControllerEventEmitters {
     readonly insertCodeAtPositionClicked: EventEmitter<any>
     readonly fileClicked: EventEmitter<any>
     readonly storeCodeResultMessageId: EventEmitter<any>
+    readonly processCustomFormAction: EventEmitter<any>
+
 }
 
 type OpenDiffMessage = {
@@ -114,7 +116,12 @@ export class FeatureDevController {
         onDidChangeAmazonQVisibility((visible) => {
             this.isAmazonQVisible = visible
         })
-
+        this.chatControllerMessageListeners.processCustomFormAction.event((data) => {
+            if (data.action?.id === 'cancel-running-task') {
+                this.stopResponse({ tabID: data.tabID });
+            }
+        });
+    
         this.chatControllerMessageListeners.processHumanChatMessage.event((data) => {
             this.processUserChatMessage(data).catch((e) => {
                 getLogger().error('processUserChatMessage failed: %s', (e as Error).message)
@@ -394,7 +401,23 @@ export class FeatureDevController {
      * Handle a regular incoming message when a user is in the code generation phase
      */
     private async onCodeGeneration(session: Session, message: string, tabID: string) {
-        // lock the UI/show loading bubbles
+
+        const updateProgress = (text: string) => {
+            const progressField: ProgressField = {
+                status: 'default',
+                text: text,
+                value: -1,
+                actions: [{
+                    id: 'cancel-running-task',
+                    text: 'Cancel',
+                    icon: 'cancel' as MynahIcons,
+                    disabled: false,
+                }]
+            };
+            this.messenger.sendUpdatePromptProgress(tabID, progressField);
+            this.messenger.sendAsyncEventProgress(tabID, true, text);
+        };
+
         this.messenger.sendAsyncEventProgress(
             tabID,
             true,
@@ -403,13 +426,21 @@ export class FeatureDevController {
                 : i18n('AWS.amazonq.featureDev.pillText.awaitMessageRetry')
         )
 
+        updateProgress(session.retries === codeGenRetryLimit
+            ? i18n('AWS.amazonq.featureDev.pillText.awaitMessage')
+            : i18n('AWS.amazonq.featureDev.pillText.awaitMessageRetry'));
+
         try {
+
+            updateProgress(i18n('AWS.amazonq.featureDev.pillText.requestingChanges'));
             this.messenger.sendAnswer({
                 message: i18n('AWS.amazonq.featureDev.pillText.requestingChanges'),
                 type: 'answer-stream',
                 tabID,
                 canBeVoted: true,
             })
+
+            updateProgress(i18n('AWS.amazonq.featureDev.pillText.generatingCode'));
             this.messenger.sendUpdatePlaceholder(tabID, i18n('AWS.amazonq.featureDev.pillText.generatingCode'))
             await session.sendMetricDataTelemetry(MetricDataOperationName.StartCodeGeneration, MetricDataResult.Success)
             await session.send(message)
@@ -446,6 +477,7 @@ export class FeatureDevController {
                 return
             }
 
+            updateProgress(i18n('AWS.amazonq.featureDev.pillText.processingChanges'));
             this.messenger.sendCodeResult(
                 filePaths,
                 deletedFiles,
@@ -516,7 +548,7 @@ export class FeatureDevController {
             await session.sendMetricDataTelemetry(MetricDataOperationName.EndCodeGeneration, result)
             throw err
         } finally {
-            // Finish processing the event
+            this.hideProgress(tabID);
 
             if (session?.state?.tokenSource?.token.isCancellationRequested) {
                 this.workOnNewTask(
@@ -884,6 +916,7 @@ export class FeatureDevController {
             i18n('AWS.amazonq.featureDev.pillText.stoppingCodeGeneration')
         )
         this.messenger.sendChatInputEnabled(message.tabID, false)
+        this.hideProgress(message.tabID);
 
         const session = await this.sessionStorage.getSession(message.tabID)
         if (session.state?.tokenSource) {
@@ -973,6 +1006,11 @@ export class FeatureDevController {
             amazonqEndOfTheConversationLatency: performance.now() - session.telemetry.sessionStartTime,
             result: 'Succeeded',
         })
+    }
+
+    private hideProgress(tabID: string) {
+        this.messenger.sendUpdatePromptProgress(tabID, null);
+        this.messenger.sendAsyncEventProgress(tabID, false, undefined);
     }
 
     private sendFeedback() {

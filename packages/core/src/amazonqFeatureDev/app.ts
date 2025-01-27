@@ -35,6 +35,7 @@ export function init(appContext: AmazonQAppInitContext) {
         insertCodeAtPositionClicked: new vscode.EventEmitter<any>(),
         fileClicked: new vscode.EventEmitter<any>(),
         storeCodeResultMessageId: new vscode.EventEmitter<any>(),
+        processCustomFormAction: new vscode.EventEmitter<any>(),
     }
 
     const messenger = new Messenger(
