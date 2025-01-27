@@ -20,8 +20,8 @@ import {
     tryRun,
     UnknownError,
     getErrorId,
-    SafeMessageError,
     getStackTraceForError,
+    SafeMessageToolkitError,
 } from '../../shared/errors'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { UnauthorizedException } from '@aws-sdk/client-sso'
@@ -351,7 +351,7 @@ describe('Telemetry', function () {
     })
 
     describe('getStackTraceForError', () => {
-        class SafeError extends ToolkitError implements SafeMessageError {}
+        class SafeError extends SafeMessageToolkitError {}
         class UnsafeError extends ToolkitError {}
 
         it('includes message for safe exceptions', () => {

@@ -368,7 +368,11 @@ export function getTelemetryResult(error: unknown | undefined): Result {
     return 'Failed'
 }
 
-export class SafeMessageError extends Error {}
+export class SafeMessageToolkitError extends ToolkitError {
+    public constructor(message: string, info: ErrorInformation = {}) {
+        super(message, info)
+    }
+}
 
 /**
  * This function constructs a string similar to error.printStackTrace() for telemetry,
@@ -388,7 +392,7 @@ export function getStackTraceForError(error: Error): string {
         }
         seenExceptions.add(err)
 
-        if (error instanceof SafeMessageError) {
+        if (error instanceof SafeMessageToolkitError) {
             lines.push(`${prefix}${err.constructor.name}: ${err.message}`)
         } else {
             lines.push(`${prefix}${err.constructor.name}`)

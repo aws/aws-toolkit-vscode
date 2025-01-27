@@ -3,12 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { SafeMessageError, ToolkitError } from '../shared/errors'
+import { SafeMessageToolkitError, ToolkitError } from '../shared/errors'
 import { featureName } from './constants'
 import { uploadCodeError } from './userFacingText'
 import { i18n } from '../shared/i18n-helper'
 
-export class ConversationIdNotFoundError extends ToolkitError implements SafeMessageError {
+export class ConversationIdNotFoundError extends SafeMessageToolkitError {
     constructor() {
         super(i18n('AWS.amazonq.featureDev.error.conversationIdNotFoundError'), {
             code: 'ConversationIdNotFound',
@@ -16,7 +16,7 @@ export class ConversationIdNotFoundError extends ToolkitError implements SafeMes
     }
 }
 
-export class TabIdNotFoundError extends ToolkitError implements SafeMessageError {
+export class TabIdNotFoundError extends SafeMessageToolkitError {
     constructor() {
         super(i18n('AWS.amazonq.featureDev.error.tabIdNotFoundError'), {
             code: 'TabIdNotFound',
@@ -24,7 +24,7 @@ export class TabIdNotFoundError extends ToolkitError implements SafeMessageError
     }
 }
 
-export class WorkspaceFolderNotFoundError extends ToolkitError implements SafeMessageError {
+export class WorkspaceFolderNotFoundError extends SafeMessageToolkitError {
     constructor() {
         super(i18n('AWS.amazonq.featureDev.error.workspaceFolderNotFoundError'), {
             code: 'WorkspaceFolderNotFound',
@@ -32,7 +32,7 @@ export class WorkspaceFolderNotFoundError extends ToolkitError implements SafeMe
     }
 }
 
-export class UserMessageNotFoundError extends ToolkitError implements SafeMessageError {
+export class UserMessageNotFoundError extends SafeMessageToolkitError {
     constructor() {
         super(i18n('AWS.amazonq.featureDev.error.userMessageNotFoundError'), {
             code: 'MessageNotFound',
@@ -40,7 +40,7 @@ export class UserMessageNotFoundError extends ToolkitError implements SafeMessag
     }
 }
 
-export class SelectedFolderNotInWorkspaceFolderError extends ToolkitError implements SafeMessageError {
+export class SelectedFolderNotInWorkspaceFolderError extends SafeMessageToolkitError {
     constructor() {
         super(i18n('AWS.amazonq.featureDev.error.selectedFolderNotInWorkspaceFolderError'), {
             code: 'SelectedFolderNotInWorkspaceFolder',
@@ -48,7 +48,7 @@ export class SelectedFolderNotInWorkspaceFolderError extends ToolkitError implem
     }
 }
 
-export class PromptRefusalException extends ToolkitError implements SafeMessageError {
+export class PromptRefusalException extends SafeMessageToolkitError {
     constructor() {
         super(i18n('AWS.amazonq.featureDev.error.promptRefusalException'), {
             code: 'PromptRefusalException',
@@ -56,7 +56,7 @@ export class PromptRefusalException extends ToolkitError implements SafeMessageE
     }
 }
 
-export class NoChangeRequiredException extends ToolkitError implements SafeMessageError {
+export class NoChangeRequiredException extends SafeMessageToolkitError {
     constructor() {
         super(i18n('AWS.amazonq.featureDev.error.noChangeRequiredException'), {
             code: 'NoChangeRequiredException',
@@ -65,13 +65,13 @@ export class NoChangeRequiredException extends ToolkitError implements SafeMessa
 }
 
 // To prevent potential security issues, message passed in should be predictably safe for telemetry
-export class FeatureDevServiceError extends ToolkitError implements SafeMessageError {
+export class FeatureDevServiceError extends SafeMessageToolkitError {
     constructor(message: string, code: string) {
         super(message, { code })
     }
 }
 
-export class PrepareRepoFailedError extends ToolkitError implements SafeMessageError {
+export class PrepareRepoFailedError extends SafeMessageToolkitError {
     constructor() {
         super(i18n('AWS.amazonq.featureDev.error.prepareRepoFailedError'), {
             code: 'PrepareRepoFailed',
@@ -79,37 +79,37 @@ export class PrepareRepoFailedError extends ToolkitError implements SafeMessageE
     }
 }
 
-export class UploadCodeError extends ToolkitError implements SafeMessageError {
+export class UploadCodeError extends SafeMessageToolkitError {
     constructor(statusCode: string) {
         super(uploadCodeError, { code: `UploadCode-${statusCode}` })
     }
 }
 
-export class UploadURLExpired extends ToolkitError implements SafeMessageError {
+export class UploadURLExpired extends SafeMessageToolkitError {
     constructor() {
         super(i18n('AWS.amazonq.featureDev.error.uploadURLExpired'), { code: 'UploadURLExpired' })
     }
 }
 
-export class IllegalStateTransition extends ToolkitError implements SafeMessageError {
+export class IllegalStateTransition extends SafeMessageToolkitError {
     constructor() {
         super(i18n('AWS.amazonq.featureDev.error.illegalStateTransition'), { code: 'IllegalStateTransition' })
     }
 }
 
-export class ContentLengthError extends ToolkitError implements SafeMessageError {
+export class ContentLengthError extends SafeMessageToolkitError {
     constructor() {
         super(i18n('AWS.amazonq.featureDev.error.contentLengthError'), { code: ContentLengthError.name })
     }
 }
 
-export class ZipFileError extends ToolkitError implements SafeMessageError {
+export class ZipFileError extends SafeMessageToolkitError {
     constructor() {
         super(i18n('AWS.amazonq.featureDev.error.zipFileError'), { code: ZipFileError.name })
     }
 }
 
-export class CodeIterationLimitError extends ToolkitError implements SafeMessageError {
+export class CodeIterationLimitError extends SafeMessageToolkitError {
     constructor() {
         super(i18n('AWS.amazonq.featureDev.error.codeIterationLimitError'), { code: CodeIterationLimitError.name })
     }
