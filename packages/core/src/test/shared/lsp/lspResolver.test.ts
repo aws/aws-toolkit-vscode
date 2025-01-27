@@ -5,9 +5,53 @@
 
 import assert from 'assert'
 import sinon from 'sinon'
-import { LanguageServerResolver, LspResult, Manifest } from '../../../shared'
+import { LanguageServerResolver, LspResult, Manifest, Target } from '../../../shared'
 import { Range } from 'semver'
 import { assertTelemetry } from '../../testUtil'
+import { LanguageServerLocation } from '../../../shared/telemetry'
+
+const serverVersion = '1.0.0'
+const assetDirectory = 'path/to/assets'
+const serverName = 'myLS'
+
+/**
+ * Helper function for generating valid manifest for tests.
+ * @param platform
+ * @param arch
+ * @returns
+ */
+function manifestTarget(platform: 'linux' | 'darwin' | 'windows', arch: 'x64' | 'arm64'): Target {
+    return {
+        platform,
+        arch,
+        contents: [
+            {
+                filename: `${serverName}-${platform}-${arch}.zip`,
+                url: `https://example.com/lsp-${platform}-${arch}.zip`,
+                hashes: ['sha384:thisisahash'],
+                bytes: 100,
+            },
+            {
+                filename: `node-${platform}-${arch}`,
+                url: `https://example.com/temp-assets/node-${platform}-${arch}`,
+                hashes: ['sha384:thisisanotherhash'],
+                bytes: 200,
+            },
+        ],
+    }
+}
+/**
+ * Helper function for generating valid LspResult for tests.
+ * @param location
+ * @returns
+ */
+function lspResult(location: LanguageServerLocation): LspResult {
+    return {
+        location,
+        version: serverVersion,
+        assetDirectory: assetDirectory,
+    }
+}
 
 describe('lspResolver', function () {
     let remoteStub: sinon.SinonStub
@@ -21,111 +65,25 @@ describe('lspResolver', function () {
         localStub = sinon.stub(LanguageServerResolver.prototype, 'getLocalServer' as any)
         fallbackStub = sinon.stub(LanguageServerResolver.prototype, 'getFallbackServer' as any)
         manifest = {
-            manifestSchemaVersion: '1.0.0',
+            manifestSchemaVersion: '2.0.0',
             artifactId: 'artifact-id',
             artifactDescription: 'artifact-description',
             isManifestDeprecated: false,
             versions: [
                 {
-                    serverVersion: '1.0.0',
+                    serverVersion: serverVersion,
                     isDelisted: false,
                     targets: [
-                        {
-                            platform: 'linux',
-                            arch: 'x64',
-                            contents: [
-                                {
-                                    filename: 'myLS-linux-x64.zip',
-                                    url: 'https://example.com/qserver-linux-x64.zip',
-                                    hashes: ['sha384:thisisahash'],
-                                    bytes: 100,
-                                },
-                                {
-                                    filename: 'node-linux-x64',
-                                    url: 'https://example.com/temp-assets/node-linux-x64',
-                                    hashes: ['sha384:thisisanotherhash'],
-                                    bytes: 200,
-                                },
-                            ],
-                        },
-                        {
-                            platform: 'linux',
-                            arch: 'arm64',
-                            contents: [
-                                {
-                                    filename: 'myLS-linux-arm64.zip',
-                                    url: 'https://example.com/qserver-linux-arm64.zip',
-                                    hashes: ['sha384:thisisahash'],
-                                    bytes: 100,
-                                },
-                                {
-                                    filename: 'node-linux-arm64',
-                                    url: 'https://example.com/temp-assets/node-linux-arm64',
-                                    hashes: ['sha384:thisisanotherhash'],
-                                    bytes: 200,
-                                },
-                            ],
-                        },
-                        {
-                            platform: 'darwin',
-                            arch: 'x64',
-                            contents: [
-                                {
-                                    filename: 'myLS-darwin-x64.zip',
-                                    url: 'https://example.com/qserver-darwin-x64.zip',
-                                    hashes: ['sha384:thisisahash'],
-                                    bytes: 100,
-                                },
-                                {
-                                    filename: 'node-linux-x64',
-                                    url: 'https://example.com/temp-assets/node-darwin-x64',
-                                    hashes: ['sha384:thisisanotherhash'],
-                                    bytes: 200,
-                                },
-                            ],
-                        },
-                        {
-                            platform: 'darwin',
-                            arch: 'arm64',
-                            contents: [
-                                {
-                                    filename: 'myLS-darwin-arm64.zip',
-                                    url: 'https://example.com/qserver-darwin-arm64.zip',
-                                    hashes: ['sha384:thisisahash'],
-                                    bytes: 100,
-                                },
-                                {
-                                    filename: 'node-linux-arm64',
-                                    url: 'https://example.com/temp-assets/node-darwin-arm64',
-                                    hashes: ['sha384:thisisanotherhash'],
-                                    bytes: 200,
-                                },
-                            ],
-                        },
-                        {
-                            platform: 'windows',
-                            arch: 'x64',
-                            contents: [
-                                {
-                                    filename: 'myLS-windows-x64.zip',
-                                    url: 'https://example.com/qserver-windows-x64.zip',
-                                    hashes: ['sha384:thisisahash'],
-                                    bytes: 100,
-                                },
-                                {
-                                    filename: 'node-linux-x64',
-                                    url: 'https://example.com/temp-assets/node-windows-x64',
-                                    hashes: ['sha384:thisisanotherhash'],
-                                    bytes: 200,
-                                },
-                            ],
-                        },
+                        manifestTarget('linux', 'x64'),
+                        manifestTarget('linux', 'arm64'),
+                        manifestTarget('darwin', 'x64'),
+                        manifestTarget('darwin', 'arm64'),
+                        manifestTarget('windows', 'x64'),
                     ],
                 },
             ],
-            location: 'remote',
         }
-        versionRange = new Range('>=1.0.0')
+        versionRange = new Range(`>=${serverVersion}`)
     })
 
     after(function () {
@@ -133,45 +91,37 @@ describe('lspResolver', function () {
     })
 
     it('tries local cache first', async function () {
-        localStub.resolves({
-            location: 'cache',
-            version: '1.0.0',
-            assetDirectory: 'path/to/assets',
-        } satisfies LspResult)
+        localStub.resolves(lspResult('cache'))
 
-        const r = await new LanguageServerResolver(manifest, 'myLS', versionRange).resolve()
+        const r = await new LanguageServerResolver(manifest, serverName, versionRange).resolve()
         assert.strictEqual(r.location, 'cache')
         assertTelemetry('languageServer_setup', {
             languageServerSetupStage: 'getServer',
-            id: 'myLS',
+            id: serverName,
             languageServerLocation: 'cache',
-            languageServerVersion: '1.0.0',
+            languageServerVersion: serverVersion,
             result: 'Succeeded',
         })
     })
 
     it('tries fetching remote if cache fails', async function () {
         localStub.rejects(new Error('not found'))
-        remoteStub.resolves({
-            location: 'remote',
-            version: '1.0.0',
-            assetDirectory: 'path/to/assets',
-        } satisfies LspResult)
+        remoteStub.resolves(lspResult('remote'))
 
-        const r = await new LanguageServerResolver(manifest, 'myLS', versionRange).resolve()
+        const r = await new LanguageServerResolver(manifest, serverName, versionRange).resolve()
         assert.strictEqual(r.location, 'remote')
         assertTelemetry('languageServer_setup', [
             {
                 languageServerSetupStage: 'getServer',
-                id: 'myLS',
+                id: serverName,
                 languageServerLocation: 'cache',
                 result: 'Failed',
             },
             {
                 languageServerSetupStage: 'getServer',
-                id: 'myLS',
+                id: serverName,
                 languageServerLocation: 'remote',
-                languageServerVersion: '1.0.0',
+                languageServerVersion: serverVersion,
                 result: 'Succeeded',
             },
         ])
@@ -180,32 +130,28 @@ describe('lspResolver', function () {
     it('tries fallback version if both remote and cache fail', async function () {
         localStub.rejects(new Error('not found'))
         remoteStub.rejects(new Error('not found'))
-        fallbackStub.resolves({
-            location: 'fallback',
-            version: '1.0.0',
-            assetDirectory: 'path/to/assets',
-        } satisfies LspResult)
+        fallbackStub.resolves(lspResult('fallback'))
 
-        const r = await new LanguageServerResolver(manifest, 'myLS', versionRange).resolve()
+        const r = await new LanguageServerResolver(manifest, serverName, versionRange).resolve()
         assert.strictEqual(r.location, 'fallback')
         assertTelemetry('languageServer_setup', [
             {
                 languageServerSetupStage: 'getServer',
-                id: 'myLS',
+                id: serverName,
                 languageServerLocation: 'cache',
                 result: 'Failed',
             },
             {
                 languageServerSetupStage: 'getServer',
-                id: 'myLS',
+                id: serverName,
                 languageServerLocation: 'remote',
                 result: 'Failed',
             },
             {
                 languageServerSetupStage: 'getServer',
-                id: 'myLS',
+                id: serverName,
                 languageServerLocation: 'fallback',
-                languageServerVersion: '1.0.0',
+                languageServerVersion: serverVersion,
                 result: 'Succeeded',
             },
         ])
@@ -216,23 +162,23 @@ describe('lspResolver', function () {
         remoteStub.rejects(new Error('not found'))
         fallbackStub.rejects(new Error('not found'))
 
-        await assert.rejects(new LanguageServerResolver(manifest, 'myLS', versionRange).resolve(), /not found/)
+        await assert.rejects(new LanguageServerResolver(manifest, serverName, versionRange).resolve(), /not found/)
         assertTelemetry('languageServer_setup', [
             {
                 languageServerSetupStage: 'getServer',
-                id: 'myLS',
+                id: serverName,
                 languageServerLocation: 'cache',
                 result: 'Failed',
             },
             {
                 languageServerSetupStage: 'getServer',
-                id: 'myLS',
+                id: serverName,
                 languageServerLocation: 'remote',
                 result: 'Failed',
             },
             {
                 languageServerSetupStage: 'getServer',
-                id: 'myLS',
+                id: serverName,
                 languageServerLocation: 'fallback',
                 result: 'Failed',
             },
