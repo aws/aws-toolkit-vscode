@@ -5,7 +5,7 @@
 
 import assert from 'assert'
 import sinon from 'sinon'
-import { ManifestResolver } from '../../../shared'
+import { Manifest, ManifestResolver } from '../../../shared'
 import { assertTelemetry } from '../../testUtil'
 
 describe('manifestResolver', function () {
@@ -29,7 +29,7 @@ describe('manifestResolver', function () {
             isManifestDeprecated: false,
             versions: [],
             location: 'remote',
-        })
+        } satisfies Manifest)
 
         const r = await new ManifestResolver('remote-manifest.com', 'myLS').resolve()
         assert.strictEqual(r.location, 'remote')

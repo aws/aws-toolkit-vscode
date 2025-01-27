@@ -59,7 +59,7 @@ export class LanguageServerResolver {
         }
     }
 
-    async getFallbackServer(latestVersion: LspVersion): Promise<LspResult> {
+    private async getFallbackServer(latestVersion: LspVersion): Promise<LspResult> {
         const fallbackDirectory = await this.getFallbackDir(latestVersion.serverVersion)
         if (!fallbackDirectory) {
             throw new ToolkitError('Unable to find a compatible version of the Language Server', {
@@ -79,7 +79,7 @@ export class LanguageServerResolver {
         }
     }
 
-    async fetchRemoteServer(
+    private async fetchRemoteServer(
         cacheDirectory: string,
         latestVersion: LspVersion,
         targetContents: TargetContent[]
@@ -95,7 +95,7 @@ export class LanguageServerResolver {
         }
     }
 
-    async getLocalServer(
+    private async getLocalServer(
         cacheDirectory: string,
         latestVersion: LspVersion,
         targetContents: TargetContent[]
