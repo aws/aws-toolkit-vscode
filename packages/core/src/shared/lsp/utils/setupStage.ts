@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { LanguageServerSetup, LanguageServerSetupStage, telemetry } from '../../../shared/telemetry'
-import { tryFunctions } from '../../../shared/utilities/tsUtils'
+import { LanguageServerSetup, LanguageServerSetupStage, telemetry } from '../../telemetry'
+import { tryFunctions } from '../../utilities/tsUtils'
 
 /**
  * Runs the designated stage within a telemetry span and optionally uses the getMetadata extractor to record metadata from the result of the stage.

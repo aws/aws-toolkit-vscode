@@ -8,7 +8,7 @@ import { ToolkitError } from '../errors'
 import { Timeout } from '../utilities/timeoutUtils'
 import globals from '../extensionGlobals'
 import { Manifest } from './types'
-import { StageResolver, tryStageResolvers } from './utils/stage'
+import { StageResolver, tryStageResolvers } from './utils/setupStage'
 import { HttpResourceFetcher } from '../resourcefetcher/httpResourceFetcher'
 
 const logger = getLogger('lsp')
