@@ -145,6 +145,7 @@ describe('lspResolver', function () {
 
         const r = await new LanguageServerResolver(manifest, serverName, versionRange).resolve()
         assert.strictEqual(r.location, 'fallback')
+        // jscpd:ignore-start
         assertTelemetry('languageServer_setup', [
             {
                 languageServerSetupStage: 'getServer',
@@ -166,6 +167,7 @@ describe('lspResolver', function () {
                 result: 'Succeeded',
             },
         ])
+        // jscpd:ignore-end
     })
 
     it('rejects if local, remote, and fallback all reject', async function () {
@@ -177,6 +179,7 @@ describe('lspResolver', function () {
         fallbackStub.rejects(new Error('not found'))
 
         await assert.rejects(new LanguageServerResolver(manifest, serverName, versionRange).resolve(), /not found/)
+        // jscpd:ignore-start
         assertTelemetry('languageServer_setup', [
             {
                 languageServerSetupStage: 'getServer',
@@ -197,5 +200,6 @@ describe('lspResolver', function () {
                 result: 'Failed',
             },
         ])
+        // jscpd:ignore-end
     })
 })
