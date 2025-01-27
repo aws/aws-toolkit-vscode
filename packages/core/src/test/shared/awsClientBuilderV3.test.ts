@@ -27,12 +27,12 @@ describe('AwsClientBuilderV3', function () {
             const service = await builder.createAwsService(Client)
             const clientId = getClientId(new GlobalState(new FakeMemento()))
 
-            assert.ok(service.config.customUserAgent)
+            assert.ok(service.config.userAgent)
             assert.strictEqual(
-                service.config.customUserAgent![0][0].replace('---Insiders', ''),
+                service.config.userAgent![0][0].replace('---Insiders', ''),
                 `AWS-Toolkit-For-VSCode/testPluginVersion Visual-Studio-Code/${version} ClientId/${clientId}`
             )
-            assert.strictEqual(service.config.customUserAgent![0][1], extensionVersion)
+            assert.strictEqual(service.config.userAgent![0][1], extensionVersion)
         })
 
         it('adds region to client', async function () {
@@ -46,15 +46,15 @@ describe('AwsClientBuilderV3', function () {
             const service = await builder.createAwsService(Client)
             const clientId = getClientId(new GlobalState(new FakeMemento()))
             const regex = new RegExp(`ClientId/${clientId}`)
-            assert.ok(service.config.customUserAgent![0][0].match(regex))
+            assert.ok(service.config.userAgent![0][0].match(regex))
         })
 
         it('does not override custom user-agent if specified in options', async function () {
             const service = await builder.createAwsService(Client, {
-                customUserAgent: [['CUSTOM USER AGENT']],
+                userAgent: [['CUSTOM USER AGENT']],
             })
 
-            assert.strictEqual(service.config.customUserAgent[0][0], 'CUSTOM USER AGENT')
+            assert.strictEqual(service.config.userAgent[0][0], 'CUSTOM USER AGENT')
         })
     })
 })

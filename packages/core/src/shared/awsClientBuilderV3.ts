@@ -42,7 +42,7 @@ interface AwsClient {
 interface AwsClientOptions {
     credentials: AwsCredentialIdentityProvider
     region: string | Provider<string>
-    customUserAgent: UserAgent
+    userAgent: UserAgent
     requestHandler: {
         metadata?: RequestHandlerMetadata
         handle: (req: any, options?: any) => Promise<RequestHandlerOutput<any>>
@@ -78,8 +78,8 @@ export class AWSClientBuilderV3 {
             opt.region = region
         }
 
-        if (!opt.customUserAgent && userAgent) {
-            opt.customUserAgent = [[getUserAgent({ includePlatform: true, includeClientId: true }), extensionVersion]]
+        if (!opt.userAgent && userAgent) {
+            opt.userAgent = [[getUserAgent({ includePlatform: true, includeClientId: true }), extensionVersion]]
         }
 
         if (!opt.retryStrategy) {
