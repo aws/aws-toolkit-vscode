@@ -143,7 +143,7 @@ const telemetryMiddleware: DeserializeMiddleware<any, any> =
         const result = await next(args).catch((e: any) => logAndThrow(e, serviceId, logTail))
         if (HttpResponse.isInstance(result.response)) {
             // TODO: omit credentials / sensitive info from the logs / telemetry.
-            const output = partialClone(result.output)
+            const output = partialClone(result.output, 3)
             getLogger().debug('API Response %s: %O', logTail, output)
         }
 
