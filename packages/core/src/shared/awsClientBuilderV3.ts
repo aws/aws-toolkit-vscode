@@ -132,7 +132,6 @@ function logAndThrow(e: any, serviceId: string, errorMessageAppend: string): nev
 /**
  * Telemetry logic to be added to all created clients. Adds logging and emitting metric on errors.
  */
-
 const telemetryMiddleware: DeserializeMiddleware<any, any> =
     (next: DeserializeHandler<any, any>, context: HandlerExecutionContext) => async (args: any) => {
         if (!HttpResponse.isInstance(args.request)) {
