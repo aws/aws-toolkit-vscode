@@ -40,9 +40,10 @@ export async function prepareRepoData(
     zip: AdmZip = new AdmZip()
 ) {
     try {
-        const files = await collectFiles(repoRootPaths, workspaceFolders, true, maxRepoSizeBytes)
         const devCommandWorkspaceConfigurations = CodeWhispererSettings.instance.getDevCommandWorkspaceConfigurations()
         const useAutoBuildFeature = devCommandWorkspaceConfigurations[repoRootPaths[0]] ?? false
+        // We only respect gitignore file rules if useAutoBuildFeature is on, this is to avoid dropping necessary files for building the code (e.g. png files imported in js code)
+        const files = await collectFiles(repoRootPaths, workspaceFolders, true, maxRepoSizeBytes, !useAutoBuildFeature)
 
         let totalBytes = 0
         const ignoredExtensionMap = new Map<string, number>()
@@ -59,10 +60,10 @@ export async function prepareRepoData(
                 throw error
             }
             const isCodeFile_ = isCodeFile(file.relativeFilePath)
-            // exclude user's devfile if `useAutoBuildFeature` is set to false
-            const excludeDevFile = useAutoBuildFeature ? false : file.relativeFilePath === 'devfile.yaml'
-
-            if (fileSize >= maxFileSizeBytes || !isCodeFile_ || excludeDevFile) {
+            const isDevFile = file.relativeFilePath === 'devfile.yaml'
+            // When useAutoBuildFeature is on, only respect the gitignore rules filtered earlier and apply the size limit, otherwise, exclude all non code files and gitignore files
+            const isNonCodeFileAndIgnored = useAutoBuildFeature ? false : !isCodeFile_ || isDevFile
+            if (fileSize >= maxFileSizeBytes || isNonCodeFileAndIgnored) {
                 if (!isCodeFile_) {
                     const re = /(?:\.([^.]+))?$/
                     const extensionArray = re.exec(file.relativeFilePath)
