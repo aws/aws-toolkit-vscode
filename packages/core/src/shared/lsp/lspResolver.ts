@@ -375,7 +375,9 @@ export class LanguageServerResolver {
     private getCompatibleLspTarget(version: LspVersion) {
         // TODO make this web friendly
         // TODO make this fully support windows
-        const platform = process.platform
+
+        // Workaround: Manifest platform field is `windows`, whereas node returns win32
+        const platform = process.platform === 'win32' ? 'windows' : process.platform
         const arch = process.arch
         return version.targets.find((x) => x.arch === arch && x.platform === platform)
     }
