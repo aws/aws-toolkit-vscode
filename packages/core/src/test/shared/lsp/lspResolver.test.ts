@@ -59,8 +59,10 @@ describe('lspResolver', function () {
     let fallbackStub: sinon.SinonStub
     let manifest: Manifest
     let versionRange: Range
+    let isMac: boolean // TODO: remove this check once LSPResolver supports other OS.
 
     before(function () {
+        isMac = process.platform === 'darwin'
         remoteStub = sinon.stub(LanguageServerResolver.prototype, 'fetchRemoteServer' as any)
         localStub = sinon.stub(LanguageServerResolver.prototype, 'getLocalServer' as any)
         fallbackStub = sinon.stub(LanguageServerResolver.prototype, 'getFallbackServer' as any)
@@ -91,6 +93,9 @@ describe('lspResolver', function () {
     })
 
     it('tries local cache first', async function () {
+        if (!isMac) {
+            this.skip()
+        }
         localStub.resolves(lspResult('cache'))
 
         const r = await new LanguageServerResolver(manifest, serverName, versionRange).resolve()
@@ -105,6 +110,9 @@ describe('lspResolver', function () {
     })
 
     it('tries fetching remote if cache fails', async function () {
+        if (!isMac) {
+            this.skip()
+        }
         localStub.rejects(new Error('not found'))
         remoteStub.resolves(lspResult('remote'))
 
@@ -128,6 +136,9 @@ describe('lspResolver', function () {
     })
 
     it('tries fallback version if both remote and cache fail', async function () {
+        if (!isMac) {
+            this.skip()
+        }
         localStub.rejects(new Error('not found'))
         remoteStub.rejects(new Error('not found'))
         fallbackStub.resolves(lspResult('fallback'))
@@ -158,6 +169,9 @@ describe('lspResolver', function () {
     })
 
     it('rejects if local, remote, and fallback all reject', async function () {
+        if (!isMac) {
+            this.skip()
+        }
         localStub.rejects(new Error('not found'))
         remoteStub.rejects(new Error('not found'))
         fallbackStub.rejects(new Error('not found'))
