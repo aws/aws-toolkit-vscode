@@ -52,7 +52,7 @@ export class SSMWrapper extends ClientWrapper<SSMClient> {
     }
 
     public async describeInstance(target: string): Promise<InstanceInformation> {
-        const response2 = this.makePaginatedRequest(
+        const response = this.makePaginatedRequest(
             DescribeInstanceInformationCommand,
             {
                 InstanceInformationFilterList: [
@@ -64,7 +64,7 @@ export class SSMWrapper extends ClientWrapper<SSMClient> {
             } as DescribeInstanceInformationCommandInput,
             'InstanceIds'
         )
-        const resolvedResponse = await response2.flatten().flatten().promise()
+        const resolvedResponse = await response.flatten().flatten().promise()
         return resolvedResponse[0]!
     }
 
@@ -85,7 +85,7 @@ export class SSMWrapper extends ClientWrapper<SSMClient> {
         })
     }
 
-    private async waitUntilCommandExecuted(commandId: string, target: string) {
+    private async waitForCommand(commandId: string, target: string) {
         const result = await waitUntilCommandExecuted(
             { client: await this.getClient(), maxWaitTime: 30 },
             { CommandId: commandId, InstanceId: target }
@@ -102,7 +102,7 @@ export class SSMWrapper extends ClientWrapper<SSMClient> {
     ): Promise<SendCommandCommandOutput> {
         const response = await this.sendCommand(target, documentName, parameters)
         try {
-            await this.waitUntilCommandExecuted(response.Command!.CommandId!, target)
+            await this.waitForCommand(response.Command!.CommandId!, target)
             return response
         } catch (err) {
             throw new ToolkitError(`Failed in sending command to target ${target}`, { cause: err as Error })
