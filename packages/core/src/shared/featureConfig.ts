@@ -184,7 +184,7 @@ export class FeatureConfigProvider {
                         .showInformationMessage(
                             localize(
                                 'AWS.amazonq.chat.workspacecontext.enable.message',
-                                'Amazon Q: Workspace index is now enabled. You can disable it in the Amazon Q settings.'
+                                'Amazon Q: Workspace index is now enabled. You can disable it from Amazon Q settings.'
                             ),
                             localize('AWS.amazonq.opensettings', 'Open settings')
                         )

@@ -295,7 +295,7 @@
     "AWS.codewhisperer.customization.notification.new_customizations.learn_more": "Learn More",
     "AWS.amazonq.title": "Amazon Q",
     "AWS.amazonq.chat": "Chat",
-    "AWS.amazonq.chat.workspacecontext.enable.message": "Amazon Q: Workspace index is now enabled. You can disable it in the Amazon Q settings.",
+    "AWS.amazonq.chat.workspacecontext.enable.message": "Amazon Q: Workspace index is now enabled. You can disable it from Amazon Q settings.",
     "AWS.amazonq.security": "Code Issues",
     "AWS.amazonq.login": "Login",
     "AWS.amazonq.learnMore": "Learn More About Amazon Q",
