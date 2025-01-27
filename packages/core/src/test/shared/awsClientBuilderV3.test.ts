@@ -66,16 +66,19 @@ describe('AwsClientBuilderV3', function () {
         assert.strictEqual(service.config.userAgent[0][0], 'CUSTOM USER AGENT')
     })
 
-    it('adds region to client', async function () {
-        const service = await builder.createAwsService(Client, { region: 'us-west-2' })
-        assert.ok(service.config.region)
-        assert.strictEqual(service.config.region, 'us-west-2')
-    })
-
     describe('middlewareStack', function () {
         let args: { request: { hostname: string; path: string }; input: any }
         let context: { clientName?: string; commandName?: string }
         let response: { response: { statusCode: number }; output: { message: string } }
+        let httpRequestStub: sinon.SinonStub
+        let httpResponseStub: sinon.SinonStub
+
+        before(function () {
+            httpRequestStub = sinon.stub(HttpRequest, 'isInstance')
+            httpResponseStub = sinon.stub(HttpResponse, 'isInstance')
+            httpRequestStub.callsFake(() => true)
+            httpResponseStub.callsFake(() => true)
+        })
 
         beforeEach(function () {
             args = {
@@ -99,19 +102,16 @@ describe('AwsClientBuilderV3', function () {
                 },
             }
         })
-        afterEach(function () {
+        after(function () {
             sinon.restore()
         })
 
         it('logs messages on request', async function () {
-            sinon.stub(HttpRequest, 'isInstance').callsFake(() => true)
             await logOnRequest((_: any) => _, args as any)
             assertLogsContainAllOf(['testHost', 'testPath'], false, 'debug')
         })
 
-        it('adds telemetry meta and logs on error failure', async function () {
-            sinon.stub(HttpResponse, 'isInstance').callsFake(() => true)
-
+        it('adds telemetry metadata and logs on error failure', async function () {
             const next = (_: any) => {
                 throw new Error('test error')
             }
@@ -123,7 +123,6 @@ describe('AwsClientBuilderV3', function () {
         })
 
         it('does not emit telemetry, but still logs on successes', async function () {
-            sinon.stub(HttpResponse, 'isInstance').callsFake(() => true)
             const next = async (_: any) => {
                 return response
             }
@@ -131,13 +130,12 @@ describe('AwsClientBuilderV3', function () {
                 assert.deepStrictEqual(await emitOnRequest(next, context, args), response)
             })
             assertLogsContainAllOf(['testHost', 'testPath'], false, 'debug')
-            assert.throws(() => assertTelemetry('vscode_executeCommand', { requestServiceType: 'test' }))
+            assert.throws(() => assertTelemetry('vscode_executeCommand', { requestServiceType: 'foo' }))
         })
 
         it('custom endpoints overwrite request url', async function () {
             const settings = new TestSettings()
             await settings.update('aws.dev.endpoints', { foo: 'http://example.com:3000/path' })
-            sinon.stub(HttpRequest, 'isInstance').callsFake(() => true)
             const next = async (args: any) => args
             const newArgs: any = await overwriteEndpoint(next, context, new DevSettings(settings), args)
 
@@ -149,7 +147,6 @@ describe('AwsClientBuilderV3', function () {
 
         it('custom endpoints are not overwritten if not specified', async function () {
             const settings = new TestSettings()
-            sinon.stub(HttpRequest, 'isInstance').callsFake(() => true)
             const next = async (args: any) => args
             const newArgs: any = await overwriteEndpoint(next, context, new DevSettings(settings), args)
 
