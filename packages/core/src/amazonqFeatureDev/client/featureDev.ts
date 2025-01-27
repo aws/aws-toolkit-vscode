@@ -32,6 +32,7 @@ import {
     MetricData,
     TelemetryEvent,
 } from './featuredevproxyclient'
+import { ExportResultArchiveCommandInput } from '@amzn/codewhisperer-streaming'
 
 // Re-enable once BE is able to handle retries.
 const writeAPIRetryOptions = {
@@ -231,7 +232,7 @@ export class FeatureDevClient {
             const params = {
                 exportId: conversationId,
                 exportIntent: 'TASK_ASSIST',
-            }
+            } satisfies ExportResultArchiveCommandInput
             getLogger().debug(`Executing exportResultArchive with %O`, params)
             const archiveResponse = await streamingClient.exportResultArchive(params)
             const buffer: number[] = []
