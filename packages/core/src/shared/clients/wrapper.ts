@@ -4,7 +4,7 @@
  */
 import * as vscode from 'vscode'
 import globals from '../extensionGlobals'
-import { AwsClient, AwsClientConstructor } from '../awsClientBuilderV3'
+import { AwsClient, AwsClientConstructor, AwsCommand } from '../awsClientBuilderV3'
 import { pageableToCollection } from '../utilities/collectionUtils'
 
 export abstract class ClientWrapper<C extends AwsClient> implements vscode.Disposable {
@@ -23,7 +23,7 @@ export abstract class ClientWrapper<C extends AwsClient> implements vscode.Dispo
         return this.client!
     }
 
-    protected async makeRequest<CommandInput extends object, Command extends object>(
+    protected async makeRequest<CommandInput extends object, Command extends AwsCommand>(
         command: new (o: CommandInput) => Command,
         commandOptions: CommandInput
     ) {
@@ -31,7 +31,11 @@ export abstract class ClientWrapper<C extends AwsClient> implements vscode.Dispo
         return await client.send(new command(commandOptions))
     }
 
-    protected makePaginatedRequest<CommandInput extends object, CommandOutput extends object, Command extends object>(
+    protected makePaginatedRequest<
+        CommandInput extends object,
+        CommandOutput extends object,
+        Command extends AwsCommand,
+    >(
         command: new (o: CommandInput) => Command,
         commandOptions: CommandInput,
         collectKey: keyof CommandOutput & string,
