@@ -247,12 +247,15 @@ export class Session {
         return { leftPath, rightPath, ...diff }
     }
 
-    public async sendDocGenerationTelemetryEvent(docV2GenerationEvent: DocV2GenerationEvent) {
+    public async sendDocTelemetryEvent(
+        telemetryEvent: DocV2GenerationEvent | DocV2AcceptanceEvent,
+        eventType: 'generation' | 'acceptance'
+    ) {
         const client = await this.proxyClient.getClient()
         try {
             const params: SendTelemetryEventRequest = {
                 telemetryEvent: {
-                    docV2GenerationEvent,
+                    [eventType === 'generation' ? 'docV2GenerationEvent' : 'docV2AcceptanceEvent']: telemetryEvent,
                 },
                 optOutPreference: getOptOutPreference(),
                 userContext: {
@@ -263,42 +266,14 @@ export class Session {
                     ideVersion: extensionVersion,
                 },
             }
-            const response = await client.sendTelemetryEvent(params).promise()
-            getLogger().debug(
-                `${featureName}: successfully sent docV2GenerationEvent: ConversationId: ${docV2GenerationEvent.conversationId} RequestId: ${response.$response.requestId}`
-            )
-        } catch (e) {
-            getLogger().error(
-                `${featureName}: failed to send doc generation telemetry: ${(e as Error).name}: ${
-                    (e as Error).message
-                } RequestId: ${(e as any).requestId}`
-            )
-        }
-    }
 
-    public async sendDocAcceptanceTelemetryEvent(docV2AcceptanceEvent: DocV2AcceptanceEvent) {
-        const client = await this.proxyClient.getClient()
-        try {
-            const params: SendTelemetryEventRequest = {
-                telemetryEvent: {
-                    docV2AcceptanceEvent,
-                },
-                optOutPreference: getOptOutPreference(),
-                userContext: {
-                    ideCategory: 'VSCODE',
-                    operatingSystem: getOperatingSystem(),
-                    product: 'DocGeneration', // Should be the same as in JetBrains
-                    clientId: getClientId(globals.globalState),
-                    ideVersion: extensionVersion,
-                },
-            }
             const response = await client.sendTelemetryEvent(params).promise()
             getLogger().debug(
-                `${featureName}: successfully sent docV2AcceptanceEvent: ConversationId: ${docV2AcceptanceEvent.conversationId} RequestId: ${response.$response.requestId}`
+                `${featureName}: successfully sent docV2${eventType === 'generation' ? 'GenerationEvent' : 'AcceptanceEvent'}: ConversationId: ${telemetryEvent.conversationId} RequestId: ${response.$response.requestId}`
             )
         } catch (e) {
             getLogger().error(
-                `${featureName}: failed to send doc generation telemetry: ${(e as Error).name}: ${
+                `${featureName}: failed to send doc ${eventType} telemetry: ${(e as Error).name}: ${
                     (e as Error).message
                 } RequestId: ${(e as any).requestId}`
             )

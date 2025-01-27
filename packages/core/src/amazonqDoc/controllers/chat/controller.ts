@@ -603,7 +603,7 @@ export class DocController {
                 this.docGenerationTask.numberOfGeneratedFiles = totalGeneratedFiles
                 const docGenerationEvent = this.docGenerationTask.docGenerationEventBase()
 
-                await session.sendDocGenerationTelemetryEvent(docGenerationEvent)
+                await session.sendDocTelemetryEvent(docGenerationEvent, 'generation')
             }
         } finally {
             if (session?.state?.tokenSource?.token.isCancellationRequested) {
@@ -673,7 +673,7 @@ export class DocController {
         this.docGenerationTask.numberOfAddedFiles = totalAddedFiles
         const docAcceptanceEvent = this.docGenerationTask.docAcceptanceEventBase()
 
-        await session.sendDocAcceptanceTelemetryEvent(docAcceptanceEvent)
+        await session.sendDocTelemetryEvent(docAcceptanceEvent, 'acceptance')
     }
     private processLink(message: any) {
         void openUrl(vscode.Uri.parse(message.link))
