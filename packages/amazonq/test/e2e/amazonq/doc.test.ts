@@ -108,6 +108,71 @@ describe('Amazon Q Doc', async function () {
                 FollowUpTypes.MakeChanges,
                 FollowUpTypes.RejectChanges,
             ])
+
+            tab.clickButton(FollowUpTypes.AcceptChanges)
+
+            await tab.waitForButtons([FollowUpTypes.NewTask, FollowUpTypes.CloseSession])
+        })
+    })
+
+    describe('Edits a README', () => {
+        beforeEach(async function () {
+            tab.addChatMessage({ command: '/doc' })
+            await tab.waitForChatFinishesLoading()
+        })
+
+        it('Make specific change in README', async () => {
+            await tab.waitForButtons([FollowUpTypes.UpdateDocumentation])
+
+            tab.clickButton(FollowUpTypes.UpdateDocumentation)
+
+            await tab.waitForButtons([FollowUpTypes.SynchronizeDocumentation, FollowUpTypes.EditDocumentation])
+
+            tab.clickButton(FollowUpTypes.EditDocumentation)
+
+            await tab.waitForButtons([FollowUpTypes.ProceedFolderSelection])
+
+            tab.clickButton(FollowUpTypes.ProceedFolderSelection)
+
+            tab.addChatMessage({ prompt: 'remove the repository structure section' })
+
+            await tab.waitForText(
+                `${i18n('AWS.amazonq.doc.answer.readmeUpdated')} ${i18n('AWS.amazonq.doc.answer.codeResult')}`
+            )
+
+            await tab.waitForButtons([
+                FollowUpTypes.AcceptChanges,
+                FollowUpTypes.MakeChanges,
+                FollowUpTypes.RejectChanges,
+            ])
+        })
+
+        it('Handle unrelated prompt error', async () => {
+            await tab.waitForButtons([FollowUpTypes.UpdateDocumentation])
+
+            tab.clickButton(FollowUpTypes.UpdateDocumentation)
+
+            await tab.waitForButtons([FollowUpTypes.SynchronizeDocumentation, FollowUpTypes.EditDocumentation])
+
+            tab.clickButton(FollowUpTypes.EditDocumentation)
+
+            await tab.waitForButtons([FollowUpTypes.ProceedFolderSelection])
+
+            tab.clickButton(FollowUpTypes.ProceedFolderSelection)
+
+            tab.addChatMessage({ prompt: 'tell me about the weather' })
+
+            await tab.waitForEvent(() =>
+                tab.getChatItems().some(({ body }) => body?.startsWith(i18n('AWS.amazonq.doc.error.promptUnrelated')))
+            )
+
+            await tab.waitForEvent(() => {
+                const store = tab.getStore()
+                return (
+                    !store.promptInputDisabledState &&
+                    store.promptInputPlaceholder === i18n('AWS.amazonq.doc.placeholder.editReadme')
+                )
+            })
         })
     })
 })

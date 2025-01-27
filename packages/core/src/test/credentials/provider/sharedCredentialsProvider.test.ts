@@ -4,13 +4,11 @@
  */
 
 import assert from 'assert'
-import * as FakeTimers from '@sinonjs/fake-timers'
 import * as sinon from 'sinon'
 import { SharedCredentialsProvider } from '../../../auth/providers/sharedCredentialsProvider'
 import { stripUndefined } from '../../../shared/utilities/collectionUtils'
 import * as process from '@aws-sdk/credential-provider-process'
 import { ParsedIniData } from '@smithy/shared-ini-file-loader'
-import { installFakeClock } from '../../testUtil'
 import { SsoClient } from '../../../auth/sso/clients'
 import { stub } from '../../utilities/stubber'
 import { SsoAccessTokenProvider } from '../../../auth/sso/ssoAccessTokenProvider'
@@ -19,20 +17,13 @@ import { createTestSections } from '../testUtil'
 const missingPropertiesFragment = 'missing properties'
 
 describe('SharedCredentialsProvider', async function () {
-    let clock: FakeTimers.InstalledClock
     let sandbox: sinon.SinonSandbox
 
     before(function () {
         sandbox = sinon.createSandbox()
-        clock = installFakeClock()
-    })
-
-    after(function () {
-        clock.uninstall()
     })
 
     afterEach(function () {
-        clock.reset()
         sandbox.restore()
     })
 

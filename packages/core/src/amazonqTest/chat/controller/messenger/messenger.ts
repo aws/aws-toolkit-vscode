@@ -183,7 +183,8 @@ export class Messenger {
         tabID: string,
         triggerID: string,
         triggerPayload: TriggerPayload,
-        fileName: string
+        fileName: string,
+        fileInWorkspace: boolean
     ) {
         let message = ''
         let messageId = response.$metadata.requestId ?? ''
@@ -277,12 +278,25 @@ export class Messenger {
                     TelemetryHelper.instance.sendTestGenerationToolkitEvent(
                         session,
                         false,
+                        fileInWorkspace,
                         'Cancelled',
                         messageId,
                         performance.now() - session.testGenerationStartTime,
-                        getTelemetryReasonDesc(CodeWhispererConstants.unitTestGenerationCancelMessage)
+                        getTelemetryReasonDesc(
+                            `TestGenCancelled: ${CodeWhispererConstants.unitTestGenerationCancelMessage}`
+                        ),
+                        undefined,
+                        undefined,
+                        undefined,
+                        undefined,
+                        undefined,
+                        undefined,
+                        undefined,
+                        undefined,
+                        undefined,
+                        undefined,
+                        'TestGenCancelled'
                     )
-
                     this.dispatcher.sendUpdatePromptProgress(
                         new UpdatePromptProgressMessage(tabID, cancellingProgressField)
                     )
@@ -291,11 +305,12 @@ export class Messenger {
                     TelemetryHelper.instance.sendTestGenerationToolkitEvent(
                         session,
                         false,
+                        fileInWorkspace,
                         'Succeeded',
                         messageId,
-                        performance.now() - session.testGenerationStartTime
+                        performance.now() - session.testGenerationStartTime,
+                        undefined
                     )
-
                     this.dispatcher.sendUpdatePromptProgress(
                         new UpdatePromptProgressMessage(tabID, testGenCompletedField)
                     )

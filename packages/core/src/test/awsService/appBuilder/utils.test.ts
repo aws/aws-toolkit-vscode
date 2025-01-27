@@ -294,9 +294,9 @@ describe('AppBuilder Utils', function () {
             }
             try {
                 await runOpenTemplate(tNode as TreeNode)
-                assert.fail('No template provided')
+                assert.fail('SAM Template not found, cannot open template')
             } catch (err) {
-                assert.strictEqual((err as Error).message, 'No template provided')
+                assert.strictEqual((err as Error).message, 'SAM Template not found, cannot open template')
             }
             // Then
             assert(openCommand.neverCalledWith(sinon.match.has('fspath', sinon.match(/template.yaml/g))))

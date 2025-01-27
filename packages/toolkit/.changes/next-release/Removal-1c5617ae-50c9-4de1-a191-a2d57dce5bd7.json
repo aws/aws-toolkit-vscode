@@ -1,4 +1,0 @@
-{
-	"type": "Removal",
-	"description": "Amazon Q: No longer autoinstall Amazon Q if the user had used CodeWhisperer in old Toolkit versions."
-}

@@ -8,7 +8,7 @@ import * as localizedText from '../../shared/localizedText'
 import { Auth } from '../../auth/auth'
 import { ToolkitError, isNetworkError, tryRun } from '../../shared/errors'
 import { getSecondaryAuth, setScopes } from '../../auth/secondaryAuth'
-import { isCloud9, isSageMaker } from '../../shared/extensionUtilities'
+import { isSageMaker } from '../../shared/extensionUtilities'
 import { AmazonQPromptSettings } from '../../shared/settings'
 import {
     scopesCodeWhispererCore,
@@ -55,14 +55,8 @@ export const amazonQScopes = [...codeWhispererChatScopes, ...scopesGumby, ...sco
  * for Amazon Q.
  */
 export const isValidCodeWhispererCoreConnection = (conn?: Connection): conn is Connection => {
-    if (isCloud9('classic')) {
-        return isIamConnection(conn)
-    }
-
     return (
-        (isSageMaker() && isIamConnection(conn)) ||
-        (isCloud9('codecatalyst') && isIamConnection(conn)) ||
-        (isSsoConnection(conn) && hasScopes(conn, codeWhispererCoreScopes))
+        (isSageMaker() && isIamConnection(conn)) || (isSsoConnection(conn) && hasScopes(conn, codeWhispererCoreScopes))
     )
 }
 /** Superset that includes all of CodeWhisperer + Amazon Q */
@@ -144,10 +138,6 @@ export class AuthUtil {
     })
 
     public async setVscodeContextProps() {
-        if (isCloud9()) {
-            return
-        }
-
         await setContext('aws.codewhisperer.connected', this.isConnected())
         const doShowAmazonQLoginView = !this.isConnected() || this.isConnectionExpired()
         await setContext('aws.amazonq.showLoginView', doShowAmazonQLoginView)

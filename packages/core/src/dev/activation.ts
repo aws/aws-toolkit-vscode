@@ -24,6 +24,7 @@ import { getSessionId } from '../shared/telemetry/util'
 import { NotificationsController } from '../notifications/controller'
 import { DevNotificationsState } from '../notifications/types'
 import { QuickPickItem } from 'vscode'
+import { ChildProcess } from '../shared/utilities/processUtils'
 
 interface MenuOption {
     readonly label: string
@@ -44,6 +45,7 @@ export type DevFunction =
     | 'editAuthConnections'
     | 'notificationsSend'
     | 'forceIdeCrash'
+    | 'startChildProcess'
 
 export type DevOptions = {
     context: vscode.ExtensionContext
@@ -125,6 +127,11 @@ const menuOptions: () => Record<DevFunction, MenuOption> = () => {
             label: 'Crash: Force IDE ExtHost Crash',
             detail: `Will SIGKILL ExtHost, { pid: ${process.pid}, sessionId: '${getSessionId().slice(0, 8)}-...' }, but the IDE itself will not crash.`,
             executor: forceQuitIde,
+        },
+        startChildProcess: {
+            label: 'ChildProcess: Start child process',
+            detail: 'Start ChildProcess from our utility wrapper for testing',
+            executor: startChildProcess,
         },
     }
 }
@@ -334,7 +341,7 @@ class ObjectEditor {
                 return this.openState(targetContext.secrets, key)
             case 'auth':
                 // Auth memento is determined in a different way
-                return this.openState(getEnvironmentSpecificMemento(), key)
+                return this.openState(getEnvironmentSpecificMemento(globalState), key)
         }
     }
 
@@ -577,4 +584,16 @@ async function editNotifications() {
         await targetNotificationsController.pollForStartUp()
         await targetNotificationsController.pollForEmergencies()
     })
+}
+
+async function startChildProcess() {
+    const result = await createInputBox({
+        title: 'Enter a command',
+    }).prompt()
+    if (result) {
+        const [command, ...args] = result?.toString().split(' ') ?? []
+        getLogger().info(`Starting child process: '${command}'`)
+        const processResult = await ChildProcess.run(command, args, { collect: true })
+        getLogger().info(`Child process exited with code ${processResult.exitCode}`)
+    }
 }
