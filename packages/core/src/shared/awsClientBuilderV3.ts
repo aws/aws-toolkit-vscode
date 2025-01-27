@@ -27,24 +27,22 @@ import { telemetry } from './telemetry'
 import { getRequestId, getTelemetryReason, getTelemetryReasonDesc, getTelemetryResult } from './errors'
 import { extensionVersion } from '.'
 import { getLogger } from './logger'
-import { omitIfPresent } from './utilities/tsUtils'
+import { partialClone } from './utilities/collectionUtils'
 
 export type AwsClientConstructor<C> = new (o: AwsClientOptions) => C
 
 // AWS-SDKv3 does not export generic types for clients so we need to build them as needed
 // https://github.com/aws/aws-sdk-js-v3/issues/5856#issuecomment-2096950979
-export interface AwsClient {
+interface AwsClient {
     middlewareStack: {
         add: MiddlewareStack<any, MetadataBearer>['add']
     }
-    send: (command: any, options?: any) => Promise<any>
-    destroy: () => void
 }
 
 interface AwsClientOptions {
     credentials: AwsCredentialIdentityProvider
     region: string | Provider<string>
-    customUserAgent: UserAgent
+    userAgent: UserAgent
     requestHandler: {
         metadata?: RequestHandlerMetadata
         handle: (req: any, options?: any) => Promise<RequestHandlerOutput<any>>
@@ -80,8 +78,8 @@ export class AWSClientBuilderV3 {
             opt.region = region
         }
 
-        if (!opt.customUserAgent && userAgent) {
-            opt.customUserAgent = [[getUserAgent({ includePlatform: true, includeClientId: true }), extensionVersion]]
+        if (!opt.userAgent && userAgent) {
+            opt.userAgent = [[getUserAgent({ includePlatform: true, includeClientId: true }), extensionVersion]]
         }
 
         if (!opt.retryStrategy) {
@@ -134,7 +132,6 @@ function logAndThrow(e: any, serviceId: string, errorMessageAppend: string): nev
 /**
  * Telemetry logic to be added to all created clients. Adds logging and emitting metric on errors.
  */
-
 const telemetryMiddleware: DeserializeMiddleware<any, any> =
     (next: DeserializeHandler<any, any>, context: HandlerExecutionContext) => async (args: any) => {
         if (!HttpResponse.isInstance(args.request)) {
@@ -146,7 +143,7 @@ const telemetryMiddleware: DeserializeMiddleware<any, any> =
         const result = await next(args).catch((e: any) => logAndThrow(e, serviceId, logTail))
         if (HttpResponse.isInstance(result.response)) {
             // TODO: omit credentials / sensitive info from the logs / telemetry.
-            const output = omitIfPresent(result.output, [])
+            const output = partialClone(result.output, 3)
             getLogger().debug('API Response %s: %O', logTail, output)
         }
 

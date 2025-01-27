@@ -53,11 +53,9 @@ import {
 import { CodeTransformTelemetryState } from '../../telemetry/codeTransformTelemetryState'
 import DependencyVersions from '../../models/dependencies'
 import { getStringHash } from '../../../shared/utilities/textUtilities'
-import { getVersionData } from '../../../codewhisperer/service/transformByQ/transformMavenHandler'
 import AdmZip from 'adm-zip'
 import { AuthError } from '../../../auth/sso/server'
 import {
-    setMaven,
     openBuildLogFile,
     parseBuildFile,
     validateSQLMetadataFile,
@@ -321,12 +319,6 @@ export class GumbyController {
                     telemetryJavaVersion = JDKToTelemetryValue(javaVersion) as CodeTransformJavaSourceVersionsAllowed
                 }
                 telemetry.record({ codeTransformLocalJavaVersion: telemetryJavaVersion })
-
-                await setMaven()
-                const versionInfo = await getVersionData()
-                const mavenVersionInfoMessage = `${versionInfo[0]} (${transformByQState.getMavenName()})`
-                telemetry.record({ buildSystemVersion: mavenVersionInfoMessage })
-
                 return validProjects
             })
             return validProjects

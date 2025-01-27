@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import * as FakeTimers from '@sinonjs/fake-timers'
 import assert from 'assert'
-import sinon from 'sinon'
+import sinon, { createSandbox } from 'sinon'
 import globals from '../../shared/extensionGlobals'
 import { randomUUID } from '../../shared/crypto'
 import { getContext } from '../../shared/vscode/setContext'
@@ -27,6 +27,7 @@ import {
 import { HttpResourceFetcher } from '../../shared/resourcefetcher/httpResourceFetcher'
 import { NotificationsNode } from '../../notifications/panelNode'
 import { RuleEngine } from '../../notifications/rules'
+import Sinon from 'sinon'
 
 // one test node to use across different tests
 export const panelNode: NotificationsNode = NotificationsNode.instance
@@ -512,13 +513,16 @@ describe('Notifications Controller', function () {
 
 describe('RemoteFetcher', function () {
     let clock: FakeTimers.InstalledClock
+    let sandbox: Sinon.SinonSandbox
 
     before(function () {
         clock = installFakeClock()
+        sandbox = createSandbox()
     })
 
     afterEach(function () {
         clock.reset()
+        sandbox.restore()
     })
 
     after(function () {
@@ -526,29 +530,29 @@ describe('RemoteFetcher', function () {
     })
 
     it('retries and throws error', async function () {
-        const httpStub = sinon.stub(HttpResourceFetcher.prototype, 'getNewETagContent')
+        // Setup
+        const httpStub = sandbox.stub(HttpResourceFetcher.prototype, 'getNewETagContent')
         httpStub.throws(new Error('network error'))
 
-        const runClock = (async () => {
-            await clock.tickAsync(1)
-            for (let n = 1; n <= RemoteFetcher.retryNumber; n++) {
-                assert.equal(httpStub.callCount, n)
-                await clock.tickAsync(RemoteFetcher.retryIntervalMs)
-            }
+        // Start function under test
+        const fetcher = assert.rejects(new RemoteFetcher().fetch('startUp', 'any'), (e) => {
+            return e instanceof Error && e.message === 'last error'
+        })
 
-            // Stop trying
-            await clock.tickAsync(RemoteFetcher.retryNumber)
-            assert.equal(httpStub.callCount, RemoteFetcher.retryNumber)
-        })()
+        // Progresses the clock, allowing the fetcher logic to break out of sleep for each iteration of withRetries()
+        assert.strictEqual(httpStub.callCount, 1) // 0
+        await clock.tickAsync(RemoteFetcher.retryIntervalMs)
+        assert.strictEqual(httpStub.callCount, 2) // 30_000
+        await clock.tickAsync(RemoteFetcher.retryIntervalMs)
+        assert.strictEqual(httpStub.callCount, 3) // 60_000
+        await clock.tickAsync(RemoteFetcher.retryIntervalMs)
+        assert.strictEqual(httpStub.callCount, 4) // 120_000
+        httpStub.throws(new Error('last error'))
+        await clock.tickAsync(RemoteFetcher.retryIntervalMs)
+        assert.strictEqual(httpStub.callCount, 5) // 150_000
 
-        const fetcher = new RemoteFetcher()
+        // We hit timeout so the last error will be thrown
         await fetcher
-            .fetch('startUp', 'any')
-            .then(() => assert.ok(false, 'Did not throw exception.'))
-            .catch(() => assert.ok(true))
-        await runClock
-
-        httpStub.restore()
     })
 })
 

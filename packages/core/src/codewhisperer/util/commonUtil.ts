@@ -6,7 +6,6 @@
 import * as vscode from 'vscode'
 import * as semver from 'semver'
 import { distance } from 'fastest-levenshtein'
-import { isCloud9 } from '../../shared/extensionUtilities'
 import { getInlineSuggestEnabled } from '../../shared/utilities/editorUtilities'
 import {
     AWSTemplateCaseInsensitiveKeyWords,
@@ -31,12 +30,12 @@ export function asyncCallWithTimeout<T>(asyncPromise: Promise<T>, message: strin
 }
 
 export function isInlineCompletionEnabled() {
-    return getInlineSuggestEnabled() && !isCloud9()
+    return getInlineSuggestEnabled()
 }
 
 // This is the VS Code version that started to have regressions in inline completion API
 export function isVscHavingRegressionInlineCompletionApi() {
-    return semver.gte(vscode.version, '1.78.0') && getInlineSuggestEnabled() && !isCloud9()
+    return semver.gte(vscode.version, '1.78.0') && getInlineSuggestEnabled()
 }
 
 export function getFileExt(languageId: string) {

@@ -43,6 +43,7 @@ import { featureDevScheme, featureName, messageWithConversationId } from '../../
 import { i18n } from '../../../../shared/i18n-helper'
 import { FollowUpTypes } from '../../../../amazonq/commons/types'
 import { ToolkitError } from '../../../../shared'
+import { MessengerTypes } from '../../../../amazonqFeatureDev/controllers/chat/messenger/constants'
 
 let mockGetCodeGeneration: sinon.SinonStub
 describe('Controller', () => {
@@ -526,6 +527,30 @@ describe('Controller', () => {
                 await waitUntil(() => Promise.resolve(sendMetricDataTelemetrySpy.callCount >= 2), {})
             }
 
+            async function verifyMessage(
+                expectedMessage: string,
+                type: MessengerTypes,
+                remainingIterations?: number,
+                totalIterations?: number
+            ) {
+                sinon.stub(session, 'send').resolves()
+                sinon.stub(session, 'sendLinesOfCodeGeneratedTelemetry').resolves() // Avoid sending extra telemetry
+                const sendAnswerSpy = sinon.stub(controllerSetup.messenger, 'sendAnswer')
+                sinon.stub(session.state, 'codeGenerationRemainingIterationCount').value(remainingIterations)
+                sinon.stub(session.state, 'codeGenerationTotalIterationCount').value(totalIterations)
+
+                await fireChatMessage(session)
+                await verifyMetricsCalled()
+
+                assert.ok(
+                    sendAnswerSpy.calledWith({
+                        type,
+                        tabID,
+                        message: expectedMessage,
+                    })
+                )
+            }
+
             beforeEach(async () => {
                 session = await createCodeGenState()
                 sinon.stub(session, 'preloader').resolves()
@@ -556,6 +581,49 @@ describe('Controller', () => {
             for (const { name, error } of runs) {
                 it(`sends failure operation telemetry on ${name}`, async () => {
                     await verifyException(error)
+                })
+            }
+
+            // Using 3 to avoid spamming the tests
+            for (let remainingIterations = 0; remainingIterations <= 3; remainingIterations++) {
+                it(`verifies add code messages for remaining iterations at ${remainingIterations}`, async () => {
+                    const totalIterations = 10
+                    const expectedMessage = (() => {
+                        if (remainingIterations > 2) {
+                            return 'Would you like me to add this code to your project, or provide feedback for new code?'
+                        } else if (remainingIterations > 0) {
+                            return `Would you like me to add this code to your project, or provide feedback for new code? You have ${remainingIterations} out of ${totalIterations} code generations left.`
+                        } else {
+                            return 'Would you like me to add this code to your project?'
+                        }
+                    })()
+                    await verifyMessage(expectedMessage, 'answer', remainingIterations, totalIterations)
+                })
+            }
+
+            for (let remainingIterations = -1; remainingIterations <= 3; remainingIterations++) {
+                let remaining: number | undefined = remainingIterations
+                if (remainingIterations < 0) {
+                    remaining = undefined
+                }
+                it(`verifies messages after cancellation for remaining iterations at ${remaining !== undefined ? remaining : 'undefined'}`, async () => {
+                    const totalIterations = 10
+                    const expectedMessage = (() => {
+                        if (remaining === undefined || remaining > 2) {
+                            return 'I stopped generating your code. If you want to continue working on this task, provide another description.'
+                        } else if (remaining > 0) {
+                            return `I stopped generating your code. If you want to continue working on this task, provide another description. You have ${remaining} out of ${totalIterations} code generations left.`
+                        } else {
+                            return "I stopped generating your code. You don't have more iterations left, however, you can start a new session."
+                        }
+                    })()
+                    session.state.tokenSource.cancel()
+                    await verifyMessage(
+                        expectedMessage,
+                        'answer-part',
+                        remaining,
+                        remaining === undefined ? undefined : totalIterations
+                    )
                 })
             }
         })

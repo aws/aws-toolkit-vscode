@@ -10,7 +10,9 @@ import {
     EditDocumentation,
     FolderSelectorFollowUps,
     Mode,
+    NewSessionFollowUps,
     SynchronizeDocumentation,
+    CodeChangeFollowUps,
     docScheme,
     featureName,
     findReadmePath,
@@ -20,10 +22,8 @@ import { getLogger } from '../../../shared/logger'
 
 import { Session } from '../../session/session'
 import { i18n } from '../../../shared/i18n-helper'
-import { telemetry } from '../../../shared/telemetry'
 import path from 'path'
 import { createSingleFileDialog } from '../../../shared/ui/common/openDialog'
-import { MynahIcons } from '@aws/mynah-ui'
 
 import {
     MonthlyConversationLimitError,
@@ -187,12 +187,6 @@ export class DocController {
         const codeGenerationId: string = message.messageId
         const zipFilePath: string = message.filePath
         const session = await this.sessionStorage.getSession(tabId)
-        telemetry.amazonq_isReviewedChanges.emit({
-            amazonqConversationId: session.conversationId,
-            enabled: true,
-            result: 'Succeeded',
-            credentialStartUrl: AuthUtil.instance.startUrl,
-        })
 
         const workspacePrefixMapping = getWorkspaceFoldersByPrefixes(session.config.workspaceFolders)
         const pathInfos = getPathsFromZipFilePath(zipFilePath, workspacePrefixMapping, session.config.workspaceFolders)
@@ -305,18 +299,7 @@ export class DocController {
                         tabID: data?.tabID,
                         disableChatInput: true,
                         message: 'Your changes have been discarded.',
-                        followUps: [
-                            {
-                                pillText: i18n('AWS.amazonq.featureDev.pillText.newTask'),
-                                type: FollowUpTypes.NewTask,
-                                status: 'info',
-                            },
-                            {
-                                pillText: i18n('AWS.amazonq.doc.pillText.closeSession'),
-                                type: FollowUpTypes.CloseSession,
-                                status: 'info',
-                            },
-                        ],
+                        followUps: NewSessionFollowUps,
                     })
                     break
                 case FollowUpTypes.ProceedFolderSelection:
@@ -357,7 +340,6 @@ export class DocController {
     }
 
     private async fileClicked(message: any) {
-        // TODO: add Telemetry here
         const tabId: string = message.tabID
         const messageId = message.messageId
         const filePathToUpdate: string = message.filePath
@@ -397,12 +379,6 @@ export class DocController {
     private async newTask(message: any) {
         // Old session for the tab is ending, delete it so we can create a new one for the message id
         this.docGenerationTask = new DocGenerationTask()
-        const session = await this.sessionStorage.getSession(message.tabID)
-        telemetry.amazonq_endChat.emit({
-            amazonqConversationId: session.conversationId,
-            amazonqEndOfTheConversationLatency: performance.now() - session.telemetry.sessionStartTime,
-            result: 'Succeeded',
-        })
         this.sessionStorage.deleteSession(message.tabID)
 
         // Re-run the opening flow, where we check auth + create a session
@@ -419,27 +395,26 @@ export class DocController {
         this.messenger.sendUpdatePlaceholder(message.tabID, i18n('AWS.amazonq.featureDev.placeholder.sessionClosed'))
         this.messenger.sendChatInputEnabled(message.tabID, false)
 
-        const session = await this.sessionStorage.getSession(message.tabID)
         this.docGenerationTask.reset()
-
-        telemetry.amazonq_endChat.emit({
-            amazonqConversationId: session.conversationId,
-            amazonqEndOfTheConversationLatency: performance.now() - session.telemetry.sessionStartTime,
-            result: 'Succeeded',
-        })
     }
 
     private processErrorChatMessage = (err: any, message: any, session: Session | undefined) => {
         const errorMessage = createUserFacingErrorMessage(`${err.cause?.message ?? err.message}`)
         // eslint-disable-next-line unicorn/no-null
         this.messenger.sendUpdatePromptProgress(message.tabID, null)
+        if (err.constructor.name === MonthlyConversationLimitError.name) {
+            this.messenger.sendMonthlyLimitError(message.tabID)
+        } else {
+            const enableUserInput = this.mode === Mode.EDIT && err.remainingIterations > 0
 
-        switch (err.constructor.name) {
-            case MonthlyConversationLimitError.name:
-                this.messenger.sendMonthlyLimitError(message.tabID)
-                break
-            default:
-                this.messenger.sendErrorMessage(errorMessage, message.tabID, 0, session?.conversationIdUnsafe, false)
+            this.messenger.sendErrorMessage(
+                errorMessage,
+                message.tabID,
+                0,
+                session?.conversationIdUnsafe,
+                false,
+                enableUserInput
+            )
         }
     }
 
@@ -448,8 +423,6 @@ export class DocController {
             await this.onDocsGeneration(session, message.message, message.tabID)
         } catch (err: any) {
             this.processErrorChatMessage(err, message, session)
-            // Lock the chat input until they explicitly click one of the follow ups
-            this.messenger.sendChatInputEnabled(message.tabID, false)
         }
     }
 
@@ -482,17 +455,12 @@ export class DocController {
             }
 
             await this.generateDocumentation({ message, session })
-            this.messenger.sendChatInputEnabled(message?.tabID, false)
-            this.messenger.sendUpdatePlaceholder(message.tabID, i18n('AWS.amazonq.doc.pillText.selectOption'))
         } catch (err: any) {
             this.processErrorChatMessage(err, message, session)
-            // Lock the chat input until they explicitly click one of the follow ups
-            this.messenger.sendChatInputEnabled(message.tabID, false)
         }
     }
 
     private async stopResponse(message: any) {
-        telemetry.ui_click.emit({ elementId: 'amazonq_stopCodeGeneration' })
         this.messenger.sendAnswer({
             message: i18n('AWS.amazonq.featureDev.pillText.stoppingCodeGeneration'),
             type: 'answer-part',
@@ -612,40 +580,21 @@ export class DocController {
                 this.messenger.sendAnswer({
                     type: 'answer',
                     tabID: tabID,
-                    message: `${this.mode === Mode.CREATE ? i18n('AWS.amazonq.doc.answer.readmeCreated') : i18n('AWS.amazonq.doc.answer.readmeUpdated')} ${i18n('AWS.amazonq.doc.answer.codeResult')}`,
+                    message: `${this.mode === Mode.CREATE ? i18n('AWS.amazonq.doc.answer.readmeCreated') : i18n('AWS.amazonq.doc.answer.readmeUpdated')} ${remainingIterations > 0 ? i18n('AWS.amazonq.doc.answer.codeResult') : i18n('AWS.amazonq.doc.answer.acceptOrReject')}`,
                     disableChatInput: true,
                 })
-            }
 
-            this.messenger.sendAnswer({
-                message: undefined,
-                type: 'system-prompt',
-                disableChatInput: true,
-                followUps: [
-                    {
-                        pillText: 'Accept',
-                        prompt: 'Accept',
-                        type: FollowUpTypes.AcceptChanges,
-                        icon: 'ok' as MynahIcons,
-                        status: 'success',
-                    },
-                    {
-                        pillText: 'Make changes',
-                        prompt: 'Make changes',
-                        type: FollowUpTypes.MakeChanges,
-                        icon: 'refresh' as MynahIcons,
-                        status: 'info',
-                    },
-                    {
-                        pillText: 'Reject',
-                        prompt: 'Reject',
-                        type: FollowUpTypes.RejectChanges,
-                        icon: 'cancel' as MynahIcons,
-                        status: 'error',
-                    },
-                ],
-                tabID: tabID,
-            })
+                this.messenger.sendAnswer({
+                    message: undefined,
+                    type: 'system-prompt',
+                    disableChatInput: true,
+                    followUps:
+                        remainingIterations > 0
+                            ? CodeChangeFollowUps
+                            : CodeChangeFollowUps.filter((followUp) => followUp.type !== FollowUpTypes.MakeChanges),
+                    tabID: tabID,
+                })
+            }
         } finally {
             if (session?.state?.tokenSource?.token.isCancellationRequested) {
                 await this.newTask({ tabID })
@@ -664,10 +613,8 @@ export class DocController {
             type: 'answer',
             tabID: message.tabID,
             message: 'Follow instructions to re-authenticate ...',
+            disableChatInput: true,
         })
-
-        // Explicitly ensure the user goes through the re-authenticate flow
-        this.messenger.sendChatInputEnabled(message.tabID, false)
     }
 
     private tabClosed(message: any) {
@@ -679,18 +626,6 @@ export class DocController {
         try {
             session = await this.sessionStorage.getSession(message.tabID)
 
-            const acceptedFiles = (paths?: { rejected: boolean }[]) => (paths || []).filter((i) => !i.rejected).length
-
-            const amazonqNumberOfFilesAccepted =
-                acceptedFiles(session.state.filePaths) + acceptedFiles(session.state.deletedFiles)
-
-            telemetry.amazonq_isAcceptedCodeChanges.emit({
-                credentialStartUrl: AuthUtil.instance.startUrl,
-                amazonqConversationId: session.conversationId,
-                amazonqNumberOfFilesAccepted,
-                enabled: true,
-                result: 'Succeeded',
-            })
             await session.insertChanges()
 
             const readmePath = findReadmePath(session.state.filePaths)
@@ -704,20 +639,7 @@ export class DocController {
                 type: 'answer',
                 disableChatInput: true,
                 tabID: message.tabID,
-                followUps: [
-                    {
-                        pillText: 'Start a new documentation task',
-                        prompt: 'Start a new documentation task',
-                        type: FollowUpTypes.NewTask,
-                        status: 'info',
-                    },
-                    {
-                        pillText: 'End session',
-                        prompt: 'End session',
-                        type: FollowUpTypes.CloseSession,
-                        status: 'info',
-                    },
-                ],
+                followUps: NewSessionFollowUps,
             })
 
             this.messenger.sendUpdatePlaceholder(message.tabID, i18n('AWS.amazonq.doc.pillText.selectOption'))

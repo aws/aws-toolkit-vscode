@@ -29,7 +29,7 @@ export class qTestingFramework {
         featureName: TabType,
         amazonQEnabled: boolean,
         featureConfigsSerialized: [string, FeatureContext][],
-        welcomeCount = 0
+        welcomeCount = Number.MAX_VALUE // by default don't show the welcome page
     ) {
         /**
          * Instantiate the UI and override the postMessage to publish using the app message

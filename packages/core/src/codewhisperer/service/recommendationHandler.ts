@@ -14,7 +14,6 @@ import { AWSError } from 'aws-sdk'
 import { isAwsError } from '../../shared/errors'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { getLogger } from '../../shared/logger'
-import { isCloud9 } from '../../shared/extensionUtilities'
 import { hasVendedIamCredentials } from '../../auth/auth'
 import {
     asyncCallWithTimeout,
@@ -44,6 +43,7 @@ import { openUrl } from '../../shared/utilities/vsCodeUtils'
 import { indent } from '../../shared/utilities/textUtilities'
 import path from 'path'
 import { isIamConnection } from '../../auth/connection'
+import { UserWrittenCodeTracker } from '../tracker/userWrittenCodeTracker'
 
 /**
  * This class is for getRecommendation/listRecommendation API calls and its states
@@ -63,9 +63,7 @@ const rejectCommand = Commands.declare('aws.amazonq.rejectCodeSuggestion', () =>
         traceId: TelemetryHelper.instance.traceId,
     })
 
-    if (!isCloud9('any')) {
-        await vscode.commands.executeCommand('editor.action.inlineSuggest.hide')
-    }
+    await vscode.commands.executeCommand('editor.action.inlineSuggest.hide')
     RecommendationHandler.instance.reportUserDecisions(-1)
     await Commands.tryExecute('aws.amazonq.refreshAnnotation')
 })
@@ -207,6 +205,8 @@ export class RecommendationHandler {
             session.requestContext = await EditorContext.buildGenerateRecommendationRequest(editor as vscode.TextEditor)
         }
         const request = session.requestContext.request
+        // record preprocessing end time
+        TelemetryHelper.instance.setPreprocessEndTime()
 
         // set start pos for non pagination call or first pagination call
         if (!pagination || (pagination && page === 0)) {
@@ -316,6 +316,7 @@ export class RecommendationHandler {
             getLogger().debug(msg)
             if (invocationResult === 'Succeeded') {
                 CodeWhispererCodeCoverageTracker.getTracker(session.language)?.incrementServiceInvocationCount()
+                UserWrittenCodeTracker.instance.onQFeatureInvoked()
             } else {
                 if (
                     (errorMessage?.includes(invalidCustomizationMessage) && errorCode === 'AccessDeniedException') ||
@@ -495,9 +496,7 @@ export class RecommendationHandler {
             session.suggestionStates,
             session.requestContext.supplementalMetadata
         )
-        if (isCloud9('any')) {
-            this.clearRecommendations()
-        } else if (isInlineCompletionEnabled()) {
+        if (isInlineCompletionEnabled()) {
             this.clearInlineCompletionStates().catch((e) => {
                 getLogger().error('clearInlineCompletionStates failed: %s', (e as Error).message)
             })

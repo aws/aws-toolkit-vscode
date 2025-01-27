@@ -110,21 +110,19 @@ export async function activate(args: {
     )
 
     const amazonQViewNode: ToolView[] = []
-    if (!isCloud9()) {
-        if (
-            isExtensionInstalled(VSCODE_EXTENSION_ID.amazonq) ||
-            globals.globalState.get<boolean>('aws.toolkit.amazonq.dismissed')
-        ) {
-            await setContext('aws.toolkit.amazonq.dismissed', true)
-        }
-
-        // We should create the tree even if it's dismissed, in case the user installs Amazon Q later.
-        amazonQViewNode.push({
-            nodes: [AmazonQNode.instance],
-            view: 'aws.amazonq.codewhisperer',
-            refreshCommands: [refreshAmazonQ, refreshAmazonQRootNode],
-        })
+    if (
+        isExtensionInstalled(VSCODE_EXTENSION_ID.amazonq) ||
+        globals.globalState.get<boolean>('aws.toolkit.amazonq.dismissed')
+    ) {
+        await setContext('aws.toolkit.amazonq.dismissed', true)
     }
+
+    // We should create the tree even if it's dismissed, in case the user installs Amazon Q later.
+    amazonQViewNode.push({
+        nodes: [AmazonQNode.instance],
+        view: 'aws.amazonq.codewhisperer',
+        refreshCommands: [refreshAmazonQ, refreshAmazonQRootNode],
+    })
 
     const viewNodes: ToolView[] = [
         ...amazonQViewNode,

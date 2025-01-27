@@ -24,11 +24,11 @@ import { NotificationsNode } from './panelNode'
 import { Commands } from '../shared/vscode/commands2'
 import { RuleEngine } from './rules'
 import { TreeNode } from '../shared/treeview/resourceTreeDataProvider'
-import { withRetries } from '../shared/utilities/functionUtils'
 import { FileResourceFetcher } from '../shared/resourcefetcher/fileResourceFetcher'
 import { isAmazonQ } from '../shared/extensionUtilities'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { randomUUID } from '../shared/crypto'
+import { waitUntil } from '../shared/utilities/timeoutUtils'
 
 const logger = getLogger('notifications')
 
@@ -266,8 +266,8 @@ export interface NotificationFetcher {
 }
 
 export class RemoteFetcher implements NotificationFetcher {
-    public static readonly retryNumber = 5
     public static readonly retryIntervalMs = 30000
+    public static readonly retryTimeout = RemoteFetcher.retryIntervalMs * 5
 
     private readonly startUpEndpoint: string =
         'https://idetoolkits-hostedfiles.amazonaws.com/Notifications/VSCode/startup/1.x.json'
@@ -286,7 +286,7 @@ export class RemoteFetcher implements NotificationFetcher {
         })
         logger.verbose('Attempting to fetch notifications for category: %s at endpoint: %s', category, endpoint)
 
-        return withRetries(
+        return waitUntil(
             async () => {
                 try {
                     return await fetcher.getNewETagContent(versionTag)
@@ -296,8 +296,9 @@ export class RemoteFetcher implements NotificationFetcher {
                 }
             },
             {
-                maxRetries: RemoteFetcher.retryNumber,
-                delay: RemoteFetcher.retryIntervalMs,
+                interval: RemoteFetcher.retryIntervalMs,
+                timeout: RemoteFetcher.retryTimeout,
+                retryOnFail: true,
                 // No exponential backoff - necessary?
             }
         )
