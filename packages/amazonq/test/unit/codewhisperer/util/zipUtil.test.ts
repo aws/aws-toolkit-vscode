@@ -6,7 +6,7 @@
 import assert from 'assert'
 import vscode from 'vscode'
 import sinon from 'sinon'
-import { join } from 'path'
+import { join, posix } from 'path'
 import { getTestWorkspaceFolder } from 'aws-core-vscode/test'
 import { CodeAnalysisScope, CodeWhispererConstants, ZipUtil } from 'aws-core-vscode/codewhisperer'
 import { codeScanTruncDirPrefix } from 'aws-core-vscode/codewhisperer'
@@ -124,7 +124,7 @@ describe('zipUtil', function () {
             const zipFileData = await fs.readFileBytes(zipMetadata.zipFilePath)
             const zip = await JSZip.loadAsync(zipFileData)
             const files = Object.keys(zip.files)
-            assert.ok(files.includes(join('workspaceFolder', 'workspaceFolder', 'App.java')))
+            assert.ok(files.includes(posix.join('workspaceFolder', 'workspaceFolder', 'App.java')))
         })
 
         it('should handle path with repeated project name for project scan', async function () {
@@ -136,7 +136,7 @@ describe('zipUtil', function () {
             const zipFileData = await fs.readFileBytes(zipMetadata.zipFilePath)
             const zip = await JSZip.loadAsync(zipFileData)
             const files = Object.keys(zip.files)
-            assert.ok(files.includes(join('workspaceFolder', 'workspaceFolder', 'App.java')))
+            assert.ok(files.includes(posix.join('workspaceFolder', 'workspaceFolder', 'App.java')))
         })
     })
 
