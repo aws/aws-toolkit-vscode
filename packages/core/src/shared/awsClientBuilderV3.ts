@@ -27,7 +27,7 @@ import { telemetry } from './telemetry'
 import { getRequestId, getTelemetryReason, getTelemetryReasonDesc, getTelemetryResult } from './errors'
 import { extensionVersion } from '.'
 import { getLogger } from './logger'
-import { omitIfPresent } from './utilities/tsUtils'
+import { partialClone } from './utilities/collectionUtils'
 
 export type AwsClientConstructor<C> = new (o: AwsClientOptions) => C
 
@@ -143,7 +143,7 @@ const telemetryMiddleware: DeserializeMiddleware<any, any> =
         const result = await next(args).catch((e: any) => logAndThrow(e, serviceId, logTail))
         if (HttpResponse.isInstance(result.response)) {
             // TODO: omit credentials / sensitive info from the logs / telemetry.
-            const output = omitIfPresent(result.output, [])
+            const output = partialClone(result.output)
             getLogger().debug('API Response %s: %O', logTail, output)
         }
 
