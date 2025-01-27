@@ -29,10 +29,8 @@ import {
 } from '../../errors'
 import { codeGenRetryLimit, defaultRetryLimit } from '../../limits'
 import { Session } from '../../session/session'
-import { featureName } from '../../constants'
-import { ChatSessionStorage } from '../../storages/chatSession'
-import { DeletedFileInfo, DevPhase, FollowUpTypes, type NewFileInfo } from '../../types'
-import { Messenger } from './messenger/messenger'
+import { featureDevScheme, featureName } from '../../constants'
+import { DeletedFileInfo, DevPhase, MetricDataOperationName, MetricDataResult, type NewFileInfo } from '../../types'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { AuthController } from '../../../amazonq/auth/controller'
 import { getLogger } from '../../../shared/logger'
@@ -47,8 +45,9 @@ import { openDeletedDiff, openDiff } from '../../../amazonq/commons/diff'
 import { i18n } from '../../../shared/i18n-helper'
 import globals from '../../../shared/extensionGlobals'
 import { randomUUID } from '../../../shared'
-
-export const TotalSteps = 3
+import { FollowUpTypes } from '../../../amazonq/commons/types'
+import { Messenger } from '../../../amazonq/commons/connector/baseMessenger'
+import { BaseChatSessionStorage } from '../../../amazonq/commons/baseChatStorage'
 
 export interface ChatControllerEventEmitters {
     readonly processHumanChatMessage: EventEmitter<any>
@@ -88,8 +87,9 @@ type StoreMessageIdMessage = {
 }
 
 export class FeatureDevController {
+    private readonly scheme: string = featureDevScheme
     private readonly messenger: Messenger
-    private readonly sessionStorage: ChatSessionStorage
+    private readonly sessionStorage: BaseChatSessionStorage<Session>
     private isAmazonQVisible: boolean
     private authController: AuthController
     private contentController: EditorContentController
@@ -97,7 +97,7 @@ export class FeatureDevController {
     public constructor(
         private readonly chatControllerMessageListeners: ChatControllerEventEmitters,
         messenger: Messenger,
-        sessionStorage: ChatSessionStorage,
+        sessionStorage: BaseChatSessionStorage<Session>,
         onDidChangeAmazonQVisibility: vscode.Event<boolean>
     ) {
         this.messenger = messenger
@@ -411,6 +411,7 @@ export class FeatureDevController {
                 canBeVoted: true,
             })
             this.messenger.sendUpdatePlaceholder(tabID, i18n('AWS.amazonq.featureDev.pillText.generatingCode'))
+            await session.sendMetricDataTelemetry(MetricDataOperationName.StartCodeGeneration, MetricDataResult.Success)
             await session.send(message)
             const filePaths = session.state.filePaths ?? []
             const deletedFiles = session.state.deletedFiles ?? []
@@ -459,12 +460,17 @@ export class FeatureDevController {
 
             if (remainingIterations !== undefined && totalIterations !== undefined) {
                 this.messenger.sendAnswer({
-                    type: 'answer',
+                    type: 'answer' as const,
                     tabID: tabID,
-                    message:
-                        remainingIterations === 0
-                            ? 'Would you like me to add this code to your project?'
-                            : `Would you like me to add this code to your project, or provide feedback for new code? You have ${remainingIterations} out of ${totalIterations} code generations left.`,
+                    message: (() => {
+                        if (remainingIterations > 2) {
+                            return 'Would you like me to add this code to your project, or provide feedback for new code?'
+                        } else if (remainingIterations > 0) {
+                            return `Would you like me to add this code to your project, or provide feedback for new code? You have ${remainingIterations} out of ${totalIterations} code generations left.`
+                        } else {
+                            return 'Would you like me to add this code to your project?'
+                        }
+                    })(),
                 })
             }
 
@@ -484,15 +490,39 @@ export class FeatureDevController {
                 await session.sendLinesOfCodeGeneratedTelemetry()
             }
             this.messenger.sendUpdatePlaceholder(tabID, i18n('AWS.amazonq.featureDev.pillText.selectOption'))
+        } catch (err: any) {
+            getLogger().error(`${featureName}: Error during code generation: ${err}`)
+
+            let result: string
+            switch (err.constructor.name) {
+                case FeatureDevServiceError.name:
+                    if (err.code === 'EmptyPatchException') {
+                        result = MetricDataResult.LlmFailure
+                    } else if (err.code === 'GuardrailsException' || err.code === 'ThrottlingException') {
+                        result = MetricDataResult.Error
+                    } else {
+                        result = MetricDataResult.Fault
+                    }
+                    break
+                case PromptRefusalException.name:
+                case NoChangeRequiredException.name:
+                    result = MetricDataResult.Error
+                    break
+                default:
+                    result = MetricDataResult.Fault
+                    break
+            }
+
+            await session.sendMetricDataTelemetry(MetricDataOperationName.EndCodeGeneration, result)
+            throw err
         } finally {
             // Finish processing the event
 
             if (session?.state?.tokenSource?.token.isCancellationRequested) {
                 this.workOnNewTask(
                     session.tabID,
-                    session.state.codeGenerationRemainingIterationCount ||
-                        TotalSteps - (session.state?.currentIteration || 0),
-                    session.state.codeGenerationTotalIterationCount || TotalSteps,
+                    session.state.codeGenerationRemainingIterationCount,
+                    session.state.codeGenerationTotalIterationCount,
                     session?.state?.tokenSource?.token.isCancellationRequested
                 )
                 this.disposeToken(session)
@@ -515,6 +545,7 @@ export class FeatureDevController {
                 }
             }
         }
+        await session.sendMetricDataTelemetry(MetricDataOperationName.EndCodeGeneration, MetricDataResult.Success)
     }
 
     private sendUpdateCodeMessage(tabID: string) {
@@ -534,10 +565,16 @@ export class FeatureDevController {
     ) {
         if (isStoppedGeneration) {
             this.messenger.sendAnswer({
-                message:
-                    (remainingIterations ?? 0) <= 0
-                        ? "I stopped generating your code. You don't have more iterations left, however, you can start a new session."
-                        : `I stopped generating your code. If you want to continue working on this task, provide another description. You have ${remainingIterations} out of ${totalIterations} code generations left.`,
+                message: ((remainingIterations) => {
+                    if (totalIterations !== undefined) {
+                        if (remainingIterations <= 0) {
+                            return "I stopped generating your code. You don't have more iterations left, however, you can start a new session."
+                        } else if (remainingIterations <= 2) {
+                            return `I stopped generating your code. If you want to continue working on this task, provide another description. You have ${remainingIterations} out of ${totalIterations} code generations left.`
+                        }
+                    }
+                    return 'I stopped generating your code. If you want to continue working on this task, provide another description.'
+                })(remainingIterations),
                 type: 'answer-part',
                 tabID,
             })
@@ -818,21 +855,21 @@ export class FeatureDevController {
 
         if (message.deleted) {
             const name = path.basename(pathInfos.relativePath)
-            await openDeletedDiff(pathInfos.absolutePath, name, tabId)
+            await openDeletedDiff(pathInfos.absolutePath, name, tabId, this.scheme)
         } else {
             let uploadId = session.uploadId
             if (session?.state?.uploadHistory && session.state.uploadHistory[codeGenerationId]) {
                 uploadId = session?.state?.uploadHistory[codeGenerationId].uploadId
             }
             const rightPath = path.join(uploadId, zipFilePath)
-            await openDiff(pathInfos.absolutePath, rightPath, tabId)
+            await openDiff(pathInfos.absolutePath, rightPath, tabId, this.scheme)
         }
     }
 
     private async openFile(filePath: NewFileInfo, tabId: string) {
         const leftPath = path.join(filePath.workspaceFolder.uri.fsPath, filePath.relativePath)
         const rightPath = filePath.virtualMemoryUri.path
-        await openDiff(leftPath, rightPath, tabId)
+        await openDiff(leftPath, rightPath, tabId, this.scheme)
     }
 
     private async stopResponse(message: any) {

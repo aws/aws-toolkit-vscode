@@ -89,7 +89,9 @@ describe('regionSubmenu', function () {
         submenuPrompter.activePrompter!.onDidChangeBusy((b: boolean) => {
             if (!b) {
                 const itemsAfterLabels = submenuPrompter.activePrompter!.quickPick.items.map((i) => i.label)
-                region2Data.forEach((item) => assert(itemsAfterLabels.includes(item)))
+                for (const item of region2Data) {
+                    assert(itemsAfterLabels.includes(item))
+                }
                 assert.notStrictEqual(itemsBeforeLabels, itemsAfterLabels)
             }
         })

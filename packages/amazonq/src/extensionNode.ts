@@ -18,7 +18,7 @@ import { Auth, AuthUtils, getTelemetryMetadataForConn, isAnySsoConnection } from
 import api from './api'
 import { activate as activateCWChat } from './app/chat/activation'
 import { beta } from 'aws-core-vscode/dev'
-import { activate as activateNotifications } from 'aws-core-vscode/notifications'
+import { activate as activateNotifications, NotificationsController } from 'aws-core-vscode/notifications'
 import { AuthState, AuthUtil } from 'aws-core-vscode/codewhisperer'
 import { telemetry, AuthUserState } from 'aws-core-vscode/telemetry'
 
@@ -67,15 +67,14 @@ async function activateAmazonQNode(context: vscode.ExtensionContext) {
 
     // TODO: Should probably emit for web as well.
     // Will the web metric look the same?
-    const authState = await getAuthState()
     telemetry.auth_userState.emit({
         passive: true,
         result: 'Succeeded',
         source: AuthUtils.ExtensionUse.instance.sourceForTelemetry(),
-        ...authState,
+        ...(await getAuthState()),
     })
 
-    void activateNotifications(context, authState, getAuthState)
+    void activateNotifications(context, getAuthState)
 }
 
 async function getAuthState(): Promise<Omit<AuthUserState, 'source'>> {
@@ -122,13 +121,16 @@ async function setupDevMode(context: vscode.ExtensionContext) {
 
     const devOptions: DevOptions = {
         context,
-        auth: Auth.instance,
+        auth: () => Auth.instance,
+        notificationsController: () => NotificationsController.instance,
         menuOptions: [
             'editStorage',
+            'resetState',
             'showEnvVars',
             'deleteSsoConnections',
             'expireSsoConnections',
             'editAuthConnections',
+            'notificationsSend',
             'forceIdeCrash',
         ],
     }

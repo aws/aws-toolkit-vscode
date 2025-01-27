@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import * as FakeTimers from '@sinonjs/fake-timers'
 import assert from 'assert'
-import sinon from 'sinon'
+import sinon, { createSandbox } from 'sinon'
 import globals from '../../shared/extensionGlobals'
 import { randomUUID } from '../../shared/crypto'
 import { getContext } from '../../shared/vscode/setContext'
@@ -20,18 +20,20 @@ import {
 import {
     NotificationData,
     NotificationType,
+    RuleContext,
     ToolkitNotification,
     getNotificationTelemetryId,
 } from '../../notifications/types'
 import { HttpResourceFetcher } from '../../shared/resourcefetcher/httpResourceFetcher'
 import { NotificationsNode } from '../../notifications/panelNode'
 import { RuleEngine } from '../../notifications/rules'
+import Sinon from 'sinon'
 
 // one test node to use across different tests
 export const panelNode: NotificationsNode = NotificationsNode.instance
 
 describe('Notifications Controller', function () {
-    const ruleEngine: RuleEngine = new RuleEngine({
+    const ruleContex: RuleContext = {
         ideVersion: '1.83.0',
         extensionVersion: '1.20.0',
         os: 'LINUX',
@@ -41,7 +43,7 @@ describe('Notifications Controller', function () {
         authStates: ['connected'],
         authScopes: ['codewhisperer:completions', 'codewhisperer:analysis'],
         activeExtensions: ['ext1', 'ext2'],
-    })
+    }
 
     let controller: NotificationsController
     let fetcher: TestFetcher
@@ -90,9 +92,14 @@ describe('Notifications Controller', function () {
     beforeEach(async function () {
         await panelNode.setNotifications([], [])
         fetcher = new TestFetcher()
-        controller = new NotificationsController(panelNode, fetcher, '_aws.test.notification' as any)
+        controller = new NotificationsController(
+            panelNode,
+            async () => ruleContex,
+            fetcher,
+            '_aws.test.notification' as any
+        )
 
-        ruleEngineSpy = sinon.spy(ruleEngine, 'shouldDisplayNotification')
+        ruleEngineSpy = sinon.spy(RuleEngine.prototype, 'shouldDisplayNotification')
         focusPanelSpy = sinon.spy(panelNode, 'focusPanel')
 
         await globals.globalState.update(controller.storageKey, {
@@ -118,7 +125,7 @@ describe('Notifications Controller', function () {
             content: JSON.stringify(content),
         })
 
-        await controller.pollForStartUp(ruleEngine)
+        await controller.pollForStartUp()
 
         assert.equal(ruleEngineSpy.callCount, 2)
         assert.deepStrictEqual(ruleEngineSpy.args, [[content.notifications[0]], [content.notifications[1]]])
@@ -150,7 +157,7 @@ describe('Notifications Controller', function () {
             content: JSON.stringify(content),
         })
 
-        await controller.pollForEmergencies(ruleEngine)
+        await controller.pollForEmergencies()
 
         assert.equal(ruleEngineSpy.callCount, 2)
         assert.deepStrictEqual(ruleEngineSpy.args, [[content.notifications[0]], [content.notifications[1]]])
@@ -191,8 +198,8 @@ describe('Notifications Controller', function () {
             content: JSON.stringify(emergencyContent),
         })
 
-        await controller.pollForStartUp(ruleEngine)
-        await controller.pollForEmergencies(ruleEngine)
+        await controller.pollForStartUp()
+        await controller.pollForEmergencies()
 
         // There are only 4 notifications in this test.
         // However, each time there is a poll, ALL notifications are evaluated for display.
@@ -241,7 +248,7 @@ describe('Notifications Controller', function () {
             content: JSON.stringify(content),
         })
 
-        await controller.pollForStartUp(ruleEngine)
+        await controller.pollForStartUp()
 
         assert.equal(panelNode.getChildren().length, 2)
         assert.equal(panelNode.startUpNotifications.length, 2)
@@ -284,7 +291,7 @@ describe('Notifications Controller', function () {
             content: JSON.stringify(content),
         })
 
-        await controller.pollForStartUp(ruleEngine)
+        await controller.pollForStartUp()
         assert.equal(panelNode.getChildren().length, 1)
         assert.equal(getContext('aws.toolkit.notifications.show'), true)
 
@@ -298,7 +305,7 @@ describe('Notifications Controller', function () {
             content: JSON.stringify(content),
         })
 
-        await controller.pollForStartUp(ruleEngine)
+        await controller.pollForStartUp()
 
         const actualState = await globals.globalState.get(controller.storageKey)
         assert.deepStrictEqual(actualState, {
@@ -333,9 +340,9 @@ describe('Notifications Controller', function () {
             content: JSON.stringify(emergencyContent),
         })
 
-        await controller.pollForEmergencies(ruleEngine)
-        await controller.pollForEmergencies(ruleEngine)
-        await controller.pollForStartUp(ruleEngine)
+        await controller.pollForEmergencies()
+        await controller.pollForEmergencies()
+        await controller.pollForStartUp()
 
         assert.equal(focusPanelSpy.callCount, 1)
         assert.equal(panelNode.getChildren().length, 2)
@@ -352,7 +359,7 @@ describe('Notifications Controller', function () {
             content: JSON.stringify(content),
         })
 
-        await controller.pollForStartUp(ruleEngine)
+        await controller.pollForStartUp()
 
         assert.deepStrictEqual(await globals.globalState.get(controller.storageKey), {
             startUp: {
@@ -369,7 +376,7 @@ describe('Notifications Controller', function () {
             eTag,
             content: undefined,
         })
-        await controller.pollForStartUp(ruleEngine)
+        await controller.pollForStartUp()
 
         assert.deepStrictEqual(await globals.globalState.get(controller.storageKey), {
             startUp: {
@@ -401,8 +408,8 @@ describe('Notifications Controller', function () {
             content: JSON.stringify(emergencyContent),
         })
 
-        await controller.pollForStartUp(ruleEngine)
-        await controller.pollForEmergencies(ruleEngine)
+        await controller.pollForStartUp()
+        await controller.pollForEmergencies()
 
         await dismissNotification(startUpContent.notifications[0])
 
@@ -428,7 +435,7 @@ describe('Notifications Controller', function () {
             content: JSON.stringify(emptyContent),
         })
 
-        await controller.pollForStartUp(ruleEngine)
+        await controller.pollForStartUp()
         assert.deepStrictEqual(await globals.globalState.get(controller.storageKey), {
             startUp: {
                 payload: emptyContent,
@@ -449,7 +456,7 @@ describe('Notifications Controller', function () {
             content: JSON.stringify(emptyContent),
         })
 
-        await controller.pollForEmergencies(ruleEngine)
+        await controller.pollForEmergencies()
         assert.deepStrictEqual(await globals.globalState.get(controller.storageKey), {
             startUp: {
                 payload: emptyContent,
@@ -475,7 +482,9 @@ describe('Notifications Controller', function () {
                 throw new Error('test error')
             }
         })()
-        assert.doesNotThrow(() => new NotificationsController(panelNode, fetcher).pollForStartUp(ruleEngine))
+        assert.doesNotThrow(() =>
+            new NotificationsController(panelNode, async () => ruleContex, fetcher).pollForStartUp()
+        )
         assert.ok(wasCalled)
     })
 
@@ -492,7 +501,7 @@ describe('Notifications Controller', function () {
 
         const onReceiveSpy = sinon.spy(panelNode, 'onReceiveNotifications')
 
-        await controller.pollForStartUp(ruleEngine)
+        await controller.pollForStartUp()
 
         assert.equal(onReceiveSpy.callCount, 1)
         assert.deepStrictEqual(onReceiveSpy.args[0][0], [content.notifications[0]])
@@ -504,13 +513,16 @@ describe('Notifications Controller', function () {
 
 describe('RemoteFetcher', function () {
     let clock: FakeTimers.InstalledClock
+    let sandbox: Sinon.SinonSandbox
 
     before(function () {
         clock = installFakeClock()
+        sandbox = createSandbox()
     })
 
     afterEach(function () {
         clock.reset()
+        sandbox.restore()
     })
 
     after(function () {
@@ -518,29 +530,29 @@ describe('RemoteFetcher', function () {
     })
 
     it('retries and throws error', async function () {
-        const httpStub = sinon.stub(HttpResourceFetcher.prototype, 'getNewETagContent')
+        // Setup
+        const httpStub = sandbox.stub(HttpResourceFetcher.prototype, 'getNewETagContent')
         httpStub.throws(new Error('network error'))
 
-        const runClock = (async () => {
-            await clock.tickAsync(1)
-            for (let n = 1; n <= RemoteFetcher.retryNumber; n++) {
-                assert.equal(httpStub.callCount, n)
-                await clock.tickAsync(RemoteFetcher.retryIntervalMs)
-            }
+        // Start function under test
+        const fetcher = assert.rejects(new RemoteFetcher().fetch('startUp', 'any'), (e) => {
+            return e instanceof Error && e.message === 'last error'
+        })
 
-            // Stop trying
-            await clock.tickAsync(RemoteFetcher.retryNumber)
-            assert.equal(httpStub.callCount, RemoteFetcher.retryNumber)
-        })()
+        // Progresses the clock, allowing the fetcher logic to break out of sleep for each iteration of withRetries()
+        assert.strictEqual(httpStub.callCount, 1) // 0
+        await clock.tickAsync(RemoteFetcher.retryIntervalMs)
+        assert.strictEqual(httpStub.callCount, 2) // 30_000
+        await clock.tickAsync(RemoteFetcher.retryIntervalMs)
+        assert.strictEqual(httpStub.callCount, 3) // 60_000
+        await clock.tickAsync(RemoteFetcher.retryIntervalMs)
+        assert.strictEqual(httpStub.callCount, 4) // 120_000
+        httpStub.throws(new Error('last error'))
+        await clock.tickAsync(RemoteFetcher.retryIntervalMs)
+        assert.strictEqual(httpStub.callCount, 5) // 150_000
 
-        const fetcher = new RemoteFetcher()
+        // We hit timeout so the last error will be thrown
         await fetcher
-            .fetch('startUp', 'any')
-            .then(() => assert.ok(false, 'Did not throw exception.'))
-            .catch(() => assert.ok(true))
-        await runClock
-
-        httpStub.restore()
     })
 })
 

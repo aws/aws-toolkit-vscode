@@ -73,7 +73,7 @@ export class AppNode implements TreeNode {
                 createPlaceholderItem(
                     localize(
                         'AWS.appBuilder.explorerNode.app.noResourceTree',
-                        '[Unable to load Resource tree for this App. Update SAM template]'
+                        '[Unable to load resource tree for this app. Ensure SAM template is correct.]'
                     )
                 ),
             ]

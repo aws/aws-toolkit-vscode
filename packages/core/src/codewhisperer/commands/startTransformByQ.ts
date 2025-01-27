@@ -5,11 +5,10 @@
 
 import * as vscode from 'vscode'
 import * as fs from 'fs' // eslint-disable-line no-restricted-imports
-import * as os from 'os'
-import * as xml2js from 'xml2js'
 import path from 'path'
 import { getLogger } from '../../shared/logger'
 import * as CodeWhispererConstants from '../models/constants'
+import * as localizedText from '../../shared/localizedText'
 import {
     transformByQState,
     StepProgress,
@@ -18,7 +17,6 @@ import {
     FolderInfo,
     ZipManifest,
     TransformByQStatus,
-    DB,
     TransformationType,
     TransformationCandidateProject,
 } from '../models/model'
@@ -49,14 +47,13 @@ import {
     prepareProjectDependencies,
     runMavenDependencyUpdateCommands,
 } from '../service/transformByQ/transformMavenHandler'
-import { CodeTransformCancelSrcComponents, telemetry } from '../../shared/telemetry/telemetry'
+import { telemetry } from '../../shared/telemetry/telemetry'
 import { CodeTransformTelemetryState } from '../../amazonqGumby/telemetry/codeTransformTelemetryState'
-import { CancelActionPositions, calculateTotalLatency } from '../../amazonqGumby/telemetry/codeTransformTelemetry'
+import { calculateTotalLatency } from '../../amazonqGumby/telemetry/codeTransformTelemetry'
 import { MetadataResult } from '../../shared/telemetry/telemetryClient'
 import { submitFeedback } from '../../feedback/vue/submitFeedback'
 import { placeholder } from '../../shared/vscode/commands2'
 import {
-    AbsolutePathDetectedError,
     AlternateDependencyVersionsNotFoundError,
     JavaHomeNotSetError,
     JobStartError,
@@ -71,6 +68,7 @@ import {
     getJsonValuesFromManifestFile,
     highlightPomIssueInProject,
     parseVersionsListFromPomFile,
+    setMaven,
     writeLogs,
 } from '../service/transformByQ/transformFileHandler'
 import { sleep } from '../../shared/utilities/timeoutUtils'
@@ -81,7 +79,6 @@ import { setContext } from '../../shared/vscode/setContext'
 import { makeTemporaryToolkitFolder } from '../../shared'
 import globals from '../../shared/extensionGlobals'
 import { convertDateToTimestamp } from '../../shared/datetime'
-import { isWin } from '../../shared/vscode/env'
 import { findStringInDirectory } from '../../shared/utilities/workspaceUtils'
 
 function getFeedbackCommentData() {
@@ -109,63 +106,6 @@ export async function processSQLConversionTransformFormInput(pathToProject: stri
     transformByQState.setSchema(schema)
     transformByQState.setSourceJDKVersion(JDKVersion.JDK8) // use dummy value of JDK8 so that startJob API can be called
     // targetJDKVersion defaults to JDK17, the only supported version, which is fine
-}
-
-export async function validateSQLMetadataFile(fileContents: string, message: any) {
-    try {
-        const sctData = await xml2js.parseStringPromise(fileContents)
-        const dbEntities = sctData['tree']['instances'][0]['ProjectModel'][0]['entities'][0]
-        const sourceDB = dbEntities['sources'][0]['DbServer'][0]['$']['vendor'].trim().toUpperCase()
-        const targetDB = dbEntities['targets'][0]['DbServer'][0]['$']['vendor'].trim().toUpperCase()
-        const sourceServerName = dbEntities['sources'][0]['DbServer'][0]['$']['name'].trim()
-        transformByQState.setSourceServerName(sourceServerName)
-        if (sourceDB !== DB.ORACLE) {
-            transformByQState.getChatMessenger()?.sendUnrecoverableErrorResponse('unsupported-source-db', message.tabID)
-            return false
-        } else if (targetDB !== DB.AURORA_POSTGRESQL && targetDB !== DB.RDS_POSTGRESQL) {
-            transformByQState.getChatMessenger()?.sendUnrecoverableErrorResponse('unsupported-target-db', message.tabID)
-            return false
-        }
-        transformByQState.setSourceDB(sourceDB)
-        transformByQState.setTargetDB(targetDB)
-
-        const serverNodeLocations =
-            sctData['tree']['instances'][0]['ProjectModel'][0]['relations'][0]['server-node-location']
-        const schemaNames = new Set<string>()
-        serverNodeLocations.forEach((serverNodeLocation: any) => {
-            const schemaNodes = serverNodeLocation['FullNameNodeInfoList'][0]['nameParts'][0][
-                'FullNameNodeInfo'
-            ].filter((node: any) => node['$']['typeNode'].toLowerCase() === 'schema')
-            schemaNodes.forEach((node: any) => {
-                schemaNames.add(node['$']['nameNode'].toUpperCase())
-            })
-        })
-        transformByQState.setSchemaOptions(schemaNames) // user will choose one of these
-        getLogger().info(
-            `CodeTransformation: Parsed .sct file with source DB: ${sourceDB}, target DB: ${targetDB}, source host name: ${sourceServerName}, and schema names: ${Array.from(schemaNames)}`
-        )
-    } catch (err: any) {
-        getLogger().error('CodeTransformation: Error parsing .sct file. %O', err)
-        transformByQState.getChatMessenger()?.sendUnrecoverableErrorResponse('error-parsing-sct-file', message.tabID)
-        return false
-    }
-    return true
-}
-
-export async function setMaven() {
-    let mavenWrapperExecutableName = isWin() ? 'mvnw.cmd' : 'mvnw'
-    const mavenWrapperExecutablePath = path.join(transformByQState.getProjectPath(), mavenWrapperExecutableName)
-    if (fs.existsSync(mavenWrapperExecutablePath)) {
-        if (mavenWrapperExecutableName === 'mvnw') {
-            mavenWrapperExecutableName = './mvnw' // add the './' for non-Windows
-        } else if (mavenWrapperExecutableName === 'mvnw.cmd') {
-            mavenWrapperExecutableName = '.\\mvnw.cmd' // add the '.\' for Windows
-        }
-        transformByQState.setMavenName(mavenWrapperExecutableName)
-    } else {
-        transformByQState.setMavenName('mvn')
-    }
-    getLogger().info(`CodeTransformation: using Maven ${transformByQState.getMavenName()}`)
 }
 
 async function validateJavaHome(): Promise<boolean> {
@@ -290,45 +230,12 @@ export async function finalizeTransformByQ(status: string) {
     }
 }
 
-export async function parseBuildFile() {
-    try {
-        const absolutePaths = ['users/', 'system/', 'volumes/', 'c:\\', 'd:\\']
-        const alias = path.basename(os.homedir())
-        absolutePaths.push(alias)
-        const buildFilePath = path.join(transformByQState.getProjectPath(), 'pom.xml')
-        if (fs.existsSync(buildFilePath)) {
-            const buildFileContents = fs.readFileSync(buildFilePath).toString().toLowerCase()
-            const detectedPaths = []
-            for (const absolutePath of absolutePaths) {
-                if (buildFileContents.includes(absolutePath)) {
-                    detectedPaths.push(absolutePath)
-                }
-            }
-            if (detectedPaths.length > 0) {
-                const warningMessage = CodeWhispererConstants.absolutePathDetectedMessage(
-                    detectedPaths.length,
-                    path.basename(buildFilePath),
-                    detectedPaths.join(', ')
-                )
-                transformByQState.getChatControllers()?.errorThrown.fire({
-                    error: new AbsolutePathDetectedError(warningMessage),
-                    tabID: ChatSessionManager.Instance.getSession().tabID,
-                })
-                getLogger().info('CodeTransformation: absolute path potentially in build file')
-                return warningMessage
-            }
-        }
-    } catch (err: any) {
-        // swallow error
-        getLogger().error(`CodeTransformation: error scanning for absolute paths, tranformation continuing: ${err}`)
-    }
-    return undefined
-}
-
 export async function preTransformationUploadCode() {
     await vscode.commands.executeCommand('aws.amazonq.transformationHub.focus')
 
-    void vscode.window.showInformationMessage(CodeWhispererConstants.jobStartedNotification)
+    void vscode.window.showInformationMessage(CodeWhispererConstants.jobStartedNotification, {
+        title: localizedText.ok,
+    })
 
     let uploadId = ''
     throwIfCancelled()
@@ -357,6 +264,7 @@ export async function preTransformationUploadCode() {
 
             transformByQState.setPayloadFilePath(payloadFilePath)
             uploadId = await uploadPayload(payloadFilePath)
+            telemetry.record({ codeTransformJobId: uploadId }) // uploadId is re-used as jobId
         })
     } catch (err) {
         const errorMessage = (err as Error).message
@@ -495,12 +403,6 @@ export async function openHilPomFile() {
         HumanInTheLoopManager.instance.diagnosticCollection,
         humanInTheLoopManager.getManifestFileValues().sourcePomVersion
     )
-}
-
-export async function openBuildLogFile() {
-    const logFilePath = transformByQState.getPreBuildLogFilePath()
-    const doc = await vscode.workspace.openTextDocument(logFilePath)
-    await vscode.window.showTextDocument(doc)
 }
 
 export async function terminateHILEarly(jobID: string) {
@@ -752,14 +654,14 @@ export async function getValidSQLConversionCandidateProjects() {
         let resultLog = ''
         for (const project of javaProjects) {
             // as long as at least one of these strings is found, project contains embedded SQL statements
-            const searchStrings = ['oracle.jdbc.OracleDriver', 'jdbc:oracle:thin:@', 'jdbc:oracle:oci:@', 'jdbc:odbc:']
+            const searchStrings = ['oracle.jdbc.', 'jdbc:oracle:', 'jdbc:odbc:']
             for (const str of searchStrings) {
                 const spawnResult = await findStringInDirectory(str, project.path)
                 // just for telemetry purposes
                 if (spawnResult.error || spawnResult.stderr) {
-                    resultLog += `search failed: ${JSON.stringify(spawnResult)}`
+                    resultLog += `search error: ${JSON.stringify(spawnResult)}--`
                 } else {
-                    resultLog += `search succeeded: ${spawnResult.exitCode}`
+                    resultLog += `search complete (exit code: ${spawnResult.exitCode})--`
                 }
                 getLogger().info(`CodeTransformation: searching for ${str} in ${project.path}, result = ${resultLog}`)
                 if (spawnResult.exitCode === 0) {
@@ -835,20 +737,22 @@ export async function postTransformationJob() {
         const mavenVersionInfoMessage = `${versionInfo[0]} (${transformByQState.getMavenName()})`
         const javaVersionInfoMessage = `${versionInfo[1]} (${transformByQState.getMavenName()})`
 
-        // Note: IntelliJ implementation of ResultStatusMessage includes additional metadata such as jobId.
         telemetry.codeTransform_totalRunTime.emit({
             buildSystemVersion: mavenVersionInfoMessage,
             codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
+            codeTransformJobId: transformByQState.getJobId(),
             codeTransformResultStatusMessage: resultStatusMessage,
             codeTransformRunTimeLatency: durationInMs,
             codeTransformLocalJavaVersion: javaVersionInfoMessage,
             result: resultStatusMessage === TransformByQStatus.Succeeded ? MetadataResult.Pass : MetadataResult.Fail,
-            reason: resultStatusMessage,
+            reason: `${resultStatusMessage}-${chatMessage}`,
         })
     }
 
     if (transformByQState.isSucceeded()) {
-        void vscode.window.showInformationMessage(CodeWhispererConstants.jobCompletedNotification(diffMessage))
+        void vscode.window.showInformationMessage(CodeWhispererConstants.jobCompletedNotification(diffMessage), {
+            title: localizedText.ok,
+        })
     } else if (transformByQState.isPartiallySucceeded()) {
         void vscode.window
             .showInformationMessage(
@@ -919,55 +823,52 @@ export async function cleanupTransformationJob() {
     CodeTransformTelemetryState.instance.resetCodeTransformMetaDataField()
 }
 
-export async function stopTransformByQ(
-    jobId: string,
-    cancelSrc: CancelActionPositions = CancelActionPositions.BottomHubPanel
-) {
-    if (transformByQState.isRunning()) {
-        getLogger().info('CodeTransformation: User requested to stop transformation. Stopping transformation.')
-        transformByQState.setToCancelled()
-        transformByQState.setPolledJobStatus('CANCELLED')
-        await setContext('gumby.isStopButtonAvailable', false)
-        try {
-            await stopJob(jobId)
-            void vscode.window
-                .showErrorMessage(
-                    CodeWhispererConstants.jobCancelledNotification,
-                    CodeWhispererConstants.amazonQFeedbackText
-                )
-                .then((choice) => {
-                    if (choice === CodeWhispererConstants.amazonQFeedbackText) {
-                        void submitFeedback(
-                            placeholder,
-                            CodeWhispererConstants.amazonQFeedbackKey,
-                            getFeedbackCommentData()
-                        )
-                    }
-                })
-        } catch (err) {
-            void vscode.window
-                .showErrorMessage(
-                    CodeWhispererConstants.errorStoppingJobNotification,
-                    CodeWhispererConstants.amazonQFeedbackText
-                )
-                .then((choice) => {
-                    if (choice === CodeWhispererConstants.amazonQFeedbackText) {
-                        void submitFeedback(
-                            placeholder,
-                            CodeWhispererConstants.amazonQFeedbackKey,
-                            getFeedbackCommentData()
-                        )
-                    }
-                })
-            getLogger().error(`CodeTransformation: Error stopping transformation ${err}`)
-        } finally {
-            telemetry.codeTransform_jobIsCancelledByUser.emit({
-                codeTransformCancelSrcComponents: cancelSrc as CodeTransformCancelSrcComponents,
-                codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-                result: MetadataResult.Pass,
-            })
+export async function stopTransformByQ(jobId: string) {
+    await telemetry.codeTransform_jobIsCancelledByUser.run(async () => {
+        telemetry.record({
+            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
+            codeTransformJobId: jobId,
+        })
+        if (transformByQState.isRunning()) {
+            getLogger().info('CodeTransformation: User requested to stop transformation. Stopping transformation.')
+            transformByQState.setToCancelled()
+            transformByQState.setPolledJobStatus('CANCELLED')
+            await setContext('gumby.isStopButtonAvailable', false)
+            try {
+                await stopJob(jobId)
+                void vscode.window
+                    .showErrorMessage(
+                        CodeWhispererConstants.jobCancelledNotification,
+                        CodeWhispererConstants.amazonQFeedbackText
+                    )
+                    .then((choice) => {
+                        if (choice === CodeWhispererConstants.amazonQFeedbackText) {
+                            void submitFeedback(
+                                placeholder,
+                                CodeWhispererConstants.amazonQFeedbackKey,
+                                getFeedbackCommentData()
+                            )
+                        }
+                    })
+            } catch (err) {
+                void vscode.window
+                    .showErrorMessage(
+                        CodeWhispererConstants.errorStoppingJobNotification,
+                        CodeWhispererConstants.amazonQFeedbackText
+                    )
+                    .then((choice) => {
+                        if (choice === CodeWhispererConstants.amazonQFeedbackText) {
+                            void submitFeedback(
+                                placeholder,
+                                CodeWhispererConstants.amazonQFeedbackKey,
+                                getFeedbackCommentData()
+                            )
+                        }
+                    })
+                getLogger().error(`CodeTransformation: Error stopping transformation ${err}`)
+            }
         }
-    }
+    })
 }
 
 async function setContextVariables() {

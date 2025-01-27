@@ -51,9 +51,9 @@ import { getHttpStatusCode, AwsClientResponseError } from '../../../shared/error
 import { uiEventRecorder } from '../../../amazonq/util/eventRecorder'
 import { globals, waitUntil } from '../../../shared'
 import { telemetry } from '../../../shared/telemetry'
-import { Auth } from '../../../auth'
 import { isSsoConnection } from '../../../auth/connection'
 import { inspect } from '../../../shared/utilities/collectionUtils'
+import { DefaultAmazonQAppInitContext } from '../../../amazonq/apps/initContext'
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
@@ -231,17 +231,19 @@ export class ChatController {
         this.openLinkInExternalBrowser(click)
     }
 
-    private processQuickActionCommand(quickActionCommand: ChatPromptCommandType) {
+    private processQuickActionCommand(message: PromptMessage) {
         this.editorContextExtractor
             .extractContextForTrigger('QuickAction')
             .then((context) => {
                 const triggerID = randomUUID()
 
+                const quickActionCommand = message.command as ChatPromptCommandType
+
                 this.messenger.sendQuickActionMessage(quickActionCommand, triggerID)
 
                 this.triggerEventsStorage.addTriggerEvent({
                     id: triggerID,
-                    tabID: undefined,
+                    tabID: message.tabID,
                     message: undefined,
                     type: 'quick_action',
                     quickAction: quickActionCommand,
@@ -378,11 +380,20 @@ export class ChatController {
 
         this.editorContextExtractor
             .extractContextForTrigger('ContextMenu')
-            .then((context) => {
+            .then(async (context) => {
                 const triggerID = randomUUID()
+                if (command.type === 'aws.amazonq.generateUnitTests') {
+                    DefaultAmazonQAppInitContext.instance.getAppsToWebViewMessagePublisher().publish({
+                        sender: 'testChat',
+                        command: 'test',
+                        type: 'chatMessage',
+                    })
+                    // For non-supported languages, we'll just open the standard chat.
+                    return
+                }
 
                 if (context?.focusAreaContext?.codeBlock === undefined) {
-                    throw 'Sorry, we cannot help with the selected language code snippet'
+                    throw 'Sorry, I cannot help with the selected language code snippet'
                 }
 
                 const prompt = this.promptGenerator.generateForContextMenuCommand(command)
@@ -475,7 +486,7 @@ export class ChatController {
                 recordTelemetryChatRunCommand('clear')
                 return
             default:
-                this.processQuickActionCommand(message.command)
+                this.processQuickActionCommand(message)
         }
     }
 
@@ -623,21 +634,17 @@ export class ChatController {
                 if (CodeWhispererSettings.instance.isLocalIndexEnabled()) {
                     const start = performance.now()
                     triggerPayload.relevantTextDocuments = await LspController.instance.query(triggerPayload.message)
-                    triggerPayload.relevantTextDocuments.forEach((doc) => {
+                    for (const doc of triggerPayload.relevantTextDocuments) {
                         getLogger().info(
                             `amazonq: Using workspace files ${doc.relativeFilePath}, content(partial): ${doc.text?.substring(0, 200)}`
                         )
-                    })
+                    }
                     triggerPayload.projectContextQueryLatencyMs = performance.now() - start
                 } else {
                     this.messenger.sendOpenSettingsMessage(triggerID, tabID)
                     return
                 }
-            }
-            // if user does not have @workspace in the prompt, but user is Amazon internal
-            // add project context by default
-            else if (
-                Auth.instance.isInternalAmazonUser() &&
+            } else if (
                 !LspController.instance.isIndexingInProgress() &&
                 CodeWhispererSettings.instance.isLocalIndexEnabled()
             ) {

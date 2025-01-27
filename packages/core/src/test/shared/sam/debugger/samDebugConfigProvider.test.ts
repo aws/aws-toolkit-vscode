@@ -510,8 +510,8 @@ describe('SamDebugConfigurationProvider', async function () {
                     target: TEMPLATE_TARGET_TYPE,
                     templatePath: relPath,
                     logicalId: 'TestResource',
-                    //lambdaHandler: 'sick handles',
-                    //projectRoot: 'root as in beer'
+                    // lambdaHandler: 'sick handles',
+                    // projectRoot: 'root as in beer'
                 },
             })
             assert.strictEqual(resolved!.name, name)
@@ -555,7 +555,6 @@ describe('SamDebugConfigurationProvider', async function () {
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'nodejs18.x',
                 runtimeFamily: lambdaModel.RuntimeFamily.NodeJS,
-                useIkpdb: false,
                 workspaceFolder: {
                     index: 0,
                     name: 'test-workspace-folder',
@@ -721,7 +720,6 @@ describe('SamDebugConfigurationProvider', async function () {
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'nodejs18.x',
                 runtimeFamily: lambdaModel.RuntimeFamily.NodeJS,
-                useIkpdb: false,
                 workspaceFolder: {
                     index: 0,
                     name: 'test-workspace-folder',
@@ -881,7 +879,6 @@ describe('SamDebugConfigurationProvider', async function () {
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'nodejs20.x',
                 runtimeFamily: lambdaModel.RuntimeFamily.NodeJS,
-                useIkpdb: false,
                 workspaceFolder: {
                     index: 0,
                     name: 'test-workspace-folder',
@@ -1008,7 +1005,6 @@ describe('SamDebugConfigurationProvider', async function () {
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'nodejs18.x',
                 runtimeFamily: lambdaModel.RuntimeFamily.NodeJS,
-                useIkpdb: false,
                 workspaceFolder: {
                     index: 0,
                     name: 'test-workspace-folder',
@@ -1147,7 +1143,6 @@ describe('SamDebugConfigurationProvider', async function () {
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'nodejs20.x',
                 runtimeFamily: lambdaModel.RuntimeFamily.NodeJS,
-                useIkpdb: false,
                 workspaceFolder: {
                     index: 0,
                     name: 'test-workspace-folder',
@@ -1228,7 +1223,6 @@ describe('SamDebugConfigurationProvider', async function () {
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'java17',
                 runtimeFamily: lambdaModel.RuntimeFamily.Java,
-                useIkpdb: false,
                 type: AWS_SAM_DEBUG_TYPE,
                 workspaceFolder: {
                     index: 0,
@@ -1331,7 +1325,6 @@ describe('SamDebugConfigurationProvider', async function () {
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'java17',
                 runtimeFamily: lambdaModel.RuntimeFamily.Java,
-                useIkpdb: false,
                 type: AWS_SAM_DEBUG_TYPE,
                 workspaceFolder: {
                     index: 0,
@@ -1444,7 +1437,6 @@ describe('SamDebugConfigurationProvider', async function () {
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'java17',
                 runtimeFamily: lambdaModel.RuntimeFamily.Java,
-                useIkpdb: false,
                 type: AWS_SAM_DEBUG_TYPE,
                 workspaceFolder: {
                     index: 0,
@@ -1543,7 +1535,6 @@ describe('SamDebugConfigurationProvider', async function () {
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'java11',
                 runtimeFamily: lambdaModel.RuntimeFamily.Java,
-                useIkpdb: false,
                 type: AWS_SAM_DEBUG_TYPE,
                 workspaceFolder: {
                     index: 0,
@@ -1640,7 +1631,6 @@ describe('SamDebugConfigurationProvider', async function () {
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'dotnet6', // lambdaModel.dotNetRuntimes[0],
                 runtimeFamily: lambdaModel.RuntimeFamily.DotNet,
-                useIkpdb: false,
                 type: AWS_SAM_DEBUG_TYPE,
                 workspaceFolder: {
                     index: 0,
@@ -1809,7 +1799,6 @@ describe('SamDebugConfigurationProvider', async function () {
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'dotnet6', // lambdaModel.dotNetRuntimes[0],
                 runtimeFamily: lambdaModel.RuntimeFamily.DotNet,
-                useIkpdb: false,
                 type: AWS_SAM_DEBUG_TYPE,
                 workspaceFolder: {
                     index: 0,
@@ -1964,7 +1953,6 @@ describe('SamDebugConfigurationProvider', async function () {
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'dotnet6', // lambdaModel.dotNetRuntimes[0],
                 runtimeFamily: lambdaModel.RuntimeFamily.DotNet,
-                useIkpdb: false,
                 type: AWS_SAM_DEBUG_TYPE,
                 workspaceFolder: {
                     index: 0,
@@ -2129,7 +2117,6 @@ describe('SamDebugConfigurationProvider', async function () {
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'python3.7',
                 runtimeFamily: lambdaModel.RuntimeFamily.Python,
-                useIkpdb: false,
                 type: AWS_SAM_DEBUG_TYPE,
                 handlerName: 'app.lambda_handler',
                 workspaceFolder: {
@@ -2275,7 +2262,6 @@ describe('SamDebugConfigurationProvider', async function () {
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'python3.7',
                 runtimeFamily: lambdaModel.RuntimeFamily.Python,
-                useIkpdb: false,
                 type: AWS_SAM_DEBUG_TYPE,
                 handlerName: 'app.lambda_handler',
                 workspaceFolder: {
@@ -2401,7 +2387,6 @@ describe('SamDebugConfigurationProvider', async function () {
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'python3.7',
                 runtimeFamily: lambdaModel.RuntimeFamily.Python,
-                useIkpdb: false,
                 type: AWS_SAM_DEBUG_TYPE,
                 handlerName: 'app.lambda_handler',
                 workspaceFolder: {
@@ -2493,7 +2478,6 @@ describe('SamDebugConfigurationProvider', async function () {
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'python3.7',
                 runtimeFamily: lambdaModel.RuntimeFamily.Python,
-                useIkpdb: false,
                 type: AWS_SAM_DEBUG_TYPE,
                 handlerName: 'HelloWorldFunction',
                 workspaceFolder: {
@@ -2635,207 +2619,6 @@ describe('SamDebugConfigurationProvider', async function () {
             getLogger().setLogLevel('debug')
         })
 
-        it('target=code: ikpdb, python 3.7', async function () {
-            const appDir = pathutil.normalize(
-                path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/python3.7-plain-sam-app')
-            )
-            const folder = testutil.getWorkspaceFolder(appDir)
-            const input = {
-                type: AWS_SAM_DEBUG_TYPE,
-                name: 'test: ikpdb target=code',
-                request: DIRECT_INVOKE_TYPE,
-                invokeTarget: {
-                    target: CODE_TARGET_TYPE,
-                    lambdaHandler: 'app.lambda_handler',
-                    projectRoot: 'hello_world',
-                },
-                lambda: {
-                    runtime: 'python3.7',
-                    payload: {
-                        path: `${appDir}/events/event.json`,
-                    },
-                },
-                // Force ikpdb in non-cloud9 environment.
-                useIkpdb: true,
-            }
-
-            // Invoke with noDebug=false (the default).
-            const actual = (await debugConfigProvider.makeConfig(folder, input))!
-            // Expected result with noDebug=false.
-            const expected: SamLaunchRequestArgs = {
-                awsCredentials: fakeCredentials,
-                request: 'attach', // Input "direct-invoke", output "attach".
-                runtime: 'python3.7',
-                runtimeFamily: lambdaModel.RuntimeFamily.Python,
-                useIkpdb: true,
-                type: AWS_SAM_DEBUG_TYPE,
-                handlerName: 'app.lambda_handler',
-                workspaceFolder: {
-                    index: 0,
-                    name: 'test-workspace-folder',
-                    uri: vscode.Uri.file(appDir),
-                },
-                baseBuildDir: actual.baseBuildDir, // Random, sanity-checked by assertEqualLaunchConfigs().
-                envFile: undefined,
-                eventPayloadFile: `${actual.baseBuildDir}/event.json`,
-                codeRoot: pathutil.normalize(path.join(appDir, 'hello_world')),
-                debugArgs: [
-                    `-m ikp3db --ikpdb-address=0.0.0.0 --ikpdb-port=${actual.debugPort} -ik_ccwd=hello_world -ik_cwd=/var/task --ikpdb-log=BEXFPG`,
-                ],
-                apiPort: actual.apiPort,
-                debugPort: actual.debugPort,
-                documentUri: vscode.Uri.file(''), // TODO: remove or test.
-                invokeTarget: { ...input.invokeTarget },
-                lambda: {
-                    ...input.lambda,
-                    environmentVariables: {},
-                    memoryMb: undefined,
-                    timeoutSec: undefined,
-                },
-                sam: {
-                    containerBuild: true,
-                },
-                name: input.name,
-                templatePath: pathutil.normalize(path.join(actual.baseBuildDir!, 'app___vsctk___template.yaml')),
-                parameterOverrides: undefined,
-                architecture: undefined,
-                region: 'us-west-2',
-
-                //
-                // Python-ikpdb fields
-                //
-                port: actual.debugPort,
-                address: 'localhost',
-                localRoot: pathutil.normalize(path.join(appDir, 'hello_world')),
-                remoteRoot: '/var/task',
-            }
-
-            assertEqualLaunchConfigs(actual, expected)
-            assert.strictEqual(
-                await fs.readFileText(actual.eventPayloadFile!),
-                await fs.readFileText(input.lambda.payload.path)
-            )
-            await assertFileText(
-                expected.templatePath,
-                `Resources:
-  helloworld:
-    Type: AWS::Serverless::Function
-    Properties:
-      Handler: ${expected.handlerName}
-      CodeUri: >-
-        ${expected.codeRoot}
-      Runtime: python3.7
-`
-            )
-
-            //
-            // Test noDebug=true.
-            //
-            ;(input as any).noDebug = true
-            const actualNoDebug = (await debugConfigProvider.makeConfig(folder, input))! as SamLaunchRequestArgs
-            const expectedNoDebug: SamLaunchRequestArgs = {
-                ...expected,
-                noDebug: true,
-                request: 'launch',
-                debugPort: undefined,
-                port: -1,
-                handlerName: 'app.lambda_handler',
-                baseBuildDir: actualNoDebug.baseBuildDir,
-                envFile: undefined,
-                eventPayloadFile: `${actualNoDebug.baseBuildDir}/event.json`,
-            }
-            assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug)
-        })
-
-        it('target=template: ikpdb, python 3.7 (deep project tree)', async function () {
-            // To test a deeper tree, use "testFixtures/workspaceFolder/" as the root.
-            const appDir = pathutil.normalize(path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/'))
-            const folder = testutil.getWorkspaceFolder(appDir)
-            const input = {
-                type: AWS_SAM_DEBUG_TYPE,
-                name: 'test-py37-template',
-                request: DIRECT_INVOKE_TYPE,
-                invokeTarget: {
-                    target: TEMPLATE_TARGET_TYPE,
-                    templatePath: 'python3.7-plain-sam-app/template.yaml',
-                    logicalId: 'HelloWorldFunction',
-                },
-                // Force ikpdb in non-cloud9 environment.
-                useIkpdb: true,
-            }
-            const templatePath = vscode.Uri.file(path.join(appDir, 'python3.7-plain-sam-app/template.yaml'))
-
-            // Invoke with noDebug=false (the default).
-            const actual = (await debugConfigProvider.makeConfig(folder, input))!
-            // Expected result with noDebug=false.
-            const expected: SamLaunchRequestArgs = {
-                awsCredentials: fakeCredentials,
-                request: 'attach', // Input "direct-invoke", output "attach".
-                runtime: 'python3.7',
-                runtimeFamily: lambdaModel.RuntimeFamily.Python,
-                useIkpdb: true,
-                type: AWS_SAM_DEBUG_TYPE,
-                handlerName: 'app.lambda_handler',
-                workspaceFolder: {
-                    index: 0,
-                    name: 'test-workspace-folder',
-                    uri: vscode.Uri.file(appDir),
-                },
-                baseBuildDir: actual.baseBuildDir, // Random, sanity-checked by assertEqualLaunchConfigs().
-                envFile: undefined,
-                eventPayloadFile: undefined,
-                codeRoot: pathutil.normalize(path.join(appDir, 'python3.7-plain-sam-app/hello_world')),
-                apiPort: undefined,
-                debugArgs: [
-                    `-m ikp3db --ikpdb-address=0.0.0.0 --ikpdb-port=${actual.debugPort} -ik_ccwd=python3.7-plain-sam-app/hello_world -ik_cwd=/var/task --ikpdb-log=BEXFPG`,
-                ],
-                debugPort: actual.debugPort,
-                documentUri: vscode.Uri.file(''), // TODO: remove or test.
-                invokeTarget: { ...input.invokeTarget },
-                lambda: {
-                    environmentVariables: {},
-                    memoryMb: undefined,
-                    timeoutSec: 3,
-                },
-                sam: {
-                    containerBuild: true,
-                },
-                name: input.name,
-                templatePath: pathutil.normalize(path.join(path.dirname(templatePath.fsPath), 'template.yaml')),
-                parameterOverrides: undefined,
-                architecture: undefined,
-                region: 'us-west-2',
-
-                //
-                // Python-ikpdb fields
-                //
-                port: actual.debugPort,
-                address: 'localhost',
-                localRoot: pathutil.normalize(path.join(appDir, 'hello_world')),
-                remoteRoot: '/var/task',
-            }
-
-            assertEqualLaunchConfigs(actual, expected)
-
-            //
-            // Test noDebug=true.
-            //
-            ;(input as any).noDebug = true
-            const actualNoDebug = (await debugConfigProvider.makeConfig(folder, input))!
-            const expectedNoDebug: SamLaunchRequestArgs = {
-                ...expected,
-                noDebug: true,
-                request: 'launch',
-                debugPort: undefined,
-                port: -1,
-                handlerName: 'app.lambda_handler',
-                baseBuildDir: actualNoDebug.baseBuildDir,
-                envFile: undefined,
-                eventPayloadFile: undefined,
-            }
-            assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug)
-        })
-
         it('debugconfig with "aws" section', async function () {
             // Simluates credentials in "aws.credentials" launch-config field.
             const configCredentials: Credentials = {
@@ -2918,7 +2701,6 @@ describe('SamDebugConfigurationProvider', async function () {
                 awsCredentials: configCredentials,
                 ...awsSection,
                 type: AWS_SAM_DEBUG_TYPE,
-                useIkpdb: false,
                 workspaceFolder: {
                     index: 0,
                     name: 'test-workspace-folder',
@@ -3010,7 +2792,6 @@ describe('SamDebugConfigurationProvider', async function () {
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'go1.x',
                 runtimeFamily: lambdaModel.RuntimeFamily.Go,
-                useIkpdb: false,
                 workspaceFolder: {
                     index: 0,
                     name: 'test-workspace-folder',

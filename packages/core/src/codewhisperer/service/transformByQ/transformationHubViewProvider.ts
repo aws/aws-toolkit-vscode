@@ -98,7 +98,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
             </style>
             </head>
             <body>
-            <p><b>Job Status</b></p>
+            <p><b>Transformation Status</b></p>
             ${
                 Object.keys(sessionJobHistory).length === 0
                     ? `<p>${CodeWhispererConstants.nothingToShowMessage}</p>`
@@ -375,9 +375,11 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
             const isTransformFailed = jobPlanProgress['transformCode'] === StepProgress.Failed
             const progress = this.getTransformationStepProgressMarkup(planSteps, isTransformFailed)
             const latestGenericStepDetails = this.getLatestGenericStepDetails(transformByQState.getPolledJobStatus())
+            const jobId = transformByQState.getJobId()
             progressHtml = `
             <div id="progress" class="column">
                 <p><b>Transformation Progress</b> <span id="runningTime"></span></p>
+                <p>${jobId ? `Job ID: ${jobId}` : ''}</p>
                 ${waitingMarkup}
                 ${buildMarkup}
                 ${planMarkup}

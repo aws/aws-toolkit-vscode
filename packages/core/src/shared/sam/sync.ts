@@ -9,7 +9,6 @@ import * as vscode from 'vscode'
 import * as path from 'path'
 import * as localizedText from '../localizedText'
 import { DefaultS3Client } from '../clients/s3Client'
-import { Wizard } from '../wizards/wizard'
 import { DataQuickPickItem, createMultiPick, createQuickPick } from '../ui/pickerPrompter'
 import { DefaultCloudFormationClient } from '../clients/cloudFormationClient'
 import * as CloudFormation from '../cloudformation/cloudformation'
@@ -28,14 +27,14 @@ import { createExitPrompter } from '../ui/common/exitPrompter'
 import { getConfigFileUri, SamConfig, validateSamSyncConfig, writeSamconfigGlobal } from './config'
 import { cast, Optional } from '../utilities/typeConstructors'
 import { pushIf, toRecord } from '../utilities/collectionUtils'
-import { getOverriddenParameters } from '../../lambda/config/parameterUtils'
+import { getParameters } from '../../lambda/config/parameterUtils'
 import { addTelemetryEnvVar } from './cli/samCliInvokerUtils'
 import { samSyncParamUrl, samSyncUrl, samUpgradeUrl } from '../constants'
 import { openUrl } from '../utilities/vsCodeUtils'
 import { showOnce } from '../utilities/messages'
 import { IamConnection } from '../../auth/connection'
 import { CloudFormationTemplateRegistry } from '../fs/templateRegistry'
-import { TreeNode } from '../treeview/resourceTreeDataProvider'
+import { isTreeNode, TreeNode } from '../treeview/resourceTreeDataProvider'
 import { getSpawnEnv } from '../env/resolveEnv'
 import {
     getProjectRoot,
@@ -52,6 +51,11 @@ import { ParamsSource, createSyncParamsSourcePrompter } from '../ui/sam/paramsSo
 import { createEcrPrompter } from '../ui/sam/ecrPrompter'
 import { BucketSource, createBucketNamePrompter, createBucketSourcePrompter } from '../ui/sam/bucketPrompter'
 import { runInTerminal } from './processTerminal'
+import {
+    TemplateParametersForm,
+    TemplateParametersWizard,
+} from '../../awsService/appBuilder/wizards/templateParametersWizard'
+import { CompositeWizard } from '../wizards/compositeWizard'
 
 export interface SyncParams {
     readonly paramsSource: ParamsSource
@@ -59,6 +63,7 @@ export interface SyncParams {
     readonly deployType: 'infra' | 'code'
     readonly projectRoot: vscode.Uri
     readonly template: TemplateItem
+    readonly templateParameters: any
     readonly stackName: string
     readonly bucketSource: BucketSource
     readonly bucketName: string
@@ -147,7 +152,30 @@ export const syncFlagItems: DataQuickPickItem<string>[] = [
     },
 ]
 
-export class SyncWizard extends Wizard<SyncParams> {
+export enum SamSyncEntryPoints {
+    SamTemplateFile,
+    SamConfigFile,
+    RegionNodeContextMenu,
+    AppBuilderNodeButton,
+    CommandPalette,
+}
+
+function getSyncEntryPoint(arg: vscode.Uri | AWSTreeNodeBase | TreeNode | undefined) {
+    if (arg instanceof vscode.Uri) {
+        if (arg.path.endsWith('samconfig.toml')) {
+            return SamSyncEntryPoints.SamConfigFile
+        }
+        return SamSyncEntryPoints.SamTemplateFile
+    } else if (arg instanceof AWSTreeNodeBase) {
+        return SamSyncEntryPoints.RegionNodeContextMenu
+    } else if (isTreeNode(arg)) {
+        return SamSyncEntryPoints.AppBuilderNodeButton
+    } else {
+        return SamSyncEntryPoints.CommandPalette
+    }
+}
+
+export class SyncWizard extends CompositeWizard<SyncParams> {
     registry: CloudFormationTemplateRegistry
     public constructor(
         state: Pick<SyncParams, 'deployType'> & Partial<SyncParams>,
@@ -156,17 +184,38 @@ export class SyncWizard extends Wizard<SyncParams> {
     ) {
         super({ initState: state, exitPrompterProvider: shouldPromptExit ? createExitPrompter : undefined })
         this.registry = registry
+    }
+
+    public override async init(): Promise<this> {
         this.form.template.bindPrompter(() => createTemplatePrompter(this.registry, syncMementoRootKey, samSyncUrl))
+        this.form.templateParameters.bindPrompter(
+            async ({ template }) =>
+                this.createWizardPrompter<TemplateParametersWizard, TemplateParametersForm>(
+                    TemplateParametersWizard,
+                    template!.uri,
+                    samSyncUrl,
+                    syncMementoRootKey
+                ),
+            {
+                showWhen: async ({ template }) => {
+                    const samTemplateParameters = await getParameters(template!.uri)
+                    return !!samTemplateParameters && samTemplateParameters.size > 0
+                },
+            }
+        )
+
         this.form.projectRoot.setDefault(({ template }) => getProjectRoot(template))
 
         this.form.paramsSource.bindPrompter(async ({ projectRoot }) => {
             const existValidSamConfig: boolean | undefined = await validateSamSyncConfig(projectRoot)
             return createSyncParamsSourcePrompter(existValidSamConfig)
         })
+
         this.form.region.bindPrompter(() => createRegionPrompter().transform((r) => r.id), {
             showWhen: ({ paramsSource }) =>
                 paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
         })
+
         this.form.stackName.bindPrompter(
             ({ region }) =>
                 createStackPrompter(new DefaultCloudFormationClient(region!), syncMementoRootKey, samSyncUrl),
@@ -210,6 +259,7 @@ export class SyncWizard extends Wizard<SyncParams> {
                     paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
             }
         )
+        return this
     }
 }
 
@@ -296,30 +346,22 @@ export async function saveAndBindArgs(args: SyncParams): Promise<{ readonly boun
     return { boundArgs }
 }
 
-async function loadLegacyParameterOverrides(template: TemplateItem) {
-    try {
-        const params = await getOverriddenParameters(template.uri)
-        if (!params) {
-            return
-        }
-
-        return [...params.entries()].map(([k, v]) => `${k}=${v}`)
-    } catch (err) {
-        getLogger().warn(`sam: unable to load legacy parameter overrides: %s`, err)
-    }
-}
-
 export async function runSamSync(args: SyncParams) {
     telemetry.record({ lambdaPackageType: args.ecrRepoUri !== undefined ? 'Image' : 'Zip' })
 
     const { path: samCliPath, parsedVersion } = await getSamCliPathAndVersion()
     const { boundArgs } = await saveAndBindArgs(args)
-    const overrides = await loadLegacyParameterOverrides(args.template)
-    if (overrides !== undefined) {
-        // Leaving this out of the definitions file as this is _very_ niche and specific to the
-        // implementation. Plus we would have to redefine `sam_sync` to add it.
-        telemetry.record({ isUsingTemplatesJson: true } as any)
-        boundArgs.push('--parameter-overrides', ...overrides)
+
+    if (!!args.templateParameters && Object.entries(args.templateParameters).length > 0) {
+        const templateParameters = new Map<string, string>(Object.entries(args.templateParameters))
+        const paramsToSet: string[] = []
+        for (const [key, value] of templateParameters.entries()) {
+            if (value) {
+                await updateRecentResponse(syncMementoRootKey, args.template.uri.fsPath, key, value)
+                paramsToSet.push(`ParameterKey=${key},ParameterValue=${value}`)
+            }
+        }
+        paramsToSet.length > 0 && boundArgs.push('--parameter-overrides', paramsToSet.join(' '))
     }
 
     // '--no-watch' was not added until https://github.com/aws/aws-sam-cli/releases/tag/v1.77.0
@@ -354,9 +396,15 @@ export async function runSamSync(args: SyncParams) {
         }),
     })
 
-    await runInTerminal(sam, 'sync')
+    // with '--watch' selected, the sync process will run in the background until the user manually kills it
+    // we need to save the stack and region to the samconfig file now, otherwise the user would not see latest deployed resoure during this sync process
     const { paramsSource, stackName, region, projectRoot } = args
     const shouldWriteSyncSamconfigGlobal = paramsSource !== ParamsSource.SamConfig && !!stackName && !!region
+    if (boundArgs.includes('--watch')) {
+        shouldWriteSyncSamconfigGlobal && (await writeSamconfigGlobal(projectRoot, stackName, region))
+    }
+
+    await runInTerminal(sam, 'sync')
     shouldWriteSyncSamconfigGlobal && (await writeSamconfigGlobal(projectRoot, stackName, region))
 }
 
@@ -425,21 +473,30 @@ export async function prepareSyncParams(
 ): Promise<Partial<SyncParams>> {
     // Skip creating dependency layers by default for backwards compat
     const baseParams: Partial<SyncParams> = { skipDependencyLayer: true }
+    const entryPoint = getSyncEntryPoint(arg)
 
-    if (arg instanceof AWSTreeNodeBase) {
-        // "Deploy" command was invoked on a regionNode.
-        return { ...baseParams, region: arg.regionCode }
-    } else if (arg instanceof vscode.Uri) {
-        if (arg.path.endsWith('samconfig.toml')) {
-            // "Deploy" command was invoked on a samconfig.toml file.
-            // TODO: add step to verify samconfig content to skip param source prompter
-            const config = await SamConfig.fromConfigFileUri(arg)
+    switch (entryPoint) {
+        case SamSyncEntryPoints.SamTemplateFile: {
+            const entryPointArg = arg as vscode.Uri
+            const template = {
+                uri: entryPointArg,
+                data: await CloudFormation.load(entryPointArg.fsPath, validate),
+            }
+
+            return {
+                ...baseParams,
+                template: template,
+                projectRoot: getProjectRootUri(template.uri),
+            }
+        }
+        case SamSyncEntryPoints.SamConfigFile: {
+            const config = await SamConfig.fromConfigFileUri(arg as vscode.Uri)
             const params = getSyncParamsFromConfig(config)
             const projectRoot = vscode.Uri.joinPath(config.location, '..')
             const templateUri = params.templatePath
                 ? vscode.Uri.file(path.resolve(projectRoot.fsPath, params.templatePath))
                 : undefined
-            const template = templateUri
+            const samConfigFileTemplate = templateUri
                 ? {
                       uri: templateUri,
                       data: await CloudFormation.load(templateUri.fsPath),
@@ -448,29 +505,38 @@ export async function prepareSyncParams(
             // Always use the dependency layer if the user specified to do so
             const skipDependencyLayer = !config.getCommandParam('sync', 'dependency_layer')
 
-            return { ...baseParams, ...params, template, projectRoot, skipDependencyLayer } as SyncParams
+            return {
+                ...baseParams,
+                ...params,
+                template: samConfigFileTemplate,
+                projectRoot,
+                skipDependencyLayer,
+            } as SyncParams
         }
-
-        // "Deploy" command was invoked on a template.yaml file.
-        const template = {
-            uri: arg,
-            data: await CloudFormation.load(arg.fsPath, validate),
+        case SamSyncEntryPoints.RegionNodeContextMenu: {
+            const entryPointArg = arg as AWSTreeNodeBase
+            return { ...baseParams, region: entryPointArg.regionCode }
         }
-
-        return { ...baseParams, template, projectRoot: getProjectRootUri(template.uri) }
-    } else if (arg && arg.getTreeItem()) {
-        // "Deploy" command was invoked on a TreeNode on the AppBuilder.
-        const templateUri = (arg.getTreeItem() as vscode.TreeItem).resourceUri
-        if (templateUri) {
-            const template = {
-                uri: templateUri,
-                data: await CloudFormation.load(templateUri.fsPath, validate),
+        case SamSyncEntryPoints.AppBuilderNodeButton: {
+            const entryPointArg = arg as TreeNode
+            const templateUri = (entryPointArg.getTreeItem() as vscode.TreeItem).resourceUri
+            if (templateUri) {
+                const template = {
+                    uri: templateUri,
+                    data: await CloudFormation.load(templateUri.fsPath, validate),
+                }
+                return {
+                    ...baseParams,
+                    template,
+                    projectRoot: getProjectRootUri(templateUri),
+                }
             }
-            return { ...baseParams, template, projectRoot: getProjectRootUri(template.uri) }
+            return baseParams
         }
+        case SamSyncEntryPoints.CommandPalette:
+        default:
+            return baseParams
     }
-
-    return baseParams
 }
 
 export type SamSyncResult = {
@@ -514,7 +580,7 @@ async function updateSyncRecentResponse(region: string, key: string, value: stri
 }
 
 export async function confirmDevStack() {
-    const canPrompt = await ToolkitPromptSettings.instance.isPromptEnabled('samcliConfirmDevStack')
+    const canPrompt = ToolkitPromptSettings.instance.isPromptEnabled('samcliConfirmDevStack')
     if (!canPrompt) {
         return
     }

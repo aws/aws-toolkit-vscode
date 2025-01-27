@@ -16,10 +16,10 @@ import path from 'path'
  */
 export function getCompletionItems(document: vscode.TextDocument, position: vscode.Position) {
     const completionItems: vscode.CompletionItem[] = []
-    session.recommendations.forEach((recommendation, index) => {
+    for (const [index, recommendation] of session.recommendations.entries()) {
         completionItems.push(getCompletionItem(document, position, recommendation, index))
         session.setSuggestionState(index, 'Showed')
-    })
+    }
     return completionItems
 }
 

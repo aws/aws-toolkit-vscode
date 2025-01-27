@@ -9,7 +9,8 @@ import sinon from 'sinon'
 import { registerAuthHook, using } from 'aws-core-vscode/test'
 import { loginToIdC } from './utils/setup'
 import { Messenger } from './framework/messenger'
-import { FollowUpTypes, examples } from 'aws-core-vscode/amazonqFeatureDev'
+import { examples } from 'aws-core-vscode/amazonqFeatureDev'
+import { FollowUpTypes } from 'aws-core-vscode/amazonq'
 import { sleep } from 'aws-core-vscode/shared'
 
 describe('Amazon Q Feature Dev', function () {
@@ -21,22 +22,11 @@ describe('Amazon Q Feature Dev', function () {
     const fileLevelAcceptPrompt = `${prompt} and add a license, and a contributing file`
     const tooManyRequestsWaitTime = 100000
 
-    function waitForButtons(buttons: FollowUpTypes[]) {
-        return tab.waitForEvent(() => {
-            return buttons.every((value) => tab.hasButton(value))
-        })
-    }
-
     async function waitForText(text: string) {
-        await tab.waitForEvent(
-            () => {
-                return tab.getChatItems().some((chatItem) => chatItem.body === text)
-            },
-            {
-                waitIntervalInMs: 250,
-                waitTimeoutInMs: 2000,
-            }
-        )
+        await tab.waitForText(text, {
+            waitIntervalInMs: 250,
+            waitTimeoutInMs: 2000,
+        })
     }
 
     async function iterate(prompt: string) {
@@ -200,12 +190,12 @@ describe('Amazon Q Feature Dev', function () {
         it('Clicks accept code and click new task', async () => {
             await retryIfRequired(async () => {
                 await Promise.any([
-                    waitForButtons([FollowUpTypes.InsertCode, FollowUpTypes.ProvideFeedbackAndRegenerateCode]),
-                    waitForButtons([FollowUpTypes.Retry]),
+                    tab.waitForButtons([FollowUpTypes.InsertCode, FollowUpTypes.ProvideFeedbackAndRegenerateCode]),
+                    tab.waitForButtons([FollowUpTypes.Retry]),
                 ])
             })
             tab.clickButton(FollowUpTypes.InsertCode)
-            await waitForButtons([FollowUpTypes.NewTask, FollowUpTypes.CloseSession])
+            await tab.waitForButtons([FollowUpTypes.NewTask, FollowUpTypes.CloseSession])
             tab.clickButton(FollowUpTypes.NewTask)
             await waitForText('What new task would you like to work on?')
             assert.deepStrictEqual(tab.getChatItems().pop()?.body, 'What new task would you like to work on?')
@@ -214,15 +204,15 @@ describe('Amazon Q Feature Dev', function () {
         it('Iterates on codegen', async () => {
             await retryIfRequired(async () => {
                 await Promise.any([
-                    waitForButtons([FollowUpTypes.InsertCode, FollowUpTypes.ProvideFeedbackAndRegenerateCode]),
-                    waitForButtons([FollowUpTypes.Retry]),
+                    tab.waitForButtons([FollowUpTypes.InsertCode, FollowUpTypes.ProvideFeedbackAndRegenerateCode]),
+                    tab.waitForButtons([FollowUpTypes.Retry]),
                 ])
             })
             tab.clickButton(FollowUpTypes.ProvideFeedbackAndRegenerateCode)
             await tab.waitForChatFinishesLoading()
             await iterate(codegenApproachPrompt)
             tab.clickButton(FollowUpTypes.InsertCode)
-            await waitForButtons([FollowUpTypes.NewTask, FollowUpTypes.CloseSession])
+            await tab.waitForButtons([FollowUpTypes.NewTask, FollowUpTypes.CloseSession])
         })
     })
 
@@ -239,8 +229,8 @@ describe('Amazon Q Feature Dev', function () {
             )
             await retryIfRequired(async () => {
                 await Promise.any([
-                    waitForButtons([FollowUpTypes.InsertCode, FollowUpTypes.ProvideFeedbackAndRegenerateCode]),
-                    waitForButtons([FollowUpTypes.Retry]),
+                    tab.waitForButtons([FollowUpTypes.InsertCode, FollowUpTypes.ProvideFeedbackAndRegenerateCode]),
+                    tab.waitForButtons([FollowUpTypes.Retry]),
                 ])
             })
         })
@@ -270,7 +260,7 @@ describe('Amazon Q Feature Dev', function () {
 
             it('disables all action buttons when new task is clicked', async () => {
                 tab.clickButton(FollowUpTypes.InsertCode)
-                await waitForButtons([FollowUpTypes.NewTask, FollowUpTypes.CloseSession])
+                await tab.waitForButtons([FollowUpTypes.NewTask, FollowUpTypes.CloseSession])
                 tab.clickButton(FollowUpTypes.NewTask)
                 await waitForText('What new task would you like to work on?')
 
@@ -282,7 +272,7 @@ describe('Amazon Q Feature Dev', function () {
 
             it('disables all action buttons when close session is clicked', async () => {
                 tab.clickButton(FollowUpTypes.InsertCode)
-                await waitForButtons([FollowUpTypes.NewTask, FollowUpTypes.CloseSession])
+                await tab.waitForButtons([FollowUpTypes.NewTask, FollowUpTypes.CloseSession])
                 tab.clickButton(FollowUpTypes.CloseSession)
                 await waitForText(
                     "Okay, I've ended this chat session. You can open a new tab to chat or start another workflow."
@@ -334,7 +324,7 @@ describe('Amazon Q Feature Dev', function () {
                 for (const filePath of filePaths) {
                     await clickActionButton(filePath, 'accept-change')
                 }
-                await waitForButtons([FollowUpTypes.NewTask, FollowUpTypes.CloseSession])
+                await tab.waitForButtons([FollowUpTypes.NewTask, FollowUpTypes.CloseSession])
 
                 assert.ok(tab.hasButton(FollowUpTypes.InsertCode) === false)
                 assert.ok(tab.hasButton(FollowUpTypes.ProvideFeedbackAndRegenerateCode) === false)

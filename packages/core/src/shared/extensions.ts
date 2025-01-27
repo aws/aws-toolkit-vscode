@@ -31,9 +31,7 @@ export const vscodeExtensionMinVersion = {
     remotessh: '0.74.0',
 }
 
-/**
- * Long-lived, extension-scoped, shared globals.
- */
+/** @deprecated Use `extensionGlobals.ts:globals` instead. */
 export interface ExtContext {
     extensionContext: vscode.ExtensionContext
     awsContext: AwsContext

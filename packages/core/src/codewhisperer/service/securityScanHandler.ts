@@ -12,6 +12,7 @@ import {
     CodeScansState,
     codeScanState,
     CodeScanStoppedError,
+    onDemandFileScanState,
 } from '../models/model'
 import { sleep } from '../../shared/utilities/timeoutUtils'
 import * as codewhispererClient from '../client/codewhisperer'
@@ -39,6 +40,11 @@ import {
     UploadArtifactToS3Error,
 } from '../models/errors'
 import { getTelemetryReasonDesc } from '../../shared/errors'
+import { CodeWhispererSettings } from '../util/codewhispererSettings'
+import { detectCommentAboveLine } from '../../shared/utilities/commentUtils'
+import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
+import { FeatureUseCase } from '../models/constants'
+import { UploadTestArtifactToS3Error } from '../../amazonqTest/error'
 
 export async function listScanResults(
     client: DefaultCodeWhispererClient,
@@ -52,48 +58,61 @@ export async function listScanResults(
     const codeScanIssueMap: Map<string, RawCodeScanIssue[]> = new Map()
     const aggregatedCodeScanIssueList: AggregatedCodeScanIssue[] = []
     const requester = (request: codewhispererClient.ListCodeScanFindingsRequest) => client.listCodeScanFindings(request)
-    const collection = pageableToCollection(requester, { jobId, codeScanFindingsSchema }, 'nextToken')
+    const request: codewhispererClient.ListCodeScanFindingsRequest = { jobId, codeScanFindingsSchema }
+    const collection = pageableToCollection(requester, request, 'nextToken')
     const issues = await collection
         .flatten()
         .map((resp) => {
-            logger.verbose(`Request id: ${resp.$response.requestId}`)
+            logger.verbose(`ListCodeScanFindingsRequest requestId: ${resp.$response.requestId}`)
             if ('codeScanFindings' in resp) {
                 return resp.codeScanFindings
             }
             return resp.codeAnalysisFindings
         })
         .promise()
-    issues.forEach((issue) => {
+    for (const issue of issues) {
         mapToAggregatedList(codeScanIssueMap, issue, editor, scope)
-    })
-    codeScanIssueMap.forEach((issues, key) => {
+    }
+    for (const [key, issues] of codeScanIssueMap.entries()) {
         // Project path example: /Users/username/project
         // Key example: project/src/main/java/com/example/App.java
-        projectPaths.forEach((projectPath) => {
+        for (const projectPath of projectPaths) {
             // We need to remove the project path from the key to get the absolute path to the file
             // Do not use .. in between because there could be multiple project paths in the same parent dir.
             const filePath = path.join(projectPath, key.split('/').slice(1).join('/'))
             if (existsSync(filePath) && statSync(filePath).isFile()) {
                 const aggregatedCodeScanIssue: AggregatedCodeScanIssue = {
                     filePath: filePath,
-                    issues: issues.map(mapRawToCodeScanIssue),
+                    issues: issues.map((issue) => mapRawToCodeScanIssue(issue, editor, jobId)),
                 }
                 aggregatedCodeScanIssueList.push(aggregatedCodeScanIssue)
             }
-        })
+        }
         const maybeAbsolutePath = `/${key}`
         if (existsSync(maybeAbsolutePath) && statSync(maybeAbsolutePath).isFile()) {
             const aggregatedCodeScanIssue: AggregatedCodeScanIssue = {
                 filePath: maybeAbsolutePath,
-                issues: issues.map(mapRawToCodeScanIssue),
+                issues: issues.map((issue) => mapRawToCodeScanIssue(issue, editor, jobId)),
             }
             aggregatedCodeScanIssueList.push(aggregatedCodeScanIssue)
         }
-    })
+    }
     return aggregatedCodeScanIssueList
 }
 
-function mapRawToCodeScanIssue(issue: RawCodeScanIssue): CodeScanIssue {
+function mapRawToCodeScanIssue(
+    issue: RawCodeScanIssue,
+    editor: vscode.TextEditor | undefined,
+    jobId: string
+): CodeScanIssue {
+    const isIssueTitleIgnored = CodeWhispererSettings.instance.getIgnoredSecurityIssues().includes(issue.title)
+    const isSingleIssueIgnored =
+        editor &&
+        detectCommentAboveLine(editor.document, issue.startLine - 1, CodeWhispererConstants.amazonqIgnoreNextLine)
+    const language = editor
+        ? runtimeLanguageContext.getLanguageContext(editor.document.languageId, path.extname(editor.document.fileName))
+              .language
+        : 'plaintext'
     return {
         startLine: issue.startLine - 1 >= 0 ? issue.startLine - 1 : 0,
         endLine: issue.endLine,
@@ -108,6 +127,9 @@ function mapRawToCodeScanIssue(issue: RawCodeScanIssue): CodeScanIssue {
         severity: issue.severity,
         recommendation: issue.remediation.recommendation,
         suggestedFixes: issue.remediation.suggestedFixes,
+        visible: !isIssueTitleIgnored && !isSingleIssueIgnored,
+        scanJobId: jobId,
+        language,
     }
 }
 
@@ -119,7 +141,11 @@ export function mapToAggregatedList(
 ) {
     const codeScanIssues: RawCodeScanIssue[] = JSON.parse(json)
     const filteredIssues = codeScanIssues.filter((issue) => {
-        if (scope === CodeWhispererConstants.CodeAnalysisScope.FILE && editor) {
+        if (
+            (scope === CodeWhispererConstants.CodeAnalysisScope.FILE_AUTO ||
+                scope === CodeWhispererConstants.CodeAnalysisScope.FILE_ON_DEMAND) &&
+            editor
+        ) {
             for (let lineNumber = issue.startLine; lineNumber <= issue.endLine; lineNumber++) {
                 const line = editor.document.lineAt(lineNumber - 1)?.text
                 const codeContent = issue.codeSnippet.find((codeIssue) => codeIssue.number === lineNumber)?.content
@@ -134,14 +160,31 @@ export function mapToAggregatedList(
         return true
     })
 
-    filteredIssues.forEach((issue) => {
+    for (const issue of filteredIssues) {
         const filePath = issue.filePath
         if (codeScanIssueMap.has(filePath)) {
-            codeScanIssueMap.get(filePath)?.push(issue)
+            if (!isExistingIssue(issue, codeScanIssueMap)) {
+                codeScanIssueMap.get(filePath)?.push(issue)
+            } else {
+                getLogger().warn('Found duplicate issue %O, ignoring...', issue)
+            }
         } else {
             codeScanIssueMap.set(filePath, [issue])
         }
-    })
+    }
+}
+
+function isDuplicateIssue(issueA: RawCodeScanIssue, issueB: RawCodeScanIssue) {
+    return (
+        issueA.filePath === issueB.filePath &&
+        issueA.title === issueB.title &&
+        issueA.startLine === issueB.startLine &&
+        issueA.endLine === issueB.endLine
+    )
+}
+
+function isExistingIssue(issue: RawCodeScanIssue, codeScanIssueMap: Map<string, RawCodeScanIssue[]>) {
+    return codeScanIssueMap.get(issue.filePath)?.some((existingIssue) => isDuplicateIssue(issue, existingIssue))
 }
 
 export async function pollScanJobStatus(
@@ -163,7 +206,7 @@ export async function pollScanJobStatus(
             jobId: jobId,
         }
         const resp = await client.getCodeScan(req)
-        logger.verbose(`Request id: ${resp.$response.requestId}`)
+        logger.verbose(`GetCodeScanRequest requestId: ${resp.$response.requestId}`)
         if (resp.status !== 'Pending') {
             status = resp.status
             logger.verbose(`Scan job status: ${status}`)
@@ -191,19 +234,28 @@ export async function createScanJob(
 ) {
     const logger = getLoggerForScope(scope)
     logger.verbose(`Creating scan job...`)
+    const codeAnalysisScope = scope === CodeWhispererConstants.CodeAnalysisScope.FILE_AUTO ? 'FILE' : 'PROJECT'
     const req: codewhispererClient.CreateCodeScanRequest = {
         artifacts: artifactMap,
         programmingLanguage: {
             languageName: languageId,
         },
-        scope: scope,
+        scope: codeAnalysisScope,
         codeScanName: scanName,
     }
     const resp = await client.createCodeScan(req).catch((err) => {
         getLogger().error(`Failed creating scan job. Request id: ${err.requestId}`)
+        if (
+            err.message === CodeWhispererConstants.scansLimitReachedErrorMessage &&
+            err.code === 'ThrottlingException'
+        ) {
+            throw err
+        }
         throw new CreateCodeScanError(err)
     })
-    logger.verbose(`Request id: ${resp.$response.requestId}`)
+    getLogger().info(
+        `Amazon Q Code Review requestId: ${resp.$response.requestId} and Amazon Q Code Review jobId: ${resp.jobId}`
+    )
     TelemetryHelper.instance.sendCodeScanEvent(languageId, resp.$response.requestId)
     return resp
 }
@@ -234,10 +286,10 @@ export async function getPresignedUrlAndUpload(
         getLogger().error(`Failed getting presigned url for uploading src context. Request id: ${err.requestId}`)
         throw new CreateUploadUrlError(err)
     })
-    logger.verbose(`Request id: ${srcResp.$response.requestId}`)
+    logger.verbose(`CreateUploadUrlRequest request id: ${srcResp.$response.requestId}`)
     logger.verbose(`Complete Getting presigned Url for uploading src context.`)
     logger.verbose(`Uploading src context...`)
-    await uploadArtifactToS3(zipMetadata.zipFilePath, srcResp, scope)
+    await uploadArtifactToS3(zipMetadata.zipFilePath, srcResp, FeatureUseCase.CODE_SCAN, scope)
     logger.verbose(`Complete uploading src context.`)
     const artifactMap: ArtifactMap = {
         SourceCode: srcResp.uploadId,
@@ -246,12 +298,17 @@ export async function getPresignedUrlAndUpload(
 }
 
 function getUploadIntent(scope: CodeWhispererConstants.CodeAnalysisScope): UploadIntent {
-    return scope === CodeWhispererConstants.CodeAnalysisScope.FILE
-        ? CodeWhispererConstants.fileScanUploadIntent
-        : CodeWhispererConstants.projectScanUploadIntent
+    if (
+        scope === CodeWhispererConstants.CodeAnalysisScope.FILE_AUTO ||
+        scope === CodeWhispererConstants.CodeAnalysisScope.FILE_ON_DEMAND
+    ) {
+        return CodeWhispererConstants.fileScanUploadIntent
+    } else {
+        return CodeWhispererConstants.projectScanUploadIntent
+    }
 }
 
-function getMd5(fileName: string) {
+export function getMd5(fileName: string) {
     const hasher = crypto.createHash('md5')
     hasher.update(readFileSync(fileName))
     return hasher.digest('base64')
@@ -264,7 +321,12 @@ export function throwIfCancelled(scope: CodeWhispererConstants.CodeAnalysisScope
                 throw new CodeScanStoppedError()
             }
             break
-        case CodeWhispererConstants.CodeAnalysisScope.FILE: {
+        case CodeWhispererConstants.CodeAnalysisScope.FILE_ON_DEMAND:
+            if (onDemandFileScanState.isCancelling()) {
+                throw new CodeScanStoppedError()
+            }
+            break
+        case CodeWhispererConstants.CodeAnalysisScope.FILE_AUTO: {
             const latestCodeScanStartTime = CodeScansState.instance.getLatestScanTime()
             if (
                 !CodeScansState.instance.isScansEnabled() ||
@@ -279,11 +341,12 @@ export function throwIfCancelled(scope: CodeWhispererConstants.CodeAnalysisScope
             break
     }
 }
-
+// TODO: Refactor this
 export async function uploadArtifactToS3(
     fileName: string,
     resp: CreateUploadUrlResponse,
-    scope: CodeWhispererConstants.CodeAnalysisScope
+    featureUseCase: FeatureUseCase,
+    scope?: CodeWhispererConstants.CodeAnalysisScope
 ) {
     const logger = getLoggerForScope(scope)
     const encryptionContext = `{"uploadId":"${resp.uploadId}"}`
@@ -305,33 +368,42 @@ export async function uploadArtifactToS3(
         }).response
         logger.debug(`StatusCode: ${response.status}, Text: ${response.statusText}`)
     } catch (error) {
+        let errorMessage = ''
+        const isCodeScan = featureUseCase === FeatureUseCase.CODE_SCAN
+        const featureType = isCodeScan ? 'security scans' : 'unit test generation'
+        const defaultMessage = isCodeScan ? 'Security scan failed.' : 'Test generation failed.'
         getLogger().error(
-            `Amazon Q is unable to upload workspace artifacts to Amazon S3 for security scans. For more information, see the Amazon Q documentation or contact your network or organization administrator.`
+            `Amazon Q is unable to upload workspace artifacts to Amazon S3 for ${featureType}. ` +
+                'For more information, see the Amazon Q documentation or contact your network or organization administrator.'
         )
-        const errorMessage = getTelemetryReasonDesc(error)?.includes(`"PUT" request failed with code "403"`)
-            ? `"PUT" request failed with code "403"`
-            : (getTelemetryReasonDesc(error) ?? 'Security scan failed.')
-
-        throw new UploadArtifactToS3Error(errorMessage)
+        const errorDesc = getTelemetryReasonDesc(error)
+        if (errorDesc?.includes('"PUT" request failed with code "403"')) {
+            errorMessage = '"PUT" request failed with code "403"'
+        } else if (errorDesc?.includes('"PUT" request failed with code "503"')) {
+            errorMessage = '"PUT" request failed with code "503"'
+        } else {
+            errorMessage = errorDesc ?? defaultMessage
+        }
+        throw isCodeScan ? new UploadArtifactToS3Error(errorMessage) : new UploadTestArtifactToS3Error(errorMessage)
     }
 }
 
-export function getLoggerForScope(scope: CodeWhispererConstants.CodeAnalysisScope) {
-    return scope === CodeWhispererConstants.CodeAnalysisScope.FILE ? getNullLogger() : getLogger()
+// TODO: Refactor this
+export function getLoggerForScope(scope?: CodeWhispererConstants.CodeAnalysisScope) {
+    return scope === CodeWhispererConstants.CodeAnalysisScope.FILE_AUTO ? getNullLogger() : getLogger()
 }
 
 function getPollingDelayMsForScope(scope: CodeWhispererConstants.CodeAnalysisScope) {
     return (
-        (scope === CodeWhispererConstants.CodeAnalysisScope.FILE
+        (scope === CodeWhispererConstants.CodeAnalysisScope.FILE_AUTO ||
+        scope === CodeWhispererConstants.CodeAnalysisScope.FILE_ON_DEMAND
             ? CodeWhispererConstants.fileScanPollingDelaySeconds
             : CodeWhispererConstants.projectScanPollingDelaySeconds) * 1000
     )
 }
 
 function getPollingTimeoutMsForScope(scope: CodeWhispererConstants.CodeAnalysisScope) {
-    return (
-        (scope === CodeWhispererConstants.CodeAnalysisScope.FILE
-            ? CodeWhispererConstants.codeFileScanJobTimeoutSeconds
-            : CodeWhispererConstants.codeScanJobTimeoutSeconds) * 1000
-    )
+    return scope === CodeWhispererConstants.CodeAnalysisScope.FILE_AUTO
+        ? CodeWhispererConstants.expressScanTimeoutMs
+        : CodeWhispererConstants.standardScanTimeoutMs
 }

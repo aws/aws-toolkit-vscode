@@ -626,7 +626,9 @@
                 "timestamp": { "shape": "Timestamp" },
                 "unmodifiedAcceptedCharacterCount": { "shape": "PrimitiveInteger" },
                 "totalNewCodeCharacterCount": { "shape": "PrimitiveInteger" },
-                "totalNewCodeLineCount": { "shape": "PrimitiveInteger" }
+                "totalNewCodeLineCount": { "shape": "PrimitiveInteger" },
+                "userWrittenCodeCharacterCount": { "shape": "PrimitiveInteger" },
+                "userWrittenCodeLineCount": { "shape": "PrimitiveInteger" }
             }
         },
         "CodeFixAcceptanceEvent": {
@@ -663,7 +665,8 @@
             "type": "string",
             "documentation": "<p>Code fix name</p>",
             "max": 128,
-            "min": 1
+            "min": 1,
+            "pattern": "[a-zA-Z0-9-_$:.]*"
         },
         "CodeFixUploadContext": {
             "type": "structure",
@@ -2092,7 +2095,8 @@
         "StartCodeFixJobRequestDescriptionString": {
             "type": "string",
             "max": 2000,
-            "min": 1
+            "min": 1,
+            "sensitive": true
         },
         "StartCodeFixJobRequestRuleIdString": {
             "type": "string",
@@ -2228,7 +2232,8 @@
         "SuggestedFixDescriptionString": {
             "type": "string",
             "max": 2000,
-            "min": 1
+            "min": 1,
+            "sensitive": true
         },
         "SuggestionState": {
             "type": "string",
@@ -2665,7 +2670,7 @@
         },
         "TransformationProgressUpdateStatus": {
             "type": "string",
-            "enum": ["IN_PROGRESS", "COMPLETED", "FAILED", "PAUSED", "AWAITING_CLIENT_ACTION"]
+            "enum": ["IN_PROGRESS", "COMPLETED", "FAILED", "PAUSED", "AWAITING_CLIENT_ACTION", "SKIPPED"]
         },
         "TransformationProjectArtifactDescriptor": {
             "type": "structure",
@@ -2744,7 +2749,7 @@
         },
         "TransformationStepStatus": {
             "type": "string",
-            "enum": ["CREATED", "COMPLETED", "PARTIALLY_COMPLETED", "STOPPED", "FAILED", "PAUSED"]
+            "enum": ["CREATED", "COMPLETED", "PARTIALLY_COMPLETED", "STOPPED", "FAILED", "PAUSED", "SKIPPED"]
         },
         "TransformationSteps": {
             "type": "list",

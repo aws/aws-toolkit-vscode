@@ -77,7 +77,7 @@ interface DependencyPaths {
     readonly ssh: string
 }
 
-type EnvProvider = () => Promise<NodeJS.ProcessEnv>
+export type EnvProvider = () => Promise<NodeJS.ProcessEnv>
 
 export interface VscodeRemoteConnection {
     readonly sshPath: string
@@ -167,11 +167,11 @@ export async function handleMissingTool(tools: Err<MissingTool[]>) {
         missing
     )
 
-    tools.err().forEach((d) => {
+    for (const d of tools.err()) {
         if (d.reason) {
             getLogger().error(`codecatalyst: failed to get tool "${d.name}": ${d.reason}`)
         }
-    })
+    }
 
     return Result.err(
         new ToolkitError(msg, {
@@ -250,4 +250,24 @@ export async function getDeniedSsmActions(client: IamClient, roleArn: string): P
     })
 
     return deniedActions
+}
+
+/**
+ * Creates a new {@link ChildProcess} class bound to a specific remote environment. All instances of this
+ * derived class will have SSM session information injected as environment variables as-needed.
+ */
+export function createBoundProcess(envProvider: EnvProvider): typeof ChildProcess {
+    type Run = ChildProcess['run']
+    return class SessionBoundProcess extends ChildProcess {
+        public override async run(...args: Parameters<Run>): ReturnType<Run> {
+            const options = args[0]
+            const envVars = await envProvider()
+            const spawnOptions = {
+                ...options?.spawnOptions,
+                env: { ...envVars, ...options?.spawnOptions?.env },
+            }
+
+            return super.run({ ...options, spawnOptions })
+        }
+    }
 }

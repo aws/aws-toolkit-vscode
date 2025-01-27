@@ -26,7 +26,7 @@ import { GlobalState } from '../shared/globalState'
 import { FeatureConfigProvider } from '../shared/featureConfig'
 import { mockFeatureConfigsData } from './fake/mockFeatureConfigData'
 import { fs } from '../shared'
-import { promises as nodefs } from 'fs' //eslint-disable-line no-restricted-imports
+import { promises as nodefs } from 'fs' // eslint-disable-line no-restricted-imports
 
 disableAwsSdkWarning()
 const testReportDir = join(__dirname, '../../../../../.test-reports') // Root project, not subproject

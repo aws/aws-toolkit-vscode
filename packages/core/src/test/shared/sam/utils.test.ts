@@ -68,11 +68,11 @@ describe('SAM utils', async function () {
                 expected: undefined,
             },
         ]
-        testScenarios.forEach((scenario) => {
+        for (const scenario of testScenarios) {
             it(`returns Source for ${scenario.name}`, async () => {
                 assert.strictEqual(getSource(scenario.value), scenario.expected)
             })
-        })
+        }
     })
 
     describe('checks if it is DotNet', async function () {
@@ -159,12 +159,12 @@ describe('SAM utils', async function () {
             sandbox.restore()
         })
 
-        testScenarios.forEach((scenario) => {
+        for (const scenario of testScenarios) {
             it(`returns isDotNetRuntime for ${scenario.name}`, async () => {
                 const response = await isDotnetRuntime(noUri, scenario.template)
                 assert.strictEqual(response, scenario.expected)
             })
-        })
+        }
     })
 
     describe('getSamCliPathAndVersion', async function () {

@@ -16,7 +16,11 @@ import {
     FinalizeHandler,
     FinalizeRequestMiddleware,
     HandlerExecutionContext,
+    MetadataBearer,
+    MiddlewareStack,
     Provider,
+    RequestHandlerMetadata,
+    RequestHandlerOutput,
     RetryStrategy,
     UserAgent,
 } from '@aws-sdk/types'
@@ -26,24 +30,32 @@ import { telemetry } from './telemetry'
 import { getRequestId, getTelemetryReason, getTelemetryReasonDesc, getTelemetryResult } from './errors'
 import { extensionVersion } from '.'
 import { getLogger } from './logger'
-import { omitIfPresent, selectFrom } from './utilities/tsUtils'
+import { partialClone } from './utilities/collectionUtils'
+import { selectFrom } from './utilities/tsUtils'
 
 export type AwsClientConstructor<C> = new (o: AwsClientOptions) => C
 
+// AWS-SDKv3 does not export generic types for clients so we need to build them as needed
+// https://github.com/aws/aws-sdk-js-v3/issues/5856#issuecomment-2096950979
 interface AwsClient {
-    middlewareStack: any // Ideally this would extends MiddlewareStack<Input, Output>, but this causes issues on client construction.
+    middlewareStack: {
+        add: MiddlewareStack<any, MetadataBearer>['add']
+    }
 }
 
-interface AwsConfigOptions {
+interface AwsClientOptions {
     credentials: AwsCredentialIdentityProvider
     region: string | Provider<string>
-    customUserAgent: UserAgent
-    requestHandler: any
+    userAgent: UserAgent
+    requestHandler: {
+        metadata?: RequestHandlerMetadata
+        handle: (req: any, options?: any) => Promise<RequestHandlerOutput<any>>
+        destroy?: () => void
+    }
     apiVersion: string
     endpoint: string
     retryStrategy: RetryStrategy | RetryStrategyV2
 }
-export type AwsClientOptions = AwsConfigOptions
 
 export class AWSClientBuilderV3 {
     public constructor(private readonly context: AwsContext) {}
@@ -70,8 +82,8 @@ export class AWSClientBuilderV3 {
             opt.region = region
         }
 
-        if (!opt.customUserAgent && userAgent) {
-            opt.customUserAgent = [[getUserAgent({ includePlatform: true, includeClientId: true }), extensionVersion]]
+        if (!opt.userAgent && userAgent) {
+            opt.userAgent = [[getUserAgent({ includePlatform: true, includeClientId: true }), extensionVersion]]
         }
 
         if (!opt.retryStrategy) {
@@ -144,7 +156,7 @@ export async function emitOnRequest(next: DeserializeHandler<any, any>, context:
         const result = await next(args)
         if (HttpResponse.isInstance(result.response)) {
             // TODO: omit credentials / sensitive info from the telemetry.
-            const output = omitIfPresent(result.output, [])
+            const output = partialClone(result.output, 3)
             getLogger().debug(`API Response %s: %O`, logTail, output)
         }
         return result
@@ -157,7 +169,7 @@ export async function logOnRequest(next: FinalizeHandler<any, any>, args: any) {
     if (HttpRequest.isInstance(args.request)) {
         const { hostname, path } = args.request
         // TODO: omit credentials / sensitive info from the logs.
-        const input = omitIfPresent(args.input, [])
+        const input = partialClone(args.input, 3)
         getLogger().debug(`API Request (%s %s): %O`, hostname, path, input)
     }
     return next(args)

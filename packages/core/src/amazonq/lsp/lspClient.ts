@@ -10,7 +10,7 @@
 import * as vscode from 'vscode'
 import * as path from 'path'
 import * as nls from 'vscode-nls'
-import * as cp from 'child_process'
+import { spawn } from 'child_process' // eslint-disable-line no-restricted-imports
 import * as crypto from 'crypto'
 import * as jose from 'jose'
 
@@ -26,11 +26,13 @@ import {
     QueryVectorIndexRequestType,
     UpdateIndexV2RequestPayload,
     UpdateIndexV2RequestType,
+    QueryRepomapIndexRequestType,
+    GetRepomapIndexJSONRequestType,
     Usage,
 } from './types'
 import { Writable } from 'stream'
 import { CodeWhispererSettings } from '../../codewhisperer/util/codewhispererSettings'
-import { fs, getLogger } from '../../shared'
+import { fs, getLogger, globals } from '../../shared'
 
 const localize = nls.loadMessageBundle()
 
@@ -139,6 +141,31 @@ export class LspClient {
             return undefined
         }
     }
+    async queryRepomapIndex(filePaths: string[]) {
+        try {
+            const request = JSON.stringify({
+                filePaths: filePaths,
+            })
+            const resp: any = await this.client?.sendRequest(QueryRepomapIndexRequestType, await this.encrypt(request))
+            return resp
+        } catch (e) {
+            getLogger().error(`LspClient: QueryRepomapIndex error: ${e}`)
+            throw e
+        }
+    }
+    async getRepoMapJSON() {
+        try {
+            const request = JSON.stringify({})
+            const resp: any = await this.client?.sendRequest(
+                GetRepomapIndexJSONRequestType,
+                await this.encrypt(request)
+            )
+            return resp
+        } catch (e) {
+            getLogger().error(`LspClient: queryInlineProjectContext error: ${e}`)
+            throw e
+        }
+    }
 }
 /**
  * Activates the language server, this will start LSP server running over IPC protocol.
@@ -172,7 +199,7 @@ export async function activate(extensionContext: ExtensionContext) {
 
     const nodename = process.platform === 'win32' ? 'node.exe' : 'node'
 
-    const child = cp.spawn(extensionContext.asAbsolutePath(path.join('resources', nodename)), [
+    const child = spawn(extensionContext.asAbsolutePath(path.join('resources', nodename)), [
         serverModule,
         ...debugOptions.execArgv,
     ])
@@ -201,6 +228,9 @@ export async function activate(extensionContext: ExtensionContext) {
             // this is used by LSP to determine index cache path, move to this folder so that when extension updates index is not deleted.
             extensionPath: path.join(fs.getUserHomeDir(), '.aws', 'amazonq', 'cache'),
         },
+        // Log to the Amazon Q Logs so everything is in a single channel
+        // TODO: Add prefix to the language server logs so it is easier to search
+        outputChannel: globals.logOutputChannel,
     }
 
     // Create the language client and start the client.

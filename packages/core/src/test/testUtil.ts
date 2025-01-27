@@ -18,7 +18,7 @@ import { DeclaredCommand } from '../shared/vscode/commands2'
 import { mkdirSync, existsSync } from 'fs' // eslint-disable-line no-restricted-imports
 import { randomBytes } from 'crypto'
 import request from '../shared/request'
-import { stub } from 'sinon'
+import { createStubInstance, stub } from 'sinon'
 
 const testTempDirs: string[] = []
 
@@ -344,9 +344,9 @@ export function assertTelemetry<K extends MetricName>(
         const passive = expectedCopy?.passive
         delete expectedCopy['passive']
 
-        Object.keys(expectedCopy).forEach(
-            (k) => ((expectedCopy as any)[k] = (expectedCopy as Record<string, any>)[k]?.toString())
-        )
+        for (const k of Object.keys(expectedCopy)) {
+            ;(expectedCopy as any)[k] = (expectedCopy as Record<string, any>)[k]?.toString()
+        }
 
         const msg = `telemetry metric ${i + 1} (of ${
             expectedList.length
@@ -633,4 +633,11 @@ export function getFetchStubWithResponse(response: Partial<Response>) {
 
 export function copyEnv(): NodeJS.ProcessEnv {
     return { ...process.env }
+}
+
+// Returns a stubbed response object
+export function createResponse(text: string): Response {
+    const responseStub = createStubInstance(Response)
+    responseStub.text.resolves(text)
+    return responseStub
 }

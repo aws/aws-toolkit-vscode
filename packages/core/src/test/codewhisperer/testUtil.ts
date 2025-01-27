@@ -44,7 +44,12 @@ export function createMockDocument(
     filename = 'test.py',
     language = 'python'
 ): MockDocument {
-    return new MockDocument(doc, filename, sinon.spy(), language)
+    return new MockDocument(
+        doc,
+        filename,
+        sinon.spy(async (_doc) => true),
+        language
+    )
 }
 
 export function createMockTextEditor(
@@ -191,6 +196,9 @@ export function createCodeScanIssue(overrides?: Partial<CodeScanIssue>): CodeSca
         suggestedFixes: [
             { description: 'fix', code: '@@ -1,1 +1,1 @@\nfirst line\n-second line\n+third line\nfourth line' },
         ],
+        visible: true,
+        language: 'python',
+        scanJobId: 'scanJob',
         ...overrides,
     }
 }
@@ -218,7 +226,7 @@ export const mockGetCodeScanResponse = {
         requestId: 'requestId',
         hasNextPage: () => false,
         error: undefined,
-        nextPage: () => undefined,
+        nextPage: () => null, // eslint-disable-line unicorn/no-null
         redirectCount: 0,
         retryCount: 0,
         httpResponse: new HttpResponse(),
@@ -238,7 +246,7 @@ export function createClient() {
             requestId: 'requestId',
             hasNextPage: () => false,
             error: undefined,
-            nextPage: () => undefined,
+            nextPage: () => null, // eslint-disable-line unicorn/no-null
             redirectCount: 0,
             retryCount: 0,
             httpResponse: new HttpResponse(),
@@ -255,7 +263,7 @@ export function createClient() {
             requestId: 'requestId',
             hasNextPage: () => false,
             error: undefined,
-            nextPage: () => undefined,
+            nextPage: () => null, // eslint-disable-line unicorn/no-null
             redirectCount: 0,
             retryCount: 0,
             httpResponse: new HttpResponse(),
@@ -298,7 +306,7 @@ export function createClient() {
             requestId: 'requestId',
             hasNextPage: () => false,
             error: undefined,
-            nextPage: () => undefined,
+            nextPage: () => null, // eslint-disable-line unicorn/no-null
             redirectCount: 0,
             retryCount: 0,
             httpResponse: new HttpResponse(),
@@ -317,6 +325,15 @@ export function aStringWithLineCount(lineCount: number, start: number = 0): stri
     let s = ''
     for (let i = start; i < start + lineCount; i++) {
         s += `line${i}\n`
+    }
+
+    return s.trimEnd()
+}
+
+export function aLongStringWithLineCount(lineCount: number, start: number = 0): string {
+    let s = ''
+    for (let i = start; i < start + lineCount; i++) {
+        s += `a`.repeat(100) + `line${i}\n`
     }
 
     return s.trimEnd()

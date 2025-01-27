@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import * as GitTypes from '../../../types/git.d'
 import { SemVer, parse as semverParse } from 'semver'
-import { execFile } from 'child_process'
+import { execFile } from 'child_process' // eslint-disable-line no-restricted-imports
 import { promisify } from 'util'
 import { VSCODE_EXTENSION_ID } from '../extensions'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../filesystemUtilities'
@@ -209,7 +209,11 @@ export class GitExtension {
     public async getRemotes(): Promise<GitTypes.Remote[]> {
         const api = await this.validateApi('git: api is disabled, returning empty array of remotes')
         const remotes: GitTypes.Remote[] = []
-        api?.repositories.forEach((repo) => remotes.push(...repo.state.remotes))
+        if (api) {
+            for (const repo of api.repositories) {
+                remotes.push(...repo.state.remotes)
+            }
+        }
 
         return remotes
     }
@@ -237,7 +241,7 @@ export class GitExtension {
             .map((repo) => repo.state.remotes.filter((other) => other.fetchUrl === remote.fetchUrl))
             .reduce((a, b) => a.concat(b), [])
 
-        api.repositories.forEach((repo) =>
+        for (const repo of api.repositories) {
             branches.push(
                 ...repo.state.refs.filter(
                     (ref: GitTypes.Ref) =>
@@ -246,7 +250,7 @@ export class GitExtension {
                         remotes.some((remote) => remote.name === ref.remote)
                 )
             )
-        )
+        }
 
         getLogger().debug(`git: found ${branches.length} branches from local repositories`)
 
@@ -289,18 +293,21 @@ export class GitExtension {
         if (!api) {
             return config
         } else if (repository) {
-            ;(await repository.getConfigs()).forEach(({ key, value }) => (config[key] = value))
+            for (const { key, value } of await repository.getConfigs()) {
+                config[key] = value
+            }
         } else {
             const { stdout } = await this.execFileAsync(api.git.path, ['config', '--list', `--global`]).catch((err) => {
                 getLogger().verbose(`git: failed to read config: %s`, err)
                 return { stdout: '' }
             })
 
-            stdout
+            for (const [k, v] of stdout
                 .toString()
                 .split(/\r?\n/)
-                .map((l) => l.split('='))
-                .forEach(([k, v]) => (config[k] = v))
+                .map((l) => l.split('='))) {
+                config[k] = v
+            }
         }
 
         return config

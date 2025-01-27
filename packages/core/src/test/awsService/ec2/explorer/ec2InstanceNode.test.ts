@@ -35,7 +35,7 @@ describe('ec2InstanceNode', function () {
         sinon.stub(Ec2InstanceNode.prototype, 'updateStatus')
         // Don't want to be polling here, that is tested in ../ec2ParentNode.test.ts
         // disabled here for convenience (avoiding race conditions with timeout)
-        sinon.stub(PollingSet.prototype, 'start')
+        sinon.stub(PollingSet.prototype, 'add')
         const testClient = new Ec2Client('')
         const testParentNode = new Ec2ParentNode(testRegion, testPartition, testClient)
         testNode = new Ec2InstanceNode(testParentNode, testClient, 'testRegion', 'testPartition', testInstance)

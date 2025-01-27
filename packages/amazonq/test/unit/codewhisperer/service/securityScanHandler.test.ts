@@ -13,42 +13,47 @@ import {
     mapToAggregatedList,
     DefaultCodeWhispererClient,
     ListCodeScanFindingsResponse,
+    pollScanJobStatus,
+    SecurityScanTimedOutError,
 } from 'aws-core-vscode/codewhisperer'
+import { timeoutUtils } from 'aws-core-vscode/shared'
 import assert from 'assert'
 import sinon from 'sinon'
 import * as vscode from 'vscode'
 import fs from 'fs' // eslint-disable-line no-restricted-imports
 
-const mockCodeScanFindings = JSON.stringify([
-    {
-        filePath: 'workspaceFolder/python3.7-plain-sam-app/hello_world/app.py',
-        startLine: 1,
-        endLine: 1,
-        title: 'title',
-        description: {
+const buildRawCodeScanIssue = (params?: Partial<RawCodeScanIssue>): RawCodeScanIssue => ({
+    filePath: 'workspaceFolder/python3.7-plain-sam-app/hello_world/app.py',
+    startLine: 1,
+    endLine: 1,
+    title: 'title',
+    description: {
+        text: 'text',
+        markdown: 'markdown',
+    },
+    detectorId: 'detectorId',
+    detectorName: 'detectorName',
+    findingId: 'findingId',
+    relatedVulnerabilities: [],
+    severity: 'High',
+    remediation: {
+        recommendation: {
             text: 'text',
-            markdown: 'markdown',
+            url: 'url',
         },
-        detectorId: 'detectorId',
-        detectorName: 'detectorName',
-        findingId: 'findingId',
-        relatedVulnerabilities: [],
-        severity: 'High',
-        remediation: {
-            recommendation: {
-                text: 'text',
-                url: 'url',
-            },
-            suggestedFixes: [],
-        },
-        codeSnippet: [],
-    } satisfies RawCodeScanIssue,
-])
+        suggestedFixes: [],
+    },
+    codeSnippet: [],
+    ...params,
+})
 
-const mockListCodeScanFindingsResponse: Awaited<Promise<PromiseResult<ListCodeScanFindingsResponse, AWSError>>> = {
+const buildMockListCodeScanFindingsResponse = (
+    codeScanFindings: string = JSON.stringify([buildRawCodeScanIssue()]),
+    nextToken?: boolean
+): Awaited<Promise<PromiseResult<ListCodeScanFindingsResponse, AWSError>>> => ({
     $response: {
         hasNextPage: () => false,
-        nextPage: () => undefined,
+        nextPage: () => null, // eslint-disable-line unicorn/no-null
         data: undefined,
         error: undefined,
         requestId: '',
@@ -56,16 +61,9 @@ const mockListCodeScanFindingsResponse: Awaited<Promise<PromiseResult<ListCodeSc
         retryCount: 0,
         httpResponse: new HttpResponse(),
     },
-    codeScanFindings: mockCodeScanFindings,
-}
-
-// eslint-disable-next-line id-length
-const mockListCodeScanFindingsPaginatedResponse: Awaited<
-    Promise<PromiseResult<ListCodeScanFindingsResponse, AWSError>>
-> = {
-    ...mockListCodeScanFindingsResponse,
-    nextToken: 'nextToken',
-}
+    codeScanFindings,
+    nextToken: nextToken ? 'nextToken' : undefined,
+})
 
 describe('securityScanHandler', function () {
     describe('listScanResults', function () {
@@ -81,7 +79,7 @@ describe('securityScanHandler', function () {
         })
 
         it('should make ListCodeScanFindings request and aggregate findings by file path', async function () {
-            mockClient.listCodeScanFindings.resolves(mockListCodeScanFindingsResponse)
+            mockClient.listCodeScanFindings.resolves(buildMockListCodeScanFindingsResponse())
 
             const aggregatedCodeScanIssueList = await listScanResults(
                 mockClient,
@@ -100,11 +98,26 @@ describe('securityScanHandler', function () {
         it('should handle ListCodeScanFindings request with paginated response', async function () {
             mockClient.listCodeScanFindings
                 .onFirstCall()
-                .resolves(mockListCodeScanFindingsPaginatedResponse)
+                .resolves(
+                    buildMockListCodeScanFindingsResponse(
+                        JSON.stringify([buildRawCodeScanIssue({ title: 'title1' })]),
+                        true
+                    )
+                )
                 .onSecondCall()
-                .resolves(mockListCodeScanFindingsPaginatedResponse)
+                .resolves(
+                    buildMockListCodeScanFindingsResponse(
+                        JSON.stringify([buildRawCodeScanIssue({ title: 'title2' })]),
+                        true
+                    )
+                )
                 .onThirdCall()
-                .resolves(mockListCodeScanFindingsResponse)
+                .resolves(
+                    buildMockListCodeScanFindingsResponse(
+                        JSON.stringify([buildRawCodeScanIssue({ title: 'title3' })]),
+                        false
+                    )
+                )
 
             const aggregatedCodeScanIssueList = await listScanResults(
                 mockClient,
@@ -154,7 +167,7 @@ describe('securityScanHandler', function () {
                 { filePath: 'file2.ts', startLine: 1, endLine: 1, codeSnippet: [{ number: 1, content: 'line 1' }] },
             ])
 
-            mapToAggregatedList(codeScanIssueMap, json, editor, CodeAnalysisScope.FILE)
+            mapToAggregatedList(codeScanIssueMap, json, editor, CodeAnalysisScope.FILE_AUTO)
 
             assert.equal(codeScanIssueMap.size, 2)
             assert.equal(codeScanIssueMap.get('file1.ts')?.length, 1)
@@ -175,7 +188,7 @@ describe('securityScanHandler', function () {
                 { filePath: 'file1.ts', startLine: 3, endLine: 3, codeSnippet: [{ number: 3, content: 'line 3' }] },
             ])
 
-            mapToAggregatedList(codeScanIssueMap, json, editor, CodeAnalysisScope.FILE)
+            mapToAggregatedList(codeScanIssueMap, json, editor, CodeAnalysisScope.FILE_AUTO)
 
             assert.equal(codeScanIssueMap.size, 1)
             assert.equal(codeScanIssueMap.get('file1.ts')?.length, 2)
@@ -195,9 +208,91 @@ describe('securityScanHandler', function () {
                 { filePath: 'file1.ts', startLine: 3, endLine: 3, codeSnippet: [{ number: 3, content: '**** **' }] },
             ])
 
-            mapToAggregatedList(codeScanIssueMap, json, editor, CodeAnalysisScope.FILE)
+            mapToAggregatedList(codeScanIssueMap, json, editor, CodeAnalysisScope.FILE_AUTO)
             assert.strictEqual(codeScanIssueMap.size, 1)
             assert.strictEqual(codeScanIssueMap.get('file1.ts')?.length, 1)
+        })
+
+        it('should handle duplicate issues', function () {
+            const json = JSON.stringify([
+                {
+                    filePath: 'file1.ts',
+                    startLine: 1,
+                    endLine: 2,
+                    title: 'duplicate issue',
+                    codeSnippet: [
+                        { number: 1, content: 'line 1' },
+                        { number: 2, content: 'line 2' },
+                    ],
+                },
+                {
+                    filePath: 'file1.ts',
+                    startLine: 1,
+                    endLine: 2,
+                    title: 'duplicate issue',
+                    codeSnippet: [
+                        { number: 1, content: 'line 1' },
+                        { number: 2, content: 'line 2' },
+                    ],
+                },
+            ])
+
+            mapToAggregatedList(codeScanIssueMap, json, editor, CodeAnalysisScope.FILE_AUTO)
+            assert.strictEqual(codeScanIssueMap.size, 1)
+            assert.strictEqual(codeScanIssueMap.get('file1.ts')?.length, 1)
+        })
+    })
+
+    describe('pollScanJobStatus', function () {
+        let mockClient: Stub<DefaultCodeWhispererClient>
+        let clock: sinon.SinonFakeTimers
+        const mockJobId = 'test-job-id'
+        const mockStartTime = Date.now()
+
+        beforeEach(function () {
+            mockClient = stub(DefaultCodeWhispererClient)
+            clock = sinon.useFakeTimers({
+                shouldAdvanceTime: true,
+            })
+            sinon.stub(timeoutUtils, 'sleep').resolves()
+        })
+
+        afterEach(function () {
+            sinon.restore()
+            clock.restore()
+        })
+
+        it('should return status when scan completes successfully', async function () {
+            mockClient.getCodeScan
+                .onFirstCall()
+                .resolves({ status: 'Pending', $response: { requestId: 'req1' } })
+                .onSecondCall()
+                .resolves({ status: 'Completed', $response: { requestId: 'req2' } })
+
+            const result = await pollScanJobStatus(mockClient, mockJobId, CodeAnalysisScope.FILE_AUTO, mockStartTime)
+            assert.strictEqual(result, 'Completed')
+        })
+
+        it('should throw SecurityScanTimedOutError when polling exceeds timeout for express scans', async function () {
+            mockClient.getCodeScan.resolves({ status: 'Pending', $response: { requestId: 'req1' } })
+
+            const pollPromise = pollScanJobStatus(mockClient, mockJobId, CodeAnalysisScope.FILE_AUTO, mockStartTime)
+
+            const expectedTimeoutMs = 60_000
+            clock.tick(expectedTimeoutMs + 1000)
+
+            await assert.rejects(() => pollPromise, SecurityScanTimedOutError)
+        })
+
+        it('should throw SecurityScanTimedOutError when polling exceeds timeout for standard scans', async function () {
+            mockClient.getCodeScan.resolves({ status: 'Pending', $response: { requestId: 'req1' } })
+
+            const pollPromise = pollScanJobStatus(mockClient, mockJobId, CodeAnalysisScope.PROJECT, mockStartTime)
+
+            const expectedTimeoutMs = 600_000
+            clock.tick(expectedTimeoutMs + 1000)
+
+            await assert.rejects(() => pollPromise, SecurityScanTimedOutError)
         })
     })
 })

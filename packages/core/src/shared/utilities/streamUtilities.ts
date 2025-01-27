@@ -44,7 +44,9 @@ class BufferWriter {
     public write(chunk: Buffer) {
         const buffer = this.buffer
         if (Buffer.isBuffer(buffer)) {
-            chunk.forEach((byte) => (this.offset = buffer.writeUInt8(byte, this.offset)))
+            for (const byte of chunk) {
+                this.offset = buffer.writeUInt8(byte, this.offset)
+            }
         } else {
             buffer.push(...chunk)
             this.offset += chunk.length

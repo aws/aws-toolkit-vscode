@@ -12,7 +12,6 @@ import { VSCODE_EXTENSION_ID, extensionAlphaVersion } from './extensions'
 import { Ec2MetadataClient } from './clients/ec2MetadataClient'
 import { DefaultEc2MetadataClient } from './clients/ec2MetadataClient'
 import { extensionVersion, getCodeCatalystDevEnvId } from './vscode/env'
-import { DevSettings } from './settings'
 import globals from './extensionGlobals'
 import { once } from './utilities/functionUtils'
 import {
@@ -61,12 +60,7 @@ export function commandsPrefix(): string {
 let computeRegion: string | undefined = notInitialized
 
 export function getIdeType(): 'vscode' | 'cloud9' | 'sagemaker' | 'unknown' {
-    const settings = DevSettings.instance
-    if (
-        vscode.env.appName === cloud9Appname ||
-        vscode.env.appName === cloud9CnAppname ||
-        settings.get('forceCloud9', false)
-    ) {
+    if (vscode.env.appName === cloud9Appname || vscode.env.appName === cloud9CnAppname) {
         return 'cloud9'
     }
 
@@ -379,13 +373,13 @@ export class UserActivity implements vscode.Disposable {
         )
 
         if (customEvents) {
-            customEvents.forEach((event) =>
+            for (const event of customEvents) {
                 this.register(
                     event(() => {
                         throttledEmit(event)
                     })
                 )
-            )
+            }
         } else {
             this.registerAllEvents(throttledEmit)
         }
@@ -409,13 +403,13 @@ export class UserActivity implements vscode.Disposable {
             vscode.window.onDidChangeTextEditorViewColumn,
         ]
 
-        activityEvents.forEach((event) =>
+        for (const event of activityEvents) {
             this.register(
                 event(() => {
                     throttledEmit(event)
                 })
             )
-        )
+        }
 
         //
         // Events with special cases:
@@ -478,6 +472,8 @@ export class UserActivity implements vscode.Disposable {
     }
 
     dispose() {
-        this.disposables.forEach((d) => d.dispose())
+        for (const d of this.disposables) {
+            d.dispose()
+        }
     }
 }
