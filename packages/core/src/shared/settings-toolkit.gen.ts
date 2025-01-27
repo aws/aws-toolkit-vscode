@@ -41,8 +41,7 @@ export const toolkitSettings = {
         "ssoCacheError": {}
     },
     "aws.experiments": {
-        "jsonResourceModification": {},
-        "ec2RemoteConnect": {}
+        "jsonResourceModification": {}
     },
     "aws.resources.enabledResources": {},
     "aws.lambda.recentlyUploaded": {},

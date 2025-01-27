@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "EC2 is now available in AWS Explorer:\n\n1. Remote-connect VSCode to your EC2 instances.\n2. Open terminal to your EC2 instances.\n3. Start, stop, and visit the Launch page."
+}
