@@ -42,8 +42,7 @@ export const toolkitSettings = {
     },
     "aws.experiments": {
         "jsonResourceModification": {},
-        "amazonqLSP": {},
-        "ec2RemoteConnect": {}
+        "amazonqLSP": {}
     },
     "aws.resources.enabledResources": {},
     "aws.lambda.recentlyUploaded": {},
