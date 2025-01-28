@@ -907,6 +907,10 @@
                     "when": "false"
                 },
                 {
+                    "command": "aws.appBuilder.tailLogs",
+                    "when": "false"
+                },
+                {
                     "command": "aws.appBuilder.viewDocs",
                     "when": "false"
                 },
@@ -1646,6 +1650,11 @@
                     "group": "0@3"
                 },
                 {
+                    "command": "aws.appBuilder.tailLogs",
+                    "when": "view =~ /^(aws.explorer|aws.appBuilder|aws.appBuilderForFileExplorer)$/ && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode)$/",
+                    "group": "0@4"
+                },
+                {
                     "command": "aws.deleteCloudFormation",
                     "when": "view == aws.explorer && viewItem == awsCloudFormationNode",
                     "group": "3@5"
@@ -2144,6 +2153,11 @@
                     "command": "aws.appBuilder.searchLogs",
                     "when": "view =~ /^(aws.explorer|aws.appBuilder|aws.appBuilderForFileExplorer)$/ && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode)$/",
                     "group": "inline@2"
+                },
+                {
+                    "command": "aws.appBuilder.tailLogs",
+                    "when": "view =~ /^(aws.explorer|aws.appBuilder|aws.appBuilderForFileExplorer)$/ && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode)$/",
+                    "group": "inline@3"
                 }
             ],
             "aws.toolkit.auth": [
@@ -3752,6 +3766,13 @@
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "category": "%AWS.title%",
                 "icon": "$(search-view-icon)"
+            },
+            {
+                "command": "aws.appBuilder.tailLogs",
+                "title": "%AWS.command.appBuilder.tailLogs%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
+                "category": "%AWS.title%",
+                "icon": "$(search-show-context)"
             },
             {
                 "command": "aws.appBuilder.deploy",

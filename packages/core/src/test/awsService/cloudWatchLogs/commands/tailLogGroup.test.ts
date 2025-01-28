@@ -19,6 +19,7 @@ import { getTestWindow } from '../../../shared/vscode/window'
 import { CloudWatchLogsSettings, uriToKey } from '../../../../awsService/cloudWatchLogs/cloudWatchLogsUtils'
 import { DefaultAwsContext, ToolkitError, waitUntil } from '../../../../shared'
 import { LiveTailCodeLensProvider } from '../../../../awsService/cloudWatchLogs/document/liveTailCodeLensProvider'
+import { PrompterTester } from '../../../shared/wizards/prompterTester'
 
 describe('TailLogGroup', function () {
     const testLogGroup = 'test-log-group'
@@ -140,6 +141,48 @@ describe('TailLogGroup', function () {
 
         assert.strictEqual(registry.size, 0)
         assert.strictEqual(stopLiveTailSessionSpy.calledOnce, true)
+    })
+
+    it(`doesn't ask for stream filter if passed as parameter`, async function () {
+        sandbox.stub(DefaultAwsContext.prototype, 'getCredentialAccountId').returns(testAwsAccountId)
+        sandbox.stub(DefaultAwsContext.prototype, 'getCredentials').returns(Promise.resolve(testAwsCredentials))
+
+        // Returns one frame
+        async function* generator(): AsyncIterable<StartLiveTailResponseStream> {
+            yield getSessionUpdateFrame(false, `${testMessage}-1`, 1732276800000)
+        }
+
+        startLiveTailSessionSpy = sandbox
+            .stub(LiveTailSession.prototype, 'startLiveTailSession')
+            .returns(Promise.resolve(generator()))
+
+        const prompterTester = PrompterTester.init()
+            .handleInputBox('Provide log event filter pattern', (inputBox) => {
+                inputBox.acceptValue('filter')
+            })
+            .build()
+
+        // Set maxLines to 1.
+        cloudwatchSettingsSpy = sandbox.stub(CloudWatchLogsSettings.prototype, 'get').returns(1)
+
+        // The mock stream doesn't 'close', causing tailLogGroup to not return. If we `await`, it will never resolve.
+        // Run it in the background and use waitUntil to poll its state.
+        void tailLogGroup(
+            registry,
+            testSource,
+            codeLensProvider,
+            {
+                groupName: testLogGroup,
+                regionName: testRegion,
+            },
+            { type: 'all' }
+        )
+        await waitUntil(async () => registry.size !== 0, { interval: 100, timeout: 1000 })
+
+        prompterTester.assertCall('Provide log event filter pattern', 1)
+
+        assert.strictEqual(startLiveTailSessionSpy.calledOnce, true)
+        assert.strictEqual(registry.size, 1)
     })
 
     it('throws if crendentials are undefined', async function () {
