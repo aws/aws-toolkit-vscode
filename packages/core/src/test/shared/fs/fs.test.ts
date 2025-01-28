@@ -421,6 +421,7 @@ describe('FileSystem', function () {
             testutil.assertTelemetry('ide_fileSystem', {
                 action: 'rename',
                 result: 'Succeeded',
+                reason: 'RenameRaceCondition',
             })
 
             existsStub.restore()
