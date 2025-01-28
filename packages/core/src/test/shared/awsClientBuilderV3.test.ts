@@ -14,6 +14,9 @@ import { Client } from '@aws-sdk/smithy-client'
 import { extensionVersion } from '../../shared'
 import { assertTelemetry } from '../testUtil'
 import { telemetry } from '../../shared/telemetry'
+import { CredentialsShim } from '../../auth/deprecated/loginManager'
+import { Credentials } from '@aws-sdk/types'
+import { oneDay } from '../../shared/datetime'
 
 describe('AwsClientBuilderV3', function () {
     let builder: AWSClientBuilderV3
@@ -57,6 +60,52 @@ describe('AwsClientBuilderV3', function () {
             assert.strictEqual(service.config.userAgent[0][0], 'CUSTOM USER AGENT')
         })
     })
+
+    describe('clientCredentials', function () {
+        let fakeContext: FakeAwsContext
+        let mockCredsShim: MockCredentialsShim
+        let oldCreds: Credentials
+        let newCreds: Credentials
+
+        beforeEach(function () {
+            fakeContext = new FakeAwsContext()
+            oldCreds = {
+                accessKeyId: 'old',
+                secretAccessKey: 'old',
+                sessionToken: 'old',
+                expiration: new Date(Date.now() + oneDay),
+            }
+            newCreds = {
+                accessKeyId: 'new',
+                secretAccessKey: 'new',
+                sessionToken: 'new',
+                expiration: new Date(Date.now() + oneDay),
+            }
+            mockCredsShim = new MockCredentialsShim(oldCreds, newCreds)
+            fakeContext.credentialsShim = mockCredsShim
+            builder = new AWSClientBuilderV3(fakeContext)
+        })
+
+        it('refreshes credentials when they expire', async function () {
+            const service = await builder.createAwsService(Client)
+            assert.strictEqual(await service.config.credentials(), oldCreds)
+            mockCredsShim.expire()
+            assert.strictEqual(await service.config.credentials(), newCreds)
+        })
+
+        it('does not cache stale credentials', async function () {
+            const service = await builder.createAwsService(Client)
+            assert.strictEqual(await service.config.credentials(), oldCreds)
+            const newerCreds = {
+                accessKeyId: 'old2',
+                secretAccessKey: 'old2',
+                sessionToken: 'old2',
+                expiration: new Date(Date.now() + oneDay),
+            }
+            mockCredsShim.update(newerCreds)
+            assert.strictEqual(await service.config.credentials(), newerCreds)
+        })
+    })
 })
 
 describe('getServiceId', function () {
@@ -77,3 +126,29 @@ describe('recordErrorTelemetry', function () {
         assertTelemetry('vscode_executeCommand', { requestServiceType: 'aws-service' })
     })
 })
+
+class MockCredentialsShim implements CredentialsShim {
+    public constructor(
+        public credentials: Credentials,
+        public readonly refreshedCredentials: Credentials
+    ) {}
+
+    public expire(): void {
+        this.credentials = {
+            ...this.credentials,
+            expiration: new Date(Date.now() - oneDay),
+        }
+    }
+
+    public update(newCreds: Credentials): void {
+        this.credentials = newCreds
+    }
+
+    public async get(): Promise<Credentials> {
+        return this.credentials
+    }
+
+    public async refresh(): Promise<Credentials> {
+        return this.refreshedCredentials
+    }
+}
