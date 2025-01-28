@@ -12,7 +12,7 @@ export abstract class ClientWrapper<C extends AwsClient> implements vscode.Dispo
 
     public constructor(
         public readonly regionCode: string,
-        private readonly clientType: AwsClientConstructor<any>
+        private readonly clientType: AwsClientConstructor<C>
     ) {}
 
     protected async getClient() {
