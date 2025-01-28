@@ -11,13 +11,16 @@ import { ApiAction, Command, MessageType, WebviewContext } from '../../../stepFu
 import * as vscode from 'vscode'
 
 describe('WorkflowStudioApiHandler', function () {
-    it('should handle request and response for success', async function () {
+    let postMessageStub: sinon.SinonStub
+    let apiHandler: WorkflowStudioApiHandler
+
+    beforeEach(() => {
         const panel = vscode.window.createWebviewPanel('WorkflowStudioMock', 'WorkflowStudioMockTitle', {
             viewColumn: vscode.ViewColumn.Active,
             preserveFocus: true,
         })
 
-        const postMessageStub = sinon.stub(panel.webview, 'postMessage')
+        postMessageStub = sinon.stub(panel.webview, 'postMessage')
 
         const context: WebviewContext = {
             defaultTemplateName: '',
@@ -31,8 +34,10 @@ describe('WorkflowStudioApiHandler', function () {
             fileId: '',
         }
 
-        const apiHandler = new WorkflowStudioApiHandler('us-east-1', context)
+        apiHandler = new WorkflowStudioApiHandler('us-east-1', context)
+    })
 
+    it('should handle request and response for success', async function () {
         sinon.stub(apiHandler, 'testState').returns(
             Promise.resolve({
                 output: 'Test state output',
@@ -65,27 +70,6 @@ describe('WorkflowStudioApiHandler', function () {
     })
 
     it('should handle request and response for error', async function () {
-        const panel = vscode.window.createWebviewPanel('WorkflowStudioMock', 'WorkflowStudioMockTitle', {
-            viewColumn: vscode.ViewColumn.Active,
-            preserveFocus: true,
-        })
-
-        const postMessageStub = sinon.stub(panel.webview, 'postMessage')
-
-        const context: WebviewContext = {
-            defaultTemplateName: '',
-            defaultTemplatePath: '',
-            disposables: [],
-            panel: panel,
-            textDocument: new MockDocument('', 'foo', async () => true),
-            workSpacePath: '',
-            fileStates: {},
-            loaderNotification: undefined,
-            fileId: '',
-        }
-
-        const apiHandler = new WorkflowStudioApiHandler('us-east-1', context)
-
         sinon.stub(apiHandler, 'testState').returns(Promise.reject(new Error('Error testing state')))
 
         await apiHandler.performApiCall({
