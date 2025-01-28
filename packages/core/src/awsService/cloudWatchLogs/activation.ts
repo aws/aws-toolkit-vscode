@@ -28,13 +28,13 @@ import { getLogger } from '../../shared/logger/logger'
 import { ToolkitError } from '../../shared'
 import { LiveTailCodeLensProvider } from './document/liveTailCodeLensProvider'
 
+export const liveTailRegistry = LiveTailSessionRegistry.instance
+export const liveTailCodeLensProvider = new LiveTailCodeLensProvider(liveTailRegistry)
 export async function activate(context: vscode.ExtensionContext, configuration: Settings): Promise<void> {
     const registry = LogDataRegistry.instance
-    const liveTailRegistry = LiveTailSessionRegistry.instance
 
     const documentProvider = new LogDataDocumentProvider(registry)
     const liveTailDocumentProvider = new LiveTailDocumentProvider()
-    const liveTailCodeLensProvider = new LiveTailCodeLensProvider(liveTailRegistry)
     context.subscriptions.push(
         vscode.languages.registerCodeLensProvider(
             {
@@ -150,7 +150,7 @@ export async function activate(context: vscode.ExtensionContext, configuration: 
     )
 }
 
-function getFunctionLogGroupName(configuration: any) {
+export function getFunctionLogGroupName(configuration: any) {
     const logGroupPrefix = '/aws/lambda/'
-    return configuration.logGroupName || logGroupPrefix + configuration.FunctionName
+    return configuration.LoggingConfig?.LogGroup || logGroupPrefix + configuration.FunctionName
 }
