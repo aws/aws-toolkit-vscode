@@ -16,6 +16,7 @@ import { assertTelemetry } from '../testUtil'
 import { telemetry } from '../../shared/telemetry'
 import { CredentialsShim } from '../../auth/deprecated/loginManager'
 import { Credentials } from '@aws-sdk/types'
+import { oneDay } from '../../shared/datetime'
 
 describe('AwsClientBuilderV3', function () {
     let builder: AWSClientBuilderV3
@@ -72,13 +73,13 @@ describe('AwsClientBuilderV3', function () {
                 accessKeyId: 'old',
                 secretAccessKey: 'old',
                 sessionToken: 'old',
-                expiration: new Date(Date.now() + 1000 * 60 * 60 * 24),
+                expiration: new Date(Date.now() + oneDay),
             }
             newCreds = {
                 accessKeyId: 'new',
                 secretAccessKey: 'new',
                 sessionToken: 'new',
-                expiration: new Date(Date.now() + 1000 * 60 * 60 * 24 * 2),
+                expiration: new Date(Date.now() + oneDay),
             }
             mockCredsShim = new MockCredentialsShim(oldCreds, newCreds)
             fakeContext.credentialsShim = mockCredsShim
@@ -99,7 +100,7 @@ describe('AwsClientBuilderV3', function () {
                 accessKeyId: 'old2',
                 secretAccessKey: 'old2',
                 sessionToken: 'old2',
-                expiration: new Date(Date.now() + 1000 * 60 * 60 * 24),
+                expiration: new Date(Date.now() + oneDay),
             }
             mockCredsShim.update(newerCreds)
             assert.strictEqual(await service.config.credentials(), newerCreds)
@@ -135,7 +136,7 @@ class MockCredentialsShim implements CredentialsShim {
     public expire(): void {
         this.credentials = {
             ...this.credentials,
-            expiration: new Date(Date.now() - 1000 * 60 * 60 * 24),
+            expiration: new Date(Date.now() - oneDay),
         }
     }
 
