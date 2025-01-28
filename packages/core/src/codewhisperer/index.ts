@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export { activate, shutdown, activateInlineCompletion } from './activation'
+export { activate, shutdown } from './activation'
 export * from './util/authUtil'
 export * from './models/model'
 export * from './models/constants'

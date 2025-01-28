@@ -4,11 +4,7 @@
  */
 
 import { AuthUtils, CredentialsStore, LoginManager, initializeAuth } from 'aws-core-vscode/auth'
-import {
-    activate as activateCodeWhisperer,
-    shutdown as shutdownCodeWhisperer,
-    activateInlineCompletion,
-} from 'aws-core-vscode/codewhisperer'
+import { activate as activateCodeWhisperer, shutdown as shutdownCodeWhisperer } from 'aws-core-vscode/codewhisperer'
 import { makeEndpointsProvider, registerGenericCommands } from 'aws-core-vscode'
 import { CommonAuthWebview } from 'aws-core-vscode/login'
 import {
@@ -45,6 +41,7 @@ import * as vscode from 'vscode'
 import { registerCommands } from './commands'
 import { focusAmazonQPanel } from 'aws-core-vscode/codewhispererChat'
 import { activate as activateAmazonqLsp } from './lsp/activation'
+import { activate as activateInlineCompletion } from './inline/activation'
 
 export const amazonQContextPrefix = 'amazonq'
 
