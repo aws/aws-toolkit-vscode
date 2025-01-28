@@ -3,12 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ToolkitError } from '../shared/errors'
+import { SafeMessageToolkitError, ToolkitError } from '../shared/errors'
 import { featureName } from './constants'
 import { uploadCodeError } from './userFacingText'
 import { i18n } from '../shared/i18n-helper'
 
-export class ConversationIdNotFoundError extends ToolkitError {
+export class ConversationIdNotFoundError extends SafeMessageToolkitError {
     constructor() {
         super(i18n('AWS.amazonq.featureDev.error.conversationIdNotFoundError'), {
             code: 'ConversationIdNotFound',
@@ -16,7 +16,7 @@ export class ConversationIdNotFoundError extends ToolkitError {
     }
 }
 
-export class TabIdNotFoundError extends ToolkitError {
+export class TabIdNotFoundError extends SafeMessageToolkitError {
     constructor() {
         super(i18n('AWS.amazonq.featureDev.error.tabIdNotFoundError'), {
             code: 'TabIdNotFound',
@@ -24,7 +24,7 @@ export class TabIdNotFoundError extends ToolkitError {
     }
 }
 
-export class WorkspaceFolderNotFoundError extends ToolkitError {
+export class WorkspaceFolderNotFoundError extends SafeMessageToolkitError {
     constructor() {
         super(i18n('AWS.amazonq.featureDev.error.workspaceFolderNotFoundError'), {
             code: 'WorkspaceFolderNotFound',
@@ -32,7 +32,7 @@ export class WorkspaceFolderNotFoundError extends ToolkitError {
     }
 }
 
-export class UserMessageNotFoundError extends ToolkitError {
+export class UserMessageNotFoundError extends SafeMessageToolkitError {
     constructor() {
         super(i18n('AWS.amazonq.featureDev.error.userMessageNotFoundError'), {
             code: 'MessageNotFound',
@@ -40,7 +40,7 @@ export class UserMessageNotFoundError extends ToolkitError {
     }
 }
 
-export class SelectedFolderNotInWorkspaceFolderError extends ToolkitError {
+export class SelectedFolderNotInWorkspaceFolderError extends SafeMessageToolkitError {
     constructor() {
         super(i18n('AWS.amazonq.featureDev.error.selectedFolderNotInWorkspaceFolderError'), {
             code: 'SelectedFolderNotInWorkspaceFolder',
@@ -48,7 +48,7 @@ export class SelectedFolderNotInWorkspaceFolderError extends ToolkitError {
     }
 }
 
-export class PromptRefusalException extends ToolkitError {
+export class PromptRefusalException extends SafeMessageToolkitError {
     constructor() {
         super(i18n('AWS.amazonq.featureDev.error.promptRefusalException'), {
             code: 'PromptRefusalException',
@@ -56,7 +56,7 @@ export class PromptRefusalException extends ToolkitError {
     }
 }
 
-export class NoChangeRequiredException extends ToolkitError {
+export class NoChangeRequiredException extends SafeMessageToolkitError {
     constructor() {
         super(i18n('AWS.amazonq.featureDev.error.noChangeRequiredException'), {
             code: 'NoChangeRequiredException',
@@ -64,13 +64,14 @@ export class NoChangeRequiredException extends ToolkitError {
     }
 }
 
-export class FeatureDevServiceError extends ToolkitError {
+// To prevent potential security issues, message passed in should be predictably safe for telemetry
+export class FeatureDevServiceError extends SafeMessageToolkitError {
     constructor(message: string, code: string) {
         super(message, { code })
     }
 }
 
-export class PrepareRepoFailedError extends ToolkitError {
+export class PrepareRepoFailedError extends SafeMessageToolkitError {
     constructor() {
         super(i18n('AWS.amazonq.featureDev.error.prepareRepoFailedError'), {
             code: 'PrepareRepoFailed',
@@ -78,37 +79,37 @@ export class PrepareRepoFailedError extends ToolkitError {
     }
 }
 
-export class UploadCodeError extends ToolkitError {
+export class UploadCodeError extends SafeMessageToolkitError {
     constructor(statusCode: string) {
         super(uploadCodeError, { code: `UploadCode-${statusCode}` })
     }
 }
 
-export class UploadURLExpired extends ToolkitError {
+export class UploadURLExpired extends SafeMessageToolkitError {
     constructor() {
         super(i18n('AWS.amazonq.featureDev.error.uploadURLExpired'), { code: 'UploadURLExpired' })
     }
 }
 
-export class IllegalStateTransition extends ToolkitError {
+export class IllegalStateTransition extends SafeMessageToolkitError {
     constructor() {
         super(i18n('AWS.amazonq.featureDev.error.illegalStateTransition'), { code: 'IllegalStateTransition' })
     }
 }
 
-export class ContentLengthError extends ToolkitError {
+export class ContentLengthError extends SafeMessageToolkitError {
     constructor() {
         super(i18n('AWS.amazonq.featureDev.error.contentLengthError'), { code: ContentLengthError.name })
     }
 }
 
-export class ZipFileError extends ToolkitError {
+export class ZipFileError extends SafeMessageToolkitError {
     constructor() {
         super(i18n('AWS.amazonq.featureDev.error.zipFileError'), { code: ZipFileError.name })
     }
 }
 
-export class CodeIterationLimitError extends ToolkitError {
+export class CodeIterationLimitError extends SafeMessageToolkitError {
     constructor() {
         super(i18n('AWS.amazonq.featureDev.error.codeIterationLimitError'), { code: CodeIterationLimitError.name })
     }

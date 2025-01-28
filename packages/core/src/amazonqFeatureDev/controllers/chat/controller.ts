@@ -44,7 +44,7 @@ import { getWorkspaceFoldersByPrefixes } from '../../../shared/utilities/workspa
 import { openDeletedDiff, openDiff } from '../../../amazonq/commons/diff'
 import { i18n } from '../../../shared/i18n-helper'
 import globals from '../../../shared/extensionGlobals'
-import { randomUUID } from '../../../shared'
+import { getStackTraceForError, randomUUID } from '../../../shared'
 import { FollowUpTypes } from '../../../amazonq/commons/types'
 import { Messenger } from '../../../amazonq/commons/connector/baseMessenger'
 import { BaseChatSessionStorage } from '../../../amazonq/commons/baseChatStorage'
@@ -504,6 +504,10 @@ export class FeatureDevController {
                         result = MetricDataResult.Fault
                     }
                     break
+                case ContentLengthError.name:
+                case MonthlyConversationLimitError.name:
+                case CodeIterationLimitError.name:
+                case UploadURLExpired.name:
                 case PromptRefusalException.name:
                 case NoChangeRequiredException.name:
                     result = MetricDataResult.Error
@@ -513,7 +517,11 @@ export class FeatureDevController {
                     break
             }
 
-            await session.sendMetricDataTelemetry(MetricDataOperationName.EndCodeGeneration, result)
+            await session.sendMetricDataTelemetry(
+                MetricDataOperationName.EndCodeGeneration,
+                result,
+                'stack trace: ' + getStackTraceForError(err)
+            )
             throw err
         } finally {
             // Finish processing the event

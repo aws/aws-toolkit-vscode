@@ -20,6 +20,8 @@ import {
     tryRun,
     UnknownError,
     getErrorId,
+    getStackTraceForError,
+    SafeMessageToolkitError,
 } from '../../shared/errors'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { UnauthorizedException } from '@aws-sdk/client-sso'
@@ -345,6 +347,51 @@ describe('Telemetry', function () {
             const error1 = new ToolkitError('', { code: 'ErrorCode' })
             const error2 = new ToolkitError('', { cause: error1 })
             assert.strictEqual(getTelemetryReason(error2), 'ErrorCode')
+        })
+    })
+
+    describe('getStackTraceForError', () => {
+        class SafeError extends SafeMessageToolkitError {}
+        class UnsafeError extends ToolkitError {}
+
+        it('includes message for safe exceptions', () => {
+            const safeError = new SafeError('Safe error message')
+            const result = getStackTraceForError(safeError)
+
+            assert.ok(result.includes('Safe error message'))
+            assert.ok(result.includes('SafeError: '))
+        })
+
+        it('excludes message for unsafe exceptions', () => {
+            const unsafeError = new UnsafeError('Sensitive information')
+            const result = getStackTraceForError(unsafeError)
+
+            assert.ok(!result.includes('Sensitive information'))
+            assert.ok(result.includes('UnsafeError'))
+        })
+
+        it('respects recursion limit for nested exceptions', () => {
+            const recursionLimit = 3
+            const exceptions: ToolkitError[] = []
+
+            let currentError = new SafeError(`depth ${recursionLimit + 2}`)
+            exceptions.push(currentError)
+
+            for (let i = recursionLimit + 1; i >= 0; i--) {
+                currentError = new SafeError(`depth ${i}`, { cause: currentError })
+                exceptions.push(currentError)
+            }
+            const stackTrace = getStackTraceForError(exceptions[exceptions.length - 1])
+
+            // Assert exceptions within limit are included
+            for (let i = 0; i < recursionLimit; i++) {
+                assert(stackTrace.includes(`depth ${i}`), `Stack trace should include error at depth ${i}`)
+            }
+
+            // Assert exceptions beyond limit are not included
+            for (let i = recursionLimit; i <= exceptions.length; i++) {
+                assert(!stackTrace.includes(`depth ${i}`), `Stack trace should not include error at depth ${i}`)
+            }
         })
     })
 })

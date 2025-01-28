@@ -464,6 +464,10 @@ describe('Controller', () => {
 
             const errorResultMapping = new Map([
                 ['EmptyPatchException', MetricDataResult.LlmFailure],
+                [ContentLengthError.name, MetricDataResult.Error],
+                [MonthlyConversationLimitError.name, MetricDataResult.Error],
+                [CodeIterationLimitError.name, MetricDataResult.Error],
+                [UploadURLExpired.name, MetricDataResult.Error],
                 [PromptRefusalException.name, MetricDataResult.Error],
                 [NoChangeRequiredException.name, MetricDataResult.Error],
             ])
@@ -519,7 +523,16 @@ describe('Controller', () => {
                 )
                 const metricResult = getMetricResult(error)
                 assert.ok(
-                    sendMetricDataTelemetrySpy.calledWith(MetricDataOperationName.EndCodeGeneration, metricResult)
+                    sendMetricDataTelemetrySpy.calledWith(
+                        MetricDataOperationName.EndCodeGeneration,
+                        metricResult,
+                        sinon.match(
+                            (str) =>
+                                typeof str === 'string' &&
+                                str.includes('stack trace: ' + error.constructor.name) &&
+                                str.includes('at ')
+                        )
+                    )
                 )
             }
 
