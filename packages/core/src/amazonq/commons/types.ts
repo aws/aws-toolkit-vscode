@@ -24,6 +24,9 @@ export enum FollowUpTypes {
     NewTask = 'NewTask',
     CloseSession = 'CloseSession',
     SendFeedback = 'SendFeedback',
+    AcceptAutoBuild = 'AcceptAutoBuild',
+    DenyAutoBuild = 'DenyAutoBuild',
+    GenerateDevFile = 'GenerateDevFile',
     // Doc
     CreateDocumentation = 'CreateDocumentation',
     ChooseFolder = 'ChooseFolder',
