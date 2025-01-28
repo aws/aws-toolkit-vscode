@@ -13,7 +13,7 @@ const description = {
     workspaceIndexWorkerThreads: Number,
     workspaceIndexUseGPU: Boolean,
     workspaceIndexMaxSize: Number,
-    devCommandWorkspaceConfigurations: Object,
+    allowFeatureDevelopmentToRunCodeAndTests: Object,
     ignoredSecurityIssues: ArrayConstructor(String),
 }
 
@@ -51,16 +51,16 @@ export class CodeWhispererSettings extends fromExtensionManifest('amazonQ', desc
         return Math.max(this.get('workspaceIndexMaxSize', 250), 1)
     }
 
-    public getDevCommandWorkspaceConfigurations(): { [key: string]: boolean } {
-        return this.get('devCommandWorkspaceConfigurations', {})
+    public getAutoBuildSetting(): { [key: string]: boolean } {
+        return this.get('allowFeatureDevelopmentToRunCodeAndTests', {})
     }
 
-    public async updateDevCommandWorkspaceConfigurations(projectName: string, setting: boolean) {
-        const projects = this.getDevCommandWorkspaceConfigurations()
+    public async updateAutoBuildSetting(projectName: string, setting: boolean) {
+        const projects = this.getAutoBuildSetting()
 
         projects[projectName] = setting
 
-        await this.update('devCommandWorkspaceConfigurations', projects)
+        await this.update('allowFeatureDevelopmentToRunCodeAndTests', projects)
     }
 
     public getIgnoredSecurityIssues(): string[] {

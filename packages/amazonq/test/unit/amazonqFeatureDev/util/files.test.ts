@@ -43,7 +43,7 @@ const testDevfilePrepareRepo = async (devfileEnabled: boolean) => {
 
     const workspace = getWorkspaceFolder(folder.path)
     sinon
-        .stub(CodeWhispererSettings.instance, 'getDevCommandWorkspaceConfigurations')
+        .stub(CodeWhispererSettings.instance, 'getAutoBuildSetting')
         .returns(devfileEnabled ? { [workspace.uri.fsPath]: true } : {})
 
     await testPrepareRepoData(workspace, expectedFiles)

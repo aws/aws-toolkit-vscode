@@ -40,8 +40,8 @@ export async function prepareRepoData(
     zip: AdmZip = new AdmZip()
 ) {
     try {
-        const devCommandWorkspaceConfigurations = CodeWhispererSettings.instance.getDevCommandWorkspaceConfigurations()
-        const useAutoBuildFeature = devCommandWorkspaceConfigurations[repoRootPaths[0]] ?? false
+        const autoBuildSetting = CodeWhispererSettings.instance.getAutoBuildSetting()
+        const useAutoBuildFeature = autoBuildSetting[repoRootPaths[0]] ?? false
         // We only respect gitignore file rules if useAutoBuildFeature is on, this is to avoid dropping necessary files for building the code (e.g. png files imported in js code)
         const files = await collectFiles(repoRootPaths, workspaceFolders, true, maxRepoSizeBytes, !useAutoBuildFeature)
 
