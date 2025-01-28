@@ -6,11 +6,11 @@
 import assert from 'assert'
 import * as sinon from 'sinon'
 import { Ec2SessionTracker } from '../../../awsService/ec2/remoteSessionManager'
-import { SSMWrapper } from '../../../shared/clients/ssm'
+import { SsmClient } from '../../../shared/clients/ssm'
 
 describe('Ec2RemoteSessionManager', async function () {
     it('maintains connections to instances', async function () {
-        const envManager = new Ec2SessionTracker('test-region', new SSMWrapper('test-region'))
+        const envManager = new Ec2SessionTracker('test-region', new SsmClient('test-region'))
         await envManager.addSession('test-instance', 'test-env')
         await envManager.addSession('test-instance2', 'test-env2')
         await envManager.addSession('test-instance3', 'test-env3')
@@ -22,8 +22,8 @@ describe('Ec2RemoteSessionManager', async function () {
     })
 
     it('only allows for single connection with any given instance', async function () {
-        const envManager = new Ec2SessionTracker('test-region', new SSMWrapper('test-region'))
-        const terminateStub = sinon.stub(SSMWrapper.prototype, 'terminateSessionFromId')
+        const envManager = new Ec2SessionTracker('test-region', new SsmClient('test-region'))
+        const terminateStub = sinon.stub(SsmClient.prototype, 'terminateSessionFromId')
 
         await envManager.addSession('test-instance', 'test-env')
         sinon.assert.notCalled(terminateStub)
@@ -37,8 +37,8 @@ describe('Ec2RemoteSessionManager', async function () {
     })
 
     it('closes all active connections', async function () {
-        const envManager = new Ec2SessionTracker('test-region', new SSMWrapper('test-region'))
-        const terminateStub = sinon.stub(SSMWrapper.prototype, 'terminateSessionFromId')
+        const envManager = new Ec2SessionTracker('test-region', new SsmClient('test-region'))
+        const terminateStub = sinon.stub(SsmClient.prototype, 'terminateSessionFromId')
 
         await envManager.addSession('test-instance', 'test-env')
         await envManager.addSession('test-instance2', 'test-env2')

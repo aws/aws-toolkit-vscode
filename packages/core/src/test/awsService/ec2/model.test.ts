@@ -6,7 +6,7 @@
 import assert from 'assert'
 import * as sinon from 'sinon'
 import { Ec2Connecter, getRemoveLinesCommand } from '../../../awsService/ec2/model'
-import { SSMWrapper } from '../../../shared/clients/ssm'
+import { SsmClient } from '../../../shared/clients/ssm'
 import { Ec2Client } from '../../../shared/clients/ec2Client'
 import { Ec2Selection } from '../../../awsService/ec2/prompter'
 import { ToolkitError } from '../../../shared/errors'
@@ -115,7 +115,7 @@ describe('Ec2ConnectClient', function () {
             sinon.stub(Ec2Connecter.prototype, 'isInstanceRunning').resolves(true)
             sinon.stub(Ec2Connecter.prototype, 'getAttachedIamRole').resolves({ Arn: 'testRole' } as IAM.Role)
             sinon.stub(Ec2Connecter.prototype, 'hasProperPermissions').resolves(true)
-            sinon.stub(SSMWrapper.prototype, 'getInstanceAgentPingStatus').resolves('offline')
+            sinon.stub(SsmClient.prototype, 'getInstanceAgentPingStatus').resolves('offline')
 
             try {
                 await client.checkForStartSessionError(instanceSelection)
@@ -129,7 +129,7 @@ describe('Ec2ConnectClient', function () {
             sinon.stub(Ec2Connecter.prototype, 'isInstanceRunning').resolves(true)
             sinon.stub(Ec2Connecter.prototype, 'getAttachedIamRole').resolves({ Arn: 'testRole' } as IAM.Role)
             sinon.stub(Ec2Connecter.prototype, 'hasProperPermissions').resolves(true)
-            sinon.stub(SSMWrapper.prototype, 'getInstanceAgentPingStatus').resolves('Online')
+            sinon.stub(SsmClient.prototype, 'getInstanceAgentPingStatus').resolves('Online')
 
             assert.doesNotThrow(async () => await client.checkForStartSessionError(instanceSelection))
         })
@@ -137,7 +137,7 @@ describe('Ec2ConnectClient', function () {
 
     describe('sendSshKeysToInstance', async function () {
         it('calls the sdk with the proper parameters', async function () {
-            const sendCommandStub = sinon.stub(SSMWrapper.prototype, 'sendCommandAndWait')
+            const sendCommandStub = sinon.stub(SsmClient.prototype, 'sendCommandAndWait')
 
             const testSelection = {
                 instanceId: 'test-id',
@@ -151,7 +151,7 @@ describe('Ec2ConnectClient', function () {
         })
 
         it('avoids writing the keys to any telemetry metrics', async function () {
-            sinon.stub(SSMWrapper.prototype, 'sendCommandAndWait')
+            sinon.stub(SsmClient.prototype, 'sendCommandAndWait')
 
             const testSelection = {
                 instanceId: 'test-id',
@@ -173,7 +173,7 @@ describe('Ec2ConnectClient', function () {
         let getTargetPlatformNameStub: sinon.SinonStub<[target: string], Promise<string>>
 
         before(async function () {
-            getTargetPlatformNameStub = sinon.stub(SSMWrapper.prototype, 'getTargetPlatformName')
+            getTargetPlatformNameStub = sinon.stub(SsmClient.prototype, 'getTargetPlatformName')
         })
 
         after(async function () {
@@ -205,7 +205,7 @@ describe('Ec2ConnectClient', function () {
 
     describe('tryCleanKeys', async function () {
         it('calls the sdk with the proper parameters', async function () {
-            const sendCommandStub = sinon.stub(SSMWrapper.prototype, 'sendCommandAndWait')
+            const sendCommandStub = sinon.stub(SsmClient.prototype, 'sendCommandAndWait')
 
             const testSelection = {
                 instanceId: 'test-id',
@@ -222,7 +222,7 @@ describe('Ec2ConnectClient', function () {
 
         it('logs warning when sdk call fails', async function () {
             const sendCommandStub = sinon
-                .stub(SSMWrapper.prototype, 'sendCommandAndWait')
+                .stub(SsmClient.prototype, 'sendCommandAndWait')
                 .throws(new ToolkitError('error'))
 
             const testSelection = {

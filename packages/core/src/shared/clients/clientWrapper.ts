@@ -8,7 +8,7 @@ import { AwsClient, AwsClientConstructor, AwsCommand } from '../awsClientBuilder
 import { pageableToCollection } from '../utilities/collectionUtils'
 
 export abstract class ClientWrapper<C extends AwsClient> implements vscode.Disposable {
-    protected client: C | undefined
+    protected client?: C
 
     public constructor(
         public readonly regionCode: string,

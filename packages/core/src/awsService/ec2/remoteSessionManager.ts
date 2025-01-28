@@ -4,13 +4,13 @@
  */
 
 import { EC2 } from 'aws-sdk'
-import { SSMWrapper } from '../../shared/clients/ssm'
+import { SsmClient } from '../../shared/clients/ssm'
 import { Disposable } from 'vscode'
 
 export class Ec2SessionTracker extends Map<EC2.InstanceId, string> implements Disposable {
     public constructor(
         readonly regionCode: string,
-        protected ssm: SSMWrapper
+        protected ssm: SsmClient
     ) {
         super()
     }

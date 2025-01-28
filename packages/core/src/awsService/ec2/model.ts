@@ -8,7 +8,7 @@ import { Ec2Selection } from './prompter'
 import { getOrInstallCli } from '../../shared/utilities/cliUtils'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { ToolkitError } from '../../shared/errors'
-import { SSMWrapper } from '../../shared/clients/ssm'
+import { SsmClient } from '../../shared/clients/ssm'
 import { Ec2Client } from '../../shared/clients/ec2Client'
 import {
     VscodeRemoteConnection,
@@ -51,7 +51,7 @@ interface RemoteUser {
 }
 
 export class Ec2Connecter implements vscode.Disposable {
-    protected ssm: SSMWrapper
+    protected ssm: SsmClient
     protected ec2Client: Ec2Client
     protected iamClient: DefaultIamClient
     protected sessionManager: Ec2SessionTracker
@@ -71,8 +71,8 @@ export class Ec2Connecter implements vscode.Disposable {
         this.sessionManager = new Ec2SessionTracker(regionCode, this.ssm)
     }
 
-    protected createSsmSdkClient(): SSMWrapper {
-        return new SSMWrapper(this.regionCode)
+    protected createSsmSdkClient(): SsmClient {
+        return new SsmClient(this.regionCode)
     }
 
     protected createEc2SdkClient(): Ec2Client {

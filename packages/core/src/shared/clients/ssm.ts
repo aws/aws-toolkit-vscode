@@ -21,9 +21,9 @@ import {
 } from '@aws-sdk/client-ssm'
 import { WaiterState } from '@smithy/util-waiter'
 import { ToolkitError } from '../errors'
-import { ClientWrapper } from './wrapper'
+import { ClientWrapper } from './clientWrapper'
 
-export class SSMWrapper extends ClientWrapper<SSMClient> {
+export class SsmClient extends ClientWrapper<SSMClient> {
     public constructor(public override readonly regionCode: string) {
         super(regionCode, SSMClient)
     }
