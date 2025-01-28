@@ -98,12 +98,12 @@ import { setContext } from '../shared/vscode/setContext'
 import { syncSecurityIssueWebview } from './views/securityIssue/securityIssueWebview'
 import { detectCommentAboveLine } from '../shared/utilities/commentUtils'
 import { UserWrittenCodeTracker } from './tracker/userWrittenCodeTracker'
+import globals from '../shared/extensionGlobals'
 
 let localize: nls.LocalizeFunc
 
 export async function activate(context: ExtContext): Promise<void> {
     localize = nls.loadMessageBundle()
-    const codewhispererSettings = CodeWhispererSettings.instance
 
     // initialize AuthUtil earlier to make sure it can listen to connection change events.
     const auth = AuthUtil.instance
@@ -303,16 +303,6 @@ export async function activate(context: ExtContext): Promise<void> {
                 SecurityIssueProvider.instance.issues.some((group) => group.issues.some((issue) => issue.visible))
             void setContext('aws.amazonq.security.noMatches', noMatches)
         }),
-        // manual trigger
-        Commands.register({ id: 'aws.amazonq.invokeInlineCompletion', autoconnect: true }, async () => {
-            invokeRecommendation(
-                vscode.window.activeTextEditor as vscode.TextEditor,
-                client,
-                await getConfigEntry()
-            ).catch((e) => {
-                getLogger().error('invokeRecommendation failed: %s', (e as Error).message)
-            })
-        }),
         // select customization
         selectCustomizationPrompt.register(),
         // notify new customizations
@@ -480,6 +470,52 @@ export async function activate(context: ExtContext): Promise<void> {
         })
     }
 
+    void FeatureConfigProvider.instance.fetchFeatureConfigs().catch((error) => {
+        getLogger().error('Failed to fetch feature configs - %s', error)
+    })
+
+    await Commands.tryExecute('aws.amazonq.refreshConnectionCallback')
+    container.ready()
+
+    function setSubscriptionsForCodeIssues() {
+        context.extensionContext.subscriptions.push(
+            vscode.workspace.onDidChangeTextDocument(async (e) => {
+                if (e.document.uri.scheme !== 'file') {
+                    return
+                }
+                const diagnostics = securityScanRender.securityDiagnosticCollection?.get(e.document.uri)
+                if (!diagnostics || diagnostics.length === 0) {
+                    return
+                }
+                disposeSecurityDiagnostic(e)
+
+                SecurityIssueProvider.instance.handleDocumentChange(e)
+                SecurityIssueTreeViewProvider.instance.refresh()
+                await syncSecurityIssueWebview(context)
+
+                toggleIssuesVisibility((issue, filePath) =>
+                    filePath !== e.document.uri.fsPath
+                        ? issue.visible
+                        : !detectCommentAboveLine(
+                              e.document,
+                              issue.startLine,
+                              CodeWhispererConstants.amazonqIgnoreNextLine
+                          )
+                )
+            })
+        )
+    }
+}
+
+export async function activateInlineCompletion() {
+    const codewhispererSettings = CodeWhispererSettings.instance
+    const client = new codewhispererClient.DefaultCodeWhispererClient()
+
+    if (isInlineCompletionEnabled()) {
+        await setSubscriptionsforInlineCompletion()
+        await AuthUtil.instance.setVscodeContextProps()
+    }
+
     function getAutoTriggerStatus(): boolean {
         return CodeSuggestionsState.instance.isSuggestionsEnabled()
     }
@@ -500,17 +536,12 @@ export async function activate(context: ExtContext): Promise<void> {
         }
     }
 
-    if (isInlineCompletionEnabled()) {
-        await setSubscriptionsforInlineCompletion()
-        await AuthUtil.instance.setVscodeContextProps()
-    }
-
     async function setSubscriptionsforInlineCompletion() {
         RecommendationHandler.instance.subscribeSuggestionCommands()
         /**
          * Automated trigger
          */
-        context.extensionContext.subscriptions.push(
+        globals.context.subscriptions.push(
             vscode.window.onDidChangeActiveTextEditor(async (editor) => {
                 await RecommendationHandler.instance.onEditorChange()
             }),
@@ -560,42 +591,16 @@ export async function activate(context: ExtContext): Promise<void> {
                 if (!RecommendationHandler.instance.isSuggestionVisible()) {
                     await KeyStrokeHandler.instance.processKeyStroke(e, editor, client, await getConfigEntry())
                 }
-            })
-        )
-    }
-
-    void FeatureConfigProvider.instance.fetchFeatureConfigs().catch((error) => {
-        getLogger().error('Failed to fetch feature configs - %s', error)
-    })
-
-    await Commands.tryExecute('aws.amazonq.refreshConnectionCallback')
-    container.ready()
-
-    function setSubscriptionsForCodeIssues() {
-        context.extensionContext.subscriptions.push(
-            vscode.workspace.onDidChangeTextDocument(async (e) => {
-                if (e.document.uri.scheme !== 'file') {
-                    return
-                }
-                const diagnostics = securityScanRender.securityDiagnosticCollection?.get(e.document.uri)
-                if (!diagnostics || diagnostics.length === 0) {
-                    return
-                }
-                disposeSecurityDiagnostic(e)
-
-                SecurityIssueProvider.instance.handleDocumentChange(e)
-                SecurityIssueTreeViewProvider.instance.refresh()
-                await syncSecurityIssueWebview(context)
-
-                toggleIssuesVisibility((issue, filePath) =>
-                    filePath !== e.document.uri.fsPath
-                        ? issue.visible
-                        : !detectCommentAboveLine(
-                              e.document,
-                              issue.startLine,
-                              CodeWhispererConstants.amazonqIgnoreNextLine
-                          )
-                )
+            }),
+            // manual trigger
+            Commands.register({ id: 'aws.amazonq.invokeInlineCompletion', autoconnect: true }, async () => {
+                invokeRecommendation(
+                    vscode.window.activeTextEditor as vscode.TextEditor,
+                    client,
+                    await getConfigEntry()
+                ).catch((e) => {
+                    getLogger().error('invokeRecommendation failed: %s', (e as Error).message)
+                })
             })
         )
     }

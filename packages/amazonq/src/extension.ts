@@ -4,7 +4,11 @@
  */
 
 import { AuthUtils, CredentialsStore, LoginManager, initializeAuth } from 'aws-core-vscode/auth'
-import { activate as activateCodeWhisperer, shutdown as shutdownCodeWhisperer } from 'aws-core-vscode/codewhisperer'
+import {
+    activate as activateCodeWhisperer,
+    shutdown as shutdownCodeWhisperer,
+    activateInlineCompletion,
+} from 'aws-core-vscode/codewhisperer'
 import { makeEndpointsProvider, registerGenericCommands } from 'aws-core-vscode'
 import { CommonAuthWebview } from 'aws-core-vscode/login'
 import {
@@ -31,6 +35,7 @@ import {
     setContext,
     setupUninstallHandler,
     maybeShowMinVscodeWarning,
+    Experiments,
 } from 'aws-core-vscode/shared'
 import { ExtStartUpSources } from 'aws-core-vscode/telemetry'
 import { VSCODE_EXTENSION_ID } from 'aws-core-vscode/utils'
@@ -39,6 +44,7 @@ import * as semver from 'semver'
 import * as vscode from 'vscode'
 import { registerCommands } from './commands'
 import { focusAmazonQPanel } from 'aws-core-vscode/codewhispererChat'
+import { activate as activateAmazonqLsp } from './lsp/activation'
 
 export const amazonQContextPrefix = 'amazonq'
 
@@ -113,7 +119,13 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
     const extContext = {
         extensionContext: context,
     }
+    // This contains every lsp agnostic things (auth, security scan, code scan)
     await activateCodeWhisperer(extContext as ExtContext)
+    if (Experiments.instance.get('amazonqLSP', false)) {
+        await activateAmazonqLsp(context)
+    } else {
+        await activateInlineCompletion()
+    }
 
     // Generic extension commands
     registerGenericCommands(context, amazonQContextPrefix)
