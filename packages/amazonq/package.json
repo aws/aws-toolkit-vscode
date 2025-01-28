@@ -127,8 +127,8 @@
                     "markdownDescription": "%AWS.configuration.description.amazonq%",
                     "default": true
                 },
-                "amazonQ.devCommandWorkspaceConfigurations": {
-                    "markdownDescription": "%AWS.configuration.description.devCommandWorkspaceConfigurations%",
+                "amazonQ.allowFeatureDevelopmentToRunCodeAndTests": {
+                    "markdownDescription": "%AWS.configuration.description.featureDevelopment.allowRunningCodeAndTests%",
                     "type": "object",
                     "default": {}
                 },

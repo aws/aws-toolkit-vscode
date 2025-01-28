@@ -157,9 +157,9 @@ export class FeatureDevController {
                     this.sendFeedback()
                     break
                 case FollowUpTypes.AcceptAutoBuild:
-                    return this.processDevCommandWorkspaceSetting(true, data)
+                    return this.processAutoBuildSetting(true, data)
                 case FollowUpTypes.DenyAutoBuild:
-                    return this.processDevCommandWorkspaceSetting(false, data)
+                    return this.processAutoBuildSetting(false, data)
                 case FollowUpTypes.GenerateDevFile:
                     this.messenger.sendAnswer({
                         type: 'system-prompt',
@@ -393,7 +393,7 @@ export class FeatureDevController {
             }
 
             const root = session.getWorkspaceRoot()
-            const autoBuildProjectSetting = CodeWhispererSettings.instance.getDevCommandWorkspaceConfigurations()
+            const autoBuildProjectSetting = CodeWhispererSettings.instance.getAutoBuildSetting()
             const hasDevfile = await checkForDevFile(root)
             const isPromptedForAutoBuildFeature = Object.keys(autoBuildProjectSetting).includes(root)
 
@@ -676,9 +676,9 @@ export class FeatureDevController {
         this.messenger.sendUpdatePlaceholder(tabID, i18n('AWS.amazonq.featureDev.placeholder.additionalImprovements'))
     }
 
-    private async processDevCommandWorkspaceSetting(setting: boolean, msg: any) {
+    private async processAutoBuildSetting(setting: boolean, msg: any) {
         const root = (await this.sessionStorage.getSession(msg.tabID)).getWorkspaceRoot()
-        await CodeWhispererSettings.instance.updateDevCommandWorkspaceConfigurations(root, setting)
+        await CodeWhispererSettings.instance.updateAutoBuildSetting(root, setting)
 
         this.messenger.sendAnswer({
             message: i18n('AWS.amazonq.featureDev.answer.settingUpdated'),
