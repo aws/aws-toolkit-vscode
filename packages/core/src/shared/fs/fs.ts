@@ -312,6 +312,11 @@ export class FileSystem {
                 reasonDesc: `After multiple attempts the source path existed: ${scrubbedPath}`,
                 attempts: attempts,
             })
+        } else {
+            telemetry.ide_fileSystem.emit({
+                result: 'Succeeded',
+                action: 'rename',
+            })
         }
 
         return vfs.rename(oldUri, newUri, { overwrite: true }).then(undefined, errHandler)

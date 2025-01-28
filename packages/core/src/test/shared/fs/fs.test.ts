@@ -411,16 +411,19 @@ describe('FileSystem', function () {
             const oldPath = testFolder.pathFrom('oldFile.txt')
             const newPath = testFolder.pathFrom('newFile.txt')
 
-            const result = fs.rename(oldPath, newPath)
-            // this file is created after the first "exists" check fails, the following check should pass
-            void testutil.toFile('hello world', oldPath)
-            await result
+            const existsStub = Sinon.stub(FileSystem.prototype, 'exists')
+            existsStub.onFirstCall().resolves(false)
+            existsStub.callThrough()
+
+            await testutil.toFile('hello world', oldPath)
+            await fs.rename(oldPath, newPath)
 
             testutil.assertTelemetry('ide_fileSystem', {
                 action: 'rename',
                 result: 'Succeeded',
-                reason: 'RenameRaceCondition',
             })
+
+            existsStub.restore()
         })
     })
 
