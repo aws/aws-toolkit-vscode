@@ -5,6 +5,7 @@
 
 import sinon from 'sinon'
 import { createBasicTestConfig, createMockSessionStateConfig, TestSessionMocks } from '../utils'
+import { SessionStateConfig } from '../../../amazonq'
 
 export function createSessionTestSetup() {
     const conversationId = 'conversation-id'
@@ -20,7 +21,7 @@ export function createSessionTestSetup() {
     }
 }
 
-export async function beforeEachFunc(
+export async function createTestConfig(
     testMocks: TestSessionMocks,
     conversationId: string,
     uploadId: string,
@@ -32,4 +33,42 @@ export async function beforeEachFunc(
     const basicConfig = await createBasicTestConfig(conversationId, uploadId, currentCodeGenerationId)
     const testConfig = createMockSessionStateConfig(basicConfig, testMocks)
     return testConfig
+}
+
+export interface TestContext {
+    conversationId: string
+    uploadId: string
+    tabId: string
+    currentCodeGenerationId: string
+    testConfig: SessionStateConfig
+    testMocks: Record<string, any>
+}
+
+export function createTestContext(): TestContext {
+    const { conversationId, uploadId, tabId, currentCodeGenerationId } = createSessionTestSetup()
+
+    return {
+        conversationId,
+        uploadId,
+        tabId,
+        currentCodeGenerationId,
+        testConfig: {} as SessionStateConfig,
+        testMocks: {},
+    }
+}
+
+export function setupTestHooks(context: TestContext) {
+    beforeEach(async () => {
+        context.testMocks = {}
+        context.testConfig = await createTestConfig(
+            context.testMocks,
+            context.conversationId,
+            context.uploadId,
+            context.currentCodeGenerationId
+        )
+    })
+
+    afterEach(() => {
+        sinon.restore()
+    })
 }
