@@ -338,9 +338,13 @@ export class LanguageServerResolver {
         return version.targets.find((x) => x.arch === arch && x.platform === platform)
     }
 
+    // lazy calls to `getApplicationSupportFolder()` to avoid failure on windows.
+    public static get defaultDir() {
+        return path.join(getApplicationSupportFolder(), `aws/toolkits/language-servers`)
+    }
+
     defaultDownloadFolder() {
-        const applicationSupportFolder = getApplicationSupportFolder()
-        return path.join(applicationSupportFolder, `aws/toolkits/language-servers/${this.lsName}`)
+        return path.join(LanguageServerResolver.defaultDir, `${this.lsName}`)
     }
 
     private getDownloadDirectory(version: string) {
