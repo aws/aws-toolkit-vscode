@@ -1,34 +1,6 @@
 {
     "types": [
         {
-            "name": "languageServerLocation",
-            "type": "string",
-            "allowedValues": ["cache", "remote", "fallback", "override"],
-            "description": "The location of the language server"
-        },
-        {
-            "name": "languageServerSetupStage",
-            "type": "string",
-            "allowedValues": ["getManifest", "getServer", "validate", "launch", "handshake", "all"],
-            "description": "The stage of the LSP setup process"
-        },
-        {
-            "name": "languageServerVersion",
-            "type": "string",
-            "description": "The version of the language server"
-        },
-        {
-            "name": "manifestLocation",
-            "type": "string",
-            "allowedValues": ["cache", "remote", "override"],
-            "description": "The location of the manifest"
-        },
-        {
-            "name": "manifestSchemaVersion",
-            "type": "string",
-            "description": "The version of the manifest schema file"
-        },
-        {
             "name": "amazonGenerateApproachLatency",
             "type": "double",
             "description": "The time it takes to generate approach response"
@@ -386,39 +358,6 @@
         }
     ],
     "metrics": [
-        {
-            "name": "languageServer_setup",
-            "description": "Sets up a language server",
-            "passive": true,
-            "unit": "Milliseconds",
-            "metadata": [
-                {
-                    "type": "id"
-                },
-                {
-                    "type": "languageServerLocation",
-                    "required": false
-                },
-                {
-                    "type": "languageServerSetupStage"
-                },
-                {
-                    "type": "languageServerVersion",
-                    "required": false
-                },
-                {
-                    "type": "manifestLocation",
-                    "required": false
-                },
-                {
-                    "type": "manifestSchemaVersion",
-                    "required": false
-                },
-                {
-                    "type": "result"
-                }
-            ]
-        },
         {
             "name": "ide_fileSystem",
             "description": "File System event on execution",
