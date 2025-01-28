@@ -12,6 +12,7 @@ import {
     fs,
     LspResolution,
     getNodeExecutableName,
+    cleanLspDownloads,
 } from 'aws-core-vscode/shared'
 import path from 'path'
 
@@ -46,7 +47,7 @@ export class AmazonQLSPResolver implements LspResolver {
         const nodePath = path.join(installationResult.assetDirectory, `servers/${getNodeExecutableName()}`)
         await fs.chmod(nodePath, 0o755)
 
-        // TODO Cleanup old versions of language servers
+        await cleanLspDownloads(manifest.versions, path.dirname(installationResult.assetDirectory))
         return {
             ...installationResult,
             resourcePaths: {

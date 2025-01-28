@@ -111,6 +111,21 @@ export async function tryFunctions<Result>(functions: (() => Promise<Result>)[])
     throw currentError
 }
 
+/**
+ * Split a list into two sublists based on the result of a predicate.
+ * @param lst list to split
+ * @param pred predicate to apply to each element
+ * @returns two nested lists, where for all items x in the left sublist, pred(x) returns true. The remaining elements are in the right sublist.
+ */
+export function partition<T>(lst: T[], pred: (arg: T) => boolean): [T[], T[]] {
+    return lst.reduce(
+        ([leftAcc, rightAcc], item) => {
+            return pred(item) ? [[...leftAcc, item], rightAcc] : [leftAcc, [...rightAcc, item]]
+        },
+        [[], []] as [T[], T[]]
+    )
+}
+
 type NoSymbols<T> = { [Property in keyof T]: Property extends symbol ? never : Property }[keyof T]
 export type InterfaceNoSymbol<T> = Pick<T, NoSymbols<T>>
 /**
