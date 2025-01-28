@@ -95,7 +95,7 @@ export function createFactoryFunction<T extends new (...args: any[]) => any>(cto
 }
 
 /**
- * Try Functions in the order presented and return the first returned result. If none return, throw the final error.
+ * Try functions in the order presented and return the first returned result. If none return, throw the final error.
  * @param functions non-empty list of functions to try.
  * @returns
  */

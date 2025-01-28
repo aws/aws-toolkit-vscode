@@ -42,7 +42,7 @@ describe('tech debt', function () {
 
     it('allow lspResolver tests to run on all platforms', function () {
         fixByDate(
-            '03-01-2025',
+            '04-01-2025',
             'allow lspResolver tests to run on all platforms once it supports it. Remove the `isMac` check in core/src/test/shared/lsp/lspResolver.test.ts'
         )
     })
