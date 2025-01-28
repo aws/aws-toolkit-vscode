@@ -17,15 +17,17 @@ import {
 import { getLogger, globals, ToolkitError } from '../../../shared'
 import { uriToKey } from '../cloudWatchLogsUtils'
 import { LiveTailCodeLensProvider } from '../document/liveTailCodeLensProvider'
+import { LogStreamFilterResponse } from '../wizard/liveTailLogStreamSubmenu'
 
 export async function tailLogGroup(
     registry: LiveTailSessionRegistry,
     source: string,
     codeLensProvider: LiveTailCodeLensProvider,
-    logData?: { regionName: string; groupName: string }
+    logData?: { regionName: string; groupName: string },
+    logStreamFilterData?: LogStreamFilterResponse
 ): Promise<void> {
     await telemetry.cloudwatchlogs_startLiveTail.run(async (span) => {
-        const wizard = new TailLogGroupWizard(logData)
+        const wizard = new TailLogGroupWizard(logData, logStreamFilterData)
         const wizardResponse = await wizard.run()
         if (!wizardResponse) {
             throw new CancellationError('user')
