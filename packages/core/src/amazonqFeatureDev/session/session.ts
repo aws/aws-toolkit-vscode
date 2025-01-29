@@ -70,9 +70,9 @@ export class Session {
     /**
      * Preload any events that have to run before a chat message can be sent
      */
-    async preloader(msg: string) {
+    async preloader() {
         if (!this.preloaderFinished) {
-            await this.setupConversation(msg)
+            await this.setupConversation()
             this.preloaderFinished = true
             this.messenger.sendAsyncEventProgress(this.tabID, true, undefined)
             await this.proxyClient.sendFeatureDevTelemetryEvent(this.conversationId) // send the event only once per conversation.
@@ -84,10 +84,7 @@ export class Session {
      *
      * Starts a conversation with the backend and uploads the repo for the LLMs to be able to use it.
      */
-    private async setupConversation(msg: string) {
-        // Store the initial message when setting up the conversation so that if it fails we can retry with this message
-        this._latestMessage = msg
-
+    private async setupConversation() {
         await telemetry.amazonq_startConversationInvoke.run(async (span) => {
             this._conversationId = await this.proxyClient.createConversation()
             getLogger().info(logWithConversationId(this.conversationId))
@@ -113,6 +110,10 @@ export class Session {
     updateWorkspaceRoot(workspaceRootFolder: string) {
         this.config.workspaceRoots = [workspaceRootFolder]
         this._state && this._state.updateWorkspaceRoot && this._state.updateWorkspaceRoot(workspaceRootFolder)
+    }
+
+    getWorkspaceRoot(): string {
+        return this.config.workspaceRoots[0]
     }
 
     private getSessionStateConfig(): Omit<SessionStateConfig, 'uploadId'> {
@@ -380,6 +381,10 @@ export class Session {
 
     get latestMessage() {
         return this._latestMessage
+    }
+
+    set latestMessage(msg: string) {
+        this._latestMessage = msg
     }
 
     get telemetry() {

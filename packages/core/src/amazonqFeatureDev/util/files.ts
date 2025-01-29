@@ -19,8 +19,15 @@ import { TelemetryHelper } from './telemetryHelper'
 import { maxRepoSizeBytes } from '../constants'
 import { isCodeFile } from '../../shared/filetypes'
 import { fs } from '../../shared'
+import { CodeWhispererSettings } from '../../codewhisperer'
 
 const getSha256 = (file: Buffer) => createHash('sha256').update(file).digest('base64')
+
+export async function checkForDevFile(root: string) {
+    const devFilePath = root + '/devfile.yaml'
+    const hasDevFile = await fs.existsFile(devFilePath)
+    return hasDevFile
+}
 
 /**
  * given the root path of the repo it zips its files in memory and generates a checksum for it.
@@ -33,7 +40,10 @@ export async function prepareRepoData(
     zip: AdmZip = new AdmZip()
 ) {
     try {
-        const files = await collectFiles(repoRootPaths, workspaceFolders, true, maxRepoSizeBytes)
+        const autoBuildSetting = CodeWhispererSettings.instance.getAutoBuildSetting()
+        const useAutoBuildFeature = autoBuildSetting[repoRootPaths[0]] ?? false
+        // We only respect gitignore file rules if useAutoBuildFeature is on, this is to avoid dropping necessary files for building the code (e.g. png files imported in js code)
+        const files = await collectFiles(repoRootPaths, workspaceFolders, true, maxRepoSizeBytes, !useAutoBuildFeature)
 
         let totalBytes = 0
         const ignoredExtensionMap = new Map<string, number>()
@@ -50,8 +60,10 @@ export async function prepareRepoData(
                 throw error
             }
             const isCodeFile_ = isCodeFile(file.relativeFilePath)
-
-            if (fileSize >= maxFileSizeBytes || !isCodeFile_) {
+            const isDevFile = file.relativeFilePath === 'devfile.yaml'
+            // When useAutoBuildFeature is on, only respect the gitignore rules filtered earlier and apply the size limit, otherwise, exclude all non code files and gitignore files
+            const isNonCodeFileAndIgnored = useAutoBuildFeature ? false : !isCodeFile_ || isDevFile
+            if (fileSize >= maxFileSizeBytes || isNonCodeFileAndIgnored) {
                 if (!isCodeFile_) {
                     const re = /(?:\.([^.]+))?$/
                     const extensionArray = re.exec(file.relativeFilePath)
