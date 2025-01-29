@@ -4,9 +4,9 @@
  */
 
 import * as AWS from '@aws-sdk/types'
-import { AssumeRoleParams, fromIni } from '@aws-sdk/credential-provider-ini'
+import { fromIni } from '@aws-sdk/credential-provider-ini'
 import { fromProcess } from '@aws-sdk/credential-provider-process'
-import { ParsedIniData, SharedConfigFiles } from '@smithy/shared-ini-file-loader'
+import { ParsedIniData } from '@smithy/types'
 import { chain } from '@aws-sdk/property-provider'
 import { fromInstanceMetadata, fromContainerMetadata } from '@aws-sdk/credential-provider-imds'
 import { fromEnv } from '@aws-sdk/credential-provider-env'
@@ -19,19 +19,19 @@ import { assertHasProps, getMissingProps, hasProps } from '../../shared/utilitie
 import { DefaultStsClient } from '../../shared/clients/stsClient'
 import { SsoAccessTokenProvider } from '../sso/ssoAccessTokenProvider'
 import { SsoClient } from '../sso/clients'
-import { toRecord } from '../../shared/utilities/collectionUtils'
 import {
     extractDataFromSection,
     getRequiredFields,
     getSectionDataOrThrow,
     getSectionOrThrow,
-    isProfileSection,
     Profile,
     Section,
 } from '../credentials/sharedCredentials'
 import { SectionName, SharedCredentialsKeys } from '../credentials/types'
 import { SsoProfile, hasScopes, scopesSsoAccountAccess } from '../connection'
 import { builderIdStartUrl } from '../sso/constants'
+// TODO: There must be a better way to import this.
+import { AssumeRoleParams } from '@aws-sdk/credential-provider-ini/dist-types/resolveAssumeRoleCredentials'
 
 const credentialSources = {
     ECS_CONTAINER: 'EcsContainer',
@@ -390,23 +390,24 @@ export class SharedCredentialsProvider implements CredentialsProvider {
             }
         }
 
+        // TODO: reimplement this workaround, and confirm that it is still needed.
         // Our credentials logic merges profiles from the credentials and config files but SDK v3 does not
         // This can cause odd behavior where the Toolkit can switch to a profile but not authenticate with it
         // So the workaround is to do give the SDK the merged profiles directly
-        const profileSections = this.sections.filter(isProfileSection)
-        const profiles = toRecord(
-            profileSections.map((s) => s.name),
-            (k) => this.getProfile(k)
-        )
+        // const profileSections = this.sections.filter(isProfileSection)
+        // const profiles = toRecord(
+        //     profileSections.map((s) => s.name),
+        //     (k) => this.getProfile(k)
+        // )
 
         return fromIni({
             profile: this.profileName,
             mfaCodeProvider: async (mfaSerial) => await getMfaTokenFromUser(mfaSerial, this.profileName),
             roleAssumer: assumeRole,
-            loadedConfig: Promise.resolve({
-                credentialsFile: loadedCreds ?? profiles,
-                configFile: {},
-            } as SharedConfigFiles),
+            // loadedConfig: Promise.resolve({
+            //     credentialsFile: loadedCreds ?? profiles,
+            //     configFile: {},
+            // } as SharedConfigFiles),
         })
     }
 
