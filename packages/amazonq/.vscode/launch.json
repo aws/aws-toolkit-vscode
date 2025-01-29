@@ -155,18 +155,17 @@
             "restart": {
                 "maxAttempts": 10,
                 "delay": 1000
-            },
-            "presentation": {
-                "hidden": false,
-                "group": "",
-                "order": 1
             }
         }
     ],
     "compounds": [
         {
             "name": "Launch LSP with Debugging",
-            "configurations": ["Extension", "Attach to Language Server"]
+            "configurations": ["Extension", "Attach to Language Server"],
+            "presentation": {
+                "group": "1_Extension",
+                "order": 5
+            }
         }
     ]
 }
