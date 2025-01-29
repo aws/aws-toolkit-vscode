@@ -7,7 +7,7 @@
 AWS SDK for JavaScript QDeveloperStreaming Client for Node.js, Browser and React Native.
 
 ## Installing
-To install the this package, simply type add or install @amzn/amazon-q-developer-streaming-client
+To install this package, simply type add or install @amzn/amazon-q-developer-streaming-client
 using your favorite package manager:
 - `npm install @amzn/amazon-q-developer-streaming-client`
 - `yarn add @amzn/amazon-q-developer-streaming-client`
@@ -194,6 +194,7 @@ To contribute to client you can check our [generate clients scripts](https://git
 This SDK is distributed under the
 [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0),
 see LICENSE for more information.
+
 ## Client Commands (Operations List)
 
 <details>
@@ -324,6 +325,13 @@ UpdateProfile
 </details>
 <details>
 <summary>
+VendKeyGrant
+</summary>
+
+[Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/client/qdeveloperstreaming/command/VendKeyGrantCommand/) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-client-qdeveloperstreaming/Interface/VendKeyGrantCommandInput/) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-client-qdeveloperstreaming/Interface/VendKeyGrantCommandOutput/)
+</details>
+<details>
+<summary>
 CreateArtifactUploadUrl
 </summary>
 
@@ -363,6 +371,13 @@ GetCodeAnalysis
 </summary>
 
 [Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/client/qdeveloperstreaming/command/GetCodeAnalysisCommand/) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-client-qdeveloperstreaming/Interface/GetCodeAnalysisCommandInput/) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-client-qdeveloperstreaming/Interface/GetCodeAnalysisCommandOutput/)
+</details>
+<details>
+<summary>
+GetCodeFixJob
+</summary>
+
+[Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/client/qdeveloperstreaming/command/GetCodeFixJobCommand/) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-client-qdeveloperstreaming/Interface/GetCodeFixJobCommandInput/) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-client-qdeveloperstreaming/Interface/GetCodeFixJobCommandOutput/)
 </details>
 <details>
 <summary>
@@ -436,6 +451,13 @@ StartCodeAnalysis
 </details>
 <details>
 <summary>
+StartCodeFixJob
+</summary>
+
+[Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/client/qdeveloperstreaming/command/StartCodeFixJobCommand/) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-client-qdeveloperstreaming/Interface/StartCodeFixJobCommandInput/) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-client-qdeveloperstreaming/Interface/StartCodeFixJobCommandOutput/)
+</details>
+<details>
+<summary>
 StartTaskAssistCodeGeneration
 </summary>
 
@@ -485,6 +507,13 @@ GenerateTaskAssistPlan
 </details>
 <details>
 <summary>
+AssociateConnectorResource
+</summary>
+
+[Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/client/qdeveloperstreaming/command/AssociateConnectorResourceCommand/) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-client-qdeveloperstreaming/Interface/AssociateConnectorResourceCommandInput/) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-client-qdeveloperstreaming/Interface/AssociateConnectorResourceCommandOutput/)
+</details>
+<details>
+<summary>
 CreateAssignment
 </summary>
 
@@ -531,6 +560,13 @@ DeletePlugin
 </summary>
 
 [Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/client/qdeveloperstreaming/command/DeletePluginCommand/) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-client-qdeveloperstreaming/Interface/DeletePluginCommandInput/) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-client-qdeveloperstreaming/Interface/DeletePluginCommandOutput/)
+</details>
+<details>
+<summary>
+GetConnector
+</summary>
+
+[Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/client/qdeveloperstreaming/command/GetConnectorCommand/) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-client-qdeveloperstreaming/Interface/GetConnectorCommandInput/) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-client-qdeveloperstreaming/Interface/GetConnectorCommandOutput/)
 </details>
 <details>
 <summary>
@@ -590,6 +626,13 @@ ListConversations
 </details>
 <details>
 <summary>
+ListDashboardMetrics
+</summary>
+
+[Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/client/qdeveloperstreaming/command/ListDashboardMetricsCommand/) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-client-qdeveloperstreaming/Interface/ListDashboardMetricsCommandInput/) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-client-qdeveloperstreaming/Interface/ListDashboardMetricsCommandOutput/)
+</details>
+<details>
+<summary>
 ListExtensionProviders
 </summary>
 
@@ -636,6 +679,13 @@ PassRequest
 </summary>
 
 [Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/client/qdeveloperstreaming/command/PassRequestCommand/) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-client-qdeveloperstreaming/Interface/PassRequestCommandInput/) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-client-qdeveloperstreaming/Interface/PassRequestCommandOutput/)
+</details>
+<details>
+<summary>
+RejectConnector
+</summary>
+
+[Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/client/qdeveloperstreaming/command/RejectConnectorCommand/) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-client-qdeveloperstreaming/Interface/RejectConnectorCommandInput/) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-client-qdeveloperstreaming/Interface/RejectConnectorCommandOutput/)
 </details>
 <details>
 <summary>
