@@ -127,6 +127,11 @@
                     "markdownDescription": "%AWS.configuration.description.amazonq%",
                     "default": true
                 },
+                "amazonQ.allowFeatureDevelopmentToRunCodeAndTests": {
+                    "markdownDescription": "%AWS.configuration.description.featureDevelopment.allowRunningCodeAndTests%",
+                    "type": "object",
+                    "default": {}
+                },
                 "amazonQ.importRecommendationForInlineCodeSuggestions": {
                     "type": "boolean",
                     "description": "%AWS.configuration.description.amazonq.importRecommendation%",
