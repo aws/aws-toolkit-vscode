@@ -41,7 +41,7 @@ import * as vscode from 'vscode'
 import { registerCommands } from './commands'
 import { focusAmazonQPanel } from 'aws-core-vscode/codewhispererChat'
 import { activate as activateAmazonqLsp } from './lsp/activation'
-import { activate as activateInlineCompletion } from './inline/activation'
+import { activate as activateInlineCompletion } from './app/inline/activation'
 
 export const amazonQContextPrefix = 'amazonq'
 
