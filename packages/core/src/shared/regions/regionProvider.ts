@@ -170,24 +170,22 @@ export class RegionProvider {
         local: () => Endpoints | Promise<Endpoints>
         remote: () => Endpoints | Promise<Endpoints>
     }) {
-        const load = async () => {
-            getLogger().info('endpoints: retrieving AWS endpoints data')
-            this.loadFromEndpoints(await endpointsProvider.local())
+        getLogger().info('endpoints: retrieving AWS endpoints data')
 
-            try {
-                this.loadFromEndpoints(await endpointsProvider.remote())
-            } catch (err) {
-                getLogger().warn(
-                    `endpoints: failed to load from remote source, region data may appear outdated: %s`,
-                    err
-                )
-            }
+        try {
+            this.loadFromEndpoints(await endpointsProvider.local())
+        } catch (err) {
+            getLogger().warn(`endpoints: failed to load from local source: %s`, err)
         }
 
-        return load().catch((err) => {
-            getLogger().error('Failure while loading Endpoints Manifest: %s', err)
+        try {
+            this.loadFromEndpoints(await endpointsProvider.remote())
+        } catch (err) {
+            getLogger().warn(`endpoints: failed to load from remote source, region data may appear outdated: %s`, err)
+        }
 
-            return vscode.window.showErrorMessage(
+        if (this.getRegions().length === 0) {
+            void vscode.window.showErrorMessage(
                 `${localize(
                     'AWS.error.endpoint.load.failure',
                     'The {0} Toolkit was unable to load endpoints data.',
@@ -197,7 +195,7 @@ export class RegionProvider {
                     'Toolkit functionality may be impacted until VS Code is restarted.'
                 )}`
             )
-        })
+        }
     }
 }
 
