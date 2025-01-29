@@ -39,7 +39,7 @@ export class Session {
 
     // Used to keep track of whether or not the current session is currently authenticating/needs authenticating
     public isAuthenticating: boolean
-    private _reportedDocChanges: string | undefined = undefined
+    private _reportedDocChanges: { [key: string]: string } = {}
 
     constructor(
         public readonly config: SessionConfig,
@@ -179,6 +179,16 @@ export class Session {
         }
     }
 
+    private getFromReportedChanges(filepath: NewFileInfo) {
+        const key = `${filepath.workspaceFolder.uri.fsPath}/${filepath.relativePath}`
+        return this._reportedDocChanges[key]
+    }
+
+    private addToReportedChanges(filepath: NewFileInfo) {
+        const key = `${filepath.workspaceFolder.uri.fsPath}/${filepath.relativePath}`
+        this._reportedDocChanges[key] = filepath.fileContent
+    }
+
     public async countGeneratedContent(interactionType?: DocInteractionType) {
         let totalGeneratedChars = 0
         let totalGeneratedLines = 0
@@ -186,25 +196,24 @@ export class Session {
         const filePaths = this.state.filePaths ?? []
 
         for (const filePath of filePaths) {
+            const reportedDocChange = this.getFromReportedChanges(filePath)
             if (interactionType === 'GENERATE_README') {
-                if (this._reportedDocChanges) {
-                    const { charsAdded, linesAdded } = await this.computeFilePathDiff(
-                        filePath,
-                        this._reportedDocChanges
-                    )
+                if (reportedDocChange) {
+                    const { charsAdded, linesAdded } = await this.computeFilePathDiff(filePath, reportedDocChange)
                     totalGeneratedChars += charsAdded
                     totalGeneratedLines += linesAdded
                 } else {
+                    // If no changes are reported, this is the initial README generation and no comparison with existing files is needed
                     const fileContent = filePath.fileContent
                     totalGeneratedChars += fileContent.length
                     totalGeneratedLines += fileContent.split('\n').length
                 }
             } else {
-                const { charsAdded, linesAdded } = await this.computeFilePathDiff(filePath, this._reportedDocChanges)
+                const { charsAdded, linesAdded } = await this.computeFilePathDiff(filePath, reportedDocChange)
                 totalGeneratedChars += charsAdded
                 totalGeneratedLines += linesAdded
             }
-            this._reportedDocChanges = filePath.fileContent
+            this.addToReportedChanges(filePath)
             totalGeneratedFiles += 1
         }
         return {
