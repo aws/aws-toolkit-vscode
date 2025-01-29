@@ -85,7 +85,10 @@ describe('CodeWhisperer-customizationUtils', function () {
     it('Returns AB customization', async function () {
         sinon.stub(AuthUtil.instance, 'isValidEnterpriseSsoInUse').returns(true)
 
-        await setSelectedCustomization(baseCustomization)
+        await setSelectedCustomization({
+            arn: '',
+            name: '',
+        })
 
         const returnedCustomization = getSelectedCustomization()
 

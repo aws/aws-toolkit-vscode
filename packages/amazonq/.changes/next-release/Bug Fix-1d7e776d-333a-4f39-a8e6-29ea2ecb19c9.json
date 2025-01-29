@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Allow AB users with an overridden customization to go back to the default customization"
+}
