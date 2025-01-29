@@ -51,7 +51,7 @@
         "@typescript-eslint/parser": "^7.14.1",
         "@vscode/codicons": "^0.0.33",
         "@vscode/test-electron": "^2.3.8",
-        "@vscode/test-web": "^0.0.54",
+        "@vscode/test-web": "^0.0.65",
         "@vscode/vsce": "^2.19.0",
         "eslint": "^8.56.0",
         "eslint-config-prettier": "^9.1.0",

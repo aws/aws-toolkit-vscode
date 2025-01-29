@@ -5,6 +5,7 @@
 
 import { ToolkitError } from '../../errors'
 import { ChildProcess } from '../../utilities/processUtils'
+import { isDebugInstance } from '../../vscode/env'
 
 export function getNodeExecutableName(): string {
     return process.platform === 'win32' ? 'node.exe' : 'node'
@@ -35,7 +36,8 @@ export function createServerOptions({
     execArgv: string[]
 }) {
     return async () => {
-        const lspProcess = new ChildProcess(executable, [serverModule, ...execArgv])
+        const debugArgs = isDebugInstance() ? '--inspect=6080' : ''
+        const lspProcess = new ChildProcess(executable, [debugArgs, serverModule, ...execArgv])
 
         // this is a long running process, awaiting it will never resolve
         void lspProcess.run()

@@ -19,6 +19,7 @@
             "env": {
                 "SSMDOCUMENT_LANGUAGESERVER_PORT": "6010",
                 "WEBPACK_DEVELOPER_SERVER": "http://localhost:8080"
+                // "AWS_LANGUAGE_SERVER_OVERRIDE": "${workspaceFolder}/../../../language-servers/app/aws-lsp-codewhisperer-runtimes/out/token-standalone.js",
             },
             "envFile": "${workspaceFolder}/.local.env",
             "outFiles": ["${workspaceFolder}/dist/**/*.js", "${workspaceFolder}/../core/dist/**/*.js"],
@@ -139,6 +140,31 @@
             "presentation": {
                 "group": "4_E2ETestCurrentFile",
                 "order": 2
+            }
+        },
+        {
+            "name": "Attach to Language Server",
+            "type": "node",
+            "request": "attach",
+            "port": 6080, // Hard defined in core/src/shared/lsp/platform.ts
+            "outFiles": ["${workspaceFolder}/../../../language-servers/**/out/**/*.js"],
+            "skipFiles": [
+                "<node_internals>/**",
+                "${workspaceFolder}/../../../language-servers/**/node_modules/**/*.js"
+            ],
+            "restart": {
+                "maxAttempts": 10,
+                "delay": 1000
+            }
+        }
+    ],
+    "compounds": [
+        {
+            "name": "Launch LSP with Debugging",
+            "configurations": ["Extension", "Attach to Language Server"],
+            "presentation": {
+                "group": "1_Extension",
+                "order": 5
             }
         }
     ]

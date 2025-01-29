@@ -487,6 +487,7 @@ export interface CodeScanIssue {
     scanJobId: string
     language: string
     fixJobId?: string
+    autoDetected?: boolean
 }
 
 export interface AggregatedCodeScanIssue {

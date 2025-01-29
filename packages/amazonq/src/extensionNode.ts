@@ -7,15 +7,7 @@ import * as vscode from 'vscode'
 import { activateAmazonQCommon, amazonQContextPrefix, deactivateCommon } from './extension'
 import { DefaultAmazonQAppInitContext } from 'aws-core-vscode/amazonq'
 import { activate as activateQGumby } from 'aws-core-vscode/amazonqGumby'
-import {
-    ExtContext,
-    globals,
-    CrashMonitoring,
-    getLogger,
-    isNetworkError,
-    isSageMaker,
-    Experiments,
-} from 'aws-core-vscode/shared'
+import { ExtContext, globals, CrashMonitoring, getLogger, isNetworkError, isSageMaker } from 'aws-core-vscode/shared'
 import { filetypes, SchemaService } from 'aws-core-vscode/sharedNode'
 import { updateDevMode } from 'aws-core-vscode/dev'
 import { CommonAuthViewProvider } from 'aws-core-vscode/login'
@@ -29,7 +21,6 @@ import { beta } from 'aws-core-vscode/dev'
 import { activate as activateNotifications, NotificationsController } from 'aws-core-vscode/notifications'
 import { AuthState, AuthUtil } from 'aws-core-vscode/codewhisperer'
 import { telemetry, AuthUserState } from 'aws-core-vscode/telemetry'
-import { activate as activateAmazonqLsp } from './lsp/activation'
 
 export async function activate(context: vscode.ExtensionContext) {
     // IMPORTANT: No other code should be added to this function. Place it in one of the following 2 functions where appropriate.
@@ -52,12 +43,8 @@ async function activateAmazonQNode(context: vscode.ExtensionContext) {
         extensionContext: context,
     }
 
-    if (Experiments.instance.get('amazonqLSP', false)) {
-        await activateAmazonqLsp(context)
-    } else {
-        await activateCWChat(context)
-        await activateQGumby(extContext as ExtContext)
-    }
+    await activateCWChat(context)
+    await activateQGumby(extContext as ExtContext)
 
     const authProvider = new CommonAuthViewProvider(
         context,

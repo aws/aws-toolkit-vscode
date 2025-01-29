@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode'
+import { Lambda } from 'aws-sdk'
 import { deleteLambda } from './commands/deleteLambda'
 import { uploadLambdaCommand } from './commands/uploadLambda'
 import { LambdaFunctionNode } from './explorer/lambdaFunctionNode'
@@ -18,6 +19,11 @@ import { copyLambdaUrl } from './commands/copyLambdaUrl'
 import { ResourceNode } from '../awsService/appBuilder/explorer/nodes/resourceNode'
 import { isTreeNode, TreeNode } from '../shared/treeview/resourceTreeDataProvider'
 import { getSourceNode } from '../shared/utilities/treeNodeUtils'
+import { tailLogGroup } from '../awsService/cloudWatchLogs/commands/tailLogGroup'
+import { liveTailRegistry, liveTailCodeLensProvider } from '../awsService/cloudWatchLogs/activation'
+import { getFunctionLogGroupName } from '../awsService/cloudWatchLogs/activation'
+import { ToolkitError, isError } from '../shared'
+import { LogStreamFilterResponse } from '../awsService/cloudWatchLogs/wizard/liveTailLogStreamSubmenu'
 
 /**
  * Activates Lambda components.
@@ -76,6 +82,40 @@ export async function activate(context: ExtContext): Promise<void> {
 
         Commands.register('aws.launchDebugConfigForm', async (node: ResourceNode) =>
             registerSamDebugInvokeVueCommand(context.extensionContext, { resource: node })
-        )
+        ),
+
+        Commands.register('aws.appBuilder.tailLogs', async (node: LambdaFunctionNode | TreeNode) => {
+            let functionConfiguration: Lambda.FunctionConfiguration
+            try {
+                const sourceNode = getSourceNode<LambdaFunctionNode>(node)
+                functionConfiguration = sourceNode.configuration
+                const logGroupInfo = {
+                    regionName: sourceNode.regionCode,
+                    groupName: getFunctionLogGroupName(functionConfiguration),
+                }
+
+                const source = isTreeNode(node) ? 'AppBuilder' : 'AwsExplorerLambdaNode'
+                // Show all log streams without having to choose
+                const logStreamFilterData: LogStreamFilterResponse = { type: 'all' }
+                await tailLogGroup(
+                    liveTailRegistry,
+                    source,
+                    liveTailCodeLensProvider,
+                    logGroupInfo,
+                    logStreamFilterData
+                )
+            } catch (err) {
+                if (isError(err as Error, 'ResourceNotFoundException', "LogGroup doesn't exist.")) {
+                    // If we caught this error, then we know `functionConfiguration` actually has a value
+                    throw ToolkitError.chain(
+                        err,
+                        `Unable to fetch logs. Log group for function '${functionConfiguration!.FunctionName}' does not exist. ` +
+                            'Invoking your function at least once will create the log group.'
+                    )
+                } else {
+                    throw err
+                }
+            }
+        })
     )
 }

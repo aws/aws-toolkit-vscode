@@ -44,6 +44,21 @@ describe('TailLogGroupWizard', async function () {
         tester.filterPattern.assertShowSecond()
     })
 
+    it('skips logStream filter when logStream info is provided', async function () {
+        sandbox.stub(DefaultAwsContext.prototype, 'getCredentialAccountId').returns(testAwsAccountId)
+        const wizard = new TailLogGroupWizard(
+            {
+                groupName: testLogGroupName,
+                regionName: testRegion,
+            },
+            { type: 'specific', filter: 'log-group-name' }
+        )
+        const tester = await createWizardTester(wizard)
+        tester.regionLogGroupSubmenuResponse.assertDoesNotShow()
+        tester.logStreamFilter.assertDoesNotShow()
+        tester.filterPattern.assertShowFirst()
+    })
+
     it('builds LogGroup Arn properly', async function () {
         sandbox.stub(DefaultAwsContext.prototype, 'getCredentialAccountId').returns(testAwsAccountId)
         const arn = buildLogGroupArn(testLogGroupName, testRegion)

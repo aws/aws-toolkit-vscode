@@ -6,8 +6,8 @@
 import vscode, { env, version } from 'vscode'
 import * as nls from 'vscode-nls'
 import * as crypto from 'crypto'
-import { LanguageClient, LanguageClientOptions, ServerOptions, TransportKind } from 'vscode-languageclient'
-import { registerInlineCompletion } from '../inline/completion'
+import { LanguageClient, LanguageClientOptions } from 'vscode-languageclient'
+import { registerInlineCompletion } from '../app/inline/completion'
 import { AmazonQLspAuth, encryptionKey, notificationTypes } from './auth'
 import { AuthUtil } from 'aws-core-vscode/codewhisperer'
 import { ConnectionMetadata } from '@aws/language-server-runtimes/protocol'
@@ -18,9 +18,12 @@ const localize = nls.loadMessageBundle()
 export async function startLanguageServer(extensionContext: vscode.ExtensionContext, resourcePaths: ResourcePaths) {
     const toDispose = extensionContext.subscriptions
 
-    // The debug options for the server
-    // --inspect=6009: runs the server in Node's Inspector mode so VS Code can attach to the server for debugging
-    const debugOptions = {
+    const serverModule = resourcePaths.lsp
+
+    const serverOptions = createServerOptions({
+        encryptionKey,
+        executable: resourcePaths.node,
+        serverModule,
         execArgv: [
             '--nolazy',
             '--preserve-symlinks',
@@ -28,22 +31,6 @@ export async function startLanguageServer(extensionContext: vscode.ExtensionCont
             '--pre-init-encryption',
             '--set-credentials-encryption-key',
         ],
-    }
-
-    const serverModule = resourcePaths.lsp
-
-    // If the extension is launch in debug mode the debug server options are use
-    // Otherwise the run options are used
-    let serverOptions: ServerOptions = {
-        run: { module: serverModule, transport: TransportKind.ipc },
-        debug: { module: serverModule, transport: TransportKind.ipc, options: debugOptions },
-    }
-
-    serverOptions = createServerOptions({
-        encryptionKey,
-        executable: resourcePaths.node,
-        serverModule,
-        execArgv: debugOptions.execArgv,
     })
 
     const documentSelector = [{ scheme: 'file', language: '*' }]
