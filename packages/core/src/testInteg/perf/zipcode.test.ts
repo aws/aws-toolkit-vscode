@@ -40,7 +40,7 @@ async function setup(numberOfFiles: number, fileSize: number): Promise<SetupResu
 function performanceTestWrapper(numberOfFiles: number, fileSize: number) {
     return performanceTest(
         getEqualOSTestOptions({
-            userCpuUsage: 350,
+            userCpuUsage: 400,
             systemCpuUsage: 50,
             heapTotal: 4,
         }),
