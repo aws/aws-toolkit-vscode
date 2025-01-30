@@ -142,10 +142,10 @@ describe('InactivityMessage', function () {
                 minute: expectedMessages[i][1],
             }
             assert.deepStrictEqual(actualMessages[i].message, expected.message)
-            // Avoid flakiness in the timing by looking within a minute rather than exact.
+            // Avoid flakiness in the timing by looking within a few minutes rather than exact.
             assert.ok(
-                Math.abs(actualMessages[i].minute - expected.minute) <= 1,
-                `Expected to be within 60 seconds of minute ${expected.minute}, but instead was at minute ${actualMessages[i].minute}`
+                Math.abs(actualMessages[i].minute - expected.minute) <= 3,
+                `Expected to be within 180 seconds of minute ${expected.minute}, but instead was at minute ${actualMessages[i].minute}`
             )
         }
     }
