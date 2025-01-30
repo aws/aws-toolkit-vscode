@@ -1,0 +1,18 @@
+{
+	"date": "2025-01-30",
+	"version": "3.44.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Policy Checks selected profile is always default"
+		},
+		{
+			"type": "Feature",
+			"description": "From the Lambda treeview in AWS Explorer, you can now right-click on a function name and start a CloudWatch Logs Live Tail sessions for the selected function."
+		},
+		{
+			"type": "Feature",
+			"description": "EC2 is now available in AWS Explorer:\n\n1. Remote-connect VSCode to your EC2 instances.\n2. Open terminal to your EC2 instances.\n3. Start, stop, and visit the Launch page."
+		}
+	]
+}
