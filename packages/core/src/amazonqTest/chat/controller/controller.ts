@@ -758,8 +758,8 @@ export class TestController {
             session.linesOfCodeGenerated
         )
 
-        await this.endSession(message, FollowUpTypes.SkipBuildAndFinish)
-        return
+        // await this.endSession(message, FollowUpTypes.SkipBuildAndFinish)
+        // return
 
         if (session.listOfTestGenerationJobId.length === 1) {
             this.startInitialBuild(message)
