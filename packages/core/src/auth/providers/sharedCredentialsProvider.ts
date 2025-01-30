@@ -4,9 +4,8 @@
  */
 
 import * as AWS from '@aws-sdk/types'
-import { AssumeRoleParams, fromIni } from '@aws-sdk/credential-provider-ini'
 import { fromProcess } from '@aws-sdk/credential-provider-process'
-import { ParsedIniData, SharedConfigFiles } from '@smithy/shared-ini-file-loader'
+import { ParsedIniData } from '@smithy/types'
 import { chain } from '@aws-sdk/property-provider'
 import { fromInstanceMetadata, fromContainerMetadata } from '@aws-sdk/credential-provider-imds'
 import { fromEnv } from '@aws-sdk/credential-provider-env'
@@ -32,6 +31,8 @@ import {
 import { SectionName, SharedCredentialsKeys } from '../credentials/types'
 import { SsoProfile, hasScopes, scopesSsoAccountAccess } from '../connection'
 import { builderIdStartUrl } from '../sso/constants'
+import { ToolkitError } from '../../shared'
+import { STS } from 'aws-sdk'
 
 const credentialSources = {
     ECS_CONTAINER: 'EcsContainer',
@@ -378,18 +379,6 @@ export class SharedCredentialsProvider implements CredentialsProvider {
     }
 
     private makeSharedIniFileCredentialsProvider(loadedCreds?: ParsedIniData): AWS.CredentialProvider {
-        const assumeRole = async (credentials: AWS.Credentials, params: AssumeRoleParams) => {
-            const region = this.getDefaultRegion() ?? 'us-east-1'
-            const stsClient = new DefaultStsClient(region, credentials)
-            const response = await stsClient.assumeRole(params)
-            return {
-                accessKeyId: response.Credentials!.AccessKeyId!,
-                secretAccessKey: response.Credentials!.SecretAccessKey!,
-                sessionToken: response.Credentials?.SessionToken,
-                expiration: response.Credentials?.Expiration,
-            }
-        }
-
         // Our credentials logic merges profiles from the credentials and config files but SDK v3 does not
         // This can cause odd behavior where the Toolkit can switch to a profile but not authenticate with it
         // So the workaround is to do give the SDK the merged profiles directly
@@ -399,15 +388,40 @@ export class SharedCredentialsProvider implements CredentialsProvider {
             (k) => this.getProfile(k)
         )
 
-        return fromIni({
-            profile: this.profileName,
-            mfaCodeProvider: async (mfaSerial) => await getMfaTokenFromUser(mfaSerial, this.profileName),
-            roleAssumer: assumeRole,
-            loadedConfig: Promise.resolve({
-                credentialsFile: loadedCreds ?? profiles,
-                configFile: {},
-            } as SharedConfigFiles),
-        })
+        return async () => {
+            const profile = (loadedCreds ?? profiles)[this.profileName]
+            if (!profile) {
+                throw new ToolkitError(`auth: Profile ${this.profileName} not found`)
+            }
+            // No role to assume, return static credentials.
+            if (!profile.role_arn) {
+                return {
+                    accessKeyId: profile.aws_access_key_id!,
+                    secretAccessKey: profile.aws_secret_access_key!,
+                    sessionToken: profile.aws_session_token,
+                }
+            }
+
+            const stsClient = new DefaultStsClient(this.getDefaultRegion() ?? 'us-east-1')
+            const assumeRoleReq: STS.AssumeRoleRequest = profile.aws_mfa_serial
+                ? {
+                      RoleArn: profile.role_arn,
+                      RoleSessionName: 'AssumeRoleSession',
+                      SerialNumber: profile.aws_mfa_serial,
+                      TokenCode: await getMfaTokenFromUser(profile.aws_mfa_serial, this.profileName),
+                  }
+                : {
+                      RoleArn: profile.role_arn,
+                      RoleSessionName: 'AssumeRoleSession',
+                  }
+            const assumeRoleRsp = await stsClient.assumeRole(assumeRoleReq)
+            return {
+                accessKeyId: assumeRoleRsp.Credentials!.AccessKeyId!,
+                secretAccessKey: assumeRoleRsp.Credentials!.AccessKeyId!,
+                sessionToken: assumeRoleRsp.Credentials?.AccessKeyId,
+                expiration: assumeRoleRsp.Credentials?.Expiration,
+            }
+        }
     }
 
     private makeSourcedCredentialsProvider(): AWS.CredentialProvider {
