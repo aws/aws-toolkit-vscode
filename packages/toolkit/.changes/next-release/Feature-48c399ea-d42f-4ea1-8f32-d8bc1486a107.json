@@ -1,4 +1,0 @@
-{
-	"type": "Feature",
-	"description": "From the Lambda treeview in AWS Explorer, you can now right-click on a function name and start a CloudWatch Logs Live Tail sessions for the selected function."
-}
