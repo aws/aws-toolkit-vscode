@@ -7,7 +7,7 @@ import { IAM, StepFunctions } from 'aws-sdk'
 import { DefaultIamClient } from '../../shared/clients/iamClient'
 import { DefaultStepFunctionsClient } from '../../shared/clients/stepFunctionsClient'
 import { ApiAction, ApiCallRequestMessage, Command, MessageType, WebviewContext } from './types'
-import { telemetry } from '../../shared/telemetry'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 export class WorkflowStudioApiHandler {
     public constructor(

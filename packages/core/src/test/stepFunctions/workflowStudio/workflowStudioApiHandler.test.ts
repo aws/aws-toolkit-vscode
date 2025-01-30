@@ -9,10 +9,32 @@ import { WorkflowStudioApiHandler } from '../../../stepFunctions/workflowStudio/
 import { MockDocument } from '../../fake/fakeDocument'
 import { ApiAction, Command, MessageType, WebviewContext } from '../../../stepFunctions/workflowStudio/types'
 import * as vscode from 'vscode'
+import { assertTelemetry } from '../../testUtil'
+import { DefaultStepFunctionsClient } from '../../../shared/clients/stepFunctionsClient'
+import { DefaultIamClient } from '../../../shared/clients/iamClient'
 
 describe('WorkflowStudioApiHandler', function () {
     let postMessageStub: sinon.SinonStub
     let apiHandler: WorkflowStudioApiHandler
+    let testState: sinon.SinonStub
+
+    async function assertTestApiResponse(expectedResponse: any) {
+        await apiHandler.performApiCall({
+            apiName: ApiAction.SFNTestState,
+            params: {
+                definition: '',
+                roleArn: '',
+            },
+            requestId: 'test-request-id',
+            command: Command.API_CALL,
+            messageType: MessageType.REQUEST,
+        })
+
+        assertTelemetry('ui_click', {
+            elementId: 'stepfunctions_testState',
+        })
+        assert(postMessageStub.firstCall.calledWithExactly(expectedResponse))
+    }
 
     beforeEach(() => {
         const panel = vscode.window.createWebviewPanel('WorkflowStudioMock', 'WorkflowStudioMockTitle', {
@@ -34,68 +56,46 @@ describe('WorkflowStudioApiHandler', function () {
             fileId: '',
         }
 
-        apiHandler = new WorkflowStudioApiHandler('us-east-1', context)
+        const sfnClient = new DefaultStepFunctionsClient('us-east-1')
+        apiHandler = new WorkflowStudioApiHandler('us-east-1', context, {
+            sfn: sfnClient,
+            iam: new DefaultIamClient('us-east-1'),
+        })
+
+        testState = sinon.stub(sfnClient, 'testState')
     })
 
     it('should handle request and response for success', async function () {
-        sinon.stub(apiHandler, 'testState').returns(
-            Promise.resolve({
-                output: 'Test state output',
-            })
-        )
-
-        await apiHandler.performApiCall({
-            apiName: ApiAction.SFNTestState,
-            params: {
-                definition: '',
-                roleArn: '',
-            },
-            requestId: 'test-request-id',
-            command: Command.API_CALL,
-            messageType: MessageType.REQUEST,
+        testState.resolves({
+            output: 'Test state output',
         })
 
-        assert(
-            postMessageStub.firstCall.calledWithExactly({
-                messageType: MessageType.RESPONSE,
-                command: Command.API_CALL,
-                apiName: ApiAction.SFNTestState,
-                response: {
-                    output: 'Test state output',
-                },
-                requestId: 'test-request-id',
-                isSuccess: true,
-            })
-        )
+        await assertTestApiResponse({
+            messageType: MessageType.RESPONSE,
+            command: Command.API_CALL,
+            apiName: ApiAction.SFNTestState,
+            response: {
+                output: 'Test state output',
+            },
+            requestId: 'test-request-id',
+            isSuccess: true,
+        })
     })
 
     it('should handle request and response for error', async function () {
-        sinon.stub(apiHandler, 'testState').returns(Promise.reject(new Error('Error testing state')))
+        testState.rejects(new Error('Error testing state'))
 
-        await apiHandler.performApiCall({
-            apiName: ApiAction.SFNTestState,
-            params: {
-                definition: '',
-                roleArn: '',
-            },
-            requestId: 'test-request-id',
+        await assertTestApiResponse({
+            messageType: MessageType.RESPONSE,
             command: Command.API_CALL,
-            messageType: MessageType.REQUEST,
+            apiName: ApiAction.SFNTestState,
+            error: {
+                message: 'Error testing state',
+                name: 'Error',
+                stack: sinon.match.string,
+            },
+            isSuccess: false,
+            requestId: 'test-request-id',
         })
-
-        assert(
-            postMessageStub.firstCall.calledWithExactly({
-                messageType: MessageType.RESPONSE,
-                command: Command.API_CALL,
-                apiName: ApiAction.SFNTestState,
-                error: {
-                    message: 'Error testing state',
-                    name: 'Error',
-                    stack: sinon.match.string,
-                },
-                isSuccess: false,
-                requestId: 'test-request-id',
-            })
-        )
     })
 })

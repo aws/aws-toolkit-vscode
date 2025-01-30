@@ -200,9 +200,7 @@ async function autoSyncFileMessageHandler(request: SyncFileRequestMessage, conte
  * @param context The webview context used for returning the API response to the webview
  */
 function apiCallMessageHandler(request: ApiCallRequestMessage, context: WebviewContext) {
-    const logger = getLogger()
+    const logger = getLogger('stepfunctions')
     const apiHandler = new WorkflowStudioApiHandler(globals.awsContext.getCredentialDefaultRegion(), context)
-    apiHandler
-        .performApiCall(request)
-        .catch((error) => logger.error('StepFunctions %s API call failed: %O', request.apiName, error))
+    apiHandler.performApiCall(request).catch((error) => logger.error('%s API call failed: %O', request.apiName, error))
 }
