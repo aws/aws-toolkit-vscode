@@ -1,3 +1,9 @@
+## 1.45.0-SNAPSHOT 2025-01-30
+
+- **Bug Fix** Allow AB users with an overridden customization to go back to the default customization
+- **Bug Fix** For security reasons, disabled auto linkify for link texts coming in markdown other than [TEXT](URL) format
+- **Feature** Add setting to allow Q /dev to run code and test commands
+
 ## 1.44.0 2025-01-23
 
 - **Bug Fix** Amazon Q: word duplication when pressing tab on context selector fixed

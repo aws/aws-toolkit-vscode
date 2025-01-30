@@ -34,7 +34,6 @@ phases:
                   echo checkmarketplace: "Unknown TARGET_EXTENSION: ${TARGET_EXTENSION}"
                   exit 1
                 fi
-            - |
                 if [ "$STAGE" != "prod" ]; then
                   echo "checkmarketplace: Non-production stage detected. Installing hardcoded version '${VERSION}'."
                 fi
@@ -42,7 +41,7 @@ phases:
             - |
                 while true; do
                   code --uninstall-extension "${extension_name}" --no-sandbox --user-data-dir /tmp/vscode
-                  code --install-extension "${extension_name}@${VERSION}" --no-sandbox --user-data-dir /tmp/vscode
+                  code --install-extension "${extension_name}@${VERSION}" --no-sandbox --user-data-dir /tmp/vscode || true
                   cur_version=$(code --list-extensions --show-versions --no-sandbox --user-data-dir /tmp/vscode | grep ${extension_name} | cut -d'@' -f2)
                   if [ "${cur_version}" = "${VERSION}" ]; then
                     echo "checkmarketplace: Extension ${extension_name} is updated to version '${cur_version}.'"
