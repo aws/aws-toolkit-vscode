@@ -60,4 +60,15 @@ describe('zipStream', function () {
         assert.strictEqual(result.hash, expectedMd5)
         assert.strictEqual(result.sizeInBytes, (await fs.stat(zipPath)).size)
     })
+
+    it('should unzip from a buffer', async function () {
+        const zipStream = new ZipStream()
+        await zipStream.writeString('foo bar', 'file.txt')
+        const result = await zipStream.finalize()
+
+        const zipBuffer = result.streamBuffer.getContents()
+        assert.ok(zipBuffer)
+        const zipEntries = await ZipStream.unzip(zipBuffer)
+        assert.strictEqual(zipEntries[0].filename, 'file.txt')
+    })
 })
