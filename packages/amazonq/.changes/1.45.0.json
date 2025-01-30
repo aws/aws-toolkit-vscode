@@ -1,0 +1,18 @@
+{
+	"date": "2025-01-30",
+	"version": "1.45.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Allow AB users with an overridden customization to go back to the default customization"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "For security reasons, disabled auto linkify for link texts coming in markdown other than [TEXT](URL) format"
+		},
+		{
+			"type": "Feature",
+			"description": "Add setting to allow Q /dev to run code and test commands"
+		}
+	]
+}
