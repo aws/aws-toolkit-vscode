@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "For security reasons, disabled auto linkify for link texts coming in markdown other than [TEXT](URL) format"
-}
