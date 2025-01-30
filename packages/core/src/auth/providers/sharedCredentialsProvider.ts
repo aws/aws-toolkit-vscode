@@ -403,12 +403,12 @@ export class SharedCredentialsProvider implements CredentialsProvider {
             }
 
             const stsClient = new DefaultStsClient(this.getDefaultRegion() ?? 'us-east-1')
-            const assumeRoleReq: STS.AssumeRoleRequest = profile.aws_mfa_serial
+            const assumeRoleReq: STS.AssumeRoleRequest = profile.mfa_serial
                 ? {
                       RoleArn: profile.role_arn,
                       RoleSessionName: 'AssumeRoleSession',
-                      SerialNumber: profile.aws_mfa_serial,
-                      TokenCode: await getMfaTokenFromUser(profile.aws_mfa_serial, this.profileName),
+                      SerialNumber: profile.mfa_serial,
+                      TokenCode: await getMfaTokenFromUser(profile.mfa_serial, this.profileName),
                   }
                 : {
                       RoleArn: profile.role_arn,
