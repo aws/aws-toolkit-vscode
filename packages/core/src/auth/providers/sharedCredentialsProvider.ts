@@ -28,7 +28,7 @@ import {
     Profile,
     Section,
 } from '../credentials/sharedCredentials'
-import { SectionName, SharedCredentialsKeys } from '../credentials/types'
+import { CredentialsData, SectionName, SharedCredentialsKeys } from '../credentials/types'
 import { SsoProfile, hasScopes, scopesSsoAccountAccess } from '../connection'
 import { builderIdStartUrl } from '../sso/constants'
 import { ToolkitError } from '../../shared'
@@ -390,7 +390,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
 
         return async () => {
             // Docs for config file format: https://docs.aws.amazon.com/sdkref/latest/guide/feature-assume-role-credentials.html
-            const profile = (loadedCreds ?? profiles)[this.profileName]
+            const profile: CredentialsData = (loadedCreds ?? profiles)[this.profileName]
             if (!profile) {
                 throw new ToolkitError(`auth: Profile ${this.profileName} not found`)
             }
