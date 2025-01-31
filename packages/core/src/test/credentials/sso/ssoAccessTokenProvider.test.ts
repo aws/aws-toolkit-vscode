@@ -159,7 +159,7 @@ describe('SsoAccessTokenProvider', function () {
         it('concurrent calls are debounced', async function () {
             const validToken = createToken(hourInMs)
             await cache.token.save(startUrl, { region, startUrl, token: validToken })
-            const actualGetToken = sinon.spy(sut, '_getToken')
+            const actualGetToken = sinon.spy(sut, 'getToken')
 
             const result = await Promise.all([sut.getToken(), sut.getToken(), sut.getToken()])
 
