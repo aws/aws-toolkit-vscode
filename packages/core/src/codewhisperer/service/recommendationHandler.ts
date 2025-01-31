@@ -156,9 +156,9 @@ export class RecommendationHandler {
         config: ConfigurationEntry,
         autoTriggerType?: CodewhispererAutomatedTriggerType,
         pagination: boolean = true,
-        page: number = 0,
-        generate: boolean = isIamConnection(AuthUtil.instance.conn)
+        page: number = 0
     ): Promise<GetRecommendationsResponse> {
+        const isIamConn: boolean = isIamConnection(AuthUtil.instance.conn)
         let invocationResult: 'Succeeded' | 'Failed' = 'Failed'
         let errorMessage: string | undefined = undefined
         let errorCode: string | undefined = undefined
@@ -184,7 +184,7 @@ export class RecommendationHandler {
         ).language
         session.taskType = await this.getTaskTypeFromEditorFileName(editor.document.fileName)
 
-        if (pagination && !generate) {
+        if (pagination && !isIamConn) {
             if (page === 0) {
                 session.requestContext = await EditorContext.buildGenerateCompletionRequest(
                     editor as vscode.TextEditor,
@@ -238,7 +238,7 @@ export class RecommendationHandler {
             this.lastInvocationTime = startTime
             const mappedReq = runtimeLanguageContext.mapToRuntimeLanguage(request)
             const codewhispererPromise =
-                pagination && !generate
+                pagination && !isIamConn
                     ? client.listRecommendations(mappedReq)
                     : client.generateRecommendations(mappedReq)
             const resp = await this.getServerResponse(triggerType, config.isManualTriggerEnabled, codewhispererPromise)
@@ -333,8 +333,7 @@ export class RecommendationHandler {
                         config,
                         autoTriggerType,
                         pagination,
-                        page,
-                        true
+                        page
                     )
                 }
             }
