@@ -2,6 +2,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
+import { IAM, StepFunctions } from 'aws-sdk'
 import * as vscode from 'vscode'
 
 export type WebviewContext = {
@@ -39,6 +40,7 @@ export enum Command {
     LOAD_STAGE = 'LOAD_STAGE',
     OPEN_FEEDBACK = 'OPEN_FEEDBACK',
     CLOSE_WFS = 'CLOSE_WFS',
+    API_CALL = 'API_CALL',
 }
 
 export type FileWatchInfo = {
@@ -71,3 +73,26 @@ export interface SaveFileRequestMessage extends Message {
 export interface SyncFileRequestMessage extends SaveFileRequestMessage {
     fileContents: string
 }
+
+export enum ApiAction {
+    IAMListRoles = 'iam:ListRoles',
+    SFNTestState = 'sfn:TestState',
+}
+
+type ApiCallRequestMapping = {
+    [ApiAction.IAMListRoles]: IAM.ListRolesRequest
+    [ApiAction.SFNTestState]: StepFunctions.TestStateInput
+}
+
+interface ApiCallRequestMessageBase<ApiName extends ApiAction> extends Message {
+    requestId: string
+    apiName: ApiName
+    params: ApiCallRequestMapping[ApiName]
+}
+
+/**
+ * The message from the webview describing what API and parameters to call.
+ */
+export type ApiCallRequestMessage =
+    | ApiCallRequestMessageBase<ApiAction.IAMListRoles>
+    | ApiCallRequestMessageBase<ApiAction.SFNTestState>

@@ -13,6 +13,7 @@ import {
     FileChangedMessage,
     FileChangeEventTrigger,
     SyncFileRequestMessage,
+    ApiCallRequestMessage,
 } from './types'
 import { submitFeedback } from '../../feedback/vue/submitFeedback'
 import { placeholder } from '../../shared/vscode/commands2'
@@ -20,6 +21,8 @@ import * as nls from 'vscode-nls'
 import vscode from 'vscode'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { ToolkitError } from '../../shared/errors'
+import { WorkflowStudioApiHandler } from './workflowStudioApiHandler'
+import { getLogger, globals } from '../../shared'
 const localize = nls.loadMessageBundle()
 
 /**
@@ -47,6 +50,9 @@ export async function handleMessage(message: Message, context: WebviewContext) {
                 break
             case Command.OPEN_FEEDBACK:
                 void submitFeedback(placeholder, 'Workflow Studio')
+                break
+            case Command.API_CALL:
+                apiCallMessageHandler(message as ApiCallRequestMessage, context)
                 break
         }
     } else if (messageType === MessageType.BROADCAST) {
@@ -150,7 +156,9 @@ async function saveFileMessageHandler(request: SaveFileRequestMessage, context: 
                 )
             )
         } catch (err) {
-            throw ToolkitError.chain(err, 'Could not save asl file.', { code: 'SaveFailed' })
+            throw ToolkitError.chain(err, 'Could not save asl file.', {
+                code: 'SaveFailed',
+            })
         }
     })
 }
@@ -179,7 +187,20 @@ async function autoSyncFileMessageHandler(request: SyncFileRequestMessage, conte
             )
             await vscode.workspace.applyEdit(edit)
         } catch (err) {
-            throw ToolkitError.chain(err, 'Could not autosave asl file.', { code: 'AutoSaveFailed' })
+            throw ToolkitError.chain(err, 'Could not autosave asl file.', {
+                code: 'AutoSaveFailed',
+            })
         }
     })
+}
+
+/**
+ * Handler for making API calls from the webview and returning the response.
+ * @param request The request message containing the API to call and the parameters
+ * @param context The webview context used for returning the API response to the webview
+ */
+function apiCallMessageHandler(request: ApiCallRequestMessage, context: WebviewContext) {
+    const logger = getLogger('stepfunctions')
+    const apiHandler = new WorkflowStudioApiHandler(globals.awsContext.getCredentialDefaultRegion(), context)
+    apiHandler.performApiCall(request).catch((error) => logger.error('%s API call failed: %O', request.apiName, error))
 }
