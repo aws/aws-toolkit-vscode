@@ -82,7 +82,7 @@ export function getFileRelativePath(editor: vscode.TextEditor): string {
     return relativePath.substring(0, CodeWhispererConstants.filenameCharsLimit)
 }
 
-export async function buildListRecommendationRequest(
+export async function buildGenerateCompletionRequest(
     editor: vscode.TextEditor,
     nextToken: string,
     allowCodeWithReference: boolean

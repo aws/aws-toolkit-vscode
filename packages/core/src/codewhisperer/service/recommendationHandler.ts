@@ -186,7 +186,7 @@ export class RecommendationHandler {
 
         if (pagination && !generate) {
             if (page === 0) {
-                session.requestContext = await EditorContext.buildListRecommendationRequest(
+                session.requestContext = await EditorContext.buildGenerateCompletionRequest(
                     editor as vscode.TextEditor,
                     this.nextToken,
                     config.isSuggestionsWithCodeReferencesEnabled
