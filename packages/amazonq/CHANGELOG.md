@@ -1,4 +1,4 @@
-## 1.45.0-SNAPSHOT 2025-01-30
+## 1.45.0 2025-01-30
 
 - **Bug Fix** Allow AB users with an overridden customization to go back to the default customization
 - **Bug Fix** For security reasons, disabled auto linkify for link texts coming in markdown other than [TEXT](URL) format
