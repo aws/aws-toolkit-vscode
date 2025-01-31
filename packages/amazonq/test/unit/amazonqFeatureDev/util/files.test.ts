@@ -11,12 +11,10 @@ import {
     maxRepoSizeBytes,
 } from 'aws-core-vscode/amazonqFeatureDev'
 import { assertTelemetry, getWorkspaceFolder, TestFolder } from 'aws-core-vscode/test'
-import { fs, AmazonqCreateUpload } from 'aws-core-vscode/shared'
+import { fs, AmazonqCreateUpload, ZipStream } from 'aws-core-vscode/shared'
 import { MetricName, Span } from 'aws-core-vscode/telemetry'
 import sinon from 'sinon'
 import { CodeWhispererSettings } from 'aws-core-vscode/codewhisperer'
-
-import AdmZip from 'adm-zip'
 
 const testDevfilePrepareRepo = async (devfileEnabled: boolean) => {
     const files: Record<string, string> = {
@@ -38,8 +36,8 @@ const testDevfilePrepareRepo = async (devfileEnabled: boolean) => {
     }
 
     const expectedFiles = !devfileEnabled
-        ? ['./file.md', './.gitignore']
-        : ['./devfile.yaml', './file.md', './.gitignore', './abc.jar', 'data/logo.ico']
+        ? ['file.md', '.gitignore']
+        : ['devfile.yaml', 'file.md', '.gitignore', 'abc.jar', 'data/logo.ico']
 
     const workspace = getWorkspaceFolder(folder.path)
     sinon
@@ -71,8 +69,8 @@ const testPrepareRepoData = async (
     }
 
     // Unzip the buffer and compare the entry names
-    const zip = new AdmZip(result.zipFileBuffer)
-    const actualZipEntries = zip.getEntries().map((entry) => entry.entryName)
+    const zipEntries = await ZipStream.unzip(result.zipFileBuffer)
+    const actualZipEntries = zipEntries.map((entry) => entry.filename)
     actualZipEntries.sort((a, b) => a.localeCompare(b))
     assert.deepStrictEqual(actualZipEntries, expectedFiles)
 }
@@ -89,7 +87,7 @@ describe('file utils', () => {
             await folder.write('file2.md', 'test content')
             const workspace = getWorkspaceFolder(folder.path)
 
-            await testPrepareRepoData(workspace, ['./file1.md', './file2.md'])
+            await testPrepareRepoData(workspace, ['file1.md', 'file2.md'])
         })
 
         it('prepareRepoData ignores denied file extensions', async function () {
