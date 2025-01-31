@@ -113,7 +113,7 @@ export const getSelectedCustomization = (): Customization => {
     )
     const selectedCustomization = selectedCustomizationArr[AuthUtil.instance.conn.label]
 
-    if (selectedCustomization && selectedCustomization.name !== baseCustomization.name) {
+    if (selectedCustomization && selectedCustomization.name !== '') {
         return selectedCustomization
     } else {
         const customizationFeature = FeatureConfigProvider.getFeature(Features.customizationArnOverride)
