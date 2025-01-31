@@ -76,7 +76,7 @@ export async function prepareRepoData(
             totalBytes += fileSize
             // Paths in zip should be POSIX compliant regardless of OS
             // Reference: https://pkware.cachefly.net/webdocs/casestudies/APPNOTE.TXT
-            const posixPath = file.zipFilePath.replace(/\\/g, '/')
+            const posixPath = file.zipFilePath.split(path.sep).join(path.posix.sep)
 
             try {
                 zip.writeFile(file.fileUri.fsPath, posixPath)
