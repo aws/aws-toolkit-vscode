@@ -389,7 +389,8 @@ export class SharedCredentialsProvider implements CredentialsProvider {
         )
 
         return async () => {
-            const profile: CredentialsData = (loadedCreds ?? profiles)[this.profileName]
+            const iniData = loadedCreds ?? profiles
+            const profile: CredentialsData = iniData[this.profileName]
             if (!profile) {
                 throw new ToolkitError(`auth: Profile ${this.profileName} not found`)
             }
@@ -401,8 +402,18 @@ export class SharedCredentialsProvider implements CredentialsProvider {
                     sessionToken: profile.aws_session_token,
                 }
             }
-
-            const stsClient = new DefaultStsClient(this.getDefaultRegion() ?? 'us-east-1')
+            if (!profile.source_profile || !iniData[profile.source_profile]) {
+                throw new ToolkitError(
+                    `auth: Profile ${this.profileName} is missing source_profile for role assumption`
+                )
+            }
+            // Use source profile to assume IAM role based on role ARN provided.
+            const sourceProfile = iniData[profile.source_profile!]
+            const stsClient = new DefaultStsClient(this.getDefaultRegion() ?? 'us-east-1', {
+                accessKeyId: sourceProfile.aws_access_key_id!,
+                secretAccessKey: sourceProfile.aws_secret_access_key!,
+            })
+            // Prompt for MFA Token if needed.
             const assumeRoleReq: STS.AssumeRoleRequest = profile.mfa_serial
                 ? {
                       RoleArn: profile.role_arn,
@@ -417,8 +428,8 @@ export class SharedCredentialsProvider implements CredentialsProvider {
             const assumeRoleRsp = await stsClient.assumeRole(assumeRoleReq)
             return {
                 accessKeyId: assumeRoleRsp.Credentials!.AccessKeyId!,
-                secretAccessKey: assumeRoleRsp.Credentials!.AccessKeyId!,
-                sessionToken: assumeRoleRsp.Credentials?.AccessKeyId,
+                secretAccessKey: assumeRoleRsp.Credentials!.SecretAccessKey!,
+                sessionToken: assumeRoleRsp.Credentials?.SessionToken,
                 expiration: assumeRoleRsp.Credentials?.Expiration,
             }
         }
