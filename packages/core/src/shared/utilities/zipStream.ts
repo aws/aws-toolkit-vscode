@@ -6,13 +6,17 @@ import { WritableStreamBuffer } from 'stream-buffers'
 import crypto from 'crypto'
 import { readFileAsString } from '../filesystemUtilities'
 // Use require instead of import since this package doesn't support commonjs
-const { ZipWriter, TextReader } = require('@zip.js/zip.js')
+const { ZipWriter, TextReader, ZipReader, Uint8ArrayReader } = require('@zip.js/zip.js')
 import { getLogger } from '../logger/logger'
 
 export interface ZipStreamResult {
     sizeInBytes: number
     hash: string
     streamBuffer: WritableStreamBuffer
+}
+
+export type ZipReaderResult = {
+    filename: string
 }
 
 export type ZipStreamProps = {
@@ -148,6 +152,15 @@ export class ZipStream {
             sizeInBytes: this._streamBuffer.size(),
             hash: this._hasher.digest('base64'),
             streamBuffer: this._streamBuffer,
+        }
+    }
+
+    public static async unzip(zipBuffer: Buffer): Promise<ZipReaderResult[]> {
+        const reader = new ZipReader(new Uint8ArrayReader(new Uint8Array(zipBuffer)))
+        try {
+            return await reader.getEntries()
+        } finally {
+            await reader.close()
         }
     }
 }
