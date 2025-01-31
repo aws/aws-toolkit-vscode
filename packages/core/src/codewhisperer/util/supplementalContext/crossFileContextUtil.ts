@@ -65,8 +65,7 @@ interface Chunk {
 type SupplementalContextConfig = 'none' | 'opentabs' | 'codemap' | 'bm25' | 'default'
 
 export async function fetchSupplementalContextForSrc(
-    editor: vscode.TextEditor,
-    cancellationToken: vscode.CancellationToken
+    editor: vscode.TextEditor
 ): Promise<Pick<CodeWhispererSupplementalContext, 'supplementalContextItems' | 'strategy'> | undefined> {
     const supplementalContextConfig = getSupplementalContextConfig(editor.document.languageId)
 
@@ -78,7 +77,7 @@ export async function fetchSupplementalContextForSrc(
     // fallback to opentabs if projectContext timeout
     const opentabsContextPromise = waitUntil(
         async function () {
-            return await fetchOpentabsContext(editor, cancellationToken)
+            return await fetchOpentabsContext(editor)
         },
         { timeout: supplementalContextTimeoutInMs, interval: 5, truthy: false }
     )
@@ -100,7 +99,7 @@ export async function fetchSupplementalContextForSrc(
         const opentabsContextAndCodemap = await waitUntil(
             async function () {
                 const result: CodeWhispererSupplementalContextItem[] = []
-                const opentabsContext = await fetchOpentabsContext(editor, cancellationToken)
+                const opentabsContext = await fetchOpentabsContext(editor)
                 const codemap = await fetchProjectContext(editor, 'codemap')
 
                 function addToResult(items: CodeWhispererSupplementalContextItem[]) {
@@ -207,8 +206,7 @@ export async function fetchProjectContext(
 }
 
 export async function fetchOpentabsContext(
-    editor: vscode.TextEditor,
-    cancellationToken: vscode.CancellationToken
+    editor: vscode.TextEditor
 ): Promise<CodeWhispererSupplementalContextItem[] | undefined> {
     const codeChunksCalculated = crossFileContextConfig.numberOfChunkToFetch
 

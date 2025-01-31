@@ -30,7 +30,7 @@ export async function fetchSupplementalContext(
     if (isUtg) {
         supplementalContextPromise = fetchSupplementalContextForTest(editor, cancellationToken)
     } else {
-        supplementalContextPromise = fetchSupplementalContextForSrc(editor, cancellationToken)
+        supplementalContextPromise = fetchSupplementalContextForSrc(editor)
     }
 
     return supplementalContextPromise
