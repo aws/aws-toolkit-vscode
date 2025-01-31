@@ -53,6 +53,11 @@ export function dispatchWebViewMessagesToApps(
                 void openUrl(Uri.parse(userGuideLink))
                 return
             }
+            case 'open-form-link': {
+                const { link } = msg
+                void openUrl(Uri.parse(link))
+                return
+            }
             case 'send-telemetry': {
                 if (isOpenAgentTelemetry(msg)) {
                     telemetry.toolkit_openModule.emit({

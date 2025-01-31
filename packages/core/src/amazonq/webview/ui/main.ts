@@ -834,6 +834,12 @@ export const createMynahUI = (
             mouseEvent?.stopImmediatePropagation()
             connector.onResponseBodyLinkClick(tabId, messageId, link)
         },
+        onFormLinkClick: (link, mouseEvent) => {
+            mouseEvent?.preventDefault()
+            mouseEvent?.stopPropagation()
+            mouseEvent?.stopImmediatePropagation()
+            connector.onFormLinkClick(link)
+        },
         onInfoLinkClick: (tabId: string, link: string, mouseEvent?: MouseEvent) => {
             mouseEvent?.preventDefault()
             mouseEvent?.stopPropagation()

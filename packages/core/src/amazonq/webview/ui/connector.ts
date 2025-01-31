@@ -131,6 +131,13 @@ export class Connector {
         }
     }
 
+    onFormLinkClick = (link: string): void => {
+        this.sendMessageToExtension({
+            command: 'open-form-link',
+            link,
+        })
+    }
+
     onResponseBodyLinkClick = (tabID: string, messageId: string, link: string): void => {
         switch (this.tabsStorage.getTab(tabID)?.type) {
             case 'cwc':

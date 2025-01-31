@@ -40,6 +40,7 @@ type MessageCommand =
     | 'start-test-gen'
     | 'review'
     | 'open-user-guide'
+    | 'open-form-link'
     | 'send-telemetry'
     | 'update-welcome-count'
 
