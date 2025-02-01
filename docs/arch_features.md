@@ -3,17 +3,41 @@
 > How the main end-user features are designed and where (in code) they are implemented.
 > Corresponds to the "Logical view" of the [4+1 architectural views](https://en.wikipedia.org/wiki/4%2B1_architectural_view_model).
 
-## Connecting to AWS
+## Explorer
 
-The AWS Toolkit allows users to connect to their AWS accounts using various credential types, such as named profiles, assumed roles, and external credential processes. This enables users to interact with AWS services directly from within Visual Studio Code.
+The AWS Explorer interacts with AWS resources through a variety of mechanisms and functionalities.
 
-## AWS Explorer
+### AWS Explorer UI activation
 
-The AWS Explorer provides a tree view of AWS resources, such as Lambda functions, S3 buckets, and CloudFormation stacks. Users can interact with these resources, perform actions like deploying, invoking, and deleting functions, and view resource details.
+The `activate` function in `packages/core/src/awsexplorer/activation.ts` sets up the AWS Explorer UI and related functionality. It initializes the AWS Explorer, registers commands, and sets up event listeners to handle changes in AWS credentials and context.
+
+### Tree data provider
+
+The `AwsExplorer` class in `packages/core/src/awsexplorer/awsExplorer.ts` implements the `vscode.TreeDataProvider` interface, providing a hierarchical view of AWS resources. It manages the tree structure, handles node expansion and collapse, and updates the tree when changes occur.
+
+### Region nodes
+
+The `RegionNode` class in `packages/core/src/awsexplorer/regionNode.ts` represents an AWS region in the Explorer. It contains child nodes for various AWS services, such as Lambda, S3, and CloudFormation. These child nodes are created based on the available services in the region and the user's configuration.
+
+### Service nodes
+
+Each AWS service has its own node class, such as `LambdaNode`, `S3Node`, and `CloudFormationNode`. These nodes are responsible for fetching and displaying the resources for their respective services. For example, the `ApiGatewayNode` class in `packages/core/src/awsService/apigateway/explorer/apiGatewayNodes.ts` represents the API Gateway service and fetches the list of APIs in the region.
+
+### Commands
+
+The AWS Explorer registers various commands to interact with AWS resources. For example, the `copyUrlCommand` in `packages/core/src/awsService/apigateway/commands/copyUrl.ts` copies the URL of an API Gateway stage to the clipboard. These commands are registered in the `activate` function and can be triggered by user actions in the Explorer.
+
+### Child node loader
+
+The `ChildNodeLoader` class in `packages/core/src/awsexplorer/childNodeLoader.ts` handles loading paginated children for nodes with many resources. It ensures that the nodes are loaded incrementally, improving performance and user experience.
+
+### Event listeners
+
+The AWS Explorer listens for various events, such as changes in AWS credentials, region updates, and context changes. These events trigger updates to the Explorer, ensuring that the displayed resources are always up-to-date.
 
 ## Local debugging of SAM Lambdas
 
-The AWS Toolkit supports local debugging of AWS Serverless Application Model (SAM) Lambda functions. This allows users to test and debug their serverless applications locally before deploying them to AWS.
+TODO
 
 ## Remote connect
 
@@ -61,23 +85,3 @@ These modules show how to use and extend the "remote connect" functionality:
 -   CodeCatalyst: [openDevEnv()](https://github.com/aws/aws-toolkit-vscode/blob/c77fc076fd0ed837d077bc0318716b711a2854c8/packages/core/src/codecatalyst/model.ts#L252)
 -   EC2: [openSessionInTerminal()](https://github.com/aws/aws-toolkit-vscode/blob/c77fc076fd0ed837d077bc0318716b711a2854c8/packages/core/src/ec2/model.ts#L147)
 -   ECS: [openTaskInTerminal()](https://github.com/aws/aws-toolkit-vscode/blob/c77fc076fd0ed837d077bc0318716b711a2854c8/packages/core/src/ecs/commands.ts#L133)
-
-## Webviews
-
-The AWS Toolkit uses Vue.js for webviews, which are modular and bundled into a single file for faster load times. Webviews are used for various features, such as displaying AWS resources and interacting with them.
-
-## Prompters and Wizards
-
-The AWS Toolkit provides prompters and wizards for user interactions, such as input boxes and quick picks. These are used to guide users through various workflows, such as creating new resources and deployments.
-
-## Telemetry
-
-The AWS Toolkit collects telemetry data to monitor usage and performance. This helps improve the extension and provides insights into how users interact with the toolkit.
-
-## Error handling and logging
-
-The AWS Toolkit includes robust error handling and logging mechanisms to ensure that users are informed of any issues and can troubleshoot problems effectively.
-
-## Integration with other extensions
-
-The AWS Toolkit integrates with other VSCode extensions, such as the remote-ssh extension, to provide a seamless experience for users working with AWS resources.
