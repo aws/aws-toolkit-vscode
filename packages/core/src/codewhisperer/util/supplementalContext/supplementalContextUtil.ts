@@ -13,8 +13,7 @@ import { getLogger } from '../../../shared/logger/logger'
 import { CodeWhispererSupplementalContext } from '../../models/model'
 
 export async function fetchSupplementalContext(
-    editor: vscode.TextEditor,
-    cancellationToken: vscode.CancellationToken
+    editor: vscode.TextEditor
 ): Promise<CodeWhispererSupplementalContext | undefined> {
     const timesBeforeFetching = performance.now()
 
