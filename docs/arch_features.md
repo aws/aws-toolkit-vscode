@@ -3,13 +3,17 @@
 > How the main end-user features are designed and where (in code) they are implemented.
 > Corresponds to the "Logical view" of the [4+1 architectural views](https://en.wikipedia.org/wiki/4%2B1_architectural_view_model).
 
-## Explorer
+## Connecting to AWS
 
-TODO
+The AWS Toolkit allows users to connect to their AWS accounts using various credential types, such as named profiles, assumed roles, and external credential processes. This enables users to interact with AWS services directly from within Visual Studio Code.
+
+## AWS Explorer
+
+The AWS Explorer provides a tree view of AWS resources, such as Lambda functions, S3 buckets, and CloudFormation stacks. Users can interact with these resources, perform actions like deploying, invoking, and deleting functions, and view resource details.
 
 ## Local debugging of SAM Lambdas
 
-TODO
+The AWS Toolkit supports local debugging of AWS Serverless Application Model (SAM) Lambda functions. This allows users to test and debug their serverless applications locally before deploying them to AWS.
 
 ## Remote connect
 
@@ -57,3 +61,23 @@ These modules show how to use and extend the "remote connect" functionality:
 -   CodeCatalyst: [openDevEnv()](https://github.com/aws/aws-toolkit-vscode/blob/c77fc076fd0ed837d077bc0318716b711a2854c8/packages/core/src/codecatalyst/model.ts#L252)
 -   EC2: [openSessionInTerminal()](https://github.com/aws/aws-toolkit-vscode/blob/c77fc076fd0ed837d077bc0318716b711a2854c8/packages/core/src/ec2/model.ts#L147)
 -   ECS: [openTaskInTerminal()](https://github.com/aws/aws-toolkit-vscode/blob/c77fc076fd0ed837d077bc0318716b711a2854c8/packages/core/src/ecs/commands.ts#L133)
+
+## Webviews
+
+The AWS Toolkit uses Vue.js for webviews, which are modular and bundled into a single file for faster load times. Webviews are used for various features, such as displaying AWS resources and interacting with them.
+
+## Prompters and Wizards
+
+The AWS Toolkit provides prompters and wizards for user interactions, such as input boxes and quick picks. These are used to guide users through various workflows, such as creating new resources and deployments.
+
+## Telemetry
+
+The AWS Toolkit collects telemetry data to monitor usage and performance. This helps improve the extension and provides insights into how users interact with the toolkit.
+
+## Error handling and logging
+
+The AWS Toolkit includes robust error handling and logging mechanisms to ensure that users are informed of any issues and can troubleshoot problems effectively.
+
+## Integration with other extensions
+
+The AWS Toolkit integrates with other VSCode extensions, such as the remote-ssh extension, to provide a seamless experience for users working with AWS resources.
