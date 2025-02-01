@@ -1,0 +1,20 @@
+{
+  "image": "mcr.microsoft.com/devcontainers/universal:2",
+  "features": {
+  }
+}
+
+# Ignore the `/src/some-dir/kernel.rs` file in this repository.
+- "/src/some-dir/kernel.rs"
+
+# Ignore files called `secrets.json` anywhere in this repository.
+- "secrets.json"
+
+# Ignore all files whose names begin with `secret` anywhere in this repository.
+- "secret*"
+
+# Ignore files whose names end with `.cfg` anywhere in this repository.
+- "*.cfg"
+
+# Ignore all files in or below the `/scripts` directory of this repository.
+- "/scripts/**"
