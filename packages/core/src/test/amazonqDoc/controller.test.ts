@@ -92,20 +92,21 @@ describe('Controller - Doc Generation', () => {
     }
 
     async function performAction(
-        action: 'generate' | 'update' | 'makeChanges' | 'accept',
+        action: 'generate' | 'update' | 'makeChanges' | 'accept' | 'edit',
         getSessionStub: sinon.SinonStub,
         message?: string
     ) {
         const sequences = {
             generate: FollowUpSequences.generateReadme,
             update: FollowUpSequences.updateReadme,
+            edit: FollowUpSequences.editReadme,
             makeChanges: FollowUpSequences.makeChanges,
             accept: FollowUpSequences.acceptContent,
         }
 
         await fireFollowUps(sequences[action])
 
-        if (action === 'makeChanges' && message) {
+        if ((action === 'makeChanges' || action === 'edit') && message) {
             controllerSetup.emitters.processHumanChatMessage.fire({
                 tabID,
                 conversationID,
@@ -275,6 +276,42 @@ describe('Controller - Doc Generation', () => {
             type: 'acceptance',
             ...EventMetrics.REPO_STRUCTURE,
             interactionType: 'UPDATE_README',
+            conversationId: conversationID,
+        })
+
+        await performAction('accept', getSessionStub)
+        await assertTelemetry({
+            spy: sendDocTelemetrySpy,
+            expectedEvent,
+            type: 'acceptance',
+            callIndex: 1,
+        })
+    })
+
+    it('should emit generation telemetry for README edit', async () => {
+        await performAction('edit', getSessionStub, 'add repository structure section')
+
+        const expectedEvent = createExpectedEvent({
+            type: 'generation',
+            ...EventMetrics.REPO_STRUCTURE,
+            interactionType: 'EDIT_README',
+            conversationId: conversationID,
+        })
+
+        await assertTelemetry({
+            spy: sendDocTelemetrySpy,
+            expectedEvent,
+            type: 'generation',
+        })
+    })
+    it('should emit acceptance telemetry for README edit', async () => {
+        await performAction('edit', getSessionStub, 'add repository structure section')
+        await new Promise((resolve) => setTimeout(resolve, 100))
+
+        const expectedEvent = createExpectedEvent({
+            type: 'acceptance',
+            ...EventMetrics.REPO_STRUCTURE,
+            interactionType: 'EDIT_README',
             conversationId: conversationID,
         })
 

@@ -131,7 +131,7 @@ export type EventParams = {
     chars: number
     lines: number
     files: number
-    interactionType: 'GENERATE_README' | 'UPDATE_README'
+    interactionType: 'GENERATE_README' | 'UPDATE_README' | 'EDIT_README'
     callIndex?: number
     conversationId: string
 }
@@ -236,6 +236,12 @@ export const FollowUpSequences = {
         FollowUpTypes.NewTask,
         FollowUpTypes.UpdateDocumentation,
         FollowUpTypes.SynchronizeDocumentation,
+        FollowUpTypes.ProceedFolderSelection,
+    ],
+    editReadme: [
+        FollowUpTypes.NewTask,
+        FollowUpTypes.UpdateDocumentation,
+        FollowUpTypes.EditDocumentation,
         FollowUpTypes.ProceedFolderSelection,
     ],
     makeChanges: [FollowUpTypes.MakeChanges],
