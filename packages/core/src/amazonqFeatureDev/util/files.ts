@@ -7,11 +7,9 @@ import * as vscode from 'vscode'
 import * as path from 'path'
 import { collectFiles } from '../../shared/utilities/workspaceUtils'
 
-import AdmZip from 'adm-zip'
 import { ContentLengthError, PrepareRepoFailedError } from '../errors'
 import { getLogger } from '../../shared/logger/logger'
 import { maxFileSizeBytes } from '../limits'
-import { createHash } from 'crypto'
 import { CurrentWsFolders } from '../types'
 import { hasCode, ToolkitError } from '../../shared/errors'
 import { AmazonqCreateUpload, Span, telemetry as amznTelemetry } from '../../shared/telemetry/telemetry'
@@ -20,8 +18,7 @@ import { maxRepoSizeBytes } from '../constants'
 import { isCodeFile } from '../../shared/filetypes'
 import { fs } from '../../shared'
 import { CodeWhispererSettings } from '../../codewhisperer'
-
-const getSha256 = (file: Buffer) => createHash('sha256').update(file).digest('base64')
+import { ZipStream } from '../../shared/utilities/zipStream'
 
 export async function checkForDevFile(root: string) {
     const devFilePath = root + '/devfile.yaml'
@@ -37,7 +34,7 @@ export async function prepareRepoData(
     workspaceFolders: CurrentWsFolders,
     telemetry: TelemetryHelper,
     span: Span<AmazonqCreateUpload>,
-    zip: AdmZip = new AdmZip()
+    zip: ZipStream = new ZipStream()
 ) {
     try {
         const autoBuildSetting = CodeWhispererSettings.instance.getAutoBuildSetting()
@@ -77,11 +74,12 @@ export async function prepareRepoData(
                 continue
             }
             totalBytes += fileSize
-
-            const zipFolderPath = path.dirname(file.zipFilePath)
+            // Paths in zip should be POSIX compliant regardless of OS
+            // Reference: https://pkware.cachefly.net/webdocs/casestudies/APPNOTE.TXT
+            const posixPath = file.zipFilePath.split(path.sep).join(path.posix.sep)
 
             try {
-                zip.addLocalFile(file.fileUri.fsPath, zipFolderPath)
+                zip.writeFile(file.fileUri.fsPath, posixPath)
             } catch (error) {
                 if (error instanceof Error && error.message.includes('File not found')) {
                     // No-op: Skip if file was deleted or does not exist
@@ -111,11 +109,12 @@ export async function prepareRepoData(
 
         telemetry.setRepositorySize(totalBytes)
         span.record({ amazonqRepositorySize: totalBytes })
+        const zipResult = await zip.finalize()
 
-        const zipFileBuffer = zip.toBuffer()
+        const zipFileBuffer = zipResult.streamBuffer.getContents() || Buffer.from('')
         return {
             zipFileBuffer,
-            zipFileChecksum: getSha256(zipFileBuffer),
+            zipFileChecksum: zipResult.hash,
         }
     } catch (error) {
         getLogger().debug(`featureDev: Failed to prepare repo: ${error}`)
