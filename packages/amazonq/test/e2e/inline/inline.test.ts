@@ -91,9 +91,11 @@ describe('Amazon Q Inline', async function () {
                      * Allow some time between when the editor is opened and when we start typing.
                      * If we don't do this then the time between the initial editor selection
                      * and invoking the "type" command is too low, causing completion to never
-                     * activate. AFAICT there isn't anything we can use waitUntil on here
+                     * activate. AFAICT there isn't anything we can use waitUntil on here.
+                     *
+                     * note: this number is entirely arbitrary
                      **/
-                    await sleep(1000)
+                    await sleep(2000)
 
                     await invokeCompletion()
                     originalEditorContents = vscode.window.activeTextEditor?.document.getText()
