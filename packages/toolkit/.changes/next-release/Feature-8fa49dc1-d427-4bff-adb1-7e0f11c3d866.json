@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "Step Functions: Added support for using Workflow Studio for editing ASL files in JSON and YAML"
+}
