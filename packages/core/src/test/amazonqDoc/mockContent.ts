@@ -43,40 +43,44 @@ export class ReadmeBuilder {
     private sections: string[] = []
 
     addSection(section: string): this {
-        this.sections.push(section)
+        this.sections.push(section.replace(/\r\n/g, '\n'))
         return this
     }
 
     build(): string {
-        return this.sections.join('\n\n')
+        return this.sections.join('\n\n').replace(/\r\n/g, '\n')
     }
 
     static createBaseReadme(): string {
         return new ReadmeBuilder()
-            .addSection(ReadmeSections.HEADER)
-            .addSection(ReadmeSections.GETTING_STARTED)
-            .addSection(ReadmeSections.FEATURES)
-            .addSection(ReadmeSections.LICENSE)
+            .addSection(ReadmeBuilder.normalizeSection(ReadmeSections.HEADER))
+            .addSection(ReadmeBuilder.normalizeSection(ReadmeSections.GETTING_STARTED))
+            .addSection(ReadmeBuilder.normalizeSection(ReadmeSections.FEATURES))
+            .addSection(ReadmeBuilder.normalizeSection(ReadmeSections.LICENSE))
             .build()
     }
 
     static createReadmeWithRepoStructure(): string {
         return new ReadmeBuilder()
-            .addSection(ReadmeSections.HEADER)
-            .addSection(ReadmeSections.REPO_STRUCTURE)
-            .addSection(ReadmeSections.GETTING_STARTED)
-            .addSection(ReadmeSections.FEATURES)
-            .addSection(ReadmeSections.LICENSE)
+            .addSection(ReadmeBuilder.normalizeSection(ReadmeSections.HEADER))
+            .addSection(ReadmeBuilder.normalizeSection(ReadmeSections.REPO_STRUCTURE))
+            .addSection(ReadmeBuilder.normalizeSection(ReadmeSections.GETTING_STARTED))
+            .addSection(ReadmeBuilder.normalizeSection(ReadmeSections.FEATURES))
+            .addSection(ReadmeBuilder.normalizeSection(ReadmeSections.LICENSE))
             .build()
     }
 
     static createReadmeWithDataFlow(): string {
         return new ReadmeBuilder()
-            .addSection(ReadmeSections.HEADER)
-            .addSection(ReadmeSections.GETTING_STARTED)
-            .addSection(ReadmeSections.FEATURES)
-            .addSection(ReadmeSections.DATA_FLOW)
-            .addSection(ReadmeSections.LICENSE)
+            .addSection(ReadmeBuilder.normalizeSection(ReadmeSections.HEADER))
+            .addSection(ReadmeBuilder.normalizeSection(ReadmeSections.GETTING_STARTED))
+            .addSection(ReadmeBuilder.normalizeSection(ReadmeSections.FEATURES))
+            .addSection(ReadmeBuilder.normalizeSection(ReadmeSections.DATA_FLOW))
+            .addSection(ReadmeBuilder.normalizeSection(ReadmeSections.LICENSE))
             .build()
+    }
+
+    private static normalizeSection(section: string): string {
+        return section.replace(/\r\n/g, '\n')
     }
 }

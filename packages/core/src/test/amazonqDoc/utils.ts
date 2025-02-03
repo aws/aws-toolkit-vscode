@@ -214,11 +214,11 @@ export async function updateFilePaths(
 ) {
     const updatedFilePaths: NewFileInfo[] = [
         {
-            zipFilePath: 'README.md',
-            relativePath: 'README.md',
+            zipFilePath: path.normalize('README.md'),
+            relativePath: path.normalize('README.md'),
             fileContent: content,
             rejected: false,
-            virtualMemoryUri: generateVirtualMemoryUri(uploadId, 'README.md', docScheme),
+            virtualMemoryUri: generateVirtualMemoryUri(uploadId, path.normalize('README.md'), docScheme),
             workspaceFolder: workspaceFolder,
             changeApplied: false,
         },
