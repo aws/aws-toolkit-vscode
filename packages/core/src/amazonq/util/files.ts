@@ -10,11 +10,9 @@ import { collectFiles, getWorkspaceFoldersByPrefixes } from '../../shared/utilit
 import { ContentLengthError, PrepareRepoFailedError } from '../../amazonqFeatureDev/errors'
 import { getLogger } from '../../shared/logger/logger'
 import { maxFileSizeBytes } from '../../amazonqFeatureDev/limits'
-import { createHash } from 'crypto'
-import { CurrentWsFolders, DeletedFileInfo, NewFileInfo, NewFileZipContents } from '../commons/types'
+import { CurrentWsFolders, DeletedFileInfo, NewFileInfo, NewFileZipContents } from '../../amazonqDoc/types'
 import { hasCode, ToolkitError } from '../../shared/errors'
 import { AmazonqCreateUpload, Span, telemetry as amznTelemetry, telemetry } from '../../shared/telemetry/telemetry'
-import { TelemetryHelper } from './telemetryHelper'
 import { maxRepoSizeBytes } from '../../amazonqFeatureDev/constants'
 import { isCodeFile } from '../../shared/filetypes'
 import { fs } from '../../shared/fs/fs'
@@ -24,6 +22,7 @@ import { CodeWhispererSettings } from '../../codewhisperer/util/codewhispererSet
 import { ZipStream } from '../../shared/utilities/zipStream'
 import { isPresent } from '../../shared/utilities/collectionUtils'
 import { AuthUtil } from '../../codewhisperer'
+import { TelemetryHelper } from '../../amazonqFeatureDev'
 
 export async function checkForDevFile(root: string) {
     const devFilePath = root + '/devfile.yaml'
