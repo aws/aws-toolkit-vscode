@@ -32,7 +32,6 @@ import { CredentialsData, SectionName, SharedCredentialsKeys } from '../credenti
 import { SsoProfile, hasScopes, scopesSsoAccountAccess } from '../connection'
 import { builderIdStartUrl } from '../sso/constants'
 import { ToolkitError } from '../../shared'
-import { STS } from 'aws-sdk'
 
 const credentialSources = {
     ECS_CONTAINER: 'EcsContainer',
@@ -414,7 +413,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
                 secretAccessKey: sourceProfile.aws_secret_access_key!,
             })
             // Prompt for MFA Token if needed.
-            const assumeRoleReq: STS.AssumeRoleRequest = profile.mfa_serial
+            const assumeRoleReq = profile.mfa_serial
                 ? {
                       RoleArn: profile.role_arn,
                       RoleSessionName: 'AssumeRoleSession',
