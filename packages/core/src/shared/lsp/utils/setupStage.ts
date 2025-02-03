@@ -10,13 +10,13 @@ import { tryFunctions } from '../../utilities/tsUtils'
  * Runs the designated stage within a telemetry span and optionally uses the getMetadata extractor to record metadata from the result of the stage.
  * @param stageName name of stage for telemetry.
  * @param runStage stage to be run.
- * @param getMetadata metadata extracter to be applied to result.
+ * @param getMetadata metadata extractor to be applied to result.
  * @returns result of stage
  */
 export async function lspSetupStage<Result>(
     stageName: LanguageServerSetupStage,
     runStage: () => Promise<Result>,
-    getMetadata?: MetadataExtracter<Result>
+    getMetadata?: MetadataExtractor<Result>
 ) {
     return await telemetry.languageServer_setup.run(async (span) => {
         span.record({ languageServerSetupStage: stageName })
@@ -38,7 +38,7 @@ export async function lspSetupStage<Result>(
 export async function tryStageResolvers<Result>(
     stageName: LanguageServerSetupStage,
     resolvers: StageResolver<Result>[],
-    getMetadata: MetadataExtracter<Result>
+    getMetadata: MetadataExtractor<Result>
 ) {
     const fs = resolvers.map((resolver) => async () => {
         return await lspSetupStage(
@@ -63,4 +63,4 @@ export interface StageResolver<Result> {
     telemetryMetadata: Partial<LanguageServerSetup>
 }
 
-type MetadataExtracter<R> = (r: R) => Partial<LanguageServerSetup>
+type MetadataExtractor<R> = (r: R) => Partial<LanguageServerSetup>
