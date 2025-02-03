@@ -313,15 +313,15 @@ export function assertNoTelemetryMatch(re: RegExp | string): void | never {
  */
 export function assertTelemetry<K extends MetricName>(
     name: K,
-    expected: MetricShapes[K] | MetricShapes[K][]
+    expected: Partial<MetricShapes[K]> | Partial<MetricShapes[K]>[]
 ): void | never
 export function assertTelemetry<K extends MetricName>(
     name: K,
-    expected: MetricShapes[MetricName] | MetricShapes[MetricName][]
+    expected: Partial<MetricShapes[MetricName]> | Partial<MetricShapes[MetricName]>[]
 ): void | never
 export function assertTelemetry<K extends MetricName>(
     name: K,
-    expected: MetricShapes[K] | MetricShapes[K][]
+    expected: Partial<MetricShapes[K]> | Partial<MetricShapes[K]>[]
 ): void | never {
     const expectedList = Array.isArray(expected) ? expected : [expected]
     const query = { metricName: name }
