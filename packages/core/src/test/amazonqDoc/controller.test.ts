@@ -139,24 +139,22 @@ describe('Controller - Doc Generation', () => {
             codewhispererChat: 'connected',
             amazonQ: 'connected',
         })
-        sinon.stub(FileSystem.prototype, 'exists').callsFake(async () => true)
+        sinon.stub(FileSystem.prototype, 'exists').resolves(false)
         getSessionStub = sinon.stub(controllerSetup.sessionStorage, 'getSession').resolves(session)
         modifiedReadme = ReadmeBuilder.createReadmeWithRepoStructure()
         sinon
             .stub(vscode.workspace, 'openTextDocument')
             .callsFake(async (options?: string | vscode.Uri | { language?: string; content?: string }) => {
-                let path = ''
+                let documentPath = ''
                 if (typeof options === 'string') {
-                    path = options
+                    documentPath = options
                 } else if (options && 'path' in options) {
-                    path = options.path
+                    documentPath = options.path
                 }
 
+                const isTempFile = documentPath === 'empty'
                 return {
-                    getText: () =>
-                        path.includes('/tmp/aws-toolkit-vscode') || path.includes('\\tmp\\aws-toolkit-vscode')
-                            ? generatedReadme
-                            : modifiedReadme,
+                    getText: () => (isTempFile ? generatedReadme : modifiedReadme),
                 } as any
             })
     })
@@ -232,7 +230,6 @@ describe('Controller - Doc Generation', () => {
         })
     })
     it('should emit generation telemetry for README update', async () => {
-        await updateFilePaths(session, modifiedReadme, uploadID, docScheme, controllerSetup.workspaceFolder)
         await performAction('update', getSessionStub)
 
         const expectedEvent = createExpectedEvent({
@@ -274,7 +271,6 @@ describe('Controller - Doc Generation', () => {
     })
 
     it('should emit acceptance telemetry for README update', async () => {
-        await updateFilePaths(session, modifiedReadme, uploadID, docScheme, controllerSetup.workspaceFolder)
         await performAction('update', getSessionStub)
         await new Promise((resolve) => setTimeout(resolve, 100))
 
@@ -295,7 +291,6 @@ describe('Controller - Doc Generation', () => {
     })
 
     it('should emit generation telemetry for README edit', async () => {
-        await updateFilePaths(session, modifiedReadme, uploadID, docScheme, controllerSetup.workspaceFolder)
         await performAction('edit', getSessionStub, 'add repository structure section')
 
         const expectedEvent = createExpectedEvent({
@@ -312,7 +307,6 @@ describe('Controller - Doc Generation', () => {
         })
     })
     it('should emit acceptance telemetry for README edit', async () => {
-        await updateFilePaths(session, modifiedReadme, uploadID, docScheme, controllerSetup.workspaceFolder)
         await performAction('edit', getSessionStub, 'add repository structure section')
         await new Promise((resolve) => setTimeout(resolve, 100))
 
