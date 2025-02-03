@@ -153,7 +153,10 @@ describe('Controller - Doc Generation', () => {
                 }
 
                 return {
-                    getText: () => (path.includes('/tmp/aws-toolkit-vscode') ? generatedReadme : modifiedReadme),
+                    getText: () =>
+                        path.includes('/tmp/aws-toolkit-vscode') || path.includes('\\tmp\\aws-toolkit-vscode')
+                            ? generatedReadme
+                            : modifiedReadme,
                 } as any
             })
     })
