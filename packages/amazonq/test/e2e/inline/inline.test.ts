@@ -10,6 +10,7 @@ import {
     closeAllEditors,
     getTestWindow,
     registerAuthHook,
+    resetCodeWhispererGlobalVariables,
     TestFolder,
     toTextEditor,
     using,
@@ -37,6 +38,7 @@ describe('Amazon Q Inline', async function () {
         const folder = await TestFolder.create()
         tempFolder = folder.path
         await closeAllEditors()
+        await resetCodeWhispererGlobalVariables(false)
     })
 
     afterEach(async function () {
@@ -95,7 +97,7 @@ describe('Amazon Q Inline', async function () {
                      *
                      * note: this number is entirely arbitrary
                      **/
-                    await sleep(2000)
+                    await sleep(1000)
 
                     await invokeCompletion()
                     originalEditorContents = vscode.window.activeTextEditor?.document.getText()
