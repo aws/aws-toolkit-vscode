@@ -26,7 +26,6 @@ import {
     scansLimitReachedErrorMessage,
 } from '../../codewhisperer/models/constants'
 import * as model from '../../codewhisperer/models/model'
-import { CodewhispererSecurityScan } from '../../shared/telemetry/telemetry.gen'
 import * as errors from '../../shared/errors'
 import * as timeoutUtils from '../../shared/utilities/timeoutUtils'
 import { SecurityIssuesTree } from '../../codewhisperer'
@@ -232,7 +231,7 @@ describe('startSecurityScan', function () {
             codewhispererCodeScanIssuesWithFixes: 0,
             codewhispererCodeScanScope: 'PROJECT',
             passive: false,
-        } as CodewhispererSecurityScan)
+        })
     })
 
     it('Should cancel a scan if a newer one has started', async function () {
@@ -261,7 +260,7 @@ describe('startSecurityScan', function () {
                 result: 'Cancelled',
                 reasonDesc: 'Security scan stopped by user.',
                 reason: 'DefaultError',
-            } as unknown as CodewhispererSecurityScan,
+            },
             {
                 result: 'Succeeded',
             },
@@ -323,7 +322,7 @@ describe('startSecurityScan', function () {
             reason: 'CodeScanJobFailedError',
             reasonDesc: 'CodeScanJobFailedError: Security scan failed.',
             passive: false,
-        } as unknown as CodewhispererSecurityScan)
+        })
     })
 
     it('Should show notification when throttled for project scans', async function () {
@@ -353,7 +352,7 @@ describe('startSecurityScan', function () {
             reason: 'ThrottlingException',
             reasonDesc: `ThrottlingException: Maximum com.amazon.aws.codewhisperer.StartCodeAnalysis reached for this month.`,
             passive: false,
-        } as unknown as CodewhispererSecurityScan)
+        })
     })
 
     it('Should set monthly quota exceeded when throttled for auto file scans', async function () {
@@ -385,6 +384,6 @@ describe('startSecurityScan', function () {
             reason: 'ThrottlingException',
             reasonDesc: 'ThrottlingException: Maximum file scans count reached for this month',
             passive: true,
-        } as unknown as CodewhispererSecurityScan)
+        })
     })
 })
