@@ -30,6 +30,7 @@ export { AmazonqCreateUpload, Metric } from './telemetry/telemetry'
 export { getClientId, getOperatingSystem } from './telemetry/util'
 export { extensionVersion } from './vscode/env'
 export { cast } from './utilities/typeConstructors'
+export * as workspaceUtils from './utilities/workspaceUtils'
 export {
     CodewhispererUserTriggerDecision,
     CodewhispererLanguage,
@@ -47,6 +48,7 @@ export * from './localizedText'
 export * as env from './vscode/env'
 export * from './vscode/commands2'
 export * from './utilities/pathUtils'
+export * from './utilities/zipStream'
 export * from './errors'
 export * as messages from './utilities/messages'
 export * as errors from './errors'

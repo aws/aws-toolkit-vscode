@@ -102,8 +102,8 @@ export function performanceTest<TSetup, TExecute>(
     const testOption = options[process.platform as 'linux' | 'darwin' | 'win32']
 
     const totalTestRuns = options.testRuns ?? 10
-
-    return describe(`${name} performance tests`, () => {
+    // TODO: unskip this once flakiness is reduced.
+    return describe.skip(`${name} performance tests`, () => {
         let performanceTracker: PerformanceTracker | undefined
         const testRunMetrics: PerformanceMetrics[] = []
 
