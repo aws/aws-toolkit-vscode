@@ -1310,7 +1310,7 @@ export class TestController {
         if (session.tabID) {
             getLogger().debug('Setting input state with tabID: %s', session.tabID)
             this.messenger.sendChatInputEnabled(session.tabID, true)
-            this.messenger.sendUpdatePlaceholder(session.tabID, '/test Generate unit tests') // TODO: Change according to the UX
+            this.messenger.sendUpdatePlaceholder(session.tabID, 'Enter "/" for quick actions') // TODO: Change according to the UX
         }
         getLogger().debug(
             'Deleting output.log and temp result directory. testGenerationLogsDir: %s',
