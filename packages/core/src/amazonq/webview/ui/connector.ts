@@ -131,9 +131,9 @@ export class Connector {
         }
     }
 
-    onFormLinkClick = (link: string): void => {
+    onLinkClick = (link: string): void => {
         this.sendMessageToExtension({
-            command: 'open-form-link',
+            command: 'open-link',
             link,
         })
     }

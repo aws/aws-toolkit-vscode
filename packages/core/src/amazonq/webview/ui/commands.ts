@@ -39,8 +39,7 @@ type MessageCommand =
     | 'store-code-result-message-id'
     | 'start-test-gen'
     | 'review'
-    | 'open-user-guide'
-    | 'open-form-link'
+    | 'open-link'
     | 'send-telemetry'
     | 'update-welcome-count'
 
