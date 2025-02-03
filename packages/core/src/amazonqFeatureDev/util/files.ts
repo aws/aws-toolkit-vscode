@@ -7,11 +7,9 @@ import * as vscode from 'vscode'
 import * as path from 'path'
 import { collectFiles } from '../../shared/utilities/workspaceUtils'
 
-import AdmZip from 'adm-zip'
 import { ContentLengthError, PrepareRepoFailedError } from '../errors'
 import { getLogger } from '../../shared/logger/logger'
 import { maxFileSizeBytes } from '../limits'
-import { createHash } from 'crypto'
 import { CurrentWsFolders } from '../types'
 import { hasCode, ToolkitError } from '../../shared/errors'
 import { AmazonqCreateUpload, Span, telemetry as amznTelemetry } from '../../shared/telemetry/telemetry'
@@ -19,8 +17,14 @@ import { TelemetryHelper } from './telemetryHelper'
 import { maxRepoSizeBytes } from '../constants'
 import { isCodeFile } from '../../shared/filetypes'
 import { fs } from '../../shared'
+import { CodeWhispererSettings } from '../../codewhisperer'
+import { ZipStream } from '../../shared/utilities/zipStream'
 
-const getSha256 = (file: Buffer) => createHash('sha256').update(file).digest('base64')
+export async function checkForDevFile(root: string) {
+    const devFilePath = root + '/devfile.yaml'
+    const hasDevFile = await fs.existsFile(devFilePath)
+    return hasDevFile
+}
 
 /**
  * given the root path of the repo it zips its files in memory and generates a checksum for it.
@@ -30,10 +34,13 @@ export async function prepareRepoData(
     workspaceFolders: CurrentWsFolders,
     telemetry: TelemetryHelper,
     span: Span<AmazonqCreateUpload>,
-    zip: AdmZip = new AdmZip()
+    zip: ZipStream = new ZipStream()
 ) {
     try {
-        const files = await collectFiles(repoRootPaths, workspaceFolders, true, maxRepoSizeBytes)
+        const autoBuildSetting = CodeWhispererSettings.instance.getAutoBuildSetting()
+        const useAutoBuildFeature = autoBuildSetting[repoRootPaths[0]] ?? false
+        // We only respect gitignore file rules if useAutoBuildFeature is on, this is to avoid dropping necessary files for building the code (e.g. png files imported in js code)
+        const files = await collectFiles(repoRootPaths, workspaceFolders, true, maxRepoSizeBytes, !useAutoBuildFeature)
 
         let totalBytes = 0
         const ignoredExtensionMap = new Map<string, number>()
@@ -50,8 +57,10 @@ export async function prepareRepoData(
                 throw error
             }
             const isCodeFile_ = isCodeFile(file.relativeFilePath)
-
-            if (fileSize >= maxFileSizeBytes || !isCodeFile_) {
+            const isDevFile = file.relativeFilePath === 'devfile.yaml'
+            // When useAutoBuildFeature is on, only respect the gitignore rules filtered earlier and apply the size limit, otherwise, exclude all non code files and gitignore files
+            const isNonCodeFileAndIgnored = useAutoBuildFeature ? false : !isCodeFile_ || isDevFile
+            if (fileSize >= maxFileSizeBytes || isNonCodeFileAndIgnored) {
                 if (!isCodeFile_) {
                     const re = /(?:\.([^.]+))?$/
                     const extensionArray = re.exec(file.relativeFilePath)
@@ -65,11 +74,12 @@ export async function prepareRepoData(
                 continue
             }
             totalBytes += fileSize
-
-            const zipFolderPath = path.dirname(file.zipFilePath)
+            // Paths in zip should be POSIX compliant regardless of OS
+            // Reference: https://pkware.cachefly.net/webdocs/casestudies/APPNOTE.TXT
+            const posixPath = file.zipFilePath.split(path.sep).join(path.posix.sep)
 
             try {
-                zip.addLocalFile(file.fileUri.fsPath, zipFolderPath)
+                zip.writeFile(file.fileUri.fsPath, posixPath)
             } catch (error) {
                 if (error instanceof Error && error.message.includes('File not found')) {
                     // No-op: Skip if file was deleted or does not exist
@@ -99,11 +109,12 @@ export async function prepareRepoData(
 
         telemetry.setRepositorySize(totalBytes)
         span.record({ amazonqRepositorySize: totalBytes })
+        const zipResult = await zip.finalize()
 
-        const zipFileBuffer = zip.toBuffer()
+        const zipFileBuffer = zipResult.streamBuffer.getContents() || Buffer.from('')
         return {
             zipFileBuffer,
-            zipFileChecksum: getSha256(zipFileBuffer),
+            zipFileChecksum: zipResult.hash,
         }
     } catch (error) {
         getLogger().debug(`featureDev: Failed to prepare repo: ${error}`)

@@ -1,3 +1,19 @@
+## 3.44.0 2025-01-30
+
+- **Bug Fix** Policy Checks selected profile is always default
+- **Feature** From the Lambda treeview in AWS Explorer, you can now right-click on a function name and start a CloudWatch Logs Live Tail sessions for the selected function.
+- **Feature** EC2 is now available in AWS Explorer:
+
+1. Remote-connect VSCode to your EC2 instances.
+2. Open terminal to your EC2 instances.
+3. Start, stop, and visit the Launch page.
+
+## 3.43.0 2025-01-23
+
+- **Bug Fix** AppBuilder: Update error messaging to make more legible and actionable
+- **Bug Fix** Notifications: 'Dismiss' command visible in command palette.
+- **Removal** Cloud9: remove special-case logic.
+
 ## 3.42.0 2025-01-15
 
 - **Bug Fix** Auth: Valid StartURL not accepted at login

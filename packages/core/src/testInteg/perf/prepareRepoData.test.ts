@@ -30,7 +30,7 @@ function performanceTestWrapper(numFiles: number, fileSize: number) {
         getEqualOSTestOptions({
             userCpuUsage: 200,
             systemCpuUsage: 35,
-            heapTotal: 4,
+            heapTotal: 20,
         }),
         `handles ${numFiles} files of size ${fileSize} bytes`,
         function () {
@@ -63,8 +63,7 @@ function verifyResult(setup: setupResult, result: resultType, telemetry: Telemet
     assert.strictEqual(Buffer.isBuffer(result.zipFileBuffer), true)
     assert.strictEqual(telemetry.repositorySize, expectedSize)
     assert.strictEqual(result.zipFileChecksum.length, 44)
-
-    assert.ok(getFsCallsUpperBound(setup.fsSpy) <= setup.numFiles * 4, 'total system calls should be under 4 per file')
+    assert.ok(getFsCallsUpperBound(setup.fsSpy) <= setup.numFiles * 8, 'total system calls should be under 8 per file')
 }
 
 describe('prepareRepoData', function () {

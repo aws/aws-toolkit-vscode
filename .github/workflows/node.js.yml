@@ -57,7 +57,7 @@ jobs:
             - run: npm run testCompile
             - run: npm run lint
 
-    jscpd:
+    lint-duplicate-code:
         needs: lint-commits
         if: ${{ github.event_name == 'pull_request'}}
         runs-on: ubuntu-latest

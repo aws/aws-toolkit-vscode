@@ -447,6 +447,8 @@ export const applySecurityFix = Commands.declare(
             result: 'Succeeded',
             credentialStartUrl: AuthUtil.instance.startUrl,
             codeFixAction: 'applyFix',
+            autoDetected: targetIssue.autoDetected,
+            codewhispererCodeScanJobId: targetIssue.scanJobId,
         }
         let languageId = undefined
         try {
@@ -711,6 +713,7 @@ export const generateFix = Commands.declare(
                     } else {
                         hasSuggestedFix = suggestedFix !== undefined
                     }
+                    telemetry.record({ includesFix: hasSuggestedFix })
                     const updatedIssue: CodeScanIssue = {
                         ...targetIssue,
                         fixJobId: jobId,
@@ -755,6 +758,8 @@ export const generateFix = Commands.declare(
                         findingId: targetIssue.findingId,
                         ruleId: targetIssue.ruleId,
                         variant: refresh ? 'refresh' : undefined,
+                        autoDetected: targetIssue.autoDetected,
+                        codewhispererCodeScanJobId: targetIssue.scanJobId,
                     })
                 }
             })

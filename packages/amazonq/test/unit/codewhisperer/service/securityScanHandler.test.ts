@@ -53,7 +53,7 @@ const buildMockListCodeScanFindingsResponse = (
 ): Awaited<Promise<PromiseResult<ListCodeScanFindingsResponse, AWSError>>> => ({
     $response: {
         hasNextPage: () => false,
-        nextPage: () => undefined,
+        nextPage: () => null, // eslint-disable-line unicorn/no-null
         data: undefined,
         error: undefined,
         requestId: '',
@@ -130,6 +130,31 @@ describe('securityScanHandler', function () {
 
             assert.equal(aggregatedCodeScanIssueList.length, 2)
             assert.equal(aggregatedCodeScanIssueList[0].issues.length, 3)
+        })
+
+        it('should set autoDetected based on scope', async function () {
+            mockClient.listCodeScanFindings.resolves(
+                buildMockListCodeScanFindingsResponse(JSON.stringify([buildRawCodeScanIssue()]))
+            )
+            for (const [scope, expectedValue] of [
+                [CodeAnalysisScope.FILE_AUTO, true],
+                [CodeAnalysisScope.FILE_ON_DEMAND, false],
+                [CodeAnalysisScope.PROJECT, false],
+            ] as [CodeAnalysisScope, boolean][]) {
+                const aggregatedCodeScanIssueList = await listScanResults(
+                    mockClient,
+                    'jobId',
+                    'codeScanFindingsSchema',
+                    ['projectPath'],
+                    scope,
+                    undefined
+                )
+                assert.ok(
+                    aggregatedCodeScanIssueList.every((item) =>
+                        item.issues.every((issue) => issue.autoDetected === expectedValue)
+                    )
+                )
+            }
         })
     })
 

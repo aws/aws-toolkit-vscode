@@ -50,11 +50,12 @@ export const walkthroughInlineSuggestionsExample = Commands.declare(
     `_aws.amazonq.walkthrough.inlineSuggestionsExample`,
     () => async () => {
         const fileName = 'AmazonQ_generate_suggestion.py'
-        const fileContents = `# TODO: place your cursor at the end of line 5 and press Enter to generate a suggestion.
+        const fileContents = `# TODO: place your cursor at the end of line 6 and press Enter to generate a suggestion.
 # Tip: press tab to accept the suggestion
 
 fake_users = [
-    { "name": "User 1", "id": "user1", "city": "San Francisco", "state": "CA" },`
+    { "name": "User 1", "id": "user1", "city": "San Francisco", "state": "CA" },
+]`
 
         const uri = vscode.Uri.parse(`untitled:${fileName}`)
         const document = await vscode.workspace.openTextDocument(uri)
