@@ -229,7 +229,7 @@ export class LspController {
                 getLogger().info(`LspController: LSP already installed`)
                 return true
             }
-            status = vscode.window.setStatusBarMessage('LspController: Installing LSP ...')
+            status = vscode.window.setStatusBarMessage('Language server downloading ...')
             // clean up previous downloaded LSP
             const qserverPath = context.asAbsolutePath(path.join('resources', 'qserver'))
             if (await fs.exists(qserverPath)) {
