@@ -200,25 +200,23 @@ export class LanguageServerResolver {
             }
         })
         const fetchResults = await Promise.all(fetchTasks)
-        const verifyTasks = fetchResults.flatMap(async (fetchResult) => {
-            if (!(fetchResult.res && fetchResult.res.ok && fetchResult.res.body)) {
+        const verifyTasks = fetchResults
+            .filter((fetchResult) => fetchResult.res && fetchResult.res.ok && fetchResult.res.body)
+            .flatMap(async (fetchResult) => {
+                const arrBuffer = await fetchResult.res!.arrayBuffer()
+                const data = Buffer.from(arrBuffer)
+
+                const hash = createHash('sha384', data)
+                if (hash === fetchResult.hash) {
+                    return [{ filename: fetchResult.filename, data }]
+                }
                 return []
-            }
-
-            const arrBuffer = await fetchResult.res.arrayBuffer()
-            const data = Buffer.from(arrBuffer)
-
-            const hash = createHash('sha384', data)
-            if (hash === fetchResult.hash) {
-                return [{ filename: fetchResult.filename, data }]
-            }
-            return []
-        })
-        const filesToDownload = await lspSetupStage('validate', async () => (await Promise.all(verifyTasks)).flat())
-
-        if (filesToDownload.length !== contents.length) {
+            })
+        if (verifyTasks.length !== contents.length) {
             return false
         }
+
+        const filesToDownload = await lspSetupStage('validate', async () => (await Promise.all(verifyTasks)).flat())
 
         for (const file of filesToDownload) {
             await fs.writeFile(`${downloadDirectory}/${file.filename}`, file.data)

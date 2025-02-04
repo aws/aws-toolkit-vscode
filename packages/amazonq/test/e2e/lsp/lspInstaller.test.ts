@@ -14,6 +14,8 @@ import {
     request,
 } from 'aws-core-vscode/shared'
 import * as semver from 'semver'
+import { assertTelemetry } from 'aws-core-vscode/test'
+import { LspController } from 'aws-core-vscode/amazonq'
 
 function createVersion(version: string) {
     return {
@@ -46,6 +48,8 @@ describe('AmazonQLSPInstaller', () => {
         resolver = new AmazonQLSPResolver()
         tempDir = await makeTemporaryToolkitFolder()
         sandbox.stub(LanguageServerResolver.prototype, 'defaultDownloadFolder').returns(tempDir)
+        // Called on extension activation and can contaminate telemetry.
+        sandbox.stub(LspController.prototype, 'trySetupLsp')
     })
 
     afterEach(async () => {
@@ -117,6 +121,91 @@ describe('AmazonQLSPInstaller', () => {
             assert.ok(fallback.assetDirectory.startsWith(tempDir))
             assert.deepStrictEqual(fallback.location, 'fallback')
             assert.ok(semver.satisfies(fallback.version, supportedLspServerVersions))
+
+            // Exclude version numbers so that this test doesn't have to be updated on each update.
+            assertTelemetry('languageServer_setup', [
+                /* First Try Telemetry
+                    getManifest: remote fails, then cache succeeds.
+                    getServer: cache fails then remote succeeds.
+                    validate: succeeds.
+                */
+                {
+                    id: 'AmazonQ',
+                    manifestLocation: 'remote',
+                    languageServerSetupStage: 'getManifest',
+                    result: 'Failed',
+                },
+                {
+                    id: 'AmazonQ',
+                    manifestLocation: 'cache',
+                    languageServerSetupStage: 'getManifest',
+                    result: 'Succeeded',
+                },
+                {
+                    id: 'AmazonQ',
+                    languageServerLocation: 'cache',
+                    languageServerSetupStage: 'getServer',
+                    result: 'Failed',
+                },
+                {
+                    id: 'AmazonQ',
+                    languageServerLocation: 'remote',
+                    languageServerSetupStage: 'validate',
+                    result: 'Succeeded',
+                },
+                {
+                    id: 'AmazonQ',
+                    languageServerLocation: 'remote',
+                    languageServerSetupStage: 'getServer',
+                    result: 'Succeeded',
+                },
+                /* Second Try Telemetry
+                    getManifest: remote fails, then cache succeeds.
+                    getServer: cache succeeds
+                    validate: doesn't run since its cached.
+                */
+                {
+                    id: 'AmazonQ',
+                    manifestLocation: 'remote',
+                    languageServerSetupStage: 'getManifest',
+                    result: 'Failed',
+                },
+                {
+                    id: 'AmazonQ',
+                    manifestLocation: 'cache',
+                    languageServerSetupStage: 'getManifest',
+                    result: 'Succeeded',
+                },
+                {
+                    id: 'AmazonQ',
+                    languageServerLocation: 'cache',
+                    languageServerSetupStage: 'getServer',
+                    result: 'Succeeded',
+                },
+                /* Third Try Telemetry
+                    getManifest: (stubbed to fail, no telemetry)
+                    getServer: remote and cache fail
+                    validate: no validation since not remote. 
+                */
+                {
+                    id: 'AmazonQ',
+                    languageServerLocation: 'cache',
+                    languageServerSetupStage: 'getServer',
+                    result: 'Failed',
+                },
+                {
+                    id: 'AmazonQ',
+                    languageServerLocation: 'remote',
+                    languageServerSetupStage: 'getServer',
+                    result: 'Failed',
+                },
+                {
+                    id: 'AmazonQ',
+                    languageServerLocation: 'fallback',
+                    languageServerSetupStage: 'getServer',
+                    result: 'Succeeded',
+                },
+            ])
         })
     })
 })
