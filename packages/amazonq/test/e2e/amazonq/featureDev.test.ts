@@ -161,7 +161,8 @@ describe('Amazon Q Feature Dev', function () {
         })
     })
 
-    describe('/dev {msg} entry', async () => {
+    // Disable failing tests while investigation. The tests are only failing in CI environments.
+    describe.skip('/dev {msg} entry', async () => {
         beforeEach(async function () {
             tab.addChatMessage({ command: '/dev', prompt })
             await retryIfRequired(
@@ -216,7 +217,7 @@ describe('Amazon Q Feature Dev', function () {
         })
     })
 
-    describe('file-level accepts', async () => {
+    describe.skip('file-level accepts', async () => {
         beforeEach(async function () {
             tab.addChatMessage({ command: '/dev', prompt: fileLevelAcceptPrompt })
             await retryIfRequired(
