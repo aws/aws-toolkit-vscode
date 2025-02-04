@@ -35,7 +35,7 @@ import { findAsync } from '../../shared/utilities/collectionUtils'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { withTelemetryContext } from '../../shared/telemetry/util'
 
-const loginManagerClass = 'LoginManager'
+const loginManagerClassName = 'LoginManager'
 /**
  * @deprecated Replaced by `Auth` in `src/credentials/auth.ts`
  */
@@ -133,7 +133,7 @@ export class LoginManager {
 
     private static didTryAutoConnect = false
 
-    @withTelemetryContext({ name: 'tryAutoConnect', class: loginManagerClass })
+    @withTelemetryContext({ name: 'tryAutoConnect', class: loginManagerClassName })
     public static async tryAutoConnect(awsContext: AwsContext = globals.awsContext): Promise<boolean> {
         if (isAutomation()) {
             return false

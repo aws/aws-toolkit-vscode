@@ -16,7 +16,7 @@ import {
 } from './credentials'
 import { CredentialsProviderFactory } from './credentialsProviderFactory'
 
-const credentialsProviderManager = 'CredentialsProviderManager'
+const credentialsProviderManagerClassName = 'CredentialsProviderManager'
 /**
  * Responsible for providing the Toolkit with all available CredentialsProviders.
  * Providers may be registered directly or created with supplied CredentialsProviderFactories.
@@ -26,7 +26,7 @@ export class CredentialsProviderManager {
     private readonly providerFactories: CredentialsProviderFactory[] = []
     private readonly providers: CredentialsProvider[] = []
 
-    @withTelemetryContext({ name: 'getAllCredentialsProvider', class: credentialsProviderManager, emit: true })
+    @withTelemetryContext({ name: 'getAllCredentialsProvider', class: credentialsProviderManagerClassName, emit: true })
     public async getAllCredentialsProviders(): Promise<CredentialsProvider[]> {
         let providers: CredentialsProvider[] = []
 
@@ -69,7 +69,7 @@ export class CredentialsProviderManager {
      * Returns a map of `CredentialsProviderId` string-forms to object-forms,
      * from all credential sources. Only available providers are returned.
      */
-    @withTelemetryContext({ name: 'getCredentialProviderNames', class: credentialsProviderManager })
+    @withTelemetryContext({ name: 'getCredentialProviderNames', class: credentialsProviderManagerClassName })
     public async getCredentialProviderNames(): Promise<{ [key: string]: CredentialsId }> {
         const m: { [key: string]: CredentialsId } = {}
         for (const o of await this.getAllCredentialsProviders()) {
