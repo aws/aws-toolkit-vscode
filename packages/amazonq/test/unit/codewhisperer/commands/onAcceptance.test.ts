@@ -13,20 +13,20 @@ import {
     CodeWhispererTracker,
     RecommendationHandler,
     AuthUtil,
+    CodeWhispererSession,
 } from 'aws-core-vscode/codewhisperer'
 import { resetCodeWhispererGlobalVariables, createMockTextEditor } from 'aws-core-vscode/test'
 import { assertTelemetryCurried } from 'aws-core-vscode/test'
 
 describe('onAcceptance', function () {
+    let session: CodeWhispererSession
     describe('onAcceptance', function () {
         beforeEach(async function () {
-            const session = CodeWhispererSessionState.instance.getSession()
+            session = CodeWhispererSessionState.instance.getSession()
             await resetCodeWhispererGlobalVariables()
-            session.reset()
         })
 
         afterEach(function () {
-            const session = CodeWhispererSessionState.instance.getSession()
             sinon.restore()
             session.reset()
         })
@@ -72,7 +72,6 @@ describe('onAcceptance', function () {
         })
 
         it('Should report telemetry that records this user decision event', async function () {
-            const session = CodeWhispererSessionState.instance.getSession()
             const testStartUrl = 'testStartUrl'
             sinon.stub(AuthUtil.instance, 'startUrl').value(testStartUrl)
             const mockEditor = createMockTextEditor()

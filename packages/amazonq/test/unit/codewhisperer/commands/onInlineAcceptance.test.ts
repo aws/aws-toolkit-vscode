@@ -13,20 +13,20 @@ import {
     RecommendationHandler,
     AuthUtil,
     CodeWhispererSessionState,
+    CodeWhispererSession,
 } from 'aws-core-vscode/codewhisperer'
 import { globals } from 'aws-core-vscode/shared'
 import { extensionVersion } from 'aws-core-vscode/shared'
 
 describe('onInlineAcceptance', function () {
+    let session: CodeWhispererSession
     describe('onInlineAcceptance', function () {
         beforeEach(async function () {
-            const session = CodeWhispererSessionState.instance.getSession()
+            session = CodeWhispererSessionState.instance.getSession()
             await resetCodeWhispererGlobalVariables()
-            session.reset()
         })
 
         afterEach(function () {
-            const session = CodeWhispererSessionState.instance.getSession()
             sinon.restore()
             session.reset()
         })
@@ -51,7 +51,6 @@ describe('onInlineAcceptance', function () {
         })
 
         it('Should report telemetry that records this user decision event', async function () {
-            const session = CodeWhispererSessionState.instance.getSession()
             await globals.globalState.update('CODEWHISPERER_USER_GROUP', {
                 version: extensionVersion,
             })
