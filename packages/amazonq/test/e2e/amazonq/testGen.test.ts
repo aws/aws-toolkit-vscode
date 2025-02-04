@@ -51,10 +51,10 @@ describe('Amazon Q Test Generation', function () {
             assert.fail(`Failed to open ${language} file`)
         }
 
-        await vscode.window.showTextDocument(document, { preview: false })
+        await waitUntil(async () => await vscode.window.showTextDocument(document, { preview: false }), {})
 
         const activeEditor = vscode.window.activeTextEditor
-        if (!activeEditor || activeEditor.document !== document) {
+        if (!activeEditor || activeEditor.document.uri.fsPath !== document.uri.fsPath) {
             assert.fail(`Failed to make temp file active`)
         }
     }
@@ -163,7 +163,7 @@ describe('Amazon Q Test Generation', function () {
         for (const { language, filePath } of testFiles) {
             describe(`${language} file`, () => {
                 beforeEach(async () => {
-                    await waitUntil(async () => setupTestDocument(filePath, language), {})
+                    setupTestDocument(filePath, language)
 
                     tab.addChatMessage({ command: '/test' })
                     await tab.waitForChatFinishesLoading()
