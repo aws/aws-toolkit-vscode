@@ -53,7 +53,7 @@ export class CredentialsProviderManager {
             }
             const emitWithDebounce = cancellableDebounce(
                 (m: AwsLoadCredentials) => telemetry.aws_loadCredentials.emit(m),
-                5000
+                100
             ).promise
             void emitWithDebounce({
                 credentialSourceId: credentialsProviderToTelemetryType(providerType),
