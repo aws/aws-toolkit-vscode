@@ -71,9 +71,6 @@ export class CodeWhispererSession {
     firstSuggestionShowTime: number = 0
     perceivedLatency: number = 0
 
-    // Per-session states
-    constructor() {}
-
     setFetchCredentialStart() {
         if (this.fetchCredentialStartTime === 0 && this.invokeSuggestionStartTime !== 0) {
             this.fetchCredentialStartTime = performance.now()
