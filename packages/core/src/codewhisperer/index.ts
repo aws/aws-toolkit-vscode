@@ -49,7 +49,6 @@ export { SecurityIssueCodeActionProvider } from './service/securityIssueCodeActi
 export {
     SecurityIssueTreeViewProvider,
     SecurityViewTreeItem,
-    SecurityIssuesTree,
     FileItem,
     IssueItem,
     SeverityItem,
