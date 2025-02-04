@@ -11,7 +11,6 @@ import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
 import { getLogger } from '../../shared/logger/logger'
 import { runtimeLanguageContext } from './runtimeLanguageContext'
 import { fetchSupplementalContext } from './supplementalContext/supplementalContextUtil'
-import { supplementalContextTimeoutInMs } from '../models/constants'
 import { getSelectedCustomization } from './customizationUtil'
 import { selectFrom } from '../../shared/utilities/tsUtils'
 import { checkLeftContextKeywordsForJson } from './commonUtil'
@@ -82,7 +81,7 @@ export function getFileRelativePath(editor: vscode.TextEditor): string {
     return relativePath.substring(0, CodeWhispererConstants.filenameCharsLimit)
 }
 
-export async function buildListRecommendationRequest(
+export async function buildGenerateCompletionRequest(
     editor: vscode.TextEditor,
     nextToken: string,
     allowCodeWithReference: boolean
@@ -91,13 +90,7 @@ export async function buildListRecommendationRequest(
     supplementalMetadata: CodeWhispererSupplementalContext | undefined
 }> {
     const fileContext = extractContextForCodeWhisperer(editor)
-
-    const tokenSource = new vscode.CancellationTokenSource()
-    setTimeout(() => {
-        tokenSource.cancel()
-    }, supplementalContextTimeoutInMs)
-
-    const supplementalContexts = await fetchSupplementalContext(editor, tokenSource.token)
+    const supplementalContexts = await fetchSupplementalContext(editor)
 
     logSupplementalContext(supplementalContexts)
 
@@ -128,14 +121,7 @@ export async function buildGenerateRecommendationRequest(editor: vscode.TextEdit
     supplementalMetadata: CodeWhispererSupplementalContext | undefined
 }> {
     const fileContext = extractContextForCodeWhisperer(editor)
-
-    const tokenSource = new vscode.CancellationTokenSource()
-    // the supplement context fetch mechanisms each has a timeout of supplementalContextTimeoutInMs
-    // adding 10 ms for overall timeout as buffer
-    setTimeout(() => {
-        tokenSource.cancel()
-    }, supplementalContextTimeoutInMs + 10)
-    const supplementalContexts = await fetchSupplementalContext(editor, tokenSource.token)
+    const supplementalContexts = await fetchSupplementalContext(editor)
 
     logSupplementalContext(supplementalContexts)
 

@@ -160,7 +160,7 @@ describe('editorContext', function () {
             const optOutPreference = false
             await globals.telemetry.setTelemetryEnabled(false)
             const editor = createMockTextEditor('import math\ndef two_sum(nums, target):\n', 'test.py', 'python', 1, 17)
-            const actual = await EditorContext.buildListRecommendationRequest(editor, nextToken, optOutPreference)
+            const actual = await EditorContext.buildGenerateCompletionRequest(editor, nextToken, optOutPreference)
 
             assert.strictEqual(actual.request.nextToken, nextToken)
             assert.strictEqual((actual.request as GenerateCompletionsRequest).optOutPreference, 'OPTOUT')

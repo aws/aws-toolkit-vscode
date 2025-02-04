@@ -5,7 +5,6 @@
 
 import assert from 'assert'
 import * as FakeTimers from '@sinonjs/fake-timers'
-import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import * as crossFile from 'aws-core-vscode/codewhisperer'
 import { TestFolder, assertTabCount, installFakeClock } from 'aws-core-vscode/test'
@@ -16,11 +15,6 @@ import { LspController } from 'aws-core-vscode/amazonq'
 describe('supplementalContextUtil', function () {
     let testFolder: TestFolder
     let clock: FakeTimers.InstalledClock
-
-    const fakeCancellationToken: vscode.CancellationToken = {
-        isCancellationRequested: false,
-        onCancellationRequested: sinon.spy(),
-    }
 
     before(function () {
         clock = installFakeClock()
@@ -62,7 +56,7 @@ describe('supplementalContextUtil', function () {
 
                 await assertTabCount(4)
 
-                const actual = await crossFile.fetchSupplementalContext(editor, fakeCancellationToken)
+                const actual = await crossFile.fetchSupplementalContext(editor)
                 assert.ok(actual?.supplementalContextItems.length === 4)
             })
 
@@ -78,7 +72,7 @@ describe('supplementalContextUtil', function () {
 
                 await assertTabCount(4)
 
-                const actual = await crossFile.fetchSupplementalContext(editor, fakeCancellationToken)
+                const actual = await crossFile.fetchSupplementalContext(editor)
                 assert.ok(actual?.supplementalContextItems.length === 0)
             })
         })

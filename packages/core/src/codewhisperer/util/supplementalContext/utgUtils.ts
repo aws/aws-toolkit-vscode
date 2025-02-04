@@ -4,7 +4,7 @@
  */
 
 import * as path from 'path'
-import { fs } from '../../../shared'
+import { fs, waitUntil } from '../../../shared'
 import * as vscode from 'vscode'
 import {
     countSubstringMatches,
@@ -14,10 +14,7 @@ import {
     utgLanguageConfig,
     utgLanguageConfigs,
 } from './codeParsingUtil'
-import { ToolkitError } from '../../../shared/errors'
-import { supplemetalContextFetchingTimeoutMsg } from '../../models/constants'
-import { CancellationError } from '../../../shared/utilities/timeoutUtils'
-import { utgConfig } from '../../models/constants'
+import { supplementalContextTimeoutInMs, utgConfig } from '../../models/constants'
 import { getOpenFilesInWindow } from '../../../shared/utilities/editorUtilities'
 import { getLogger } from '../../../shared/logger/logger'
 import { CodeWhispererSupplementalContext, CodeWhispererSupplementalContextItem, UtgStrategy } from '../../models/model'
@@ -48,8 +45,7 @@ export function shouldFetchUtgContext(languageId: vscode.TextDocument['languageI
  * @returns
  */
 export async function fetchSupplementalContextForTest(
-    editor: vscode.TextEditor,
-    cancellationToken: vscode.CancellationToken
+    editor: vscode.TextEditor
 ): Promise<Pick<CodeWhispererSupplementalContext, 'supplementalContextItems' | 'strategy'> | undefined> {
     const shouldProceed = shouldFetchUtgContext(editor.document.languageId)
 
@@ -59,50 +55,53 @@ export async function fetchSupplementalContextForTest(
 
     const languageConfig = utgLanguageConfigs[editor.document.languageId]
 
-    // TODO (Metrics): 1. Total number of calls to fetchSupplementalContextForTest
-    throwIfCancelled(cancellationToken)
+    const utgContext: Pick<CodeWhispererSupplementalContext, 'supplementalContextItems' | 'strategy'> | undefined =
+        await waitUntil(
+            async function () {
+                let crossSourceFile = await findSourceFileByName(editor)
+                if (crossSourceFile) {
+                    getLogger().debug(`CodeWhisperer finished fetching utg context by file name`)
+                    return {
+                        supplementalContextItems: await generateSupplementalContextFromFocalFile(
+                            crossSourceFile,
+                            'byName'
+                        ),
+                        strategy: 'byName',
+                    }
+                }
 
-    let crossSourceFile = await findSourceFileByName(editor, languageConfig, cancellationToken)
-    if (crossSourceFile) {
-        // TODO (Metrics): 2. Success count for fetchSourceFileByName (find source file by name)
-        getLogger().debug(`CodeWhisperer finished fetching utg context by file name`)
-        return {
-            supplementalContextItems: await generateSupplementalContextFromFocalFile(
-                crossSourceFile,
-                'byName',
-                cancellationToken
-            ),
-            strategy: 'byName',
+                crossSourceFile = await findSourceFileByContent(editor, languageConfig)
+                if (crossSourceFile) {
+                    getLogger().debug(`CodeWhisperer finished fetching utg context by file content`)
+                    return {
+                        supplementalContextItems: await generateSupplementalContextFromFocalFile(
+                            crossSourceFile,
+                            'byContent'
+                        ),
+                        strategy: 'byContent',
+                    }
+                }
+
+                return undefined
+            },
+            { timeout: supplementalContextTimeoutInMs, interval: 5, truthy: false }
+        )
+
+    if (!utgContext) {
+        getLogger().debug(`CodeWhisperer failed to fetch utg context`)
+    }
+
+    return (
+        utgContext ?? {
+            supplementalContextItems: [],
+            strategy: 'empty',
         }
-    }
-    throwIfCancelled(cancellationToken)
-
-    crossSourceFile = await findSourceFileByContent(editor, languageConfig, cancellationToken)
-    if (crossSourceFile) {
-        // TODO (Metrics): 3. Success count for fetchSourceFileByContent (find source file by content)
-        getLogger().debug(`CodeWhisperer finished fetching utg context by file content`)
-        return {
-            supplementalContextItems: await generateSupplementalContextFromFocalFile(
-                crossSourceFile,
-                'byContent',
-                cancellationToken
-            ),
-            strategy: 'byContent',
-        }
-    }
-
-    // TODO (Metrics): 4. Failure count - when unable to find focal file (supplemental context empty)
-    getLogger().debug(`CodeWhisperer failed to fetch utg context`)
-    return {
-        supplementalContextItems: [],
-        strategy: 'empty',
-    }
+    )
 }
 
 async function generateSupplementalContextFromFocalFile(
     filePath: string,
-    strategy: UtgStrategy,
-    cancellationToken: vscode.CancellationToken
+    strategy: UtgStrategy
 ): Promise<CodeWhispererSupplementalContextItem[]> {
     const fileContent = await fs.readFileText(vscode.Uri.parse(filePath!).fsPath)
 
@@ -121,34 +120,23 @@ async function generateSupplementalContextFromFocalFile(
 
 async function findSourceFileByContent(
     editor: vscode.TextEditor,
-    languageConfig: utgLanguageConfig,
-    cancellationToken: vscode.CancellationToken
+    languageConfig: utgLanguageConfig
 ): Promise<string | undefined> {
     const testFileContent = await fs.readFileText(editor.document.fileName)
     const testElementList = extractFunctions(testFileContent, languageConfig.functionExtractionPattern)
 
-    throwIfCancelled(cancellationToken)
-
     testElementList.push(...extractClasses(testFileContent, languageConfig.classExtractionPattern))
-
-    throwIfCancelled(cancellationToken)
 
     let sourceFilePath: string | undefined = undefined
     let maxMatchCount = 0
 
     if (testElementList.length === 0) {
-        // TODO: Add metrics here, as unable to parse test file using Regex.
         return sourceFilePath
     }
 
     const relevantFilePaths = await getRelevantUtgFiles(editor)
 
-    throwIfCancelled(cancellationToken)
-
-    // TODO (Metrics):Add metrics for relevantFilePaths length
     for (const filePath of relevantFilePaths) {
-        throwIfCancelled(cancellationToken)
-
         const fileContent = await fs.readFileText(filePath)
         const elementList = extractFunctions(fileContent, languageConfig.functionExtractionPattern)
         elementList.push(...extractClasses(fileContent, languageConfig.classExtractionPattern))
@@ -201,11 +189,7 @@ export function guessSrcFileName(
     return undefined
 }
 
-async function findSourceFileByName(
-    editor: vscode.TextEditor,
-    languageConfig: utgLanguageConfig,
-    cancellationToken: vscode.CancellationToken
-): Promise<string | undefined> {
+async function findSourceFileByName(editor: vscode.TextEditor): Promise<string | undefined> {
     const testFileName = path.basename(editor.document.fileName)
     const assumedSrcFileName = guessSrcFileName(testFileName, editor.document.languageId)
     if (!assumedSrcFileName) {
@@ -214,16 +198,8 @@ async function findSourceFileByName(
 
     const sourceFiles = await vscode.workspace.findFiles(`**/${assumedSrcFileName}`)
 
-    throwIfCancelled(cancellationToken)
-
     if (sourceFiles.length > 0) {
         return sourceFiles[0].toString()
     }
     return undefined
-}
-
-function throwIfCancelled(token: vscode.CancellationToken): void | never {
-    if (token.isCancellationRequested) {
-        throw new ToolkitError(supplemetalContextFetchingTimeoutMsg, { cause: new CancellationError('timeout') })
-    }
 }

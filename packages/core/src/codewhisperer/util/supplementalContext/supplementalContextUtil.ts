@@ -13,8 +13,7 @@ import { getLogger } from '../../../shared/logger/logger'
 import { CodeWhispererSupplementalContext } from '../../models/model'
 
 export async function fetchSupplementalContext(
-    editor: vscode.TextEditor,
-    cancellationToken: vscode.CancellationToken
+    editor: vscode.TextEditor
 ): Promise<CodeWhispererSupplementalContext | undefined> {
     const timesBeforeFetching = performance.now()
 
@@ -28,9 +27,9 @@ export async function fetchSupplementalContext(
     >
 
     if (isUtg) {
-        supplementalContextPromise = fetchSupplementalContextForTest(editor, cancellationToken)
+        supplementalContextPromise = fetchSupplementalContextForTest(editor)
     } else {
-        supplementalContextPromise = fetchSupplementalContextForSrc(editor, cancellationToken)
+        supplementalContextPromise = fetchSupplementalContextForSrc(editor)
     }
 
     return supplementalContextPromise

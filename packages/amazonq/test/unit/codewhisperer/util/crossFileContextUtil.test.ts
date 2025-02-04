@@ -30,11 +30,6 @@ import { LspController } from 'aws-core-vscode/amazonq'
 let tempFolder: string
 
 describe('crossFileContextUtil', function () {
-    const fakeCancellationToken: vscode.CancellationToken = {
-        isCancellationRequested: false,
-        onCancellationRequested: sinon.spy(),
-    }
-
     let mockEditor: vscode.TextEditor
     let clock: FakeTimers.InstalledClock
 
@@ -68,7 +63,7 @@ describe('crossFileContextUtil', function () {
 
             await assertTabCount(2)
 
-            const actual = await crossFile.fetchSupplementalContextForSrc(myCurrentEditor, fakeCancellationToken)
+            const actual = await crossFile.fetchSupplementalContextForSrc(myCurrentEditor)
             assert.ok(actual)
             assert.strictEqual(actual.supplementalContextItems.length, 3)
             assert.strictEqual(actual.supplementalContextItems[0].content.split('\n').length, 50)
@@ -96,7 +91,7 @@ describe('crossFileContextUtil', function () {
                     },
                 ])
 
-            const actual = await crossFile.fetchSupplementalContextForSrc(myCurrentEditor, fakeCancellationToken)
+            const actual = await crossFile.fetchSupplementalContextForSrc(myCurrentEditor)
             assert.ok(actual)
             assert.strictEqual(actual.supplementalContextItems.length, 3)
             assert.strictEqual(actual?.strategy, 'codemap')
@@ -149,7 +144,7 @@ describe('crossFileContextUtil', function () {
                     },
                 ])
 
-            const actual = await crossFile.fetchSupplementalContextForSrc(myCurrentEditor, fakeCancellationToken)
+            const actual = await crossFile.fetchSupplementalContextForSrc(myCurrentEditor)
             assert.ok(actual)
             assert.strictEqual(actual.supplementalContextItems.length, 5)
             assert.strictEqual(actual?.strategy, 'bm25')
@@ -188,14 +183,14 @@ describe('crossFileContextUtil', function () {
     describe('non supported language should return undefined', function () {
         it('c++', async function () {
             mockEditor = createMockTextEditor('content', 'fileName', 'cpp')
-            const actual = await crossFile.fetchSupplementalContextForSrc(mockEditor, fakeCancellationToken)
+            const actual = await crossFile.fetchSupplementalContextForSrc(mockEditor)
             assert.strictEqual(actual, undefined)
         })
 
         it('ruby', async function () {
             mockEditor = createMockTextEditor('content', 'fileName', 'ruby')
 
-            const actual = await crossFile.fetchSupplementalContextForSrc(mockEditor, fakeCancellationToken)
+            const actual = await crossFile.fetchSupplementalContextForSrc(mockEditor)
 
             assert.strictEqual(actual, undefined)
         })
@@ -286,7 +281,7 @@ describe('crossFileContextUtil', function () {
 
                 await assertTabCount(4)
 
-                const actual = await crossFile.fetchSupplementalContextForSrc(editor, fakeCancellationToken)
+                const actual = await crossFile.fetchSupplementalContextForSrc(editor)
 
                 assert.ok(actual && actual.supplementalContextItems.length === 0)
             })
@@ -317,7 +312,7 @@ describe('crossFileContextUtil', function () {
 
                 await assertTabCount(4)
 
-                const actual = await crossFile.fetchSupplementalContextForSrc(editor, fakeCancellationToken)
+                const actual = await crossFile.fetchSupplementalContextForSrc(editor)
 
                 assert.ok(actual && actual.supplementalContextItems.length !== 0)
             })
@@ -360,7 +355,7 @@ describe('crossFileContextUtil', function () {
 
                 await assertTabCount(4)
 
-                const actual = await crossFile.fetchSupplementalContextForSrc(editor, fakeCancellationToken)
+                const actual = await crossFile.fetchSupplementalContextForSrc(editor)
 
                 assert.ok(actual && actual.supplementalContextItems.length !== 0)
             })
