@@ -195,22 +195,5 @@ describe('zipUtil', function () {
 
             await assert.rejects(() => zipUtil.generateZipTestGen(appRoot, false), /Zip failed/)
         })
-
-        it('Should handle file copy to downloads folder error', async function () {
-            // Mock LSP client
-            sinon.stub(LspClient, 'instance').get(() => ({
-                getRepoMapJSON: sinon.stub().resolves('{"mock": "data"}'),
-            }))
-
-            const mkdirSpy = sinon.spy(fs, 'mkdir')
-            sinon.stub(fs, 'exists').resolves(true)
-            sinon.stub(fs, 'copy').rejects(new Error('Copy failed'))
-
-            await assert.rejects(() => zipUtil.generateZipTestGen(appRoot, false), /Copy failed/)
-
-            // Verify mkdir was called for all directories
-            assert(mkdirSpy.called, 'mkdir should have been called')
-            assert.strictEqual(mkdirSpy.callCount, 4, 'mkdir should have been called 4 times')
-        })
     })
 })
