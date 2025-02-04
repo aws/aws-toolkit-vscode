@@ -123,21 +123,16 @@ describe('AmazonQLSPInstaller', () => {
             assert.ok(semver.satisfies(fallback.version, supportedLspServerVersions))
 
             // Exclude version numbers so that this test doesn't have to be updated on each update.
+            // Fetching manifest fails locally, but passes in CI. Therefore, this test will fail locally.
             assertTelemetry('languageServer_setup', [
                 /* First Try Telemetry
-                    getManifest: remote fails, then cache succeeds.
+                    getManifest: remote succeeds
                     getServer: cache fails then remote succeeds.
                     validate: succeeds.
                 */
                 {
                     id: 'AmazonQ',
                     manifestLocation: 'remote',
-                    languageServerSetupStage: 'getManifest',
-                    result: 'Failed',
-                },
-                {
-                    id: 'AmazonQ',
-                    manifestLocation: 'cache',
                     languageServerSetupStage: 'getManifest',
                     result: 'Succeeded',
                 },
@@ -167,12 +162,6 @@ describe('AmazonQLSPInstaller', () => {
                 {
                     id: 'AmazonQ',
                     manifestLocation: 'remote',
-                    languageServerSetupStage: 'getManifest',
-                    result: 'Failed',
-                },
-                {
-                    id: 'AmazonQ',
-                    manifestLocation: 'cache',
                     languageServerSetupStage: 'getManifest',
                     result: 'Succeeded',
                 },
