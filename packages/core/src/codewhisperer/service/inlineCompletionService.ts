@@ -16,7 +16,7 @@ import { shared } from '../../shared/utilities/functionUtils'
 import { ClassifierTrigger } from './classifierTrigger'
 import { getSelectedCustomization } from '../util/customizationUtil'
 import { codicon, getIcon } from '../../shared/icons'
-import { session } from '../util/codeWhispererSession'
+import { CodeWhispererSessionState } from '../util/codeWhispererSession'
 import { noSuggestions } from '../models/constants'
 import { Commands } from '../../shared/vscode/commands2'
 import { listCodeWhispererCommandsId } from '../ui/statusBarMenu'
@@ -119,6 +119,7 @@ export class InlineCompletionService {
             errorMessage: undefined,
             recommendationCount: 0,
         }
+        const session = CodeWhispererSessionState.instance.getSession()
         try {
             let page = 0
             while (page < this.maxPage) {
@@ -127,6 +128,7 @@ export class InlineCompletionService {
                     editor,
                     triggerType,
                     config,
+                    session,
                     autoTriggerType,
                     true,
                     page
