@@ -79,8 +79,8 @@ describe('Amazon Q Test Generation', function () {
     })
 
     afterEach(async () => {
-        // Close all editors to prevent conflicts with subsequent tests trying to open the same file
-        await vscode.commands.executeCommand('workbench.action.closeAllEditors')
+        // // Close all editors to prevent conflicts with subsequent tests trying to open the same file
+        // await vscode.commands.executeCommand('workbench.action.closeAllEditors')
         framework.removeTab(tab.tabID)
         framework.dispose()
         sinon.restore()
