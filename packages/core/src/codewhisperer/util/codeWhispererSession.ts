@@ -14,41 +14,62 @@ import { GenerateRecommendationsRequest, ListRecommendationsRequest, Recommendat
 import { Position } from 'vscode'
 import { CodeWhispererSupplementalContext, vsCodeState } from '../models/model'
 
-class CodeWhispererSession {
-    static #instance: CodeWhispererSession
+export class CodeWhispererSessionState {
+    static #instance: CodeWhispererSessionState
+    session: CodeWhispererSession
+    nextSession: CodeWhispererSession
 
-    // Per-session states
-    sessionId = ''
+    constructor() {
+        this.session = new CodeWhispererSession()
+        this.nextSession = new CodeWhispererSession()
+    }
+    public static get instance() {
+        return (this.#instance ??= new CodeWhispererSessionState())
+    }
+
+    getSession() {
+        return this.session
+    }
+
+    setSession(session: CodeWhispererSession) {
+        this.session = session
+    }
+
+    getNextSession() {
+        return this.nextSession
+    }
+
+    setNextSession(session: CodeWhispererSession) {
+        this.nextSession = session
+    }
+}
+
+export class CodeWhispererSession {
+    sessionId: string = ''
     requestIdList: string[] = []
-    startPos = new Position(0, 0)
-    startCursorOffset = 0
-    leftContextOfCurrentLine = ''
+    startPos: Position = new Position(0, 0)
+    startCursorOffset: number = 0
+    leftContextOfCurrentLine: string = ''
     requestContext: {
         request: ListRecommendationsRequest | GenerateRecommendationsRequest
         supplementalMetadata: CodeWhispererSupplementalContext | undefined
-    } = { request: {} as any, supplementalMetadata: {} as any }
+    } = { request: {} as any, supplementalMetadata: undefined }
     language: CodewhispererLanguage = 'python'
-    taskType: CodewhispererGettingStartedTask | undefined
+    taskType: CodewhispererGettingStartedTask | undefined = undefined
     triggerType: CodewhispererTriggerType = 'OnDemand'
-    autoTriggerType: CodewhispererAutomatedTriggerType | undefined
-
+    autoTriggerType: CodewhispererAutomatedTriggerType | undefined = undefined
     // Various states of recommendations
     recommendations: Recommendation[] = []
-    suggestionStates = new Map<number, string>()
-    completionTypes = new Map<number, CodewhispererCompletionType>()
-
+    suggestionStates: Map<number, string> = new Map<number, string>()
+    completionTypes: Map<number, CodewhispererCompletionType> = new Map<number, CodewhispererCompletionType>()
     // Some other variables for client component latency
-    fetchCredentialStartTime = 0
-    sdkApiCallStartTime = 0
-    invokeSuggestionStartTime = 0
-    preprocessEndTime = 0
-    timeToFirstRecommendation = 0
-    firstSuggestionShowTime = 0
-    perceivedLatency = 0
-
-    public static get instance() {
-        return (this.#instance ??= new CodeWhispererSession())
-    }
+    fetchCredentialStartTime: number = 0
+    sdkApiCallStartTime: number = 0
+    invokeSuggestionStartTime: number = 0
+    preprocessEndTime: number = 0
+    timeToFirstRecommendation: number = 0
+    firstSuggestionShowTime: number = 0
+    perceivedLatency: number = 0
 
     setFetchCredentialStart() {
         if (this.fetchCredentialStartTime === 0 && this.invokeSuggestionStartTime !== 0) {
@@ -89,7 +110,7 @@ class CodeWhispererSession {
         if (triggerType === 'OnDemand') {
             return this.timeToFirstRecommendation
         } else {
-            return session.firstSuggestionShowTime - vsCodeState.lastUserModificationTime
+            return this.firstSuggestionShowTime - vsCodeState.lastUserModificationTime
         }
     }
 
@@ -118,6 +139,3 @@ class CodeWhispererSession {
         this.completionTypes.clear()
     }
 }
-
-// TODO: convert this to a function call
-export const session = CodeWhispererSession.instance
