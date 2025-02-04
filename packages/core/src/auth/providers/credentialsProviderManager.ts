@@ -4,8 +4,9 @@
  */
 
 import { getLogger } from '../../shared/logger'
-import { telemetry } from '../../shared/telemetry/telemetry'
+import { AwsLoadCredentials, telemetry } from '../../shared/telemetry/telemetry'
 import { withTelemetryContext } from '../../shared/telemetry/util'
+import { cancellableDebounce } from '../../shared/utilities/functionUtils'
 import {
     asString,
     CredentialsProvider,
@@ -50,10 +51,15 @@ export class CredentialsProviderManager {
             if (!providerType) {
                 continue
             }
-            telemetry.aws_loadCredentials.emit({
+            const metadata = {
                 credentialSourceId: credentialsProviderToTelemetryType(providerType),
                 value: refreshed.length,
-            })
+            }
+            const emitWithDebounce = cancellableDebounce(
+                (m: AwsLoadCredentials) => telemetry.aws_loadCredentials.emit(m),
+                5000
+            ).promise
+            void emitWithDebounce(metadata)
             providers = providers.concat(refreshed)
         }
 
