@@ -163,7 +163,7 @@ describe('Amazon Q Test Generation', function () {
         for (const { language, filePath } of testFiles) {
             describe(`${language} file`, () => {
                 beforeEach(async () => {
-                    await waitUntil(async () => await setupTestDocument(filePath, language), {})
+                    await setupTestDocument(filePath, language)
 
                     tab.addChatMessage({ command: '/test' })
                     await tab.waitForChatFinishesLoading()
@@ -186,20 +186,6 @@ describe('Amazon Q Test Generation', function () {
                     })
                 })
 
-                describe('Accept code', async () => {
-                    it('Clicks on accept', async () => {
-                        await tab.waitForButtons([FollowUpTypes.AcceptCode, FollowUpTypes.RejectCode])
-                        tab.clickButton(FollowUpTypes.AcceptCode)
-                        await tab.waitForChatFinishesLoading()
-
-                        await waitForChatItems(7)
-                        const acceptedMessage = tab.getChatItems()[7]
-
-                        assert.deepStrictEqual(acceptedMessage?.type, 'answer-part')
-                        assert.deepStrictEqual(acceptedMessage?.followUp?.options?.[0].pillText, 'Accepted')
-                    })
-                })
-
                 describe('Reject code', async () => {
                     it('Clicks on reject', async () => {
                         await tab.waitForButtons([FollowUpTypes.AcceptCode, FollowUpTypes.RejectCode])
@@ -211,6 +197,20 @@ describe('Amazon Q Test Generation', function () {
 
                         assert.deepStrictEqual(rejectedMessage?.type, 'answer-part')
                         assert.deepStrictEqual(rejectedMessage?.followUp?.options?.[0].pillText, 'Rejected')
+                    })
+                })
+
+                describe('Accept code', async () => {
+                    it('Clicks on accept', async () => {
+                        await tab.waitForButtons([FollowUpTypes.AcceptCode, FollowUpTypes.RejectCode])
+                        tab.clickButton(FollowUpTypes.AcceptCode)
+                        await tab.waitForChatFinishesLoading()
+
+                        await waitForChatItems(7)
+                        const acceptedMessage = tab.getChatItems()[7]
+
+                        assert.deepStrictEqual(acceptedMessage?.type, 'answer-part')
+                        assert.deepStrictEqual(acceptedMessage?.followUp?.options?.[0].pillText, 'Accepted')
                     })
                 })
             })
