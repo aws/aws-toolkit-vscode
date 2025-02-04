@@ -44,6 +44,7 @@ import {
 import { getPathsFromZipFilePath } from '../../../amazonqFeatureDev/util/files'
 import { FollowUpTypes } from '../../../amazonq/commons/types'
 import { DocGenerationTask } from '../docGenerationTask'
+import { DevPhase } from '../../types'
 
 export interface ChatControllerEventEmitters {
     readonly processHumanChatMessage: EventEmitter<any>
@@ -227,8 +228,6 @@ export class DocController {
                 return
             }
 
-            this.docGenerationTask.userIdentity = AuthUtil.instance.conn?.id
-
             const sendFolderConfirmationMessage = (message: string) => {
                 this.messenger.sendFolderConfirmationMessage(
                     data.tabID,
@@ -288,12 +287,12 @@ export class DocController {
                     break
                 case FollowUpTypes.AcceptChanges:
                     this.docGenerationTask.userDecision = 'ACCEPT'
-                    await this.sendDocGenerationEvent(data)
+                    await this.sendDocAcceptanceEvent(data)
                     await this.insertCode(data)
                     return
                 case FollowUpTypes.RejectChanges:
                     this.docGenerationTask.userDecision = 'REJECT'
-                    await this.sendDocGenerationEvent(data)
+                    await this.sendDocAcceptanceEvent(data)
                     this.messenger.sendAnswer({
                         type: 'answer',
                         tabID: data?.tabID,
@@ -323,7 +322,7 @@ export class DocController {
                     }
                     break
                 case FollowUpTypes.CancelFolderSelection:
-                    this.docGenerationTask.reset()
+                    this.docGenerationTask.folderLevel = 'ENTIRE_WORKSPACE'
                     return this.tabOpened(data)
             }
         })
@@ -488,7 +487,7 @@ export class DocController {
                 session.isAuthenticating = true
                 return
             }
-            this.docGenerationTask.numberOfNavigation += 1
+            this.docGenerationTask.numberOfNavigations += 1
             this.messenger.sendAnswer({
                 type: 'answer',
                 tabID: message.tabID,
@@ -595,6 +594,17 @@ export class DocController {
                     tabID: tabID,
                 })
             }
+            if (session?.state.phase === DevPhase.CODEGEN) {
+                const { totalGeneratedChars, totalGeneratedLines, totalGeneratedFiles } =
+                    await session.countGeneratedContent(this.docGenerationTask.interactionType)
+                this.docGenerationTask.conversationId = session.conversationId
+                this.docGenerationTask.numberOfGeneratedChars = totalGeneratedChars
+                this.docGenerationTask.numberOfGeneratedLines = totalGeneratedLines
+                this.docGenerationTask.numberOfGeneratedFiles = totalGeneratedFiles
+                const docGenerationEvent = this.docGenerationTask.docGenerationEventBase()
+
+                await session.sendDocTelemetryEvent(docGenerationEvent, 'generation')
+            }
         } finally {
             if (session?.state?.tokenSource?.token.isCancellationRequested) {
                 await this.newTask({ tabID })
@@ -652,18 +662,18 @@ export class DocController {
             )
         }
     }
-    private async sendDocGenerationEvent(message: any) {
+    private async sendDocAcceptanceEvent(message: any) {
         const session = await this.sessionStorage.getSession(message.tabID)
         this.docGenerationTask.conversationId = session.conversationId
         const { totalAddedChars, totalAddedLines, totalAddedFiles } = await session.countAddedContent(
             this.docGenerationTask.interactionType
         )
-        this.docGenerationTask.numberOfAddChars = totalAddedChars
-        this.docGenerationTask.numberOfAddLines = totalAddedLines
-        this.docGenerationTask.numberOfAddFiles = totalAddedFiles
-        const docGenerationEvent = this.docGenerationTask.docGenerationEventBase()
+        this.docGenerationTask.numberOfAddedChars = totalAddedChars
+        this.docGenerationTask.numberOfAddedLines = totalAddedLines
+        this.docGenerationTask.numberOfAddedFiles = totalAddedFiles
+        const docAcceptanceEvent = this.docGenerationTask.docAcceptanceEventBase()
 
-        await session.sendDocGenerationTelemetryEvent(docGenerationEvent)
+        await session.sendDocTelemetryEvent(docAcceptanceEvent, 'acceptance')
     }
     private processLink(message: any) {
         void openUrl(vscode.Uri.parse(message.link))
