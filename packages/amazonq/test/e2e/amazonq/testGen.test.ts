@@ -79,8 +79,6 @@ describe('Amazon Q Test Generation', function () {
     })
 
     afterEach(async () => {
-        // // Close all editors to prevent conflicts with subsequent tests trying to open the same file
-        // await vscode.commands.executeCommand('workbench.action.closeAllEditors')
         framework.removeTab(tab.tabID)
         framework.dispose()
         sinon.restore()
@@ -186,20 +184,6 @@ describe('Amazon Q Test Generation', function () {
                     })
                 })
 
-                describe('Reject code', async () => {
-                    it('Clicks on reject', async () => {
-                        await tab.waitForButtons([FollowUpTypes.AcceptCode, FollowUpTypes.RejectCode])
-                        tab.clickButton(FollowUpTypes.RejectCode)
-                        await tab.waitForChatFinishesLoading()
-
-                        await waitForChatItems(7)
-                        const rejectedMessage = tab.getChatItems()[7]
-
-                        assert.deepStrictEqual(rejectedMessage?.type, 'answer-part')
-                        assert.deepStrictEqual(rejectedMessage?.followUp?.options?.[0].pillText, 'Rejected')
-                    })
-                })
-
                 describe('Accept code', async () => {
                     it('Clicks on accept', async () => {
                         await tab.waitForButtons([FollowUpTypes.AcceptCode, FollowUpTypes.RejectCode])
@@ -214,18 +198,17 @@ describe('Amazon Q Test Generation', function () {
                     })
                 })
 
-                describe('Accept code Additional test', async () => {
-                    it('Clicks on accept', async () => {
+                describe('Reject code', async () => {
+                    it('Clicks on reject', async () => {
                         await tab.waitForButtons([FollowUpTypes.AcceptCode, FollowUpTypes.RejectCode])
-                        tab.clickButton(FollowUpTypes.AcceptCode)
+                        tab.clickButton(FollowUpTypes.RejectCode)
                         await tab.waitForChatFinishesLoading()
 
                         await waitForChatItems(7)
-                        const acceptedMessage = tab.getChatItems()[7]
+                        const rejectedMessage = tab.getChatItems()[7]
 
-                        assert.deepStrictEqual(acceptedMessage?.type, 'answer-part')
-                        assert.deepStrictEqual(acceptedMessage?.followUp?.options?.[0].pillText, 'Accepted')
-                        assert.deepStrictEqual('temp', 'temp')
+                        assert.deepStrictEqual(rejectedMessage?.type, 'answer-part')
+                        assert.deepStrictEqual(rejectedMessage?.followUp?.options?.[0].pillText, 'Rejected')
                     })
                 })
             })
