@@ -5,6 +5,7 @@
 
 import { getLogger } from '../../shared/logger'
 import { telemetry } from '../../shared/telemetry/telemetry'
+import { withTelemetryContext } from '../../shared/telemetry/util'
 import {
     asString,
     CredentialsProvider,
@@ -14,6 +15,7 @@ import {
 } from './credentials'
 import { CredentialsProviderFactory } from './credentialsProviderFactory'
 
+const credentialsProviderManager = 'CredentialsProviderManager'
 /**
  * Responsible for providing the Toolkit with all available CredentialsProviders.
  * Providers may be registered directly or created with supplied CredentialsProviderFactories.
@@ -23,13 +25,18 @@ export class CredentialsProviderManager {
     private readonly providerFactories: CredentialsProviderFactory[] = []
     private readonly providers: CredentialsProvider[] = []
 
+    @withTelemetryContext({ name: 'getAllCredentialsProvider', class: credentialsProviderManager, emit: true })
     public async getAllCredentialsProviders(): Promise<CredentialsProvider[]> {
         let providers: CredentialsProvider[] = []
 
         for (const provider of this.providers) {
             if (await provider.isAvailable()) {
-                const telemType = credentialsProviderToTelemetryType(provider.getCredentialsId().credentialSource)
-                telemetry.aws_loadCredentials.emit({ credentialSourceId: telemType, value: 1 })
+                telemetry.aws_loadCredentials.emit({
+                    credentialSourceId: credentialsProviderToTelemetryType(
+                        provider.getCredentialsId().credentialSource
+                    ),
+                    value: 1,
+                })
                 providers = providers.concat(provider)
             } else {
                 getLogger().verbose('auth: "%s" provider unavailable', provider.getCredentialsId().credentialTypeId)
@@ -43,8 +50,10 @@ export class CredentialsProviderManager {
             if (!providerType) {
                 continue
             }
-            const telemType = credentialsProviderToTelemetryType(providerType)
-            telemetry.aws_loadCredentials.emit({ credentialSourceId: telemType, value: refreshed.length })
+            telemetry.aws_loadCredentials.emit({
+                credentialSourceId: credentialsProviderToTelemetryType(providerType),
+                value: refreshed.length,
+            })
             providers = providers.concat(refreshed)
         }
 
@@ -55,6 +64,7 @@ export class CredentialsProviderManager {
      * Returns a map of `CredentialsProviderId` string-forms to object-forms,
      * from all credential sources. Only available providers are returned.
      */
+    @withTelemetryContext({ name: 'getCredentialProviderNames', class: credentialsProviderManager })
     public async getCredentialProviderNames(): Promise<{ [key: string]: CredentialsId }> {
         const m: { [key: string]: CredentialsId } = {}
         for (const o of await this.getAllCredentialsProviders()) {
