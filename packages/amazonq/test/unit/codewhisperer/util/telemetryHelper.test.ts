@@ -39,6 +39,7 @@ function aCompletion(): Completion {
 }
 
 describe('telemetryHelper', function () {
+    const session = CodeWhispererSessionState.instance.getSession()
     describe('clientComponentLatency', function () {
         let sut: TelemetryHelper
 
@@ -48,10 +49,10 @@ describe('telemetryHelper', function () {
 
         afterEach(function () {
             sinon.restore()
+            session.reset()
         })
 
         it('resetClientComponentLatencyTime should reset state variables', function () {
-            const session = CodeWhispererSessionState.instance.getSession()
             session.invokeSuggestionStartTime = 100
             session.preprocessEndTime = 200
             session.sdkApiCallStartTime = 300
@@ -290,7 +291,6 @@ describe('telemetryHelper', function () {
         })
 
         it('Should call telemetry record for each recommendations with proper arguments', async function () {
-            const session = CodeWhispererSessionState.instance.getSession()
             const telemetryHelper = new TelemetryHelper()
             const response = [{ content: "print('Hello')" }]
             const requestIdList = ['test_x', 'test_x', 'test_y']
