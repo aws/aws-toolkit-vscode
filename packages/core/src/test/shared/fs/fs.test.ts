@@ -14,7 +14,6 @@ import fs, { FileSystem } from '../../../shared/fs/fs'
 import * as os from 'os'
 import { isMinVscode, isWin } from '../../../shared/vscode/env'
 import Sinon from 'sinon'
-import * as extensionUtilities from '../../../shared/extensionUtilities'
 import { PermissionsError, formatError, isFileNotFoundError, scrubNames } from '../../../shared/errors'
 import { EnvironmentVariables } from '../../../shared/environmentVariables'
 import * as testutil from '../../testUtil'
@@ -227,20 +226,6 @@ describe('FileSystem', function () {
             })
         })
 
-        // eslint-disable-next-line unicorn/no-array-for-each
-        paths.forEach(async function (p) {
-            it(`creates folder but uses the "fs" module if in Cloud9: '${p}'`, async function () {
-                sandbox.stub(extensionUtilities, 'isCloud9').returns(true)
-                const dirPath = testFolder.pathFrom(p)
-                const mkdirSpy = sandbox.spy(nodefs, 'mkdir')
-
-                await fs.mkdir(dirPath)
-
-                assert(existsSync(dirPath))
-                assert.deepStrictEqual(mkdirSpy.args[0], [dirPath, { recursive: true }])
-            })
-        })
-
         it('does NOT throw if dir already exists', async function () {
             // We do not always want this behavior, but it seems that this is how the vsc implementation
             // does it. Look at the Node FS implementation instead as that throws if the dir already exists.
@@ -281,32 +266,6 @@ describe('FileSystem', function () {
         function sorted(i: [string, vscode.FileType][]) {
             return i.sort((a, b) => a[0].localeCompare(b[0]))
         }
-
-        it('uses the "fs" readdir implementation if in Cloud9', async function () {
-            sandbox.stub(extensionUtilities, 'isCloud9').returns(true)
-            const readdirSpy = sandbox.spy(nodefs, 'readdir')
-
-            await testFolder.write('a.txt')
-            await testFolder.write('b.txt')
-            await testFolder.write('c.txt')
-            mkdirSync(testFolder.pathFrom('dirA'))
-            mkdirSync(testFolder.pathFrom('dirB'))
-            mkdirSync(testFolder.pathFrom('dirC'))
-
-            const files = await fs.readdir(testFolder.path)
-            assert.deepStrictEqual(
-                sorted(files),
-                sorted([
-                    ['a.txt', vscode.FileType.File],
-                    ['b.txt', vscode.FileType.File],
-                    ['c.txt', vscode.FileType.File],
-                    ['dirA', vscode.FileType.Directory],
-                    ['dirB', vscode.FileType.Directory],
-                    ['dirC', vscode.FileType.Directory],
-                ])
-            )
-            assert(readdirSpy.calledOnce)
-        })
     })
 
     describe('copy()', function () {
@@ -359,19 +318,6 @@ describe('FileSystem', function () {
             const f = path.join(dir, 'missingdir/missingfile.txt')
             assert(!existsSync(f))
             await assert.rejects(() => fs.delete(f))
-        })
-
-        it('uses "node:fs" rm() if in Cloud9', async function () {
-            sandbox.stub(extensionUtilities, 'isCloud9').returns(true)
-            const rmdirSpy = sandbox.spy(nodefs, 'rm')
-            // Folder with subfolders
-            const dirPath = await testFolder.mkdir('a/b/deleteMe')
-            mkdirSync(dirPath, { recursive: true })
-
-            await fs.delete(dirPath, { recursive: true })
-
-            assert(rmdirSpy.calledOnce)
-            assert(!existsSync(dirPath))
         })
     })
 
@@ -465,16 +411,20 @@ describe('FileSystem', function () {
             const oldPath = testFolder.pathFrom('oldFile.txt')
             const newPath = testFolder.pathFrom('newFile.txt')
 
-            const result = fs.rename(oldPath, newPath)
-            // this file is created after the first "exists" check fails, the following check should pass
-            void testutil.toFile('hello world', oldPath)
-            await result
+            const existsStub = Sinon.stub(FileSystem.prototype, 'exists')
+            existsStub.onFirstCall().resolves(false)
+            existsStub.callThrough()
+
+            await testutil.toFile('hello world', oldPath)
+            await fs.rename(oldPath, newPath)
 
             testutil.assertTelemetry('ide_fileSystem', {
                 action: 'rename',
                 result: 'Succeeded',
                 reason: 'RenameRaceCondition',
             })
+
+            existsStub.restore()
         })
     })
 

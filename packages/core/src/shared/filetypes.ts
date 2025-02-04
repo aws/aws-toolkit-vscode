@@ -166,6 +166,7 @@ export const codefileExtensions = new Set([
     '.cbl',
     '.cc',
     '.cfc',
+    '.cfg',
     '.cfm',
     '.cjs',
     '.clj',
@@ -177,6 +178,7 @@ export const codefileExtensions = new Set([
     '.cob',
     '.cobra',
     '.coffee',
+    '.config',
     '.cpp',
     '.cpy',
     '.cr',
@@ -192,6 +194,7 @@ export const codefileExtensions = new Set([
     '.e',
     '.el',
     '.elm',
+    '.env',
     '.erl',
     '.ex',
     '.exs',
@@ -207,6 +210,7 @@ export const codefileExtensions = new Set([
     '.fsi',
     '.fsx',
     '.gd',
+    '.gitignore',
     '.go',
     '.gql',
     '.gradle',
@@ -227,8 +231,8 @@ export const codefileExtensions = new Set([
     '.html',
     '.hy',
     '.idl',
+    '.ini',
     '.io',
-    '.jar',
     '.java',
     '.jl',
     '.js',
@@ -240,6 +244,7 @@ export const codefileExtensions = new Set([
     '.lgt',
     '.lhs',
     '.lisp',
+    '.lock',
     '.logtalk',
     '.lsp',
     '.lua',
@@ -326,14 +331,17 @@ export const codefileExtensions = new Set([
     '.ss',
     '.st',
     '.sv',
+    '.svg',
     '.swift',
     '.t',
     '.tcl',
     '.tf',
+    '.toml',
     '.trigger',
     '.ts',
     '.tsx',
     '.tu',
+    '.txt',
     '.v',
     '.vala',
     '.vapi',
@@ -353,7 +361,7 @@ export const codefileExtensions = new Set([
 ])
 
 // Code file names without an extension
-export const codefileNames = new Set(['Dockerfile', 'Dockerfile.build', 'gradlew', 'mvnw'])
+export const codefileNames = new Set(['Dockerfile', 'Dockerfile.build', 'gradlew', 'mvnw', '.gitignore'])
 
 /** Returns true if `filename` is a code file. */
 export function isCodeFile(filename: string): boolean {

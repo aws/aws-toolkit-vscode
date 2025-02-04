@@ -10,7 +10,6 @@ import { createPlaceholderItem } from '../../../../shared/treeview/utils'
 import * as nls from 'vscode-nls'
 
 import { getLogger } from '../../../../shared/logger/logger'
-import { FunctionConfiguration, LambdaClient, GetFunctionCommand } from '@aws-sdk/client-lambda'
 import { DefaultLambdaClient } from '../../../../shared/clients/lambdaClient'
 import globals from '../../../../shared/extensionGlobals'
 import { defaultPartition } from '../../../../shared/regions/regionProvider'
@@ -28,7 +27,6 @@ import {
     s3BucketType,
 } from '../../../../shared/cloudformation/cloudformation'
 import { ToolkitError } from '../../../../shared'
-import { getIAMConnection } from '../../../../auth/utils'
 
 const localize = nls.loadMessageBundle()
 export interface DeployedResource {
@@ -89,43 +87,16 @@ export async function generateDeployedNode(
                 const defaultClient = new DefaultLambdaClient(regionCode)
                 const lambdaNode = new LambdaNode(regionCode, defaultClient)
                 let configuration: Lambda.FunctionConfiguration
-                let v3configuration
-                let logGroupName
                 try {
                     configuration = (await defaultClient.getFunction(deployedResource.PhysicalResourceId))
                         .Configuration as Lambda.FunctionConfiguration
                     newDeployedResource = new LambdaFunctionNode(lambdaNode, regionCode, configuration)
                 } catch (error: any) {
-                    getLogger().error('Error getting Lambda configuration %O', error)
+                    getLogger().error('Error getting Lambda configuration: %O', error)
                     throw ToolkitError.chain(error, 'Error getting Lambda configuration', {
                         code: 'lambdaClientError',
                     })
                 }
-                const connection = await getIAMConnection({ prompt: false })
-                if (!connection || connection.type !== 'iam') {
-                    return [
-                        createPlaceholderItem(
-                            localize(
-                                'AWS.appBuilder.explorerNode.unavailableDeployedResource',
-                                '[Failed to retrive deployed resource.]'
-                            )
-                        ),
-                    ]
-                }
-                const cred = await connection.getCredentials()
-                const v3Client = new LambdaClient({ region: regionCode, credentials: cred })
-
-                const v3command = new GetFunctionCommand({ FunctionName: deployedResource.PhysicalResourceId })
-                try {
-                    v3configuration = (await v3Client.send(v3command)).Configuration as FunctionConfiguration
-                    logGroupName = v3configuration.LoggingConfig?.LogGroup
-                } catch {
-                    getLogger().error('Error getting Lambda V3 configuration')
-                }
-                newDeployedResource.configuration = {
-                    ...newDeployedResource.configuration,
-                    logGroupName: logGroupName,
-                } as any
                 break
             }
             case s3BucketType: {
@@ -156,7 +127,10 @@ export async function generateDeployedNode(
                 getLogger().info('Details are missing or are incomplete for: %O', deployedResource)
                 return [
                     createPlaceholderItem(
-                        localize('AWS.appBuilder.explorerNode.noApps', '[This resource is not yet supported.]')
+                        localize(
+                            'AWS.appBuilder.explorerNode.noApps',
+                            '[This resource is not yet supported in AppBuilder.]'
+                        )
                     ),
                 ]
         }
@@ -166,7 +140,7 @@ export async function generateDeployedNode(
             createPlaceholderItem(
                 localize(
                     'AWS.appBuilder.explorerNode.unavailableDeployedResource',
-                    '[Failed to retrive deployed resource.]'
+                    '[Failed to retrieve deployed resource. Ensure correct stack name and region are in the samconfig.toml, and that your account is connected.]'
                 )
             ),
         ]

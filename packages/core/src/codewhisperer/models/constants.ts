@@ -84,6 +84,7 @@ export const lineBreakWin = '\r\n'
 
 export const supplementalContextTimeoutInMs = 100
 
+export const supplementalContextMaxTotalLength = 20480
 /**
  * Ux of recommendations
  */
@@ -97,6 +98,7 @@ export const completionDetail = 'Amazon Q'
 export const codewhisperer = 'Amazon Q'
 
 // use vscode languageId here / Supported languages
+// TODO: Dropped Cloud9 support - do we need Cloud9-commented entries here?
 export const platformLanguageIds = [
     'java',
     'python',
@@ -257,9 +259,9 @@ export const codeScanZipExt = '.zip'
 
 export const contextTruncationTimeoutSeconds = 10
 
-export const codeScanJobTimeoutSeconds = 60 * 10 // 10 minutes
+export const standardScanTimeoutMs = 600_000 // 10 minutes
 
-export const codeFileScanJobTimeoutSeconds = 60 * 10 // 10 minutes
+export const expressScanTimeoutMs = 60_000
 
 export const codeFixJobTimeoutMs = 60_000
 
@@ -304,7 +306,9 @@ export const securityScanLanguageIds = [
     'csharp',
     'go',
     'ruby',
-    'golang', // Cloud9 reports Go files with this language-id
+    // Cloud9 reports Go files with this language-id
+    // TODO: Dropped Cloud9 support - is this still needed?
+    'golang',
     'json',
     'yaml',
     'tf',
@@ -725,6 +729,8 @@ export const noOpenProjectsFoundChatTestGenMessage = `Sorry, I couldn\'t find a 
 
 export const unitTestGenerationCancelMessage = 'Unit test generation cancelled.'
 
+export const tooManyRequestErrorMessage = 'Too many requests. Please wait before retrying.'
+
 export const noJavaProjectsFoundChatMessage = `I couldn\'t find a project that I can upgrade. Currently, I support Java 8, Java 11, and Java 17 projects built on Maven. Make sure your project is open in the IDE. For more information, see the [Amazon Q documentation](${codeTransformPrereqDoc}).`
 
 export const linkToDocsHome = 'https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/code-transformation.html'
@@ -860,7 +866,7 @@ export enum TestGenerationJobStatus {
     COMPLETED = 'COMPLETED',
 }
 
-export enum ZipUseCase {
+export enum FeatureUseCase {
     TEST_GENERATION = 'TEST_GENERATION',
     CODE_SCAN = 'CODE_SCAN',
 }

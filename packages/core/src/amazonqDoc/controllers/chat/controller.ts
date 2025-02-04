@@ -10,7 +10,9 @@ import {
     EditDocumentation,
     FolderSelectorFollowUps,
     Mode,
+    NewSessionFollowUps,
     SynchronizeDocumentation,
+    CodeChangeFollowUps,
     docScheme,
     featureName,
     findReadmePath,
@@ -22,7 +24,6 @@ import { Session } from '../../session/session'
 import { i18n } from '../../../shared/i18n-helper'
 import path from 'path'
 import { createSingleFileDialog } from '../../../shared/ui/common/openDialog'
-import { MynahIcons } from '@aws/mynah-ui'
 
 import {
     MonthlyConversationLimitError,
@@ -43,6 +44,7 @@ import {
 import { getPathsFromZipFilePath } from '../../../amazonqFeatureDev/util/files'
 import { FollowUpTypes } from '../../../amazonq/commons/types'
 import { DocGenerationTask } from '../docGenerationTask'
+import { DevPhase } from '../../types'
 
 export interface ChatControllerEventEmitters {
     readonly processHumanChatMessage: EventEmitter<any>
@@ -226,8 +228,6 @@ export class DocController {
                 return
             }
 
-            this.docGenerationTask.userIdentity = AuthUtil.instance.conn?.id
-
             const sendFolderConfirmationMessage = (message: string) => {
                 this.messenger.sendFolderConfirmationMessage(
                     data.tabID,
@@ -287,29 +287,18 @@ export class DocController {
                     break
                 case FollowUpTypes.AcceptChanges:
                     this.docGenerationTask.userDecision = 'ACCEPT'
-                    await this.sendDocGenerationEvent(data)
+                    await this.sendDocAcceptanceEvent(data)
                     await this.insertCode(data)
                     return
                 case FollowUpTypes.RejectChanges:
                     this.docGenerationTask.userDecision = 'REJECT'
-                    await this.sendDocGenerationEvent(data)
+                    await this.sendDocAcceptanceEvent(data)
                     this.messenger.sendAnswer({
                         type: 'answer',
                         tabID: data?.tabID,
                         disableChatInput: true,
                         message: 'Your changes have been discarded.',
-                        followUps: [
-                            {
-                                pillText: i18n('AWS.amazonq.doc.pillText.newTask'),
-                                type: FollowUpTypes.NewTask,
-                                status: 'info',
-                            },
-                            {
-                                pillText: i18n('AWS.amazonq.doc.pillText.closeSession'),
-                                type: FollowUpTypes.CloseSession,
-                                status: 'info',
-                            },
-                        ],
+                        followUps: NewSessionFollowUps,
                     })
                     break
                 case FollowUpTypes.ProceedFolderSelection:
@@ -333,7 +322,7 @@ export class DocController {
                     }
                     break
                 case FollowUpTypes.CancelFolderSelection:
-                    this.docGenerationTask.reset()
+                    this.docGenerationTask.folderLevel = 'ENTIRE_WORKSPACE'
                     return this.tabOpened(data)
             }
         })
@@ -412,13 +401,19 @@ export class DocController {
         const errorMessage = createUserFacingErrorMessage(`${err.cause?.message ?? err.message}`)
         // eslint-disable-next-line unicorn/no-null
         this.messenger.sendUpdatePromptProgress(message.tabID, null)
+        if (err.constructor.name === MonthlyConversationLimitError.name) {
+            this.messenger.sendMonthlyLimitError(message.tabID)
+        } else {
+            const enableUserInput = this.mode === Mode.EDIT && err.remainingIterations > 0
 
-        switch (err.constructor.name) {
-            case MonthlyConversationLimitError.name:
-                this.messenger.sendMonthlyLimitError(message.tabID)
-                break
-            default:
-                this.messenger.sendErrorMessage(errorMessage, message.tabID, 0, session?.conversationIdUnsafe, false)
+            this.messenger.sendErrorMessage(
+                errorMessage,
+                message.tabID,
+                0,
+                session?.conversationIdUnsafe,
+                false,
+                enableUserInput
+            )
         }
     }
 
@@ -427,8 +422,6 @@ export class DocController {
             await this.onDocsGeneration(session, message.message, message.tabID)
         } catch (err: any) {
             this.processErrorChatMessage(err, message, session)
-            // Lock the chat input until they explicitly click one of the follow ups
-            this.messenger.sendChatInputEnabled(message.tabID, false)
         }
     }
 
@@ -461,12 +454,8 @@ export class DocController {
             }
 
             await this.generateDocumentation({ message, session })
-            this.messenger.sendChatInputEnabled(message?.tabID, false)
-            this.messenger.sendUpdatePlaceholder(message.tabID, i18n('AWS.amazonq.doc.pillText.selectOption'))
         } catch (err: any) {
             this.processErrorChatMessage(err, message, session)
-            // Lock the chat input until they explicitly click one of the follow ups
-            this.messenger.sendChatInputEnabled(message.tabID, false)
         }
     }
 
@@ -498,7 +487,7 @@ export class DocController {
                 session.isAuthenticating = true
                 return
             }
-            this.docGenerationTask.numberOfNavigation += 1
+            this.docGenerationTask.numberOfNavigations += 1
             this.messenger.sendAnswer({
                 type: 'answer',
                 tabID: message.tabID,
@@ -590,40 +579,32 @@ export class DocController {
                 this.messenger.sendAnswer({
                     type: 'answer',
                     tabID: tabID,
-                    message: `${this.mode === Mode.CREATE ? i18n('AWS.amazonq.doc.answer.readmeCreated') : i18n('AWS.amazonq.doc.answer.readmeUpdated')} ${i18n('AWS.amazonq.doc.answer.codeResult')}`,
+                    message: `${this.mode === Mode.CREATE ? i18n('AWS.amazonq.doc.answer.readmeCreated') : i18n('AWS.amazonq.doc.answer.readmeUpdated')} ${remainingIterations > 0 ? i18n('AWS.amazonq.doc.answer.codeResult') : i18n('AWS.amazonq.doc.answer.acceptOrReject')}`,
                     disableChatInput: true,
                 })
-            }
 
-            this.messenger.sendAnswer({
-                message: undefined,
-                type: 'system-prompt',
-                disableChatInput: true,
-                followUps: [
-                    {
-                        pillText: 'Accept',
-                        prompt: 'Accept',
-                        type: FollowUpTypes.AcceptChanges,
-                        icon: 'ok' as MynahIcons,
-                        status: 'success',
-                    },
-                    {
-                        pillText: 'Make changes',
-                        prompt: 'Make changes',
-                        type: FollowUpTypes.MakeChanges,
-                        icon: 'refresh' as MynahIcons,
-                        status: 'info',
-                    },
-                    {
-                        pillText: 'Reject',
-                        prompt: 'Reject',
-                        type: FollowUpTypes.RejectChanges,
-                        icon: 'cancel' as MynahIcons,
-                        status: 'error',
-                    },
-                ],
-                tabID: tabID,
-            })
+                this.messenger.sendAnswer({
+                    message: undefined,
+                    type: 'system-prompt',
+                    disableChatInput: true,
+                    followUps:
+                        remainingIterations > 0
+                            ? CodeChangeFollowUps
+                            : CodeChangeFollowUps.filter((followUp) => followUp.type !== FollowUpTypes.MakeChanges),
+                    tabID: tabID,
+                })
+            }
+            if (session?.state.phase === DevPhase.CODEGEN) {
+                const { totalGeneratedChars, totalGeneratedLines, totalGeneratedFiles } =
+                    await session.countGeneratedContent(this.docGenerationTask.interactionType)
+                this.docGenerationTask.conversationId = session.conversationId
+                this.docGenerationTask.numberOfGeneratedChars = totalGeneratedChars
+                this.docGenerationTask.numberOfGeneratedLines = totalGeneratedLines
+                this.docGenerationTask.numberOfGeneratedFiles = totalGeneratedFiles
+                const docGenerationEvent = this.docGenerationTask.docGenerationEventBase()
+
+                await session.sendDocTelemetryEvent(docGenerationEvent, 'generation')
+            }
         } finally {
             if (session?.state?.tokenSource?.token.isCancellationRequested) {
                 await this.newTask({ tabID })
@@ -642,10 +623,8 @@ export class DocController {
             type: 'answer',
             tabID: message.tabID,
             message: 'Follow instructions to re-authenticate ...',
+            disableChatInput: true,
         })
-
-        // Explicitly ensure the user goes through the re-authenticate flow
-        this.messenger.sendChatInputEnabled(message.tabID, false)
     }
 
     private tabClosed(message: any) {
@@ -670,18 +649,7 @@ export class DocController {
                 type: 'answer',
                 disableChatInput: true,
                 tabID: message.tabID,
-                followUps: [
-                    {
-                        pillText: i18n('AWS.amazonq.doc.pillText.newTask'),
-                        type: FollowUpTypes.NewTask,
-                        status: 'info',
-                    },
-                    {
-                        pillText: i18n('AWS.amazonq.doc.pillText.closeSession'),
-                        type: FollowUpTypes.CloseSession,
-                        status: 'info',
-                    },
-                ],
+                followUps: NewSessionFollowUps,
             })
 
             this.messenger.sendUpdatePlaceholder(message.tabID, i18n('AWS.amazonq.doc.pillText.selectOption'))
@@ -694,18 +662,18 @@ export class DocController {
             )
         }
     }
-    private async sendDocGenerationEvent(message: any) {
+    private async sendDocAcceptanceEvent(message: any) {
         const session = await this.sessionStorage.getSession(message.tabID)
         this.docGenerationTask.conversationId = session.conversationId
         const { totalAddedChars, totalAddedLines, totalAddedFiles } = await session.countAddedContent(
             this.docGenerationTask.interactionType
         )
-        this.docGenerationTask.numberOfAddChars = totalAddedChars
-        this.docGenerationTask.numberOfAddLines = totalAddedLines
-        this.docGenerationTask.numberOfAddFiles = totalAddedFiles
-        const docGenerationEvent = this.docGenerationTask.docGenerationEventBase()
+        this.docGenerationTask.numberOfAddedChars = totalAddedChars
+        this.docGenerationTask.numberOfAddedLines = totalAddedLines
+        this.docGenerationTask.numberOfAddedFiles = totalAddedFiles
+        const docAcceptanceEvent = this.docGenerationTask.docAcceptanceEventBase()
 
-        await session.sendDocGenerationTelemetryEvent(docGenerationEvent)
+        await session.sendDocTelemetryEvent(docAcceptanceEvent, 'acceptance')
     }
     private processLink(message: any) {
         void openUrl(vscode.Uri.parse(message.link))

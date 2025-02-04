@@ -16,7 +16,7 @@ import { MockDocument } from '../fake/fakeDocument'
 import { getLogger } from '../../shared/logger'
 import { CodeWhispererCodeCoverageTracker } from '../../codewhisperer/tracker/codewhispererCodeCoverageTracker'
 import globals from '../../shared/extensionGlobals'
-import { session } from '../../codewhisperer/util/codeWhispererSession'
+import { CodeWhispererSessionState } from '../../codewhisperer/util/codeWhispererSession'
 import { DefaultAWSClientBuilder, ServiceOptions } from '../../shared/awsClientBuilder'
 import { FakeAwsContext } from '../utilities/fakeAwsContext'
 import { HttpResponse, Service } from 'aws-sdk'
@@ -33,6 +33,7 @@ export async function resetCodeWhispererGlobalVariables() {
     vsCodeState.isCodeWhispererEditing = false
     CodeWhispererCodeCoverageTracker.instances.clear()
     globals.telemetry.logger.clear()
+    const session = CodeWhispererSessionState.instance.getSession()
     session.reset()
     await globals.globalState.clear()
     await CodeSuggestionsState.instance.setSuggestionsEnabled(true)
@@ -226,7 +227,7 @@ export const mockGetCodeScanResponse = {
         requestId: 'requestId',
         hasNextPage: () => false,
         error: undefined,
-        nextPage: () => undefined,
+        nextPage: () => null, // eslint-disable-line unicorn/no-null
         redirectCount: 0,
         retryCount: 0,
         httpResponse: new HttpResponse(),
@@ -246,7 +247,7 @@ export function createClient() {
             requestId: 'requestId',
             hasNextPage: () => false,
             error: undefined,
-            nextPage: () => undefined,
+            nextPage: () => null, // eslint-disable-line unicorn/no-null
             redirectCount: 0,
             retryCount: 0,
             httpResponse: new HttpResponse(),
@@ -263,7 +264,7 @@ export function createClient() {
             requestId: 'requestId',
             hasNextPage: () => false,
             error: undefined,
-            nextPage: () => undefined,
+            nextPage: () => null, // eslint-disable-line unicorn/no-null
             redirectCount: 0,
             retryCount: 0,
             httpResponse: new HttpResponse(),
@@ -306,7 +307,7 @@ export function createClient() {
             requestId: 'requestId',
             hasNextPage: () => false,
             error: undefined,
-            nextPage: () => undefined,
+            nextPage: () => null, // eslint-disable-line unicorn/no-null
             redirectCount: 0,
             retryCount: 0,
             httpResponse: new HttpResponse(),
@@ -325,6 +326,15 @@ export function aStringWithLineCount(lineCount: number, start: number = 0): stri
     let s = ''
     for (let i = start; i < start + lineCount; i++) {
         s += `line${i}\n`
+    }
+
+    return s.trimEnd()
+}
+
+export function aLongStringWithLineCount(lineCount: number, start: number = 0): string {
+    let s = ''
+    for (let i = start; i < start + lineCount; i++) {
+        s += `a`.repeat(100) + `line${i}\n`
     }
 
     return s.trimEnd()

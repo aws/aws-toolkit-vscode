@@ -196,8 +196,8 @@ async function downloadInstallScript(debuggerPath: string): Promise<string> {
         installScriptPath = path.join(debuggerPath, 'installVsdbgScript.sh')
     }
 
-    const installScriptFetcher = new HttpResourceFetcher(installScriptUrl, { showUrl: true })
-    const installScript = await installScriptFetcher.get()
+    const installScriptFetcher = await new HttpResourceFetcher(installScriptUrl, { showUrl: true }).get()
+    const installScript = await installScriptFetcher?.text()
     if (!installScript) {
         throw Error(`Failed to download ${installScriptUrl}`)
     }

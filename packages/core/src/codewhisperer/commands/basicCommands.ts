@@ -27,7 +27,6 @@ import { connectToEnterpriseSso, getStartUrl } from '../util/getStartUrl'
 import { showCodeWhispererConnectionPrompt } from '../util/showSsoPrompt'
 import { ReferenceLogViewProvider } from '../service/referenceLogViewProvider'
 import { AuthUtil } from '../util/authUtil'
-import { isCloud9 } from '../../shared/extensionUtilities'
 import { getLogger } from '../../shared/logger'
 import { isExtensionActive, isExtensionInstalled, localize, openUrl } from '../../shared/utilities/vsCodeUtils'
 import {
@@ -50,7 +49,7 @@ import { once } from '../../shared/utilities/functionUtils'
 import { focusAmazonQPanel } from '../../codewhispererChat/commands/registerCommands'
 import { removeDiagnostic } from '../service/diagnosticsProvider'
 import { SsoAccessTokenProvider } from '../../auth/sso/ssoAccessTokenProvider'
-import { ToolkitError, getTelemetryReason, getTelemetryReasonDesc } from '../../shared/errors'
+import { ToolkitError, getErrorMsg, getTelemetryReason, getTelemetryReasonDesc } from '../../shared/errors'
 import { isRemoteWorkspace } from '../../shared/vscode/env'
 import { isBuilderIdConnection } from '../../auth/connection'
 import globals from '../../shared/extensionGlobals'
@@ -66,7 +65,9 @@ import { cancel, confirm } from '../../shared'
 import { startCodeFixGeneration } from './startCodeFixGeneration'
 import { DefaultAmazonQAppInitContext } from '../../amazonq/apps/initContext'
 import path from 'path'
+import { UserWrittenCodeTracker } from '../tracker/userWrittenCodeTracker'
 import { parsePatch } from 'diff'
+import { createCodeIssueGroupingStrategyPrompter } from '../ui/prompters'
 
 const MessageTimeOut = 5_000
 
@@ -105,9 +106,7 @@ export const enableCodeSuggestions = Commands.declare(
             await setContext('aws.codewhisperer.connected', true)
             await setContext('aws.codewhisperer.connectionExpired', false)
             vsCodeState.isFreeTierLimitReached = false
-            if (!isCloud9()) {
-                await vscode.commands.executeCommand('aws.amazonq.refreshStatusBar')
-            }
+            await vscode.commands.executeCommand('aws.amazonq.refreshStatusBar')
         }
 )
 
@@ -448,9 +447,12 @@ export const applySecurityFix = Commands.declare(
             result: 'Succeeded',
             credentialStartUrl: AuthUtil.instance.startUrl,
             codeFixAction: 'applyFix',
+            autoDetected: targetIssue.autoDetected,
+            codewhispererCodeScanJobId: targetIssue.scanJobId,
         }
         let languageId = undefined
         try {
+            UserWrittenCodeTracker.instance.onQStartsMakingEdits()
             const document = await vscode.workspace.openTextDocument(targetFilePath)
             languageId = document.languageId
             const updatedContent = await getPatchedCode(targetFilePath, suggestedFix.code)
@@ -565,6 +567,7 @@ export const applySecurityFix = Commands.declare(
                 applyFixTelemetryEntry.result,
                 !!targetIssue.suggestedFixes.length
             )
+            UserWrittenCodeTracker.instance.onQFinishesEdits()
         }
     }
 )
@@ -677,7 +680,8 @@ export const generateFix = Commands.declare(
                         })
                     await updateSecurityIssueWebview({
                         isGenerateFixLoading: true,
-                        isGenerateFixError: false,
+                        // eslint-disable-next-line unicorn/no-null
+                        generateFixError: null,
                         context: context.extensionContext,
                         filePath: targetFilePath,
                         shouldRefreshView: false,
@@ -709,6 +713,7 @@ export const generateFix = Commands.declare(
                     } else {
                         hasSuggestedFix = suggestedFix !== undefined
                     }
+                    telemetry.record({ includesFix: hasSuggestedFix })
                     const updatedIssue: CodeScanIssue = {
                         ...targetIssue,
                         fixJobId: jobId,
@@ -734,25 +739,29 @@ export const generateFix = Commands.declare(
                     SecurityIssueProvider.instance.updateIssue(updatedIssue, targetFilePath)
                     SecurityIssueTreeViewProvider.instance.refresh()
                 } catch (err) {
+                    const error = err instanceof Error ? err : new TypeError('Unexpected error')
                     await updateSecurityIssueWebview({
                         issue: targetIssue,
                         isGenerateFixLoading: false,
-                        isGenerateFixError: true,
+                        generateFixError: getErrorMsg(error, true),
                         filePath: targetFilePath,
                         context: context.extensionContext,
-                        shouldRefreshView: true,
+                        shouldRefreshView: false,
                     })
                     SecurityIssueProvider.instance.updateIssue(targetIssue, targetFilePath)
                     SecurityIssueTreeViewProvider.instance.refresh()
                     throw err
+                } finally {
+                    telemetry.record({
+                        component: targetSource,
+                        detectorId: targetIssue.detectorId,
+                        findingId: targetIssue.findingId,
+                        ruleId: targetIssue.ruleId,
+                        variant: refresh ? 'refresh' : undefined,
+                        autoDetected: targetIssue.autoDetected,
+                        codewhispererCodeScanJobId: targetIssue.scanJobId,
+                    })
                 }
-                telemetry.record({
-                    component: targetSource,
-                    detectorId: targetIssue.detectorId,
-                    findingId: targetIssue.findingId,
-                    ruleId: targetIssue.ruleId,
-                    variant: refresh ? 'refresh' : undefined,
-                })
             })
         }
 )
@@ -883,6 +892,14 @@ export const showSecurityIssueFilters = Commands.declare({ id: 'aws.amazonq.secu
         })
     }
 })
+
+export const showCodeIssueGroupingQuickPick = Commands.declare(
+    { id: 'aws.amazonq.codescan.showGroupingStrategy' },
+    () => async () => {
+        const prompter = createCodeIssueGroupingStrategyPrompter()
+        await prompter.prompt()
+    }
+)
 
 export const focusIssue = Commands.declare(
     { id: 'aws.amazonq.security.focusIssue' },

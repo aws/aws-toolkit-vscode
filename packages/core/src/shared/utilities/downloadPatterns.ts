@@ -8,7 +8,7 @@ import AdmZip from 'adm-zip'
 import { getLogger } from '../logger/logger'
 import * as vscode from 'vscode'
 import * as path from 'path'
-import { ToolkitError } from '..'
+import { ToolkitError } from '../errors'
 
 // Get pattern code and save it in temporary folder
 async function fetchUrl(owner: string, repoName: string, assetName: string): Promise<Buffer> {

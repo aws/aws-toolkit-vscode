@@ -57,7 +57,7 @@ jobs:
             - run: npm run testCompile
             - run: npm run lint
 
-    jscpd:
+    lint-duplicate-code:
         needs: lint-commits
         if: ${{ github.event_name == 'pull_request'}}
         runs-on: ubuntu-latest
@@ -101,7 +101,10 @@ jobs:
                   path: ./jscpd-report.json
 
             - name: Check for Duplicates
-              run: node "$GITHUB_WORKSPACE/.github/workflows/filterDuplicates.js" run diff_output.txt jscpd-report.json
+              env:
+                  COMMIT_HASH: ${{ github.sha}}
+                  REPO_NAME: ${{ github.repository }}
+              run: node "$GITHUB_WORKSPACE/.github/workflows/filterDuplicates.js" run diff_output.txt jscpd-report.json $COMMIT_HASH $REPO_NAME
 
     macos:
         needs: lint-commits
