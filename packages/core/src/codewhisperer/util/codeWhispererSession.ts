@@ -45,57 +45,34 @@ export class CodeWhispererSessionState {
 }
 
 export class CodeWhispererSession {
-    sessionId: string
-    requestIdList: string[]
-    startPos: Position
-    startCursorOffset: number
-    leftContextOfCurrentLine: string
+    sessionId: string = ''
+    requestIdList: string[] = []
+    startPos: Position = new Position(0, 0)
+    startCursorOffset: number = 0
+    leftContextOfCurrentLine: string = ''
     requestContext: {
         request: ListRecommendationsRequest | GenerateRecommendationsRequest
         supplementalMetadata: CodeWhispererSupplementalContext | undefined
-    }
-    language: CodewhispererLanguage
-    taskType: CodewhispererGettingStartedTask | undefined
-    triggerType: CodewhispererTriggerType
-    autoTriggerType: CodewhispererAutomatedTriggerType | undefined
-    recommendations: Recommendation[]
-    suggestionStates: Map<number, string>
-    completionTypes: Map<number, CodewhispererCompletionType>
-    fetchCredentialStartTime: number
-    sdkApiCallStartTime: number
-    invokeSuggestionStartTime: number
-    preprocessEndTime: number
-    timeToFirstRecommendation: number
-    firstSuggestionShowTime: number
-    perceivedLatency: number
+    } = { request: {} as any, supplementalMetadata: undefined }
+    language: CodewhispererLanguage = 'python'
+    taskType: CodewhispererGettingStartedTask | undefined = undefined
+    triggerType: CodewhispererTriggerType = 'OnDemand'
+    autoTriggerType: CodewhispererAutomatedTriggerType | undefined = undefined
+    // Various states of recommendations
+    recommendations: Recommendation[] = []
+    suggestionStates: Map<number, string> = new Map<number, string>()
+    completionTypes: Map<number, CodewhispererCompletionType> = new Map<number, CodewhispererCompletionType>()
+    // Some other variables for client component latency
+    fetchCredentialStartTime: number = 0
+    sdkApiCallStartTime: number = 0
+    invokeSuggestionStartTime: number = 0
+    preprocessEndTime: number = 0
+    timeToFirstRecommendation: number = 0
+    firstSuggestionShowTime: number = 0
+    perceivedLatency: number = 0
 
     // Per-session states
-    constructor() {
-        this.sessionId = ''
-        this.requestIdList = []
-        this.startPos = new Position(0, 0)
-        this.startCursorOffset = 0
-        this.leftContextOfCurrentLine = ''
-        this.requestContext = { request: {} as any, supplementalMetadata: undefined }
-        this.language = 'python'
-        this.taskType = undefined
-        this.triggerType = 'OnDemand'
-        this.autoTriggerType = undefined
-
-        // Various states of recommendations
-        this.recommendations = []
-        this.suggestionStates = new Map<number, string>()
-        this.completionTypes = new Map<number, CodewhispererCompletionType>()
-
-        // Some other variables for client component latency
-        this.fetchCredentialStartTime = 0
-        this.sdkApiCallStartTime = 0
-        this.invokeSuggestionStartTime = 0
-        this.preprocessEndTime = 0
-        this.timeToFirstRecommendation = 0
-        this.firstSuggestionShowTime = 0
-        this.perceivedLatency = 0
-    }
+    constructor() {}
 
     setFetchCredentialStart() {
         if (this.fetchCredentialStartTime === 0 && this.invokeSuggestionStartTime !== 0) {
