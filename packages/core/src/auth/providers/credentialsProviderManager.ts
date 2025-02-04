@@ -51,15 +51,14 @@ export class CredentialsProviderManager {
             if (!providerType) {
                 continue
             }
-            const metadata = {
-                credentialSourceId: credentialsProviderToTelemetryType(providerType),
-                value: refreshed.length,
-            }
             const emitWithDebounce = cancellableDebounce(
                 (m: AwsLoadCredentials) => telemetry.aws_loadCredentials.emit(m),
                 5000
             ).promise
-            void emitWithDebounce(metadata)
+            void emitWithDebounce({
+                credentialSourceId: credentialsProviderToTelemetryType(providerType),
+                value: refreshed.length,
+            })
             providers = providers.concat(refreshed)
         }
 
