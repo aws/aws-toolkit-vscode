@@ -51,11 +51,8 @@ export class CredentialsProviderManager {
             if (!providerType) {
                 continue
             }
-            const emitWithDebounce = cancellableDebounce(
-                (m: AwsLoadCredentials) => telemetry.aws_loadCredentials.emit(m),
-                100
-            ).promise
-            void emitWithDebounce({
+
+            void this.emitWithDebounce({
                 credentialSourceId: credentialsProviderToTelemetryType(providerType),
                 value: refreshed.length,
             })
@@ -64,7 +61,10 @@ export class CredentialsProviderManager {
 
         return providers
     }
-
+    private emitWithDebounce = cancellableDebounce(
+        (m: AwsLoadCredentials) => telemetry.aws_loadCredentials.emit(m),
+        100
+    ).promise
     /**
      * Returns a map of `CredentialsProviderId` string-forms to object-forms,
      * from all credential sources. Only available providers are returned.
