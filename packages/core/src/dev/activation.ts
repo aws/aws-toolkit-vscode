@@ -25,6 +25,7 @@ import { NotificationsController } from '../notifications/controller'
 import { DevNotificationsState } from '../notifications/types'
 import { QuickPickItem } from 'vscode'
 import { ChildProcess } from '../shared/utilities/processUtils'
+import { LspController } from '../amazonq'
 
 interface MenuOption {
     readonly label: string
@@ -464,6 +465,12 @@ const resettableFeatures: readonly ResettableFeature[] = [
         detail: 'Resets memory/global state for the notifications panel (includes dismissed, onReceive).',
         executor: resetNotificationsState,
     },
+    {
+        name: 'lsp',
+        label: 'Lsp',
+        detail: 'Resets (uninstall & reinstall) LSP',
+        executor: resetLspDownload,
+    },
 ] as const
 
 // TODO this is *somewhat* similar to `openStorageFromInput`. If we need another
@@ -550,6 +557,10 @@ export async function updateDevMode() {
 
 async function resetNotificationsState() {
     await targetNotificationsController.reset()
+}
+
+async function resetLspDownload() {
+    await LspController.instance.tryInstallLsp(targetContext, true)
 }
 
 async function editNotifications() {

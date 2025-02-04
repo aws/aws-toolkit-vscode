@@ -22,6 +22,8 @@ import { fs, globals, ToolkitError } from '../../shared'
 import { isWeb } from '../../shared/extensionGlobals'
 import { getUserAgent } from '../../shared/telemetry/util'
 import { isAmazonInternalOs } from '../../shared/vscode/env'
+//import * as nls from 'vscode-nls'
+//const localize = nls.loadMessageBundle()
 
 export interface Chunk {
     readonly filePath: string
@@ -219,13 +221,15 @@ export class LspController {
         return true
     }
 
-    async tryInstallLsp(context: vscode.ExtensionContext): Promise<boolean> {
+    async tryInstallLsp(context: vscode.ExtensionContext, forceReset = false): Promise<boolean> {
+        let status = undefined
         let tempFolder = undefined
         try {
-            if (await this.isLspInstalled(context)) {
+            if ((await this.isLspInstalled(context)) && !forceReset) {
                 getLogger().info(`LspController: LSP already installed`)
                 return true
             }
+            status = vscode.window.setStatusBarMessage('LspController: Installing LSP ...')
             // clean up previous downloaded LSP
             const qserverPath = context.asAbsolutePath(path.join('resources', 'qserver'))
             if (await fs.exists(qserverPath)) {
@@ -265,6 +269,7 @@ export class LspController {
             }
             await fs.chmod(nodeRuntimeTempPath, 0o755)
             await fs.rename(nodeRuntimeTempPath, nodeRuntimePath)
+            getLogger().info(`LspController: LSP successfully installed`)
             return true
         } catch (e) {
             getLogger().error(`LspController: Failed to setup LSP server ${e}`)
@@ -273,6 +278,9 @@ export class LspController {
             // clean up temp folder
             if (tempFolder) {
                 await tryRemoveFolder(tempFolder)
+            }
+            if (status) {
+                status.dispose()
             }
         }
     }
