@@ -213,6 +213,21 @@ describe('Amazon Q Test Generation', function () {
                         assert.deepStrictEqual(acceptedMessage?.followUp?.options?.[0].pillText, 'Accepted')
                     })
                 })
+
+                describe('Accept code Additional test', async () => {
+                    it('Clicks on accept', async () => {
+                        await tab.waitForButtons([FollowUpTypes.AcceptCode, FollowUpTypes.RejectCode])
+                        tab.clickButton(FollowUpTypes.AcceptCode)
+                        await tab.waitForChatFinishesLoading()
+
+                        await waitForChatItems(7)
+                        const acceptedMessage = tab.getChatItems()[7]
+
+                        assert.deepStrictEqual(acceptedMessage?.type, 'answer-part')
+                        assert.deepStrictEqual(acceptedMessage?.followUp?.options?.[0].pillText, 'Accepted')
+                        assert.deepStrictEqual('temp', 'temp')
+                    })
+                })
             })
         }
     })
