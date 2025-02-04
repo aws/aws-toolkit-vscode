@@ -163,6 +163,12 @@ describe('AmazonQLSPInstaller', () => {
                     id: 'AmazonQ',
                     manifestLocation: 'remote',
                     languageServerSetupStage: 'getManifest',
+                    result: 'Failed',
+                },
+                {
+                    id: 'AmazonQ',
+                    manifestLocation: 'cache',
+                    languageServerSetupStage: 'getManifest',
                     result: 'Succeeded',
                 },
                 {
