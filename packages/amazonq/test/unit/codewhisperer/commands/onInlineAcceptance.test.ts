@@ -18,15 +18,14 @@ import { globals } from 'aws-core-vscode/shared'
 import { extensionVersion } from 'aws-core-vscode/shared'
 
 describe('onInlineAcceptance', function () {
+    const session = CodeWhispererSessionState.instance.getSession()
     describe('onInlineAcceptance', function () {
         beforeEach(async function () {
-            const session = CodeWhispererSessionState.instance.getSession()
             await resetCodeWhispererGlobalVariables()
             session.reset()
         })
 
         afterEach(function () {
-            const session = CodeWhispererSessionState.instance.getSession()
             sinon.restore()
             session.reset()
         })
@@ -51,7 +50,6 @@ describe('onInlineAcceptance', function () {
         })
 
         it('Should report telemetry that records this user decision event', async function () {
-            const session = CodeWhispererSessionState.instance.getSession()
             await globals.globalState.update('CODEWHISPERER_USER_GROUP', {
                 version: extensionVersion,
             })
