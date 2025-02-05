@@ -500,6 +500,8 @@
         "@aws-sdk/client-cloudformation": "^3.667.0",
         "@aws-sdk/client-cloudwatch-logs": "^3.666.0",
         "@aws-sdk/client-cognito-identity": "^3.637.0",
+        "@aws-sdk/client-docdb": "^3.699.0",
+        "@aws-sdk/client-docdb-elastic": "^3.699.0",
         "@aws-sdk/client-lambda": "^3.637.0",
         "@aws-sdk/client-sso": "^3.342.0",
         "@aws-sdk/client-sso-oidc": "^3.574.0",
