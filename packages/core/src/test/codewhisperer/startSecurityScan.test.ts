@@ -28,7 +28,7 @@ import {
 import * as model from '../../codewhisperer/models/model'
 import * as errors from '../../shared/errors'
 import * as timeoutUtils from '../../shared/utilities/timeoutUtils'
-import { SecurityIssuesTree } from '../../codewhisperer'
+import { SecurityIssueTreeViewProvider } from '../../codewhisperer'
 import { createClient, mockGetCodeScanResponse } from './testUtil'
 
 let extensionContext: FakeExtensionContext
@@ -48,7 +48,7 @@ describe('startSecurityScan', function () {
         editor = await openTestFile(appCodePath)
         await model.CodeScansState.instance.setScansEnabled(false)
         sinon.stub(timeoutUtils, 'sleep')
-        focusStub = sinon.stub(SecurityIssuesTree.instance, 'focus')
+        focusStub = sinon.stub(SecurityIssueTreeViewProvider, 'focus')
     })
     afterEach(function () {
         sinon.restore()
@@ -74,7 +74,7 @@ describe('startSecurityScan', function () {
             createClient(),
             extensionContext,
             CodeAnalysisScope.PROJECT,
-            false
+            true
         )
         assert.ok(focusStub.calledOnce)
         assert.ok(securityScanRenderSpy.calledOnce)
