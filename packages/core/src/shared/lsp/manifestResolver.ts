@@ -20,7 +20,7 @@ interface StorageManifest {
 
 type ManifestStorage = Record<string, StorageManifest>
 
-const manifestStorageKey = 'aws.toolkit.lsp.manifest'
+export const manifestStorageKey = 'aws.toolkit.lsp.manifest'
 const manifestTimeoutMs = 15000
 
 export class ManifestResolver {
