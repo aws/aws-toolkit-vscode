@@ -596,6 +596,9 @@ export async function activate(context: ExtContext): Promise<void> {
                               CodeWhispererConstants.amazonqIgnoreNextLine
                           )
                 )
+            }),
+            vscode.window.createTreeView(SecurityIssueTreeViewProvider.viewType, {
+                treeDataProvider: SecurityIssueTreeViewProvider.instance,
             })
         )
     }
