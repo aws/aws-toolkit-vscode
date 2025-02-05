@@ -42,27 +42,21 @@ describe('Amazon Q Test Generation', function () {
     ]
 
     async function setupTestDocument(filePath: string, language: string) {
-        const document = await waitUntil(
-            async () => {
-                const doc = await workspaceUtils.openTextDocument(filePath)
-                return doc
-            },
-            {
-                interval: 1000,
-                timeout: 30000,
-                truthy: true,
-            }
-        )
+        await vscode.commands.executeCommand('workbench.action.closeAllEditors')
+        await new Promise((resolve) => setTimeout(resolve, 1000))
+
+        const document = await waitUntil(async () => {
+            const doc = await workspaceUtils.openTextDocument(filePath)
+            return doc
+        }, {})
 
         if (!document) {
             assert.fail(`Failed to open ${language} file`)
         }
 
-        await waitUntil(async () => await vscode.window.showTextDocument(document, { preview: false }), {
-            interval: 1000,
-            timeout: 30000,
-            truthy: true,
-        })
+        await waitUntil(async () => {
+            await vscode.window.showTextDocument(document, { preview: false })
+        }, {})
 
         const activeEditor = vscode.window.activeTextEditor
         if (!activeEditor || activeEditor.document.uri.fsPath !== document.uri.fsPath) {
