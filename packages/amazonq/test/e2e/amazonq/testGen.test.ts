@@ -161,7 +161,7 @@ describe('Amazon Q Test Generation', function () {
         for (const { language, filePath } of testFiles) {
             describe(`${language} file`, () => {
                 beforeEach(async () => {
-                    await setupTestDocument(filePath, language)
+                    await waitUntil(async () => await setupTestDocument(filePath, language), {})
 
                     tab.addChatMessage({ command: '/test' })
                     await tab.waitForChatFinishesLoading()
