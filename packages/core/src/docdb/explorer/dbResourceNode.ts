@@ -123,7 +123,7 @@ export abstract class DBResourceNode extends AWSTreeNodeBase implements AWSResou
             this.isPolling = true
             await this.waitUntilStatusChanged(true, 60000, 1000)
             getLogger().debug(`Tracking changes for a processing status wait is over`)
-            this.pollingSet.start(this.arn)
+            this.pollingSet.add(this.arn)
             getLogger().debug(`Tracking changes for ARN: ${this.arn}; condition: ${this.isPolling};`)
         } else {
             getLogger().debug(`ARN: ${this.arn} already being tracked`)
@@ -131,10 +131,10 @@ export abstract class DBResourceNode extends AWSTreeNodeBase implements AWSResou
     }
 
     public trackChanges() {
-        getLogger().debug(`Preparing to track immdiately for ARN: ${this.arn}; condition: ${this.isPolling};`)
+        getLogger().debug(`Preparing to track immediately for ARN: ${this.arn}; condition: ${this.isPolling};`)
         if (!this.isPolling) {
             this.isPolling = true
-            this.pollingSet.start(this.arn)
+            this.pollingSet.add(this.arn)
             getLogger().debug(`Tracking changes for ARN: ${this.arn}; condition: ${this.isPolling};`)
         } else {
             getLogger().debug(`ARN: ${this.arn} already being tracked`)
