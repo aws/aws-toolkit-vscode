@@ -52,7 +52,7 @@ describe('functionUtils', function () {
 
 describe('debounce', function () {
     let counter: number
-    let fn: () => Promise<unknown>
+    let fn: () => Promise<unknown> | unknown
 
     beforeEach(function () {
         counter = 0

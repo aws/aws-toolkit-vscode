@@ -86,19 +86,22 @@ export function memoize<T, U extends any[]>(fn: (...args: U) => T): (...args: U)
  * same Promise similar to {@link shared}. The window will also be 'rolled', delaying
  * the execution by another {@link delay} milliseconds.
  */
-export function debounce<T>(cb: () => T | Promise<T>, delay: number = 0): () => Promise<T> {
+export function debounce<Input extends any[], Output>(
+    cb: (...args: Input) => Output | Promise<Output>,
+    delay: number = 0
+): (...args: Input) => Promise<Output> {
     let timeout: Timeout | undefined
-    let promise: Promise<T> | undefined
+    let promise: Promise<Output> | undefined
 
-    return () => {
+    return (...args: Input) => {
         timeout?.refresh()
 
-        return (promise ??= new Promise<T>((resolve, reject) => {
+        return (promise ??= new Promise<Output>((resolve, reject) => {
             timeout = new Timeout(delay)
             timeout.onCompletion(async () => {
                 timeout = promise = undefined
                 try {
-                    resolve(await cb())
+                    resolve(await cb(...args))
                 } catch (err) {
                     reject(err)
                 }
@@ -127,21 +130,24 @@ export function cancellableDebounce<T, U extends any[]>(
     }
 
     return {
-        promise: (...arg) => {
-            timeout?.refresh()
-
-            return (promise ??= new Promise<T>((resolve, reject) => {
-                timeout = new Timeout(delay)
-                timeout.onCompletion(async () => {
-                    timeout = promise = undefined
-                    try {
-                        resolve(await cb(...arg))
-                    } catch (err) {
-                        reject(err)
-                    }
-                })
-            }))
-        },
+        promise: debounce(cb, delay),
         cancel: cancel,
+    }
+}
+
+export function keyedDebounce<T, U extends any[], K extends string = string>(
+    fn: (key: K, ...args: U) => Promise<T>
+): typeof fn {
+    const pending = new Map<K, Promise<T>>()
+
+    return (key, ...args) => {
+        if (pending.has(key)) {
+            return pending.get(key)!
+        }
+
+        const promise = fn(key, ...args).finally(() => pending.delete(key))
+        pending.set(key, promise)
+
+        return promise
     }
 }
