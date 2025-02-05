@@ -85,6 +85,10 @@ export function memoize<T, U extends any[]>(fn: (...args: U) => T): (...args: U)
  * Multiple calls made during the debounce window will receive references to the
  * same Promise similar to {@link shared}. The window will also be 'rolled', delaying
  * the execution by another {@link delay} milliseconds.
+ *
+ * This function prevents execution until {@link delay} milliseconds have passed
+ * since the last invocation regardless of arguments. If this should be
+ * argument dependent, look into {@link keyedDebounce}
  */
 export function debounce<Input extends any[], Output>(
     cb: (...args: Input) => Output | Promise<Output>,
@@ -95,7 +99,7 @@ export function debounce<Input extends any[], Output>(
 
 /**
  *
- * Similar to {@link debounce}, but allows the function to be cancelled and allow callbacks to pass function parameters.
+ * Similar to {@link debounce}, but allows the function to be cancelled.
  */
 export function cancellableDebounce<Input extends any[], Output>(
     cb: (...args: Input) => Output | Promise<Output>,
@@ -132,6 +136,10 @@ export function cancellableDebounce<Input extends any[], Output>(
     }
 }
 
+/**
+ *
+ * Similar to {@link debounce}, but uses a key to determine if the function should be called yet rather than a timeout connected to the function itself.
+ */
 export function keyedDebounce<T, U extends any[], K extends string = string>(
     fn: (key: K, ...args: U) => Promise<T>
 ): typeof fn {
