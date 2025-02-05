@@ -20,6 +20,8 @@ import { StepFunctionsNode } from '../stepFunctions/explorer/stepFunctionsNodes'
 import { SsmDocumentNode } from '../ssmDocument/explorer/ssmDocumentNode'
 import { ResourcesNode } from '../dynamicResources/explorer/nodes/resourcesNode'
 import { AppRunnerNode } from '../awsService/apprunner/explorer/apprunnerNode'
+import { DocumentDBNode } from '../docdb/explorer/docdbNode'
+import { DefaultDocumentDBClient } from '../shared/clients/docdbClient'
 import { DefaultAppRunnerClient } from '../shared/clients/apprunnerClient'
 import { DefaultEcrClient } from '../shared/clients/ecrClient'
 import { DefaultRedshiftClient } from '../shared/clients/redshiftClient'
@@ -56,6 +58,10 @@ const serviceCandidates: ServiceNode[] = [
     {
         serviceId: 'cloudformation',
         createFn: (regionCode: string) => new CloudFormationNode(regionCode),
+    },
+    {
+        serviceId: 'docdb',
+        createFn: (regionCode: string) => new DocumentDBNode(DefaultDocumentDBClient.create(regionCode)),
     },
     {
         serviceId: 'logs',
