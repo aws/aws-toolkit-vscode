@@ -42,9 +42,6 @@ describe('Amazon Q Test Generation', function () {
     ]
 
     async function setupTestDocument(filePath: string, language: string) {
-        await vscode.commands.executeCommand('workbench.action.closeAllEditors')
-        await new Promise((resolve) => setTimeout(resolve, 1000))
-
         const document = await waitUntil(async () => {
             const doc = await workspaceUtils.openTextDocument(filePath)
             return doc
