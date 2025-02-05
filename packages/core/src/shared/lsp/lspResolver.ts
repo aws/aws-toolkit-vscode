@@ -4,6 +4,7 @@
  */
 
 import fs from '../fs/fs'
+import * as vscode from 'vscode'
 import { ToolkitError } from '../errors'
 import * as semver from 'semver'
 import * as path from 'path'
@@ -22,6 +23,20 @@ export class LanguageServerResolver {
         private readonly _defaultDownloadFolder?: string
     ) {}
 
+    // wraps the resolver to show download status message
+    async resolveWithProgress() {
+        return vscode.window.withProgress(
+            {
+                location: vscode.ProgressLocation.Notification,
+                title: `Downloading '${this.lsName}' language server`,
+                cancellable: false,
+            },
+            async (progress) => {
+                return this.resolve()
+            }
+        )
+    }
+
     /**
      * Downloads and sets up the Language Server, attempting different locations in order:
      * 1. Local cache
@@ -30,63 +45,67 @@ export class LanguageServerResolver {
      * @throws ToolkitError if no compatible version can be found
      */
     async resolve() {
-        const result: LspResult = {
-            location: 'unknown',
-            version: '',
-            assetDirectory: '',
-        }
-
-        const latestVersion = this.latestCompatibleLspVersion()
-        const targetContents = this.getLSPTargetContents(latestVersion)
-        const cacheDirectory = this.getDownloadDirectory(latestVersion.serverVersion)
-
-        if (await this.hasValidLocalCache(cacheDirectory, targetContents)) {
-            result.location = 'cache'
-            result.version = latestVersion.serverVersion
-            result.assetDirectory = cacheDirectory
-            return result
-        } else {
-            // Delete the cached directory since it's invalid
-            if (await fs.existsDir(cacheDirectory)) {
-                await fs.delete(cacheDirectory, {
-                    recursive: true,
-                })
+        try {
+            const result: LspResult = {
+                location: 'unknown',
+                version: '',
+                assetDirectory: '',
             }
-        }
 
-        if (await this.downloadRemoteTargetContent(targetContents, latestVersion.serverVersion)) {
-            result.location = 'remote'
-            result.version = latestVersion.serverVersion
-            result.assetDirectory = cacheDirectory
-            return result
-        } else {
-            // clean up any leftover content that may have been downloaded
-            if (await fs.existsDir(cacheDirectory)) {
-                await fs.delete(cacheDirectory, {
-                    recursive: true,
-                })
+            const latestVersion = this.latestCompatibleLspVersion()
+            const targetContents = this.getLSPTargetContents(latestVersion)
+            const cacheDirectory = this.getDownloadDirectory(latestVersion.serverVersion)
+
+            if (await this.hasValidLocalCache(cacheDirectory, targetContents)) {
+                result.location = 'cache'
+                result.version = latestVersion.serverVersion
+                result.assetDirectory = cacheDirectory
+                return result
+            } else {
+                // Delete the cached directory since it's invalid
+                if (await fs.existsDir(cacheDirectory)) {
+                    await fs.delete(cacheDirectory, {
+                        recursive: true,
+                    })
+                }
             }
+
+            if (await this.downloadRemoteTargetContent(targetContents, latestVersion.serverVersion)) {
+                result.location = 'remote'
+                result.version = latestVersion.serverVersion
+                result.assetDirectory = cacheDirectory
+                return result
+            } else {
+                // clean up any leftover content that may have been downloaded
+                if (await fs.existsDir(cacheDirectory)) {
+                    await fs.delete(cacheDirectory, {
+                        recursive: true,
+                    })
+                }
+            }
+
+            logger.info(
+                `Unable to download language server version ${latestVersion.serverVersion}. Attempting to fetch from fallback location`
+            )
+
+            const fallbackDirectory = await this.getFallbackDir(latestVersion.serverVersion)
+            if (!fallbackDirectory) {
+                throw new ToolkitError('Unable to find a compatible version of the Language Server')
+            }
+
+            const version = path.basename(fallbackDirectory)
+            logger.info(
+                `Unable to install ${this.lsName} language server v${latestVersion.serverVersion}. Launching a previous version from ${fallbackDirectory}`
+            )
+
+            result.location = 'fallback'
+            result.version = version
+            result.assetDirectory = fallbackDirectory
+
+            return result
+        } finally {
+            logger.info(`Finished setting up LSP server`)
         }
-
-        logger.info(
-            `Unable to download language server version ${latestVersion.serverVersion}. Attempting to fetch from fallback location`
-        )
-
-        const fallbackDirectory = await this.getFallbackDir(latestVersion.serverVersion)
-        if (!fallbackDirectory) {
-            throw new ToolkitError('Unable to find a compatible version of the Language Server')
-        }
-
-        const version = path.basename(fallbackDirectory)
-        logger.info(
-            `Unable to install ${this.lsName} language server v${latestVersion.serverVersion}. Launching a previous version from ${fallbackDirectory}`
-        )
-
-        result.location = 'fallback'
-        result.version = version
-        result.assetDirectory = fallbackDirectory
-
-        return result
     }
 
     /**

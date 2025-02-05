@@ -24,7 +24,7 @@ export class WorkspaceLSPResolver implements LspResolver {
             manifest,
             name,
             new Range(supportedLspServerVersions)
-        ).resolve()
+        ).resolveWithProgress()
 
         const nodeName =
             process.platform === 'win32' ? getNodeExecutableName() : `node-${process.platform}-${process.arch}`
