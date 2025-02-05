@@ -45,6 +45,8 @@ describe('AmazonQLSPInstaller', () => {
     let resolver: AmazonQLSPResolver
     let sandbox: sinon.SinonSandbox
     let tempDir: string
+    // If globalState contains an ETag that is up to date with remote, we won't fetch it resulting in inconsistent behavior.
+    // Therefore, we clear it temporarily for these tests to ensure consistent behavior.
     let manifestStorage: { [key: string]: any }
 
     before(async () => {
