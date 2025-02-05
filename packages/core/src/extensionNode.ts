@@ -37,6 +37,7 @@ import { activate as activateDev } from './dev/activation'
 import * as beta from './dev/beta'
 import { activate as activateApplicationComposer } from './applicationcomposer/activation'
 import { activate as activateRedshift } from './awsService/redshift/activation'
+import { activate as activateDocumentDb } from './docdb/activation'
 import { activate as activateIamPolicyChecks } from './awsService/accessanalyzer/activation'
 import { activate as activateNotifications } from './notifications/activation'
 import { SchemaService } from './shared/schemas'
@@ -198,6 +199,8 @@ export async function activate(context: vscode.ExtensionContext) {
         await activateRedshift(extContext)
 
         await activateAppBuilder(extContext)
+
+        await activateDocumentDb(extContext)
 
         await activateIamPolicyChecks(extContext)
 
