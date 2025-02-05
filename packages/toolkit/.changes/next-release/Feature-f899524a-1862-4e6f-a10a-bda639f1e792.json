@@ -1,4 +1,0 @@
-{
-	"type": "Feature",
-	"description": "Step Functions: Upgrade amazon-states-language-service to 1.15. This new version enhance autocomplete for variable and JSONata expression in JSON ASL files."
-}
