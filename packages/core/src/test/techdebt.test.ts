@@ -39,11 +39,4 @@ describe('tech debt', function () {
         // This is relevant for the use of `fs.cpSync` in the copyFiles scripts.
         assert.ok(semver.lt(minNodejs, '18.0.0'), 'with node18+, we can remove the dependency on @types/node@18')
     })
-
-    it('allow lspResolver tests to run on all platforms', function () {
-        fixByDate(
-            '04-01-2025',
-            'allow lspResolver tests to run on all platforms once it supports it. Remove the `isMac` check in core/src/test/shared/lsp/lspResolver.test.ts'
-        )
-    })
 })
