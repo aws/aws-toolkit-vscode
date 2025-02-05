@@ -282,6 +282,7 @@ export class Auth implements AuthService, ConnectionManager {
      *
      * Use {@link Auth.listConnections} to avoid API calls to the SSO service.
      */
+    @withTelemetryContext({ name: 'listAndTraverseConnections', class: authClassName })
     public listAndTraverseConnections(): AsyncCollection<Connection> {
         async function* load(this: Auth) {
             await loadIamProfilesIntoStore(this.store, this.iamProfileProvider)
