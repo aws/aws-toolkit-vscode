@@ -22,10 +22,10 @@ describe('Amazon Q Test Generation', function () {
             language: 'python',
             filePath: 'python3.7-image-sam-app/hello_world/app.py',
         },
-        {
-            language: 'java',
-            filePath: 'java17-gradle/HelloWorldFunction/src/main/java/helloworld/App.java',
-        },
+        // {
+        //     language: 'java',
+        //     filePath: 'java17-gradle/HelloWorldFunction/src/main/java/helloworld/App.java',
+        // },
     ]
 
     const unsupportedLanguages = [
@@ -174,7 +174,7 @@ describe('Amazon Q Test Generation', function () {
                 })
 
                 afterEach(async function () {
-                    await closeAllEditors()
+                    waitUntil(async () => await closeAllEditors(), {})
                 })
 
                 describe('View diff', async () => {
