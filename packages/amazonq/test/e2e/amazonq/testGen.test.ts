@@ -9,7 +9,7 @@ import { qTestingFramework } from './framework/framework'
 import sinon from 'sinon'
 import { Messenger } from './framework/messenger'
 import { FollowUpTypes } from 'aws-core-vscode/amazonq'
-import { registerAuthHook, using, TestFolder } from 'aws-core-vscode/test'
+import { registerAuthHook, using, TestFolder, closeAllEditors } from 'aws-core-vscode/test'
 import { loginToIdC } from './utils/setup'
 import { waitUntil, workspaceUtils } from 'aws-core-vscode/shared'
 
@@ -171,6 +171,10 @@ describe('Amazon Q Test Generation', function () {
                     await tab.waitForButtons([FollowUpTypes.ViewDiff])
                     tab.clickButton(FollowUpTypes.ViewDiff)
                     await tab.waitForChatFinishesLoading()
+                })
+
+                afterEach(async function () {
+                    await closeAllEditors()
                 })
 
                 describe('View diff', async () => {
