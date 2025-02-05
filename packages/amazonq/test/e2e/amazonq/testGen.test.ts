@@ -81,6 +81,8 @@ describe('Amazon Q Test Generation', function () {
     })
 
     afterEach(async () => {
+        // Close all editors to prevent conflicts with subsequent tests trying to open the same file
+        await closeAllEditors()
         framework.removeTab(tab.tabID)
         framework.dispose()
         sinon.restore()
@@ -173,10 +175,6 @@ describe('Amazon Q Test Generation', function () {
                     await tab.waitForButtons([FollowUpTypes.ViewDiff])
                     tab.clickButton(FollowUpTypes.ViewDiff)
                     await tab.waitForChatFinishesLoading()
-                })
-
-                afterEach(async function () {
-                    await closeAllEditors(), {}
                 })
 
                 describe('View diff', async () => {
