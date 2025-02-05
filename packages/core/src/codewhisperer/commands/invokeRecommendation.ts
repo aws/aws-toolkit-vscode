@@ -7,9 +7,8 @@ import * as vscode from 'vscode'
 import { vsCodeState, ConfigurationEntry } from '../models/model'
 import { resetIntelliSenseState } from '../util/globalStateUtil'
 import { DefaultCodeWhispererClient } from '../client/codewhisperer'
-import { isCloud9 } from '../../shared/extensionUtilities'
 import { RecommendationHandler } from '../service/recommendationHandler'
-import { session } from '../util/codeWhispererSession'
+import { CodeWhispererSessionState } from '../util/codeWhispererSession'
 import { RecommendationService } from '../service/recommendationService'
 
 /**
@@ -21,17 +20,7 @@ export async function invokeRecommendation(
     client: DefaultCodeWhispererClient,
     config: ConfigurationEntry
 ) {
-    if (!config.isManualTriggerEnabled) {
-        return
-    }
-    /**
-     * IntelliSense in Cloud9 needs editor.suggest.showMethods
-     */
-    if (!config.isShowMethodsEnabled && isCloud9()) {
-        void vscode.window.showWarningMessage('Turn on "editor.suggest.showMethods" to use Amazon Q inline suggestions')
-        return
-    }
-    if (!editor) {
+    if (!editor || !config.isManualTriggerEnabled) {
         return
     }
 
@@ -44,6 +33,7 @@ export async function invokeRecommendation(
     /**
      * When using intelliSense, if invocation position changed, reject previous active recommendations
      */
+    const session = CodeWhispererSessionState.instance.getSession()
     if (vsCodeState.isIntelliSenseActive && editor.selection.active !== session.startPos) {
         resetIntelliSenseState(
             config.isManualTriggerEnabled,

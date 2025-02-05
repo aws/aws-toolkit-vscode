@@ -18,7 +18,7 @@ import { DeclaredCommand } from '../shared/vscode/commands2'
 import { mkdirSync, existsSync } from 'fs' // eslint-disable-line no-restricted-imports
 import { randomBytes } from 'crypto'
 import request from '../shared/request'
-import { stub } from 'sinon'
+import { createStubInstance, stub } from 'sinon'
 
 const testTempDirs: string[] = []
 
@@ -313,15 +313,15 @@ export function assertNoTelemetryMatch(re: RegExp | string): void | never {
  */
 export function assertTelemetry<K extends MetricName>(
     name: K,
-    expected: MetricShapes[K] | MetricShapes[K][]
+    expected: Partial<MetricShapes[K]> | Partial<MetricShapes[K]>[]
 ): void | never
 export function assertTelemetry<K extends MetricName>(
     name: K,
-    expected: MetricShapes[MetricName] | MetricShapes[MetricName][]
+    expected: Partial<MetricShapes[MetricName]> | Partial<MetricShapes[MetricName]>[]
 ): void | never
 export function assertTelemetry<K extends MetricName>(
     name: K,
-    expected: MetricShapes[K] | MetricShapes[K][]
+    expected: Partial<MetricShapes[K]> | Partial<MetricShapes[K]>[]
 ): void | never {
     const expectedList = Array.isArray(expected) ? expected : [expected]
     const query = { metricName: name }
@@ -633,4 +633,11 @@ export function getFetchStubWithResponse(response: Partial<Response>) {
 
 export function copyEnv(): NodeJS.ProcessEnv {
     return { ...process.env }
+}
+
+// Returns a stubbed response object
+export function createResponse(text: string): Response {
+    const responseStub = createStubInstance(Response)
+    responseStub.text.resolves(text)
+    return responseStub
 }

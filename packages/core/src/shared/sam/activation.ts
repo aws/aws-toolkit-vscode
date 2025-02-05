@@ -19,7 +19,7 @@ import * as goLensProvider from '../codelens/goCodeLensProvider'
 import { SamTemplateCodeLensProvider } from '../codelens/samTemplateCodeLensProvider'
 import * as jsLensProvider from '../codelens/typescriptCodeLensProvider'
 import { ExtContext, VSCODE_EXTENSION_ID } from '../extensions'
-import { getIdeProperties, getIdeType, isCloud9 } from '../extensionUtilities'
+import { getIdeProperties, getIdeType } from '../extensionUtilities'
 import { getLogger } from '../logger/logger'
 import { PerfLog } from '../logger/perfLogger'
 import { NoopWatcher } from '../fs/watchedFiles'
@@ -28,7 +28,6 @@ import { CodelensRootRegistry } from '../fs/codelensRootRegistry'
 import { AWS_SAM_DEBUG_TYPE } from './debugger/awsSamDebugConfiguration'
 import { SamDebugConfigProvider } from './debugger/awsSamDebugger'
 import { addSamDebugConfiguration } from './debugger/commands/addSamDebugConfiguration'
-import { lazyLoadSamTemplateStrings } from '../../lambda/models/samTemplates'
 import { ToolkitPromptSettings } from '../settings'
 import { shared } from '../utilities/functionUtils'
 import { SamCliSettings } from './cli/samCliSettings'
@@ -125,7 +124,6 @@ export async function activate(ctx: ExtContext): Promise<void> {
 }
 
 async function registerCommands(ctx: ExtContext, settings: SamCliSettings): Promise<void> {
-    lazyLoadSamTemplateStrings()
     ctx.extensionContext.subscriptions.push(
         Commands.register({ id: 'aws.samcli.detect', autoconnect: false }, () =>
             sharedDetectSamCli({ passive: false, showMessage: true })
@@ -273,13 +271,10 @@ async function activateCodefileOverlays(
 
     supportedLanguages[jsLensProvider.javascriptLanguage] = tsCodeLensProvider
     supportedLanguages[pyLensProvider.pythonLanguage] = pyCodeLensProvider
-
-    if (!isCloud9()) {
-        supportedLanguages[javaLensProvider.javaLanguage] = javaCodeLensProvider
-        supportedLanguages[csLensProvider.csharpLanguage] = csCodeLensProvider
-        supportedLanguages[goLensProvider.goLanguage] = goCodeLensProvider
-        supportedLanguages[jsLensProvider.typescriptLanguage] = tsCodeLensProvider
-    }
+    supportedLanguages[javaLensProvider.javaLanguage] = javaCodeLensProvider
+    supportedLanguages[csLensProvider.csharpLanguage] = csCodeLensProvider
+    supportedLanguages[goLensProvider.goLanguage] = goCodeLensProvider
+    supportedLanguages[jsLensProvider.typescriptLanguage] = tsCodeLensProvider
 
     disposables.push(vscode.languages.registerCodeLensProvider(jsLensProvider.typescriptAllFiles, tsCodeLensProvider))
     disposables.push(vscode.languages.registerCodeLensProvider(pyLensProvider.pythonAllfiles, pyCodeLensProvider))

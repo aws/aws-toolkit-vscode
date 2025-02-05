@@ -9,9 +9,8 @@ import { LicenseUtil } from '../util/licenseUtil'
 import * as CodeWhispererConstants from '../models/constants'
 import { CodeWhispererSettings } from '../util/codewhispererSettings'
 import globals from '../../shared/extensionGlobals'
-import { isCloud9 } from '../../shared/extensionUtilities'
 import { AuthUtil } from '../util/authUtil'
-import { session } from '../util/codeWhispererSession'
+import { CodeWhispererSessionState } from '../util/codeWhispererSession'
 
 export class ReferenceLogViewProvider implements vscode.WebviewViewProvider {
     public static readonly viewType = 'aws.codeWhisperer.referenceLog'
@@ -69,6 +68,7 @@ export class ReferenceLogViewProvider implements vscode.WebviewViewProvider {
                 reference.recommendationContentSpan.start,
                 reference.recommendationContentSpan.end
             )
+            const session = CodeWhispererSessionState.instance.getSession()
             const firstCharLineNumber =
                 editor.document.positionAt(session.startCursorOffset + reference.recommendationContentSpan.start).line +
                 1
@@ -127,22 +127,9 @@ export class ReferenceLogViewProvider implements vscode.WebviewViewProvider {
             }
         }
 
-        let csp = ''
-        if (isCloud9()) {
-            csp = `<meta
-            http-equiv="Content-Security-Policy"
-            content=
-                "default-src 'none';
-                img-src https: data:;
-                script-src 'self' 'unsafe-inline';
-                style-src 'self' 'unsafe-inline' ${webview.cspSource};
-                font-src 'self' data:;"
-            >`
-        }
         return `<!DOCTYPE html>
             <html lang="en">
             <head>
-				${csp}
                 <link rel="stylesheet" href="${styleVSCodeUri}">
             </head>
             <body>

@@ -16,7 +16,7 @@ import { Container } from '../service/serviceContainer'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { getLogger } from '../../shared/logger/logger'
 import { Commands } from '../../shared/vscode/commands2'
-import { session } from '../util/codeWhispererSession'
+import { CodeWhispererSessionState } from '../util/codeWhispererSession'
 import { RecommendationHandler } from '../service/recommendationHandler'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { setContext } from '../../shared'
@@ -75,6 +75,7 @@ export class AutotriggerState implements AnnotationState {
     static acceptedCount = 0
 
     updateState(changeSource: AnnotationChangeSource, force: boolean): AnnotationState | undefined {
+        const session = CodeWhispererSessionState.instance.getSession()
         if (AutotriggerState.acceptedCount < RecommendationService.instance.acceptedSuggestionCount) {
             return new ManualtriggerState()
         } else if (session.recommendations.length > 0 && RecommendationHandler.instance.isSuggestionVisible()) {

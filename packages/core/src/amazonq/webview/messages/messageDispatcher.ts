@@ -48,9 +48,9 @@ export function dispatchWebViewMessagesToApps(
                 AmazonQChatMessageDuration.stopChatMessageTelemetry(msg)
                 return
             }
-            case 'open-user-guide': {
-                const { userGuideLink } = msg
-                void openUrl(Uri.parse(userGuideLink))
+            case 'open-link': {
+                const { link } = msg
+                void openUrl(Uri.parse(link))
                 return
             }
             case 'send-telemetry': {

@@ -24,7 +24,7 @@ export interface TailLogGroupWizardResponse {
 }
 
 export class TailLogGroupWizard extends Wizard<TailLogGroupWizardResponse> {
-    public constructor(logGroupInfo?: CloudWatchLogsGroupInfo) {
+    public constructor(logGroupInfo?: CloudWatchLogsGroupInfo, logStreamInfo?: LogStreamFilterResponse) {
         super({
             initState: {
                 regionLogGroupSubmenuResponse: logGroupInfo
@@ -33,6 +33,7 @@ export class TailLogGroupWizard extends Wizard<TailLogGroupWizardResponse> {
                           region: logGroupInfo.regionName,
                       }
                     : undefined,
+                logStreamFilter: logStreamInfo ?? undefined,
             },
         })
         this.form.regionLogGroupSubmenuResponse.bindPrompter(createRegionLogGroupSubmenu)
