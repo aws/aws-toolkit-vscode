@@ -90,36 +90,19 @@ export function debounce<Input extends any[], Output>(
     cb: (...args: Input) => Output | Promise<Output>,
     delay: number = 0
 ): (...args: Input) => Promise<Output> {
-    let timeout: Timeout | undefined
-    let promise: Promise<Output> | undefined
-
-    return (...args: Input) => {
-        timeout?.refresh()
-
-        return (promise ??= new Promise<Output>((resolve, reject) => {
-            timeout = new Timeout(delay)
-            timeout.onCompletion(async () => {
-                timeout = promise = undefined
-                try {
-                    resolve(await cb(...args))
-                } catch (err) {
-                    reject(err)
-                }
-            })
-        }))
-    }
+    return cancellableDebounce(cb, delay).promise
 }
 
 /**
  *
  * Similar to {@link debounce}, but allows the function to be cancelled and allow callbacks to pass function parameters.
  */
-export function cancellableDebounce<T, U extends any[]>(
-    cb: (...args: U) => T | Promise<T>,
+export function cancellableDebounce<Input extends any[], Output>(
+    cb: (...args: Input) => Output | Promise<Output>,
     delay: number = 0
-): { promise: (...args: U) => Promise<T>; cancel: () => void } {
+): { promise: (...args: Input) => Promise<Output>; cancel: () => void } {
     let timeout: Timeout | undefined
-    let promise: Promise<T> | undefined
+    let promise: Promise<Output> | undefined
 
     const cancel = (): void => {
         if (timeout) {
@@ -130,7 +113,21 @@ export function cancellableDebounce<T, U extends any[]>(
     }
 
     return {
-        promise: debounce(cb, delay),
+        promise: (...args: Input) => {
+            timeout?.refresh()
+
+            return (promise ??= new Promise<Output>((resolve, reject) => {
+                timeout = new Timeout(delay)
+                timeout.onCompletion(async () => {
+                    timeout = promise = undefined
+                    try {
+                        resolve(await cb(...args))
+                    } catch (err) {
+                        reject(err)
+                    }
+                })
+            }))
+        },
         cancel: cancel,
     }
 }
