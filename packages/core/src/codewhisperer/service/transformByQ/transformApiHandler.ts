@@ -22,7 +22,7 @@ import {
     TransformByQStoppedError,
     ZipManifest,
 } from '../../models/model'
-import { getLogger } from '../../../shared/logger'
+import { getLogger } from '../../../shared/logger/logger'
 import {
     CreateUploadUrlResponse,
     ProgressUpdates,

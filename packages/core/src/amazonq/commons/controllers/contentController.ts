@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import path from 'path'
 import { Position, TextEditor, window } from 'vscode'
-import { getLogger } from '../../../shared/logger'
+import { getLogger } from '../../../shared/logger/logger'
 import { amazonQDiffScheme, amazonQTabSuffix } from '../../../shared/constants'
 import { disposeOnEditorClose } from '../../../shared/utilities/editorUtilities'
 import {
@@ -15,7 +15,9 @@ import {
     getIndentedCode,
     getSelectionFromRange,
 } from '../../../shared/utilities/textDocumentUtilities'
-import { extractFileAndCodeSelectionFromMessage, fs, getErrorMsg, ToolkitError } from '../../../shared'
+import { ToolkitError, getErrorMsg } from '../../../shared/errors'
+import fs from '../../../shared/fs/fs'
+import { extractFileAndCodeSelectionFromMessage } from '../../../shared/utilities/textUtilities'
 import { UserWrittenCodeTracker } from '../../../codewhisperer/tracker/userWrittenCodeTracker'
 
 export class ContentProvider implements vscode.TextDocumentContentProvider {

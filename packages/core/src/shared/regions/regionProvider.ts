@@ -9,7 +9,7 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
-import { getLogger } from '../logger'
+import { getLogger } from '../logger/logger'
 import { Endpoints, loadEndpoints, Region } from './endpoints'
 import { AwsContext } from '../awsContext'
 import { getIdeProperties, isAmazonQ } from '../extensionUtilities'

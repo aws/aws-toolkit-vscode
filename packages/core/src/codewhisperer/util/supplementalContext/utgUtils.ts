@@ -4,7 +4,7 @@
  */
 
 import * as path from 'path'
-import { fs } from '../../../shared'
+import { fs } from '../../../shared/fs/fs'
 import * as vscode from 'vscode'
 import {
     countSubstringMatches,

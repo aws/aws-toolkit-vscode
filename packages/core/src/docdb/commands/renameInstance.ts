@@ -4,12 +4,13 @@
  */
 
 import * as vscode from 'vscode'
-import { getLogger, ToolkitError } from '../../shared'
+import { getLogger } from '../../shared/logger/logger'
+import { ToolkitError } from '../../shared/errors'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
 import { assertNodeAvailable, validateInstanceName } from '../utils'
 import { DBInstanceNode } from '../explorer/dbInstanceNode'
-import { telemetry } from '../../shared/telemetry'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 /**
  * Renames a DocumentDB instance.

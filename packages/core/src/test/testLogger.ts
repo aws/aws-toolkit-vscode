@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Loggable, LogLevel } from '../shared/logger'
+import { Loggable, LogLevel } from '../shared/logger/logger'
 import { BaseLogger, compareLogLevel } from '../shared/logger/logger'
 import { Uri } from 'vscode'
 import util from 'util'

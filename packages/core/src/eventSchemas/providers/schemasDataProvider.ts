@@ -6,7 +6,7 @@
 import * as AWS from '@aws-sdk/types'
 import { Schemas } from 'aws-sdk'
 import { SchemaClient } from '../../shared/clients/schemaClient'
-import { getLogger, Logger } from '../../shared/logger'
+import { getLogger, Logger } from '../../shared/logger/logger'
 import { toArrayAsync } from '../../shared/utilities/collectionUtils'
 
 export class Cache {

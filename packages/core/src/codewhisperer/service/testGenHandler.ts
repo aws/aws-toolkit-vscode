@@ -4,7 +4,7 @@
  */
 
 import { ZipMetadata } from '../util/zipUtil'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 import * as CodeWhispererConstants from '../models/constants'
 import * as codewhispererClient from '../client/codewhisperer'
 import * as codeWhisperer from '../client/codewhisperer'
@@ -23,7 +23,6 @@ import {
     TestGenTimedOutError,
 } from '../../amazonqTest/error'
 import { getMd5, uploadArtifactToS3 } from './securityScanHandler'
-import { fs, randomUUID, sleep, tempDirPath } from '../../shared'
 import { ShortAnswer, testGenState } from '../models/model'
 import { ChatSessionManager } from '../../amazonqTest/chat/storages/chatSession'
 import { createCodeWhispererChatStreamingClient } from '../../shared/clients/codewhispererChatClient'
@@ -33,6 +32,10 @@ import path from 'path'
 import { ExportIntent } from '@amzn/codewhisperer-streaming'
 import { glob } from 'glob'
 import { UserWrittenCodeTracker } from '../tracker/userWrittenCodeTracker'
+import { randomUUID } from '../../shared/crypto'
+import { sleep } from '../../shared/utilities/timeoutUtils'
+import { tempDirPath } from '../../shared/filesystemUtilities'
+import fs from '../../shared/fs/fs'
 
 // TODO: Get TestFileName and Framework and to error message
 export function throwIfCancelled() {

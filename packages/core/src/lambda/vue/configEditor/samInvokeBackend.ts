@@ -7,7 +7,7 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { LaunchConfiguration } from '../../../shared/debug/launchConfiguration'
-import { getLogger } from '../../../shared/logger'
+import { getLogger } from '../../../shared/logger/logger'
 import { HttpResourceFetcher } from '../../../shared/resourcefetcher/httpResourceFetcher'
 import {
     AwsSamDebuggerConfiguration,
@@ -31,8 +31,8 @@ import globals from '../../../shared/extensionGlobals'
 import { VueWebview } from '../../../webviews/main'
 import { Commands } from '../../../shared/vscode/commands2'
 import { telemetry } from '../../../shared/telemetry/telemetry'
-import { fs } from '../../../shared'
-import { ToolkitError } from '../../../shared'
+import { fs } from '../../../shared/fs/fs'
+import { ToolkitError } from '../../../shared/errors'
 import { ResourceNode } from '../../../awsService/appBuilder/explorer/nodes/resourceNode'
 
 const localize = nls.loadMessageBundle()

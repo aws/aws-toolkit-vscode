@@ -49,11 +49,12 @@ import { CodeWhispererSettings } from '../../../codewhisperer/util/codewhisperer
 import { getSelectedCustomization } from '../../../codewhisperer/util/customizationUtil'
 import { getHttpStatusCode, AwsClientResponseError } from '../../../shared/errors'
 import { uiEventRecorder } from '../../../amazonq/util/eventRecorder'
-import { globals, waitUntil } from '../../../shared'
-import { telemetry } from '../../../shared/telemetry'
+import { telemetry } from '../../../shared/telemetry/telemetry'
 import { isSsoConnection } from '../../../auth/connection'
 import { inspect } from '../../../shared/utilities/collectionUtils'
 import { DefaultAmazonQAppInitContext } from '../../../amazonq/apps/initContext'
+import globals from '../../../shared/extensionGlobals'
+import { waitUntil } from '../../../shared/utilities/timeoutUtils'
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>

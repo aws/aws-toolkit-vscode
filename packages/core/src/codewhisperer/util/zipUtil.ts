@@ -6,7 +6,7 @@ import admZip from 'adm-zip'
 import * as vscode from 'vscode'
 import path from 'path'
 import { tempDirPath, testGenerationLogsDir } from '../../shared/filesystemUtilities'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 import * as CodeWhispererConstants from '../models/constants'
 import { ToolkitError } from '../../shared/errors'
 import { fs } from '../../shared/fs/fs'
@@ -22,8 +22,8 @@ import {
 } from '../models/errors'
 import { FeatureUseCase } from '../models/constants'
 import { ChildProcess, ChildProcessOptions } from '../../shared/utilities/processUtils'
-import { removeAnsi } from '../../shared'
 import { ProjectZipError } from '../../amazonqTest/error'
+import { removeAnsi } from '../../shared/utilities/textUtilities'
 
 export interface ZipMetadata {
     rootDir: string
