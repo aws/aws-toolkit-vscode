@@ -21,6 +21,7 @@ import { createSessionConfig } from '../../amazonq/commons/session/sessionConfig
 import { DocGenerationTask } from '../../amazonqDoc/controllers/docGenerationTask'
 import { DocV2GenerationEvent, DocV2AcceptanceEvent } from '../../amazonqFeatureDev/client/featuredevproxyclient'
 import { FollowUpTypes } from '../../amazonq/commons/types'
+import { waitUntil } from '../../shared'
 
 export function createMessenger(): DocMessenger {
     return new DocMessenger(
@@ -200,7 +201,6 @@ export async function assertTelemetry(params: {
     type: 'generation' | 'acceptance'
     callIndex?: number
 }) {
-    await new Promise((resolve) => setTimeout(resolve, 100))
     const spyCall = params.callIndex !== undefined ? params.spy.getCall(params.callIndex) : params.spy
     sinon.assert.calledWith(spyCall, sinon.match(params.expectedEvent), params.type)
 }
@@ -246,4 +246,8 @@ export const FollowUpSequences = {
     ],
     makeChanges: [FollowUpTypes.MakeChanges],
     acceptContent: [FollowUpTypes.AcceptChanges],
+}
+
+export async function waitForTelemetryCall(spy: sinon.SinonStub, expectedCallCount: number) {
+    await waitUntil(() => Promise.resolve(spy.callCount >= expectedCallCount), { timeout: 2000, interval: 100 })
 }

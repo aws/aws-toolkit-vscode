@@ -14,6 +14,7 @@ import {
     FollowUpSequences,
     generateVirtualMemoryUri,
     updateFilePaths,
+    waitForTelemetryCall,
 } from './utils'
 import { CurrentWsFolders, NewFileInfo } from '../../amazonqDoc/types'
 import { CodeGenState, docScheme, Session } from '../../amazonqDoc'
@@ -165,6 +166,7 @@ for (let i = 0; i < 1000; i++) {
         it('should emit generation telemetry for initial README generation', async () => {
             await performAction('generate', getSessionStub)
 
+            await waitForTelemetryCall(sendDocTelemetrySpy, 1)
             const expectedEvent = createExpectedEvent({
                 type: 'generation',
                 ...EventMetrics.INITIAL_README,
@@ -186,7 +188,7 @@ for (let i = 0; i < 1000; i++) {
                 interactionType: 'GENERATE_README',
                 conversationId: conversationID,
             })
-
+            await waitForTelemetryCall(sendDocTelemetrySpy, 1)
             await assertTelemetry({
                 spy: sendDocTelemetrySpy,
                 expectedEvent: firstExpectedEvent,
@@ -202,7 +204,7 @@ for (let i = 0; i < 1000; i++) {
                 interactionType: 'GENERATE_README',
                 conversationId: conversationID,
             })
-
+            await waitForTelemetryCall(sendDocTelemetrySpy, 1)
             await assertTelemetry({
                 spy: sendDocTelemetrySpy,
                 expectedEvent: secondExpectedEvent,
@@ -213,15 +215,15 @@ for (let i = 0; i < 1000; i++) {
 
         it('should emit acceptance telemetry for README generation', async () => {
             await performAction('generate', getSessionStub)
-            await new Promise((resolve) => setTimeout(resolve, 100))
+            await waitForTelemetryCall(sendDocTelemetrySpy, 1)
+            await performAction('accept', getSessionStub)
             const expectedEvent = createExpectedEvent({
                 type: 'acceptance',
                 ...EventMetrics.INITIAL_README,
                 interactionType: 'GENERATE_README',
                 conversationId: conversationID,
             })
-
-            await performAction('accept', getSessionStub)
+            await waitForTelemetryCall(sendDocTelemetrySpy, 2)
             await assertTelemetry({
                 spy: sendDocTelemetrySpy,
                 expectedEvent,
@@ -231,7 +233,7 @@ for (let i = 0; i < 1000; i++) {
         })
         it('should emit generation telemetry for README update', async () => {
             await performAction('update', getSessionStub)
-
+            await waitForTelemetryCall(sendDocTelemetrySpy, 1)
             const expectedEvent = createExpectedEvent({
                 type: 'generation',
                 ...EventMetrics.REPO_STRUCTURE,
@@ -247,13 +249,13 @@ for (let i = 0; i < 1000; i++) {
         })
         it('should emit another generation telemetry for make changes operation after README update', async () => {
             await performAction('update', getSessionStub)
-            await new Promise((resolve) => setTimeout(resolve, 100))
+            await waitForTelemetryCall(sendDocTelemetrySpy, 1)
 
             modifiedReadme = ReadmeBuilder.createReadmeWithDataFlow()
             await updateFilePaths(session, modifiedReadme, uploadID, docScheme, controllerSetup.workspaceFolder)
 
             await performAction('makeChanges', getSessionStub, 'add data flow section')
-
+            await waitForTelemetryCall(sendDocTelemetrySpy, 2)
             const expectedEvent = createExpectedEvent({
                 type: 'generation',
                 ...EventMetrics.DATA_FLOW,
@@ -272,8 +274,10 @@ for (let i = 0; i < 1000; i++) {
 
         it('should emit acceptance telemetry for README update', async () => {
             await performAction('update', getSessionStub)
-            await new Promise((resolve) => setTimeout(resolve, 100))
+            await waitForTelemetryCall(sendDocTelemetrySpy, 1)
 
+            await performAction('accept', getSessionStub)
+            await waitForTelemetryCall(sendDocTelemetrySpy, 2)
             const expectedEvent = createExpectedEvent({
                 type: 'acceptance',
                 ...EventMetrics.REPO_STRUCTURE,
@@ -281,7 +285,6 @@ for (let i = 0; i < 1000; i++) {
                 conversationId: conversationID,
             })
 
-            await performAction('accept', getSessionStub)
             await assertTelemetry({
                 spy: sendDocTelemetrySpy,
                 expectedEvent,
@@ -292,7 +295,7 @@ for (let i = 0; i < 1000; i++) {
 
         it('should emit generation telemetry for README edit', async () => {
             await performAction('edit', getSessionStub, 'add repository structure section')
-
+            await waitForTelemetryCall(sendDocTelemetrySpy, 1)
             const expectedEvent = createExpectedEvent({
                 type: 'generation',
                 ...EventMetrics.REPO_STRUCTURE,
@@ -308,8 +311,9 @@ for (let i = 0; i < 1000; i++) {
         })
         it('should emit acceptance telemetry for README edit', async () => {
             await performAction('edit', getSessionStub, 'add repository structure section')
-            await new Promise((resolve) => setTimeout(resolve, 100))
-
+            await waitForTelemetryCall(sendDocTelemetrySpy, 1)
+            await performAction('accept', getSessionStub)
+            await waitForTelemetryCall(sendDocTelemetrySpy, 2)
             const expectedEvent = createExpectedEvent({
                 type: 'acceptance',
                 ...EventMetrics.REPO_STRUCTURE,
@@ -317,7 +321,6 @@ for (let i = 0; i < 1000; i++) {
                 conversationId: conversationID,
             })
 
-            await performAction('accept', getSessionStub)
             await assertTelemetry({
                 spy: sendDocTelemetrySpy,
                 expectedEvent,
