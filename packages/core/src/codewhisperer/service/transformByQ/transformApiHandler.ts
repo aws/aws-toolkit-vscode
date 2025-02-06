@@ -132,9 +132,7 @@ export async function uploadArtifactToS3(
                 )
             } catch (e: any) {
                 if (response && !retriableCodes.includes(response.status)) {
-                    throw new Error(
-                        `Upload failed with status code = ${response.status}; did not automatically retry; full error = ${JSON.stringify(e)}`
-                    )
+                    throw new Error(`Upload failed with status code = ${response.status}; did not automatically retry`)
                 }
                 if (i !== 3) {
                     await sleep(1000 * Math.pow(2, i))
