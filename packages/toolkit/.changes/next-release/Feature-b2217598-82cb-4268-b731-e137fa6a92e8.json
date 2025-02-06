@@ -1,4 +1,4 @@
 {
 	"type": "Feature",
-	"description": "Update support for enVar in the webview"
+	"description": "Lambda: Support for environment variables in the editor webview."
 }
