@@ -336,6 +336,7 @@ export const codefileExtensions = new Set([
     '.ss',
     '.st',
     '.sv',
+    '.svelte',
     '.svg',
     '.swift',
     '.t',
