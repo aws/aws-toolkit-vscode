@@ -1,0 +1,38 @@
+{
+	"date": "2025-02-05",
+	"version": "1.46.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Citation links are not clickable as numbers, but appear as non-clickable texts"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Fix language server start failure in AL2023 ARM64"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "/review: Auto-review issues did not populate code issues list"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q: Fix code upload error when using /dev or /doc on Remote SSH"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "/test placeholder text aligned across IDEs"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Inline: Typos in the first example suggestion"
+		},
+		{
+			"type": "Feature",
+			"description": "Inline suggestions: Pre-fetch recommendations to reduce suggestion latency."
+		},
+		{
+			"type": "Feature",
+			"description": "Added github issue link and description to the chat answer feedback form"
+		}
+	]
+}
