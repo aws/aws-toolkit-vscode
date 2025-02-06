@@ -17,7 +17,11 @@ export async function activate(): Promise<void> {
     // Open the file with Workflow Studio editor in a new tab, or focus on the tab with WFS if it is already open
     globals.context.subscriptions.push(
         Commands.register('aws.stepfunctions.openWithWorkflowStudio', async (uri: vscode.Uri) => {
-            await vscode.commands.executeCommand('vscode.openWith', uri, WorkflowStudioEditorProvider.viewType)
+            await vscode.commands.executeCommand(
+                'vscode.openWith',
+                uri.with({ query: 'manual=true' }),
+                WorkflowStudioEditorProvider.viewType
+            )
         })
     )
 
@@ -26,7 +30,11 @@ export async function activate(): Promise<void> {
     globals.context.subscriptions.push(
         Commands.register('aws.stepfunctions.switchToWorkflowStudio', async (uri: vscode.Uri) => {
             await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
-            await vscode.commands.executeCommand('vscode.openWith', uri, WorkflowStudioEditorProvider.viewType)
+            await vscode.commands.executeCommand(
+                'vscode.openWith',
+                uri.with({ query: 'manual=true' }),
+                WorkflowStudioEditorProvider.viewType
+            )
         })
     )
 }

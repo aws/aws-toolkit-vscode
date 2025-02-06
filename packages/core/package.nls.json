@@ -27,6 +27,7 @@
     "AWS.stepFunctions.workflowStudio.actions.progressMessage": "Opening asl file in Workflow Studio",
     "AWS.stepFunctions.workflowStudio.actions.saveSuccessMessage": "{0} has been saved",
     "AWS.stepFunctions.workflowStudio.actions.invalidJson": "The Workflow Studio editor was not opened because the JSON in the file is invalid. To access Workflow Studio, please fix the JSON and manually reopen the integration.",
+    "AWS.stepFunctions.workflowStudio.enable.desc": "Open Amazon States Language files in Workflow Studio by default.",
     "AWS.configuration.description.awssam.debug.api": "API Gateway configuration",
     "AWS.configuration.description.awssam.debug.api.clientCertId": "The API Gateway client certificate ID",
     "AWS.configuration.description.awssam.debug.api.headers": "Additional HTTP headers",

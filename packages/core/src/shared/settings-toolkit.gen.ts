@@ -19,6 +19,7 @@ export const toolkitSettings = {
     "aws.samcli.legacyDeploy": {},
     "aws.telemetry": {},
     "aws.stepfunctions.asl.format.enable": {},
+    "aws.stepfunctions.workflowStudio.enable": {},
     "aws.stepfunctions.asl.maxItemsComputed": {},
     "aws.ssmDocument.ssm.maxItemsComputed": {},
     "aws.cwl.limit": {},

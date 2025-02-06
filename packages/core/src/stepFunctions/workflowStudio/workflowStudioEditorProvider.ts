@@ -12,6 +12,7 @@ import { telemetry } from '../../shared/telemetry/telemetry'
 import globals from '../../shared/extensionGlobals'
 import { getRandomString, getStringHash } from '../../shared/utilities/textUtilities'
 import { ToolkitError } from '../../shared/errors'
+import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
 import { WorkflowStudioEditor } from './workflowStudioEditor'
 import { i18n } from '../../shared/i18n-helper'
 import { isInvalidJsonFile } from '../utils'
@@ -86,8 +87,9 @@ export class WorkflowStudioEditorProvider implements vscode.CustomTextEditorProv
         const localeTag = `<meta name='locale' content='${locale}'>`
         const theme = vscode.window.activeColorTheme.kind
         const isDarkMode = theme === vscode.ColorThemeKind.Dark || theme === vscode.ColorThemeKind.HighContrast
+        const tabSizeTag = `<meta name='tab-size' content='${getTabSizeSetting()}'>`
         const darkModeTag = `<meta name='dark-mode' content='${isDarkMode}'>`
-        let html = `${htmlFileSplit[0]} <head> ${baseTag} ${localeTag} ${darkModeTag} ${htmlFileSplit[1]}`
+        let html = `${htmlFileSplit[0]} <head> ${baseTag} ${localeTag} ${darkModeTag} ${tabSizeTag} ${htmlFileSplit[1]}`
 
         const nonce = getRandomString()
         htmlFileSplit = html.split("script-src 'self'")
@@ -115,6 +117,21 @@ export class WorkflowStudioEditorProvider implements vscode.CustomTextEditorProv
         _token: vscode.CancellationToken
     ): Promise<void> {
         await telemetry.stepfunctions_openWorkflowStudio.run(async () => {
+            // If the user opted out from Workflow Studio and this is not a manual open, launch default editor instead
+            const autoOpenWFS = vscode.workspace.getConfiguration().get('aws.stepfunctions.workflowStudio.enable', true)
+            const isManualAction = new URLSearchParams(document.uri.query).get('manual') === 'true'
+            if (!autoOpenWFS && !isManualAction) {
+                await vscode.commands.executeCommand('vscode.openWith', document.uri, 'default')
+                webviewPanel.dispose()
+                throw ToolkitError.chain(
+                    'User opted out',
+                    'The Workflow Studio editor was not opened because the user has opted out',
+                    {
+                        code: 'userOptOut',
+                    }
+                )
+            }
+
             // For invalid JSON, open default editor and show warning message
             if (isInvalidJsonFile(document)) {
                 await vscode.commands.executeCommand('vscode.openWith', document.uri, 'default')
