@@ -12,6 +12,7 @@ import AdmZip from 'adm-zip'
 import { TargetContent, logger, LspResult, LspVersion, Manifest } from './types'
 import { getApplicationSupportFolder } from '../vscode/env'
 import { createHash } from '../crypto'
+import { lspSetupStage, StageResolver, tryStageResolvers } from './utils/setupStage'
 import { HttpResourceFetcher } from '../resourcefetcher/httpResourceFetcher'
 
 export class LanguageServerResolver {
@@ -30,51 +31,40 @@ export class LanguageServerResolver {
      * @throws ToolkitError if no compatible version can be found
      */
     async resolve() {
-        const result: LspResult = {
-            location: 'unknown',
-            version: '',
-            assetDirectory: '',
-        }
-
         const latestVersion = this.latestCompatibleLspVersion()
         const targetContents = this.getLSPTargetContents(latestVersion)
         const cacheDirectory = this.getDownloadDirectory(latestVersion.serverVersion)
 
-        if (await this.hasValidLocalCache(cacheDirectory, targetContents)) {
-            result.location = 'cache'
-            result.version = latestVersion.serverVersion
-            result.assetDirectory = cacheDirectory
-            return result
-        } else {
-            // Delete the cached directory since it's invalid
-            if (await fs.existsDir(cacheDirectory)) {
-                await fs.delete(cacheDirectory, {
-                    recursive: true,
-                })
+        const serverResolvers: StageResolver<LspResult>[] = [
+            {
+                resolve: async () => await this.getLocalServer(cacheDirectory, latestVersion, targetContents),
+                telemetryMetadata: { id: this.lsName, languageServerLocation: 'cache' },
+            },
+            {
+                resolve: async () => await this.fetchRemoteServer(cacheDirectory, latestVersion, targetContents),
+                telemetryMetadata: { id: this.lsName, languageServerLocation: 'remote' },
+            },
+            {
+                resolve: async () => await this.getFallbackServer(latestVersion),
+                telemetryMetadata: { id: this.lsName, languageServerLocation: 'fallback' },
+            },
+        ]
+
+        return await tryStageResolvers('getServer', serverResolvers, getServerVersion)
+
+        function getServerVersion(result: LspResult) {
+            return {
+                languageServerVersion: result.version,
             }
         }
+    }
 
-        if (await this.downloadRemoteTargetContent(targetContents, latestVersion.serverVersion)) {
-            result.location = 'remote'
-            result.version = latestVersion.serverVersion
-            result.assetDirectory = cacheDirectory
-            return result
-        } else {
-            // clean up any leftover content that may have been downloaded
-            if (await fs.existsDir(cacheDirectory)) {
-                await fs.delete(cacheDirectory, {
-                    recursive: true,
-                })
-            }
-        }
-
-        logger.info(
-            `Unable to download language server version ${latestVersion.serverVersion}. Attempting to fetch from fallback location`
-        )
-
+    private async getFallbackServer(latestVersion: LspVersion): Promise<LspResult> {
         const fallbackDirectory = await this.getFallbackDir(latestVersion.serverVersion)
         if (!fallbackDirectory) {
-            throw new ToolkitError('Unable to find a compatible version of the Language Server')
+            throw new ToolkitError('Unable to find a compatible version of the Language Server', {
+                code: 'IncompatibleVersion',
+            })
         }
 
         const version = path.basename(fallbackDirectory)
@@ -82,11 +72,49 @@ export class LanguageServerResolver {
             `Unable to install ${this.lsName} language server v${latestVersion.serverVersion}. Launching a previous version from ${fallbackDirectory}`
         )
 
-        result.location = 'fallback'
-        result.version = version
-        result.assetDirectory = fallbackDirectory
+        return {
+            location: 'fallback',
+            version: version,
+            assetDirectory: fallbackDirectory,
+        }
+    }
 
-        return result
+    private async fetchRemoteServer(
+        cacheDirectory: string,
+        latestVersion: LspVersion,
+        targetContents: TargetContent[]
+    ): Promise<LspResult> {
+        if (await this.downloadRemoteTargetContent(targetContents, latestVersion.serverVersion)) {
+            return {
+                location: 'remote',
+                version: latestVersion.serverVersion,
+                assetDirectory: cacheDirectory,
+            }
+        } else {
+            throw new ToolkitError('Failed to download server from remote', { code: 'RemoteDownloadFailed' })
+        }
+    }
+
+    private async getLocalServer(
+        cacheDirectory: string,
+        latestVersion: LspVersion,
+        targetContents: TargetContent[]
+    ): Promise<LspResult> {
+        if (await this.hasValidLocalCache(cacheDirectory, targetContents)) {
+            return {
+                location: 'cache',
+                version: latestVersion.serverVersion,
+                assetDirectory: cacheDirectory,
+            }
+        } else {
+            // Delete the cached directory since it's invalid
+            if (await fs.existsDir(cacheDirectory)) {
+                await fs.delete(cacheDirectory, {
+                    recursive: true,
+                })
+            }
+            throw new ToolkitError('Failed to retrieve server from cache', { code: 'InvalidCache' })
+        }
     }
 
     /**
@@ -164,25 +192,37 @@ export class LanguageServerResolver {
             await fs.mkdir(downloadDirectory)
         }
 
-        const downloadTasks = contents.map(async (content) => {
-            const res = await new HttpResourceFetcher(content.url, { showUrl: true }).get()
-            if (!res || !res.ok || !res.body) {
-                return false
+        const fetchTasks = contents.map(async (content) => {
+            return {
+                res: await new HttpResourceFetcher(content.url, { showUrl: true }).get(),
+                hash: content.hashes[0],
+                filename: content.filename,
             }
-
-            const arrBuffer = await res.arrayBuffer()
-            const data = Buffer.from(arrBuffer)
-
-            const hash = createHash('sha384', data)
-            if (hash === content.hashes[0]) {
-                await fs.writeFile(`${downloadDirectory}/${content.filename}`, data)
-                return true
-            }
-            return false
         })
-        const downloadResults = await Promise.all(downloadTasks)
-        const downloadResult = downloadResults.every(Boolean)
-        return downloadResult && this.extractZipFilesFromRemote(downloadDirectory)
+        const fetchResults = await Promise.all(fetchTasks)
+        const verifyTasks = fetchResults
+            .filter((fetchResult) => fetchResult.res && fetchResult.res.ok && fetchResult.res.body)
+            .flatMap(async (fetchResult) => {
+                const arrBuffer = await fetchResult.res!.arrayBuffer()
+                const data = Buffer.from(arrBuffer)
+
+                const hash = createHash('sha384', data)
+                if (hash === fetchResult.hash) {
+                    return [{ filename: fetchResult.filename, data }]
+                }
+                return []
+            })
+        if (verifyTasks.length !== contents.length) {
+            return false
+        }
+
+        const filesToDownload = await lspSetupStage('validate', async () => (await Promise.all(verifyTasks)).flat())
+
+        for (const file of filesToDownload) {
+            await fs.writeFile(`${downloadDirectory}/${file.filename}`, file.data)
+        }
+
+        return this.extractZipFilesFromRemote(downloadDirectory)
     }
 
     private async extractZipFilesFromRemote(downloadDirectory: string) {
@@ -333,7 +373,9 @@ export class LanguageServerResolver {
     private getCompatibleLspTarget(version: LspVersion) {
         // TODO make this web friendly
         // TODO make this fully support windows
-        const platform = process.platform
+
+        // Workaround: Manifest platform field is `windows`, whereas node returns win32
+        const platform = process.platform === 'win32' ? 'windows' : process.platform
         const arch = process.arch
         return version.targets.find((x) => x.arch === arch && x.platform === platform)
     }

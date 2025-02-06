@@ -8,12 +8,17 @@ import sinon from 'sinon'
 import { AmazonQLSPResolver, supportedLspServerVersions } from '../../../src/lsp/lspInstaller'
 import {
     fs,
+    globals,
     LanguageServerResolver,
     makeTemporaryToolkitFolder,
     ManifestResolver,
+    manifestStorageKey,
     request,
 } from 'aws-core-vscode/shared'
 import * as semver from 'semver'
+import { assertTelemetry } from 'aws-core-vscode/test'
+import { LspController } from 'aws-core-vscode/amazonq'
+import { LanguageServerSetup } from 'aws-core-vscode/telemetry'
 
 function createVersion(version: string) {
     return {
@@ -40,12 +45,22 @@ describe('AmazonQLSPInstaller', () => {
     let resolver: AmazonQLSPResolver
     let sandbox: sinon.SinonSandbox
     let tempDir: string
+    // If globalState contains an ETag that is up to date with remote, we won't fetch it resulting in inconsistent behavior.
+    // Therefore, we clear it temporarily for these tests to ensure consistent behavior.
+    let manifestStorage: { [key: string]: any }
+
+    before(async () => {
+        manifestStorage = globals.globalState.get(manifestStorageKey) || {}
+    })
 
     beforeEach(async () => {
         sandbox = sinon.createSandbox()
         resolver = new AmazonQLSPResolver()
         tempDir = await makeTemporaryToolkitFolder()
         sandbox.stub(LanguageServerResolver.prototype, 'defaultDownloadFolder').returns(tempDir)
+        // Called on extension activation and can contaminate telemetry.
+        sandbox.stub(LspController.prototype, 'trySetupLsp')
+        await globals.globalState.update(manifestStorageKey, {})
     })
 
     afterEach(async () => {
@@ -54,6 +69,10 @@ describe('AmazonQLSPInstaller', () => {
         await fs.delete(tempDir, {
             recursive: true,
         })
+    })
+
+    after(async () => {
+        await globals.globalState.update(manifestStorageKey, manifestStorage)
     })
 
     describe('resolve()', () => {
@@ -117,6 +136,94 @@ describe('AmazonQLSPInstaller', () => {
             assert.ok(fallback.assetDirectory.startsWith(tempDir))
             assert.deepStrictEqual(fallback.location, 'fallback')
             assert.ok(semver.satisfies(fallback.version, supportedLspServerVersions))
+
+            /* First Try Telemetry
+                    getManifest: remote succeeds
+                    getServer: cache fails then remote succeeds.
+                    validate: succeeds.
+            */
+            const firstTryTelemetry: Partial<LanguageServerSetup>[] = [
+                {
+                    id: 'AmazonQ',
+                    manifestLocation: 'remote',
+                    languageServerSetupStage: 'getManifest',
+                    result: 'Succeeded',
+                },
+                {
+                    id: 'AmazonQ',
+                    languageServerLocation: 'cache',
+                    languageServerSetupStage: 'getServer',
+                    result: 'Failed',
+                },
+                {
+                    id: 'AmazonQ',
+                    languageServerLocation: 'remote',
+                    languageServerSetupStage: 'validate',
+                    result: 'Succeeded',
+                },
+                {
+                    id: 'AmazonQ',
+                    languageServerLocation: 'remote',
+                    languageServerSetupStage: 'getServer',
+                    result: 'Succeeded',
+                },
+            ]
+
+            /* Second Try Telemetry
+                    getManifest: remote fails, then cache succeeds.
+                    getServer: cache succeeds
+                    validate: doesn't run since its cached.
+            */
+            const secondTryTelemetry: Partial<LanguageServerSetup>[] = [
+                {
+                    id: 'AmazonQ',
+                    manifestLocation: 'remote',
+                    languageServerSetupStage: 'getManifest',
+                    result: 'Failed',
+                },
+                {
+                    id: 'AmazonQ',
+                    manifestLocation: 'cache',
+                    languageServerSetupStage: 'getManifest',
+                    result: 'Succeeded',
+                },
+                {
+                    id: 'AmazonQ',
+                    languageServerLocation: 'cache',
+                    languageServerSetupStage: 'getServer',
+                    result: 'Succeeded',
+                },
+            ]
+
+            /* Third Try Telemetry
+                    getManifest: (stubbed to fail, no telemetry)
+                    getServer: remote and cache fail
+                    validate: no validation since not remote. 
+            */
+            const thirdTryTelemetry: Partial<LanguageServerSetup>[] = [
+                {
+                    id: 'AmazonQ',
+                    languageServerLocation: 'cache',
+                    languageServerSetupStage: 'getServer',
+                    result: 'Failed',
+                },
+                {
+                    id: 'AmazonQ',
+                    languageServerLocation: 'remote',
+                    languageServerSetupStage: 'getServer',
+                    result: 'Failed',
+                },
+                {
+                    id: 'AmazonQ',
+                    languageServerLocation: 'fallback',
+                    languageServerSetupStage: 'getServer',
+                    result: 'Succeeded',
+                },
+            ]
+
+            const expectedTelemetry = firstTryTelemetry.concat(secondTryTelemetry, thirdTryTelemetry)
+
+            assertTelemetry('languageServer_setup', expectedTelemetry)
         })
     })
 })
