@@ -31,7 +31,7 @@ export interface BuildIndexConfig {
 }
 
 /*
- * LSP Controller manages the status of Amazon Q LSP:
+ * LSP Controller manages the status of Amazon Q Workspace Indexing LSP:
  * 1. Downloading, verifying and installing LSP using DEXP LSP manifest and CDN.
  * 2. Managing the LSP states. There are a couple of possible LSP states:
  *    Not installed. Installed. Running. Indexing. Indexing Done.
@@ -44,6 +44,7 @@ export interface BuildIndexConfig {
 export class LspController {
     static #instance: LspController
     private _isIndexingInProgress = false
+    private logger = getLogger('workspaceContextLsp')
 
     public static get instance() {
         return (this.#instance ??= new this())
@@ -83,18 +84,18 @@ export class LspController {
             return await LspClient.instance.queryInlineProjectContext(query, path, target)
         } catch (e) {
             if (e instanceof Error) {
-                getLogger().error(`unexpected error while querying inline project context, e=${e.message}`)
+                this.logger.error(`unexpected error while querying inline project context, e=${e.message}`)
             }
             return []
         }
     }
 
     async buildIndex(buildIndexConfig: BuildIndexConfig) {
-        getLogger().info(`LspController: Starting to build index of project`)
+        this.logger.info(`LspController: Starting to build index of project`)
         const start = performance.now()
         const projPaths = (vscode.workspace.workspaceFolders ?? []).map((folder) => folder.uri.fsPath)
         if (projPaths.length === 0) {
-            getLogger().info(`LspController: Skipping building index. No projects found in workspace`)
+            this.logger.info(`LspController: Skipping building index. No projects found in workspace`)
             return
         }
         projPaths.sort()
@@ -111,12 +112,12 @@ export class LspController {
                 (accumulator, currentFile) => accumulator + currentFile.fileSizeBytes,
                 0
             )
-            getLogger().info(`LspController: Found ${files.length} files in current project ${projPaths}`)
+            this.logger.info(`LspController: Found ${files.length} files in current project ${projPaths}`)
             const config = buildIndexConfig.isVectorIndexEnabled ? 'all' : 'default'
             const r = files.map((f) => f.fileUri.fsPath)
             const resp = await LspClient.instance.buildIndex(r, projRoot, config)
             if (resp) {
-                getLogger().debug(`LspController: Finish building index of project`)
+                this.logger.debug(`LspController: Finish building index of project`)
                 const usage = await LspClient.instance.getLspServerUsage()
                 telemetry.amazonq_indexWorkspace.emit({
                     duration: performance.now() - start,
@@ -128,7 +129,7 @@ export class LspController {
                     credentialStartUrl: buildIndexConfig.startUrl,
                 })
             } else {
-                getLogger().error(`LspController: Failed to build index of project`)
+                this.logger.error(`LspController: Failed to build index of project`)
                 telemetry.amazonq_indexWorkspace.emit({
                     duration: performance.now() - start,
                     result: 'Failed',
@@ -139,7 +140,7 @@ export class LspController {
             }
         } catch (error) {
             // TODO: use telemetry.run()
-            getLogger().error(`LspController: Failed to build index of project`)
+            this.logger.error(`LspController: Failed to build index of project`)
             telemetry.amazonq_indexWorkspace.emit({
                 duration: performance.now() - start,
                 result: 'Failed',
@@ -155,7 +156,7 @@ export class LspController {
 
     async trySetupLsp(context: vscode.ExtensionContext, buildIndexConfig: BuildIndexConfig) {
         if (isCloud9() || isWeb() || isAmazonInternalOs()) {
-            getLogger().warn('LspController: Skipping LSP setup. LSP is not compatible with the current environment. ')
+            this.logger.warn('LspController: Skipping LSP setup. LSP is not compatible with the current environment. ')
             // do not do anything if in Cloud9 or Web mode or in AL2 (AL2 does not support node v18+)
             return
         }
@@ -168,7 +169,7 @@ export class LspController {
                     async () => {
                         const usage = await LspClient.instance.getLspServerUsage()
                         if (usage) {
-                            getLogger().info(
+                            this.logger.info(
                                 `LspController: LSP server CPU ${usage.cpuUsage}%, LSP server Memory ${
                                     usage.memoryUsage / (1024 * 1024)
                                 }MB  `
@@ -178,7 +179,7 @@ export class LspController {
                     30 * 60 * 1000
                 )
             } catch (e) {
-                getLogger().error(`LspController: LSP failed to activate ${e}`)
+                this.logger.error(`LspController: LSP failed to activate ${e}`)
             }
         })
     }
@@ -187,7 +188,7 @@ export class LspController {
         await lspSetupStage('all', async () => {
             const installResult = await new WorkspaceLSPResolver().resolve()
             await lspSetupStage('launch', async () => activateLsp(context, installResult.resourcePaths))
-            getLogger().info('LspController: LSP activated')
+            this.logger.info('LspController: LSP activated')
         })
     }
 }
