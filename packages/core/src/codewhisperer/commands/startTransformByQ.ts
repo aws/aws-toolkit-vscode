@@ -773,6 +773,11 @@ export async function postTransformationJob() {
     if (transformByQState.getPayloadFilePath() !== '') {
         fs.rmSync(transformByQState.getPayloadFilePath(), { recursive: true, force: true }) // delete ZIP if it exists
     }
+
+    // attempt download for user
+    if (transformByQState.isSucceeded() || transformByQState.isPartiallySucceeded()) {
+        await vscode.commands.executeCommand('aws.amazonq.transformationHub.reviewChanges.startReview')
+    }
 }
 
 export async function transformationJobErrorHandler(error: any) {
