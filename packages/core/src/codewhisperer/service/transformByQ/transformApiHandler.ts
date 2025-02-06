@@ -173,7 +173,7 @@ export async function resumeTransformationJob(jobId: string, userActionStatus: T
         }
     } catch (e: any) {
         const errorMessage = `Resuming the job failed due to: ${(e as Error).message}`
-        getLogger().error(`CodeTransformation: ResumeTransformation error = ${JSON.stringify(e)}`)
+        getLogger().error(`CodeTransformation: ResumeTransformation error = %O`, e)
         throw new Error(errorMessage)
     }
 }
@@ -189,7 +189,7 @@ export async function stopJob(jobId: string) {
         })
     } catch (e: any) {
         transformByQState.setJobFailureMetadata(` (request ID: ${e.requestId ?? 'unavailable'})`)
-        getLogger().error(`CodeTransformation: StopTransformation error = ${JSON.stringify(e)}`)
+        getLogger().error(`CodeTransformation: StopTransformation error = %O`, e)
         throw new Error('Stop job failed')
     }
 }
@@ -210,7 +210,7 @@ export async function uploadPayload(payloadFileName: string, uploadContext?: Upl
     } catch (e: any) {
         const errorMessage = `Creating the upload URL failed due to: ${(e as Error).message}`
         transformByQState.setJobFailureMetadata(` (request ID: ${e.requestId ?? 'unavailable'})`)
-        getLogger().error(`CodeTransformation: CreateUploadUrl error: = ${JSON.stringify(e)}`)
+        getLogger().error(`CodeTransformation: CreateUploadUrl error: = %O`, e)
         throw new Error(errorMessage)
     }
 
@@ -449,7 +449,7 @@ export async function startJob(uploadId: string) {
     } catch (e: any) {
         const errorMessage = `Starting the job failed due to: ${(e as Error).message}`
         transformByQState.setJobFailureMetadata(` (request ID: ${e.requestId ?? 'unavailable'})`)
-        getLogger().error(`CodeTransformation: StartTransformation error = ${JSON.stringify(e)}`)
+        getLogger().error(`CodeTransformation: StartTransformation error = %O`, e)
         throw new Error(errorMessage)
     }
 }
@@ -610,7 +610,7 @@ export async function getTransformationPlan(jobId: string) {
     } catch (e: any) {
         const errorMessage = (e as Error).message
         transformByQState.setJobFailureMetadata(` (request ID: ${e.requestId ?? 'unavailable'})`)
-        getLogger().error(`CodeTransformation: GetTransformationPlan error = ${JSON.stringify(e)}`)
+        getLogger().error(`CodeTransformation: GetTransformationPlan error = %O`, e)
 
         /* Means API call failed
          * If response is defined, means a display/parsing error occurred, so continue transformation
@@ -633,7 +633,7 @@ export async function getTransformationSteps(jobId: string, handleThrottleFlag: 
         return response.transformationPlan.transformationSteps.slice(1) // skip step 0 (contains supplemental info)
     } catch (e: any) {
         transformByQState.setJobFailureMetadata(` (request ID: ${e.requestId ?? 'unavailable'})`)
-        getLogger().error(`CodeTransformation: GetTransformationPlan error = ${JSON.stringify(e)}`)
+        getLogger().error(`CodeTransformation: GetTransformationPlan error = %O`, e)
         throw e
     }
 }
@@ -694,7 +694,7 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
             }
             await sleep(CodeWhispererConstants.transformationJobPollingIntervalSeconds * 1000)
         } catch (e: any) {
-            getLogger().error(`CodeTransformation: GetTransformation error = ${JSON.stringify(e)}`)
+            getLogger().error(`CodeTransformation: GetTransformation error = %O`, e)
             transformByQState.setJobFailureMetadata(` (request ID: ${e.requestId ?? 'unavailable'})`)
             throw e
         }
@@ -752,7 +752,7 @@ export async function downloadResultArchive(
             pathToArchive
         )
     } catch (e: any) {
-        getLogger().error(`CodeTransformation: ExportResultArchive error = ${JSON.stringify(e)}`)
+        getLogger().error(`CodeTransformation: ExportResultArchive error = %O`, e)
         throw e
     } finally {
         cwStreamingClient.destroy()
@@ -781,7 +781,7 @@ export async function downloadAndExtractResultArchive(
         zip.extractAllTo(pathToArchiveDir)
     } catch (e) {
         downloadErrorMessage = (e as Error).message
-        getLogger().error(`CodeTransformation: ExportResultArchive error = ${JSON.stringify(e)}`)
+        getLogger().error(`CodeTransformation: ExportResultArchive error = %O`, e)
         throw new Error('Error downloading transformation result artifacts: ' + downloadErrorMessage)
     }
 }
