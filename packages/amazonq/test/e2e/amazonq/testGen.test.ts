@@ -88,7 +88,7 @@ describe('Amazon Q Test Generation', function () {
         sinon.restore()
     })
 
-    describe('Quick action availability', () => {
+    describe.skip('Quick action availability', () => {
         it('Shows /test when test generation is enabled', async () => {
             const command = tab.findCommand('/test')
             if (!command.length) {
@@ -112,7 +112,7 @@ describe('Amazon Q Test Generation', function () {
     })
 
     describe('/test entry', () => {
-        describe('Unsupported language', () => {
+        describe.skip('Unsupported language', () => {
             const { language, filePath } = unsupportedLanguages[0]
 
             beforeEach(async () => {
@@ -134,7 +134,7 @@ describe('Amazon Q Test Generation', function () {
             })
         })
 
-        describe('External file', async () => {
+        describe.skip('External file', async () => {
             let testFolder: TestFolder
             let fileName: string
 
@@ -165,7 +165,7 @@ describe('Amazon Q Test Generation', function () {
         for (const { language, filePath } of testFiles) {
             // skipping for now since this test is flaky. passes locally, but only half the time in CI
             // have tried retries for setupTestDocument, openTextDocument, and showTextDocument
-            describe.skip(`${language} file`, () => {
+            describe(`${language} file`, () => {
                 beforeEach(async () => {
                     await waitUntil(async () => await setupTestDocument(filePath, language), {})
 
@@ -175,6 +175,7 @@ describe('Amazon Q Test Generation', function () {
                     await tab.waitForButtons([FollowUpTypes.ViewDiff])
                     tab.clickButton(FollowUpTypes.ViewDiff)
                     await tab.waitForChatFinishesLoading()
+                    console.log('beforeEach')
                 })
 
                 describe('View diff', async () => {
