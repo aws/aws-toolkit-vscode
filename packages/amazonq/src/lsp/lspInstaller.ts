@@ -53,7 +53,7 @@ export class AmazonQLSPResolver implements LspResolver {
             manifest.versions,
             path.dirname(installationResult.assetDirectory)
         )
-        logger.debug(`cleaning old LSP versions deleted ${deletedVersions.length} versions`)
+        logger.debug(`Cleaned up ${deletedVersions.length} old versions`)
 
         return {
             ...installationResult,
