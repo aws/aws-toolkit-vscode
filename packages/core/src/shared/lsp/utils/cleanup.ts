@@ -19,23 +19,30 @@ function isDelisted(manifestVersions: LspVersion[], targetVersion: string): bool
 
 /**
  * Delete all delisted versions and keep the two newest versions that remain
- * @param manifest
+ * @param manifestVersions
  * @param downloadDirectory
+ * @returns array of deleted versions.
  */
-export async function cleanLspDownloads(manifestVersions: LspVersion[], downloadDirectory: string): Promise<void> {
+export async function cleanLspDownloads(manifestVersions: LspVersion[], downloadDirectory: string): Promise<string[]> {
     const downloadedVersions = await getDownloadedVersions(downloadDirectory)
     const [delistedVersions, remainingVersions] = partition(downloadedVersions, (v: string) =>
         isDelisted(manifestVersions, v)
     )
+    const deletedVersions: string[] = []
+
     for (const v of delistedVersions) {
         await fs.delete(path.join(downloadDirectory, v), { force: true, recursive: true })
+        deletedVersions.push(v)
     }
 
     if (remainingVersions.length <= 2) {
-        return
+        return deletedVersions
     }
 
     for (const v of sort(remainingVersions).slice(0, -2)) {
         await fs.delete(path.join(downloadDirectory, v), { force: true, recursive: true })
+        deletedVersions.push(v)
     }
+
+    return deletedVersions
 }

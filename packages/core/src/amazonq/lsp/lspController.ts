@@ -44,7 +44,7 @@ export interface BuildIndexConfig {
 export class LspController {
     static #instance: LspController
     private _isIndexingInProgress = false
-    private logger = getLogger('workspaceContextLsp')
+    private logger = getLogger('QWorkspaceLsp')
 
     public static get instance() {
         return (this.#instance ??= new this())

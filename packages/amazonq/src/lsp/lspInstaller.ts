@@ -13,16 +13,18 @@ import {
     LspResolution,
     getNodeExecutableName,
     cleanLspDownloads,
+    getLogger,
 } from 'aws-core-vscode/shared'
 import path from 'path'
 
 const manifestURL = 'https://aws-toolkit-language-servers.amazonaws.com/codewhisperer/0/manifest.json'
 export const supportedLspServerVersions = '^2.3.0'
-
+const logger = getLogger('QLSP')
 export class AmazonQLSPResolver implements LspResolver {
     async resolve(): Promise<LspResolution> {
         const overrideLocation = process.env.AWS_LANGUAGE_SERVER_OVERRIDE
         if (overrideLocation) {
+            logger.info(`Using language server override location: ${overrideLocation}`)
             void vscode.window.showInformationMessage(`Using language server override location: ${overrideLocation}`)
             return {
                 assetDirectory: overrideLocation,
@@ -47,7 +49,12 @@ export class AmazonQLSPResolver implements LspResolver {
         const nodePath = path.join(installationResult.assetDirectory, `servers/${getNodeExecutableName()}`)
         await fs.chmod(nodePath, 0o755)
 
-        await cleanLspDownloads(manifest.versions, path.dirname(installationResult.assetDirectory))
+        const deletedVersions = await cleanLspDownloads(
+            manifest.versions,
+            path.dirname(installationResult.assetDirectory)
+        )
+        logger.debug(`cleaning old LSP versions deleted ${deletedVersions.length} versions`)
+
         return {
             ...installationResult,
             resourcePaths: {
