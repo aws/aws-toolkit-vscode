@@ -73,7 +73,7 @@ export default ESLintUtils.RuleCreator.withoutDocs({
                         return
                     }
 
-                    // If if does not exist as a folder, then the path is simply wrong. Another, more descriptive error will surface instead.
+                    // If it does not exist as a folder, then the path is simply wrong. Another, more descriptive error will surface instead.
                     if (!fs.existsSync(absoluteImportPath)) {
                         return
                     }
