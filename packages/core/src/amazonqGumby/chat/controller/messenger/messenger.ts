@@ -51,6 +51,7 @@ export type UnrecoverableErrorType =
     | 'unsupported-target-db'
     | 'error-parsing-sct-file'
     | 'invalid-zip-no-sct-file'
+    | 'invalid-from-to-jdk'
 
 export enum GumbyNamedMessages {
     COMPILATION_PROGRESS_MESSAGE = 'gumbyProjectCompilationMessage',
@@ -176,7 +177,9 @@ export class Messenger {
         this.dispatcher.sendAsyncEventProgress(
             new AsyncEventProgressMessage(tabID, {
                 inProgress: true,
-                message: CodeWhispererConstants.userPatchDescriptionChatMessage,
+                message: CodeWhispererConstants.userPatchDescriptionChatMessage(
+                    transformByQState.getTargetJDKVersion() ?? ''
+                ),
             })
         )
 
@@ -233,6 +236,10 @@ export class Messenger {
                     value: JDKVersion.JDK17,
                     label: JDKVersion.JDK17,
                 },
+                {
+                    value: JDKVersion.JDK21,
+                    label: JDKVersion.JDK21,
+                },
             ],
         })
 
@@ -245,6 +252,10 @@ export class Messenger {
                 {
                     value: JDKVersion.JDK17,
                     label: JDKVersion.JDK17,
+                },
+                {
+                    value: JDKVersion.JDK21,
+                    label: JDKVersion.JDK21,
                 },
             ],
         })
@@ -480,6 +491,9 @@ export class Messenger {
                 break
             case 'invalid-zip-no-sct-file':
                 message = CodeWhispererConstants.invalidMetadataFileNoSctFile
+                break
+            case 'invalid-from-to-jdk':
+                message = CodeWhispererConstants.invalidFromToJdkChatMessage
                 break
         }
 
