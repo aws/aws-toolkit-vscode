@@ -686,9 +686,7 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
              * is called, we break above on validStatesForCheckingDownloadUrl and check final status in finalizeTransformationJob
              */
             if (CodeWhispererConstants.failureStates.includes(status)) {
-                throw new JobStoppedError(
-                    response.transformationJob.reason ?? 'no failure reason in GetTransformation response'
-                )
+                throw new JobStoppedError()
             }
             await sleep(CodeWhispererConstants.transformationJobPollingIntervalSeconds * 1000)
         } catch (e: any) {
