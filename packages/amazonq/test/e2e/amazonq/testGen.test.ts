@@ -57,7 +57,7 @@ describe('Amazon Q Test Generation', function () {
 
         const activeEditor = vscode.window.activeTextEditor
         if (!activeEditor || activeEditor.document.uri.fsPath !== document.uri.fsPath) {
-            assert.fail(`Failed to make temp file active`)
+            assert.fail(`Failed to make ${language} file active`)
         }
     }
 
@@ -134,7 +134,7 @@ describe('Amazon Q Test Generation', function () {
             })
         })
 
-        describe.skip('External file', async () => {
+        describe('External file', async () => {
             let testFolder: TestFolder
             let fileName: string
 
@@ -163,8 +163,6 @@ describe('Amazon Q Test Generation', function () {
         })
 
         for (const { language, filePath } of testFiles) {
-            // skipping for now since this test is flaky. passes locally, but only half the time in CI
-            // have tried retries for setupTestDocument, openTextDocument, and showTextDocument
             describe(`${language} file`, () => {
                 beforeEach(async () => {
                     await waitUntil(async () => await setupTestDocument(filePath, language), {})
@@ -175,7 +173,7 @@ describe('Amazon Q Test Generation', function () {
                     await tab.waitForButtons([FollowUpTypes.ViewDiff])
                     tab.clickButton(FollowUpTypes.ViewDiff)
                     await tab.waitForChatFinishesLoading()
-                    console.log('beforeEach')
+                    console.log('beforeEach valid language')
                 })
 
                 describe('View diff', async () => {
