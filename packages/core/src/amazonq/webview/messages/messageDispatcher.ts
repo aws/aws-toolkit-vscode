@@ -13,6 +13,7 @@ import { telemetry } from '../../../shared/telemetry'
 import { AmazonQChatMessageDuration } from '../../messages/chatMessageDuration'
 import { globals, openUrl } from '../../../shared'
 import { isClickTelemetry, isOpenAgentTelemetry } from '../ui/telemetry/actions'
+import { DefaultAmazonQAppInitContext } from '../../apps/initContext'
 
 export function dispatchWebViewMessagesToApps(
     webview: Webview,
@@ -21,12 +22,12 @@ export function dispatchWebViewMessagesToApps(
     webview.onDidReceiveMessage((msg) => {
         switch (msg.command) {
             case 'ui-is-ready': {
+                DefaultAmazonQAppInitContext.instance.getAppsToWebViewMessagePublisher().setUiReady()
                 /**
                  * ui-is-ready isn't associated to any tab so just record the telemetry event and continue.
                  * This would be equivalent of the duration between "user clicked open q" and "ui has become available"
                  * NOTE: Amazon Q UI is only loaded ONCE. The state is saved between each hide/show of the webview.
                  */
-
                 telemetry.webview_load.emit({
                     webviewName: 'amazonq',
                     duration: performance.measure(amazonqMark.uiReady, amazonqMark.open).duration,
