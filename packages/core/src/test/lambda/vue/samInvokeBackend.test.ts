@@ -728,6 +728,9 @@ describe('SamInvokeWebview', () => {
                     },
                     lambda: {
                         runtime: 'python3.9',
+                        environmentVariables: {
+                            PARAM1: 'VALUE',
+                        },
                     },
                     sam: {
                         containerBuild: false,

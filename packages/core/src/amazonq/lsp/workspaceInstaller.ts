@@ -14,7 +14,7 @@ import { cleanLspDownloads } from '../../shared'
 
 const manifestUrl = 'https://aws-toolkit-language-servers.amazonaws.com/q-context/manifest.json'
 // this LSP client in Q extension is only going to work with these LSP server versions
-const supportedLspServerVersions = '0.1.32'
+const supportedLspServerVersions = '0.1.35'
 
 export class WorkspaceLSPResolver implements LspResolver {
     async resolve(): Promise<LspResolution> {

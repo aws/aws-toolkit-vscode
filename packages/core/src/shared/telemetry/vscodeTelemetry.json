@@ -1239,6 +1239,70 @@
                 }
             ],
             "passive": true
+        },
+        {
+            "name": "docdb_listClusters",
+            "description": "Called when DocumentDB node is expanded"
+        },
+        {
+            "name": "docdb_listInstances",
+            "description": "Called when a DocumentDB cluster node is expanded"
+        },
+        {
+            "name": "docdb_createCluster",
+            "description": "Captures the result of adding a new cluster in the 'Add Cluster' workflow"
+        },
+        {
+            "name": "docdb_createInstance",
+            "description": "Captures the result of adding an instance to a cluster"
+        },
+        {
+            "name": "docdb_deleteCluster",
+            "description": "Captures the result of deleting a cluster"
+        },
+        {
+            "name": "docdb_deleteInstance",
+            "description": "Captures the result of deleting an instance"
+        },
+        {
+            "name": "docdb_renameCluster",
+            "description": "Captures the result of renaming a cluster"
+        },
+        {
+            "name": "docdb_renameInstance",
+            "description": "Captures the result of renaming an instance"
+        },
+        {
+            "name": "docdb_resizeInstance",
+            "description": "Captures the result of changing an instance class"
+        },
+        {
+            "name": "docdb_rebootInstance",
+            "description": "Captures the result of rebooting an instance"
+        },
+        {
+            "name": "docdb_stopCluster",
+            "description": "Captures the result of stopping a cluster"
+        },
+        {
+            "name": "docdb_startCluster",
+            "description": "Captures the result of starting a cluster"
+        },
+        {
+            "name": "docdb_listTags",
+            "description": "User clicked on tags command"
+        },
+        {
+            "name": "docdb_addTag",
+            "description": "User clicked on add tag command"
+        },
+        {
+            "name": "docdb_removeTag",
+            "description": "User clicked on remove tag command"
+        },
+        {
+            "name": "docdb_addRegion",
+            "description": "User clicked on add region command"
         }
     ]
 }
