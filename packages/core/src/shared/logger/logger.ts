@@ -12,8 +12,8 @@ export type LogTopic =
     | 'test'
     | 'childProcess'
     | 'lsp'
-    | 'QWorkspaceLsp'
-    | 'QLSP'
+    | 'amazonqWorkspaceLSP'
+    | 'amazonqLSP'
     | 'unknown'
 
 class ErrorLog {
