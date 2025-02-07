@@ -212,7 +212,6 @@
     "AWS.command.s3.uploadFileToParent": "Upload to Parent...",
     "AWS.command.stepFunctions.createStateMachineFromTemplate": "Create a new Step Functions state machine",
     "AWS.command.stepFunctions.publishStateMachine": "Publish state machine to Step Functions",
-    "AWS.command.stepFunctions.previewStateMachine": "Render state machine graph",
     "AWS.command.stepFunctions.openWithWorkflowStudio": "Open with Workflow Studio",
     "AWS.command.cdk.previewStateMachine": "Render state machine graph from CDK application",
     "AWS.command.copyLogResource": "Copy Log Stream or Group",

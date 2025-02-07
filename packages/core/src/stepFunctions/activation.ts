@@ -13,7 +13,6 @@ import * as vscode from 'vscode'
 import { AwsContext } from '../shared/awsContext'
 import { createStateMachineFromTemplate } from './commands/createStateMachineFromTemplate'
 import { publishStateMachine } from './commands/publishStateMachine'
-import { AslVisualizationManager } from './commands/visualizeStateMachine/aslVisualizationManager'
 import { Commands } from '../shared/vscode/commands2'
 
 import { ASL_FORMATS, YAML_ASL, JSON_ASL } from './constants/aslFormats'
@@ -23,6 +22,7 @@ import { ToolkitError } from '../shared/errors'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { PerfLog } from '../shared/logger/perfLogger'
 import { ASLLanguageClient } from './asl/client'
+import { WorkflowStudioEditorProvider } from './workflowStudio/workflowStudioEditorProvider'
 
 /**
  * Activate Step Functions related functionality for the extension.
@@ -54,16 +54,10 @@ export async function activate(
     }
 }
 
-/*
- * TODO: Determine behaviour when command is run against bad input, or
- * non-json files. Determine if we want to limit the command to only a
- * specifc subset of file types ( .json only, custom .states extension, etc...)
- * Ensure tests are written for this use case as well.
- */
 export const previewStateMachineCommand = Commands.declare(
     'aws.previewStateMachine',
-    (manager: AslVisualizationManager) => async (arg?: vscode.TextEditor | vscode.Uri) => {
-        try {
+    () => async (arg?: vscode.TextEditor | vscode.Uri) => {
+        await telemetry.run('stepfunctions_previewstatemachine', async () => {
             arg ??= vscode.window.activeTextEditor
             const input = arg instanceof vscode.Uri ? arg : arg?.document
 
@@ -71,11 +65,11 @@ export const previewStateMachineCommand = Commands.declare(
                 throw new ToolkitError('No active text editor or document found')
             }
 
-            return await manager.visualizeStateMachine(input)
-        } finally {
-            // TODO: Consider making the metric reflect the success/failure of the above call
-            telemetry.stepfunctions_previewstatemachine.emit()
-        }
+            await vscode.commands.executeCommand('vscode.openWith', input, WorkflowStudioEditorProvider.viewType, {
+                preserveFocus: true,
+                viewColumn: vscode.ViewColumn.Beside,
+            })
+        })
     }
 )
 
@@ -84,11 +78,10 @@ async function registerStepFunctionCommands(
     awsContext: AwsContext,
     outputChannel: vscode.OutputChannel
 ): Promise<void> {
-    const visualizationManager = new AslVisualizationManager(extensionContext)
     const cdkVisualizationManager = new AslVisualizationCDKManager(extensionContext)
 
     extensionContext.subscriptions.push(
-        previewStateMachineCommand.register(visualizationManager),
+        previewStateMachineCommand.register(),
         renderCdkStateMachineGraph.register(cdkVisualizationManager),
         Commands.register('aws.stepfunctions.createStateMachineFromTemplate', async () => {
             try {
@@ -144,15 +137,8 @@ function initializeCodeLens(context: vscode.ExtensionContext) {
         public async provideCodeLenses(document: vscode.TextDocument): Promise<vscode.CodeLens[]> {
             const topOfDocument = new vscode.Range(0, 0, 0, 0)
 
-            const openCustomEditorCommand: vscode.Command = {
-                command: 'aws.stepfunctions.switchToWorkflowStudio',
+            const openCustomEditor = previewStateMachineCommand.build(document.uri).asCodeLens(topOfDocument, {
                 title: localize('AWS.command.stepFunctions.openWithWorkflowStudio', 'Open with Workflow Studio'),
-                arguments: [document.uri],
-            }
-            const openCustomEditor = new vscode.CodeLens(topOfDocument, openCustomEditorCommand)
-
-            const renderCodeLens = previewStateMachineCommand.build().asCodeLens(topOfDocument, {
-                title: localize('AWS.stepFunctions.render', 'Render graph'),
             })
 
             if (ASL_FORMATS.includes(document.languageId)) {
@@ -162,9 +148,9 @@ function initializeCodeLens(context: vscode.ExtensionContext) {
                 }
                 const publishCodeLens = new vscode.CodeLens(topOfDocument, publishCommand)
 
-                return [openCustomEditor, publishCodeLens, renderCodeLens]
+                return [publishCodeLens, openCustomEditor]
             } else {
-                return [openCustomEditor, renderCodeLens]
+                return [openCustomEditor]
             }
         }
     }
