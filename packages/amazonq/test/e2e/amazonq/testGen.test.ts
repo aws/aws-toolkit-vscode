@@ -88,7 +88,7 @@ describe('Amazon Q Test Generation', function () {
         sinon.restore()
     })
 
-    describe.skip('Quick action availability', () => {
+    describe('Quick action availability', () => {
         it('Shows /test when test generation is enabled', async () => {
             const command = tab.findCommand('/test')
             if (!command.length) {
@@ -112,7 +112,7 @@ describe('Amazon Q Test Generation', function () {
     })
 
     describe('/test entry', () => {
-        describe.skip('Unsupported language', () => {
+        describe('Unsupported language', () => {
             const { language, filePath } = unsupportedLanguages[0]
 
             beforeEach(async () => {
