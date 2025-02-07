@@ -17,7 +17,7 @@ import {
 import path from 'path'
 
 const manifestURL = 'https://aws-toolkit-language-servers.amazonaws.com/codewhisperer/0/manifest.json'
-export const supportedLspServerVersions = '^2.3.0'
+export const supportedLspServerVersions = '^3.1.1'
 
 export class AmazonQLSPResolver implements LspResolver {
     async resolve(): Promise<LspResolution> {
