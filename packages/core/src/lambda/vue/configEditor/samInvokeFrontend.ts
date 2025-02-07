@@ -345,6 +345,11 @@ export default defineComponent({
                             this.launchConfig.invokeTarget.lambdaHandler = this.resourceData.handler
                             if (this.launchConfig.lambda) {
                                 this.launchConfig.lambda.runtime = this.resourceData.runtime
+                                if (this.resourceData.environment?.Variables !== undefined) {
+                                    this.environmentVariables.value = JSON.stringify(
+                                        this.resourceData.environment?.Variables
+                                    )
+                                }
                             }
                         }
                     },
