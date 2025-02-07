@@ -43,7 +43,7 @@ export class AlternateDependencyVersionsNotFoundError extends Error {
 }
 
 export class JobStoppedError extends Error {
-    constructor(readonly requestId: string) {
+    constructor() {
         super('Job was rejected, stopped, or failed')
     }
 }
