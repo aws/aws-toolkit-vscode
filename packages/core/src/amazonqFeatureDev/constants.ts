@@ -21,8 +21,8 @@ export const generateDevFilePrompt =
 export const maxRepoSizeBytes = 200 * 1024 * 1024
 
 export const startCodeGenClientErrorMessages = ['Improperly formed request', 'Resource not found']
+export const startTaskAssisLimitReachedMessage = 'StartTaskAssistCodeGeneration reached for this month.'
 export const clientErrorMessages = [
-    'StartTaskAssistCodeGeneration reached for this month.',
     'The folder you chose did not contain any source files in a supported language. Choose another folder and try again.',
 ]
 

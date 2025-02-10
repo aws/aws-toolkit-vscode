@@ -39,7 +39,14 @@ import { CodeGenState, PrepareCodeGenState } from '../../../../amazonqFeatureDev
 import { FeatureDevClient } from '../../../../amazonqFeatureDev/client/featureDev'
 import { createAmazonQUri } from '../../../../amazonq/commons/diff'
 import { AuthUtil } from '../../../../codewhisperer'
-import { featureDevScheme, featureName, messageWithConversationId } from '../../../../amazonqFeatureDev'
+import {
+    featureDevScheme,
+    featureName,
+    messageWithConversationId,
+    clientErrorMessages,
+    startCodeGenClientErrorMessages,
+    startTaskAssisLimitReachedMessage,
+} from '../../../../amazonqFeatureDev'
 import { i18n } from '../../../../shared/i18n-helper'
 import { FollowUpTypes } from '../../../../amazonq/commons/types'
 import { ToolkitError } from '../../../../shared'
@@ -481,18 +488,13 @@ describe('Controller', () => {
                 }
                 if (
                     error.code === 'StartCodeGenerationFailed' &&
-                    (error.message.includes('Improperly formed request') ||
-                        error.message.includes('Resource not found'))
+                    startCodeGenClientErrorMessages.some((msg: string) => error.message.includes(msg))
                 ) {
                     return MetricDataResult.Error
                 }
-                if (error.message.includes('StartTaskAssistCodeGeneration reached for this month.')) {
-                    return MetricDataResult.Error
-                }
                 if (
-                    error.message.includes(
-                        'The folder you chose did not contain any source files in a supported language. Choose another folder and try again.'
-                    )
+                    clientErrorMessages.some((msg: string) => error.message.includes(msg)) ||
+                    error.message.includes(startTaskAssisLimitReachedMessage) // Include this check
                 ) {
                     return MetricDataResult.Error
                 }
