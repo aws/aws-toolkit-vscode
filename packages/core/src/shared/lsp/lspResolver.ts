@@ -345,7 +345,11 @@ export class LanguageServerResolver {
             return false
         }
 
-        return semver.satisfies(version.serverVersion, this.versionRange) && !version.isDelisted
+        return (
+            semver.satisfies(version.serverVersion, this.versionRange, {
+                includePrerelease: true,
+            }) && !version.isDelisted
+        )
     }
 
     /**

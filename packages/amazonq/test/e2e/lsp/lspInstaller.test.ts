@@ -5,7 +5,7 @@
 
 import assert from 'assert'
 import sinon from 'sinon'
-import { AmazonQLSPResolver, supportedLspServerVersions } from '../../../src/lsp/lspInstaller'
+import { AmazonQLSPResolver, manifestURL, supportedLspServerVersions } from '../../../src/lsp/lspInstaller'
 import {
     fs,
     globals,
@@ -224,6 +224,39 @@ describe('AmazonQLSPInstaller', () => {
             const expectedTelemetry = firstTryTelemetry.concat(secondTryTelemetry, thirdTryTelemetry)
 
             assertTelemetry('languageServer_setup', expectedTelemetry)
+        })
+
+        it('resolves release candidiates', async () => {
+            const original = new ManifestResolver(manifestURL, 'AmazonQ').resolve()
+            sandbox.stub(ManifestResolver.prototype, 'resolve').callsFake(async () => {
+                const originalManifest = await original
+
+                const latestVersion = originalManifest.versions.reduce((latest, current) => {
+                    return semver.gt(current.serverVersion, latest.serverVersion) ? current : latest
+                }, originalManifest.versions[0])
+
+                // These convert something like 3.1.1 to 3.2.1-rc.0
+                const incrementedVersion = semver.inc(latestVersion.serverVersion, 'minor')
+                if (!incrementedVersion) {
+                    assert.fail('Failed to increment minor version')
+                }
+
+                const prereleaseVersion = semver.inc(incrementedVersion, 'prerelease', 'rc')
+                if (!prereleaseVersion) {
+                    assert.fail('Failed to create pre-release version')
+                }
+
+                const newVersion = {
+                    ...latestVersion,
+                    serverVersion: prereleaseVersion,
+                }
+
+                originalManifest.versions = [newVersion, ...originalManifest.versions]
+                return originalManifest
+            })
+
+            const download = await resolver.resolve()
+            assert.ok(download.assetDirectory.endsWith('-rc.0'))
         })
     })
 })
