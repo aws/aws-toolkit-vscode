@@ -9,7 +9,6 @@ import sinon from 'sinon'
 import { registerAuthHook, using } from 'aws-core-vscode/test'
 import { loginToIdC } from './utils/setup'
 import { Messenger } from './framework/messenger'
-import { examples } from 'aws-core-vscode/amazonqFeatureDev'
 import { FollowUpTypes } from 'aws-core-vscode/amazonq'
 import { sleep } from 'aws-core-vscode/shared'
 
@@ -17,9 +16,11 @@ describe('Amazon Q Feature Dev', function () {
     let framework: qTestingFramework
     let tab: Messenger
 
-    const prompt = 'Add blank.txt file with empty content'
-    const codegenApproachPrompt = `${prompt} and add a readme that describes the changes`
-    const fileLevelAcceptPrompt = `${prompt} and add a license, and a contributing file`
+    const prompt = 'Add current timestamp into blank.txt'
+    const iteratePrompt = `Add a new section in readme to explain your change`
+    const fileLevelAcceptPrompt = `${prompt} and ${iteratePrompt}`
+    const informationCard =
+        'After you provide a task, I will:\n1. Generate code based on your description and the code in your workspace\n2. Provide a list of suggestions for you to review and add to your workspace\n3. If needed, iterate based on your feedback\nTo learn more, visit the [user guide](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/software-dev.html)'
     const tooManyRequestsWaitTime = 100000
 
     async function waitForText(text: string) {
@@ -144,34 +145,35 @@ describe('Amazon Q Feature Dev', function () {
     })
 
     describe('/dev entry', () => {
-        it('Clicks examples', async () => {
-            const q = framework.createTab()
-            q.addChatMessage({ command: '/dev' })
-            await retryIfRequired(
-                async () => {
-                    await q.waitForChatFinishesLoading()
-                },
-                () => {
-                    q.clickButton(FollowUpTypes.DevExamples)
-
-                    const lastChatItems = q.getChatItems().pop()
-                    assert.deepStrictEqual(lastChatItems?.body, examples)
-                }
-            )
+        before(async () => {
+            tab = framework.createTab()
+            tab.addChatMessage({ command: '/dev' }) // This would create a new tab for feature dev.
+            tab = framework.getSelectedTab()
         })
-    })
 
-    // Disable failing tests while investigation. The tests are only failing in CI environments.
-    describe.skip('/dev {msg} entry', async () => {
-        beforeEach(async function () {
-            tab.addChatMessage({ command: '/dev', prompt })
+        it('should display information card', async () => {
             await retryIfRequired(
                 async () => {
                     await tab.waitForChatFinishesLoading()
                 },
                 () => {
-                    tab.addChatMessage({ prompt })
+                    const lastChatItems = tab.getChatItems().pop()
+                    assert.deepStrictEqual(lastChatItems?.body, informationCard)
                 }
+            )
+        })
+    })
+
+    describe('/dev {msg} entry', async () => {
+        beforeEach(async function () {
+            tab = framework.createTab()
+            tab.addChatMessage({ command: '/dev', prompt })
+            tab = framework.getSelectedTab()
+            await retryIfRequired(
+                async () => {
+                    await tab.waitForChatFinishesLoading()
+                },
+                () => {}
             )
         })
 
@@ -211,15 +213,17 @@ describe('Amazon Q Feature Dev', function () {
             })
             tab.clickButton(FollowUpTypes.ProvideFeedbackAndRegenerateCode)
             await tab.waitForChatFinishesLoading()
-            await iterate(codegenApproachPrompt)
+            await iterate(iteratePrompt)
             tab.clickButton(FollowUpTypes.InsertCode)
             await tab.waitForButtons([FollowUpTypes.NewTask, FollowUpTypes.CloseSession])
         })
     })
 
-    describe.skip('file-level accepts', async () => {
+    describe('file-level accepts', async () => {
         beforeEach(async function () {
+            tab = framework.createTab()
             tab.addChatMessage({ command: '/dev', prompt: fileLevelAcceptPrompt })
+            tab = framework.getSelectedTab()
             await retryIfRequired(
                 async () => {
                     await tab.waitForChatFinishesLoading()
