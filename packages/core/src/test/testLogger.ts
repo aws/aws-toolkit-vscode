@@ -23,8 +23,6 @@ export class TestLogger extends BaseLogger {
         super()
     }
 
-    public enableDebugConsole(): void {}
-
     public getLoggedEntries(...logLevels: LogLevel[]): Loggable[] {
         return this.loggedEntries
             .filter((loggedEntry) => logLevels.length === 0 || logLevels.includes(loggedEntry.logLevel))
