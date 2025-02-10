@@ -594,6 +594,11 @@
                 "category": "%AWS.amazonq.title%"
             },
             {
+                "command": "aws.amazonq.showExtStats",
+                "title": "%AWS.command.showExtStats%",
+                "category": "%AWS.title%"
+            },
+            {
                 "command": "aws.amazonq.github",
                 "title": "%AWS.command.github%",
                 "category": "%AWS.amazonq.title%"

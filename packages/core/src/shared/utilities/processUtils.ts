@@ -2,13 +2,13 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-
 import * as proc from 'child_process' // eslint-disable-line no-restricted-imports
 import * as crossSpawn from 'cross-spawn'
 import * as logger from '../logger'
 import { Timeout, CancellationError, waitUntil } from './timeoutUtils'
 import { PollingSet } from './pollingSet'
 import { getLogger } from '../logger/logger'
+import { SystemResource, telemetry } from '../telemetry/telemetry'
 
 export interface RunParameterContext {
     /** Reports an error parsed from the stdin/stdout streams. */
@@ -62,28 +62,39 @@ export interface ChildProcessResult {
 }
 
 export const eof = Symbol('EOF')
-
+type pid = number
 export interface ProcessStats {
-    memory: number
-    cpu: number
+    memoryBytes: number
+    cpuPercent: number
+}
+
+function toTelemetryResource(k: keyof ProcessStats): SystemResource {
+    return k === 'cpuPercent' ? 'cpu' : 'memory'
 }
 export class ChildProcessTracker {
     static readonly pollingInterval: number = 10000 // Check usage every 10 seconds
     static readonly thresholds: ProcessStats = {
-        memory: 100 * 1024 * 1024, // 100 MB
-        cpu: 50,
+        memoryBytes: 100 * 1024 * 1024, // 100 MB
+        cpuPercent: 50,
     }
-    static readonly logger = getLogger('childProcess')
-    #processByPid: Map<number, ChildProcess> = new Map<number, ChildProcess>()
-    #pids: PollingSet<number>
+    readonly logger: logger.Logger
+    static #instance: ChildProcessTracker
 
-    public constructor() {
+    static get instance(): ChildProcessTracker {
+        return (this.#instance ??= new ChildProcessTracker())
+    }
+
+    #processByPid: Map<pid, ChildProcess> = new Map<pid, ChildProcess>()
+    #pids: PollingSet<pid>
+
+    private constructor() {
+        this.logger = getLogger('childProcess')
         this.#pids = new PollingSet(ChildProcessTracker.pollingInterval, () => this.monitor())
     }
 
     private cleanUp() {
         const terminatedProcesses = Array.from(this.#pids.values()).filter(
-            (pid: number) => this.#processByPid.get(pid)?.stopped
+            (pid: pid) => this.#processByPid.get(pid)?.stopped
         )
         for (const pid of terminatedProcesses) {
             this.delete(pid)
@@ -92,7 +103,7 @@ export class ChildProcessTracker {
 
     private async monitor() {
         this.cleanUp()
-        ChildProcessTracker.logger.debug(`Active running processes size: ${this.#pids.size}`)
+        this.logger.debug(`Active running processes size: ${this.#pids.size}`)
 
         for (const pid of this.#pids.values()) {
             await this.checkProcessUsage(pid)
@@ -100,19 +111,40 @@ export class ChildProcessTracker {
     }
 
     private async checkProcessUsage(pid: number): Promise<void> {
+        const warn = (resource: SystemResource, value: number) => {
+            telemetry.ide_childProcessWarning.run((span) => {
+                this.logger.warn(`Process ${this.getProcessAsStr(pid)} exceeded ${resource} threshold: ${value}`)
+                span.record({ systemResource: resource, childProcess: this.getProcessAsStr(pid) })
+            })
+        }
+
         if (!this.#pids.has(pid)) {
-            ChildProcessTracker.logger.warn(`Missing process with id ${pid}`)
+            this.logger.warn(`Missing process with pid ${pid}`)
             return
         }
         const stats = this.getUsage(pid)
-        if (stats) {
-            ChildProcessTracker.logger.debug(`Process ${pid} usage: %O`, stats)
-            if (stats.memory > ChildProcessTracker.thresholds.memory) {
-                ChildProcessTracker.logger.warn(`Process ${pid} exceeded memory threshold: ${stats.memory}`)
+        if (!stats) {
+            this.logger.warn(`Failed to get process stats for process with pid ${pid}`)
+            return
+        }
+        for (const processStat of Object.keys(ChildProcessTracker.thresholds) as (keyof ProcessStats)[]) {
+            if (doesExceedThreshold(processStat, stats[processStat])) {
+                warn(toTelemetryResource(processStat), stats[processStat])
             }
-            if (stats.cpu > ChildProcessTracker.thresholds.cpu) {
-                ChildProcessTracker.logger.warn(`Process ${pid} exceeded cpu threshold: ${stats.cpu}`)
-            }
+        }
+
+        function doesExceedThreshold(resource: keyof ProcessStats, value: number) {
+            const threshold = ChildProcessTracker.thresholds[resource]
+            return value > threshold
+        }
+    }
+
+    public getProcessAsStr(pid: pid): string {
+        try {
+            return this.#processByPid.get(pid)!.toString()
+        } catch (e) {
+            this.logger.warn(`Missing process with pid ${pid}`)
+            return `pid: ${pid}`
         }
     }
 
@@ -122,7 +154,7 @@ export class ChildProcessTracker {
         this.#pids.add(pid)
     }
 
-    public delete(childProcessId: number) {
+    public delete(childProcessId: pid) {
         this.#processByPid.delete(childProcessId)
         this.#pids.delete(childProcessId)
     }
@@ -143,16 +175,42 @@ export class ChildProcessTracker {
         this.#processByPid.clear()
     }
 
+    public async getAllUsage(): Promise<Map<pid, ProcessStats>> {
+        return new Map(
+            await Promise.all(
+                Array.from(this.#pids).map(async (pid: pid) => {
+                    const stats = this.getUsage(pid)
+                    return [pid, stats] as const
+                })
+            )
+        )
+    }
+
+    public async logAllUsage(): Promise<void> {
+        await telemetry.ide_showExtStats.run(async (span) => {
+            span.record({ numChildProcesses: this.size })
+            if (this.size === 0) {
+                this.logger.info('No Active Subprocesses')
+                return
+            }
+            const usage = await this.getAllUsage()
+            const logMsg = Array.from(usage.entries()).reduce((acc, [pid, stats]) => {
+                return acc + `Process ${pid}: ${stats.cpuPercent}% cpu, ${stats.memoryBytes} B of memory\n`
+            }, '')
+            this.logger.info(`Active Subprocesses (${this.size} active)\n${logMsg}`)
+        })
+    }
+
     public getUsage(pid: number): ProcessStats {
         try {
             // isWin() leads to circular dependency.
             return process.platform === 'win32' ? getWindowsUsage() : getUnixUsage()
         } catch (e) {
-            ChildProcessTracker.logger.warn(`Failed to get process stats for ${pid}: ${e}`)
-            return { cpu: 0, memory: 0 }
+            this.logger.warn(`Failed to get process stats for ${pid}: ${e}`)
+            return { cpuPercent: 0, memoryBytes: 0 }
         }
 
-        function getWindowsUsage() {
+        function getWindowsUsage(): ProcessStats {
             const cpuOutput = proc
                 .execFileSync('wmic', [
                     'path',
@@ -171,12 +229,12 @@ export class ChildProcessTracker {
             const memoryBytes = parseInt(memOutput.split('\n')[1]) * 1024
 
             return {
-                cpu: isNaN(cpuPercentage) ? 0 : cpuPercentage,
-                memory: memoryBytes,
+                cpuPercent: isNaN(cpuPercentage) ? 0 : cpuPercentage,
+                memoryBytes,
             }
         }
 
-        function getUnixUsage() {
+        function getUnixUsage(): ProcessStats {
             const cpuMemOutput = proc.execFileSync('ps', ['-p', pid.toString(), '-o', '%cpu,%mem']).toString()
             const rssOutput = proc.execFileSync('ps', ['-p', pid.toString(), '-o', 'rss']).toString()
 
@@ -185,21 +243,19 @@ export class ChildProcessTracker {
             const memoryBytes = parseInt(rssOutput.split('\n')[1]) * 1024
 
             return {
-                cpu: isNaN(cpuPercentage) ? 0 : cpuPercentage,
-                memory: memoryBytes,
+                cpuPercent: isNaN(cpuPercentage) ? 0 : cpuPercentage,
+                memoryBytes,
             }
         }
     }
 }
 
-/**
- * Convenience class to manage a child process
- * To use:
- * - instantiate
- * - call and await run to get the results (pass or fail)
- */
+export interface ProcessStats {
+    memoryBytes: number
+    cpuPercent: number
+}
 export class ChildProcess {
-    static #runningProcesses = new ChildProcessTracker()
+    static #runningProcesses = ChildProcessTracker.instance
     static stopTimeout = 3000
     #childProcess: proc.ChildProcess | undefined
     #processErrors: Error[] = []

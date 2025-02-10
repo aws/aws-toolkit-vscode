@@ -19,7 +19,7 @@ import { sleep } from '../../../shared/utilities/timeoutUtils'
 import { Timeout, waitUntil } from '../../../shared/utilities/timeoutUtils'
 import { fs } from '../../../shared'
 import * as FakeTimers from '@sinonjs/fake-timers'
-import { installFakeClock } from '../../testUtil'
+import { assertTelemetry, installFakeClock } from '../../testUtil'
 import { isWin } from '../../../shared/vscode/env'
 import { assertLogsContain } from '../../globalSetup.test'
 
@@ -384,119 +384,186 @@ function startSleepProcess(timeout: number = 90): RunningProcess {
 
 describe('ChildProcessTracker', function () {
     let tracker: ChildProcessTracker
-    let clock: FakeTimers.InstalledClock
-    let usageMock: sinon.SinonStub
 
     before(function () {
-        clock = installFakeClock()
-        tracker = new ChildProcessTracker()
-        usageMock = sinon.stub(ChildProcessTracker.prototype, 'getUsage')
+        tracker = ChildProcessTracker.instance
+        tracker.clear() // Avoid bleed-through of other tests running child processes.
     })
 
     afterEach(function () {
         tracker.clear()
-        usageMock.reset()
     })
 
-    after(function () {
-        clock.uninstall()
+    describe('tracking functionality', function () {
+        let clock: FakeTimers.InstalledClock
+        let usageMock: sinon.SinonStub
+
+        before(function () {
+            clock = installFakeClock()
+            usageMock = sinon.stub(ChildProcessTracker.prototype, 'getUsage')
+        })
+
+        afterEach(function () {
+            usageMock.reset()
+        })
+
+        after(function () {
+            clock.uninstall()
+            usageMock.restore()
+        })
+
+        it(`removes stopped processes every ${ChildProcessTracker.pollingInterval / 1000} seconds`, async function () {
+            // Start a 'sleep' command, check it only removes after we stop it.
+            const runningProcess = startSleepProcess()
+            assert.strictEqual(tracker.has(runningProcess.childProcess), true, 'failed to add sleep command')
+
+            await clock.tickAsync(ChildProcessTracker.pollingInterval)
+            assert.strictEqual(tracker.has(runningProcess.childProcess), true, 'process was mistakenly removed')
+            await stopAndWait(runningProcess)
+
+            await clock.tickAsync(ChildProcessTracker.pollingInterval)
+            assert.strictEqual(
+                tracker.has(runningProcess.childProcess),
+                false,
+                'process was not removed after stopping'
+            )
+        })
+
+        it('multiple processes from same command are tracked seperately', async function () {
+            const runningProcess1 = startSleepProcess()
+            const runningProcess2 = startSleepProcess()
+
+            assert.strictEqual(tracker.has(runningProcess1.childProcess), true, 'Missing first process')
+            assert.strictEqual(tracker.has(runningProcess2.childProcess), true, 'Missing second process')
+
+            await stopAndWait(runningProcess1)
+            await clock.tickAsync(ChildProcessTracker.pollingInterval)
+            assert.strictEqual(tracker.has(runningProcess2.childProcess), true, 'second process was mistakenly removed')
+            assert.strictEqual(
+                tracker.has(runningProcess1.childProcess),
+                false,
+                'first process was not removed after stopping it'
+            )
+
+            await stopAndWait(runningProcess2)
+            await clock.tickAsync(ChildProcessTracker.pollingInterval)
+            assert.strictEqual(
+                tracker.has(runningProcess2.childProcess),
+                false,
+                'second process was not removed after stopping it'
+            )
+
+            assert.strictEqual(tracker.size, 0, 'expected tracker to be empty')
+        })
+
+        it('logs a warning message and emits metric when cpu exceeds threshold', async function () {
+            const runningProcess = startSleepProcess()
+
+            const highCpu: ProcessStats = {
+                cpuPercent: ChildProcessTracker.thresholds.cpuPercent + 1,
+                memoryBytes: 0,
+            }
+
+            usageMock.returns(highCpu)
+
+            await clock.tickAsync(ChildProcessTracker.pollingInterval)
+            assertLogsContain('exceeded cpu threshold', false, 'warn')
+            assertTelemetry('ide_childProcessWarning', {
+                systemResource: 'cpu',
+                childProcess: runningProcess.childProcess.toString(),
+            })
+
+            await stopAndWait(runningProcess)
+        })
+
+        it('logs a warning message and emits metric when memory exceeds threshold', async function () {
+            const runningProcess = startSleepProcess()
+            const highMemory: ProcessStats = {
+                cpuPercent: 0,
+                memoryBytes: ChildProcessTracker.thresholds.memoryBytes + 1,
+            }
+
+            usageMock.returns(highMemory)
+            await clock.tickAsync(ChildProcessTracker.pollingInterval)
+            assertLogsContain('exceeded memory threshold', false, 'warn')
+            assertTelemetry('ide_childProcessWarning', {
+                systemResource: 'memory',
+                childProcess: runningProcess.childProcess.toString(),
+            })
+
+            await stopAndWait(runningProcess)
+        })
+
+        it('includes pid in logs', async function () {
+            const runningProcess = startSleepProcess()
+
+            usageMock.returns({
+                cpuPercent: 0,
+                memoryBytes: ChildProcessTracker.thresholds.memoryBytes + 1,
+            })
+
+            await clock.tickAsync(ChildProcessTracker.pollingInterval)
+            assertLogsContain(runningProcess.childProcess.pid().toString(), false, 'warn')
+
+            await stopAndWait(runningProcess)
+        })
+
+        it('does not log for processes within threshold', async function () {
+            const runningProcess = startSleepProcess()
+
+            usageMock.returns({
+                cpu: ChildProcessTracker.thresholds.cpuPercent - 1,
+                memory: ChildProcessTracker.thresholds.memoryBytes - 1,
+            })
+
+            await clock.tickAsync(ChildProcessTracker.pollingInterval)
+
+            assert.throws(() => assertLogsContain(runningProcess.childProcess.pid().toString(), false, 'warn'))
+            assert.throws(() => assertTelemetry('ide_childProcessWarning', {}))
+            await stopAndWait(runningProcess)
+        })
     })
 
-    it(`removes stopped processes every ${ChildProcessTracker.pollingInterval / 1000} seconds`, async function () {
-        // Start a 'sleep' command, check it only removes after we stop it.
-        const runningProcess = startSleepProcess()
-        tracker.add(runningProcess.childProcess)
-        assert.strictEqual(tracker.has(runningProcess.childProcess), true, 'failed to add sleep command')
+    describe('logAllUsage', function () {
+        it('includes only active processes', async function () {
+            const runningProcess1 = startSleepProcess()
+            const runningProcess2 = startSleepProcess()
 
-        await clock.tickAsync(ChildProcessTracker.pollingInterval)
-        assert.strictEqual(tracker.has(runningProcess.childProcess), true, 'process was mistakenly removed')
-        await stopAndWait(runningProcess)
+            assert.ok(tracker.has(runningProcess1.childProcess), 'Missing first process')
+            assert.ok(tracker.has(runningProcess2.childProcess), 'Missing seconds process')
 
-        await clock.tickAsync(ChildProcessTracker.pollingInterval)
-        assert.strictEqual(tracker.has(runningProcess.childProcess), false, 'process was not removed after stopping')
+            await stopAndWait(runningProcess1)
+
+            await tracker.logAllUsage()
+            assert.throws(() => assertLogsContain(runningProcess1.childProcess.pid().toString(), false, 'info'))
+            assertLogsContain(runningProcess2.childProcess.pid().toString(), false, 'info')
+        })
+
+        it('defaults to empty message when empty', async function () {
+            await tracker.logAllUsage()
+            assertLogsContain('No Active Subprocesses', false, 'info')
+        })
+
+        it('emits telemetry with size equal to number of processes (empty)', async function () {
+            await tracker.logAllUsage()
+            assertTelemetry('ide_showExtStats', { numChildProcesses: 0 })
+        })
+
+        it('emits telemetry to number of processes (nonempty)', async function () {
+            const size = 10
+            for (const _ of Array.from({ length: size })) {
+                startSleepProcess()
+            }
+
+            await tracker.logAllUsage()
+            assertTelemetry('ide_showExtStats', { numChildProcesses: size })
+        })
     })
 
-    it('multiple processes from same command are tracked seperately', async function () {
+    it('getProcessAsStr logs warning when its missing', async function () {
         const runningProcess1 = startSleepProcess()
-        const runningProcess2 = startSleepProcess()
-        tracker.add(runningProcess1.childProcess)
-        tracker.add(runningProcess2.childProcess)
-
-        assert.strictEqual(tracker.has(runningProcess1.childProcess), true, 'Missing first process')
-        assert.strictEqual(tracker.has(runningProcess2.childProcess), true, 'Missing second process')
-
-        await stopAndWait(runningProcess1)
-        await clock.tickAsync(ChildProcessTracker.pollingInterval)
-        assert.strictEqual(tracker.has(runningProcess2.childProcess), true, 'second process was mistakenly removed')
-        assert.strictEqual(
-            tracker.has(runningProcess1.childProcess),
-            false,
-            'first process was not removed after stopping it'
-        )
-
-        await stopAndWait(runningProcess2)
-        await clock.tickAsync(ChildProcessTracker.pollingInterval)
-        assert.strictEqual(
-            tracker.has(runningProcess2.childProcess),
-            false,
-            'second process was not removed after stopping it'
-        )
-
-        assert.strictEqual(tracker.size, 0, 'expected tracker to be empty')
-    })
-
-    it('logs a warning message when system usage exceeds threshold', async function () {
-        const runningProcess = startSleepProcess()
-        tracker.add(runningProcess.childProcess)
-
-        const highCpu: ProcessStats = {
-            cpu: ChildProcessTracker.thresholds.cpu + 1,
-            memory: 0,
-        }
-        const highMemory: ProcessStats = {
-            cpu: 0,
-            memory: ChildProcessTracker.thresholds.memory + 1,
-        }
-
-        usageMock.returns(highCpu)
-
-        await clock.tickAsync(ChildProcessTracker.pollingInterval)
-        assertLogsContain('exceeded cpu threshold', false, 'warn')
-
-        usageMock.returns(highMemory)
-        await clock.tickAsync(ChildProcessTracker.pollingInterval)
-        assertLogsContain('exceeded memory threshold', false, 'warn')
-
-        await stopAndWait(runningProcess)
-    })
-
-    it('includes pid in logs', async function () {
-        const runningProcess = startSleepProcess()
-        tracker.add(runningProcess.childProcess)
-
-        usageMock.returns({
-            cpu: ChildProcessTracker.thresholds.cpu + 1,
-            memory: 0,
-        })
-
-        await clock.tickAsync(ChildProcessTracker.pollingInterval)
-        assertLogsContain(runningProcess.childProcess.pid().toString(), false, 'warn')
-
-        await stopAndWait(runningProcess)
-    })
-
-    it('does not log for processes within threshold', async function () {
-        const runningProcess = startSleepProcess()
-
-        usageMock.returns({
-            cpu: ChildProcessTracker.thresholds.cpu - 1,
-            memory: ChildProcessTracker.thresholds.memory - 1,
-        })
-
-        await clock.tickAsync(ChildProcessTracker.pollingInterval)
-
-        assert.throws(() => assertLogsContain(runningProcess.childProcess.pid().toString(), false, 'warn'))
-
-        await stopAndWait(runningProcess)
+        tracker.clear()
+        tracker.getProcessAsStr(runningProcess1.childProcess.pid())
+        assertLogsContain(runningProcess1.childProcess.pid().toString(), false, 'warn')
     })
 })

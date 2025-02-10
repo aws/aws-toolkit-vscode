@@ -3216,6 +3216,11 @@
                 "category": "%AWS.title%"
             },
             {
+                "command": "aws.toolkit.showExtStats",
+                "title": "%AWS.command.showExtStats%",
+                "category": "%AWS.title%"
+            },
+            {
                 "command": "aws.toolkit.help",
                 "title": "%AWS.command.help%",
                 "category": "%AWS.title%",

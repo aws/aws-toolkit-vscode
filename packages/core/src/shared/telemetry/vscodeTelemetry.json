@@ -1,6 +1,22 @@
 {
     "types": [
         {
+            "name": "numChildProcesses",
+            "type": "int",
+            "description": "number of child processes actively running"
+        },
+        {
+            "name": "childProcess",
+            "type": "string",
+            "description": "A string representation of a ChildProcess"
+        },
+        {
+            "name": "systemResource",
+            "type": "string",
+            "allowedValues": ["cpu", "memory"],
+            "description": "The type of system resource being measured"
+        },
+        {
             "name": "amazonGenerateApproachLatency",
             "type": "double",
             "description": "The time it takes to generate approach response"
@@ -369,6 +385,30 @@
                 {
                     "type": "attempts",
                     "required": false
+                }
+            ]
+        },
+        {
+            "name": "ide_showExtStats",
+            "description": "Emitted when user invokes show extensions stats command",
+            "metadata": [
+                {
+                    "type": "numChildProcesses",
+                    "required": true
+                }
+            ]
+        },
+        {
+            "name": "ide_childProcessWarning",
+            "description": "Child Process warning due to high system usage",
+            "metadata": [
+                {
+                    "type": "systemResource",
+                    "required": true
+                },
+                {
+                    "type": "childProcess",
+                    "required": true
                 }
             ]
         },
