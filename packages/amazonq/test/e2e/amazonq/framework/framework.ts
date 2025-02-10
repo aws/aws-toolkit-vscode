@@ -105,6 +105,16 @@ export class qTestingFramework {
         return Object.entries(tabs).map(([tabId]) => new Messenger(tabId, this.mynahUIProps, this.mynahUI))
     }
 
+    public getSelectedTab() {
+        const selectedTabId = this.mynahUI.getSelectedTabId()
+        const selectedTab = this.getTabs().find((tab) => tab.tabID === selectedTabId)
+
+        if (!selectedTab) {
+            assert.fail('Selected tab not found')
+        }
+        return selectedTab
+    }
+
     public findTab(title: string) {
         return Object.values(this.getTabs()).find((tab) => tab.getStore().tabTitle === title)
     }
