@@ -1,3 +1,8 @@
+## 3.45.0 2025-02-05
+
+- **Feature** Add support for DocumentDB clusters
+- **Feature** Step Functions: Upgrade amazon-states-language-service to 1.15. This new version enhance autocomplete for variable and JSONata expression in JSON ASL files.
+
 ## 3.44.0 2025-01-30
 
 - **Bug Fix** Policy Checks selected profile is always default

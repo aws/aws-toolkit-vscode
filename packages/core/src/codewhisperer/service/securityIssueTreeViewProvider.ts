@@ -106,6 +106,12 @@ export class SecurityIssueTreeViewProvider implements vscode.TreeDataProvider<Se
     public refresh(): void {
         this._onDidChangeTreeData.fire()
     }
+
+    public static focus() {
+        void vscode.commands.executeCommand('aws.amazonq.SecurityIssuesTree.focus').then(undefined, (e) => {
+            getLogger().error('SecurityIssuesTree focus failed: %s', e.message)
+        })
+    }
 }
 
 enum ContextValue {
@@ -203,24 +209,5 @@ export class IssueItem extends vscode.TreeItem {
         markdown.appendMarkdown(this.issue.recommendation.text)
 
         return markdown
-    }
-}
-
-export class SecurityIssuesTree {
-    static #instance: SecurityIssuesTree
-    public static get instance() {
-        return (this.#instance ??= new this())
-    }
-
-    constructor() {
-        vscode.window.createTreeView(SecurityIssueTreeViewProvider.viewType, {
-            treeDataProvider: SecurityIssueTreeViewProvider.instance,
-        })
-    }
-
-    public focus() {
-        void vscode.commands.executeCommand('aws.amazonq.SecurityIssuesTree.focus').then(undefined, (e) => {
-            getLogger().error('SecurityIssuesTree focus failed: %s', e.message)
-        })
     }
 }

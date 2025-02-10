@@ -199,20 +199,6 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
                     .filter((e) => (opts.menuOptions ?? Object.keys(options)).includes(e[0]))
                     .map((e) => e[1])
             )
-        }),
-        // "AWS (Developer): Watch Logs"
-        Commands.register('aws.dev.viewLogs', async () => {
-            // HACK: Use startDebugging() so we can use the DEBUG CONSOLE (which supports
-            // user-defined filtering, unlike the OUTPUT panel).
-            await vscode.debug.startDebugging(undefined, {
-                name: 'aws-dev-log',
-                request: 'launch',
-                type: 'node', // Nonsense, to force the debugger to start.
-            })
-            getLogger().enableDebugConsole()
-            if (!getLogger().logLevelEnabled('debug')) {
-                getLogger().setLogLevel('debug')
-            }
         })
     )
 

@@ -9,11 +9,6 @@
             "name": "Extension",
             "type": "extensionHost",
             "request": "launch",
-            "debugWebviews": true,
-            "rendererDebugOptions": {
-                "urlFilter": "*amazonwebservices.amazon-q-vscode*",
-                "webRoot": "${workspaceFolder}"
-            },
             "runtimeExecutable": "${execPath}",
             "args": ["--extensionDevelopmentPath=${workspaceFolder}"],
             "env": {

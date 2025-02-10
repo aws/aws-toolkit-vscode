@@ -119,6 +119,8 @@ async function validateJavaHome(): Promise<boolean> {
             javaVersionUsedByMaven = JDKVersion.JDK11
         } else if (javaVersionUsedByMaven === '17.') {
             javaVersionUsedByMaven = JDKVersion.JDK17
+        } else if (javaVersionUsedByMaven === '21.') {
+            javaVersionUsedByMaven = JDKVersion.JDK21
         }
     }
     if (javaVersionUsedByMaven !== transformByQState.getSourceJDKVersion()) {
@@ -772,6 +774,12 @@ export async function postTransformationJob() {
 
     if (transformByQState.getPayloadFilePath() !== '') {
         fs.rmSync(transformByQState.getPayloadFilePath(), { recursive: true, force: true }) // delete ZIP if it exists
+    }
+
+    // attempt download for user
+    // TODO: refactor as explained here https://github.com/aws/aws-toolkit-vscode/pull/6519/files#r1946873107
+    if (transformByQState.isSucceeded() || transformByQState.isPartiallySucceeded()) {
+        await vscode.commands.executeCommand('aws.amazonq.transformationHub.reviewChanges.startReview')
     }
 }
 
