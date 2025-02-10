@@ -24,6 +24,7 @@ import {
     ContentLengthError,
     createUserFacingErrorMessage,
     FeatureDevServiceError,
+    isAPIClientError,
     MonthlyConversationLimitError,
     NoChangeRequiredException,
     PrepareRepoFailedError,
@@ -39,14 +40,7 @@ import { CodeGenState, PrepareCodeGenState } from '../../../../amazonqFeatureDev
 import { FeatureDevClient } from '../../../../amazonqFeatureDev/client/featureDev'
 import { createAmazonQUri } from '../../../../amazonq/commons/diff'
 import { AuthUtil } from '../../../../codewhisperer'
-import {
-    featureDevScheme,
-    featureName,
-    messageWithConversationId,
-    clientErrorMessages,
-    startCodeGenClientErrorMessages,
-    startTaskAssistLimitReachedMessage,
-} from '../../../../amazonqFeatureDev'
+import { featureDevScheme, featureName, messageWithConversationId } from '../../../../amazonqFeatureDev'
 import { i18n } from '../../../../shared/i18n-helper'
 import { FollowUpTypes } from '../../../../amazonq/commons/types'
 import { ToolkitError } from '../../../../shared'
@@ -486,12 +480,7 @@ describe('Controller', () => {
                 if (error instanceof FeatureDevServiceError && error.code) {
                     return errorResultMapping.get(error.code) ?? MetricDataResult.Error
                 }
-                if (
-                    (error.code === 'StartCodeGenerationFailed' &&
-                        startCodeGenClientErrorMessages.some((msg: string) => error.message.includes(msg))) ||
-                    clientErrorMessages.some((msg: string) => error.message.includes(msg)) ||
-                    error.message.includes(startTaskAssistLimitReachedMessage)
-                ) {
+                if (isAPIClientError(error)) {
                     return MetricDataResult.Error
                 }
                 return errorResultMapping.get(error.constructor.name) ?? MetricDataResult.Fault

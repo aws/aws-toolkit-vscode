@@ -15,6 +15,7 @@ import {
     createUserFacingErrorMessage,
     denyListedErrors,
     FeatureDevServiceError,
+    isAPIClientError,
     MonthlyConversationLimitError,
     NoChangeRequiredException,
     PrepareRepoFailedError,
@@ -29,14 +30,7 @@ import {
 } from '../../errors'
 import { codeGenRetryLimit, defaultRetryLimit } from '../../limits'
 import { Session } from '../../session/session'
-import {
-    clientErrorMessages,
-    featureDevScheme,
-    featureName,
-    generateDevFilePrompt,
-    startCodeGenClientErrorMessages,
-    startTaskAssistLimitReachedMessage,
-} from '../../constants'
+import { featureDevScheme, featureName, generateDevFilePrompt } from '../../constants'
 import { DeletedFileInfo, DevPhase, MetricDataOperationName, MetricDataResult, type NewFileInfo } from '../../types'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { AuthController } from '../../../amazonq/auth/controller'
@@ -569,12 +563,7 @@ export class FeatureDevController {
                     result = MetricDataResult.Error
                     break
                 default:
-                    if (
-                        (err.code === 'StartCodeGenerationFailed' &&
-                            startCodeGenClientErrorMessages.some((msg) => err.message.includes(msg))) ||
-                        clientErrorMessages.some((msg) => err.message.includes(msg)) ||
-                        err.message.includes(startTaskAssistLimitReachedMessage)
-                    ) {
+                    if (isAPIClientError(err)) {
                         result = MetricDataResult.Error
                     } else {
                         result = MetricDataResult.Fault
