@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "Amazon Q /dev: support `.hbs`, `.gjs`, `.gts`, `.astro`, `.mdx`, `.svelte`, `.erb`, `.rake` files"
+}
