@@ -45,7 +45,7 @@ import {
     messageWithConversationId,
     clientErrorMessages,
     startCodeGenClientErrorMessages,
-    startTaskAssisLimitReachedMessage,
+    startTaskAssistLimitReachedMessage,
 } from '../../../../amazonqFeatureDev'
 import { i18n } from '../../../../shared/i18n-helper'
 import { FollowUpTypes } from '../../../../amazonq/commons/types'
@@ -494,7 +494,7 @@ describe('Controller', () => {
                 }
                 if (
                     clientErrorMessages.some((msg: string) => error.message.includes(msg)) ||
-                    error.message.includes(startTaskAssisLimitReachedMessage) // Include this check
+                    error.message.includes(startTaskAssistLimitReachedMessage) // Include this check
                 ) {
                     return MetricDataResult.Error
                 }

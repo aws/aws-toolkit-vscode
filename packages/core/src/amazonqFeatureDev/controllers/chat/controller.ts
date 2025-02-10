@@ -35,7 +35,7 @@ import {
     featureName,
     generateDevFilePrompt,
     startCodeGenClientErrorMessages,
-    startTaskAssisLimitReachedMessage,
+    startTaskAssistLimitReachedMessage,
 } from '../../constants'
 import { DeletedFileInfo, DevPhase, MetricDataOperationName, MetricDataResult, type NewFileInfo } from '../../types'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
@@ -573,7 +573,7 @@ export class FeatureDevController {
                         (err.code === 'StartCodeGenerationFailed' &&
                             startCodeGenClientErrorMessages.some((msg) => err.message.includes(msg))) ||
                         clientErrorMessages.some((msg) => err.message.includes(msg)) ||
-                        err.message.includes(startTaskAssisLimitReachedMessage)
+                        err.message.includes(startTaskAssistLimitReachedMessage)
                     ) {
                         result = MetricDataResult.Error
                     } else {
