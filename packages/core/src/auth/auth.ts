@@ -21,7 +21,7 @@ import { SsoClient } from './sso/clients'
 import { getLogger } from '../shared/logger'
 import { CredentialsProviderManager } from './providers/credentialsProviderManager'
 import { asString, CredentialsId, CredentialsProvider, fromString } from './providers/credentials'
-import { keyedDebounce, once, throttle } from '../shared/utilities/functionUtils'
+import { keyedDebounce, once } from '../shared/utilities/functionUtils'
 import { CredentialsSettings } from './credentials/utils'
 import {
     extractDataFromSection,
@@ -248,8 +248,8 @@ export class Auth implements AuthService, ConnectionManager {
         this.#onDidChangeActiveConnection.fire(undefined)
     }
 
-    @withTelemetryContext({ name: 'listConnections', class: authClassName, emit: true })
-    private async listConnectionsDefault(): Promise<Connection[]> {
+    @withTelemetryContext({ name: 'listConnections', class: authClassName })
+    public async listConnections(): Promise<Connection[]> {
         await loadIamProfilesIntoStore(this.store, this.iamProfileProvider)
 
         const connections = await Promise.all(
@@ -258,8 +258,6 @@ export class Auth implements AuthService, ConnectionManager {
 
         return connections
     }
-
-    public listConnections = throttle(() => this.listConnectionsDefault(), 500)
 
     /**
      * Gathers all local profiles plus any AWS accounts/roles associated with SSO ("IAM Identity

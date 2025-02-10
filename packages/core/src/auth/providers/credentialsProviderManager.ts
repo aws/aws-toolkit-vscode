@@ -6,6 +6,7 @@
 import { getLogger } from '../../shared/logger'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { withTelemetryContext } from '../../shared/telemetry/util'
+import { throttle } from '../../shared/utilities/functionUtils'
 import {
     asString,
     CredentialsProvider,
@@ -65,8 +66,12 @@ export class CredentialsProviderManager {
      * Returns a map of `CredentialsProviderId` string-forms to object-forms,
      * from all credential sources. Only available providers are returned.
      */
-    @withTelemetryContext({ name: 'getCredentialProviderNames', class: credentialsProviderManagerClassName })
-    public async getCredentialProviderNames(): Promise<{ [key: string]: CredentialsId }> {
+    @withTelemetryContext({
+        name: 'getCredentialProviderNames',
+        class: credentialsProviderManagerClassName,
+        emit: true,
+    })
+    private async getCredentialProviderNamesDefault(): Promise<{ [key: string]: CredentialsId }> {
         const m: { [key: string]: CredentialsId } = {}
         for (const o of await this.getAllCredentialsProviders()) {
             m[asString(o.getCredentialsId())] = o.getCredentialsId()
@@ -74,6 +79,8 @@ export class CredentialsProviderManager {
 
         return m
     }
+
+    public getCredentialProviderNames = throttle(() => this.getCredentialProviderNamesDefault(), 500)
 
     public async getCredentialsProvider(credentials: CredentialsId): Promise<CredentialsProvider | undefined> {
         for (const provider of this.providers) {
