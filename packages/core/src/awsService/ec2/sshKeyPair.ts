@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import os from 'os'
-import { fs, globals } from '../../shared'
+import globals from '../../shared/extensionGlobals'
+import { fs } from '../../shared/fs/fs'
 import { ToolkitError } from '../../shared/errors'
 import { tryRun } from '../../shared/utilities/pathFind'
 import { Timeout } from '../../shared/utilities/timeoutUtils'

@@ -6,7 +6,7 @@
 import * as path from 'path'
 import { EnvironmentVariables } from '../../environmentVariables'
 import * as filesystemUtilities from '../../filesystemUtilities'
-import { getLogger, Logger } from '../../logger'
+import { getLogger, Logger } from '../../logger/logger'
 import { SamCliInfoInvocation } from './samCliInfo'
 import { DefaultSamCliValidator, SamCliValidatorContext, SamCliVersionValidation } from './samCliValidator'
 import { PerfLog } from '../../logger/perfLogger'

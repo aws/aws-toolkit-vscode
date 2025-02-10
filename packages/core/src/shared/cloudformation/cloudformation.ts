@@ -9,7 +9,7 @@ import { schema } from 'yaml-cfn'
 import * as yaml from 'js-yaml'
 import * as filesystemUtilities from '../filesystemUtilities'
 import fs from '../../shared/fs/fs'
-import { getLogger } from '../logger'
+import { getLogger } from '../logger/logger'
 import { lambdaPackageTypeImage } from '../constants'
 import { isUntitledScheme, normalizeVSCodeUri } from '../utilities/vsCodeUtils'
 

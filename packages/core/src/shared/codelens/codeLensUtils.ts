@@ -8,7 +8,7 @@ import { RuntimeFamily } from '../../lambda/models/samLambdaRuntime'
 import * as CloudFormation from '../cloudformation/cloudformation'
 import { getResourcesForHandler } from '../fs/templateRegistry'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
-import { getLogger } from '../logger'
+import { getLogger } from '../logger/logger'
 import { API_TARGET_TYPE, CODE_TARGET_TYPE, TEMPLATE_TARGET_TYPE } from '../sam/debugger/awsSamDebugConfiguration'
 import {
     addSamDebugConfiguration,

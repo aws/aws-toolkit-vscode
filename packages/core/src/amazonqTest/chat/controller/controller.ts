@@ -13,29 +13,6 @@ import { ChatSessionManager } from '../storages/chatSession'
 import { BuildStatus, ConversationState, Session } from '../session/session'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import {
-    CodeWhispererConstants,
-    ReferenceLogViewProvider,
-    ShortAnswer,
-    ShortAnswerReference,
-    TelemetryHelper,
-    TestGenerationBuildStep,
-    testGenState,
-    tooManyRequestErrorMessage,
-    unitTestGenerationCancelMessage,
-    UserWrittenCodeTracker,
-} from '../../../codewhisperer'
-import {
-    fs,
-    getLogger,
-    getTelemetryReasonDesc,
-    i18n,
-    openUrl,
-    randomUUID,
-    sleep,
-    tempDirPath,
-    testGenerationLogsDir,
-} from '../../../shared'
-import {
     buildProgressField,
     cancellingProgressField,
     cancelTestGenButton,
@@ -46,7 +23,7 @@ import {
     testGenSummaryMessage,
 } from '../../models/constants'
 import MessengerUtils, { ButtonActions } from './messenger/messengerUtils'
-import { isAwsError } from '../../../shared/errors'
+import { getTelemetryReasonDesc, isAwsError } from '../../../shared/errors'
 import { ChatItemType } from '../../../amazonq/commons/model'
 import { ProgressField } from '@aws/mynah-ui'
 import { FollowUpTypes } from '../../../amazonq/commons/types'
@@ -64,8 +41,26 @@ import { EditorContentController } from '../../../amazonq/commons/controllers/co
 import { amazonQTabSuffix } from '../../../shared/constants'
 import { applyChanges } from '../../../shared/utilities/textDocumentUtilities'
 import { telemetry } from '../../../shared/telemetry/telemetry'
-import { CodeReference } from '../../../amazonq'
 import { CodeWhispererSettings } from '../../../codewhisperer/util/codewhispererSettings'
+import { openUrl } from '../../../shared/utilities/vsCodeUtils'
+import { getLogger } from '../../../shared/logger/logger'
+import { i18n } from '../../../shared/i18n-helper'
+import { sleep } from '../../../shared/utilities/timeoutUtils'
+import { fs } from '../../../shared/fs/fs'
+import { randomUUID } from '../../../shared/crypto'
+import { tempDirPath, testGenerationLogsDir } from '../../../shared/filesystemUtilities'
+import { CodeReference } from '../../../codewhispererChat/view/connector/connector'
+import { TelemetryHelper } from '../../../codewhisperer/util/telemetryHelper'
+import { ShortAnswer, ShortAnswerReference, testGenState } from '../../../codewhisperer/models/model'
+import {
+    referenceLogText,
+    TestGenerationBuildStep,
+    tooManyRequestErrorMessage,
+    unitTestGenerationCancelMessage,
+    utgLimitReached,
+} from '../../../codewhisperer/models/constants'
+import { UserWrittenCodeTracker } from '../../../codewhisperer/tracker/userWrittenCodeTracker'
+import { ReferenceLogViewProvider } from '../../../codewhisperer/service/referenceLogViewProvider'
 
 export interface TestChatControllerEventEmitters {
     readonly tabOpened: vscode.EventEmitter<any>
@@ -281,7 +276,7 @@ export class TestController {
 
         // If user reached monthly limit for builderId
         if (error.code === 'CreateTestJobError') {
-            if (error.message.includes(CodeWhispererConstants.utgLimitReached)) {
+            if (error.message.includes(utgLimitReached)) {
                 getLogger().error('Monthly quota reached for QSDA actions.')
                 return this.messenger.sendMessage(
                     i18n('AWS.amazonq.featureDev.error.monthlyLimitReached'),
@@ -713,7 +708,7 @@ export class TestController {
             getLogger().debug('Extracted code slice: %s', code)
             const referenceLog =
                 `[${time}] Accepted recommendation ` +
-                CodeWhispererConstants.referenceLogText(
+                referenceLogText(
                     `<br><code>${code}</code><br>`,
                     reference.licenseName!,
                     reference.repository!,

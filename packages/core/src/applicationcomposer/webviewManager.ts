@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import request from '../shared/request'
 import { ApplicationComposer } from './composerWebview'
-import { getLogger } from '../shared/logger'
+import { getLogger } from '../shared/logger/logger'
 
 const localize = nls.loadMessageBundle()
 

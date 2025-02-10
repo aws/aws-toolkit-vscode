@@ -5,8 +5,8 @@
 
 import * as vscode from 'vscode'
 import * as localizedText from '../../shared/localizedText'
-import { getLogger } from '../../shared/logger'
-import { telemetry } from '../../shared/telemetry'
+import { getLogger } from '../../shared/logger/logger'
+import { telemetry } from '../../shared/telemetry/telemetry'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { showConfirmationMessage } from '../../shared/utilities/messages'

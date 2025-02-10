@@ -7,7 +7,7 @@
 
 import { join, resolve } from 'path'
 import fs from '../../shared/fs/fs'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 
 /**
  * Returns env var value if it is non-empty.

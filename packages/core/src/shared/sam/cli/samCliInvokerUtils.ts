@@ -4,7 +4,7 @@
  */
 
 import { SpawnOptions } from 'child_process' // eslint-disable-line no-restricted-imports
-import { getLogger } from '../../logger'
+import { getLogger } from '../../logger/logger'
 import { getUserAgent } from '../../telemetry/util'
 import { ChildProcessResult, ChildProcessOptions } from '../../utilities/processUtils'
 import { ErrorInformation, ToolkitError } from '../../errors'

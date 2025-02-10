@@ -11,7 +11,7 @@ import { subscribeOnce } from '../../shared/utilities/vsCodeUtils'
 import { Container } from '../service/serviceContainer'
 import { RecommendationHandler } from '../service/recommendationHandler'
 import { cancellableDebounce } from '../../shared/utilities/functionUtils'
-import { telemetry } from '../../shared/telemetry'
+import { telemetry } from '../../shared/telemetry/telemetry'
 import { TelemetryHelper } from '../util/telemetryHelper'
 
 export class ActiveStateController implements vscode.Disposable {

@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { RestApiNode } from '../explorer/apiNodes'
-import { getLogger, Logger } from '../../../shared/logger'
+import { getLogger, Logger } from '../../../shared/logger/logger'
 
 import { toArrayAsync } from '../../../shared/utilities/collectionUtils'
 import { Resource } from 'aws-sdk/clients/apigateway'
