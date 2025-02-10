@@ -4,9 +4,8 @@
  */
 
 import { getLogger } from '../../shared/logger'
-import { AwsLoadCredentials, telemetry } from '../../shared/telemetry/telemetry'
+import { telemetry } from '../../shared/telemetry/telemetry'
 import { withTelemetryContext } from '../../shared/telemetry/util'
-import { cancellableDebounce } from '../../shared/utilities/functionUtils'
 import {
     asString,
     CredentialsProvider,
@@ -26,7 +25,7 @@ export class CredentialsProviderManager {
     private readonly providerFactories: CredentialsProviderFactory[] = []
     private readonly providers: CredentialsProvider[] = []
 
-    @withTelemetryContext({ name: 'getAllCredentialsProvider', class: credentialsProviderManagerClassName, emit: true })
+    @withTelemetryContext({ name: 'getAllCredentialsProvider', class: credentialsProviderManagerClassName })
     public async getAllCredentialsProviders(): Promise<CredentialsProvider[]> {
         let providers: CredentialsProvider[] = []
 
@@ -52,7 +51,7 @@ export class CredentialsProviderManager {
                 continue
             }
 
-            void this.emitWithDebounce({
+            telemetry.aws_loadCredentials.emit({
                 credentialSourceId: credentialsProviderToTelemetryType(providerType),
                 value: refreshed.length,
             })
@@ -61,10 +60,7 @@ export class CredentialsProviderManager {
 
         return providers
     }
-    private emitWithDebounce = cancellableDebounce(
-        (m: AwsLoadCredentials) => telemetry.aws_loadCredentials.emit(m),
-        100
-    ).promise
+
     /**
      * Returns a map of `CredentialsProviderId` string-forms to object-forms,
      * from all credential sources. Only available providers are returned.
