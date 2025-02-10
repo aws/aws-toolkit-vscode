@@ -487,14 +487,10 @@ describe('Controller', () => {
                     return errorResultMapping.get(error.code) ?? MetricDataResult.Error
                 }
                 if (
-                    error.code === 'StartCodeGenerationFailed' &&
-                    startCodeGenClientErrorMessages.some((msg: string) => error.message.includes(msg))
-                ) {
-                    return MetricDataResult.Error
-                }
-                if (
+                    (error.code === 'StartCodeGenerationFailed' &&
+                        startCodeGenClientErrorMessages.some((msg: string) => error.message.includes(msg))) ||
                     clientErrorMessages.some((msg: string) => error.message.includes(msg)) ||
-                    error.message.includes(startTaskAssistLimitReachedMessage) // Include this check
+                    error.message.includes(startTaskAssistLimitReachedMessage)
                 ) {
                     return MetricDataResult.Error
                 }
