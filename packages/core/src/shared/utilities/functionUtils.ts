@@ -156,3 +156,29 @@ export function keyedDebounce<T, U extends any[], K extends string = string>(
         return promise
     }
 }
+
+/**
+ * Wraps the target function such that it will only execute after {@link delay} milliseconds have passed
+ * since the last invocation. Omitting {@link delay} will not execute the function for
+ * a single event loop.
+ *
+ * Multiple calls made during the throttle window will return the last returned result.
+ */
+export function throttle<Input extends any[], Output>(
+    fn: (...args: Input) => Output | Promise<Output>,
+    delay: number = 0
+): (...args: Input) => Promise<Output> {
+    let lastResult: Output
+    let timeout: Timeout | undefined
+
+    return async (...args: Input) => {
+        if (timeout) {
+            return lastResult
+        }
+
+        timeout = new Timeout(delay)
+        timeout.onCompletion(() => (timeout = undefined))
+
+        return (lastResult = (await fn(...args)) as Output)
+    }
+}

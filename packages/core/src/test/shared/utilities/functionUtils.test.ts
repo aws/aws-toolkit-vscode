@@ -4,7 +4,7 @@
  */
 
 import assert from 'assert'
-import { once, onceChanged, debounce } from '../../../shared/utilities/functionUtils'
+import { once, onceChanged, debounce, throttle } from '../../../shared/utilities/functionUtils'
 import { installFakeClock } from '../../testUtil'
 
 describe('functionUtils', function () {
@@ -105,5 +105,55 @@ describe('debounce', function () {
             assert.strictEqual(counter, 2)
             assert.strictEqual(calls.length, 4)
         })
+    })
+})
+
+describe('throttle', function () {
+    let counter: number
+    let fn: () => Promise<number>
+    let clock: ReturnType<typeof installFakeClock>
+
+    const callAndSleep = async (delayInMs: number) => {
+        const r = await fn()
+        await clock.tickAsync(delayInMs)
+        return r
+    }
+
+    const callAndSleepN = async (delayInMs: number, n: number) => {
+        const results = []
+        for (const _ of Array.from({ length: n })) {
+            results.push(await callAndSleep(delayInMs))
+        }
+        return results
+    }
+
+    beforeEach(function () {
+        clock = installFakeClock()
+        counter = 0
+        fn = throttle(() => ++counter, 10)
+    })
+
+    afterEach(function () {
+        clock.uninstall()
+    })
+
+    it('prevents a function from executing more than once in the `delay` window', async function () {
+        await callAndSleepN(3, 3)
+        assert.strictEqual(counter, 1, 'total calls should be 1')
+    })
+
+    it('returns cached value on subsequent calls within window', async function () {
+        const result = await callAndSleepN(3, 3)
+        assert.deepStrictEqual(result, [1, 1, 1], 'all calls in window should return cached value')
+    })
+
+    it('updates cache for next window', async function () {
+        const result = await callAndSleepN(10, 3)
+        assert.deepStrictEqual(result, [1, 2, 3], 'each call should return a new value')
+    })
+
+    it('properly manages rolling cache window', async function () {
+        const result = await callAndSleepN(5, 10)
+        assert.deepStrictEqual(result, [1, 1, 2, 2, 3, 3, 4, 4, 5, 5])
     })
 })
