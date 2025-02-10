@@ -12,6 +12,7 @@ export type LogTopic =
     | 'test'
     | 'childProcess'
     | 'unknown'
+    | 'chat'
     | 'stepfunctions'
 
 class ErrorLog {
@@ -42,8 +43,6 @@ export interface Logger {
     /** Returns true if the given log level is being logged.  */
     logLevelEnabled(logLevel: LogLevel): boolean
     getLogById(logID: number, file: vscode.Uri): string | undefined
-    /** HACK: Enables logging to vscode Debug Console. */
-    enableDebugConsole(): void
     sendToLog(
         logLevel: 'debug' | 'verbose' | 'info' | 'warn' | 'error',
         message: string | Error,
@@ -81,8 +80,6 @@ export abstract class BaseLogger implements Logger {
     abstract setLogLevel(logLevel: LogLevel): void
     abstract logLevelEnabled(logLevel: LogLevel): boolean
     abstract getLogById(logID: number, file: vscode.Uri): string | undefined
-    /** HACK: Enables logging to vscode Debug Console. */
-    abstract enableDebugConsole(): void
 }
 
 /**
@@ -173,7 +170,6 @@ export class NullLogger extends BaseLogger {
     public getLogById(logID: number, file: vscode.Uri): string | undefined {
         return undefined
     }
-    public enableDebugConsole(): void {}
     override sendToLog(
         logLevel: 'error' | 'warn' | 'info' | 'verbose' | 'debug',
         message: string | Error,
@@ -197,7 +193,6 @@ export class ConsoleLogger extends BaseLogger {
     public getLogById(logID: number, file: vscode.Uri): string | undefined {
         return undefined
     }
-    public enableDebugConsole(): void {}
     override sendToLog(
         logLevel: 'error' | 'warn' | 'info' | 'verbose' | 'debug',
         message: string | Error,
@@ -249,10 +244,6 @@ export class TopicLogger extends BaseLogger implements vscode.Disposable {
 
     override getLogById(logID: number, file: vscode.Uri): string | undefined {
         return this.logger.getLogById(logID, file)
-    }
-
-    override enableDebugConsole(): void {
-        this.logger.enableDebugConsole()
     }
 
     override sendToLog(level: LogLevel, message: string | Error, ...meta: any[]): number {
