@@ -18,7 +18,6 @@ import { showMessageWithUrl } from '../../shared/utilities/messages'
 import { parse } from '@aws-sdk/util-arn-parser'
 import { Commands } from '../../shared/vscode/commands2'
 import { vsCodeState } from '../models/model'
-import { FeatureConfigProvider, Features } from '../../shared/featureConfig'
 
 /**
  *
@@ -116,18 +115,7 @@ export const getSelectedCustomization = (): Customization => {
     if (selectedCustomization && selectedCustomization.name !== '') {
         return selectedCustomization
     } else {
-        const customizationFeature = FeatureConfigProvider.getFeature(Features.customizationArnOverride)
-        const arnOverride = customizationFeature?.value.stringValue
-        const customizationOverrideName = customizationFeature?.variation
-        if (arnOverride === undefined) {
-            return baseCustomization
-        } else {
-            return {
-                arn: arnOverride,
-                name: customizationOverrideName,
-                description: baseCustomization.description,
-            }
-        }
+        return baseCustomization
     }
 }
 
