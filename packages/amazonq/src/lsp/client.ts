@@ -11,7 +11,7 @@ import { registerInlineCompletion } from '../app/inline/completion'
 import { AmazonQLspAuth, encryptionKey, notificationTypes } from './auth'
 import { AuthUtil } from 'aws-core-vscode/codewhisperer'
 import { ConnectionMetadata } from '@aws/language-server-runtimes/protocol'
-import { ResourcePaths, createServerOptions } from 'aws-core-vscode/shared'
+import { ResourcePaths, Settings, createServerOptions, globals } from 'aws-core-vscode/shared'
 
 const localize = nls.loadMessageBundle()
 
@@ -34,6 +34,9 @@ export async function startLanguageServer(extensionContext: vscode.ExtensionCont
     })
 
     const documentSelector = [{ scheme: 'file', language: '*' }]
+
+    const clientId = 'amazonq'
+    const traceServerEnabled = Settings.instance.isSet(`${clientId}.trace.server`)
 
     // Options to control the language client
     const clientOptions: LanguageClientOptions = {
@@ -60,10 +63,20 @@ export async function startLanguageServer(extensionContext: vscode.ExtensionCont
                 providesBearerToken: true,
             },
         },
+        /**
+         * When the trace server is enabled it outputs a ton of log messages so:
+         *   When trace server is enabled, logs go to a seperate "Amazon Q Language Server" output.
+         *   Otherwise, logs go to the regular "Amazon Q Logs" channel.
+         */
+        ...(traceServerEnabled
+            ? {}
+            : {
+                  outputChannel: globals.logOutputChannel,
+              }),
     }
 
     const client = new LanguageClient(
-        'amazonq',
+        clientId,
         localize('amazonq.server.name', 'Amazon Q Language Server'),
         serverOptions,
         clientOptions
