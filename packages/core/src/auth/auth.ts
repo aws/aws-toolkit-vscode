@@ -417,6 +417,7 @@ export class Auth implements AuthService, ConnectionManager {
         await setContext('aws.isInternalUser', false)
     }
 
+    @withTelemetryContext({ name: 'getConnection', class: authClassName })
     public async getConnection(connection: Pick<Connection, 'id'>): Promise<Connection | undefined> {
         const connections = await this.listConnections()
 
@@ -524,6 +525,7 @@ export class Auth implements AuthService, ConnectionManager {
         await this.thrownOnConn(id, 'exists')
     }
 
+    @withTelemetryContext({ name: 'thrownOnConn', class: authClassName })
     private async thrownOnConn(id: CredentialsId, throwOn: 'exists' | 'not-exists') {
         const idAsString = asString(id)
         const conns = await this.listConnections() // triggers loading of profile in to store
