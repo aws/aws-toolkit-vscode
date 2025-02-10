@@ -6,7 +6,7 @@
 import globals from '../../shared/extensionGlobals'
 import { getLogger } from '../../shared/logger/logger'
 import { AmazonqApproachInvoke, AmazonqCodeGenerationInvoke, Span } from '../../shared/telemetry/telemetry'
-import { LLMResponseType } from '../commons/types'
+import { LLMResponseType } from '../types'
 
 export class TelemetryHelper {
     public generateApproachIteration: number

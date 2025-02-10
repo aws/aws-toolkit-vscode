@@ -5,13 +5,13 @@
 
 import { docScheme, featureName, Mode } from '../constants'
 import { DeletedFileInfo, Interaction, NewFileInfo, SessionState, SessionStateConfig } from '../types'
-import { DocPrepareCodeGenState } from './sessionState'
+import { PrepareCodeGenState } from './sessionState'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { AuthUtil } from '../../codewhisperer/util/authUtil'
 import { SessionConfig } from '../../amazonq/commons/session/sessionConfigFactory'
 import path from 'path'
 import { FeatureDevClient } from '../../amazonqFeatureDev/client/featureDev'
-import { TelemetryHelper } from '../../amazonq/util/telemetryHelper'
+import { TelemetryHelper } from '../../amazonqFeatureDev/util/telemetryHelper'
 import { ConversationNotStartedState } from '../../amazonqFeatureDev/session/sessionState'
 import { logWithConversationId } from '../../amazonqFeatureDev/userFacingText'
 import { ConversationIdNotFoundError } from '../../amazonqFeatureDev/errors'
@@ -91,7 +91,7 @@ export class Session {
             span.record({ amazonqConversationId: this._conversationId, credentialStartUrl: AuthUtil.instance.startUrl })
         })
 
-        this._state = new DocPrepareCodeGenState(
+        this._state = new PrepareCodeGenState(
             {
                 ...this.getSessionStateConfig(),
                 conversationId: this.conversationId,

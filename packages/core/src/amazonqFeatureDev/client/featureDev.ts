@@ -32,7 +32,6 @@ import {
     MetricData,
     TelemetryEvent,
 } from './featuredevproxyclient'
-import { FeatureClient } from '../../amazonq/client/client'
 
 // Re-enable once BE is able to handle retries.
 const writeAPIRetryOptions = {
@@ -63,7 +62,7 @@ export async function createFeatureDevProxyClient(options?: Partial<ServiceOptio
     )) as FeatureDevProxyClient
 }
 
-export class FeatureDevClient implements FeatureClient {
+export class FeatureDevClient {
     public async getClient(options?: Partial<ServiceOptions>) {
         // Should not be stored for the whole session.
         // Client has to be reinitialized for each request so we always have a fresh bearerToken
