@@ -21,8 +21,8 @@ import { VirtualMemoryFile } from '../../shared/virtualMemoryFile'
 import { CodeWhispererSettings } from '../../codewhisperer/util/codewhispererSettings'
 import { ZipStream } from '../../shared/utilities/zipStream'
 import { isPresent } from '../../shared/utilities/collectionUtils'
-import { AuthUtil } from '../../codewhisperer'
-import { TelemetryHelper } from '../../amazonqFeatureDev'
+import { AuthUtil } from '../../codewhisperer/util/authUtil'
+import { TelemetryHelper } from '../util/telemetryHelper'
 
 export async function checkForDevFile(root: string) {
     const devFilePath = root + '/devfile.yaml'

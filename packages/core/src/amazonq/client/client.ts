@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ServiceOptions } from '../../shared'
+import { ServiceOptions } from '../../shared/awsClientBuilder'
 
 export abstract class FeatureClient {
     public abstract getClient(options?: Partial<ServiceOptions>): Promise<any>

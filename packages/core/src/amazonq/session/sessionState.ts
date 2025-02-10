@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import { ToolkitError } from '../../shared/errors'
 import globals from '../../shared/extensionGlobals'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { VirtualFileSystem } from '../../shared/virtualFilesystem'
 import { CodeReference, UploadHistory } from '../webview/ui/connector'
