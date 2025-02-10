@@ -42,8 +42,8 @@ describe('tech debt', function () {
 
     it('remove debugging telemetry', async function () {
         fixByDate(
-            '2025-02-11',
-            'Remove debugging telemetry in `packages/core/src/auth/providers/credentialsProviderManager.ts`. Should only need to remove the `emit: true` in the decorator.'
+            '2025-02-18',
+            'Remove debugging telemetry in `packages/core/src/auth/auth.ts`. Should only need to remove the `emit: true` in the decorator.'
         )
     })
 })
