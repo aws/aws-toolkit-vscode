@@ -211,7 +211,7 @@ function maskArns(text: string) {
  */
 export function registerAuthHook(secret: string, lambdaId = process.env['AUTH_UTIL_LAMBDA_ARN']) {
     return getTestWindow().onDidShowMessage((message) => {
-        if (message.items[0].title.match(new RegExp(proceedToBrowser))) {
+        if (message.items.length > 0 && message.items[0].title.match(new RegExp(proceedToBrowser))) {
             if (!lambdaId) {
                 const baseMessage = 'Browser login flow was shown during testing without an authorizer function'
                 if (process.env['AWS_TOOLKIT_AUTOMATION'] === 'local') {

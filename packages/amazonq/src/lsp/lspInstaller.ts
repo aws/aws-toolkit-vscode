@@ -4,7 +4,6 @@
  */
 
 import * as vscode from 'vscode'
-import { Range } from 'semver'
 import {
     ManifestResolver,
     LanguageServerResolver,
@@ -16,9 +15,12 @@ import {
     getLogger,
 } from 'aws-core-vscode/shared'
 import path from 'path'
+import { Range } from 'semver'
 
-const manifestURL = 'https://aws-toolkit-language-servers.amazonaws.com/codewhisperer/0/manifest.json'
-export const supportedLspServerVersions = '^3.1.1'
+export const manifestURL = 'https://aws-toolkit-language-servers.amazonaws.com/codewhisperer/0/manifest.json'
+export const supportedLspServerVersions = new Range('^3.1.1', {
+    includePrerelease: true,
+})
 const logger = getLogger('amazonqLsp')
 
 export class AmazonQLSPResolver implements LspResolver {
@@ -44,7 +46,7 @@ export class AmazonQLSPResolver implements LspResolver {
         const installationResult = await new LanguageServerResolver(
             manifest,
             name,
-            new Range(supportedLspServerVersions)
+            supportedLspServerVersions
         ).resolve()
 
         const nodePath = path.join(installationResult.assetDirectory, `servers/${getNodeExecutableName()}`)
